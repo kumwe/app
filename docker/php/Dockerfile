@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.7
 
-ARG PHP_IMAGE=php:8.4-fpm-alpine
+ARG PHP_IMAGE=php:8.5-fpm-alpine
 ARG COMPOSER_IMAGE=composer:2
 ARG NGINX_IMAGE=nginx:1.28-alpine
 
@@ -16,11 +16,11 @@ RUN set -eux; \
         libzip-dev \
         oniguruma-dev \
         postgresql-dev; \
-    docker-php-ext-install -j"$(getconf _NPROCESSORS_ONLN)" intl mbstring opcache pdo_pgsql pgsql zip; \
+    docker-php-ext-install -j"$(getconf _NPROCESSORS_ONLN)" intl mbstring opcache pdo_mysql pdo_pgsql zip; \
     pecl install redis-6.3.0; \
     docker-php-ext-enable redis; \
     apk del .build-dependencies; \
-    php -r 'foreach (["ctype", "fileinfo", "filter", "intl", "mbstring", "openssl", "pdo", "pdo_pgsql", "pgsql", "redis", "sodium", "zip"] as $extension) { if (!extension_loaded($extension)) { fwrite(STDERR, "Missing PHP extension: {$extension}\n"); exit(1); } }'; \
+    php -r 'foreach (["ctype", "fileinfo", "filter", "intl", "mbstring", "openssl", "pdo", "pdo_mysql", "pdo_pgsql", "redis", "sodium", "zip"] as $extension) { if (!extension_loaded($extension)) { fwrite(STDERR, "Missing PHP extension: {$extension}\n"); exit(1); } }'; \
     { \
         echo 'expose_php=Off'; \
         echo 'display_errors=Off'; \
@@ -122,6 +122,7 @@ RUN set -eux; \
         storage/media \
         storage/sessions \
         storage/tmp \
+        public/assets/extensions \
         extensions
 
 FROM php-base AS runtime
