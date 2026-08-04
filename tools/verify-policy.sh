@@ -67,4 +67,11 @@ if static_locator_matches; then
     exit 1
 fi
 
+for legacy_root_file in index.php .htaccess robots.txt.dist web.config.txt; do
+    if [[ -e "$legacy_root_file" ]]; then
+        echo "Policy violation: legacy root web artifact '$legacy_root_file' must not be shipped." >&2
+        exit 1
+    fi
+done
+
 echo 'Kumwe architecture policy verified.'
