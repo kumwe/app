@@ -211,7 +211,7 @@ final readonly class DoctrineScheduler implements Scheduler, ScheduleRepository
         } catch (JsonException $exception) {
             throw new RuntimeException('A schedule payload contains invalid JSON.', 0, $exception);
         }
-        if (!is_array($payload) || array_is_list($payload)) {
+        if (!is_array($payload) || ($payload !== [] && array_is_list($payload))) {
             throw new RuntimeException('A schedule payload must be a JSON object.');
         }
         /** @var array<string, mixed> $payload */

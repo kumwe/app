@@ -269,7 +269,7 @@ final readonly class DoctrineJobQueue implements JobQueue
         } catch (JsonException $exception) {
             throw new RuntimeException('A queued job contains invalid JSON.', 0, $exception);
         }
-        if (!is_array($payload) || array_is_list($payload)) {
+        if (!is_array($payload) || ($payload !== [] && array_is_list($payload))) {
             throw new RuntimeException('A queued job payload must be a JSON object.');
         }
         /** @var array<string, mixed> $payload */
@@ -299,7 +299,7 @@ final readonly class DoctrineJobQueue implements JobQueue
             throw new RuntimeException('A queued job contains invalid JSON.', 0, $exception);
         }
 
-        if (!is_array($payload) || array_is_list($payload)) {
+        if (!is_array($payload) || ($payload !== [] && array_is_list($payload))) {
             throw new RuntimeException('A queued job payload must be a JSON object.');
         }
         /** @var array<string, mixed> $payload */

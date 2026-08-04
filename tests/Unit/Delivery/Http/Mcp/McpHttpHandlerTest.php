@@ -5,9 +5,10 @@ declare(strict_types=1);
 namespace Kumwe\CMS\Tests\Unit\Delivery\Http\Mcp;
 
 use Kumwe\CMS\Delivery\Http\Mcp\McpHttpHandler;
-use Kumwe\CMS\Infrastructure\Mcp\KumweMcpHandlers;
 use Kumwe\CMS\Infrastructure\Mcp\KumweMcpServerFactory;
 use Kumwe\CMS\Infrastructure\Mcp\McpCapabilityCatalog;
+use Kumwe\CMS\Identity\Application\Authentication\AuthenticatedPrincipal;
+use Kumwe\CMS\Tests\Support\McpHandlersFixture;
 use Laminas\Diactoros\ResponseFactory;
 use Laminas\Diactoros\ServerRequest;
 use Laminas\Diactoros\StreamFactory;
@@ -29,7 +30,11 @@ final class McpHttpHandlerTest extends TestCase
     {
         $request = (new ServerRequest())
             ->withMethod('OPTIONS')
-            ->withUri(new \Laminas\Diactoros\Uri('https://kumwe.test/mcp'));
+            ->withUri(new \Laminas\Diactoros\Uri('https://kumwe.test/mcp'))
+            ->withAttribute(
+                AuthenticatedPrincipal::REQUEST_ATTRIBUTE,
+                AuthenticatedPrincipal::fromStrings('test:mcp', ['content.read']),
+            );
 
         self::assertSame(204, $this->handler()->handle($request)->getStatusCode());
     }
@@ -40,7 +45,7 @@ final class McpHttpHandlerTest extends TestCase
 
         return new McpHttpHandler(
             new KumweMcpServerFactory($catalog),
-            new KumweMcpHandlers($catalog),
+            McpHandlersFixture::create($catalog),
             new ResponseFactory(),
             new StreamFactory(),
             new NullLogger(),

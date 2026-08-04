@@ -22,14 +22,14 @@ final class KernelTest extends TestCase
 {
     public function testContainerReturnsOneConfiguredApplication(): void
     {
-        $container = (new ContainerFactory())->create(new Environment($this->environment()));
+        $container = (new ContainerFactory())->create(Environment::fromGlobals());
 
         self::assertSame($container->get(Application::class), $container->get(Application::class));
     }
 
     public function testPublicHealthAndProtectedBoundaries(): void
     {
-        $container = (new ContainerFactory())->create(new Environment($this->environment()));
+        $container = (new ContainerFactory())->create(Environment::fromGlobals());
         $application = $container->get(Application::class);
         $factory = new ServerRequestFactory();
 
@@ -49,26 +49,4 @@ final class KernelTest extends TestCase
         self::assertSame(405, $unsafeApi->getStatusCode());
     }
 
-    /**
-     * @return array<string, string>
-     */
-    private function environment(): array
-    {
-        return [
-            'APP_ENV' => 'testing',
-            'APP_DEBUG' => 'false',
-            'APP_BASE_URL' => 'https://kumwe.test',
-            'APP_TRUSTED_HOSTS' => 'kumwe.test',
-            'APP_SECRET' => str_repeat('a', 32),
-            'DB_HOST' => '127.0.0.1',
-            'DB_DRIVER' => 'pgsql',
-            'DB_PORT' => '5432',
-            'DB_NAME' => 'kumwe_test',
-            'DB_USER' => 'kumwe',
-            'DB_PASSWORD' => 'kumwe_test',
-            'DB_TABLE_PREFIX' => 'kumwe_',
-            'DB_SERVER_VERSION' => '17',
-            'DB_SSLMODE' => 'disable',
-        ];
-    }
 }
