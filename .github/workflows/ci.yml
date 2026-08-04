@@ -70,7 +70,7 @@ jobs:
         run: composer install --no-interaction --prefer-dist
 
       - name: Verify dependency and source policy
-        run: composer policy
+        run: composer architecture:policy
 
       - name: Audit locked dependencies
         run: composer audit --locked --abandoned=fail
@@ -85,7 +85,7 @@ jobs:
         run: composer test -- --coverage-clover=build/coverage.xml
 
       - name: Upload generated dependency lock
-        if: matrix.php == '8.4'
+        if: always() && matrix.php == '8.4'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: composer-lock
