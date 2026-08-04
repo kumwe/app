@@ -1,4 +1,4 @@
-# Clean Kumwe 2.x installation
+# Install Kumwe in production
 
 ## Preconditions
 
@@ -6,7 +6,7 @@
 - A committed `composer.lock`. The production image deliberately refuses an
   unlocked dependency build.
 - Three independent random secrets stored outside the repository.
-- An empty PostgreSQL database volume. Kumwe 1.x tables are not converted.
+- An empty PostgreSQL database volume.
 - A TLS-terminating reverse proxy in front of the loopback-bound web port.
 
 Create secrets with restrictive permissions:
@@ -52,24 +52,32 @@ curl --fail --silent http://127.0.0.1:8080/health/live
 curl --fail --silent http://127.0.0.1:8080/health/ready
 ```
 
-The one-shot `migrate` service must complete before `app` starts. It uses only
-forward Kumwe 2.x migrations and PostgreSQL advisory locking. Do not import the
-historical `sql/install.sql`; it is a Kumwe 1.x artifact.
+The one-shot `migrate` service completes before `app` starts. Migrations are
+forward-only and protected by a PostgreSQL advisory lock.
 
-## Automation activation gate
+## Create the owner
 
-`worker` and `scheduler` exist under the Compose `automation` profile. The
-current kernel must register `queue:work` and `schedule:run` before enabling it.
-Verify this from the exact image being deployed:
+Create the first administrator from a protected file mounted into the container:
 
 ```bash
-docker compose -f compose.production.yaml run --rm app php bin/kumwe list
+install -m 0600 /dev/null /srv/kumwe/secrets/administrator-password
+docker compose -f compose.production.yaml run --rm \
+  --volume /srv/kumwe/secrets/administrator-password:/run/secrets/administrator-password:ro \
+  app php bin/kumwe user:create-admin \
+  --email=owner@example.com \
+  --name="Site owner" \
+  --password-file=/run/secrets/administrator-password
+rm /srv/kumwe/secrets/administrator-password
 ```
 
-Only after both commands appear may operators start the profile:
+Open `https://cms.example.org/administrator`, sign in, create and publish the
+homepage, then select its slug under **Settings**.
+
+## Start automation
 
 ```bash
 docker compose -f compose.production.yaml --profile automation up -d worker scheduler
 ```
 
-This gate prevents absent Phase 7 commands from becoming production crash loops.
+Confirm the worker and scheduler remain healthy and that `php bin/kumwe
+schedule:list` reports the built-in session cleanup schedule.

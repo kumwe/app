@@ -1,7 +1,7 @@
 # Kumwe operations
 
-These runbooks describe the supported operational boundary for clean Kumwe 2.x
-installations. They do not provide a Kumwe 1.x data or schema migration path.
+These runbooks cover installation, deployment, monitoring, backup, recovery,
+upgrades, release verification, and incident response for Kumwe.
 
 - [Install](install.md)
 - [Production deployment](deploy.md)

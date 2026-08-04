@@ -45,7 +45,7 @@ three bases and record them in provenance.
 docker compose -f compose.production.yaml config --quiet
 docker compose -f compose.production.yaml up -d postgres redis
 docker compose -f compose.production.yaml run --rm migrate
-docker compose -f compose.production.yaml up -d app web
+docker compose -f compose.production.yaml --profile automation up -d app web worker scheduler
 docker compose -f compose.production.yaml ps
 ```
 
@@ -53,3 +53,8 @@ docker compose -f compose.production.yaml ps
 dependencies. `/health/ready` checks the database migration ledger and returns
 503 until the required schema is available. Readiness is the traffic gate;
 liveness must not be used for dependency-driven restarts.
+
+After every deployment, sign in to the administrator, read the configured
+homepage, create and remove a disposable draft, execute one idempotent API retry,
+and run `queue:work --once` plus `schedule:run` once from the exact application
+image. Keep the previous verified image digests and backup until those checks pass.
