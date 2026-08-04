@@ -33,7 +33,10 @@ final class McpHttpHandlerTest extends TestCase
             ->withUri(new \Laminas\Diactoros\Uri('https://kumwe.test/mcp'))
             ->withAttribute(
                 AuthenticatedPrincipal::REQUEST_ATTRIBUTE,
-                AuthenticatedPrincipal::fromStrings('test:mcp', ['content.read']),
+                AuthenticatedPrincipal::fromStrings(
+                    '018f22e2-7c8b-7ab0-8f3a-88e8026bb301',
+                    ['content.read'],
+                ),
             );
 
         self::assertSame(204, $this->handler()->handle($request)->getStatusCode());

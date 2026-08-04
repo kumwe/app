@@ -48,5 +48,4 @@ final class KernelTest extends TestCase
         self::assertSame('/administrator/login', $admin->getHeaderLine('Location'));
         self::assertSame(405, $unsafeApi->getStatusCode());
     }
-
 }
