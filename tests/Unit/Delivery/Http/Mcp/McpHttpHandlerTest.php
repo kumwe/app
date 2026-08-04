@@ -45,7 +45,7 @@ final class McpHttpHandlerTest extends TestCase
             new StreamFactory(),
             new NullLogger(),
             $maxBodyBytes,
-            ['localhost'],
+            ['kumwe.test'],
         );
     }
 }

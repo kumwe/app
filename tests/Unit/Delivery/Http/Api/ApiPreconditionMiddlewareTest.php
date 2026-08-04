@@ -8,6 +8,7 @@ use Kumwe\CMS\Delivery\Http\Api\Concurrency\IfMatch;
 use Kumwe\CMS\Delivery\Http\Api\Concurrency\RequireIfMatchMiddleware;
 use Kumwe\CMS\Delivery\Http\Api\Idempotency\IdempotencyKey;
 use Kumwe\CMS\Delivery\Http\Api\Idempotency\RequireIdempotencyKeyMiddleware;
+use Kumwe\CMS\Delivery\Http\Api\ProblemDetailsResponseFactory;
 use Laminas\Diactoros\Response\TextResponse;
 use Laminas\Diactoros\ServerRequestFactory;
 use PHPUnit\Framework\Attributes\CoversClass;
