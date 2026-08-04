@@ -28,6 +28,7 @@ require_value KUMWE_BACKUP_DIR
 require_value KUMWE_DB_NAME
 require_value KUMWE_DB_USER
 require_value KUMWE_DB_PASSWORD_FILE
+require_value KUMWE_EXTENSIONS_DIR
 require_value KUMWE_MEDIA_DIR
 require_value KUMWE_RELEASE
 
@@ -40,10 +41,12 @@ database_schema="${KUMWE_DB_SCHEMA:-kumwe}"
     || fail 'set KUMWE_BACKUP_CONSISTENCY=quiesced after writes and media changes have been stopped'
 [[ -d "$KUMWE_BACKUP_DIR" ]] || fail 'KUMWE_BACKUP_DIR must be an existing directory'
 [[ -d "$KUMWE_MEDIA_DIR" ]] || fail 'KUMWE_MEDIA_DIR must be an existing directory'
+[[ -d "$KUMWE_EXTENSIONS_DIR" ]] || fail 'KUMWE_EXTENSIONS_DIR must be an existing directory'
 [[ -r "$KUMWE_DB_PASSWORD_FILE" ]] || fail 'KUMWE_DB_PASSWORD_FILE is not readable'
 
 backup_root="$(cd -- "$KUMWE_BACKUP_DIR" && pwd -P)"
 media_root="$(cd -- "$KUMWE_MEDIA_DIR" && pwd -P)"
+extensions_root="$(cd -- "$KUMWE_EXTENSIONS_DIR" && pwd -P)"
 
 case "$backup_root" in
     / | /home | /root | /workspace)
@@ -57,8 +60,18 @@ case "$media_root" in
         ;;
 esac
 
+case "$extensions_root" in
+    / | /home | /root | /workspace)
+        fail "refusing unsafe extensions root '$extensions_root'"
+        ;;
+esac
+
 if find "$media_root" -xdev \( -type l -o \( ! -type f -a ! -type d \) \) -print -quit | grep -q .; then
     fail 'media tree contains a symbolic link or unsupported file type'
+fi
+
+if find "$extensions_root" -xdev \( -type l -o \( ! -type f -a ! -type d \) \) -print -quit | grep -q .; then
+    fail 'extensions tree contains a symbolic link or unsupported file type'
 fi
 
 while IFS= read -r -d '' media_path; do
@@ -101,7 +114,7 @@ connection_arguments=(
     --username="$KUMWE_DB_USER"
 )
 
-required_migration='20260804000700_create_automation_platform'
+required_migration='20260804000800_create_application_runtime'
 applied_migration="$(
     psql \
         "${connection_arguments[@]}" \
@@ -132,9 +145,22 @@ tar \
     --directory="$media_root" \
     .
 
+tar \
+    --create \
+    --gzip \
+    --one-file-system \
+    --file="${staging_directory}/extensions.tar.gz" \
+    --directory="$extensions_root" \
+    .
+
 if tar --list --verbose --gzip --file="${staging_directory}/media.tar.gz" \
     | awk 'substr($1, 1, 1) !~ /^[-d]$/ { found = 1 } END { exit found ? 0 : 1 }'; then
     fail 'created media archive contains a symbolic link or unsupported file type'
+fi
+
+if tar --list --verbose --gzip --file="${staging_directory}/extensions.tar.gz" \
+    | awk 'substr($1, 1, 1) !~ /^[-d]$/ { found = 1 } END { exit found ? 0 : 1 }'; then
+    fail 'created extensions archive contains a symbolic link or unsupported file type'
 fi
 
 jq -n \
@@ -150,12 +176,12 @@ jq -n \
         created_at: $created_at,
         database: $database,
         database_schema: $database_schema,
-        contents: ["database.dump", "media.tar.gz"]
+        contents: ["database.dump", "extensions.tar.gz", "media.tar.gz"]
     }' > "${staging_directory}/manifest.json"
 
 (
     cd -- "$staging_directory"
-    sha256sum database.dump manifest.json media.tar.gz > checksums.sha256
+    sha256sum database.dump extensions.tar.gz manifest.json media.tar.gz > checksums.sha256
 )
 
 if [[ -n "${KUMWE_BACKUP_SIGNING_SECRET_KEY_FILE:-}" ]]; then

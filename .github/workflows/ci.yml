@@ -59,7 +59,7 @@ jobs:
         uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240
         with:
           php-version: ${{ matrix.php }}
-          extensions: ctype, fileinfo, filter, intl, json, mbstring, openssl, pdo, pdo_pgsql, sodium
+          extensions: ctype, fileinfo, filter, intl, json, mbstring, openssl, pdo, pdo_pgsql, sodium, zip
           coverage: xdebug
           tools: composer:v2
 
@@ -83,6 +83,41 @@ jobs:
 
       - name: Test
         run: composer test -- --coverage-clover=build/coverage.xml
+
+      - name: Exercise backup and restore
+        if: matrix.php == '8.4'
+        env:
+          KUMWE_BACKUP_CONSISTENCY: quiesced
+          KUMWE_BACKUP_DIR: ${{ runner.temp }}/kumwe-backups
+          KUMWE_DB_HOST: 127.0.0.1
+          KUMWE_DB_NAME: kumwe_test
+          KUMWE_DB_PORT: 5432
+          KUMWE_DB_SCHEMA: kumwe
+          KUMWE_DB_USER: kumwe
+          KUMWE_EXTENSIONS_DIR: ${{ github.workspace }}/extensions
+          KUMWE_MEDIA_DIR: ${{ runner.temp }}/kumwe-media-source
+          KUMWE_RELEASE: 2.0.0
+          KUMWE_RESTORE_DB_HOST: 127.0.0.1
+          KUMWE_RESTORE_DB_NAME: kumwe_restore_test
+          KUMWE_RESTORE_DB_PORT: 5432
+          KUMWE_RESTORE_DB_SCHEMA: kumwe
+          KUMWE_RESTORE_DB_USER: kumwe
+          KUMWE_RESTORE_EXTENSIONS_DIR: ${{ runner.temp }}/restored/extensions
+          KUMWE_RESTORE_MEDIA_DIR: ${{ runner.temp }}/restored/media
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes jq postgresql-client
+          install -d -m 0700 "$KUMWE_BACKUP_DIR" "$KUMWE_MEDIA_DIR" "${KUMWE_RESTORE_MEDIA_DIR%/media}"
+          install -m 0600 /dev/null "${RUNNER_TEMP}/kumwe-db-password"
+          printf '%s' "$DB_PASSWORD" > "${RUNNER_TEMP}/kumwe-db-password"
+          export KUMWE_DB_PASSWORD_FILE="${RUNNER_TEMP}/kumwe-db-password"
+          backup_path="$(tools/backup.sh)"
+          PGPASSWORD="$DB_PASSWORD" createdb --host="$KUMWE_RESTORE_DB_HOST" --port="$KUMWE_RESTORE_DB_PORT" --username="$KUMWE_RESTORE_DB_USER" "$KUMWE_RESTORE_DB_NAME"
+          export KUMWE_RESTORE_DB_PASSWORD_FILE="${RUNNER_TEMP}/kumwe-db-password"
+          tools/restore.sh "$backup_path"
+          test -d "$KUMWE_RESTORE_MEDIA_DIR"
+          test -d "$KUMWE_RESTORE_EXTENSIONS_DIR"
+          PGPASSWORD="$DB_PASSWORD" psql --host="$KUMWE_RESTORE_DB_HOST" --port="$KUMWE_RESTORE_DB_PORT" --username="$KUMWE_RESTORE_DB_USER" --dbname="$KUMWE_RESTORE_DB_NAME" --no-align --tuples-only --command="SELECT version FROM kumwe.schema_migrations WHERE version = '20260804000800_create_application_runtime'" | grep -qx '20260804000800_create_application_runtime'
 
       - name: Upload generated dependency lock
         if: always() && matrix.php == '8.4'
