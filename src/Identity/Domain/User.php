@@ -157,10 +157,7 @@ final class User
             return;
         }
 
-        unset($this->roles[$index]);
-        /** @var list<non-empty-string> $roles */
-        $roles = array_values($this->roles);
-        $this->roles = $roles;
+        array_splice($this->roles, $index, 1);
         ++$this->version;
     }
 

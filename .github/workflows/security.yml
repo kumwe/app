@@ -79,12 +79,26 @@ jobs:
           composer architecture:policy
 
       - name: Scan repository for secrets
-        run: >-
-          docker run --rm
-          --volume "$PWD:/repo:ro"
-          --workdir /repo
-          "$GITLEAKS_IMAGE"
-          detect --source=/repo --no-banner --redact
+        shell: bash
+        run: |
+          install -d build/security
+          set +e
+          docker run --rm \
+            --volume "$PWD:/repo:ro" \
+            --volume "$PWD/build/security:/report" \
+            --workdir /repo \
+            "$GITLEAKS_IMAGE" \
+            detect --source=/repo --no-banner --redact \
+            --report-format json --report-path /report/gitleaks.json
+          scan_status=$?
+          set -e
+
+          if test -s build/security/gitleaks.json; then
+            jq '[.[] | {RuleID, File, StartLine, Fingerprint}]' \
+              build/security/gitleaks.json
+          fi
+
+          exit "$scan_status"
 
       - name: Scan filesystem dependencies and configuration
         run: >-
@@ -118,6 +132,7 @@ jobs:
             dir:/src -o cyclonedx-json > build/security/kumwe-source.cdx.json
 
       - name: Upload security evidence
+        if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: security-evidence-${{ github.sha }}
