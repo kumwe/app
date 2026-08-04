@@ -40,7 +40,8 @@ case "$KUMWE_RESTORE_MEDIA_DIR" in
     / | /home | /root | /workspace) fail 'refusing unsafe media target' ;;
 esac
 
-tools/restore-verify.sh "$1"
+script_directory="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
+"${script_directory}/restore-verify.sh" "$1"
 backup_directory="$(cd -- "$1" && pwd -P)"
 database_schema="${KUMWE_RESTORE_DB_SCHEMA:-kumwe}"
 [[ "$database_schema" =~ ^[A-Za-z_][A-Za-z0-9_]{0,62}$ ]] || fail 'restore database schema is invalid'
