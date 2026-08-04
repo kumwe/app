@@ -121,7 +121,14 @@ final readonly class DoctrineAdministratorSessionStore implements AdministratorS
             $this->tables->quoted('administrator_sessions'),
         ), [$this->clock->now()], [Types::DATETIME_IMMUTABLE]);
 
-        return $affected;
+        if (is_int($affected)) {
+            return $affected;
+        }
+        if (preg_match('/^[0-9]+$/D', $affected) !== 1) {
+            throw new RuntimeException('The expired administrator session count is invalid.');
+        }
+
+        return (int) $affected;
     }
 
     /** @return list<string> */
