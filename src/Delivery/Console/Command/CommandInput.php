@@ -52,10 +52,17 @@ final class CommandInput
      */
     public static function jsonObject(array $options, string $name, string $default = '{}'): array
     {
-        $value = json_decode($options[$name] ?? $default, true, 64, JSON_THROW_ON_ERROR);
-        if (!is_array($value) || array_is_list($value)) {
+        $encoded = $options[$name] ?? $default;
+        $object = json_decode($encoded, false, 64, JSON_THROW_ON_ERROR);
+        if (!$object instanceof \stdClass) {
             throw new InvalidArgumentException(sprintf('The --%s option must be a JSON object.', $name));
         }
+
+        $value = json_decode($encoded, true, 64, JSON_THROW_ON_ERROR);
+        if (!is_array($value)) {
+            throw new \LogicException('A validated JSON object did not decode to an associative array.');
+        }
+
         /** @var array<string, mixed> $value */
         return $value;
     }
