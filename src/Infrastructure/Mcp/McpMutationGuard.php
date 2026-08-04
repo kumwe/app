@@ -26,9 +26,10 @@ final readonly class McpMutationGuard
     }
 
     /**
+     * @template TResult of array<string, mixed>
      * @param array<string, mixed> $input
-     * @param callable(): array<string, mixed> $mutation
-     * @return array<string, mixed>
+     * @param callable(): TResult $mutation
+     * @return TResult
      */
     public function run(
         AuthenticatedPrincipal $principal,
@@ -58,7 +59,10 @@ final readonly class McpMutationGuard
                 'expires_at' => Types::DATETIME_IMMUTABLE,
             ]);
         } catch (UniqueConstraintViolationException) {
-            return $this->replay($principal, $operation, $operationId, $digest);
+            /** @var TResult $replayed */
+            $replayed = $this->replay($principal, $operation, $operationId, $digest);
+
+            return $replayed;
         }
 
         try {
@@ -94,7 +98,8 @@ final readonly class McpMutationGuard
             . 'WHERE subject = ? AND operation = ? AND idempotency_key = ?',
             $this->tables->quoted('idempotency'),
         ), [$principal->subject(), 'mcp.' . $operation, $operationId]);
-        if ($row === false || !hash_equals((string) ($row['request_digest'] ?? ''), $digest)) {
+        $storedDigest = $row === false ? null : ($row['request_digest'] ?? null);
+        if ($row === false || !is_string($storedDigest) || !hash_equals($storedDigest, $digest)) {
             throw new InvalidArgumentException('The MCP operationId was already used with different input.');
         }
         if (($row['state'] ?? null) !== 'completed') {

@@ -53,7 +53,10 @@ final readonly class RedisLockedExtensionManager implements ExtensionManager
         });
     }
 
-    /** @param callable(): array<string, mixed> $operation @return array<string, mixed> */
+    /**
+     * @param callable(): array<string, mixed> $operation
+     * @return array<string, mixed>
+     */
     private function locked(callable $operation): array
     {
         $token = bin2hex(random_bytes(32));

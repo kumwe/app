@@ -187,9 +187,10 @@ final readonly class DoctrineJobQueue implements JobQueue
             'SELECT worker_id FROM %s WHERE worker_id = ?',
             $this->tables->quoted('worker_heartbeats'),
         ), [$workerId]);
+        $processId = getmypid();
         $values = [
             'queue' => $queue,
-            'process_id' => getmypid() ?: 1,
+            'process_id' => $processId === false ? 1 : $processId,
             'release' => $this->release,
             'heartbeat_at' => $now,
             'current_job_id' => $jobId,
@@ -271,6 +272,7 @@ final readonly class DoctrineJobQueue implements JobQueue
         if (!is_array($payload) || array_is_list($payload)) {
             throw new RuntimeException('A queued job payload must be a JSON object.');
         }
+        /** @var array<string, mixed> $payload */
 
         return new StoredJob(
             $this->requiredString($row, 'id'),
@@ -283,7 +285,10 @@ final readonly class DoctrineJobQueue implements JobQueue
         );
     }
 
-    /** @param array<string, mixed> $row @return array<string, mixed> */
+    /**
+     * @param array<string, mixed> $row
+     * @return array<string, mixed>
+     */
     private function normalize(array $row): array
     {
         try {
@@ -297,6 +302,7 @@ final readonly class DoctrineJobQueue implements JobQueue
         if (!is_array($payload) || array_is_list($payload)) {
             throw new RuntimeException('A queued job payload must be a JSON object.');
         }
+        /** @var array<string, mixed> $payload */
 
         $row['payload'] = $payload;
         $row['attempts'] = $this->integer($row, 'attempts');
@@ -325,9 +331,9 @@ final readonly class DoctrineJobQueue implements JobQueue
         return (int) $value;
     }
 
-    private function assertLeaseUpdated(int $affected): void
+    private function assertLeaseUpdated(int|string $affected): void
     {
-        if ($affected !== 1) {
+        if ((string) $affected !== '1') {
             throw new RuntimeException('The worker no longer owns the active job lease.');
         }
     }

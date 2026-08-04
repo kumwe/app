@@ -32,6 +32,9 @@ final readonly class ExtensionTableNames
 
     public function quoted(string $name): string
     {
-        return $this->database->quoteIdentifier($this->raw($name));
+        return implode('.', array_map(
+            $this->database->getDatabasePlatform()->quoteSingleIdentifier(...),
+            explode('.', $this->raw($name)),
+        ));
     }
 }

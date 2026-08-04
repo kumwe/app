@@ -90,13 +90,16 @@ final readonly class DoctrineSiteSettings implements SiteSettings
         });
     }
 
-    /** @param array<string, mixed> $settings @return array<string, mixed> */
+    /**
+     * @param array<string, mixed> $settings
+     * @return array<string, mixed>
+     */
     private function validate(array $settings): array
     {
-        $siteName = trim((string) ($settings['site_name'] ?? ''));
-        $homepageSlug = trim((string) ($settings['homepage_slug'] ?? ''));
-        $locale = trim((string) ($settings['default_locale'] ?? ''));
-        $timezone = trim((string) ($settings['timezone'] ?? ''));
+        $siteName = $this->stringSetting($settings, 'site_name');
+        $homepageSlug = $this->stringSetting($settings, 'homepage_slug');
+        $locale = $this->stringSetting($settings, 'default_locale');
+        $timezone = $this->stringSetting($settings, 'timezone');
 
         if ($siteName === '' || mb_strlen($siteName) > 160) {
             throw new InvalidArgumentException('The site name must contain 1 to 160 characters.');
@@ -124,6 +127,17 @@ final readonly class DoctrineSiteSettings implements SiteSettings
                 FILTER_VALIDATE_BOOL,
             ),
         ];
+    }
+
+    /** @param array<string, mixed> $settings */
+    private function stringSetting(array $settings, string $key): string
+    {
+        $value = $settings[$key] ?? null;
+        if (!is_string($value)) {
+            throw new InvalidArgumentException(sprintf('The %s setting must be a string.', $key));
+        }
+
+        return trim($value);
     }
 
     private function upsert(string $key, mixed $value, string $actorId): void

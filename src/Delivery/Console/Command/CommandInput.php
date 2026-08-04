@@ -9,7 +9,10 @@ use JsonException;
 
 final class CommandInput
 {
-    /** @param list<string> $arguments @return array<string, string> */
+    /**
+     * @param list<string> $arguments
+     * @return array<string, string>
+     */
     public static function options(array $arguments): array
     {
         $options = [];
@@ -42,7 +45,11 @@ final class CommandInput
         return (int) $value;
     }
 
-    /** @param array<string, string> $options @return array<string, mixed> @throws JsonException */
+    /**
+     * @param array<string, string> $options
+     * @return array<string, mixed>
+     * @throws JsonException
+     */
     public static function jsonObject(array $options, string $name, string $default = '{}'): array
     {
         $value = json_decode($options[$name] ?? $default, true, 64, JSON_THROW_ON_ERROR);

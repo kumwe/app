@@ -22,7 +22,10 @@ final readonly class NavigationApiResponder
     {
     }
 
-    /** @param MenuRecord|MenuItemRecord $record */
+    /**
+     * @param MenuRecord|MenuItemRecord $record
+     * @param array<non-empty-string, array<string>|string> $headers
+     */
     public function record(object $record, int $status = 200, array $headers = []): ResponseInterface
     {
         return new JsonResponse($record->toArray(), $status, [

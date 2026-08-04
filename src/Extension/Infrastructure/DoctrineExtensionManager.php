@@ -6,6 +6,7 @@ namespace Kumwe\CMS\Extension\Infrastructure;
 
 use InvalidArgumentException;
 use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\Platforms\AbstractMySQLPlatform;
 use Doctrine\DBAL\Types\Types;
 use Joomla\Event\DispatcherInterface;
 use Joomla\Event\Event;
@@ -146,7 +147,10 @@ final readonly class DoctrineExtensionManager implements ExtensionManager
 
             return $result;
         } catch (Throwable $exception) {
-            if (!$this->database->getDatabasePlatform()->supportsDDLTransactions() && $appliedMigrations !== []) {
+            if (
+                $this->database->getDatabasePlatform() instanceof AbstractMySQLPlatform
+                && $appliedMigrations !== []
+            ) {
                 try {
                     $this->migrations->compensate($manifest, array_reverse($appliedMigrations));
                 } catch (Throwable $rollbackFailure) {

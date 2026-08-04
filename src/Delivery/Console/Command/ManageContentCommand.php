@@ -77,7 +77,6 @@ final readonly class ManageContentCommand implements Command
                     CommandInput::required($options, 'id'),
                     CommandInput::positiveInteger($options, 'version'),
                 )->toArray(),
-                default => throw new \InvalidArgumentException('Unsupported content action.'),
             };
             $output->line(CommandInput::render($result));
             return 0;
@@ -87,7 +86,10 @@ final readonly class ManageContentCommand implements Command
         }
     }
 
-    /** @param array<string, string> $options @return array<string, mixed> */
+    /**
+     * @param array<string, string> $options
+     * @return array<string, mixed>
+     */
     private function transition(
         array $options,
         AuthenticatedPrincipal $principal,
