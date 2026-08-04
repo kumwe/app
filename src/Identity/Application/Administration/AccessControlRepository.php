@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Kumwe\CMS\Identity\Application\Administration;
 
+use DateTimeImmutable;
+
 interface AccessControlRepository
 {
     /** @return list<array<string, mixed>> */
@@ -24,7 +26,7 @@ interface AccessControlRepository
         string $displayName,
         string $status,
         string $passwordHash,
-        string $at,
+        DateTimeImmutable $at,
     ): void;
 
     public function updateUser(
@@ -33,12 +35,12 @@ interface AccessControlRepository
         string $displayName,
         string $status,
         int $expectedVersion,
-        string $at,
+        DateTimeImmutable $at,
     ): void;
 
-    public function insertRole(string $id, string $code, string $name, string $at): void;
+    public function insertRole(string $id, string $code, string $name, DateTimeImmutable $at): void;
 
-    public function assignRole(string $userId, string $roleId, string $actorId, string $at): void;
+    public function assignRole(string $userId, string $roleId, string $actorId, DateTimeImmutable $at): void;
 
     public function revokeRole(string $userId, string $roleId): void;
 
@@ -49,12 +51,12 @@ interface AccessControlRepository
         string $scopeType,
         ?string $scopeIdentifier,
         string $actorId,
-        string $at,
+        DateTimeImmutable $at,
     ): void;
 
     public function revokeGrant(string $grantId): void;
 
-    public function revokeToken(string $tokenId, string $at): void;
+    public function revokeToken(string $tokenId, DateTimeImmutable $at): void;
 
     public function roleCode(string $roleId): ?string;
 }

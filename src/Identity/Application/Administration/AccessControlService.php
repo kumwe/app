@@ -78,7 +78,7 @@ final readonly class AccessControlService
                 $displayName,
                 $status->value,
                 $hash,
-                $at->format('Y-m-d H:i:s.uP'),
+                $at,
             );
             $this->audit($actorId, 'user.create', 'user', $id, ['status' => $status->value]);
 
@@ -116,7 +116,7 @@ final readonly class AccessControlService
                 $displayName,
                 $status->value,
                 $expectedVersion,
-                $at->format('Y-m-d H:i:s.uP'),
+                $at,
             );
             $this->audit($actorId, 'user.update', 'user', $id, ['status' => $status->value]);
         });
@@ -136,7 +136,7 @@ final readonly class AccessControlService
         $id = Uuid::uuid7()->toString();
         $at = $this->clock->now();
         return $this->transactions->transactional(function () use ($actorId, $id, $code, $name, $at): string {
-            $this->repository->insertRole($id, $code, $name, $at->format('Y-m-d H:i:s.uP'));
+            $this->repository->insertRole($id, $code, $name, $at);
             $this->audit($actorId, 'role.create', 'role', $id, ['code' => $code]);
 
             return $id;
@@ -147,7 +147,7 @@ final readonly class AccessControlService
     {
         $at = $this->clock->now();
         $this->transactions->transactional(function () use ($actorId, $userId, $roleId, $at): void {
-            $this->repository->assignRole($userId, $roleId, $actorId, $at->format('Y-m-d H:i:s.uP'));
+            $this->repository->assignRole($userId, $roleId, $actorId, $at);
             $this->audit($actorId, 'role.assign', 'user', $userId, ['role_id' => $roleId]);
         });
     }
@@ -200,7 +200,7 @@ final readonly class AccessControlService
                 $scopeType,
                 $scopeIdentifier,
                 $actorId,
-                $at->format('Y-m-d H:i:s.uP'),
+                $at,
             );
             $this->audit($actorId, 'capability.grant', 'role', $roleId, [
                 'capability' => $capability,
@@ -224,7 +224,7 @@ final readonly class AccessControlService
     {
         $at = $this->clock->now();
         $this->transactions->transactional(function () use ($actorId, $tokenId, $at): void {
-            $this->repository->revokeToken($tokenId, $at->format('Y-m-d H:i:s.uP'));
+            $this->repository->revokeToken($tokenId, $at);
             $this->audit($actorId, 'token.revoke', 'api_token', $tokenId);
         });
     }

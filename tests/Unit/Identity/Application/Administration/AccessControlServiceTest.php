@@ -39,7 +39,7 @@ final class AccessControlServiceTest extends TestCase
             'Site Editor',
             'active',
             'verified-password-hash',
-            '2026-08-04 10:00:00.000000+00:00',
+            self::equalTo(new DateTimeImmutable('2026-08-04T10:00:00+00:00')),
         );
         $passwords = $this->createMock(PasswordHasher::class);
         $passwords->expects(self::once())->method('hash')
@@ -93,7 +93,7 @@ final class AccessControlServiceTest extends TestCase
             'content_type',
             'news',
             self::ACTOR,
-            '2026-08-04 10:00:00.000000+00:00',
+            self::equalTo(new DateTimeImmutable('2026-08-04T10:00:00+00:00')),
         );
         $audit = $this->createMock(AuditRecorder::class);
         $audit->expects(self::once())->method('record')->with(self::callback(
@@ -144,7 +144,7 @@ final class AccessControlServiceTest extends TestCase
         $repository = $this->createMock(AccessControlRepository::class);
         $repository->expects(self::once())->method('revokeToken')->with(
             '018f22e2-7c8b-7ab0-8f3a-88e8026bb305',
-            '2026-08-04 10:00:00.000000+00:00',
+            self::equalTo(new DateTimeImmutable('2026-08-04T10:00:00+00:00')),
         );
         $audit = $this->createMock(AuditRecorder::class);
         $audit->expects(self::once())->method('record')->with(self::callback(
