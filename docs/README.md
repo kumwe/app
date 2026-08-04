@@ -1,29 +1,42 @@
 # Kumwe documentation
 
-Use this page as the index for installing, using, extending, integrating, deploying, and maintaining Kumwe.
+Use this index to install, operate, administer, integrate, extend, or evolve Kumwe.
 
-## Site owners and editors
+## Install a site
 
-- [Getting started](getting-started.md): start a local installation and create the owner account.
-- [Administrator and publishing](administration.md): configure the site, edit pages, use workflow, schedule publication, and manage extensions.
-- [Templates](templates.md): install, activate, and create a public site design.
+- [Getting started](getting-started.md): launch the development stack and create the owner.
+- [Configuration](configuration.md): administrator settings, environment variables, secrets, database selection, and Redis.
+- [Production installation](operations/install.md): released Docker images, Composer project, and release ZIP.
+- [Production deployment](operations/deploy.md): topology, image pinning, proxy boundary, and deployment checks.
 
-## Extension and integration developers
+## Use and administer Kumwe
 
-- [Extension development](extensions.md): package manifests, service providers, routes, events, dependencies, signatures, install, update, and removal.
-- [REST API](rest-api.md): tokens, capabilities, content operations, ETags, retry safety, and the OpenAPI contract.
-- [MCP](mcp.md): HTTP and stdio transports, authentication, exposed tools/resources, and safe usage.
-- [Workers and scheduler](automation.md): job contracts, worker processes, cron schedules, retries, and failure handling.
-- [Development and testing](development.md): local runtime, test suites, static analysis, coding standards, and release checks.
+- [Administrator](administration.md): content workflow, menus, users, groups, permissions, settings, tokens, extensions, and templates.
+- [Command-line interface](cli.md): installation, health, tokens, extensions, workers, schedules, and MCP stdio.
+- [Workers and scheduler](automation.md): durable jobs, retries, recurring work, and worker operation.
+- [Templates](templates.md): build, install, activate, and verify a public design.
 
-## Production operators
+## Integrate and extend Kumwe
 
-- [Install](operations/install.md)
-- [Deploy](operations/deploy.md)
-- [Monitor](operations/monitoring.md)
-- [Back up and restore](operations/backup-restore.md)
+- [REST API](rest-api.md): authentication, content, navigation, identity, optimistic concurrency, and retry safety.
+- [MCP](mcp.md): stdio and Streamable HTTP transports, capabilities, tools, resources, and safe writes.
+- [Extensions](extensions.md): manifests, providers, events, migrations, dependencies, signatures, lifecycle, and tests.
+- [OpenAPI contract](../api/openapi/kumwe-v1.json): machine-readable REST v1 schema.
+
+## Operate production
+
+- [Operations index](operations/README.md)
+- [Monitoring and health](operations/monitoring.md)
+- [Backup and restore](operations/backup-restore.md)
 - [Upgrade](operations/upgrade.md)
-- [Verify releases](operations/release-verification.md)
-- [Respond to incidents](operations/incident-response.md)
+- [Release verification](operations/release-verification.md)
+- [Incident response](operations/incident-response.md)
+- [Security policy](../SECURITY.md)
 
-Also consult the [security policy](../SECURITY.md), the [REST OpenAPI document](../api/openapi/kumwe-v1.json), and `php bin/kumwe list` for the command-line index shipped with the installed release.
+## Maintain and evolve the project
+
+- [Development and testing](development.md): local checks, database matrix, deployment tests, and release gates.
+- [Architecture guide](architecture/README.md): stable boundaries, persistence choice, delivery parity, extension model, and growth paths.
+- [Contributing](../CONTRIBUTING.md): repository workflow and contribution requirements.
+
+Run `php bin/kumwe list` in an installed release for the exact CLI command index. Public documentation describes released behavior; temporary plans and internal implementation status do not belong here.

@@ -1,29 +1,31 @@
 # Install Kumwe in production
 
-## Preconditions
+Kumwe ships as versioned Docker images, a Composer project, and a self-contained release ZIP. All methods use PHP 8.5, the same CLI and migrations, and the same administrator. MariaDB LTS is the default database; MySQL 8.4 and PostgreSQL 17 are alternatives.
 
-- Docker Engine with Compose v2 support.
-- A committed `composer.lock`. The production image deliberately refuses an
-  unlocked dependency build.
-- Three independent random secrets stored outside the repository.
-- An empty PostgreSQL database volume.
-- A TLS-terminating reverse proxy in front of the loopback-bound web port.
+Choose an immutable released version, verify it as described in [Release verification](release-verification.md), and keep site configuration outside source control.
 
-Create secrets with restrictive permissions:
+## Docker images
+
+This is the recommended reproducible deployment.
+
+### 1. Prepare the release and secrets
+
+Obtain `compose.production.yaml` from the matching signed release. Create three independent secrets outside the project:
 
 ```bash
 install -d -m 0700 /srv/kumwe/secrets
 openssl rand -base64 48 > /srv/kumwe/secrets/app-secret
-openssl rand -base64 32 > /srv/kumwe/secrets/database-password
-openssl rand -base64 32 > /srv/kumwe/secrets/redis-password
+openssl rand -base64 32 | tr -d '\n' > /srv/kumwe/secrets/database-password
+openssl rand -base64 32 | tr -d '\n' > /srv/kumwe/secrets/redis-password
 chmod 0600 /srv/kumwe/secrets/*
 ```
 
-Set deployment inputs in the operator shell or a protected deployment-system
-environment. Do not commit them to `.env`:
+Set deployment inputs in a protected service environment or operator shell:
 
 ```bash
 export KUMWE_RELEASE=2.0.0
+export KUMWE_APP_IMAGE_REF=ghcr.io/kumwe/cms/app:2.0.0
+export KUMWE_WEB_IMAGE_REF=ghcr.io/kumwe/cms/web:2.0.0
 export KUMWE_BASE_URL=https://cms.example.org
 export KUMWE_TRUSTED_HOSTS=cms.example.org
 export KUMWE_TRUSTED_PROXIES=10.20.0.10
@@ -32,35 +34,25 @@ export KUMWE_DB_PASSWORD_FILE=/srv/kumwe/secrets/database-password
 export KUMWE_REDIS_PASSWORD_FILE=/srv/kumwe/secrets/redis-password
 ```
 
-Validate the rendered model before it can create resources:
+Production change control should replace version tags with verified digests. To select MySQL or PostgreSQL, add the coherent variables from [Deployment](deploy.md#database-choice).
+
+### 2. Validate and start
 
 ```bash
 docker compose -f compose.production.yaml config --quiet
-docker compose -f compose.production.yaml build app web migrate
-```
-
-The build expects `composer.lock`, installs production dependencies with an
-authoritative class map, verifies PHP platform requirements, and puts only
-`public/` in the nginx image.
-
-Start the stack:
-
-```bash
+docker compose -f compose.production.yaml pull
 docker compose -f compose.production.yaml up -d
 docker compose -f compose.production.yaml ps
-curl --fail --silent http://127.0.0.1:8080/health/live
 curl --fail --silent http://127.0.0.1:8080/health/ready
 ```
 
-The one-shot `migrate` service completes before `app` starts. Migrations are
-forward-only and protected by a PostgreSQL advisory lock.
+The one-shot `migrate` service applies the portable Doctrine schema before `app` starts. Add `--profile automation` to run the worker and scheduler.
 
-## Create the owner
-
-Create the first administrator from a protected file mounted into the container:
+### 3. Create the owner
 
 ```bash
 install -m 0600 /dev/null /srv/kumwe/secrets/administrator-password
+# Put a password of at least 12 characters in the file.
 docker compose -f compose.production.yaml run --rm \
   --volume /srv/kumwe/secrets/administrator-password:/run/secrets/administrator-password:ro \
   app php bin/kumwe user:create-admin \
@@ -70,14 +62,77 @@ docker compose -f compose.production.yaml run --rm \
 rm /srv/kumwe/secrets/administrator-password
 ```
 
-Open `https://cms.example.org/administrator`, sign in, create and publish the
-homepage, then select its slug under **Settings**.
+Open the canonical `/administrator` URL, sign in, and follow [Administrator](../administration.md).
 
-## Start automation
+## Composer project
+
+Composer can deploy the complete CMS as a project package. The post-create hook starts an interactive installer when run in a terminal. Once `kumwe/cms` is registered on Packagist, use:
 
 ```bash
-docker compose -f compose.production.yaml --profile automation up -d worker scheduler
+composer create-project kumwe/cms:^2.0 /srv/kumwe \
+  --no-dev \
+  --prefer-dist
 ```
 
-Confirm the worker and scheduler remain healthy and that `php bin/kumwe
-schedule:list` reports the built-in session cleanup schedule.
+Until Packagist registration is complete, resolve the signed GitHub release through its VCS repository:
+
+```bash
+composer create-project \
+  --repository='{"type":"vcs","url":"https://github.com/Kumwe/cms.git"}' \
+  kumwe/cms:^2.0 /srv/kumwe \
+  --no-dev \
+  --prefer-dist
+```
+
+The installer asks for the canonical HTTPS URL, MariaDB/MySQL/PostgreSQL connection, table prefix, Redis connection, and first administrator. It writes an owner-readable `.env`, runs `database:migrate`, and creates the owner through the public CLI.
+
+For non-interactive automation, Composer installs files without guessing credentials. Run the installer in a protected terminal before serving the site:
+
+```bash
+cd /srv/kumwe
+php bin/kumwe-install
+```
+
+Requirements for a native installation:
+
+- PHP 8.5 with all extensions required by `composer.json` and the PDO driver for the selected database (`pdo_mysql` for MariaDB/MySQL or `pdo_pgsql` for PostgreSQL);
+- Composer 2 for installation and locked upgrades;
+- a supported database and Redis 8 endpoint;
+- writable `storage/` and `extensions/` for the PHP-FPM service account;
+- a web server whose only document root is `/srv/kumwe/public`;
+- separate long-running `queue:work` and `schedule:run --loop` services.
+
+Composer scripts never run with a web-server identity or an unrestricted database administrator account. After installation, remove interactive shell access that is not operationally required and protect `.env` from the web server and backups according to the site's secret policy.
+
+## Release ZIP
+
+The ZIP contains production dependencies and is intended for hosts that cannot run Composer on the server.
+
+1. Download `kumwe-cms-VERSION.zip`, `SHA256SUMS`, and the Cosign bundle from the GitHub release.
+2. Verify the checksum, signature, and provenance.
+3. Extract into a new versioned directory, never over a running release.
+4. Run `php bin/kumwe-install` in a protected terminal.
+5. Set the web document root to the extracted `public/` directory.
+6. Configure worker and scheduler services, then run the [deployment acceptance](deploy.md#post-deployment-acceptance).
+
+Example extraction:
+
+```bash
+install -d -m 0750 /srv/kumwe/releases/2.0.0
+unzip -q kumwe-cms-2.0.0.zip -d /srv/kumwe/releases/2.0.0
+cd /srv/kumwe/releases/2.0.0
+php bin/kumwe-install
+```
+
+Keep `.env`, media, extension packages, sessions, logs, and other persistent state outside disposable release directories where the host permits. Use an atomic symlink or release switch for upgrades.
+
+## Complete installation checklist
+
+- `/health/live` and `/health/ready` succeed through the real proxy.
+- The owner can sign in and a limited account is denied a forbidden route.
+- A page can complete the workflow and render publicly.
+- Menu, user/group, setting, extension, REST, MCP, worker, and scheduler smoke checks pass.
+- Backup creation, backup verification, and clean-target recovery are exercised.
+- Exact application, web, database, and Redis digests are recorded.
+
+Continue with [Production deployment](deploy.md), [Monitoring](monitoring.md), and [Backup and restore](backup-restore.md).

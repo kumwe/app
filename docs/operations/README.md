@@ -1,17 +1,14 @@
-# Kumwe operations
+# Operations
 
-These runbooks cover installation, deployment, monitoring, backup, recovery,
-upgrades, release verification, and incident response for Kumwe.
+These runbooks cover production installation, deployment, monitoring, recovery, upgrades, release verification, and incident response.
 
-- [Install](install.md)
-- [Production deployment](deploy.md)
-- [2.x upgrades](upgrade.md)
-- [Backup and restore](backup-restore.md)
-- [Monitoring](monitoring.md)
-- [Release verification](release-verification.md)
-- [Incident response](incident-response.md)
+- [Install](install.md): Docker images, Composer project, or release ZIP.
+- [Deploy](deploy.md): hardened container topology, database choice, image pinning, and acceptance.
+- [Configuration](../configuration.md): environment, secrets, database, Redis, and browser-managed settings.
+- [Monitor](monitoring.md): health contracts, signals, logs, and audit records.
+- [Back up and restore](backup-restore.md): complete backup, verification, clean-target recovery, and drills.
+- [Upgrade](upgrade.md): forward-only migrations and atomic application replacement.
+- [Verify releases](release-verification.md): checksums, signatures, provenance, images, and SBOMs.
+- [Respond to incidents](incident-response.md): preservation, containment, recovery, and review.
 
-Commands assume the repository or signed release archive is the current working
-directory. Run commands as an unprivileged deployment account. Keep TLS
-termination, the host firewall and off-host backup storage outside the Compose
-project.
+Run commands as an unprivileged deployment account. Keep TLS termination, firewall policy, secret storage, and off-host backup storage outside Kumwe's application release. For commands that mutate durable state, capture the exact release and database engine in the change record.

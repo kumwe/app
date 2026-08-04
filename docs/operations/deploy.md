@@ -1,60 +1,82 @@
 # Production deployment
 
+This guide describes the supplied container topology. See [Install](install.md) for initial secrets and owner creation, and [Configuration](../configuration.md) for every application setting.
+
 ## Topology
 
-`web` is the only service with a host port. It defaults to
-`127.0.0.1:8080`; publish it through the site's TLS reverse proxy. `app` is a
-non-root PHP-FPM process. PostgreSQL and Redis are attached only to the internal
-backend network. The migration task completes before application readiness.
+`web` is the only service with a host port and defaults to `127.0.0.1:8080`. Publish it through a TLS reverse proxy or private load balancer. `app`, `worker`, `scheduler`, and `migrate` use the same immutable PHP image and configuration. `database` and Redis exist only on the internal backend network.
 
-The PHP and nginx images are immutable. Writable runtime state is limited to
-tmpfs mounts and the media volume. Containers drop Linux capabilities and set
-`no-new-privileges`. PostgreSQL and Redis retain their own named volumes.
+The migration task must complete before the application starts. Writable application state is limited to tmpfs plus media and extension volumes. Runtime containers are non-root, read-only, capability-dropped, and configured with `no-new-privileges`.
 
-## Image pinning
+## Select and pin images
 
-The Compose defaults are readable upstream tags for local evaluation. Production
-automation should override every image with an immutable digest:
+Release images are published at:
+
+```text
+ghcr.io/kumwe/cms/app:VERSION
+ghcr.io/kumwe/cms/web:VERSION
+```
+
+Set complete image references before rendering Compose:
 
 ```bash
 export KUMWE_APP_IMAGE_REF=ghcr.io/kumwe/cms/app@sha256:APP_DIGEST
 export KUMWE_WEB_IMAGE_REF=ghcr.io/kumwe/cms/web@sha256:WEB_DIGEST
-export KUMWE_POSTGRES_IMAGE=postgres@sha256:POSTGRES_DIGEST
+export KUMWE_DATABASE_IMAGE=mariadb@sha256:DATABASE_DIGEST
 export KUMWE_REDIS_IMAGE=redis@sha256:REDIS_DIGEST
 ```
 
-Never substitute example digest text directly. `KUMWE_APP_IMAGE_REF` and
-`KUMWE_WEB_IMAGE_REF` are complete references; Compose does not append a mutable
-tag to them.
+Use digests from [release verification](release-verification.md), not the example text. Mutable `latest`, major-line, and database LTS tags are convenient discovery aliases; a production rollout should record and deploy the exact tested digests.
 
-The Dockerfile also accepts `PHP_IMAGE`, `COMPOSER_IMAGE` and `NGINX_IMAGE` build
-arguments. Release engineering should pass verified digest references for all
-three bases and record them in provenance.
+## Database choice
+
+MariaDB LTS is the default. Override one coherent set for another supported engine:
+
+| Engine | `KUMWE_DB_DRIVER` | `KUMWE_DB_PORT` | `KUMWE_DB_SERVER_VERSION` | Example `KUMWE_DATABASE_IMAGE` |
+|---|---:|---:|---|---|
+| MariaDB LTS | `mariadb` | `3306` | Version matching the image | `mariadb:lts` |
+| MySQL 8.4 | `mysql` | `3306` | `8.4` | `mysql:8.4` |
+| PostgreSQL 17 | `pgsql` | `5432` | `17` | `postgres:17-alpine` |
+
+Choose the engine before the first migration. Switching an existing site requires a separately tested logical data migration; changing only the image and driver variables is not a database conversion.
+
+For a managed database, keep the application variables but omit or profile out the bundled `database` service in a deployment-specific Compose overlay. Use TLS verification, private networking, backups, monitoring, and a least-privilege migration account supplied by the database platform.
 
 ## Proxy boundary
 
 - Forward only the canonical hostname.
 - Send `X-Forwarded-Proto: https` and the original host.
-- Set `KUMWE_TRUSTED_PROXIES` to the proxy address ranges, never `0.0.0.0/0`.
+- Set `KUMWE_TRUSTED_PROXIES` to actual proxy address ranges, never all networks.
 - Keep the Compose HTTP binding on loopback or a private interface.
-- Apply request-rate and connection limits at the edge as a second layer.
+- Match request-size limits at the proxy, nginx, PHP, and Kumwe boundary.
+- Apply connection and rate controls at the edge in addition to Kumwe's account and token controls.
 
-## Deployment check
+## Deploy
 
 ```bash
 docker compose -f compose.production.yaml config --quiet
-docker compose -f compose.production.yaml up -d postgres redis
+docker compose -f compose.production.yaml pull
+docker compose -f compose.production.yaml up -d database redis
 docker compose -f compose.production.yaml run --rm migrate
 docker compose -f compose.production.yaml --profile automation up -d app web worker scheduler
 docker compose -f compose.production.yaml ps
+curl --fail --silent http://127.0.0.1:8080/health/live
+curl --fail --silent http://127.0.0.1:8080/health/ready
 ```
 
-`/health/live` proves that the HTTP process can respond and does not query
-dependencies. `/health/ready` checks the database migration ledger and returns
-503 until the required schema is available. Readiness is the traffic gate;
-liveness must not be used for dependency-driven restarts.
+`/health/live` proves only that the HTTP process responds. `/health/ready` verifies database connectivity and the required migration ledger. Use readiness as the traffic gate; do not restart a healthy process merely because an external dependency is briefly unavailable.
 
-After every deployment, sign in to the administrator, read the configured
-homepage, create and remove a disposable draft, execute one idempotent API retry,
-and run `queue:work --once` plus `schedule:run` once from the exact application
-image. Keep the previous verified image digests and backup until those checks pass.
+## Post-deployment acceptance
+
+From outside the stack and from the exact deployed application image:
+
+1. sign into the administrator with a non-owner test account;
+2. create, edit, review, publish, render, unpublish, trash, and restore a disposable page;
+3. create a disposable menu item and exercise a permitted user/group change;
+4. repeat one REST mutation with the same idempotency key and confirm replay behavior;
+5. run `queue:work --once` and `schedule:run`;
+6. confirm a capability-limited account receives `403` for a forbidden administrator and API action;
+7. inspect logs, worker heartbeat, queue age, database health, and Redis health;
+8. retain the previous image digests and verified backup until acceptance succeeds.
+
+CI performs an equivalent clean deployment for MariaDB, MySQL, and PostgreSQL before release. Site-specific acceptance remains necessary because proxy, TLS, storage, extensions, and identity policy differ by installation.

@@ -1,6 +1,8 @@
 # Development and testing
 
-Kumwe supports PHP 8.4 and 8.5 with PostgreSQL 17. The development image includes Composer and the required PHP extensions.
+Kumwe develops and releases on PHP 8.5. Every persistence and deployment change is tested against MariaDB LTS, MySQL 8.4, and PostgreSQL 17. The development image contains Composer and both PDO driver families.
+
+## Local checks
 
 ```bash
 cp .env.example .env
@@ -19,14 +21,52 @@ composer test:integration
 composer security:audit
 ```
 
-Add unit tests for every Kumwe-owned class with meaningful behavior. Persistence adapters, migrations, HTTP composition, extension activation, and concurrency require PostgreSQL integration or functional tests. Test extension archives with traversal, links, duplicate paths, expansion limits, invalid manifests, compatibility errors, unknown signing keys, and bad signatures.
+Run integration tests once for each database group in [Getting started](getting-started.md#choose-another-database). A change that passes only the default database is not portable.
 
-Before opening a change:
+## Test ownership
 
-1. Run `composer qa` against a clean PostgreSQL database.
-2. Build both production targets with `docker build --target runtime` and `--target web`.
-3. Run filesystem and image vulnerability scans at the repository's configured severity threshold.
-4. Exercise `tools/backup.sh`, `tools/restore-verify.sh`, and `tools/restore.sh` against disposable targets.
-5. Confirm `/health/live`, `/health/ready`, administrator login, a draft write, a workflow transition, and an idempotent API retry.
+- Add focused unit tests for every Kumwe-owned class with meaningful branching or invariants.
+- Test repositories, migrations, transaction boundaries, locks, queues, and concurrency against real database services rather than database mocks.
+- Test administrator and API authorization both positively and negatively for every capability.
+- Test content, navigation, settings, identity, and extensions through their shared application services and through the relevant delivery surfaces.
+- Test extension archives with traversal, links, duplicate paths, expansion limits, invalid manifests, compatibility failures, unknown keys, bad signatures, migration failures, and interrupted activation.
+- Test worker retries, permanent failure classification, lease expiry, duplicate schedule occurrences, and restart behavior.
 
-GitHub Actions executes this matrix for pull requests and release tags. Release tags use `v2.x.y` and publish signed checksums, image digests, provenance, and CycloneDX SBOMs.
+Coverage is a missing-test signal, not the release decision. New code must keep the configured line/branch floor, while security policies and state transitions require explicit behavior and mutation-resistant assertions.
+
+## Full deployment contract
+
+Pull-request CI must do more than run PHPUnit. For each supported database it:
+
+1. builds the PHP 8.5 application and production web images from locked dependencies;
+2. starts a clean database and Redis service;
+3. runs forward migrations from an empty database;
+4. creates an owner through the CLI;
+5. starts nginx, PHP-FPM, worker, and scheduler;
+6. waits for liveness and readiness;
+7. exercises administrator login/CSRF/capabilities, public rendering, REST authentication/idempotency/concurrency, MCP initialization, queue work, and scheduling;
+8. restarts application processes and proves durable state remains available;
+9. scans source and the exact runtime images and publishes test evidence.
+
+Artifact tests separately install the Composer project and release ZIP into empty directories, apply configuration, migrate, start the application, and run the same acceptance probe. A release tag may publish images or archives only after these tests succeed.
+
+## Recovery and release checks
+
+Before a release:
+
+1. create a complete backup with `tools/backup.sh`;
+2. verify it with `tools/restore-verify.sh`;
+3. restore it into empty database and filesystem targets with `tools/restore.sh`;
+4. boot the restored site and run the deployment acceptance probe;
+5. verify extension/runtime files and media checksums;
+6. produce SBOMs, vulnerability reports, checksums, signatures, image digests, and provenance.
+
+Backup/restore tooling must be exercised for every supported database engine. Site operators should also perform scheduled off-host recovery drills because CI cannot test site-specific storage, identity, proxy, or extension dependencies.
+
+## Before opening a pull request
+
+- Keep the worktree free of generated secrets, logs, database dumps, and built vendor files.
+- Update OpenAPI and task documentation with behavior changes.
+- Update the [architecture guide](architecture/README.md) only when an invariant or stable interface changes; do not add temporary progress notes.
+- Run the narrowest test while developing, then the complete local quality suite and at least the default MariaDB deployment.
+- Include the risk, migration, compatibility, and recovery implications in the pull-request description.

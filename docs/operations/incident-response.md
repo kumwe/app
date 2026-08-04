@@ -4,7 +4,7 @@
 
 1. Record the time, deployed image digests, release, affected host and observed
    health responses.
-2. Preserve centralized logs, reverse-proxy logs, PostgreSQL logs and relevant
+2. Preserve centralized logs, reverse-proxy logs, database logs and relevant
    audit records under restricted access.
 3. Snapshot persistent volumes or create a verified backup when doing so will not
    destroy evidence.
