@@ -191,7 +191,7 @@ final readonly class DoctrineJobQueue implements JobQueue
         $values = [
             'queue' => $queue,
             'process_id' => $processId === false ? 1 : $processId,
-            'release' => $this->release,
+            'application_release' => $this->release,
             'heartbeat_at' => $now,
             'current_job_id' => $jobId,
         ];
