@@ -68,8 +68,24 @@ jobs:
       - name: Verify source policy
         run: composer architecture:policy
 
-      - name: Coding standard
-        run: composer cs
+      - name: Generate coding-standard normalization evidence
+        run: |
+          composer cs:fix || true
+          git diff --binary > phpcbf.patch
+
+      - name: Upload coding-standard normalization evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phpcbf-patch
+          path: phpcbf.patch
+          if-no-files-found: error
+          retention-days: 3
+
+      - name: Require committed coding-standard normalization
+        run: |
+          composer cs
+          git diff --exit-code
 
       - name: Static analysis
         run: composer analyse
