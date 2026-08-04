@@ -1,0 +1,19 @@
+{% extends "administrator/layout.twig" %}
+{% block title %}Sign in · Kumwe{% endblock %}
+{% block content %}
+  <section class="auth-card" aria-labelledby="sign-in-title">
+    <p class="eyebrow">Kumwe CMS</p>
+    <h1 id="sign-in-title">Administrator sign in</h1>
+    <p>Manage the website, publishing workflow, extensions and operations.</p>
+    {% if error is defined %}<div class="alert" role="alert">{{ error }}</div>{% endif %}
+    <form action="/administrator/login" method="post" class="stack">
+      <label>Email
+        <input type="email" name="email" value="{{ email|default('') }}" autocomplete="username" required autofocus>
+      </label>
+      <label>Password
+        <input type="password" name="password" autocomplete="current-password" required>
+      </label>
+      <button class="primary" type="submit">Sign in</button>
+    </form>
+  </section>
+{% endblock %}

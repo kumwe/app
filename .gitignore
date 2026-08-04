@@ -1,5 +1,6 @@
 /.env
 /.env.local
+/.admin-password
 /.phpunit.cache/
 /.phpunit.result.cache
 /.php-cs-fixer.cache
@@ -11,9 +12,11 @@
 /storage/logs/*
 /storage/sessions/*
 /storage/tmp/*
+/extensions/*
 /vendor/
 
 !/storage/cache/.gitkeep
 !/storage/logs/.gitkeep
 !/storage/sessions/.gitkeep
 !/storage/tmp/.gitkeep
+!/extensions/.gitkeep

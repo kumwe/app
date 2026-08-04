@@ -60,6 +60,32 @@ final readonly class ContentEntry
         );
     }
 
+    /**
+     * Rebuild an entry loaded from trusted persistence while preserving all
+     * domain validation performed by the constructor.
+     *
+     * @param array<array-key, mixed> $data
+     */
+    public static function reconstitute(
+        string $id,
+        string $title,
+        string $slug,
+        array $data,
+        ContentStatus $status,
+        PublicationWindow $publicationWindow,
+        int $version,
+    ): self {
+        return new self(
+            strtolower($id),
+            trim($title),
+            $slug,
+            $data,
+            $status,
+            $publicationWindow,
+            $version,
+        );
+    }
+
     public function id(): string
     {
         return $this->id;
@@ -106,7 +132,13 @@ final readonly class ContentEntry
     /**
      * @param array<array-key, mixed> $data
      */
-    public function revise(ExpectedVersion $expectedVersion, string $title, string $slug, array $data): self
+    public function revise(
+        ExpectedVersion $expectedVersion,
+        string $title,
+        string $slug,
+        array $data,
+        ?PublicationWindow $publicationWindow = null,
+    ): self
     {
         $expectedVersion->assertMatches($this->version);
 
@@ -116,7 +148,7 @@ final readonly class ContentEntry
             $slug,
             $data,
             $this->status,
-            $this->publicationWindow,
+            $publicationWindow ?? $this->publicationWindow,
             $this->version + 1,
         );
     }

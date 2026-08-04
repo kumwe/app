@@ -19,6 +19,9 @@ final readonly class ApplicationConfiguration
         public array $trustedHosts,
         public array $trustedProxies,
         public int $maxBodyBytes,
+        public int $administratorSessionSeconds,
+        public bool $allowUnsignedLocalExtensions,
+        public string $release,
         public string $secret,
         public DatabaseConfiguration $database,
     ) {
@@ -36,6 +39,12 @@ final readonly class ApplicationConfiguration
 
         if (strlen($secret) < 32) {
             throw new InvalidArgumentException('APP_SECRET must contain at least 32 bytes.');
+        }
+
+        if ($administratorSessionSeconds < 300 || $administratorSessionSeconds > 604_800) {
+            throw new InvalidArgumentException(
+                'APP_ADMIN_SESSION_SECONDS must be between 300 and 604800 seconds.',
+            );
         }
     }
 

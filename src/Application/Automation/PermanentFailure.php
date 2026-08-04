@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Kumwe\CMS\Application\Automation;
 
-interface PermanentFailure
+use RuntimeException;
+
+final class PermanentFailure extends RuntimeException
 {
 }
