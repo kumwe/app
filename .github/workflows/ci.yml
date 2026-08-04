@@ -105,6 +105,20 @@ jobs:
           KUMWE_RESTORE_EXTENSIONS_DIR: ${{ runner.temp }}/restored/extensions
           KUMWE_RESTORE_MEDIA_DIR: ${{ runner.temp }}/restored/media
         run: |
+          pgdg_key="${RUNNER_TEMP}/postgresql-pgdg.asc"
+          curl --fail --location --silent --show-error \
+            https://www.postgresql.org/media/keys/ACCC4CF8.asc \
+            --output "$pgdg_key"
+          test "$(gpg --show-keys --with-colons "$pgdg_key" | awk -F: '$1 == "fpr" {print $10; exit}')" \
+            = 'B97B0AFCAA1A47F044F244A07FCC7D46ACCC4CF8'
+          sudo install -d -m 0755 /usr/share/postgresql-common/pgdg
+          sudo gpg --dearmor --batch --yes \
+            --output /usr/share/postgresql-common/pgdg/apt.postgresql.org.gpg \
+            "$pgdg_key"
+          . /etc/os-release
+          printf 'deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.gpg] https://apt.postgresql.org/pub/repos/apt %s-pgdg main\n' \
+            "$VERSION_CODENAME" \
+            | sudo tee /etc/apt/sources.list.d/pgdg.list >/dev/null
           sudo apt-get update
           sudo apt-get install --yes jq postgresql-client-17
           install -d -m 0700 "$KUMWE_BACKUP_DIR" "$KUMWE_MEDIA_DIR" "${KUMWE_RESTORE_MEDIA_DIR%/media}"
