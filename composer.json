@@ -77,12 +77,12 @@
     "audit": "composer audit --locked --abandoned=fail",
     "cs": "phpcs -q",
     "cs:fix": "phpcbf",
-    "policy": "bash tools/verify-policy.sh",
+    "architecture:policy": "bash tools/verify-policy.sh",
     "test": "phpunit --colors=always",
     "test:integration": "phpunit --testsuite integration --colors=always",
     "test:unit": "phpunit --testsuite unit --colors=always",
     "qa": [
-      "@policy",
+      "@architecture:policy",
       "@cs",
       "@analyse",
       "@test"
