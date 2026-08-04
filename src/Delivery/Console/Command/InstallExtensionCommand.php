@@ -26,6 +26,7 @@ final readonly class InstallExtensionCommand implements Command
         return 'Verify, install and activate a Kumwe extension ZIP.';
     }
 
+    /** @param list<string> $arguments */
     public function execute(array $arguments, Output $output): int
     {
         try {
@@ -44,11 +45,14 @@ final readonly class InstallExtensionCommand implements Command
                 $options['key-id'] ?? null,
                 $options['signature'] ?? null,
             );
+            $identifier = $this->resultString($installed, 'identifier');
+            $version = $this->resultString($installed, 'installed_version');
+            $status = $this->resultString($installed, 'status');
             $output->line(sprintf(
                 'Installed %s %s (%s).',
-                (string) ($installed['identifier'] ?? ''),
-                (string) ($installed['installed_version'] ?? ''),
-                (string) ($installed['status'] ?? ''),
+                $identifier,
+                $version,
+                $status,
             ));
 
             return 0;
@@ -59,7 +63,10 @@ final readonly class InstallExtensionCommand implements Command
         }
     }
 
-    /** @param list<string> $arguments @return array<string, string> */
+    /**
+     * @param list<string> $arguments
+     * @return array<string, string>
+     */
     private function options(array $arguments): array
     {
         $options = [];
@@ -73,5 +80,17 @@ final readonly class InstallExtensionCommand implements Command
         }
 
         return $options;
+    }
+
+    /** @param array<string, mixed> $result */
+    private function resultString(array $result, string $field): string
+    {
+        $value = $result[$field] ?? null;
+
+        if (!is_string($value) || $value === '') {
+            throw new InvalidArgumentException(sprintf('The installed extension %s is invalid.', $field));
+        }
+
+        return $value;
     }
 }

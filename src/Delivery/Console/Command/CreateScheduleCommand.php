@@ -29,6 +29,7 @@ final readonly class CreateScheduleCommand implements Command
         return 'Create a validated recurring job schedule.';
     }
 
+    /** @param list<string> $arguments */
     public function execute(array $arguments, Output $output): int
     {
         try {
@@ -53,7 +54,10 @@ final readonly class CreateScheduleCommand implements Command
         }
     }
 
-    /** @param list<string> $arguments @return array<string, string> */
+    /**
+     * @param list<string> $arguments
+     * @return array<string, string>
+     */
     private function options(array $arguments): array
     {
         $options = [];
@@ -81,7 +85,10 @@ final readonly class CreateScheduleCommand implements Command
         return $value;
     }
 
-    /** @return array<string, mixed> @throws JsonException */
+    /**
+     * @return array<string, mixed>
+     * @throws JsonException
+     */
     private function payload(string $json): array
     {
         $payload = json_decode($json, true, 64, JSON_THROW_ON_ERROR);
@@ -90,6 +97,7 @@ final readonly class CreateScheduleCommand implements Command
             throw new InvalidArgumentException('The schedule payload must be a JSON object.');
         }
 
+        /** @var array<string, mixed> $payload */
         return $payload;
     }
 }

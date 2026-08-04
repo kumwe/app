@@ -25,12 +25,19 @@ final readonly class ActivateExtensionCommand implements Command
         return 'Activate an installed extension and rebuild the runtime map.';
     }
 
+    /** @param list<string> $arguments */
     public function execute(array $arguments, Output $output): int
     {
         try {
             $identifier = $arguments[0] ?? '';
             $extension = $this->extensions->activate($identifier, 'system:cli');
-            $output->line(sprintf('Activated %s.', (string) ($extension['identifier'] ?? $identifier)));
+            $installedIdentifier = $extension['identifier'] ?? $identifier;
+
+            if (!is_string($installedIdentifier)) {
+                throw new \RuntimeException('The extension manager returned an invalid identifier.');
+            }
+
+            $output->line(sprintf('Activated %s.', $installedIdentifier));
 
             return 0;
         } catch (Throwable $exception) {

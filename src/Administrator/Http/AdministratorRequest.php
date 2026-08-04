@@ -33,6 +33,7 @@ final class AdministratorRequest
         return $form;
     }
 
+    /** @param array<string, string> $form */
     public static function required(array $form, string $field): string
     {
         $value = trim($form[$field] ?? '');
@@ -44,6 +45,7 @@ final class AdministratorRequest
         return $value;
     }
 
+    /** @param array<string, string> $form */
     public static function positiveInteger(array $form, string $field): int
     {
         $value = $form[$field] ?? '';
@@ -55,7 +57,10 @@ final class AdministratorRequest
         return (int) $value;
     }
 
-    /** @return array<string, mixed> */
+    /**
+     * @param array<string, string> $form
+     * @return array<string, mixed>
+     */
     public static function contentData(array $form): array
     {
         $json = trim($form['data'] ?? '');
@@ -74,9 +79,11 @@ final class AdministratorRequest
             throw new InvalidArgumentException('Content data must be a JSON object.');
         }
 
+        /** @var array<string, mixed> $data */
         return $data;
     }
 
+    /** @param array<string, string> $form */
     public static function publicationWindow(array $form): PublicationWindow
     {
         $startsAt = trim($form['publish_at'] ?? '');

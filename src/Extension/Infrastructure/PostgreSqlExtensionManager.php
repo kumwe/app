@@ -198,10 +198,11 @@ final readonly class PostgreSqlExtensionManager implements ExtensionManager
 
         try {
             $this->transactions->transactional(function () use ($identifier, $actorId): void {
+                $boundIdentifier = $identifier;
                 $query = $this->database->getQuery(true)
                     ->delete($this->quoteName($this->schema . '.extensions'))
                     ->where($this->quoteName('identifier') . ' = :identifier')
-                    ->bind(':identifier', $identifier, ParameterType::STRING);
+                    ->bind(':identifier', $boundIdentifier, ParameterType::STRING);
                 $this->database->setQuery($query)->execute();
                 $this->compiler->rebuild();
                 $this->audit($actorId, 'extension.uninstall', $identifier);
@@ -213,23 +214,32 @@ final readonly class PostgreSqlExtensionManager implements ExtensionManager
         }
     }
 
+    /** @return array<string, mixed> */
     private function changeStatus(string $identifier, string $status, string $action, string $actorId): array
     {
-        return $this->transactions->transactional(function () use ($identifier, $status, $action, $actorId): array {
+        /** @var array<string, mixed> $result */
+        $result = $this->transactions->transactional(function () use (
+            $identifier,
+            $status,
+            $action,
+            $actorId,
+        ): array {
             $installed = $this->findInstalled($identifier);
 
             if ($status === 'active' && ($installed['extension_type'] ?? null) === ExtensionType::Template->value) {
                 $this->disableTemplatesExcept($identifier);
             }
 
+            $boundStatus = $status;
+            $boundIdentifier = $identifier;
             $query = $this->database->getQuery(true)
                 ->update($this->quoteName($this->schema . '.extensions'))
                 ->set($this->quoteName('status') . ' = :status')
                 ->set($this->quoteName('registry_version') . ' = ' . $this->quoteName('registry_version') . ' + 1')
                 ->set($this->quoteName('updated_at') . ' = CURRENT_TIMESTAMP')
                 ->where($this->quoteName('identifier') . ' = :identifier')
-                ->bind(':status', $status, ParameterType::STRING)
-                ->bind(':identifier', $identifier, ParameterType::STRING);
+                ->bind(':status', $boundStatus, ParameterType::STRING)
+                ->bind(':identifier', $boundIdentifier, ParameterType::STRING);
             $this->database->setQuery($query)->execute();
 
             if ($this->database->getAffectedRows() !== 1) {
@@ -241,6 +251,8 @@ final readonly class PostgreSqlExtensionManager implements ExtensionManager
 
             return $this->findInstalled($identifier);
         });
+
+        return $result;
     }
 
     private function persistRelease(
@@ -261,6 +273,13 @@ final readonly class PostgreSqlExtensionManager implements ExtensionManager
         }
 
         if ($existing === null) {
+            $boundExtensionId = $extensionId;
+            $boundIdentifier = $identifier;
+            $type = $manifest->type()->value;
+            $version = (string) $manifest->version();
+            $status = 'active';
+            $provider = $manifest->serviceProvider();
+            $boundRuntimePath = $relativeRuntime;
             $query = $this->database->getQuery(true)
                 ->insert($this->quoteName($this->schema . '.extensions'))
                 ->columns($this->quoteNames([
@@ -271,20 +290,24 @@ final readonly class PostgreSqlExtensionManager implements ExtensionManager
                     ':id, :identifier, :type, :version, :status, :provider, 1, :runtime_path, '
                     . 'CURRENT_TIMESTAMP, CURRENT_TIMESTAMP',
                 )
-                ->bind(':id', $extensionId, ParameterType::STRING)
-                ->bind(':identifier', $identifier, ParameterType::STRING)
-                ->bind(':type', $manifest->type()->value, ParameterType::STRING)
-                ->bind(':version', (string) $manifest->version(), ParameterType::STRING)
-                ->bind(':status', 'active', ParameterType::STRING)
-                ->bind(':provider', $manifest->serviceProvider(), ParameterType::STRING)
-                ->bind(':runtime_path', $relativeRuntime, ParameterType::STRING);
+                ->bind(':id', $boundExtensionId, ParameterType::STRING)
+                ->bind(':identifier', $boundIdentifier, ParameterType::STRING)
+                ->bind(':type', $type, ParameterType::STRING)
+                ->bind(':version', $version, ParameterType::STRING)
+                ->bind(':status', $status, ParameterType::STRING)
+                ->bind(':provider', $provider, ParameterType::STRING)
+                ->bind(':runtime_path', $boundRuntimePath, ParameterType::STRING);
         } else {
-            $installedVersion = SemanticVersion::fromString((string) ($existing['installed_version'] ?? ''));
+            $installedVersion = SemanticVersion::fromString($this->requiredString($existing, 'installed_version'));
 
             if ($manifest->version()->compare($installedVersion) <= 0) {
                 throw new InvalidArgumentException('An installed extension can only be replaced by a newer version.');
             }
 
+            $version = (string) $manifest->version();
+            $provider = $manifest->serviceProvider();
+            $boundRuntimePath = $relativeRuntime;
+            $boundExtensionId = $extensionId;
             $query = $this->database->getQuery(true)
                 ->update($this->quoteName($this->schema . '.extensions'))
                 ->set($this->quoteName('installed_version') . ' = :version')
@@ -294,14 +317,21 @@ final readonly class PostgreSqlExtensionManager implements ExtensionManager
                 ->set($this->quoteName('registry_version') . ' = ' . $this->quoteName('registry_version') . ' + 1')
                 ->set($this->quoteName('updated_at') . ' = CURRENT_TIMESTAMP')
                 ->where($this->quoteName('id') . ' = :id')
-                ->bind(':version', (string) $manifest->version(), ParameterType::STRING)
-                ->bind(':provider', $manifest->serviceProvider(), ParameterType::STRING)
-                ->bind(':runtime_path', $relativeRuntime, ParameterType::STRING)
-                ->bind(':id', $extensionId, ParameterType::STRING);
+                ->bind(':version', $version, ParameterType::STRING)
+                ->bind(':provider', $provider, ParameterType::STRING)
+                ->bind(':runtime_path', $boundRuntimePath, ParameterType::STRING)
+                ->bind(':id', $boundExtensionId, ParameterType::STRING);
         }
 
         $this->database->setQuery($query)->execute();
         $releaseId = Uuid::uuid7()->toString();
+        $boundReleaseId = $releaseId;
+        $boundExtensionId = $extensionId;
+        $releaseVersion = (string) $manifest->version();
+        $checksumValue = (string) $checksum;
+        $algorithm = $signature?->algorithm();
+        $signingKeyId = $signature?->keyId();
+        $signatureBase64 = $signature?->asBase64();
         $release = $this->database->getQuery(true)
             ->insert($this->quoteName($this->schema . '.extension_releases'))
             ->columns($this->quoteNames([
@@ -312,39 +342,44 @@ final readonly class PostgreSqlExtensionManager implements ExtensionManager
                 ':id, :extension_id, :version, CAST(:manifest AS jsonb), :checksum, :algorithm, '
                 . ':key_id, :signature, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP',
             )
-            ->bind(':id', $releaseId, ParameterType::STRING)
-            ->bind(':extension_id', $extensionId, ParameterType::STRING)
-            ->bind(':version', (string) $manifest->version(), ParameterType::STRING)
+            ->bind(':id', $boundReleaseId, ParameterType::STRING)
+            ->bind(':extension_id', $boundExtensionId, ParameterType::STRING)
+            ->bind(':version', $releaseVersion, ParameterType::STRING)
             ->bind(':manifest', $manifestJson, ParameterType::STRING)
-            ->bind(':checksum', (string) $checksum, ParameterType::STRING)
+            ->bind(':checksum', $checksumValue, ParameterType::STRING)
             ->bind(
                 ':algorithm',
-                $signature?->algorithm(),
+                $algorithm,
                 $signature === null ? ParameterType::NULL : ParameterType::STRING,
             )
-            ->bind(':key_id', $signature?->keyId(), $signature === null ? ParameterType::NULL : ParameterType::STRING)
+            ->bind(':key_id', $signingKeyId, $signature === null ? ParameterType::NULL : ParameterType::STRING)
             ->bind(
                 ':signature',
-                $signature?->asBase64(),
+                $signatureBase64,
                 $signature === null ? ParameterType::NULL : ParameterType::STRING,
             );
         $this->database->setQuery($release)->execute();
 
         foreach ($manifest->dependencies() as $dependency) {
+            $boundReleaseId = $releaseId;
+            $dependencyIdentifier = $dependency->extension()->value();
+            $dependencyConstraint = (string) $dependency->constraint();
+            $optional = $dependency->isOptional();
             $query = $this->database->getQuery(true)
                 ->insert($this->quoteName($this->schema . '.extension_dependencies'))
                 ->columns($this->quoteNames(['release_id', 'required_identifier', 'version_constraint', 'optional']))
                 ->values(':release_id, :identifier, :constraint, :optional')
-                ->bind(':release_id', $releaseId, ParameterType::STRING)
-                ->bind(':identifier', $dependency->extension()->value(), ParameterType::STRING)
-                ->bind(':constraint', (string) $dependency->constraint(), ParameterType::STRING)
-                ->bind(':optional', $dependency->isOptional(), ParameterType::BOOLEAN);
+                ->bind(':release_id', $boundReleaseId, ParameterType::STRING)
+                ->bind(':identifier', $dependencyIdentifier, ParameterType::STRING)
+                ->bind(':constraint', $dependencyConstraint, ParameterType::STRING)
+                ->bind(':optional', $optional, ParameterType::BOOLEAN);
             $this->database->setQuery($query)->execute();
         }
     }
 
     private function disableTemplatesExcept(string $identifier): void
     {
+        $boundIdentifier = $identifier;
         $query = $this->database->getQuery(true)
             ->update($this->quoteName($this->schema . '.extensions'))
             ->set($this->quoteName('status') . " = 'disabled'")
@@ -353,7 +388,7 @@ final readonly class PostgreSqlExtensionManager implements ExtensionManager
             ->where($this->quoteName('extension_type') . " = 'template'")
             ->where($this->quoteName('status') . " = 'active'")
             ->where($this->quoteName('identifier') . ' <> :identifier')
-            ->bind(':identifier', $identifier, ParameterType::STRING);
+            ->bind(':identifier', $boundIdentifier, ParameterType::STRING);
         $this->database->setQuery($query)->execute();
     }
 
@@ -421,13 +456,14 @@ final readonly class PostgreSqlExtensionManager implements ExtensionManager
             return;
         }
 
+        $keyId = $signature->keyId();
         $query = $this->database->getQuery(true)
             ->select($this->quoteName('public_key_base64'))
             ->from($this->quoteName($this->schema . '.extension_trust_keys'))
             ->where($this->quoteName('key_id') . ' = :key_id')
             ->where($this->quoteName('enabled') . ' = true')
             ->where($this->quoteName('revoked_at') . ' IS NULL')
-            ->bind(':key_id', $signature->keyId(), ParameterType::STRING);
+            ->bind(':key_id', $keyId, ParameterType::STRING);
         $publicKey = $this->database->setQuery($query)->loadResult();
 
         if (!is_string($publicKey)) {
@@ -514,14 +550,20 @@ final readonly class PostgreSqlExtensionManager implements ExtensionManager
     /** @return array<string, mixed>|null */
     private function findInstalledOrNull(string $identifier): ?array
     {
+        $boundIdentifier = $identifier;
         $query = $this->database->getQuery(true)
             ->select('*')
             ->from($this->quoteName($this->schema . '.extensions'))
             ->where($this->quoteName('identifier') . ' = :identifier')
-            ->bind(':identifier', $identifier, ParameterType::STRING);
+            ->bind(':identifier', $boundIdentifier, ParameterType::STRING);
         $row = $this->database->setQuery($query)->loadAssoc();
 
-        return is_array($row) ? $row : null;
+        if (!is_array($row)) {
+            return null;
+        }
+
+        /** @var array<string, mixed> $row */
+        return $row;
     }
 
     /** @param array<string, mixed> $metadata */
@@ -565,6 +607,10 @@ final readonly class PostgreSqlExtensionManager implements ExtensionManager
         );
 
         foreach ($iterator as $item) {
+            if (!$item instanceof \SplFileInfo) {
+                throw new RuntimeException('Extension storage returned an invalid filesystem entry.');
+            }
+
             if ($item->isLink()) {
                 unlink($item->getPathname());
             } elseif ($item->isDir()) {
@@ -577,10 +623,25 @@ final readonly class PostgreSqlExtensionManager implements ExtensionManager
         rmdir($resolved);
     }
 
-    /** @param list<string> $names @return list<string> */
+    /**
+     * @param list<string> $names
+     * @return list<string>
+     */
     private function quoteNames(array $names): array
     {
         return array_map(fn (string $name): string => $this->quoteName($name), $names);
+    }
+
+    /** @param array<string, mixed> $row */
+    private function requiredString(array $row, string $field): string
+    {
+        $value = $row[$field] ?? null;
+
+        if (!is_string($value) || $value === '') {
+            throw new RuntimeException(sprintf('Installed extension field %s is invalid.', $field));
+        }
+
+        return $value;
     }
 
     private function quoteName(string $name, ?string $alias = null): string

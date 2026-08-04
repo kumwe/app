@@ -22,6 +22,14 @@ final readonly class PostgreSqlAuditRecorder implements AuditRecorder
 
     public function record(AuditEvent $event): void
     {
+        $id = $event->id();
+        $occurredAt = $event->occurredAt()->format('Y-m-d H:i:s.uP');
+        $actorId = $event->actorId();
+        $action = $event->action();
+        $subjectType = $event->subjectType();
+        $subjectId = $event->subjectId();
+        $outcome = $event->outcome();
+        $metadata = $event->metadataAsJson();
         $query = $this->database->getQuery(true)
             ->insert($this->quoteName($this->schema . '.audit_events'))
             ->columns($this->quoteNames([
@@ -37,27 +45,30 @@ final readonly class PostgreSqlAuditRecorder implements AuditRecorder
             ->values(
                 ':id, :occurred_at, :actor_id, :action, :subject_type, :subject_id, :outcome, CAST(:metadata AS jsonb)',
             )
-            ->bind(':id', $event->id(), ParameterType::STRING)
-            ->bind(':occurred_at', $event->occurredAt()->format('Y-m-d H:i:s.uP'), ParameterType::STRING)
+            ->bind(':id', $id, ParameterType::STRING)
+            ->bind(':occurred_at', $occurredAt, ParameterType::STRING)
             ->bind(
                 ':actor_id',
-                $event->actorId(),
-                $event->actorId() === null ? ParameterType::NULL : ParameterType::STRING,
+                $actorId,
+                $actorId === null ? ParameterType::NULL : ParameterType::STRING,
             )
-            ->bind(':action', $event->action(), ParameterType::STRING)
-            ->bind(':subject_type', $event->subjectType(), ParameterType::STRING)
+            ->bind(':action', $action, ParameterType::STRING)
+            ->bind(':subject_type', $subjectType, ParameterType::STRING)
             ->bind(
                 ':subject_id',
-                $event->subjectId(),
-                $event->subjectId() === null ? ParameterType::NULL : ParameterType::STRING,
+                $subjectId,
+                $subjectId === null ? ParameterType::NULL : ParameterType::STRING,
             )
-            ->bind(':outcome', $event->outcome(), ParameterType::STRING)
-            ->bind(':metadata', $event->metadataAsJson(), ParameterType::STRING);
+            ->bind(':outcome', $outcome, ParameterType::STRING)
+            ->bind(':metadata', $metadata, ParameterType::STRING);
 
         $this->database->setQuery($query)->execute();
     }
 
-    /** @param list<string> $names @return list<string> */
+    /**
+     * @param list<string> $names
+     * @return list<string>
+     */
     private function quoteNames(array $names): array
     {
         return array_map(fn (string $name): string => $this->quoteName($name), $names);

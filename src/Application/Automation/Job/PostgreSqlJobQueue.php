@@ -92,7 +92,12 @@ final readonly class PostgreSqlJobQueue implements JobQueue
         );
         $row = $this->database->setQuery($sql)->loadAssoc();
 
-        return is_array($row) ? $this->map($row) : null;
+        if (!is_array($row)) {
+            return null;
+        }
+
+        /** @var array<string, mixed> $row */
+        return $this->map($row);
     }
 
     public function complete(StoredJob $job, string $workerId): void
@@ -115,7 +120,7 @@ final readonly class PostgreSqlJobQueue implements JobQueue
         $this->assertWorker($workerId);
         $dead = $permanent || $job->attempts >= $job->maximumAttempts;
 
-        $this->transactions->transactional(function () use ($job, $workerId, $failure, $dead): void {
+        $this->transactions->transactional(function () use ($job, $workerId, $failure, $permanent, $dead): void {
             if (!$dead) {
                 $delay = min(3_600, 2 ** min($job->attempts, 11));
                 $sql = sprintf(
@@ -172,6 +177,12 @@ final readonly class PostgreSqlJobQueue implements JobQueue
     {
         $this->assertWorker($workerId);
         $this->assertQueue($queue);
+        $processId = getmypid();
+
+        if ($processId === false) {
+            $processId = 1;
+        }
+
         $sql = sprintf(
             'INSERT INTO %s (worker_id, queue, process_id, release, started_at, heartbeat_at, current_job_id) '
             . 'VALUES (%s, %s, %d, %s, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, %s) '
@@ -180,7 +191,7 @@ final readonly class PostgreSqlJobQueue implements JobQueue
             $this->table('worker_heartbeats'),
             $this->quote($workerId),
             $this->quote($queue),
-            getmypid() ?: 1,
+            $processId,
             $this->quote($this->release),
             $jobId === null ? 'NULL' : $this->quote($jobId),
         );
@@ -202,15 +213,40 @@ final readonly class PostgreSqlJobQueue implements JobQueue
             throw new RuntimeException('A queued job payload must be a JSON object.');
         }
 
+        /** @var array<string, mixed> $payload */
         return new StoredJob(
-            (string) ($row['id'] ?? ''),
-            (string) ($row['queue'] ?? ''),
-            (string) ($row['job_type'] ?? ''),
+            $this->requiredString($row, 'id'),
+            $this->requiredString($row, 'queue'),
+            $this->requiredString($row, 'job_type'),
             $payload,
-            (int) ($row['schema_version'] ?? 0),
-            (int) ($row['attempts'] ?? 0),
-            (int) ($row['maximum_attempts'] ?? 0),
+            $this->integer($row, 'schema_version'),
+            $this->integer($row, 'attempts'),
+            $this->integer($row, 'maximum_attempts'),
         );
+    }
+
+    /** @param array<string, mixed> $row */
+    private function requiredString(array $row, string $field): string
+    {
+        $value = $row[$field] ?? null;
+
+        if (!is_string($value) || $value === '') {
+            throw new RuntimeException(sprintf('Queued job field %s is invalid.', $field));
+        }
+
+        return $value;
+    }
+
+    /** @param array<string, mixed> $row */
+    private function integer(array $row, string $field): int
+    {
+        $value = $row[$field] ?? null;
+
+        if (!is_int($value) && (!is_string($value) || preg_match('/^-?[0-9]+$/D', $value) !== 1)) {
+            throw new RuntimeException(sprintf('Queued job field %s is not an integer.', $field));
+        }
+
+        return (int) $value;
     }
 
     private function assertLeaseUpdated(): void

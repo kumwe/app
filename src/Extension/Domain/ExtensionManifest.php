@@ -118,7 +118,8 @@ final readonly class ExtensionManifest
         $kumweConstraint = self::requiredString($requires, 'kumwe');
         $phpConstraint = self::requiredString($requires, 'php');
         $dependencyData = $data['dependencies'] ?? [];
-        $autoloadData = $data['autoload']['psr-4'] ?? [];
+        $autoload = self::requiredObject($data, 'autoload');
+        $autoloadData = $autoload['psr-4'] ?? [];
 
         if (!is_array($dependencyData) || !array_is_list($dependencyData)) {
             throw new InvalidArgumentException('The extension dependencies field must be a JSON array.');

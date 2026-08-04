@@ -54,6 +54,8 @@ final readonly class PostgreSqlAdministratorIdentityGateway implements Administr
         $sourceDigest = hash_hmac('sha256', trim($source) === '' ? 'unknown' : $source, $this->applicationSecret);
         $subjectDigest = hash_hmac('sha256', $normalized, $this->applicationSecret);
         $threshold = $this->clock->now()->sub(new DateInterval('PT15M'))->format('Y-m-d H:i:s.uP');
+        $boundSubjectDigest = $subjectDigest;
+        $boundSourceDigest = $sourceDigest;
         $countQuery = $this->database->getQuery(true)
             ->select('COUNT(*)')
             ->from($this->quoteName($this->schema . '.authentication_attempts'))
@@ -61,11 +63,11 @@ final readonly class PostgreSqlAdministratorIdentityGateway implements Administr
             ->where($this->quoteName('source_digest') . ' = :source_digest')
             ->where($this->quoteName('succeeded') . ' = false')
             ->where($this->quoteName('occurred_at') . ' >= :threshold')
-            ->bind(':subject_digest', $subjectDigest, ParameterType::STRING)
-            ->bind(':source_digest', $sourceDigest, ParameterType::STRING)
+            ->bind(':subject_digest', $boundSubjectDigest, ParameterType::STRING)
+            ->bind(':source_digest', $boundSourceDigest, ParameterType::STRING)
             ->bind(':threshold', $threshold, ParameterType::STRING);
 
-        if ((int) $this->database->setQuery($countQuery)->loadResult() >= 10) {
+        if ($this->integerResult($this->database->setQuery($countQuery)->loadResult(), 'authentication count') >= 10) {
             throw new AuthenticationThrottled();
         }
 
@@ -171,6 +173,10 @@ final readonly class PostgreSqlAdministratorIdentityGateway implements Administr
         $token = $this->base64Url(random_bytes(48));
         $tokenId = Uuid::uuid7()->toString();
         $capabilityJson = json_encode(array_values(array_unique($capabilities)), JSON_THROW_ON_ERROR);
+        $boundTokenId = $tokenId;
+        $tokenDigest = hash('sha256', $token);
+        $expiresAtValue = $expiresAt?->format('Y-m-d H:i:s.uP');
+        $createdAt = $this->clock->now()->format('Y-m-d H:i:s.uP');
         $query = $this->database->getQuery(true)
             ->insert($this->quoteName($this->schema . '.api_tokens'))
             ->columns($this->quoteNames([
@@ -183,17 +189,17 @@ final readonly class PostgreSqlAdministratorIdentityGateway implements Administr
                 'created_at',
             ]))
             ->values(':id, :subject_id, :token_digest, :name, CAST(:capabilities AS jsonb), :expires_at, :created_at')
-            ->bind(':id', $tokenId, ParameterType::STRING)
+            ->bind(':id', $boundTokenId, ParameterType::STRING)
             ->bind(':subject_id', $userId, ParameterType::STRING)
-            ->bind(':token_digest', hash('sha256', $token), ParameterType::STRING)
+            ->bind(':token_digest', $tokenDigest, ParameterType::STRING)
             ->bind(':name', $name, ParameterType::STRING)
             ->bind(':capabilities', $capabilityJson, ParameterType::STRING)
             ->bind(
                 ':expires_at',
-                $expiresAt?->format('Y-m-d H:i:s.uP'),
+                $expiresAtValue,
                 $expiresAt === null ? ParameterType::NULL : ParameterType::STRING,
             )
-            ->bind(':created_at', $this->clock->now()->format('Y-m-d H:i:s.uP'), ParameterType::STRING);
+            ->bind(':created_at', $createdAt, ParameterType::STRING);
         $this->database->setQuery($query)->execute();
 
         return ['token' => $token, 'token_id' => $tokenId];
@@ -205,13 +211,16 @@ final readonly class PostgreSqlAdministratorIdentityGateway implements Administr
             ->select('COUNT(*)')
             ->from($this->quoteName($this->schema . '.users'));
 
-        if ((int) $this->database->setQuery($query)->loadResult() !== 0) {
+        if ($this->integerResult($this->database->setQuery($query)->loadResult(), 'user count') !== 0) {
             throw new RuntimeException('The initial administrator can only be created before any user exists.');
         }
     }
 
     private function insertUser(string $id, EmailAddress $email, string $displayName, string $now): void
     {
+        $emailValue = $email->value();
+        $normalizedEmail = $email->value();
+        $status = 'active';
         $query = $this->database->getQuery(true)
             ->insert($this->quoteName($this->schema . '.users'))
             ->columns($this->quoteNames([
@@ -219,10 +228,10 @@ final readonly class PostgreSqlAdministratorIdentityGateway implements Administr
             ]))
             ->values(':id, :email, :email_normalized, :display_name, :status, 1, :created_at, :updated_at')
             ->bind(':id', $id, ParameterType::STRING)
-            ->bind(':email', $email->value(), ParameterType::STRING)
-            ->bind(':email_normalized', $email->value(), ParameterType::STRING)
+            ->bind(':email', $emailValue, ParameterType::STRING)
+            ->bind(':email_normalized', $normalizedEmail, ParameterType::STRING)
             ->bind(':display_name', $displayName, ParameterType::STRING)
-            ->bind(':status', 'active', ParameterType::STRING)
+            ->bind(':status', $status, ParameterType::STRING)
             ->bind(':created_at', $now, ParameterType::STRING)
             ->bind(':updated_at', $now, ParameterType::STRING);
         $this->database->setQuery($query)->execute();
@@ -242,28 +251,40 @@ final readonly class PostgreSqlAdministratorIdentityGateway implements Administr
 
     private function insertAdministratorRole(string $roleId, string $userId, string $now): void
     {
+        $boundRoleId = $roleId;
+        $roleCode = 'administrator';
+        $roleName = 'Administrator';
+        $roleCreatedAt = $now;
         $role = $this->database->getQuery(true)
             ->insert($this->quoteName($this->schema . '.roles'))
             ->columns($this->quoteNames(['id', 'code', 'name', 'created_at']))
             ->values(':id, :code, :name, :created_at')
-            ->bind(':id', $roleId, ParameterType::STRING)
-            ->bind(':code', 'administrator', ParameterType::STRING)
-            ->bind(':name', 'Administrator', ParameterType::STRING)
-            ->bind(':created_at', $now, ParameterType::STRING);
+            ->bind(':id', $boundRoleId, ParameterType::STRING)
+            ->bind(':code', $roleCode, ParameterType::STRING)
+            ->bind(':name', $roleName, ParameterType::STRING)
+            ->bind(':created_at', $roleCreatedAt, ParameterType::STRING);
         $this->database->setQuery($role)->execute();
 
+        $assignedUserId = $userId;
+        $assignedRoleId = $roleId;
+        $assignedAt = $now;
+        $assignedBy = $userId;
         $assignment = $this->database->getQuery(true)
             ->insert($this->quoteName($this->schema . '.user_roles'))
             ->columns($this->quoteNames(['user_id', 'role_id', 'assigned_at', 'assigned_by']))
             ->values(':user_id, :role_id, :assigned_at, :assigned_by')
-            ->bind(':user_id', $userId, ParameterType::STRING)
-            ->bind(':role_id', $roleId, ParameterType::STRING)
-            ->bind(':assigned_at', $now, ParameterType::STRING)
-            ->bind(':assigned_by', $userId, ParameterType::STRING);
+            ->bind(':user_id', $assignedUserId, ParameterType::STRING)
+            ->bind(':role_id', $assignedRoleId, ParameterType::STRING)
+            ->bind(':assigned_at', $assignedAt, ParameterType::STRING)
+            ->bind(':assigned_by', $assignedBy, ParameterType::STRING);
         $this->database->setQuery($assignment)->execute();
 
         foreach (self::ADMINISTRATOR_CAPABILITIES as $capability) {
             $grantId = Uuid::uuid7()->toString();
+            $grantRoleId = $roleId;
+            $scopeType = 'global';
+            $grantedAt = $now;
+            $grantedBy = $userId;
             $grant = $this->database->getQuery(true)
                 ->insert($this->quoteName($this->schema . '.role_capability_grants'))
                 ->columns($this->quoteNames([
@@ -271,11 +292,11 @@ final readonly class PostgreSqlAdministratorIdentityGateway implements Administr
                 ]))
                 ->values(':id, :role_id, :capability, :scope_type, NULL, :granted_at, :granted_by')
                 ->bind(':id', $grantId, ParameterType::STRING)
-                ->bind(':role_id', $roleId, ParameterType::STRING)
+                ->bind(':role_id', $grantRoleId, ParameterType::STRING)
                 ->bind(':capability', $capability, ParameterType::STRING)
-                ->bind(':scope_type', 'global', ParameterType::STRING)
-                ->bind(':granted_at', $now, ParameterType::STRING)
-                ->bind(':granted_by', $userId, ParameterType::STRING);
+                ->bind(':scope_type', $scopeType, ParameterType::STRING)
+                ->bind(':granted_at', $grantedAt, ParameterType::STRING)
+                ->bind(':granted_by', $grantedBy, ParameterType::STRING);
             $this->database->setQuery($grant)->execute();
         }
     }
@@ -306,15 +327,17 @@ final readonly class PostgreSqlAdministratorIdentityGateway implements Administr
 
     private function recordAttempt(string $subjectDigest, string $sourceDigest, bool $succeeded): void
     {
+        $attemptId = Uuid::uuid7()->toString();
+        $occurredAt = $this->clock->now()->format('Y-m-d H:i:s.uP');
         $query = $this->database->getQuery(true)
             ->insert($this->quoteName($this->schema . '.authentication_attempts'))
             ->columns($this->quoteNames(['id', 'subject_digest', 'source_digest', 'succeeded', 'occurred_at']))
             ->values(':id, :subject_digest, :source_digest, :succeeded, :occurred_at')
-            ->bind(':id', Uuid::uuid7()->toString(), ParameterType::STRING)
+            ->bind(':id', $attemptId, ParameterType::STRING)
             ->bind(':subject_digest', $subjectDigest, ParameterType::STRING)
             ->bind(':source_digest', $sourceDigest, ParameterType::STRING)
             ->bind(':succeeded', $succeeded, ParameterType::BOOLEAN)
-            ->bind(':occurred_at', $this->clock->now()->format('Y-m-d H:i:s.uP'), ParameterType::STRING);
+            ->bind(':occurred_at', $occurredAt, ParameterType::STRING);
         $this->database->setQuery($query)->execute();
     }
 
@@ -323,7 +346,19 @@ final readonly class PostgreSqlAdministratorIdentityGateway implements Administr
         return rtrim(strtr(base64_encode($bytes), '+/', '-_'), '=');
     }
 
-    /** @param list<string> $names @return list<string> */
+    private function integerResult(mixed $result, string $description): int
+    {
+        if (!is_int($result) && (!is_string($result) || preg_match('/^[0-9]+$/D', $result) !== 1)) {
+            throw new RuntimeException(sprintf('The %s query returned an invalid integer.', $description));
+        }
+
+        return (int) $result;
+    }
+
+    /**
+     * @param list<string> $names
+     * @return list<string>
+     */
     private function quoteNames(array $names): array
     {
         return array_map(fn (string $name): string => $this->quoteName($name), $names);
