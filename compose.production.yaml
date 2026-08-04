@@ -28,7 +28,8 @@ x-kumwe-runtime: &kumwe-runtime
   image: ${KUMWE_APP_IMAGE_REF:-ghcr.io/kumwe/cms/app:latest}
   pull_policy: ${KUMWE_APPLICATION_PULL_POLICY:-always}
   # Compose file-backed secrets preserve host ownership. Bootstrap as root only
-  # long enough to read them; kumwe-entrypoint immediately drops to www-data.
+  # long enough to read them. CLI processes drop immediately; PHP-FPM creates
+  # its configured www-data request-worker pool from the capability-limited master.
   user: '0:0'
   environment: *kumwe-environment
   secrets:

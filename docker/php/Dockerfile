@@ -91,6 +91,11 @@ load_secret DB_PASSWORD
 load_secret REDIS_PASSWORD
 
 if [ "$(id -u)" -eq 0 ]; then
+    if [ "${1:-}" = 'php-fpm' ]; then
+        # The FPM master opens logs and creates the configured www-data pool.
+        exec "$@"
+    fi
+
     exec su-exec www-data:www-data "$@"
 fi
 
