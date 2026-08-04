@@ -12,16 +12,18 @@ final readonly class BlockDocument
     private const MAX_NODES = 500;
     private const MAX_DEPTH = 12;
 
-    /**
-     * @param array<mixed> $roots
-     */
+    /** @var list<BlockNode> */
+    private array $roots;
+
+    /** @param list<BlockNode> $roots */
     private function __construct(
         private string $id,
         private int $schemaVersion,
-        private array $roots,
+        array $roots,
         private int $version,
         private string $checksum,
     ) {
+        $this->roots = $roots;
     }
 
     /**

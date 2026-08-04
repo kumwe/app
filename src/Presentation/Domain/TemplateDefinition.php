@@ -34,7 +34,7 @@ final readonly class TemplateDefinition
             }
         }
 
-        /** @var list<string> $slots */
+        /** @var non-empty-list<non-falsy-string> $slots */
         if (count($slots) !== count(array_unique($slots))) {
             throw new InvalidArgumentException('A template requires unique declared slots.');
         }

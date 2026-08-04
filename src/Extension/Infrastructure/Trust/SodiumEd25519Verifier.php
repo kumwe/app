@@ -30,7 +30,7 @@ final readonly class SodiumEd25519Verifier implements PackageSignatureVerifier
                 throw new InvalidArgumentException('Every Ed25519 public key must contain exactly 32 bytes.');
             }
 
-            /** @var non-empty-string $publicKey */
+            /** @var non-falsy-string $publicKey */
             $keys[$keyId] = $publicKey;
         }
 

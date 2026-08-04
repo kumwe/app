@@ -51,7 +51,7 @@ final readonly class Asset
             }
         }
 
-        /** @var list<string> $dependencies */
+        /** @var list<non-falsy-string> $dependencies */
         if (count($dependencies) !== count(array_unique($dependencies))) {
             throw new InvalidArgumentException('Asset dependencies must be unique.');
         }

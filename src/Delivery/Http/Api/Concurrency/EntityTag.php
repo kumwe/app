@@ -32,7 +32,7 @@ final readonly class EntityTag implements Stringable
             throw new InvalidArgumentException('The entity tag is not valid RFC 9110 syntax.');
         }
 
-        return new self($matches[2], ($matches[1] ?? '') === 'W/');
+        return new self($matches[2], $matches[1] === 'W/');
     }
 
     public function isWeak(): bool

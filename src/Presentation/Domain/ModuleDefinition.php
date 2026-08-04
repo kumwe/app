@@ -39,7 +39,7 @@ final readonly class ModuleDefinition
             }
         }
 
-        /** @var list<string> $requiredSettings */
+        /** @var list<non-falsy-string> $requiredSettings */
         if (count($requiredSettings) !== count(array_unique($requiredSettings))) {
             throw new InvalidArgumentException('Required module settings must be unique.');
         }

@@ -32,7 +32,7 @@ final readonly class PresentationContext
             }
         }
 
-        /** @var list<string> $roles */
+        /** @var list<non-empty-string> $roles */
         $this->roles = $roles;
     }
 
