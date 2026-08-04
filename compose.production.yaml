@@ -39,6 +39,7 @@ x-kumwe-runtime: &kumwe-runtime
   cap_drop:
     - ALL
   cap_add:
+    - DAC_READ_SEARCH
     - SETGID
     - SETUID
   security_opt:
@@ -222,6 +223,7 @@ services:
       - ALL
     cap_add:
       - CHOWN
+      - DAC_READ_SEARCH
       - SETGID
       - SETUID
     security_opt:
