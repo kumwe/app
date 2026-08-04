@@ -30,6 +30,7 @@ use Kumwe\CMS\Infrastructure\Persistence\Migration\MigrationRepository;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\MigrationRunner;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\PostgreSqlMigrationLock;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\PostgreSqlMigrationRepository;
+use Kumwe\CMS\Infrastructure\Persistence\Migration\SchemaMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\Version202608040001CreateSystemTables;
 use Kumwe\CMS\Infrastructure\Persistence\PostgreSqlDatabaseFactory;
 use Kumwe\CMS\Infrastructure\Persistence\ReadinessProbe;
@@ -92,7 +93,7 @@ final class ContainerFactory
         ], true);
 
         $this->registerLogging($container, $configuration);
-        $this->registerPersistence($container, $configuration);
+        $this->registerPersistence($container, $configuration, $root);
         $this->registerHttp($container, $configuration);
         $this->registerConsole($container);
 
@@ -113,7 +114,11 @@ final class ContainerFactory
         $container->alias(LoggerInterface::class, Logger::class);
     }
 
-    private function registerPersistence(Container $container, ApplicationConfiguration $configuration): void
+    private function registerPersistence(
+        Container $container,
+        ApplicationConfiguration $configuration,
+        string $root,
+    ): void
     {
         $databaseConfiguration = $configuration->database;
         $container->share(DatabaseInterface::class, static fn (): DatabaseInterface =>
@@ -133,14 +138,21 @@ final class ContainerFactory
                 repository: $container->get(MigrationRepository::class),
                 lock: $container->get(MigrationLock::class),
                 transactions: $container->get(TransactionManager::class),
-                migrations: [new Version202608040001CreateSystemTables($databaseConfiguration->schema)],
+                migrations: [
+                    new Version202608040001CreateSystemTables($databaseConfiguration->schema),
+                    SchemaMigration::fromFile(
+                        '20260804000300_create_identity_and_audit',
+                        $databaseConfiguration->schema,
+                        $root . '/database/schema/phase3.sql',
+                    ),
+                ],
             ), true);
         $container->share(ReadinessProbe::class, static fn (Container $container): ReadinessProbe =>
             new ReadinessProbe(
                 database: $container->get(DatabaseInterface::class),
                 logger: $container->get(LoggerInterface::class),
                 schema: $databaseConfiguration->schema,
-                requiredMigration: '20260804000100_create_system_tables',
+                requiredMigration: '20260804000300_create_identity_and_audit',
             ), true);
     }
 
