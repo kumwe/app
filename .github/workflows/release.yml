@@ -1,0 +1,235 @@
+name: Kumwe release
+
+on:
+  push:
+    tags:
+      - 'v2.*.*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing protected v2.x tag to release
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  packages: write
+  id-token: write
+  attestations: write
+
+concurrency:
+  group: release-${{ github.ref }}-${{ inputs.tag }}
+  cancel-in-progress: false
+
+env:
+  REGISTRY: ghcr.io
+  SYFT_IMAGE: anchore/syft:v1.33.0
+  TRIVY_IMAGE: aquasec/trivy:0.67.2
+
+jobs:
+  release:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: kumwe_release
+          POSTGRES_USER: kumwe
+          POSTGRES_PASSWORD: kumwe_release
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U kumwe -d kumwe_release"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      APP_ENV: testing
+      APP_DEBUG: 'false'
+      APP_BASE_URL: https://kumwe.test
+      APP_TRUSTED_HOSTS: kumwe.test
+      APP_SECRET: test-only-secret-that-is-never-used-in-production
+      DB_HOST: 127.0.0.1
+      DB_PORT: '5432'
+      DB_NAME: kumwe_release
+      DB_USER: kumwe
+      DB_PASSWORD: kumwe_release
+      DB_SCHEMA: kumwe
+      DB_SSLMODE: disable
+    steps:
+      - name: Check out release tag
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref }}
+          fetch-depth: 0
+
+      - name: Validate release identity
+        id: release
+        shell: bash
+        env:
+          REQUESTED_RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+        run: |
+          set -euo pipefail
+          release_tag="$REQUESTED_RELEASE_TAG"
+          [[ "$release_tag" =~ ^v2\.[0-9]+\.[0-9]+([+-][0-9A-Za-z.-]+)?$ ]]
+          git show-ref --tags --verify --quiet "refs/tags/$release_tag"
+          test "$(git rev-parse HEAD)" = "$(git rev-list --max-count=1 "$release_tag")"
+          test -f composer.lock
+          repository="${GITHUB_REPOSITORY,,}"
+          echo "tag=$release_tag" >> "$GITHUB_OUTPUT"
+          echo "version=${release_tag#v}" >> "$GITHUB_OUTPUT"
+          echo "app_image=$REGISTRY/$repository/app" >> "$GITHUB_OUTPUT"
+          echo "web_image=$REGISTRY/$repository/web" >> "$GITHUB_OUTPUT"
+
+      - name: Install PHP
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240
+        with:
+          php-version: '8.4'
+          extensions: ctype, fileinfo, filter, intl, json, mbstring, openssl, pdo, pdo_pgsql, pgsql, redis, sodium
+          coverage: none
+          tools: composer:v2
+
+      - name: Verify source and locked dependencies
+        run: |
+          composer validate --strict
+          composer install --no-interaction --prefer-dist
+          composer audit --locked --abandoned=fail
+          composer architecture:policy
+          composer cs
+          composer analyse
+          composer test
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@9780b0c442fbb1117ed29e0efdff1e18412f7567
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure Buildx
+        uses: docker/setup-buildx-action@e468171a9de216ec08956ac3ada2f0791b6bd435
+
+      - name: Build and publish application image
+        id: app
+        uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83
+        with:
+          context: .
+          file: docker/php/Dockerfile
+          target: runtime
+          push: true
+          tags: |
+            ${{ steps.release.outputs.app_image }}:${{ steps.release.outputs.version }}
+            ${{ steps.release.outputs.app_image }}:${{ github.sha }}
+          build-args: KUMWE_RELEASE=${{ steps.release.outputs.version }}
+
+      - name: Build and publish web image
+        id: web
+        uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83
+        with:
+          context: .
+          file: docker/php/Dockerfile
+          target: web
+          push: true
+          tags: |
+            ${{ steps.release.outputs.web_image }}:${{ steps.release.outputs.version }}
+            ${{ steps.release.outputs.web_image }}:${{ github.sha }}
+          build-args: KUMWE_RELEASE=${{ steps.release.outputs.version }}
+
+      - name: Build release archive
+        shell: bash
+        run: |
+          set -euo pipefail
+          version='${{ steps.release.outputs.version }}'
+          install -d dist/package
+          git archive --format=tar HEAD | tar --extract --directory=dist/package
+          composer install \
+            --working-dir=dist/package \
+            --classmap-authoritative \
+            --no-ansi \
+            --no-dev \
+            --no-interaction \
+            --no-progress \
+            --no-scripts \
+            --prefer-dist
+          find dist/package/storage -mindepth 1 -type f ! -name .gitkeep -delete
+          if find dist/package -type l -print -quit | grep -q .; then
+              echo 'Release package contains a symbolic link.' >&2
+              exit 1
+          fi
+          (
+              cd dist/package
+              zip -X --quiet --recurse-paths "../kumwe-cms-${version}.zip" .
+          )
+
+      - name: Generate SBOMs and scan published images
+        shell: bash
+        run: |
+          set -euo pipefail
+          app_ref='${{ steps.release.outputs.app_image }}@${{ steps.app.outputs.digest }}'
+          web_ref='${{ steps.release.outputs.web_image }}@${{ steps.web.outputs.digest }}'
+          docker pull "$app_ref"
+          docker pull "$web_ref"
+          docker run --rm --volume /var/run/docker.sock:/var/run/docker.sock "$SYFT_IMAGE" \
+            "$app_ref" -o cyclonedx-json > dist/kumwe-app.cdx.json
+          docker run --rm --volume /var/run/docker.sock:/var/run/docker.sock "$SYFT_IMAGE" \
+            "$web_ref" -o cyclonedx-json > dist/kumwe-web.cdx.json
+          docker run --rm --volume "$PWD/dist/package:/src:ro" "$SYFT_IMAGE" \
+            dir:/src -o cyclonedx-json > dist/kumwe-archive.cdx.json
+          docker run --rm --volume /var/run/docker.sock:/var/run/docker.sock "$TRIVY_IMAGE" \
+            image --exit-code 1 --ignore-unfixed --severity HIGH,CRITICAL "$app_ref"
+          docker run --rm --volume /var/run/docker.sock:/var/run/docker.sock "$TRIVY_IMAGE" \
+            image --exit-code 1 --ignore-unfixed --severity HIGH,CRITICAL "$web_ref"
+          rm -rf dist/package
+          (
+              cd dist
+              sha256sum kumwe-*.cdx.json kumwe-cms-*.zip > SHA256SUMS
+          )
+
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@d7543c93d881b35a8faa02e8e3605f69b7a1ce62
+
+      - name: Sign images, SBOM attestations and checksums
+        shell: bash
+        run: |
+          set -euo pipefail
+          app_ref='${{ steps.release.outputs.app_image }}@${{ steps.app.outputs.digest }}'
+          web_ref='${{ steps.release.outputs.web_image }}@${{ steps.web.outputs.digest }}'
+          cosign sign --yes "$app_ref" "$web_ref"
+          cosign attest --yes --type cyclonedx --predicate dist/kumwe-app.cdx.json "$app_ref"
+          cosign attest --yes --type cyclonedx --predicate dist/kumwe-web.cdx.json "$web_ref"
+          cosign sign-blob --yes --bundle dist/SHA256SUMS.cosign.bundle dist/SHA256SUMS
+
+      - name: Attest application image provenance
+        uses: actions/attest-build-provenance@e8998f949152b193b063cb0ec769d69d929409be
+        with:
+          subject-name: ${{ steps.release.outputs.app_image }}
+          subject-digest: ${{ steps.app.outputs.digest }}
+          push-to-registry: true
+
+      - name: Attest web image provenance
+        uses: actions/attest-build-provenance@e8998f949152b193b063cb0ec769d69d929409be
+        with:
+          subject-name: ${{ steps.release.outputs.web_image }}
+          subject-digest: ${{ steps.web.outputs.digest }}
+          push-to-registry: true
+
+      - name: Attest release archive provenance
+        uses: actions/attest-build-provenance@e8998f949152b193b063cb0ec769d69d929409be
+        with:
+          subject-path: dist/kumwe-cms-${{ steps.release.outputs.version }}.zip
+
+      - name: Publish GitHub release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: >-
+          gh release create '${{ steps.release.outputs.tag }}'
+          dist/SHA256SUMS
+          dist/SHA256SUMS.cosign.bundle
+          dist/kumwe-app.cdx.json
+          dist/kumwe-archive.cdx.json
+          dist/kumwe-cms-${{ steps.release.outputs.version }}.zip
+          dist/kumwe-web.cdx.json
+          --generate-notes
+          --title 'Kumwe CMS ${{ steps.release.outputs.version }}'
+          --verify-tag

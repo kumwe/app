@@ -1,0 +1,236 @@
+name: kumwe
+
+x-kumwe-build: &kumwe-build
+  context: .
+  dockerfile: docker/php/Dockerfile
+  args:
+    KUMWE_RELEASE: ${KUMWE_RELEASE:?Set KUMWE_RELEASE to the deployed 2.x release}
+
+x-kumwe-environment: &kumwe-environment
+  APP_ENV: production
+  APP_DEBUG: 'false'
+  APP_BASE_URL: ${KUMWE_BASE_URL:?Set KUMWE_BASE_URL to the canonical HTTPS URL}
+  APP_TRUSTED_HOSTS: ${KUMWE_TRUSTED_HOSTS:?Set KUMWE_TRUSTED_HOSTS}
+  APP_TRUSTED_PROXIES: ${KUMWE_TRUSTED_PROXIES:-}
+  APP_MAX_BODY_BYTES: ${KUMWE_MAX_BODY_BYTES:-8388608}
+  APP_SECRET_FILE: /run/secrets/app_secret
+  DB_HOST: postgres
+  DB_PORT: '5432'
+  DB_NAME: ${KUMWE_DB_NAME:-kumwe}
+  DB_USER: ${KUMWE_DB_USER:-kumwe}
+  DB_PASSWORD_FILE: /run/secrets/db_password
+  DB_SCHEMA: kumwe
+  DB_SSLMODE: ${KUMWE_DB_SSLMODE:-prefer}
+  REDIS_HOST: redis
+  REDIS_PORT: '6379'
+  REDIS_PASSWORD_FILE: /run/secrets/redis_password
+  MAIL_TRANSPORT: ${KUMWE_MAIL_TRANSPORT:-null}
+  MAIL_FROM_ADDRESS: ${KUMWE_MAIL_FROM_ADDRESS:-kumwe@localhost}
+  MAIL_FROM_NAME: ${KUMWE_MAIL_FROM_NAME:-Kumwe CMS}
+  KUMWE_RELEASE: ${KUMWE_RELEASE}
+
+x-kumwe-runtime: &kumwe-runtime
+  image: ${KUMWE_APP_IMAGE_REF:-kumwe-app:local}
+  build:
+    <<: *kumwe-build
+    target: runtime
+  environment: *kumwe-environment
+  secrets:
+    - app_secret
+    - db_password
+    - redis_password
+  read_only: true
+  cap_drop:
+    - ALL
+  security_opt:
+    - no-new-privileges:true
+  init: true
+  stop_grace_period: 30s
+  tmpfs:
+    - /tmp:rw,noexec,nosuid,nodev,size=64m,mode=1777
+    - /run:rw,noexec,nosuid,nodev,size=16m,mode=755
+    - /var/www/kumwe/storage/cache:rw,noexec,nosuid,nodev,size=64m,mode=700,uid=82,gid=82
+    - /var/www/kumwe/storage/logs:rw,noexec,nosuid,nodev,size=16m,mode=700,uid=82,gid=82
+    - /var/www/kumwe/storage/sessions:rw,noexec,nosuid,nodev,size=32m,mode=700,uid=82,gid=82
+    - /var/www/kumwe/storage/tmp:rw,noexec,nosuid,nodev,size=64m,mode=700,uid=82,gid=82
+  volumes:
+    - media-data:/var/www/kumwe/storage/media
+  networks:
+    - backend
+  restart: unless-stopped
+
+services:
+  web:
+    image: ${KUMWE_WEB_IMAGE_REF:-kumwe-web:local}
+    build:
+      <<: *kumwe-build
+      target: web
+    depends_on:
+      app:
+        condition: service_healthy
+    ports:
+      - ${KUMWE_HTTP_BIND:-127.0.0.1}:${KUMWE_HTTP_PORT:-8080}:8080
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    init: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,nodev,size=32m,mode=1777
+    networks:
+      - frontend
+    restart: unless-stopped
+    healthcheck:
+      test: [CMD, wget, --quiet, --output-document=-, http://127.0.0.1:8080/health/live]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+  app:
+    <<: *kumwe-runtime
+    command: [php-fpm, -F]
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    networks:
+      - frontend
+      - backend
+    healthcheck:
+      test: [CMD, /usr/local/bin/kumwe-entrypoint, php, bin/kumwe, app:health]
+      interval: 30s
+      timeout: 8s
+      retries: 3
+      start_period: 20s
+
+  worker:
+    <<: *kumwe-runtime
+    profiles: [automation]
+    command: [php, bin/kumwe, queue:work]
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: [CMD, /usr/local/bin/kumwe-entrypoint, php, bin/kumwe, app:health]
+      interval: 30s
+      timeout: 8s
+      retries: 3
+      start_period: 20s
+
+  scheduler:
+    <<: *kumwe-runtime
+    profiles: [automation]
+    command: [php, bin/kumwe, schedule:run, --loop]
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: [CMD, /usr/local/bin/kumwe-entrypoint, php, bin/kumwe, app:health]
+      interval: 30s
+      timeout: 8s
+      retries: 3
+      start_period: 20s
+
+  migrate:
+    <<: *kumwe-runtime
+    command: [php, bin/kumwe, database:migrate]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: 'no'
+
+  postgres:
+    image: ${KUMWE_POSTGRES_IMAGE:-postgres:17-alpine}
+    environment:
+      POSTGRES_DB: ${KUMWE_DB_NAME:-kumwe}
+      POSTGRES_USER: ${KUMWE_DB_USER:-kumwe}
+      POSTGRES_PASSWORD_FILE: /run/secrets/db_password
+      POSTGRES_INITDB_ARGS: --auth-host=scram-sha-256
+    command: [postgres, -c, password_encryption=scram-sha-256]
+    secrets:
+      - db_password
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - backend
+    restart: unless-stopped
+    stop_grace_period: 60s
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}"']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  redis:
+    image: ${KUMWE_REDIS_IMAGE:-redis:8-alpine}
+    entrypoint: [/bin/sh, -ec]
+    command:
+      - |
+        umask 077
+        redis_password="$$(cat /run/secrets/redis_password)"
+        test -n "$${redis_password}"
+        case "$${redis_password}" in
+          *[!A-Za-z0-9+/=_-]*)
+            echo 'Redis password must be a base64-compatible token.' >&2
+            exit 78
+            ;;
+        esac
+        printf '%s\n' \
+          'bind 0.0.0.0 ::0' \
+          'protected-mode yes' \
+          'appendonly yes' \
+          'appendfsync everysec' \
+          "requirepass $${redis_password}" \
+          > /run/redis/redis.conf
+        chown redis:redis /run/redis /run/redis/redis.conf
+        chmod 0700 /run/redis
+        chmod 0600 /run/redis/redis.conf
+        exec /usr/local/bin/docker-entrypoint.sh redis-server /run/redis/redis.conf
+    secrets:
+      - redis_password
+    read_only: true
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETGID
+      - SETUID
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /run/redis:rw,noexec,nosuid,nodev,size=1m,mode=700
+    volumes:
+      - redis-data:/data
+    networks:
+      - backend
+    restart: unless-stopped
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - 'redis-cli --no-auth-warning -a "$$(cat /run/secrets/redis_password)" ping | grep -qx PONG'
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+secrets:
+  app_secret:
+    file: ${KUMWE_APP_SECRET_FILE:?Set KUMWE_APP_SECRET_FILE}
+  db_password:
+    file: ${KUMWE_DB_PASSWORD_FILE:?Set KUMWE_DB_PASSWORD_FILE}
+  redis_password:
+    file: ${KUMWE_REDIS_PASSWORD_FILE:?Set KUMWE_REDIS_PASSWORD_FILE}
+
+volumes:
+  media-data:
+  postgres-data:
+  redis-data:
+
+networks:
+  frontend:
+  backend:
+    internal: true

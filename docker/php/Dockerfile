@@ -1,0 +1,158 @@
+# syntax=docker/dockerfile:1.7
+
+ARG PHP_IMAGE=php:8.4-fpm-alpine
+ARG COMPOSER_IMAGE=composer:2
+ARG NGINX_IMAGE=nginx:1.28-alpine
+
+FROM ${COMPOSER_IMAGE} AS composer
+
+FROM ${PHP_IMAGE} AS php-base
+
+RUN set -eux; \
+    apk add --no-cache icu-libs libpq oniguruma tzdata; \
+    apk add --no-cache --virtual .build-dependencies \
+        $PHPIZE_DEPS \
+        icu-dev \
+        oniguruma-dev \
+        postgresql-dev; \
+    docker-php-ext-install -j"$(getconf _NPROCESSORS_ONLN)" intl mbstring opcache pdo_pgsql pgsql; \
+    pecl install redis-6.3.0; \
+    docker-php-ext-enable redis; \
+    apk del .build-dependencies; \
+    php -r 'foreach (["ctype", "fileinfo", "filter", "intl", "mbstring", "openssl", "pdo", "pdo_pgsql", "pgsql", "redis", "sodium"] as $extension) { if (!extension_loaded($extension)) { fwrite(STDERR, "Missing PHP extension: {$extension}\n"); exit(1); } }'; \
+    { \
+        echo 'expose_php=Off'; \
+        echo 'display_errors=Off'; \
+        echo 'display_startup_errors=Off'; \
+        echo 'log_errors=On'; \
+        echo 'error_log=/proc/self/fd/2'; \
+        echo 'memory_limit=256M'; \
+        echo 'max_execution_time=60'; \
+        echo 'post_max_size=8M'; \
+        echo 'upload_max_filesize=8M'; \
+        echo 'session.cookie_httponly=1'; \
+        echo 'session.cookie_samesite=Lax'; \
+        echo 'session.cookie_secure=1'; \
+        echo 'session.use_strict_mode=1'; \
+        echo 'opcache.enable=1'; \
+        echo 'opcache.enable_cli=0'; \
+        echo 'opcache.validate_timestamps=0'; \
+        echo 'opcache.jit=disable'; \
+    } > /usr/local/etc/php/conf.d/zz-kumwe-production.ini; \
+    { \
+        echo '[www]'; \
+        echo 'clear_env = no'; \
+        echo 'catch_workers_output = yes'; \
+        echo 'decorate_workers_output = no'; \
+        echo 'ping.path = /fpm-ping'; \
+        echo 'pm = dynamic'; \
+        echo 'pm.max_children = 20'; \
+        echo 'pm.start_servers = 2'; \
+        echo 'pm.min_spare_servers = 2'; \
+        echo 'pm.max_spare_servers = 6'; \
+        echo 'pm.max_requests = 500'; \
+    } > /usr/local/etc/php-fpm.d/zz-kumwe.conf
+
+RUN <<'SH'
+set -eu
+install -m 0755 /dev/null /usr/local/bin/kumwe-entrypoint
+cat > /usr/local/bin/kumwe-entrypoint <<'ENTRYPOINT'
+#!/bin/sh
+set -eu
+
+load_secret() {
+    variable_name="$1"
+    file_variable_name="${variable_name}_FILE"
+    secret_file="$(printenv "$file_variable_name" 2>/dev/null || true)"
+
+    if [ -z "$secret_file" ]; then
+        return 0
+    fi
+
+    if [ ! -r "$secret_file" ]; then
+        echo "Secret file for ${variable_name} is not readable." >&2
+        exit 78
+    fi
+
+    secret_value="$(cat -- "$secret_file")"
+
+    if [ -z "$secret_value" ]; then
+        echo "Secret file for ${variable_name} is empty." >&2
+        exit 78
+    fi
+
+    export "${variable_name}=${secret_value}"
+    unset "$file_variable_name"
+}
+
+load_secret APP_SECRET
+load_secret DB_PASSWORD
+load_secret REDIS_PASSWORD
+
+exec "$@"
+ENTRYPOINT
+SH
+
+WORKDIR /var/www/kumwe
+
+FROM php-base AS vendor
+
+COPY --from=composer /usr/bin/composer /usr/local/bin/composer
+COPY composer.json composer.lock ./
+
+RUN composer install \
+    --classmap-authoritative \
+    --no-ansi \
+    --no-dev \
+    --no-interaction \
+    --no-progress \
+    --no-scripts \
+    --prefer-dist
+
+COPY . ./
+
+RUN set -eux; \
+    composer dump-autoload --classmap-authoritative --no-ansi --no-dev --no-interaction; \
+    composer check-platform-reqs --no-dev; \
+    rm -rf storage/cache/* storage/logs/* storage/sessions/* storage/tmp/*; \
+    install -d -o www-data -g www-data \
+        storage/cache \
+        storage/logs \
+        storage/media \
+        storage/sessions \
+        storage/tmp
+
+FROM php-base AS runtime
+
+ARG KUMWE_RELEASE=development
+ENV APP_ENV=production \
+    APP_DEBUG=false \
+    KUMWE_RELEASE=${KUMWE_RELEASE}
+
+COPY --from=vendor --chown=www-data:www-data /var/www/kumwe /var/www/kumwe
+
+USER www-data
+ENTRYPOINT ["/usr/local/bin/kumwe-entrypoint"]
+CMD ["php-fpm", "-F"]
+STOPSIGNAL SIGQUIT
+EXPOSE 9000
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
+    CMD ["php-fpm", "-t"]
+
+FROM ${NGINX_IMAGE} AS web
+
+COPY docker/nginx/default.conf /etc/nginx/conf.d/default.conf
+COPY --from=vendor --chown=nginx:nginx /var/www/kumwe/public /var/www/kumwe/public
+
+RUN set -eux; \
+    sed -i 's#^pid .*#pid /tmp/nginx.pid;#' /etc/nginx/nginx.conf; \
+    sed -i '/http {/a\    client_body_temp_path /tmp/client_temp;\n    proxy_temp_path /tmp/proxy_temp;\n    fastcgi_temp_path /tmp/fastcgi_temp;\n    uwsgi_temp_path /tmp/uwsgi_temp;\n    scgi_temp_path /tmp/scgi_temp;' /etc/nginx/nginx.conf
+
+USER nginx
+ENTRYPOINT ["nginx"]
+CMD ["-g", "daemon off;"]
+EXPOSE 8080
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
+    CMD wget --quiet --output-document=- http://127.0.0.1:8080/health/live >/dev/null || exit 1
