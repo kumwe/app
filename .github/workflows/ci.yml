@@ -1,4 +1,4 @@
-name: Kumwe 2.0 CI
+name: Kumwe CI
 
 on:
   push:
@@ -16,41 +16,37 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  lockfile:
+    name: Composer lock consistency
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - name: Install PHP and Composer
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240
+        with:
+          php-version: '8.5'
+          extensions: ctype, fileinfo, filter, intl, json, mbstring, openssl, pdo, pdo_mysql, pdo_pgsql, redis, sodium, zip
+          coverage: none
+          tools: composer:v2
+      - name: Resolve the declared dependency graph
+        run: composer update --no-interaction --prefer-dist --no-install
+      - name: Upload the resolved lock file
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: composer-lock
+          path: composer.lock
+          if-no-files-found: error
+          retention-days: 3
+      - name: Require a committed reproducible lock file
+        run: git diff --exit-code -- composer.lock
+
   quality:
-    name: PHP ${{ matrix.php }} / PostgreSQL 17
+    name: PHP 8.5 quality
     runs-on: ubuntu-24.04
     timeout-minutes: 20
-    strategy:
-      fail-fast: false
-      matrix:
-        php: ['8.4', '8.5']
-    services:
-      postgres:
-        image: postgres:17-alpine
-        env:
-          POSTGRES_DB: kumwe_test
-          POSTGRES_USER: kumwe
-          POSTGRES_PASSWORD: kumwe_test
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U kumwe -d kumwe_test"
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 10
-    env:
-      APP_ENV: testing
-      APP_DEBUG: 'false'
-      APP_BASE_URL: https://kumwe.test
-      APP_TRUSTED_HOSTS: kumwe.test
-      APP_SECRET: test-only-secret-that-is-never-used-in-production
-      DB_HOST: 127.0.0.1
-      DB_PORT: 5432
-      DB_NAME: kumwe_test
-      DB_USER: kumwe
-      DB_PASSWORD: kumwe_test
-      DB_SCHEMA: kumwe
-      DB_SSLMODE: disable
     steps:
       - name: Check out repository
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
@@ -58,22 +54,19 @@ jobs:
       - name: Install PHP
         uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240
         with:
-          php-version: ${{ matrix.php }}
-          extensions: ctype, fileinfo, filter, intl, json, mbstring, openssl, pdo, pdo_pgsql, sodium, zip
-          coverage: xdebug
+          php-version: '8.5'
+          extensions: ctype, fileinfo, filter, intl, json, mbstring, openssl, pdo, pdo_mysql, pdo_pgsql, redis, sodium, zip
+          coverage: none
           tools: composer:v2
 
-      - name: Validate Composer metadata
-        run: composer validate --strict --no-check-lock
+      - name: Install and validate locked dependencies
+        run: |
+          composer validate --strict
+          composer install --no-interaction --prefer-dist
+          composer audit --locked --abandoned=fail
 
-      - name: Install dependencies
-        run: composer install --no-interaction --prefer-dist
-
-      - name: Verify dependency and source policy
+      - name: Verify source policy
         run: composer architecture:policy
-
-      - name: Audit locked dependencies
-        run: composer audit --locked --abandoned=fail
 
       - name: Coding standard
         run: composer cs
@@ -81,66 +74,188 @@ jobs:
       - name: Static analysis
         run: composer analyse
 
-      - name: Test
-        run: composer test -- --coverage-clover=build/coverage.xml
-
-      - name: Exercise backup and restore
-        if: matrix.php == '8.4'
-        env:
-          KUMWE_BACKUP_CONSISTENCY: quiesced
-          KUMWE_BACKUP_DIR: ${{ runner.temp }}/kumwe-backups
-          KUMWE_DB_HOST: 127.0.0.1
-          KUMWE_DB_NAME: kumwe_test
-          KUMWE_DB_PORT: 5432
-          KUMWE_DB_SCHEMA: kumwe
-          KUMWE_DB_USER: kumwe
-          KUMWE_EXTENSIONS_DIR: ${{ github.workspace }}/extensions
-          KUMWE_MEDIA_DIR: ${{ runner.temp }}/kumwe-media-source
-          KUMWE_RELEASE: 2.0.0
-          KUMWE_RESTORE_DB_HOST: 127.0.0.1
-          KUMWE_RESTORE_DB_NAME: kumwe_restore_test
-          KUMWE_RESTORE_DB_PORT: 5432
-          KUMWE_RESTORE_DB_SCHEMA: kumwe
-          KUMWE_RESTORE_DB_USER: kumwe
-          KUMWE_RESTORE_EXTENSIONS_DIR: ${{ runner.temp }}/restored/extensions
-          KUMWE_RESTORE_MEDIA_DIR: ${{ runner.temp }}/restored/media
+      - name: Unit and architecture tests
         run: |
-          pgdg_key="${RUNNER_TEMP}/postgresql-pgdg.asc"
-          curl --fail --location --silent --show-error \
-            https://www.postgresql.org/media/keys/ACCC4CF8.asc \
-            --output "$pgdg_key"
-          test "$(gpg --show-keys --with-colons "$pgdg_key" | awk -F: '$1 == "fpr" {print $10; exit}')" \
-            = 'B97B0AFCAA1A47F044F244A07FCC7D46ACCC4CF8'
-          sudo install -d -m 0755 /usr/share/postgresql-common/pgdg
-          sudo gpg --dearmor --batch --yes \
-            --output /usr/share/postgresql-common/pgdg/apt.postgresql.org.gpg \
-            "$pgdg_key"
-          . /etc/os-release
-          printf 'deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.gpg] https://apt.postgresql.org/pub/repos/apt %s-pgdg main\n' \
-            "$VERSION_CODENAME" \
-            | sudo tee /etc/apt/sources.list.d/pgdg.list >/dev/null
-          sudo apt-get update
-          sudo apt-get install --yes jq postgresql-client-17
-          export PATH="/usr/lib/postgresql/17/bin:$PATH"
-          pg_dump --version | grep -Eq '^pg_dump \(PostgreSQL\) 17\.'
-          pg_restore --version | grep -Eq '^pg_restore \(PostgreSQL\) 17\.'
-          install -d -m 0700 "$KUMWE_BACKUP_DIR" "$KUMWE_MEDIA_DIR" "${KUMWE_RESTORE_MEDIA_DIR%/media}"
-          install -m 0600 /dev/null "${RUNNER_TEMP}/kumwe-db-password"
-          printf '%s' "$DB_PASSWORD" > "${RUNNER_TEMP}/kumwe-db-password"
-          export KUMWE_DB_PASSWORD_FILE="${RUNNER_TEMP}/kumwe-db-password"
-          backup_path="$(tools/backup.sh)"
-          PGPASSWORD="$DB_PASSWORD" createdb --host="$KUMWE_RESTORE_DB_HOST" --port="$KUMWE_RESTORE_DB_PORT" --username="$KUMWE_RESTORE_DB_USER" "$KUMWE_RESTORE_DB_NAME"
-          export KUMWE_RESTORE_DB_PASSWORD_FILE="${RUNNER_TEMP}/kumwe-db-password"
-          tools/restore.sh "$backup_path"
-          test -d "$KUMWE_RESTORE_MEDIA_DIR"
-          test -d "$KUMWE_RESTORE_EXTENSIONS_DIR"
-          PGPASSWORD="$DB_PASSWORD" psql --host="$KUMWE_RESTORE_DB_HOST" --port="$KUMWE_RESTORE_DB_PORT" --username="$KUMWE_RESTORE_DB_USER" --dbname="$KUMWE_RESTORE_DB_NAME" --no-align --tuples-only --command="SELECT version FROM kumwe.schema_migrations WHERE version = '20260804000800_create_application_runtime'" | grep -qx '20260804000800_create_application_runtime'
+          vendor/bin/phpunit --testsuite unit --colors=always
+          vendor/bin/phpunit --testsuite architecture --colors=always
 
-      - name: Upload generated dependency lock
-        if: always() && matrix.php == '8.4'
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+  database:
+    name: PHP 8.5 / ${{ matrix.database.name }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        database:
+          - name: MariaDB LTS
+            driver: mariadb
+            image: mariadb:lts
+            port: 3306
+            server-version: mariadb-12.3.2
+            health: >-
+              --health-cmd "healthcheck.sh --connect --innodb_initialized"
+              --health-interval 5s --health-timeout 5s --health-retries 20
+          - name: MySQL 8.4 LTS
+            driver: mysql
+            image: mysql:8.4
+            port: 3306
+            server-version: '8.4'
+            health: >-
+              --health-cmd "mysqladmin ping -h 127.0.0.1 -ukumwe -pkumwe_test"
+              --health-interval 5s --health-timeout 5s --health-retries 20
+          - name: PostgreSQL 17
+            driver: pgsql
+            image: postgres:17-alpine
+            port: 5432
+            server-version: '17'
+            health: >-
+              --health-cmd "pg_isready -U kumwe -d kumwe_test"
+              --health-interval 5s --health-timeout 5s --health-retries 20
+    services:
+      database:
+        image: ${{ matrix.database.image }}
+        env:
+          MARIADB_DATABASE: kumwe_test
+          MARIADB_USER: kumwe
+          MARIADB_PASSWORD: kumwe_test
+          MARIADB_ALLOW_EMPTY_ROOT_PASSWORD: 'yes'
+          MYSQL_DATABASE: kumwe_test
+          MYSQL_USER: kumwe
+          MYSQL_PASSWORD: kumwe_test
+          MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
+          POSTGRES_DB: kumwe_test
+          POSTGRES_USER: kumwe
+          POSTGRES_PASSWORD: kumwe_test
+        ports:
+          - '${{ matrix.database.port }}:${{ matrix.database.port }}'
+        options: ${{ matrix.database.health }}
+      redis:
+        image: redis:8-alpine
+        ports:
+          - '6379:6379'
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s --health-timeout 3s --health-retries 20
+    env:
+      APP_ENV: testing
+      APP_DEBUG: 'false'
+      APP_BASE_URL: https://kumwe.test
+      APP_TRUSTED_HOSTS: kumwe.test
+      DB_DRIVER: ${{ matrix.database.driver }}
+      DB_HOST: 127.0.0.1
+      DB_PORT: ${{ matrix.database.port }}
+      DB_NAME: kumwe_test
+      DB_USER: kumwe
+      DB_PASSWORD: kumwe_test
+      DB_TABLE_PREFIX: kumwe_
+      DB_SSLMODE: disable
+      DB_SERVER_VERSION: ${{ matrix.database.server-version }}
+      REDIS_HOST: 127.0.0.1
+      REDIS_PORT: 6379
+      REDIS_DATABASE: 0
+      REDIS_NAMESPACE: kumwe.ci
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+
+      - name: Install PHP
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240
         with:
-          name: composer-lock
-          path: composer.lock
-          if-no-files-found: error
-          retention-days: 3
+          php-version: '8.5'
+          extensions: ctype, fileinfo, filter, intl, json, mbstring, openssl, pdo, pdo_mysql, pdo_pgsql, redis, sodium, zip
+          coverage: none
+          tools: composer:v2
+
+      - name: Generate ephemeral application secret
+        shell: bash
+        run: echo "APP_SECRET=$(openssl rand -base64 48 | tr -d '\n')" >> "$GITHUB_ENV"
+
+      - name: Install locked dependencies
+        run: composer install --no-interaction --prefer-dist
+
+      - name: Migrate an empty database
+        run: php bin/kumwe database:migrate
+
+      - name: Run complete test suite
+        run: composer test
+
+      - name: Verify schema status
+        run: php bin/kumwe database:status
+
+      - name: Install database recovery client
+        uses: ./.github/actions/database-client
+        with:
+          driver: ${{ matrix.database.driver }}
+
+      - name: Exercise clean-target backup and restore
+        shell: bash
+        run: |
+          set -euo pipefail
+          recovery_root="$RUNNER_TEMP/kumwe-recovery-${DB_DRIVER}"
+          backup_root="$recovery_root/backups"
+          source_media="$recovery_root/source/media"
+          source_extensions="$recovery_root/source/extensions"
+          source_extension_assets="$recovery_root/source/extension-assets"
+          restore_root="$recovery_root/restored"
+          password_file="$recovery_root/database-password"
+          install -d -m 0700 \
+            "$backup_root" \
+            "$source_media" \
+            "$source_extensions" \
+            "$source_extension_assets" \
+            "$restore_root"
+          install -m 0600 /dev/null "$password_file"
+          printf %s "$DB_PASSWORD" > "$password_file"
+          printf 'acceptance-media' > "$source_media/probe.txt"
+          printf 'acceptance-extension' > "$source_extensions/probe.txt"
+          printf 'acceptance-extension-asset' > "$source_extension_assets/probe.css"
+
+          if [[ "$DB_DRIVER" == pgsql ]]; then
+            PGPASSWORD="$DB_PASSWORD" createdb \
+              --host="$DB_HOST" --port="$DB_PORT" --username="$DB_USER" kumwe_restore_test
+          else
+            if [[ "$DB_DRIVER" == mariadb ]]; then
+              docker exec '${{ job.services.database.id }}' mariadb --user=root \
+                --execute="CREATE DATABASE kumwe_restore_test CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci; GRANT ALL ON kumwe_restore_test.* TO 'kumwe'@'%'"
+            else
+              docker exec '${{ job.services.database.id }}' mysql --user=root \
+                --execute="CREATE DATABASE kumwe_restore_test CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci; GRANT ALL ON kumwe_restore_test.* TO 'kumwe'@'%'"
+            fi
+          fi
+
+          export KUMWE_BACKUP_CONSISTENCY=quiesced
+          export KUMWE_BACKUP_DIR="$backup_root"
+          export KUMWE_DB_DRIVER="$DB_DRIVER"
+          export KUMWE_DB_HOST="$DB_HOST"
+          export KUMWE_DB_PORT="$DB_PORT"
+          export KUMWE_DB_NAME="$DB_NAME"
+          export KUMWE_DB_USER="$DB_USER"
+          export KUMWE_DB_PASSWORD_FILE="$password_file"
+          export KUMWE_DB_TABLE_PREFIX="$DB_TABLE_PREFIX"
+          export KUMWE_EXTENSIONS_DIR="$source_extensions"
+          export KUMWE_EXTENSION_ASSETS_DIR="$source_extension_assets"
+          export KUMWE_MEDIA_DIR="$source_media"
+          export KUMWE_RELEASE=2.0.0
+          backup_path="$(bash tools/backup.sh)"
+
+          export KUMWE_RESTORE_DB_DRIVER="$DB_DRIVER"
+          export KUMWE_RESTORE_DB_HOST="$DB_HOST"
+          export KUMWE_RESTORE_DB_PORT="$DB_PORT"
+          export KUMWE_RESTORE_DB_NAME=kumwe_restore_test
+          export KUMWE_RESTORE_DB_USER="$DB_USER"
+          export KUMWE_RESTORE_DB_PASSWORD_FILE="$password_file"
+          export KUMWE_RESTORE_DB_TABLE_PREFIX="$DB_TABLE_PREFIX"
+          export KUMWE_RESTORE_EXTENSIONS_DIR="$restore_root/extensions"
+          export KUMWE_RESTORE_EXTENSION_ASSETS_DIR="$restore_root/extension-assets"
+          export KUMWE_RESTORE_MEDIA_DIR="$restore_root/media"
+          bash tools/restore.sh "$backup_path"
+          cmp "$source_media/probe.txt" "$restore_root/media/probe.txt"
+          cmp "$source_extensions/probe.txt" "$restore_root/extensions/probe.txt"
+          cmp "$source_extension_assets/probe.css" "$restore_root/extension-assets/probe.css"
+
+  deployment:
+    name: Complete deployment acceptance
+    needs:
+      - quality
+      - database
+    uses: ./.github/workflows/deployment-acceptance.yml

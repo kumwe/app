@@ -1,0 +1,278 @@
+<?php
+
+declare(strict_types=1);
+
+/**
+ * Interactive project bootstrap used by `composer create-project kumwe/cms`.
+ * It deliberately delegates schema and identity work to Kumwe's public CLI.
+ */
+
+$root = dirname(__DIR__);
+$environmentFile = $root . '/.env';
+$interactive = function_exists('stream_isatty')
+    && stream_isatty(STDIN)
+    && !in_array('--no-interaction', $argv, true);
+$packageRelease = '2.0.0-dev';
+$autoloadFile = $root . '/vendor/autoload.php';
+
+if (is_file($autoloadFile)) {
+    require $autoloadFile;
+    $prettyVersion = Composer\InstalledVersions::isInstalled('kumwe/cms')
+        ? Composer\InstalledVersions::getPrettyVersion('kumwe/cms')
+        : null;
+
+    if (is_string($prettyVersion)) {
+        $candidateRelease = ltrim($prettyVersion, 'v');
+
+        if (preg_match('/^2\.[0-9]+\.[0-9]+([+-][0-9A-Za-z.-]+)?$/D', $candidateRelease) === 1) {
+            $packageRelease = $candidateRelease;
+        }
+    }
+}
+
+if (is_file($environmentFile)) {
+    fwrite(STDOUT, "Kumwe is already configured; .env was not changed.\n");
+    exit(0);
+}
+
+if (!$interactive || getenv('COMPOSER_NO_INTERACTION') === '1') {
+    fwrite(
+        STDOUT,
+        "Kumwe was installed without interactive configuration. "
+        . "Run `php bin/kumwe-install` from the project directory before serving the site.\n",
+    );
+    exit(0);
+}
+
+fwrite(STDOUT, "\nKumwe CMS configuration\n\n");
+
+$baseUrl = prompt('Canonical HTTPS URL', 'https://kumwe.example');
+$host = parse_url($baseUrl, PHP_URL_HOST);
+
+if (!is_string($host) || $host === '' || !str_starts_with($baseUrl, 'https://')) {
+    fail('The production URL must be an absolute HTTPS URL.');
+}
+
+$driverChoice = strtolower(prompt('Database [mariadb/mysql/pgsql]', 'mariadb'));
+$database = match ($driverChoice) {
+    'mariadb' => ['mariadb', '127.0.0.1', '3306', 'mariadb-12.3.2'],
+    'mysql' => ['mysql', '127.0.0.1', '3306', '8.4'],
+    'pgsql', 'postgres', 'postgresql' => ['pgsql', '127.0.0.1', '5432', '17'],
+    default => fail('Database must be mariadb, mysql or pgsql.'),
+};
+
+[$driver, $defaultHost, $defaultPort, $defaultVersion] = $database;
+$databaseHost = prompt('Database host', $defaultHost);
+$databasePort = prompt('Database port', $defaultPort);
+$databaseName = prompt('Database name', 'kumwe');
+$databaseUser = prompt('Database user', 'kumwe');
+$databasePassword = secretPrompt('Database password');
+$databasePrefix = prompt('Database table prefix', 'kumwe_');
+$databaseSslMode = prompt('Database SSL mode', 'disable');
+$databaseServerVersion = prompt('Database server version', $defaultVersion);
+$redisHost = prompt('Redis host', '127.0.0.1');
+$redisPort = prompt('Redis port', '6379');
+$redisPassword = secretPrompt('Redis password (leave empty when Redis has no password)');
+
+if ($databasePassword === '') {
+    fail('Database password must not be empty.');
+}
+
+$values = [
+    'APP_ENV' => 'production',
+    'APP_DEBUG' => 'false',
+    'APP_BASE_URL' => $baseUrl,
+    'APP_TRUSTED_HOSTS' => $host,
+    'APP_TRUSTED_PROXIES' => '',
+    'APP_MAX_BODY_BYTES' => '8388608',
+    'APP_ADMIN_SESSION_SECONDS' => '28800',
+    'KUMWE_RELEASE' => $packageRelease,
+    'APP_SECRET' => base64_encode(random_bytes(48)),
+    'EXTENSIONS_ALLOW_UNSIGNED_LOCAL' => 'false',
+    'DB_DRIVER' => $driver,
+    'DB_HOST' => $databaseHost,
+    'DB_PORT' => $databasePort,
+    'DB_NAME' => $databaseName,
+    'DB_USER' => $databaseUser,
+    'DB_PASSWORD' => $databasePassword,
+    'DB_TABLE_PREFIX' => $databasePrefix,
+    'DB_SSLMODE' => $databaseSslMode,
+    'DB_SERVER_VERSION' => $databaseServerVersion,
+    'REDIS_HOST' => $redisHost,
+    'REDIS_PORT' => $redisPort,
+    'REDIS_PASSWORD' => $redisPassword,
+];
+
+$contents = '';
+
+foreach ($values as $name => $value) {
+    $contents .= $name . '=' . encodeEnvironmentValue($value) . "\n";
+    putenv($name . '=' . $value);
+}
+
+if (file_put_contents($environmentFile, $contents, LOCK_EX) === false || !chmod($environmentFile, 0600)) {
+    fail('Could not write the protected .env configuration file.');
+}
+
+fwrite(STDOUT, "\nConfiguration written to .env with owner-only permissions.\n");
+
+if (!confirmation('Connect to the database and install the schema now?', true)) {
+    fwrite(STDOUT, "Run `php bin/kumwe database:migrate` after the database is available.\n");
+    exit(0);
+}
+
+if (runCommand([PHP_BINARY, $root . '/bin/kumwe', 'database:migrate'], $root) !== 0) {
+    fail('Database migration failed. Correct .env and run `php bin/kumwe database:migrate`.');
+}
+
+if (!confirmation('Create the first administrator now?', true)) {
+    fwrite(STDOUT, "Use `php bin/kumwe user:create-admin --help` to create it later.\n");
+    exit(0);
+}
+
+$administratorEmail = prompt('Administrator email');
+$administratorName = prompt('Administrator display name', 'Administrator');
+$administratorPassword = secretPrompt('Administrator password (minimum 12 characters)');
+
+if (strlen($administratorPassword) < 12) {
+    fail('Administrator password must contain at least 12 characters.');
+}
+
+$temporaryPasswordFile = tempnam(sys_get_temp_dir(), 'kumwe-admin-');
+
+if (!is_string($temporaryPasswordFile)) {
+    fail('Could not create a protected temporary password file.');
+}
+
+try {
+    if (!chmod($temporaryPasswordFile, 0600)
+        || file_put_contents($temporaryPasswordFile, $administratorPassword, LOCK_EX) === false
+    ) {
+        fail('Could not write the protected administrator password file.');
+    }
+
+    $exitCode = runCommand([
+        PHP_BINARY,
+        $root . '/bin/kumwe',
+        'user:create-admin',
+        '--email=' . $administratorEmail,
+        '--name=' . $administratorName,
+        '--password-file=' . $temporaryPasswordFile,
+    ], $root);
+} finally {
+    if (is_file($temporaryPasswordFile)) {
+        unlink($temporaryPasswordFile);
+    }
+}
+
+if ($exitCode !== 0) {
+    fail('Administrator creation failed; configuration and schema were retained.');
+}
+
+fwrite(STDOUT, "\nKumwe is configured. Point the web server document root at public/.\n");
+
+/** @return never */
+function fail(string $message): never
+{
+    fwrite(STDERR, "Kumwe setup failed: {$message}\n");
+    exit(1);
+}
+
+function prompt(string $label, ?string $default = null): string
+{
+    $suffix = $default === null || $default === '' ? '' : " [{$default}]";
+    fwrite(STDOUT, $label . $suffix . ': ');
+    $answer = fgets(STDIN);
+
+    if (!is_string($answer)) {
+        fail('Input ended before configuration was complete.');
+    }
+
+    $answer = trim($answer);
+
+    return $answer === '' && $default !== null ? $default : $answer;
+}
+
+function secretPrompt(string $label): string
+{
+    fwrite(STDOUT, $label . ': ');
+    $terminalState = terminalState();
+
+    if ($terminalState === null) {
+        fail('This terminal cannot hide secret input. Configure secrets non-interactively instead.');
+    }
+
+    setTerminalState('-echo');
+
+    try {
+        $answer = fgets(STDIN);
+    } finally {
+        setTerminalState($terminalState);
+        fwrite(STDOUT, "\n");
+    }
+
+    if (!is_string($answer)) {
+        fail('Input ended before configuration was complete.');
+    }
+
+    return trim($answer);
+}
+
+function terminalState(): ?string
+{
+    $process = proc_open(
+        ['stty', '-g'],
+        [STDIN, ['pipe', 'w'], STDERR],
+        $pipes,
+    );
+
+    if (!is_resource($process) || !isset($pipes[1]) || !is_resource($pipes[1])) {
+        return null;
+    }
+
+    $state = stream_get_contents($pipes[1]);
+    fclose($pipes[1]);
+
+    if (proc_close($process) !== 0 || !is_string($state) || trim($state) === '') {
+        return null;
+    }
+
+    return trim($state);
+}
+
+function setTerminalState(string $state): void
+{
+    $process = proc_open(['stty', $state], [STDIN, STDOUT, STDERR], $pipes);
+
+    if (!is_resource($process) || proc_close($process) !== 0) {
+        fail('Could not protect terminal secret input.');
+    }
+}
+
+function confirmation(string $label, bool $default): bool
+{
+    $answer = strtolower(prompt($label . ($default ? ' [Y/n]' : ' [y/N]'), $default ? 'y' : 'n'));
+
+    return in_array($answer, ['y', 'yes'], true);
+}
+
+function encodeEnvironmentValue(string $value): string
+{
+    return '"' . str_replace(
+        ["\\", '"', "\r", "\n"],
+        ["\\\\", '\\"', '\\r', '\\n'],
+        $value,
+    ) . '"';
+}
+
+/** @param non-empty-list<string> $command */
+function runCommand(array $command, string $workingDirectory): int
+{
+    $process = proc_open($command, [STDIN, STDOUT, STDERR], $pipes, $workingDirectory);
+
+    if (!is_resource($process)) {
+        fail('Could not start the Kumwe CLI.');
+    }
+
+    return proc_close($process);
+}

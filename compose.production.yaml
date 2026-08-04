@@ -1,11 +1,5 @@
 name: kumwe
 
-x-kumwe-build: &kumwe-build
-  context: .
-  dockerfile: docker/php/Dockerfile
-  args:
-    KUMWE_RELEASE: ${KUMWE_RELEASE:?Set KUMWE_RELEASE to the deployed 2.x release}
-
 x-kumwe-environment: &kumwe-environment
   APP_ENV: production
   APP_DEBUG: 'false'
@@ -14,29 +8,25 @@ x-kumwe-environment: &kumwe-environment
   APP_TRUSTED_PROXIES: ${KUMWE_TRUSTED_PROXIES:-}
   APP_MAX_BODY_BYTES: ${KUMWE_MAX_BODY_BYTES:-8388608}
   APP_ADMIN_SESSION_SECONDS: ${KUMWE_ADMIN_SESSION_SECONDS:-28800}
-  KUMWE_RELEASE: ${KUMWE_RELEASE:-2.0.0}
+  KUMWE_RELEASE: ${KUMWE_RELEASE:?Set KUMWE_RELEASE to the deployed 2.x release}
   EXTENSIONS_ALLOW_UNSIGNED_LOCAL: 'false'
   APP_SECRET_FILE: /run/secrets/app_secret
-  DB_HOST: postgres
-  DB_PORT: '5432'
+  DB_DRIVER: ${KUMWE_DB_DRIVER:-mariadb}
+  DB_HOST: database
+  DB_PORT: ${KUMWE_DB_PORT:-3306}
   DB_NAME: ${KUMWE_DB_NAME:-kumwe}
   DB_USER: ${KUMWE_DB_USER:-kumwe}
   DB_PASSWORD_FILE: /run/secrets/db_password
-  DB_SCHEMA: kumwe
-  DB_SSLMODE: ${KUMWE_DB_SSLMODE:-prefer}
+  DB_TABLE_PREFIX: ${KUMWE_DB_TABLE_PREFIX:-kumwe_}
+  DB_SSLMODE: ${KUMWE_DB_SSLMODE:-disable}
+  DB_SERVER_VERSION: ${KUMWE_DB_SERVER_VERSION:-mariadb-12.3.2}
   REDIS_HOST: redis
   REDIS_PORT: '6379'
   REDIS_PASSWORD_FILE: /run/secrets/redis_password
-  MAIL_TRANSPORT: ${KUMWE_MAIL_TRANSPORT:-null}
-  MAIL_FROM_ADDRESS: ${KUMWE_MAIL_FROM_ADDRESS:-kumwe@localhost}
-  MAIL_FROM_NAME: ${KUMWE_MAIL_FROM_NAME:-Kumwe CMS}
-  KUMWE_RELEASE: ${KUMWE_RELEASE}
 
 x-kumwe-runtime: &kumwe-runtime
-  image: ${KUMWE_APP_IMAGE_REF:-kumwe-app:local}
-  build:
-    <<: *kumwe-build
-    target: runtime
+  image: ${KUMWE_APP_IMAGE_REF:-ghcr.io/kumwe/cms/app:latest}
+  pull_policy: ${KUMWE_APPLICATION_PULL_POLICY:-always}
   environment: *kumwe-environment
   secrets:
     - app_secret
@@ -59,16 +49,15 @@ x-kumwe-runtime: &kumwe-runtime
   volumes:
     - media-data:/var/www/kumwe/storage/media
     - extensions-data:/var/www/kumwe/extensions
+    - extension-assets-data:/var/www/kumwe/public/assets/extensions
   networks:
     - backend
   restart: unless-stopped
 
 services:
   web:
-    image: ${KUMWE_WEB_IMAGE_REF:-kumwe-web:local}
-    build:
-      <<: *kumwe-build
-      target: web
+    image: ${KUMWE_WEB_IMAGE_REF:-ghcr.io/kumwe/cms/web:latest}
+    pull_policy: ${KUMWE_APPLICATION_PULL_POLICY:-always}
     depends_on:
       app:
         condition: service_healthy
@@ -84,6 +73,8 @@ services:
       - /tmp:rw,noexec,nosuid,nodev,size=32m,mode=1777
     networks:
       - frontend
+    volumes:
+      - extension-assets-data:/var/www/kumwe/public/assets/extensions:ro
     restart: unless-stopped
     healthcheck:
       test: [CMD, wget, --quiet, --output-document=-, http://127.0.0.1:8080/health/live]
@@ -140,37 +131,59 @@ services:
     <<: *kumwe-runtime
     command: [php, bin/kumwe, database:migrate]
     depends_on:
-      postgres:
+      database:
         condition: service_healthy
       redis:
         condition: service_healthy
     restart: 'no'
 
-  postgres:
-    image: ${KUMWE_POSTGRES_IMAGE:-postgres:17-alpine}
+  database:
+    image: ${KUMWE_DATABASE_IMAGE:-mariadb:lts}
+    pull_policy: ${KUMWE_INFRASTRUCTURE_PULL_POLICY:-always}
     environment:
+      DB_DRIVER: ${KUMWE_DB_DRIVER:-mariadb}
+      MARIADB_DATABASE: ${KUMWE_DB_NAME:-kumwe}
+      MARIADB_USER: ${KUMWE_DB_USER:-kumwe}
+      MARIADB_PASSWORD_FILE: /run/secrets/db_password
+      MARIADB_RANDOM_ROOT_PASSWORD: 'yes'
+      MYSQL_DATABASE: ${KUMWE_DB_NAME:-kumwe}
+      MYSQL_USER: ${KUMWE_DB_USER:-kumwe}
+      MYSQL_PASSWORD_FILE: /run/secrets/db_password
+      MYSQL_RANDOM_ROOT_PASSWORD: 'yes'
       POSTGRES_DB: ${KUMWE_DB_NAME:-kumwe}
       POSTGRES_USER: ${KUMWE_DB_USER:-kumwe}
       POSTGRES_PASSWORD_FILE: /run/secrets/db_password
       POSTGRES_INITDB_ARGS: --auth-host=scram-sha-256
-    command: [postgres, -c, password_encryption=scram-sha-256]
     secrets:
       - db_password
     volumes:
-      - postgres-data:/var/lib/postgresql/data
+      - database-mysql-data:/var/lib/mysql
+      - database-postgres-data:/var/lib/postgresql/data
     networks:
       - backend
     restart: unless-stopped
     stop_grace_period: 60s
     healthcheck:
-      test: [CMD-SHELL, 'pg_isready -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}"']
+      test:
+        - CMD-SHELL
+        - >-
+          if [ "$${DB_DRIVER}" = pgsql ]; then
+            pg_isready -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}";
+          elif command -v healthcheck.sh >/dev/null 2>&1; then
+            healthcheck.sh --connect --innodb_initialized;
+          elif command -v mariadb-admin >/dev/null 2>&1; then
+            mariadb-admin ping --silent -h 127.0.0.1 -u"$${MARIADB_USER}" -p"$$(cat /run/secrets/db_password)";
+          else
+            mysqladmin ping --silent -h 127.0.0.1 -u"$${MYSQL_USER}" -p"$$(cat /run/secrets/db_password)";
+          fi
       interval: 10s
       timeout: 5s
-      retries: 10
+      retries: 20
       start_period: 20s
 
   redis:
     image: ${KUMWE_REDIS_IMAGE:-redis:8-alpine}
+    pull_policy: ${KUMWE_INFRASTRUCTURE_PULL_POLICY:-always}
     entrypoint: [/bin/sh, -ec]
     command:
       - |
@@ -230,9 +243,11 @@ secrets:
     file: ${KUMWE_REDIS_PASSWORD_FILE:?Set KUMWE_REDIS_PASSWORD_FILE}
 
 volumes:
+  extension-assets-data:
   extensions-data:
   media-data:
-  postgres-data:
+  database-mysql-data:
+  database-postgres-data:
   redis-data:
 
 networks:

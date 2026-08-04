@@ -27,36 +27,45 @@ env:
   TRIVY_IMAGE: aquasec/trivy:0.67.2
 
 jobs:
+  acceptance:
+    name: Release deployment gate
+    uses: ./.github/workflows/deployment-acceptance.yml
+    with:
+      ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref }}
+
   release:
+    needs: acceptance
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     services:
-      postgres:
-        image: postgres:17-alpine
+      database:
+        image: mariadb:lts
         env:
-          POSTGRES_DB: kumwe_release
-          POSTGRES_USER: kumwe
-          POSTGRES_PASSWORD: kumwe_release
+          MARIADB_DATABASE: kumwe_release
+          MARIADB_USER: kumwe
+          MARIADB_PASSWORD: kumwe_release
+          MARIADB_RANDOM_ROOT_PASSWORD: 'yes'
         ports:
-          - 5432:5432
+          - 3306:3306
         options: >-
-          --health-cmd "pg_isready -U kumwe -d kumwe_release"
+          --health-cmd "healthcheck.sh --connect --innodb_initialized"
           --health-interval 5s
           --health-timeout 5s
-          --health-retries 10
+          --health-retries 20
     env:
       APP_ENV: testing
       APP_DEBUG: 'false'
       APP_BASE_URL: https://kumwe.test
       APP_TRUSTED_HOSTS: kumwe.test
-      APP_SECRET: test-only-secret-that-is-never-used-in-production
       DB_HOST: 127.0.0.1
-      DB_PORT: '5432'
+      DB_DRIVER: mariadb
+      DB_PORT: '3306'
       DB_NAME: kumwe_release
       DB_USER: kumwe
       DB_PASSWORD: kumwe_release
-      DB_SCHEMA: kumwe
+      DB_TABLE_PREFIX: kumwe_
       DB_SSLMODE: disable
+      DB_SERVER_VERSION: mariadb-12.3.2
     steps:
       - name: Check out release tag
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
@@ -81,14 +90,37 @@ jobs:
           echo "version=${release_tag#v}" >> "$GITHUB_OUTPUT"
           echo "app_image=$REGISTRY/$repository/app" >> "$GITHUB_OUTPUT"
           echo "web_image=$REGISTRY/$repository/web" >> "$GITHUB_OUTPUT"
+          version="${release_tag#v}"
+          image_version="${version//+/-}"
+          app_image="$REGISTRY/$repository/app"
+          web_image="$REGISTRY/$repository/web"
+          app_tags="$(printf '%s\n%s' "$app_image:$image_version" "$app_image:${GITHUB_SHA}")"
+          web_tags="$(printf '%s\n%s' "$web_image:$image_version" "$web_image:${GITHUB_SHA}")"
+          if [[ "$release_tag" =~ ^v2\.[0-9]+\.[0-9]+$ ]]; then
+            minor="${version%.*}"
+            app_tags="$(printf '%s\n%s\n%s\n%s' "$app_tags" "$app_image:$minor" "$app_image:2" "$app_image:latest")"
+            web_tags="$(printf '%s\n%s\n%s\n%s' "$web_tags" "$web_image:$minor" "$web_image:2" "$web_image:latest")"
+          fi
+          {
+            echo 'app_tags<<KUMWE_TAGS'
+            echo "$app_tags"
+            echo 'KUMWE_TAGS'
+            echo 'web_tags<<KUMWE_TAGS'
+            echo "$web_tags"
+            echo 'KUMWE_TAGS'
+          } >> "$GITHUB_OUTPUT"
 
       - name: Install PHP
         uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240
         with:
-          php-version: '8.4'
-          extensions: ctype, fileinfo, filter, intl, json, mbstring, openssl, pdo, pdo_pgsql, pgsql, redis, sodium, zip
+          php-version: '8.5'
+          extensions: ctype, fileinfo, filter, intl, json, mbstring, openssl, pdo, pdo_mysql, pdo_pgsql, redis, sodium, zip
           coverage: none
           tools: composer:v2
+
+      - name: Generate ephemeral application secret
+        shell: bash
+        run: echo "APP_SECRET=$(openssl rand -base64 48 | tr -d '\n')" >> "$GITHUB_ENV"
 
       - name: Verify source and locked dependencies
         run: |
@@ -98,6 +130,7 @@ jobs:
           composer architecture:policy
           composer cs
           composer analyse
+          php bin/kumwe database:migrate
           composer test
 
       - name: Log in to GitHub Container Registry
@@ -118,9 +151,7 @@ jobs:
           file: docker/php/Dockerfile
           target: runtime
           push: true
-          tags: |
-            ${{ steps.release.outputs.app_image }}:${{ steps.release.outputs.version }}
-            ${{ steps.release.outputs.app_image }}:${{ github.sha }}
+          tags: ${{ steps.release.outputs.app_tags }}
           build-args: KUMWE_RELEASE=${{ steps.release.outputs.version }}
 
       - name: Build and publish web image
@@ -131,9 +162,7 @@ jobs:
           file: docker/php/Dockerfile
           target: web
           push: true
-          tags: |
-            ${{ steps.release.outputs.web_image }}:${{ steps.release.outputs.version }}
-            ${{ steps.release.outputs.web_image }}:${{ github.sha }}
+          tags: ${{ steps.release.outputs.web_tags }}
           build-args: KUMWE_RELEASE=${{ steps.release.outputs.version }}
 
       - name: Build release archive
@@ -141,9 +170,10 @@ jobs:
         run: |
           set -euo pipefail
           version='${{ steps.release.outputs.version }}'
-          install -d dist/package
-          git archive --format=tar HEAD | tar --extract --directory=dist/package
-          composer install \
+          install -d dist/archive dist/package
+          composer archive --format=tar --dir=dist/archive --file=kumwe-source
+          tar --extract --file=dist/archive/kumwe-source.tar --directory=dist/package
+          COMPOSER_ROOT_VERSION="$version" composer install \
             --working-dir=dist/package \
             --classmap-authoritative \
             --no-ansi \
@@ -155,6 +185,12 @@ jobs:
           find dist/package/storage -mindepth 1 -type f ! -name .gitkeep -delete
           if find dist/package -type l -print -quit | grep -q .; then
               echo 'Release package contains a symbolic link.' >&2
+              exit 1
+          fi
+          if find dist/package -type f \
+              \( -path '*/tests/*' -o -path '*/.github/*' -o -path '*/docker/*' -o -name compose.yaml \) \
+              -print -quit | grep -q .; then
+              echo 'Release package contains development-only files.' >&2
               exit 1
           fi
           (
@@ -181,6 +217,7 @@ jobs:
           docker run --rm --volume /var/run/docker.sock:/var/run/docker.sock "$TRIVY_IMAGE" \
             image --exit-code 1 --ignore-unfixed --severity HIGH,CRITICAL "$web_ref"
           rm -rf dist/package
+          rm -rf dist/archive
           (
               cd dist
               sha256sum kumwe-*.cdx.json kumwe-cms-*.zip > SHA256SUMS

@@ -1,0 +1,518 @@
+name: Kumwe deployment acceptance
+
+on:
+  workflow_call:
+    inputs:
+      ref:
+        description: Git reference to deploy
+        required: false
+        type: string
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  distribution-installation:
+    name: Composer and ZIP installation
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    services:
+      database:
+        image: mariadb:lts
+        env:
+          MARIADB_DATABASE: kumwe_distribution
+          MARIADB_USER: kumwe
+          MARIADB_PASSWORD: kumwe_distribution
+          MARIADB_ALLOW_EMPTY_ROOT_PASSWORD: 'yes'
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd "healthcheck.sh --connect --innodb_initialized"
+          --health-interval 5s --health-timeout 5s --health-retries 20
+      redis:
+        image: redis:8-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s --health-timeout 5s --health-retries 20
+    env:
+      APP_ENV: production
+      APP_DEBUG: 'false'
+      APP_BASE_URL: https://127.0.0.1:18081
+      APP_TRUSTED_HOSTS: 127.0.0.1,localhost
+      EXTENSIONS_ALLOW_UNSIGNED_LOCAL: 'false'
+      KUMWE_RELEASE: 2.0.0-acceptance
+      DB_DRIVER: mariadb
+      DB_HOST: 127.0.0.1
+      DB_PORT: '3306'
+      DB_NAME: kumwe_distribution
+      DB_USER: kumwe
+      DB_PASSWORD: kumwe_distribution
+      DB_TABLE_PREFIX: kumwe_
+      DB_SSLMODE: disable
+      DB_SERVER_VERSION: mariadb-12.3.2
+      REDIS_HOST: 127.0.0.1
+      REDIS_PORT: '6379'
+      REDIS_PASSWORD: ''
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ inputs.ref || github.sha }}
+          fetch-depth: 0
+
+      - name: Install PHP and Composer
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240
+        with:
+          php-version: '8.5'
+          extensions: ctype, fileinfo, filter, intl, json, mbstring, openssl, pdo, pdo_mysql, pdo_pgsql, redis, sodium, zip
+          coverage: none
+          tools: composer:v2
+
+      - name: Generate ephemeral application secret
+        shell: bash
+        run: echo "APP_SECRET=$(openssl rand -base64 48 | tr -d '\n')" >> "$GITHUB_ENV"
+
+      - name: Build release ZIP with production dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          install -d build/distribution/archive build/distribution/package
+          composer archive \
+            --format=tar \
+            --dir=build/distribution/archive \
+            --file=kumwe-source
+          tar --extract \
+            --file=build/distribution/archive/kumwe-source.tar \
+            --directory=build/distribution/package
+          COMPOSER_ROOT_VERSION=2.0.0-acceptance composer install \
+            --working-dir=build/distribution/package \
+            --classmap-authoritative \
+            --no-ansi \
+            --no-dev \
+            --no-interaction \
+            --no-progress \
+            --no-scripts \
+            --prefer-dist
+          (
+            cd build/distribution/package
+            zip -X --quiet --recurse-paths ../kumwe-cms.zip .
+          )
+          unzip -Z1 build/distribution/kumwe-cms.zip | grep --fixed-strings --quiet composer.json
+          if unzip -Z1 build/distribution/kumwe-cms.zip \
+              | grep -E '(^|/)(\.github|tests|docker|compose\.yaml)(/|$)' >/dev/null; then
+            echo 'Distribution ZIP contains development-only paths.' >&2
+            exit 1
+          fi
+          unzip -q build/distribution/kumwe-cms.zip -d "$RUNNER_TEMP/kumwe-zip"
+
+      - name: Verify non-interactive Composer bootstrap
+        shell: bash
+        env:
+          COMPOSER_NO_INTERACTION: '1'
+        run: |
+          composer create-project \
+            --no-ansi \
+            --no-interaction \
+            --no-progress \
+            --repository='{"type":"path","url":"build/distribution/package","options":{"symlink":false}}' \
+            kumwe/cms \
+            "$RUNNER_TEMP/kumwe-composer" \
+            'dev-main'
+          test -f "$RUNNER_TEMP/kumwe-composer/vendor/autoload.php"
+          test ! -e "$RUNNER_TEMP/kumwe-composer/.env"
+
+      - name: Verify non-interactive ZIP bootstrap
+        working-directory: ${{ runner.temp }}/kumwe-zip
+        env:
+          COMPOSER_NO_INTERACTION: '1'
+        run: |
+          php bin/kumwe-install
+          test ! -e .env
+
+      - name: Install and exercise Composer deployment
+        working-directory: ${{ runner.temp }}/kumwe-composer
+        shell: bash
+        run: |
+          set -euo pipefail
+          php bin/kumwe database:migrate
+          password_file="$RUNNER_TEMP/composer-administrator-password"
+          install -m 0600 /dev/null "$password_file"
+          openssl rand -base64 32 | tr -d '\n' > "$password_file"
+          php bin/kumwe user:create-admin \
+            --email=composer-administrator@kumwe.test \
+            --name=Administrator \
+            --password-file="$password_file"
+          php -S 127.0.0.1:18081 -t public public/index.php \
+            > "$RUNNER_TEMP/kumwe-composer-server.log" 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          curl --fail --silent --show-error --retry 20 --retry-connrefused \
+            http://127.0.0.1:18081/health/live >/dev/null
+          curl --fail --silent --show-error --retry 20 --retry-connrefused \
+            http://127.0.0.1:18081/health/ready >/dev/null
+          curl --fail --silent --show-error --retry 20 --retry-connrefused \
+            http://127.0.0.1:18081/administrator/login >/dev/null
+
+      - name: Prepare clean ZIP database
+        run: >-
+          docker exec '${{ job.services.database.id }}' mariadb --user=root
+          --execute="CREATE DATABASE kumwe_distribution_zip CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+          GRANT ALL ON kumwe_distribution_zip.* TO 'kumwe'@'%'"
+
+      - name: Install and exercise ZIP deployment
+        working-directory: ${{ runner.temp }}/kumwe-zip
+        shell: bash
+        run: |
+          set -euo pipefail
+          export APP_BASE_URL=https://127.0.0.1:18082
+          export DB_NAME=kumwe_distribution_zip
+          php bin/kumwe database:migrate
+          password_file="$RUNNER_TEMP/zip-administrator-password"
+          install -m 0600 /dev/null "$password_file"
+          openssl rand -base64 32 | tr -d '\n' > "$password_file"
+          php bin/kumwe user:create-admin \
+            --email=zip-administrator@kumwe.test \
+            --name=Administrator \
+            --password-file="$password_file"
+          php -S 127.0.0.1:18082 -t public public/index.php \
+            > "$RUNNER_TEMP/kumwe-zip-server.log" 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          curl --fail --silent --show-error --retry 20 --retry-connrefused \
+            http://127.0.0.1:18082/health/live >/dev/null
+          curl --fail --silent --show-error --retry 20 --retry-connrefused \
+            http://127.0.0.1:18082/health/ready >/dev/null
+          curl --fail --silent --show-error --retry 20 --retry-connrefused \
+            http://127.0.0.1:18082/administrator/login >/dev/null
+
+  production-deployment:
+    name: Production / ${{ matrix.database.name }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      matrix:
+        database:
+          - name: MariaDB LTS
+            driver: mariadb
+            image: mariadb:lts
+            port: '3306'
+            server-version: mariadb-12.3.2
+          - name: MySQL 8.4 LTS
+            driver: mysql
+            image: mysql:8.4
+            port: '3306'
+            server-version: '8.4'
+          - name: PostgreSQL 17
+            driver: pgsql
+            image: postgres:17-alpine
+            port: '5432'
+            server-version: '17'
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ inputs.ref || github.sha }}
+
+      - name: Build production images
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker build \
+            --file docker/php/Dockerfile \
+            --target runtime \
+            --tag kumwe-app:acceptance \
+            --build-arg KUMWE_RELEASE=2.0.0-acceptance \
+            .
+          docker build \
+            --file docker/php/Dockerfile \
+            --target web \
+            --tag kumwe-web:acceptance \
+            --build-arg KUMWE_RELEASE=2.0.0-acceptance \
+            .
+
+      - name: Prepare isolated production configuration
+        shell: bash
+        env:
+          DATABASE_DRIVER: ${{ matrix.database.driver }}
+          DATABASE_IMAGE: ${{ matrix.database.image }}
+          DATABASE_PORT: ${{ matrix.database.port }}
+          DATABASE_SERVER_VERSION: ${{ matrix.database.server-version }}
+        run: |
+          set -euo pipefail
+          secrets_directory="$RUNNER_TEMP/kumwe-secrets"
+          install -d -m 0700 "$secrets_directory"
+          app_secret_file="$secrets_directory/app-secret"
+          administrator_password_file="$secrets_directory/administrator-password"
+          database_password_file="$secrets_directory/database-password"
+          redis_password_file="$secrets_directory/redis-password"
+          umask 077
+          openssl rand -base64 48 > "$app_secret_file"
+          openssl rand -base64 32 | tr -d '\n' > "$administrator_password_file"
+          openssl rand -base64 32 | tr -d '\n' > "$database_password_file"
+          openssl rand -base64 32 | tr -d '\n' > "$redis_password_file"
+          chmod 0600 \
+            "$app_secret_file" \
+            "$administrator_password_file" \
+            "$database_password_file" \
+            "$redis_password_file"
+          {
+            echo 'KUMWE_APP_IMAGE_REF=kumwe-app:acceptance'
+            echo 'KUMWE_WEB_IMAGE_REF=kumwe-web:acceptance'
+            echo 'KUMWE_APPLICATION_PULL_POLICY=never'
+            echo 'KUMWE_INFRASTRUCTURE_PULL_POLICY=always'
+            echo 'KUMWE_BASE_URL=https://kumwe.test'
+            echo 'KUMWE_TRUSTED_HOSTS=kumwe.test,127.0.0.1,localhost'
+            echo 'KUMWE_HTTP_BIND=127.0.0.1'
+            echo 'KUMWE_HTTP_PORT=18080'
+            echo 'KUMWE_RELEASE=2.0.0-acceptance'
+            echo "KUMWE_DATABASE_IMAGE=$DATABASE_IMAGE"
+            echo "KUMWE_DB_DRIVER=$DATABASE_DRIVER"
+            echo "KUMWE_DB_PORT=$DATABASE_PORT"
+            echo "KUMWE_DB_SERVER_VERSION=$DATABASE_SERVER_VERSION"
+            echo 'KUMWE_DB_SSLMODE=disable'
+            echo 'KUMWE_DB_NAME=kumwe_acceptance'
+            echo 'KUMWE_DB_USER=kumwe'
+            echo 'KUMWE_DB_TABLE_PREFIX=kumwe_'
+            echo 'KUMWE_REDIS_IMAGE=redis:8-alpine'
+            echo "KUMWE_APP_SECRET_FILE=$app_secret_file"
+            echo "KUMWE_ACCEPTANCE_ADMIN_PASSWORD_FILE=$administrator_password_file"
+            echo "KUMWE_DB_PASSWORD_FILE=$database_password_file"
+            echo "KUMWE_REDIS_PASSWORD_FILE=$redis_password_file"
+          } >> "$GITHUB_ENV"
+
+      - name: Validate Compose model
+        run: docker compose --file compose.production.yaml config --quiet
+
+      - name: Deploy database, Redis and migrations
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker compose --file compose.production.yaml up --detach --wait database redis
+          docker compose --file compose.production.yaml run --rm migrate
+
+      - name: Create first administrator through the deployed CLI
+        shell: bash
+        run: |
+          set -euo pipefail
+          administrator_password="$(<"$KUMWE_ACCEPTANCE_ADMIN_PASSWORD_FILE")"
+          docker compose --file compose.production.yaml run \
+            --rm \
+            --no-deps \
+            --env KUMWE_ACCEPTANCE_ADMIN_PASSWORD="$administrator_password" \
+            app \
+            sh -euc '
+              umask 077
+              password_file=/tmp/kumwe-acceptance-admin-password
+              trap '\''rm -f "$password_file"'\'' EXIT
+              printf %s "$KUMWE_ACCEPTANCE_ADMIN_PASSWORD" > "$password_file"
+              php bin/kumwe user:create-admin \
+                --email=administrator@kumwe.test \
+                --name=Administrator \
+                --password-file="$password_file"
+            '
+
+      - name: Start the complete production topology
+        run: >-
+          docker compose --file compose.production.yaml --profile automation
+          up --detach --wait app web worker scheduler
+
+      - name: Exercise HTTP, CLI and process health
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --retry 20 --retry-connrefused \
+            http://127.0.0.1:18080/health/live >/dev/null
+          curl --fail --silent --show-error --retry 20 --retry-connrefused \
+            http://127.0.0.1:18080/health/ready >/dev/null
+          curl --fail --silent --show-error --retry 20 --retry-connrefused \
+            http://127.0.0.1:18080/administrator/login >/dev/null
+          docker compose --file compose.production.yaml exec -T app php bin/kumwe app:health
+          test "$(docker inspect --format '{{.State.Health.Status}}' kumwe-app-1)" = healthy
+          test "$(docker inspect --format '{{.State.Health.Status}}' kumwe-web-1)" = healthy
+          test "$(docker inspect --format '{{.State.Status}}' kumwe-worker-1)" = running
+          test "$(docker inspect --format '{{.State.Status}}' kumwe-scheduler-1)" = running
+
+      - name: Exercise administration, REST, authorization and idempotency
+        shell: bash
+        run: |
+          set -euo pipefail
+          full_token_output="$(docker compose --file compose.production.yaml exec -T app \
+            php bin/kumwe token:create \
+            --email=administrator@kumwe.test \
+            --name=deployment-acceptance \
+            --capabilities=content.read,content.create,content.update,content.submit,content.review,content.publish,users.manage)"
+          read_token_output="$(docker compose --file compose.production.yaml exec -T app \
+            php bin/kumwe token:create \
+            --email=administrator@kumwe.test \
+            --name=deployment-read-only \
+            --capabilities=content.read)"
+          full_token="$(sed -n '2p' <<< "$full_token_output")"
+          read_token="$(sed -n '2p' <<< "$read_token_output")"
+          [[ "$full_token" =~ ^[A-Za-z0-9_-]{32,}$ ]]
+          [[ "$read_token" =~ ^[A-Za-z0-9_-]{32,}$ ]]
+          state_file="$RUNNER_TEMP/kumwe-probe-state-${{ matrix.database.driver }}.json"
+          KUMWE_PROBE_BASE_URL=http://127.0.0.1:18080 \
+          KUMWE_PROBE_ADMIN_EMAIL=administrator@kumwe.test \
+          KUMWE_PROBE_ADMIN_PASSWORD="$(<"$KUMWE_ACCEPTANCE_ADMIN_PASSWORD_FILE")" \
+          KUMWE_PROBE_API_TOKEN="$full_token" \
+          KUMWE_PROBE_READ_TOKEN="$read_token" \
+          KUMWE_PROBE_STATE_FILE="$state_file" \
+            bash tools/deployment-probe.sh
+          echo "KUMWE_ACCEPTANCE_API_TOKEN=$full_token" >> "$GITHUB_ENV"
+          echo "KUMWE_ACCEPTANCE_PROBE_STATE=$state_file" >> "$GITHUB_ENV"
+
+      - name: Exercise Redis and durable automation
+        shell: bash
+        run: |
+          set -euo pipefail
+          redis_response="$(docker compose --file compose.production.yaml exec -T redis sh -euc \
+            'redis-cli --no-auth-warning -a "$(cat /run/secrets/redis_password)" ping')"
+          [[ "$redis_response" == PONG ]]
+          docker compose --file compose.production.yaml --profile automation stop worker scheduler
+          docker compose --file compose.production.yaml exec -T app \
+            php bin/kumwe schedule:create \
+            --name=deployment-acceptance \
+            '--cron=* * * * *' \
+            --timezone=UTC \
+            --job=system.sessions.purge \
+            --payload='{}' \
+            --queue=default \
+            --first-run=2000-01-01T00:00:00Z
+          scheduler_output="$(docker compose --file compose.production.yaml exec -T app \
+            php bin/kumwe schedule:run)"
+          grep --fixed-strings --quiet 'Dispatched 1 due schedule(s).' <<< "$scheduler_output"
+          docker compose --file compose.production.yaml exec -T app \
+            php bin/kumwe queue:work --once
+          docker compose --file compose.production.yaml --profile automation \
+            up --detach --wait worker scheduler
+
+      - name: Restart services and verify persistence
+        shell: bash
+        run: |
+          set -euo pipefail
+          page_slug="$(jq -er '.page_slug' "$KUMWE_ACCEPTANCE_PROBE_STATE")"
+          api_content_id="$(jq -er '.api_content_id' "$KUMWE_ACCEPTANCE_PROBE_STATE")"
+          docker compose --file compose.production.yaml restart app web
+          docker compose --file compose.production.yaml up --detach --wait app web
+          curl --fail --silent --show-error --retry 20 --retry-connrefused \
+            "http://127.0.0.1:18080/pages/$page_slug" >/dev/null
+          curl --fail --silent --show-error --retry 20 --retry-connrefused \
+            --header "Authorization: Bearer $KUMWE_ACCEPTANCE_API_TOKEN" \
+            "http://127.0.0.1:18080/api/v1/content/$api_content_id" >/dev/null
+
+      - name: Install database recovery client
+        uses: ./.github/actions/database-client
+        with:
+          driver: ${{ matrix.database.driver }}
+
+      - name: Restore a production backup into a clean database
+        shell: bash
+        env:
+          DATABASE_DRIVER: ${{ matrix.database.driver }}
+          DATABASE_IMAGE: ${{ matrix.database.image }}
+          DATABASE_PORT: ${{ matrix.database.port }}
+        run: |
+          set -euo pipefail
+          recovery_root="$RUNNER_TEMP/kumwe-production-recovery-$DATABASE_DRIVER"
+          backup_root="$recovery_root/backups"
+          source_media="$recovery_root/source/media"
+          source_extensions="$recovery_root/source/extensions"
+          source_extension_assets="$recovery_root/source/extension-assets"
+          restore_root="$recovery_root/restored"
+          restore_container="kumwe-restore-$DATABASE_DRIVER"
+          database_password="$(<"$KUMWE_DB_PASSWORD_FILE")"
+          cleanup_recovery() {
+            docker rm --force "$restore_container" >/dev/null 2>&1 || true
+          }
+          trap cleanup_recovery EXIT
+          install -d -m 0700 \
+            "$backup_root" "$source_media" "$source_extensions" "$source_extension_assets" "$restore_root"
+          printf 'production-media' > "$source_media/probe.txt"
+          printf 'production-extension' > "$source_extensions/probe.txt"
+          printf 'production-extension-asset' > "$source_extension_assets/probe.css"
+
+          if [[ "$DATABASE_DRIVER" == pgsql ]]; then
+            database_health='pg_isready -U kumwe -d kumwe_restore'
+          elif [[ "$DATABASE_DRIVER" == mariadb ]]; then
+            database_health='healthcheck.sh --connect --innodb_initialized'
+          else
+            database_health="mysqladmin ping -h 127.0.0.1 -ukumwe -p$database_password"
+          fi
+          docker run --detach \
+            --name "$restore_container" \
+            --publish "127.0.0.1::$DATABASE_PORT" \
+            --health-cmd "$database_health" \
+            --health-interval 2s \
+            --health-timeout 5s \
+            --health-retries 30 \
+            --env MARIADB_DATABASE=kumwe_restore \
+            --env MARIADB_USER=kumwe \
+            --env "MARIADB_PASSWORD=$database_password" \
+            --env MARIADB_RANDOM_ROOT_PASSWORD=yes \
+            --env MYSQL_DATABASE=kumwe_restore \
+            --env MYSQL_USER=kumwe \
+            --env "MYSQL_PASSWORD=$database_password" \
+            --env MYSQL_RANDOM_ROOT_PASSWORD=yes \
+            --env POSTGRES_DB=kumwe_restore \
+            --env POSTGRES_USER=kumwe \
+            --env "POSTGRES_PASSWORD=$database_password" \
+            "$DATABASE_IMAGE" >/dev/null
+          for attempt in $(seq 1 60); do
+            [[ "$(docker inspect --format '{{.State.Health.Status}}' "$restore_container")" == healthy ]] && break
+            sleep 2
+          done
+          [[ "$(docker inspect --format '{{.State.Health.Status}}' "$restore_container")" == healthy ]]
+          restore_port="$(docker port "$restore_container" "$DATABASE_PORT/tcp" | awk -F: 'NR == 1 {print $NF}')"
+          [[ "$restore_port" =~ ^[0-9]+$ ]]
+          source_host="$(docker inspect \
+            --format '{{(index .NetworkSettings.Networks "kumwe_backend").IPAddress}}' \
+            kumwe-database-1)"
+          [[ -n "$source_host" ]]
+          docker compose --file compose.production.yaml --profile automation \
+            stop web app worker scheduler
+
+          export KUMWE_BACKUP_CONSISTENCY=quiesced
+          export KUMWE_BACKUP_DIR="$backup_root"
+          export KUMWE_DB_DRIVER="$DATABASE_DRIVER"
+          export KUMWE_DB_HOST="$source_host"
+          export KUMWE_DB_PORT="$DATABASE_PORT"
+          export KUMWE_DB_NAME=kumwe_acceptance
+          export KUMWE_DB_USER=kumwe
+          export KUMWE_DB_PASSWORD_FILE
+          export KUMWE_DB_TABLE_PREFIX=kumwe_
+          export KUMWE_EXTENSIONS_DIR="$source_extensions"
+          export KUMWE_EXTENSION_ASSETS_DIR="$source_extension_assets"
+          export KUMWE_MEDIA_DIR="$source_media"
+          export KUMWE_RELEASE=2.0.0
+          backup_path="$(bash tools/backup.sh)"
+
+          export KUMWE_RESTORE_DB_DRIVER="$DATABASE_DRIVER"
+          export KUMWE_RESTORE_DB_HOST=127.0.0.1
+          export KUMWE_RESTORE_DB_PORT="$restore_port"
+          export KUMWE_RESTORE_DB_NAME=kumwe_restore
+          export KUMWE_RESTORE_DB_USER=kumwe
+          export KUMWE_RESTORE_DB_PASSWORD_FILE="$KUMWE_DB_PASSWORD_FILE"
+          export KUMWE_RESTORE_DB_TABLE_PREFIX=kumwe_
+          export KUMWE_RESTORE_EXTENSIONS_DIR="$restore_root/extensions"
+          export KUMWE_RESTORE_EXTENSION_ASSETS_DIR="$restore_root/extension-assets"
+          export KUMWE_RESTORE_MEDIA_DIR="$restore_root/media"
+          bash tools/restore.sh "$backup_path"
+          cmp "$source_media/probe.txt" "$restore_root/media/probe.txt"
+          cmp "$source_extensions/probe.txt" "$restore_root/extensions/probe.txt"
+          cmp "$source_extension_assets/probe.css" "$restore_root/extension-assets/probe.css"
+
+      - name: Capture deployment diagnostics
+        if: failure()
+        run: |
+          docker compose --file compose.production.yaml --profile automation ps --all || true
+          docker compose --file compose.production.yaml --profile automation logs --no-color || true
+
+      - name: Remove acceptance deployment
+        if: always()
+        run: >-
+          docker compose --file compose.production.yaml --profile automation
+          down --volumes --remove-orphans

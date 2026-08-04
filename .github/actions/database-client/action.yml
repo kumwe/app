@@ -1,0 +1,39 @@
+name: Install Kumwe database recovery client
+description: Installs the native client used by the database-matrix recovery drill.
+inputs:
+  driver:
+    description: Kumwe database driver (mariadb, mysql or pgsql)
+    required: true
+runs:
+  using: composite
+  steps:
+    - name: Install MariaDB/MySQL client
+      if: inputs.driver != 'pgsql'
+      shell: bash
+      run: |
+        set -euo pipefail
+        sudo apt-get update
+        sudo apt-get install --yes jq mariadb-client
+
+    - name: Install verified PostgreSQL 17 client
+      if: inputs.driver == 'pgsql'
+      shell: bash
+      run: |
+        set -euo pipefail
+        pgdg_key="${RUNNER_TEMP}/postgresql-pgdg.asc"
+        curl --fail --location --silent --show-error \
+          https://www.postgresql.org/media/keys/ACCC4CF8.asc \
+          --output "$pgdg_key"
+        test "$(gpg --show-keys --with-colons "$pgdg_key" | awk -F: '$1 == "fpr" {print $10; exit}')" \
+          = 'B97B0AFCAA1A47F044F244A07FCC7D46ACCC4CF8'
+        sudo install -d -m 0755 /usr/share/postgresql-common/pgdg
+        sudo gpg --dearmor --batch --yes \
+          --output /usr/share/postgresql-common/pgdg/apt.postgresql.org.gpg \
+          "$pgdg_key"
+        . /etc/os-release
+        printf 'deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.gpg] https://apt.postgresql.org/pub/repos/apt %s-pgdg main\n' \
+          "$VERSION_CODENAME" \
+          | sudo tee /etc/apt/sources.list.d/pgdg.list >/dev/null
+        sudo apt-get update
+        sudo apt-get install --yes jq postgresql-client-17
+        echo '/usr/lib/postgresql/17/bin' >> "$GITHUB_PATH"

@@ -15,27 +15,46 @@ services:
     ports:
       - '8080:8080'
     depends_on:
-      postgres:
+      database:
         condition: service_healthy
       redis:
         condition: service_healthy
 
-  postgres:
-    image: postgres:17-alpine
+  database:
+    image: ${KUMWE_DATABASE_IMAGE:-mariadb:lts}
     environment:
+      DB_DRIVER: ${DB_DRIVER:-mariadb}
+      MARIADB_DATABASE: ${DB_NAME:-kumwe}
+      MARIADB_USER: ${DB_USER:-kumwe}
+      MARIADB_PASSWORD: ${DB_PASSWORD:-kumwe-development-only}
+      MARIADB_RANDOM_ROOT_PASSWORD: 'yes'
+      MYSQL_DATABASE: ${DB_NAME:-kumwe}
+      MYSQL_USER: ${DB_USER:-kumwe}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-kumwe-development-only}
+      MYSQL_RANDOM_ROOT_PASSWORD: 'yes'
       POSTGRES_DB: ${DB_NAME:-kumwe}
       POSTGRES_USER: ${DB_USER:-kumwe}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-kumwe-development-only}
     volumes:
-      - postgres-data:/var/lib/postgresql/data
+      - database-mysql-data:/var/lib/mysql
+      - database-postgres-data:/var/lib/postgresql/data
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}"']
+      test:
+        - CMD-SHELL
+        - >-
+          if [ "$${DB_DRIVER}" = pgsql ]; then
+            pg_isready -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}";
+          elif command -v mariadb-admin >/dev/null 2>&1; then
+            mariadb-admin ping --silent -h 127.0.0.1 -u"$${MARIADB_USER}" -p"$${MARIADB_PASSWORD}";
+          else
+            mysqladmin ping --silent -h 127.0.0.1 -u"$${MYSQL_USER}" -p"$${MYSQL_PASSWORD}";
+          fi
       interval: 5s
       timeout: 5s
       retries: 10
 
   redis:
-    image: redis:8-alpine
+    image: ${KUMWE_REDIS_IMAGE:-redis:8-alpine}
     command: redis-server --appendonly yes
     volumes:
       - redis-data:/data
@@ -46,5 +65,6 @@ services:
       retries: 10
 
 volumes:
-  postgres-data:
+  database-mysql-data:
+  database-postgres-data:
   redis-data:
