@@ -25,6 +25,7 @@ final readonly class AdministratorDashboardHandler implements RequestHandlerInte
 
         return new HtmlResponse($this->renderer->render('content-list', [
             'csrf' => $session->csrfToken,
+            'capabilities' => AdministratorRequest::capabilityMap($request),
             'entries' => array_map(
                 static fn (ContentRecord $record): array => $record->toArray(),
                 $this->content->list(200, true),

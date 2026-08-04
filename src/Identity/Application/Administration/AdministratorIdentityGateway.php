@@ -22,5 +22,6 @@ interface AdministratorIdentityGateway
         string $name,
         array $capabilities,
         ?\DateTimeImmutable $expiresAt = null,
+        ?string $actorId = null,
     ): array;
 }

@@ -36,6 +36,7 @@ final readonly class AdministratorContentEditorHandler implements RequestHandler
 
         return new HtmlResponse($this->renderer->render('content-form', [
             'csrf' => $session->csrfToken,
+            'capabilities' => AdministratorRequest::capabilityMap($request),
             'entry' => $entry,
         ]), 200, ['Cache-Control' => 'no-store']);
     }

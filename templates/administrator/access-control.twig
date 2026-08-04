@@ -1,0 +1,77 @@
+{% extends "administrator/layout.twig" %}
+{% block title %}Users and access · Kumwe{% endblock %}
+{% block content %}
+  <div class="page-heading"><div><p class="eyebrow">Identity</p><h1>Users, groups and permissions</h1></div></div>
+  {% if saved %}<p class="notice" role="status">Access control updated.</p>{% endif %}
+  {% if created_token %}<div class="alert token-result" role="status"><strong>Copy this token now. It will not be shown again.</strong><code>{{ created_token.token }}</code><small>ID: {{ created_token.token_id }}</small></div>{% endif %}
+
+  {% if capabilities['users.manage'] is defined %}
+  <div class="admin-grid">
+    <section class="panel stack"><h2>Create user</h2><form method="post" action="/administrator/access" class="stack">
+      <input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="action" value="user.create">
+      <label>Email<input type="email" name="email" required></label><label>Display name<input name="display_name" required></label>
+      <label>Initial password<input type="password" name="password" minlength="12" autocomplete="new-password" required></label>
+      <label>Status<select name="status"><option value="active">Active</option><option value="pending">Pending</option></select></label>
+      <button class="primary" type="submit">Create user</button>
+    </form></section>
+    <section class="panel stack"><h2>Create group</h2><form method="post" action="/administrator/access" class="stack">
+      <input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="action" value="role.create">
+      <label>Code<input name="code" pattern="[a-z][a-z0-9._-]+" required></label><label>Name<input name="name" required></label>
+      <button class="primary" type="submit">Create group</button>
+    </form></section>
+  </div>
+  {% endif %}
+
+  <section class="panel stack"><h2>Users</h2><div class="table-wrap"><table><thead><tr><th>User</th><th>Status</th><th>Groups</th><th>Manage</th></tr></thead><tbody>
+  {% for user in users %}{% set user_form = 'user-' ~ user.id %}<tr>
+    <td><input form="{{ user_form }}" name="display_name" value="{{ user.display_name }}"><input form="{{ user_form }}" type="email" name="email" value="{{ user.email }}"></td>
+    <td><select form="{{ user_form }}" name="status">{% for status in ['pending','active','suspended','disabled'] %}<option value="{{ status }}" {% if status == user.status %}selected{% endif %}>{{ status|title }}</option>{% endfor %}</select></td>
+    <td>{% for role in user.roles %}<form method="post" action="/administrator/access" class="grant-pill"><input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="action" value="role.revoke"><input type="hidden" name="user_id" value="{{ user.id }}"><input type="hidden" name="role_id" value="{{ role.id }}"><span class="status">{{ role.name }}</span>{% if capabilities['users.manage'] is defined %}<button class="link-button danger" type="submit" aria-label="Remove {{ role.name }} from {{ user.display_name }}">Remove</button>{% endif %}</form>{% else %}None{% endfor %}</td>
+    <td class="actions"><form id="{{ user_form }}" method="post" action="/administrator/access"><input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="id" value="{{ user.id }}"><input type="hidden" name="version" value="{{ user.version }}"></form>
+      {% if capabilities['users.manage'] is defined %}<button form="{{ user_form }}" name="action" value="user.update">Save</button>{% endif %}</td>
+  </tr>{% endfor %}</tbody></table></div></section>
+
+  <section class="panel stack"><h2>Groups and capability grants</h2>
+  {% for role in roles %}<article class="role-card"><h3>{{ role.name }} <code>{{ role.code }}</code></h3>
+    <div class="grant-list">{% for grant in role.grants %}<form method="post" action="/administrator/access" class="grant-pill">
+      <input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="action" value="grant.revoke"><input type="hidden" name="grant_id" value="{{ grant.id }}">
+      <span>{{ grant.capability }} · {{ grant.scope_type }}{% if grant.scope_identifier %}:{{ grant.scope_identifier }}{% endif %}</span>{% if capabilities['users.manage'] is defined %}<button class="danger" aria-label="Revoke {{ grant.capability }}">×</button>{% endif %}
+    </form>{% else %}<span class="muted">No grants</span>{% endfor %}</div>
+    {% if capabilities['users.manage'] is defined %}<form method="post" action="/administrator/access" class="form-grid">
+      <input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="action" value="grant.create"><input type="hidden" name="role_id" value="{{ role.id }}">
+      <label>Capability<select name="capability">{% for option in available_capabilities %}<option value="{{ option.code }}">{{ option.code }}</option>{% endfor %}</select></label>
+      <label>Scope<select name="scope_type"><option value="global">Global</option><option value="component">Component</option><option value="content_type">Content type</option></select></label>
+      <label>Scope identifier<input name="scope_identifier" placeholder="blank for global"></label><button type="submit">Grant</button>
+    </form>{% endif %}
+  </article>{% endfor %}</section>
+
+  {% if capabilities['users.manage'] is defined %}
+  <section class="panel stack"><h2>Assign group</h2><form method="post" action="/administrator/access" class="form-grid">
+    <input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="action" value="role.assign">
+    <label>User<select name="user_id">{% for user in users %}<option value="{{ user.id }}">{{ user.display_name }}</option>{% endfor %}</select></label>
+    <label>Group<select name="role_id">{% for role in roles %}<option value="{{ role.id }}">{{ role.name }}</option>{% endfor %}</select></label><button type="submit">Assign</button>
+  </form></section>
+
+  <section class="panel stack"><h2>Create API / MCP token</h2><form method="post" action="/administrator/access" class="form-grid">
+    <input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="action" value="token.create">
+    <label>User email<input type="email" name="token_email" required></label><label>Token name<input name="token_name" required></label>
+    <label>Capabilities<input name="token_capabilities" placeholder="content.read,navigation.read" required></label><label>Expires at<input type="datetime-local" name="expires_at"></label>
+    <button class="primary" type="submit">Create token</button>
+  </form></section>
+
+  <section class="panel stack"><h2>API / MCP tokens</h2><div class="table-wrap"><table>
+    <thead><tr><th>Token</th><th>User</th><th>Capabilities</th><th>Expiry</th><th>Status</th><th>Manage</th></tr></thead>
+    <tbody>{% for token in tokens %}<tr>
+      <td><strong>{{ token.name }}</strong><br><small>{{ token.id }}</small></td>
+      <td>{{ token.subject_name }}<br><small>{{ token.subject_email }}</small></td>
+      <td><small>{{ token.capabilities|join(', ') }}</small></td>
+      <td>{{ token.expires_at|default('No expiry') }}</td>
+      <td>{% if token.revoked_at %}<span class="status">Revoked</span>{% else %}<span class="status published">Active</span>{% endif %}</td>
+      <td>{% if not token.revoked_at %}<form method="post" action="/administrator/access">
+        <input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="action" value="token.revoke"><input type="hidden" name="token_id" value="{{ token.id }}">
+        <button class="danger" type="submit">Revoke</button>
+      </form>{% endif %}</td>
+    </tr>{% else %}<tr><td colspan="6">No API or MCP tokens have been issued.</td></tr>{% endfor %}</tbody>
+  </table></div></section>
+  {% endif %}
+{% endblock %}

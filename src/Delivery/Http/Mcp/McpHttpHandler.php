@@ -6,6 +6,7 @@ namespace Kumwe\CMS\Delivery\Http\Mcp;
 
 use Kumwe\CMS\Infrastructure\Mcp\KumweMcpHandlers;
 use Kumwe\CMS\Infrastructure\Mcp\KumweMcpServerFactory;
+use Kumwe\CMS\Identity\Application\Authentication\AuthenticatedPrincipal;
 use Mcp\Server\Transport\Http\Middleware\CorsMiddleware;
 use Mcp\Server\Transport\Http\Middleware\DnsRebindingProtectionMiddleware;
 use Mcp\Server\Transport\Http\Middleware\ProtocolVersionMiddleware;
@@ -52,6 +53,10 @@ final readonly class McpHttpHandler implements RequestHandlerInterface
 
     public function handle(ServerRequestInterface $request): ResponseInterface
     {
+        $principal = $request->getAttribute(AuthenticatedPrincipal::REQUEST_ATTRIBUTE);
+        if (!$principal instanceof AuthenticatedPrincipal) {
+            throw new \LogicException('MCP HTTP requests must be authenticated before dispatch.');
+        }
         $transport = new StreamableHttpTransport(
             request: $request,
             responseFactory: $this->responses,
@@ -68,6 +73,6 @@ final readonly class McpHttpHandler implements RequestHandlerInterface
             ],
             maxBodyBytes: $this->maxBodyBytes,
         );
-        return $this->servers->create($this->handlers)->run($transport);
+        return $this->servers->create($this->handlers->forPrincipal($principal))->run($transport);
     }
 }

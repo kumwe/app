@@ -10,4 +10,5 @@ enum JobStatus: string
     case RESERVED = 'reserved';
     case COMPLETED = 'completed';
     case DEAD = 'dead';
+    case CANCELED = 'canceled';
 }

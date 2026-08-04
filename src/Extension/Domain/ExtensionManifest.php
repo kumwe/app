@@ -16,9 +16,33 @@ final readonly class ExtensionManifest
     /** @var array<string, string> */
     private array $autoload;
 
+    /** @var list<class-string> */
+    private array $migrations;
+
+    /** @var array<string, mixed> */
+    private array $configuration;
+
+    /** @var list<string> */
+    private array $permissions;
+
+    /** @var list<array<string, mixed>> */
+    private array $routes;
+
+    /** @var list<array<string, mixed>> */
+    private array $events;
+
+    /** @var list<string> */
+    private array $assets;
+
     /**
      * @param array<mixed> $dependencies
      * @param array<mixed> $autoload
+     * @param array<mixed> $migrations
+     * @param array<mixed> $configuration
+     * @param array<mixed> $permissions
+     * @param array<mixed> $routes
+     * @param array<mixed> $events
+     * @param array<mixed> $assets
      */
     public function __construct(
         private ExtensionIdentifier $identifier,
@@ -29,6 +53,12 @@ final readonly class ExtensionManifest
         private VersionConstraint $phpCompatibility,
         array $dependencies = [],
         array $autoload = [],
+        array $migrations = [],
+        array $configuration = [],
+        array $permissions = [],
+        array $routes = [],
+        array $events = [],
+        array $assets = [],
     ) {
         if (
             strlen($serviceProvider) > 255
@@ -88,6 +118,12 @@ final readonly class ExtensionManifest
 
         ksort($autoloadMap, SORT_STRING);
         $this->autoload = $autoloadMap;
+        $this->migrations = $this->classList($migrations, 'migrations');
+        $this->configuration = $this->object($configuration, 'configuration');
+        $this->permissions = $this->identifierList($permissions, 'permissions');
+        $this->routes = $this->objectList($routes, 'routes');
+        $this->events = $this->objectList($events, 'events');
+        $this->assets = $this->pathList($assets, 'assets');
     }
 
     public static function fromJson(string $json): self
@@ -120,6 +156,12 @@ final readonly class ExtensionManifest
         $dependencyData = $data['dependencies'] ?? [];
         $autoload = self::requiredObject($data, 'autoload');
         $autoloadData = $autoload['psr-4'] ?? [];
+        $migrations = $data['migrations'] ?? [];
+        $configuration = $data['configuration'] ?? [];
+        $permissions = $data['permissions'] ?? [];
+        $routes = $data['routes'] ?? [];
+        $events = $data['events'] ?? [];
+        $assets = $data['assets'] ?? [];
 
         if (!is_array($dependencyData) || !array_is_list($dependencyData)) {
             throw new InvalidArgumentException('The extension dependencies field must be a JSON array.');
@@ -167,6 +209,14 @@ final readonly class ExtensionManifest
             VersionConstraint::fromString($phpConstraint),
             $dependencies,
             $autoloadData,
+            is_array($migrations) ? $migrations : throw new InvalidArgumentException('Migrations must be a list.'),
+            is_array($configuration)
+                ? $configuration
+                : throw new InvalidArgumentException('Configuration must be an object.'),
+            is_array($permissions) ? $permissions : throw new InvalidArgumentException('Permissions must be a list.'),
+            is_array($routes) ? $routes : throw new InvalidArgumentException('Routes must be a list.'),
+            is_array($events) ? $events : throw new InvalidArgumentException('Events must be a list.'),
+            is_array($assets) ? $assets : throw new InvalidArgumentException('Assets must be a list.'),
         );
     }
 
@@ -206,6 +256,123 @@ final readonly class ExtensionManifest
     public function autoload(): array
     {
         return $this->autoload;
+    }
+
+    /** @return list<class-string> */
+    public function migrations(): array
+    {
+        return $this->migrations;
+    }
+
+    /** @return array<string, mixed> */
+    public function configuration(): array
+    {
+        return $this->configuration;
+    }
+
+    /** @return list<string> */
+    public function permissions(): array
+    {
+        return $this->permissions;
+    }
+
+    /** @return list<array<string, mixed>> */
+    public function routes(): array
+    {
+        return $this->routes;
+    }
+
+    /** @return list<array<string, mixed>> */
+    public function events(): array
+    {
+        return $this->events;
+    }
+
+    /** @return list<string> */
+    public function assets(): array
+    {
+        return $this->assets;
+    }
+
+    /** @param array<mixed> $values @return list<class-string> */
+    private function classList(array $values, string $field): array
+    {
+        if (!array_is_list($values) || count($values) > 256) {
+            throw new InvalidArgumentException(sprintf('Extension %s must be a list of at most 256 classes.', $field));
+        }
+        $result = [];
+        foreach ($values as $value) {
+            if (!is_string($value)
+                || preg_match('/^[A-Za-z_][A-Za-z0-9_]*(?:\\\\[A-Za-z_][A-Za-z0-9_]*)+$/D', $value) !== 1
+            ) {
+                throw new InvalidArgumentException(sprintf('Extension %s contains an invalid class.', $field));
+            }
+            /** @var class-string $value */
+            $result[] = $value;
+        }
+        return $result;
+    }
+
+    /** @param array<mixed> $value @return array<string, mixed> */
+    private function object(array $value, string $field): array
+    {
+        if (array_is_list($value) && $value !== []) {
+            throw new InvalidArgumentException(sprintf('Extension %s must be a JSON object.', $field));
+        }
+        /** @var array<string, mixed> $value */
+        return $value;
+    }
+
+    /** @param array<mixed> $values @return list<string> */
+    private function identifierList(array $values, string $field): array
+    {
+        if (!array_is_list($values) || count($values) > 256) {
+            throw new InvalidArgumentException(sprintf('Extension %s must be a list.', $field));
+        }
+        $result = [];
+        foreach ($values as $value) {
+            if (!is_string($value) || preg_match('/^[a-z][a-z0-9._-]{1,190}$/D', $value) !== 1) {
+                throw new InvalidArgumentException(sprintf('Extension %s contains an invalid identifier.', $field));
+            }
+            $result[] = $value;
+        }
+        return array_values(array_unique($result));
+    }
+
+    /** @param array<mixed> $values @return list<array<string, mixed>> */
+    private function objectList(array $values, string $field): array
+    {
+        if (!array_is_list($values) || count($values) > 256) {
+            throw new InvalidArgumentException(sprintf('Extension %s must be a list.', $field));
+        }
+        $result = [];
+        foreach ($values as $value) {
+            if (!is_array($value) || array_is_list($value)) {
+                throw new InvalidArgumentException(sprintf('Every extension %s entry must be an object.', $field));
+            }
+            /** @var array<string, mixed> $value */
+            $result[] = $value;
+        }
+        return $result;
+    }
+
+    /** @param array<mixed> $values @return list<string> */
+    private function pathList(array $values, string $field): array
+    {
+        if (!array_is_list($values) || count($values) > 512) {
+            throw new InvalidArgumentException(sprintf('Extension %s must be a list.', $field));
+        }
+        $result = [];
+        foreach ($values as $value) {
+            if (!is_string($value)
+                || preg_match('#^(?:[A-Za-z0-9_.-]+/)*[A-Za-z0-9_.-]+$#D', $value) !== 1
+                || str_contains($value, '..')
+            ) {
+                throw new InvalidArgumentException(sprintf('Extension %s contains an unsafe path.', $field));
+            }
+            $result[] = $value;
+        }
+        return array_values(array_unique($result));
     }
 
     /**

@@ -29,4 +29,13 @@ final class JobHandlerRegistry
     {
         return $this->handlers[$type] ?? null;
     }
+
+    /** @return list<string> */
+    public function types(): array
+    {
+        $types = array_keys($this->handlers);
+        sort($types, SORT_STRING);
+
+        return $types;
+    }
 }

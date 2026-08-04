@@ -30,8 +30,13 @@ final readonly class HomePageHandler implements RequestHandlerInterface
             ? ['site_name' => $settings['site_name']]
             : ['site_name' => $settings['site_name'], 'entry' => $record->toArray()];
 
-        return new HtmlResponse($this->twig->render($template, $variables), 200, [
+        $headers = [
             'Cache-Control' => 'public, max-age=60, stale-while-revalidate=300',
-        ]);
+        ];
+        if ($settings['search_indexing_enabled'] !== true) {
+            $headers['X-Robots-Tag'] = 'noindex, nofollow, noarchive';
+        }
+
+        return new HtmlResponse($this->twig->render($template, $variables), 200, $headers);
     }
 }

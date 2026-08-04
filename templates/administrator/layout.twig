@@ -12,10 +12,13 @@
     <a class="brand" href="/administrator">Kumwe</a>
     {% if csrf is defined %}
       <nav aria-label="Administrator">
-        <a href="/administrator">Content</a>
-        <a href="/administrator/content/new">New page</a>
-        <a href="/administrator/extensions">Extensions</a>
-        <a href="/administrator/settings">Settings</a>
+        {% if capabilities['content.read'] is defined %}<a href="/administrator">Content</a>{% endif %}
+        {% if capabilities['content.create'] is defined %}<a href="/administrator/content/new">New page</a>{% endif %}
+        {% if capabilities['navigation.manage'] is defined %}<a href="/administrator/navigation">Menus</a>{% endif %}
+        {% if capabilities['users.manage'] is defined %}<a href="/administrator/access">Users &amp; access</a>{% endif %}
+        {% if capabilities['extensions.manage'] is defined %}<a href="/administrator/extensions">Extensions</a>{% endif %}
+        {% if capabilities['automation.manage'] is defined %}<a href="/administrator/automation">Automation</a>{% endif %}
+        {% if capabilities['settings.manage'] is defined %}<a href="/administrator/settings">Settings</a>{% endif %}
         <form action="/administrator/logout" method="post">
           <input type="hidden" name="_csrf" value="{{ csrf }}">
           <button class="link-button" type="submit">Sign out</button>

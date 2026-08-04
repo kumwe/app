@@ -11,6 +11,7 @@ use Kumwe\CMS\Content\Application\ContentRecord;
 use Kumwe\CMS\Content\Domain\VersionConflict;
 use Kumwe\CMS\Delivery\Http\Api\Concurrency\EntityTag;
 use Kumwe\CMS\Delivery\Http\Api\ProblemDetailsResponseFactory;
+use Kumwe\CMS\Identity\Application\Authorization\InsufficientCapability;
 use Laminas\Diactoros\Response\JsonResponse;
 use Psr\Http\Message\ResponseInterface;
 use Throwable;
@@ -34,6 +35,13 @@ final readonly class ContentApiResponder
     public function problem(Throwable $exception, string $instance): ResponseInterface
     {
         return match (true) {
+            $exception instanceof InsufficientCapability => $this->problems->create(
+                403,
+                'Forbidden',
+                $exception->getMessage(),
+                'urn:kumwe:problem:insufficient-capability',
+                $instance,
+            ),
             $exception instanceof ContentNotFound => $this->problems->create(
                 404,
                 'Content Not Found',

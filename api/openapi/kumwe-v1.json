@@ -151,6 +151,203 @@
         }
       }
     },
+    "/api/v1/menus": {
+      "get": {"operationId": "listMenus", "security": [{"bearerAuth": []}], "responses": {"200": {"description": "Menu collection"}}},
+      "post": {"operationId": "createMenu", "security": [{"bearerAuth": []}], "parameters": [{"$ref": "#/components/parameters/IdempotencyKey"}], "responses": {"201": {"description": "Menu created"}}}
+    },
+    "/api/v1/menus/{id}": {
+      "get": {"operationId": "getMenu", "security": [{"bearerAuth": []}], "responses": {"200": {"description": "Menu"}}},
+      "patch": {"operationId": "updateMenu", "security": [{"bearerAuth": []}], "parameters": [{"$ref": "#/components/parameters/IdempotencyKey"}, {"$ref": "#/components/parameters/IfMatch"}], "responses": {"200": {"description": "Menu updated"}}},
+      "delete": {"operationId": "deleteMenu", "security": [{"bearerAuth": []}], "parameters": [{"$ref": "#/components/parameters/IdempotencyKey"}, {"$ref": "#/components/parameters/IfMatch"}], "responses": {"204": {"description": "Menu deleted"}}}
+    },
+    "/api/v1/menus/{menuId}/items": {
+      "get": {"operationId": "listMenuItems", "security": [{"bearerAuth": []}], "responses": {"200": {"description": "Menu items"}}},
+      "post": {"operationId": "createMenuItem", "security": [{"bearerAuth": []}], "parameters": [{"$ref": "#/components/parameters/IdempotencyKey"}], "responses": {"201": {"description": "Menu item created"}}}
+    },
+    "/api/v1/menu-items/{id}": {
+      "get": {"operationId": "getMenuItem", "security": [{"bearerAuth": []}], "responses": {"200": {"description": "Menu item"}}},
+      "patch": {"operationId": "updateMenuItem", "security": [{"bearerAuth": []}], "parameters": [{"$ref": "#/components/parameters/IdempotencyKey"}, {"$ref": "#/components/parameters/IfMatch"}], "responses": {"200": {"description": "Menu item updated"}}},
+      "delete": {"operationId": "deleteMenuItem", "security": [{"bearerAuth": []}], "parameters": [{"$ref": "#/components/parameters/IdempotencyKey"}, {"$ref": "#/components/parameters/IfMatch"}], "responses": {"204": {"description": "Menu item deleted"}}}
+    },
+    "/api/v1/users": {
+      "get": {"operationId": "listUsers", "security": [{"bearerAuth": []}], "responses": {"200": {"description": "User collection"}}},
+      "post": {"operationId": "createUser", "security": [{"bearerAuth": []}], "parameters": [{"$ref": "#/components/parameters/IdempotencyKey"}], "responses": {"201": {"description": "User created"}}}
+    },
+    "/api/v1/users/{id}": {
+      "patch": {"operationId": "updateUser", "security": [{"bearerAuth": []}], "parameters": [{"$ref": "#/components/parameters/IdempotencyKey"}], "responses": {"204": {"description": "User updated"}}}
+    },
+    "/api/v1/roles": {
+      "get": {"operationId": "listRoles", "security": [{"bearerAuth": []}], "responses": {"200": {"description": "Role collection"}}},
+      "post": {"operationId": "createRole", "security": [{"bearerAuth": []}], "parameters": [{"$ref": "#/components/parameters/IdempotencyKey"}], "responses": {"201": {"description": "Role created"}}}
+    },
+    "/api/v1/users/{id}/roles/{roleId}": {
+      "put": {"operationId": "assignRole", "security": [{"bearerAuth": []}], "parameters": [{"$ref": "#/components/parameters/IdempotencyKey"}], "responses": {"204": {"description": "Role assigned"}}},
+      "delete": {"operationId": "revokeRole", "security": [{"bearerAuth": []}], "parameters": [{"$ref": "#/components/parameters/IdempotencyKey"}], "responses": {"204": {"description": "Role revoked"}}}
+    },
+    "/api/v1/roles/{id}/grants": {
+      "post": {"operationId": "createGrant", "security": [{"bearerAuth": []}], "parameters": [{"$ref": "#/components/parameters/IdempotencyKey"}], "responses": {"201": {"description": "Capability granted"}}}
+    },
+    "/api/v1/grants/{grantId}": {
+      "delete": {"operationId": "revokeGrant", "security": [{"bearerAuth": []}], "parameters": [{"$ref": "#/components/parameters/IdempotencyKey"}], "responses": {"204": {"description": "Grant revoked"}}}
+    },
+    "/api/v1/tokens": {
+      "get": {"operationId": "listTokens", "security": [{"bearerAuth": []}], "responses": {"200": {"description": "Token metadata without secrets"}}},
+      "post": {"operationId": "createToken", "security": [{"bearerAuth": []}], "parameters": [{"$ref": "#/components/parameters/IdempotencyKey"}], "responses": {"201": {"description": "Token created; secret returned once"}}}
+    },
+    "/api/v1/tokens/{tokenId}": {
+      "delete": {"operationId": "revokeToken", "security": [{"bearerAuth": []}], "parameters": [{"$ref": "#/components/parameters/IdempotencyKey"}], "responses": {"204": {"description": "Token revoked"}}}
+    },
+    "/api/v1/settings": {
+      "get": {"operationId": "getSettings", "security": [{"bearerAuth": []}], "responses": {"200": {"description": "Site settings"}}},
+      "put": {"operationId": "updateSettings", "security": [{"bearerAuth": []}], "parameters": [{"$ref": "#/components/parameters/IdempotencyKey"}], "responses": {"200": {"description": "Site settings updated"}}}
+    },
+    "/api/v1/extensions": {
+      "get": {"operationId": "listExtensions", "security": [{"bearerAuth": []}], "responses": {"200": {"description": "Installed extensions"}}}
+    },
+    "/api/v1/extensions/{vendor}/{name}/activate": {
+      "post": {"operationId": "activateExtension", "security": [{"bearerAuth": []}], "parameters": [{"$ref": "#/components/parameters/IdempotencyKey"}], "responses": {"200": {"description": "Extension activated"}}}
+    },
+    "/api/v1/extensions/{vendor}/{name}/disable": {
+      "post": {"operationId": "disableExtension", "security": [{"bearerAuth": []}], "parameters": [{"$ref": "#/components/parameters/IdempotencyKey"}], "responses": {"200": {"description": "Extension disabled"}}}
+    },
+    "/api/v1/extensions/{vendor}/{name}": {
+      "delete": {"operationId": "uninstallExtension", "security": [{"bearerAuth": []}], "parameters": [{"$ref": "#/components/parameters/IdempotencyKey"}], "responses": {"204": {"description": "Extension uninstalled"}}}
+    },
+    "/api/v1/schedules": {
+      "get": {
+        "operationId": "listSchedules",
+        "summary": "List automation schedules and registered job types",
+        "security": [{"bearerAuth": []}],
+        "responses": {
+          "200": {"description": "Schedule collection"},
+          "401": {"$ref": "#/components/responses/Unauthorized"},
+          "403": {"$ref": "#/components/responses/Forbidden"}
+        }
+      },
+      "post": {
+        "operationId": "createSchedule",
+        "summary": "Create an automation schedule",
+        "security": [{"bearerAuth": []}],
+        "parameters": [{"$ref": "#/components/parameters/IdempotencyKey"}],
+        "requestBody": {
+          "required": true,
+          "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ScheduleCreate"}}}
+        },
+        "responses": {
+          "201": {"description": "Schedule created"},
+          "401": {"$ref": "#/components/responses/Unauthorized"},
+          "403": {"$ref": "#/components/responses/Forbidden"},
+          "409": {"$ref": "#/components/responses/Conflict"},
+          "422": {"$ref": "#/components/responses/Unprocessable"}
+        }
+      }
+    },
+    "/api/v1/schedules/{id}": {
+      "parameters": [{
+        "name": "id", "in": "path", "required": true, "schema": {"type": "string", "format": "uuid"}
+      }],
+      "get": {
+        "operationId": "getSchedule",
+        "summary": "Read an automation schedule",
+        "security": [{"bearerAuth": []}],
+        "responses": {
+          "200": {"description": "Schedule with its current ETag"},
+          "401": {"$ref": "#/components/responses/Unauthorized"},
+          "403": {"$ref": "#/components/responses/Forbidden"},
+          "404": {"$ref": "#/components/responses/NotFound"}
+        }
+      },
+      "patch": {
+        "operationId": "setScheduleEnabled",
+        "summary": "Enable or disable an automation schedule",
+        "security": [{"bearerAuth": []}],
+        "parameters": [
+          {"$ref": "#/components/parameters/IdempotencyKey"},
+          {"$ref": "#/components/parameters/IfMatch"}
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ScheduleState"}}}
+        },
+        "responses": {
+          "204": {"description": "Schedule state updated"},
+          "401": {"$ref": "#/components/responses/Unauthorized"},
+          "403": {"$ref": "#/components/responses/Forbidden"},
+          "404": {"$ref": "#/components/responses/NotFound"},
+          "409": {"$ref": "#/components/responses/Conflict"},
+          "412": {"$ref": "#/components/responses/PreconditionFailed"},
+          "422": {"$ref": "#/components/responses/Unprocessable"}
+        }
+      },
+      "delete": {
+        "operationId": "deleteSchedule",
+        "summary": "Delete an automation schedule",
+        "security": [{"bearerAuth": []}],
+        "parameters": [
+          {"$ref": "#/components/parameters/IdempotencyKey"},
+          {"$ref": "#/components/parameters/IfMatch"}
+        ],
+        "responses": {
+          "204": {"description": "Schedule deleted"},
+          "401": {"$ref": "#/components/responses/Unauthorized"},
+          "403": {"$ref": "#/components/responses/Forbidden"},
+          "404": {"$ref": "#/components/responses/NotFound"},
+          "409": {"$ref": "#/components/responses/Conflict"},
+          "412": {"$ref": "#/components/responses/PreconditionFailed"}
+        }
+      }
+    },
+    "/api/v1/jobs": {
+      "get": {
+        "operationId": "listJobs",
+        "summary": "List recent and failed automation jobs",
+        "security": [{"bearerAuth": []}],
+        "parameters": [{
+          "name": "limit", "in": "query", "schema": {"type": "integer", "minimum": 1, "maximum": 500}
+        }],
+        "responses": {
+          "200": {"description": "Job collection"},
+          "401": {"$ref": "#/components/responses/Unauthorized"},
+          "403": {"$ref": "#/components/responses/Forbidden"}
+        }
+      }
+    },
+    "/api/v1/jobs/{id}/retry": {
+      "post": {
+        "operationId": "retryJob",
+        "summary": "Retry a dead automation job",
+        "security": [{"bearerAuth": []}],
+        "parameters": [
+          {"name": "id", "in": "path", "required": true, "schema": {"type": "string", "format": "uuid"}},
+          {"$ref": "#/components/parameters/IdempotencyKey"}
+        ],
+        "responses": {
+          "204": {"description": "Job queued for retry"},
+          "401": {"$ref": "#/components/responses/Unauthorized"},
+          "403": {"$ref": "#/components/responses/Forbidden"},
+          "409": {"$ref": "#/components/responses/Conflict"},
+          "422": {"$ref": "#/components/responses/Unprocessable"}
+        }
+      }
+    },
+    "/api/v1/jobs/{id}/cancel": {
+      "post": {
+        "operationId": "cancelJob",
+        "summary": "Cancel a pending automation job",
+        "security": [{"bearerAuth": []}],
+        "parameters": [
+          {"name": "id", "in": "path", "required": true, "schema": {"type": "string", "format": "uuid"}},
+          {"$ref": "#/components/parameters/IdempotencyKey"}
+        ],
+        "responses": {
+          "204": {"description": "Pending job canceled"},
+          "401": {"$ref": "#/components/responses/Unauthorized"},
+          "403": {"$ref": "#/components/responses/Forbidden"},
+          "409": {"$ref": "#/components/responses/Conflict"},
+          "422": {"$ref": "#/components/responses/Unprocessable"}
+        }
+      }
+    },
     "/api/v1/plans": {
       "post": {
         "operationId": "previewSafePlan",
@@ -277,6 +474,26 @@
         "type": "object",
         "required": ["status"],
         "properties": {"status": {"type": "string", "enum": ["draft", "review", "published", "archived"]}},
+        "additionalProperties": false
+      },
+      "ScheduleCreate": {
+        "type": "object",
+        "required": ["name", "cron_expression", "timezone", "job_type", "queue", "first_run"],
+        "properties": {
+          "name": {"type": "string", "minLength": 1, "maxLength": 160},
+          "cron_expression": {"type": "string", "minLength": 1, "maxLength": 120},
+          "timezone": {"type": "string", "minLength": 1, "maxLength": 80},
+          "job_type": {"type": "string", "minLength": 3, "maxLength": 128},
+          "queue": {"type": "string", "minLength": 1, "maxLength": 64},
+          "first_run": {"type": "string", "format": "date-time"},
+          "payload": {"type": "object", "additionalProperties": true}
+        },
+        "additionalProperties": false
+      },
+      "ScheduleState": {
+        "type": "object",
+        "required": ["enabled"],
+        "properties": {"enabled": {"type": "boolean"}},
         "additionalProperties": false
       },
       "SafePlanRequest": {

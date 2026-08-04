@@ -25,17 +25,20 @@ final readonly class AdministratorSettingsHandler implements RequestHandlerInter
 
         if (strtoupper($request->getMethod()) === 'POST') {
             $form = AdministratorRequest::form($request);
-            $this->settings->update(
-                $session->principal->subject(),
-                AdministratorRequest::required($form, 'site_name'),
-                AdministratorRequest::required($form, 'homepage_slug'),
-            );
+            $this->settings->updateAll($session->principal->subject(), [
+                'site_name' => AdministratorRequest::required($form, 'site_name'),
+                'homepage_slug' => AdministratorRequest::required($form, 'homepage_slug'),
+                'default_locale' => AdministratorRequest::required($form, 'default_locale'),
+                'timezone' => AdministratorRequest::required($form, 'timezone'),
+                'search_indexing_enabled' => ($form['search_indexing_enabled'] ?? '') === '1',
+            ]);
 
             return new RedirectResponse('/administrator/settings?saved=1', 303);
         }
 
         return new HtmlResponse($this->renderer->render('settings', [
             'csrf' => $session->csrfToken,
+            'capabilities' => AdministratorRequest::capabilityMap($request),
             'settings' => $this->settings->current(),
             'saved' => ($request->getQueryParams()['saved'] ?? null) === '1',
         ]), 200, ['Cache-Control' => 'no-store']);

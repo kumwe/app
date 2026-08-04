@@ -1,0 +1,19 @@
+{
+  "schema": 1,
+  "name": "kumwe/announcements-example",
+  "type": "component",
+  "version": "1.0.0",
+  "provider": "KumweExample\\Announcements\\Provider",
+  "autoload": {"psr-4": {"KumweExample\\Announcements\\": "src/"}},
+  "requires": {"kumwe": "^2.0.0", "php": "^8.5.0"},
+  "dependencies": [],
+  "migrations": ["KumweExample\\Announcements\\Migration\\CreateAnnouncements"],
+  "configuration": {
+    "type": "object",
+    "properties": {"heading": {"type": "string", "default": "Announcements"}}
+  },
+  "permissions": ["announcements.manage"],
+  "routes": [{"name": "announcements.index", "path": "/announcements", "methods": ["GET"]}],
+  "events": [],
+  "assets": []
+}

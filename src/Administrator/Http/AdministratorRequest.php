@@ -116,4 +116,15 @@ final class AdministratorRequest
 
         return $session;
     }
+
+    /** @return array<string, true> */
+    public static function capabilityMap(ServerRequestInterface $request): array
+    {
+        $map = [];
+        foreach (self::session($request)->principal->capabilities() as $capability) {
+            $map[$capability->value()] = true;
+        }
+
+        return $map;
+    }
 }

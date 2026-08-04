@@ -5,11 +5,13 @@ declare(strict_types=1);
 namespace Kumwe\CMS\Delivery\Http\Api\Idempotency;
 
 use DateTimeImmutable;
-use InvalidArgumentException;
-use Joomla\Database\DatabaseInterface;
+use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
+use Doctrine\DBAL\Types\Types;
 use JsonException;
 use Kumwe\CMS\Delivery\Http\Api\ProblemDetailsResponseFactory;
 use Kumwe\CMS\Identity\Application\Authentication\AuthenticatedPrincipal;
+use Kumwe\CMS\Infrastructure\Persistence\TableNames;
 use Laminas\Diactoros\Response\JsonResponse;
 use Psr\Clock\ClockInterface;
 use Psr\Http\Message\ResponseInterface;
@@ -22,14 +24,11 @@ use RuntimeException;
 final readonly class PersistentIdempotencyMiddleware implements MiddlewareInterface
 {
     public function __construct(
-        private DatabaseInterface $database,
+        private Connection $database,
+        private TableNames $tables,
         private ClockInterface $clock,
         private ProblemDetailsResponseFactory $problems,
-        private string $schema,
     ) {
-        if (preg_match('/^[a-z][a-z0-9_]{0,62}$/D', $schema) !== 1) {
-            throw new InvalidArgumentException('The PostgreSQL schema name is invalid.');
-        }
     }
 
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
@@ -51,22 +50,31 @@ final readonly class PersistentIdempotencyMiddleware implements MiddlewareInterf
             (string) $request->getBody(),
         ]));
         $now = $this->clock->now();
-        $insert = sprintf(
-            "INSERT INTO %s (id, idempotency_key, subject, operation, request_digest, state, created_at, expires_at) "
-            . "VALUES (%s, %s, %s, %s, %s, 'in_progress', %s, %s) "
-            . 'ON CONFLICT (subject, operation, idempotency_key) DO NOTHING',
-            $this->table(),
-            $this->quote(Uuid::uuid7()->toString()),
-            $this->quote((string) $key),
-            $this->quote($principal->subject()),
-            $this->quote($operation),
-            $this->quote($digest),
-            $this->quote($now->format('Y-m-d H:i:s.uP')),
-            $this->quote($now->modify('+24 hours')->format('Y-m-d H:i:s.uP')),
-        );
-        $this->database->setQuery($insert)->execute();
+        $inserted = true;
+        try {
+            $this->database->insert($this->tables->raw('idempotency'), [
+                'id' => Uuid::uuid7()->toString(),
+                'idempotency_key' => (string) $key,
+                'subject' => $principal->subject(),
+                'operation' => $operation,
+                'request_digest' => $digest,
+                'state' => 'in_progress',
+                'result_status' => null,
+                'result_body' => null,
+                'result_headers' => null,
+                'result_body_digest' => null,
+                'created_at' => $now,
+                'completed_at' => null,
+                'expires_at' => $now->modify('+24 hours'),
+            ], [
+                'created_at' => Types::DATETIME_IMMUTABLE,
+                'expires_at' => Types::DATETIME_IMMUTABLE,
+            ]);
+        } catch (UniqueConstraintViolationException) {
+            $inserted = false;
+        }
 
-        if ($this->database->getAffectedRows() === 0) {
+        if (!$inserted) {
             $replay = $this->replay($principal->subject(), $operation, (string) $key, $digest, $request);
 
             if ($replay !== null) {
@@ -94,16 +102,13 @@ final readonly class PersistentIdempotencyMiddleware implements MiddlewareInterf
         string $digest,
         ServerRequestInterface $request,
     ): ?ResponseInterface {
-        $row = $this->database->setQuery(sprintf(
+        $row = $this->database->fetchAssociative(sprintf(
             'SELECT request_digest, state, result_status, result_body, result_headers, expires_at FROM %s '
-            . 'WHERE subject = %s AND operation = %s AND idempotency_key = %s',
-            $this->table(),
-            $this->quote($subject),
-            $this->quote($operation),
-            $this->quote($key),
-        ))->loadAssoc();
+            . 'WHERE subject = ? AND operation = ? AND idempotency_key = ?',
+            $this->tables->quoted('idempotency'),
+        ), [$subject, $operation, $key]);
 
-        if (!is_array($row)) {
+        if ($row === false) {
             throw new RuntimeException('The idempotency record could not be loaded.');
         }
 
@@ -153,18 +158,16 @@ final readonly class PersistentIdempotencyMiddleware implements MiddlewareInterf
 
     private function reset(string $subject, string $operation, string $key, string $digest): void
     {
-        $this->database->setQuery(sprintf(
-            "UPDATE %s SET request_digest = %s, state = 'in_progress', result_status = NULL, "
-            . "result_body = NULL, result_body_digest = NULL, result_headers = '{}'::jsonb, "
-            . 'completed_at = NULL, created_at = CURRENT_TIMESTAMP, '
-            . "expires_at = CURRENT_TIMESTAMP + interval '24 hours' "
-            . 'WHERE subject = %s AND operation = %s AND idempotency_key = %s',
-            $this->table(),
-            $this->quote($digest),
-            $this->quote($subject),
-            $this->quote($operation),
-            $this->quote($key),
-        ))->execute();
+        $now = $this->clock->now();
+        $this->database->executeStatement(sprintf(
+            "UPDATE %s SET request_digest = ?, state = 'in_progress', result_status = NULL, "
+            . 'result_body = NULL, result_body_digest = NULL, result_headers = NULL, completed_at = NULL, '
+            . 'created_at = ?, expires_at = ? WHERE subject = ? AND operation = ? AND idempotency_key = ?',
+            $this->tables->quoted('idempotency'),
+        ), [$digest, $now, $now->modify('+24 hours'), $subject, $operation, $key], [
+            Types::STRING, Types::DATETIME_IMMUTABLE, Types::DATETIME_IMMUTABLE,
+            Types::STRING, Types::STRING, Types::STRING,
+        ]);
     }
 
     private function complete(string $subject, string $operation, string $key, ResponseInterface $response): void
@@ -184,33 +187,33 @@ final readonly class PersistentIdempotencyMiddleware implements MiddlewareInterf
             }
         }
 
-        $encodedHeaders = json_encode($headers, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES);
-        $sql = sprintf(
-            "UPDATE %s SET state = 'completed', result_status = %d, result_body = %s::jsonb, "
-            . 'result_body_digest = %s, result_headers = %s::jsonb, completed_at = CURRENT_TIMESTAMP '
-            . "WHERE subject = %s AND operation = %s AND idempotency_key = %s AND state = 'in_progress'",
-            $this->table(),
+        $this->database->executeStatement(sprintf(
+            "UPDATE %s SET state = 'completed', result_status = ?, result_body = ?, result_body_digest = ?, "
+            . "result_headers = ?, completed_at = ? WHERE subject = ? AND operation = ? AND idempotency_key = ? "
+            . "AND state = 'in_progress'",
+            $this->tables->quoted('idempotency'),
+        ), [
             $response->getStatusCode(),
-            $this->quote($body),
-            $this->quote(hash('sha256', $body)),
-            $this->quote($encodedHeaders),
-            $this->quote($subject),
-            $this->quote($operation),
-            $this->quote($key),
-        );
-        $this->database->setQuery($sql)->execute();
+            $decoded,
+            hash('sha256', $body),
+            $headers,
+            $this->clock->now(),
+            $subject,
+            $operation,
+            $key,
+        ], [
+            Types::INTEGER, Types::JSON, Types::STRING, Types::JSON, Types::DATETIME_IMMUTABLE,
+            Types::STRING, Types::STRING, Types::STRING,
+        ]);
     }
 
     private function markFailed(string $subject, string $operation, string $key): void
     {
-        $this->database->setQuery(sprintf(
-            "UPDATE %s SET state = 'failed' WHERE subject = %s AND operation = %s "
-            . "AND idempotency_key = %s AND state = 'in_progress'",
-            $this->table(),
-            $this->quote($subject),
-            $this->quote($operation),
-            $this->quote($key),
-        ))->execute();
+        $this->database->executeStatement(sprintf(
+            "UPDATE %s SET state = 'failed' WHERE subject = ? AND operation = ? "
+            . "AND idempotency_key = ? AND state = 'in_progress'",
+            $this->tables->quoted('idempotency'),
+        ), [$subject, $operation, $key]);
     }
 
     /** @return array<string, mixed> */
@@ -269,25 +272,4 @@ final readonly class PersistentIdempotencyMiddleware implements MiddlewareInterf
         return (int) $value;
     }
 
-    private function table(): string
-    {
-        $quoted = $this->database->quoteName($this->schema . '.idempotency');
-
-        if (!is_string($quoted)) {
-            throw new RuntimeException('Joomla Database returned an invalid quoted table.');
-        }
-
-        return $quoted;
-    }
-
-    private function quote(string $value): string
-    {
-        $quoted = $this->database->quote($value);
-
-        if (!is_string($quoted)) {
-            throw new RuntimeException('Joomla Database returned an invalid quoted value.');
-        }
-
-        return $quoted;
-    }
 }

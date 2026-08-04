@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "name": "kumwe/audit-listener-example",
+  "type": "plugin",
+  "version": "1.0.0",
+  "provider": "KumweExample\\AuditListener\\Provider",
+  "autoload": {"psr-4": {"KumweExample\\AuditListener\\": "src/"}},
+  "requires": {"kumwe": "^2.0.0", "php": "^8.5.0"},
+  "dependencies": [],
+  "migrations": [],
+  "configuration": {},
+  "permissions": [],
+  "routes": [],
+  "events": [{"name": "onKumweExtensionAfterActivate", "direction": "consumes"}],
+  "assets": []
+}

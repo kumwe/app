@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "name": "kumwe/minimal-template-example",
+  "type": "template",
+  "version": "1.0.0",
+  "provider": "KumweExample\\MinimalTemplate\\Provider",
+  "autoload": {"psr-4": {"KumweExample\\MinimalTemplate\\": "src/"}},
+  "requires": {"kumwe": "^2.0.0", "php": "^8.5.0"},
+  "dependencies": [],
+  "migrations": [],
+  "configuration": {},
+  "permissions": [],
+  "routes": [],
+  "events": [],
+  "assets": ["assets/site.css"]
+}

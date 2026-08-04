@@ -47,4 +47,25 @@ final class EnvironmentTest extends TestCase
 
         (new Environment(['LIMIT' => '0']))->positiveInteger('LIMIT', 1);
     }
+
+    public function testDotenvEscapesAreDecodedInOnePass(): void
+    {
+        $file = tempnam(sys_get_temp_dir(), 'kumwe-env-');
+        self::assertIsString($file);
+        self::assertNotFalse(file_put_contents(
+            $file,
+            'APP_TRUSTED_PROXIES="literal\\\\nproxy"' . "\n",
+        ));
+        $original = getenv('APP_TRUSTED_PROXIES');
+        putenv('APP_TRUSTED_PROXIES');
+
+        try {
+            self::assertSame('literal\\nproxy', Environment::fromGlobals($file)->string('APP_TRUSTED_PROXIES'));
+        } finally {
+            unlink($file);
+            if (is_string($original)) {
+                putenv('APP_TRUSTED_PROXIES=' . $original);
+            }
+        }
+    }
 }

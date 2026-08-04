@@ -12,7 +12,7 @@
   "homepage": "https://github.com/Kumwe/cms",
   "license": "GPL-2.0-only",
   "require": {
-    "php": "^8.4",
+    "php": "^8.5",
     "ext-ctype": "*",
     "ext-fileinfo": "*",
     "ext-filter": "*",
@@ -21,11 +21,11 @@
     "ext-mbstring": "*",
     "ext-openssl": "*",
     "ext-pdo": "*",
-    "ext-pdo_pgsql": "*",
+    "ext-redis": "*",
     "ext-sodium": "*",
     "ext-zip": "*",
     "joomla/archive": "^4.0",
-    "joomla/database": "^4.0",
+    "doctrine/dbal": "^4.4",
     "joomla/di": "^4.0",
     "joomla/event": "^4.0",
     "joomla/filesystem": "^4.2",
@@ -52,6 +52,10 @@
     "phpstan/phpstan-strict-rules": "^2.0",
     "phpunit/phpunit": "^11.5",
     "squizlabs/php_codesniffer": "^3.13"
+  },
+  "suggest": {
+    "ext-pdo_mysql": "Required when Kumwe uses MariaDB or MySQL.",
+    "ext-pdo_pgsql": "Required when Kumwe uses PostgreSQL."
   },
   "autoload": {
     "psr-4": {
@@ -88,6 +92,23 @@
       "@cs",
       "@analyse",
       "@test"
+    ],
+    "post-create-project-cmd": "@php bin/kumwe-install"
+  },
+  "archive": {
+    "exclude": [
+      "/.github",
+      "/.gitattributes",
+      "/.gitignore",
+      "/.gitleaks.toml",
+      "/.phpunit.cache",
+      "/build",
+      "/compose.yaml",
+      "/docker",
+      "/phpcs.xml",
+      "/phpstan.neon",
+      "/phpunit.xml.dist",
+      "/tests"
     ]
   },
   "minimum-stability": "stable",

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Kumwe\CMS\Infrastructure\Persistence\Migration;
 
-use Joomla\Database\DatabaseInterface;
+use Doctrine\DBAL\Connection;
 
 interface Migration
 {
@@ -12,5 +12,5 @@ interface Migration
 
     public function checksum(): string;
 
-    public function up(DatabaseInterface $database): void;
+    public function up(Connection $database): void;
 }

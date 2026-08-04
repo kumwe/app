@@ -9,6 +9,7 @@ use Kumwe\CMS\Kernel\Configuration\ApplicationConfiguration;
 use Kumwe\CMS\Kernel\Configuration\ConfigurationFactory;
 use Kumwe\CMS\Kernel\Configuration\DatabaseConfiguration;
 use Kumwe\CMS\Kernel\Configuration\RuntimeEnvironment;
+use Kumwe\CMS\Kernel\Configuration\RedisConfiguration;
 use Kumwe\CMS\Shared\Infrastructure\Configuration\Environment;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
@@ -16,6 +17,7 @@ use PHPUnit\Framework\TestCase;
 #[CoversClass(ConfigurationFactory::class)]
 #[CoversClass(ApplicationConfiguration::class)]
 #[CoversClass(DatabaseConfiguration::class)]
+#[CoversClass(RedisConfiguration::class)]
 #[CoversClass(RuntimeEnvironment::class)]
 final class ConfigurationFactoryTest extends TestCase
 {
@@ -26,7 +28,10 @@ final class ConfigurationFactoryTest extends TestCase
         self::assertSame(RuntimeEnvironment::Production, $configuration->environment);
         self::assertTrue($configuration->isProduction());
         self::assertSame(['kumwe.test'], $configuration->trustedHosts);
-        self::assertSame('kumwe', $configuration->database->schema);
+        self::assertSame('kumwe_', $configuration->database->tablePrefix);
+        self::assertSame('pgsql', $configuration->database->driver);
+        self::assertSame('redis', $configuration->redis->host);
+        self::assertSame('kumwe.cms', $configuration->redis->namespace);
     }
 
     public function testProductionRequiresHttps(): void
@@ -59,11 +64,13 @@ final class ConfigurationFactoryTest extends TestCase
             'APP_TRUSTED_HOSTS' => 'kumwe.test',
             'APP_SECRET' => str_repeat('a', 32),
             'DB_HOST' => 'postgres',
+            'DB_DRIVER' => 'pgsql',
             'DB_PORT' => '5432',
             'DB_NAME' => 'kumwe',
             'DB_USER' => 'kumwe',
             'DB_PASSWORD' => 'secret',
-            'DB_SCHEMA' => 'kumwe',
+            'DB_TABLE_PREFIX' => 'kumwe_',
+            'DB_SERVER_VERSION' => '17',
             'DB_SSLMODE' => 'require',
         ];
     }

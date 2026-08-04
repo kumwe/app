@@ -32,6 +32,7 @@ final readonly class AdministratorExtensionsHandler implements RequestHandlerInt
         if (strtoupper($request->getMethod()) === 'GET') {
             return new HtmlResponse($this->renderer->render('extensions', [
                 'csrf' => $session->csrfToken,
+                'capabilities' => AdministratorRequest::capabilityMap($request),
                 'extensions' => $this->extensions->installed(),
             ]), 200, ['Cache-Control' => 'no-store']);
         }
@@ -60,6 +61,7 @@ final readonly class AdministratorExtensionsHandler implements RequestHandlerInt
         } catch (Throwable $exception) {
             return new HtmlResponse($this->renderer->render('extensions', [
                 'csrf' => $session->csrfToken,
+                'capabilities' => AdministratorRequest::capabilityMap($request),
                 'extensions' => $this->extensions->installed(),
                 'error' => $exception->getMessage(),
             ]), 422, ['Cache-Control' => 'no-store']);

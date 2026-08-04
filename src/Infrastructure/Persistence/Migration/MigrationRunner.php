@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Kumwe\CMS\Infrastructure\Persistence\Migration;
 
-use Joomla\Database\DatabaseInterface;
+use Doctrine\DBAL\Connection;
 use Kumwe\CMS\Infrastructure\Persistence\TransactionManager;
 use RuntimeException;
 
@@ -14,7 +14,7 @@ final readonly class MigrationRunner
      * @param list<Migration> $migrations
      */
     public function __construct(
-        private DatabaseInterface $database,
+        private Connection $database,
         private MigrationRepository $repository,
         private MigrationLock $lock,
         private TransactionManager $transactions,
@@ -43,11 +43,17 @@ final readonly class MigrationRunner
                 }
 
                 $started = hrtime(true);
-                $this->transactions->transactional(function () use ($migration, $id, $checksum, $started): void {
+                $operation = function () use ($migration, $id, $checksum, $started): void {
                     $migration->up($this->database);
                     $elapsed = max(0, (int) round((hrtime(true) - $started) / 1_000_000));
                     $this->repository->record($id, $checksum, $elapsed);
-                });
+                };
+
+                if ($this->database->getDatabasePlatform()->supportsDDLTransactions()) {
+                    $this->transactions->transactional($operation);
+                } else {
+                    $operation();
+                }
                 $completed[] = $id;
             }
 

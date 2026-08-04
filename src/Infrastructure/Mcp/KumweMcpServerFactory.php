@@ -24,11 +24,11 @@ final readonly class KumweMcpServerFactory
             ->setServerInfo(
                 name: 'Kumwe CMS',
                 version: $this->serverVersion,
-                description: 'Read-only discovery and non-executable planning for Kumwe CMS.',
+                description: 'Capability-protected CMS administration through Kumwe application services.',
             )
             ->setInstructions(
-                'Use Kumwe MCP only to discover, read, and prepare plans. '
-                . 'No tool can apply, publish, install, administer, query raw storage, or expose secrets.',
+                'Use the least-privilege token required for each operation. Mutations use the same audited '
+                . 'application services and optimistic concurrency rules as the administrator and REST API.',
             )
             ->setLazyLoading(false)
             ->setCapabilities(new ServerCapabilities(
@@ -48,16 +48,20 @@ final readonly class KumweMcpServerFactory
         }
 
         foreach ($this->catalog->tools() as $tool) {
+            $handler = [$handlers, $tool['handler']];
+            if (!is_callable($handler)) {
+                throw new \LogicException(sprintf('MCP handler %s is not callable.', $tool['handler']));
+            }
             $builder->addTool(
-                handler: [$handlers, $tool['handler']],
+                handler: $handler,
                 name: $tool['name'],
                 title: $tool['title'],
                 description: $tool['description'],
                 annotations: new ToolAnnotations(
                     title: $tool['title'],
-                    readOnlyHint: true,
-                    destructiveHint: false,
-                    idempotentHint: true,
+                    readOnlyHint: $tool['readOnly'],
+                    destructiveHint: $tool['destructive'],
+                    idempotentHint: $tool['idempotent'],
                     openWorldHint: false,
                 ),
                 inputSchema: $tool['inputSchema'],
@@ -66,8 +70,12 @@ final readonly class KumweMcpServerFactory
         }
 
         foreach ($this->catalog->resources() as $resource) {
+            $handler = [$handlers, $resource['handler']];
+            if (!is_callable($handler)) {
+                throw new \LogicException(sprintf('MCP resource handler %s is not callable.', $resource['handler']));
+            }
             $builder->addResource(
-                handler: [$handlers, $resource['handler']],
+                handler: $handler,
                 uri: $resource['uri'],
                 name: $resource['name'],
                 title: $resource['title'],
@@ -77,8 +85,12 @@ final readonly class KumweMcpServerFactory
         }
 
         foreach ($this->catalog->prompts() as $prompt) {
+            $handler = [$handlers, $prompt['handler']];
+            if (!is_callable($handler)) {
+                throw new \LogicException(sprintf('MCP prompt handler %s is not callable.', $prompt['handler']));
+            }
             $builder->addPrompt(
-                handler: [$handlers, $prompt['handler']],
+                handler: $handler,
                 name: $prompt['name'],
                 title: $prompt['title'],
                 description: $prompt['description'],
