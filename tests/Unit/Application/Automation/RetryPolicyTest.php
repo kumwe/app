@@ -38,8 +38,7 @@ final class RetryPolicyTest extends TestCase
     public function testPermanentAndExhaustedFailuresAreNotRetried(): void
     {
         $policy = new RetryPolicy($this->clock(), $this->jitter(0), 10, 60);
-        $permanent = new class ('Invalid content') extends RuntimeException implements PermanentFailure {
-        };
+        $permanent = new PermanentFailure('Invalid content');
 
         self::assertSame(FailureClassification::PERMANENT, $policy->classify($permanent));
         self::assertFalse($policy->decide($permanent, 1, 5)->shouldRetry);
