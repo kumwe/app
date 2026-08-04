@@ -19,11 +19,14 @@ use Kumwe\CMS\Http\Handler\LivenessHandler;
 use Kumwe\CMS\Http\Handler\NotFoundHandler;
 use Kumwe\CMS\Http\Handler\ReadinessHandler;
 use Kumwe\CMS\Http\Middleware\BodyLimitMiddleware;
+use Kumwe\CMS\Http\Middleware\BearerAuthenticationMiddleware;
 use Kumwe\CMS\Http\Middleware\ProblemDetailsMiddleware;
 use Kumwe\CMS\Http\Middleware\RequestIdMiddleware;
 use Kumwe\CMS\Http\Middleware\SecurityHeadersMiddleware;
 use Kumwe\CMS\Http\Middleware\TrustedHostMiddleware;
 use Kumwe\CMS\Http\Security\TrustedHostMatcher;
+use Kumwe\CMS\Identity\Application\Authentication\AccessTokenVerifier;
+use Kumwe\CMS\Identity\Infrastructure\Authentication\PostgreSqlAccessTokenVerifier;
 use Kumwe\CMS\Infrastructure\Persistence\JoomlaTransactionManager;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\MigrationLock;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\MigrationRepository;
@@ -131,6 +134,11 @@ final class ContainerFactory
             ), true);
         $container->share(MigrationLock::class, static fn (Container $container): MigrationLock =>
             new PostgreSqlMigrationLock($container->get(DatabaseInterface::class)), true);
+        $container->share(AccessTokenVerifier::class, static fn (Container $container): AccessTokenVerifier =>
+            new PostgreSqlAccessTokenVerifier(
+                $container->get(DatabaseInterface::class),
+                $databaseConfiguration->schema,
+            ), true);
         $container->share(MigrationRunner::class, static fn (Container $container): MigrationRunner =>
             new MigrationRunner(
                 database: $container->get(DatabaseInterface::class),
@@ -245,6 +253,11 @@ final class ContainerFactory
             new TrustedHostMatcher($configuration->trustedHosts),
         ), true);
         $container->share(BodyLimitMiddleware::class, new BodyLimitMiddleware($configuration->maxBodyBytes), true);
+        $container->share(BearerAuthenticationMiddleware::class, static function (
+            Container $container,
+        ): BearerAuthenticationMiddleware {
+            return new BearerAuthenticationMiddleware($container->get(AccessTokenVerifier::class));
+        }, true);
         $container->share(SecurityHeadersMiddleware::class, new SecurityHeadersMiddleware(
             $configuration->isProduction(),
         ), true);
@@ -294,6 +307,7 @@ final class ContainerFactory
         $application->pipe(ImplicitHeadMiddleware::class);
         $application->pipe(ImplicitOptionsMiddleware::class);
         $application->pipe(MethodNotAllowedMiddleware::class);
+        $application->pipe(BearerAuthenticationMiddleware::class);
         $application->pipe(DispatchMiddleware::class);
         $application->pipe(NotFoundHandler::class);
 
