@@ -215,7 +215,7 @@ services:
         chmod 0700 /run/redis
         chmod 0600 /run/redis/redis.conf
         chown redis:redis /run/redis /run/redis/redis.conf
-        exec su-exec redis:redis redis-server /run/redis/redis.conf
+        exec /usr/local/bin/docker-entrypoint.sh redis-server /run/redis/redis.conf
     secrets:
       - redis_password
     read_only: true
