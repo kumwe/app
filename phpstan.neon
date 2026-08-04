@@ -1,0 +1,16 @@
+parameters:
+  level: max
+  paths:
+    - src
+    - tests
+  tmpDir: .phpstan.cache
+  treatPhpDocTypesAsCertain: false
+  reportUnmatchedIgnoredErrors: true
+  checkMissingOverrideMethodAttribute: true
+  checkUninitializedProperties: true
+  dynamicConstantNames:
+    - PHP_VERSION
+
+includes:
+  - vendor/phpstan/phpstan-strict-rules/rules.neon
+  - vendor/phpstan/phpstan-deprecation-rules/rules.neon

@@ -1,72 +1,94 @@
 {
   "name": "kumwe/cms",
   "type": "project",
-  "description": "Kumwe CMS",
+  "description": "Kumwe CMS 2.0",
   "keywords": [
+    "cms",
+    "joomla-framework",
     "kumwe",
-    "cms"
+    "laminas",
+    "mezzio"
   ],
   "homepage": "https://github.com/Kumwe/cms",
-  "license": "GPL-2.0",
-  "config": {
-    "optimize-autoloader": true,
-    "platform": {
-      "php": "7.2.5"
-    },
-    "vendor-dir": "libraries/vendor",
-    "github-protocols": ["https"],
-    "allow-plugins": {
-      "dealerdirect/phpcodesniffer-composer-installer": true
-    }
+  "license": "GPL-2.0-only",
+  "require": {
+    "php": "^8.4",
+    "ext-ctype": "*",
+    "ext-fileinfo": "*",
+    "ext-filter": "*",
+    "ext-intl": "*",
+    "ext-json": "*",
+    "ext-mbstring": "*",
+    "ext-openssl": "*",
+    "ext-pdo": "*",
+    "ext-pdo_pgsql": "*",
+    "ext-sodium": "*",
+    "joomla/archive": "^4.0",
+    "joomla/database": "^4.0",
+    "joomla/di": "^4.0",
+    "joomla/event": "^4.0",
+    "joomla/filesystem": "^4.2",
+    "joomla/filter": "^4.0",
+    "joomla/registry": "^4.0",
+    "laminas/laminas-authentication": "^2.19",
+    "laminas/laminas-diactoros": "^3.8",
+    "laminas/laminas-httphandlerrunner": "^2.13",
+    "laminas/laminas-inputfilter": "^2.35",
+    "mezzio/mezzio": "^3.28",
+    "mezzio/mezzio-fastroute": "^3.14",
+    "mezzio/mezzio-helpers": "^5.20",
+    "mezzio/mezzio-problem-details": "^1.19",
+    "mezzio/mezzio-twigrenderer": "^2.19",
+    "monolog/monolog": "^3.9",
+    "psr/clock": "^1.0",
+    "psr/log": "^3.0",
+    "ramsey/uuid": "^4.9",
+    "twig/twig": "^3.26"
+  },
+  "require-dev": {
+    "phpstan/phpstan": "^2.1",
+    "phpstan/phpstan-deprecation-rules": "^2.0",
+    "phpstan/phpstan-strict-rules": "^2.0",
+    "phpunit/phpunit": "^11.5",
+    "squizlabs/php_codesniffer": "^3.13"
   },
   "autoload": {
     "psr-4": {
-      "Kumwe\\CMS\\": "libraries/src/"
+      "Kumwe\\CMS\\": "src/"
     }
   },
-  "require": {
-    "php": "^7.2.5",
-    "ext-json": "*",
-    "joomla/application": "~2.0",
-    "joomla/archive": "~2.0",
-    "joomla/authentication": "~2.0",
-    "joomla/console": "~2.0",
-    "joomla/controller": "~2.0",
-    "joomla/crypt": "~2.0",
-    "joomla/data": "~2.0",
-    "joomla/database": "~2.0",
-    "joomla/di": "~2.0",
-    "joomla/event": "~2.0",
-    "joomla/filter": "~2.0",
-    "joomla/filesystem": "~2.0",
-    "joomla/http": "~2.0",
-    "joomla/input": "~2.0",
-    "joomla/model": "~2.0",
-    "joomla/preload": "~2.0",
-    "joomla/ldap": "~2.0",
-    "joomla/oauth1": "~2.0",
-    "joomla/oauth2": "~2.0",
-    "joomla/registry": "~2.0",
-    "joomla/renderer": "~2.0",
-    "joomla/router": "~2.0",
-    "joomla/session": "~2.0",
-    "joomla/string": "~2.0",
-    "joomla/uri": "~2.0",
-    "joomla/utilities": "~2.0",
-    "algo26-matthias/idna-convert": "~3.0",
-    "joomla/view": "~2.0",
-    "laminas/laminas-diactoros": "^2.3",
-    "monolog/monolog": "^2.1",
-    "psr/link": "^1.0",
-    "ramsey/uuid": "^4.0.1",
-    "robmorgan/phinx": "^0.12.3",
-    "defuse/php-encryption": "^2.0",
-    "symfony/asset": "^5.1.2",
-    "symfony/process": "^5.1.2",
-    "symfony/web-link": "^5.1.2",
-    "symfony/yaml": "^5.1.2",
-    "theiconic/php-ga-measurement-protocol": "^2.7.2",
-    "twig/twig": "^2.13",
-    "phpmailer/phpmailer": "~6.0"
-  }
+  "autoload-dev": {
+    "psr-4": {
+      "Kumwe\\CMS\\Tests\\": "tests/"
+    }
+  },
+  "config": {
+    "allow-plugins": {},
+    "audit": {
+      "abandoned": "fail"
+    },
+    "optimize-autoloader": true,
+    "preferred-install": {
+      "*": "dist"
+    },
+    "sort-packages": true
+  },
+  "scripts": {
+    "analyse": "phpstan analyse --no-progress --memory-limit=1G",
+    "audit": "composer audit --locked --abandoned=fail",
+    "cs": "phpcs -q",
+    "cs:fix": "phpcbf",
+    "policy": "bash tools/verify-policy.sh",
+    "test": "phpunit --colors=always",
+    "test:integration": "phpunit --testsuite integration --colors=always",
+    "test:unit": "phpunit --testsuite unit --colors=always",
+    "qa": [
+      "@policy",
+      "@cs",
+      "@analyse",
+      "@test"
+    ]
+  },
+  "minimum-stability": "stable",
+  "prefer-stable": true
 }
