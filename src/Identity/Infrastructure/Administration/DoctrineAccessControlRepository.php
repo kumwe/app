@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace Kumwe\CMS\Identity\Infrastructure\Administration;
 
+use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\Types\Types;
 use InvalidArgumentException;
 use JsonException;
 use Kumwe\CMS\Identity\Application\Administration\AccessControlRepository;
@@ -107,7 +109,7 @@ final readonly class DoctrineAccessControlRepository implements AccessControlRep
         string $displayName,
         string $status,
         string $passwordHash,
-        string $at,
+        DateTimeImmutable $at,
     ): void {
         $this->database->insert($this->tables->raw('users'), [
             'id' => $id,
@@ -118,11 +120,16 @@ final readonly class DoctrineAccessControlRepository implements AccessControlRep
             'version' => 1,
             'created_at' => $at,
             'updated_at' => $at,
+        ], [
+            'created_at' => Types::DATETIME_IMMUTABLE,
+            'updated_at' => Types::DATETIME_IMMUTABLE,
         ]);
         $this->database->insert($this->tables->raw('password_credentials'), [
             'user_id' => $id,
             'password_hash' => $passwordHash,
             'changed_at' => $at,
+        ], [
+            'changed_at' => Types::DATETIME_IMMUTABLE,
         ]);
     }
 
@@ -132,24 +139,34 @@ final readonly class DoctrineAccessControlRepository implements AccessControlRep
         string $displayName,
         string $status,
         int $expectedVersion,
-        string $at,
+        DateTimeImmutable $at,
     ): void {
         $affected = $this->database->executeStatement(sprintf(
             'UPDATE %s SET email = ?, email_normalized = ?, display_name = ?, status = ?, '
             . 'version = version + 1, updated_at = ? WHERE id = ? AND version = ?',
             $this->tables->quoted('users'),
-        ), [$email, $email, $displayName, $status, $at, $id, $expectedVersion]);
+        ), [$email, $email, $displayName, $status, $at, $id, $expectedVersion], [
+            Types::STRING,
+            Types::STRING,
+            Types::STRING,
+            Types::STRING,
+            Types::DATETIME_IMMUTABLE,
+            Types::STRING,
+            Types::INTEGER,
+        ]);
         $this->assertChanged($affected, 'user');
     }
 
-    public function insertRole(string $id, string $code, string $name, string $at): void
+    public function insertRole(string $id, string $code, string $name, DateTimeImmutable $at): void
     {
         $this->database->insert($this->tables->raw('roles'), [
             'id' => $id, 'code' => $code, 'name' => $name, 'created_at' => $at,
+        ], [
+            'created_at' => Types::DATETIME_IMMUTABLE,
         ]);
     }
 
-    public function assignRole(string $userId, string $roleId, string $actorId, string $at): void
+    public function assignRole(string $userId, string $roleId, string $actorId, DateTimeImmutable $at): void
     {
         $exists = $this->database->fetchOne(sprintf(
             'SELECT role_id FROM %s WHERE user_id = ? AND role_id = ?',
@@ -162,6 +179,8 @@ final readonly class DoctrineAccessControlRepository implements AccessControlRep
                 'role_id' => $roleId,
                 'assigned_at' => $at,
                 'assigned_by' => $actorId,
+            ], [
+                'assigned_at' => Types::DATETIME_IMMUTABLE,
             ]);
         }
     }
@@ -181,7 +200,7 @@ final readonly class DoctrineAccessControlRepository implements AccessControlRep
         string $scopeType,
         ?string $scopeIdentifier,
         string $actorId,
-        string $at,
+        DateTimeImmutable $at,
     ): void {
         $this->database->insert($this->tables->raw('role_capability_grants'), [
             'id' => $id,
@@ -191,6 +210,8 @@ final readonly class DoctrineAccessControlRepository implements AccessControlRep
             'scope_identifier' => $scopeIdentifier,
             'granted_at' => $at,
             'granted_by' => $actorId,
+        ], [
+            'granted_at' => Types::DATETIME_IMMUTABLE,
         ]);
     }
 
@@ -202,12 +223,12 @@ final readonly class DoctrineAccessControlRepository implements AccessControlRep
         );
     }
 
-    public function revokeToken(string $tokenId, string $at): void
+    public function revokeToken(string $tokenId, DateTimeImmutable $at): void
     {
         $affected = $this->database->executeStatement(sprintf(
             'UPDATE %s SET revoked_at = ? WHERE id = ? AND revoked_at IS NULL',
             $this->tables->quoted('api_tokens'),
-        ), [$at, $tokenId]);
+        ), [$at, $tokenId], [Types::DATETIME_IMMUTABLE, Types::STRING]);
         $this->assertChanged($affected, 'active API token');
     }
 
