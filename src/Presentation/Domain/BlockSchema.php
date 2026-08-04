@@ -8,16 +8,25 @@ use InvalidArgumentException;
 
 final readonly class BlockSchema
 {
+    /** @var array<string, BlockPropertyType> */
+    private array $properties;
+
+    /** @var list<string> */
+    private array $requiredProperties;
+
+    /** @var list<string> */
+    private array $allowedChildTypes;
+
     /**
-     * @param array<string, BlockPropertyType> $properties
-     * @param list<string>                     $requiredProperties
-     * @param list<string>                     $allowedChildTypes
+     * @param array<array-key, mixed> $properties
+     * @param array<mixed>            $requiredProperties
+     * @param array<mixed>            $allowedChildTypes
      */
     public function __construct(
         private string $type,
-        private array $properties,
-        private array $requiredProperties = [],
-        private array $allowedChildTypes = [],
+        array $properties,
+        array $requiredProperties = [],
+        array $allowedChildTypes = [],
         private bool $allowsChildren = false,
     ) {
         if (preg_match('/^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)*$/D', $type) !== 1) {
@@ -25,7 +34,7 @@ final readonly class BlockSchema
         }
 
         foreach ($properties as $name => $propertyType) {
-            if (!is_string($name) || !$propertyType instanceof BlockPropertyType) {
+            if (!is_string($name) || !($propertyType instanceof BlockPropertyType)) {
                 throw new InvalidArgumentException('Block property schemas must map names to property types.');
             }
         }
@@ -35,20 +44,35 @@ final readonly class BlockSchema
         }
 
         foreach ($requiredProperties as $required) {
+            if (!is_string($required)) {
+                throw new InvalidArgumentException('Required block property names must be strings.');
+            }
+
             if (!array_key_exists($required, $properties)) {
                 throw new InvalidArgumentException(sprintf('Required property %s has no schema.', $required));
             }
         }
 
+        /** @var list<string> $requiredProperties */
         if (count($requiredProperties) !== count(array_unique($requiredProperties))) {
             throw new InvalidArgumentException('Required block properties must be unique.');
         }
 
         foreach ($allowedChildTypes as $childType) {
+            if (!is_string($childType)) {
+                throw new InvalidArgumentException('Allowed child block types must be strings.');
+            }
+
             if (preg_match('/^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)*$/D', $childType) !== 1) {
                 throw new InvalidArgumentException('Allowed child block types must be stable identifiers.');
             }
         }
+
+        /** @var array<string, BlockPropertyType> $properties */
+        $this->properties = $properties;
+        $this->requiredProperties = $requiredProperties;
+        /** @var list<string> $allowedChildTypes */
+        $this->allowedChildTypes = $allowedChildTypes;
     }
 
     public function type(): string

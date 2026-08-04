@@ -8,19 +8,22 @@ use InvalidArgumentException;
 
 final readonly class PresentationContext
 {
-    /** @param list<string> $roles */
+    /** @var list<string> */
+    private array $roles;
+
+    /** @param array<mixed> $roles */
     public function __construct(
         private string $route,
         private ?string $menuId,
         private string $locale,
-        private array $roles = [],
+        array $roles = [],
     ) {
         if ($route === '' || $locale === '') {
             throw new InvalidArgumentException('Presentation route and locale are required.');
         }
 
         if (!array_is_list($roles)) {
-            throw new InvalidArgumentException('Presentation roles must be an ordered list.');
+            throw new InvalidArgumentException('Presentation roles must be a list.');
         }
 
         foreach ($roles as $role) {
@@ -28,6 +31,9 @@ final readonly class PresentationContext
                 throw new InvalidArgumentException('Presentation roles must be non-empty strings.');
             }
         }
+
+        /** @var list<string> $roles */
+        $this->roles = $roles;
     }
 
     public function route(): string

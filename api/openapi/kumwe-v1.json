@@ -1,0 +1,383 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Kumwe CMS API",
+    "version": "1.0.0",
+    "description": "Public discovery, health, and non-executable plan-preview endpoints for Kumwe CMS 2.0."
+  },
+  "jsonSchemaDialect": "https://json-schema.org/draft/2020-12/schema",
+  "servers": [
+    {
+      "url": "/"
+    }
+  ],
+  "paths": {
+    "/api/v1": {
+      "get": {
+        "operationId": "discoverApi",
+        "summary": "Discover the public API",
+        "responses": {
+          "200": {
+            "description": "API discovery document",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiDiscovery"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/plans": {
+      "post": {
+        "operationId": "previewSafePlan",
+        "summary": "Create a non-executable review plan",
+        "description": "Returns a short-lived plan preview. This operation cannot apply, publish, install, or delete anything.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SafePlanRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Non-executable plan preview",
+            "headers": {
+              "ETag": {
+                "$ref": "#/components/headers/ETag"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SafePlan"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        }
+      }
+    },
+    "/health/live": {
+      "get": {
+        "operationId": "getLiveness",
+        "summary": "Check process liveness",
+        "responses": {
+          "200": {
+            "description": "The process is alive",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Liveness"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health/ready": {
+      "get": {
+        "operationId": "getReadiness",
+        "summary": "Check application readiness",
+        "responses": {
+          "200": {
+            "description": "The application and required persistence are ready",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Readiness"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "A required service is not ready",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Readiness"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "Kumwe opaque access token",
+        "description": "A hashed Kumwe API token carrying the exact content.read capability."
+      }
+    },
+    "headers": {
+      "ETag": {
+        "description": "A strong entity tag for optimistic concurrency.",
+        "schema": {
+          "type": "string",
+          "pattern": "^\\\"[^\\\"]*\\\"$"
+        }
+      }
+    },
+    "parameters": {
+      "IdempotencyKey": {
+        "name": "Idempotency-Key",
+        "in": "header",
+        "required": true,
+        "description": "An opaque retry key containing 8 to 128 transport-safe ASCII characters.",
+        "schema": {
+          "type": "string",
+          "minLength": 8,
+          "maxLength": 128,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{7,127}$"
+        }
+      },
+      "IfMatch": {
+        "name": "If-Match",
+        "in": "header",
+        "required": true,
+        "description": "The current strong ETag, required by future state-changing endpoints.",
+        "schema": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "responses": {
+      "BadRequest": {
+        "description": "The request or required idempotency header is invalid",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/ProblemDetails"
+            }
+          }
+        }
+      },
+      "PreconditionRequired": {
+        "description": "A required If-Match header was not supplied",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/ProblemDetails"
+            }
+          }
+        }
+      },
+      "Unauthorized": {
+        "description": "A valid bearer access token is required",
+        "headers": {
+          "WWW-Authenticate": {
+            "schema": {
+              "type": "string"
+            }
+          }
+        },
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/ProblemDetails"
+            }
+          }
+        }
+      },
+      "Forbidden": {
+        "description": "The token lacks the required content.read capability",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "$ref": "#/components/schemas/ProblemDetails"
+            }
+          }
+        }
+      }
+    },
+    "schemas": {
+      "ApiDiscovery": {
+        "type": "object",
+        "required": [
+          "product",
+          "api_version",
+          "status"
+        ],
+        "properties": {
+          "product": {
+            "const": "Kumwe CMS"
+          },
+          "api_version": {
+            "const": "v1"
+          },
+          "status": {
+            "const": "available"
+          }
+        },
+        "additionalProperties": false
+      },
+      "Liveness": {
+        "type": "object",
+        "required": [
+          "status",
+          "product"
+        ],
+        "properties": {
+          "status": {
+            "const": "alive"
+          },
+          "product": {
+            "const": "Kumwe CMS"
+          }
+        },
+        "additionalProperties": false
+      },
+      "ProblemDetails": {
+        "type": "object",
+        "required": [
+          "type",
+          "title",
+          "status",
+          "detail"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "format": "uri-reference"
+          },
+          "title": {
+            "type": "string"
+          },
+          "status": {
+            "type": "integer",
+            "minimum": 400,
+            "maximum": 599
+          },
+          "detail": {
+            "type": "string"
+          },
+          "instance": {
+            "type": "string",
+            "format": "uri-reference"
+          }
+        },
+        "additionalProperties": true
+      },
+      "Readiness": {
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "ready",
+              "not_ready"
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "SafePlanRequest": {
+        "type": "object",
+        "required": [
+          "operation",
+          "target"
+        ],
+        "properties": {
+          "operation": {
+            "$ref": "#/components/schemas/SafePlanOperation"
+          },
+          "target": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255
+          }
+        },
+        "additionalProperties": false
+      },
+      "SafePlanOperation": {
+        "type": "string",
+        "enum": [
+          "content.review",
+          "seo.review",
+          "site.structure.review",
+          "extension.compatibility.review"
+        ]
+      },
+      "SafePlan": {
+        "type": "object",
+        "required": [
+          "id",
+          "mode",
+          "operation",
+          "target",
+          "created_at",
+          "expires_at",
+          "steps",
+          "apply_supported"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "mode": {
+            "const": "plan_only"
+          },
+          "operation": {
+            "$ref": "#/components/schemas/SafePlanOperation"
+          },
+          "target": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "steps": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "apply_supported": {
+            "const": false
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  }
+}

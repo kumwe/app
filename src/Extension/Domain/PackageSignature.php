@@ -8,6 +8,7 @@ use InvalidArgumentException;
 
 final readonly class PackageSignature
 {
+    /** @param non-empty-string $bytes */
     private function __construct(
         private string $keyId,
         private string $bytes,
@@ -26,6 +27,7 @@ final readonly class PackageSignature
             throw new InvalidArgumentException('An Ed25519 signature must contain exactly 64 bytes.');
         }
 
+        /** @var non-empty-string $bytes */
         return new self($keyId, $bytes);
     }
 
@@ -39,6 +41,7 @@ final readonly class PackageSignature
         return 'ed25519';
     }
 
+    /** @return non-empty-string */
     public function bytes(): string
     {
         return $this->bytes;

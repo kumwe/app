@@ -10,6 +10,7 @@ use Kumwe\CMS\Identity\Application\Authentication\AuthenticatedPrincipal;
 use Kumwe\CMS\Identity\Domain\Capability;
 use Laminas\Diactoros\Response\JsonResponse;
 use LogicException;
+use Mezzio\Router\Route;
 use Mezzio\Router\RouteResult;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -85,7 +86,16 @@ final readonly class BearerAuthenticationMiddleware implements MiddlewareInterfa
             return [];
         }
 
-        return $routeResult->getMatchedRoute()?->getOptions() ?? [];
+        $route = $routeResult->getMatchedRoute();
+
+        if (!$route instanceof Route) {
+            return [];
+        }
+
+        /** @var array<string, mixed> $options */
+        $options = $route->getOptions();
+
+        return $options;
     }
 
     private function parseToken(string $header): ?string

@@ -36,7 +36,13 @@ final readonly class VersionConstraint implements Stringable
 
         $comparators = [];
 
-        foreach (preg_split('/\s+/', $expression) ?: [] as $token) {
+        $tokens = preg_split('/\s+/', $expression);
+
+        if ($tokens === false) {
+            throw new InvalidArgumentException('The version constraint could not be parsed.');
+        }
+
+        foreach ($tokens as $token) {
             if (preg_match('/^(<=|>=|<|>|=)?(.+)$/D', $token, $matches) !== 1) {
                 throw new InvalidArgumentException('The version constraint is invalid.');
             }

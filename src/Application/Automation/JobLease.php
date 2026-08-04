@@ -15,7 +15,7 @@ final readonly class JobLease
         private DateTimeImmutable $acquiredAt,
         private DateTimeImmutable $expiresAt,
     ) {
-        if (!preg_match('/^[A-Za-z0-9][A-Za-z0-9._:-]{2,127}$/D', $owner)) {
+        if (preg_match('/^[A-Za-z0-9][A-Za-z0-9._:-]{2,127}$/D', $owner) !== 1) {
             throw new InvalidArgumentException('The job lease owner is invalid.');
         }
 

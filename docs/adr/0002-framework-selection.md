@@ -18,6 +18,9 @@ boundary not supplied by the selected libraries.
 
 - `joomla/renderer` is replaced by a Kumwe renderer port backed by Twig 3.
 - The HTTP application uses Mezzio and Laminas Diactoros.
-- Joomla DI, Event, Database, Registry, Filter, Archive, Filesystem and Console
-  remain preferred infrastructure components.
+- Joomla DI, Event, Database, Registry, Filter, Archive and Filesystem remain
+  preferred infrastructure components.
+- The narrow console dispatcher and forward-only migration runner remain
+  Kumwe-owned boundaries because the otherwise suitable packages would add a
+  prohibited direct framework dependency chain.
 - Composer policy tests reject prohibited direct dependencies.

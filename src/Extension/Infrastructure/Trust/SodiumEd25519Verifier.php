@@ -11,10 +11,10 @@ use Kumwe\CMS\Extension\Domain\PackageSignature;
 
 final readonly class SodiumEd25519Verifier implements PackageSignatureVerifier
 {
-    /** @var array<string, string> */
+    /** @var array<string, non-empty-string> */
     private array $publicKeys;
 
-    /** @param array<string, string> $base64PublicKeys Keyed by signing key ID. */
+    /** @param array<mixed> $base64PublicKeys Keyed by signing key ID. */
     public function __construct(array $base64PublicKeys)
     {
         $keys = [];
@@ -30,9 +30,11 @@ final readonly class SodiumEd25519Verifier implements PackageSignatureVerifier
                 throw new InvalidArgumentException('Every Ed25519 public key must contain exactly 32 bytes.');
             }
 
+            /** @var non-empty-string $publicKey */
             $keys[$keyId] = $publicKey;
         }
 
+        /** @var array<string, non-empty-string> $keys */
         $this->publicKeys = $keys;
     }
 

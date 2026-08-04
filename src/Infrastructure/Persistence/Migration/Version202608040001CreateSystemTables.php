@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\CMS\Infrastructure\Persistence\Migration;
 
 use Joomla\Database\DatabaseInterface;
+use RuntimeException;
 
 final readonly class Version202608040001CreateSystemTables implements Migration
 {
@@ -26,10 +27,17 @@ final readonly class Version202608040001CreateSystemTables implements Migration
 
     public function up(DatabaseInterface $database): void
     {
+        $schema = $database->quoteName($this->schema);
+        $table = $database->quoteName('system_settings');
+
+        if (!is_string($schema) || !is_string($table)) {
+            throw new RuntimeException('The database returned an invalid quoted system table name.');
+        }
+
         $database->setQuery(sprintf(
             $this->sqlTemplate(),
-            $database->quoteName($this->schema),
-            $database->quoteName('system_settings'),
+            $schema,
+            $table,
         ))->execute();
     }
 

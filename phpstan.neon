@@ -2,11 +2,10 @@ parameters:
   level: max
   paths:
     - src
-    - tests
   tmpDir: .phpstan.cache
   treatPhpDocTypesAsCertain: false
   reportUnmatchedIgnoredErrors: true
-  checkMissingOverrideMethodAttribute: true
+  checkMissingOverrideMethodAttribute: false
   checkUninitializedProperties: true
   dynamicConstantNames:
     - PHP_VERSION

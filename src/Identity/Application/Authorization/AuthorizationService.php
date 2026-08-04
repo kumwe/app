@@ -16,14 +16,14 @@ final readonly class AuthorizationService
     /** @var list<AuthorizationPolicy> */
     private array $policies;
 
-    /** @param iterable<AuthorizationPolicy> $policies */
+    /** @param iterable<mixed> $policies */
     public function __construct(iterable $policies)
     {
         $normalized = [];
 
         foreach ($policies as $policy) {
-            if (!$policy instanceof AuthorizationPolicy) {
-                throw new InvalidArgumentException('Every authorization policy must implement AuthorizationPolicy.');
+            if (!($policy instanceof AuthorizationPolicy)) {
+                throw new InvalidArgumentException('Authorization policies must implement AuthorizationPolicy.');
             }
 
             $normalized[] = $policy;
@@ -32,21 +32,26 @@ final readonly class AuthorizationService
         $this->policies = $normalized;
     }
 
-    /** @param list<CapabilityGrant> $grants */
+    /** @param array<mixed> $grants */
     public function decide(
         User $user,
         Capability $capability,
         GrantScope $scope,
         array $grants = [],
     ): AuthorizationDecision {
-        if (!$user->canAuthenticate()) {
-            return AuthorizationDecision::deny('user.inactive');
+        if (!array_is_list($grants)) {
+            throw new InvalidArgumentException('Capability grants must be a list.');
         }
 
         foreach ($grants as $grant) {
-            if (!$grant instanceof CapabilityGrant) {
-                throw new InvalidArgumentException('Every grant must be a CapabilityGrant.');
+            if (!($grant instanceof CapabilityGrant)) {
+                throw new InvalidArgumentException('Every capability grant must be a CapabilityGrant.');
             }
+        }
+
+        /** @var list<CapabilityGrant> $grants */
+        if (!$user->canAuthenticate()) {
+            return AuthorizationDecision::deny('user.inactive');
         }
 
         $allowance = null;

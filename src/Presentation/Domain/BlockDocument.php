@@ -13,7 +13,7 @@ final readonly class BlockDocument
     private const MAX_DEPTH = 12;
 
     /**
-     * @param list<BlockNode> $roots
+     * @param array<mixed> $roots
      */
     private function __construct(
         private string $id,
@@ -41,14 +41,14 @@ final readonly class BlockDocument
             throw new InvalidArgumentException('A block schema version must be at least one.');
         }
 
-        self::validateTree($roots, $schemas);
-        $checksum = self::checksum($schemaVersion, $roots);
+        $roots = self::validateTree($roots, $schemas);
+        $checksum = self::calculateChecksum($schemaVersion, $roots);
 
         return new self(strtolower($id), $schemaVersion, $roots, 1, $checksum);
     }
 
     /**
-     * @param list<BlockNode> $roots
+     * @param array<mixed> $roots
      *
      * @throws JsonException
      */
@@ -62,14 +62,14 @@ final readonly class BlockDocument
             ));
         }
 
-        self::validateTree($roots, $schemas);
+        $roots = self::validateTree($roots, $schemas);
 
         return new self(
             $this->id,
             $this->schemaVersion,
             $roots,
             $this->version + 1,
-            self::checksum($this->schemaVersion, $roots),
+            self::calculateChecksum($this->schemaVersion, $roots),
         );
     }
 
@@ -100,24 +100,28 @@ final readonly class BlockDocument
     }
 
     /**
-     * @param list<BlockNode> $roots
+     * @param array<mixed> $roots
+     * @return list<BlockNode>
      */
-    private static function validateTree(array $roots, BlockSchemaRegistry $schemas): void
+    private static function validateTree(array $roots, BlockSchemaRegistry $schemas): array
     {
         if (!array_is_list($roots)) {
-            throw new InvalidArgumentException('Block document roots must be an ordered list.');
+            throw new InvalidBlockDocument('Block document roots must be a list.');
         }
 
         $seen = [];
         $nodeCount = 0;
 
         foreach ($roots as $root) {
-            if (!$root instanceof BlockNode) {
-                throw new InvalidArgumentException('Block document roots must be block nodes.');
+            if (!($root instanceof BlockNode)) {
+                throw new InvalidBlockDocument('Every block document root must be a block node.');
             }
 
             self::validateNode($root, $schemas, 1, $nodeCount, $seen);
         }
+
+        /** @var list<BlockNode> $roots */
+        return $roots;
     }
 
     /** @param array<string, true> $seen */
@@ -153,7 +157,7 @@ final readonly class BlockDocument
      *
      * @throws JsonException
      */
-    private static function checksum(int $schemaVersion, array $roots): string
+    private static function calculateChecksum(int $schemaVersion, array $roots): string
     {
         return hash('sha256', json_encode(
             self::canonicalize([

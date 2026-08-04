@@ -8,11 +8,14 @@ use InvalidArgumentException;
 
 final readonly class ModuleDefinition
 {
-    /** @param list<string> $requiredSettings */
+    /** @var list<string> */
+    private array $requiredSettings;
+
+    /** @param array<mixed> $requiredSettings */
     public function __construct(
         private string $id,
         private string $handle,
-        private array $requiredSettings = [],
+        array $requiredSettings = [],
     ) {
         if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iD', $id) !== 1) {
             throw new InvalidArgumentException('A module definition ID must be a canonical UUID.');
@@ -22,15 +25,26 @@ final readonly class ModuleDefinition
             throw new InvalidArgumentException('A module handle must be a stable lowercase identifier.');
         }
 
-        if (!array_is_list($requiredSettings) || count($requiredSettings) !== count(array_unique($requiredSettings))) {
-            throw new InvalidArgumentException('Required module settings must be unique.');
+        if (!array_is_list($requiredSettings)) {
+            throw new InvalidArgumentException('Required module settings must be a list.');
         }
 
         foreach ($requiredSettings as $setting) {
-            if (!is_string($setting) || preg_match('/^[a-z][a-z0-9_]*$/D', $setting) !== 1) {
+            if (!is_string($setting)) {
+                throw new InvalidArgumentException('Required module settings must be strings.');
+            }
+
+            if (preg_match('/^[a-z][a-z0-9_]*$/D', $setting) !== 1) {
                 throw new InvalidArgumentException('Required module settings must be safe identifiers.');
             }
         }
+
+        /** @var list<string> $requiredSettings */
+        if (count($requiredSettings) !== count(array_unique($requiredSettings))) {
+            throw new InvalidArgumentException('Required module settings must be unique.');
+        }
+
+        $this->requiredSettings = $requiredSettings;
     }
 
     public function id(): string

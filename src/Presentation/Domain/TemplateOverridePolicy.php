@@ -8,22 +8,32 @@ use InvalidArgumentException;
 
 final readonly class TemplateOverridePolicy
 {
-    /** @param list<string> $allowedViews */
-    public function __construct(private array $allowedViews)
+    /** @var list<string> */
+    private array $allowedViews;
+
+    /** @param array<mixed> $allowedViews */
+    public function __construct(array $allowedViews)
     {
         if (!array_is_list($allowedViews)) {
-            throw new InvalidArgumentException('Overrideable logical views must be an ordered list.');
-        }
-
-        if (count($allowedViews) !== count(array_unique($allowedViews))) {
-            throw new InvalidArgumentException('Overrideable logical views must be unique.');
+            throw new InvalidArgumentException('Overrideable logical views must be a list.');
         }
 
         foreach ($allowedViews as $view) {
+            if (!is_string($view)) {
+                throw new InvalidArgumentException('Overrideable logical views must be strings.');
+            }
+
             if (preg_match('/^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)*$/D', $view) !== 1) {
                 throw new InvalidArgumentException('Overrideable logical views must be safe identifiers.');
             }
         }
+
+        /** @var list<string> $allowedViews */
+        if (count($allowedViews) !== count(array_unique($allowedViews))) {
+            throw new InvalidArgumentException('Overrideable logical views must be unique.');
+        }
+
+        $this->allowedViews = $allowedViews;
     }
 
     public function authorize(string $logicalView, string $relativePath): string

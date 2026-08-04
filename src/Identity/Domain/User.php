@@ -12,9 +12,7 @@ final class User
     /** @var list<string> */
     private array $roles;
 
-    /**
-     * @param list<string> $roles
-     */
+    /** @param array<mixed> $roles */
     private function __construct(
         private readonly string $id,
         private EmailAddress $email,
@@ -38,9 +36,7 @@ final class User
         return new self(strtolower($id), $email, trim($displayName), [], UserStatus::Pending, 0);
     }
 
-    /**
-     * @param list<string> $roles
-     */
+    /** @param array<mixed> $roles */
     public static function reconstitute(
         string $id,
         EmailAddress $email,
@@ -193,15 +189,24 @@ final class User
     }
 
     /**
-     * @param list<string> $roles
+     * @param array<mixed> $roles
      * @return list<string>
      */
     private static function normalizeRoles(array $roles): array
     {
+        if (!array_is_list($roles)) {
+            throw new InvalidArgumentException('User roles must be a list.');
+        }
+
         foreach ($roles as $role) {
+            if (!is_string($role)) {
+                throw new InvalidArgumentException('Every user role must be a string.');
+            }
+
             CapabilityGrant::assertRole($role);
         }
 
+        /** @var list<string> $roles */
         $roles = array_values(array_unique($roles));
         sort($roles, SORT_STRING);
 
