@@ -9,7 +9,7 @@ FROM ${COMPOSER_IMAGE} AS composer
 FROM ${PHP_IMAGE} AS php-base
 
 RUN set -eux; \
-    apk add --no-cache icu-libs libpq libzip oniguruma tzdata; \
+    apk add --no-cache icu-libs libpq libzip oniguruma su-exec tzdata; \
     apk add --no-cache --virtual .build-dependencies \
         $PHPIZE_DEPS \
         icu-dev \
@@ -89,6 +89,10 @@ load_secret() {
 load_secret APP_SECRET
 load_secret DB_PASSWORD
 load_secret REDIS_PASSWORD
+
+if [ "$(id -u)" -eq 0 ]; then
+    exec su-exec www-data:www-data "$@"
+fi
 
 exec "$@"
 ENTRYPOINT
