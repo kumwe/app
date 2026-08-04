@@ -150,6 +150,11 @@ final class ContainerFactory
                         $databaseConfiguration->schema,
                         $root . '/database/schema/phase4.sql',
                     ),
+                    SchemaMigration::fromFile(
+                        '20260804000500_create_extension_platform',
+                        $databaseConfiguration->schema,
+                        $root . '/database/schema/phase5.sql',
+                    ),
                 ],
             ), true);
         $container->share(ReadinessProbe::class, static fn (Container $container): ReadinessProbe =>
@@ -157,7 +162,7 @@ final class ContainerFactory
                 database: $container->get(DatabaseInterface::class),
                 logger: $container->get(LoggerInterface::class),
                 schema: $databaseConfiguration->schema,
-                requiredMigration: '20260804000400_create_content_workflow_and_navigation',
+                requiredMigration: '20260804000500_create_extension_platform',
             ), true);
     }
 
