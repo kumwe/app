@@ -65,7 +65,7 @@ final class ProductionArtifactsTest extends TestCase
 
         self::assertStringContainsString('set -Eeuo pipefail', $backup);
         self::assertStringContainsString('KUMWE_BACKUP_CONSISTENCY', $backup);
-        self::assertStringContainsString('20260804000700_create_automation_platform', $backup);
+        self::assertStringContainsString('20260804000800_create_application_runtime', $backup);
         self::assertStringContainsString('product_major: 2', $backup);
         self::assertStringContainsString('set -Eeuo pipefail', $verify);
         self::assertStringContainsString('Kumwe 1.x and unknown formats are refused', $verify);
