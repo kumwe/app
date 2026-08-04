@@ -56,7 +56,7 @@ require_value KUMWE_PROBE_ADMIN_PASSWORD
 require_value KUMWE_PROBE_API_TOKEN
 require_value KUMWE_PROBE_MCP_HOST
 require_value KUMWE_PROBE_READ_TOKEN
-[[ "$KUMWE_PROBE_MCP_HOST" =~ ^[A-Za-z0-9.\[\]:-]+$ ]] \
+[[ "$KUMWE_PROBE_MCP_HOST" =~ ^[][A-Za-z0-9.:-]+$ ]] \
     || fail 'KUMWE_PROBE_MCP_HOST is not an exact host or IP address'
 
 probe_root="$(mktemp -d)"
