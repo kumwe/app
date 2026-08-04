@@ -1,27 +1,21 @@
 # Upgrade Kumwe
 
-Kumwe releases use forward-only, advisory-locked database migrations. Upgrade
-from a healthy supported release and verify extension compatibility before
-changing the running images.
+Kumwe releases use forward-only Doctrine migrations serialized by a database-backed lock. Upgrade only from a healthy supported release and verify PHP, database, Redis, and extension compatibility before replacing running artifacts.
 
 ## Procedure
 
-1. Verify the target release, signatures, checksums, SBOM and provenance as
-   described in [release verification](release-verification.md).
-2. Read the release notes and verify PHP, PostgreSQL, Redis and extension
-   compatibility.
-3. Quiesce writes at the reverse proxy or application maintenance boundary.
-4. Create and independently verify a backup using the exact current release.
-5. Pull the target image digests without replacing running containers.
-6. Run the migration task once. It holds the database migration lock.
-7. Start the target `app`, confirm readiness, then replace `web` and automation
-   processes.
-8. Exercise login, content reads, a reversible draft write, media access and the
-   API contract before reopening writes.
-9. Record deployed image digests and retain the pre-upgrade backup according to
-   policy.
+1. Read the release notes and [verify](release-verification.md) checksums, signatures, provenance, SBOMs, and image digests.
+2. Confirm the release supports the installed database engine and exact server line.
+3. Verify every active extension against the target Kumwe and PHP versions.
+4. Quiesce writes at the reverse proxy or maintenance boundary.
+5. Create and independently verify a complete backup from the current release.
+6. Pull or stage the target artifacts without replacing running processes.
+7. Run the target migration command once; competing migration processes must wait or fail safely.
+8. Start the target application, confirm readiness, then replace web and automation processes.
+9. Exercise login, public rendering, a reversible draft mutation, menu read, capability denial, API idempotency replay, and one worker/scheduler iteration.
+10. Record deployed digests and retain the previous artifacts and backup according to policy.
 
-Typical Compose commands after the backup is verified:
+For Compose:
 
 ```bash
 docker compose -f compose.production.yaml pull
@@ -30,7 +24,10 @@ docker compose -f compose.production.yaml --profile automation up -d --no-deps a
 curl --fail --silent http://127.0.0.1:8080/health/ready
 ```
 
-Schema migrations are forward-only. Do not attempt to run down-migrations after
-a failed release. Keep writes closed, preserve logs, deploy a compatible fixed
-image when the schema is healthy, or restore the verified backup into an empty
-database, media directory, and extensions directory.
+For Composer or ZIP installations, stage the complete new release in a sibling directory, keep site-specific environment/secrets and persistent storage outside the release tree, run migrations from the staged release, then atomically switch the web-server release link. Do not overwrite vendor or source files in place.
+
+## Failure handling
+
+Schema migrations are forward-only. Do not attempt a down-migration against a live database. Keep writes closed and preserve logs. If the schema is healthy, deploy a compatible fixed application release. If durable state must be reverted, restore the verified pre-upgrade backup into an empty database and new media/extension targets, validate it in isolation, and then cut over.
+
+Changing MariaDB, MySQL, or PostgreSQL engine is a data-migration project, not an ordinary Kumwe release upgrade. Rehearse logical export/import, type conversion, sequence/identity behavior, collation, timezones, extensions, query plans, and full acceptance tests before cutover.

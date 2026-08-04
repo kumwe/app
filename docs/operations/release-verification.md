@@ -1,16 +1,33 @@
-# Release verification
+# Verify a release
 
-The release workflow accepts only `v2.x.y` tags, requires a committed dependency
-lock, runs the project quality suite, builds the runtime and web images, scans
-them, generates CycloneDX SBOMs, signs image digests and release checksums with
-keyless Cosign, and publishes provenance attestations.
+The release workflow accepts protected `v2.x.y` tags only after the complete MariaDB, MySQL, and PostgreSQL deployment gate succeeds. It builds the PHP 8.5 application and web images, creates the dependency-complete ZIP, scans artifacts, generates CycloneDX SBOMs, signs image digests and checksums with keyless Cosign, and publishes provenance attestations.
 
-Before deployment, verify the Git tag and downloaded checksums, then verify the
-keyless signing identity expected for this repository. Replace the repository and
-workflow references below with the exact canonical values if the project moves:
+Stable releases publish these image aliases:
+
+- exact version, such as `2.3.1`;
+- source commit SHA;
+- minor line, such as `2.3`;
+- major line `2`;
+- `latest`.
+
+Use aliases to discover a release. Resolve and deploy the signed digest for production.
+
+## Verify downloaded artifacts
 
 ```bash
 sha256sum --check SHA256SUMS
+cosign verify-blob \
+  --bundle SHA256SUMS.cosign.bundle \
+  --certificate-identity-regexp='^https://github.com/Kumwe/cms/.github/workflows/release.yml@refs/tags/v2\.' \
+  --certificate-oidc-issuer=https://token.actions.githubusercontent.com \
+  SHA256SUMS
+```
+
+The checksum list covers the release ZIP and supplied SBOMs. Confirm the certificate identity matches this repository and workflow, the tag points at the expected source commit, and the GitHub release is not a draft or prerelease unless that is the intended rollout.
+
+## Verify images and attestations
+
+```bash
 cosign verify \
   --certificate-identity-regexp='^https://github.com/Kumwe/cms/.github/workflows/release.yml@refs/tags/v2\.' \
   --certificate-oidc-issuer=https://token.actions.githubusercontent.com \
@@ -20,14 +37,10 @@ cosign verify-attestation \
   --certificate-identity-regexp='^https://github.com/Kumwe/cms/.github/workflows/release.yml@refs/tags/v2\.' \
   --certificate-oidc-issuer=https://token.actions.githubusercontent.com \
   ghcr.io/kumwe/cms/app@sha256:APP_DIGEST
-cosign verify-blob \
-  --bundle SHA256SUMS.cosign.bundle \
-  --certificate-identity-regexp='^https://github.com/Kumwe/cms/.github/workflows/release.yml@refs/tags/v2\.' \
-  --certificate-oidc-issuer=https://token.actions.githubusercontent.com \
-  SHA256SUMS
 ```
 
-Compare the image digests with the provenance subjects and deploy those digests,
-not mutable tags. Review the SBOM and scanner output under the site's risk policy.
-A passing scanner is evidence for the scanned database and artifact, not proof
-that the application is vulnerability-free.
+Repeat for the web image. Compare both digests with release provenance subjects and the deployment record. Review the SBOM and scanner evidence under the site's risk policy. A passing scan is evidence for the artifact and vulnerability database at scan time, not proof that software has no vulnerabilities.
+
+## Composer releases
+
+Before `composer create-project`, verify that the selected `kumwe/cms` version resolves to the same protected Git tag and locked dependency set as the GitHub release. Use `composer audit --locked --abandoned=fail` after installation, preserve `composer.lock`, and do not accept an unexpected source branch or development constraint in production.
