@@ -8,6 +8,29 @@ use InvalidArgumentException;
 
 final readonly class Environment
 {
+    private const PROCESS_KEYS = [
+        'APP_ENV',
+        'APP_DEBUG',
+        'APP_BASE_URL',
+        'APP_TRUSTED_HOSTS',
+        'APP_TRUSTED_PROXIES',
+        'APP_MAX_BODY_BYTES',
+        'APP_SECRET',
+        'DB_HOST',
+        'DB_PORT',
+        'DB_NAME',
+        'DB_USER',
+        'DB_PASSWORD',
+        'DB_SCHEMA',
+        'DB_SSLMODE',
+        'REDIS_HOST',
+        'REDIS_PORT',
+        'REDIS_PASSWORD',
+        'MAIL_TRANSPORT',
+        'MAIL_FROM_ADDRESS',
+        'MAIL_FROM_NAME',
+    ];
+
     /**
      * @param array<string, string> $values
      */
@@ -22,11 +45,7 @@ final readonly class Environment
     {
         $values = [];
 
-        foreach (array_keys($_ENV + $_SERVER) as $key) {
-            if (!is_string($key)) {
-                continue;
-            }
-
+        foreach (self::PROCESS_KEYS as $key) {
             $value = getenv($key);
 
             if (is_string($value)) {
