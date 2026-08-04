@@ -212,9 +212,9 @@ services:
           'appendfsync everysec' \
           "requirepass $${redis_password}" \
           > /run/redis/redis.conf
-        chown redis:redis /run/redis /run/redis/redis.conf
         chmod 0700 /run/redis
         chmod 0600 /run/redis/redis.conf
+        chown redis:redis /run/redis /run/redis/redis.conf
         exec su-exec redis:redis redis-server /run/redis/redis.conf
     secrets:
       - redis_password
