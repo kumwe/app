@@ -49,7 +49,7 @@ final readonly class NativePasswordHasher implements PasswordHasher
 
         $hash = password_hash($plainTextPassword, $this->algorithm, $this->options);
 
-        if (!is_string($hash) || $hash === '') {
+        if ($hash === '') {
             throw new RuntimeException('PHP was unable to hash the password.');
         }
 
@@ -83,6 +83,6 @@ final readonly class NativePasswordHasher implements PasswordHasher
     {
         $information = password_get_info($passwordHash);
 
-        return ($information['algoName'] ?? null) === 'bcrypt';
+        return $information['algoName'] === 'bcrypt';
     }
 }

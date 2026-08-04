@@ -8,12 +8,15 @@ use InvalidArgumentException;
 
 final readonly class Asset
 {
-    /** @param list<string> $dependencies */
+    /** @var list<string> */
+    private array $dependencies;
+
+    /** @param array<mixed> $dependencies */
     public function __construct(
         private string $name,
         private string $path,
         private ?string $integrity = null,
-        private array $dependencies = [],
+        array $dependencies = [],
     ) {
         if (preg_match('/^[a-z][a-z0-9._-]*$/D', $name) !== 1) {
             throw new InvalidArgumentException('An asset name must be a safe logical identifier.');
@@ -38,9 +41,22 @@ final readonly class Asset
             throw new InvalidArgumentException('Asset integrity must be a valid SHA SRI value.');
         }
 
-        if (!array_is_list($dependencies) || count($dependencies) !== count(array_unique($dependencies))) {
+        if (!array_is_list($dependencies)) {
+            throw new InvalidArgumentException('Asset dependencies must be a list.');
+        }
+
+        foreach ($dependencies as $dependency) {
+            if (!is_string($dependency) || preg_match('/^[a-z][a-z0-9._-]*$/D', $dependency) !== 1) {
+                throw new InvalidArgumentException('Asset dependencies must be safe logical identifiers.');
+            }
+        }
+
+        /** @var list<string> $dependencies */
+        if (count($dependencies) !== count(array_unique($dependencies))) {
             throw new InvalidArgumentException('Asset dependencies must be unique.');
         }
+
+        $this->dependencies = $dependencies;
     }
 
     public function name(): string

@@ -60,7 +60,13 @@ final readonly class SchemaMigration implements Migration
 
     public function up(DatabaseInterface $database): void
     {
-        $sql = str_replace('{{schema}}', $database->quoteName($this->schema), $this->sql);
+        $quotedSchema = $database->quoteName($this->schema);
+
+        if (!is_string($quotedSchema)) {
+            throw new RuntimeException('The database returned an invalid quoted schema name.');
+        }
+
+        $sql = str_replace('{{schema}}', $quotedSchema, $this->sql);
 
         foreach ($this->splitter->split($sql) as $statement) {
             if ($this->isTransactionBoundary($statement)) {

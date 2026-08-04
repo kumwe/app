@@ -8,31 +8,37 @@ use InvalidArgumentException;
 
 final readonly class ModuleAssignment
 {
-    /** @param list<AssignmentCondition> $conditions */
+    /** @var list<AssignmentCondition> */
+    private array $conditions;
+
+    /** @param array<mixed> $conditions */
     public function __construct(
         private string $id,
         private string $moduleInstanceId,
         private string $slot,
         private int $position,
-        private array $conditions = [],
+        array $conditions = [],
         private bool $enabled = true,
     ) {
         self::assertUuid($id, 'module assignment');
         self::assertUuid($moduleInstanceId, 'module instance');
 
-        if (!array_is_list($conditions)) {
-            throw new InvalidArgumentException('Module conditions must be an ordered list.');
-        }
-
         if (preg_match('/^[a-z][a-z0-9_-]*$/D', $slot) !== 1) {
             throw new InvalidArgumentException('A module assignment slot must be a safe lowercase identifier.');
         }
 
+        if (!array_is_list($conditions)) {
+            throw new InvalidArgumentException('Module assignment conditions must be a list.');
+        }
+
         foreach ($conditions as $condition) {
-            if (!$condition instanceof AssignmentCondition) {
-                throw new InvalidArgumentException('Module conditions must be typed assignment conditions.');
+            if (!($condition instanceof AssignmentCondition)) {
+                throw new InvalidArgumentException('Module assignment conditions must implement AssignmentCondition.');
             }
         }
+
+        /** @var list<AssignmentCondition> $conditions */
+        $this->conditions = $conditions;
     }
 
     public function id(): string

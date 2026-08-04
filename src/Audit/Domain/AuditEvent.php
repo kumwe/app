@@ -7,12 +7,14 @@ namespace Kumwe\CMS\Audit\Domain;
 use DateTimeImmutable;
 use InvalidArgumentException;
 use JsonException;
-use LogicException;
 
 final readonly class AuditEvent
 {
+    /** @var array<string, mixed> */
+    private array $metadata;
+
     /**
-     * @param array<string, mixed> $metadata Values must be JSON-serializable.
+     * @param array<mixed> $metadata Values must be JSON-serializable.
      */
     public function __construct(
         private string $id,
@@ -22,7 +24,7 @@ final readonly class AuditEvent
         private string $subjectType,
         private ?string $subjectId,
         private string $outcome,
-        private array $metadata = [],
+        array $metadata = [],
     ) {
         if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/Di', $id) !== 1) {
             throw new InvalidArgumentException('The audit event ID must be a canonical UUID.');
@@ -51,6 +53,9 @@ final readonly class AuditEvent
         } catch (JsonException $exception) {
             throw new InvalidArgumentException('Audit metadata must be JSON-serializable.', 0, $exception);
         }
+
+        /** @var array<string, mixed> $metadata */
+        $this->metadata = $metadata;
     }
 
     public function id(): string
@@ -96,13 +101,7 @@ final readonly class AuditEvent
 
     public function metadataAsJson(): string
     {
-        $json = json_encode($this->metadata, JSON_FORCE_OBJECT | JSON_THROW_ON_ERROR);
-
-        if (!is_string($json)) {
-            throw new LogicException('PHP was unable to encode the audit metadata.');
-        }
-
-        return $json;
+        return json_encode($this->metadata, JSON_FORCE_OBJECT | JSON_THROW_ON_ERROR);
     }
 
     private static function assertOpaqueId(string $value, string $field): void

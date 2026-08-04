@@ -34,6 +34,7 @@ final readonly class PackageChecksum implements Stringable
         return hash_equals($this->sha256, hash('sha256', $packageBytes));
     }
 
+    /** @return non-empty-string */
     public function __toString(): string
     {
         return $this->sha256;

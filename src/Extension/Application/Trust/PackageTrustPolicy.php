@@ -13,13 +13,17 @@ final readonly class PackageTrustPolicy
     /** @var array<string, true> */
     private array $trustedKeyIds;
 
-    /** @param list<string> $trustedKeyIds */
+    /** @param array<mixed> $trustedKeyIds */
     public function __construct(
         private PackageSignatureVerifier $verifier,
         array $trustedKeyIds,
         private bool $allowUnsignedLocalPackages = false,
     ) {
         $keys = [];
+
+        if (!array_is_list($trustedKeyIds)) {
+            throw new InvalidArgumentException('Trusted signing key IDs must be a list.');
+        }
 
         foreach ($trustedKeyIds as $keyId) {
             if (!is_string($keyId) || preg_match('/^[a-z0-9][a-z0-9._:-]{2,126}$/D', $keyId) !== 1) {

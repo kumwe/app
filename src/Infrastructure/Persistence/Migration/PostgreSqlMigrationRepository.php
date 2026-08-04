@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\CMS\Infrastructure\Persistence\Migration;
 
 use Joomla\Database\DatabaseInterface;
+use RuntimeException;
 
 final readonly class PostgreSqlMigrationRepository implements MigrationRepository
 {
@@ -14,7 +15,7 @@ final readonly class PostgreSqlMigrationRepository implements MigrationRepositor
 
     public function ensureLedger(): void
     {
-        $schema = $this->database->quoteName($this->schema);
+        $schema = $this->quoteName($this->schema);
         $this->database->setQuery(sprintf('CREATE SCHEMA IF NOT EXISTS %s', $schema))->execute();
         $this->database->setQuery(sprintf(
             'CREATE TABLE IF NOT EXISTS %s.%s ('
@@ -24,7 +25,7 @@ final readonly class PostgreSqlMigrationRepository implements MigrationRepositor
             . 'execution_ms integer NOT NULL CHECK (execution_ms >= 0)'
             . ')',
             $schema,
-            $this->database->quoteName('schema_migrations'),
+            $this->quoteName('schema_migrations'),
         ))->execute();
     }
 
@@ -32,13 +33,29 @@ final readonly class PostgreSqlMigrationRepository implements MigrationRepositor
     {
         $rows = $this->database->setQuery(sprintf(
             'SELECT version, checksum FROM %s.%s ORDER BY version',
-            $this->database->quoteName($this->schema),
-            $this->database->quoteName('schema_migrations'),
+            $this->quoteName($this->schema),
+            $this->quoteName('schema_migrations'),
         ))->loadAssocList();
+
+        if (!is_array($rows)) {
+            throw new RuntimeException('The migration ledger query returned an invalid row set.');
+        }
+
         $applied = [];
 
         foreach ($rows as $row) {
-            $applied[(string) $row['version']] = (string) $row['checksum'];
+            if (!is_array($row)) {
+                throw new RuntimeException('The migration ledger contains an invalid row.');
+            }
+
+            $version = $row['version'] ?? null;
+            $checksum = $row['checksum'] ?? null;
+
+            if (!is_string($version) || !is_string($checksum)) {
+                throw new RuntimeException('The migration ledger contains invalid version or checksum values.');
+            }
+
+            $applied[$version] = $checksum;
         }
 
         return $applied;
@@ -48,11 +65,33 @@ final readonly class PostgreSqlMigrationRepository implements MigrationRepositor
     {
         $this->database->setQuery(sprintf(
             'INSERT INTO %s.%s (version, checksum, execution_ms) VALUES (%s, %s, %d)',
-            $this->database->quoteName($this->schema),
-            $this->database->quoteName('schema_migrations'),
-            $this->database->quote($id),
-            $this->database->quote($checksum),
+            $this->quoteName($this->schema),
+            $this->quoteName('schema_migrations'),
+            $this->quote($id),
+            $this->quote($checksum),
             $executionMilliseconds,
         ))->execute();
+    }
+
+    private function quote(string $value): string
+    {
+        $quoted = $this->database->quote($value);
+
+        if (!is_string($quoted)) {
+            throw new RuntimeException('The database returned an invalid quoted value.');
+        }
+
+        return $quoted;
+    }
+
+    private function quoteName(string $identifier): string
+    {
+        $quoted = $this->database->quoteName($identifier);
+
+        if (!is_string($quoted)) {
+            throw new RuntimeException('The database returned an invalid quoted identifier.');
+        }
+
+        return $quoted;
     }
 }

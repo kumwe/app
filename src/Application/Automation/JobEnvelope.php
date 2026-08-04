@@ -40,11 +40,11 @@ final readonly class JobEnvelope
             throw new InvalidArgumentException('A job ID must be a canonical UUID.');
         }
 
-        if (!preg_match('/^[A-Za-z0-9][A-Za-z0-9._:-]{0,63}$/D', $queue)) {
+        if (preg_match('/^[A-Za-z0-9][A-Za-z0-9._:-]{0,63}$/D', $queue) !== 1) {
             throw new InvalidArgumentException('The job queue name is invalid.');
         }
 
-        if (!preg_match('/^[A-Za-z][A-Za-z0-9._:-]{2,127}$/D', $type)) {
+        if (preg_match('/^[A-Za-z][A-Za-z0-9._:-]{2,127}$/D', $type) !== 1) {
             throw new InvalidArgumentException('The job type is invalid.');
         }
 

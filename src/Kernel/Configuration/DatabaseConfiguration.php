@@ -28,7 +28,7 @@ final readonly class DatabaseConfiguration
             throw new InvalidArgumentException('The database port is invalid.');
         }
 
-        if (!preg_match('/^[a-z][a-z0-9_]{0,62}$/', $schema)) {
+        if (preg_match('/^[a-z][a-z0-9_]{0,62}$/', $schema) !== 1) {
             throw new InvalidArgumentException('The PostgreSQL schema name is invalid.');
         }
 

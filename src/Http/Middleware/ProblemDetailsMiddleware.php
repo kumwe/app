@@ -23,7 +23,8 @@ final readonly class ProblemDetailsMiddleware implements MiddlewareInterface
         try {
             return $handler->handle($request);
         } catch (Throwable $exception) {
-            $requestId = (string) $request->getAttribute(RequestIdMiddleware::ATTRIBUTE, 'unknown');
+            $requestAttribute = $request->getAttribute(RequestIdMiddleware::ATTRIBUTE, 'unknown');
+            $requestId = is_string($requestAttribute) ? $requestAttribute : 'unknown';
             $this->logger->error('Unhandled request exception.', [
                 'exception' => $exception,
                 'request_id' => $requestId,

@@ -8,15 +8,21 @@ use InvalidArgumentException;
 
 final readonly class BlockNode
 {
+    /** @var array<string, mixed> */
+    private array $properties;
+
+    /** @var list<BlockNode> */
+    private array $children;
+
     /**
-     * @param array<string, mixed> $properties
-     * @param list<BlockNode>      $children
+     * @param array<array-key, mixed> $properties
+     * @param array<mixed>            $children
      */
     public function __construct(
         private string $id,
         private string $type,
-        private array $properties = [],
-        private array $children = [],
+        array $properties = [],
+        array $children = [],
     ) {
         if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iD', $id) !== 1) {
             throw new InvalidArgumentException('A block node ID must be a canonical UUID.');
@@ -39,10 +45,15 @@ final readonly class BlockNode
         }
 
         foreach ($children as $child) {
-            if (!$child instanceof self) {
+            if (!($child instanceof self)) {
                 throw new InvalidArgumentException('Block children must be block nodes.');
             }
         }
+
+        /** @var array<string, mixed> $properties */
+        $this->properties = $properties;
+        /** @var list<BlockNode> $children */
+        $this->children = $children;
     }
 
     public function id(): string

@@ -10,6 +10,7 @@ use Joomla\Database\ParameterType;
 use JsonException;
 use Kumwe\CMS\Identity\Application\Authentication\AccessTokenVerifier;
 use Kumwe\CMS\Identity\Application\Authentication\AuthenticatedPrincipal;
+use LogicException;
 
 final readonly class PostgreSqlAccessTokenVerifier implements AccessTokenVerifier
 {
@@ -29,21 +30,21 @@ final readonly class PostgreSqlAccessTokenVerifier implements AccessTokenVerifie
         $digest = hash('sha256', $token);
         $query = $this->database->getQuery(true)
             ->select([
-                $this->database->quoteName('t.subject_id'),
-                $this->database->quoteName('t.capabilities'),
+                $this->quoteName('t.subject_id'),
+                $this->quoteName('t.capabilities'),
             ])
-            ->from($this->database->quoteName($this->schema . '.api_tokens', 't'))
+            ->from($this->quoteName($this->schema . '.api_tokens', 't'))
             ->join(
                 'INNER',
-                $this->database->quoteName($this->schema . '.users', 'u')
-                    . ' ON ' . $this->database->quoteName('u.id')
-                    . ' = ' . $this->database->quoteName('t.subject_id'),
+                $this->quoteName($this->schema . '.users', 'u')
+                    . ' ON ' . $this->quoteName('u.id')
+                    . ' = ' . $this->quoteName('t.subject_id'),
             )
-            ->where($this->database->quoteName('t.token_digest') . ' = :token_digest')
-            ->where($this->database->quoteName('t.revoked_at') . ' IS NULL')
-            ->where('(' . $this->database->quoteName('t.expires_at') . ' IS NULL OR '
-                . $this->database->quoteName('t.expires_at') . ' > CURRENT_TIMESTAMP)')
-            ->where($this->database->quoteName('u.status') . ' = ' . $this->database->quote('active'))
+            ->where($this->quoteName('t.token_digest') . ' = :token_digest')
+            ->where($this->quoteName('t.revoked_at') . ' IS NULL')
+            ->where('(' . $this->quoteName('t.expires_at') . ' IS NULL OR '
+                . $this->quoteName('t.expires_at') . ' > CURRENT_TIMESTAMP)')
+            ->where($this->quoteName('u.status') . ' = ' . $this->quoteValue('active'))
             ->bind(':token_digest', $digest, ParameterType::STRING);
 
         $row = $this->database->setQuery($query)->loadAssoc();
@@ -97,5 +98,27 @@ final readonly class PostgreSqlAccessTokenVerifier implements AccessTokenVerifie
         }
 
         return $stored;
+    }
+
+    private function quoteName(string $name, ?string $alias = null): string
+    {
+        $quoted = $this->database->quoteName($name, $alias);
+
+        if (!is_string($quoted)) {
+            throw new LogicException('Joomla Database returned an invalid quoted identifier.');
+        }
+
+        return $quoted;
+    }
+
+    private function quoteValue(string $value): string
+    {
+        $quoted = $this->database->quote($value);
+
+        if (!is_string($quoted)) {
+            throw new LogicException('Joomla Database returned an invalid quoted value.');
+        }
+
+        return $quoted;
     }
 }

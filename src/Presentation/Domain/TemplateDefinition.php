@@ -8,8 +8,11 @@ use InvalidArgumentException;
 
 final readonly class TemplateDefinition
 {
-    /** @param list<string> $slots */
-    public function __construct(private string $id, private string $handle, private array $slots)
+    /** @var list<string> */
+    private array $slots;
+
+    /** @param array<mixed> $slots */
+    public function __construct(private string $id, private string $handle, array $slots)
     {
         self::assertUuid($id);
 
@@ -17,15 +20,26 @@ final readonly class TemplateDefinition
             throw new InvalidArgumentException('A template handle must be a stable lowercase identifier.');
         }
 
-        if (!array_is_list($slots) || $slots === [] || count($slots) !== count(array_unique($slots))) {
-            throw new InvalidArgumentException('A template requires unique declared slots.');
+        if (!array_is_list($slots) || $slots === []) {
+            throw new InvalidArgumentException('A template requires a non-empty slot list.');
         }
 
         foreach ($slots as $slot) {
+            if (!is_string($slot)) {
+                throw new InvalidArgumentException('Template slots must be strings.');
+            }
+
             if (preg_match('/^[a-z][a-z0-9_-]*$/D', $slot) !== 1) {
                 throw new InvalidArgumentException('Template slots must be safe lowercase identifiers.');
             }
         }
+
+        /** @var list<string> $slots */
+        if (count($slots) !== count(array_unique($slots))) {
+            throw new InvalidArgumentException('A template requires unique declared slots.');
+        }
+
+        $this->slots = $slots;
     }
 
     public function id(): string

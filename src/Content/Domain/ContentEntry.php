@@ -10,14 +10,17 @@ use Kumwe\CMS\Workflow\Domain\Workflow;
 
 final readonly class ContentEntry
 {
+    /** @var array<string, mixed> */
+    private array $data;
+
     /**
-     * @param array<string, mixed> $data
+     * @param array<array-key, mixed> $data
      */
     private function __construct(
         private string $id,
         private string $title,
         private string $slug,
-        private array $data,
+        array $data,
         private ContentStatus $status,
         private PublicationWindow $publicationWindow,
         private int $version,
@@ -27,13 +30,16 @@ final readonly class ContentEntry
         self::assertSlug($slug);
         self::assertData($data);
 
+        /** @var array<string, mixed> $data */
+        $this->data = $data;
+
         if ($version < 1) {
             throw new InvalidArgumentException('A content entry version must be at least one.');
         }
     }
 
     /**
-     * @param array<string, mixed> $data
+     * @param array<array-key, mixed> $data
      */
     public static function create(
         string $id,
@@ -98,7 +104,7 @@ final readonly class ContentEntry
     }
 
     /**
-     * @param array<string, mixed> $data
+     * @param array<array-key, mixed> $data
      */
     public function revise(ExpectedVersion $expectedVersion, string $title, string $slug, array $data): self
     {
@@ -197,7 +203,7 @@ final readonly class ContentEntry
     }
 
     /**
-     * @param array<string, mixed> $data
+     * @param array<array-key, mixed> $data
      */
     private static function assertData(array $data): void
     {

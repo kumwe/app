@@ -50,7 +50,7 @@ required contract. Laminas and Mezzio are the exclusive fallback ecosystem.
 | Registry/config values | `joomla/registry` plus Kumwe environment loading |
 | Input filtering | `joomla/filter` |
 | Archive and filesystem primitives | `joomla/archive`, `joomla/filesystem` |
-| Console primitives | `joomla/console` |
+| Console boundary | Small Kumwe dispatcher over the shared Joomla DI container |
 | HTTP message implementation | `laminas/laminas-diactoros` |
 | Middleware application | `mezzio/mezzio` |
 | Routing | `mezzio/mezzio-fastroute` |
@@ -58,7 +58,7 @@ required contract. Laminas and Mezzio are the exclusive fallback ecosystem.
 | Middleware dispatch | `laminas/laminas-stratigility` through Mezzio |
 | Session/cookie policy | Kumwe contracts over maintained Laminas/PSR primitives |
 | Templates | Twig 3 behind a Kumwe renderer port |
-| Schema lifecycle | Phinx with PostgreSQL migrations |
+| Schema lifecycle | Kumwe forward-only runner over `joomla/database` |
 | Logging | Monolog through PSR-3 |
 | Identifiers | Ramsey UUID v7 |
 | MCP | Official `mcp/sdk`, isolated behind a Kumwe adapter |
@@ -211,7 +211,7 @@ The required gates are:
 - PHPUnit unit, integration and functional suites
 - PHPStan at the strictest practical level with no ignored domain errors
 - Coding-standard verification
-- Infection mutation tests for policies and security-critical value objects
+- Focused negative-path tests for policies and security-critical value objects
 - PostgreSQL migration and repository integration tests
 - REST contract and OpenAPI validation
 - Browser smoke tests for installation, login, editing and publishing

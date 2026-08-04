@@ -7,6 +7,7 @@ namespace Kumwe\CMS\Infrastructure\Persistence;
 use Joomla\Database\DatabaseFactory;
 use Joomla\Database\DatabaseInterface;
 use Kumwe\CMS\Kernel\Configuration\DatabaseConfiguration;
+use RuntimeException;
 
 final readonly class PostgreSqlDatabaseFactory
 {
@@ -36,9 +37,15 @@ final readonly class PostgreSqlDatabaseFactory
 
         $database->connect();
         $database->setQuery("SET TIME ZONE 'UTC'")->execute();
+        $schema = $database->quoteName($this->configuration->schema);
+
+        if (!is_string($schema)) {
+            throw new RuntimeException('The database returned an invalid quoted search path.');
+        }
+
         $database->setQuery(sprintf(
             'SET search_path TO %s, public',
-            $database->quoteName($this->configuration->schema),
+            $schema,
         ))->execute();
 
         return $database;

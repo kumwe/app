@@ -13,7 +13,7 @@ final readonly class ExtensionManifest
     /** @var list<ExtensionDependency> */
     private array $dependencies;
 
-    /** @param list<ExtensionDependency> $dependencies */
+    /** @param array<mixed> $dependencies */
     public function __construct(
         private ExtensionIdentifier $identifier,
         private ExtensionType $type,
@@ -32,13 +32,17 @@ final readonly class ExtensionManifest
 
         $seen = [];
 
+        if (!array_is_list($dependencies)) {
+            throw new InvalidArgumentException('Extension dependencies must be a list.');
+        }
+
         if (count($dependencies) > 256) {
             throw new InvalidArgumentException('An extension manifest cannot declare more than 256 dependencies.');
         }
 
         foreach ($dependencies as $dependency) {
-            if (!$dependency instanceof ExtensionDependency) {
-                throw new InvalidArgumentException('Every manifest dependency must be an ExtensionDependency.');
+            if (!($dependency instanceof ExtensionDependency)) {
+                throw new InvalidArgumentException('Every extension dependency must be an ExtensionDependency.');
             }
 
             $dependencyName = $dependency->extension()->value();
@@ -54,7 +58,8 @@ final readonly class ExtensionManifest
             $seen[$dependencyName] = true;
         }
 
-        $this->dependencies = array_values($dependencies);
+        /** @var list<ExtensionDependency> $dependencies */
+        $this->dependencies = $dependencies;
     }
 
     public static function fromJson(string $json): self

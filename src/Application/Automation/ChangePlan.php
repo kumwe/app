@@ -32,7 +32,7 @@ final readonly class ChangePlan
             throw new InvalidArgumentException('A change plan ID is required.');
         }
 
-        if (!preg_match('/^[A-Za-z][A-Za-z0-9._:-]{2,127}$/D', $command)) {
+        if (preg_match('/^[A-Za-z][A-Za-z0-9._:-]{2,127}$/D', $command) !== 1) {
             throw new InvalidArgumentException('The change plan command name is invalid.');
         }
 

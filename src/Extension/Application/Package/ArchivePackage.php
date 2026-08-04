@@ -11,20 +11,21 @@ final readonly class ArchivePackage
     /** @var list<ArchiveEntry> */
     private array $entries;
 
-    /** @param list<ArchiveEntry> $entries */
+    /** @param array<mixed> $entries */
     public function __construct(array $entries)
     {
-        if ($entries === []) {
+        if (!array_is_list($entries) || $entries === []) {
             throw new InvalidArgumentException('An extension archive cannot be empty.');
         }
 
         foreach ($entries as $entry) {
-            if (!$entry instanceof ArchiveEntry) {
-                throw new InvalidArgumentException('Every archive member must be an ArchiveEntry.');
+            if (!($entry instanceof ArchiveEntry)) {
+                throw new InvalidArgumentException('Every extension archive entry must be an ArchiveEntry.');
             }
         }
 
-        $this->entries = array_values($entries);
+        /** @var list<ArchiveEntry> $entries */
+        $this->entries = $entries;
     }
 
     /** @return list<ArchiveEntry> */

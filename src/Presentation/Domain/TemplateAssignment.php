@@ -8,25 +8,33 @@ use InvalidArgumentException;
 
 final readonly class TemplateAssignment
 {
-    /** @param list<AssignmentCondition> $conditions */
+    /** @var list<AssignmentCondition> */
+    private array $conditions;
+
+    /** @param array<mixed> $conditions */
     public function __construct(
         private string $id,
         private TemplateDefinition $template,
         private int $priority,
-        private array $conditions = [],
+        array $conditions = [],
         private bool $enabled = true,
     ) {
         self::assertUuid($id);
 
         if (!array_is_list($conditions)) {
-            throw new InvalidArgumentException('Template conditions must be an ordered list.');
+            throw new InvalidArgumentException('Template assignment conditions must be a list.');
         }
 
         foreach ($conditions as $condition) {
-            if (!$condition instanceof AssignmentCondition) {
-                throw new InvalidArgumentException('Template conditions must be typed assignment conditions.');
+            if (!($condition instanceof AssignmentCondition)) {
+                throw new InvalidArgumentException(
+                    'Template assignment conditions must implement AssignmentCondition.',
+                );
             }
         }
+
+        /** @var list<AssignmentCondition> $conditions */
+        $this->conditions = $conditions;
     }
 
     public function id(): string

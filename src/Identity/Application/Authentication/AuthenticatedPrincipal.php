@@ -14,7 +14,7 @@ final readonly class AuthenticatedPrincipal
     /** @var array<string, Capability> */
     private array $capabilities;
 
-    /** @param list<Capability> $capabilities */
+    /** @param array<mixed> $capabilities */
     public function __construct(private string $subject, array $capabilities)
     {
         $uuidPattern = '/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}'
@@ -25,14 +25,14 @@ final readonly class AuthenticatedPrincipal
         }
 
         if (!array_is_list($capabilities)) {
-            throw new InvalidArgumentException('Principal capabilities must be an ordered list.');
+            throw new InvalidArgumentException('Principal capabilities must be a list.');
         }
 
         $indexed = [];
 
         foreach ($capabilities as $capability) {
-            if (!$capability instanceof Capability) {
-                throw new InvalidArgumentException('Principal capabilities must be validated Capability values.');
+            if (!($capability instanceof Capability)) {
+                throw new InvalidArgumentException('Principal capabilities must be Capability values.');
             }
 
             if (isset($indexed[$capability->value()])) {
@@ -49,20 +49,24 @@ final readonly class AuthenticatedPrincipal
         $this->capabilities = $indexed;
     }
 
-    /** @param list<string> $capabilities */
+    /** @param array<mixed> $capabilities */
     public static function fromStrings(string $subject, array $capabilities): self
     {
         if (!array_is_list($capabilities)) {
-            throw new InvalidArgumentException('Principal capability strings must be an ordered list.');
+            throw new InvalidArgumentException('Principal capability names must be a list.');
         }
 
-        return new self(
-            strtolower($subject),
-            array_map(
-                static fn (string $capability): Capability => Capability::fromString($capability),
-                $capabilities,
-            ),
-        );
+        $values = [];
+
+        foreach ($capabilities as $capability) {
+            if (!is_string($capability)) {
+                throw new InvalidArgumentException('Principal capability names must be strings.');
+            }
+
+            $values[] = Capability::fromString($capability);
+        }
+
+        return new self(strtolower($subject), $values);
     }
 
     public function subject(): string

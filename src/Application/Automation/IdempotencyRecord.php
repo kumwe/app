@@ -24,7 +24,7 @@ final readonly class IdempotencyRecord
             throw new InvalidArgumentException('Idempotency subject and operation are required.');
         }
 
-        if (!preg_match('/^[a-f0-9]{64}$/D', $requestDigest)) {
+        if (preg_match('/^[a-f0-9]{64}$/D', $requestDigest) !== 1) {
             throw new InvalidArgumentException('The idempotency request digest must be SHA-256.');
         }
 
