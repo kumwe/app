@@ -43,6 +43,10 @@ final class ZipArchiveReader implements ArchiveReader
                 $attributes = 0;
 
                 if ($zip->getExternalAttributesIndex($index, $operatingSystem, $attributes)) {
+                    if (!is_int($attributes)) {
+                        throw new RuntimeException('The ZIP archive contains invalid external attributes.');
+                    }
+
                     $unixType = ($attributes >> 16) & 0xF000;
 
                     if ($unixType === 0xA000) {

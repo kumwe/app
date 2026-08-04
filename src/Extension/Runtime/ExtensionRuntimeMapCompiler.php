@@ -124,6 +124,10 @@ final readonly class ExtensionRuntimeMapCompiler
             $table,
         ))->loadResult();
 
+        if (!is_int($result) && (!is_string($result) || preg_match('/^[0-9]+$/D', $result) !== 1)) {
+            throw new RuntimeException('The extension runtime generation is invalid.');
+        }
+
         return (int) $result;
     }
 

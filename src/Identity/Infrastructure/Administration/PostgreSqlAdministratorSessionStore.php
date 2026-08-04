@@ -42,6 +42,14 @@ final readonly class PostgreSqlAdministratorSessionStore implements Administrato
         $csrf = $this->base64Url(random_bytes(32));
         $now = $this->clock->now();
         $expiresAt = $now->add(new DateInterval(sprintf('PT%dS', $this->lifetimeSeconds)));
+        $boundId = $id;
+        $userId = $principal->subject();
+        $tokenDigest = hash('sha256', $token);
+        $boundCsrf = $csrf;
+        $userAgentDigest = $this->fingerprint($userAgent);
+        $createdAt = $this->timestamp($now);
+        $lastSeenAt = $this->timestamp($now);
+        $expiresAtValue = $this->timestamp($expiresAt);
         $query = $this->database->getQuery(true)
             ->insert($this->quoteName($this->schema . '.administrator_sessions'))
             ->columns($this->quoteNames([
@@ -59,14 +67,14 @@ final readonly class PostgreSqlAdministratorSessionStore implements Administrato
                 ':id, :user_id, :token_digest, :csrf_token, NULL, :user_agent_digest, '
                 . ':created_at, :last_seen_at, :expires_at',
             )
-            ->bind(':id', $id, ParameterType::STRING)
-            ->bind(':user_id', $principal->subject(), ParameterType::STRING)
-            ->bind(':token_digest', hash('sha256', $token), ParameterType::STRING)
-            ->bind(':csrf_token', $csrf, ParameterType::STRING)
-            ->bind(':user_agent_digest', $this->fingerprint($userAgent), ParameterType::STRING)
-            ->bind(':created_at', $this->timestamp($now), ParameterType::STRING)
-            ->bind(':last_seen_at', $this->timestamp($now), ParameterType::STRING)
-            ->bind(':expires_at', $this->timestamp($expiresAt), ParameterType::STRING);
+            ->bind(':id', $boundId, ParameterType::STRING)
+            ->bind(':user_id', $userId, ParameterType::STRING)
+            ->bind(':token_digest', $tokenDigest, ParameterType::STRING)
+            ->bind(':csrf_token', $boundCsrf, ParameterType::STRING)
+            ->bind(':user_agent_digest', $userAgentDigest, ParameterType::STRING)
+            ->bind(':created_at', $createdAt, ParameterType::STRING)
+            ->bind(':last_seen_at', $lastSeenAt, ParameterType::STRING)
+            ->bind(':expires_at', $expiresAtValue, ParameterType::STRING);
         $this->database->setQuery($query)->execute();
 
         return new CreatedAdministratorSession(
@@ -82,6 +90,8 @@ final readonly class PostgreSqlAdministratorSessionStore implements Administrato
         }
 
         $now = $this->clock->now();
+        $tokenDigest = hash('sha256', $token);
+        $nowValue = $this->timestamp($now);
         $query = $this->database->getQuery(true)
             ->select([
                 $this->quoteName('s.id'),
@@ -99,8 +109,8 @@ final readonly class PostgreSqlAdministratorSessionStore implements Administrato
             ->where($this->quoteName('s.token_digest') . ' = :token_digest')
             ->where($this->quoteName('s.expires_at') . ' > :now')
             ->where($this->quoteName('u.status') . " = 'active'")
-            ->bind(':token_digest', hash('sha256', $token), ParameterType::STRING)
-            ->bind(':now', $this->timestamp($now), ParameterType::STRING);
+            ->bind(':token_digest', $tokenDigest, ParameterType::STRING)
+            ->bind(':now', $nowValue, ParameterType::STRING);
         $row = $this->database->setQuery($query)->loadAssoc();
 
         if (!is_array($row)) {
@@ -143,10 +153,11 @@ final readonly class PostgreSqlAdministratorSessionStore implements Administrato
 
     public function purgeExpired(): int
     {
+        $now = $this->timestamp($this->clock->now());
         $query = $this->database->getQuery(true)
             ->delete($this->quoteName($this->schema . '.administrator_sessions'))
             ->where($this->quoteName('expires_at') . ' <= :now')
-            ->bind(':now', $this->timestamp($this->clock->now()), ParameterType::STRING);
+            ->bind(':now', $now, ParameterType::STRING);
         $this->database->setQuery($query)->execute();
 
         return $this->database->getAffectedRows();
@@ -174,11 +185,12 @@ final readonly class PostgreSqlAdministratorSessionStore implements Administrato
 
     private function touch(string $id, DateTimeImmutable $time): void
     {
+        $lastSeenAt = $this->timestamp($time);
         $query = $this->database->getQuery(true)
             ->update($this->quoteName($this->schema . '.administrator_sessions'))
             ->set($this->quoteName('last_seen_at') . ' = :last_seen_at')
             ->where($this->quoteName('id') . ' = :id')
-            ->bind(':last_seen_at', $this->timestamp($time), ParameterType::STRING)
+            ->bind(':last_seen_at', $lastSeenAt, ParameterType::STRING)
             ->bind(':id', $id, ParameterType::STRING);
         $this->database->setQuery($query)->execute();
     }
@@ -198,7 +210,10 @@ final readonly class PostgreSqlAdministratorSessionStore implements Administrato
         return $value->format('Y-m-d H:i:s.uP');
     }
 
-    /** @param list<string> $names @return list<string> */
+    /**
+     * @param list<string> $names
+     * @return list<string>
+     */
     private function quoteNames(array $names): array
     {
         return array_map(fn (string $name): string => $this->quoteName($name), $names);

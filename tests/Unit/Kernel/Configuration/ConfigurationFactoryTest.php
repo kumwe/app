@@ -57,7 +57,7 @@ final class ConfigurationFactoryTest extends TestCase
             'APP_DEBUG' => 'false',
             'APP_BASE_URL' => 'https://kumwe.test',
             'APP_TRUSTED_HOSTS' => 'kumwe.test',
-            'APP_SECRET' => '0123456789abcdef0123456789abcdef',
+            'APP_SECRET' => str_repeat('a', 32),
             'DB_HOST' => 'postgres',
             'DB_PORT' => '5432',
             'DB_NAME' => 'kumwe',

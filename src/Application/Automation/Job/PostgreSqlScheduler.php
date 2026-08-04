@@ -55,6 +55,7 @@ final readonly class PostgreSqlScheduler implements Scheduler, ScheduleRepositor
                     throw new RuntimeException('The due schedule query returned an invalid row.');
                 }
 
+                /** @var array<string, mixed> $row */
                 $this->dispatch($row);
                 ++$dispatched;
             }
@@ -140,11 +141,11 @@ final readonly class PostgreSqlScheduler implements Scheduler, ScheduleRepositor
             $this->quote($jobId),
             $this->quote($this->requiredString($row, 'queue')),
             $this->quote($this->requiredString($row, 'job_type')),
-            (int) ($row['job_schema_version'] ?? 1),
+            $this->integer($row, 'job_schema_version'),
             $this->quote(json_encode($payload, JSON_THROW_ON_ERROR)),
-            (int) ($row['priority'] ?? 0),
+            $this->integer($row, 'priority'),
             $this->quote($this->timestamp($now)),
-            (int) ($row['maximum_attempts'] ?? 5),
+            $this->integer($row, 'maximum_attempts'),
             $this->quote($id),
             $this->quote($this->timestamp($scheduledFor)),
             $this->quote($occurrenceKey),
@@ -180,6 +181,7 @@ final readonly class PostgreSqlScheduler implements Scheduler, ScheduleRepositor
             throw new RuntimeException('A schedule payload must be a JSON object.');
         }
 
+        /** @var array<string, mixed> $payload */
         return $payload;
     }
 
@@ -193,6 +195,18 @@ final readonly class PostgreSqlScheduler implements Scheduler, ScheduleRepositor
         }
 
         return $value;
+    }
+
+    /** @param array<string, mixed> $row */
+    private function integer(array $row, string $field): int
+    {
+        $value = $row[$field] ?? null;
+
+        if (!is_int($value) && (!is_string($value) || preg_match('/^-?[0-9]+$/D', $value) !== 1)) {
+            throw new RuntimeException(sprintf('Schedule field %s is not an integer.', $field));
+        }
+
+        return (int) $value;
     }
 
     private function assertQueue(string $queue): void

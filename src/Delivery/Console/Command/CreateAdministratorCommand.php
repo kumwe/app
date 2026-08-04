@@ -26,6 +26,7 @@ final readonly class CreateAdministratorCommand implements Command
         return 'Create the first administrator from a protected password file.';
     }
 
+    /** @param list<string> $arguments */
     public function execute(array $arguments, Output $output): int
     {
         try {
@@ -46,7 +47,10 @@ final readonly class CreateAdministratorCommand implements Command
         }
     }
 
-    /** @param list<string> $arguments @return array<string, string> */
+    /**
+     * @param list<string> $arguments
+     * @return array<string, string>
+     */
     private function options(array $arguments): array
     {
         $options = [];

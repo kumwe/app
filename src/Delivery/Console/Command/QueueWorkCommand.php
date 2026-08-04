@@ -26,23 +26,40 @@ final readonly class QueueWorkCommand implements Command
         return 'Run the durable PostgreSQL job worker.';
     }
 
+    /** @param list<string> $arguments */
     public function execute(array $arguments, Output $output): int
     {
         try {
             $options = $this->options($arguments);
             $queue = $options['queue'] ?? 'default';
             $once = isset($options['once']);
-            $sleepMilliseconds = isset($options['sleep-ms']) ? (int) $options['sleep-ms'] : 1_000;
+
+            if (!is_string($queue)) {
+                throw new InvalidArgumentException('The worker queue must be a string.');
+            }
+
+            $sleepOption = $options['sleep-ms'] ?? null;
+
+            if ($sleepOption !== null && (!is_string($sleepOption) || preg_match('/^[0-9]+$/D', $sleepOption) !== 1)) {
+                throw new InvalidArgumentException('Worker sleep must be an integer.');
+            }
+
+            $sleepMilliseconds = $sleepOption === null ? 1_000 : (int) $sleepOption;
 
             if ($sleepMilliseconds < 50 || $sleepMilliseconds > 60_000) {
                 throw new InvalidArgumentException('Worker sleep must be between 50 and 60000 milliseconds.');
             }
 
-            $host = gethostname() ?: 'kumwe';
+            $host = gethostname();
+            $host = $host === false ? 'kumwe' : $host;
+            $safeHost = preg_replace('/[^A-Za-z0-9._-]/', '-', $host);
+            $safeHost = $safeHost === null || $safeHost === '' ? 'kumwe' : $safeHost;
+            $processId = getmypid();
+            $processId = $processId === false ? 1 : $processId;
             $workerId = sprintf(
                 '%s:%d:%s',
-                preg_replace('/[^A-Za-z0-9._-]/', '-', $host),
-                getmypid() ?: 1,
+                $safeHost,
+                $processId,
                 bin2hex(random_bytes(4)),
             );
             $output->line(sprintf('Kumwe worker %s is consuming queue %s.', $workerId, $queue));
@@ -63,7 +80,10 @@ final readonly class QueueWorkCommand implements Command
         }
     }
 
-    /** @param list<string> $arguments @return array<string, string|true> */
+    /**
+     * @param list<string> $arguments
+     * @return array<string, string|true>
+     */
     private function options(array $arguments): array
     {
         $options = [];

@@ -46,7 +46,18 @@ final readonly class PostgreSqlContentRepository implements ContentRepository
             throw new RuntimeException('The content query returned an invalid result set.');
         }
 
-        return array_map(fn (array $row): ContentRecord => $this->map($row), $rows);
+        $records = [];
+
+        foreach ($rows as $row) {
+            if (!is_array($row)) {
+                throw new RuntimeException('The content query returned an invalid row.');
+            }
+
+            /** @var array<string, mixed> $row */
+            $records[] = $this->map($row);
+        }
+
+        return $records;
     }
 
     public function find(string $id, bool $includeDeleted = false): ?ContentRecord
@@ -61,7 +72,12 @@ final readonly class PostgreSqlContentRepository implements ContentRepository
 
         $row = $this->database->setQuery($query)->loadAssoc();
 
-        return is_array($row) ? $this->map($row) : null;
+        if (!is_array($row)) {
+            return null;
+        }
+
+        /** @var array<string, mixed> $row */
+        return $this->map($row);
     }
 
     public function findPublishedBySlug(string $slug, DateTimeImmutable $time): ?ContentRecord
@@ -80,7 +96,12 @@ final readonly class PostgreSqlContentRepository implements ContentRepository
             ->bind(':visible_until', $timestamp, ParameterType::STRING);
         $row = $this->database->setQuery($query)->loadAssoc();
 
-        return is_array($row) ? $this->map($row) : null;
+        if (!is_array($row)) {
+            return null;
+        }
+
+        /** @var array<string, mixed> $row */
+        return $this->map($row);
     }
 
     public function insert(ContentRecord $record): void
@@ -89,6 +110,18 @@ final readonly class PostgreSqlContentRepository implements ContentRepository
         $data = json_encode($entry->data(), JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
         $publishAt = $entry->publicationWindow()->startsAt();
         $unpublishAt = $entry->publicationWindow()->endsAt();
+        $id = $entry->id();
+        $contentTypeId = $record->contentTypeId;
+        $workflowId = $record->workflowId;
+        $workflowState = $entry->status()->value;
+        $title = $entry->title();
+        $slug = $entry->slug();
+        $publishTimestamp = $this->nullableTimestamp($publishAt);
+        $unpublishTimestamp = $this->nullableTimestamp($unpublishAt);
+        $version = $entry->version();
+        $createdAt = $this->timestamp($record->createdAt);
+        $updatedAt = $this->timestamp($record->updatedAt);
+        $deletedAt = $this->nullableTimestamp($record->deletedAt);
         $query = $this->database->getQuery(true)
             ->insert($this->quoteName($this->schema . '.content_entries'))
             ->columns($this->quoteNames([
@@ -121,23 +154,19 @@ final readonly class PostgreSqlContentRepository implements ContentRepository
                 ':updated_at',
                 ':deleted_at',
             ]))
-            ->bind(':id', $entry->id(), ParameterType::STRING)
-            ->bind(':content_type_id', $record->contentTypeId, ParameterType::STRING)
-            ->bind(':workflow_id', $record->workflowId, ParameterType::STRING)
-            ->bind(':workflow_state_key', $entry->status()->value, ParameterType::STRING)
-            ->bind(':title', $entry->title(), ParameterType::STRING)
-            ->bind(':slug', $entry->slug(), ParameterType::STRING)
+            ->bind(':id', $id, ParameterType::STRING)
+            ->bind(':content_type_id', $contentTypeId, ParameterType::STRING)
+            ->bind(':workflow_id', $workflowId, ParameterType::STRING)
+            ->bind(':workflow_state_key', $workflowState, ParameterType::STRING)
+            ->bind(':title', $title, ParameterType::STRING)
+            ->bind(':slug', $slug, ParameterType::STRING)
             ->bind(':data', $data, ParameterType::STRING)
-            ->bind(':publish_at', $this->nullableTimestamp($publishAt), $this->nullableType($publishAt))
-            ->bind(':unpublish_at', $this->nullableTimestamp($unpublishAt), $this->nullableType($unpublishAt))
-            ->bind(':version', $entry->version(), ParameterType::INTEGER)
-            ->bind(':created_at', $this->timestamp($record->createdAt), ParameterType::STRING)
-            ->bind(':updated_at', $this->timestamp($record->updatedAt), ParameterType::STRING)
-            ->bind(
-                ':deleted_at',
-                $this->nullableTimestamp($record->deletedAt),
-                $this->nullableType($record->deletedAt),
-            );
+            ->bind(':publish_at', $publishTimestamp, $this->nullableType($publishAt))
+            ->bind(':unpublish_at', $unpublishTimestamp, $this->nullableType($unpublishAt))
+            ->bind(':version', $version, ParameterType::INTEGER)
+            ->bind(':created_at', $createdAt, ParameterType::STRING)
+            ->bind(':updated_at', $updatedAt, ParameterType::STRING)
+            ->bind(':deleted_at', $deletedAt, $this->nullableType($record->deletedAt));
 
         $this->database->setQuery($query)->execute();
     }
@@ -148,6 +177,15 @@ final readonly class PostgreSqlContentRepository implements ContentRepository
         $data = json_encode($entry->data(), JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
         $publishAt = $entry->publicationWindow()->startsAt();
         $unpublishAt = $entry->publicationWindow()->endsAt();
+        $workflowState = $entry->status()->value;
+        $title = $entry->title();
+        $slug = $entry->slug();
+        $publishTimestamp = $this->nullableTimestamp($publishAt);
+        $unpublishTimestamp = $this->nullableTimestamp($unpublishAt);
+        $newVersion = $entry->version();
+        $updatedAt = $this->timestamp($record->updatedAt);
+        $boundId = $entry->id();
+        $boundExpectedVersion = $expectedVersion;
         $query = $this->database->getQuery(true)
             ->update($this->quoteName($this->schema . '.content_entries'))
             ->set($this->quoteName('workflow_state_key') . ' = :workflow_state_key')
@@ -161,16 +199,16 @@ final readonly class PostgreSqlContentRepository implements ContentRepository
             ->where($this->quoteName('id') . ' = :id')
             ->where($this->quoteName('version') . ' = :expected_version')
             ->where($this->quoteName('deleted_at') . ' IS NULL')
-            ->bind(':workflow_state_key', $entry->status()->value, ParameterType::STRING)
-            ->bind(':title', $entry->title(), ParameterType::STRING)
-            ->bind(':slug', $entry->slug(), ParameterType::STRING)
+            ->bind(':workflow_state_key', $workflowState, ParameterType::STRING)
+            ->bind(':title', $title, ParameterType::STRING)
+            ->bind(':slug', $slug, ParameterType::STRING)
             ->bind(':data', $data, ParameterType::STRING)
-            ->bind(':publish_at', $this->nullableTimestamp($publishAt), $this->nullableType($publishAt))
-            ->bind(':unpublish_at', $this->nullableTimestamp($unpublishAt), $this->nullableType($unpublishAt))
-            ->bind(':new_version', $entry->version(), ParameterType::INTEGER)
-            ->bind(':updated_at', $this->timestamp($record->updatedAt), ParameterType::STRING)
-            ->bind(':id', $entry->id(), ParameterType::STRING)
-            ->bind(':expected_version', $expectedVersion, ParameterType::INTEGER);
+            ->bind(':publish_at', $publishTimestamp, $this->nullableType($publishAt))
+            ->bind(':unpublish_at', $unpublishTimestamp, $this->nullableType($unpublishAt))
+            ->bind(':new_version', $newVersion, ParameterType::INTEGER)
+            ->bind(':updated_at', $updatedAt, ParameterType::STRING)
+            ->bind(':id', $boundId, ParameterType::STRING)
+            ->bind(':expected_version', $boundExpectedVersion, ParameterType::INTEGER);
 
         $this->database->setQuery($query)->execute();
         $this->assertUpdated($expectedVersion, $entry->id());
@@ -182,6 +220,10 @@ final readonly class PostgreSqlContentRepository implements ContentRepository
         ?DateTimeImmutable $deletedAt,
         DateTimeImmutable $updatedAt,
     ): void {
+        $deletedTimestamp = $this->nullableTimestamp($deletedAt);
+        $updatedTimestamp = $this->timestamp($updatedAt);
+        $boundId = $id;
+        $boundExpectedVersion = $expectedVersion;
         $query = $this->database->getQuery(true)
             ->update($this->quoteName($this->schema . '.content_entries'))
             ->set($this->quoteName('deleted_at') . ' = :deleted_at')
@@ -189,10 +231,10 @@ final readonly class PostgreSqlContentRepository implements ContentRepository
             ->set($this->quoteName('version') . ' = ' . $this->quoteName('version') . ' + 1')
             ->where($this->quoteName('id') . ' = :id')
             ->where($this->quoteName('version') . ' = :expected_version')
-            ->bind(':deleted_at', $this->nullableTimestamp($deletedAt), $this->nullableType($deletedAt))
-            ->bind(':updated_at', $this->timestamp($updatedAt), ParameterType::STRING)
-            ->bind(':id', $id, ParameterType::STRING)
-            ->bind(':expected_version', $expectedVersion, ParameterType::INTEGER);
+            ->bind(':deleted_at', $deletedTimestamp, $this->nullableType($deletedAt))
+            ->bind(':updated_at', $updatedTimestamp, ParameterType::STRING)
+            ->bind(':id', $boundId, ParameterType::STRING)
+            ->bind(':expected_version', $boundExpectedVersion, ParameterType::INTEGER);
 
         $this->database->setQuery($query)->execute();
         $this->assertUpdated($expectedVersion, $id);
@@ -204,6 +246,11 @@ final readonly class PostgreSqlContentRepository implements ContentRepository
             $revision->snapshot(),
             JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE,
         );
+        $id = $revision->id();
+        $contentEntryId = $revision->contentEntryId();
+        $revisionNumber = $revision->revisionNumber();
+        $checksum = $revision->checksum();
+        $createdAt = $this->timestamp($revision->createdAt());
         $query = $this->database->getQuery(true)
             ->insert($this->quoteName($this->schema . '.content_revisions'))
             ->columns($this->quoteNames([
@@ -215,12 +262,12 @@ final readonly class PostgreSqlContentRepository implements ContentRepository
                 'created_at',
             ]))
             ->values(':id, :content_entry_id, :revision_number, CAST(:snapshot AS jsonb), :checksum, :created_at')
-            ->bind(':id', $revision->id(), ParameterType::STRING)
-            ->bind(':content_entry_id', $revision->contentEntryId(), ParameterType::STRING)
-            ->bind(':revision_number', $revision->revisionNumber(), ParameterType::INTEGER)
+            ->bind(':id', $id, ParameterType::STRING)
+            ->bind(':content_entry_id', $contentEntryId, ParameterType::STRING)
+            ->bind(':revision_number', $revisionNumber, ParameterType::INTEGER)
             ->bind(':snapshot', $snapshot, ParameterType::STRING)
-            ->bind(':checksum', $revision->checksum(), ParameterType::STRING)
-            ->bind(':created_at', $this->timestamp($revision->createdAt()), ParameterType::STRING);
+            ->bind(':checksum', $checksum, ParameterType::STRING)
+            ->bind(':created_at', $createdAt, ParameterType::STRING);
 
         $this->database->setQuery($query)->execute();
     }
@@ -233,7 +280,13 @@ final readonly class PostgreSqlContentRepository implements ContentRepository
             ->where($this->quoteName('content_entry_id') . ' = :content_entry_id')
             ->bind(':content_entry_id', $contentEntryId, ParameterType::STRING);
 
-        return (int) $this->database->setQuery($query)->loadResult();
+        $result = $this->database->setQuery($query)->loadResult();
+
+        if (!is_int($result) && (!is_string($result) || preg_match('/^[0-9]+$/D', $result) !== 1)) {
+            throw new RuntimeException('The next content revision number is invalid.');
+        }
+
+        return (int) $result;
     }
 
     private function baseSelect(): \Joomla\Database\QueryInterface
@@ -268,10 +321,11 @@ final readonly class PostgreSqlContentRepository implements ContentRepository
             throw new RuntimeException('Stored content JSON is invalid.', 0, $exception);
         }
 
-        if (!is_array($data)) {
+        if (!is_array($data) || array_is_list($data)) {
             throw new RuntimeException('Stored content data must be a JSON object.');
         }
 
+        /** @var array<string, mixed> $data */
         $id = $this->requiredString($row, 'id');
         $status = ContentStatus::from($this->requiredString($row, 'workflow_state_key'));
         $window = new PublicationWindow(
@@ -285,7 +339,7 @@ final readonly class PostgreSqlContentRepository implements ContentRepository
             $data,
             $status,
             $window,
-            (int) ($row['version'] ?? 0),
+            $this->integer($row, 'version'),
         );
 
         return new ContentRecord(
@@ -318,6 +372,18 @@ final readonly class PostgreSqlContentRepository implements ContentRepository
         return $value;
     }
 
+    /** @param array<string, mixed> $row */
+    private function integer(array $row, string $key): int
+    {
+        $value = $row[$key] ?? null;
+
+        if (!is_int($value) && (!is_string($value) || preg_match('/^[0-9]+$/D', $value) !== 1)) {
+            throw new RuntimeException(sprintf('Stored content field %s is not an integer.', $key));
+        }
+
+        return (int) $value;
+    }
+
     private function dateTime(string $value): DateTimeImmutable
     {
         return new DateTimeImmutable($value, new DateTimeZone('UTC'));
@@ -343,7 +409,10 @@ final readonly class PostgreSqlContentRepository implements ContentRepository
         return $value === null ? ParameterType::NULL : ParameterType::STRING;
     }
 
-    /** @param list<string> $names @return list<string> */
+    /**
+     * @param list<string> $names
+     * @return list<string>
+     */
     private function quoteNames(array $names): array
     {
         return array_map(fn (string $name): string => $this->quoteName($name), $names);

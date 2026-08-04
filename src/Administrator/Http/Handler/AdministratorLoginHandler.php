@@ -34,12 +34,17 @@ final readonly class AdministratorLoginHandler implements RequestHandlerInterfac
         }
 
         $form = AdministratorRequest::form($request);
+        $remoteAddress = $request->getServerParams()['REMOTE_ADDR'] ?? 'unknown';
+
+        if (!is_string($remoteAddress) || $remoteAddress === '') {
+            $remoteAddress = 'unknown';
+        }
 
         try {
             $principal = $this->identities->authenticate(
                 $form['email'] ?? '',
                 $form['password'] ?? '',
-                (string) ($request->getServerParams()['REMOTE_ADDR'] ?? 'unknown'),
+                $remoteAddress,
             );
         } catch (AuthenticationThrottled $exception) {
             return new HtmlResponse($this->renderer->render('login', [

@@ -29,6 +29,7 @@ final class ContentApiRequest
             throw new InvalidArgumentException('The request body must be a JSON object.');
         }
 
+        /** @var array<string, mixed> $data */
         return $data;
     }
 
@@ -54,6 +55,7 @@ final class ContentApiRequest
         return $id;
     }
 
+    /** @param array<string, mixed> $body */
     public static function requiredString(array $body, string $field): string
     {
         $value = $body[$field] ?? null;
@@ -65,7 +67,10 @@ final class ContentApiRequest
         return trim($value);
     }
 
-    /** @return array<string, mixed> */
+    /**
+     * @param array<string, mixed> $body
+     * @return array<string, mixed>
+     */
     public static function data(array $body): array
     {
         $data = $body['data'] ?? [];
@@ -74,9 +79,11 @@ final class ContentApiRequest
             throw new InvalidArgumentException('The data field must be a JSON object.');
         }
 
+        /** @var array<string, mixed> $data */
         return $data;
     }
 
+    /** @param array<string, mixed> $body */
     public static function publicationWindow(array $body): ?PublicationWindow
     {
         if (!array_key_exists('publish_at', $body) && !array_key_exists('unpublish_at', $body)) {

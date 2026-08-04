@@ -27,6 +27,7 @@ final readonly class CreateAccessTokenCommand implements Command
         return 'Create a scoped API/MCP access token and print it once.';
     }
 
+    /** @param list<string> $arguments */
     public function execute(array $arguments, Output $output): int
     {
         try {
@@ -54,7 +55,10 @@ final readonly class CreateAccessTokenCommand implements Command
         }
     }
 
-    /** @param list<string> $arguments @return array<string, string> */
+    /**
+     * @param list<string> $arguments
+     * @return array<string, string>
+     */
     private function options(array $arguments): array
     {
         $options = [];

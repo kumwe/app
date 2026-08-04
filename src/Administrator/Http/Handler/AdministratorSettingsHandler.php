@@ -26,7 +26,7 @@ final readonly class AdministratorSettingsHandler implements RequestHandlerInter
         if (strtoupper($request->getMethod()) === 'POST') {
             $form = AdministratorRequest::form($request);
             $this->settings->update(
-                $session->userId,
+                $session->principal->subject(),
                 AdministratorRequest::required($form, 'site_name'),
                 AdministratorRequest::required($form, 'homepage_slug'),
             );

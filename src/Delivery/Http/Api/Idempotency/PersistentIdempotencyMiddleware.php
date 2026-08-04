@@ -107,7 +107,8 @@ final readonly class PersistentIdempotencyMiddleware implements MiddlewareInterf
             throw new RuntimeException('The idempotency record could not be loaded.');
         }
 
-        $expiresAt = new DateTimeImmutable((string) ($row['expires_at'] ?? ''));
+        /** @var array<string, mixed> $row */
+        $expiresAt = new DateTimeImmutable($this->requiredString($row, 'expires_at'));
 
         if ($expiresAt <= $this->clock->now()) {
             $this->reset($subject, $operation, $key, $digest);
@@ -115,7 +116,7 @@ final readonly class PersistentIdempotencyMiddleware implements MiddlewareInterf
             return null;
         }
 
-        if (!hash_equals((string) ($row['request_digest'] ?? ''), $digest)) {
+        if (!hash_equals($this->requiredString($row, 'request_digest'), $digest)) {
             return $this->problems->create(
                 422,
                 'Idempotency Key Reused',
@@ -125,15 +126,17 @@ final readonly class PersistentIdempotencyMiddleware implements MiddlewareInterf
             );
         }
 
-        if ((string) ($row['state'] ?? '') === 'completed') {
+        $state = $this->requiredString($row, 'state');
+
+        if ($state === 'completed') {
             $body = $this->jsonObject($row['result_body'] ?? null);
             $headers = $this->headers($row['result_headers'] ?? null);
             $headers['Idempotency-Replayed'] = 'true';
 
-            return new JsonResponse($body, (int) ($row['result_status'] ?? 200), $headers);
+            return new JsonResponse($body, $this->integer($row, 'result_status'), $headers);
         }
 
-        if ((string) ($row['state'] ?? '') === 'failed') {
+        if ($state === 'failed') {
             $this->reset($subject, $operation, $key, $digest);
 
             return null;
@@ -219,26 +222,51 @@ final readonly class PersistentIdempotencyMiddleware implements MiddlewareInterf
             throw new RuntimeException('An idempotency result contains invalid JSON.', 0, $exception);
         }
 
-        if (!is_array($decoded)) {
-            throw new RuntimeException('An idempotency result must contain a JSON array or object.');
+        if (!is_array($decoded) || array_is_list($decoded)) {
+            throw new RuntimeException('An idempotency result must contain a JSON object.');
         }
 
+        /** @var array<string, mixed> $decoded */
         return $decoded;
     }
 
-    /** @return array<string, string> */
+    /** @return array<non-empty-string, string> */
     private function headers(mixed $stored): array
     {
         $headers = $this->jsonObject($stored);
 
         foreach ($headers as $name => $value) {
-            if (!is_string($value)) {
+            if ($name === '' || !is_string($value)) {
                 throw new RuntimeException('Stored idempotency response headers must contain strings.');
             }
         }
 
-        /** @var array<string, string> $headers */
+        /** @var array<non-empty-string, string> $headers */
         return $headers;
+    }
+
+    /** @param array<string, mixed> $row */
+    private function requiredString(array $row, string $field): string
+    {
+        $value = $row[$field] ?? null;
+
+        if (!is_string($value) || $value === '') {
+            throw new RuntimeException(sprintf('Idempotency field %s is invalid.', $field));
+        }
+
+        return $value;
+    }
+
+    /** @param array<string, mixed> $row */
+    private function integer(array $row, string $field): int
+    {
+        $value = $row[$field] ?? null;
+
+        if (!is_int($value) && (!is_string($value) || preg_match('/^[0-9]+$/D', $value) !== 1)) {
+            throw new RuntimeException(sprintf('Idempotency field %s is not an integer.', $field));
+        }
+
+        return (int) $value;
     }
 
     private function table(): string
