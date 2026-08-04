@@ -214,6 +214,7 @@ final readonly class DoctrineScheduler implements Scheduler, ScheduleRepository
         if (!is_array($payload) || array_is_list($payload)) {
             throw new RuntimeException('A schedule payload must be a JSON object.');
         }
+        /** @var array<string, mixed> $payload */
         return $payload;
     }
 
@@ -248,7 +249,10 @@ final readonly class DoctrineScheduler implements Scheduler, ScheduleRepository
         return new DateTimeImmutable($value);
     }
 
-    /** @param array<string, mixed> $row @return array<string, mixed> */
+    /**
+     * @param array<string, mixed> $row
+     * @return array<string, mixed>
+     */
     private function normalize(array $row): array
     {
         $row['payload'] = $this->payload($row['payload'] ?? null);

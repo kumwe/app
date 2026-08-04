@@ -16,6 +16,7 @@ use Kumwe\CMS\Identity\Application\Authentication\AuthenticatedPrincipal;
 use Kumwe\CMS\Infrastructure\Persistence\TableNames;
 use Psr\Clock\ClockInterface;
 use Ramsey\Uuid\Uuid;
+use RuntimeException;
 
 final readonly class DoctrineAdministratorSessionStore implements AdministratorSessionStore
 {
@@ -86,9 +87,13 @@ final readonly class DoctrineAdministratorSessionStore implements AdministratorS
             return null;
         }
 
-        $expiresAt = $row['expires_at'] instanceof DateTimeImmutable
-            ? $row['expires_at']
-            : new DateTimeImmutable((string) $row['expires_at']);
+        $storedExpiry = $row['expires_at'] ?? null;
+        if (!$storedExpiry instanceof DateTimeImmutable && !is_string($storedExpiry)) {
+            return null;
+        }
+        $expiresAt = $storedExpiry instanceof DateTimeImmutable
+            ? $storedExpiry
+            : new DateTimeImmutable($storedExpiry);
         $this->database->update(
             $this->tables->raw('administrator_sessions'),
             ['last_seen_at' => $now],
@@ -111,10 +116,16 @@ final readonly class DoctrineAdministratorSessionStore implements AdministratorS
 
     public function purgeExpired(): int
     {
-        return $this->database->executeStatement(sprintf(
+        $affected = $this->database->executeStatement(sprintf(
             'DELETE FROM %s WHERE expires_at <= ?',
             $this->tables->quoted('administrator_sessions'),
         ), [$this->clock->now()], [Types::DATETIME_IMMUTABLE]);
+
+        if (!is_int($affected) && (!is_string($affected) || preg_match('/^[0-9]+$/D', $affected) !== 1)) {
+            throw new RuntimeException('The expired administrator session count is invalid.');
+        }
+
+        return (int) $affected;
     }
 
     /** @return list<string> */

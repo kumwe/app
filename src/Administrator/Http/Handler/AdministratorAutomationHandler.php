@@ -90,7 +90,10 @@ final readonly class AdministratorAutomationHandler implements RequestHandlerInt
         }
     }
 
-    /** @param array<string, string> $form @return array<string, mixed> */
+    /**
+     * @param array<string, string> $form
+     * @return array<string, mixed>
+     */
     private function payload(array $form): array
     {
         try {

@@ -83,7 +83,10 @@ final readonly class ManageNavigationCommand implements Command
         }
     }
 
-    /** @param array<string, string> $options @return array{deleted: bool} */
+    /**
+     * @param array<string, string> $options
+     * @return array{deleted: bool}
+     */
     private function deleteMenu(array $options, string $actor): array
     {
         $this->navigation->deleteMenu(
@@ -94,7 +97,10 @@ final readonly class ManageNavigationCommand implements Command
         return ['deleted' => true];
     }
 
-    /** @param array<string, string> $options @return array{deleted: bool} */
+    /**
+     * @param array<string, string> $options
+     * @return array{deleted: bool}
+     */
     private function deleteItem(array $options, string $actor): array
     {
         $this->navigation->deleteItem(

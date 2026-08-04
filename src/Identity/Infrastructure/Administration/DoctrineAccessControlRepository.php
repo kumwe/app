@@ -221,9 +221,9 @@ final readonly class DoctrineAccessControlRepository implements AccessControlRep
         return is_string($code) ? $code : null;
     }
 
-    private function assertChanged(int $affected, string $resource): void
+    private function assertChanged(int|string $affected, string $resource): void
     {
-        if ($affected !== 1) {
+        if ((string) $affected !== '1') {
             throw new InvalidArgumentException(sprintf(
                 'The %s does not exist or changed; reload and retry.',
                 $resource,

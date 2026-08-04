@@ -242,9 +242,9 @@ final readonly class DoctrineContentRepository implements ContentRepository
         );
     }
 
-    private function assertUpdated(int $affected, int $expectedVersion, string $id): void
+    private function assertUpdated(int|string $affected, int $expectedVersion, string $id): void
     {
-        if ($affected !== 1) {
+        if ((string) $affected !== '1') {
             throw new VersionConflict($expectedVersion, $this->find($id, true)?->entry->version() ?? 0);
         }
     }

@@ -490,7 +490,11 @@ final class McpCapabilityCatalog
      * @param array<string, mixed> $properties
      * @param array<string, mixed> $output
      * @param list<string> $required
-     * @return array<string, mixed>
+     * @return array{
+     *   name: string, title: string, description: string, handler: string,
+     *   capability: string|null, readOnly: bool, destructive: bool, idempotent: bool,
+     *   inputSchema: array<string, mixed>, outputSchema: array<string, mixed>
+     * }
      */
     private function tool(
         string $name,

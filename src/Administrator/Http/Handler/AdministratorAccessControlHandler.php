@@ -50,7 +50,10 @@ final readonly class AdministratorAccessControlHandler implements RequestHandler
         ]), 200, ['Cache-Control' => 'no-store']);
     }
 
-    /** @param array<string, string> $form @return array{token: string, token_id: string}|null */
+    /**
+     * @param array<string, string> $form
+     * @return array{token: string, token_id: string}|null
+     */
     private function mutate(string $actorId, array $form): ?array
     {
         $action = AdministratorRequest::required($form, 'action');
@@ -125,7 +128,10 @@ final readonly class AdministratorAccessControlHandler implements RequestHandler
         return null;
     }
 
-    /** @param array<string, string> $form @return array{token: string, token_id: string} */
+    /**
+     * @param array<string, string> $form
+     * @return array{token: string, token_id: string}
+     */
     private function createToken(array $form, string $actorId): array
     {
         $capabilities = array_values(array_filter(array_map(

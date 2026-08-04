@@ -294,7 +294,10 @@ final readonly class ExtensionManifest
         return $this->assets;
     }
 
-    /** @param array<mixed> $values @return list<class-string> */
+    /**
+     * @param array<mixed> $values
+     * @return list<class-string>
+     */
     private function classList(array $values, string $field): array
     {
         if (!array_is_list($values) || count($values) > 256) {
@@ -314,7 +317,10 @@ final readonly class ExtensionManifest
         return $result;
     }
 
-    /** @param array<mixed> $value @return array<string, mixed> */
+    /**
+     * @param array<mixed> $value
+     * @return array<string, mixed>
+     */
     private function object(array $value, string $field): array
     {
         if (array_is_list($value) && $value !== []) {
@@ -324,7 +330,10 @@ final readonly class ExtensionManifest
         return $value;
     }
 
-    /** @param array<mixed> $values @return list<string> */
+    /**
+     * @param array<mixed> $values
+     * @return list<string>
+     */
     private function identifierList(array $values, string $field): array
     {
         if (!array_is_list($values) || count($values) > 256) {
@@ -340,7 +349,10 @@ final readonly class ExtensionManifest
         return array_values(array_unique($result));
     }
 
-    /** @param array<mixed> $values @return list<array<string, mixed>> */
+    /**
+     * @param array<mixed> $values
+     * @return list<array<string, mixed>>
+     */
     private function objectList(array $values, string $field): array
     {
         if (!array_is_list($values) || count($values) > 256) {
@@ -357,7 +369,10 @@ final readonly class ExtensionManifest
         return $result;
     }
 
-    /** @param array<mixed> $values @return list<string> */
+    /**
+     * @param array<mixed> $values
+     * @return list<string>
+     */
     private function pathList(array $values, string $field): array
     {
         if (!array_is_list($values) || count($values) > 512) {

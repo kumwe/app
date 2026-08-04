@@ -70,7 +70,10 @@ final readonly class ManageAccessCommand implements Command
         }
     }
 
-    /** @param array<string, string> $options @return array{updated: bool} */
+    /**
+     * @param array<string, string> $options
+     * @return array{updated: bool}
+     */
     private function updateUser(array $options, string $actor): array
     {
         $this->access->updateUser(
@@ -84,7 +87,10 @@ final readonly class ManageAccessCommand implements Command
         return ['updated' => true];
     }
 
-    /** @param array<string, string> $options @return array{updated: bool} */
+    /**
+     * @param array<string, string> $options
+     * @return array{updated: bool}
+     */
     private function assignRole(array $options, string $actor, bool $revoke): array
     {
         $arguments = [
@@ -99,14 +105,20 @@ final readonly class ManageAccessCommand implements Command
         return ['updated' => true];
     }
 
-    /** @param array<string, string> $options @return array{updated: bool} */
+    /**
+     * @param array<string, string> $options
+     * @return array{updated: bool}
+     */
     private function revokeGrant(array $options, string $actor): array
     {
         $this->access->revokeGrant($actor, CommandInput::required($options, 'grant'));
         return ['updated' => true];
     }
 
-    /** @param array<string, string> $options @return array{updated: bool} */
+    /**
+     * @param array<string, string> $options
+     * @return array{updated: bool}
+     */
     private function revokeToken(array $options, string $actor): array
     {
         $this->access->revokeToken($actor, CommandInput::required($options, 'token'));

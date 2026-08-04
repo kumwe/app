@@ -232,9 +232,9 @@ final readonly class DoctrineNavigationRepository implements NavigationRepositor
         );
     }
 
-    private function assertChanged(int $affected, string $resource): void
+    private function assertChanged(int|string $affected, string $resource): void
     {
-        if ($affected !== 1) {
+        if ((string) $affected !== '1') {
             throw new NavigationVersionConflict(sprintf('The %s changed; reload it and retry.', $resource));
         }
     }

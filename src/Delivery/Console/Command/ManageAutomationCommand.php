@@ -68,7 +68,10 @@ final readonly class ManageAutomationCommand implements Command
         }
     }
 
-    /** @param array<string, string> $options @return array{updated: bool} */
+    /**
+     * @param array<string, string> $options
+     * @return array{updated: bool}
+     */
     private function scheduleState(string $actor, array $options, bool $enabled): array
     {
         $this->automation->setScheduleEnabled(
@@ -80,7 +83,10 @@ final readonly class ManageAutomationCommand implements Command
         return ['updated' => true];
     }
 
-    /** @param array<string, string> $options @return array{deleted: bool} */
+    /**
+     * @param array<string, string> $options
+     * @return array{deleted: bool}
+     */
     private function deleteSchedule(string $actor, array $options): array
     {
         $this->automation->deleteSchedule(
@@ -91,7 +97,10 @@ final readonly class ManageAutomationCommand implements Command
         return ['deleted' => true];
     }
 
-    /** @param array<string, string> $options @return array{updated: bool} */
+    /**
+     * @param array<string, string> $options
+     * @return array{updated: bool}
+     */
     private function jobAction(string $actor, array $options, bool $retry): array
     {
         $id = CommandInput::required($options, 'id');
