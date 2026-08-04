@@ -9,7 +9,8 @@ php bin/kumwe list
 In production Compose:
 
 ```bash
-docker compose -f compose.production.yaml exec app php bin/kumwe list
+docker compose -f compose.production.yaml exec app \
+  /usr/local/bin/kumwe-entrypoint php bin/kumwe list
 ```
 
 Commands return `0` on success and a non-zero status on invalid input, unavailable dependencies, or failed work. Run them as the unprivileged application service account. Content, navigation, settings, and access commands require `--token-file` and enforce the token's capabilities; the verified token subject becomes the audit actor. The token file must be absolute, non-symlinked, and readable only by its owner. Installation, migration, extension-package, and process-lifecycle commands additionally rely on protected host/container access.
