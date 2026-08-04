@@ -87,7 +87,7 @@ jobs:
           tar --extract \
             --file=build/distribution/archive/kumwe-source.tar \
             --directory=build/distribution/package
-          COMPOSER_ROOT_VERSION=2.0.0-acceptance composer install \
+          COMPOSER_ROOT_VERSION=2.0.0 composer install \
             --working-dir=build/distribution/package \
             --classmap-authoritative \
             --no-ansi \

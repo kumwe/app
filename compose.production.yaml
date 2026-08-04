@@ -27,6 +27,9 @@ x-kumwe-environment: &kumwe-environment
 x-kumwe-runtime: &kumwe-runtime
   image: ${KUMWE_APP_IMAGE_REF:-ghcr.io/kumwe/cms/app:latest}
   pull_policy: ${KUMWE_APPLICATION_PULL_POLICY:-always}
+  # Compose file-backed secrets preserve host ownership. Bootstrap as root only
+  # long enough to read them; kumwe-entrypoint immediately drops to www-data.
+  user: '0:0'
   environment: *kumwe-environment
   secrets:
     - app_secret
@@ -35,6 +38,9 @@ x-kumwe-runtime: &kumwe-runtime
   read_only: true
   cap_drop:
     - ALL
+  cap_add:
+    - SETGID
+    - SETUID
   security_opt:
     - no-new-privileges:true
   init: true
@@ -184,6 +190,8 @@ services:
   redis:
     image: ${KUMWE_REDIS_IMAGE:-redis:8-alpine}
     pull_policy: ${KUMWE_INFRASTRUCTURE_PULL_POLICY:-always}
+    # Read the protected file-backed secret, then run Redis as its service user.
+    user: '0:0'
     entrypoint: [/bin/sh, -ec]
     command:
       - |
@@ -206,7 +214,7 @@ services:
         chown redis:redis /run/redis /run/redis/redis.conf
         chmod 0700 /run/redis
         chmod 0600 /run/redis/redis.conf
-        exec /usr/local/bin/docker-entrypoint.sh redis-server /run/redis/redis.conf
+        exec su-exec redis:redis redis-server /run/redis/redis.conf
     secrets:
       - redis_password
     read_only: true
