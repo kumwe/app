@@ -347,7 +347,7 @@ jobs:
             /usr/local/bin/kumwe-entrypoint php bin/kumwe token:create \
             --email=administrator@kumwe.test \
             --name=deployment-acceptance \
-            --capabilities=content.read,content.create,content.update,content.submit,content.review,content.publish,users.manage)"
+            --capabilities=automation.manage,content.read,content.create,content.update,content.submit,content.review,content.publish,users.manage)"
           read_token_output="$(docker compose --file compose.production.yaml exec -T app \
             /usr/local/bin/kumwe-entrypoint php bin/kumwe token:create \
             --email=administrator@kumwe.test \
@@ -377,20 +377,26 @@ jobs:
             'redis-cli --no-auth-warning -a "$(cat /run/secrets/redis_password)" ping')"
           [[ "$redis_response" == PONG ]]
           docker compose --file compose.production.yaml --profile automation stop worker scheduler
-          docker compose --file compose.production.yaml exec -T app \
-            /usr/local/bin/kumwe-entrypoint php bin/kumwe schedule:create \
-            --name=deployment-acceptance \
-            '--cron=* * * * *' \
-            --timezone=UTC \
-            --job=system.sessions.purge \
-            --payload='{}' \
-            --queue=default \
-            --first-run=2000-01-01T00:00:00Z
-          scheduler_output="$(docker compose --file compose.production.yaml exec -T app \
-            /usr/local/bin/kumwe-entrypoint php bin/kumwe schedule:run)"
-          grep --fixed-strings --quiet 'Dispatched 1 due schedule(s).' <<< "$scheduler_output"
-          docker compose --file compose.production.yaml exec -T app \
-            /usr/local/bin/kumwe-entrypoint php bin/kumwe queue:work --once
+          automation_output="$(docker compose --file compose.production.yaml exec -T \
+            --env "KUMWE_ACCEPTANCE_API_TOKEN=$KUMWE_ACCEPTANCE_API_TOKEN" \
+            app /usr/local/bin/kumwe-entrypoint sh -euc '
+              umask 077
+              token_file="$(mktemp)"
+              trap '\''rm -f "$token_file"'\'' EXIT
+              printf %s "$KUMWE_ACCEPTANCE_API_TOKEN" > "$token_file"
+              php bin/kumwe automation create \
+                --token-file="$token_file" \
+                --name=deployment-acceptance \
+                --cron="* * * * *" \
+                --timezone=UTC \
+                --job=system.sessions.purge \
+                --payload="{}" \
+                --queue=default \
+                --first-run=2000-01-01T00:00:00Z
+              php bin/kumwe schedule:run
+              php bin/kumwe queue:work --once
+            ')"
+          grep --fixed-strings --quiet 'Dispatched 1 due schedule(s).' <<< "$automation_output"
           docker compose --file compose.production.yaml --profile automation \
             up --detach --wait worker scheduler
 
