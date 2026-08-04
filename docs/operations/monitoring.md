@@ -1,6 +1,6 @@
 # Monitoring and health
 
-## Current health contract
+## Health contract
 
 - `GET /health/live`: HTTP process liveness only.
 - `GET /health/ready`: database connectivity and required migration readiness.
@@ -12,20 +12,15 @@ PostgreSQL and Redis container health independently.
 
 Minimum external signals are HTTP availability and latency, 5xx rate, FPM
 saturation, PostgreSQL connections/locks/storage/replication, Redis memory and
-evictions, queue age/depth/failures once workers are enabled, scheduler lag,
+evictions, queue age/depth/failures, worker heartbeat freshness, scheduler lag,
 backup age and restore-drill age.
 
-## Logging and metrics status
+## Logging
 
-The current kernel logs to `php://stderr` through Monolog. Container logs must be
-collected off-host with retention and access control. It does not yet install the
-JSON formatter or redaction processor described by `config/observability.php`;
-operators must not claim structured JSON logging until that kernel integration is
-tested. Request bodies, credentials, cookies and authorization headers must never
-be added to logs.
+Kumwe logs to `php://stderr` through Monolog. Collect container logs off-host
+with retention and access control. Request bodies, credentials, cookies and
+authorization headers must never be added to logs.
 
-`config/observability.php` is the versioned target contract for required context,
-redaction, health behavior and safe metric labels. Metrics and tracing default to
-disabled because no exporter is wired into the kernel yet. Do not expose a
-`/metrics` route publicly or configure dashboards against one until the adapter is
-implemented and authenticated on an internal network.
+`config/observability.php` defines safe context and forbidden high-cardinality or
+sensitive labels. Keep any infrastructure metrics endpoint private and enforce
+the same redaction policy in the collector.
