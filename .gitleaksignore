@@ -1,0 +1,6 @@
+# Deterministic test-only APP_SECRET fixtures introduced by the Kumwe 2.0 test harness.
+99bf326ae6de932e7befceed8dce5d5747c51e37:tests/Functional/Http/KernelTest.php:generic-api-key:63
+99bf326ae6de932e7befceed8dce5d5747c51e37:tests/Unit/Kernel/Configuration/ConfigurationFactoryTest.php:generic-api-key:60
+
+# Inactive example value in the preserved 2022 legacy baseline; Kumwe 2.0 does not load this file.
+a5a45e92ae8f131071d469608f595f43ccc489bd:config.php.example:generic-api-key:48
