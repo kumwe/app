@@ -362,6 +362,7 @@ jobs:
           KUMWE_PROBE_ADMIN_EMAIL=administrator@kumwe.test \
           KUMWE_PROBE_ADMIN_PASSWORD="$(<"$KUMWE_ACCEPTANCE_ADMIN_PASSWORD_FILE")" \
           KUMWE_PROBE_API_TOKEN="$full_token" \
+          KUMWE_PROBE_MCP_HOST=kumwe.test \
           KUMWE_PROBE_READ_TOKEN="$read_token" \
           KUMWE_PROBE_STATE_FILE="$state_file" \
             bash tools/deployment-probe.sh
