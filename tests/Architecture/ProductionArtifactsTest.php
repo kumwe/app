@@ -32,6 +32,19 @@ final class ProductionArtifactsTest extends TestCase
         self::assertStringNotContainsString('COPY --from=vendor /var/www/kumwe /var/www/kumwe/public', $dockerfile);
     }
 
+    public function testOnlyTheDedicatedPublicDirectoryContainsWebEntrypoints(): void
+    {
+        foreach (['index.php', '.htaccess', 'robots.txt.dist', 'web.config.txt'] as $legacyRootFile) {
+            self::assertFileDoesNotExist(
+                $this->root . '/' . $legacyRootFile,
+                sprintf('Legacy web-root artifact %s must not be shipped.', $legacyRootFile),
+            );
+        }
+
+        self::assertFileExists($this->root . '/public/index.php');
+        self::assertFileExists($this->root . '/public/robots.txt');
+    }
+
     public function testProductionTopologyKeepsDataServicesInternalAndSecretsFileBacked(): void
     {
         $compose = $this->contents('compose.production.yaml');
