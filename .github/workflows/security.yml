@@ -1,0 +1,126 @@
+name: Kumwe security
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+  schedule:
+    - cron: '17 3 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: security-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  GITLEAKS_IMAGE: ghcr.io/gitleaks/gitleaks:v8.28.0
+  SYFT_IMAGE: anchore/syft:v1.33.0
+  TRIVY_IMAGE: aquasec/trivy:0.67.2
+
+jobs:
+  source-and-image:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: kumwe_security
+          POSTGRES_USER: kumwe
+          POSTGRES_PASSWORD: kumwe_security
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U kumwe -d kumwe_security"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      APP_ENV: testing
+      APP_DEBUG: 'false'
+      APP_BASE_URL: https://kumwe.test
+      APP_TRUSTED_HOSTS: kumwe.test
+      APP_SECRET: test-only-secret-that-is-never-used-in-production
+      DB_HOST: 127.0.0.1
+      DB_PORT: '5432'
+      DB_NAME: kumwe_security
+      DB_USER: kumwe
+      DB_PASSWORD: kumwe_security
+      DB_SCHEMA: kumwe
+      DB_SSLMODE: disable
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          fetch-depth: 0
+
+      - name: Require reproducible dependencies
+        run: test -f composer.lock
+
+      - name: Install PHP
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240
+        with:
+          php-version: '8.4'
+          extensions: ctype, fileinfo, filter, intl, json, mbstring, openssl, pdo, pdo_pgsql, pgsql, redis, sodium
+          coverage: none
+          tools: composer:v2
+
+      - name: Install locked dependencies
+        run: composer install --no-interaction --prefer-dist
+
+      - name: Validate and audit dependencies
+        run: |
+          composer validate --strict
+          composer audit --locked --abandoned=fail
+          composer architecture:policy
+
+      - name: Scan repository for secrets
+        run: >-
+          docker run --rm
+          --volume "$PWD:/repo:ro"
+          --workdir /repo
+          "$GITLEAKS_IMAGE"
+          detect --source=/repo --no-banner --redact
+
+      - name: Scan filesystem dependencies and configuration
+        run: >-
+          docker run --rm
+          --volume "$PWD:/src:ro"
+          "$TRIVY_IMAGE"
+          filesystem --exit-code 1 --ignore-unfixed
+          --severity HIGH,CRITICAL --scanners vuln,misconfig,secret /src
+
+      - name: Build production runtime image
+        run: >-
+          docker build
+          --file docker/php/Dockerfile
+          --target runtime
+          --tag kumwe-security:${GITHUB_SHA}
+          --build-arg KUMWE_RELEASE=2.0.0-security-scan
+          .
+
+      - name: Scan production runtime image
+        run: >-
+          docker run --rm
+          --volume /var/run/docker.sock:/var/run/docker.sock
+          "$TRIVY_IMAGE"
+          image --exit-code 1 --ignore-unfixed
+          --severity HIGH,CRITICAL kumwe-security:${GITHUB_SHA}
+
+      - name: Generate source SBOM
+        run: |
+          install -d build/security
+          docker run --rm --volume "$PWD:/src:ro" "$SYFT_IMAGE" \
+            dir:/src -o cyclonedx-json > build/security/kumwe-source.cdx.json
+
+      - name: Upload security evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: security-evidence-${{ github.sha }}
+          path: build/security
+          if-no-files-found: error
+          retention-days: 14
