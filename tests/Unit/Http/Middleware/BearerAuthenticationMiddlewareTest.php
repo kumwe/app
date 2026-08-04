@@ -19,6 +19,7 @@ use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
+use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 
 #[CoversClass(BearerAuthenticationMiddleware::class)]
@@ -175,7 +176,8 @@ final class BearerAuthenticationMiddlewareTest extends TestCase
     /** @param array<string, mixed> $options */
     private function request(array $options): ServerRequestInterface
     {
-        $route = new Route('/protected', 'protected-handler', ['GET'], 'protected', $options);
+        $route = new Route('/protected', $this->createStub(MiddlewareInterface::class), ['GET'], 'protected');
+        $route->setOptions($options);
 
         return (new ServerRequestFactory())
             ->createServerRequest('GET', 'https://kumwe.test/protected')

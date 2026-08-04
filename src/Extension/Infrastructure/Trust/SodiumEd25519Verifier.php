@@ -11,7 +11,7 @@ use Kumwe\CMS\Extension\Domain\PackageSignature;
 
 final readonly class SodiumEd25519Verifier implements PackageSignatureVerifier
 {
-    /** @var array<string, non-empty-string> */
+    /** @var array<string, non-falsy-string> */
     private array $publicKeys;
 
     /** @param array<mixed> $base64PublicKeys Keyed by signing key ID. */
@@ -34,7 +34,7 @@ final readonly class SodiumEd25519Verifier implements PackageSignatureVerifier
             $keys[$keyId] = $publicKey;
         }
 
-        /** @var array<string, non-empty-string> $keys */
+        /** @var array<string, non-falsy-string> $keys */
         $this->publicKeys = $keys;
     }
 
