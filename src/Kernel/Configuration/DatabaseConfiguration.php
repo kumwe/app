@@ -17,8 +17,10 @@ final readonly class DatabaseConfiguration
         public string $schema,
         public string $sslMode,
     ) {
-        if (filter_var($host, FILTER_VALIDATE_DOMAIN, FILTER_FLAG_HOSTNAME) === false
-            && filter_var($host, FILTER_VALIDATE_IP) === false) {
+        if (
+            filter_var($host, FILTER_VALIDATE_DOMAIN, FILTER_FLAG_HOSTNAME) === false
+            && filter_var($host, FILTER_VALIDATE_IP) === false
+        ) {
             throw new InvalidArgumentException('The database host is invalid.');
         }
 

@@ -33,7 +33,7 @@ final class AuthorizationServiceTest extends TestCase
     {
         $tracker = new \stdClass();
         $tracker->called = false;
-        $policy = new class($tracker) implements AuthorizationPolicy {
+        $policy = new class ($tracker) implements AuthorizationPolicy {
             public function __construct(private readonly \stdClass $tracker)
             {
             }
@@ -93,7 +93,7 @@ final class AuthorizationServiceTest extends TestCase
 
     private function fixedPolicy(AuthorizationDecision $decision): AuthorizationPolicy
     {
-        return new class($decision) implements AuthorizationPolicy {
+        return new class ($decision) implements AuthorizationPolicy {
             public function __construct(private readonly AuthorizationDecision $decision)
             {
             }

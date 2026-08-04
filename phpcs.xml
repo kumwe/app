@@ -7,6 +7,9 @@
     <arg name="colors"/>
     <arg name="extensions" value="php"/>
     <rule ref="PSR12"/>
+    <rule ref="PSR1.Classes.ClassDeclaration.MultipleClasses">
+        <exclude-pattern>tests/*</exclude-pattern>
+    </rule>
     <rule ref="Generic.Files.LineLength">
         <properties>
             <property name="lineLimit" value="120"/>

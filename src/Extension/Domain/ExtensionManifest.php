@@ -23,7 +23,8 @@ final readonly class ExtensionManifest
         private VersionConstraint $phpCompatibility,
         array $dependencies = [],
     ) {
-        if (strlen($serviceProvider) > 255
+        if (
+            strlen($serviceProvider) > 255
             || preg_match('/^[A-Za-z_][A-Za-z0-9_]*(?:\\\\[A-Za-z_][A-Za-z0-9_]*)+$/D', $serviceProvider) !== 1
         ) {
             throw new InvalidArgumentException('The service provider must be a fully qualified PHP class name.');

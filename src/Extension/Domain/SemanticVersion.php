@@ -150,7 +150,8 @@ final readonly class SemanticVersion implements Stringable
     {
         $maximum = (string) PHP_INT_MAX;
 
-        if (strlen($component) > strlen($maximum)
+        if (
+            strlen($component) > strlen($maximum)
             || (strlen($component) === strlen($maximum) && strcmp($component, $maximum) > 0)
         ) {
             throw new InvalidArgumentException('A semantic version component exceeds the platform integer range.');

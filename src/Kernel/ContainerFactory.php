@@ -118,8 +118,7 @@ final class ContainerFactory
         Container $container,
         ApplicationConfiguration $configuration,
         string $root,
-    ): void
-    {
+    ): void {
         $databaseConfiguration = $configuration->database;
         $container->share(DatabaseInterface::class, static fn (): DatabaseInterface =>
             (new PostgreSqlDatabaseFactory($databaseConfiguration))->create(), true);
@@ -197,18 +196,24 @@ final class ContainerFactory
 
             return $emitter;
         }, true);
-        $container->share(ServerRequestErrorResponseGenerator::class, static fn (Container $container):
-            ServerRequestErrorResponseGenerator => new ServerRequestErrorResponseGenerator(
+        $container->share(ServerRequestErrorResponseGenerator::class, static function (
+            Container $container,
+        ): ServerRequestErrorResponseGenerator {
+            return new ServerRequestErrorResponseGenerator(
                 $container->get(ResponseFactoryInterface::class),
                 false,
-            ), true);
-        $container->share(RequestHandlerRunnerInterface::class, static fn (Container $container):
-            RequestHandlerRunnerInterface => new RequestHandlerRunner(
+            );
+        }, true);
+        $container->share(RequestHandlerRunnerInterface::class, static function (
+            Container $container,
+        ): RequestHandlerRunnerInterface {
+            return new RequestHandlerRunner(
                 $container->get(ApplicationPipeline::class),
                 $container->get(EmitterInterface::class),
                 static fn () => ServerRequestFactory::fromGlobals(),
                 $container->get(ServerRequestErrorResponseGenerator::class),
-            ), true);
+            );
+        }, true);
 
         $this->registerMiddleware($container, $configuration);
         $this->registerHandlers($container);
@@ -228,11 +233,14 @@ final class ContainerFactory
     private function registerMiddleware(Container $container, ApplicationConfiguration $configuration): void
     {
         $container->share(RequestIdMiddleware::class, new RequestIdMiddleware(), true);
-        $container->share(ProblemDetailsMiddleware::class, static fn (Container $container):
-            ProblemDetailsMiddleware => new ProblemDetailsMiddleware(
+        $container->share(ProblemDetailsMiddleware::class, static function (
+            Container $container,
+        ): ProblemDetailsMiddleware {
+            return new ProblemDetailsMiddleware(
                 $container->get(LoggerInterface::class),
                 $configuration->debug,
-            ), true);
+            );
+        }, true);
         $container->share(TrustedHostMiddleware::class, new TrustedHostMiddleware(
             new TrustedHostMatcher($configuration->trustedHosts),
         ), true);
@@ -247,14 +255,20 @@ final class ContainerFactory
                 $container->get(RouterInterface::class),
                 $container->get(StreamFactoryInterface::class),
             ), true);
-        $container->share(ImplicitOptionsMiddleware::class, static fn (Container $container):
-            ImplicitOptionsMiddleware => new ImplicitOptionsMiddleware(
+        $container->share(ImplicitOptionsMiddleware::class, static function (
+            Container $container,
+        ): ImplicitOptionsMiddleware {
+            return new ImplicitOptionsMiddleware(
                 $container->get(ResponseFactoryInterface::class),
-            ), true);
-        $container->share(MethodNotAllowedMiddleware::class, static fn (Container $container):
-            MethodNotAllowedMiddleware => new MethodNotAllowedMiddleware(
+            );
+        }, true);
+        $container->share(MethodNotAllowedMiddleware::class, static function (
+            Container $container,
+        ): MethodNotAllowedMiddleware {
+            return new MethodNotAllowedMiddleware(
                 $container->get(ResponseFactoryInterface::class),
-            ), true);
+            );
+        }, true);
         $container->share(DispatchMiddleware::class, new DispatchMiddleware(), true);
     }
 
