@@ -1,0 +1,16 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+use Kumwe\CMS\Delivery\Console\ConsoleApplication;
+
+$root = dirname(__DIR__);
+require $root . '/vendor/autoload.php';
+
+/** @var Joomla\DI\Container $container */
+$container = require $root . '/bootstrap/container.php';
+/** @var ConsoleApplication $application */
+$application = $container->get(ConsoleApplication::class);
+
+exit($application->run(array_values($argv)));
