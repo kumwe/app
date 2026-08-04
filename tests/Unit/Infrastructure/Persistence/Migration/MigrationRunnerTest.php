@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 namespace Kumwe\CMS\Tests\Unit\Infrastructure\Persistence\Migration;
 
-use Joomla\Database\DatabaseInterface;
+use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\Platforms\AbstractPlatform;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\Migration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\MigrationLock;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\MigrationRepository;
@@ -53,8 +54,11 @@ final class MigrationRunnerTest extends TestCase
      */
     private function runner(InMemoryMigrationRepository $repository, array $migrations): MigrationRunner
     {
+        $database = $this->createStub(Connection::class);
+        $database->method('getDatabasePlatform')->willReturn($this->createStub(AbstractPlatform::class));
+
         return new MigrationRunner(
-            $this->createStub(DatabaseInterface::class),
+            $database,
             $repository,
             new DirectMigrationLock(),
             new DirectTransactionManager(),
@@ -85,7 +89,7 @@ final readonly class RecordingMigration implements Migration
         return hash('sha256', $this->migrationId);
     }
 
-    public function up(DatabaseInterface $database): void
+    public function up(Connection $database): void
     {
         $this->log->ids[] = $this->migrationId;
     }

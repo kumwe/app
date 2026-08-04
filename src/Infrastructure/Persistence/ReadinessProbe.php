@@ -23,7 +23,9 @@ final readonly class ReadinessProbe
     public function ready(): bool
     {
         try {
-            $this->database->connect();
+            // DBAL 4 keeps Connection::connect() internal. A trivial query both
+            // establishes the lazy connection and verifies that it is usable.
+            $this->database->fetchOne('SELECT 1');
 
             if ($this->redis !== null && !$this->redis->ready()) {
                 return false;

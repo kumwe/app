@@ -7,7 +7,7 @@ namespace Kumwe\CMS\Infrastructure\Persistence;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\DriverManager;
 use Kumwe\CMS\Kernel\Configuration\DatabaseConfiguration;
-use PDO;
+use Pdo\Mysql;
 
 final readonly class DoctrineConnectionFactory
 {
@@ -32,7 +32,13 @@ final readonly class DoctrineConnectionFactory
         if ($this->configuration->driver === 'pgsql') {
             $parameters['sslmode'] = $this->configuration->sslMode;
         } elseif ($this->configuration->sslMode !== 'disable') {
-            $parameters['driverOptions'] = [PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT => true];
+            $parameters['driverOptions'] = [
+                Mysql::ATTR_SSL_VERIFY_SERVER_CERT => in_array(
+                    $this->configuration->sslMode,
+                    ['verify-ca', 'verify-full'],
+                    true,
+                ),
+            ];
         }
 
         $connection = DriverManager::getConnection($parameters);

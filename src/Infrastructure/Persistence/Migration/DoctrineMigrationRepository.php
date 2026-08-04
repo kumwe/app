@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\CMS\Infrastructure\Persistence\Migration;
 
 use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\Schema\PrimaryKeyConstraint;
 use Doctrine\DBAL\Types\Types;
 use Kumwe\CMS\Infrastructure\Persistence\TableNames;
 use RuntimeException;
@@ -29,7 +30,9 @@ final readonly class DoctrineMigrationRepository implements MigrationRepository
         $table->addColumn('checksum', Types::STRING, ['length' => 64, 'fixed' => true]);
         $table->addColumn('executed_at', Types::DATETIME_IMMUTABLE);
         $table->addColumn('execution_ms', Types::INTEGER, ['unsigned' => true]);
-        $table->setPrimaryKey(['version']);
+        $table->addPrimaryKeyConstraint(
+            PrimaryKeyConstraint::editor()->setUnquotedColumnNames('version')->create(),
+        );
         $schema->createTable($table);
     }
 
