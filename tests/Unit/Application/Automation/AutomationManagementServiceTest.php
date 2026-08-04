@@ -1,0 +1,153 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Kumwe\CMS\Tests\Unit\Application\Automation;
+
+use DateTimeImmutable;
+use InvalidArgumentException;
+use Kumwe\CMS\Application\Automation\AutomationManagementService;
+use Kumwe\CMS\Application\Automation\Job\ScheduleRepository;
+use Kumwe\CMS\Application\Automation\JobHandler;
+use Kumwe\CMS\Application\Automation\JobHandlerRegistry;
+use Kumwe\CMS\Application\Automation\JobQueue;
+use Kumwe\CMS\Audit\Application\AuditRecorder;
+use Kumwe\CMS\Audit\Domain\AuditEvent;
+use Kumwe\CMS\Infrastructure\Persistence\TransactionManager;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\UsesClass;
+use PHPUnit\Framework\TestCase;
+use Psr\Clock\ClockInterface;
+
+#[CoversClass(AutomationManagementService::class)]
+#[UsesClass(AuditEvent::class)]
+#[UsesClass(JobHandlerRegistry::class)]
+final class AutomationManagementServiceTest extends TestCase
+{
+    private const ACTOR = '018f22e2-7c8b-7ab0-8f3a-88e8026bb301';
+    private const SCHEDULE = '018f22e2-7c8b-7ab0-8f3a-88e8026bb401';
+    private const JOB = '018f22e2-7c8b-7ab0-8f3a-88e8026bb402';
+
+    public function testCreatesOnlyRegisteredJobTypeInsideAuditedTransaction(): void
+    {
+        $firstRun = new DateTimeImmutable('2026-08-04T11:00:00+00:00');
+        $schedules = $this->createMock(ScheduleRepository::class);
+        $schedules->expects(self::once())->method('create')->with(
+            'Purge sessions',
+            '0 * * * *',
+            'UTC',
+            'system.sessions.purge',
+            [],
+            'maintenance',
+            $firstRun,
+        )->willReturn(self::SCHEDULE);
+        $audit = $this->createMock(AuditRecorder::class);
+        $audit->expects(self::once())->method('record')->with(self::callback(
+            static fn (AuditEvent $event): bool => $event->action() === 'automation.schedule.create'
+                && $event->subjectId() === self::SCHEDULE
+                && $event->metadata() === ['job_type' => 'system.sessions.purge'],
+        ));
+
+        $id = $this->service($schedules, audit: $audit)->createSchedule(
+            self::ACTOR,
+            'Purge sessions',
+            '0 * * * *',
+            'UTC',
+            'system.sessions.purge',
+            [],
+            'maintenance',
+            $firstRun,
+        );
+
+        self::assertSame(self::SCHEDULE, $id);
+    }
+
+    public function testRejectsScheduleForUnregisteredJobTypeBeforePersistence(): void
+    {
+        $schedules = $this->createMock(ScheduleRepository::class);
+        $schedules->expects(self::never())->method('create');
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('no registered handler');
+
+        $this->service($schedules)->createSchedule(
+            self::ACTOR,
+            'Unknown job',
+            '0 * * * *',
+            'UTC',
+            'unknown.job',
+            [],
+            'default',
+            new DateTimeImmutable('2026-08-04T11:00:00+00:00'),
+        );
+    }
+
+    public function testEnablesScheduleWithOptimisticVersionAndAudit(): void
+    {
+        $schedules = $this->createMock(ScheduleRepository::class);
+        $schedules->expects(self::once())->method('setEnabled')->with(self::SCHEDULE, 3, true);
+        $audit = $this->createMock(AuditRecorder::class);
+        $audit->expects(self::once())->method('record')->with(self::callback(
+            static fn (AuditEvent $event): bool => $event->action() === 'automation.schedule.enable'
+                && $event->subjectId() === self::SCHEDULE,
+        ));
+
+        $this->service($schedules, audit: $audit)->setScheduleEnabled(
+            self::ACTOR,
+            self::SCHEDULE,
+            3,
+            true,
+        );
+    }
+
+    public function testRetriesAndCancelsJobsThroughSharedQueueBoundary(): void
+    {
+        $jobs = $this->createMock(JobQueue::class);
+        $jobs->expects(self::once())->method('retry')->with(self::JOB);
+        $jobs->expects(self::once())->method('cancel')->with(self::JOB);
+        $audit = $this->createMock(AuditRecorder::class);
+        $audit->expects(self::exactly(2))->method('record')->with(self::callback(
+            static fn (AuditEvent $event): bool => in_array($event->action(), [
+                'automation.job.retry',
+                'automation.job.cancel',
+            ], true),
+        ));
+        $service = $this->service($this->createStub(ScheduleRepository::class), $jobs, $audit);
+
+        $service->retryJob(self::ACTOR, self::JOB);
+        $service->cancelJob(self::ACTOR, self::JOB);
+    }
+
+    private function service(
+        ScheduleRepository $schedules,
+        ?JobQueue $jobs = null,
+        ?AuditRecorder $audit = null,
+    ): AutomationManagementService {
+        $transactions = $this->createStub(TransactionManager::class);
+        $transactions->method('transactional')->willReturnCallback(
+            static fn (callable $operation): mixed => $operation(),
+        );
+        $clock = $this->createStub(ClockInterface::class);
+        $clock->method('now')->willReturn(new DateTimeImmutable('2026-08-04T10:00:00+00:00'));
+
+        return new AutomationManagementService(
+            $schedules,
+            $jobs ?? $this->createStub(JobQueue::class),
+            new JobHandlerRegistry([new SessionPurgeHandler()]),
+            $transactions,
+            $audit ?? $this->createStub(AuditRecorder::class),
+            $clock,
+        );
+    }
+}
+
+final class SessionPurgeHandler implements JobHandler
+{
+    public function type(): string
+    {
+        return 'system.sessions.purge';
+    }
+
+    public function handle(array $payload): void
+    {
+    }
+}

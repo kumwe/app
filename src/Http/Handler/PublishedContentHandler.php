@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\CMS\Http\Handler;
 
 use Kumwe\CMS\Content\Application\ContentService;
+use Kumwe\CMS\Site\Application\SiteSettings;
 use Laminas\Diactoros\Response\HtmlResponse;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -13,8 +14,11 @@ use Twig\Environment;
 
 final readonly class PublishedContentHandler implements RequestHandlerInterface
 {
-    public function __construct(private ContentService $content, private Environment $twig)
-    {
+    public function __construct(
+        private ContentService $content,
+        private SiteSettings $settings,
+        private Environment $twig,
+    ) {
     }
 
     public function handle(ServerRequestInterface $request): ResponseInterface
@@ -31,10 +35,15 @@ final readonly class PublishedContentHandler implements RequestHandlerInterface
             return $this->notFound();
         }
 
+        $headers = ['Cache-Control' => 'public, max-age=60, stale-while-revalidate=300'];
+        if ($this->settings->current()['search_indexing_enabled'] !== true) {
+            $headers['X-Robots-Tag'] = 'noindex, nofollow, noarchive';
+        }
+
         return new HtmlResponse(
             $this->twig->render('site/page.twig', ['entry' => $record->toArray()]),
             200,
-            ['Cache-Control' => 'public, max-age=60, stale-while-revalidate=300'],
+            $headers,
         );
     }
 

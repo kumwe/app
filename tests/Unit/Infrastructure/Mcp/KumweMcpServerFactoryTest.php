@@ -10,6 +10,7 @@ use Kumwe\CMS\Infrastructure\Mcp\McpCapabilityCatalog;
 use Mcp\Server;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
+use ReflectionClass;
 
 #[CoversClass(KumweMcpServerFactory::class)]
 final class KumweMcpServerFactoryTest extends TestCase
@@ -17,7 +18,9 @@ final class KumweMcpServerFactoryTest extends TestCase
     public function testBuildsAnOfficialSdkServerUsingManualRegistration(): void
     {
         $catalog = new McpCapabilityCatalog();
-        $server = (new KumweMcpServerFactory($catalog))->create(new KumweMcpHandlers($catalog));
+        $handlers = (new ReflectionClass(KumweMcpHandlers::class))->newInstanceWithoutConstructor();
+        self::assertInstanceOf(KumweMcpHandlers::class, $handlers);
+        $server = (new KumweMcpServerFactory($catalog))->create($handlers);
 
         self::assertInstanceOf(Server::class, $server);
     }

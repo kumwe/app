@@ -3,7 +3,7 @@
 {% block content %}
   <div class="page-heading">
     <div><p class="eyebrow">Website</p><h1>Content</h1></div>
-    <a class="button primary" href="/administrator/content/new">Create page</a>
+    {% if capabilities['content.create'] is defined %}<a class="button primary" href="/administrator/content/new">Create page</a>{% endif %}
   </div>
 
   {% if entries is empty %}
@@ -21,16 +21,20 @@
             <td><time datetime="{{ entry.updated_at }}">{{ entry.updated_at|date('Y-m-d H:i') }} UTC</time></td>
             <td class="actions">
               {% if not entry.deleted_at %}
-                <a href="/administrator/content/{{ entry.id }}/edit">Edit</a>
+                {% if capabilities['content.update'] is defined %}<a href="/administrator/content/{{ entry.id }}/edit">Edit</a>{% endif %}
+                {% if capabilities['content.delete'] is defined %}
                 <form action="/administrator/content/{{ entry.id }}/trash" method="post">
                   <input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="version" value="{{ entry.version }}">
                   <button class="link-button danger" type="submit">Trash</button>
                 </form>
+                {% endif %}
               {% else %}
+                {% if capabilities['content.restore'] is defined %}
                 <form action="/administrator/content/{{ entry.id }}/restore" method="post">
                   <input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="version" value="{{ entry.version }}">
                   <button class="link-button" type="submit">Restore</button>
                 </form>
+                {% endif %}
               {% endif %}
             </td>
           </tr>

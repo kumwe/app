@@ -35,11 +35,24 @@
           'published': ['draft', 'archived'],
           'archived': ['draft']
         } %}
+        {% set transition_capability = {
+          'draft:review': 'content.submit',
+          'draft:archived': 'content.archive',
+          'review:draft': 'content.review',
+          'review:published': 'content.publish',
+          'review:archived': 'content.archive',
+          'published:draft': 'content.unpublish',
+          'published:archived': 'content.archive',
+          'archived:draft': 'content.restore'
+        } %}
         {% for target in targets[entry.status] %}
+          {% set required = transition_capability[entry.status ~ ':' ~ target] %}
+          {% if capabilities[required] is defined %}
           <form action="/administrator/content/{{ entry.id }}/transition" method="post">
             <input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="version" value="{{ entry.version }}"><input type="hidden" name="status" value="{{ target }}">
             <button class="button full" type="submit">Move to {{ target|capitalize }}</button>
           </form>
+          {% endif %}
         {% endfor %}
       </aside>
     {% endif %}

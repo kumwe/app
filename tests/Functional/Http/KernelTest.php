@@ -61,11 +61,13 @@ final class KernelTest extends TestCase
             'APP_TRUSTED_HOSTS' => 'kumwe.test',
             'APP_SECRET' => str_repeat('a', 32),
             'DB_HOST' => '127.0.0.1',
+            'DB_DRIVER' => 'pgsql',
             'DB_PORT' => '5432',
             'DB_NAME' => 'kumwe_test',
             'DB_USER' => 'kumwe',
             'DB_PASSWORD' => 'kumwe_test',
-            'DB_SCHEMA' => 'kumwe',
+            'DB_TABLE_PREFIX' => 'kumwe_',
+            'DB_SERVER_VERSION' => '17',
             'DB_SSLMODE' => 'disable',
         ];
     }

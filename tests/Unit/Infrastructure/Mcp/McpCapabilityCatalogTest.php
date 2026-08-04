@@ -11,22 +11,23 @@ use PHPUnit\Framework\TestCase;
 #[CoversClass(McpCapabilityCatalog::class)]
 final class McpCapabilityCatalogTest extends TestCase
 {
-    public function testCatalogContainsOnlyExplicitReadAndPlanCapabilities(): void
+    public function testCatalogDeclaresCapabilityProtectedIdempotentMutations(): void
     {
         $catalog = new McpCapabilityCatalog();
         $summary = $catalog->publicSummary();
 
-        self::assertSame('read_and_plan_only', $summary['mode']);
-        self::assertSame(['kumwe_discover', 'kumwe_plan_review'], $summary['tools']);
+        self::assertSame('capability_protected_read_write', $summary['mode']);
+        self::assertContains('kumwe_content_create', $summary['tools']);
+        self::assertContains('kumwe_settings_update', $summary['tools']);
         self::assertSame(['kumwe://capabilities'], $summary['resources']);
         self::assertSame(['kumwe_site_review'], $summary['prompts']);
 
         foreach ($catalog->tools() as $tool) {
-            self::assertDoesNotMatchRegularExpression(
-                '/install|delete|publish|secret|database|admin/i',
-                $tool['name'],
-            );
-            self::assertSame(false, $tool['outputSchema']['properties']['apply_supported']['const'] ?? false);
+            if ($tool['readOnly']) {
+                continue;
+            }
+            self::assertTrue($tool['idempotent']);
+            self::assertArrayHasKey('operationId', $tool['inputSchema']['properties']);
         }
     }
 }

@@ -1,0 +1,86 @@
+{% extends "administrator/layout.twig" %}
+{% block title %}Automation · Kumwe{% endblock %}
+{% block content %}
+  <div class="page-heading">
+    <div><p class="eyebrow">Operations</p><h1>Automation</h1></div>
+  </div>
+  {% if saved %}<p class="notice" role="status">Automation updated.</p>{% endif %}
+
+  <section class="panel stack">
+    <h2>Create schedule</h2>
+    <form action="/administrator/automation" method="post" class="form-grid">
+      <input type="hidden" name="_csrf" value="{{ csrf }}">
+      <input type="hidden" name="action" value="schedule.create">
+      <label>Name<input name="name" maxlength="160" required></label>
+      <label>Cron expression<input name="cron_expression" value="0 * * * *" maxlength="120" required></label>
+      <label>Timezone<input name="timezone" value="UTC" maxlength="80" required></label>
+      <label>Queue<input name="queue" value="default" maxlength="64" required></label>
+      <label>Job type<select name="job_type" required>
+        {% for type in job_types %}<option value="{{ type }}">{{ type }}</option>{% endfor %}
+      </select></label>
+      <label>First run (UTC)<input type="datetime-local" name="first_run" required></label>
+      <label class="full-row">Payload (JSON object)<textarea name="payload" rows="5">{}</textarea></label>
+      <button class="primary" type="submit">Create schedule</button>
+    </form>
+  </section>
+
+  <section class="panel stack">
+    <h2>Schedules</h2>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Name</th><th>Job</th><th>Next run</th><th>Status</th><th>Actions</th></tr></thead>
+      <tbody>
+      {% for schedule in schedules %}
+        <tr>
+          <td><strong>{{ schedule.name }}</strong><small><code>{{ schedule.cron_expression }}</code></small></td>
+          <td><code>{{ schedule.job_type }}</code><small>{{ schedule.queue }}</small></td>
+          <td>{{ schedule.next_run_at ?: 'Not scheduled' }}</td>
+          <td><span class="status">{{ schedule.enabled ? 'Enabled' : 'Disabled' }}</span></td>
+          <td class="actions">
+            <form action="/administrator/automation" method="post">
+              <input type="hidden" name="_csrf" value="{{ csrf }}">
+              <input type="hidden" name="id" value="{{ schedule.id }}">
+              <input type="hidden" name="version" value="{{ schedule.version }}">
+              <button name="action" value="schedule.{{ schedule.enabled ? 'disable' : 'enable' }}">
+                {{ schedule.enabled ? 'Disable' : 'Enable' }}
+              </button>
+              <button class="danger" name="action" value="schedule.delete">Delete</button>
+            </form>
+          </td>
+        </tr>
+      {% else %}
+        <tr><td colspan="5">No schedules configured.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table></div>
+  </section>
+
+  <section class="panel stack">
+    <h2>Recent jobs</h2>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Job</th><th>Status</th><th>Attempts</th><th>Available</th><th>Actions</th></tr></thead>
+      <tbody>
+      {% for job in jobs %}
+        <tr>
+          <td><strong>{{ job.job_type }}</strong><small><code>{{ job.id }}</code> · {{ job.queue }}</small>
+            {% if job.error_message %}<div class="alert">{{ job.error_message }}</div>{% endif %}</td>
+          <td><span class="status status-{{ job.status }}">{{ job.status|title }}</span></td>
+          <td>{{ job.attempts }} / {{ job.maximum_attempts }}</td>
+          <td>{{ job.available_at }}</td>
+          <td class="actions">
+            {% if job.status in ['dead', 'pending'] %}
+              <form action="/administrator/automation" method="post">
+                <input type="hidden" name="_csrf" value="{{ csrf }}">
+                <input type="hidden" name="id" value="{{ job.id }}">
+                {% if job.status == 'dead' %}<button name="action" value="job.retry">Retry</button>{% endif %}
+                {% if job.status == 'pending' %}<button name="action" value="job.cancel">Cancel</button>{% endif %}
+              </form>
+            {% else %}<span class="muted">No action</span>{% endif %}
+          </td>
+        </tr>
+      {% else %}
+        <tr><td colspan="5">No jobs recorded.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table></div>
+  </section>
+{% endblock %}

@@ -24,6 +24,7 @@ final readonly class ApplicationConfiguration
         public string $release,
         public string $secret,
         public DatabaseConfiguration $database,
+        public RedisConfiguration $redis,
     ) {
         if (filter_var($baseUrl, FILTER_VALIDATE_URL) === false) {
             throw new InvalidArgumentException('APP_BASE_URL must contain an absolute URL.');

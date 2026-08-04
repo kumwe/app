@@ -4,47 +4,29 @@ declare(strict_types=1);
 
 namespace Kumwe\CMS\Extension\Runtime;
 
-use InvalidArgumentException;
-use Joomla\Database\DatabaseInterface;
+use Doctrine\DBAL\Connection;
 use Kumwe\CMS\Extension\Domain\ExtensionManifest;
+use Kumwe\CMS\Infrastructure\Persistence\TableNames;
 use RuntimeException;
 
 final readonly class ExtensionRuntimeMapCompiler
 {
     public function __construct(
-        private DatabaseInterface $database,
-        private string $schema,
+        private Connection $database,
+        private TableNames $tables,
         private string $mapFile,
     ) {
-        if (preg_match('/^[a-z][a-z0-9_]{0,62}$/D', $schema) !== 1) {
-            throw new InvalidArgumentException('The PostgreSQL schema name is invalid.');
-        }
     }
 
     public function rebuild(): int
     {
-        $query = $this->database->getQuery(true)
-            ->select([
-                $this->quoteName('e.identifier'),
-                $this->quoteName('e.service_provider'),
-                $this->quoteName('e.extension_type'),
-                $this->quoteName('e.runtime_path'),
-                $this->quoteName('r.manifest'),
-            ])
-            ->from($this->quoteName($this->schema . '.extensions', 'e'))
-            ->join(
-                'INNER',
-                $this->quoteName($this->schema . '.extension_releases', 'r')
-                    . ' ON ' . $this->quoteName('r.extension_id') . ' = ' . $this->quoteName('e.id')
-                    . ' AND ' . $this->quoteName('r.version') . ' = ' . $this->quoteName('e.installed_version'),
-            )
-            ->where($this->quoteName('e.status') . " = 'active'")
-            ->order($this->quoteName('e.identifier'));
-        $rows = $this->database->setQuery($query)->loadAssocList();
-
-        if (!is_array($rows)) {
-            throw new RuntimeException('The active extension query returned an invalid result set.');
-        }
+        $rows = $this->database->fetchAllAssociative(sprintf(
+            'SELECT e.identifier, e.service_provider, e.extension_type, e.runtime_path, r.manifest '
+            . 'FROM %s e INNER JOIN %s r ON r.extension_id = e.id AND r.version = e.installed_version '
+            . "WHERE e.status = 'active' ORDER BY e.identifier",
+            $this->tables->quoted('extensions'),
+            $this->tables->quoted('extension_releases'),
+        ));
 
         $extensions = [];
 
@@ -63,13 +45,14 @@ final readonly class ExtensionRuntimeMapCompiler
                 !is_string($identifier)
                 || !is_string($provider)
                 || !is_string($runtimePath)
-                || !is_string($manifestJson)
                 || !is_string($type)
             ) {
                 throw new RuntimeException('An active extension has incomplete runtime metadata.');
             }
 
-            $manifest = ExtensionManifest::fromJson($manifestJson);
+            $manifest = ExtensionManifest::fromJson(is_string($manifestJson)
+                ? $manifestJson
+                : json_encode($manifestJson, JSON_THROW_ON_ERROR));
             $extensions[] = [
                 'identifier' => $identifier,
                 'provider' => $provider,
@@ -114,15 +97,15 @@ final readonly class ExtensionRuntimeMapCompiler
 
     private function nextGeneration(): int
     {
-        $table = $this->quoteName($this->schema . '.extension_runtime_generation');
-        $this->database->setQuery(sprintf(
-            'UPDATE %s SET generation = generation + 1, rebuilt_at = CURRENT_TIMESTAMP WHERE singleton = true',
+        $table = $this->tables->quoted('extension_runtime_generation');
+        $this->database->executeStatement(sprintf(
+            'UPDATE %s SET generation = generation + 1, rebuilt_at = CURRENT_TIMESTAMP WHERE singleton_key = 1',
             $table,
-        ))->execute();
-        $result = $this->database->setQuery(sprintf(
-            'SELECT generation FROM %s WHERE singleton = true',
+        ));
+        $result = $this->database->fetchOne(sprintf(
+            'SELECT generation FROM %s WHERE singleton_key = 1',
             $table,
-        ))->loadResult();
+        ));
 
         if (!is_int($result) && (!is_string($result) || preg_match('/^[0-9]+$/D', $result) !== 1)) {
             throw new RuntimeException('The extension runtime generation is invalid.');
@@ -131,14 +114,4 @@ final readonly class ExtensionRuntimeMapCompiler
         return (int) $result;
     }
 
-    private function quoteName(string $name, ?string $alias = null): string
-    {
-        $quoted = $this->database->quoteName($name, $alias);
-
-        if (!is_string($quoted)) {
-            throw new RuntimeException('Joomla Database returned an invalid quoted identifier.');
-        }
-
-        return $quoted;
-    }
 }

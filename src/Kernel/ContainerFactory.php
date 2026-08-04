@@ -4,12 +4,13 @@ declare(strict_types=1);
 
 namespace Kumwe\CMS\Kernel;
 
-use Joomla\Database\DatabaseInterface;
+use Doctrine\DBAL\Connection;
 use Joomla\DI\Container;
 use Joomla\Event\Dispatcher;
 use Joomla\Event\DispatcherInterface;
-use Kumwe\CMS\Application\Automation\Job\PostgreSqlJobQueue;
-use Kumwe\CMS\Application\Automation\Job\PostgreSqlScheduler;
+use Kumwe\CMS\Application\Automation\AutomationManagementService;
+use Kumwe\CMS\Application\Automation\Job\DoctrineJobQueue;
+use Kumwe\CMS\Application\Automation\Job\DoctrineScheduler;
 use Kumwe\CMS\Application\Automation\Job\PurgeAdministratorSessionsHandler;
 use Kumwe\CMS\Application\Automation\Job\RebuildExtensionMapHandler;
 use Kumwe\CMS\Application\Automation\Job\ScheduleRepository;
@@ -19,42 +20,52 @@ use Kumwe\CMS\Application\Automation\JobQueue;
 use Kumwe\CMS\Application\Automation\Scheduler;
 use Kumwe\CMS\Application\Automation\Worker;
 use Kumwe\CMS\Administrator\Http\Handler\AdministratorContentEditorHandler;
+use Kumwe\CMS\Administrator\Http\Handler\AdministratorAccessControlHandler;
+use Kumwe\CMS\Administrator\Http\Handler\AdministratorAutomationHandler;
 use Kumwe\CMS\Administrator\Http\Handler\AdministratorCreateContentHandler;
 use Kumwe\CMS\Administrator\Http\Handler\AdministratorDashboardHandler;
 use Kumwe\CMS\Administrator\Http\Handler\AdministratorExtensionActionHandler;
 use Kumwe\CMS\Administrator\Http\Handler\AdministratorExtensionsHandler;
 use Kumwe\CMS\Administrator\Http\Handler\AdministratorLoginHandler;
 use Kumwe\CMS\Administrator\Http\Handler\AdministratorLogoutHandler;
+use Kumwe\CMS\Administrator\Http\Handler\AdministratorNavigationHandler;
 use Kumwe\CMS\Administrator\Http\Handler\AdministratorRestoreContentHandler;
 use Kumwe\CMS\Administrator\Http\Handler\AdministratorSettingsHandler;
 use Kumwe\CMS\Administrator\Http\Handler\AdministratorTransitionContentHandler;
 use Kumwe\CMS\Administrator\Http\Handler\AdministratorTrashContentHandler;
 use Kumwe\CMS\Administrator\Http\Handler\AdministratorUpdateContentHandler;
 use Kumwe\CMS\Administrator\Http\Middleware\AdministratorCsrfMiddleware;
+use Kumwe\CMS\Administrator\Http\Middleware\AdministratorAuthorizationMiddleware;
 use Kumwe\CMS\Administrator\Http\Middleware\AdministratorSessionMiddleware;
 use Kumwe\CMS\Administrator\Presentation\AdministratorRenderer;
 use Kumwe\CMS\Audit\Application\AuditRecorder;
-use Kumwe\CMS\Audit\Infrastructure\Persistence\PostgreSqlAuditRecorder;
+use Kumwe\CMS\Audit\Infrastructure\Persistence\DoctrineAuditRecorder;
 use Kumwe\CMS\Content\Application\ContentRepository;
 use Kumwe\CMS\Content\Application\ContentService;
-use Kumwe\CMS\Content\Infrastructure\Persistence\PostgreSqlContentRepository;
+use Kumwe\CMS\Content\Infrastructure\Persistence\DoctrineContentRepository;
 use Kumwe\CMS\Extension\Application\ExtensionManager;
+use Kumwe\CMS\Extension\Application\Migration\ExtensionMigrationRunner;
 use Kumwe\CMS\Extension\Application\Package\ArchiveReader;
 use Kumwe\CMS\Extension\Application\Package\PackageSafetyPolicy;
 use Kumwe\CMS\Extension\Infrastructure\Package\ZipArchiveReader;
-use Kumwe\CMS\Extension\Infrastructure\PostgreSqlExtensionManager;
+use Kumwe\CMS\Extension\Infrastructure\DoctrineExtensionManager;
+use Kumwe\CMS\Extension\Infrastructure\RedisLockedExtensionManager;
 use Kumwe\CMS\Extension\Runtime\ActiveExtensionSet;
 use Kumwe\CMS\Extension\Runtime\ExtensionRuntimeLoader;
 use Kumwe\CMS\Extension\Runtime\ExtensionRuntimeMapCompiler;
 use Kumwe\CMS\Delivery\Console\Command\CreateAccessTokenCommand;
 use Kumwe\CMS\Delivery\Console\Command\CreateAdministratorCommand;
-use Kumwe\CMS\Delivery\Console\Command\CreateScheduleCommand;
+use Kumwe\CMS\Delivery\Console\Command\ConsoleAuthorizer;
 use Kumwe\CMS\Delivery\Console\Command\ActivateExtensionCommand;
 use Kumwe\CMS\Delivery\Console\Command\DisableExtensionCommand;
 use Kumwe\CMS\Delivery\Console\Command\HealthCheckCommand;
 use Kumwe\CMS\Delivery\Console\Command\InstallExtensionCommand;
 use Kumwe\CMS\Delivery\Console\Command\ListExtensionsCommand;
-use Kumwe\CMS\Delivery\Console\Command\ListSchedulesCommand;
+use Kumwe\CMS\Delivery\Console\Command\ManageAutomationCommand;
+use Kumwe\CMS\Delivery\Console\Command\ManageAccessCommand;
+use Kumwe\CMS\Delivery\Console\Command\ManageContentCommand;
+use Kumwe\CMS\Delivery\Console\Command\ManageNavigationCommand;
+use Kumwe\CMS\Delivery\Console\Command\ManageSettingsCommand;
 use Kumwe\CMS\Delivery\Console\Command\McpServeCommand;
 use Kumwe\CMS\Delivery\Console\Command\MigrateCommand;
 use Kumwe\CMS\Delivery\Console\Command\MigrationStatusCommand;
@@ -72,8 +83,17 @@ use Kumwe\CMS\Delivery\Http\Api\Content\ContentCollectionHandler;
 use Kumwe\CMS\Delivery\Http\Api\Content\ContentItemHandler;
 use Kumwe\CMS\Delivery\Http\Api\Content\ContentRestoreHandler;
 use Kumwe\CMS\Delivery\Http\Api\Content\ContentTransitionHandler;
+use Kumwe\CMS\Delivery\Http\Api\Extension\ExtensionApiHandler;
+use Kumwe\CMS\Delivery\Http\Api\Automation\AutomationApiHandler;
+use Kumwe\CMS\Delivery\Http\Api\Identity\AccessControlApiHandler;
+use Kumwe\CMS\Delivery\Http\Api\Navigation\MenuCollectionHandler;
+use Kumwe\CMS\Delivery\Http\Api\Navigation\MenuItemCollectionHandler;
+use Kumwe\CMS\Delivery\Http\Api\Navigation\MenuItemResourceHandler;
+use Kumwe\CMS\Delivery\Http\Api\Navigation\MenuResourceHandler;
+use Kumwe\CMS\Delivery\Http\Api\Navigation\NavigationApiResponder;
 use Kumwe\CMS\Delivery\Http\Api\Plan\PlanPreviewHandler;
 use Kumwe\CMS\Delivery\Http\Api\Plan\SafePlanFactory;
+use Kumwe\CMS\Delivery\Http\Api\Site\SiteSettingsApiHandler;
 use Kumwe\CMS\Delivery\Http\Api\ProblemDetailsResponseFactory;
 use Kumwe\CMS\Delivery\Http\Mcp\McpHttpHandler;
 use Kumwe\CMS\Http\Handler\ApiIndexHandler;
@@ -82,6 +102,7 @@ use Kumwe\CMS\Http\Handler\LivenessHandler;
 use Kumwe\CMS\Http\Handler\NotFoundHandler;
 use Kumwe\CMS\Http\Handler\PublishedContentHandler;
 use Kumwe\CMS\Http\Handler\ReadinessHandler;
+use Kumwe\CMS\Http\Handler\RobotsHandler;
 use Kumwe\CMS\Http\Middleware\BodyLimitMiddleware;
 use Kumwe\CMS\Http\Middleware\BearerAuthenticationMiddleware;
 use Kumwe\CMS\Http\Middleware\ProblemDetailsMiddleware;
@@ -92,31 +113,44 @@ use Kumwe\CMS\Http\Security\TrustedHostMatcher;
 use Kumwe\CMS\Identity\Application\Authentication\AccessTokenVerifier;
 use Kumwe\CMS\Identity\Application\Administration\AdministratorIdentityGateway;
 use Kumwe\CMS\Identity\Application\Administration\AdministratorSessionStore;
+use Kumwe\CMS\Identity\Application\Administration\AuthenticationRateLimiter;
+use Kumwe\CMS\Identity\Application\Administration\AccessControlRepository;
+use Kumwe\CMS\Identity\Application\Administration\AccessControlService;
 use Kumwe\CMS\Identity\Application\Security\PasswordHasher;
-use Kumwe\CMS\Identity\Infrastructure\Administration\PostgreSqlAdministratorIdentityGateway;
-use Kumwe\CMS\Identity\Infrastructure\Administration\PostgreSqlAdministratorSessionStore;
-use Kumwe\CMS\Identity\Infrastructure\Authentication\PostgreSqlAccessTokenVerifier;
+use Kumwe\CMS\Identity\Infrastructure\Administration\DoctrineAccessControlRepository;
+use Kumwe\CMS\Identity\Infrastructure\Administration\DoctrineAdministratorIdentityGateway;
+use Kumwe\CMS\Identity\Infrastructure\Administration\DoctrineAdministratorSessionStore;
+use Kumwe\CMS\Identity\Infrastructure\Administration\RedisAuthenticationRateLimiter;
+use Kumwe\CMS\Identity\Infrastructure\Authentication\DoctrineAccessTokenVerifier;
 use Kumwe\CMS\Identity\Infrastructure\Security\NativePasswordHasher;
-use Kumwe\CMS\Infrastructure\Persistence\JoomlaTransactionManager;
+use Kumwe\CMS\Infrastructure\Persistence\DoctrineConnectionFactory;
+use Kumwe\CMS\Infrastructure\Persistence\DoctrineTransactionManager;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\MigrationLock;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\MigrationRepository;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\MigrationRunner;
-use Kumwe\CMS\Infrastructure\Persistence\Migration\PostgreSqlMigrationLock;
-use Kumwe\CMS\Infrastructure\Persistence\Migration\PostgreSqlMigrationRepository;
-use Kumwe\CMS\Infrastructure\Persistence\Migration\SchemaMigration;
-use Kumwe\CMS\Infrastructure\Persistence\Migration\Version202608040001CreateSystemTables;
-use Kumwe\CMS\Infrastructure\Persistence\PostgreSqlDatabaseFactory;
+use Kumwe\CMS\Infrastructure\Persistence\Migration\CoreSchemaMigration;
+use Kumwe\CMS\Infrastructure\Persistence\Migration\DoctrineMigrationLock;
+use Kumwe\CMS\Infrastructure\Persistence\Migration\DoctrineMigrationRepository;
 use Kumwe\CMS\Infrastructure\Persistence\ReadinessProbe;
 use Kumwe\CMS\Infrastructure\Persistence\TransactionManager;
+use Kumwe\CMS\Infrastructure\Persistence\TableNames;
+use Kumwe\CMS\Infrastructure\Redis\RedisConnectionFactory;
+use Kumwe\CMS\Infrastructure\Redis\RedisRuntime;
 use Kumwe\CMS\Infrastructure\Mcp\KumweMcpHandlers;
 use Kumwe\CMS\Infrastructure\Mcp\KumweMcpServerFactory;
 use Kumwe\CMS\Infrastructure\Mcp\McpCapabilityCatalog;
+use Kumwe\CMS\Infrastructure\Mcp\McpMutationGuard;
 use Kumwe\CMS\Infrastructure\Time\SystemClock;
 use Kumwe\CMS\Kernel\Configuration\ApplicationConfiguration;
 use Kumwe\CMS\Kernel\Configuration\ConfigurationFactory;
 use Kumwe\CMS\Shared\Infrastructure\Configuration\Environment;
 use Kumwe\CMS\Site\Application\SiteSettings;
-use Kumwe\CMS\Site\Infrastructure\Persistence\PostgreSqlSiteSettings;
+use Kumwe\CMS\Site\Infrastructure\Persistence\DoctrineSiteSettings;
+use Kumwe\CMS\Site\Infrastructure\Persistence\CachedSiteSettings;
+use Kumwe\CMS\Navigation\Application\NavigationRepository;
+use Kumwe\CMS\Navigation\Application\NavigationService;
+use Kumwe\CMS\Navigation\Infrastructure\Persistence\DoctrineNavigationRepository;
+use Kumwe\CMS\Workflow\Application\ContentTransitionAuthorizer;
 use Kumwe\CMS\Workflow\Domain\Workflow;
 use Laminas\Diactoros\ResponseFactory;
 use Laminas\Diactoros\ServerRequestFactory;
@@ -143,6 +177,7 @@ use Mezzio\Router\Middleware\MethodNotAllowedMiddleware;
 use Mezzio\Router\Middleware\RouteMiddleware;
 use Mezzio\Router\RouteCollector;
 use Mezzio\Router\RouteCollectorInterface;
+use Mezzio\Router\Route;
 use Mezzio\Router\RouterInterface;
 use Monolog\Handler\StreamHandler;
 use Monolog\Level;
@@ -153,6 +188,7 @@ use Psr\Http\Message\ResponseFactoryInterface;
 use Psr\Http\Message\StreamFactoryInterface;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use Redis;
 use Twig\Environment as TwigEnvironment;
 use Twig\Loader\FilesystemLoader;
 
@@ -182,7 +218,7 @@ final class ContainerFactory
         ], true);
 
         $this->registerLogging($container, $configuration);
-        $this->registerPersistence($container, $configuration, $root);
+        $this->registerPersistence($container, $configuration);
         $this->registerExtensions($container, $configuration, $root);
         $this->registerMcp($container, $root);
         $this->registerHttp($container, $configuration, $root);
@@ -208,55 +244,74 @@ final class ContainerFactory
     private function registerPersistence(
         Container $container,
         ApplicationConfiguration $configuration,
-        string $root,
     ): void {
         $databaseConfiguration = $configuration->database;
-        $container->share(DatabaseInterface::class, static fn (): DatabaseInterface =>
-            (new PostgreSqlDatabaseFactory($databaseConfiguration))->create(), true);
+        $container->share(Connection::class, static fn (): Connection =>
+            (new DoctrineConnectionFactory($databaseConfiguration))->create(), true);
+        $container->share(TableNames::class, static fn (Container $container): TableNames => new TableNames(
+            self::service($container, Connection::class),
+            $databaseConfiguration->tablePrefix,
+        ), true);
         $container->share(TransactionManager::class, static fn (Container $container): TransactionManager =>
-            new JoomlaTransactionManager(self::service($container, DatabaseInterface::class)), true);
+            new DoctrineTransactionManager(self::service($container, Connection::class)), true);
+        $redisConfiguration = $configuration->redis;
+        $container->share(Redis::class, static fn (): Redis =>
+            (new RedisConnectionFactory($redisConfiguration))->create(), true);
+        $container->share(RedisRuntime::class, static fn (Container $container): RedisRuntime =>
+            new RedisRuntime(self::service($container, Redis::class)), true);
+        $container->share(AuthenticationRateLimiter::class, static fn (
+            Container $container,
+        ): AuthenticationRateLimiter => new RedisAuthenticationRateLimiter(
+            self::service($container, RedisRuntime::class),
+        ), true);
         $container->share(PasswordHasher::class, new NativePasswordHasher(), true);
         $container->share(Workflow::class, new Workflow(), true);
         $container->share(MigrationRepository::class, static fn (Container $container): MigrationRepository =>
-            new PostgreSqlMigrationRepository(
-                self::service($container, DatabaseInterface::class),
-                $databaseConfiguration->schema,
+            new DoctrineMigrationRepository(
+                self::service($container, Connection::class),
+                self::service($container, TableNames::class),
             ), true);
         $container->share(MigrationLock::class, static fn (Container $container): MigrationLock =>
-            new PostgreSqlMigrationLock(self::service($container, DatabaseInterface::class)), true);
+            new DoctrineMigrationLock(
+                self::service($container, Connection::class),
+                self::service($container, TableNames::class),
+            ), true);
         $container->share(AccessTokenVerifier::class, static fn (Container $container): AccessTokenVerifier =>
-            new PostgreSqlAccessTokenVerifier(
-                self::service($container, DatabaseInterface::class),
-                $databaseConfiguration->schema,
+            new DoctrineAccessTokenVerifier(
+                self::service($container, Connection::class),
+                self::service($container, TableNames::class),
+                self::service($container, ClockInterface::class),
             ), true);
         $container->share(AdministratorIdentityGateway::class, static fn (
             Container $container,
-        ): AdministratorIdentityGateway => new PostgreSqlAdministratorIdentityGateway(
-            self::service($container, DatabaseInterface::class),
-            $databaseConfiguration->schema,
+        ): AdministratorIdentityGateway => new DoctrineAdministratorIdentityGateway(
+            self::service($container, Connection::class),
+            self::service($container, TableNames::class),
             self::service($container, PasswordHasher::class),
             self::service($container, TransactionManager::class),
             self::service($container, ClockInterface::class),
+            self::service($container, AuthenticationRateLimiter::class),
+            self::service($container, AuditRecorder::class),
             $configuration->secret,
         ), true);
         $container->share(AdministratorSessionStore::class, static fn (
             Container $container,
-        ): AdministratorSessionStore => new PostgreSqlAdministratorSessionStore(
-            self::service($container, DatabaseInterface::class),
-            $databaseConfiguration->schema,
+        ): AdministratorSessionStore => new DoctrineAdministratorSessionStore(
+            self::service($container, Connection::class),
+            self::service($container, TableNames::class),
             self::service($container, ClockInterface::class),
             $configuration->secret,
             $configuration->administratorSessionSeconds,
         ), true);
         $container->share(AuditRecorder::class, static fn (Container $container): AuditRecorder =>
-            new PostgreSqlAuditRecorder(
-                self::service($container, DatabaseInterface::class),
-                $databaseConfiguration->schema,
+            new DoctrineAuditRecorder(
+                self::service($container, Connection::class),
+                self::service($container, TableNames::class),
             ), true);
         $container->share(ContentRepository::class, static fn (Container $container): ContentRepository =>
-            new PostgreSqlContentRepository(
-                self::service($container, DatabaseInterface::class),
-                $databaseConfiguration->schema,
+            new DoctrineContentRepository(
+                self::service($container, Connection::class),
+                self::service($container, TableNames::class),
             ), true);
         $container->share(ContentService::class, static fn (Container $container): ContentService =>
             new ContentService(
@@ -266,78 +321,92 @@ final class ContainerFactory
                 self::service($container, ClockInterface::class),
                 self::service($container, Workflow::class),
             ), true);
-        $container->share(SiteSettings::class, static fn (Container $container): SiteSettings =>
-            new PostgreSqlSiteSettings(
-                self::service($container, DatabaseInterface::class),
+        $container->share(ContentTransitionAuthorizer::class, new ContentTransitionAuthorizer(), true);
+        $container->share(NavigationRepository::class, static fn (Container $container): NavigationRepository =>
+            new DoctrineNavigationRepository(
+                self::service($container, Connection::class),
+                self::service($container, TableNames::class),
+            ), true);
+        $container->share(NavigationService::class, static fn (Container $container): NavigationService =>
+            new NavigationService(
+                self::service($container, NavigationRepository::class),
+                self::service($container, AuditRecorder::class),
+                self::service($container, TransactionManager::class),
+                self::service($container, ClockInterface::class),
+            ), true);
+        $container->share(AccessControlRepository::class, static fn (
+            Container $container,
+        ): AccessControlRepository => new DoctrineAccessControlRepository(
+            self::service($container, Connection::class),
+            self::service($container, TableNames::class),
+        ), true);
+        $container->share(AccessControlService::class, static fn (Container $container): AccessControlService =>
+            new AccessControlService(
+                self::service($container, AccessControlRepository::class),
+                self::service($container, PasswordHasher::class),
                 self::service($container, TransactionManager::class),
                 self::service($container, AuditRecorder::class),
                 self::service($container, ClockInterface::class),
-                $databaseConfiguration->schema,
+            ), true);
+        $container->share(DoctrineSiteSettings::class, static fn (
+            Container $container,
+        ): DoctrineSiteSettings => new DoctrineSiteSettings(
+            self::service($container, Connection::class),
+            self::service($container, TableNames::class),
+            self::service($container, TransactionManager::class),
+            self::service($container, AuditRecorder::class),
+            self::service($container, ClockInterface::class),
+        ), true);
+        $container->share(SiteSettings::class, static fn (Container $container): SiteSettings =>
+            new CachedSiteSettings(
+                self::service($container, DoctrineSiteSettings::class),
+                self::service($container, RedisRuntime::class),
             ), true);
         $container->share(JobQueue::class, static fn (Container $container): JobQueue =>
-            new PostgreSqlJobQueue(
-                self::service($container, DatabaseInterface::class),
+            new DoctrineJobQueue(
+                self::service($container, Connection::class),
+                self::service($container, TableNames::class),
                 self::service($container, TransactionManager::class),
                 self::service($container, ClockInterface::class),
-                $databaseConfiguration->schema,
                 $configuration->release,
             ), true);
-        $container->share(PostgreSqlScheduler::class, static fn (
+        $container->share(DoctrineScheduler::class, static fn (
             Container $container,
-        ): PostgreSqlScheduler => new PostgreSqlScheduler(
-            self::service($container, DatabaseInterface::class),
+        ): DoctrineScheduler => new DoctrineScheduler(
+            self::service($container, Connection::class),
+            self::service($container, TableNames::class),
             self::service($container, TransactionManager::class),
             self::service($container, ClockInterface::class),
-            $databaseConfiguration->schema,
         ), true);
-        $container->alias(Scheduler::class, PostgreSqlScheduler::class);
-        $container->alias(ScheduleRepository::class, PostgreSqlScheduler::class);
+        $container->alias(Scheduler::class, DoctrineScheduler::class);
+        $container->alias(ScheduleRepository::class, DoctrineScheduler::class);
+        $container->share(AutomationManagementService::class, static fn (
+            Container $container,
+        ): AutomationManagementService => new AutomationManagementService(
+            self::service($container, ScheduleRepository::class),
+            self::service($container, JobQueue::class),
+            self::service($container, JobHandlerRegistry::class),
+            self::service($container, TransactionManager::class),
+            self::service($container, AuditRecorder::class),
+            self::service($container, ClockInterface::class),
+        ), true);
         $container->share(MigrationRunner::class, static fn (Container $container): MigrationRunner =>
             new MigrationRunner(
-                database: self::service($container, DatabaseInterface::class),
+                database: self::service($container, Connection::class),
                 repository: self::service($container, MigrationRepository::class),
                 lock: self::service($container, MigrationLock::class),
                 transactions: self::service($container, TransactionManager::class),
                 migrations: [
-                    new Version202608040001CreateSystemTables($databaseConfiguration->schema),
-                    SchemaMigration::fromFile(
-                        '20260804000300_create_identity_and_audit',
-                        $databaseConfiguration->schema,
-                        $root . '/database/schema/phase3.sql',
-                    ),
-                    SchemaMigration::fromFile(
-                        '20260804000400_create_content_workflow_and_navigation',
-                        $databaseConfiguration->schema,
-                        $root . '/database/schema/phase4.sql',
-                    ),
-                    SchemaMigration::fromFile(
-                        '20260804000500_create_extension_platform',
-                        $databaseConfiguration->schema,
-                        $root . '/database/schema/phase5.sql',
-                    ),
-                    SchemaMigration::fromFile(
-                        '20260804000600_create_presentation_platform',
-                        $databaseConfiguration->schema,
-                        $root . '/database/schema/phase6.sql',
-                    ),
-                    SchemaMigration::fromFile(
-                        '20260804000700_create_automation_platform',
-                        $databaseConfiguration->schema,
-                        $root . '/database/schema/phase7.sql',
-                    ),
-                    SchemaMigration::fromFile(
-                        '20260804000800_create_application_runtime',
-                        $databaseConfiguration->schema,
-                        $root . '/database/schema/application.sql',
-                    ),
+                    new CoreSchemaMigration(self::service($container, TableNames::class)),
                 ],
             ), true);
         $container->share(ReadinessProbe::class, static fn (Container $container): ReadinessProbe =>
             new ReadinessProbe(
-                database: self::service($container, DatabaseInterface::class),
+                database: self::service($container, Connection::class),
                 logger: self::service($container, LoggerInterface::class),
-                schema: $databaseConfiguration->schema,
-                requiredMigration: '20260804000800_create_application_runtime',
+                tables: self::service($container, TableNames::class),
+                requiredMigration: CoreSchemaMigration::ID,
+                redis: self::service($container, RedisRuntime::class),
             ), true);
     }
 
@@ -433,28 +502,43 @@ final class ContainerFactory
     ): void {
         $mapFile = $root . '/storage/cache/extensions.json';
         $extensionRoot = $root . '/extensions';
-        $schema = $configuration->database->schema;
         $container->share(ArchiveReader::class, new ZipArchiveReader(), true);
         $container->share(PackageSafetyPolicy::class, new PackageSafetyPolicy(), true);
+        $container->share(ExtensionMigrationRunner::class, static fn (
+            Container $container,
+        ): ExtensionMigrationRunner => new ExtensionMigrationRunner(
+            self::service($container, Connection::class),
+            self::service($container, TableNames::class),
+            self::service($container, ClockInterface::class),
+        ), true);
         $container->share(ExtensionRuntimeMapCompiler::class, static fn (
             Container $container,
         ): ExtensionRuntimeMapCompiler => new ExtensionRuntimeMapCompiler(
-            self::service($container, DatabaseInterface::class),
-            $schema,
+            self::service($container, Connection::class),
+            self::service($container, TableNames::class),
             $mapFile,
         ), true);
-        $container->share(ExtensionManager::class, static fn (Container $container): ExtensionManager =>
-            new PostgreSqlExtensionManager(
-                self::service($container, DatabaseInterface::class),
-                $schema,
+        $container->share(DoctrineExtensionManager::class, static fn (
+            Container $container,
+        ): DoctrineExtensionManager => new DoctrineExtensionManager(
+                self::service($container, Connection::class),
+                self::service($container, TableNames::class),
                 $extensionRoot,
+                $root . '/public/assets/extensions',
                 self::service($container, ArchiveReader::class),
                 self::service($container, PackageSafetyPolicy::class),
+                self::service($container, ExtensionMigrationRunner::class),
                 self::service($container, ExtensionRuntimeMapCompiler::class),
                 self::service($container, TransactionManager::class),
                 self::service($container, AuditRecorder::class),
                 self::service($container, ClockInterface::class),
+                self::service($container, DispatcherInterface::class),
                 $configuration->allowUnsignedLocalExtensions,
+            ), true);
+        $container->share(ExtensionManager::class, static fn (Container $container): ExtensionManager =>
+            new RedisLockedExtensionManager(
+                self::service($container, DoctrineExtensionManager::class),
+                self::service($container, RedisRuntime::class),
             ), true);
         $active = (new ExtensionRuntimeLoader($mapFile, $extensionRoot))->load($container);
         $container->share(ActiveExtensionSet::class, $active, true);
@@ -486,10 +570,10 @@ final class ContainerFactory
         $container->share(PersistentIdempotencyMiddleware::class, static fn (
             Container $container,
         ): PersistentIdempotencyMiddleware => new PersistentIdempotencyMiddleware(
-            self::service($container, DatabaseInterface::class),
+            self::service($container, Connection::class),
+            self::service($container, TableNames::class),
             self::service($container, ClockInterface::class),
             self::service($container, ProblemDetailsResponseFactory::class),
-            $configuration->database->schema,
         ), true);
         $container->share(RequireIfMatchMiddleware::class, static function (
             Container $container,
@@ -503,6 +587,11 @@ final class ContainerFactory
         ): AdministratorSessionMiddleware => new AdministratorSessionMiddleware(
             self::service($container, AdministratorSessionStore::class),
         ), true);
+        $container->share(
+            AdministratorAuthorizationMiddleware::class,
+            new AdministratorAuthorizationMiddleware(),
+            true,
+        );
         $container->share(AdministratorCsrfMiddleware::class, new AdministratorCsrfMiddleware(), true);
         $container->share(BearerAuthenticationMiddleware::class, static function (
             Container $container,
@@ -549,6 +638,8 @@ final class ContainerFactory
         $container->share(NotFoundHandler::class, new NotFoundHandler(), true);
         $container->share(ReadinessHandler::class, static fn (Container $container): ReadinessHandler =>
             new ReadinessHandler(self::service($container, ReadinessProbe::class)), true);
+        $container->share(RobotsHandler::class, static fn (Container $container): RobotsHandler =>
+            new RobotsHandler(self::service($container, SiteSettings::class)), true);
         $container->share(SafePlanFactory::class, static fn (Container $container): SafePlanFactory =>
             new SafePlanFactory(self::service($container, ClockInterface::class)), true);
         $container->share(PlanPreviewHandler::class, static fn (Container $container): PlanPreviewHandler =>
@@ -575,6 +666,7 @@ final class ContainerFactory
         ): ContentTransitionHandler => new ContentTransitionHandler(
             self::service($container, ContentService::class),
             self::service($container, ContentApiResponder::class),
+            self::service($container, ContentTransitionAuthorizer::class),
         ), true);
         $container->share(ContentRestoreHandler::class, static fn (
             Container $container,
@@ -586,6 +678,7 @@ final class ContainerFactory
             Container $container,
         ): PublishedContentHandler => new PublishedContentHandler(
             self::service($container, ContentService::class),
+            self::service($container, SiteSettings::class),
             self::service($container, TwigEnvironment::class),
         ), true);
         $configuration = self::service($container, ApplicationConfiguration::class);
@@ -631,6 +724,7 @@ final class ContainerFactory
             Container $container,
         ): AdministratorTransitionContentHandler => new AdministratorTransitionContentHandler(
             self::service($container, ContentService::class),
+            self::service($container, ContentTransitionAuthorizer::class),
         ), true);
         $container->share(AdministratorTrashContentHandler::class, static fn (
             Container $container,
@@ -659,6 +753,77 @@ final class ContainerFactory
         ): AdministratorSettingsHandler => new AdministratorSettingsHandler(
             self::service($container, SiteSettings::class),
             self::service($container, AdministratorRenderer::class),
+        ), true);
+        $container->share(AdministratorNavigationHandler::class, static fn (
+            Container $container,
+        ): AdministratorNavigationHandler => new AdministratorNavigationHandler(
+            self::service($container, NavigationService::class),
+            self::service($container, AdministratorRenderer::class),
+        ), true);
+        $container->share(AdministratorAccessControlHandler::class, static fn (
+            Container $container,
+        ): AdministratorAccessControlHandler => new AdministratorAccessControlHandler(
+            self::service($container, AccessControlService::class),
+            self::service($container, AdministratorIdentityGateway::class),
+            self::service($container, AdministratorRenderer::class),
+        ), true);
+        $container->share(AdministratorAutomationHandler::class, static fn (
+            Container $container,
+        ): AdministratorAutomationHandler => new AdministratorAutomationHandler(
+            self::service($container, AutomationManagementService::class),
+            self::service($container, AdministratorRenderer::class),
+        ), true);
+        $container->share(NavigationApiResponder::class, static fn (
+            Container $container,
+        ): NavigationApiResponder => new NavigationApiResponder(
+            self::service($container, ProblemDetailsResponseFactory::class),
+        ), true);
+        $container->share(MenuCollectionHandler::class, static fn (Container $container): MenuCollectionHandler =>
+            new MenuCollectionHandler(
+                self::service($container, NavigationService::class),
+                self::service($container, NavigationApiResponder::class),
+            ), true);
+        $container->share(MenuResourceHandler::class, static fn (Container $container): MenuResourceHandler =>
+            new MenuResourceHandler(
+                self::service($container, NavigationService::class),
+                self::service($container, NavigationApiResponder::class),
+            ), true);
+        $container->share(MenuItemCollectionHandler::class, static fn (
+            Container $container,
+        ): MenuItemCollectionHandler => new MenuItemCollectionHandler(
+            self::service($container, NavigationService::class),
+            self::service($container, NavigationApiResponder::class),
+        ), true);
+        $container->share(MenuItemResourceHandler::class, static fn (
+            Container $container,
+        ): MenuItemResourceHandler => new MenuItemResourceHandler(
+            self::service($container, NavigationService::class),
+            self::service($container, NavigationApiResponder::class),
+        ), true);
+        $container->share(AccessControlApiHandler::class, static fn (
+            Container $container,
+        ): AccessControlApiHandler => new AccessControlApiHandler(
+            self::service($container, AccessControlService::class),
+            self::service($container, AdministratorIdentityGateway::class),
+            self::service($container, ProblemDetailsResponseFactory::class),
+        ), true);
+        $container->share(SiteSettingsApiHandler::class, static fn (
+            Container $container,
+        ): SiteSettingsApiHandler => new SiteSettingsApiHandler(
+            self::service($container, SiteSettings::class),
+            self::service($container, ProblemDetailsResponseFactory::class),
+        ), true);
+        $container->share(ExtensionApiHandler::class, static fn (
+            Container $container,
+        ): ExtensionApiHandler => new ExtensionApiHandler(
+            self::service($container, ExtensionManager::class),
+            self::service($container, ProblemDetailsResponseFactory::class),
+        ), true);
+        $container->share(AutomationApiHandler::class, static fn (
+            Container $container,
+        ): AutomationApiHandler => new AutomationApiHandler(
+            self::service($container, AutomationManagementService::class),
+            self::service($container, ProblemDetailsResponseFactory::class),
         ), true);
         $container->share(McpHttpHandler::class, static function (
             Container $container,
@@ -694,6 +859,7 @@ final class ContainerFactory
         $application->pipe(ImplicitOptionsMiddleware::class);
         $application->pipe(MethodNotAllowedMiddleware::class);
         $application->pipe(AdministratorSessionMiddleware::class);
+        $application->pipe(AdministratorAuthorizationMiddleware::class);
         $application->pipe(BearerAuthenticationMiddleware::class);
         $application->pipe(DispatchMiddleware::class);
         $application->pipe(NotFoundHandler::class);
@@ -701,78 +867,112 @@ final class ContainerFactory
         $application->get('/', HomePageHandler::class, 'site.home');
         $application->get('/health/live', LivenessHandler::class, 'health.live');
         $application->get('/health/ready', ReadinessHandler::class, 'health.ready');
+        $application->get('/robots.txt', RobotsHandler::class, 'site.robots');
         $application->route(
             '/administrator/login',
             AdministratorLoginHandler::class,
             ['GET', 'POST'],
             'administrator.login',
         );
-        $application->get('/administrator', AdministratorDashboardHandler::class, 'administrator.index');
-        $application->get(
+        self::administratorRoute(
+            $application->get('/administrator', AdministratorDashboardHandler::class, 'administrator.index'),
+            'content.read',
+        );
+        self::administratorRoute($application->get(
             '/administrator/content/new',
             AdministratorContentEditorHandler::class,
             'administrator.content.new',
-        );
-        $application->get(
+        ), 'content.create');
+        self::administratorRoute($application->get(
             '/administrator/content/{id}/edit',
             AdministratorContentEditorHandler::class,
             'administrator.content.edit',
-        );
-        $application->post(
+        ), 'content.update');
+        self::administratorRoute($application->post(
             '/administrator/content',
             [AdministratorCsrfMiddleware::class, AdministratorCreateContentHandler::class],
             'administrator.content.create',
-        );
-        $application->post(
+        ), 'content.create');
+        self::administratorRoute($application->post(
             '/administrator/content/{id}',
             [AdministratorCsrfMiddleware::class, AdministratorUpdateContentHandler::class],
             'administrator.content.update',
-        );
-        $application->post(
+        ), 'content.update');
+        self::administratorRoute($application->post(
             '/administrator/content/{id}/transition',
             [AdministratorCsrfMiddleware::class, AdministratorTransitionContentHandler::class],
             'administrator.content.transition',
-        );
-        $application->post(
+        ), 'content.read');
+        self::administratorRoute($application->post(
             '/administrator/content/{id}/trash',
             [AdministratorCsrfMiddleware::class, AdministratorTrashContentHandler::class],
             'administrator.content.trash',
-        );
-        $application->post(
+        ), 'content.delete');
+        self::administratorRoute($application->post(
             '/administrator/content/{id}/restore',
             [AdministratorCsrfMiddleware::class, AdministratorRestoreContentHandler::class],
             'administrator.content.restore',
-        );
-        $application->post(
+        ), 'content.restore');
+        self::administratorRoute($application->post(
             '/administrator/logout',
             [AdministratorCsrfMiddleware::class, AdministratorLogoutHandler::class],
             'administrator.logout',
-        );
-        $application->get(
+        ), 'administrator.access');
+        self::administratorRoute($application->get(
             '/administrator/extensions',
             AdministratorExtensionsHandler::class,
             'administrator.extensions',
-        );
-        $application->post(
+        ), 'extensions.manage');
+        self::administratorRoute($application->post(
             '/administrator/extensions',
             [AdministratorCsrfMiddleware::class, AdministratorExtensionsHandler::class],
             'administrator.extensions.install',
-        );
-        $application->post(
+        ), 'extensions.manage');
+        self::administratorRoute($application->post(
             '/administrator/extensions/action',
             [AdministratorCsrfMiddleware::class, AdministratorExtensionActionHandler::class],
             'administrator.extensions.action',
-        );
-        $application->get(
+        ), 'extensions.manage');
+        self::administratorRoute($application->get(
             '/administrator/settings',
             AdministratorSettingsHandler::class,
             'administrator.settings',
-        );
-        $application->post(
+        ), 'settings.manage');
+        self::administratorRoute($application->post(
             '/administrator/settings',
             [AdministratorCsrfMiddleware::class, AdministratorSettingsHandler::class],
             'administrator.settings.update',
-        );
+        ), 'settings.manage');
+        self::administratorRoute($application->get(
+            '/administrator/navigation',
+            AdministratorNavigationHandler::class,
+            'administrator.navigation',
+        ), 'navigation.manage');
+        self::administratorRoute($application->post(
+            '/administrator/navigation',
+            [AdministratorCsrfMiddleware::class, AdministratorNavigationHandler::class],
+            'administrator.navigation.update',
+        ), 'navigation.manage');
+        self::administratorRoute($application->get(
+            '/administrator/access',
+            AdministratorAccessControlHandler::class,
+            'administrator.access-control',
+        ), 'users.manage');
+        self::administratorRoute($application->post(
+            '/administrator/access',
+            [AdministratorCsrfMiddleware::class, AdministratorAccessControlHandler::class],
+            'administrator.access-control.update',
+        ), 'users.manage');
+        self::administratorRoute($application->get(
+            '/administrator/automation',
+            AdministratorAutomationHandler::class,
+            'administrator.automation',
+        ), 'automation.manage');
+        self::administratorRoute($application->post(
+            '/administrator/automation',
+            [AdministratorCsrfMiddleware::class, AdministratorAutomationHandler::class],
+            'administrator.automation.update',
+        ), 'automation.manage');
         $application->get('/pages/{slug}', PublishedContentHandler::class, 'site.content.page');
         $application->get('/api/v1', ApiIndexHandler::class, 'api.v1.index');
 
@@ -847,7 +1047,7 @@ final class ContainerFactory
         );
         $contentTransition->setOptions([
             BearerAuthenticationMiddleware::OPTION_AUTHENTICATION => 'bearer',
-            BearerAuthenticationMiddleware::OPTION_REQUIRED_CAPABILITIES => ['content.publish'],
+            BearerAuthenticationMiddleware::OPTION_REQUIRED_CAPABILITIES => ['content.read'],
         ]);
         $contentRestore = $application->post(
             '/api/v1/content/{id}/restore',
@@ -861,8 +1061,211 @@ final class ContainerFactory
         );
         $contentRestore->setOptions([
             BearerAuthenticationMiddleware::OPTION_AUTHENTICATION => 'bearer',
-            BearerAuthenticationMiddleware::OPTION_REQUIRED_CAPABILITIES => ['content.delete'],
+            BearerAuthenticationMiddleware::OPTION_REQUIRED_CAPABILITIES => ['content.restore'],
         ]);
+
+        self::apiRoute($application->get(
+            '/api/v1/menus',
+            MenuCollectionHandler::class,
+            'api.v1.menus.list',
+        ), 'navigation.manage');
+        self::apiRoute($application->post(
+            '/api/v1/menus',
+            [
+                RequireIdempotencyKeyMiddleware::class,
+                PersistentIdempotencyMiddleware::class,
+                MenuCollectionHandler::class,
+            ],
+            'api.v1.menus.create',
+        ), 'navigation.manage');
+        self::apiRoute($application->get(
+            '/api/v1/menus/{id}',
+            MenuResourceHandler::class,
+            'api.v1.menus.read',
+        ), 'navigation.manage');
+        self::apiRoute($application->patch(
+            '/api/v1/menus/{id}',
+            [
+                RequireIdempotencyKeyMiddleware::class,
+                PersistentIdempotencyMiddleware::class,
+                RequireIfMatchMiddleware::class,
+                MenuResourceHandler::class,
+            ],
+            'api.v1.menus.update',
+        ), 'navigation.manage');
+        self::apiRoute($application->delete(
+            '/api/v1/menus/{id}',
+            [
+                RequireIdempotencyKeyMiddleware::class,
+                PersistentIdempotencyMiddleware::class,
+                RequireIfMatchMiddleware::class,
+                MenuResourceHandler::class,
+            ],
+            'api.v1.menus.delete',
+        ), 'navigation.manage');
+        self::apiRoute($application->get(
+            '/api/v1/menus/{menuId}/items',
+            MenuItemCollectionHandler::class,
+            'api.v1.menu-items.list',
+        ), 'navigation.manage');
+        self::apiRoute($application->post(
+            '/api/v1/menus/{menuId}/items',
+            [
+                RequireIdempotencyKeyMiddleware::class,
+                PersistentIdempotencyMiddleware::class,
+                MenuItemCollectionHandler::class,
+            ],
+            'api.v1.menu-items.create',
+        ), 'navigation.manage');
+        self::apiRoute($application->get(
+            '/api/v1/menu-items/{id}',
+            MenuItemResourceHandler::class,
+            'api.v1.menu-items.read',
+        ), 'navigation.manage');
+        self::apiRoute($application->patch(
+            '/api/v1/menu-items/{id}',
+            [
+                RequireIdempotencyKeyMiddleware::class,
+                PersistentIdempotencyMiddleware::class,
+                RequireIfMatchMiddleware::class,
+                MenuItemResourceHandler::class,
+            ],
+            'api.v1.menu-items.update',
+        ), 'navigation.manage');
+        self::apiRoute($application->delete(
+            '/api/v1/menu-items/{id}',
+            [
+                RequireIdempotencyKeyMiddleware::class,
+                PersistentIdempotencyMiddleware::class,
+                RequireIfMatchMiddleware::class,
+                MenuItemResourceHandler::class,
+            ],
+            'api.v1.menu-items.delete',
+        ), 'navigation.manage');
+
+        foreach ([
+            ['GET', '/api/v1/users', 'api.v1.users.list'],
+            ['GET', '/api/v1/roles', 'api.v1.roles.list'],
+            ['GET', '/api/v1/tokens', 'api.v1.tokens.list'],
+        ] as [$method, $path, $name]) {
+            self::apiRoute(
+                $application->route($path, AccessControlApiHandler::class, [$method], $name),
+                'users.manage',
+            );
+        }
+
+        self::apiRoute($application->get(
+            '/api/v1/settings',
+            SiteSettingsApiHandler::class,
+            'api.v1.settings.read',
+        ), 'settings.manage');
+        self::apiRoute($application->put(
+            '/api/v1/settings',
+            [
+                RequireIdempotencyKeyMiddleware::class,
+                PersistentIdempotencyMiddleware::class,
+                SiteSettingsApiHandler::class,
+            ],
+            'api.v1.settings.update',
+        ), 'settings.manage');
+        self::apiRoute($application->get(
+            '/api/v1/extensions',
+            ExtensionApiHandler::class,
+            'api.v1.extensions.list',
+        ), 'extensions.manage');
+        foreach ([
+            ['POST', '/api/v1/extensions/{vendor}/{name}/activate', 'api.v1.extensions.activate'],
+            ['POST', '/api/v1/extensions/{vendor}/{name}/disable', 'api.v1.extensions.disable'],
+            ['DELETE', '/api/v1/extensions/{vendor}/{name}', 'api.v1.extensions.uninstall'],
+        ] as [$method, $path, $name]) {
+            self::apiRoute($application->route(
+                $path,
+                [
+                    RequireIdempotencyKeyMiddleware::class,
+                    PersistentIdempotencyMiddleware::class,
+                    ExtensionApiHandler::class,
+                ],
+                [$method],
+                $name,
+            ), 'extensions.manage');
+        }
+        foreach ([
+            ['POST', '/api/v1/users', 'api.v1.users.create'],
+            ['PATCH', '/api/v1/users/{id}', 'api.v1.users.update'],
+            ['POST', '/api/v1/roles', 'api.v1.roles.create'],
+            ['PUT', '/api/v1/users/{id}/roles/{roleId}', 'api.v1.user-roles.assign'],
+            ['DELETE', '/api/v1/users/{id}/roles/{roleId}', 'api.v1.user-roles.revoke'],
+            ['POST', '/api/v1/roles/{id}/grants', 'api.v1.role-grants.create'],
+            ['DELETE', '/api/v1/grants/{grantId}', 'api.v1.role-grants.revoke'],
+            ['POST', '/api/v1/tokens', 'api.v1.tokens.create'],
+            ['DELETE', '/api/v1/tokens/{tokenId}', 'api.v1.tokens.revoke'],
+        ] as [$method, $path, $name]) {
+            self::apiRoute($application->route(
+                $path,
+                [
+                    RequireIdempotencyKeyMiddleware::class,
+                    PersistentIdempotencyMiddleware::class,
+                    AccessControlApiHandler::class,
+                ],
+                [$method],
+                $name,
+            ), 'users.manage');
+        }
+
+        self::apiRoute($application->get(
+            '/api/v1/schedules',
+            AutomationApiHandler::class,
+            'api.v1.schedules.list',
+        ), 'automation.manage');
+        self::apiRoute($application->post(
+            '/api/v1/schedules',
+            [
+                RequireIdempotencyKeyMiddleware::class,
+                PersistentIdempotencyMiddleware::class,
+                AutomationApiHandler::class,
+            ],
+            'api.v1.schedules.create',
+        ), 'automation.manage');
+        self::apiRoute($application->get(
+            '/api/v1/schedules/{id}',
+            AutomationApiHandler::class,
+            'api.v1.schedules.read',
+        ), 'automation.manage');
+        foreach ([
+            ['PATCH', 'api.v1.schedules.update'],
+            ['DELETE', 'api.v1.schedules.delete'],
+        ] as [$method, $name]) {
+            self::apiRoute($application->route(
+                '/api/v1/schedules/{id}',
+                [
+                    RequireIdempotencyKeyMiddleware::class,
+                    PersistentIdempotencyMiddleware::class,
+                    RequireIfMatchMiddleware::class,
+                    AutomationApiHandler::class,
+                ],
+                [$method],
+                $name,
+            ), 'automation.manage');
+        }
+        self::apiRoute($application->get(
+            '/api/v1/jobs',
+            AutomationApiHandler::class,
+            'api.v1.jobs.list',
+        ), 'automation.manage');
+        foreach ([
+            ['/api/v1/jobs/{id}/retry', 'api.v1.jobs.retry'],
+            ['/api/v1/jobs/{id}/cancel', 'api.v1.jobs.cancel'],
+        ] as [$path, $name]) {
+            self::apiRoute($application->post(
+                $path,
+                [
+                    RequireIdempotencyKeyMiddleware::class,
+                    PersistentIdempotencyMiddleware::class,
+                    AutomationApiHandler::class,
+                ],
+                $name,
+            ), 'automation.manage');
+        }
 
         $planRoute = $application->post(
             '/api/v1/plans',
@@ -875,10 +1278,7 @@ final class ContainerFactory
         ]);
 
         $mcpRoute = $application->route('/mcp', McpHttpHandler::class, ['GET', 'POST', 'DELETE'], 'mcp');
-        $mcpRoute->setOptions([
-            BearerAuthenticationMiddleware::OPTION_AUTHENTICATION => 'bearer',
-            BearerAuthenticationMiddleware::OPTION_REQUIRED_CAPABILITIES => ['content.read'],
-        ]);
+        self::apiRoute($mcpRoute);
         $application->route('/mcp', McpHttpHandler::class, ['OPTIONS'], 'mcp.options');
         self::service($container, ActiveExtensionSet::class)->registerRoutes($application);
     }
@@ -956,18 +1356,41 @@ final class ContainerFactory
             new QueueWorkCommand(self::service($container, Worker::class)), true);
         $container->share(ScheduleRunCommand::class, static fn (Container $container): ScheduleRunCommand =>
             new ScheduleRunCommand(self::service($container, Scheduler::class)), true);
-        $container->share(CreateScheduleCommand::class, static fn (
+        $container->share(ConsoleAuthorizer::class, static fn (Container $container): ConsoleAuthorizer =>
+            new ConsoleAuthorizer(self::service($container, AccessTokenVerifier::class)), true);
+        $container->share(ManageAutomationCommand::class, static fn (
             Container $container,
-        ): CreateScheduleCommand => new CreateScheduleCommand(
-            self::service($container, ScheduleRepository::class),
-            self::service($container, ClockInterface::class),
+        ): ManageAutomationCommand => new ManageAutomationCommand(
+            self::service($container, AutomationManagementService::class),
+            self::service($container, ConsoleAuthorizer::class),
         ), true);
-        $container->share(ListSchedulesCommand::class, static fn (Container $container): ListSchedulesCommand =>
-            new ListSchedulesCommand(self::service($container, ScheduleRepository::class)), true);
+        $container->share(ManageContentCommand::class, static fn (Container $container): ManageContentCommand =>
+            new ManageContentCommand(
+                self::service($container, ContentService::class),
+                self::service($container, ConsoleAuthorizer::class),
+                self::service($container, ContentTransitionAuthorizer::class),
+            ), true);
+        $container->share(ManageNavigationCommand::class, static fn (
+            Container $container,
+        ): ManageNavigationCommand => new ManageNavigationCommand(
+            self::service($container, NavigationService::class),
+            self::service($container, ConsoleAuthorizer::class),
+        ), true);
+        $container->share(ManageSettingsCommand::class, static fn (Container $container): ManageSettingsCommand =>
+            new ManageSettingsCommand(
+                self::service($container, SiteSettings::class),
+                self::service($container, ConsoleAuthorizer::class),
+            ), true);
+        $container->share(ManageAccessCommand::class, static fn (Container $container): ManageAccessCommand =>
+            new ManageAccessCommand(
+                self::service($container, AccessControlService::class),
+                self::service($container, ConsoleAuthorizer::class),
+            ), true);
         $container->share(McpServeCommand::class, static fn (Container $container): McpServeCommand =>
             new McpServeCommand(
                 self::service($container, KumweMcpServerFactory::class),
                 self::service($container, KumweMcpHandlers::class),
+                self::service($container, AccessTokenVerifier::class),
                 self::service($container, LoggerInterface::class),
             ), true);
         $container->share(ConsoleApplication::class, static fn (Container $container): ConsoleApplication =>
@@ -984,8 +1407,11 @@ final class ContainerFactory
                 self::service($container, UninstallExtensionCommand::class),
                 self::service($container, QueueWorkCommand::class),
                 self::service($container, ScheduleRunCommand::class),
-                self::service($container, CreateScheduleCommand::class),
-                self::service($container, ListSchedulesCommand::class),
+                self::service($container, ManageAutomationCommand::class),
+                self::service($container, ManageContentCommand::class),
+                self::service($container, ManageNavigationCommand::class),
+                self::service($container, ManageSettingsCommand::class),
+                self::service($container, ManageAccessCommand::class),
                 self::service($container, McpServeCommand::class),
             ], self::service($container, Output::class)), true);
     }
@@ -993,6 +1419,12 @@ final class ContainerFactory
     private function registerMcp(Container $container, string $root): void
     {
         $container->share(McpCapabilityCatalog::class, new McpCapabilityCatalog(), true);
+        $container->share(McpMutationGuard::class, static fn (Container $container): McpMutationGuard =>
+            new McpMutationGuard(
+                self::service($container, Connection::class),
+                self::service($container, TableNames::class),
+                self::service($container, ClockInterface::class),
+            ), true);
         $container->share(SessionStoreInterface::class, static fn (Container $container): SessionStoreInterface =>
             new FileSessionStore(
                 $root . '/storage/sessions/mcp',
@@ -1000,12 +1432,38 @@ final class ContainerFactory
                 self::service($container, ClockInterface::class),
             ), true);
         $container->share(KumweMcpHandlers::class, static fn (Container $container): KumweMcpHandlers =>
-            new KumweMcpHandlers(self::service($container, McpCapabilityCatalog::class)), true);
+            new KumweMcpHandlers(
+                self::service($container, McpCapabilityCatalog::class),
+                self::service($container, ContentService::class),
+                self::service($container, NavigationService::class),
+                self::service($container, AccessControlService::class),
+                self::service($container, SiteSettings::class),
+                self::service($container, ExtensionManager::class),
+                self::service($container, AutomationManagementService::class),
+                self::service($container, ContentTransitionAuthorizer::class),
+                self::service($container, McpMutationGuard::class),
+                self::service($container, ClockInterface::class),
+            ), true);
         $container->share(KumweMcpServerFactory::class, static fn (Container $container): KumweMcpServerFactory =>
             new KumweMcpServerFactory(
                 self::service($container, McpCapabilityCatalog::class),
                 sessions: self::service($container, SessionStoreInterface::class),
             ), true);
+    }
+
+    private static function administratorRoute(Route $route, string ...$capabilities): void
+    {
+        $route->setOptions([
+            AdministratorAuthorizationMiddleware::OPTION_REQUIRED_CAPABILITIES => $capabilities,
+        ]);
+    }
+
+    private static function apiRoute(Route $route, string ...$capabilities): void
+    {
+        $route->setOptions([
+            BearerAuthenticationMiddleware::OPTION_AUTHENTICATION => 'bearer',
+            BearerAuthenticationMiddleware::OPTION_REQUIRED_CAPABILITIES => $capabilities,
+        ]);
     }
 
     /**

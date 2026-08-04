@@ -22,7 +22,7 @@ final class ProductionArtifactsTest extends TestCase
         $dockerfile = $this->contents('docker/php/Dockerfile');
 
         self::assertStringContainsString('FROM php-base AS runtime', $dockerfile);
-        self::assertStringContainsString('pdo_pgsql pgsql', $dockerfile);
+        self::assertStringContainsString('pdo_mysql pdo_pgsql', $dockerfile);
         self::assertStringContainsString('pecl install redis-6.3.0', $dockerfile);
         self::assertStringContainsString('USER www-data', $dockerfile);
         self::assertStringContainsString(
@@ -42,20 +42,35 @@ final class ProductionArtifactsTest extends TestCase
         }
 
         self::assertFileExists($this->root . '/public/index.php');
-        self::assertFileExists($this->root . '/public/robots.txt');
+        self::assertFileDoesNotExist($this->root . '/public/robots.txt');
+
+        $nginx = $this->contents('docker/nginx/default.conf');
+        self::assertStringNotContainsString('location = /robots.txt', $nginx);
+        self::assertStringContainsString('try_files $uri $uri/ /index.php?$query_string;', $nginx);
+
+        $container = $this->contents('src/Kernel/ContainerFactory.php');
+        self::assertStringContainsString("get('/robots.txt', RobotsHandler::class", $container);
     }
 
     public function testProductionTopologyKeepsDataServicesInternalAndSecretsFileBacked(): void
     {
         $compose = $this->contents('compose.production.yaml');
 
-        foreach (['web:', 'app:', 'worker:', 'scheduler:', 'migrate:', 'postgres:', 'redis:'] as $service) {
+        foreach (['web:', 'app:', 'worker:', 'scheduler:', 'migrate:', 'database:', 'redis:'] as $service) {
             self::assertStringContainsString($service, $compose);
         }
 
         self::assertStringContainsString('internal: true', $compose);
+        self::assertStringContainsString('ghcr.io/kumwe/cms/app:latest', $compose);
+        self::assertStringContainsString('ghcr.io/kumwe/cms/web:latest', $compose);
+        self::assertStringContainsString('KUMWE_DATABASE_IMAGE:-mariadb:lts', $compose);
+        self::assertStringContainsString('KUMWE_REDIS_IMAGE:-redis:8-alpine', $compose);
         self::assertStringContainsString('APP_SECRET_FILE: /run/secrets/app_secret', $compose);
         self::assertStringContainsString('DB_PASSWORD_FILE: /run/secrets/db_password', $compose);
+        self::assertStringContainsString(
+            'extension-assets-data:/var/www/kumwe/public/assets/extensions',
+            $compose,
+        );
         self::assertStringContainsString('profiles: [automation]', $compose);
     }
 
@@ -78,10 +93,36 @@ final class ProductionArtifactsTest extends TestCase
 
         self::assertStringContainsString('set -Eeuo pipefail', $backup);
         self::assertStringContainsString('KUMWE_BACKUP_CONSISTENCY', $backup);
-        self::assertStringContainsString('20260804000800_create_application_runtime', $backup);
+        self::assertStringContainsString('20260804010000_create_kumwe_core', $backup);
+        self::assertStringContainsString('mariadb|mysql|pgsql', $backup);
         self::assertStringContainsString('product_major: 2', $backup);
+        self::assertStringContainsString('extension-assets.tar.gz', $backup);
         self::assertStringContainsString('set -Eeuo pipefail', $verify);
         self::assertStringContainsString('Kumwe 1.x and unknown formats are refused', $verify);
+    }
+
+    public function testCiDeploysEverySupportedDatabaseAndComposerDistribution(): void
+    {
+        $ci = $this->contents('.github/workflows/ci.yml');
+        $acceptance = $this->contents('.github/workflows/deployment-acceptance.yml');
+
+        foreach (['mariadb:lts', 'mysql:8.4', 'postgres:17-alpine'] as $databaseImage) {
+            self::assertStringContainsString($databaseImage, $ci);
+            self::assertStringContainsString($databaseImage, $acceptance);
+        }
+
+        self::assertStringContainsString("php-version: '8.5'", $ci);
+        self::assertStringContainsString('php bin/kumwe database:migrate', $acceptance);
+        self::assertStringContainsString('php bin/kumwe user:create-admin', $acceptance);
+        self::assertStringContainsString('Composer and ZIP installation', $acceptance);
+        self::assertStringContainsString('bash tools/deployment-probe.sh', $acceptance);
+        self::assertStringContainsString('Restore a production backup into a clean database', $acceptance);
+
+        $probe = $this->contents('tools/deployment-probe.sh');
+        self::assertStringContainsString('user without administrator.access', $probe);
+        self::assertStringContainsString('Idempotency-Replayed: true', $probe);
+        self::assertStringContainsString('kumwe_content_list', $probe);
+        self::assertStringContainsString('kumwe_content_create', $probe);
     }
 
     public function testObservabilityContractIsPrivateByDefault(): void

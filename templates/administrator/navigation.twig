@@ -1,0 +1,57 @@
+{% extends "administrator/layout.twig" %}
+{% block title %}Navigation · Kumwe{% endblock %}
+{% block content %}
+  <div class="page-heading"><div><p class="eyebrow">Site structure</p><h1>Menus and navigation</h1></div></div>
+  {% if saved %}<p class="notice" role="status">Navigation updated.</p>{% endif %}
+
+  {% if capabilities['navigation.manage'] is defined %}
+    <section class="panel stack">
+      <h2>Create a menu</h2>
+      <form action="/administrator/navigation" method="post" class="form-grid">
+        <input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="action" value="menu.create">
+        <label>Handle<input name="handle" pattern="[a-z][a-z0-9_]*" required></label>
+        <label>Title<input name="title" maxlength="255" required></label>
+        <button class="primary" type="submit">Create menu</button>
+      </form>
+    </section>
+  {% endif %}
+
+  {% for menu in menus %}
+    <section class="panel stack resource-panel">
+      <form action="/administrator/navigation" method="post" class="form-grid">
+        <input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="action" value="menu.update">
+        <input type="hidden" name="id" value="{{ menu.id }}"><input type="hidden" name="version" value="{{ menu.version }}">
+        <label>Handle<input name="handle" value="{{ menu.handle }}" required></label>
+        <label>Title<input name="title" value="{{ menu.title }}" required></label>
+        {% if capabilities['navigation.manage'] is defined %}<button type="submit">Save menu</button>{% endif %}
+      </form>
+
+      <div class="table-wrap"><table><thead><tr><th>Path</th><th>Title</th><th>Parent</th><th>Position</th><th>Actions</th></tr></thead><tbody>
+      {% for item in items[menu.id] %}
+        {% set item_form = 'menu-item-' ~ item.id %}
+        <tr>
+          <td><input form="{{ item_form }}" name="slug" value="{{ item.slug }}" aria-label="Slug for {{ item.title }}"><small>{{ item.path }}</small></td>
+          <td><input form="{{ item_form }}" name="title" value="{{ item.title }}" aria-label="Title for {{ item.path }}"></td>
+          <td><select form="{{ item_form }}" name="parent_id"><option value="">Root</option>{% for candidate in items[menu.id] if candidate.id != item.id %}<option value="{{ candidate.id }}" {% if candidate.id == item.parent_id %}selected{% endif %}>{{ candidate.path }}</option>{% endfor %}</select></td>
+          <td><input form="{{ item_form }}" type="number" min="0" name="position" value="{{ item.position }}"></td>
+          <td class="actions"><form id="{{ item_form }}" action="/administrator/navigation" method="post"><input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="id" value="{{ item.id }}"><input type="hidden" name="version" value="{{ item.version }}"></form>
+            {% if capabilities['navigation.manage'] is defined %}<button form="{{ item_form }}" name="action" value="item.update">Save</button><button form="{{ item_form }}" class="danger" name="action" value="item.delete">Delete</button>{% endif %}</td>
+        </tr>
+      {% else %}<tr><td colspan="5">No menu items yet.</td></tr>{% endfor %}
+      </tbody></table></div>
+
+      {% if capabilities['navigation.manage'] is defined %}
+        <form action="/administrator/navigation" method="post" class="form-grid">
+          <input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="action" value="item.create"><input type="hidden" name="menu_id" value="{{ menu.id }}">
+          <label>Title<input name="title" required></label><label>Slug<input name="slug" pattern="[a-z0-9]+(-[a-z0-9]+)*" required></label>
+          <label>Parent<select name="parent_id"><option value="">Root</option>{% for item in items[menu.id] %}<option value="{{ item.id }}">{{ item.path }}</option>{% endfor %}</select></label>
+          <label>Position<input type="number" min="0" name="position" value="0"></label><button class="primary" type="submit">Add item</button>
+        </form>
+        <form action="/administrator/navigation" method="post" onsubmit="return confirm('Delete this menu and all its items?')">
+          <input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="action" value="menu.delete"><input type="hidden" name="id" value="{{ menu.id }}"><input type="hidden" name="version" value="{{ menu.version }}">
+          <button class="danger" type="submit">Delete menu</button>
+        </form>
+      {% endif %}
+    </section>
+  {% endfor %}
+{% endblock %}

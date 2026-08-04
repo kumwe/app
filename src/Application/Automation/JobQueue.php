@@ -26,4 +26,11 @@ interface JobQueue
     public function fail(StoredJob $job, string $workerId, Throwable $failure, bool $permanent): void;
 
     public function heartbeat(string $workerId, string $queue, ?string $jobId = null): void;
+
+    /** @return list<array<string, mixed>> */
+    public function all(int $limit = 100): array;
+
+    public function retry(string $id): void;
+
+    public function cancel(string $id): void;
 }

@@ -21,4 +21,11 @@ interface ScheduleRepository
 
     /** @return list<array<string, mixed>> */
     public function all(): array;
+
+    /** @return array<string, mixed>|null */
+    public function find(string $id): ?array;
+
+    public function setEnabled(string $id, int $expectedVersion, bool $enabled): void;
+
+    public function delete(string $id, int $expectedVersion): void;
 }

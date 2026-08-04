@@ -12,6 +12,14 @@ final class ConfigurationFactory
     public function create(Environment $environment): ApplicationConfiguration
     {
         $runtime = RuntimeEnvironment::from($environment->string('APP_ENV', 'production'));
+        $databaseDriver = strtolower($environment->string('DB_DRIVER', 'mariadb'));
+        $defaultPort = $databaseDriver === 'pgsql' ? 5432 : 3306;
+        $defaultServerVersion = match ($databaseDriver) {
+            'pgsql' => '17',
+            'mysql' => '8.4',
+            'mariadb' => 'mariadb-12.3.2',
+            default => '',
+        };
 
         return new ApplicationConfiguration(
             environment: $runtime,
@@ -25,13 +33,22 @@ final class ConfigurationFactory
             release: $environment->string('KUMWE_RELEASE', '2.0.0-dev'),
             secret: $environment->string('APP_SECRET'),
             database: new DatabaseConfiguration(
+                driver: $databaseDriver,
                 host: $environment->string('DB_HOST'),
-                port: $environment->positiveInteger('DB_PORT', 5432),
+                port: $environment->positiveInteger('DB_PORT', $defaultPort),
                 database: $environment->string('DB_NAME'),
                 user: $environment->string('DB_USER'),
                 password: $environment->string('DB_PASSWORD'),
-                schema: $environment->string('DB_SCHEMA', 'kumwe'),
+                tablePrefix: $environment->string('DB_TABLE_PREFIX', 'kumwe_'),
                 sslMode: $environment->string('DB_SSLMODE', 'require'),
+                serverVersion: $environment->string('DB_SERVER_VERSION', $defaultServerVersion),
+            ),
+            redis: new RedisConfiguration(
+                host: $environment->string('REDIS_HOST', 'redis'),
+                port: $environment->positiveInteger('REDIS_PORT', 6379),
+                password: $environment->optionalString('REDIS_PASSWORD'),
+                database: $environment->nonNegativeInteger('REDIS_DATABASE', 0, 15),
+                namespace: $environment->string('REDIS_NAMESPACE', 'kumwe.cms'),
             ),
         );
     }
