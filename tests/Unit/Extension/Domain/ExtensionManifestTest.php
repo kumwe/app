@@ -21,6 +21,7 @@ final class ExtensionManifestTest extends TestCase
         self::assertSame('acme/editor', $manifest->identifier()->value());
         self::assertSame(ExtensionType::Plugin, $manifest->type());
         self::assertSame('Acme\\Editor\\Provider', $manifest->serviceProvider());
+        self::assertSame(['Acme\\Editor\\' => 'src/'], $manifest->autoload());
         self::assertCount(1, $manifest->dependencies());
         self::assertTrue($manifest->supports(
             SemanticVersion::fromString('2.4.0'),
@@ -44,6 +45,7 @@ final class ExtensionManifestTest extends TestCase
   "type": "plugin",
   "version": "1.2.3",
   "provider": "Acme\\Editor\\Provider",
+  "autoload": {"psr-4": {"Acme\\Editor\\": "src/"}},
   "requires": {"kumwe": "^2.0.0", "php": "^8.4.0"},
   "dependencies": [{"name": "acme/library", "constraint": "^1.0.0", "optional": false}]
 }
