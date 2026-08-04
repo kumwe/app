@@ -138,8 +138,7 @@ final readonly class ContentEntry
         string $slug,
         array $data,
         ?PublicationWindow $publicationWindow = null,
-    ): self
-    {
+    ): self {
         $expectedVersion->assertMatches($this->version);
 
         return new self(
