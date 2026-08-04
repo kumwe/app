@@ -371,7 +371,8 @@ final readonly class CoreSchemaMigration implements Migration
         $idempotency->addColumn('request_digest', Types::STRING, ['length' => 64, 'fixed' => true]);
         $idempotency->addColumn('state', Types::STRING, ['length' => 16, 'default' => 'in_progress']);
         $idempotency->addColumn('result_status', Types::SMALLINT, ['notnull' => false]);
-        $idempotency->addColumn('result_body', Types::JSON, ['notnull' => false]);
+        // Native JSON columns may reorder object keys; replay must retain the original response bytes.
+        $idempotency->addColumn('result_body', Types::TEXT, ['notnull' => false]);
         $idempotency->addColumn('result_headers', Types::JSON, ['notnull' => false]);
         $idempotency->addColumn('result_body_digest', Types::STRING, [
             'length' => 64,

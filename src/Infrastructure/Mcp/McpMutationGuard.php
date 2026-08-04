@@ -67,12 +67,26 @@ final readonly class McpMutationGuard
 
         try {
             $result = $mutation();
+            $encoded = json_encode($result, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
             $this->database->executeStatement(sprintf(
-                "UPDATE %s SET state = 'completed', result_status = 200, result_body = ?, completed_at = ? "
+                "UPDATE %s SET state = 'completed', result_status = 200, result_body = ?, "
+                . 'result_body_digest = ?, completed_at = ? '
                 . 'WHERE subject = ? AND operation = ? AND idempotency_key = ?',
                 $this->tables->quoted('idempotency'),
-            ), [$result, $this->clock->now(), $principal->subject(), 'mcp.' . $operation, $operationId], [
-                Types::JSON, Types::DATETIME_IMMUTABLE, Types::STRING, Types::STRING, Types::STRING,
+            ), [
+                $encoded,
+                hash('sha256', $encoded),
+                $this->clock->now(),
+                $principal->subject(),
+                'mcp.' . $operation,
+                $operationId,
+            ], [
+                Types::TEXT,
+                Types::STRING,
+                Types::DATETIME_IMMUTABLE,
+                Types::STRING,
+                Types::STRING,
+                Types::STRING,
             ]);
 
             return $result;
