@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\CMS\Infrastructure\Persistence\Migration;
 
 use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\Schema\PrimaryKeyConstraint;
 use Doctrine\DBAL\Schema\Schema;
 use Doctrine\DBAL\Schema\Table;
 use Doctrine\DBAL\Types\Types;
@@ -55,7 +56,7 @@ final readonly class CoreSchemaMigration implements Migration
     private function identity(Schema $schema): void
     {
         $users = $this->table($schema, 'users');
-        $this->id($users);
+        $this->primaryKey($users);
         $users->addColumn('email', Types::STRING, ['length' => 254]);
         $users->addColumn('email_normalized', Types::STRING, ['length' => 254]);
         $users->addColumn('display_name', Types::STRING, ['length' => 191]);
@@ -68,10 +69,10 @@ final readonly class CoreSchemaMigration implements Migration
         $credentials->addColumn('user_id', Types::GUID);
         $credentials->addColumn('password_hash', Types::TEXT);
         $credentials->addColumn('changed_at', Types::DATETIME_IMMUTABLE);
-        $credentials->setPrimaryKey(['user_id']);
+        $this->primaryKey($credentials, 'user_id');
 
         $roles = $this->table($schema, 'roles');
-        $this->id($roles);
+        $this->primaryKey($roles);
         $roles->addColumn('code', Types::STRING, ['length' => 64]);
         $roles->addColumn('name', Types::STRING, ['length' => 191]);
         $roles->addColumn('created_at', Types::DATETIME_IMMUTABLE);
@@ -82,15 +83,15 @@ final readonly class CoreSchemaMigration implements Migration
         $userRoles->addColumn('role_id', Types::GUID);
         $userRoles->addColumn('assigned_at', Types::DATETIME_IMMUTABLE);
         $userRoles->addColumn('assigned_by', Types::GUID, ['notnull' => false]);
-        $userRoles->setPrimaryKey(['user_id', 'role_id']);
+        $this->primaryKey($userRoles, 'user_id', 'role_id');
 
         $capabilities = $this->table($schema, 'capabilities');
         $capabilities->addColumn('code', Types::STRING, ['length' => 191]);
         $capabilities->addColumn('description', Types::STRING, ['length' => 500, 'default' => '']);
-        $capabilities->setPrimaryKey(['code']);
+        $this->primaryKey($capabilities, 'code');
 
         $grants = $this->table($schema, 'role_capability_grants');
-        $this->id($grants);
+        $this->primaryKey($grants);
         $grants->addColumn('role_id', Types::GUID);
         $grants->addColumn('capability_code', Types::STRING, ['length' => 191]);
         $grants->addColumn('scope_type', Types::STRING, ['length' => 63]);
@@ -100,7 +101,7 @@ final readonly class CoreSchemaMigration implements Migration
         $grants->addIndex(['role_id', 'capability_code'], 'idx_grants_lookup');
 
         $audit = $this->table($schema, 'audit_events');
-        $this->id($audit);
+        $this->primaryKey($audit);
         $audit->addColumn('occurred_at', Types::DATETIME_IMMUTABLE);
         $audit->addColumn('actor_id', Types::STRING, ['length' => 191, 'notnull' => false]);
         $audit->addColumn('action', Types::STRING, ['length' => 127]);
@@ -112,7 +113,7 @@ final readonly class CoreSchemaMigration implements Migration
         $audit->addIndex(['actor_id', 'occurred_at'], 'idx_audit_actor');
 
         $sessions = $this->table($schema, 'administrator_sessions');
-        $this->id($sessions);
+        $this->primaryKey($sessions);
         $sessions->addColumn('user_id', Types::GUID);
         $sessions->addColumn('token_digest', Types::STRING, ['length' => 64, 'fixed' => true]);
         $sessions->addColumn('csrf_token', Types::STRING, ['length' => 128]);
@@ -125,7 +126,7 @@ final readonly class CoreSchemaMigration implements Migration
         $sessions->addIndex(['expires_at'], 'idx_admin_session_expiry');
 
         $tokens = $this->table($schema, 'api_tokens');
-        $this->id($tokens);
+        $this->primaryKey($tokens);
         $tokens->addColumn('subject_id', Types::GUID);
         $tokens->addColumn('token_digest', Types::STRING, ['length' => 64, 'fixed' => true]);
         $tokens->addColumn('name', Types::STRING, ['length' => 191]);
@@ -140,7 +141,7 @@ final readonly class CoreSchemaMigration implements Migration
     private function content(Schema $schema): void
     {
         $workflows = $this->table($schema, 'workflows');
-        $this->id($workflows);
+        $this->primaryKey($workflows);
         $workflows->addColumn('handle', Types::STRING, ['length' => 100]);
         $workflows->addColumn('name', Types::STRING, ['length' => 255]);
         $workflows->addColumn('version', Types::INTEGER, ['default' => 1]);
@@ -153,17 +154,17 @@ final readonly class CoreSchemaMigration implements Migration
         $states->addColumn('name', Types::STRING, ['length' => 255]);
         $states->addColumn('is_initial', Types::BOOLEAN, ['default' => false]);
         $states->addColumn('is_public', Types::BOOLEAN, ['default' => false]);
-        $states->setPrimaryKey(['workflow_id', 'state_key']);
+        $this->primaryKey($states, 'workflow_id', 'state_key');
 
         $transitions = $this->table($schema, 'workflow_transitions');
         $transitions->addColumn('workflow_id', Types::GUID);
         $transitions->addColumn('from_state', Types::STRING, ['length' => 40]);
         $transitions->addColumn('to_state', Types::STRING, ['length' => 40]);
         $transitions->addColumn('required_capability', Types::STRING, ['length' => 191, 'notnull' => false]);
-        $transitions->setPrimaryKey(['workflow_id', 'from_state', 'to_state']);
+        $this->primaryKey($transitions, 'workflow_id', 'from_state', 'to_state');
 
         $types = $this->table($schema, 'content_types');
-        $this->id($types);
+        $this->primaryKey($types);
         $types->addColumn('workflow_id', Types::GUID);
         $types->addColumn('handle', Types::STRING, ['length' => 100]);
         $types->addColumn('name', Types::STRING, ['length' => 255]);
@@ -173,7 +174,7 @@ final readonly class CoreSchemaMigration implements Migration
         $types->addUniqueIndex(['handle'], 'uniq_content_type_handle');
 
         $entries = $this->table($schema, 'content_entries');
-        $this->id($entries);
+        $this->primaryKey($entries);
         $entries->addColumn('content_type_id', Types::GUID);
         $entries->addColumn('workflow_id', Types::GUID);
         $entries->addColumn('workflow_state_key', Types::STRING, ['length' => 40]);
@@ -189,7 +190,7 @@ final readonly class CoreSchemaMigration implements Migration
         $entries->addIndex(['workflow_state_key', 'publish_at', 'unpublish_at'], 'idx_content_publication');
 
         $revisions = $this->table($schema, 'content_revisions');
-        $this->id($revisions);
+        $this->primaryKey($revisions);
         $revisions->addColumn('content_entry_id', Types::GUID);
         $revisions->addColumn('revision_number', Types::INTEGER);
         $revisions->addColumn('snapshot', Types::JSON);
@@ -201,7 +202,7 @@ final readonly class CoreSchemaMigration implements Migration
     private function navigation(Schema $schema): void
     {
         $menus = $this->table($schema, 'navigation_menus');
-        $this->id($menus);
+        $this->primaryKey($menus);
         $menus->addColumn('handle', Types::STRING, ['length' => 100]);
         $menus->addColumn('title', Types::STRING, ['length' => 255]);
         $menus->addColumn('version', Types::INTEGER, ['default' => 1]);
@@ -209,12 +210,14 @@ final readonly class CoreSchemaMigration implements Migration
         $menus->addUniqueIndex(['handle'], 'uniq_menu_handle');
 
         $items = $this->table($schema, 'navigation_items');
-        $this->id($items);
+        $this->primaryKey($items);
         $items->addColumn('menu_id', Types::GUID);
         $items->addColumn('parent_id', Types::GUID, ['notnull' => false]);
         $items->addColumn('title', Types::STRING, ['length' => 255]);
         $items->addColumn('slug', Types::STRING, ['length' => 160]);
-        $items->addColumn('path', Types::STRING, ['length' => 2048]);
+        // Keep the composite unique index within MySQL/MariaDB's portable
+        // utf8mb4 index-width limit while still allowing deeply nested menus.
+        $items->addColumn('path', Types::STRING, ['length' => 512]);
         $items->addColumn('position', Types::INTEGER, ['default' => 0]);
         $items->addColumn('version', Types::INTEGER, ['default' => 1]);
         $this->timestamps($items);
@@ -225,7 +228,7 @@ final readonly class CoreSchemaMigration implements Migration
     private function extensions(Schema $schema): void
     {
         $extensions = $this->table($schema, 'extensions');
-        $this->id($extensions);
+        $this->primaryKey($extensions);
         $extensions->addColumn('identifier', Types::STRING, ['length' => 127]);
         $extensions->addColumn('extension_type', Types::STRING, ['length' => 32]);
         $extensions->addColumn('installed_version', Types::STRING, ['length' => 128]);
@@ -238,7 +241,7 @@ final readonly class CoreSchemaMigration implements Migration
         $extensions->addUniqueIndex(['identifier'], 'uniq_extension_identifier');
 
         $releases = $this->table($schema, 'extension_releases');
-        $this->id($releases);
+        $this->primaryKey($releases);
         $releases->addColumn('extension_id', Types::GUID);
         $releases->addColumn('version', Types::STRING, ['length' => 128]);
         $releases->addColumn('manifest', Types::JSON);
@@ -255,7 +258,7 @@ final readonly class CoreSchemaMigration implements Migration
         $dependencies->addColumn('required_identifier', Types::STRING, ['length' => 127]);
         $dependencies->addColumn('version_constraint', Types::STRING, ['length' => 255]);
         $dependencies->addColumn('optional', Types::BOOLEAN, ['default' => false]);
-        $dependencies->setPrimaryKey(['release_id', 'required_identifier']);
+        $this->primaryKey($dependencies, 'release_id', 'required_identifier');
 
         $keys = $this->table($schema, 'extension_trust_keys');
         $keys->addColumn('key_id', Types::STRING, ['length' => 127]);
@@ -264,26 +267,26 @@ final readonly class CoreSchemaMigration implements Migration
         $keys->addColumn('enabled', Types::BOOLEAN, ['default' => true]);
         $keys->addColumn('added_at', Types::DATETIME_IMMUTABLE);
         $keys->addColumn('revoked_at', Types::DATETIME_IMMUTABLE, ['notnull' => false]);
-        $keys->setPrimaryKey(['key_id']);
+        $this->primaryKey($keys, 'key_id');
 
         $generation = $this->table($schema, 'extension_runtime_generation');
         $generation->addColumn('singleton_key', Types::SMALLINT);
         $generation->addColumn('generation', Types::BIGINT, ['default' => 0]);
         $generation->addColumn('rebuilt_at', Types::DATETIME_IMMUTABLE);
-        $generation->setPrimaryKey(['singleton_key']);
+        $this->primaryKey($generation, 'singleton_key');
 
         $migrations = $this->table($schema, 'extension_migrations');
         $migrations->addColumn('extension_identifier', Types::STRING, ['length' => 127]);
         $migrations->addColumn('migration_id', Types::STRING, ['length' => 96]);
         $migrations->addColumn('extension_version', Types::STRING, ['length' => 128]);
         $migrations->addColumn('applied_at', Types::DATETIME_IMMUTABLE);
-        $migrations->setPrimaryKey(['extension_identifier', 'migration_id']);
+        $this->primaryKey($migrations, 'extension_identifier', 'migration_id');
     }
 
     private function automation(Schema $schema): void
     {
         $schedules = $this->table($schema, 'schedules');
-        $this->id($schedules);
+        $this->primaryKey($schedules);
         $schedules->addColumn('name', Types::STRING, ['length' => 160]);
         $schedules->addColumn('cron_expression', Types::STRING, ['length' => 120]);
         $schedules->addColumn('timezone', Types::STRING, ['length' => 80]);
@@ -302,7 +305,7 @@ final readonly class CoreSchemaMigration implements Migration
         $schedules->addIndex(['enabled', 'next_run_at'], 'idx_schedule_due');
 
         $jobs = $this->table($schema, 'jobs');
-        $this->id($jobs);
+        $this->primaryKey($jobs);
         $jobs->addColumn('queue', Types::STRING, ['length' => 64, 'default' => 'default']);
         $jobs->addColumn('job_type', Types::STRING, ['length' => 128]);
         $jobs->addColumn('schema_version', Types::INTEGER, ['default' => 1]);
@@ -324,7 +327,7 @@ final readonly class CoreSchemaMigration implements Migration
         $jobs->addUniqueIndex(['occurrence_key'], 'uniq_job_occurrence');
 
         $failed = $this->table($schema, 'failed_jobs');
-        $this->id($failed);
+        $this->primaryKey($failed);
         $failed->addColumn('job_id', Types::GUID);
         $failed->addColumn('queue', Types::STRING, ['length' => 64]);
         $failed->addColumn('job_type', Types::STRING, ['length' => 128]);
@@ -347,7 +350,7 @@ final readonly class CoreSchemaMigration implements Migration
         $heartbeats->addColumn('started_at', Types::DATETIME_IMMUTABLE);
         $heartbeats->addColumn('heartbeat_at', Types::DATETIME_IMMUTABLE);
         $heartbeats->addColumn('current_job_id', Types::GUID, ['notnull' => false]);
-        $heartbeats->setPrimaryKey(['worker_id']);
+        $this->primaryKey($heartbeats, 'worker_id');
     }
 
     private function runtime(Schema $schema): void
@@ -358,10 +361,10 @@ final readonly class CoreSchemaMigration implements Migration
         $settings->addColumn('version', Types::INTEGER, ['default' => 1]);
         $settings->addColumn('updated_by', Types::GUID, ['notnull' => false]);
         $settings->addColumn('updated_at', Types::DATETIME_IMMUTABLE);
-        $settings->setPrimaryKey(['setting_key']);
+        $this->primaryKey($settings, 'setting_key');
 
         $idempotency = $this->table($schema, 'idempotency');
-        $this->id($idempotency);
+        $this->primaryKey($idempotency);
         $idempotency->addColumn('idempotency_key', Types::STRING, ['length' => 128]);
         $idempotency->addColumn('subject', Types::STRING, ['length' => 255]);
         $idempotency->addColumn('operation', Types::STRING, ['length' => 160]);
@@ -616,10 +619,21 @@ final readonly class CoreSchemaMigration implements Migration
         return $schema->createTable($this->tables->raw($name));
     }
 
-    private function id(Table $table): void
+    /**
+     * @param non-empty-string $firstColumn
+     * @param non-empty-string ...$otherColumns
+     */
+    private function primaryKey(Table $table, string $firstColumn = 'id', string ...$otherColumns): void
     {
-        $table->addColumn('id', Types::GUID);
-        $table->setPrimaryKey(['id']);
+        if ($firstColumn === 'id') {
+            $table->addColumn('id', Types::GUID);
+        }
+
+        $table->addPrimaryKeyConstraint(
+            PrimaryKeyConstraint::editor()
+                ->setUnquotedColumnNames($firstColumn, ...$otherColumns)
+                ->create(),
+        );
     }
 
     private function timestamps(Table $table): void

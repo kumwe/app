@@ -27,6 +27,6 @@ final readonly class TableNames
 
     public function quoted(string $name): string
     {
-        return $this->connection->quoteIdentifier($this->raw($name));
+        return $this->connection->quoteSingleIdentifier($this->raw($name));
     }
 }

@@ -14,6 +14,8 @@ final readonly class DoctrineTransactionManager implements TransactionManager
 
     public function transactional(callable $operation): mixed
     {
-        return $this->connection->transactional($operation);
+        return $this->connection->transactional(
+            static fn (Connection $connection): mixed => $operation(),
+        );
     }
 }

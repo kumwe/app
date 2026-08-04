@@ -6,6 +6,7 @@ namespace Kumwe\CMS\Infrastructure\Persistence\Migration;
 
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
+use Doctrine\DBAL\Schema\PrimaryKeyConstraint;
 use Doctrine\DBAL\Types\Types;
 use Kumwe\CMS\Infrastructure\Persistence\TableNames;
 use RuntimeException;
@@ -69,7 +70,9 @@ final readonly class DoctrineMigrationLock implements MigrationLock
         $table->addColumn('owner_token', Types::STRING, ['length' => 64, 'fixed' => true]);
         $table->addColumn('acquired_at', Types::DATETIME_IMMUTABLE);
         $table->addColumn('expires_at', Types::DATETIME_IMMUTABLE);
-        $table->setPrimaryKey(['lock_name']);
+        $table->addPrimaryKeyConstraint(
+            PrimaryKeyConstraint::editor()->setUnquotedColumnNames('lock_name')->create(),
+        );
         $schema->createTable($table);
     }
 }

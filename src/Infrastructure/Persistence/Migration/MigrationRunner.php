@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\CMS\Infrastructure\Persistence\Migration;
 
 use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use Kumwe\CMS\Infrastructure\Persistence\TransactionManager;
 use RuntimeException;
 
@@ -49,7 +50,7 @@ final readonly class MigrationRunner
                     $this->repository->record($id, $checksum, $elapsed);
                 };
 
-                if ($this->database->getDatabasePlatform()->supportsDDLTransactions()) {
+                if ($this->database->getDatabasePlatform() instanceof PostgreSQLPlatform) {
                     $this->transactions->transactional($operation);
                 } else {
                     $operation();
