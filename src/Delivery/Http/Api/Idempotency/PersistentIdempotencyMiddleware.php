@@ -12,7 +12,7 @@ use JsonException;
 use Kumwe\CMS\Delivery\Http\Api\ProblemDetailsResponseFactory;
 use Kumwe\CMS\Identity\Application\Authentication\AuthenticatedPrincipal;
 use Kumwe\CMS\Infrastructure\Persistence\TableNames;
-use Laminas\Diactoros\Response\JsonResponse;
+use Laminas\Diactoros\Response;
 use Psr\Clock\ClockInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -103,7 +103,8 @@ final readonly class PersistentIdempotencyMiddleware implements MiddlewareInterf
         ServerRequestInterface $request,
     ): ?ResponseInterface {
         $row = $this->database->fetchAssociative(sprintf(
-            'SELECT request_digest, state, result_status, result_body, result_headers, expires_at FROM %s '
+            'SELECT request_digest, state, result_status, result_body, result_body_digest, result_headers, '
+            . 'expires_at FROM %s '
             . 'WHERE subject = ? AND operation = ? AND idempotency_key = ?',
             $this->tables->quoted('idempotency'),
         ), [$subject, $operation, $key]);
@@ -134,11 +135,20 @@ final readonly class PersistentIdempotencyMiddleware implements MiddlewareInterf
         $state = $this->requiredString($row, 'state');
 
         if ($state === 'completed') {
-            $body = $this->jsonObject($row['result_body'] ?? null);
+            $body = $this->storedString($row, 'result_body');
+            $bodyDigest = $this->requiredString($row, 'result_body_digest');
+            if (!hash_equals($bodyDigest, hash('sha256', $body))) {
+                throw new RuntimeException('The stored idempotency response body failed its integrity check.');
+            }
             $headers = $this->headers($row['result_headers'] ?? null);
             $headers['Idempotency-Replayed'] = 'true';
+            $response = (new Response())->withStatus($this->integer($row, 'result_status'));
+            foreach ($headers as $name => $value) {
+                $response = $response->withHeader($name, $value);
+            }
+            $response->getBody()->write($body);
 
-            return new JsonResponse($body, $this->integer($row, 'result_status'), $headers);
+            return $response;
         }
 
         if ($state === 'failed') {
@@ -172,13 +182,7 @@ final readonly class PersistentIdempotencyMiddleware implements MiddlewareInterf
 
     private function complete(string $subject, string $operation, string $key, ResponseInterface $response): void
     {
-        $decoded = json_decode((string) $response->getBody(), true, 64, JSON_THROW_ON_ERROR);
-
-        if (!is_array($decoded)) {
-            throw new RuntimeException('Idempotent HTTP responses must contain JSON arrays or objects.');
-        }
-
-        $body = json_encode($decoded, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+        $body = (string) $response->getBody();
         $headers = [];
 
         foreach (['Content-Type', 'Cache-Control', 'ETag', 'Location'] as $name) {
@@ -194,7 +198,7 @@ final readonly class PersistentIdempotencyMiddleware implements MiddlewareInterf
             $this->tables->quoted('idempotency'),
         ), [
             $response->getStatusCode(),
-            $decoded,
+            $body,
             hash('sha256', $body),
             $headers,
             $this->clock->now(),
@@ -202,7 +206,7 @@ final readonly class PersistentIdempotencyMiddleware implements MiddlewareInterf
             $operation,
             $key,
         ], [
-            Types::INTEGER, Types::JSON, Types::STRING, Types::JSON, Types::DATETIME_IMMUTABLE,
+            Types::INTEGER, Types::TEXT, Types::STRING, Types::JSON, Types::DATETIME_IMMUTABLE,
             Types::STRING, Types::STRING, Types::STRING,
         ]);
     }
@@ -254,6 +258,18 @@ final readonly class PersistentIdempotencyMiddleware implements MiddlewareInterf
         $value = $row[$field] ?? null;
 
         if (!is_string($value) || $value === '') {
+            throw new RuntimeException(sprintf('Idempotency field %s is invalid.', $field));
+        }
+
+        return $value;
+    }
+
+    /** @param array<string, mixed> $row */
+    private function storedString(array $row, string $field): string
+    {
+        $value = $row[$field] ?? null;
+
+        if (!is_string($value)) {
             throw new RuntimeException(sprintf('Idempotency field %s is invalid.', $field));
         }
 
