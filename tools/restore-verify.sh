@@ -30,7 +30,7 @@ case "$backup_directory" in
         ;;
 esac
 
-for required_file in checksums.sha256 database.dump manifest.json media.tar.gz; do
+for required_file in checksums.sha256 database.dump extensions.tar.gz manifest.json media.tar.gz; do
     [[ -f "${backup_directory}/${required_file}" ]] || fail "missing required file '$required_file'"
     [[ ! -L "${backup_directory}/${required_file}" ]] || fail "required file '$required_file' is a symbolic link"
 done
@@ -40,7 +40,7 @@ if find "$backup_directory" -xdev -type l -print -quit | grep -q .; then
 fi
 
 actual_checksum_files="$({ awk '{print $2}' "${backup_directory}/checksums.sha256" || true; } | sort)"
-expected_checksum_files="$(printf '%s\n' database.dump manifest.json media.tar.gz | sort)"
+expected_checksum_files="$(printf '%s\n' database.dump extensions.tar.gz manifest.json media.tar.gz | sort)"
 [[ "$actual_checksum_files" == "$expected_checksum_files" ]] \
     || fail 'checksum manifest contains an unexpected or missing path'
 
@@ -55,7 +55,7 @@ jq -e '
     and .product_major == 2
     and (.release | test("^2\\.[0-9]+\\.[0-9]+([+-][0-9A-Za-z.-]+)?$"))
     and (.database_schema | test("^[A-Za-z_][A-Za-z0-9_]{0,62}$"))
-    and .contents == ["database.dump", "media.tar.gz"]
+    and .contents == ["database.dump", "extensions.tar.gz", "media.tar.gz"]
 ' "${backup_directory}/manifest.json" >/dev/null \
     || fail 'manifest is not a supported Kumwe 2.x backup; Kumwe 1.x and unknown formats are refused'
 
@@ -96,6 +96,19 @@ fi
 if awk 'substr($1, 1, 1) !~ /^[-d]$/ { found = 1 } END { exit found ? 0 : 1 }' \
     <<< "$archive_verbose_listing"; then
     fail 'media archive contains a symbolic link or unsupported file type'
+fi
+
+if ! extension_listing="$(tar --list --gzip --file="${backup_directory}/extensions.tar.gz")"; then
+    fail 'extensions archive cannot be read'
+fi
+
+if grep -E '(^/|(^|/)\.\.(/|$))' <<< "$extension_listing" >/dev/null; then
+    fail 'extensions archive contains an absolute or parent-traversal path'
+fi
+
+if tar --list --verbose --gzip --file="${backup_directory}/extensions.tar.gz" \
+    | awk 'substr($1, 1, 1) !~ /^[-d]$/ { found = 1 } END { exit found ? 0 : 1 }'; then
+    fail 'extensions archive contains a symbolic link or unsupported file type'
 fi
 
 echo "Verified Kumwe 2.x backup: $backup_directory"
