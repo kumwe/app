@@ -82,7 +82,10 @@ final readonly class KumweMcpHandlers
         return $this->mutations->run($principal, 'content.create', $operationId, [
             'title' => $title, 'slug' => $slug, 'body' => $body,
         ], fn (): array => $this->content->create(
-            $principal->subject(), $title, $slug, ['body' => $body],
+            $principal->subject(),
+            $title,
+            $slug,
+            ['body' => $body],
         )->toArray());
     }
 
@@ -94,14 +97,18 @@ final readonly class KumweMcpHandlers
         string $title,
         string $slug,
         string $body,
-    ): array
-    {
+    ): array {
         $principal = $this->require('content.update');
 
         return $this->mutations->run($principal, 'content.update', $operationId, [
             'id' => $id, 'version' => $version, 'title' => $title, 'slug' => $slug, 'body' => $body,
         ], fn (): array => $this->content->update(
-            $principal->subject(), $id, $version, $title, $slug, ['body' => $body],
+            $principal->subject(),
+            $id,
+            $version,
+            $title,
+            $slug,
+            ['body' => $body],
         )->toArray());
     }
 
@@ -115,7 +122,10 @@ final readonly class KumweMcpHandlers
         return $this->mutations->run($principal, 'content.transition', $operationId, [
             'id' => $id, 'version' => $version, 'status' => $status,
         ], fn (): array => $this->content->transition(
-            $principal->subject(), $id, $version, $target,
+            $principal->subject(),
+            $id,
+            $version,
+            $target,
         )->toArray());
     }
 
@@ -123,16 +133,26 @@ final readonly class KumweMcpHandlers
     public function trashContent(string $operationId, string $id, int $version): array
     {
         $principal = $this->require('content.delete');
-        return $this->mutations->run($principal, 'content.trash', $operationId, compact('id', 'version'),
-            fn (): array => $this->content->trash($principal->subject(), $id, $version)->toArray());
+        return $this->mutations->run(
+            $principal,
+            'content.trash',
+            $operationId,
+            compact('id', 'version'),
+            fn (): array => $this->content->trash($principal->subject(), $id, $version)->toArray()
+        );
     }
 
     /** @return array<string, mixed> */
     public function restoreContent(string $operationId, string $id, int $version): array
     {
         $principal = $this->require('content.restore');
-        return $this->mutations->run($principal, 'content.restore', $operationId, compact('id', 'version'),
-            fn (): array => $this->content->restore($principal->subject(), $id, $version)->toArray());
+        return $this->mutations->run(
+            $principal,
+            'content.restore',
+            $operationId,
+            compact('id', 'version'),
+            fn (): array => $this->content->restore($principal->subject(), $id, $version)->toArray()
+        );
     }
 
     /** @return array{items: list<array<string, mixed>>} */
@@ -154,7 +174,9 @@ final readonly class KumweMcpHandlers
         return $this->mutations->run($principal, 'menu.create', $operationId, [
             'handle' => $handle, 'title' => $title,
         ], fn (): array => $this->navigation->createMenu(
-            $principal->subject(), $handle, $title,
+            $principal->subject(),
+            $handle,
+            $title,
         )->toArray());
     }
 
@@ -162,8 +184,10 @@ final readonly class KumweMcpHandlers
     public function listMenuItems(string $menuId): array
     {
         $this->require('navigation.manage');
-        return ['items' => array_map(static fn (MenuItemRecord $item): array => $item->toArray(),
-            $this->navigation->items($menuId))];
+        return ['items' => array_map(
+            static fn (MenuItemRecord $item): array => $item->toArray(),
+            $this->navigation->items($menuId)
+        )];
     }
 
     /** @return array<string, mixed> */
@@ -177,10 +201,20 @@ final readonly class KumweMcpHandlers
     ): array {
         $principal = $this->require('navigation.manage');
         $input = compact('menuId', 'title', 'slug', 'position', 'parentId');
-        return $this->mutations->run($principal, 'menu-item.create', $operationId, $input,
+        return $this->mutations->run(
+            $principal,
+            'menu-item.create',
+            $operationId,
+            $input,
             fn (): array => $this->navigation->createItem(
-                $principal->subject(), $menuId, $parentId === '' ? null : $parentId, $title, $slug, $position,
-            )->toArray());
+                $principal->subject(),
+                $menuId,
+                $parentId === '' ? null : $parentId,
+                $title,
+                $slug,
+                $position,
+            )->toArray()
+        );
     }
 
     /** @return array<string, mixed> */
@@ -252,22 +286,36 @@ final readonly class KumweMcpHandlers
         string $status,
     ): array {
         $principal = $this->require('users.manage');
-        return $this->mutations->run($principal, 'user.update', $operationId,
+        return $this->mutations->run(
+            $principal,
+            'user.update',
+            $operationId,
             compact('id', 'version', 'email', 'displayName', 'status'),
             function () use ($principal, $id, $version, $email, $displayName, $status): array {
                 $this->access->updateUser(
-                    $principal->subject(), $id, $email, $displayName, UserStatus::from($status), $version,
+                    $principal->subject(),
+                    $id,
+                    $email,
+                    $displayName,
+                    UserStatus::from($status),
+                    $version,
                 );
                 return ['updated' => true];
-            });
+            }
+        );
     }
 
     /** @return array{id: string} */
     public function createRole(string $operationId, string $code, string $name): array
     {
         $principal = $this->require('users.manage');
-        return $this->mutations->run($principal, 'role.create', $operationId, compact('code', 'name'),
-            fn (): array => ['id' => $this->access->createRole($principal->subject(), $code, $name)]);
+        return $this->mutations->run(
+            $principal,
+            'role.create',
+            $operationId,
+            compact('code', 'name'),
+            fn (): array => ['id' => $this->access->createRole($principal->subject(), $code, $name)]
+        );
     }
 
     /** @return array{items: list<array<string, mixed>>} */
@@ -318,19 +366,29 @@ final readonly class KumweMcpHandlers
     public function disableExtension(string $operationId, string $identifier): array
     {
         $principal = $this->require('extensions.manage');
-        return $this->mutations->run($principal, 'extension.disable', $operationId, compact('identifier'),
-            fn (): array => $this->extensions->disable($identifier, $principal->subject()));
+        return $this->mutations->run(
+            $principal,
+            'extension.disable',
+            $operationId,
+            compact('identifier'),
+            fn (): array => $this->extensions->disable($identifier, $principal->subject())
+        );
     }
 
     /** @return array{uninstalled: bool} */
     public function uninstallExtension(string $operationId, string $identifier): array
     {
         $principal = $this->require('extensions.manage');
-        return $this->mutations->run($principal, 'extension.uninstall', $operationId, compact('identifier'),
+        return $this->mutations->run(
+            $principal,
+            'extension.uninstall',
+            $operationId,
+            compact('identifier'),
             function () use ($principal, $identifier): array {
                 $this->extensions->uninstall($identifier, $principal->subject());
                 return ['uninstalled' => true];
-            });
+            }
+        );
     }
 
     /** @return array{items: list<array<string, mixed>>} */
@@ -364,7 +422,14 @@ final readonly class KumweMcpHandlers
             'name' => $name, 'cron' => $cron, 'jobType' => $jobType,
             'timezone' => $timezone, 'queue' => $queue,
         ], fn (): array => ['id' => $this->automation->createSchedule(
-            $principal->subject(), $name, $cron, $timezone, $jobType, [], $queue, $this->clock->now(),
+            $principal->subject(),
+            $name,
+            $cron,
+            $timezone,
+            $jobType,
+            [],
+            $queue,
+            $this->clock->now(),
         )]);
     }
 
@@ -376,22 +441,32 @@ final readonly class KumweMcpHandlers
         bool $enabled,
     ): array {
         $principal = $this->require('automation.manage');
-        return $this->mutations->run($principal, 'schedule.update', $operationId,
-            compact('id', 'version', 'enabled'), function () use ($principal, $id, $version, $enabled): array {
+        return $this->mutations->run(
+            $principal,
+            'schedule.update',
+            $operationId,
+            compact('id', 'version', 'enabled'),
+            function () use ($principal, $id, $version, $enabled): array {
                 $this->automation->setScheduleEnabled($principal->subject(), $id, $version, $enabled);
                 return ['updated' => true];
-            });
+            }
+        );
     }
 
     /** @return array{deleted: bool} */
     public function deleteSchedule(string $operationId, string $id, int $version): array
     {
         $principal = $this->require('automation.manage');
-        return $this->mutations->run($principal, 'schedule.delete', $operationId, compact('id', 'version'),
+        return $this->mutations->run(
+            $principal,
+            'schedule.delete',
+            $operationId,
+            compact('id', 'version'),
             function () use ($principal, $id, $version): array {
                 $this->automation->deleteSchedule($principal->subject(), $id, $version);
                 return ['deleted' => true];
-            });
+            }
+        );
     }
 
     /** @return array{updated: bool} */
@@ -410,15 +485,20 @@ final readonly class KumweMcpHandlers
     private function jobAction(string $operationId, string $id, bool $retry): array
     {
         $principal = $this->require('automation.manage');
-        return $this->mutations->run($principal, $retry ? 'job.retry' : 'job.cancel', $operationId,
-            compact('id'), function () use ($principal, $id, $retry): array {
+        return $this->mutations->run(
+            $principal,
+            $retry ? 'job.retry' : 'job.cancel',
+            $operationId,
+            compact('id'),
+            function () use ($principal, $id, $retry): array {
                 if ($retry) {
                     $this->automation->retryJob($principal->subject(), $id);
                 } else {
                     $this->automation->cancelJob($principal->subject(), $id);
                 }
                 return ['updated' => true];
-            });
+            }
+        );
     }
 
     /** @throws JsonException */

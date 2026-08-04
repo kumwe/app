@@ -66,12 +66,14 @@ final class ManagementDeliveryTest extends TestCase
         $application = $this->application();
         $factory = new ServerRequestFactory();
 
-        foreach ([
+        foreach (
+            [
             '/administrator/navigation',
             '/administrator/access',
             '/administrator/settings',
             '/administrator/automation',
-        ] as $path) {
+            ] as $path
+        ) {
             $response = $application->handle(
                 $factory->createServerRequest('GET', 'https://kumwe.test' . $path)
                     ->withHeader('Host', 'kumwe.test'),

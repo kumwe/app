@@ -113,5 +113,4 @@ final readonly class ExtensionRuntimeMapCompiler
 
         return (int) $result;
     }
-
 }

@@ -91,14 +91,16 @@ final readonly class ManageContentCommand implements Command
     private function transition(
         array $options,
         AuthenticatedPrincipal $principal,
-    ): array
-    {
+    ): array {
         $id = CommandInput::required($options, 'id');
         $target = ContentStatus::from(CommandInput::required($options, 'status'));
         $this->transitions->assertAllowed($principal, $this->content->get($id)->entry->status(), $target);
 
         return $this->content->transition(
-            $principal->subject(), $id, CommandInput::positiveInteger($options, 'version'), $target,
+            $principal->subject(),
+            $id,
+            CommandInput::positiveInteger($options, 'version'),
+            $target,
         )->toArray();
     }
 }

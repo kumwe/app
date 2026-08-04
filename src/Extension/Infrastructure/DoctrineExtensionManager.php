@@ -659,5 +659,4 @@ final readonly class DoctrineExtensionManager implements ExtensionManager
 
         return $value;
     }
-
 }

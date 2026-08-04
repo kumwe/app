@@ -87,7 +87,8 @@ final readonly class ManageNavigationCommand implements Command
     private function deleteMenu(array $options, string $actor): array
     {
         $this->navigation->deleteMenu(
-            $actor, CommandInput::required($options, 'id'),
+            $actor,
+            CommandInput::required($options, 'id'),
             CommandInput::positiveInteger($options, 'version'),
         );
         return ['deleted' => true];
@@ -97,7 +98,8 @@ final readonly class ManageNavigationCommand implements Command
     private function deleteItem(array $options, string $actor): array
     {
         $this->navigation->deleteItem(
-            $actor, CommandInput::required($options, 'id'),
+            $actor,
+            CommandInput::required($options, 'id'),
             CommandInput::positiveInteger($options, 'version'),
         );
         return ['deleted' => true];

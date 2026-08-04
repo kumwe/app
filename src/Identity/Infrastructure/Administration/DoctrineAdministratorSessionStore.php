@@ -75,7 +75,8 @@ final readonly class DoctrineAdministratorSessionStore implements AdministratorS
             $this->tables->quoted('users'),
         ), [hash('sha256', $token), $now], [Types::STRING, Types::DATETIME_IMMUTABLE]);
 
-        if ($row === false
+        if (
+            $row === false
             || !is_string($row['user_agent_digest'] ?? null)
             || !hash_equals($row['user_agent_digest'], $this->fingerprint($userAgent))
             || !is_string($row['id'] ?? null)
