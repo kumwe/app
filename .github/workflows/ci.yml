@@ -106,7 +106,7 @@ jobs:
           KUMWE_RESTORE_MEDIA_DIR: ${{ runner.temp }}/restored/media
         run: |
           sudo apt-get update
-          sudo apt-get install --yes jq postgresql-client
+          sudo apt-get install --yes jq postgresql-client-17
           install -d -m 0700 "$KUMWE_BACKUP_DIR" "$KUMWE_MEDIA_DIR" "${KUMWE_RESTORE_MEDIA_DIR%/media}"
           install -m 0600 /dev/null "${RUNNER_TEMP}/kumwe-db-password"
           printf '%s' "$DB_PASSWORD" > "${RUNNER_TEMP}/kumwe-db-password"
