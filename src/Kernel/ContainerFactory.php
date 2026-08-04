@@ -203,8 +203,7 @@ final class ContainerFactory
         Container $container,
         ApplicationConfiguration $configuration,
         string $root,
-    ): void
-    {
+    ): void {
         $container->share(ResponseFactoryInterface::class, new ResponseFactory(), true);
         $container->share(StreamFactoryInterface::class, new StreamFactory(), true);
         $container->share(RouterInterface::class, static fn (): RouterInterface =>
