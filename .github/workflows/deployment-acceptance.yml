@@ -102,7 +102,7 @@ jobs:
           )
           unzip -Z1 build/distribution/kumwe-cms.zip | grep --fixed-strings --quiet composer.json
           if unzip -Z1 build/distribution/kumwe-cms.zip \
-              | grep -E '(^|/)(\.github|tests|docker|compose\.yaml)(/|$)' >/dev/null; then
+              | grep -E '^(\.github|tests|docker)(/|$)|^compose\.yaml$' >/dev/null; then
             echo 'Distribution ZIP contains development-only paths.' >&2
             exit 1
           fi

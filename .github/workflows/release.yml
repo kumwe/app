@@ -187,9 +187,10 @@ jobs:
               echo 'Release package contains a symbolic link.' >&2
               exit 1
           fi
-          if find dist/package -type f \
-              \( -path '*/tests/*' -o -path '*/.github/*' -o -path '*/docker/*' -o -name compose.yaml \) \
-              -print -quit | grep -q .; then
+          if [ -e dist/package/.github ] \
+              || [ -e dist/package/tests ] \
+              || [ -e dist/package/docker ] \
+              || [ -e dist/package/compose.yaml ]; then
               echo 'Release package contains development-only files.' >&2
               exit 1
           fi
