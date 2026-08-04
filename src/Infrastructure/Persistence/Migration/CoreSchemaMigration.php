@@ -346,7 +346,7 @@ final readonly class CoreSchemaMigration implements Migration
         $heartbeats->addColumn('worker_id', Types::STRING, ['length' => 128]);
         $heartbeats->addColumn('queue', Types::STRING, ['length' => 64]);
         $heartbeats->addColumn('process_id', Types::INTEGER, ['notnull' => false]);
-        $heartbeats->addColumn('release', Types::STRING, ['length' => 128]);
+        $heartbeats->addColumn('application_release', Types::STRING, ['length' => 128]);
         $heartbeats->addColumn('started_at', Types::DATETIME_IMMUTABLE);
         $heartbeats->addColumn('heartbeat_at', Types::DATETIME_IMMUTABLE);
         $heartbeats->addColumn('current_job_id', Types::GUID, ['notnull' => false]);

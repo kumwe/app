@@ -52,6 +52,7 @@ final class AutomationManagementIntegrationTest extends TestCase
         $automation->deleteSchedule(self::ACTOR, $scheduleId, 2);
 
         $jobId = $queue->enqueue('system.sessions.purge', [], $now);
+        $queue->heartbeat('integration-worker', 'default');
         $job = $queue->claim('default', 'integration-worker', 60);
         self::assertNotNull($job);
         self::assertSame($jobId, $job->id);
