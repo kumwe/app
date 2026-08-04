@@ -70,8 +70,11 @@ final readonly class TrustedHostMatcher
         $host = explode(':', $host, 2)[0];
         $host = rtrim($host, '.');
 
-        if ($host === '' || filter_var($host, FILTER_VALIDATE_DOMAIN, FILTER_FLAG_HOSTNAME) === false
-            && filter_var($host, FILTER_VALIDATE_IP) === false) {
+        if (
+            $host === ''
+            || filter_var($host, FILTER_VALIDATE_DOMAIN, FILTER_FLAG_HOSTNAME) === false
+            && filter_var($host, FILTER_VALIDATE_IP) === false
+        ) {
             throw new InvalidArgumentException('The Host header is malformed.');
         }
 
@@ -88,8 +91,10 @@ final readonly class TrustedHostMatcher
 
         $candidate = str_starts_with($pattern, '*.') ? substr($pattern, 2) : $pattern;
 
-        if (filter_var($candidate, FILTER_VALIDATE_DOMAIN, FILTER_FLAG_HOSTNAME) === false
-            && filter_var($candidate, FILTER_VALIDATE_IP) === false) {
+        if (
+            filter_var($candidate, FILTER_VALIDATE_DOMAIN, FILTER_FLAG_HOSTNAME) === false
+            && filter_var($candidate, FILTER_VALIDATE_IP) === false
+        ) {
             throw new InvalidArgumentException(sprintf('Trusted host pattern "%s" is invalid.', $pattern));
         }
     }

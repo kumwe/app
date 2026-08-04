@@ -25,7 +25,7 @@ final class RetryPolicyTest extends TestCase
     public function testTransientFailureUsesDeterministicFullJitterAndClock(): void
     {
         $policy = new RetryPolicy($this->clock(), $this->jitter(7), 10, 60);
-        $failure = new class('Temporary database outage') extends RuntimeException implements TransientFailure {
+        $failure = new class ('Temporary database outage') extends RuntimeException implements TransientFailure {
         };
         $decision = $policy->decide($failure, 2, 5);
 
@@ -38,7 +38,7 @@ final class RetryPolicyTest extends TestCase
     public function testPermanentAndExhaustedFailuresAreNotRetried(): void
     {
         $policy = new RetryPolicy($this->clock(), $this->jitter(0), 10, 60);
-        $permanent = new class('Invalid content') extends RuntimeException implements PermanentFailure {
+        $permanent = new class ('Invalid content') extends RuntimeException implements PermanentFailure {
         };
 
         self::assertSame(FailureClassification::PERMANENT, $policy->classify($permanent));

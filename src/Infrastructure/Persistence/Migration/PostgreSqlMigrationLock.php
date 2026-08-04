@@ -22,7 +22,8 @@ final readonly class PostgreSqlMigrationLock implements MigrationLock
         try {
             return $operation();
         } finally {
-            $this->database->setQuery(sprintf('SELECT pg_advisory_unlock(hashtextextended(%s, 0))', $lockName))->execute();
+            $unlock = sprintf('SELECT pg_advisory_unlock(hashtextextended(%s, 0))', $lockName);
+            $this->database->setQuery($unlock)->execute();
         }
     }
 }

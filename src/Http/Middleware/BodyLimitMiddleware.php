@@ -20,11 +20,14 @@ final readonly class BodyLimitMiddleware implements MiddlewareInterface
     {
         $length = $request->getHeaderLine('Content-Length');
 
-        if ($length !== '' && (
-            filter_var($length, FILTER_VALIDATE_INT) === false
-            || (int) $length < 0
-            || (int) $length > $this->maximumBytes
-        )) {
+        if (
+            $length !== ''
+            && (
+                filter_var($length, FILTER_VALIDATE_INT) === false
+                || (int) $length < 0
+                || (int) $length > $this->maximumBytes
+            )
+        ) {
             return new JsonResponse([
                 'type' => 'about:blank',
                 'title' => 'Content Too Large',
