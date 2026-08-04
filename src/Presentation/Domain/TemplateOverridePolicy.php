@@ -28,7 +28,7 @@ final readonly class TemplateOverridePolicy
             }
         }
 
-        /** @var list<string> $allowedViews */
+        /** @var list<non-falsy-string> $allowedViews */
         if (count($allowedViews) !== count(array_unique($allowedViews))) {
             throw new InvalidArgumentException('Overrideable logical views must be unique.');
         }

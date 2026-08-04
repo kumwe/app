@@ -71,7 +71,7 @@ final readonly class BlockSchema
         /** @var array<string, BlockPropertyType> $properties */
         $this->properties = $properties;
         $this->requiredProperties = $requiredProperties;
-        /** @var list<string> $allowedChildTypes */
+        /** @var list<non-falsy-string> $allowedChildTypes */
         $this->allowedChildTypes = $allowedChildTypes;
     }
 

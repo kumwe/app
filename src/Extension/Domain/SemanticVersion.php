@@ -47,7 +47,7 @@ final readonly class SemanticVersion implements Stringable
             (int) $matches[2],
             (int) $matches[3],
             $preRelease,
-            isset($matches[5]) && $matches[5] !== '' ? $matches[5] : null,
+            $matches[5] ?? null,
         );
     }
 

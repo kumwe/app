@@ -9,8 +9,13 @@ use Stringable;
 
 final readonly class PackageChecksum implements Stringable
 {
-    private function __construct(private string $sha256)
+    /** @var non-empty-string */
+    private string $sha256;
+
+    /** @param non-empty-string $sha256 */
+    private function __construct(string $sha256)
     {
+        $this->sha256 = $sha256;
     }
 
     public static function sha256(string $hexadecimalDigest): self

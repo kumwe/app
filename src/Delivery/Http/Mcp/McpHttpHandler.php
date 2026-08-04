@@ -46,7 +46,7 @@ final readonly class McpHttpHandler implements RequestHandlerInterface
             }
         }
 
-        /** @var non-empty-list<string> $allowedHosts */
+        /** @var non-empty-list<non-empty-string> $allowedHosts */
         $this->allowedHosts = $allowedHosts;
     }
 

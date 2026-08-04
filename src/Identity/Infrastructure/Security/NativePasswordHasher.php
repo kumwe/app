@@ -6,7 +6,6 @@ namespace Kumwe\CMS\Identity\Infrastructure\Security;
 
 use InvalidArgumentException;
 use Kumwe\CMS\Identity\Application\Security\PasswordHasher;
-use RuntimeException;
 
 final readonly class NativePasswordHasher implements PasswordHasher
 {
@@ -48,10 +47,6 @@ final readonly class NativePasswordHasher implements PasswordHasher
         }
 
         $hash = password_hash($plainTextPassword, $this->algorithm, $this->options);
-
-        if ($hash === '') {
-            throw new RuntimeException('PHP was unable to hash the password.');
-        }
 
         return $hash;
     }
