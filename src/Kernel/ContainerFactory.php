@@ -145,6 +145,11 @@ final class ContainerFactory
                         $databaseConfiguration->schema,
                         $root . '/database/schema/phase3.sql',
                     ),
+                    SchemaMigration::fromFile(
+                        '20260804000400_create_content_workflow_and_navigation',
+                        $databaseConfiguration->schema,
+                        $root . '/database/schema/phase4.sql',
+                    ),
                 ],
             ), true);
         $container->share(ReadinessProbe::class, static fn (Container $container): ReadinessProbe =>
@@ -152,7 +157,7 @@ final class ContainerFactory
                 database: $container->get(DatabaseInterface::class),
                 logger: $container->get(LoggerInterface::class),
                 schema: $databaseConfiguration->schema,
-                requiredMigration: '20260804000300_create_identity_and_audit',
+                requiredMigration: '20260804000400_create_content_workflow_and_navigation',
             ), true);
     }
 
