@@ -9,17 +9,18 @@ FROM ${COMPOSER_IMAGE} AS composer
 FROM ${PHP_IMAGE} AS php-base
 
 RUN set -eux; \
-    apk add --no-cache icu-libs libpq oniguruma tzdata; \
+    apk add --no-cache icu-libs libpq libzip oniguruma tzdata; \
     apk add --no-cache --virtual .build-dependencies \
         $PHPIZE_DEPS \
         icu-dev \
+        libzip-dev \
         oniguruma-dev \
         postgresql-dev; \
-    docker-php-ext-install -j"$(getconf _NPROCESSORS_ONLN)" intl mbstring opcache pdo_pgsql pgsql; \
+    docker-php-ext-install -j"$(getconf _NPROCESSORS_ONLN)" intl mbstring opcache pdo_pgsql pgsql zip; \
     pecl install redis-6.3.0; \
     docker-php-ext-enable redis; \
     apk del .build-dependencies; \
-    php -r 'foreach (["ctype", "fileinfo", "filter", "intl", "mbstring", "openssl", "pdo", "pdo_pgsql", "pgsql", "redis", "sodium"] as $extension) { if (!extension_loaded($extension)) { fwrite(STDERR, "Missing PHP extension: {$extension}\n"); exit(1); } }'; \
+    php -r 'foreach (["ctype", "fileinfo", "filter", "intl", "mbstring", "openssl", "pdo", "pdo_pgsql", "pgsql", "redis", "sodium", "zip"] as $extension) { if (!extension_loaded($extension)) { fwrite(STDERR, "Missing PHP extension: {$extension}\n"); exit(1); } }'; \
     { \
         echo 'expose_php=Off'; \
         echo 'display_errors=Off'; \
@@ -120,7 +121,8 @@ RUN set -eux; \
         storage/logs \
         storage/media \
         storage/sessions \
-        storage/tmp
+        storage/tmp \
+        extensions
 
 FROM php-base AS runtime
 

@@ -6,23 +6,81 @@ namespace Kumwe\CMS\Kernel;
 
 use Joomla\Database\DatabaseInterface;
 use Joomla\DI\Container;
+use Joomla\Event\Dispatcher;
+use Joomla\Event\DispatcherInterface;
+use Kumwe\CMS\Application\Automation\Job\PostgreSqlJobQueue;
+use Kumwe\CMS\Application\Automation\Job\PostgreSqlScheduler;
+use Kumwe\CMS\Application\Automation\Job\PurgeAdministratorSessionsHandler;
+use Kumwe\CMS\Application\Automation\Job\RebuildExtensionMapHandler;
+use Kumwe\CMS\Application\Automation\Job\ScheduleRepository;
+use Kumwe\CMS\Application\Automation\Job\TransitionContentHandler;
+use Kumwe\CMS\Application\Automation\JobHandlerRegistry;
+use Kumwe\CMS\Application\Automation\JobQueue;
+use Kumwe\CMS\Application\Automation\Scheduler;
+use Kumwe\CMS\Application\Automation\Worker;
+use Kumwe\CMS\Administrator\Http\Handler\AdministratorContentEditorHandler;
+use Kumwe\CMS\Administrator\Http\Handler\AdministratorCreateContentHandler;
+use Kumwe\CMS\Administrator\Http\Handler\AdministratorDashboardHandler;
+use Kumwe\CMS\Administrator\Http\Handler\AdministratorExtensionActionHandler;
+use Kumwe\CMS\Administrator\Http\Handler\AdministratorExtensionsHandler;
+use Kumwe\CMS\Administrator\Http\Handler\AdministratorLoginHandler;
+use Kumwe\CMS\Administrator\Http\Handler\AdministratorLogoutHandler;
+use Kumwe\CMS\Administrator\Http\Handler\AdministratorRestoreContentHandler;
+use Kumwe\CMS\Administrator\Http\Handler\AdministratorSettingsHandler;
+use Kumwe\CMS\Administrator\Http\Handler\AdministratorTransitionContentHandler;
+use Kumwe\CMS\Administrator\Http\Handler\AdministratorTrashContentHandler;
+use Kumwe\CMS\Administrator\Http\Handler\AdministratorUpdateContentHandler;
+use Kumwe\CMS\Administrator\Http\Middleware\AdministratorCsrfMiddleware;
+use Kumwe\CMS\Administrator\Http\Middleware\AdministratorSessionMiddleware;
+use Kumwe\CMS\Administrator\Presentation\AdministratorRenderer;
+use Kumwe\CMS\Audit\Application\AuditRecorder;
+use Kumwe\CMS\Audit\Infrastructure\Persistence\PostgreSqlAuditRecorder;
+use Kumwe\CMS\Content\Application\ContentRepository;
+use Kumwe\CMS\Content\Application\ContentService;
+use Kumwe\CMS\Content\Infrastructure\Persistence\PostgreSqlContentRepository;
+use Kumwe\CMS\Extension\Application\ExtensionManager;
+use Kumwe\CMS\Extension\Application\Package\ArchiveReader;
+use Kumwe\CMS\Extension\Application\Package\PackageSafetyPolicy;
+use Kumwe\CMS\Extension\Infrastructure\Package\ZipArchiveReader;
+use Kumwe\CMS\Extension\Infrastructure\PostgreSqlExtensionManager;
+use Kumwe\CMS\Extension\Runtime\ActiveExtensionSet;
+use Kumwe\CMS\Extension\Runtime\ExtensionRuntimeLoader;
+use Kumwe\CMS\Extension\Runtime\ExtensionRuntimeMapCompiler;
+use Kumwe\CMS\Delivery\Console\Command\CreateAccessTokenCommand;
+use Kumwe\CMS\Delivery\Console\Command\CreateAdministratorCommand;
+use Kumwe\CMS\Delivery\Console\Command\CreateScheduleCommand;
+use Kumwe\CMS\Delivery\Console\Command\ActivateExtensionCommand;
+use Kumwe\CMS\Delivery\Console\Command\DisableExtensionCommand;
 use Kumwe\CMS\Delivery\Console\Command\HealthCheckCommand;
+use Kumwe\CMS\Delivery\Console\Command\InstallExtensionCommand;
+use Kumwe\CMS\Delivery\Console\Command\ListExtensionsCommand;
+use Kumwe\CMS\Delivery\Console\Command\ListSchedulesCommand;
 use Kumwe\CMS\Delivery\Console\Command\McpServeCommand;
 use Kumwe\CMS\Delivery\Console\Command\MigrateCommand;
 use Kumwe\CMS\Delivery\Console\Command\MigrationStatusCommand;
+use Kumwe\CMS\Delivery\Console\Command\QueueWorkCommand;
+use Kumwe\CMS\Delivery\Console\Command\ScheduleRunCommand;
+use Kumwe\CMS\Delivery\Console\Command\UninstallExtensionCommand;
 use Kumwe\CMS\Delivery\Console\ConsoleApplication;
 use Kumwe\CMS\Delivery\Console\Output;
 use Kumwe\CMS\Delivery\Console\StreamOutput;
 use Kumwe\CMS\Delivery\Http\Api\Idempotency\RequireIdempotencyKeyMiddleware;
+use Kumwe\CMS\Delivery\Http\Api\Idempotency\PersistentIdempotencyMiddleware;
+use Kumwe\CMS\Delivery\Http\Api\Concurrency\RequireIfMatchMiddleware;
+use Kumwe\CMS\Delivery\Http\Api\Content\ContentApiResponder;
+use Kumwe\CMS\Delivery\Http\Api\Content\ContentCollectionHandler;
+use Kumwe\CMS\Delivery\Http\Api\Content\ContentItemHandler;
+use Kumwe\CMS\Delivery\Http\Api\Content\ContentRestoreHandler;
+use Kumwe\CMS\Delivery\Http\Api\Content\ContentTransitionHandler;
 use Kumwe\CMS\Delivery\Http\Api\Plan\PlanPreviewHandler;
 use Kumwe\CMS\Delivery\Http\Api\Plan\SafePlanFactory;
 use Kumwe\CMS\Delivery\Http\Api\ProblemDetailsResponseFactory;
 use Kumwe\CMS\Delivery\Http\Mcp\McpHttpHandler;
-use Kumwe\CMS\Http\Handler\AdministratorBoundaryHandler;
 use Kumwe\CMS\Http\Handler\ApiIndexHandler;
 use Kumwe\CMS\Http\Handler\HomePageHandler;
 use Kumwe\CMS\Http\Handler\LivenessHandler;
 use Kumwe\CMS\Http\Handler\NotFoundHandler;
+use Kumwe\CMS\Http\Handler\PublishedContentHandler;
 use Kumwe\CMS\Http\Handler\ReadinessHandler;
 use Kumwe\CMS\Http\Middleware\BodyLimitMiddleware;
 use Kumwe\CMS\Http\Middleware\BearerAuthenticationMiddleware;
@@ -32,7 +90,13 @@ use Kumwe\CMS\Http\Middleware\SecurityHeadersMiddleware;
 use Kumwe\CMS\Http\Middleware\TrustedHostMiddleware;
 use Kumwe\CMS\Http\Security\TrustedHostMatcher;
 use Kumwe\CMS\Identity\Application\Authentication\AccessTokenVerifier;
+use Kumwe\CMS\Identity\Application\Administration\AdministratorIdentityGateway;
+use Kumwe\CMS\Identity\Application\Administration\AdministratorSessionStore;
+use Kumwe\CMS\Identity\Application\Security\PasswordHasher;
+use Kumwe\CMS\Identity\Infrastructure\Administration\PostgreSqlAdministratorIdentityGateway;
+use Kumwe\CMS\Identity\Infrastructure\Administration\PostgreSqlAdministratorSessionStore;
 use Kumwe\CMS\Identity\Infrastructure\Authentication\PostgreSqlAccessTokenVerifier;
+use Kumwe\CMS\Identity\Infrastructure\Security\NativePasswordHasher;
 use Kumwe\CMS\Infrastructure\Persistence\JoomlaTransactionManager;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\MigrationLock;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\MigrationRepository;
@@ -51,6 +115,9 @@ use Kumwe\CMS\Infrastructure\Time\SystemClock;
 use Kumwe\CMS\Kernel\Configuration\ApplicationConfiguration;
 use Kumwe\CMS\Kernel\Configuration\ConfigurationFactory;
 use Kumwe\CMS\Shared\Infrastructure\Configuration\Environment;
+use Kumwe\CMS\Site\Application\SiteSettings;
+use Kumwe\CMS\Site\Infrastructure\Persistence\PostgreSqlSiteSettings;
+use Kumwe\CMS\Workflow\Domain\Workflow;
 use Laminas\Diactoros\ResponseFactory;
 use Laminas\Diactoros\ServerRequestFactory;
 use Laminas\Diactoros\StreamFactory;
@@ -86,6 +153,8 @@ use Psr\Http\Message\ResponseFactoryInterface;
 use Psr\Http\Message\StreamFactoryInterface;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use Twig\Environment as TwigEnvironment;
+use Twig\Loader\FilesystemLoader;
 
 final class ContainerFactory
 {
@@ -99,6 +168,8 @@ final class ContainerFactory
         $container->alias(ContainerInterface::class, Container::class);
         $container->share(ApplicationConfiguration::class, $configuration, true);
         $container->share(ClockInterface::class, new SystemClock(), true);
+        $container->share(Dispatcher::class, new Dispatcher(), true);
+        $container->alias(DispatcherInterface::class, Dispatcher::class);
         $container->share('config', [
             'debug' => $configuration->debug,
             'router' => [
@@ -112,6 +183,7 @@ final class ContainerFactory
 
         $this->registerLogging($container, $configuration);
         $this->registerPersistence($container, $configuration, $root);
+        $this->registerExtensions($container, $configuration, $root);
         $this->registerMcp($container, $root);
         $this->registerHttp($container, $configuration, $root);
         $this->registerConsole($container);
@@ -143,6 +215,8 @@ final class ContainerFactory
             (new PostgreSqlDatabaseFactory($databaseConfiguration))->create(), true);
         $container->share(TransactionManager::class, static fn (Container $container): TransactionManager =>
             new JoomlaTransactionManager(self::service($container, DatabaseInterface::class)), true);
+        $container->share(PasswordHasher::class, new NativePasswordHasher(), true);
+        $container->share(Workflow::class, new Workflow(), true);
         $container->share(MigrationRepository::class, static fn (Container $container): MigrationRepository =>
             new PostgreSqlMigrationRepository(
                 self::service($container, DatabaseInterface::class),
@@ -155,6 +229,69 @@ final class ContainerFactory
                 self::service($container, DatabaseInterface::class),
                 $databaseConfiguration->schema,
             ), true);
+        $container->share(AdministratorIdentityGateway::class, static fn (
+            Container $container,
+        ): AdministratorIdentityGateway => new PostgreSqlAdministratorIdentityGateway(
+            self::service($container, DatabaseInterface::class),
+            $databaseConfiguration->schema,
+            self::service($container, PasswordHasher::class),
+            self::service($container, TransactionManager::class),
+            self::service($container, ClockInterface::class),
+            $configuration->secret,
+        ), true);
+        $container->share(AdministratorSessionStore::class, static fn (
+            Container $container,
+        ): AdministratorSessionStore => new PostgreSqlAdministratorSessionStore(
+            self::service($container, DatabaseInterface::class),
+            $databaseConfiguration->schema,
+            self::service($container, ClockInterface::class),
+            $configuration->secret,
+            $configuration->administratorSessionSeconds,
+        ), true);
+        $container->share(AuditRecorder::class, static fn (Container $container): AuditRecorder =>
+            new PostgreSqlAuditRecorder(
+                self::service($container, DatabaseInterface::class),
+                $databaseConfiguration->schema,
+            ), true);
+        $container->share(ContentRepository::class, static fn (Container $container): ContentRepository =>
+            new PostgreSqlContentRepository(
+                self::service($container, DatabaseInterface::class),
+                $databaseConfiguration->schema,
+            ), true);
+        $container->share(ContentService::class, static fn (Container $container): ContentService =>
+            new ContentService(
+                self::service($container, ContentRepository::class),
+                self::service($container, AuditRecorder::class),
+                self::service($container, TransactionManager::class),
+                self::service($container, ClockInterface::class),
+                self::service($container, Workflow::class),
+            ), true);
+        $container->share(SiteSettings::class, static fn (Container $container): SiteSettings =>
+            new PostgreSqlSiteSettings(
+                self::service($container, DatabaseInterface::class),
+                self::service($container, TransactionManager::class),
+                self::service($container, AuditRecorder::class),
+                self::service($container, ClockInterface::class),
+                $databaseConfiguration->schema,
+            ), true);
+        $container->share(JobQueue::class, static fn (Container $container): JobQueue =>
+            new PostgreSqlJobQueue(
+                self::service($container, DatabaseInterface::class),
+                self::service($container, TransactionManager::class),
+                self::service($container, ClockInterface::class),
+                $databaseConfiguration->schema,
+                $configuration->release,
+            ), true);
+        $container->share(PostgreSqlScheduler::class, static fn (
+            Container $container,
+        ): PostgreSqlScheduler => new PostgreSqlScheduler(
+            self::service($container, DatabaseInterface::class),
+            self::service($container, TransactionManager::class),
+            self::service($container, ClockInterface::class),
+            $databaseConfiguration->schema,
+        ), true);
+        $container->alias(Scheduler::class, PostgreSqlScheduler::class);
+        $container->alias(ScheduleRepository::class, PostgreSqlScheduler::class);
         $container->share(MigrationRunner::class, static fn (Container $container): MigrationRunner =>
             new MigrationRunner(
                 database: self::service($container, DatabaseInterface::class),
@@ -188,6 +325,11 @@ final class ContainerFactory
                         $databaseConfiguration->schema,
                         $root . '/database/schema/phase7.sql',
                     ),
+                    SchemaMigration::fromFile(
+                        '20260804000800_create_application_runtime',
+                        $databaseConfiguration->schema,
+                        $root . '/database/schema/application.sql',
+                    ),
                 ],
             ), true);
         $container->share(ReadinessProbe::class, static fn (Container $container): ReadinessProbe =>
@@ -195,7 +337,7 @@ final class ContainerFactory
                 database: self::service($container, DatabaseInterface::class),
                 logger: self::service($container, LoggerInterface::class),
                 schema: $databaseConfiguration->schema,
-                requiredMigration: '20260804000700_create_automation_platform',
+                requiredMigration: '20260804000800_create_application_runtime',
             ), true);
     }
 
@@ -206,6 +348,30 @@ final class ContainerFactory
     ): void {
         $container->share(ResponseFactoryInterface::class, new ResponseFactory(), true);
         $container->share(StreamFactoryInterface::class, new StreamFactory(), true);
+        $container->share(FilesystemLoader::class, static function (
+            Container $container,
+        ) use ($root): FilesystemLoader {
+            $loader = new FilesystemLoader();
+
+            foreach (self::service($container, ActiveExtensionSet::class)->templatePaths() as $path) {
+                $loader->addPath($path);
+            }
+
+            $loader->addPath($root . '/templates');
+
+            return $loader;
+        }, true);
+        $container->share(TwigEnvironment::class, static fn (Container $container): TwigEnvironment =>
+            new TwigEnvironment(
+                self::service($container, FilesystemLoader::class),
+                [
+                    'autoescape' => 'html',
+                    'cache' => $configuration->isProduction() ? $root . '/storage/cache/twig' : false,
+                    'strict_variables' => true,
+                ],
+            ), true);
+        $container->share(AdministratorRenderer::class, static fn (Container $container): AdministratorRenderer =>
+            new AdministratorRenderer(self::service($container, TwigEnvironment::class)), true);
         $container->share(RouterInterface::class, static fn (): RouterInterface =>
             new FastRouteRouter(null, null, [
                 'cache_enabled' => $configuration->isProduction(),
@@ -254,10 +420,44 @@ final class ContainerFactory
                 self::service($container, RouteCollectorInterface::class),
                 self::service($container, RequestHandlerRunnerInterface::class),
             );
-            $this->configureApplication($application);
+            $this->configureApplication($application, $container);
 
             return $application;
         }, true);
+    }
+
+    private function registerExtensions(
+        Container $container,
+        ApplicationConfiguration $configuration,
+        string $root,
+    ): void {
+        $mapFile = $root . '/storage/cache/extensions.json';
+        $extensionRoot = $root . '/extensions';
+        $schema = $configuration->database->schema;
+        $container->share(ArchiveReader::class, new ZipArchiveReader(), true);
+        $container->share(PackageSafetyPolicy::class, new PackageSafetyPolicy(), true);
+        $container->share(ExtensionRuntimeMapCompiler::class, static fn (
+            Container $container,
+        ): ExtensionRuntimeMapCompiler => new ExtensionRuntimeMapCompiler(
+            self::service($container, DatabaseInterface::class),
+            $schema,
+            $mapFile,
+        ), true);
+        $container->share(ExtensionManager::class, static fn (Container $container): ExtensionManager =>
+            new PostgreSqlExtensionManager(
+                self::service($container, DatabaseInterface::class),
+                $schema,
+                $extensionRoot,
+                self::service($container, ArchiveReader::class),
+                self::service($container, PackageSafetyPolicy::class),
+                self::service($container, ExtensionRuntimeMapCompiler::class),
+                self::service($container, TransactionManager::class),
+                self::service($container, AuditRecorder::class),
+                self::service($container, ClockInterface::class),
+                $configuration->allowUnsignedLocalExtensions,
+            ), true);
+        $active = (new ExtensionRuntimeLoader($mapFile, $extensionRoot))->load($container);
+        $container->share(ActiveExtensionSet::class, $active, true);
     }
 
     private function registerMiddleware(Container $container, ApplicationConfiguration $configuration): void
@@ -283,6 +483,27 @@ final class ContainerFactory
                 self::service($container, ProblemDetailsResponseFactory::class),
             );
         }, true);
+        $container->share(PersistentIdempotencyMiddleware::class, static fn (
+            Container $container,
+        ): PersistentIdempotencyMiddleware => new PersistentIdempotencyMiddleware(
+            self::service($container, DatabaseInterface::class),
+            self::service($container, ClockInterface::class),
+            self::service($container, ProblemDetailsResponseFactory::class),
+            $configuration->database->schema,
+        ), true);
+        $container->share(RequireIfMatchMiddleware::class, static function (
+            Container $container,
+        ): RequireIfMatchMiddleware {
+            return new RequireIfMatchMiddleware(
+                self::service($container, ProblemDetailsResponseFactory::class),
+            );
+        }, true);
+        $container->share(AdministratorSessionMiddleware::class, static fn (
+            Container $container,
+        ): AdministratorSessionMiddleware => new AdministratorSessionMiddleware(
+            self::service($container, AdministratorSessionStore::class),
+        ), true);
+        $container->share(AdministratorCsrfMiddleware::class, new AdministratorCsrfMiddleware(), true);
         $container->share(BearerAuthenticationMiddleware::class, static function (
             Container $container,
         ): BearerAuthenticationMiddleware {
@@ -317,10 +538,14 @@ final class ContainerFactory
 
     private function registerHandlers(Container $container): void
     {
-        $container->share(HomePageHandler::class, new HomePageHandler(), true);
+        $container->share(HomePageHandler::class, static fn (Container $container): HomePageHandler =>
+            new HomePageHandler(
+                self::service($container, ContentService::class),
+                self::service($container, SiteSettings::class),
+                self::service($container, TwigEnvironment::class),
+            ), true);
         $container->share(LivenessHandler::class, new LivenessHandler(), true);
         $container->share(ApiIndexHandler::class, new ApiIndexHandler(), true);
-        $container->share(AdministratorBoundaryHandler::class, new AdministratorBoundaryHandler(), true);
         $container->share(NotFoundHandler::class, new NotFoundHandler(), true);
         $container->share(ReadinessHandler::class, static fn (Container $container): ReadinessHandler =>
             new ReadinessHandler(self::service($container, ReadinessProbe::class)), true);
@@ -331,6 +556,110 @@ final class ContainerFactory
                 self::service($container, SafePlanFactory::class),
                 self::service($container, ProblemDetailsResponseFactory::class),
             ), true);
+        $container->share(ContentApiResponder::class, static fn (Container $container): ContentApiResponder =>
+            new ContentApiResponder(self::service($container, ProblemDetailsResponseFactory::class)), true);
+        $container->share(ContentCollectionHandler::class, static fn (
+            Container $container,
+        ): ContentCollectionHandler => new ContentCollectionHandler(
+            self::service($container, ContentService::class),
+            self::service($container, ContentApiResponder::class),
+        ), true);
+        $container->share(ContentItemHandler::class, static fn (
+            Container $container,
+        ): ContentItemHandler => new ContentItemHandler(
+            self::service($container, ContentService::class),
+            self::service($container, ContentApiResponder::class),
+        ), true);
+        $container->share(ContentTransitionHandler::class, static fn (
+            Container $container,
+        ): ContentTransitionHandler => new ContentTransitionHandler(
+            self::service($container, ContentService::class),
+            self::service($container, ContentApiResponder::class),
+        ), true);
+        $container->share(ContentRestoreHandler::class, static fn (
+            Container $container,
+        ): ContentRestoreHandler => new ContentRestoreHandler(
+            self::service($container, ContentService::class),
+            self::service($container, ContentApiResponder::class),
+        ), true);
+        $container->share(PublishedContentHandler::class, static fn (
+            Container $container,
+        ): PublishedContentHandler => new PublishedContentHandler(
+            self::service($container, ContentService::class),
+            self::service($container, TwigEnvironment::class),
+        ), true);
+        $configuration = self::service($container, ApplicationConfiguration::class);
+        $secureCookie = parse_url($configuration->baseUrl, PHP_URL_SCHEME) === 'https';
+        $container->share(AdministratorLoginHandler::class, static fn (
+            Container $container,
+        ): AdministratorLoginHandler => new AdministratorLoginHandler(
+            self::service($container, AdministratorIdentityGateway::class),
+            self::service($container, AdministratorSessionStore::class),
+            self::service($container, AdministratorRenderer::class),
+            $secureCookie,
+            $configuration->administratorSessionSeconds,
+        ), true);
+        $container->share(AdministratorLogoutHandler::class, static fn (
+            Container $container,
+        ): AdministratorLogoutHandler => new AdministratorLogoutHandler(
+            self::service($container, AdministratorSessionStore::class),
+            $secureCookie,
+        ), true);
+        $container->share(AdministratorDashboardHandler::class, static fn (
+            Container $container,
+        ): AdministratorDashboardHandler => new AdministratorDashboardHandler(
+            self::service($container, ContentService::class),
+            self::service($container, AdministratorRenderer::class),
+        ), true);
+        $container->share(AdministratorContentEditorHandler::class, static fn (
+            Container $container,
+        ): AdministratorContentEditorHandler => new AdministratorContentEditorHandler(
+            self::service($container, ContentService::class),
+            self::service($container, AdministratorRenderer::class),
+        ), true);
+        $container->share(AdministratorCreateContentHandler::class, static fn (
+            Container $container,
+        ): AdministratorCreateContentHandler => new AdministratorCreateContentHandler(
+            self::service($container, ContentService::class),
+        ), true);
+        $container->share(AdministratorUpdateContentHandler::class, static fn (
+            Container $container,
+        ): AdministratorUpdateContentHandler => new AdministratorUpdateContentHandler(
+            self::service($container, ContentService::class),
+        ), true);
+        $container->share(AdministratorTransitionContentHandler::class, static fn (
+            Container $container,
+        ): AdministratorTransitionContentHandler => new AdministratorTransitionContentHandler(
+            self::service($container, ContentService::class),
+        ), true);
+        $container->share(AdministratorTrashContentHandler::class, static fn (
+            Container $container,
+        ): AdministratorTrashContentHandler => new AdministratorTrashContentHandler(
+            self::service($container, ContentService::class),
+        ), true);
+        $container->share(AdministratorRestoreContentHandler::class, static fn (
+            Container $container,
+        ): AdministratorRestoreContentHandler => new AdministratorRestoreContentHandler(
+            self::service($container, ContentService::class),
+        ), true);
+        $container->share(AdministratorExtensionsHandler::class, static fn (
+            Container $container,
+        ): AdministratorExtensionsHandler => new AdministratorExtensionsHandler(
+            self::service($container, ExtensionManager::class),
+            self::service($container, AdministratorRenderer::class),
+            dirname(__DIR__, 2) . '/storage/tmp',
+        ), true);
+        $container->share(AdministratorExtensionActionHandler::class, static fn (
+            Container $container,
+        ): AdministratorExtensionActionHandler => new AdministratorExtensionActionHandler(
+            self::service($container, ExtensionManager::class),
+        ), true);
+        $container->share(AdministratorSettingsHandler::class, static fn (
+            Container $container,
+        ): AdministratorSettingsHandler => new AdministratorSettingsHandler(
+            self::service($container, SiteSettings::class),
+            self::service($container, AdministratorRenderer::class),
+        ), true);
         $container->share(McpHttpHandler::class, static function (
             Container $container,
         ): McpHttpHandler {
@@ -353,7 +682,7 @@ final class ContainerFactory
         }, true);
     }
 
-    private function configureApplication(Application $application): void
+    private function configureApplication(Application $application, Container $container): void
     {
         $application->pipe(RequestIdMiddleware::class);
         $application->pipe(ProblemDetailsMiddleware::class);
@@ -364,6 +693,7 @@ final class ContainerFactory
         $application->pipe(ImplicitHeadMiddleware::class);
         $application->pipe(ImplicitOptionsMiddleware::class);
         $application->pipe(MethodNotAllowedMiddleware::class);
+        $application->pipe(AdministratorSessionMiddleware::class);
         $application->pipe(BearerAuthenticationMiddleware::class);
         $application->pipe(DispatchMiddleware::class);
         $application->pipe(NotFoundHandler::class);
@@ -371,8 +701,168 @@ final class ContainerFactory
         $application->get('/', HomePageHandler::class, 'site.home');
         $application->get('/health/live', LivenessHandler::class, 'health.live');
         $application->get('/health/ready', ReadinessHandler::class, 'health.ready');
-        $application->get('/administrator', AdministratorBoundaryHandler::class, 'administrator.index');
+        $application->route(
+            '/administrator/login',
+            AdministratorLoginHandler::class,
+            ['GET', 'POST'],
+            'administrator.login',
+        );
+        $application->get('/administrator', AdministratorDashboardHandler::class, 'administrator.index');
+        $application->get(
+            '/administrator/content/new',
+            AdministratorContentEditorHandler::class,
+            'administrator.content.new',
+        );
+        $application->get(
+            '/administrator/content/{id}/edit',
+            AdministratorContentEditorHandler::class,
+            'administrator.content.edit',
+        );
+        $application->post(
+            '/administrator/content',
+            [AdministratorCsrfMiddleware::class, AdministratorCreateContentHandler::class],
+            'administrator.content.create',
+        );
+        $application->post(
+            '/administrator/content/{id}',
+            [AdministratorCsrfMiddleware::class, AdministratorUpdateContentHandler::class],
+            'administrator.content.update',
+        );
+        $application->post(
+            '/administrator/content/{id}/transition',
+            [AdministratorCsrfMiddleware::class, AdministratorTransitionContentHandler::class],
+            'administrator.content.transition',
+        );
+        $application->post(
+            '/administrator/content/{id}/trash',
+            [AdministratorCsrfMiddleware::class, AdministratorTrashContentHandler::class],
+            'administrator.content.trash',
+        );
+        $application->post(
+            '/administrator/content/{id}/restore',
+            [AdministratorCsrfMiddleware::class, AdministratorRestoreContentHandler::class],
+            'administrator.content.restore',
+        );
+        $application->post(
+            '/administrator/logout',
+            [AdministratorCsrfMiddleware::class, AdministratorLogoutHandler::class],
+            'administrator.logout',
+        );
+        $application->get(
+            '/administrator/extensions',
+            AdministratorExtensionsHandler::class,
+            'administrator.extensions',
+        );
+        $application->post(
+            '/administrator/extensions',
+            [AdministratorCsrfMiddleware::class, AdministratorExtensionsHandler::class],
+            'administrator.extensions.install',
+        );
+        $application->post(
+            '/administrator/extensions/action',
+            [AdministratorCsrfMiddleware::class, AdministratorExtensionActionHandler::class],
+            'administrator.extensions.action',
+        );
+        $application->get(
+            '/administrator/settings',
+            AdministratorSettingsHandler::class,
+            'administrator.settings',
+        );
+        $application->post(
+            '/administrator/settings',
+            [AdministratorCsrfMiddleware::class, AdministratorSettingsHandler::class],
+            'administrator.settings.update',
+        );
+        $application->get('/pages/{slug}', PublishedContentHandler::class, 'site.content.page');
         $application->get('/api/v1', ApiIndexHandler::class, 'api.v1.index');
+
+        $contentCollection = $application->get(
+            '/api/v1/content',
+            ContentCollectionHandler::class,
+            'api.v1.content.collection',
+        );
+        $contentCollection->setOptions([
+            BearerAuthenticationMiddleware::OPTION_AUTHENTICATION => 'bearer',
+            BearerAuthenticationMiddleware::OPTION_REQUIRED_CAPABILITIES => ['content.read'],
+        ]);
+        $contentCreate = $application->post(
+            '/api/v1/content',
+            [
+                RequireIdempotencyKeyMiddleware::class,
+                PersistentIdempotencyMiddleware::class,
+                ContentCollectionHandler::class,
+            ],
+            'api.v1.content.create',
+        );
+        $contentCreate->setOptions([
+            BearerAuthenticationMiddleware::OPTION_AUTHENTICATION => 'bearer',
+            BearerAuthenticationMiddleware::OPTION_REQUIRED_CAPABILITIES => ['content.create'],
+        ]);
+        $contentItem = $application->get(
+            '/api/v1/content/{id}',
+            ContentItemHandler::class,
+            'api.v1.content.read',
+        );
+        $contentItem->setOptions([
+            BearerAuthenticationMiddleware::OPTION_AUTHENTICATION => 'bearer',
+            BearerAuthenticationMiddleware::OPTION_REQUIRED_CAPABILITIES => ['content.read'],
+        ]);
+        $contentUpdate = $application->patch(
+            '/api/v1/content/{id}',
+            [
+                RequireIdempotencyKeyMiddleware::class,
+                PersistentIdempotencyMiddleware::class,
+                RequireIfMatchMiddleware::class,
+                ContentItemHandler::class,
+            ],
+            'api.v1.content.update',
+        );
+        $contentUpdate->setOptions([
+            BearerAuthenticationMiddleware::OPTION_AUTHENTICATION => 'bearer',
+            BearerAuthenticationMiddleware::OPTION_REQUIRED_CAPABILITIES => ['content.update'],
+        ]);
+        $contentDelete = $application->delete(
+            '/api/v1/content/{id}',
+            [
+                RequireIdempotencyKeyMiddleware::class,
+                PersistentIdempotencyMiddleware::class,
+                RequireIfMatchMiddleware::class,
+                ContentItemHandler::class,
+            ],
+            'api.v1.content.trash',
+        );
+        $contentDelete->setOptions([
+            BearerAuthenticationMiddleware::OPTION_AUTHENTICATION => 'bearer',
+            BearerAuthenticationMiddleware::OPTION_REQUIRED_CAPABILITIES => ['content.delete'],
+        ]);
+        $contentTransition = $application->post(
+            '/api/v1/content/{id}/transition',
+            [
+                RequireIdempotencyKeyMiddleware::class,
+                PersistentIdempotencyMiddleware::class,
+                RequireIfMatchMiddleware::class,
+                ContentTransitionHandler::class,
+            ],
+            'api.v1.content.transition',
+        );
+        $contentTransition->setOptions([
+            BearerAuthenticationMiddleware::OPTION_AUTHENTICATION => 'bearer',
+            BearerAuthenticationMiddleware::OPTION_REQUIRED_CAPABILITIES => ['content.publish'],
+        ]);
+        $contentRestore = $application->post(
+            '/api/v1/content/{id}/restore',
+            [
+                RequireIdempotencyKeyMiddleware::class,
+                PersistentIdempotencyMiddleware::class,
+                RequireIfMatchMiddleware::class,
+                ContentRestoreHandler::class,
+            ],
+            'api.v1.content.restore',
+        );
+        $contentRestore->setOptions([
+            BearerAuthenticationMiddleware::OPTION_AUTHENTICATION => 'bearer',
+            BearerAuthenticationMiddleware::OPTION_REQUIRED_CAPABILITIES => ['content.delete'],
+        ]);
 
         $planRoute = $application->post(
             '/api/v1/plans',
@@ -390,10 +880,36 @@ final class ContainerFactory
             BearerAuthenticationMiddleware::OPTION_REQUIRED_CAPABILITIES => ['content.read'],
         ]);
         $application->route('/mcp', McpHttpHandler::class, ['OPTIONS'], 'mcp.options');
+        self::service($container, ActiveExtensionSet::class)->registerRoutes($application);
     }
 
     private function registerConsole(Container $container): void
     {
+        $container->share(PurgeAdministratorSessionsHandler::class, static fn (
+            Container $container,
+        ): PurgeAdministratorSessionsHandler => new PurgeAdministratorSessionsHandler(
+            self::service($container, AdministratorSessionStore::class),
+        ), true);
+        $container->share(RebuildExtensionMapHandler::class, static fn (
+            Container $container,
+        ): RebuildExtensionMapHandler => new RebuildExtensionMapHandler(
+            self::service($container, ExtensionRuntimeMapCompiler::class),
+        ), true);
+        $container->share(TransitionContentHandler::class, static fn (
+            Container $container,
+        ): TransitionContentHandler => new TransitionContentHandler(
+            self::service($container, ContentService::class),
+        ), true);
+        $container->share(JobHandlerRegistry::class, static fn (Container $container): JobHandlerRegistry =>
+            new JobHandlerRegistry([
+                self::service($container, PurgeAdministratorSessionsHandler::class),
+                self::service($container, RebuildExtensionMapHandler::class),
+                self::service($container, TransitionContentHandler::class),
+            ]), true);
+        $container->share(Worker::class, static fn (Container $container): Worker => new Worker(
+            self::service($container, JobQueue::class),
+            self::service($container, JobHandlerRegistry::class),
+        ), true);
         $container->share(Output::class, static fn (): Output => StreamOutput::standard(), true);
         $container->share(MigrateCommand::class, static fn (Container $container): MigrateCommand =>
             new MigrateCommand(self::service($container, MigrationRunner::class)), true);
@@ -401,6 +917,53 @@ final class ContainerFactory
             new MigrationStatusCommand(self::service($container, MigrationRunner::class)), true);
         $container->share(HealthCheckCommand::class, static fn (Container $container): HealthCheckCommand =>
             new HealthCheckCommand(self::service($container, ReadinessProbe::class)), true);
+        $container->share(CreateAdministratorCommand::class, static fn (
+            Container $container,
+        ): CreateAdministratorCommand => new CreateAdministratorCommand(
+            self::service($container, AdministratorIdentityGateway::class),
+        ), true);
+        $container->share(CreateAccessTokenCommand::class, static fn (
+            Container $container,
+        ): CreateAccessTokenCommand => new CreateAccessTokenCommand(
+            self::service($container, AdministratorIdentityGateway::class),
+        ), true);
+        $container->share(ListExtensionsCommand::class, static fn (
+            Container $container,
+        ): ListExtensionsCommand => new ListExtensionsCommand(
+            self::service($container, ExtensionManager::class),
+        ), true);
+        $container->share(InstallExtensionCommand::class, static fn (
+            Container $container,
+        ): InstallExtensionCommand => new InstallExtensionCommand(
+            self::service($container, ExtensionManager::class),
+        ), true);
+        $container->share(ActivateExtensionCommand::class, static fn (
+            Container $container,
+        ): ActivateExtensionCommand => new ActivateExtensionCommand(
+            self::service($container, ExtensionManager::class),
+        ), true);
+        $container->share(DisableExtensionCommand::class, static fn (
+            Container $container,
+        ): DisableExtensionCommand => new DisableExtensionCommand(
+            self::service($container, ExtensionManager::class),
+        ), true);
+        $container->share(UninstallExtensionCommand::class, static fn (
+            Container $container,
+        ): UninstallExtensionCommand => new UninstallExtensionCommand(
+            self::service($container, ExtensionManager::class),
+        ), true);
+        $container->share(QueueWorkCommand::class, static fn (Container $container): QueueWorkCommand =>
+            new QueueWorkCommand(self::service($container, Worker::class)), true);
+        $container->share(ScheduleRunCommand::class, static fn (Container $container): ScheduleRunCommand =>
+            new ScheduleRunCommand(self::service($container, Scheduler::class)), true);
+        $container->share(CreateScheduleCommand::class, static fn (
+            Container $container,
+        ): CreateScheduleCommand => new CreateScheduleCommand(
+            self::service($container, ScheduleRepository::class),
+            self::service($container, ClockInterface::class),
+        ), true);
+        $container->share(ListSchedulesCommand::class, static fn (Container $container): ListSchedulesCommand =>
+            new ListSchedulesCommand(self::service($container, ScheduleRepository::class)), true);
         $container->share(McpServeCommand::class, static fn (Container $container): McpServeCommand =>
             new McpServeCommand(
                 self::service($container, KumweMcpServerFactory::class),
@@ -412,6 +975,17 @@ final class ContainerFactory
                 self::service($container, MigrateCommand::class),
                 self::service($container, MigrationStatusCommand::class),
                 self::service($container, HealthCheckCommand::class),
+                self::service($container, CreateAdministratorCommand::class),
+                self::service($container, CreateAccessTokenCommand::class),
+                self::service($container, ListExtensionsCommand::class),
+                self::service($container, InstallExtensionCommand::class),
+                self::service($container, ActivateExtensionCommand::class),
+                self::service($container, DisableExtensionCommand::class),
+                self::service($container, UninstallExtensionCommand::class),
+                self::service($container, QueueWorkCommand::class),
+                self::service($container, ScheduleRunCommand::class),
+                self::service($container, CreateScheduleCommand::class),
+                self::service($container, ListSchedulesCommand::class),
                 self::service($container, McpServeCommand::class),
             ], self::service($container, Output::class)), true);
     }

@@ -1,0 +1,42 @@
+{% extends "administrator/layout.twig" %}
+{% block title %}Content · Kumwe{% endblock %}
+{% block content %}
+  <div class="page-heading">
+    <div><p class="eyebrow">Website</p><h1>Content</h1></div>
+    <a class="button primary" href="/administrator/content/new">Create page</a>
+  </div>
+
+  {% if entries is empty %}
+    <section class="empty-state"><h2>Your site is ready</h2><p>Create the first page, submit it for review, then publish it.</p></section>
+  {% else %}
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Title</th><th>Status</th><th>Address</th><th>Updated</th><th><span class="sr-only">Actions</span></th></tr></thead>
+        <tbody>
+        {% for entry in entries %}
+          <tr class="{{ entry.deleted_at ? 'muted' : '' }}">
+            <td><strong>{{ entry.title }}</strong>{% if entry.deleted_at %}<span class="tag">Trashed</span>{% endif %}</td>
+            <td><span class="status status-{{ entry.status }}">{{ entry.status|capitalize }}</span></td>
+            <td>{% if entry.status == 'published' and not entry.deleted_at %}<a href="/pages/{{ entry.slug }}" target="_blank" rel="noopener">/pages/{{ entry.slug }}</a>{% else %}/pages/{{ entry.slug }}{% endif %}</td>
+            <td><time datetime="{{ entry.updated_at }}">{{ entry.updated_at|date('Y-m-d H:i') }} UTC</time></td>
+            <td class="actions">
+              {% if not entry.deleted_at %}
+                <a href="/administrator/content/{{ entry.id }}/edit">Edit</a>
+                <form action="/administrator/content/{{ entry.id }}/trash" method="post">
+                  <input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="version" value="{{ entry.version }}">
+                  <button class="link-button danger" type="submit">Trash</button>
+                </form>
+              {% else %}
+                <form action="/administrator/content/{{ entry.id }}/restore" method="post">
+                  <input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="version" value="{{ entry.version }}">
+                  <button class="link-button" type="submit">Restore</button>
+                </form>
+              {% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% endif %}
+{% endblock %}

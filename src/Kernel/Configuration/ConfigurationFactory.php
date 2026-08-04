@@ -20,6 +20,9 @@ final class ConfigurationFactory
             trustedHosts: $this->trustedHosts($environment),
             trustedProxies: $environment->commaSeparatedList('APP_TRUSTED_PROXIES'),
             maxBodyBytes: $environment->positiveInteger('APP_MAX_BODY_BYTES', 2_097_152),
+            administratorSessionSeconds: $environment->positiveInteger('APP_ADMIN_SESSION_SECONDS', 28_800),
+            allowUnsignedLocalExtensions: $environment->boolean('EXTENSIONS_ALLOW_UNSIGNED_LOCAL'),
+            release: $environment->string('KUMWE_RELEASE', '2.0.0-dev'),
             secret: $environment->string('APP_SECRET'),
             database: new DatabaseConfiguration(
                 host: $environment->string('DB_HOST'),

@@ -3,30 +3,151 @@
   "info": {
     "title": "Kumwe CMS API",
     "version": "1.0.0",
-    "description": "Public discovery, health, and non-executable plan-preview endpoints for Kumwe CMS 2.0."
+    "description": "Authenticated content management, public discovery, and health endpoints for Kumwe CMS 2.0."
   },
   "jsonSchemaDialect": "https://json-schema.org/draft/2020-12/schema",
-  "servers": [
-    {
-      "url": "/"
-    }
-  ],
+  "servers": [{"url": "/"}],
   "paths": {
     "/api/v1": {
       "get": {
         "operationId": "discoverApi",
-        "summary": "Discover the public API",
+        "summary": "Discover the API",
+        "responses": {"200": {"description": "API discovery document"}}
+      }
+    },
+    "/api/v1/content": {
+      "get": {
+        "operationId": "listContent",
+        "summary": "List content",
+        "security": [{"bearerAuth": []}],
+        "parameters": [{
+          "name": "include_deleted",
+          "in": "query",
+          "schema": {"type": "string", "enum": ["0", "1"], "default": "0"}
+        }],
         "responses": {
           "200": {
-            "description": "API discovery document",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiDiscovery"
-                }
-              }
-            }
-          }
+            "description": "Content collection",
+            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ContentCollection"}}}
+          },
+          "401": {"$ref": "#/components/responses/Unauthorized"},
+          "403": {"$ref": "#/components/responses/Forbidden"}
+        }
+      },
+      "post": {
+        "operationId": "createContent",
+        "summary": "Create a draft",
+        "security": [{"bearerAuth": []}],
+        "parameters": [{"$ref": "#/components/parameters/IdempotencyKey"}],
+        "requestBody": {
+          "required": true,
+          "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ContentCreate"}}}
+        },
+        "responses": {
+          "201": {"$ref": "#/components/responses/ContentRecord"},
+          "400": {"$ref": "#/components/responses/BadRequest"},
+          "401": {"$ref": "#/components/responses/Unauthorized"},
+          "403": {"$ref": "#/components/responses/Forbidden"},
+          "409": {"$ref": "#/components/responses/Conflict"},
+          "422": {"$ref": "#/components/responses/Unprocessable"}
+        }
+      }
+    },
+    "/api/v1/content/{id}": {
+      "parameters": [{"$ref": "#/components/parameters/ContentId"}],
+      "get": {
+        "operationId": "getContent",
+        "summary": "Read content",
+        "security": [{"bearerAuth": []}],
+        "responses": {
+          "200": {"$ref": "#/components/responses/ContentRecord"},
+          "401": {"$ref": "#/components/responses/Unauthorized"},
+          "403": {"$ref": "#/components/responses/Forbidden"},
+          "404": {"$ref": "#/components/responses/NotFound"}
+        }
+      },
+      "patch": {
+        "operationId": "updateContent",
+        "summary": "Update content",
+        "security": [{"bearerAuth": []}],
+        "parameters": [
+          {"$ref": "#/components/parameters/IdempotencyKey"},
+          {"$ref": "#/components/parameters/IfMatch"}
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ContentPatch"}}}
+        },
+        "responses": {
+          "200": {"$ref": "#/components/responses/ContentRecord"},
+          "401": {"$ref": "#/components/responses/Unauthorized"},
+          "403": {"$ref": "#/components/responses/Forbidden"},
+          "404": {"$ref": "#/components/responses/NotFound"},
+          "409": {"$ref": "#/components/responses/Conflict"},
+          "412": {"$ref": "#/components/responses/PreconditionFailed"},
+          "422": {"$ref": "#/components/responses/Unprocessable"}
+        }
+      },
+      "delete": {
+        "operationId": "trashContent",
+        "summary": "Move content to trash",
+        "security": [{"bearerAuth": []}],
+        "parameters": [
+          {"$ref": "#/components/parameters/IdempotencyKey"},
+          {"$ref": "#/components/parameters/IfMatch"}
+        ],
+        "responses": {
+          "200": {"$ref": "#/components/responses/ContentRecord"},
+          "401": {"$ref": "#/components/responses/Unauthorized"},
+          "403": {"$ref": "#/components/responses/Forbidden"},
+          "404": {"$ref": "#/components/responses/NotFound"},
+          "409": {"$ref": "#/components/responses/Conflict"},
+          "412": {"$ref": "#/components/responses/PreconditionFailed"}
+        }
+      }
+    },
+    "/api/v1/content/{id}/transition": {
+      "post": {
+        "operationId": "transitionContent",
+        "summary": "Move content through its workflow",
+        "security": [{"bearerAuth": []}],
+        "parameters": [
+          {"$ref": "#/components/parameters/ContentId"},
+          {"$ref": "#/components/parameters/IdempotencyKey"},
+          {"$ref": "#/components/parameters/IfMatch"}
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ContentTransition"}}}
+        },
+        "responses": {
+          "200": {"$ref": "#/components/responses/ContentRecord"},
+          "401": {"$ref": "#/components/responses/Unauthorized"},
+          "403": {"$ref": "#/components/responses/Forbidden"},
+          "404": {"$ref": "#/components/responses/NotFound"},
+          "409": {"$ref": "#/components/responses/Conflict"},
+          "412": {"$ref": "#/components/responses/PreconditionFailed"},
+          "422": {"$ref": "#/components/responses/Unprocessable"}
+        }
+      }
+    },
+    "/api/v1/content/{id}/restore": {
+      "post": {
+        "operationId": "restoreContent",
+        "summary": "Restore trashed content",
+        "security": [{"bearerAuth": []}],
+        "parameters": [
+          {"$ref": "#/components/parameters/ContentId"},
+          {"$ref": "#/components/parameters/IdempotencyKey"},
+          {"$ref": "#/components/parameters/IfMatch"}
+        ],
+        "responses": {
+          "200": {"$ref": "#/components/responses/ContentRecord"},
+          "401": {"$ref": "#/components/responses/Unauthorized"},
+          "403": {"$ref": "#/components/responses/Forbidden"},
+          "404": {"$ref": "#/components/responses/NotFound"},
+          "409": {"$ref": "#/components/responses/Conflict"},
+          "412": {"$ref": "#/components/responses/PreconditionFailed"}
         }
       }
     },
@@ -34,349 +155,150 @@
       "post": {
         "operationId": "previewSafePlan",
         "summary": "Create a non-executable review plan",
-        "description": "Returns a short-lived plan preview. This operation cannot apply, publish, install, or delete anything.",
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "$ref": "#/components/parameters/IdempotencyKey"
-          }
-        ],
+        "security": [{"bearerAuth": []}],
+        "parameters": [{"$ref": "#/components/parameters/IdempotencyKey"}],
         "requestBody": {
           "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/SafePlanRequest"
-              }
-            }
-          }
+          "content": {"application/json": {"schema": {"$ref": "#/components/schemas/SafePlanRequest"}}}
         },
         "responses": {
-          "200": {
-            "description": "Non-executable plan preview",
-            "headers": {
-              "ETag": {
-                "$ref": "#/components/headers/ETag"
-              }
-            },
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/SafePlan"
-                }
-              }
-            }
-          },
-          "400": {
-            "$ref": "#/components/responses/BadRequest"
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          }
+          "200": {"description": "Plan preview"},
+          "400": {"$ref": "#/components/responses/BadRequest"},
+          "401": {"$ref": "#/components/responses/Unauthorized"},
+          "403": {"$ref": "#/components/responses/Forbidden"}
         }
       }
     },
     "/health/live": {
-      "get": {
-        "operationId": "getLiveness",
-        "summary": "Check process liveness",
-        "responses": {
-          "200": {
-            "description": "The process is alive",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Liveness"
-                }
-              }
-            }
-          }
-        }
-      }
+      "get": {"operationId": "getLiveness", "responses": {"200": {"description": "Process is alive"}}}
     },
     "/health/ready": {
       "get": {
         "operationId": "getReadiness",
-        "summary": "Check application readiness",
         "responses": {
-          "200": {
-            "description": "The application and required persistence are ready",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Readiness"
-                }
-              }
-            }
-          },
-          "503": {
-            "description": "A required service is not ready",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Readiness"
-                }
-              }
-            }
-          }
+          "200": {"description": "Application is ready"},
+          "503": {"description": "A required service is unavailable"}
         }
       }
     }
   },
   "components": {
     "securitySchemes": {
-      "bearerAuth": {
-        "type": "http",
-        "scheme": "bearer",
-        "bearerFormat": "Kumwe opaque access token",
-        "description": "A hashed Kumwe API token carrying the exact content.read capability."
-      }
-    },
-    "headers": {
-      "ETag": {
-        "description": "A strong entity tag for optimistic concurrency.",
-        "schema": {
-          "type": "string",
-          "pattern": "^\\\"[^\\\"]*\\\"$"
-        }
-      }
+      "bearerAuth": {"type": "http", "scheme": "bearer", "bearerFormat": "Kumwe opaque access token"}
     },
     "parameters": {
+      "ContentId": {
+        "name": "id", "in": "path", "required": true, "schema": {"type": "string", "format": "uuid"}
+      },
       "IdempotencyKey": {
         "name": "Idempotency-Key",
         "in": "header",
         "required": true,
-        "description": "An opaque retry key containing 8 to 128 transport-safe ASCII characters.",
-        "schema": {
-          "type": "string",
-          "minLength": 8,
-          "maxLength": 128,
-          "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{7,127}$"
-        }
+        "description": "Unique retry key. A completed response is replayed for 24 hours; reuse with a different request is rejected.",
+        "schema": {"type": "string", "minLength": 8, "maxLength": 128, "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{7,127}$"}
       },
       "IfMatch": {
         "name": "If-Match",
         "in": "header",
         "required": true,
-        "description": "The current strong ETag, required by future state-changing endpoints.",
-        "schema": {
-          "type": "string",
-          "minLength": 1
-        }
+        "description": "Strong ETag returned by the latest content response.",
+        "schema": {"type": "string", "pattern": "^\\\"v[1-9][0-9]*\\\"$"}
       }
     },
     "responses": {
-      "BadRequest": {
-        "description": "The request or required idempotency header is invalid",
-        "content": {
-          "application/problem+json": {
-            "schema": {
-              "$ref": "#/components/schemas/ProblemDetails"
-            }
-          }
-        }
-      },
-      "PreconditionRequired": {
-        "description": "A required If-Match header was not supplied",
-        "content": {
-          "application/problem+json": {
-            "schema": {
-              "$ref": "#/components/schemas/ProblemDetails"
-            }
-          }
-        }
-      },
-      "Unauthorized": {
-        "description": "A valid bearer access token is required",
+      "ContentRecord": {
+        "description": "Content record",
         "headers": {
-          "WWW-Authenticate": {
-            "schema": {
-              "type": "string"
-            }
-          }
+          "ETag": {"description": "Strong version tag", "schema": {"type": "string"}},
+          "Idempotency-Replayed": {"description": "Present and true when a stored result was replayed", "schema": {"type": "string"}}
         },
-        "content": {
-          "application/problem+json": {
-            "schema": {
-              "$ref": "#/components/schemas/ProblemDetails"
-            }
-          }
-        }
+        "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Content"}}}
       },
-      "Forbidden": {
-        "description": "The token lacks the required content.read capability",
-        "content": {
-          "application/problem+json": {
-            "schema": {
-              "$ref": "#/components/schemas/ProblemDetails"
-            }
-          }
-        }
-      }
+      "BadRequest": {"description": "Malformed request", "content": {"application/problem+json": {"schema": {"$ref": "#/components/schemas/ProblemDetails"}}}},
+      "Unauthorized": {"description": "Valid bearer token required", "content": {"application/problem+json": {"schema": {"$ref": "#/components/schemas/ProblemDetails"}}}},
+      "Forbidden": {"description": "Token lacks the required capability", "content": {"application/problem+json": {"schema": {"$ref": "#/components/schemas/ProblemDetails"}}}},
+      "NotFound": {"description": "Content was not found", "content": {"application/problem+json": {"schema": {"$ref": "#/components/schemas/ProblemDetails"}}}},
+      "Conflict": {"description": "Operation is already in progress", "content": {"application/problem+json": {"schema": {"$ref": "#/components/schemas/ProblemDetails"}}}},
+      "PreconditionFailed": {"description": "ETag does not match the current version", "content": {"application/problem+json": {"schema": {"$ref": "#/components/schemas/ProblemDetails"}}}},
+      "Unprocessable": {"description": "Validation failed or retry key was reused", "content": {"application/problem+json": {"schema": {"$ref": "#/components/schemas/ProblemDetails"}}}}
     },
     "schemas": {
-      "ApiDiscovery": {
+      "Content": {
         "type": "object",
-        "required": [
-          "product",
-          "api_version",
-          "status"
-        ],
+        "required": ["id", "title", "slug", "data", "status", "version", "content_type_id", "workflow_id", "created_at", "updated_at"],
         "properties": {
-          "product": {
-            "const": "Kumwe CMS"
-          },
-          "api_version": {
-            "const": "v1"
-          },
-          "status": {
-            "const": "available"
-          }
+          "id": {"type": "string", "format": "uuid"},
+          "title": {"type": "string"},
+          "slug": {"type": "string", "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"},
+          "data": {"type": "object", "additionalProperties": true},
+          "status": {"type": "string", "enum": ["draft", "review", "published", "archived"]},
+          "publish_at": {"type": ["string", "null"], "format": "date-time"},
+          "unpublish_at": {"type": ["string", "null"], "format": "date-time"},
+          "version": {"type": "integer", "minimum": 1},
+          "content_type_id": {"type": "string", "format": "uuid"},
+          "workflow_id": {"type": "string", "format": "uuid"},
+          "created_at": {"type": "string", "format": "date-time"},
+          "updated_at": {"type": "string", "format": "date-time"},
+          "deleted_at": {"type": ["string", "null"], "format": "date-time"}
         },
         "additionalProperties": false
       },
-      "Liveness": {
+      "ContentCollection": {
         "type": "object",
-        "required": [
-          "status",
-          "product"
-        ],
+        "required": ["items"],
+        "properties": {"items": {"type": "array", "items": {"$ref": "#/components/schemas/Content"}}},
+        "additionalProperties": false
+      },
+      "ContentCreate": {
+        "type": "object",
+        "required": ["title", "slug"],
         "properties": {
-          "status": {
-            "const": "alive"
-          },
-          "product": {
-            "const": "Kumwe CMS"
-          }
+          "title": {"type": "string", "minLength": 1},
+          "slug": {"type": "string", "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"},
+          "data": {"type": "object", "additionalProperties": true},
+          "publish_at": {"type": ["string", "null"], "format": "date-time"},
+          "unpublish_at": {"type": ["string", "null"], "format": "date-time"}
+        },
+        "additionalProperties": false
+      },
+      "ContentPatch": {
+        "type": "object",
+        "minProperties": 1,
+        "properties": {
+          "title": {"type": "string", "minLength": 1},
+          "slug": {"type": "string", "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"},
+          "data": {"type": "object", "additionalProperties": true},
+          "publish_at": {"type": ["string", "null"], "format": "date-time"},
+          "unpublish_at": {"type": ["string", "null"], "format": "date-time"}
+        },
+        "additionalProperties": false
+      },
+      "ContentTransition": {
+        "type": "object",
+        "required": ["status"],
+        "properties": {"status": {"type": "string", "enum": ["draft", "review", "published", "archived"]}},
+        "additionalProperties": false
+      },
+      "SafePlanRequest": {
+        "type": "object",
+        "required": ["operation", "target"],
+        "properties": {
+          "operation": {"type": "string", "enum": ["content.review", "seo.review", "site.structure.review", "extension.compatibility.review"]},
+          "target": {"type": "string", "minLength": 1, "maxLength": 255}
         },
         "additionalProperties": false
       },
       "ProblemDetails": {
         "type": "object",
-        "required": [
-          "type",
-          "title",
-          "status",
-          "detail"
-        ],
+        "required": ["type", "title", "status", "detail"],
         "properties": {
-          "type": {
-            "type": "string",
-            "format": "uri-reference"
-          },
-          "title": {
-            "type": "string"
-          },
-          "status": {
-            "type": "integer",
-            "minimum": 400,
-            "maximum": 599
-          },
-          "detail": {
-            "type": "string"
-          },
-          "instance": {
-            "type": "string",
-            "format": "uri-reference"
-          }
+          "type": {"type": "string", "format": "uri-reference"},
+          "title": {"type": "string"},
+          "status": {"type": "integer", "minimum": 400, "maximum": 599},
+          "detail": {"type": "string"},
+          "instance": {"type": "string", "format": "uri-reference"}
         },
         "additionalProperties": true
-      },
-      "Readiness": {
-        "type": "object",
-        "required": [
-          "status"
-        ],
-        "properties": {
-          "status": {
-            "type": "string",
-            "enum": [
-              "ready",
-              "not_ready"
-            ]
-          }
-        },
-        "additionalProperties": false
-      },
-      "SafePlanRequest": {
-        "type": "object",
-        "required": [
-          "operation",
-          "target"
-        ],
-        "properties": {
-          "operation": {
-            "$ref": "#/components/schemas/SafePlanOperation"
-          },
-          "target": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 255
-          }
-        },
-        "additionalProperties": false
-      },
-      "SafePlanOperation": {
-        "type": "string",
-        "enum": [
-          "content.review",
-          "seo.review",
-          "site.structure.review",
-          "extension.compatibility.review"
-        ]
-      },
-      "SafePlan": {
-        "type": "object",
-        "required": [
-          "id",
-          "mode",
-          "operation",
-          "target",
-          "created_at",
-          "expires_at",
-          "steps",
-          "apply_supported"
-        ],
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "mode": {
-            "const": "plan_only"
-          },
-          "operation": {
-            "$ref": "#/components/schemas/SafePlanOperation"
-          },
-          "target": {
-            "type": "string"
-          },
-          "created_at": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "expires_at": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "steps": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "apply_supported": {
-            "const": false
-          }
-        },
-        "additionalProperties": false
       }
     }
   }

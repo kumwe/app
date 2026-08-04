@@ -1,0 +1,47 @@
+{% extends "administrator/layout.twig" %}
+{% block title %}{{ entry ? 'Edit ' ~ entry.title : 'Create page' }} · Kumwe{% endblock %}
+{% block content %}
+  <div class="page-heading">
+    <div><p class="eyebrow">Content editor</p><h1>{{ entry ? entry.title : 'Create page' }}</h1></div>
+    <a class="button" href="/administrator">Back to content</a>
+  </div>
+
+  <div class="editor-grid">
+    <form action="{{ entry ? '/administrator/content/' ~ entry.id : '/administrator/content' }}" method="post" class="panel stack">
+      <input type="hidden" name="_csrf" value="{{ csrf }}">
+      {% if entry %}<input type="hidden" name="version" value="{{ entry.version }}">{% endif %}
+      <label>Title
+        <input type="text" name="title" maxlength="255" value="{{ entry.title|default('') }}" required>
+      </label>
+      <label>URL slug
+        <span class="input-prefix"><span>/pages/</span><input type="text" name="slug" maxlength="160" pattern="[a-z0-9]+(-[a-z0-9]+)*" value="{{ entry.slug|default('') }}" required></span>
+      </label>
+      <label>Content data (JSON object)
+        <textarea name="data" rows="18" spellcheck="false">{{ entry.data_json|default('{\n  "body": ""\n}') }}</textarea>
+      </label>
+      <div class="two-column">
+        <label>Publish at (optional)<input type="datetime-local" name="publish_at" value="{{ entry.publication_window.starts_at|default('') ? entry.publication_window.starts_at|date('Y-m-d\\TH:i') : '' }}"></label>
+        <label>Unpublish at (optional)<input type="datetime-local" name="unpublish_at" value="{{ entry.publication_window.ends_at|default('') ? entry.publication_window.ends_at|date('Y-m-d\\TH:i') : '' }}"></label>
+      </div>
+      <button class="primary" type="submit">{{ entry ? 'Save changes' : 'Create draft' }}</button>
+    </form>
+
+    {% if entry %}
+      <aside class="panel stack">
+        <div><p class="eyebrow">Workflow</p><h2>{{ entry.status|capitalize }}</h2><p>Version {{ entry.version }}</p></div>
+        {% set targets = {
+          'draft': ['review', 'archived'],
+          'review': ['draft', 'published', 'archived'],
+          'published': ['draft', 'archived'],
+          'archived': ['draft']
+        } %}
+        {% for target in targets[entry.status] %}
+          <form action="/administrator/content/{{ entry.id }}/transition" method="post">
+            <input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="version" value="{{ entry.version }}"><input type="hidden" name="status" value="{{ target }}">
+            <button class="button full" type="submit">Move to {{ target|capitalize }}</button>
+          </form>
+        {% endfor %}
+      </aside>
+    {% endif %}
+  </div>
+{% endblock %}

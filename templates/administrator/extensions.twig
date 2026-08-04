@@ -1,0 +1,33 @@
+{% extends "administrator/layout.twig" %}
+{% block title %}Extensions · Kumwe{% endblock %}
+{% block content %}
+  <div class="page-heading"><div><p class="eyebrow">Platform</p><h1>Extensions</h1></div></div>
+  {% if error is defined %}<div class="alert" role="alert">{{ error }}</div>{% endif %}
+  <div class="editor-grid">
+    <section class="panel stack">
+      <div><p class="eyebrow">Installed</p><h2>Runtime extensions</h2></div>
+      {% if extensions is empty %}<p>No extensions are installed. Core content management remains available.</p>{% endif %}
+      {% for extension in extensions %}
+        <article>
+          <div class="page-heading"><div><strong>{{ extension.identifier }}</strong><div>{{ extension.extension_type }} · {{ extension.installed_version }} · {{ extension.status }}</div></div>
+            <form action="/administrator/extensions/action" method="post">
+              <input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="identifier" value="{{ extension.identifier }}">
+              {% if extension.status == 'active' %}<button type="submit" name="action" value="disable">Disable</button>{% else %}<button type="submit" name="action" value="activate">Activate</button>{% endif %}
+              <button class="danger" type="submit" name="action" value="uninstall">Uninstall</button>
+            </form>
+          </div>
+        </article>
+      {% endfor %}
+    </section>
+    <aside class="panel stack">
+      <div><p class="eyebrow">Install</p><h2>Upload package</h2></div>
+      <form action="/administrator/extensions" method="post" enctype="multipart/form-data" class="stack">
+        <input type="hidden" name="_csrf" value="{{ csrf }}">
+        <label>Kumwe extension ZIP<input type="file" name="package" accept=".zip,application/zip" required></label>
+        <label>Signing key ID (signed production packages)<input type="text" name="key_id"></label>
+        <label>Ed25519 signature (base64)<textarea name="signature" rows="4"></textarea></label>
+        <button class="primary" type="submit">Verify and install</button>
+      </form>
+    </aside>
+  </div>
+{% endblock %}

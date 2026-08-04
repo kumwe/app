@@ -1,0 +1,50 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Kumwe\CMS\Http\Handler;
+
+use Kumwe\CMS\Content\Application\ContentService;
+use Laminas\Diactoros\Response\HtmlResponse;
+use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\ServerRequestInterface;
+use Psr\Http\Server\RequestHandlerInterface;
+use Twig\Environment;
+
+final readonly class PublishedContentHandler implements RequestHandlerInterface
+{
+    public function __construct(private ContentService $content, private Environment $twig)
+    {
+    }
+
+    public function handle(ServerRequestInterface $request): ResponseInterface
+    {
+        $slug = $request->getAttribute('slug');
+
+        if (!is_string($slug) || $slug === '') {
+            return $this->notFound();
+        }
+
+        $record = $this->content->publishedBySlug($slug);
+
+        if ($record === null) {
+            return $this->notFound();
+        }
+
+        return new HtmlResponse(
+            $this->twig->render('site/page.twig', ['entry' => $record->toArray()]),
+            200,
+            ['Cache-Control' => 'public, max-age=60, stale-while-revalidate=300'],
+        );
+    }
+
+    private function notFound(): ResponseInterface
+    {
+        return new HtmlResponse(
+            '<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Not found</title></head>'
+            . '<body><main><h1>Page not found</h1></main></body></html>',
+            404,
+            ['Cache-Control' => 'no-store'],
+        );
+    }
+}

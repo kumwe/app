@@ -13,7 +13,13 @@ final readonly class ExtensionManifest
     /** @var list<ExtensionDependency> */
     private array $dependencies;
 
-    /** @param array<mixed> $dependencies */
+    /** @var array<string, string> */
+    private array $autoload;
+
+    /**
+     * @param array<mixed> $dependencies
+     * @param array<mixed> $autoload
+     */
     public function __construct(
         private ExtensionIdentifier $identifier,
         private ExtensionType $type,
@@ -22,6 +28,7 @@ final readonly class ExtensionManifest
         private VersionConstraint $kumweCompatibility,
         private VersionConstraint $phpCompatibility,
         array $dependencies = [],
+        array $autoload = [],
     ) {
         if (
             strlen($serviceProvider) > 255
@@ -60,6 +67,27 @@ final readonly class ExtensionManifest
 
         /** @var list<ExtensionDependency> $dependencies */
         $this->dependencies = $dependencies;
+
+        $autoloadMap = [];
+
+        foreach ($autoload as $prefix => $path) {
+            if (
+                !is_string($prefix)
+                || !is_string($path)
+                || preg_match('/^[A-Za-z_][A-Za-z0-9_]*(?:\\\\[A-Za-z_][A-Za-z0-9_]*)*\\\\$/D', $prefix) !== 1
+                || preg_match('#^(?:[A-Za-z0-9_.-]+/)*[A-Za-z0-9_.-]+/$#D', $path) !== 1
+                || str_contains($path, '..')
+            ) {
+                throw new InvalidArgumentException(
+                    'Extension PSR-4 autoload entries must use safe prefixes and paths.',
+                );
+            }
+
+            $autoloadMap[$prefix] = $path;
+        }
+
+        ksort($autoloadMap, SORT_STRING);
+        $this->autoload = $autoloadMap;
     }
 
     public static function fromJson(string $json): self
@@ -90,9 +118,14 @@ final readonly class ExtensionManifest
         $kumweConstraint = self::requiredString($requires, 'kumwe');
         $phpConstraint = self::requiredString($requires, 'php');
         $dependencyData = $data['dependencies'] ?? [];
+        $autoloadData = $data['autoload']['psr-4'] ?? [];
 
         if (!is_array($dependencyData) || !array_is_list($dependencyData)) {
             throw new InvalidArgumentException('The extension dependencies field must be a JSON array.');
+        }
+
+        if (!is_array($autoloadData) || array_is_list($autoloadData)) {
+            throw new InvalidArgumentException('The extension autoload.psr-4 field must be a JSON object.');
         }
 
         $dependencies = [];
@@ -132,6 +165,7 @@ final readonly class ExtensionManifest
             VersionConstraint::fromString($kumweConstraint),
             VersionConstraint::fromString($phpConstraint),
             $dependencies,
+            $autoloadData,
         );
     }
 
@@ -165,6 +199,12 @@ final readonly class ExtensionManifest
     public function dependencies(): array
     {
         return $this->dependencies;
+    }
+
+    /** @return array<string, string> */
+    public function autoload(): array
+    {
+        return $this->autoload;
     }
 
     /**

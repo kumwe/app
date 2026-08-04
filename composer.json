@@ -23,6 +23,7 @@
     "ext-pdo": "*",
     "ext-pdo_pgsql": "*",
     "ext-sodium": "*",
+    "ext-zip": "*",
     "joomla/archive": "^4.0",
     "joomla/database": "^4.0",
     "joomla/di": "^4.0",

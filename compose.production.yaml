@@ -13,6 +13,9 @@ x-kumwe-environment: &kumwe-environment
   APP_TRUSTED_HOSTS: ${KUMWE_TRUSTED_HOSTS:?Set KUMWE_TRUSTED_HOSTS}
   APP_TRUSTED_PROXIES: ${KUMWE_TRUSTED_PROXIES:-}
   APP_MAX_BODY_BYTES: ${KUMWE_MAX_BODY_BYTES:-8388608}
+  APP_ADMIN_SESSION_SECONDS: ${KUMWE_ADMIN_SESSION_SECONDS:-28800}
+  KUMWE_RELEASE: ${KUMWE_RELEASE:-2.0.0}
+  EXTENSIONS_ALLOW_UNSIGNED_LOCAL: 'false'
   APP_SECRET_FILE: /run/secrets/app_secret
   DB_HOST: postgres
   DB_PORT: '5432'
@@ -55,6 +58,7 @@ x-kumwe-runtime: &kumwe-runtime
     - /var/www/kumwe/storage/tmp:rw,noexec,nosuid,nodev,size=64m,mode=700,uid=82,gid=82
   volumes:
     - media-data:/var/www/kumwe/storage/media
+    - extensions-data:/var/www/kumwe/extensions
   networks:
     - backend
   restart: unless-stopped
@@ -226,6 +230,7 @@ secrets:
     file: ${KUMWE_REDIS_PASSWORD_FILE:?Set KUMWE_REDIS_PASSWORD_FILE}
 
 volumes:
+  extensions-data:
   media-data:
   postgres-data:
   redis-data:

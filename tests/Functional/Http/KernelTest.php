@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Kumwe\CMS\Tests\Functional\Http;
 
-use Kumwe\CMS\Http\Handler\AdministratorBoundaryHandler;
 use Kumwe\CMS\Http\Handler\ApiIndexHandler;
 use Kumwe\CMS\Http\Handler\HomePageHandler;
 use Kumwe\CMS\Http\Handler\LivenessHandler;
@@ -19,7 +18,6 @@ use PHPUnit\Framework\TestCase;
 #[CoversClass(HomePageHandler::class)]
 #[CoversClass(LivenessHandler::class)]
 #[CoversClass(ApiIndexHandler::class)]
-#[CoversClass(AdministratorBoundaryHandler::class)]
 final class KernelTest extends TestCase
 {
     public function testContainerReturnsOneConfiguredApplication(): void
@@ -46,7 +44,8 @@ final class KernelTest extends TestCase
         );
 
         self::assertSame(200, $live->getStatusCode());
-        self::assertSame(403, $admin->getStatusCode());
+        self::assertSame(303, $admin->getStatusCode());
+        self::assertSame('/administrator/login', $admin->getHeaderLine('Location'));
         self::assertSame(405, $unsafeApi->getStatusCode());
     }
 

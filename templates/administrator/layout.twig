@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>{% block title %}Kumwe Administrator{% endblock %}</title>
+  <link rel="stylesheet" href="/assets/administrator.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="/administrator">Kumwe</a>
+    {% if csrf is defined %}
+      <nav aria-label="Administrator">
+        <a href="/administrator">Content</a>
+        <a href="/administrator/content/new">New page</a>
+        <a href="/administrator/extensions">Extensions</a>
+        <a href="/administrator/settings">Settings</a>
+        <form action="/administrator/logout" method="post">
+          <input type="hidden" name="_csrf" value="{{ csrf }}">
+          <button class="link-button" type="submit">Sign out</button>
+        </form>
+      </nav>
+    {% endif %}
+  </header>
+  <main class="shell">
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>

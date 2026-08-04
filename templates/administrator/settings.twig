@@ -1,0 +1,13 @@
+{% extends "administrator/layout.twig" %}
+{% block title %}Site settings · Kumwe{% endblock %}
+{% block content %}
+  <div class="page-heading"><div><p class="eyebrow">Website</p><h1>Site settings</h1></div></div>
+  {% if saved %}<p class="notice" role="status">Settings saved.</p>{% endif %}
+  <form class="editor" action="/administrator/settings" method="post">
+    <input type="hidden" name="_csrf" value="{{ csrf }}">
+    <label>Site name<input name="site_name" value="{{ settings.site_name }}" maxlength="160" required></label>
+    <label>Homepage slug<input name="homepage_slug" value="{{ settings.homepage_slug }}" pattern="[a-z0-9]+(-[a-z0-9]+)*" required></label>
+    <p class="help">Publish a page with this slug; Kumwe will render it at the root address.</p>
+    <button class="button primary" type="submit">Save settings</button>
+  </form>
+{% endblock %}
