@@ -270,4 +270,27 @@ CREATE INDEX idx_kumwe_idempotency_in_progress
     ON {{schema}}.idempotency (created_at, id)
     WHERE state = 'in_progress';
 
+CREATE TABLE {{schema}}.api_tokens (
+    id uuid PRIMARY KEY,
+    subject_id uuid NOT NULL REFERENCES {{schema}}.users (id) ON DELETE CASCADE,
+    token_digest char(64) NOT NULL UNIQUE,
+    name varchar(191) NOT NULL,
+    capabilities jsonb NOT NULL DEFAULT '[]'::jsonb,
+    expires_at timestamptz,
+    revoked_at timestamptz,
+    created_at timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    last_used_at timestamptz,
+    CONSTRAINT ck_kumwe_api_tokens_digest CHECK (token_digest ~ '^[a-f0-9]{64}$'),
+    CONSTRAINT ck_kumwe_api_tokens_name CHECK (btrim(name) <> ''),
+    CONSTRAINT ck_kumwe_api_tokens_capabilities CHECK (jsonb_typeof(capabilities) = 'array'),
+    CONSTRAINT ck_kumwe_api_tokens_expiry CHECK (expires_at IS NULL OR expires_at > created_at),
+    CONSTRAINT ck_kumwe_api_tokens_revocation CHECK (revoked_at IS NULL OR revoked_at >= created_at),
+    CONSTRAINT ck_kumwe_api_tokens_last_used CHECK (last_used_at IS NULL OR last_used_at >= created_at)
+);
+
+CREATE INDEX idx_kumwe_api_tokens_subject ON {{schema}}.api_tokens (subject_id, created_at DESC);
+CREATE INDEX idx_kumwe_api_tokens_expiry
+    ON {{schema}}.api_tokens (expires_at)
+    WHERE revoked_at IS NULL AND expires_at IS NOT NULL;
+
 COMMIT;
