@@ -74,8 +74,10 @@ final readonly class ManageAccessCommand implements Command
     private function updateUser(array $options, string $actor): array
     {
         $this->access->updateUser(
-            $actor, CommandInput::required($options, 'id'),
-            CommandInput::required($options, 'email'), CommandInput::required($options, 'display-name'),
+            $actor,
+            CommandInput::required($options, 'id'),
+            CommandInput::required($options, 'email'),
+            CommandInput::required($options, 'display-name'),
             UserStatus::from(CommandInput::required($options, 'status')),
             CommandInput::positiveInteger($options, 'version'),
         );

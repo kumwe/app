@@ -271,5 +271,4 @@ final readonly class PersistentIdempotencyMiddleware implements MiddlewareInterf
 
         return (int) $value;
     }
-
 }

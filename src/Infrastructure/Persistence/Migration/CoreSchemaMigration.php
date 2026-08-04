@@ -385,16 +385,32 @@ final readonly class CoreSchemaMigration implements Migration
     private function foreignKeys(Schema $schema): void
     {
         $schema->getTable($this->tables->raw('password_credentials'))->addForeignKeyConstraint(
-            $this->tables->raw('users'), ['user_id'], ['id'], ['onDelete' => 'CASCADE'], 'fk_password_user',
+            $this->tables->raw('users'),
+            ['user_id'],
+            ['id'],
+            ['onDelete' => 'CASCADE'],
+            'fk_password_user',
         );
         $schema->getTable($this->tables->raw('user_roles'))->addForeignKeyConstraint(
-            $this->tables->raw('users'), ['user_id'], ['id'], ['onDelete' => 'CASCADE'], 'fk_user_roles_user',
+            $this->tables->raw('users'),
+            ['user_id'],
+            ['id'],
+            ['onDelete' => 'CASCADE'],
+            'fk_user_roles_user',
         );
         $schema->getTable($this->tables->raw('user_roles'))->addForeignKeyConstraint(
-            $this->tables->raw('roles'), ['role_id'], ['id'], ['onDelete' => 'CASCADE'], 'fk_user_roles_role',
+            $this->tables->raw('roles'),
+            ['role_id'],
+            ['id'],
+            ['onDelete' => 'CASCADE'],
+            'fk_user_roles_role',
         );
         $schema->getTable($this->tables->raw('role_capability_grants'))->addForeignKeyConstraint(
-            $this->tables->raw('roles'), ['role_id'], ['id'], ['onDelete' => 'CASCADE'], 'fk_grants_role',
+            $this->tables->raw('roles'),
+            ['role_id'],
+            ['id'],
+            ['onDelete' => 'CASCADE'],
+            'fk_grants_role',
         );
         $schema->getTable($this->tables->raw('role_capability_grants'))->addForeignKeyConstraint(
             $this->tables->raw('capabilities'),
@@ -404,25 +420,53 @@ final readonly class CoreSchemaMigration implements Migration
             'fk_grants_capability',
         );
         $schema->getTable($this->tables->raw('administrator_sessions'))->addForeignKeyConstraint(
-            $this->tables->raw('users'), ['user_id'], ['id'], ['onDelete' => 'CASCADE'], 'fk_session_user',
+            $this->tables->raw('users'),
+            ['user_id'],
+            ['id'],
+            ['onDelete' => 'CASCADE'],
+            'fk_session_user',
         );
         $schema->getTable($this->tables->raw('api_tokens'))->addForeignKeyConstraint(
-            $this->tables->raw('users'), ['subject_id'], ['id'], ['onDelete' => 'CASCADE'], 'fk_token_user',
+            $this->tables->raw('users'),
+            ['subject_id'],
+            ['id'],
+            ['onDelete' => 'CASCADE'],
+            'fk_token_user',
         );
         $schema->getTable($this->tables->raw('workflow_states'))->addForeignKeyConstraint(
-            $this->tables->raw('workflows'), ['workflow_id'], ['id'], ['onDelete' => 'CASCADE'], 'fk_state_workflow',
+            $this->tables->raw('workflows'),
+            ['workflow_id'],
+            ['id'],
+            ['onDelete' => 'CASCADE'],
+            'fk_state_workflow',
         );
         $schema->getTable($this->tables->raw('content_types'))->addForeignKeyConstraint(
-            $this->tables->raw('workflows'), ['workflow_id'], ['id'], [], 'fk_type_workflow',
+            $this->tables->raw('workflows'),
+            ['workflow_id'],
+            ['id'],
+            [],
+            'fk_type_workflow',
         );
         $schema->getTable($this->tables->raw('content_entries'))->addForeignKeyConstraint(
-            $this->tables->raw('content_types'), ['content_type_id'], ['id'], [], 'fk_entry_type',
+            $this->tables->raw('content_types'),
+            ['content_type_id'],
+            ['id'],
+            [],
+            'fk_entry_type',
         );
         $schema->getTable($this->tables->raw('content_revisions'))->addForeignKeyConstraint(
-            $this->tables->raw('content_entries'), ['content_entry_id'], ['id'], [], 'fk_revision_entry',
+            $this->tables->raw('content_entries'),
+            ['content_entry_id'],
+            ['id'],
+            [],
+            'fk_revision_entry',
         );
         $schema->getTable($this->tables->raw('navigation_items'))->addForeignKeyConstraint(
-            $this->tables->raw('navigation_menus'), ['menu_id'], ['id'], ['onDelete' => 'CASCADE'], 'fk_item_menu',
+            $this->tables->raw('navigation_menus'),
+            ['menu_id'],
+            ['id'],
+            ['onDelete' => 'CASCADE'],
+            'fk_item_menu',
         );
         $schema->getTable($this->tables->raw('extension_releases'))->addForeignKeyConstraint(
             $this->tables->raw('extensions'),
@@ -454,12 +498,14 @@ final readonly class CoreSchemaMigration implements Migration
             'updated_at' => $now,
         ], ['created_at' => Types::DATETIME_IMMUTABLE, 'updated_at' => Types::DATETIME_IMMUTABLE]);
 
-        foreach ([
+        foreach (
+            [
             ['draft', 'Draft', true, false],
             ['review', 'In review', false, false],
             ['published', 'Published', false, true],
             ['archived', 'Archived', false, false],
-        ] as [$key, $name, $initial, $public]) {
+            ] as [$key, $name, $initial, $public]
+        ) {
             $database->insert($this->tables->raw('workflow_states'), [
                 'workflow_id' => $workflowId,
                 'state_key' => $key,
@@ -469,7 +515,8 @@ final readonly class CoreSchemaMigration implements Migration
             ], ['is_initial' => Types::BOOLEAN, 'is_public' => Types::BOOLEAN]);
         }
 
-        foreach ([
+        foreach (
+            [
             ['draft', 'review', 'content.submit'],
             ['draft', 'archived', 'content.archive'],
             ['review', 'draft', 'content.review'],
@@ -478,7 +525,8 @@ final readonly class CoreSchemaMigration implements Migration
             ['published', 'draft', 'content.unpublish'],
             ['published', 'archived', 'content.archive'],
             ['archived', 'draft', 'content.restore'],
-        ] as [$from, $to, $capability]) {
+            ] as [$from, $to, $capability]
+        ) {
             $database->insert($this->tables->raw('workflow_transitions'), [
                 'workflow_id' => $workflowId,
                 'from_state' => $from,

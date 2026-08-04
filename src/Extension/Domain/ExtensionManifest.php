@@ -302,7 +302,8 @@ final readonly class ExtensionManifest
         }
         $result = [];
         foreach ($values as $value) {
-            if (!is_string($value)
+            if (
+                !is_string($value)
                 || preg_match('/^[A-Za-z_][A-Za-z0-9_]*(?:\\\\[A-Za-z_][A-Za-z0-9_]*)+$/D', $value) !== 1
             ) {
                 throw new InvalidArgumentException(sprintf('Extension %s contains an invalid class.', $field));
@@ -364,7 +365,8 @@ final readonly class ExtensionManifest
         }
         $result = [];
         foreach ($values as $value) {
-            if (!is_string($value)
+            if (
+                !is_string($value)
                 || preg_match('#^(?:[A-Za-z0-9_.-]+/)*[A-Za-z0-9_.-]+$#D', $value) !== 1
                 || str_contains($value, '..')
             ) {

@@ -39,7 +39,7 @@ final readonly class SiteSettingsApiHandler implements RequestHandlerInterface
             $this->settings->updateAll($principal->subject(), $body);
 
             return new JsonResponse($this->settings->current(), 200, ['Cache-Control' => 'no-store']);
-        } catch (JsonException|InvalidArgumentException $exception) {
+        } catch (JsonException | InvalidArgumentException $exception) {
             return $this->problems->create(
                 422,
                 'Unprocessable Settings',

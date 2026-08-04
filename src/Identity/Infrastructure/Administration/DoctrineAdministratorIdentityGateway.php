@@ -78,10 +78,12 @@ final readonly class DoctrineAdministratorIdentityGateway implements Administrat
         }
 
         return $this->transactions->transactional(function () use ($address, $displayName, $password): string {
-            if ((int) $this->database->fetchOne(sprintf(
-                'SELECT COUNT(*) FROM %s',
-                $this->tables->quoted('users'),
-            )) !== 0) {
+            if (
+                (int) $this->database->fetchOne(sprintf(
+                    'SELECT COUNT(*) FROM %s',
+                    $this->tables->quoted('users'),
+                )) !== 0
+            ) {
                 throw new RuntimeException('The initial administrator can only be created before any user exists.');
             }
 

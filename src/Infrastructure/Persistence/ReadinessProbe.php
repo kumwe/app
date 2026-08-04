@@ -29,9 +29,11 @@ final readonly class ReadinessProbe
                 return false;
             }
 
-            if (!$this->database->createSchemaManager()->tablesExist([
+            if (
+                !$this->database->createSchemaManager()->tablesExist([
                 $this->tables->raw('schema_migrations'),
-            ])) {
+                ])
+            ) {
                 return false;
             }
 
@@ -47,5 +49,4 @@ final readonly class ReadinessProbe
             return false;
         }
     }
-
 }

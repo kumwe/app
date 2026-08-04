@@ -521,20 +521,20 @@ final class ContainerFactory
         $container->share(DoctrineExtensionManager::class, static fn (
             Container $container,
         ): DoctrineExtensionManager => new DoctrineExtensionManager(
-                self::service($container, Connection::class),
-                self::service($container, TableNames::class),
-                $extensionRoot,
-                $root . '/public/assets/extensions',
-                self::service($container, ArchiveReader::class),
-                self::service($container, PackageSafetyPolicy::class),
-                self::service($container, ExtensionMigrationRunner::class),
-                self::service($container, ExtensionRuntimeMapCompiler::class),
-                self::service($container, TransactionManager::class),
-                self::service($container, AuditRecorder::class),
-                self::service($container, ClockInterface::class),
-                self::service($container, DispatcherInterface::class),
-                $configuration->allowUnsignedLocalExtensions,
-            ), true);
+            self::service($container, Connection::class),
+            self::service($container, TableNames::class),
+            $extensionRoot,
+            $root . '/public/assets/extensions',
+            self::service($container, ArchiveReader::class),
+            self::service($container, PackageSafetyPolicy::class),
+            self::service($container, ExtensionMigrationRunner::class),
+            self::service($container, ExtensionRuntimeMapCompiler::class),
+            self::service($container, TransactionManager::class),
+            self::service($container, AuditRecorder::class),
+            self::service($container, ClockInterface::class),
+            self::service($container, DispatcherInterface::class),
+            $configuration->allowUnsignedLocalExtensions,
+        ), true);
         $container->share(ExtensionManager::class, static fn (Container $container): ExtensionManager =>
             new RedisLockedExtensionManager(
                 self::service($container, DoctrineExtensionManager::class),
@@ -1143,11 +1143,13 @@ final class ContainerFactory
             'api.v1.menu-items.delete',
         ), 'navigation.manage');
 
-        foreach ([
+        foreach (
+            [
             ['GET', '/api/v1/users', 'api.v1.users.list'],
             ['GET', '/api/v1/roles', 'api.v1.roles.list'],
             ['GET', '/api/v1/tokens', 'api.v1.tokens.list'],
-        ] as [$method, $path, $name]) {
+            ] as [$method, $path, $name]
+        ) {
             self::apiRoute(
                 $application->route($path, AccessControlApiHandler::class, [$method], $name),
                 'users.manage',
@@ -1173,11 +1175,13 @@ final class ContainerFactory
             ExtensionApiHandler::class,
             'api.v1.extensions.list',
         ), 'extensions.manage');
-        foreach ([
+        foreach (
+            [
             ['POST', '/api/v1/extensions/{vendor}/{name}/activate', 'api.v1.extensions.activate'],
             ['POST', '/api/v1/extensions/{vendor}/{name}/disable', 'api.v1.extensions.disable'],
             ['DELETE', '/api/v1/extensions/{vendor}/{name}', 'api.v1.extensions.uninstall'],
-        ] as [$method, $path, $name]) {
+            ] as [$method, $path, $name]
+        ) {
             self::apiRoute($application->route(
                 $path,
                 [
@@ -1189,7 +1193,8 @@ final class ContainerFactory
                 $name,
             ), 'extensions.manage');
         }
-        foreach ([
+        foreach (
+            [
             ['POST', '/api/v1/users', 'api.v1.users.create'],
             ['PATCH', '/api/v1/users/{id}', 'api.v1.users.update'],
             ['POST', '/api/v1/roles', 'api.v1.roles.create'],
@@ -1199,7 +1204,8 @@ final class ContainerFactory
             ['DELETE', '/api/v1/grants/{grantId}', 'api.v1.role-grants.revoke'],
             ['POST', '/api/v1/tokens', 'api.v1.tokens.create'],
             ['DELETE', '/api/v1/tokens/{tokenId}', 'api.v1.tokens.revoke'],
-        ] as [$method, $path, $name]) {
+            ] as [$method, $path, $name]
+        ) {
             self::apiRoute($application->route(
                 $path,
                 [
@@ -1231,10 +1237,12 @@ final class ContainerFactory
             AutomationApiHandler::class,
             'api.v1.schedules.read',
         ), 'automation.manage');
-        foreach ([
+        foreach (
+            [
             ['PATCH', 'api.v1.schedules.update'],
             ['DELETE', 'api.v1.schedules.delete'],
-        ] as [$method, $name]) {
+            ] as [$method, $name]
+        ) {
             self::apiRoute($application->route(
                 '/api/v1/schedules/{id}',
                 [
@@ -1252,10 +1260,12 @@ final class ContainerFactory
             AutomationApiHandler::class,
             'api.v1.jobs.list',
         ), 'automation.manage');
-        foreach ([
+        foreach (
+            [
             ['/api/v1/jobs/{id}/retry', 'api.v1.jobs.retry'],
             ['/api/v1/jobs/{id}/cancel', 'api.v1.jobs.cancel'],
-        ] as [$path, $name]) {
+            ] as [$path, $name]
+        ) {
             self::apiRoute($application->post(
                 $path,
                 [

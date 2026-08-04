@@ -248,11 +248,13 @@ final readonly class AutomationApiHandler implements RequestHandlerInterface
 
     private function firstRun(string $value): DateTimeImmutable
     {
-        if (preg_match(
-            '/^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}'
-            . '(?:\.[0-9]+)?(?:Z|[+-][0-9]{2}:[0-9]{2})$/D',
-            $value,
-        ) !== 1) {
+        if (
+            preg_match(
+                '/^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}'
+                . '(?:\.[0-9]+)?(?:Z|[+-][0-9]{2}:[0-9]{2})$/D',
+                $value,
+            ) !== 1
+        ) {
             throw new InvalidArgumentException('The first_run field must be an RFC 3339 date-time.');
         }
 

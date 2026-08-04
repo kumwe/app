@@ -18,8 +18,7 @@ final readonly class AdministratorTransitionContentHandler implements RequestHan
     public function __construct(
         private ContentService $content,
         private ContentTransitionAuthorizer $authorization,
-    )
-    {
+    ) {
     }
 
     public function handle(ServerRequestInterface $request): ResponseInterface
