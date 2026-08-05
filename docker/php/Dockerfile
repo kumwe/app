@@ -41,6 +41,9 @@ RUN set -eux; \
         echo 'opcache.jit=disable'; \
     } > /usr/local/etc/php/conf.d/zz-kumwe-production.ini; \
     { \
+        echo '[global]'; \
+        echo 'error_log = /var/www/kumwe/storage/logs/php-fpm.log'; \
+        echo ''; \
         echo '[www]'; \
         echo 'clear_env = no'; \
         echo 'catch_workers_output = yes'; \
