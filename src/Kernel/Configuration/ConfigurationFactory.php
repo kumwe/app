@@ -85,7 +85,7 @@ final class ConfigurationFactory
         /** @var array<string, string> $keys */
         $keys = [];
         foreach (get_object_vars($decoded) as $keyId => $key) {
-            if (!is_string($key)) {
+            if (!is_string($keyId) || !is_string($key)) {
                 throw new InvalidArgumentException('Previous runtime signing keys must map IDs to secrets.');
             }
             $keys[$keyId] = $key;
