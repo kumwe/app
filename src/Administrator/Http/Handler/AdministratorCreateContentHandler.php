@@ -20,13 +20,17 @@ final readonly class AdministratorCreateContentHandler implements RequestHandler
     public function handle(ServerRequestInterface $request): ResponseInterface
     {
         $form = AdministratorRequest::form($request);
+        $contentType = $form['content_type'] ?? ContentService::CORE_PAGE_TYPE_ID;
+        if (!is_string($contentType) || trim($contentType) === '') {
+            $contentType = ContentService::CORE_PAGE_TYPE_ID;
+        }
         $entry = $this->content->create(
             AdministratorRequest::context($request),
             AdministratorRequest::required($form, 'title'),
             AdministratorRequest::required($form, 'slug'),
             AdministratorRequest::contentData($form),
             AdministratorRequest::publicationWindow($form),
-            AdministratorRequest::required($form, 'content_type'),
+            $contentType,
         );
 
         return new RedirectResponse('/administrator/content/' . $entry->entry->id() . '/edit', 303);

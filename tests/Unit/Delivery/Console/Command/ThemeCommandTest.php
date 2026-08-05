@@ -11,9 +11,9 @@ use Kumwe\CMS\Delivery\Console\Command\RecoverAdministratorThemeCommand;
 use Kumwe\CMS\Delivery\Console\Output;
 use Kumwe\CMS\Extension\Application\ExtensionManager;
 use Kumwe\CMS\Identity\Application\Authentication\AccessTokenVerifier;
-use Kumwe\CMS\Identity\Application\Authentication\AuthenticatedPrincipal;
 use Kumwe\CMS\Presentation\Application\AdministratorThemeRecovery;
 use Kumwe\CMS\Presentation\ThemeSurface;
+use Kumwe\CMS\Tests\Support\AuthorizationContext;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 
@@ -85,9 +85,9 @@ final class ThemeCommandTest extends TestCase
     private function command(ExtensionManager $extensions): ActivateExtensionCommand
     {
         $tokens = $this->createStub(AccessTokenVerifier::class);
-        $tokens->method('verify')->willReturn(AuthenticatedPrincipal::fromStrings(
-            self::ACTOR,
+        $tokens->method('verify')->willReturn(AuthorizationContext::principal(
             ['extensions.manage', 'themes.site.manage'],
+            self::ACTOR,
         ));
 
         return new ActivateExtensionCommand($extensions, new ConsoleAuthorizer($tokens));

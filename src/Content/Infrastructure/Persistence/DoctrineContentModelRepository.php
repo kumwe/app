@@ -20,6 +20,7 @@ use Kumwe\CMS\Infrastructure\Persistence\TableNames;
 use Kumwe\CMS\Workflow\Domain\WorkflowDefinition;
 use Kumwe\CMS\Workflow\Domain\WorkflowStateDefinition;
 use Kumwe\CMS\Workflow\Domain\WorkflowTransitionDefinition;
+use Ramsey\Uuid\Uuid;
 use RuntimeException;
 
 final readonly class DoctrineContentModelRepository implements ContentModelRepository
@@ -41,14 +42,18 @@ final readonly class DoctrineContentModelRepository implements ContentModelRepos
 
     public function contentType(SiteContext $site, string $identifier, ?int $version = null): ?ContentTypeDefinition
     {
+        $identity = Uuid::isValid($identifier) ? '(h.id = ? OR h.handle = ?)' : 'h.handle = ?';
         $sql = sprintf(
             'SELECT v.* FROM %s v INNER JOIN %s h ON h.id = v.content_type_id '
-            . 'WHERE h.site_identifier = ? AND (h.id = ? OR h.handle = ?) AND v.version = %s',
+            . 'WHERE h.site_identifier = ? AND %s AND v.version = %s',
             $this->tables->quoted('content_type_definition_versions'),
             $this->tables->quoted('content_types'),
+            $identity,
             $version === null ? 'h.version' : '?',
         );
-        $parameters = [$site->identifier(), $identifier, $identifier];
+        $parameters = Uuid::isValid($identifier)
+            ? [$site->identifier(), $identifier, $identifier]
+            : [$site->identifier(), $identifier];
         if ($version !== null) {
             $parameters[] = $version;
         }
@@ -123,14 +128,18 @@ final readonly class DoctrineContentModelRepository implements ContentModelRepos
 
     public function workflow(SiteContext $site, string $identifier, ?int $version = null): ?WorkflowDefinition
     {
+        $identity = Uuid::isValid($identifier) ? '(h.id = ? OR h.handle = ?)' : 'h.handle = ?';
         $sql = sprintf(
             'SELECT v.* FROM %s v INNER JOIN %s h ON h.id = v.workflow_id '
-            . 'WHERE h.site_identifier = ? AND (h.id = ? OR h.handle = ?) AND v.version = %s',
+            . 'WHERE h.site_identifier = ? AND %s AND v.version = %s',
             $this->tables->quoted('workflow_definition_versions'),
             $this->tables->quoted('workflows'),
+            $identity,
             $version === null ? 'h.version' : '?',
         );
-        $parameters = [$site->identifier(), $identifier, $identifier];
+        $parameters = Uuid::isValid($identifier)
+            ? [$site->identifier(), $identifier, $identifier]
+            : [$site->identifier(), $identifier];
         if ($version !== null) {
             $parameters[] = $version;
         }

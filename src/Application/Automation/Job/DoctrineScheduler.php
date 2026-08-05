@@ -8,6 +8,7 @@ use DateTimeImmutable;
 use DateTimeZone;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
+use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use Doctrine\DBAL\Types\Types;
 use InvalidArgumentException;
 use JsonException;
@@ -57,15 +58,19 @@ final readonly class DoctrineScheduler implements Scheduler, ScheduleRepository
         }
 
         return $this->transactions->transactional(function () use ($context, $limit): int {
+            $scheduleOwnershipId = $this->database->getDatabasePlatform() instanceof PostgreSQLPlatform
+                ? 'CAST(s.id AS VARCHAR)'
+                : 's.id';
             $rows = $this->database->fetchAllAssociative(sprintf(
                 'SELECT s.* FROM %s s WHERE (s.execution_scope = ? OR (s.execution_scope = ? '
                 . 'AND EXISTS (SELECT 1 FROM %s o INNER JOIN %s site ON site.identifier = o.site_identifier '
-                . 'WHERE o.resource_type = ? AND o.resource_id = s.id AND site.enabled = ?))) '
+                . 'WHERE o.resource_type = ? AND o.resource_id = %s AND site.enabled = ?))) '
                 . 'AND s.enabled = ? AND s.next_run_at <= ? '
                 . 'ORDER BY s.next_run_at, s.id LIMIT %d FOR UPDATE SKIP LOCKED',
                 $this->tables->quoted('schedules'),
                 $this->tables->quoted('resource_site_ownership'),
                 $this->tables->quoted('sites'),
+                $scheduleOwnershipId,
                 $limit,
             ), [
                 JobExecutionClass::Installation->value,

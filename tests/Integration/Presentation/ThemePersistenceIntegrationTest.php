@@ -150,7 +150,7 @@ final class ThemePersistenceIntegrationTest extends TestCase
                 $tables->quoted('site_theme_activations'),
             ), ['default']),
         );
-        self::assertFalse($database->fetchOne(sprintf(
+        self::assertNull($database->fetchOne(sprintf(
             "SELECT extension_id FROM %s WHERE surface = 'administrator'",
             $tables->quoted('theme_activations'),
         )));

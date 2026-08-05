@@ -31,7 +31,7 @@ final class DoctrineAccessTokenVerifierTest extends TestCase
     public function testRemovedPermissionIsAbsentImmediatelyDespiteTokenSnapshot(): void
     {
         $database = $this->createMock(Connection::class);
-        $database->method('quoteIdentifier')->willReturnCallback(static fn (string $name): string => $name);
+        $database->method('quoteSingleIdentifier')->willReturnCallback(static fn (string $name): string => $name);
         $database->expects(self::once())->method('fetchAssociative')->willReturn([
             'id' => '018f22e2-7c8b-7ab0-8f3a-88e8026bb399',
             'subject_id' => self::SUBJECT,
@@ -106,7 +106,7 @@ final class DoctrineAccessTokenVerifierTest extends TestCase
     public function testBindsEveryLookupToAdapterAndSiteContext(): void
     {
         $database = $this->createMock(Connection::class);
-        $database->method('quoteIdentifier')->willReturnCallback(static fn (string $name): string => $name);
+        $database->method('quoteSingleIdentifier')->willReturnCallback(static fn (string $name): string => $name);
         $database->expects(self::exactly(2))->method('fetchAssociative')->with(
             self::stringContains('INNER JOIN kumwe_sites s'),
             self::callback(static function (array $parameters): bool {
