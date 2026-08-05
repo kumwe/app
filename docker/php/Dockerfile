@@ -45,6 +45,7 @@ RUN set -eux; \
         echo 'error_log = /var/www/kumwe/storage/logs/php-fpm.log'; \
         echo ''; \
         echo '[www]'; \
+        echo 'access.log = /dev/null'; \
         echo 'clear_env = no'; \
         echo 'catch_workers_output = yes'; \
         echo 'decorate_workers_output = no'; \
