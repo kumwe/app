@@ -7,6 +7,7 @@ namespace Kumwe\CMS\Infrastructure\Mcp;
 use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
+use Doctrine\DBAL\Platforms\SQLitePlatform;
 use Doctrine\DBAL\Types\Types;
 use InvalidArgumentException;
 use JsonException;
@@ -301,10 +302,12 @@ final readonly class McpMutationGuard
         string $operationId,
         string $owner,
     ): void {
+        $lock = $this->database->getDatabasePlatform() instanceof SQLitePlatform ? '' : ' FOR UPDATE';
         $row = $this->database->fetchAssociative(sprintf(
             'SELECT owner_token, authorization_fingerprint, state, lease_expires_at FROM %s '
-            . 'WHERE subject = ? AND operation = ? AND idempotency_key = ? FOR UPDATE',
+            . 'WHERE subject = ? AND operation = ? AND idempotency_key = ?%s',
             $this->tables->quoted('idempotency'),
+            $lock,
         ), [$principal->subject(), $operation, $operationId]);
         if (
             $row === false

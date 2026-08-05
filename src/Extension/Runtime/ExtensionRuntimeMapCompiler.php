@@ -7,6 +7,7 @@ namespace Kumwe\CMS\Extension\Runtime;
 use DateInterval;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
+use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use Doctrine\DBAL\Platforms\SQLitePlatform;
 use Doctrine\DBAL\Types\Types;
 use InvalidArgumentException;
@@ -565,13 +566,17 @@ final readonly class ExtensionRuntimeMapCompiler implements TrustRuntimeInvalida
     private function runtimeState(): array
     {
         $themes = $this->themeAssignments();
+        $releaseJoin = $this->database->getDatabasePlatform() instanceof PostgreSQLPlatform
+            ? 'CAST(r.extension_id AS VARCHAR) = CAST(e.id AS VARCHAR)'
+            : 'r.extension_id = e.id';
         $rows = $this->database->fetchAllAssociative(sprintf(
             'SELECT e.identifier, e.installed_version, e.service_provider, e.extension_type, e.runtime_path, '
             . 'r.manifest, r.package_sha256, r.signing_key_id, r.artifact_sha256, r.deployed_tree_sha256 '
-            . 'FROM %s e INNER JOIN %s r ON r.extension_id = e.id AND r.version = e.installed_version '
+            . 'FROM %s e INNER JOIN %s r ON %s AND r.version = e.installed_version '
             . "WHERE e.status = 'active' ORDER BY e.identifier",
             $this->tables->quoted('extensions'),
             $this->tables->quoted('extension_releases'),
+            $releaseJoin,
         ));
         $extensions = [];
 

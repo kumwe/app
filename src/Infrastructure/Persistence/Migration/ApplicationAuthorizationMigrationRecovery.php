@@ -5,11 +5,10 @@ declare(strict_types=1);
 namespace Kumwe\CMS\Infrastructure\Persistence\Migration;
 
 use Doctrine\DBAL\Connection;
-use Doctrine\DBAL\Schema\Column;
 use Doctrine\DBAL\Schema\ForeignKeyConstraint;
 use Doctrine\DBAL\Schema\ForeignKeyConstraint\ReferentialAction;
 use Doctrine\DBAL\Schema\Index\IndexType;
-use Doctrine\DBAL\Schema\Name;
+use Doctrine\DBAL\Schema\Name\UnqualifiedName;
 use Doctrine\DBAL\Schema\PrimaryKeyConstraint;
 use Doctrine\DBAL\Schema\Schema;
 use Doctrine\DBAL\Schema\Table;
@@ -569,13 +568,10 @@ final readonly class ApplicationAuthorizationMigrationRecovery
     /** @param list<string> $expected */
     private function assertExactColumns(Table $table, array $expected): void
     {
-        $columns = array_map(
-            static fn (Column $column): string => $column->getObjectName()->toString(),
-            $table->getColumns(),
-        );
-        sort($columns, SORT_STRING);
-        sort($expected, SORT_STRING);
-        if ($columns !== $expected) {
+        if (
+            count($table->getColumns()) !== count($expected)
+            || array_any($expected, static fn (string $column): bool => !$table->hasColumn($column))
+        ) {
             throw new RuntimeException(sprintf(
                 'The interrupted table "%s" has divergent columns.',
                 $table->getObjectName()->toString(),
@@ -654,12 +650,12 @@ final readonly class ApplicationAuthorizationMigrationRecovery
     private function assertIndex(Table $table, string $name, array $columns): void
     {
         foreach ($table->getIndexes() as $index) {
-            if ($index->getObjectName()?->toString() !== $name) {
+            if ($index->getObjectName()?->getIdentifier()->getValue() !== $name) {
                 continue;
             }
             $actual = array_map(
                 static fn (\Doctrine\DBAL\Schema\Index\IndexedColumn $column): string =>
-                    $column->getColumnName()->toString(),
+                    $column->getColumnName()->getIdentifier()->getValue(),
                 $index->getIndexedColumns(),
             );
             if ($actual !== $columns || $index->getType() !== IndexType::REGULAR) {
@@ -690,7 +686,8 @@ final readonly class ApplicationAuthorizationMigrationRecovery
         foreach ($table->getForeignKeys() as $foreignKey) {
             if (
                 $this->names($foreignKey->getReferencingColumnNames()) === ['site_identifier']
-                && $foreignKey->getReferencedTableName()->toString() === $this->tables->raw('sites')
+                && $foreignKey->getReferencedTableName()->getUnqualifiedName()->getIdentifier()->getValue()
+                    === $this->tables->raw('sites')
             ) {
                 return $foreignKey;
             }
@@ -700,12 +697,15 @@ final readonly class ApplicationAuthorizationMigrationRecovery
     }
 
     /**
-     * @param non-empty-list<Name> $names
+     * @param non-empty-list<UnqualifiedName> $names
      * @return non-empty-list<string>
      */
     private function names(array $names): array
     {
-        return array_map(static fn (Name $name): string => $name->toString(), $names);
+        return array_map(
+            static fn (UnqualifiedName $name): string => $name->getIdentifier()->getValue(),
+            $names,
+        );
     }
 
     private function nonNegativeInteger(mixed $value, string $label): int

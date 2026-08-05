@@ -266,7 +266,7 @@ final class ThemePersistenceIntegrationTest extends TestCase
 
             self::assertFalse($first->isCurrent($firstState));
             self::assertTrue($second->isCurrent($secondState));
-            self::assertSame(2, $secondState->generation);
+            self::assertSame($firstState->generation + 1, $secondState->generation);
         } finally {
             foreach (['replica-a.json', 'replica-b.json'] as $file) {
                 if (is_file($directory . '/' . $file)) {
@@ -456,13 +456,13 @@ final class ThemePersistenceIntegrationTest extends TestCase
         );
 
         try {
-            $compiler->reconcileAndMaterialize();
+            $initialState = $compiler->reconcileAndMaterialize();
             $database->transactional(static fn (): int => $compiler->stage('test.generation-two'));
-            self::assertSame(2, $compiler->materializeLatest()->generation);
+            self::assertSame($initialState->generation + 1, $compiler->materializeLatest()->generation);
             $database->executeStatement(sprintf(
-                'UPDATE %s SET generation = 1 WHERE singleton_key = 1',
+                'UPDATE %s SET generation = ? WHERE singleton_key = 1',
                 $tables->quoted('extension_runtime_generation'),
-            ));
+            ), [$initialState->generation]);
             $this->expectException(\RuntimeException::class);
 
             $compiler->materializeLatest();
