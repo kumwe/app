@@ -27,6 +27,7 @@ final readonly class AutomationManagementService
         private AuditRecorder $audit,
         private ClockInterface $clock,
         private AuthorizationGateway $authorization,
+        private JobExecutionScope $jobScope,
     ) {
     }
 
@@ -55,7 +56,15 @@ final readonly class AutomationManagementService
     public function jobTypes(ExecutionContext $context): array
     {
         $this->authorize($context, AuthorizationResource::collection('job'));
-        return $this->handlers->types();
+        return array_values(array_filter(
+            $this->handlers->types(),
+            fn (string $type): bool => !$this->jobScope->isInstallationGlobal($type)
+                || $this->authorization->decide(
+                    $context,
+                    Capability::fromString('automation.manage'),
+                    AuthorizationResource::item('automation_installation', $type),
+                )->allowed,
+        ));
     }
 
     /** @param array<string, mixed> $payload */
@@ -108,7 +117,6 @@ final readonly class AutomationManagementService
         int $expectedVersion,
         bool $enabled,
     ): void {
-        $this->authorize($context, AuthorizationResource::item('schedule', $id));
         $actorId = $context->actorId();
         $this->assertId($id);
         $this->transactions->transactional(function () use (
@@ -130,7 +138,6 @@ final readonly class AutomationManagementService
 
     public function deleteSchedule(ExecutionContext $context, string $id, int $expectedVersion): void
     {
-        $this->authorize($context, AuthorizationResource::item('schedule', $id));
         $actorId = $context->actorId();
         $this->assertId($id);
         $this->transactions->transactional(function () use ($context, $actorId, $id, $expectedVersion): void {
@@ -141,7 +148,6 @@ final readonly class AutomationManagementService
 
     public function retryJob(ExecutionContext $context, string $id): void
     {
-        $this->authorize($context, AuthorizationResource::item('job', $id));
         $actorId = $context->actorId();
         $this->assertId($id);
         $this->transactions->transactional(function () use ($context, $actorId, $id): void {
@@ -152,7 +158,6 @@ final readonly class AutomationManagementService
 
     public function cancelJob(ExecutionContext $context, string $id): void
     {
-        $this->authorize($context, AuthorizationResource::item('job', $id));
         $actorId = $context->actorId();
         $this->assertId($id);
         $this->transactions->transactional(function () use ($context, $actorId, $id): void {

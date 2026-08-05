@@ -122,6 +122,7 @@ final class AutomationApiHandlerTest extends TestCase
             $this->createStub(AuditRecorder::class),
             $clock,
             AuthorizationContext::gateway(),
+            new \Kumwe\CMS\Application\Automation\JobExecutionScope(),
         );
 
         return new AutomationApiHandler($automation, new ProblemDetailsResponseFactory());

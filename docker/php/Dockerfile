@@ -17,10 +17,10 @@ RUN set -eux; \
         oniguruma-dev \
         postgresql-dev; \
     docker-php-ext-install -j"$(getconf _NPROCESSORS_ONLN)" intl mbstring pcntl pdo_mysql pdo_pgsql zip; \
-    pecl install redis-6.3.0; \
-    docker-php-ext-enable redis; \
+    pecl install redis-6.3.0 apcu-5.1.28; \
+    docker-php-ext-enable redis apcu; \
     apk del .build-dependencies; \
-    php -r 'foreach (["ctype", "fileinfo", "filter", "intl", "mbstring", "openssl", "Zend OPcache", "pcntl", "pdo", "pdo_mysql", "pdo_pgsql", "redis", "sodium", "zip"] as $extension) { if (!extension_loaded($extension)) { fwrite(STDERR, "Missing PHP extension: {$extension}\n"); exit(1); } }'; \
+    php -r 'foreach (["apcu", "ctype", "fileinfo", "filter", "intl", "mbstring", "openssl", "pcntl", "Zend OPcache", "pdo", "pdo_mysql", "pdo_pgsql", "redis", "sodium", "zip"] as $extension) { if (!extension_loaded($extension)) { fwrite(STDERR, "Missing PHP extension: {$extension}\n"); exit(1); } }'; \
     { \
         echo 'expose_php=Off'; \
         echo 'display_errors=Off'; \
@@ -87,15 +87,51 @@ load_secret() {
 }
 
 load_secret APP_SECRET
+load_secret EXTENSION_RUNTIME_SIGNING_KEY
 load_secret DB_PASSWORD
 load_secret REDIS_PASSWORD
 
-if [ "$(id -u)" -eq 0 ]; then
-    if [ "${1:-}" = 'php-fpm' ]; then
-        # The FPM master opens logs and creates the configured www-data pool.
-        exec "$@"
-    fi
+if [ -z "${KUMWE_INSTANCE_ID:-}" ]; then
+    KUMWE_INSTANCE_ID="$(cat /etc/hostname)"
+    export KUMWE_INSTANCE_ID
+fi
 
+materialize_runtime() {
+    case "${1:-}" in
+        php-fpm)
+            ;;
+        php)
+            case "${2:-}:${3:-}" in
+                bin/kumwe:queue:work|bin/kumwe:schedule:run)
+                    ;;
+                *)
+                    return 0
+                    ;;
+            esac
+            ;;
+        *)
+            return 0
+            ;;
+    esac
+
+    if [ "$(id -u)" -eq 0 ]; then
+        su-exec www-data:www-data php bin/kumwe extension:runtime:materialize
+    else
+        php bin/kumwe extension:runtime:materialize
+    fi
+}
+
+materialize_runtime "$@"
+
+if [ "${1:-}" = 'php-fpm' ]; then
+    if [ "$(id -u)" -eq 0 ]; then
+        su-exec www-data:www-data php bin/kumwe extension:runtime:watch --interval=10 --reload-pid=1 &
+    else
+        php bin/kumwe extension:runtime:watch --interval=10 --reload-pid=1 &
+    fi
+fi
+
+if [ "$(id -u)" -eq 0 ]; then
     exec su-exec www-data:www-data "$@"
 fi
 

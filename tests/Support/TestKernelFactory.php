@@ -12,8 +12,10 @@ use Kumwe\CMS\Application\Authorization\SystemPrincipal;
 use Kumwe\CMS\Delivery\Console\Command\CreateAdministratorCommand;
 use Kumwe\CMS\Delivery\Console\Command\MigrateCommand;
 use Kumwe\CMS\Delivery\Console\Command\QueueWorkCommand;
+use Kumwe\CMS\Delivery\Console\Command\ScheduleRunCommand;
 use Kumwe\CMS\Delivery\Console\Output;
 use Kumwe\CMS\Identity\Application\Administration\AdministratorIdentityGateway;
+use Kumwe\CMS\Identity\Application\Authentication\AuthenticatedPrincipal;
 use Kumwe\CMS\Kernel\ContainerFactory;
 use Kumwe\CMS\Shared\Infrastructure\Configuration\Environment;
 use RuntimeException;
@@ -72,6 +74,58 @@ final class TestKernelFactory
         return $system->context(
             SiteContext::default(),
             'integration-worker-' . bin2hex(random_bytes(16)),
+        );
+    }
+
+    public static function schedulerContext(Container $container): ExecutionContext
+    {
+        $command = $container->get(ScheduleRunCommand::class);
+        if (!$command instanceof ScheduleRunCommand) {
+            throw new RuntimeException('The scheduler command is unavailable.');
+        }
+        $property = new \ReflectionProperty($command, 'system');
+        $system = $property->getValue($command);
+        if (!$system instanceof SystemPrincipal) {
+            throw new RuntimeException('The scheduler system principal is unavailable.');
+        }
+
+        return $system->context(
+            SiteContext::default(),
+            'integration-scheduler-' . bin2hex(random_bytes(16)),
+        );
+    }
+
+    /**
+     * Creates a deliberately narrowed principal for integration-only denial tests.
+     * Production callers cannot obtain the authority proof reflected here.
+     *
+     * @param list<array{capability: string, scope_type: string, scope_identifier: ?string}> $grants
+     */
+    public static function contextFromGrantRows(
+        Container $container,
+        array $grants,
+        string $site = SiteContext::DEFAULT,
+    ): ExecutionContext {
+        $administrator = self::administratorContext($container);
+        $principal = $administrator->principal();
+        if ($principal === null) {
+            throw new RuntimeException('The integration administrator principal is unavailable.');
+        }
+        $property = new \ReflectionProperty(AuthenticatedPrincipal::class, 'provenance');
+        $provenance = $property->getValue($principal);
+        if (!is_object($provenance)) {
+            throw new RuntimeException('The integration authority proof is unavailable.');
+        }
+
+        return AuthenticatedPrincipal::issueFromGrantRows(
+            $provenance,
+            $principal->subject(),
+            $grants,
+            'integration-scoped:' . $principal->subject(),
+        )->context(
+            SiteContext::fromString($site),
+            AuthenticationStrength::BearerToken,
+            'integration-scoped-' . bin2hex(random_bytes(16)),
         );
     }
 

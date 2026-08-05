@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\CMS\Content\Application;
 
 use DateTimeImmutable;
+use Kumwe\CMS\Application\Authorization\SiteContext;
 use Kumwe\CMS\Content\Domain\ContentEntry;
 
 final readonly class ContentRecord
@@ -16,6 +17,9 @@ final readonly class ContentRecord
         public DateTimeImmutable $createdAt,
         public DateTimeImmutable $updatedAt,
         public ?DateTimeImmutable $deletedAt = null,
+        public int $contentTypeVersion = 1,
+        public int $workflowVersion = 1,
+        public string $siteIdentifier = SiteContext::DEFAULT,
     ) {
     }
 
@@ -28,6 +32,9 @@ final readonly class ContentRecord
             $this->createdAt,
             $updatedAt,
             $this->deletedAt,
+            $this->contentTypeVersion,
+            $this->workflowVersion,
+            $this->siteIdentifier,
         );
     }
 
@@ -40,6 +47,9 @@ final readonly class ContentRecord
             $this->createdAt,
             $updatedAt,
             $deletedAt,
+            $this->contentTypeVersion,
+            $this->workflowVersion,
+            $this->siteIdentifier,
         );
     }
 
@@ -50,6 +60,9 @@ final readonly class ContentRecord
             ...$this->entry->snapshot(),
             'content_type_id' => $this->contentTypeId,
             'workflow_id' => $this->workflowId,
+            'content_type_version' => $this->contentTypeVersion,
+            'workflow_version' => $this->workflowVersion,
+            'site' => $this->siteIdentifier,
             'created_at' => $this->createdAt->format(DATE_ATOM),
             'updated_at' => $this->updatedAt->format(DATE_ATOM),
             'deleted_at' => $this->deletedAt?->format(DATE_ATOM),

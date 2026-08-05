@@ -6,8 +6,6 @@ namespace Kumwe\CMS\Delivery\Http\Api\Content;
 
 use Kumwe\CMS\Content\Application\ContentService;
 use Kumwe\CMS\Delivery\Http\Api\ApiExecutionContext;
-use Kumwe\CMS\Content\Domain\ContentStatus;
-use Kumwe\CMS\Workflow\Application\ContentTransitionAuthorizer;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\RequestHandlerInterface;
@@ -18,7 +16,6 @@ final readonly class ContentTransitionHandler implements RequestHandlerInterface
     public function __construct(
         private ContentService $content,
         private ContentApiResponder $responder,
-        private ContentTransitionAuthorizer $authorization,
     ) {
     }
 
@@ -30,9 +27,7 @@ final readonly class ContentTransitionHandler implements RequestHandlerInterface
             $stored = $this->content->get($context, $id);
             $expectedVersion = ContentApiRequest::expectedVersion($request, $stored->entry->version());
             $body = ContentApiRequest::json($request);
-            $target = ContentStatus::from(ContentApiRequest::requiredString($body, 'status'));
-            $principal = ContentApiRequest::principal($request);
-            $this->authorization->assertAllowed($principal, $stored->entry->status(), $target);
+            $target = ContentApiRequest::requiredString($body, 'status');
 
             return $this->responder->record($this->content->transition(
                 $context,

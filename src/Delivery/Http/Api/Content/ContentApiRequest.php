@@ -70,6 +70,12 @@ final class ContentApiRequest
         return trim($value);
     }
 
+    /** @param array<string, mixed> $body */
+    public static function optionalString(array $body, string $field, string $default): string
+    {
+        return array_key_exists($field, $body) ? self::requiredString($body, $field) : $default;
+    }
+
     /**
      * @param array<string, mixed> $body
      * @return array<string, mixed>

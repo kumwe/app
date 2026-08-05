@@ -51,6 +51,12 @@ final class ManagementDeliveryTest extends TestCase
         ['POST', '/api/v1/tokens'],
         ['GET', '/api/v1/tokens'],
         ['DELETE', '/api/v1/tokens/018f22e2-7c8b-7ab0-8f3a-88e8026bb305'],
+        ['POST', '/api/v1/tokens/018f22e2-7c8b-7ab0-8f3a-88e8026bb305/rotate'],
+        ['DELETE', '/api/v1/users/018f22e2-7c8b-7ab0-8f3a-88e8026bb301/tokens'],
+        ['GET', '/api/v1/extension-trust-keys'],
+        ['POST', '/api/v1/extension-trust-keys'],
+        ['POST', '/api/v1/extension-trust-keys/registry.primary/rotate'],
+        ['DELETE', '/api/v1/extension-trust-keys/registry.primary'],
         ['GET', '/api/v1/schedules'],
         ['POST', '/api/v1/schedules'],
         ['GET', '/api/v1/schedules/018f22e2-7c8b-7ab0-8f3a-88e8026bb401'],
@@ -59,6 +65,14 @@ final class ManagementDeliveryTest extends TestCase
         ['GET', '/api/v1/jobs'],
         ['POST', '/api/v1/jobs/018f22e2-7c8b-7ab0-8f3a-88e8026bb402/retry'],
         ['POST', '/api/v1/jobs/018f22e2-7c8b-7ab0-8f3a-88e8026bb402/cancel'],
+        ['GET', '/api/v1/content-types'],
+        ['POST', '/api/v1/content-types'],
+        ['GET', '/api/v1/content-types/018f22e2-7c8b-7ab0-8f3a-88e8026bb402'],
+        ['PATCH', '/api/v1/content-types/018f22e2-7c8b-7ab0-8f3a-88e8026bb402'],
+        ['GET', '/api/v1/workflows'],
+        ['POST', '/api/v1/workflows'],
+        ['GET', '/api/v1/workflows/018f22e2-7c8b-7ab0-8f3a-88e8026bb401'],
+        ['PATCH', '/api/v1/workflows/018f22e2-7c8b-7ab0-8f3a-88e8026bb401'],
     ];
 
     public function testAdministratorManagementScreensAreRegisteredAndSessionProtected(): void
@@ -72,6 +86,7 @@ final class ManagementDeliveryTest extends TestCase
             '/administrator/access',
             '/administrator/settings',
             '/administrator/automation',
+            '/administrator/content-models',
             ] as $path
         ) {
             $response = $application->handle(

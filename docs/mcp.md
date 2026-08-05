@@ -8,19 +8,22 @@ The endpoint is `https://cms.example.org/mcp`. Send a Kumwe bearer token on ever
 
 ```http
 Authorization: Bearer TOKEN
+Kumwe-Site: corporate
 ```
 
-The transport validates the exact host, Origin/CORS behavior, MCP protocol version, request body limit, and persistent session. The route requires authentication; each tool then requires its own capability. A settings-only token can use settings tools without also receiving content access.
+The required `Kumwe-Site` header selects exactly one validated site and must match the site bound into the token. Host and forwarding headers never select the site. The transport also validates the exact host, Origin/CORS behavior, MCP protocol version, request body limit, and persistent session. The route requires authentication; each tool then requires its own capability. A settings-only token can use settings tools without also receiving content access.
 
 ## Local stdio
 
 Create a short-lived, least-privilege token and store it in an absolute owner-readable file. Configure the client to launch:
 
 ```bash
-php bin/kumwe mcp:serve --token-file=/run/secrets/kumwe-mcp-token
+php bin/kumwe mcp:serve \
+  --site=corporate \
+  --token-file=/run/secrets/kumwe-mcp-token
 ```
 
-Stdio does not grant implicit local administrator power. The token is verified for expiry/revocation and its capabilities apply to every tool. Run the process as a dedicated unprivileged service account; never give an MCP client database-administration credentials, signing private keys, backup keys, or unrestricted extension/media filesystem access.
+The required `--site` value selects exactly one site for the lifetime of the stdio process. The token must have been issued for that same site; a token for `default` or another site is rejected. Stdio does not grant implicit local administrator power. The token is reverified for expiry/revocation and its current capabilities before each protected handler access. Run the process as a dedicated unprivileged service account; never give an MCP client database-administration credentials, signing private keys, backup keys, or unrestricted extension/media filesystem access.
 
 ## Tools
 

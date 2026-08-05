@@ -6,21 +6,27 @@ namespace Kumwe\CMS\Tests\Unit\Infrastructure\Persistence\Migration;
 
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Platforms\AbstractPlatform;
+use Doctrine\DBAL\Platforms\MySQLPlatform;
+use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
+use Kumwe\CMS\Application\Authorization\SiteContext;
+use Kumwe\CMS\Application\Authorization\SystemIdentity;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\Migration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\MigrationLock;
+use Kumwe\CMS\Infrastructure\Persistence\Migration\MigrationPlan;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\MigrationRepository;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\MigrationResult;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\MigrationRunner;
+use Kumwe\CMS\Infrastructure\Persistence\Migration\NonTransactionalMigrationAction;
+use Kumwe\CMS\Infrastructure\Persistence\Migration\NonTransactionalMigrationRecovery;
 use Kumwe\CMS\Infrastructure\Persistence\TransactionManager;
+use Kumwe\CMS\Tests\Support\AuthorizationContext;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
-use Kumwe\CMS\Application\Authorization\SiteContext;
-use Kumwe\CMS\Application\Authorization\SystemIdentity;
-use Kumwe\CMS\Tests\Support\AuthorizationContext;
 
 #[CoversClass(MigrationRunner::class)]
 #[CoversClass(MigrationResult::class)]
+#[CoversClass(MigrationPlan::class)]
 final class MigrationRunnerTest extends TestCase
 {
     public function testMigrationsAreAppliedInLexicalOrderAndOnlyOnce(): void
@@ -52,21 +58,165 @@ final class MigrationRunnerTest extends TestCase
         $runner->migrate($this->context());
     }
 
+    public function testUnknownNewerMigrationIsRejected(): void
+    {
+        $repository = new InMemoryMigrationRepository();
+        $repository->checksums['20260804000100_first'] = hash('sha256', '20260804000100_first');
+        $repository->checksums['20260804000300_future'] = hash('sha256', '20260804000300_future');
+        $runner = $this->runner($repository, [
+            new RecordingMigration('20260804000100_first', new MigrationCallLog()),
+        ]);
+        $this->expectException(RuntimeException::class);
+
+        $runner->migrate($this->context());
+    }
+
+    public function testMigrationGapIsRejected(): void
+    {
+        $repository = new InMemoryMigrationRepository();
+        $repository->checksums['20260804000200_second'] = hash('sha256', '20260804000200_second');
+        $runner = $this->runner($repository, [
+            new RecordingMigration('20260804000100_first', new MigrationCallLog()),
+            new RecordingMigration('20260804000200_second', new MigrationCallLog()),
+        ]);
+        $this->expectException(RuntimeException::class);
+
+        $runner->migrate($this->context());
+    }
+
+    public function testPendingRejectsChecksumDrift(): void
+    {
+        $repository = new InMemoryMigrationRepository();
+        $repository->checksums['20260804000100_first'] = str_repeat('f', 64);
+        $runner = $this->runner($repository, [
+            new RecordingMigration('20260804000100_first', new MigrationCallLog()),
+        ]);
+        $this->expectException(RuntimeException::class);
+
+        $runner->pending($this->context());
+    }
+
+    public function testHistoricalChecksumCompatibilityIsExplicitAndExact(): void
+    {
+        $migration = new RecordingMigration(
+            '20260805030000_recover_jobs_and_idempotency',
+            new MigrationCallLog(),
+        );
+        $historical = [
+            '5e55e74ae3027ecc5d4843e045cf19a3e07d0b7be1f2ce556807bb67eda61947',
+            '4d7fc30104c21bda0c00947fb82bce1333daa0d542e7292ee4e96bbda1c83b5d',
+        ];
+        $plan = new MigrationPlan([$migration], [$migration->id() => $historical]);
+
+        foreach ($historical as $checksum) {
+            self::assertTrue($plan->complete([$migration->id() => $checksum]));
+        }
+        $this->expectException(RuntimeException::class);
+        $plan->complete([$migration->id() => str_repeat('b', 64)]);
+    }
+
+    public function testUnknownRecoveryAttemptIsRejectedBeforeMigrationExecution(): void
+    {
+        $calls = new MigrationCallLog();
+        $runner = $this->runner(
+            new InMemoryMigrationRepository(),
+            [new RecordingMigration('20260804000100_first', $calls)],
+            recovery: new RecordingNonTransactionalMigrationRecovery(rejectAttempts: true),
+        );
+
+        try {
+            $runner->migrate($this->context());
+            self::fail('An unknown recovery attempt must fail closed.');
+        } catch (RuntimeException $exception) {
+            self::assertStringContainsString('unknown attempt', $exception->getMessage());
+        }
+        self::assertSame([], $calls->ids);
+    }
+
+    public function testMySqlJournalsBeforeExecutionAndCompletesAfterLedgerWrite(): void
+    {
+        $repository = new InMemoryMigrationRepository();
+        $calls = new MigrationCallLog();
+        $recovery = new RecordingNonTransactionalMigrationRecovery();
+        $runner = $this->runner(
+            $repository,
+            [new RecordingMigration('20260804000100_first', $calls)],
+            new MySQLPlatform(),
+            new DirectTransactionManager(),
+            $recovery,
+        );
+
+        self::assertTrue($runner->migrate($this->context())->changed());
+        self::assertSame(['prepare:20260804000100_first', 'complete:20260804000100_first'], $recovery->calls);
+        self::assertSame(['20260804000100_first'], $calls->ids);
+        self::assertArrayHasKey('20260804000100_first', $repository->checksums);
+    }
+
+    public function testRecoveredMySqlPostconditionIsRecordedWithoutRepeatingMigration(): void
+    {
+        $repository = new InMemoryMigrationRepository();
+        $calls = new MigrationCallLog();
+        $recovery = new RecordingNonTransactionalMigrationRecovery(
+            NonTransactionalMigrationAction::RecordRecovered,
+        );
+        $runner = $this->runner(
+            $repository,
+            [new RecordingMigration('20260804000100_first', $calls)],
+            new MySQLPlatform(),
+            new DirectTransactionManager(),
+            $recovery,
+        );
+
+        self::assertTrue($runner->migrate($this->context())->changed());
+        self::assertSame([], $calls->ids);
+        self::assertArrayHasKey('20260804000100_first', $repository->checksums);
+        self::assertSame(['prepare:20260804000100_first', 'complete:20260804000100_first'], $recovery->calls);
+    }
+
+    public function testPostgreSqlKeepsMigrationAndLedgerInOneTransactionWithoutRecoveryJournal(): void
+    {
+        $repository = new InMemoryMigrationRepository();
+        $calls = new MigrationCallLog();
+        $transactions = new RecordingTransactionManager();
+        $recovery = new RecordingNonTransactionalMigrationRecovery();
+        $runner = $this->runner(
+            $repository,
+            [new RecordingMigration('20260804000100_first', $calls)],
+            new PostgreSQLPlatform(),
+            $transactions,
+            $recovery,
+        );
+
+        self::assertTrue($runner->migrate($this->context())->changed());
+        self::assertSame(1, $transactions->calls);
+        self::assertSame([], $recovery->calls);
+        self::assertSame(['20260804000100_first'], $calls->ids);
+        self::assertArrayHasKey('20260804000100_first', $repository->checksums);
+    }
+
     /**
      * @param list<Migration> $migrations
      */
-    private function runner(InMemoryMigrationRepository $repository, array $migrations): MigrationRunner
-    {
+    private function runner(
+        InMemoryMigrationRepository $repository,
+        array $migrations,
+        ?AbstractPlatform $platform = null,
+        ?TransactionManager $transactions = null,
+        ?NonTransactionalMigrationRecovery $recovery = null,
+    ): MigrationRunner {
         $database = $this->createStub(Connection::class);
-        $database->method('getDatabasePlatform')->willReturn($this->createStub(AbstractPlatform::class));
+        $database->method('getDatabasePlatform')->willReturn(
+            $platform ?? $this->createStub(AbstractPlatform::class),
+        );
 
         return new MigrationRunner(
             $database,
             $repository,
             new DirectMigrationLock(),
-            new DirectTransactionManager(),
-            $migrations,
+            $transactions ?? new DirectTransactionManager(),
+            new MigrationPlan($migrations),
             AuthorizationContext::gateway(),
+            $recovery ?? new RecordingNonTransactionalMigrationRecovery(),
         );
     }
 
@@ -140,5 +290,76 @@ final class DirectTransactionManager implements TransactionManager
     public function transactional(callable $operation): mixed
     {
         return $operation();
+    }
+
+    public function afterCommit(callable $operation): void
+    {
+        $operation();
+    }
+
+    public function afterRollback(callable $operation): void
+    {
+    }
+}
+
+final class RecordingTransactionManager implements TransactionManager
+{
+    public int $calls = 0;
+
+    public function transactional(callable $operation): mixed
+    {
+        ++$this->calls;
+
+        return $operation();
+    }
+
+    public function afterCommit(callable $operation): void
+    {
+        $operation();
+    }
+
+    public function afterRollback(callable $operation): void
+    {
+    }
+}
+
+final class RecordingNonTransactionalMigrationRecovery implements NonTransactionalMigrationRecovery
+{
+    /** @var list<string> */
+    public array $calls = [];
+
+    public function __construct(
+        private NonTransactionalMigrationAction $action = NonTransactionalMigrationAction::Execute,
+        private bool $rejectAttempts = false,
+    ) {
+    }
+
+    public function assertKnownAttempts(array $knownMigrationIds): void
+    {
+        if ($this->rejectAttempts) {
+            throw new RuntimeException('Migration recovery contains an unknown attempt.');
+        }
+    }
+
+    public function hasUnresolvedAttempts(): bool
+    {
+        return false;
+    }
+
+    public function prepare(Migration $migration): NonTransactionalMigrationAction
+    {
+        $this->calls[] = 'prepare:' . $migration->id();
+
+        return $this->action;
+    }
+
+    public function complete(Migration $migration): void
+    {
+        $this->calls[] = 'complete:' . $migration->id();
+    }
+
+    public function reconcileApplied(Migration $migration): void
+    {
+        $this->calls[] = 'reconcile:' . $migration->id();
     }
 }

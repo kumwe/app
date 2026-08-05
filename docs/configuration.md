@@ -32,12 +32,19 @@ Start from `.env.example` for development. Production Compose maps operator-faci
 | `APP_ENV` | `development`, `testing`, or `production` | `production` |
 | `APP_DEBUG` | Detailed development failures | `false` |
 | `APP_BASE_URL` | Canonical absolute URL | HTTPS URL |
+| `APP_PUBLIC_SITE` | Explicit site served by public content and theme routes | Canonical site identifier; defaults to `default` |
 | `APP_TRUSTED_HOSTS` | Comma-separated accepted hostnames | Exact public hosts |
 | `APP_TRUSTED_PROXIES` | Comma-separated proxy address ranges | Only the actual proxy network |
 | `APP_MAX_BODY_BYTES` | Maximum parsed request body | Match proxy and PHP limits |
 | `APP_ADMIN_SESSION_SECONDS` | Administrator session lifetime | 300–604800 seconds |
 | `APP_SECRET` | Session and application secret | At least 32 random bytes; prefer `APP_SECRET_FILE` in containers |
+| `EXTENSION_RUNTIME_SIGNING_KEY_ID` | Active versioned runtime-publication key ID | Stable lowercase identifier |
+| `EXTENSION_RUNTIME_SIGNING_KEY` | Dedicated runtime-publication signing secret | Independent 32+ byte secret file |
+| `EXTENSION_RUNTIME_PREVIOUS_KEYS` | JSON key-ID/secret overlap set | Retain only during controlled rotation |
 | `KUMWE_RELEASE` | Running release identifier | Exact deployed version |
+| `KUMWE_DEPLOYMENT_ID` | Stable rollout identity | Explicit deployment identifier |
+| `KUMWE_REPLICA_ID` | Stable replica identity | Unique per concurrently running replica |
+| `KUMWE_PROCESS_ID` | Stable process role identity | `app-runtime`, `queue-worker`, or `scheduler` |
 | `EXTENSIONS_ALLOW_UNSIGNED_LOCAL` | Allow unsigned local packages | `false` in production |
 
 `APP_TRUSTED_PROXIES` accepts individual IPv4/IPv6 addresses and CIDR ranges (for example,
@@ -75,6 +82,6 @@ The supplied Compose deployment tracks the supported Redis 8 line for easy updat
 
 ## Secret files
 
-The production entrypoint recognizes `APP_SECRET_FILE`, `DB_PASSWORD_FILE`, and `REDIS_PASSWORD_FILE`. Each file must be readable only by the deployment service, contain exactly one non-empty secret, and remain outside the repository and release package. The entrypoint loads the value into the process and unsets the file-variable name before launching PHP.
+The production entrypoint recognizes `APP_SECRET_FILE`, `EXTENSION_RUNTIME_SIGNING_KEY_FILE`, `DB_PASSWORD_FILE`, and `REDIS_PASSWORD_FILE`. Each file must be readable only by the deployment service, contain exactly one non-empty secret, and remain outside the repository and release package. The entrypoint loads the value into the process and unsets the file-variable name before launching PHP.
 
 After changing process configuration, replace the affected web and worker containers. After changing administrator settings, no container restart is required.

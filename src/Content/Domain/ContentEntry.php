@@ -21,7 +21,7 @@ final readonly class ContentEntry
         private string $title,
         private string $slug,
         array $data,
-        private ContentStatus $status,
+        private string $status,
         private PublicationWindow $publicationWindow,
         private int $version,
     ) {
@@ -46,7 +46,7 @@ final readonly class ContentEntry
         string $title,
         string $slug,
         array $data = [],
-        ContentStatus $status = ContentStatus::Draft,
+        ContentStatus|string $status = ContentStatus::Draft,
         ?PublicationWindow $publicationWindow = null,
     ): self {
         return new self(
@@ -54,7 +54,7 @@ final readonly class ContentEntry
             trim($title),
             $slug,
             $data,
-            $status,
+            self::stateKey($status),
             $publicationWindow ?? PublicationWindow::unbounded(),
             1,
         );
@@ -71,7 +71,7 @@ final readonly class ContentEntry
         string $title,
         string $slug,
         array $data,
-        ContentStatus $status,
+        ContentStatus|string $status,
         PublicationWindow $publicationWindow,
         int $version,
     ): self {
@@ -80,7 +80,7 @@ final readonly class ContentEntry
             trim($title),
             $slug,
             $data,
-            $status,
+            self::stateKey($status),
             $publicationWindow,
             $version,
         );
@@ -109,7 +109,12 @@ final readonly class ContentEntry
         return $this->data;
     }
 
-    public function status(): ContentStatus
+    public function status(): ContentStatus|string
+    {
+        return ContentStatus::tryFrom($this->status) ?? $this->status;
+    }
+
+    public function statusKey(): string
     {
         return $this->status;
     }
@@ -126,7 +131,7 @@ final readonly class ContentEntry
 
     public function isVisibleAt(DateTimeImmutable $instant): bool
     {
-        return $this->status->isPublic() && $this->publicationWindow->contains($instant);
+        return $this->status === ContentStatus::Published->value && $this->publicationWindow->contains($instant);
     }
 
     /**
@@ -170,7 +175,7 @@ final readonly class ContentEntry
     public function transition(
         ExpectedVersion $expectedVersion,
         Workflow $workflow,
-        ContentStatus $target,
+        ContentStatus|string $target,
     ): self {
         $expectedVersion->assertMatches($this->version);
         $workflow->assertCanTransition($this->status, $target);
@@ -180,7 +185,7 @@ final readonly class ContentEntry
             $this->title,
             $this->slug,
             $this->data,
-            $target,
+            self::stateKey($target),
             $this->publicationWindow,
             $this->version + 1,
         );
@@ -196,7 +201,7 @@ final readonly class ContentEntry
             'title' => $this->title,
             'slug' => $this->slug,
             'data' => $this->data,
-            'status' => $this->status->value,
+            'status' => $this->status,
             'publication_window' => [
                 'starts_at' => $this->publicationWindow->startsAt()?->format(DATE_ATOM),
                 'ends_at' => $this->publicationWindow->endsAt()?->format(DATE_ATOM),
@@ -210,6 +215,15 @@ final readonly class ContentEntry
         if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iD', $id) !== 1) {
             throw new InvalidArgumentException('A content entry ID must be a canonical UUID.');
         }
+    }
+
+    private static function stateKey(ContentStatus|string $state): string
+    {
+        $state = $state instanceof ContentStatus ? $state->value : $state;
+        if (preg_match('/^[a-z][a-z0-9_-]{0,39}$/D', $state) !== 1) {
+            throw new InvalidArgumentException('A workflow state key must be a lowercase identifier.');
+        }
+        return $state;
     }
 
     private static function assertTitle(string $title): void

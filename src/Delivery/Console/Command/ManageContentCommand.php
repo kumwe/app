@@ -6,7 +6,6 @@ namespace Kumwe\CMS\Delivery\Console\Command;
 
 use Kumwe\CMS\Content\Application\ContentRecord;
 use Kumwe\CMS\Content\Application\ContentService;
-use Kumwe\CMS\Content\Domain\ContentStatus;
 use Kumwe\CMS\Delivery\Console\Command;
 use Kumwe\CMS\Delivery\Console\Output;
 use Kumwe\CMS\Application\Authorization\ExecutionContext;
@@ -18,7 +17,7 @@ final readonly class ManageContentCommand implements Command
     public function __construct(
         private ContentService $content,
         private ConsoleAuthorizer $authorization,
-        private ContentTransitionAuthorizer $transitions,
+        ?ContentTransitionAuthorizer $_legacyTransitions = null,
     ) {
     }
 
@@ -61,6 +60,7 @@ final readonly class ManageContentCommand implements Command
                     CommandInput::required($options, 'title'),
                     CommandInput::required($options, 'slug'),
                     CommandInput::jsonObject($options, 'data'),
+                    contentTypeIdentifier: $options['content-type'] ?? ContentService::CORE_PAGE_TYPE_ID,
                 )->toArray(),
                 'update' => $this->content->update(
                     $context,
@@ -99,13 +99,7 @@ final readonly class ManageContentCommand implements Command
         ExecutionContext $context,
     ): array {
         $id = CommandInput::required($options, 'id');
-        $target = ContentStatus::from(CommandInput::required($options, 'status'));
-        $principal = $context->principal() ?? throw new \LogicException('A CLI principal is required.');
-        $this->transitions->assertAllowed(
-            $principal,
-            $this->content->get($context, $id)->entry->status(),
-            $target,
-        );
+        $target = CommandInput::required($options, 'status');
 
         return $this->content->transition(
             $context,

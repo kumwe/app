@@ -53,10 +53,12 @@ final class McpCapabilityCatalog
                 true,
                 [
                     'operationId' => $this->operationId(),
-                    'title' => ['type' => 'string'], 'slug' => ['type' => 'string'], 'body' => ['type' => 'string'],
+                    'title' => ['type' => 'string'], 'slug' => ['type' => 'string'],
+                    'body' => ['type' => 'string'], 'contentType' => ['type' => 'string'],
+                    'data' => ['type' => 'object', 'additionalProperties' => true],
                 ],
                 $object,
-                ['operationId', 'title', 'slug', 'body']
+                ['operationId', 'title', 'slug']
             ),
             $this->tool(
                 'kumwe_content_update',
@@ -71,9 +73,10 @@ final class McpCapabilityCatalog
                     'operationId' => $this->operationId(),
                     'id' => ['type' => 'string'], 'version' => ['type' => 'integer', 'minimum' => 1],
                     'title' => ['type' => 'string'], 'slug' => ['type' => 'string'], 'body' => ['type' => 'string'],
+                    'data' => ['type' => 'object', 'additionalProperties' => true],
                 ],
                 $object,
-                ['operationId', 'id', 'version', 'title', 'slug', 'body']
+                ['operationId', 'id', 'version', 'title', 'slug']
             ),
             $this->tool(
                 'kumwe_content_transition',
@@ -87,7 +90,7 @@ final class McpCapabilityCatalog
                 [
                     'operationId' => $this->operationId(),
                     'id' => ['type' => 'string'], 'version' => ['type' => 'integer', 'minimum' => 1],
-                    'status' => ['type' => 'string', 'enum' => ['draft', 'review', 'published', 'archived']],
+                    'status' => ['type' => 'string', 'pattern' => '^[a-z][a-z0-9_-]{0,39}$'],
                 ],
                 $object,
                 ['operationId', 'id', 'version', 'status']
@@ -301,6 +304,111 @@ final class McpCapabilityCatalog
                 ['operationId', 'tokenId']
             ),
             $this->tool(
+                'kumwe_token_rotate',
+                'Rotate API token',
+                'Rotate a token and return its replacement secret once.',
+                'rotateToken',
+                'users.manage',
+                false,
+                true,
+                true,
+                [
+                    'operationId' => $this->operationId(), 'tokenId' => ['type' => 'string'],
+                    'name' => ['type' => 'string'], 'expiresAt' => ['type' => 'string'],
+                ],
+                $object,
+                ['operationId', 'tokenId', 'name']
+            ),
+            $this->tool(
+                'kumwe_token_revoke_subject_site',
+                'Revoke user tokens for site',
+                'Revoke every token for one user in the authenticated site only.',
+                'revokeSubjectSiteTokens',
+                'users.manage',
+                false,
+                true,
+                true,
+                [
+                    'operationId' => $this->operationId(), 'userId' => ['type' => 'string'],
+                    'reason' => ['type' => 'string'],
+                ],
+                $object,
+                ['operationId', 'userId', 'reason'],
+            ),
+            $this->tool(
+                'kumwe_token_emergency_revoke_subject',
+                'Emergency revoke user tokens',
+                'Globally invalidate every token for one user by advancing their security epoch.',
+                'emergencyRevokeSubjectTokens',
+                'users.manage',
+                false,
+                true,
+                true,
+                [
+                    'operationId' => $this->operationId(), 'userId' => ['type' => 'string'],
+                    'reason' => ['type' => 'string'],
+                ],
+                $object,
+                ['operationId', 'userId', 'reason']
+            ),
+            $this->tool(
+                'kumwe_trust_key_list',
+                'List extension trust keys',
+                'List trust keys and the active releases that still depend on each key.',
+                'listTrustKeys',
+                'extensions.manage',
+                true,
+                false,
+                true,
+                [],
+                $object,
+            ),
+            $this->tool(
+                'kumwe_trust_key_add',
+                'Add extension trust key',
+                'Add a constrained and expiring Ed25519 extension signing key.',
+                'addTrustKey',
+                'extensions.manage',
+                false,
+                false,
+                true,
+                $this->trustKeyProperties(),
+                $object,
+                ['operationId', 'keyId', 'publicKeyBase64', 'vendorNamespace', 'extensionPattern', 'expiresAt'],
+            ),
+            $this->tool(
+                'kumwe_trust_key_rotate',
+                'Begin extension trust-key rotation',
+                'Add a replacement key while retaining the old key during the overlap period.',
+                'rotateTrustKey',
+                'extensions.manage',
+                false,
+                false,
+                true,
+                [...$this->trustKeyProperties(), 'oldKeyId' => ['type' => 'string']],
+                $object,
+                [
+                    'operationId', 'oldKeyId', 'newKeyId', 'publicKeyBase64',
+                    'vendorNamespace', 'extensionPattern', 'expiresAt',
+                ],
+            ),
+            $this->tool(
+                'kumwe_trust_key_revoke',
+                'Finalize or emergency-revoke trust key',
+                'Finalize rotation only after upgrades, or quarantine affected releases during an emergency.',
+                'revokeTrustKey',
+                'extensions.manage',
+                false,
+                true,
+                true,
+                [
+                    'operationId' => $this->operationId(), 'keyId' => ['type' => 'string'],
+                    'reason' => ['type' => 'string'], 'emergency' => ['type' => 'boolean'],
+                ],
+                $object,
+                ['operationId', 'keyId', 'reason'],
+            ),
+            $this->tool(
                 'kumwe_extension_list',
                 'List extensions',
                 'List installed extensions.',
@@ -321,7 +429,12 @@ final class McpCapabilityCatalog
                 false,
                 false,
                 true,
-                ['operationId' => $this->operationId(), 'identifier' => ['type' => 'string']],
+                [
+                    'operationId' => $this->operationId(),
+                    'identifier' => ['type' => 'string'],
+                    'surface' => ['type' => ['string', 'null'], 'enum' => ['site', 'administrator', null]],
+                    'currentPassword' => $this->currentPassword(),
+                ],
                 $object,
                 ['operationId', 'identifier']
             ),
@@ -334,7 +447,11 @@ final class McpCapabilityCatalog
                 false,
                 false,
                 true,
-                ['operationId' => $this->operationId(), 'identifier' => ['type' => 'string']],
+                [
+                    'operationId' => $this->operationId(),
+                    'identifier' => ['type' => 'string'],
+                    'currentPassword' => $this->currentPassword(),
+                ],
                 $object,
                 ['operationId', 'identifier']
             ),
@@ -347,7 +464,11 @@ final class McpCapabilityCatalog
                 false,
                 true,
                 true,
-                ['operationId' => $this->operationId(), 'identifier' => ['type' => 'string']],
+                [
+                    'operationId' => $this->operationId(),
+                    'identifier' => ['type' => 'string'],
+                    'currentPassword' => $this->currentPassword(),
+                ],
                 $object,
                 ['operationId', 'identifier']
             ),
@@ -525,5 +646,30 @@ final class McpCapabilityCatalog
     private function operationId(): array
     {
         return ['type' => 'string', 'minLength' => 16, 'maxLength' => 128];
+    }
+
+    /** @return array<string, array<string, mixed>> */
+    private function trustKeyProperties(): array
+    {
+        return [
+            'operationId' => $this->operationId(),
+            'keyId' => ['type' => 'string'],
+            'newKeyId' => ['type' => 'string'],
+            'publicKeyBase64' => ['type' => 'string'],
+            'vendorNamespace' => ['type' => 'string'],
+            'extensionPattern' => ['type' => 'string'],
+            'expiresAt' => ['type' => 'string'],
+        ];
+    }
+
+    /** @return array<string, bool|int|string|list<string>> */
+    private function currentPassword(): array
+    {
+        return [
+            'type' => ['string', 'null'],
+            'minLength' => 1,
+            'maxLength' => 4_096,
+            'writeOnly' => true,
+        ];
     }
 }

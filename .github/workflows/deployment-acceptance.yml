@@ -67,13 +67,21 @@ jobs:
         uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240
         with:
           php-version: '8.5'
-          extensions: ctype, fileinfo, filter, intl, json, mbstring, openssl, pdo, pdo_mysql, pdo_pgsql, redis, sodium, zip
+          extensions: apcu, ctype, fileinfo, filter, intl, json, mbstring, openssl, pcntl, pdo, pdo_mysql, pdo_pgsql, redis, sodium, zip
           coverage: none
           tools: composer:v2
 
-      - name: Generate ephemeral application secret
+      - name: Generate ephemeral application and runtime identities
         shell: bash
-        run: echo "APP_SECRET=$(openssl rand -base64 48 | tr -d '\n')" >> "$GITHUB_ENV"
+        run: |
+          {
+            echo "APP_SECRET=$(openssl rand -base64 48 | tr -d '\n')"
+            echo "EXTENSION_RUNTIME_SIGNING_KEY=$(openssl rand -base64 48 | tr -d '\n')"
+            echo 'EXTENSION_RUNTIME_SIGNING_KEY_ID=runtime-v1'
+            echo 'KUMWE_DEPLOYMENT_ID=distribution-acceptance'
+            echo 'KUMWE_REPLICA_ID=distribution-runner'
+            echo 'KUMWE_PROCESS_ID=distribution-runtime'
+          } >> "$GITHUB_ENV"
 
       - name: Build release ZIP with production dependencies
         shell: bash
@@ -248,16 +256,22 @@ jobs:
           secrets_directory="$RUNNER_TEMP/kumwe-secrets"
           install -d -m 0700 "$secrets_directory"
           app_secret_file="$secrets_directory/app-secret"
+          runtime_signing_key_file="$secrets_directory/runtime-signing-key"
+          runtime_previous_keys_file="$secrets_directory/runtime-previous-keys.json"
           administrator_password_file="$secrets_directory/administrator-password"
           database_password_file="$secrets_directory/database-password"
           redis_password_file="$secrets_directory/redis-password"
           umask 077
           openssl rand -base64 48 > "$app_secret_file"
+          openssl rand -base64 48 > "$runtime_signing_key_file"
+          printf '{}\n' > "$runtime_previous_keys_file"
           openssl rand -base64 32 | tr -d '\n' > "$administrator_password_file"
           openssl rand -base64 32 | tr -d '\n' > "$database_password_file"
           openssl rand -base64 32 | tr -d '\n' > "$redis_password_file"
           chmod 0600 \
             "$app_secret_file" \
+            "$runtime_signing_key_file" \
+            "$runtime_previous_keys_file" \
             "$administrator_password_file" \
             "$database_password_file" \
             "$redis_password_file"
@@ -272,6 +286,8 @@ jobs:
             echo 'KUMWE_HTTP_BIND=127.0.0.1'
             echo 'KUMWE_HTTP_PORT=18080'
             echo 'KUMWE_RELEASE=2.0.0-acceptance'
+            echo 'KUMWE_DEPLOYMENT_ID=acceptance-deployment'
+            echo 'KUMWE_REPLICA_ID=acceptance-replica'
             echo "KUMWE_DATABASE_IMAGE=$DATABASE_IMAGE"
             echo "KUMWE_DB_DRIVER=$DATABASE_DRIVER"
             echo "KUMWE_DB_PORT=$DATABASE_PORT"
@@ -282,6 +298,8 @@ jobs:
             echo 'KUMWE_DB_TABLE_PREFIX=kumwe_'
             echo 'KUMWE_REDIS_IMAGE=redis:8-alpine'
             echo "KUMWE_APP_SECRET_FILE=$app_secret_file"
+            echo "KUMWE_RUNTIME_SIGNING_KEY_FILE=$runtime_signing_key_file"
+            echo "KUMWE_RUNTIME_PREVIOUS_KEYS_FILE=$runtime_previous_keys_file"
             echo "KUMWE_ACCEPTANCE_ADMIN_PASSWORD_FILE=$administrator_password_file"
             echo "KUMWE_DB_PASSWORD_FILE=$database_password_file"
             echo "KUMWE_REDIS_PASSWORD_FILE=$redis_password_file"

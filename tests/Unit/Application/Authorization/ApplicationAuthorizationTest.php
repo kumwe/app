@@ -176,6 +176,26 @@ final class ApplicationAuthorizationTest extends TestCase
         }
     }
 
+    public function testNonDefaultSiteBindsCollectionsAndTransportQueuesToTheExecutionContext(): void
+    {
+        $site = '018f22e2-7c8b-7ab0-8f3a-88e8026bb499';
+        $gateway = AuthorizationContext::gateway(ownership: AuthorizationContext::ownership());
+
+        $gateway->assertAllowed(
+            AuthorizationContext::human(['automation.manage'], self::SUBJECT, $site),
+            Capability::fromString('automation.manage'),
+            AuthorizationResource::collection('schedule'),
+        );
+        $gateway->assertAllowed(
+            AuthorizationContext::system(SystemIdentity::Worker)->context(
+                SiteContext::fromString($site),
+                'worker-queue-site-test',
+            ),
+            Capability::fromString('system.worker.operate'),
+            AuthorizationResource::item('queue', 'default'),
+        );
+    }
+
     public function testEveryAllowAndDenyDecisionCarriesRequestSiteAndPolicyMetadata(): void
     {
         /** @var ArrayObject<int, array<string, mixed>> $records */
@@ -412,7 +432,7 @@ final class ApplicationAuthorizationTest extends TestCase
         $scheduler = AuthorizationContext::system(SystemIdentity::Scheduler);
         $gateway->assertAllowed(
             $scheduler->context(SiteContext::default(), 'scheduler-test-request'),
-            Capability::fromString('automation.manage'),
+            Capability::fromString('system.scheduler.dispatch'),
             AuthorizationResource::collection('schedule'),
         );
         $gateway->assertAllowed(
@@ -422,6 +442,22 @@ final class ApplicationAuthorizationTest extends TestCase
             ),
             Capability::fromString('system.worker.operate'),
             AuthorizationResource::item('queue', 'default'),
+        );
+        $gateway->assertAllowed(
+            AuthorizationContext::system(SystemIdentity::ExtensionMaterializer)->context(
+                SiteContext::default(),
+                'extension-materializer-test',
+            ),
+            Capability::fromString('extensions.manage'),
+            AuthorizationResource::collection('extension_runtime_map'),
+        );
+        $gateway->assertAllowed(
+            AuthorizationContext::system(SystemIdentity::InstallationMaintenance)->context(
+                SiteContext::default(),
+                'installation-maintenance-test',
+            ),
+            Capability::fromString('automation.manage'),
+            AuthorizationResource::item('automation_installation', 'system.idempotency.purge'),
         );
 
         self::assertFalse($gateway->decide(
@@ -433,6 +469,22 @@ final class ApplicationAuthorizationTest extends TestCase
             $scheduler->context(SiteContext::fromString('another-site'), 'scheduler-cross-site-test'),
             Capability::fromString('automation.manage'),
             AuthorizationResource::collection('schedule'),
+        )->allowed);
+        self::assertFalse($gateway->decide(
+            AuthorizationContext::system(SystemIdentity::Worker)->context(
+                SiteContext::default(),
+                'worker-global-escalation-test',
+            ),
+            Capability::fromString('extensions.manage'),
+            AuthorizationResource::collection('extension_runtime_map'),
+        )->allowed);
+        self::assertFalse($gateway->decide(
+            AuthorizationContext::system(SystemIdentity::Worker)->context(
+                SiteContext::default(),
+                'worker-global-maintenance-escalation-test',
+            ),
+            Capability::fromString('automation.manage'),
+            AuthorizationResource::item('automation_installation', 'system.idempotency.purge'),
         )->allowed);
         self::assertFalse($gateway->decide(
             AuthorizationContext::human(['system.worker.operate']),

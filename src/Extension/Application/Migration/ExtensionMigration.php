@@ -6,7 +6,10 @@ namespace Kumwe\CMS\Extension\Application\Migration;
 
 use Doctrine\DBAL\Connection;
 
-/** A forward extension schema change with a compensating rollback. */
+/**
+ * A forward extension schema change. up() MUST be idempotent and resume safely after
+ * implicit-commit DDL; the durable install saga retries it until the migration ledger commits.
+ */
 interface ExtensionMigration
 {
     public function id(): string;

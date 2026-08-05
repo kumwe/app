@@ -24,6 +24,8 @@ final class ProductionArtifactsTest extends TestCase
         self::assertStringContainsString('FROM php-base AS runtime', $dockerfile);
         self::assertStringContainsString('pdo_mysql pdo_pgsql', $dockerfile);
         self::assertStringContainsString('pecl install redis-6.3.0', $dockerfile);
+        self::assertStringContainsString('apcu-5.1.28', $dockerfile);
+        self::assertStringContainsString('mbstring pcntl pdo_mysql', $dockerfile);
         self::assertStringContainsString('USER www-data', $dockerfile);
         self::assertStringContainsString(
             'COPY --from=vendor --chown=nginx:nginx /var/www/kumwe/public /var/www/kumwe/public',
@@ -66,6 +68,10 @@ final class ProductionArtifactsTest extends TestCase
         self::assertStringContainsString('KUMWE_DATABASE_IMAGE:-mariadb:lts', $compose);
         self::assertStringContainsString('KUMWE_REDIS_IMAGE:-redis:8-alpine', $compose);
         self::assertStringContainsString('APP_SECRET_FILE: /run/secrets/app_secret', $compose);
+        self::assertStringContainsString(
+            'EXTENSION_RUNTIME_SIGNING_KEY_FILE: /run/secrets/runtime_signing_key',
+            $compose,
+        );
         self::assertStringContainsString('DB_PASSWORD_FILE: /run/secrets/db_password', $compose);
         self::assertStringContainsString(
             'extension-assets-data:/var/www/kumwe/public/assets/extensions',
@@ -123,6 +129,20 @@ final class ProductionArtifactsTest extends TestCase
         self::assertStringContainsString('Idempotency-Replayed: true', $probe);
         self::assertStringContainsString('kumwe_content_list', $probe);
         self::assertStringContainsString('kumwe_content_create', $probe);
+    }
+
+    public function testNativeInstallerPersistsIndependentRuntimeTrustAndStableIdentity(): void
+    {
+        $installer = $this->contents('bin/kumwe-install');
+
+        self::assertStringContainsString(
+            "'EXTENSION_RUNTIME_SIGNING_KEY' => base64_encode(random_bytes(48))",
+            $installer,
+        );
+        self::assertStringContainsString("'KUMWE_DEPLOYMENT_ID' =>", $installer);
+        self::assertStringContainsString("'KUMWE_REPLICA_ID' => 'primary-replica'", $installer);
+        self::assertStringContainsString("'KUMWE_PROCESS_ID' => 'application-runtime'", $installer);
+        self::assertStringContainsString("'KUMWE_INSTANCE_ID' => 'primary-instance'", $installer);
     }
 
     public function testObservabilityContractIsPrivateByDefault(): void

@@ -28,6 +28,7 @@ final class ConfigurationFactoryTest extends TestCase
         self::assertSame(RuntimeEnvironment::Production, $configuration->environment);
         self::assertTrue($configuration->isProduction());
         self::assertSame(['kumwe.test'], $configuration->trustedHosts);
+        self::assertSame('default', $configuration->publicSite);
         self::assertSame('kumwe_', $configuration->database->tablePrefix);
         self::assertSame('pgsql', $configuration->database->driver);
         self::assertSame('redis', $configuration->redis->host);
@@ -61,6 +62,57 @@ final class ConfigurationFactoryTest extends TestCase
         (new ConfigurationFactory())->create(new Environment($values));
     }
 
+    public function testProductionRequiresIndependentRuntimeSigningKey(): void
+    {
+        $values = $this->values();
+        unset($values['EXTENSION_RUNTIME_SIGNING_KEY']);
+        $this->expectException(InvalidArgumentException::class);
+
+        (new ConfigurationFactory())->create(new Environment($values));
+    }
+
+    public function testRuntimeSigningKeyCannotReuseApplicationSecret(): void
+    {
+        $values = $this->values();
+        $values['EXTENSION_RUNTIME_SIGNING_KEY'] = $values['APP_SECRET'];
+        $this->expectException(InvalidArgumentException::class);
+
+        (new ConfigurationFactory())->create(new Environment($values));
+    }
+
+    public function testRuntimeProcessIdentityMustBeStableIdentifier(): void
+    {
+        $values = $this->values();
+        $values['KUMWE_PROCESS_ID'] = 'random process request';
+        $this->expectException(InvalidArgumentException::class);
+
+        (new ConfigurationFactory())->create(new Environment($values));
+    }
+
+    public function testPublicSiteMustBeCanonicalIdentifier(): void
+    {
+        $values = $this->values();
+        $values['APP_PUBLIC_SITE'] = 'Invalid Site';
+        $this->expectException(InvalidArgumentException::class);
+
+        (new ConfigurationFactory())->create(new Environment($values));
+    }
+
+    public function testPreviousRuntimeKeyRingCanBeReadFromProtectedFile(): void
+    {
+        $file = tempnam(sys_get_temp_dir(), 'kumwe-runtime-keys-');
+        self::assertIsString($file);
+        file_put_contents($file, json_encode(['runtime-v0' => str_repeat('p', 32)], JSON_THROW_ON_ERROR));
+        try {
+            $values = $this->values();
+            $values['EXTENSION_RUNTIME_PREVIOUS_KEYS_FILE'] = $file;
+            $configuration = (new ConfigurationFactory())->create(new Environment($values));
+
+            self::assertSame(['runtime-v0' => str_repeat('p', 32)], $configuration->runtimePreviousSigningKeys);
+        } finally {
+            unlink($file);
+        }
+    }
     /**
      * @return array<string, string>
      */
@@ -72,6 +124,11 @@ final class ConfigurationFactoryTest extends TestCase
             'APP_BASE_URL' => 'https://kumwe.test',
             'APP_TRUSTED_HOSTS' => 'kumwe.test',
             'APP_SECRET' => str_repeat('a', 32),
+            'EXTENSION_RUNTIME_SIGNING_KEY' => str_repeat('r', 32),
+            'KUMWE_DEPLOYMENT_ID' => 'deployment-2026-08-05',
+            'KUMWE_REPLICA_ID' => 'replica-one',
+            'KUMWE_PROCESS_ID' => 'app-runtime',
+            'KUMWE_INSTANCE_ID' => 'instance-one',
             'DB_HOST' => 'postgres',
             'DB_DRIVER' => 'pgsql',
             'DB_PORT' => '5432',

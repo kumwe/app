@@ -7,12 +7,18 @@ namespace Kumwe\CMS\Tests\Unit\Application\Automation;
 use DateTimeImmutable;
 use Kumwe\CMS\Application\Automation\JobHandler;
 use Kumwe\CMS\Application\Automation\JobHandlerRegistry;
+use Kumwe\CMS\Application\Automation\GlobalJobPrincipals;
+use Kumwe\CMS\Application\Automation\JobExecutionClass;
+use Kumwe\CMS\Application\Automation\JobExecutionScope;
 use Kumwe\CMS\Application\Automation\JobLeaseContext;
 use Kumwe\CMS\Application\Automation\JobQueue;
 use Kumwe\CMS\Application\Automation\LeaseAwareJobHandler;
 use Kumwe\CMS\Application\Automation\StoredJob;
 use Kumwe\CMS\Application\Automation\Worker;
+use Kumwe\CMS\Application\Authorization\AuthorizationResource;
+use Kumwe\CMS\Application\Authorization\AuthorizationResourceOwnershipUnknown;
 use Kumwe\CMS\Application\Authorization\ExecutionContext;
+use Kumwe\CMS\Application\Authorization\ResourceSiteOwnership;
 use Kumwe\CMS\Application\Authorization\SiteContext;
 use Kumwe\CMS\Application\Authorization\SystemIdentity;
 use Kumwe\CMS\Tests\Support\AuthorizationContext;
@@ -28,7 +34,7 @@ final class WorkerTest extends TestCase
     {
         $queue = new RecordingJobQueue([$this->job('lease-aware')]);
         $handler = new RenewingHandler();
-        $worker = new Worker($queue, new JobHandlerRegistry([$handler]), AuthorizationContext::gateway());
+        $worker = $this->worker($queue, new JobHandlerRegistry([$handler]));
 
         self::assertTrue($worker->runOnce($this->context(), 'default', 'worker-one', 30));
         self::assertSame([45], $queue->renewals);
@@ -39,11 +45,7 @@ final class WorkerTest extends TestCase
     public function testTransientFailureIsReleasedThroughQueuePolicy(): void
     {
         $queue = new RecordingJobQueue([$this->job('failing')]);
-        $worker = new Worker(
-            $queue,
-            new JobHandlerRegistry([new FailingHandler()]),
-            AuthorizationContext::gateway(),
-        );
+        $worker = $this->worker($queue, new JobHandlerRegistry([new FailingHandler()]));
 
         self::assertTrue($worker->runOnce($this->context(), 'default', 'worker-one'));
         self::assertSame([false], $queue->permanentFailures);
@@ -53,7 +55,7 @@ final class WorkerTest extends TestCase
     public function testUnknownTypeIsPermanentlyDeadLettered(): void
     {
         $queue = new RecordingJobQueue([$this->job('unknown')]);
-        $worker = new Worker($queue, new JobHandlerRegistry([]), AuthorizationContext::gateway());
+        $worker = $this->worker($queue, new JobHandlerRegistry([]));
 
         self::assertTrue($worker->runOnce($this->context(), 'default', 'worker-one'));
         self::assertSame([true], $queue->permanentFailures);
@@ -62,16 +64,128 @@ final class WorkerTest extends TestCase
     public function testEmptyQueueOnlyPublishesIdleHeartbeat(): void
     {
         $queue = new RecordingJobQueue([]);
-        $worker = new Worker($queue, new JobHandlerRegistry([]), AuthorizationContext::gateway());
+        $worker = $this->worker($queue, new JobHandlerRegistry([]));
 
         self::assertFalse($worker->runOnce($this->context(), 'default', 'worker-one'));
         self::assertSame(1, $queue->heartbeats);
     }
 
-    private function job(string $type): StoredJob
+    public function testHandlerReceivesTheDurablyOwnedJobSite(): void
+    {
+        $queue = new RecordingJobQueue([$this->job('site-aware')]);
+        $handler = new SiteCapturingHandler();
+        $worker = $this->worker($queue, new JobHandlerRegistry([$handler]), 'corporate');
+
+        self::assertTrue($worker->runOnce($this->context(), 'default', 'worker-one'));
+        self::assertSame('corporate', $handler->site);
+    }
+
+    public function testOneWorkerConsumesSharedQueueJobsInTheirIndependentSites(): void
+    {
+        $firstId = '00000000-0000-7000-8000-000000000001';
+        $secondId = '00000000-0000-7000-8000-000000000002';
+        $queue = new RecordingJobQueue([
+            $this->job('multi-site', $firstId),
+            $this->job('multi-site', $secondId),
+        ]);
+        $handler = new MultiSiteCapturingHandler();
+        $ownership = new class ($firstId, $secondId) implements ResourceSiteOwnership {
+            public function __construct(private string $firstId, private string $secondId)
+            {
+            }
+
+            public function siteFor(AuthorizationResource $resource): SiteContext
+            {
+                return match ($resource->identifier()) {
+                    $this->firstId => SiteContext::fromString('corporate'),
+                    $this->secondId => SiteContext::fromString('storefront'),
+                    default => SiteContext::default(),
+                };
+            }
+        };
+        $worker = new Worker(
+            $queue,
+            new JobHandlerRegistry([$handler]),
+            AuthorizationContext::gateway(ownership: $ownership),
+            $ownership,
+            AuthorizationContext::system(SystemIdentity::Worker),
+            new JobExecutionScope(),
+            $this->globalPrincipals(),
+        );
+
+        self::assertTrue($worker->runOnce($this->context(), 'shared', 'worker-one'));
+        self::assertTrue($worker->runOnce($this->context(), 'shared', 'worker-one'));
+        self::assertSame(['corporate', 'storefront'], $handler->sites);
+        self::assertSame([$firstId, $secondId], $queue->completed);
+    }
+
+    public function testJobRetiredBetweenClaimAndExecutionIsNeverHandled(): void
+    {
+        $queue = new RecordingJobQueue([$this->job('site-aware')]);
+        $handler = new SiteCapturingHandler();
+        $ownership = new class implements ResourceSiteOwnership {
+            public function siteFor(AuthorizationResource $resource): SiteContext
+            {
+                throw new AuthorizationResourceOwnershipUnknown($resource);
+            }
+        };
+        $worker = new Worker(
+            $queue,
+            new JobHandlerRegistry([$handler]),
+            AuthorizationContext::gateway(ownership: $ownership),
+            $ownership,
+            AuthorizationContext::system(SystemIdentity::Worker),
+            new JobExecutionScope(),
+            $this->globalPrincipals(),
+        );
+
+        self::assertTrue($worker->runOnce($this->context(), 'default', 'worker-one'));
+        self::assertNull($handler->site);
+        self::assertSame([], $queue->completed);
+        self::assertSame([], $queue->permanentFailures);
+        self::assertSame(1, $queue->heartbeats);
+    }
+
+    public function testInstallationGlobalJobUsesItsDedicatedPrincipalAndWorkerLeaseAuthority(): void
+    {
+        $queue = new RecordingJobQueue([$this->job(
+            'system.idempotency.purge',
+            executionClass: JobExecutionClass::Installation,
+        )]);
+        $handler = new IdentityCapturingHandler('system.idempotency.purge');
+        $worker = $this->worker($queue, new JobHandlerRegistry([$handler]));
+
+        self::assertTrue($worker->runOnce($this->context(), 'default', 'worker-one'));
+        self::assertSame(SystemIdentity::InstallationMaintenance, $handler->identity);
+        self::assertSame([SystemIdentity::Worker], $queue->completionIdentities);
+    }
+
+    private function worker(
+        JobQueue $queue,
+        JobHandlerRegistry $handlers,
+        string $site = SiteContext::DEFAULT,
+    ): Worker {
+        $ownership = AuthorizationContext::ownership($site);
+
+        return new Worker(
+            $queue,
+            $handlers,
+            AuthorizationContext::gateway(ownership: $ownership),
+            $ownership,
+            AuthorizationContext::system(SystemIdentity::Worker),
+            new JobExecutionScope(),
+            $this->globalPrincipals(),
+        );
+    }
+
+    private function job(
+        string $type,
+        string $id = '00000000-0000-7000-8000-000000000001',
+        JobExecutionClass $executionClass = JobExecutionClass::Site,
+    ): StoredJob
     {
         return new StoredJob(
-            '00000000-0000-7000-8000-000000000001',
+            $id,
             'default',
             $type,
             [],
@@ -79,6 +193,15 @@ final class WorkerTest extends TestCase
             1,
             5,
             '00000000-0000-7000-8000-000000000101',
+            $executionClass->value,
+        );
+    }
+
+    private function globalPrincipals(): GlobalJobPrincipals
+    {
+        return new GlobalJobPrincipals(
+            AuthorizationContext::system(SystemIdentity::InstallationMaintenance),
+            AuthorizationContext::system(SystemIdentity::ExtensionMaterializer),
         );
     }
 
@@ -101,6 +224,8 @@ final class RecordingJobQueue implements JobQueue
     public array $completed = [];
     /** @var list<bool> */
     public array $permanentFailures = [];
+    /** @var list<SystemIdentity|null> */
+    public array $completionIdentities = [];
     public int $heartbeats = 0;
 
     /** @param list<StoredJob> $jobs */
@@ -142,6 +267,7 @@ final class RecordingJobQueue implements JobQueue
     public function complete(ExecutionContext $context, StoredJob $job, string $workerId): void
     {
         $this->completed[] = $job->id;
+        $this->completionIdentities[] = $context->systemIdentity();
     }
 
     public function fail(
@@ -199,6 +325,56 @@ final class RenewingHandler implements LeaseAwareJobHandler
         JobLeaseContext $lease,
     ): void {
         $lease->renew(45);
+    }
+}
+
+final class SiteCapturingHandler implements JobHandler
+{
+    public ?string $site = null;
+
+    public function type(): string
+    {
+        return 'site-aware';
+    }
+
+    public function handle(array $payload, ExecutionContext $context): void
+    {
+        $this->site = $context->site()->identifier();
+    }
+}
+
+final class MultiSiteCapturingHandler implements JobHandler
+{
+    /** @var list<string> */
+    public array $sites = [];
+
+    public function type(): string
+    {
+        return 'multi-site';
+    }
+
+    public function handle(array $payload, ExecutionContext $context): void
+    {
+        $this->sites[] = $context->site()->identifier();
+    }
+}
+
+final class IdentityCapturingHandler implements JobHandler
+{
+    public ?SystemIdentity $identity = null;
+
+    public function __construct(private string $jobType)
+    {
+    }
+
+    public function type(): string
+    {
+        return $this->jobType;
+    }
+
+    public function handle(array $payload, ExecutionContext $context): void
+    {
+        $this->identity = $context->systemIdentity();
     }
 }
 

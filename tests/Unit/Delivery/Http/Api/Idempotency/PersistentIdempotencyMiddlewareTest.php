@@ -18,6 +18,7 @@ use Kumwe\CMS\Delivery\Http\Api\ProblemDetailsResponseFactory;
 use Kumwe\CMS\Identity\Application\Authentication\AuthenticatedPrincipal;
 use Kumwe\CMS\Identity\Application\Administration\AccessControlRepository;
 use Kumwe\CMS\Identity\Application\Administration\TokenDelegationPreauthorizer;
+use Kumwe\CMS\Identity\Application\Administration\TokenRotationPreauthorizer;
 use Kumwe\CMS\Infrastructure\Persistence\TableNames;
 use Kumwe\CMS\Infrastructure\Persistence\TransactionManager;
 use Kumwe\CMS\Tests\Support\AuthorizationContext;
@@ -108,14 +109,28 @@ final class PersistentIdempotencyMiddlewareTest extends TestCase
                 {
                     return $operation();
                 }
+
+                public function afterCommit(callable $operation): void
+                {
+                    $operation();
+                }
+
+                public function afterRollback(callable $operation): void
+                {
+                }
             },
             new HttpMutationPreauthorizer(
                 AuthorizationContext::gateway(),
                 (new \ReflectionClass(ContentService::class))->newInstanceWithoutConstructor(),
-                $this->createStub(AccessControlRepository::class),
+                $repository = $this->createStub(AccessControlRepository::class),
                 new TokenDelegationPreauthorizer(
-                    $this->createStub(AccessControlRepository::class),
+                    $repository,
                     AuthorizationContext::gateway(),
+                ),
+                new TokenRotationPreauthorizer(
+                    $repository,
+                    AuthorizationContext::gateway(),
+                    new TokenDelegationPreauthorizer($repository, AuthorizationContext::gateway()),
                 ),
             ),
         );

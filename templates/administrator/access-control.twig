@@ -1,4 +1,4 @@
-{% extends "administrator/layout.twig" %}
+{% extends "layout.twig" %}
 {% block title %}Users and access · Kumwe{% endblock %}
 {% block content %}
   <div class="page-heading"><div><p class="eyebrow">Identity</p><h1>Users, groups and permissions</h1></div></div>
@@ -28,7 +28,8 @@
     <td><select form="{{ user_form }}" name="status">{% for status in ['pending','active','suspended','disabled'] %}<option value="{{ status }}" {% if status == user.status %}selected{% endif %}>{{ status|title }}</option>{% endfor %}</select></td>
     <td>{% for role in user.roles %}<form method="post" action="/administrator/access" class="grant-pill"><input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="action" value="role.revoke"><input type="hidden" name="user_id" value="{{ user.id }}"><input type="hidden" name="role_id" value="{{ role.id }}"><span class="status">{{ role.name }}</span>{% if capabilities['users.manage'] is defined %}<button class="link-button danger" type="submit" aria-label="Remove {{ role.name }} from {{ user.display_name }}">Remove</button>{% endif %}</form>{% else %}None{% endfor %}</td>
     <td class="actions"><form id="{{ user_form }}" method="post" action="/administrator/access"><input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="id" value="{{ user.id }}"><input type="hidden" name="version" value="{{ user.version }}"></form>
-      {% if capabilities['users.manage'] is defined %}<button form="{{ user_form }}" name="action" value="user.update">Save</button>{% endif %}</td>
+      {% if capabilities['users.manage'] is defined %}<button form="{{ user_form }}" name="action" value="user.update">Save</button>
+      <form method="post" action="/administrator/access" class="stack"><input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="action" value="token.emergency_revoke"><input type="hidden" name="user_id" value="{{ user.id }}"><input name="reason" maxlength="500" placeholder="Emergency revocation reason" required><button class="danger" type="submit">Revoke all tokens</button></form>{% endif %}</td>
   </tr>{% endfor %}</tbody></table></div></section>
 
   <section class="panel stack"><h2>Groups and capability grants</h2>
@@ -56,6 +57,8 @@
     <input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="action" value="token.create">
     <label>User email<input type="email" name="token_email" required></label><label>Token name<input name="token_name" required></label>
     <label>Capabilities<input name="token_capabilities" placeholder="content.read,navigation.read" required></label><label>Expires at<input type="datetime-local" name="expires_at"></label>
+    <label>Audience<select name="audience" required><option value="kumwe-http">HTTP API</option><option value="kumwe-cli">CLI</option><option value="kumwe-mcp">MCP</option></select></label>
+    <label>Purpose<select name="purpose" required><option value="api">API</option><option value="management">CLI management</option><option value="mcp">MCP</option></select></label>
     <button class="primary" type="submit">Create token</button>
   </form></section>
 
@@ -64,13 +67,13 @@
     <tbody>{% for token in tokens %}<tr>
       <td><strong>{{ token.name }}</strong><br><small>{{ token.id }}</small></td>
       <td>{{ token.subject_name }}<br><small>{{ token.subject_email }}</small></td>
-      <td><small>{{ token.capabilities|join(', ') }}</small></td>
+      <td><small>{{ token.capabilities|join(', ') }}<br>{{ token.audience }} · {{ token.purpose }} · {{ token.site_identifier }}</small></td>
       <td>{{ token.expires_at|default('No expiry') }}</td>
       <td>{% if token.revoked_at %}<span class="status">Revoked</span>{% else %}<span class="status published">Active</span>{% endif %}</td>
       <td>{% if not token.revoked_at %}<form method="post" action="/administrator/access">
         <input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="action" value="token.revoke"><input type="hidden" name="token_id" value="{{ token.id }}">
         <button class="danger" type="submit">Revoke</button>
-      </form>{% endif %}</td>
+      </form><form method="post" action="/administrator/access" class="stack"><input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="action" value="token.rotate"><input type="hidden" name="token_id" value="{{ token.id }}"><input name="token_name" value="{{ token.name }}" required><input type="datetime-local" name="expires_at"><button type="submit">Rotate</button></form>{% endif %}</td>
     </tr>{% else %}<tr><td colspan="6">No API or MCP tokens have been issued.</td></tr>{% endfor %}</tbody>
   </table></div></section>
   {% endif %}

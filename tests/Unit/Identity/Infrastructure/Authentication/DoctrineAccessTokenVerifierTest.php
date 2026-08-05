@@ -28,20 +28,21 @@ final class DoctrineAccessTokenVerifierTest extends TestCase
     private const string TOKEN = 'abcdefghijklmnopqrstuvwxyz0123456789ABCD';
     private const string SUBJECT = '018f22e2-7c8b-7ab0-8f3a-88e8026bb301';
 
-    public function testBuildsPrincipalFromPortableDatabaseRow(): void
+    public function testRemovedPermissionIsAbsentImmediatelyDespiteTokenSnapshot(): void
     {
         $database = $this->createMock(Connection::class);
         $database->method('quoteIdentifier')->willReturnCallback(static fn (string $name): string => $name);
         $database->expects(self::once())->method('fetchAssociative')->willReturn([
             'id' => '018f22e2-7c8b-7ab0-8f3a-88e8026bb399',
             'subject_id' => self::SUBJECT,
-            'capabilities' => '["content.read","content.update"]',
+            'capabilities' => '["content.read","content.update","content.delete"]',
             'last_used_at' => null,
             'security_epoch' => 1,
+            'site_identifier' => 'default',
         ]);
         $database->expects(self::once())->method('fetchAllAssociative')->willReturn([
-            ['capability' => 'content.read', 'scope_type' => 'global', 'scope_identifier' => null],
-            ['capability' => 'content.update', 'scope_type' => 'content', 'scope_identifier' => 'news'],
+            ['capability' => 'content.read', 'scope_type' => 'site', 'scope_identifier' => 'default'],
+            ['capability' => 'content.update', 'scope_type' => 'content_type', 'scope_identifier' => 'news'],
         ]);
         $database->expects(self::once())->method('executeStatement');
 
@@ -55,13 +56,23 @@ final class DoctrineAccessTokenVerifierTest extends TestCase
 
         self::assertInstanceOf(AuthenticatedPrincipal::class, $principal);
         self::assertTrue($principal->hasCapability(Capability::fromString('content.read')));
+        self::assertTrue($principal->hasCapability(Capability::fromString('content.update')));
+        self::assertFalse($principal->hasCapability(Capability::fromString('content.delete')));
+        self::assertTrue($principal->allows(
+            Capability::fromString('content.read'),
+            [GrantScope::named('site', 'default')],
+        ));
+        self::assertFalse($principal->allows(
+            Capability::fromString('content.read'),
+            [GrantScope::named('site', 'other-site')],
+        ));
         self::assertTrue($principal->allows(
             Capability::fromString('content.update'),
-            [GrantScope::named('content', 'news')],
+            [GrantScope::named('content_type', 'news')],
         ));
         self::assertFalse($principal->allows(
             Capability::fromString('content.update'),
-            [GrantScope::named('content', 'another')],
+            [GrantScope::named('content_type', 'events')],
         ));
     }
 
@@ -77,6 +88,42 @@ final class DoctrineAccessTokenVerifierTest extends TestCase
             AuthorizationContext::provenance(),
         ))
             ->verify('short'));
+    }
+
+    public function testRejectsUnknownAudiencePurposeBeforeDatabaseLookup(): void
+    {
+        $database = $this->createMock(Connection::class);
+        $database->expects(self::never())->method('fetchAssociative');
+
+        self::assertNull((new DoctrineAccessTokenVerifier(
+            $database,
+            new TableNames($database, 'kumwe_'),
+            $this->clock(),
+            AuthorizationContext::provenance(),
+        ))->verify(self::TOKEN, 'kumwe-http', 'management', 'default'));
+    }
+
+    public function testBindsEveryLookupToAdapterAndSiteContext(): void
+    {
+        $database = $this->createMock(Connection::class);
+        $database->method('quoteIdentifier')->willReturnCallback(static fn (string $name): string => $name);
+        $database->expects(self::exactly(2))->method('fetchAssociative')->with(
+            self::stringContains('INNER JOIN kumwe_sites s'),
+            self::callback(static function (array $parameters): bool {
+                return $parameters === [hash('sha256', self::TOKEN), 'kumwe-cli', 'management', 'default', true]
+                    || $parameters === [hash('sha256', self::TOKEN), 'kumwe-http', 'api', 'other-site', true];
+            }),
+            self::anything(),
+        )->willReturn(false);
+        $verifier = new DoctrineAccessTokenVerifier(
+            $database,
+            new TableNames($database, 'kumwe_'),
+            $this->clock(),
+            AuthorizationContext::provenance(),
+        );
+
+        self::assertNull($verifier->verify(self::TOKEN, 'kumwe-cli', 'management', 'default'));
+        self::assertNull($verifier->verify(self::TOKEN, 'kumwe-http', 'api', 'other-site'));
     }
 
     private function clock(): ClockInterface

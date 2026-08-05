@@ -67,6 +67,23 @@ final class CommandInput
         return $value;
     }
 
+    /** @param array<string, string> $options @return list<array<string, mixed>> */
+    public static function jsonObjectList(array $options, string $name): array
+    {
+        $value = json_decode(self::required($options, $name), true, 64, JSON_THROW_ON_ERROR);
+        if (!is_array($value) || !array_is_list($value)) {
+            throw new InvalidArgumentException(sprintf('The --%s option must be a JSON array.', $name));
+        }
+        foreach ($value as $item) {
+            if (!is_array($item) || array_is_list($item)) {
+                throw new InvalidArgumentException(sprintf('Every --%s item must be a JSON object.', $name));
+            }
+        }
+
+        /** @var list<array<string, mixed>> $value */
+        return $value;
+    }
+
     /** @param array<string, mixed> $value */
     public static function render(array $value): string
     {

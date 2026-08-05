@@ -13,9 +13,14 @@ use InvalidArgumentException;
 use JsonException;
 use Kumwe\CMS\Application\Authorization\AuthorizationGateway;
 use Kumwe\CMS\Application\Authorization\AuthorizationResource;
+use Kumwe\CMS\Application\Authorization\AuthorizationResourceOwnershipUnknown;
 use Kumwe\CMS\Application\Authorization\ExecutionContext;
+use Kumwe\CMS\Application\Authorization\ResourceSiteOwnership;
 use Kumwe\CMS\Application\Authorization\ResourceSiteOwnershipWriter;
+use Kumwe\CMS\Application\Authorization\SystemPrincipal;
 use Kumwe\CMS\Application\Automation\CronExpression;
+use Kumwe\CMS\Application\Automation\JobExecutionClass;
+use Kumwe\CMS\Application\Automation\JobExecutionScope;
 use Kumwe\CMS\Application\Automation\ScheduleOccurrenceKey;
 use Kumwe\CMS\Application\Automation\Scheduler;
 use Kumwe\CMS\Infrastructure\Persistence\TableNames;
@@ -33,7 +38,10 @@ final readonly class DoctrineScheduler implements Scheduler, ScheduleRepository
         private TransactionManager $transactions,
         private ClockInterface $clock,
         private AuthorizationGateway $authorization,
-        private ResourceSiteOwnershipWriter $ownership,
+        private ResourceSiteOwnership $ownership,
+        private ResourceSiteOwnershipWriter $ownershipWriter,
+        private SystemPrincipal $system,
+        private JobExecutionScope $jobScope,
     ) {
     }
 
@@ -50,17 +58,65 @@ final readonly class DoctrineScheduler implements Scheduler, ScheduleRepository
 
         return $this->transactions->transactional(function () use ($context, $limit): int {
             $rows = $this->database->fetchAllAssociative(sprintf(
-                'SELECT * FROM %s WHERE enabled = ? AND next_run_at <= ? '
-                . 'ORDER BY next_run_at, id LIMIT %d FOR UPDATE SKIP LOCKED',
+                'SELECT s.* FROM %s s WHERE (s.execution_scope = ? OR (s.execution_scope = ? '
+                . 'AND EXISTS (SELECT 1 FROM %s o INNER JOIN %s site ON site.identifier = o.site_identifier '
+                . 'WHERE o.resource_type = ? AND o.resource_id = s.id AND site.enabled = ?))) '
+                . 'AND s.enabled = ? AND s.next_run_at <= ? '
+                . 'ORDER BY s.next_run_at, s.id LIMIT %d FOR UPDATE SKIP LOCKED',
                 $this->tables->quoted('schedules'),
+                $this->tables->quoted('resource_site_ownership'),
+                $this->tables->quoted('sites'),
                 $limit,
-            ), [true, $this->clock->now()], [Types::BOOLEAN, Types::DATETIME_IMMUTABLE]);
+            ), [
+                JobExecutionClass::Installation->value,
+                JobExecutionClass::Site->value,
+                'schedule',
+                true,
+                true,
+                $this->clock->now(),
+            ], [
+                Types::STRING,
+                Types::STRING,
+                Types::STRING,
+                Types::BOOLEAN,
+                Types::BOOLEAN,
+                Types::DATETIME_IMMUTABLE,
+            ]);
 
+            $dispatched = 0;
             foreach ($rows as $row) {
-                $this->dispatch($row, $context->site());
+                $scheduleId = $this->requiredString($row, 'id');
+                $jobType = $this->requiredString($row, 'job_type');
+                $executionClass = $this->jobScope->assertStoredClass(
+                    $jobType,
+                    $this->requiredString($row, 'execution_scope'),
+                );
+                $site = null;
+                if ($executionClass === JobExecutionClass::Site) {
+                    try {
+                        $site = $this->ownership->siteFor(AuthorizationResource::item('schedule', $scheduleId));
+                    } catch (AuthorizationResourceOwnershipUnknown) {
+                        continue;
+                    }
+                    if (!$this->lockEnabledSite($site)) {
+                        continue;
+                    }
+                    $scheduleContext = $this->system->context(
+                        $site,
+                        'scheduler-schedule-' . $scheduleId,
+                        $context->correlationId(),
+                    );
+                    $this->authorization->assertAllowed(
+                        $scheduleContext,
+                        Capability::fromString('system.scheduler.dispatch'),
+                        AuthorizationResource::item('schedule', $scheduleId),
+                    );
+                }
+                $this->dispatch($row, $site, $executionClass);
+                $dispatched++;
             }
 
-            return count($rows);
+            return $dispatched;
         });
     }
 
@@ -84,6 +140,8 @@ final readonly class DoctrineScheduler implements Scheduler, ScheduleRepository
             throw new InvalidArgumentException('The schedule timezone is invalid.');
         }
         $this->assertJobType($jobType);
+        $this->authorizeJobType($context, $jobType);
+        $executionClass = $this->jobScope->executionClass($jobType);
         $this->assertQueue($queue);
         $id = Uuid::uuid7()->toString();
         $now = $this->clock->now();
@@ -95,6 +153,7 @@ final readonly class DoctrineScheduler implements Scheduler, ScheduleRepository
             $timezone,
             $queue,
             $jobType,
+            $executionClass,
             $payload,
             $firstRun,
             $now,
@@ -106,6 +165,7 @@ final readonly class DoctrineScheduler implements Scheduler, ScheduleRepository
                 'timezone' => $timezone,
                 'queue' => $queue,
                 'job_type' => $jobType,
+                'execution_scope' => $executionClass->value,
                 'job_schema_version' => 1,
                 'payload' => $payload,
                 'priority' => 0,
@@ -123,7 +183,9 @@ final readonly class DoctrineScheduler implements Scheduler, ScheduleRepository
                 'created_at' => Types::DATETIME_IMMUTABLE,
                 'updated_at' => Types::DATETIME_IMMUTABLE,
             ]);
-            $this->ownership->record(AuthorizationResource::item('schedule', $id), $context->site());
+            if ($executionClass === JobExecutionClass::Site) {
+                $this->ownershipWriter->record(AuthorizationResource::item('schedule', $id), $context->site());
+            }
         });
 
         return $id;
@@ -139,23 +201,23 @@ final readonly class DoctrineScheduler implements Scheduler, ScheduleRepository
         return array_values(array_filter(
             $rows,
             fn (array $row): bool => is_string($row['id'] ?? null)
-                && $this->authorization->decide(
-                    $context,
-                    Capability::fromString('automation.manage'),
-                    AuthorizationResource::item('schedule', $row['id']),
-                )->allowed,
+                && $this->canManageRow($context, $row),
         ));
     }
 
     public function find(ExecutionContext $context, string $id): ?array
     {
-        $this->authorize($context, AuthorizationResource::item('schedule', $id));
         $row = $this->database->fetchAssociative(sprintf(
             'SELECT * FROM %s WHERE id = ?',
             $this->tables->quoted('schedules'),
         ), [$id]);
 
-        return $row === false ? null : $this->normalize($row);
+        if ($row === false) {
+            return null;
+        }
+        $this->authorizeRow($context, $row);
+
+        return $this->normalize($row);
     }
 
     public function setEnabled(
@@ -164,7 +226,8 @@ final readonly class DoctrineScheduler implements Scheduler, ScheduleRepository
         int $expectedVersion,
         bool $enabled,
     ): void {
-        $this->authorize($context, AuthorizationResource::item('schedule', $id));
+        $row = $this->scheduleRow($id);
+        $this->authorizeRow($context, $row);
         if ($expectedVersion < 1) {
             throw new InvalidArgumentException('The expected schedule version must be positive.');
         }
@@ -186,12 +249,18 @@ final readonly class DoctrineScheduler implements Scheduler, ScheduleRepository
 
     public function delete(ExecutionContext $context, string $id, int $expectedVersion): void
     {
-        $this->authorize($context, AuthorizationResource::item('schedule', $id));
+        $row = $this->scheduleRow($id);
+        $executionClass = $this->authorizeRow($context, $row);
         if ($expectedVersion < 1) {
             throw new InvalidArgumentException('The expected schedule version must be positive.');
         }
 
-        $this->transactions->transactional(function () use ($context, $id, $expectedVersion): void {
+        $this->transactions->transactional(function () use (
+            $context,
+            $executionClass,
+            $id,
+            $expectedVersion,
+        ): void {
             $affected = $this->database->executeStatement(sprintf(
                 'DELETE FROM %s WHERE id = ? AND version = ?',
                 $this->tables->quoted('schedules'),
@@ -200,13 +269,18 @@ final readonly class DoctrineScheduler implements Scheduler, ScheduleRepository
             if ((string) $affected !== '1') {
                 throw new InvalidArgumentException('The schedule does not exist or its version changed.');
             }
-            $this->ownership->remove(AuthorizationResource::item('schedule', $id), $context->site());
+            if ($executionClass === JobExecutionClass::Site) {
+                $this->ownershipWriter->remove(AuthorizationResource::item('schedule', $id), $context->site());
+            }
         });
     }
 
     /** @param array<string, mixed> $row */
-    private function dispatch(array $row, \Kumwe\CMS\Application\Authorization\SiteContext $site): void
-    {
+    private function dispatch(
+        array $row,
+        ?\Kumwe\CMS\Application\Authorization\SiteContext $site,
+        JobExecutionClass $executionClass,
+    ): void {
         $id = $this->requiredString($row, 'id');
         $scheduledFor = $this->dateTime($row['next_run_at'] ?? null);
         $now = $this->clock->now();
@@ -217,6 +291,7 @@ final readonly class DoctrineScheduler implements Scheduler, ScheduleRepository
                 'id' => $jobId,
                 'queue' => $this->requiredString($row, 'queue'),
                 'job_type' => $this->requiredString($row, 'job_type'),
+                'execution_scope' => $executionClass->value,
                 'schema_version' => $this->integer($row, 'job_schema_version'),
                 'payload' => $this->payload($row['payload'] ?? null),
                 'priority' => $this->integer($row, 'priority'),
@@ -236,7 +311,12 @@ final readonly class DoctrineScheduler implements Scheduler, ScheduleRepository
                 'created_at' => Types::DATETIME_IMMUTABLE,
                 'updated_at' => Types::DATETIME_IMMUTABLE,
             ]);
-            $this->ownership->record(AuthorizationResource::item('job', $jobId), $site);
+            if ($executionClass === JobExecutionClass::Site) {
+                if ($site === null) {
+                    throw new RuntimeException('A site-owned scheduled job has no durable site.');
+                }
+                $this->ownershipWriter->record(AuthorizationResource::item('job', $jobId), $site);
+            }
         } catch (UniqueConstraintViolationException) {
             // A concurrent scheduler already emitted this occurrence.
         }
@@ -333,5 +413,77 @@ final readonly class DoctrineScheduler implements Scheduler, ScheduleRepository
             Capability::fromString('automation.manage'),
             $resource,
         );
+    }
+
+    private function authorizeJobType(ExecutionContext $context, string $jobType): void
+    {
+        if (!$this->jobScope->isInstallationGlobal($jobType)) {
+            return;
+        }
+
+        $this->authorization->assertAllowed(
+            $context,
+            Capability::fromString('automation.manage'),
+            AuthorizationResource::item('automation_installation', $jobType),
+        );
+    }
+
+    /** @param array<string, mixed> $row */
+    private function canManageRow(ExecutionContext $context, array $row): bool
+    {
+        $jobType = $this->requiredString($row, 'job_type');
+        $executionClass = $this->jobScope->assertStoredClass(
+            $jobType,
+            $this->requiredString($row, 'execution_scope'),
+        );
+        $resource = $executionClass === JobExecutionClass::Installation
+            ? AuthorizationResource::item('automation_installation', $jobType)
+            : AuthorizationResource::item('schedule', $this->requiredString($row, 'id'));
+
+        return $this->authorization->decide(
+            $context,
+            Capability::fromString('automation.manage'),
+            $resource,
+        )->allowed;
+    }
+
+    /** @param array<string, mixed> $row */
+    private function authorizeRow(ExecutionContext $context, array $row): JobExecutionClass
+    {
+        $jobType = $this->requiredString($row, 'job_type');
+        $executionClass = $this->jobScope->assertStoredClass(
+            $jobType,
+            $this->requiredString($row, 'execution_scope'),
+        );
+        $this->authorize(
+            $context,
+            $executionClass === JobExecutionClass::Installation
+                ? AuthorizationResource::item('automation_installation', $jobType)
+                : AuthorizationResource::item('schedule', $this->requiredString($row, 'id')),
+        );
+
+        return $executionClass;
+    }
+
+    /** @return array<string, mixed> */
+    private function scheduleRow(string $id): array
+    {
+        $row = $this->database->fetchAssociative(sprintf(
+            'SELECT id, job_type, execution_scope FROM %s WHERE id = ?',
+            $this->tables->quoted('schedules'),
+        ), [$id]);
+        if ($row === false) {
+            throw new InvalidArgumentException('The schedule does not exist.');
+        }
+
+        return $row;
+    }
+
+    private function lockEnabledSite(\Kumwe\CMS\Application\Authorization\SiteContext $site): bool
+    {
+        return $this->database->fetchOne(sprintf(
+            'SELECT identifier FROM %s WHERE identifier = ? AND enabled = ? FOR UPDATE',
+            $this->tables->quoted('sites'),
+        ), [$site->identifier(), true], [Types::STRING, Types::BOOLEAN]) !== false;
     }
 }

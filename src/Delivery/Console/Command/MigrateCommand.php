@@ -8,12 +8,16 @@ use Kumwe\CMS\Application\Authorization\SiteContext;
 use Kumwe\CMS\Application\Authorization\SystemPrincipal;
 use Kumwe\CMS\Delivery\Console\Command;
 use Kumwe\CMS\Delivery\Console\Output;
+use Kumwe\CMS\Extension\Runtime\ExtensionRuntimeMapCompiler;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\MigrationRunner;
 
 final readonly class MigrateCommand implements Command
 {
-    public function __construct(private MigrationRunner $runner, private SystemPrincipal $system)
-    {
+    public function __construct(
+        private MigrationRunner $runner,
+        private ExtensionRuntimeMapCompiler $extensions,
+        private SystemPrincipal $system,
+    ) {
     }
 
     public function name(): string
@@ -34,14 +38,14 @@ final readonly class MigrateCommand implements Command
         ));
 
         if (!$result->changed()) {
-            $output->line('Database schema is current.');
-
-            return 0;
+            $output->line('Database schema is current; reconciling the extension runtime publication.');
+        } else {
+            foreach ($result->applied as $migration) {
+                $output->line(sprintf('Applied %s', $migration));
+            }
         }
-
-        foreach ($result->applied as $migration) {
-            $output->line(sprintf('Applied %s', $migration));
-        }
+        $state = $this->extensions->reconcileAndMaterialize(true);
+        $output->line(sprintf('Materialized extension runtime generation %d', $state->generation));
 
         return 0;
     }

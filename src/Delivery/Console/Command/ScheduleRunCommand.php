@@ -10,12 +10,18 @@ use Kumwe\CMS\Application\Authorization\SiteContext;
 use Kumwe\CMS\Application\Authorization\SystemPrincipal;
 use Kumwe\CMS\Delivery\Console\Command;
 use Kumwe\CMS\Delivery\Console\Output;
+use Kumwe\CMS\Extension\Runtime\ExtensionRuntimeMapCompiler;
+use Kumwe\CMS\Extension\Runtime\RuntimeMaterializationState;
 use Throwable;
 
 final readonly class ScheduleRunCommand implements Command
 {
-    public function __construct(private Scheduler $scheduler, private SystemPrincipal $system)
-    {
+    public function __construct(
+        private Scheduler $scheduler,
+        private SystemPrincipal $system,
+        private ?ExtensionRuntimeMapCompiler $runtime = null,
+        private ?RuntimeMaterializationState $loadedRuntime = null,
+    ) {
     }
 
     public function name(): string
@@ -45,6 +51,9 @@ final readonly class ScheduleRunCommand implements Command
             );
 
             do {
+                if ($this->runtime !== null && $this->loadedRuntime !== null) {
+                    $this->runtime->assertLoadedGenerationCurrent($this->loadedRuntime);
+                }
                 $dispatched = $this->scheduler->dispatchDue($context);
 
                 if (!$loop) {

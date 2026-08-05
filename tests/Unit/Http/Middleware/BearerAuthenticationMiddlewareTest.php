@@ -93,7 +93,12 @@ final class BearerAuthenticationMiddlewareTest extends TestCase
     public function testUnknownTokenReturnsInvalidTokenWithoutEchoingToken(): void
     {
         $verifier = $this->createMock(AccessTokenVerifier::class);
-        $verifier->expects(self::once())->method('verify')->with(self::TOKEN)->willReturn(null);
+        $verifier->expects(self::once())->method('verify')->with(
+            self::TOKEN,
+            'kumwe-http',
+            'api',
+            'default',
+        )->willReturn(null);
         $response = (new BearerAuthenticationMiddleware($verifier))->process(
             $this->protectedRequest()->withHeader('Authorization', 'Bearer ' . self::TOKEN),
             $this->neverHandler(),
@@ -108,7 +113,7 @@ final class BearerAuthenticationMiddlewareTest extends TestCase
     {
         $principal = AuthorizationContext::principal(['content.read', 'content.update'], self::SUBJECT);
         $verifier = $this->createMock(AccessTokenVerifier::class);
-        $verifier->method('verify')->with(self::TOKEN)->willReturn($principal);
+        $verifier->method('verify')->with(self::TOKEN, 'kumwe-http', 'api', 'default')->willReturn($principal);
         $handler = $this->createMock(RequestHandlerInterface::class);
         $handler->expects(self::once())->method('handle')->with(self::callback(
             static function (ServerRequestInterface $request) use ($principal): bool {
@@ -172,13 +177,78 @@ final class BearerAuthenticationMiddlewareTest extends TestCase
         );
     }
 
+    public function testRequiresOneExplicitSiteHeaderForAuthenticatedRequests(): void
+    {
+        $verifier = $this->createMock(AccessTokenVerifier::class);
+        $verifier->expects(self::never())->method('verify');
+        $request = $this->protectedRequest()
+            ->withoutHeader(BearerAuthenticationMiddleware::SITE_HEADER)
+            ->withHeader('Authorization', 'Bearer ' . self::TOKEN)
+            ->withHeader('Host', 'corporate.example.test')
+            ->withHeader('X-Forwarded-Host', 'default.example.test');
+
+        $response = (new BearerAuthenticationMiddleware($verifier))->process($request, $this->neverHandler());
+
+        self::assertSame(401, $response->getStatusCode());
+        self::assertStringContainsString('error="invalid_request"', $response->getHeaderLine('WWW-Authenticate'));
+    }
+
+    public function testBindsAValidatedNonDefaultSiteToVerificationAndExecutionContext(): void
+    {
+        $principal = AuthorizationContext::principal(['content.read'], self::SUBJECT);
+        $verifier = $this->createMock(AccessTokenVerifier::class);
+        $verifier->expects(self::once())->method('verify')->with(
+            self::TOKEN,
+            'kumwe-mcp',
+            'mcp',
+            'corporate',
+        )->willReturn($principal);
+        $handler = $this->createMock(RequestHandlerInterface::class);
+        $handler->expects(self::once())->method('handle')->with(self::callback(
+            static function (ServerRequestInterface $request): bool {
+                $context = $request->getAttribute(ExecutionContext::REQUEST_ATTRIBUTE);
+
+                return $context instanceof ExecutionContext
+                    && $context->site()->identifier() === 'corporate';
+            },
+        ))->willReturn(new TextResponse('', 204));
+        $request = $this->request([
+            BearerAuthenticationMiddleware::OPTION_AUTHENTICATION => 'bearer',
+            BearerAuthenticationMiddleware::OPTION_REQUIRED_CAPABILITIES => ['content.read'],
+            BearerAuthenticationMiddleware::OPTION_TOKEN_AUDIENCE => 'kumwe-mcp',
+            BearerAuthenticationMiddleware::OPTION_TOKEN_PURPOSE => 'mcp',
+        ])->withHeader('Authorization', 'Bearer ' . self::TOKEN)
+            ->withHeader(BearerAuthenticationMiddleware::SITE_HEADER, 'Corporate');
+
+        self::assertSame(204, (new BearerAuthenticationMiddleware($verifier))->process(
+            $request,
+            $handler,
+        )->getStatusCode());
+    }
+
+    public function testRejectsAmbiguousOrInvalidSiteHeadersBeforeTokenVerification(): void
+    {
+        foreach ([['corporate', 'storefront'], ['corporate,storefront'], ['../corporate']] as $values) {
+            $verifier = $this->createMock(AccessTokenVerifier::class);
+            $verifier->expects(self::never())->method('verify');
+            $request = $this->protectedRequest()
+                ->withHeader('Authorization', 'Bearer ' . self::TOKEN)
+                ->withHeader(BearerAuthenticationMiddleware::SITE_HEADER, $values);
+
+            self::assertSame(401, (new BearerAuthenticationMiddleware($verifier))->process(
+                $request,
+                $this->neverHandler(),
+            )->getStatusCode());
+        }
+    }
+
     /** @param list<string> $requiredCapabilities */
     private function protectedRequest(array $requiredCapabilities = []): ServerRequestInterface
     {
         return $this->request([
             BearerAuthenticationMiddleware::OPTION_AUTHENTICATION => 'bearer',
             BearerAuthenticationMiddleware::OPTION_REQUIRED_CAPABILITIES => $requiredCapabilities,
-        ]);
+        ])->withHeader(BearerAuthenticationMiddleware::SITE_HEADER, 'default');
     }
 
     /** @param array<string, mixed> $options */

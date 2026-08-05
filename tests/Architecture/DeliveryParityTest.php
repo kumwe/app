@@ -21,6 +21,8 @@ final class DeliveryParityTest extends TestCase
         'administrator.content.transition' => 'content.read',
         'administrator.content.trash' => 'content.delete',
         'administrator.content.restore' => 'content.restore',
+        'administrator.content-models' => 'content.read',
+        'administrator.content-models.update' => 'content.update',
         'administrator.extensions' => 'extensions.manage',
         'administrator.extensions.install' => 'extensions.manage',
         'administrator.extensions.action' => 'extensions.manage',
@@ -48,11 +50,21 @@ final class DeliveryParityTest extends TestCase
         '/api/v1/grants/{grantId}' => ['delete'],
         '/api/v1/tokens' => ['get', 'post'],
         '/api/v1/tokens/{tokenId}' => ['delete'],
+        '/api/v1/tokens/{tokenId}/rotate' => ['post'],
+        '/api/v1/users/{id}/tokens' => ['delete'],
+        '/api/v1/users/{id}/tokens/emergency' => ['delete'],
+        '/api/v1/extension-trust-keys' => ['get', 'post'],
+        '/api/v1/extension-trust-keys/{keyId}/rotate' => ['post'],
+        '/api/v1/extension-trust-keys/{keyId}' => ['delete'],
         '/api/v1/schedules' => ['get', 'post'],
         '/api/v1/schedules/{id}' => ['get', 'patch', 'delete'],
         '/api/v1/jobs' => ['get'],
         '/api/v1/jobs/{id}/retry' => ['post'],
         '/api/v1/jobs/{id}/cancel' => ['post'],
+        '/api/v1/content-types' => ['get', 'post'],
+        '/api/v1/content-types/{id}' => ['get', 'patch'],
+        '/api/v1/workflows' => ['get', 'post'],
+        '/api/v1/workflows/{id}' => ['get', 'patch'],
     ];
 
     public function testEveryCoreAdministratorRouteDeclaresItsCapabilityPolicy(): void
@@ -110,6 +122,17 @@ final class DeliveryParityTest extends TestCase
                     $method,
                     $paths[$path],
                     sprintf('OpenAPI does not document %s %s.', strtoupper($method), $path),
+                );
+                $security = $paths[$path][$method]['security'] ?? null;
+                self::assertIsArray($security);
+                self::assertSame(
+                    [['bearerAuth' => [], 'siteContext' => []]],
+                    $security,
+                    sprintf(
+                        '%s %s does not require both bearer and explicit site binding.',
+                        strtoupper($method),
+                        $path,
+                    ),
                 );
             }
         }

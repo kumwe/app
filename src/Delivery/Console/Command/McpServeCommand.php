@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Kumwe\CMS\Delivery\Console\Command;
 
-use Kumwe\CMS\Application\Authorization\AuthenticationStrength;
+use InvalidArgumentException;
 use Kumwe\CMS\Application\Authorization\SiteContext;
 use Kumwe\CMS\Delivery\Console\Command;
 use Kumwe\CMS\Delivery\Console\Output;
@@ -36,42 +36,49 @@ final readonly class McpServeCommand implements Command
 
     public function execute(array $arguments, Output $output): int
     {
-        if (count($arguments) !== 1 || !str_starts_with($arguments[0], '--token-file=')) {
-            $output->error('Usage: mcp:serve --token-file=/run/secrets/kumwe-mcp-token');
+        try {
+            $options = CommandInput::options($arguments);
+            if (
+                count($arguments) !== 2
+                || count($options) !== 2
+                || array_diff(array_keys($options), ['site', 'token-file']) !== []
+            ) {
+                throw new InvalidArgumentException('The MCP stdio options are invalid.');
+            }
+            $site = SiteContext::fromString(CommandInput::required($options, 'site'));
+            $file = CommandInput::required($options, 'token-file');
+        } catch (InvalidArgumentException $exception) {
+            $output->error(sprintf(
+                '%s Usage: mcp:serve --site=SITE --token-file=/run/secrets/kumwe-mcp-token',
+                $exception->getMessage(),
+            ));
 
             return 64;
         }
 
-        $file = substr($arguments[0], strlen('--token-file='));
-        $permissions = $file === '' || !is_file($file) ? false : fileperms($file);
-        if (
-            $file === ''
-            || !str_starts_with($file, DIRECTORY_SEPARATOR)
-            || !is_file($file)
-            || is_link($file)
-            || !is_readable($file)
-            || !is_int($permissions)
-            || ($permissions & 0o077) !== 0
-        ) {
-            $output->error('The MCP token file must be absolute, readable, non-symlinked, and mode 0600 or stricter.');
+        try {
+            $token = CommandInput::secretFile($file);
+        } catch (InvalidArgumentException) {
+            $output->error(
+                'The MCP token file must be absolute, readable, non-symlinked, non-empty, '
+                . 'and mode 0600 or stricter.',
+            );
 
             return 65;
         }
-        $token = trim((string) file_get_contents($file));
-        $principal = $this->tokens->verify($token);
-        if ($principal === null) {
+
+        $siteIdentifier = $site->identifier();
+        if ($this->tokens->verify($token, 'kumwe-mcp', 'mcp', $siteIdentifier) === null) {
             $output->error('The MCP access token is invalid, expired, or revoked.');
 
             return 77;
         }
 
-        $context = $principal->context(
-            SiteContext::default(),
-            AuthenticationStrength::BearerToken,
-            'mcp-stdio-' . bin2hex(random_bytes(16)),
-        );
-
-        return $this->servers->create($this->handlers->forContext($context))
+        return $this->servers->create($this->handlers->forCredential(
+            $this->tokens,
+            $token,
+            $siteIdentifier,
+        ))
             ->run(new StdioTransport(logger: $this->logger));
     }
 }

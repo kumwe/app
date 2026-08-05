@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Kumwe\CMS\Infrastructure\Mcp;
 
+use Closure;
 use InvalidArgumentException;
 use JsonException;
 use Kumwe\CMS\Application\Authorization\AuthenticationStrength;
@@ -14,17 +15,20 @@ use Kumwe\CMS\Application\Authorization\SiteContext;
 use Kumwe\CMS\Application\Automation\AutomationManagementService;
 use Kumwe\CMS\Content\Application\ContentRecord;
 use Kumwe\CMS\Content\Application\ContentService;
-use Kumwe\CMS\Content\Domain\ContentStatus;
 use Kumwe\CMS\Extension\Application\ExtensionManager;
+use Kumwe\CMS\Extension\Application\Trust\TrustStore;
 use Kumwe\CMS\Identity\Application\Administration\AccessControlService;
+use Kumwe\CMS\Identity\Application\Administration\AdministratorIdentityGateway;
+use Kumwe\CMS\Identity\Application\Administration\TokenRotationPreauthorizer;
 use Kumwe\CMS\Identity\Application\Authentication\AuthenticatedPrincipal;
+use Kumwe\CMS\Identity\Application\Authentication\AccessTokenVerifier;
 use Kumwe\CMS\Identity\Application\Authorization\InsufficientCapability;
 use Kumwe\CMS\Identity\Domain\Capability;
 use Kumwe\CMS\Navigation\Application\MenuRecord;
 use Kumwe\CMS\Navigation\Application\MenuItemRecord;
 use Kumwe\CMS\Navigation\Application\NavigationService;
+use Kumwe\CMS\Presentation\ThemeSurface;
 use Kumwe\CMS\Site\Application\SiteSettings;
-use Kumwe\CMS\Workflow\Application\ContentTransitionAuthorizer;
 use Kumwe\CMS\Identity\Domain\UserStatus;
 use Psr\Clock\ClockInterface;
 
@@ -37,12 +41,15 @@ final readonly class KumweMcpHandlers
         private AccessControlService $access,
         private SiteSettings $settings,
         private ExtensionManager $extensions,
+        private TrustStore $trust,
+        private AdministratorIdentityGateway $identity,
         private AutomationManagementService $automation,
-        private ContentTransitionAuthorizer $transitions,
         private McpMutationGuard $mutations,
         private ClockInterface $clock,
         private AuthorizationGateway $authorization,
+        private TokenRotationPreauthorizer $tokenRotation,
         private ?ExecutionContext $executionContext = null,
+        private ?Closure $contextRefresh = null,
     ) {
     }
 
@@ -55,12 +62,51 @@ final readonly class KumweMcpHandlers
             $this->access,
             $this->settings,
             $this->extensions,
+            $this->trust,
+            $this->identity,
             $this->automation,
-            $this->transitions,
             $this->mutations,
             $this->clock,
             $this->authorization,
+            $this->tokenRotation,
             $context,
+        );
+    }
+
+    /** Bind a retained stdio credential that is reverified before every protected handler access. */
+    public function forCredential(
+        AccessTokenVerifier $tokens,
+        string $token,
+        string $siteIdentifier = SiteContext::DEFAULT,
+    ): self {
+        $site = SiteContext::fromString($siteIdentifier);
+        $siteIdentifier = $site->identifier();
+        $refresh = static function () use ($tokens, $token, $site, $siteIdentifier): ExecutionContext {
+            $principal = $tokens->verify($token, 'kumwe-mcp', 'mcp', $siteIdentifier)
+                ?? throw new InsufficientCapability('authenticated');
+
+            return $principal->context(
+                $site,
+                AuthenticationStrength::BearerToken,
+                'mcp-stdio-' . bin2hex(random_bytes(16)),
+            );
+        };
+
+        return new self(
+            $this->catalog,
+            $this->content,
+            $this->navigation,
+            $this->access,
+            $this->settings,
+            $this->extensions,
+            $this->trust,
+            $this->identity,
+            $this->automation,
+            $this->mutations,
+            $this->clock,
+            $this->authorization,
+            $this->tokenRotation,
+            contextRefresh: $refresh,
         );
     }
 
@@ -81,60 +127,62 @@ final readonly class KumweMcpHandlers
         )];
     }
 
-    /** @return array<string, mixed> */
-    public function createContent(string $operationId, string $title, string $slug, string $body): array
+    /** @param array<string, mixed> $data @return array<string, mixed> */
+    public function createContent(
+        string $operationId,
+        string $title,
+        string $slug,
+        string $body = '',
+        ?string $contentType = null,
+        array $data = [],
+    ): array
     {
         $this->require('content.create');
         $this->preauthorize($operationId, 'content.create', AuthorizationResource::collection('content'));
 
         return $this->mutations->run($this->context($operationId), 'content.create', $operationId, [
-            'title' => $title, 'slug' => $slug, 'body' => $body,
+            'title' => $title, 'slug' => $slug, 'body' => $body, 'content_type' => $contentType, 'data' => $data,
         ], fn (): array => $this->content->create(
             $this->context($operationId),
             $title,
             $slug,
-            ['body' => $body],
+            $data === [] ? ['body' => $body] : $data,
+            contentTypeIdentifier: $contentType ?? ContentService::CORE_PAGE_TYPE_ID,
         )->toArray());
     }
 
-    /** @return array<string, mixed> */
+    /** @param array<string, mixed> $data @return array<string, mixed> */
     public function updateContent(
         string $operationId,
         string $id,
         int $version,
         string $title,
         string $slug,
-        string $body,
+        string $body = '',
+        array $data = [],
     ): array {
         $this->require('content.update');
         $this->preauthorize($operationId, 'content.update', AuthorizationResource::item('content', $id));
 
         return $this->mutations->run($this->context($operationId), 'content.update', $operationId, [
-            'id' => $id, 'version' => $version, 'title' => $title, 'slug' => $slug, 'body' => $body,
+            'id' => $id, 'version' => $version, 'title' => $title, 'slug' => $slug, 'body' => $body, 'data' => $data,
         ], fn (): array => $this->content->update(
             $this->context($operationId),
             $id,
             $version,
             $title,
             $slug,
-            ['body' => $body],
+            $data === [] ? ['body' => $body] : $data,
         )->toArray());
     }
 
     /** @return array<string, mixed> */
     public function transitionContent(string $operationId, string $id, int $version, string $status): array
     {
-        $principal = $this->principal();
-        $target = ContentStatus::from($status);
-        $stored = $this->content->get($this->context($operationId), $id);
-        $this->transitions->assertAllowed(
-            $principal,
-            $stored->entry->status(),
-            $target,
-        );
+        $target = $status;
         $this->preauthorize(
             $operationId,
-            $this->transitionAction($stored->entry->status(), $target),
+            $this->content->transitionCapability($this->context($operationId), $id, $target)->value(),
             AuthorizationResource::item('content', $id),
         );
 
@@ -289,7 +337,7 @@ final readonly class KumweMcpHandlers
     {
         $this->require('users.manage');
 
-        return ['items' => $this->access->users($this->context())];
+        return ['items' => $this->access->users($this->context('users-list'))];
     }
 
     /**
@@ -301,10 +349,8 @@ final readonly class KumweMcpHandlers
     public function listRoles(): array
     {
         $this->require('users.manage');
-        return [
-            'items' => $this->access->roles($this->context()),
-            'capabilities' => $this->access->capabilities($this->context()),
-        ];
+        $context = $this->context('roles-list');
+        return ['items' => $this->access->roles($context), 'capabilities' => $this->access->capabilities($context)];
     }
 
     /** @return array{updated: bool} */
@@ -356,7 +402,7 @@ final readonly class KumweMcpHandlers
     {
         $this->require('users.manage');
 
-        return ['items' => $this->access->tokens($this->context())];
+        return ['items' => $this->access->tokens($this->context('tokens-list'))];
     }
 
     /** @return array{revoked: bool} */
@@ -378,6 +424,201 @@ final readonly class KumweMcpHandlers
         );
     }
 
+    /** @return array<string, mixed> */
+    public function rotateToken(
+        string $operationId,
+        string $tokenId,
+        string $name,
+        string $expiresAt = '',
+    ): array {
+        $this->require('users.manage');
+        $this->tokenRotation->authorize($this->context($operationId), $tokenId);
+        return $this->mutations->runSecret(
+            $this->context($operationId),
+            'token.rotate',
+            $operationId,
+            compact('tokenId', 'name', 'expiresAt'),
+            fn (): array => $this->identity->rotateAccessToken(
+                $this->context($operationId),
+                $tokenId,
+                $name,
+                $expiresAt === '' ? null : new \DateTimeImmutable($expiresAt),
+            ),
+        );
+    }
+
+    /** @return array{revoked: int} */
+    public function emergencyRevokeSubjectTokens(
+        string $operationId,
+        string $userId,
+        string $reason,
+    ): array {
+        $this->require('users.manage');
+        $this->preauthorize($operationId, 'users.manage', AuthorizationResource::item('user', $userId));
+        return $this->mutations->run(
+            $this->context($operationId),
+            'token.revoke-subject',
+            $operationId,
+            compact('userId', 'reason'),
+            fn (): array => ['revoked' => $this->access->emergencyRevokeAllSubjectTokens(
+                $this->context($operationId),
+                $userId,
+                $reason,
+            )],
+        );
+    }
+
+    /** @return array{revoked: int} */
+    public function revokeSubjectSiteTokens(string $operationId, string $userId, string $reason): array
+    {
+        $this->require('users.manage');
+        $this->preauthorize(
+            $operationId,
+            'users.manage',
+            AuthorizationResource::item('site', $this->context($operationId)->site()->identifier()),
+        );
+        return $this->mutations->run(
+            $this->context($operationId),
+            'token.revoke-subject-site',
+            $operationId,
+            compact('userId', 'reason'),
+            fn (): array => ['revoked' => $this->access->revokeSubjectTokens(
+                $this->context($operationId),
+                $userId,
+                $reason,
+            )],
+        );
+    }
+
+    /** @return array{items: list<array<string, mixed>>} */
+    public function listTrustKeys(): array
+    {
+        $this->require('extensions.manage');
+        return ['items' => $this->trust->keys($this->context('trust-keys-list'))];
+    }
+
+    /** @return array{updated: bool} */
+    public function addTrustKey(
+        string $operationId,
+        string $keyId,
+        string $publicKeyBase64,
+        string $vendorNamespace,
+        string $extensionPattern,
+        string $expiresAt,
+    ): array {
+        $this->require('extensions.manage');
+        $this->preauthorize(
+            $operationId,
+            'extensions.manage',
+            AuthorizationResource::collection('extension_trust_key'),
+        );
+        return $this->runTrustMutation(
+            $this->context($operationId),
+            'trust-key.add',
+            $operationId,
+            compact('keyId', 'publicKeyBase64', 'vendorNamespace', 'extensionPattern', 'expiresAt'),
+            function () use (
+                $operationId,
+                $keyId,
+                $publicKeyBase64,
+                $vendorNamespace,
+                $extensionPattern,
+                $expiresAt,
+            ): array {
+                $this->trust->add(
+                    $this->context($operationId),
+                    $keyId,
+                    $publicKeyBase64,
+                    $vendorNamespace,
+                    $extensionPattern,
+                    new \DateTimeImmutable($expiresAt),
+                );
+                return ['updated' => true];
+            },
+        );
+    }
+
+    /** @return array{updated: bool} */
+    public function rotateTrustKey(
+        string $operationId,
+        string $oldKeyId,
+        string $newKeyId,
+        string $publicKeyBase64,
+        string $vendorNamespace,
+        string $extensionPattern,
+        string $expiresAt,
+    ): array {
+        $this->require('extensions.manage');
+        $this->preauthorize(
+            $operationId,
+            'extensions.manage',
+            AuthorizationResource::item('extension_trust_key', $oldKeyId),
+        );
+        $input = compact(
+            'oldKeyId',
+            'newKeyId',
+            'publicKeyBase64',
+            'vendorNamespace',
+            'extensionPattern',
+            'expiresAt',
+        );
+        return $this->runTrustMutation(
+            $this->context($operationId),
+            'trust-key.rotate',
+            $operationId,
+            $input,
+            function () use (
+                $operationId,
+                $oldKeyId,
+                $newKeyId,
+                $publicKeyBase64,
+                $vendorNamespace,
+                $extensionPattern,
+                $expiresAt,
+            ): array {
+                $this->trust->rotate(
+                    $this->context($operationId),
+                    $oldKeyId,
+                    $newKeyId,
+                    $publicKeyBase64,
+                    $vendorNamespace,
+                    $extensionPattern,
+                    new \DateTimeImmutable($expiresAt),
+                );
+                return ['updated' => true];
+            },
+        );
+    }
+
+    /** @return array<string, mixed> */
+    public function revokeTrustKey(
+        string $operationId,
+        string $keyId,
+        string $reason,
+        bool $emergency = false,
+    ): array {
+        $this->require('extensions.manage');
+        $this->preauthorize(
+            $operationId,
+            'extensions.manage',
+            AuthorizationResource::item('extension_trust_key', $keyId),
+        );
+        return $this->runTrustMutation(
+            $this->context($operationId),
+            $emergency ? 'trust-key.emergency-revoke' : 'trust-key.finalize',
+            $operationId,
+            compact('keyId', 'reason', 'emergency'),
+            function () use ($operationId, $keyId, $reason, $emergency): array {
+                $context = $this->context($operationId);
+                if ($emergency) {
+                    return ['quarantined' => $this->trust->emergencyRevoke($context, $keyId, $reason)];
+                }
+                $this->trust->finalizeRotation($context, $keyId, $reason);
+                return ['updated' => true];
+            },
+        );
+    }
+
     /** @return array{items: list<array<string, mixed>>} */
     public function listExtensions(): array
     {
@@ -387,8 +628,12 @@ final readonly class KumweMcpHandlers
     }
 
     /** @return array<string, mixed> */
-    public function activateExtension(string $operationId, string $identifier): array
-    {
+    public function activateExtension(
+        string $operationId,
+        string $identifier,
+        ?string $surface = null,
+        #[\SensitiveParameter] ?string $currentPassword = null,
+    ): array {
         $this->require('extensions.manage');
         $this->preauthorize(
             $operationId,
@@ -396,45 +641,69 @@ final readonly class KumweMcpHandlers
             AuthorizationResource::item('extension', $identifier),
         );
 
-        return $this->mutations->run($this->context($operationId), 'extension.activate', $operationId, [
-            'identifier' => $identifier,
-        ], fn (): array => $this->extensions->activate($identifier, $this->context($operationId)));
+        $context = $this->context($operationId);
+        $themeSurface = ThemeSurface::optional($surface);
+
+        return $this->runExtensionMutation(
+            $context,
+            'extension.activate',
+            $operationId,
+            [
+                'identifier' => $identifier,
+                'surface' => $themeSurface?->value,
+                'step_up_supplied' => $currentPassword !== null,
+            ],
+            fn (): array => $this->extensions->activate(
+                $identifier,
+                $context,
+                $themeSurface,
+                $currentPassword,
+            ),
+        );
     }
 
     /** @return array<string, mixed> */
-    public function disableExtension(string $operationId, string $identifier): array
-    {
+    public function disableExtension(
+        string $operationId,
+        string $identifier,
+        #[\SensitiveParameter] ?string $currentPassword = null,
+    ): array {
         $this->require('extensions.manage');
         $this->preauthorize(
             $operationId,
             'extensions.manage',
             AuthorizationResource::item('extension', $identifier),
         );
-        return $this->mutations->run(
-            $this->context($operationId),
+        $context = $this->context($operationId);
+        return $this->runExtensionMutation(
+            $context,
             'extension.disable',
             $operationId,
-            compact('identifier'),
-            fn (): array => $this->extensions->disable($identifier, $this->context($operationId))
+            ['identifier' => $identifier, 'step_up_supplied' => $currentPassword !== null],
+            fn (): array => $this->extensions->disable($identifier, $context, $currentPassword),
         );
     }
 
     /** @return array{uninstalled: bool} */
-    public function uninstallExtension(string $operationId, string $identifier): array
-    {
+    public function uninstallExtension(
+        string $operationId,
+        string $identifier,
+        #[\SensitiveParameter] ?string $currentPassword = null,
+    ): array {
         $this->require('extensions.manage');
         $this->preauthorize(
             $operationId,
             'extensions.manage',
             AuthorizationResource::item('extension', $identifier),
         );
-        return $this->mutations->run(
-            $this->context($operationId),
+        $context = $this->context($operationId);
+        return $this->runExtensionMutation(
+            $context,
             'extension.uninstall',
             $operationId,
-            compact('identifier'),
-            function () use ($operationId, $identifier): array {
-                $this->extensions->uninstall($identifier, $this->context($operationId));
+            ['identifier' => $identifier, 'step_up_supplied' => $currentPassword !== null],
+            function () use ($context, $identifier, $currentPassword): array {
+                $this->extensions->uninstall($identifier, $context, $currentPassword);
                 return ['uninstalled' => true];
             }
         );
@@ -588,14 +857,18 @@ final readonly class KumweMcpHandlers
 
     private function principal(): AuthenticatedPrincipal
     {
-        return $this->executionContext?->principal()
+        return $this->context()->principal()
             ?? throw new InsufficientCapability('authenticated');
     }
 
     private function context(?string $operationId = null): ExecutionContext
     {
-        $context = $this->executionContext
-            ?? throw new InsufficientCapability('authenticated');
+        $context = $this->contextRefresh !== null
+            ? ($this->contextRefresh)()
+            : $this->executionContext;
+        if (!$context instanceof ExecutionContext) {
+            throw new InsufficientCapability('authenticated');
+        }
 
         return $operationId === null
             ? $context
@@ -611,16 +884,41 @@ final readonly class KumweMcpHandlers
         );
     }
 
-    private function transitionAction(ContentStatus $from, ContentStatus $target): string
-    {
-        return match (true) {
-            $from === ContentStatus::Draft && $target === ContentStatus::Review => 'content.submit',
-            $from === ContentStatus::Review && $target === ContentStatus::Draft => 'content.review',
-            $target === ContentStatus::Published => 'content.publish',
-            $from === ContentStatus::Published && $target === ContentStatus::Draft => 'content.unpublish',
-            $target === ContentStatus::Archived => 'content.archive',
-            $from === ContentStatus::Archived && $target === ContentStatus::Draft => 'content.restore',
-            default => 'content.update',
-        };
+    /**
+     * The advisory lifecycle lock intentionally surrounds the complete mutation guard. This keeps the lock held
+     * through the guard's outer transaction commit or rollback while nested TrustStore calls re-enter it safely.
+     * @template TResult of array<string, mixed>
+     * @param array<string, mixed> $input
+     * @param callable(): TResult $mutation
+     * @return TResult
+     */
+    private function runTrustMutation(
+        ExecutionContext $context,
+        string $operation,
+        string $operationId,
+        array $input,
+        callable $mutation,
+    ): array {
+        return $this->trust->synchronizedLifecycle(
+            fn (): array => $this->mutations->run($context, $operation, $operationId, $input, $mutation),
+        );
+    }
+
+    /**
+     * @template TResult of array<string, mixed>
+     * @param array<string, mixed> $input
+     * @param callable(): TResult $mutation
+     * @return TResult
+     */
+    private function runExtensionMutation(
+        ExecutionContext $context,
+        string $operation,
+        string $operationId,
+        array $input,
+        callable $mutation,
+    ): array {
+        return $this->trust->synchronizedLifecycle(
+            fn (): array => $this->mutations->run($context, $operation, $operationId, $input, $mutation),
+        );
     }
 }

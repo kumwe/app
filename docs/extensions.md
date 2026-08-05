@@ -155,7 +155,7 @@ final class Version202608040001CreateAnnouncements implements ExtensionMigration
 }
 ```
 
-Kumwe assigns extension tables a safe prefix derived from the installation prefix and extension identifier. Migrations are applied in manifest order, recorded per extension, and compensated in reverse order if installation fails. They must be portable across MariaDB, MySQL, and PostgreSQL and must not alter core tables.
+Kumwe assigns extension tables a safe prefix derived from the installation prefix and extension identifier. Migrations are applied in manifest order and recorded per extension with a SHA-256 digest of the migration implementation. A later package cannot reuse an applied migration ID with different executable bytes. Newly applied migrations are compensated in reverse order if installation fails. They must be portable across MariaDB, MySQL, and PostgreSQL and must not alter core tables.
 
 Migrations are forward-moving application assets. `down()` exists to compensate the migrations applied by a failed installation attempt; uninstall and ordinary upgrades do not silently destroy site data. Provide an explicit, separately confirmed purge operation when an extension truly needs destructive cleanup.
 
@@ -164,7 +164,7 @@ Migrations are forward-moving application assets. `down()` exists to compensate 
 - Prefix public routes with the extension or feature name and resolve handlers from DI.
 - Declare every new capability in `permissions` and enforce it at route and application-service boundaries.
 - Describe browser-managed settings in `configuration`, including type, validation, default, capability, and whether a value is secret.
-- List packaged public assets by safe relative path and serve them through an extension-owned asset manifest or route.
+- List packaged public assets by safe relative path. Kumwe serves `/assets/extensions/{vendor}/{name}/{version}/...` through a live registry/trust check, so disabling, uninstalling, or revoking the release immediately makes its files unavailable.
 - Namespace jobs, events, service IDs, setting keys, and database tables to the extension identifier.
 
 Never expose deployment secrets in extension settings. An extension that needs an API credential should integrate with the site's protected secret provider and show only connection status in the administrator.
@@ -176,14 +176,17 @@ php bin/kumwe extension:install /absolute/acme-announcements.zip \
   --key-id=acme-release-2026 \
   --signature=BASE64_ED25519_SIGNATURE
 php bin/kumwe extension:list
-php bin/kumwe extension:disable acme/announcements
-php bin/kumwe extension:activate acme/announcements
-php bin/kumwe extension:uninstall acme/announcements
+php bin/kumwe extension:disable acme/announcements \
+  --token-file=/run/secrets/kumwe-extension-token
+php bin/kumwe extension:activate acme/announcements \
+  --token-file=/run/secrets/kumwe-extension-token
+php bin/kumwe extension:uninstall acme/announcements \
+  --token-file=/run/secrets/kumwe-extension-token
 ```
 
-The signature covers the lowercase SHA-256 package digest. Production requires an enabled Ed25519 trust key; development may explicitly allow unsigned local packages. Installation stages files outside the public root, checks compatibility and dependencies, applies migrations, persists the release, and atomically rebuilds the runtime map. A failure compensates newly applied migrations and removes staging without replacing the active version.
+The signature covers the lowercase SHA-256 package digest. Production requires an enabled Ed25519 trust key; development may explicitly allow unsigned local packages. Installation first snapshots caller-owned bytes into private staging, then verifies the immutable snapshot before migration, extraction, or public asset publication. It checks compatibility and dependencies, applies migrations under the lifecycle fence, persists the release, and stages an immutable signed runtime publication in the same registry operation. A failed local publication write cannot roll back or outrun committed registry state: startup reconciliation rematerializes the database generation, and readiness stays unhealthy until the process has loaded that exact trusted generation. A pre-commit failure compensates newly applied migrations and removes staging without replacing the active version; interrupted install records are reconciled to committed or rolled-back state on startup.
 
-Activation affects new HTTP requests. Restart workers and schedulers after installing, activating, disabling, or removing extension code.
+Active plugin and module upgrades keep the old version root until the replacement generation has converged and the retention lease expires. Disable and uninstall follow the same retained-root rule, so old replicas never point at prematurely deleted code. Restart workers and schedulers after installing, activating, disabling, or removing extension code.
 
 ## Test an extension
 

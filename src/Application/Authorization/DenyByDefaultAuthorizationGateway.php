@@ -13,8 +13,10 @@ final readonly class DenyByDefaultAuthorizationGateway implements AuthorizationG
     private const SYSTEM_CAPABILITIES = [
         'system:bootstrap' => ['administrator.bootstrap'],
         'system:cli' => [],
+        'system:extension-materializer' => ['extensions.manage'],
+        'system:installation-maintenance' => ['automation.manage'],
         'system:migration' => ['system.migrate'],
-        'system:scheduler' => ['automation.manage', 'system.scheduler.dispatch'],
+        'system:scheduler' => ['system.scheduler.dispatch'],
         'system:worker' => [
             'automation.manage',
             'content.archive',
@@ -25,9 +27,14 @@ final readonly class DenyByDefaultAuthorizationGateway implements AuthorizationG
             'content.submit',
             'content.unpublish',
             'content.update',
-            'extensions.manage',
             'system.worker.operate',
         ],
+    ];
+
+    /** @var list<string> */
+    private const INSTALLATION_GLOBAL_SYSTEM_IDENTITIES = [
+        'system:extension-materializer',
+        'system:installation-maintenance',
     ];
 
     public function __construct(
@@ -79,7 +86,7 @@ final readonly class DenyByDefaultAuthorizationGateway implements AuthorizationG
         try {
             $siteMatches = $scope->isGlobal()
                 || $scope->type() === 'site'
-                || $this->ownership->siteFor($resource)->identifier() === $context->site()->identifier();
+                || $this->siteFor($context, $resource)->identifier() === $context->site()->identifier();
         } catch (AuthorizationResourceOwnershipUnknown) {
             $decision = new AuthorizationDecision(false, 'core.site-ownership.v1', 'resource_site_unknown');
             $this->record($context, $action, $resource, $decision);
@@ -117,7 +124,7 @@ final readonly class DenyByDefaultAuthorizationGateway implements AuthorizationG
         }
 
         try {
-            $owner = $this->ownership->siteFor($resource);
+            $owner = $this->siteFor($context, $resource);
         } catch (AuthorizationResourceOwnershipUnknown) {
             return new AuthorizationDecision(false, 'core.site-ownership.v1', 'resource_site_unknown');
         }
@@ -130,6 +137,7 @@ final readonly class DenyByDefaultAuthorizationGateway implements AuthorizationG
         if ($principal !== null && str_starts_with($action->value(), 'system.')) {
             return new AuthorizationDecision(false, 'core.system-identity.v1', 'system_identity_required');
         }
+        $systemIdentity = $context->systemIdentity()?->value ?? '';
         $allowed = $principal !== null
             ? $principal->allows(
                 $action,
@@ -140,11 +148,13 @@ final readonly class DenyByDefaultAuthorizationGateway implements AuthorizationG
                         GrantScope::named($resource->type(), $resource->identifier()),
                     ],
             )
-            : in_array(
-                $action->value(),
-                self::SYSTEM_CAPABILITIES[$context->systemIdentity()->value ?? ''] ?? [],
-                true,
-            );
+            : (!$globalGrantRequired
+                || in_array($systemIdentity, self::INSTALLATION_GLOBAL_SYSTEM_IDENTITIES, true))
+                && in_array(
+                    $action->value(),
+                    self::SYSTEM_CAPABILITIES[$systemIdentity] ?? [],
+                    true,
+                );
 
         return new AuthorizationDecision(
             $allowed,
@@ -153,6 +163,17 @@ final readonly class DenyByDefaultAuthorizationGateway implements AuthorizationG
                 ? ($globalGrantRequired ? 'matching_global_grant' : 'matching_effective_grant')
                 : ($globalGrantRequired ? 'global_grant_required' : 'no_matching_effective_grant'),
         );
+    }
+
+    private function siteFor(ExecutionContext $context, AuthorizationResource $resource): SiteContext
+    {
+        // Collections are created/listed within the caller's site. Queues are configured
+        // transport partitions shared by sites; durable jobs carry the actual ownership.
+        if ($resource->identifier() === '*' || $resource->type() === 'queue') {
+            return $context->site();
+        }
+
+        return $this->ownership->siteFor($resource);
     }
 
     private function record(

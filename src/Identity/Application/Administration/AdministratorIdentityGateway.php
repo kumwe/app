@@ -29,5 +29,16 @@ interface AdministratorIdentityGateway
         string $name,
         array $capabilities,
         ?\DateTimeImmutable $expiresAt = null,
+        string $audience = 'kumwe-http',
+        string $purpose = 'api',
+        ?string $rotatedFrom = null,
+    ): array;
+
+    /** @return array{token: string, token_id: string} */
+    public function rotateAccessToken(
+        ExecutionContext $context,
+        string $tokenId,
+        string $name,
+        ?\DateTimeImmutable $expiresAt,
     ): array;
 }

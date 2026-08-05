@@ -33,7 +33,7 @@ use RuntimeException;
 #[CoversClass(ServerFailureResponse::class)]
 final class IdempotencyRecoveryIntegrationTest extends TestCase
 {
-    private const SUBJECT = '018f22e2-7c8b-7ab0-8f3a-88e8026bb301';
+    private const OPERATION = 'POST /api/v1/content';
 
     public function testStaleOwnershipIsRecoveredAndTheCompletedResultIsReplayed(): void
     {
@@ -47,7 +47,7 @@ final class IdempotencyRecoveryIntegrationTest extends TestCase
         $key = 'recovery-' . substr(Uuid::uuid7()->toString(), 0, 24);
         $context = TestKernelFactory::administratorContext($container);
         $request = $this->request($key, $context);
-        $operation = 'POST /api/v1/content';
+        $operation = self::OPERATION;
         $now = new DateTimeImmutable('now');
         $ownerToken = Uuid::uuid7()->toString();
         $database->insert($tables->raw('idempotency'), [
@@ -133,7 +133,7 @@ final class IdempotencyRecoveryIntegrationTest extends TestCase
         self::assertSame(0, (int) $database->fetchOne(sprintf(
             'SELECT COUNT(*) FROM %s WHERE subject = ? AND operation = ? AND idempotency_key = ?',
             $tables->quoted('idempotency'),
-        ), [$context->actorId(), 'POST /api/v1/content', $key]));
+        ), [$context->actorId(), self::OPERATION, $key]));
     }
 
     public function testServerFailureRollsBackMutationAndReleasesReservation(): void
@@ -187,7 +187,7 @@ final class IdempotencyRecoveryIntegrationTest extends TestCase
         self::assertSame(0, (int) $database->fetchOne(sprintf(
             'SELECT COUNT(*) FROM %s WHERE subject = ? AND operation = ? AND idempotency_key = ?',
             $tables->quoted('idempotency'),
-        ), [$context->actorId(), 'POST /api/v1/content', $key]));
+        ), [$context->actorId(), self::OPERATION, $key]));
     }
 
     public function testPurgeCannotDeleteRecordReacquiredAfterCandidateSelection(): void
@@ -211,8 +211,8 @@ final class IdempotencyRecoveryIntegrationTest extends TestCase
         $primary->insert($tables->raw('idempotency'), [
             'id' => $id,
             'idempotency_key' => 'purge-race-' . substr($id, 0, 20),
-            'subject' => self::SUBJECT,
-            'operation' => 'POST /api/v1/content',
+            'subject' => TestKernelFactory::administratorContext($primaryContainer)->actorId(),
+            'operation' => self::OPERATION,
             'request_digest' => hash('sha256', 'expired-request'),
             'authorization_fingerprint' => hash('sha256', 'expired-authorization'),
             'state' => 'completed',
@@ -266,6 +266,10 @@ final class IdempotencyRecoveryIntegrationTest extends TestCase
 
     private function request(string $key, ExecutionContext $context): ServerRequestInterface
     {
+        $principal = $context->principal();
+        if (!$principal instanceof AuthenticatedPrincipal) {
+            throw new RuntimeException('The idempotency integration request requires a human principal.');
+        }
         return (new ServerRequestFactory())
             ->createServerRequest('POST', 'https://kumwe.test/api/v1/content')
             ->withAttribute(
@@ -274,7 +278,7 @@ final class IdempotencyRecoveryIntegrationTest extends TestCase
             )
             ->withAttribute(
                 AuthenticatedPrincipal::REQUEST_ATTRIBUTE,
-                $context->principal(),
+                $principal,
             )
             ->withAttribute(ExecutionContext::REQUEST_ATTRIBUTE, $context);
     }

@@ -23,7 +23,7 @@ final readonly class InstallExtensionCommand implements Command
 
     public function description(): string
     {
-        return 'Verify, install and activate a Kumwe extension ZIP.';
+        return 'Verify and install a disabled Kumwe extension ZIP.';
     }
 
     /** @param list<string> $arguments */

@@ -8,6 +8,7 @@ use InvalidArgumentException;
 use Kumwe\CMS\Administrator\Http\AdministratorRequest;
 use Kumwe\CMS\Administrator\Presentation\AdministratorRenderer;
 use Kumwe\CMS\Extension\Application\ExtensionManager;
+use Kumwe\CMS\Extension\Application\Trust\TrustStore;
 use Laminas\Diactoros\Response\HtmlResponse;
 use Laminas\Diactoros\Response\RedirectResponse;
 use Psr\Http\Message\ResponseInterface;
@@ -20,6 +21,7 @@ final readonly class AdministratorExtensionsHandler implements RequestHandlerInt
 {
     public function __construct(
         private ExtensionManager $extensions,
+        private TrustStore $trust,
         private AdministratorRenderer $renderer,
         private string $temporaryDirectory,
     ) {
@@ -34,6 +36,7 @@ final readonly class AdministratorExtensionsHandler implements RequestHandlerInt
                 'csrf' => $session->csrfToken,
                 'capabilities' => AdministratorRequest::capabilityMap($request),
                 'extensions' => $this->extensions->installed(AdministratorRequest::context($request)),
+                'trust_keys' => $this->trust->keys(AdministratorRequest::context($request)),
             ]), 200, ['Cache-Control' => 'no-store']);
         }
 
@@ -63,6 +66,7 @@ final readonly class AdministratorExtensionsHandler implements RequestHandlerInt
                 'csrf' => $session->csrfToken,
                 'capabilities' => AdministratorRequest::capabilityMap($request),
                 'extensions' => $this->extensions->installed(AdministratorRequest::context($request)),
+                'trust_keys' => $this->trust->keys(AdministratorRequest::context($request)),
                 'error' => $exception->getMessage(),
             ]), 422, ['Cache-Control' => 'no-store']);
         } finally {
