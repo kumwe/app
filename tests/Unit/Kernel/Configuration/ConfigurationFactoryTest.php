@@ -113,6 +113,19 @@ final class ConfigurationFactoryTest extends TestCase
             unlink($file);
         }
     }
+
+    public function testEmptyPreviousRuntimeKeyRingIsAnObjectRatherThanAList(): void
+    {
+        $values = $this->values();
+        $values['EXTENSION_RUNTIME_PREVIOUS_KEYS'] = '{}';
+        $configuration = (new ConfigurationFactory())->create(new Environment($values));
+        self::assertSame([], $configuration->runtimePreviousSigningKeys);
+
+        $values['EXTENSION_RUNTIME_PREVIOUS_KEYS'] = '[]';
+        $this->expectException(InvalidArgumentException::class);
+        (new ConfigurationFactory())->create(new Environment($values));
+    }
+
     /**
      * @return array<string, string>
      */
