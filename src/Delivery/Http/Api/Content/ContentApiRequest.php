@@ -30,7 +30,10 @@ final class ContentApiRequest
             throw new InvalidArgumentException('The request body must be a JSON object.');
         }
 
-        return get_object_vars($data);
+        /** @var array<string, mixed> $body */
+        $body = get_object_vars($data);
+
+        return $body;
     }
 
     public static function principal(ServerRequestInterface $request): AuthenticatedPrincipal
@@ -120,6 +123,7 @@ final class ContentApiRequest
     /** @return array<string, mixed> */
     private static function normalizeObject(stdClass $object): array
     {
+        /** @var array<string, mixed> $normalized */
         $normalized = [];
         foreach (get_object_vars($object) as $name => $value) {
             $normalized[$name] = self::normalizeValue($value);

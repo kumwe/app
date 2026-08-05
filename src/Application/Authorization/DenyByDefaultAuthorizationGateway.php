@@ -142,7 +142,7 @@ final readonly class DenyByDefaultAuthorizationGateway implements AuthorizationG
             )
             : in_array(
                 $action->value(),
-                self::SYSTEM_CAPABILITIES[$context->systemIdentity()?->value ?? ''] ?? [],
+                self::SYSTEM_CAPABILITIES[$context->systemIdentity()->value] ?? [],
                 true,
             );
 

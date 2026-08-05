@@ -11,7 +11,6 @@ use Kumwe\CMS\Delivery\Http\Api\ProblemDetailsResponseFactory;
 use Kumwe\CMS\Delivery\Http\Api\ApiExecutionContext;
 use Kumwe\CMS\Identity\Application\Administration\AccessControlService;
 use Kumwe\CMS\Identity\Application\Administration\AdministratorIdentityGateway;
-use Kumwe\CMS\Identity\Application\Authentication\AuthenticatedPrincipal;
 use Kumwe\CMS\Identity\Domain\UserStatus;
 use Laminas\Diactoros\Response\EmptyResponse;
 use Laminas\Diactoros\Response\JsonResponse;
@@ -284,13 +283,4 @@ final readonly class AccessControlApiHandler implements RequestHandlerInterface
         return $value;
     }
 
-    private function principal(ServerRequestInterface $request): AuthenticatedPrincipal
-    {
-        $principal = $request->getAttribute(AuthenticatedPrincipal::REQUEST_ATTRIBUTE);
-        if (!$principal instanceof AuthenticatedPrincipal) {
-            throw new InvalidArgumentException('An authenticated principal is required.');
-        }
-
-        return $principal;
-    }
 }

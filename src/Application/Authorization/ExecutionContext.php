@@ -111,14 +111,14 @@ final readonly class ExecutionContext
 
     public function actorId(): string
     {
-        return $this->principal?->subject() ?? $this->systemIdentity?->value
+        return $this->principal?->subject() ?? $this->systemIdentity->value
             ?? throw new \LogicException('The execution context has no identity.');
     }
 
     public function authorizationFingerprint(): string
     {
         $identity = $this->principal?->authorizationFingerprint()
-            ?? 'system:' . ($this->systemIdentity?->value ?? 'unknown');
+            ?? 'system:' . $this->systemIdentity->value;
 
         return hash('sha256', implode("\n", [
             $identity,
