@@ -37,14 +37,38 @@ final readonly class Worker
         }
 
         try {
-            $handler->handle($job->payload);
-            $this->queue->complete($job, $workerId);
+            if ($handler instanceof LeaseAwareJobHandler) {
+                $handler->handleWithLease(
+                    $job->payload,
+                    new JobLeaseContext(
+                        $job->id,
+                        $leaseSeconds,
+                        function (int $seconds) use ($job, $workerId, $queueName): void {
+                            $this->queue->renew($job, $workerId, $seconds);
+                            $this->queue->heartbeat($workerId, $queueName, $job->id);
+                        },
+                    ),
+                );
+            } else {
+                $handler->handle($job->payload);
+            }
         } catch (PermanentFailure $failure) {
             $this->queue->fail($job, $workerId, $failure, true);
+
+            return true;
         } catch (Throwable $failure) {
             $this->queue->fail($job, $workerId, $failure, false);
+
+            return true;
         }
 
+        $this->queue->complete($job, $workerId);
+
         return true;
+    }
+
+    public function disconnect(string $workerId): void
+    {
+        $this->queue->disconnect($workerId);
     }
 }

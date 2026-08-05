@@ -222,6 +222,20 @@ final readonly class JobEnvelope
         return $this->transition(JobStatus::COMPLETED, $this->availableAt, $this->attempts, null);
     }
 
+    public function renewLease(string $worker, DateTimeImmutable $time, int $leaseSeconds): self
+    {
+        if ($this->status !== JobStatus::RESERVED || $this->lease === null) {
+            throw new DomainException('The job is not reserved.');
+        }
+
+        return $this->transition(
+            JobStatus::RESERVED,
+            $this->availableAt,
+            $this->attempts,
+            $this->lease->renew($worker, $time, $leaseSeconds),
+        );
+    }
+
     public function deadLetter(string $worker, DateTimeImmutable $time): self
     {
         $this->assertActiveLease($worker, $time);

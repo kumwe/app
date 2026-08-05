@@ -12,11 +12,13 @@ use Kumwe\CMS\Application\Automation\AutomationManagementService;
 use Kumwe\CMS\Application\Automation\Job\DoctrineJobQueue;
 use Kumwe\CMS\Application\Automation\Job\DoctrineScheduler;
 use Kumwe\CMS\Application\Automation\Job\PurgeAdministratorSessionsHandler;
+use Kumwe\CMS\Application\Automation\Job\PurgeIdempotencyRecordsHandler;
 use Kumwe\CMS\Application\Automation\Job\RebuildExtensionMapHandler;
 use Kumwe\CMS\Application\Automation\Job\ScheduleRepository;
 use Kumwe\CMS\Application\Automation\Job\TransitionContentHandler;
 use Kumwe\CMS\Application\Automation\JobHandlerRegistry;
 use Kumwe\CMS\Application\Automation\JobQueue;
+use Kumwe\CMS\Application\Automation\IdempotencyPurger;
 use Kumwe\CMS\Application\Automation\Scheduler;
 use Kumwe\CMS\Application\Automation\Worker;
 use Kumwe\CMS\Administrator\Http\Handler\AdministratorContentEditorHandler;
@@ -77,6 +79,7 @@ use Kumwe\CMS\Delivery\Console\Output;
 use Kumwe\CMS\Delivery\Console\StreamOutput;
 use Kumwe\CMS\Delivery\Http\Api\Idempotency\RequireIdempotencyKeyMiddleware;
 use Kumwe\CMS\Delivery\Http\Api\Idempotency\PersistentIdempotencyMiddleware;
+use Kumwe\CMS\Delivery\Http\Api\Idempotency\DoctrineIdempotencyPurger;
 use Kumwe\CMS\Delivery\Http\Api\Concurrency\RequireIfMatchMiddleware;
 use Kumwe\CMS\Delivery\Http\Api\Content\ContentApiResponder;
 use Kumwe\CMS\Delivery\Http\Api\Content\ContentCollectionHandler;
@@ -131,6 +134,7 @@ use Kumwe\CMS\Infrastructure\Persistence\Migration\MigrationLock;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\MigrationRepository;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\MigrationRunner;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\CoreSchemaMigration;
+use Kumwe\CMS\Infrastructure\Persistence\Migration\JobRecoveryMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\DoctrineMigrationLock;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\DoctrineMigrationRepository;
 use Kumwe\CMS\Infrastructure\Persistence\ReadinessProbe;
@@ -400,6 +404,7 @@ final class ContainerFactory
                 transactions: self::service($container, TransactionManager::class),
                 migrations: [
                     new CoreSchemaMigration(self::service($container, TableNames::class)),
+                    new JobRecoveryMigration(self::service($container, TableNames::class)),
                 ],
             ), true);
         $container->share(ReadinessProbe::class, static fn (Container $container): ReadinessProbe =>
@@ -407,7 +412,7 @@ final class ContainerFactory
                 database: self::service($container, Connection::class),
                 logger: self::service($container, LoggerInterface::class),
                 tables: self::service($container, TableNames::class),
-                requiredMigration: CoreSchemaMigration::ID,
+                requiredMigration: JobRecoveryMigration::ID,
                 redis: self::service($container, RedisRuntime::class),
             ), true);
     }
@@ -579,6 +584,7 @@ final class ContainerFactory
             self::service($container, TableNames::class),
             self::service($container, ClockInterface::class),
             self::service($container, ProblemDetailsResponseFactory::class),
+            self::service($container, TransactionManager::class),
         ), true);
         $container->share(RequireIfMatchMiddleware::class, static function (
             Container $container,
@@ -1306,6 +1312,17 @@ final class ContainerFactory
         ): PurgeAdministratorSessionsHandler => new PurgeAdministratorSessionsHandler(
             self::service($container, AdministratorSessionStore::class),
         ), true);
+        $container->share(IdempotencyPurger::class, static fn (Container $container): IdempotencyPurger =>
+            new DoctrineIdempotencyPurger(
+                self::service($container, Connection::class),
+                self::service($container, TableNames::class),
+                self::service($container, ClockInterface::class),
+            ), true);
+        $container->share(PurgeIdempotencyRecordsHandler::class, static fn (
+            Container $container,
+        ): PurgeIdempotencyRecordsHandler => new PurgeIdempotencyRecordsHandler(
+            self::service($container, IdempotencyPurger::class),
+        ), true);
         $container->share(RebuildExtensionMapHandler::class, static fn (
             Container $container,
         ): RebuildExtensionMapHandler => new RebuildExtensionMapHandler(
@@ -1319,6 +1336,7 @@ final class ContainerFactory
         $container->share(JobHandlerRegistry::class, static fn (Container $container): JobHandlerRegistry =>
             new JobHandlerRegistry([
                 self::service($container, PurgeAdministratorSessionsHandler::class),
+                self::service($container, PurgeIdempotencyRecordsHandler::class),
                 self::service($container, RebuildExtensionMapHandler::class),
                 self::service($container, TransitionContentHandler::class),
             ]), true);

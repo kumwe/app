@@ -6,6 +6,7 @@ namespace Kumwe\CMS\Tests\Integration\Persistence;
 
 use Kumwe\CMS\Infrastructure\Persistence\Migration\MigrationRunner;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\CoreSchemaMigration;
+use Kumwe\CMS\Infrastructure\Persistence\Migration\JobRecoveryMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\DoctrineMigrationLock;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\DoctrineMigrationRepository;
 use Kumwe\CMS\Infrastructure\Persistence\ReadinessProbe;
@@ -18,6 +19,7 @@ use PHPUnit\Framework\TestCase;
 #[CoversClass(DoctrineMigrationLock::class)]
 #[CoversClass(DoctrineMigrationRepository::class)]
 #[CoversClass(CoreSchemaMigration::class)]
+#[CoversClass(JobRecoveryMigration::class)]
 final class MigrationIntegrationTest extends TestCase
 {
     public function testDatabaseMigrationIsIdempotentAndReady(): void
