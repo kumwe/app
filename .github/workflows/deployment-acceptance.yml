@@ -403,7 +403,7 @@ jobs:
                 --site=default \
                 --email=administrator@kumwe.test \
                 --name=deployment-cli-management \
-                --capabilities=users.manage \
+                --capabilities=automation.manage,content.read,content.create,content.update,content.submit,content.review,content.publish,users.manage \
                 --audience=kumwe-cli \
                 --purpose=management \
                 --password-file="$password_file"
