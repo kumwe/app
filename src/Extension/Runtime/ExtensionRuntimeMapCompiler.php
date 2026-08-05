@@ -185,9 +185,10 @@ final readonly class ExtensionRuntimeMapCompiler implements TrustRuntimeInvalida
                 throw new RuntimeException('The extension runtime map lock could not be acquired.');
             }
             $this->assertOpenLockFile($lock, $lockPath);
-            if (!fchmod($lock, 0600)) {
+            if (!chmod($lockPath, 0600)) {
                 throw new RuntimeException('The extension runtime map lock permissions could not be secured.');
             }
+            $this->assertOpenLockFile($lock, $lockPath);
             if (file_exists($this->mapFile) && (!is_file($this->mapFile) || is_link($this->mapFile))) {
                 throw new RuntimeException('The extension runtime map target is not a regular file.');
             }

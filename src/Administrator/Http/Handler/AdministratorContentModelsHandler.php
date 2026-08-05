@@ -8,6 +8,8 @@ use JsonException;
 use Kumwe\CMS\Administrator\Http\AdministratorRequest;
 use Kumwe\CMS\Administrator\Presentation\AdministratorRenderer;
 use Kumwe\CMS\Content\Application\ContentModelService;
+use Kumwe\CMS\Content\Domain\ContentTypeDefinition;
+use Kumwe\CMS\Workflow\Domain\WorkflowDefinition;
 use Laminas\Diactoros\Response\HtmlResponse;
 use Laminas\Diactoros\Response\RedirectResponse;
 use Psr\Http\Message\ResponseInterface;
@@ -32,16 +34,44 @@ final readonly class AdministratorContentModelsHandler implements RequestHandler
                 $states = $this->objectList($form['states'] ?? '', 'states');
                 $transitions = $this->objectList($form['transitions'] ?? '', 'transitions');
                 if ($action === 'create') {
-                    $this->models->createWorkflow($context, AdministratorRequest::required($form, 'handle'), AdministratorRequest::required($form, 'name'), $states, $transitions);
+                    $this->models->createWorkflow(
+                        $context,
+                        AdministratorRequest::required($form, 'handle'),
+                        AdministratorRequest::required($form, 'name'),
+                        $states,
+                        $transitions,
+                    );
                 } else {
-                    $this->models->updateWorkflow($context, AdministratorRequest::required($form, 'id'), AdministratorRequest::positiveInteger($form, 'version'), AdministratorRequest::required($form, 'name'), $states, $transitions, ($form['allow_breaking'] ?? '') === '1');
+                    $this->models->updateWorkflow(
+                        $context,
+                        AdministratorRequest::required($form, 'id'),
+                        AdministratorRequest::positiveInteger($form, 'version'),
+                        AdministratorRequest::required($form, 'name'),
+                        $states,
+                        $transitions,
+                        ($form['allow_breaking'] ?? '') === '1',
+                    );
                 }
             } elseif ($kind === 'content_type') {
                 $schema = $this->object($form['schema'] ?? '', 'schema');
                 if ($action === 'create') {
-                    $this->models->createContentType($context, AdministratorRequest::required($form, 'handle'), AdministratorRequest::required($form, 'name'), AdministratorRequest::required($form, 'workflow'), $schema);
+                    $this->models->createContentType(
+                        $context,
+                        AdministratorRequest::required($form, 'handle'),
+                        AdministratorRequest::required($form, 'name'),
+                        AdministratorRequest::required($form, 'workflow'),
+                        $schema,
+                    );
                 } else {
-                    $this->models->updateContentType($context, AdministratorRequest::required($form, 'id'), AdministratorRequest::positiveInteger($form, 'version'), AdministratorRequest::required($form, 'name'), AdministratorRequest::required($form, 'workflow'), $schema, ($form['allow_breaking'] ?? '') === '1');
+                    $this->models->updateContentType(
+                        $context,
+                        AdministratorRequest::required($form, 'id'),
+                        AdministratorRequest::positiveInteger($form, 'version'),
+                        AdministratorRequest::required($form, 'name'),
+                        AdministratorRequest::required($form, 'workflow'),
+                        $schema,
+                        ($form['allow_breaking'] ?? '') === '1',
+                    );
                 }
             } else {
                 throw new \InvalidArgumentException('The content model kind is unsupported.');
@@ -119,17 +149,28 @@ final readonly class AdministratorContentModelsHandler implements RequestHandler
     }
 
     /** @return array<string, mixed> */
-    private function contentTypeDocument(\Kumwe\CMS\Content\Domain\ContentTypeDefinition $definition): array
+    private function contentTypeDocument(ContentTypeDefinition $definition): array
     {
-        return $definition->toArray() + ['schema_json' => json_encode($definition->schema(), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR)];
+        return $definition->toArray() + [
+            'schema_json' => json_encode(
+                $definition->schema(),
+                JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR,
+            ),
+        ];
     }
 
     /** @return array<string, mixed> */
-    private function workflowDocument(\Kumwe\CMS\Workflow\Domain\WorkflowDefinition $definition): array
+    private function workflowDocument(WorkflowDefinition $definition): array
     {
         $document = $definition->toArray();
-        $document['states_json'] = json_encode($document['states'], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
-        $document['transitions_json'] = json_encode($document['transitions'], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
+        $document['states_json'] = json_encode(
+            $document['states'],
+            JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR,
+        );
+        $document['transitions_json'] = json_encode(
+            $document['transitions'],
+            JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR,
+        );
         return $document;
     }
 }
