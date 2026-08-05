@@ -138,7 +138,7 @@ final class AccessControlIntegrationTest extends TestCase
         try {
             $access->revokeToken($siteContext, $otherToken['token_id']);
             self::fail('Cross-site token revocation must be rejected.');
-        } catch (AuthorizationDenied|\InvalidArgumentException) {
+        } catch (AuthorizationDenied | \InvalidArgumentException) {
         }
         self::assertSame(1, $access->revokeSubjectTokens($siteContext, $userId, 'site access removed'));
         self::assertNull($tokens->verify($defaultToken['token'], 'kumwe-http', 'api', 'default'));
