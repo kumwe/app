@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - master
+      - modernization
       - 'agent/**'
   pull_request:
   workflow_dispatch:
