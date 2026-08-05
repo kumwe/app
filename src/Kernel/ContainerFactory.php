@@ -109,7 +109,9 @@ use Kumwe\CMS\Http\Middleware\ProblemDetailsMiddleware;
 use Kumwe\CMS\Http\Middleware\RequestIdMiddleware;
 use Kumwe\CMS\Http\Middleware\SecurityHeadersMiddleware;
 use Kumwe\CMS\Http\Middleware\TrustedHostMiddleware;
+use Kumwe\CMS\Http\Middleware\TrustedProxyMiddleware;
 use Kumwe\CMS\Http\Security\TrustedHostMatcher;
+use Kumwe\CMS\Http\Security\TrustedProxyMatcher;
 use Kumwe\CMS\Identity\Application\Authentication\AccessTokenVerifier;
 use Kumwe\CMS\Identity\Application\Administration\AdministratorIdentityGateway;
 use Kumwe\CMS\Identity\Application\Administration\AdministratorSessionStore;
@@ -555,6 +557,9 @@ final class ContainerFactory
                 $configuration->debug,
             );
         }, true);
+        $container->share(TrustedProxyMiddleware::class, new TrustedProxyMiddleware(
+            new TrustedProxyMatcher($configuration->trustedProxies),
+        ), true);
         $container->share(TrustedHostMiddleware::class, new TrustedHostMiddleware(
             new TrustedHostMatcher($configuration->trustedHosts),
         ), true);
@@ -851,6 +856,7 @@ final class ContainerFactory
     {
         $application->pipe(RequestIdMiddleware::class);
         $application->pipe(ProblemDetailsMiddleware::class);
+        $application->pipe(TrustedProxyMiddleware::class);
         $application->pipe(TrustedHostMiddleware::class);
         $application->pipe(BodyLimitMiddleware::class);
         $application->pipe(SecurityHeadersMiddleware::class);

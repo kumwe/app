@@ -52,6 +52,15 @@ final class ConfigurationFactoryTest extends TestCase
         (new ConfigurationFactory())->create(new Environment($values));
     }
 
+    public function testTrustedProxyRangesAreValidatedDuringConfiguration(): void
+    {
+        $values = $this->values();
+        $values['APP_TRUSTED_PROXIES'] = '10.0.0.0/8,2001:db8::/129';
+        $this->expectException(InvalidArgumentException::class);
+
+        (new ConfigurationFactory())->create(new Environment($values));
+    }
+
     /**
      * @return array<string, string>
      */

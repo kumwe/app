@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\CMS\Kernel\Configuration;
 
 use InvalidArgumentException;
+use Kumwe\CMS\Http\Security\TrustedProxyMatcher;
 
 final readonly class ApplicationConfiguration
 {
@@ -37,6 +38,9 @@ final readonly class ApplicationConfiguration
         if ($trustedHosts === []) {
             throw new InvalidArgumentException('At least one trusted host is required.');
         }
+
+        // Fail during bootstrap rather than silently running with a malformed trust boundary.
+        new TrustedProxyMatcher($trustedProxies);
 
         if (strlen($secret) < 32) {
             throw new InvalidArgumentException('APP_SECRET must contain at least 32 bytes.');

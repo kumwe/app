@@ -10,6 +10,7 @@ use Kumwe\CMS\Administrator\Presentation\AdministratorRenderer;
 use Kumwe\CMS\Identity\Application\Administration\AdministratorIdentityGateway;
 use Kumwe\CMS\Identity\Application\Administration\AdministratorSessionStore;
 use Kumwe\CMS\Identity\Application\Administration\AuthenticationThrottled;
+use Kumwe\CMS\Http\Middleware\TrustedProxyMiddleware;
 use Laminas\Diactoros\Response\HtmlResponse;
 use Laminas\Diactoros\Response\RedirectResponse;
 use Psr\Http\Message\ResponseInterface;
@@ -34,7 +35,7 @@ final readonly class AdministratorLoginHandler implements RequestHandlerInterfac
         }
 
         $form = AdministratorRequest::form($request);
-        $remoteAddress = $request->getServerParams()['REMOTE_ADDR'] ?? 'unknown';
+        $remoteAddress = $request->getAttribute(TrustedProxyMiddleware::ATTRIBUTE_CLIENT_ADDRESS, 'unknown');
 
         if (!is_string($remoteAddress) || $remoteAddress === '') {
             $remoteAddress = 'unknown';
