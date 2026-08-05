@@ -22,6 +22,9 @@ interface NavigationRepository
 
     public function updateMenu(MenuRecord $menu, int $expectedVersion): void;
 
+    /** @return list<string> */
+    public function itemIdsForMenuDeletion(string $id, int $expectedVersion): array;
+
     public function deleteMenu(string $id, int $expectedVersion): void;
 
     public function insertItem(MenuItemRecord $item): void;

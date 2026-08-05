@@ -4,6 +4,13 @@ declare(strict_types=1);
 
 namespace Kumwe\CMS\Administrator\Http\Middleware;
 
+use Kumwe\CMS\Application\Authorization\AuthenticationStrength;
+use Kumwe\CMS\Application\Authorization\AuthorizationDenied;
+use Kumwe\CMS\Application\Authorization\AuthorizationGateway;
+use Kumwe\CMS\Application\Authorization\AuthorizationResource;
+use Kumwe\CMS\Application\Authorization\ExecutionContext;
+use Kumwe\CMS\Application\Authorization\SiteContext;
+use Kumwe\CMS\Http\Middleware\RequestIdMiddleware;
 use Kumwe\CMS\Identity\Application\Administration\AdministratorSession;
 use Kumwe\CMS\Identity\Application\Administration\AdministratorSessionStore;
 use Kumwe\CMS\Identity\Application\Authentication\AuthenticatedPrincipal;
@@ -19,8 +26,10 @@ final readonly class AdministratorSessionMiddleware implements MiddlewareInterfa
 {
     public const COOKIE_NAME = 'kumwe_administrator';
 
-    public function __construct(private AdministratorSessionStore $sessions)
-    {
+    public function __construct(
+        private AdministratorSessionStore $sessions,
+        private AuthorizationGateway $authorization,
+    ) {
     }
 
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
@@ -43,19 +52,31 @@ final readonly class AdministratorSessionMiddleware implements MiddlewareInterfa
             return $this->unauthenticated($request);
         }
 
-        if (!$session->principal->hasCapability(Capability::fromString('administrator.access'))) {
+        $context = $session->principal->context(
+            SiteContext::default(),
+            AuthenticationStrength::Password,
+            $this->requestId($request),
+        );
+        try {
+            $this->authorization->assertAllowed(
+                $context,
+                Capability::fromString('administrator.access'),
+                AuthorizationResource::item('administrator_session', $session->id),
+            );
+        } catch (AuthorizationDenied) {
             return new JsonResponse([
                 'type' => 'about:blank',
                 'title' => 'Forbidden',
                 'status' => 403,
-                'detail' => 'Administrator access is not granted.',
+                'detail' => 'Administrator access is not granted for this session.',
             ], 403, ['Content-Type' => 'application/problem+json']);
         }
 
         return $handler->handle(
             $request
                 ->withAttribute(AdministratorSession::REQUEST_ATTRIBUTE, $session)
-                ->withAttribute(AuthenticatedPrincipal::REQUEST_ATTRIBUTE, $session->principal),
+                ->withAttribute(AuthenticatedPrincipal::REQUEST_ATTRIBUTE, $session->principal)
+                ->withAttribute(ExecutionContext::REQUEST_ATTRIBUTE, $context),
         );
     }
 
@@ -71,5 +92,14 @@ final readonly class AdministratorSessionMiddleware implements MiddlewareInterfa
             'status' => 401,
             'detail' => 'A valid administrator session is required.',
         ], 401, ['Content-Type' => 'application/problem+json']);
+    }
+
+    private function requestId(ServerRequestInterface $request): string
+    {
+        $requestId = $request->getAttribute(RequestIdMiddleware::ATTRIBUTE);
+
+        return is_string($requestId) && $requestId !== ''
+            ? $requestId
+            : 'request-' . bin2hex(random_bytes(16));
     }
 }

@@ -20,7 +20,10 @@ final readonly class AdministratorLogoutHandler implements RequestHandlerInterfa
 
     public function handle(ServerRequestInterface $request): ResponseInterface
     {
-        $this->sessions->delete(AdministratorRequest::session($request)->id);
+        $this->sessions->delete(
+            AdministratorRequest::context($request),
+            AdministratorRequest::session($request)->id,
+        );
 
         return new RedirectResponse('/administrator/login', 303, [
             'Cache-Control' => 'no-store',

@@ -21,7 +21,7 @@ final readonly class AdministratorCreateContentHandler implements RequestHandler
     {
         $form = AdministratorRequest::form($request);
         $entry = $this->content->create(
-            AdministratorRequest::session($request)->principal->subject(),
+            AdministratorRequest::context($request),
             AdministratorRequest::required($form, 'title'),
             AdministratorRequest::required($form, 'slug'),
             AdministratorRequest::contentData($form),

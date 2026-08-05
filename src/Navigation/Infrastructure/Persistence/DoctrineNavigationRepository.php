@@ -81,6 +81,33 @@ final readonly class DoctrineNavigationRepository implements NavigationRepositor
         $this->assertChanged($affected, 'menu');
     }
 
+    public function itemIdsForMenuDeletion(string $id, int $expectedVersion): array
+    {
+        $version = $this->database->fetchOne(sprintf(
+            'SELECT version FROM %s WHERE id = ? FOR UPDATE',
+            $this->tables->quoted('navigation_menus'),
+        ), [$id]);
+        if (
+            (!is_int($version) && (!is_string($version) || preg_match('/^[0-9]+$/D', $version) !== 1))
+            || (int) $version !== $expectedVersion
+        ) {
+            throw new NavigationVersionConflict('The menu changed; reload it and retry.');
+        }
+
+        $ids = $this->database->fetchFirstColumn(sprintf(
+            'SELECT id FROM %s WHERE menu_id = ? ORDER BY id',
+            $this->tables->quoted('navigation_items'),
+        ), [$id]);
+        foreach ($ids as $itemId) {
+            if (!is_string($itemId) || $itemId === '') {
+                throw new RuntimeException('A navigation item identifier is invalid.');
+            }
+        }
+
+        /** @var list<string> $ids */
+        return $ids;
+    }
+
     public function deleteMenu(string $id, int $expectedVersion): void
     {
         $this->assertChanged($this->database->executeStatement(sprintf(

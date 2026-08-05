@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Kumwe\CMS\Application\Automation;
 
+use Kumwe\CMS\Application\Authorization\ExecutionContext;
+
 /**
  * Opt-in contract for work that may outlive its initial lease.
  *
@@ -13,5 +15,9 @@ namespace Kumwe\CMS\Application\Automation;
 interface LeaseAwareJobHandler extends JobHandler
 {
     /** @param array<string, mixed> $payload */
-    public function handleWithLease(array $payload, JobLeaseContext $lease): void;
+    public function handleWithLease(
+        array $payload,
+        ExecutionContext $context,
+        JobLeaseContext $lease,
+    ): void;
 }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Kumwe\CMS\Delivery\Console\Command;
 
+use Kumwe\CMS\Application\Authorization\ExecutionContext;
 use Kumwe\CMS\Delivery\Console\Command;
 use Kumwe\CMS\Delivery\Console\Output;
 use Kumwe\CMS\Navigation\Application\MenuItemRecord;
@@ -32,31 +33,31 @@ final readonly class ManageNavigationCommand implements Command
         try {
             $action = array_shift($arguments) ?? 'list';
             $options = CommandInput::options($arguments);
-            $principal = $this->authorization->require($options, 'navigation.manage');
+            $context = $this->authorization->require($options, 'navigation.manage');
             $result = match ($action) {
                 'list' => ['items' => array_map(
                     static fn (MenuRecord $menu): array => $menu->toArray(),
-                    $this->navigation->menus(),
+                    $this->navigation->menus($context),
                 )],
                 'items' => ['items' => array_map(
                     static fn (MenuItemRecord $item): array => $item->toArray(),
-                    $this->navigation->items(CommandInput::required($options, 'menu')),
+                    $this->navigation->items($context, CommandInput::required($options, 'menu')),
                 )],
                 'create-menu' => $this->navigation->createMenu(
-                    $principal->subject(),
+                    $context,
                     CommandInput::required($options, 'handle'),
                     CommandInput::required($options, 'title'),
                 )->toArray(),
                 'update-menu' => $this->navigation->updateMenu(
-                    $principal->subject(),
+                    $context,
                     CommandInput::required($options, 'id'),
                     CommandInput::positiveInteger($options, 'version'),
                     CommandInput::required($options, 'handle'),
                     CommandInput::required($options, 'title'),
                 )->toArray(),
-                'delete-menu' => $this->deleteMenu($options, $principal->subject()),
+                'delete-menu' => $this->deleteMenu($options, $context),
                 'create-item' => $this->navigation->createItem(
-                    $principal->subject(),
+                    $context,
                     CommandInput::required($options, 'menu'),
                     $this->optional($options, 'parent'),
                     CommandInput::required($options, 'title'),
@@ -64,7 +65,7 @@ final readonly class ManageNavigationCommand implements Command
                     (int) ($options['position'] ?? 0),
                 )->toArray(),
                 'update-item' => $this->navigation->updateItem(
-                    $principal->subject(),
+                    $context,
                     CommandInput::required($options, 'id'),
                     CommandInput::positiveInteger($options, 'version'),
                     $this->optional($options, 'parent'),
@@ -72,7 +73,7 @@ final readonly class ManageNavigationCommand implements Command
                     CommandInput::required($options, 'slug'),
                     (int) ($options['position'] ?? 0),
                 )->toArray(),
-                'delete-item' => $this->deleteItem($options, $principal->subject()),
+                'delete-item' => $this->deleteItem($options, $context),
                 default => throw new \InvalidArgumentException('Unsupported navigation action.'),
             };
             $output->line(CommandInput::render($result));
@@ -87,10 +88,10 @@ final readonly class ManageNavigationCommand implements Command
      * @param array<string, string> $options
      * @return array{deleted: bool}
      */
-    private function deleteMenu(array $options, string $actor): array
+    private function deleteMenu(array $options, ExecutionContext $context): array
     {
         $this->navigation->deleteMenu(
-            $actor,
+            $context,
             CommandInput::required($options, 'id'),
             CommandInput::positiveInteger($options, 'version'),
         );
@@ -101,10 +102,10 @@ final readonly class ManageNavigationCommand implements Command
      * @param array<string, string> $options
      * @return array{deleted: bool}
      */
-    private function deleteItem(array $options, string $actor): array
+    private function deleteItem(array $options, ExecutionContext $context): array
     {
         $this->navigation->deleteItem(
-            $actor,
+            $context,
             CommandInput::required($options, 'id'),
             CommandInput::positiveInteger($options, 'version'),
         );

@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace Kumwe\CMS\Http\Middleware;
 
 use InvalidArgumentException;
+use Kumwe\CMS\Application\Authorization\AuthenticationStrength;
+use Kumwe\CMS\Application\Authorization\ExecutionContext;
+use Kumwe\CMS\Application\Authorization\SiteContext;
 use Kumwe\CMS\Identity\Application\Authentication\AccessTokenVerifier;
 use Kumwe\CMS\Identity\Application\Authentication\AuthenticatedPrincipal;
 use Kumwe\CMS\Identity\Domain\Capability;
@@ -71,10 +74,15 @@ final readonly class BearerAuthenticationMiddleware implements MiddlewareInterfa
             }
         }
 
-        return $handler->handle($request->withAttribute(
-            AuthenticatedPrincipal::REQUEST_ATTRIBUTE,
-            $principal,
-        ));
+        return $handler->handle(
+            $request
+                ->withAttribute(AuthenticatedPrincipal::REQUEST_ATTRIBUTE, $principal)
+                ->withAttribute(ExecutionContext::REQUEST_ATTRIBUTE, $principal->context(
+                    SiteContext::default(),
+                    AuthenticationStrength::BearerToken,
+                    $this->requestId($request),
+                )),
+        );
     }
 
     /** @return array<string, mixed> */
@@ -166,6 +174,15 @@ final readonly class BearerAuthenticationMiddleware implements MiddlewareInterfa
             'WWW-Authenticate' => $challenge,
             'Cache-Control' => 'no-store',
         ]);
+    }
+
+    private function requestId(ServerRequestInterface $request): string
+    {
+        $requestId = $request->getAttribute(RequestIdMiddleware::ATTRIBUTE);
+
+        return is_string($requestId) && $requestId !== ''
+            ? $requestId
+            : 'request-' . bin2hex(random_bytes(16));
     }
 
     /** @param list<Capability> $required */

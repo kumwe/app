@@ -6,13 +6,16 @@ namespace Kumwe\CMS\Delivery\Console\Command;
 
 use InvalidArgumentException;
 use Kumwe\CMS\Application\Automation\Worker;
+use Kumwe\CMS\Application\Authorization\ExecutionContext;
+use Kumwe\CMS\Application\Authorization\SiteContext;
+use Kumwe\CMS\Application\Authorization\SystemPrincipal;
 use Kumwe\CMS\Delivery\Console\Command;
 use Kumwe\CMS\Delivery\Console\Output;
 use Throwable;
 
 final readonly class QueueWorkCommand implements Command
 {
-    public function __construct(private Worker $worker)
+    public function __construct(private Worker $worker, private SystemPrincipal $system)
     {
     }
 
@@ -30,6 +33,8 @@ final readonly class QueueWorkCommand implements Command
     public function execute(array $arguments, Output $output): int
     {
         $workerId = null;
+        $context = null;
+        $queue = null;
 
         try {
             $options = $this->options($arguments);
@@ -69,6 +74,10 @@ final readonly class QueueWorkCommand implements Command
                 bin2hex(random_bytes(4)),
             );
             $output->line(sprintf('Kumwe worker %s is consuming queue %s.', $workerId, $queue));
+            $context = $this->system->context(
+                SiteContext::default(),
+                'worker-' . bin2hex(random_bytes(16)),
+            );
 
             $draining = false;
             if (function_exists('pcntl_async_signals') && function_exists('pcntl_signal')) {
@@ -86,7 +95,7 @@ final readonly class QueueWorkCommand implements Command
             $handledJobs = 0;
 
             do {
-                $handled = $this->worker->runOnce($queue, $workerId, $leaseSeconds);
+                $handled = $this->worker->runOnce($context, $queue, $workerId, $leaseSeconds);
                 $handledJobs += $handled ? 1 : 0;
 
                 $runtimeSeconds = (int) ((hrtime(true) - $startedAt) / 1_000_000_000);
@@ -111,9 +120,9 @@ final readonly class QueueWorkCommand implements Command
 
             return 1;
         } finally {
-            if (is_string($workerId)) {
+            if (is_string($workerId) && $context instanceof ExecutionContext && is_string($queue)) {
                 try {
-                    $this->worker->disconnect($workerId);
+                    $this->worker->disconnect($context, $workerId, $queue);
                 } catch (Throwable $exception) {
                     $output->error(sprintf('Worker heartbeat cleanup failed: %s', $exception->getMessage()));
                 }

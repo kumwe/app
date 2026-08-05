@@ -28,7 +28,7 @@ final readonly class AdministratorDashboardHandler implements RequestHandlerInte
             'capabilities' => AdministratorRequest::capabilityMap($request),
             'entries' => array_map(
                 static fn (ContentRecord $record): array => $record->toArray(),
-                $this->content->list(200, true),
+                $this->content->list(AdministratorRequest::context($request), 200, true),
             ),
         ]), 200, ['Cache-Control' => 'no-store']);
     }

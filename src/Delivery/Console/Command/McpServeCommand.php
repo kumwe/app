@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Kumwe\CMS\Delivery\Console\Command;
 
+use Kumwe\CMS\Application\Authorization\AuthenticationStrength;
+use Kumwe\CMS\Application\Authorization\SiteContext;
 use Kumwe\CMS\Delivery\Console\Command;
 use Kumwe\CMS\Delivery\Console\Output;
 use Kumwe\CMS\Infrastructure\Mcp\KumweMcpHandlers;
@@ -63,7 +65,13 @@ final readonly class McpServeCommand implements Command
             return 77;
         }
 
-        return $this->servers->create($this->handlers->forPrincipal($principal))
+        $context = $principal->context(
+            SiteContext::default(),
+            AuthenticationStrength::BearerToken,
+            'mcp-stdio-' . bin2hex(random_bytes(16)),
+        );
+
+        return $this->servers->create($this->handlers->forContext($context))
             ->run(new StdioTransport(logger: $this->logger));
     }
 }

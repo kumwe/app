@@ -11,6 +11,7 @@ use JsonException;
 use Kumwe\CMS\Administrator\Http\AdministratorRequest;
 use Kumwe\CMS\Administrator\Presentation\AdministratorRenderer;
 use Kumwe\CMS\Application\Automation\AutomationManagementService;
+use Kumwe\CMS\Application\Authorization\ExecutionContext;
 use Laminas\Diactoros\Response\HtmlResponse;
 use Laminas\Diactoros\Response\RedirectResponse;
 use Psr\Http\Message\ResponseInterface;
@@ -30,30 +31,31 @@ final readonly class AdministratorAutomationHandler implements RequestHandlerInt
         $session = AdministratorRequest::session($request);
 
         if (strtoupper($request->getMethod()) === 'POST') {
-            $this->mutate($session->principal->subject(), AdministratorRequest::form($request));
+            $this->mutate(AdministratorRequest::context($request), AdministratorRequest::form($request));
 
             return new RedirectResponse('/administrator/automation?saved=1', 303);
         }
 
+        $context = AdministratorRequest::context($request);
         return new HtmlResponse($this->renderer->render('automation', [
             'csrf' => $session->csrfToken,
             'capabilities' => AdministratorRequest::capabilityMap($request),
-            'schedules' => $this->automation->schedules(),
-            'jobs' => $this->automation->jobs(200),
-            'job_types' => $this->automation->jobTypes(),
+            'schedules' => $this->automation->schedules($context),
+            'jobs' => $this->automation->jobs($context, 200),
+            'job_types' => $this->automation->jobTypes($context),
             'saved' => ($request->getQueryParams()['saved'] ?? null) === '1',
         ]), 200, ['Cache-Control' => 'no-store']);
     }
 
     /** @param array<string, string> $form */
-    private function mutate(string $actorId, array $form): void
+    private function mutate(ExecutionContext $context, array $form): void
     {
         $action = AdministratorRequest::required($form, 'action');
 
         switch ($action) {
             case 'schedule.create':
                 $this->automation->createSchedule(
-                    $actorId,
+                    $context,
                     AdministratorRequest::required($form, 'name'),
                     AdministratorRequest::required($form, 'cron_expression'),
                     AdministratorRequest::required($form, 'timezone'),
@@ -66,7 +68,7 @@ final readonly class AdministratorAutomationHandler implements RequestHandlerInt
             case 'schedule.enable':
             case 'schedule.disable':
                 $this->automation->setScheduleEnabled(
-                    $actorId,
+                    $context,
                     AdministratorRequest::required($form, 'id'),
                     AdministratorRequest::positiveInteger($form, 'version'),
                     $action === 'schedule.enable',
@@ -74,16 +76,16 @@ final readonly class AdministratorAutomationHandler implements RequestHandlerInt
                 return;
             case 'schedule.delete':
                 $this->automation->deleteSchedule(
-                    $actorId,
+                    $context,
                     AdministratorRequest::required($form, 'id'),
                     AdministratorRequest::positiveInteger($form, 'version'),
                 );
                 return;
             case 'job.retry':
-                $this->automation->retryJob($actorId, AdministratorRequest::required($form, 'id'));
+                $this->automation->retryJob($context, AdministratorRequest::required($form, 'id'));
                 return;
             case 'job.cancel':
-                $this->automation->cancelJob($actorId, AdministratorRequest::required($form, 'id'));
+                $this->automation->cancelJob($context, AdministratorRequest::required($form, 'id'));
                 return;
             default:
                 throw new InvalidArgumentException('The automation action is not supported.');

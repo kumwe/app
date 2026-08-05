@@ -11,7 +11,7 @@ use Throwable;
 
 final readonly class UninstallExtensionCommand implements Command
 {
-    public function __construct(private ExtensionManager $extensions)
+    public function __construct(private ExtensionManager $extensions, private ConsoleAuthorizer $authorization)
     {
     }
 
@@ -28,8 +28,10 @@ final readonly class UninstallExtensionCommand implements Command
     public function execute(array $arguments, Output $output): int
     {
         try {
-            $identifier = $arguments[0] ?? '';
-            $this->extensions->uninstall($identifier, 'system:cli');
+            $identifier = array_shift($arguments) ?? '';
+            $options = CommandInput::options($arguments);
+            $context = $this->authorization->require($options, 'extensions.manage');
+            $this->extensions->uninstall($identifier, $context);
             $output->line(sprintf('Uninstalled %s.', $identifier));
 
             return 0;

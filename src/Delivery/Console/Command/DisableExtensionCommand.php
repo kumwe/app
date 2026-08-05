@@ -11,7 +11,7 @@ use Throwable;
 
 final readonly class DisableExtensionCommand implements Command
 {
-    public function __construct(private ExtensionManager $extensions)
+    public function __construct(private ExtensionManager $extensions, private ConsoleAuthorizer $authorization)
     {
     }
 
@@ -29,8 +29,10 @@ final readonly class DisableExtensionCommand implements Command
     public function execute(array $arguments, Output $output): int
     {
         try {
-            $identifier = $arguments[0] ?? '';
-            $extension = $this->extensions->disable($identifier, 'system:cli');
+            $identifier = array_shift($arguments) ?? '';
+            $options = CommandInput::options($arguments);
+            $context = $this->authorization->require($options, 'extensions.manage');
+            $extension = $this->extensions->disable($identifier, $context);
             $installedIdentifier = $extension['identifier'] ?? $identifier;
 
             if (!is_string($installedIdentifier)) {

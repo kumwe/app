@@ -4,13 +4,15 @@ declare(strict_types=1);
 
 namespace Kumwe\CMS\Delivery\Console\Command;
 
+use Kumwe\CMS\Application\Authorization\SiteContext;
+use Kumwe\CMS\Application\Authorization\SystemPrincipal;
 use Kumwe\CMS\Delivery\Console\Command;
 use Kumwe\CMS\Delivery\Console\Output;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\MigrationRunner;
 
 final readonly class MigrateCommand implements Command
 {
-    public function __construct(private MigrationRunner $runner)
+    public function __construct(private MigrationRunner $runner, private SystemPrincipal $system)
     {
     }
 
@@ -26,7 +28,10 @@ final readonly class MigrateCommand implements Command
 
     public function execute(array $arguments, Output $output): int
     {
-        $result = $this->runner->migrate();
+        $result = $this->runner->migrate($this->system->context(
+            SiteContext::default(),
+            'migration-' . bin2hex(random_bytes(16)),
+        ));
 
         if (!$result->changed()) {
             $output->line('Database schema is current.');

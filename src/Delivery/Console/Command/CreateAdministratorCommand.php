@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Kumwe\CMS\Delivery\Console\Command;
 
 use InvalidArgumentException;
+use Kumwe\CMS\Application\Authorization\SiteContext;
+use Kumwe\CMS\Application\Authorization\SystemPrincipal;
 use Kumwe\CMS\Delivery\Console\Command;
 use Kumwe\CMS\Delivery\Console\Output;
 use Kumwe\CMS\Identity\Application\Administration\AdministratorIdentityGateway;
@@ -12,8 +14,10 @@ use Throwable;
 
 final readonly class CreateAdministratorCommand implements Command
 {
-    public function __construct(private AdministratorIdentityGateway $identities)
-    {
+    public function __construct(
+        private AdministratorIdentityGateway $identities,
+        private SystemPrincipal $system,
+    ) {
     }
 
     public function name(): string
@@ -33,6 +37,10 @@ final readonly class CreateAdministratorCommand implements Command
             $options = $this->options($arguments);
             $password = $this->passwordFromFile($this->required($options, 'password-file'));
             $id = $this->identities->createInitialAdministrator(
+                $this->system->context(
+                    SiteContext::default(),
+                    'bootstrap-' . bin2hex(random_bytes(16)),
+                ),
                 $this->required($options, 'email'),
                 $this->required($options, 'name'),
                 $password,

@@ -4,15 +4,15 @@ declare(strict_types=1);
 
 namespace Kumwe\CMS\Identity\Application\Administration;
 
-use Kumwe\CMS\Identity\Application\Authentication\AuthenticatedPrincipal;
+use Kumwe\CMS\Application\Authorization\ExecutionContext;
 
 interface AdministratorSessionStore
 {
-    public function create(AuthenticatedPrincipal $principal, string $userAgent): CreatedAdministratorSession;
+    public function create(ExecutionContext $context, string $userAgent): CreatedAdministratorSession;
 
     public function find(string $token, string $userAgent): ?AdministratorSession;
 
-    public function delete(string $sessionId): void;
+    public function delete(ExecutionContext $context, string $sessionId): void;
 
-    public function purgeExpired(): int;
+    public function purgeExpired(ExecutionContext $context): int;
 }

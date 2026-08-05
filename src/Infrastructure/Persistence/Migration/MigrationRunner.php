@@ -6,6 +6,10 @@ namespace Kumwe\CMS\Infrastructure\Persistence\Migration;
 
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
+use Kumwe\CMS\Application\Authorization\AuthorizationGateway;
+use Kumwe\CMS\Application\Authorization\AuthorizationResource;
+use Kumwe\CMS\Application\Authorization\ExecutionContext;
+use Kumwe\CMS\Identity\Domain\Capability;
 use Kumwe\CMS\Infrastructure\Persistence\TransactionManager;
 use RuntimeException;
 
@@ -20,11 +24,13 @@ final readonly class MigrationRunner
         private MigrationLock $lock,
         private TransactionManager $transactions,
         private array $migrations,
+        private AuthorizationGateway $authorization,
     ) {
     }
 
-    public function migrate(): MigrationResult
+    public function migrate(ExecutionContext $context): MigrationResult
     {
+        $this->authorize($context);
         return $this->lock->synchronized(function (): MigrationResult {
             $this->repository->ensureLedger();
             $applied = $this->repository->applied();
@@ -65,8 +71,9 @@ final readonly class MigrationRunner
     /**
      * @return list<Migration>
      */
-    public function pending(): array
+    public function pending(ExecutionContext $context): array
     {
+        $this->authorize($context);
         $this->repository->ensureLedger();
         $applied = $this->repository->applied();
 
@@ -102,5 +109,14 @@ final readonly class MigrationRunner
         }
 
         return $migrations;
+    }
+
+    private function authorize(ExecutionContext $context): void
+    {
+        $this->authorization->assertAllowed(
+            $context,
+            Capability::fromString('system.migrate'),
+            AuthorizationResource::collection('database_schema'),
+        );
     }
 }

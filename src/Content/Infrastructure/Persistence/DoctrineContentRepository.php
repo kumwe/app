@@ -27,17 +27,22 @@ final readonly class DoctrineContentRepository implements ContentRepository
     {
     }
 
-    public function all(int $limit = 100, bool $includeDeleted = false): array
+    public function all(int $limit = 100, bool $includeDeleted = false, int $offset = 0): array
     {
         if ($limit < 1 || $limit > 500) {
             throw new InvalidArgumentException('The content result limit must be between 1 and 500.');
+        }
+        if ($offset < 0) {
+            throw new InvalidArgumentException('The content result offset cannot be negative.');
         }
 
         $query = $this->database->createQueryBuilder()
             ->select(...$this->columns())
             ->from($this->tables->raw('content_entries'), 'e')
             ->orderBy('e.updated_at', 'DESC')
-            ->setMaxResults($limit);
+            ->addOrderBy('e.id', 'DESC')
+            ->setMaxResults($limit)
+            ->setFirstResult($offset);
 
         if (!$includeDeleted) {
             $query->where('e.deleted_at IS NULL');

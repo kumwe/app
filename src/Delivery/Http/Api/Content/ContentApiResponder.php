@@ -6,6 +6,7 @@ namespace Kumwe\CMS\Delivery\Http\Api\Content;
 
 use DomainException;
 use InvalidArgumentException;
+use Kumwe\CMS\Application\Authorization\AuthorizationDenied;
 use Kumwe\CMS\Content\Application\ContentNotFound;
 use Kumwe\CMS\Content\Application\ContentRecord;
 use Kumwe\CMS\Content\Domain\VersionConflict;
@@ -35,6 +36,13 @@ final readonly class ContentApiResponder
     public function problem(Throwable $exception, string $instance): ResponseInterface
     {
         return match (true) {
+            $exception instanceof AuthorizationDenied => $this->problems->create(
+                403,
+                'Forbidden',
+                'The authenticated identity is not authorized for this operation.',
+                'urn:kumwe:problem:authorization-denied',
+                $instance,
+            ),
             $exception instanceof InsufficientCapability => $this->problems->create(
                 403,
                 'Forbidden',

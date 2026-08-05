@@ -27,7 +27,7 @@ final readonly class AdministratorContentEditorHandler implements RequestHandler
         $entry = null;
 
         if (is_string($id) && $id !== '') {
-            $entry = $this->content->get($id, true)->toArray();
+            $entry = $this->content->get(AdministratorRequest::context($request), $id, true)->toArray();
             $entry['data_json'] = json_encode(
                 $entry['data'],
                 JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR,

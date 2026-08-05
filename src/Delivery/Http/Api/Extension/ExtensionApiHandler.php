@@ -6,6 +6,7 @@ namespace Kumwe\CMS\Delivery\Http\Api\Extension;
 
 use InvalidArgumentException;
 use Kumwe\CMS\Delivery\Http\Api\ProblemDetailsResponseFactory;
+use Kumwe\CMS\Delivery\Http\Api\ApiExecutionContext;
 use Kumwe\CMS\Extension\Application\ExtensionManager;
 use Kumwe\CMS\Identity\Application\Authentication\AuthenticatedPrincipal;
 use Laminas\Diactoros\Response\EmptyResponse;
@@ -25,22 +26,22 @@ final readonly class ExtensionApiHandler implements RequestHandlerInterface
         try {
             if (strtoupper($request->getMethod()) === 'GET') {
                 return new JsonResponse(
-                    ['items' => $this->extensions->installed()],
+                    ['items' => $this->extensions->installed(ApiExecutionContext::fromRequest($request))],
                     200,
                     ['Cache-Control' => 'no-store'],
                 );
             }
             $identifier = $this->identifier($request);
-            $actor = $this->principal($request)->subject();
+            $context = ApiExecutionContext::fromRequest($request);
             $path = $request->getUri()->getPath();
             if (str_ends_with($path, '/activate')) {
-                return new JsonResponse($this->extensions->activate($identifier, $actor));
+                return new JsonResponse($this->extensions->activate($identifier, $context));
             }
             if (str_ends_with($path, '/disable')) {
-                return new JsonResponse($this->extensions->disable($identifier, $actor));
+                return new JsonResponse($this->extensions->disable($identifier, $context));
             }
             if (strtoupper($request->getMethod()) === 'DELETE') {
-                $this->extensions->uninstall($identifier, $actor);
+                $this->extensions->uninstall($identifier, $context);
                 return new EmptyResponse(204);
             }
             throw new InvalidArgumentException('The extension operation is not supported.');

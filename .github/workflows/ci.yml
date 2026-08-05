@@ -158,6 +158,7 @@ jobs:
       APP_DEBUG: 'false'
       APP_BASE_URL: https://kumwe.test
       APP_TRUSTED_HOSTS: kumwe.test
+      EXTENSIONS_ALLOW_UNSIGNED_LOCAL: 'true'
       DB_DRIVER: ${{ matrix.database.driver }}
       DB_HOST: 127.0.0.1
       DB_PORT: ${{ matrix.database.port }}
@@ -190,7 +191,10 @@ jobs:
       - name: Install locked dependencies
         run: composer install --no-interaction --prefer-dist
 
-      - name: Migrate an empty database
+      - name: Install immutable parent schema
+        run: php tests/Support/install-parent-schema.php
+
+      - name: Upgrade parent schema to current
         run: php bin/kumwe database:migrate
 
       - name: Run complete test suite

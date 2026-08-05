@@ -10,8 +10,11 @@ use Kumwe\CMS\Application\Automation\JobHandlerRegistry;
 use Kumwe\CMS\Application\Automation\JobQueue;
 use Kumwe\CMS\Application\Automation\StoredJob;
 use Kumwe\CMS\Application\Automation\Worker;
+use Kumwe\CMS\Application\Authorization\ExecutionContext;
+use Kumwe\CMS\Application\Authorization\SystemIdentity;
 use Kumwe\CMS\Delivery\Console\Command\QueueWorkCommand;
 use Kumwe\CMS\Delivery\Console\Output;
+use Kumwe\CMS\Tests\Support\AuthorizationContext;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Throwable;
@@ -22,7 +25,7 @@ final class QueueWorkCommandTest extends TestCase
     public function testMaximumJobsDrainsWithoutClaimingAdditionalWorkAndDisconnects(): void
     {
         $queue = new DrainQueue(3);
-        $command = new QueueWorkCommand(new Worker($queue, new JobHandlerRegistry([new DrainHandler()])));
+        $command = $this->command($queue, [new DrainHandler()]);
         $output = new DrainOutput();
 
         self::assertSame(0, $command->execute([
@@ -39,12 +42,21 @@ final class QueueWorkCommandTest extends TestCase
     public function testInvalidLeaseWindowReturnsFailureWithoutConnecting(): void
     {
         $queue = new DrainQueue(0);
-        $command = new QueueWorkCommand(new Worker($queue, new JobHandlerRegistry([])));
+        $command = $this->command($queue, []);
         $output = new DrainOutput();
 
         self::assertSame(1, $command->execute(['--lease-seconds=4'], $output));
         self::assertSame(0, $queue->disconnects);
         self::assertStringContainsString('between 5 and 3600', $output->errors[0]);
+    }
+
+    /** @param list<JobHandler> $handlers */
+    private function command(JobQueue $queue, array $handlers): QueueWorkCommand
+    {
+        return new QueueWorkCommand(
+            new Worker($queue, new JobHandlerRegistry($handlers), AuthorizationContext::gateway()),
+            AuthorizationContext::system(SystemIdentity::Worker),
+        );
     }
 }
 
@@ -77,6 +89,7 @@ final class DrainQueue implements JobQueue
     }
 
     public function enqueue(
+        ExecutionContext $context,
         string $type,
         array $payload,
         DateTimeImmutable $availableAt,
@@ -87,43 +100,64 @@ final class DrainQueue implements JobQueue
         return '';
     }
 
-    public function claim(string $queue, string $workerId, int $leaseSeconds): ?StoredJob
+    public function claim(
+        ExecutionContext $context,
+        string $queue,
+        string $workerId,
+        int $leaseSeconds,
+    ): ?StoredJob
     {
         return array_shift($this->jobs);
     }
 
-    public function renew(StoredJob $job, string $workerId, int $leaseSeconds): void
+    public function renew(
+        ExecutionContext $context,
+        StoredJob $job,
+        string $workerId,
+        int $leaseSeconds,
+    ): void
     {
     }
 
-    public function complete(StoredJob $job, string $workerId): void
+    public function complete(ExecutionContext $context, StoredJob $job, string $workerId): void
     {
         $this->completed++;
     }
 
-    public function fail(StoredJob $job, string $workerId, Throwable $failure, bool $permanent): void
+    public function fail(
+        ExecutionContext $context,
+        StoredJob $job,
+        string $workerId,
+        Throwable $failure,
+        bool $permanent,
+    ): void
     {
     }
 
-    public function heartbeat(string $workerId, string $queue, ?string $jobId = null): void
+    public function heartbeat(
+        ExecutionContext $context,
+        string $workerId,
+        string $queue,
+        ?string $jobId = null,
+    ): void
     {
     }
 
-    public function disconnect(string $workerId): void
+    public function disconnect(ExecutionContext $context, string $workerId, string $queue): void
     {
         $this->disconnects++;
     }
 
-    public function all(int $limit = 100): array
+    public function all(ExecutionContext $context, int $limit = 100): array
     {
         return [];
     }
 
-    public function retry(string $id): void
+    public function retry(ExecutionContext $context, string $id): void
     {
     }
 
-    public function cancel(string $id): void
+    public function cancel(ExecutionContext $context, string $id): void
     {
     }
 }
@@ -135,7 +169,7 @@ final class DrainHandler implements JobHandler
         return 'drain.test';
     }
 
-    public function handle(array $payload): void
+    public function handle(array $payload, ExecutionContext $context): void
     {
     }
 }

@@ -15,6 +15,9 @@ use Kumwe\CMS\Infrastructure\Persistence\TransactionManager;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
+use Kumwe\CMS\Application\Authorization\SiteContext;
+use Kumwe\CMS\Application\Authorization\SystemIdentity;
+use Kumwe\CMS\Tests\Support\AuthorizationContext;
 
 #[CoversClass(MigrationRunner::class)]
 #[CoversClass(MigrationResult::class)]
@@ -31,10 +34,10 @@ final class MigrationRunnerTest extends TestCase
 
         self::assertSame(
             ['20260804000100_first', '20260804000200_second'],
-            $runner->migrate()->applied,
+            $runner->migrate($this->context())->applied,
         );
         self::assertSame(['20260804000100_first', '20260804000200_second'], $calls->ids);
-        self::assertFalse($runner->migrate()->changed());
+        self::assertFalse($runner->migrate($this->context())->changed());
     }
 
     public function testChecksumDriftIsRejected(): void
@@ -46,7 +49,7 @@ final class MigrationRunnerTest extends TestCase
         ]);
         $this->expectException(RuntimeException::class);
 
-        $runner->migrate();
+        $runner->migrate($this->context());
     }
 
     /**
@@ -63,6 +66,15 @@ final class MigrationRunnerTest extends TestCase
             new DirectMigrationLock(),
             new DirectTransactionManager(),
             $migrations,
+            AuthorizationContext::gateway(),
+        );
+    }
+
+    private function context(): \Kumwe\CMS\Application\Authorization\ExecutionContext
+    {
+        return AuthorizationContext::system(SystemIdentity::Migration)->context(
+            SiteContext::default(),
+            'migration-test',
         );
     }
 }

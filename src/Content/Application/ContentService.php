@@ -5,6 +5,10 @@ declare(strict_types=1);
 namespace Kumwe\CMS\Content\Application;
 
 use DateTimeImmutable;
+use Kumwe\CMS\Application\Authorization\AuthorizationGateway;
+use Kumwe\CMS\Application\Authorization\AuthorizationResource;
+use Kumwe\CMS\Application\Authorization\ExecutionContext;
+use Kumwe\CMS\Application\Authorization\ResourceSiteOwnershipWriter;
 use Kumwe\CMS\Audit\Application\AuditRecorder;
 use Kumwe\CMS\Audit\Domain\AuditEvent;
 use Kumwe\CMS\Content\Domain\ContentEntry;
@@ -13,6 +17,7 @@ use Kumwe\CMS\Content\Domain\ContentStatus;
 use Kumwe\CMS\Content\Domain\ExpectedVersion;
 use Kumwe\CMS\Content\Domain\PublicationWindow;
 use Kumwe\CMS\Infrastructure\Persistence\TransactionManager;
+use Kumwe\CMS\Identity\Domain\Capability;
 use Kumwe\CMS\Workflow\Domain\Workflow;
 use Psr\Clock\ClockInterface;
 use Ramsey\Uuid\Uuid;
@@ -28,17 +33,44 @@ final readonly class ContentService
         private TransactionManager $transactions,
         private ClockInterface $clock,
         private Workflow $workflow,
+        private AuthorizationGateway $authorization,
+        private ResourceSiteOwnershipWriter $ownership,
     ) {
     }
 
     /** @return list<ContentRecord> */
-    public function list(int $limit = 100, bool $includeDeleted = false): array
+    public function list(ExecutionContext $context, int $limit = 100, bool $includeDeleted = false): array
     {
-        return $this->repository->all($limit, $includeDeleted);
+        if ($limit < 1 || $limit > 500) {
+            throw new \InvalidArgumentException('The content result limit must be between 1 and 500.');
+        }
+        $result = [];
+        $offset = 0;
+        $pageSize = min(500, max(50, $limit));
+
+        do {
+            $page = $this->repository->all($pageSize, $includeDeleted, $offset);
+            foreach ($page as $record) {
+                if ($this->authorization->decide(
+                    $context,
+                    Capability::fromString('content.read'),
+                    AuthorizationResource::item('content', $record->entry->id()),
+                )->allowed) {
+                    $result[] = $record;
+                    if (count($result) === $limit) {
+                        return $result;
+                    }
+                }
+            }
+            $offset += count($page);
+        } while (count($page) === $pageSize);
+
+        return $result;
     }
 
-    public function get(string $id, bool $includeDeleted = false): ContentRecord
+    public function get(ExecutionContext $context, string $id, bool $includeDeleted = false): ContentRecord
     {
+        $this->authorize($context, 'content.read', $id);
         return $this->repository->find($id, $includeDeleted) ?? throw new ContentNotFound($id);
     }
 
@@ -51,12 +83,17 @@ final readonly class ContentService
      * @param array<array-key, mixed> $data
      */
     public function create(
-        string $actorId,
+        ExecutionContext $context,
         string $title,
         string $slug,
         array $data,
         ?PublicationWindow $window = null,
     ): ContentRecord {
+        $this->authorization->assertAllowed(
+            $context,
+            Capability::fromString('content.create'),
+            AuthorizationResource::collection('content'),
+        );
         $now = $this->clock->now();
         $entry = ContentEntry::create(
             Uuid::uuid7()->toString(),
@@ -74,10 +111,14 @@ final readonly class ContentService
             $now,
         );
 
-        return $this->transactions->transactional(function () use ($record, $actorId, $now): ContentRecord {
+        return $this->transactions->transactional(function () use ($record, $context, $now): ContentRecord {
             $this->repository->insert($record);
+            $this->ownership->record(
+                AuthorizationResource::item('content', $record->entry->id()),
+                $context->site(),
+            );
             $this->captureRevision($record->entry, $now);
-            $this->recordAudit($actorId, 'content.create', $record->entry, $now);
+            $this->recordAudit($context->actorId(), 'content.create', $record->entry, $now);
 
             return $record;
         });
@@ -87,7 +128,7 @@ final readonly class ContentService
      * @param array<array-key, mixed> $data
      */
     public function update(
-        string $actorId,
+        ExecutionContext $context,
         string $id,
         int $expectedVersion,
         string $title,
@@ -95,7 +136,8 @@ final readonly class ContentService
         array $data,
         ?PublicationWindow $window = null,
     ): ContentRecord {
-        $stored = $this->get($id);
+        $this->authorize($context, 'content.update', $id);
+        $stored = $this->get($context, $id);
         $expected = new ExpectedVersion($expectedVersion);
         $entry = $stored->entry->revise($expected, $title, $slug, $data, $window);
 
@@ -105,24 +147,36 @@ final readonly class ContentService
         return $this->transactions->transactional(function () use (
             $updated,
             $expectedVersion,
-            $actorId,
+            $context,
             $now,
         ): ContentRecord {
             $this->repository->update($updated, $expectedVersion);
             $this->captureRevision($updated->entry, $now);
-            $this->recordAudit($actorId, 'content.update', $updated->entry, $now);
+            $this->recordAudit($context->actorId(), 'content.update', $updated->entry, $now);
 
             return $updated;
         });
     }
 
     public function transition(
-        string $actorId,
+        ExecutionContext $context,
         string $id,
         int $expectedVersion,
         ContentStatus $target,
     ): ContentRecord {
-        $stored = $this->get($id);
+        $this->authorize($context, 'content.read', $id);
+        $stored = $this->get($context, $id);
+        $from = $stored->entry->status();
+        $requiredCapability = match (true) {
+            $from === ContentStatus::Draft && $target === ContentStatus::Review => 'content.submit',
+            $from === ContentStatus::Review && $target === ContentStatus::Draft => 'content.review',
+            $target === ContentStatus::Published => 'content.publish',
+            $from === ContentStatus::Published && $target === ContentStatus::Draft => 'content.unpublish',
+            $target === ContentStatus::Archived => 'content.archive',
+            $from === ContentStatus::Archived && $target === ContentStatus::Draft => 'content.restore',
+            default => 'content.update',
+        };
+        $this->authorize($context, $requiredCapability, $id);
         $entry = $stored->entry->transition(new ExpectedVersion($expectedVersion), $this->workflow, $target);
         $now = $this->clock->now();
         $updated = $stored->withEntry($entry, $now);
@@ -130,12 +184,12 @@ final readonly class ContentService
         return $this->transactions->transactional(function () use (
             $updated,
             $expectedVersion,
-            $actorId,
+            $context,
             $now,
         ): ContentRecord {
             $this->repository->update($updated, $expectedVersion);
             $this->captureRevision($updated->entry, $now);
-            $this->recordAudit($actorId, 'content.transition', $updated->entry, $now, [
+            $this->recordAudit($context->actorId(), 'content.transition', $updated->entry, $now, [
                 'status' => $updated->entry->status()->value,
             ]);
 
@@ -143,29 +197,31 @@ final readonly class ContentService
         });
     }
 
-    public function trash(string $actorId, string $id, int $expectedVersion): ContentRecord
+    public function trash(ExecutionContext $context, string $id, int $expectedVersion): ContentRecord
     {
-        $stored = $this->get($id);
+        $this->authorize($context, 'content.delete', $id);
+        $stored = $this->get($context, $id);
         (new ExpectedVersion($expectedVersion))->assertMatches($stored->entry->version());
         $now = $this->clock->now();
 
         return $this->transactions->transactional(function () use (
             $id,
             $expectedVersion,
-            $actorId,
+            $context,
             $now,
         ): ContentRecord {
             $this->repository->setDeletedAt($id, $expectedVersion, $now, $now);
-            $record = $this->get($id, true);
-            $this->recordAudit($actorId, 'content.trash', $record->entry, $now);
+            $record = $this->get($context, $id, true);
+            $this->recordAudit($context->actorId(), 'content.trash', $record->entry, $now);
 
             return $record;
         });
     }
 
-    public function restore(string $actorId, string $id, int $expectedVersion): ContentRecord
+    public function restore(ExecutionContext $context, string $id, int $expectedVersion): ContentRecord
     {
-        $stored = $this->get($id, true);
+        $this->authorize($context, 'content.restore', $id);
+        $stored = $this->get($context, $id, true);
 
         if ($stored->deletedAt === null) {
             return $stored;
@@ -177,12 +233,12 @@ final readonly class ContentService
         return $this->transactions->transactional(function () use (
             $id,
             $expectedVersion,
-            $actorId,
+            $context,
             $now,
         ): ContentRecord {
             $this->repository->setDeletedAt($id, $expectedVersion, null, $now);
-            $record = $this->get($id);
-            $this->recordAudit($actorId, 'content.restore', $record->entry, $now);
+            $record = $this->get($context, $id);
+            $this->recordAudit($context->actorId(), 'content.restore', $record->entry, $now);
 
             return $record;
         });
@@ -196,6 +252,15 @@ final readonly class ContentService
             $this->repository->nextRevisionNumber($entry->id()),
             $time,
         ));
+    }
+
+    private function authorize(ExecutionContext $context, string $action, string $id): void
+    {
+        $this->authorization->assertAllowed(
+            $context,
+            Capability::fromString($action),
+            AuthorizationResource::item('content', $id),
+        );
     }
 
     /** @param array<string, mixed> $metadata */

@@ -10,8 +10,10 @@ use Kumwe\CMS\Extension\Application\ExtensionManager;
 
 final readonly class ListExtensionsCommand implements Command
 {
-    public function __construct(private ExtensionManager $extensions)
-    {
+    public function __construct(
+        private ExtensionManager $extensions,
+        private ConsoleAuthorizer $authorization,
+    ) {
     }
 
     public function name(): string
@@ -27,7 +29,8 @@ final readonly class ListExtensionsCommand implements Command
     /** @param list<string> $arguments */
     public function execute(array $arguments, Output $output): int
     {
-        foreach ($this->extensions->installed() as $extension) {
+        $context = $this->authorization->require(CommandInput::options($arguments), 'extensions.manage');
+        foreach ($this->extensions->installed($context) as $extension) {
             $output->line(sprintf(
                 '%-40s %-12s %-12s %s',
                 $this->value($extension, 'identifier'),

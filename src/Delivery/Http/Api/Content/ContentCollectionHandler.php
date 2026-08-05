@@ -6,6 +6,7 @@ namespace Kumwe\CMS\Delivery\Http\Api\Content;
 
 use Kumwe\CMS\Content\Application\ContentRecord;
 use Kumwe\CMS\Content\Application\ContentService;
+use Kumwe\CMS\Delivery\Http\Api\ApiExecutionContext;
 use Laminas\Diactoros\Response\JsonResponse;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -26,7 +27,7 @@ final readonly class ContentCollectionHandler implements RequestHandlerInterface
             return new JsonResponse([
                 'items' => array_map(
                     static fn (ContentRecord $record): array => $record->toArray(),
-                    $this->content->list(100, $includeDeleted),
+                    $this->content->list(ApiExecutionContext::fromRequest($request), 100, $includeDeleted),
                 ),
             ], 200, ['Cache-Control' => 'no-store']);
         }
@@ -34,7 +35,7 @@ final readonly class ContentCollectionHandler implements RequestHandlerInterface
         try {
             $body = ContentApiRequest::json($request);
             $record = $this->content->create(
-                ContentApiRequest::principal($request)->subject(),
+                ApiExecutionContext::fromRequest($request),
                 ContentApiRequest::requiredString($body, 'title'),
                 ContentApiRequest::requiredString($body, 'slug'),
                 ContentApiRequest::data($body),

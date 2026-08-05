@@ -6,6 +6,9 @@ namespace Kumwe\CMS\Tests\Unit\Application\Automation;
 
 use Kumwe\CMS\Application\Automation\IdempotencyPurger;
 use Kumwe\CMS\Application\Automation\Job\PurgeIdempotencyRecordsHandler;
+use Kumwe\CMS\Application\Authorization\SiteContext;
+use Kumwe\CMS\Application\Authorization\SystemIdentity;
+use Kumwe\CMS\Tests\Support\AuthorizationContext;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 
@@ -17,7 +20,7 @@ final class PurgeIdempotencyRecordsHandlerTest extends TestCase
         $purger = new CountingIdempotencyPurger([100, 100, 25]);
         $handler = new PurgeIdempotencyRecordsHandler($purger);
 
-        $handler->handle(['batch_size' => 100, 'maximum_batches' => 10]);
+        $handler->handle(['batch_size' => 100, 'maximum_batches' => 10], $this->context());
 
         self::assertSame(3, $purger->calls);
     }
@@ -27,9 +30,17 @@ final class PurgeIdempotencyRecordsHandlerTest extends TestCase
         $purger = new CountingIdempotencyPurger([100, 100, 100]);
         $handler = new PurgeIdempotencyRecordsHandler($purger);
 
-        $handler->handle(['batch_size' => 100, 'maximum_batches' => 2]);
+        $handler->handle(['batch_size' => 100, 'maximum_batches' => 2], $this->context());
 
         self::assertSame(2, $purger->calls);
+    }
+
+    private function context(): \Kumwe\CMS\Application\Authorization\ExecutionContext
+    {
+        return AuthorizationContext::system(SystemIdentity::Worker)->context(
+            SiteContext::default(),
+            'idempotency-purge-test',
+        );
     }
 }
 

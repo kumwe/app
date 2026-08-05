@@ -6,6 +6,11 @@ namespace Kumwe\CMS\Infrastructure\Mcp;
 
 use InvalidArgumentException;
 use JsonException;
+use Kumwe\CMS\Application\Authorization\AuthenticationStrength;
+use Kumwe\CMS\Application\Authorization\AuthorizationGateway;
+use Kumwe\CMS\Application\Authorization\AuthorizationResource;
+use Kumwe\CMS\Application\Authorization\ExecutionContext;
+use Kumwe\CMS\Application\Authorization\SiteContext;
 use Kumwe\CMS\Application\Automation\AutomationManagementService;
 use Kumwe\CMS\Content\Application\ContentRecord;
 use Kumwe\CMS\Content\Application\ContentService;
@@ -36,11 +41,12 @@ final readonly class KumweMcpHandlers
         private ContentTransitionAuthorizer $transitions,
         private McpMutationGuard $mutations,
         private ClockInterface $clock,
-        private ?AuthenticatedPrincipal $principal = null,
+        private AuthorizationGateway $authorization,
+        private ?ExecutionContext $executionContext = null,
     ) {
     }
 
-    public function forPrincipal(AuthenticatedPrincipal $principal): self
+    public function forContext(ExecutionContext $context): self
     {
         return new self(
             $this->catalog,
@@ -53,7 +59,8 @@ final readonly class KumweMcpHandlers
             $this->transitions,
             $this->mutations,
             $this->clock,
-            $principal,
+            $this->authorization,
+            $context,
         );
     }
 
@@ -70,19 +77,20 @@ final readonly class KumweMcpHandlers
 
         return ['items' => array_map(
             static fn (ContentRecord $record): array => $record->toArray(),
-            $this->content->list(includeDeleted: $includeDeleted),
+            $this->content->list($this->context(), includeDeleted: $includeDeleted),
         )];
     }
 
     /** @return array<string, mixed> */
     public function createContent(string $operationId, string $title, string $slug, string $body): array
     {
-        $principal = $this->require('content.create');
+        $this->require('content.create');
+        $this->preauthorize($operationId, 'content.create', AuthorizationResource::collection('content'));
 
-        return $this->mutations->run($principal, 'content.create', $operationId, [
+        return $this->mutations->run($this->context($operationId), 'content.create', $operationId, [
             'title' => $title, 'slug' => $slug, 'body' => $body,
         ], fn (): array => $this->content->create(
-            $principal->subject(),
+            $this->context($operationId),
             $title,
             $slug,
             ['body' => $body],
@@ -98,12 +106,13 @@ final readonly class KumweMcpHandlers
         string $slug,
         string $body,
     ): array {
-        $principal = $this->require('content.update');
+        $this->require('content.update');
+        $this->preauthorize($operationId, 'content.update', AuthorizationResource::item('content', $id));
 
-        return $this->mutations->run($principal, 'content.update', $operationId, [
+        return $this->mutations->run($this->context($operationId), 'content.update', $operationId, [
             'id' => $id, 'version' => $version, 'title' => $title, 'slug' => $slug, 'body' => $body,
         ], fn (): array => $this->content->update(
-            $principal->subject(),
+            $this->context($operationId),
             $id,
             $version,
             $title,
@@ -117,12 +126,22 @@ final readonly class KumweMcpHandlers
     {
         $principal = $this->principal();
         $target = ContentStatus::from($status);
-        $this->transitions->assertAllowed($principal, $this->content->get($id)->entry->status(), $target);
+        $stored = $this->content->get($this->context($operationId), $id);
+        $this->transitions->assertAllowed(
+            $principal,
+            $stored->entry->status(),
+            $target,
+        );
+        $this->preauthorize(
+            $operationId,
+            $this->transitionAction($stored->entry->status(), $target),
+            AuthorizationResource::item('content', $id),
+        );
 
-        return $this->mutations->run($principal, 'content.transition', $operationId, [
+        return $this->mutations->run($this->context($operationId), 'content.transition', $operationId, [
             'id' => $id, 'version' => $version, 'status' => $status,
         ], fn (): array => $this->content->transition(
-            $principal->subject(),
+            $this->context($operationId),
             $id,
             $version,
             $target,
@@ -132,26 +151,28 @@ final readonly class KumweMcpHandlers
     /** @return array<string, mixed> */
     public function trashContent(string $operationId, string $id, int $version): array
     {
-        $principal = $this->require('content.delete');
+        $this->require('content.delete');
+        $this->preauthorize($operationId, 'content.delete', AuthorizationResource::item('content', $id));
         return $this->mutations->run(
-            $principal,
+            $this->context($operationId),
             'content.trash',
             $operationId,
             compact('id', 'version'),
-            fn (): array => $this->content->trash($principal->subject(), $id, $version)->toArray()
+            fn (): array => $this->content->trash($this->context($operationId), $id, $version)->toArray()
         );
     }
 
     /** @return array<string, mixed> */
     public function restoreContent(string $operationId, string $id, int $version): array
     {
-        $principal = $this->require('content.restore');
+        $this->require('content.restore');
+        $this->preauthorize($operationId, 'content.restore', AuthorizationResource::item('content', $id));
         return $this->mutations->run(
-            $principal,
+            $this->context($operationId),
             'content.restore',
             $operationId,
             compact('id', 'version'),
-            fn (): array => $this->content->restore($principal->subject(), $id, $version)->toArray()
+            fn (): array => $this->content->restore($this->context($operationId), $id, $version)->toArray()
         );
     }
 
@@ -162,19 +183,20 @@ final readonly class KumweMcpHandlers
 
         return ['items' => array_map(
             static fn (MenuRecord $menu): array => $menu->toArray(),
-            $this->navigation->menus(),
+            $this->navigation->menus($this->context()),
         )];
     }
 
     /** @return array<string, mixed> */
     public function createMenu(string $operationId, string $handle, string $title): array
     {
-        $principal = $this->require('navigation.manage');
+        $this->require('navigation.manage');
+        $this->preauthorize($operationId, 'navigation.manage', AuthorizationResource::collection('menu'));
 
-        return $this->mutations->run($principal, 'menu.create', $operationId, [
+        return $this->mutations->run($this->context($operationId), 'menu.create', $operationId, [
             'handle' => $handle, 'title' => $title,
         ], fn (): array => $this->navigation->createMenu(
-            $principal->subject(),
+            $this->context($operationId),
             $handle,
             $title,
         )->toArray());
@@ -186,7 +208,7 @@ final readonly class KumweMcpHandlers
         $this->require('navigation.manage');
         return ['items' => array_map(
             static fn (MenuItemRecord $item): array => $item->toArray(),
-            $this->navigation->items($menuId)
+            $this->navigation->items($this->context(), $menuId)
         )];
     }
 
@@ -199,15 +221,16 @@ final readonly class KumweMcpHandlers
         int $position = 0,
         string $parentId = '',
     ): array {
-        $principal = $this->require('navigation.manage');
+        $this->require('navigation.manage');
+        $this->preauthorize($operationId, 'navigation.manage', AuthorizationResource::item('menu', $menuId));
         $input = compact('menuId', 'title', 'slug', 'position', 'parentId');
         return $this->mutations->run(
-            $principal,
+            $this->context($operationId),
             'menu-item.create',
             $operationId,
             $input,
             fn (): array => $this->navigation->createItem(
-                $principal->subject(),
+                $this->context($operationId),
                 $menuId,
                 $parentId === '' ? null : $parentId,
                 $title,
@@ -222,7 +245,7 @@ final readonly class KumweMcpHandlers
     {
         $this->require('settings.manage');
 
-        return $this->settings->current();
+        return $this->settings->managed($this->context());
     }
 
     /** @return array<string, mixed> */
@@ -234,7 +257,12 @@ final readonly class KumweMcpHandlers
         string $timezone,
         bool $searchIndexingEnabled,
     ): array {
-        $principal = $this->require('settings.manage');
+        $this->require('settings.manage');
+        $this->preauthorize(
+            $operationId,
+            'settings.manage',
+            AuthorizationResource::item('site', $this->context()->site()->identifier()),
+        );
         $values = [
             'site_name' => $siteName,
             'homepage_slug' => $homepageSlug,
@@ -244,14 +272,14 @@ final readonly class KumweMcpHandlers
         ];
 
         return $this->mutations->run(
-            $principal,
+            $this->context($operationId),
             'settings.update',
             $operationId,
             $values,
-            function () use ($principal, $values): array {
-                $this->settings->updateAll($principal->subject(), $values);
+            function () use ($operationId, $values): array {
+                $this->settings->updateAll($this->context($operationId), $values);
 
-                return $this->settings->current();
+                return $this->settings->managed($this->context($operationId));
             },
         );
     }
@@ -261,7 +289,7 @@ final readonly class KumweMcpHandlers
     {
         $this->require('users.manage');
 
-        return ['items' => $this->access->users()];
+        return ['items' => $this->access->users($this->context())];
     }
 
     /**
@@ -273,7 +301,10 @@ final readonly class KumweMcpHandlers
     public function listRoles(): array
     {
         $this->require('users.manage');
-        return ['items' => $this->access->roles(), 'capabilities' => $this->access->capabilities()];
+        return [
+            'items' => $this->access->roles($this->context()),
+            'capabilities' => $this->access->capabilities($this->context()),
+        ];
     }
 
     /** @return array{updated: bool} */
@@ -285,15 +316,16 @@ final readonly class KumweMcpHandlers
         string $displayName,
         string $status,
     ): array {
-        $principal = $this->require('users.manage');
+        $this->require('users.manage');
+        $this->preauthorize($operationId, 'users.manage', AuthorizationResource::item('user', $id));
         return $this->mutations->run(
-            $principal,
+            $this->context($operationId),
             'user.update',
             $operationId,
             compact('id', 'version', 'email', 'displayName', 'status'),
-            function () use ($principal, $id, $version, $email, $displayName, $status): array {
+            function () use ($operationId, $id, $version, $email, $displayName, $status): array {
                 $this->access->updateUser(
-                    $principal->subject(),
+                    $this->context($operationId),
                     $id,
                     $email,
                     $displayName,
@@ -308,13 +340,14 @@ final readonly class KumweMcpHandlers
     /** @return array{id: string} */
     public function createRole(string $operationId, string $code, string $name): array
     {
-        $principal = $this->require('users.manage');
+        $this->require('users.manage');
+        $this->preauthorize($operationId, 'users.manage', AuthorizationResource::collection('role'));
         return $this->mutations->run(
-            $principal,
+            $this->context($operationId),
             'role.create',
             $operationId,
             compact('code', 'name'),
-            fn (): array => ['id' => $this->access->createRole($principal->subject(), $code, $name)]
+            fn (): array => ['id' => $this->access->createRole($this->context($operationId), $code, $name)]
         );
     }
 
@@ -323,21 +356,22 @@ final readonly class KumweMcpHandlers
     {
         $this->require('users.manage');
 
-        return ['items' => $this->access->tokens()];
+        return ['items' => $this->access->tokens($this->context())];
     }
 
     /** @return array{revoked: bool} */
     public function revokeToken(string $operationId, string $tokenId): array
     {
-        $principal = $this->require('users.manage');
+        $this->require('users.manage');
+        $this->preauthorize($operationId, 'users.manage', AuthorizationResource::item('api_token', $tokenId));
 
         return $this->mutations->run(
-            $principal,
+            $this->context($operationId),
             'token.revoke',
             $operationId,
             ['token_id' => $tokenId],
-            function () use ($principal, $tokenId): array {
-                $this->access->revokeToken($principal->subject(), $tokenId);
+            function () use ($operationId, $tokenId): array {
+                $this->access->revokeToken($this->context($operationId), $tokenId);
 
                 return ['revoked' => true];
             },
@@ -349,43 +383,58 @@ final readonly class KumweMcpHandlers
     {
         $this->require('extensions.manage');
 
-        return ['items' => $this->extensions->installed()];
+        return ['items' => $this->extensions->installed($this->context())];
     }
 
     /** @return array<string, mixed> */
     public function activateExtension(string $operationId, string $identifier): array
     {
-        $principal = $this->require('extensions.manage');
+        $this->require('extensions.manage');
+        $this->preauthorize(
+            $operationId,
+            'extensions.manage',
+            AuthorizationResource::item('extension', $identifier),
+        );
 
-        return $this->mutations->run($principal, 'extension.activate', $operationId, [
+        return $this->mutations->run($this->context($operationId), 'extension.activate', $operationId, [
             'identifier' => $identifier,
-        ], fn (): array => $this->extensions->activate($identifier, $principal->subject()));
+        ], fn (): array => $this->extensions->activate($identifier, $this->context($operationId)));
     }
 
     /** @return array<string, mixed> */
     public function disableExtension(string $operationId, string $identifier): array
     {
-        $principal = $this->require('extensions.manage');
+        $this->require('extensions.manage');
+        $this->preauthorize(
+            $operationId,
+            'extensions.manage',
+            AuthorizationResource::item('extension', $identifier),
+        );
         return $this->mutations->run(
-            $principal,
+            $this->context($operationId),
             'extension.disable',
             $operationId,
             compact('identifier'),
-            fn (): array => $this->extensions->disable($identifier, $principal->subject())
+            fn (): array => $this->extensions->disable($identifier, $this->context($operationId))
         );
     }
 
     /** @return array{uninstalled: bool} */
     public function uninstallExtension(string $operationId, string $identifier): array
     {
-        $principal = $this->require('extensions.manage');
+        $this->require('extensions.manage');
+        $this->preauthorize(
+            $operationId,
+            'extensions.manage',
+            AuthorizationResource::item('extension', $identifier),
+        );
         return $this->mutations->run(
-            $principal,
+            $this->context($operationId),
             'extension.uninstall',
             $operationId,
             compact('identifier'),
-            function () use ($principal, $identifier): array {
-                $this->extensions->uninstall($identifier, $principal->subject());
+            function () use ($operationId, $identifier): array {
+                $this->extensions->uninstall($identifier, $this->context($operationId));
                 return ['uninstalled' => true];
             }
         );
@@ -396,14 +445,14 @@ final readonly class KumweMcpHandlers
     {
         $this->require('automation.manage');
 
-        return ['items' => $this->automation->schedules()];
+        return ['items' => $this->automation->schedules($this->context())];
     }
 
     /** @return array{items: list<array<string, mixed>>} */
     public function listJobs(int $limit = 100): array
     {
         $this->require('automation.manage');
-        return ['items' => $this->automation->jobs($limit)];
+        return ['items' => $this->automation->jobs($this->context(), $limit)];
     }
 
     /** @return array{id: string} */
@@ -417,12 +466,12 @@ final readonly class KumweMcpHandlers
     ): array {
         $this->require('automation.manage');
 
-        $principal = $this->principal();
-        return $this->mutations->run($principal, 'schedule.create', $operationId, [
+        $this->preauthorize($operationId, 'automation.manage', AuthorizationResource::collection('schedule'));
+        return $this->mutations->run($this->context($operationId), 'schedule.create', $operationId, [
             'name' => $name, 'cron' => $cron, 'jobType' => $jobType,
             'timezone' => $timezone, 'queue' => $queue,
         ], fn (): array => ['id' => $this->automation->createSchedule(
-            $principal->subject(),
+            $this->context($operationId),
             $name,
             $cron,
             $timezone,
@@ -440,14 +489,15 @@ final readonly class KumweMcpHandlers
         int $version,
         bool $enabled,
     ): array {
-        $principal = $this->require('automation.manage');
+        $this->require('automation.manage');
+        $this->preauthorize($operationId, 'automation.manage', AuthorizationResource::item('schedule', $id));
         return $this->mutations->run(
-            $principal,
+            $this->context($operationId),
             'schedule.update',
             $operationId,
             compact('id', 'version', 'enabled'),
-            function () use ($principal, $id, $version, $enabled): array {
-                $this->automation->setScheduleEnabled($principal->subject(), $id, $version, $enabled);
+            function () use ($operationId, $id, $version, $enabled): array {
+                $this->automation->setScheduleEnabled($this->context($operationId), $id, $version, $enabled);
                 return ['updated' => true];
             }
         );
@@ -456,14 +506,15 @@ final readonly class KumweMcpHandlers
     /** @return array{deleted: bool} */
     public function deleteSchedule(string $operationId, string $id, int $version): array
     {
-        $principal = $this->require('automation.manage');
+        $this->require('automation.manage');
+        $this->preauthorize($operationId, 'automation.manage', AuthorizationResource::item('schedule', $id));
         return $this->mutations->run(
-            $principal,
+            $this->context($operationId),
             'schedule.delete',
             $operationId,
             compact('id', 'version'),
-            function () use ($principal, $id, $version): array {
-                $this->automation->deleteSchedule($principal->subject(), $id, $version);
+            function () use ($operationId, $id, $version): array {
+                $this->automation->deleteSchedule($this->context($operationId), $id, $version);
                 return ['deleted' => true];
             }
         );
@@ -484,17 +535,18 @@ final readonly class KumweMcpHandlers
     /** @return array{updated: bool} */
     private function jobAction(string $operationId, string $id, bool $retry): array
     {
-        $principal = $this->require('automation.manage');
+        $this->require('automation.manage');
+        $this->preauthorize($operationId, 'automation.manage', AuthorizationResource::item('job', $id));
         return $this->mutations->run(
-            $principal,
+            $this->context($operationId),
             $retry ? 'job.retry' : 'job.cancel',
             $operationId,
             compact('id'),
-            function () use ($principal, $id, $retry): array {
+            function () use ($operationId, $id, $retry): array {
                 if ($retry) {
-                    $this->automation->retryJob($principal->subject(), $id);
+                    $this->automation->retryJob($this->context($operationId), $id);
                 } else {
-                    $this->automation->cancelJob($principal->subject(), $id);
+                    $this->automation->cancelJob($this->context($operationId), $id);
                 }
                 return ['updated' => true];
             }
@@ -536,6 +588,39 @@ final readonly class KumweMcpHandlers
 
     private function principal(): AuthenticatedPrincipal
     {
-        return $this->principal ?? throw new InsufficientCapability('authenticated');
+        return $this->executionContext?->principal()
+            ?? throw new InsufficientCapability('authenticated');
+    }
+
+    private function context(?string $operationId = null): ExecutionContext
+    {
+        $context = $this->executionContext
+            ?? throw new InsufficientCapability('authenticated');
+
+        return $operationId === null
+            ? $context
+            : $context->child('mcp-' . $operationId, $operationId);
+    }
+
+    private function preauthorize(string $operationId, string $action, AuthorizationResource $resource): void
+    {
+        $this->authorization->assertAllowed(
+            $this->context($operationId),
+            Capability::fromString($action),
+            $resource,
+        );
+    }
+
+    private function transitionAction(ContentStatus $from, ContentStatus $target): string
+    {
+        return match (true) {
+            $from === ContentStatus::Draft && $target === ContentStatus::Review => 'content.submit',
+            $from === ContentStatus::Review && $target === ContentStatus::Draft => 'content.review',
+            $target === ContentStatus::Published => 'content.publish',
+            $from === ContentStatus::Published && $target === ContentStatus::Draft => 'content.unpublish',
+            $target === ContentStatus::Archived => 'content.archive',
+            $from === ContentStatus::Archived && $target === ContentStatus::Draft => 'content.restore',
+            default => 'content.update',
+        };
     }
 }

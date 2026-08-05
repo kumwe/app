@@ -9,6 +9,7 @@ use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Doctrine\DBAL\Types\Types;
 use JsonException;
+use Kumwe\CMS\Application\Authorization\ExecutionContext;
 use Kumwe\CMS\Delivery\Http\Api\ProblemDetailsResponseFactory;
 use Kumwe\CMS\Identity\Application\Authentication\AuthenticatedPrincipal;
 use Kumwe\CMS\Infrastructure\Persistence\TableNames;
@@ -34,6 +35,7 @@ final readonly class PersistentIdempotencyMiddleware implements MiddlewareInterf
         private ClockInterface $clock,
         private ProblemDetailsResponseFactory $problems,
         private TransactionManager $transactions,
+        private HttpMutationPreauthorizer $preauthorization,
     ) {
     }
 
@@ -41,11 +43,20 @@ final readonly class PersistentIdempotencyMiddleware implements MiddlewareInterf
     {
         $key = $request->getAttribute(RequireIdempotencyKeyMiddleware::ATTRIBUTE);
         $principal = $request->getAttribute(AuthenticatedPrincipal::REQUEST_ATTRIBUTE);
-        if (!$key instanceof IdempotencyKey || !$principal instanceof AuthenticatedPrincipal) {
+        $context = $request->getAttribute(ExecutionContext::REQUEST_ATTRIBUTE);
+        if (
+            !$key instanceof IdempotencyKey
+            || !$principal instanceof AuthenticatedPrincipal
+            || !$context instanceof ExecutionContext
+            || $context->principal() !== $principal
+        ) {
             throw new RuntimeException('Persistent idempotency requires an authenticated request and validated key.');
         }
 
+        // Replay is an authorization-sensitive read and must never precede exact use-case authorization.
+        $this->preauthorization->authorize($request, $context);
         $subject = $principal->subject();
+        $authorizationFingerprint = $context->authorizationFingerprint();
         $operation = strtoupper($request->getMethod()) . ' ' . $request->getUri()->getPath();
         $keyValue = (string) $key;
         $digest = $this->requestDigest($request);
@@ -59,9 +70,12 @@ final readonly class PersistentIdempotencyMiddleware implements MiddlewareInterf
                 'subject' => $subject,
                 'operation' => $operation,
                 'request_digest' => $digest,
+                'authorization_fingerprint' => $authorizationFingerprint,
                 'state' => 'in_progress',
                 'owner_token' => $ownerToken,
                 'locked_until' => $now->modify('+' . self::PROCESSING_LEASE_SECONDS . ' seconds'),
+                'lease_owner' => $ownerToken,
+                'lease_expires_at' => $now->modify('+' . self::PROCESSING_LEASE_SECONDS . ' seconds'),
                 'result_status' => null,
                 'result_body' => null,
                 'result_headers' => null,
@@ -71,6 +85,7 @@ final readonly class PersistentIdempotencyMiddleware implements MiddlewareInterf
                 'expires_at' => $now->modify('+' . self::RETENTION_SECONDS . ' seconds'),
             ], [
                 'locked_until' => Types::DATETIME_IMMUTABLE,
+                'lease_expires_at' => Types::DATETIME_IMMUTABLE,
                 'created_at' => Types::DATETIME_IMMUTABLE,
                 'expires_at' => Types::DATETIME_IMMUTABLE,
             ]);
@@ -80,6 +95,7 @@ final readonly class PersistentIdempotencyMiddleware implements MiddlewareInterf
                 $operation,
                 $keyValue,
                 $digest,
+                $authorizationFingerprint,
                 $ownerToken,
                 $request,
             );
@@ -118,13 +134,14 @@ final readonly class PersistentIdempotencyMiddleware implements MiddlewareInterf
         string $operation,
         string $key,
         string $digest,
+        string $authorizationFingerprint,
         string $ownerToken,
         ServerRequestInterface $request,
     ): ?ResponseInterface {
         for ($attempt = 0; $attempt < 3; $attempt++) {
             $row = $this->database->fetchAssociative(sprintf(
-                'SELECT id, request_digest, state, owner_token, locked_until, result_status, result_body, '
-                . 'result_body_digest, result_headers, expires_at FROM %s '
+                'SELECT id, request_digest, authorization_fingerprint, state, owner_token, locked_until, '
+                . 'result_status, result_body, result_body_digest, result_headers, expires_at FROM %s '
                 . 'WHERE subject = ? AND operation = ? AND idempotency_key = ?',
                 $this->tables->quoted('idempotency'),
             ), [$subject, $operation, $key]);
@@ -137,7 +154,7 @@ final readonly class PersistentIdempotencyMiddleware implements MiddlewareInterf
             $id = $this->requiredString($row, 'id');
             $expiresAt = new DateTimeImmutable($this->requiredString($row, 'expires_at'));
             if ($expiresAt <= $now) {
-                if ($this->acquireExpired($id, $digest, $ownerToken, $now)) {
+                if ($this->acquireExpired($id, $digest, $authorizationFingerprint, $ownerToken, $now)) {
                     return null;
                 }
                 continue;
@@ -153,11 +170,30 @@ final readonly class PersistentIdempotencyMiddleware implements MiddlewareInterf
                 );
             }
 
+            if (!hash_equals(
+                $this->requiredString($row, 'authorization_fingerprint'),
+                $authorizationFingerprint,
+            )) {
+                return $this->problems->create(
+                    409,
+                    'Authorization Context Changed',
+                    'This Idempotency-Key belongs to a different credential or authorization state.',
+                    'urn:kumwe:problem:idempotency-authorization-changed',
+                    (string) $request->getUri(),
+                );
+            }
+
             $state = $this->requiredString($row, 'state');
             if ($state === 'completed') {
                 return $this->replay($row);
             }
-            if ($state === 'failed' && $this->acquireFailed($id, $digest, $ownerToken, $now)) {
+            if ($state === 'failed' && $this->acquireFailed(
+                $id,
+                $digest,
+                $authorizationFingerprint,
+                $ownerToken,
+                $now,
+            )) {
                 return null;
             }
 
@@ -165,7 +201,7 @@ final readonly class PersistentIdempotencyMiddleware implements MiddlewareInterf
             if (
                 $state === 'in_progress'
                 && (!is_string($lockedUntil) || new DateTimeImmutable($lockedUntil) <= $now)
-                && $this->acquireStale($id, $ownerToken, $now)
+                && $this->acquireStale($id, $authorizationFingerprint, $ownerToken, $now)
             ) {
                 return null;
             }
@@ -205,11 +241,17 @@ final readonly class PersistentIdempotencyMiddleware implements MiddlewareInterf
         return $response;
     }
 
-    private function acquireExpired(string $id, string $digest, string $ownerToken, DateTimeImmutable $now): bool
-    {
+    private function acquireExpired(
+        string $id,
+        string $digest,
+        string $authorizationFingerprint,
+        string $ownerToken,
+        DateTimeImmutable $now,
+    ): bool {
         return $this->reset(
             $id,
             $digest,
+            $authorizationFingerprint,
             $ownerToken,
             $now,
             'expires_at <= ?',
@@ -218,16 +260,35 @@ final readonly class PersistentIdempotencyMiddleware implements MiddlewareInterf
         );
     }
 
-    private function acquireFailed(string $id, string $digest, string $ownerToken, DateTimeImmutable $now): bool
-    {
-        return $this->reset($id, $digest, $ownerToken, $now, "state = 'failed'", [], []);
+    private function acquireFailed(
+        string $id,
+        string $digest,
+        string $authorizationFingerprint,
+        string $ownerToken,
+        DateTimeImmutable $now,
+    ): bool {
+        return $this->reset(
+            $id,
+            $digest,
+            $authorizationFingerprint,
+            $ownerToken,
+            $now,
+            "state = 'failed'",
+            [],
+            [],
+        );
     }
 
-    private function acquireStale(string $id, string $ownerToken, DateTimeImmutable $now): bool
-    {
+    private function acquireStale(
+        string $id,
+        string $authorizationFingerprint,
+        string $ownerToken,
+        DateTimeImmutable $now,
+    ): bool {
         return $this->reset(
             $id,
             null,
+            $authorizationFingerprint,
             $ownerToken,
             $now,
             "state = 'in_progress' AND (locked_until IS NULL OR locked_until <= ?)",
@@ -243,6 +304,7 @@ final readonly class PersistentIdempotencyMiddleware implements MiddlewareInterf
     private function reset(
         string $id,
         ?string $digest,
+        string $authorizationFingerprint,
         string $ownerToken,
         DateTimeImmutable $now,
         string $condition,
@@ -253,22 +315,29 @@ final readonly class PersistentIdempotencyMiddleware implements MiddlewareInterf
         $values = $digest === null ? [] : [$digest];
         $types = $digest === null ? [] : [Types::STRING];
         $values = array_merge($values, [
+            $authorizationFingerprint,
+            $ownerToken,
             $ownerToken,
             $now,
+            $now->modify('+' . self::PROCESSING_LEASE_SECONDS . ' seconds'),
             $now->modify('+' . self::PROCESSING_LEASE_SECONDS . ' seconds'),
             $now->modify('+' . self::RETENTION_SECONDS . ' seconds'),
             $id,
         ], $conditionValues);
         $types = array_merge($types, [
             Types::STRING,
+            Types::STRING,
+            Types::STRING,
+            Types::DATETIME_IMMUTABLE,
             Types::DATETIME_IMMUTABLE,
             Types::DATETIME_IMMUTABLE,
             Types::DATETIME_IMMUTABLE,
             Types::GUID,
         ], $conditionTypes);
         $affected = $this->database->executeStatement(sprintf(
-            "UPDATE %s SET %sstate = 'in_progress', owner_token = ?, created_at = ?, locked_until = ?, "
-            . 'expires_at = ?, result_status = NULL, result_body = NULL, result_body_digest = NULL, '
+            "UPDATE %s SET %sauthorization_fingerprint = ?, state = 'in_progress', owner_token = ?, "
+            . 'lease_owner = ?, created_at = ?, locked_until = ?, lease_expires_at = ?, expires_at = ?, '
+            . 'result_status = NULL, result_body = NULL, result_body_digest = NULL, '
             . 'result_headers = NULL, completed_at = NULL WHERE id = ? AND %s',
             $this->tables->quoted('idempotency'),
             $digestAssignment,
@@ -293,8 +362,9 @@ final readonly class PersistentIdempotencyMiddleware implements MiddlewareInterf
         }
         $now = $this->clock->now();
         $affected = $this->database->executeStatement(sprintf(
-            "UPDATE %s SET state = 'completed', owner_token = NULL, locked_until = NULL, result_status = ?, "
-            . 'result_body = ?, result_body_digest = ?, result_headers = ?, completed_at = ? '
+            "UPDATE %s SET state = 'completed', owner_token = NULL, locked_until = NULL, "
+            . 'lease_owner = NULL, lease_expires_at = NULL, result_status = ?, result_body = ?, '
+            . 'result_body_digest = ?, result_headers = ?, completed_at = ? '
             . 'WHERE subject = ? AND operation = ? AND idempotency_key = ? AND state = '
             . "'in_progress' AND owner_token = ? AND locked_until > ?",
             $this->tables->quoted('idempotency'),

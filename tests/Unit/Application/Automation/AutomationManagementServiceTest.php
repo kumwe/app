@@ -11,6 +11,7 @@ use Kumwe\CMS\Application\Automation\Job\ScheduleRepository;
 use Kumwe\CMS\Application\Automation\JobHandler;
 use Kumwe\CMS\Application\Automation\JobHandlerRegistry;
 use Kumwe\CMS\Application\Automation\JobQueue;
+use Kumwe\CMS\Application\Authorization\ExecutionContext;
 use Kumwe\CMS\Audit\Application\AuditRecorder;
 use Kumwe\CMS\Audit\Domain\AuditEvent;
 use Kumwe\CMS\Infrastructure\Persistence\TransactionManager;
@@ -18,6 +19,7 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
 use Psr\Clock\ClockInterface;
+use Kumwe\CMS\Tests\Support\AuthorizationContext;
 
 #[CoversClass(AutomationManagementService::class)]
 #[UsesClass(AuditEvent::class)]
@@ -33,6 +35,7 @@ final class AutomationManagementServiceTest extends TestCase
         $firstRun = new DateTimeImmutable('2026-08-04T11:00:00+00:00');
         $schedules = $this->createMock(ScheduleRepository::class);
         $schedules->expects(self::once())->method('create')->with(
+            self::isInstanceOf(ExecutionContext::class),
             'Purge sessions',
             '0 * * * *',
             'UTC',
@@ -49,7 +52,7 @@ final class AutomationManagementServiceTest extends TestCase
         ));
 
         $id = $this->service($schedules, audit: $audit)->createSchedule(
-            self::ACTOR,
+            $this->context(),
             'Purge sessions',
             '0 * * * *',
             'UTC',
@@ -70,7 +73,7 @@ final class AutomationManagementServiceTest extends TestCase
         $this->expectExceptionMessage('no registered handler');
 
         $this->service($schedules)->createSchedule(
-            self::ACTOR,
+            $this->context(),
             'Unknown job',
             '0 * * * *',
             'UTC',
@@ -84,7 +87,12 @@ final class AutomationManagementServiceTest extends TestCase
     public function testEnablesScheduleWithOptimisticVersionAndAudit(): void
     {
         $schedules = $this->createMock(ScheduleRepository::class);
-        $schedules->expects(self::once())->method('setEnabled')->with(self::SCHEDULE, 3, true);
+        $schedules->expects(self::once())->method('setEnabled')->with(
+            self::isInstanceOf(ExecutionContext::class),
+            self::SCHEDULE,
+            3,
+            true,
+        );
         $audit = $this->createMock(AuditRecorder::class);
         $audit->expects(self::once())->method('record')->with(self::callback(
             static fn (AuditEvent $event): bool => $event->action() === 'automation.schedule.enable'
@@ -92,7 +100,7 @@ final class AutomationManagementServiceTest extends TestCase
         ));
 
         $this->service($schedules, audit: $audit)->setScheduleEnabled(
-            self::ACTOR,
+            $this->context(),
             self::SCHEDULE,
             3,
             true,
@@ -102,8 +110,14 @@ final class AutomationManagementServiceTest extends TestCase
     public function testRetriesAndCancelsJobsThroughSharedQueueBoundary(): void
     {
         $jobs = $this->createMock(JobQueue::class);
-        $jobs->expects(self::once())->method('retry')->with(self::JOB);
-        $jobs->expects(self::once())->method('cancel')->with(self::JOB);
+        $jobs->expects(self::once())->method('retry')->with(
+            self::isInstanceOf(ExecutionContext::class),
+            self::JOB,
+        );
+        $jobs->expects(self::once())->method('cancel')->with(
+            self::isInstanceOf(ExecutionContext::class),
+            self::JOB,
+        );
         $audit = $this->createMock(AuditRecorder::class);
         $audit->expects(self::exactly(2))->method('record')->with(self::callback(
             static fn (AuditEvent $event): bool => in_array($event->action(), [
@@ -113,8 +127,8 @@ final class AutomationManagementServiceTest extends TestCase
         ));
         $service = $this->service($this->createStub(ScheduleRepository::class), $jobs, $audit);
 
-        $service->retryJob(self::ACTOR, self::JOB);
-        $service->cancelJob(self::ACTOR, self::JOB);
+        $service->retryJob($this->context(), self::JOB);
+        $service->cancelJob($this->context(), self::JOB);
     }
 
     private function service(
@@ -136,7 +150,13 @@ final class AutomationManagementServiceTest extends TestCase
             $transactions,
             $audit ?? $this->createStub(AuditRecorder::class),
             $clock,
+            AuthorizationContext::gateway(),
         );
+    }
+
+    private function context(): ExecutionContext
+    {
+        return AuthorizationContext::human(['automation.manage'], self::ACTOR);
     }
 }
 
@@ -147,7 +167,7 @@ final class SessionPurgeHandler implements JobHandler
         return 'system.sessions.purge';
     }
 
-    public function handle(array $payload): void
+    public function handle(array $payload, ExecutionContext $context): void
     {
     }
 }

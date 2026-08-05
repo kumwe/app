@@ -4,29 +4,51 @@ declare(strict_types=1);
 
 namespace KumweExample\Announcements;
 
-use Joomla\DI\Container;
+use Kumwe\CMS\Extension\Runtime\ExtensionContainer;
+use Kumwe\CMS\Extension\Runtime\ExtensionRouteRegistrar;
 use Kumwe\CMS\Extension\Runtime\RuntimeExtension;
 use Laminas\Diactoros\Response\JsonResponse;
-use Mezzio\Application;
+use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\ServerRequestInterface;
+use Psr\Http\Server\RequestHandlerInterface;
 
 final class Provider implements RuntimeExtension
 {
-    public function register(Container $container): void
+    private ?RequestHandlerInterface $handler = null;
+
+    public function register(ExtensionContainer $container): void
     {
-        $container->share('kumwe.example.announcements.handler', static fn (): callable =>
-            static fn (): JsonResponse => new JsonResponse(['announcements' => []]), true);
+        $container->share(
+            'extension.kumwe.announcements-example.handler',
+            static fn (ExtensionContainer $container): RequestHandlerInterface =>
+                new class implements RequestHandlerInterface {
+                    public function handle(ServerRequestInterface $request): ResponseInterface
+                    {
+                        return new JsonResponse(['announcements' => []]);
+                    }
+                },
+        );
     }
 
-    public function boot(Container $container): void
+    public function boot(ExtensionContainer $container): void
     {
+        $handler = $container->get('extension.kumwe.announcements-example.handler');
+        if (!$handler instanceof RequestHandlerInterface) {
+            throw new \LogicException('The announcements request handler is unavailable.');
+        }
+        $this->handler = $handler;
     }
 
-    public function registerRoutes(Application $application): void
+    public function registerRoutes(ExtensionRouteRegistrar $routes): void
     {
-        $application->get(
-            '/announcements',
-            'kumwe.example.announcements.handler',
-            'announcements.index',
+        if ($this->handler === null) {
+            throw new \LogicException('The announcements extension was not booted.');
+        }
+        $routes->route(
+            '/extensions/kumwe/announcements-example/announcements',
+            $this->handler,
+            ['GET'],
+            'extension.kumwe.announcements-example.index',
         );
     }
 }

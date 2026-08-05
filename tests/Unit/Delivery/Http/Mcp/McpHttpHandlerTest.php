@@ -8,6 +8,8 @@ use Kumwe\CMS\Delivery\Http\Mcp\McpHttpHandler;
 use Kumwe\CMS\Infrastructure\Mcp\KumweMcpServerFactory;
 use Kumwe\CMS\Infrastructure\Mcp\McpCapabilityCatalog;
 use Kumwe\CMS\Identity\Application\Authentication\AuthenticatedPrincipal;
+use Kumwe\CMS\Application\Authorization\ExecutionContext;
+use Kumwe\CMS\Tests\Support\AuthorizationContext;
 use Kumwe\CMS\Tests\Support\McpHandlersFixture;
 use Laminas\Diactoros\ResponseFactory;
 use Laminas\Diactoros\ServerRequest;
@@ -28,18 +30,36 @@ final class McpHttpHandlerTest extends TestCase
 
     public function testItRunsTheOfficialTransportForOptionsRequests(): void
     {
+        $context = AuthorizationContext::human(['content.read']);
         $request = (new ServerRequest())
             ->withMethod('OPTIONS')
             ->withUri(new \Laminas\Diactoros\Uri('https://kumwe.test/mcp'))
             ->withAttribute(
                 AuthenticatedPrincipal::REQUEST_ATTRIBUTE,
-                AuthenticatedPrincipal::fromStrings(
-                    '018f22e2-7c8b-7ab0-8f3a-88e8026bb301',
-                    ['content.read'],
-                ),
-            );
+                $context->principal(),
+            )
+            ->withAttribute(ExecutionContext::REQUEST_ATTRIBUTE, $context);
 
         self::assertSame(204, $this->handler()->handle($request)->getStatusCode());
+    }
+
+    public function testItRejectsMismatchedPrincipalAndExecutionContext(): void
+    {
+        $context = AuthorizationContext::human(['content.read']);
+        $other = AuthorizationContext::human(
+            ['content.read'],
+            '018f22e2-7c8b-7ab0-8f3a-88e8026bb302',
+        );
+        $request = (new ServerRequest())
+            ->withMethod('OPTIONS')
+            ->withUri(new \Laminas\Diactoros\Uri('https://kumwe.test/mcp'))
+            ->withAttribute(AuthenticatedPrincipal::REQUEST_ATTRIBUTE, $other->principal())
+            ->withAttribute(ExecutionContext::REQUEST_ATTRIBUTE, $context);
+
+        $this->expectException(\LogicException::class);
+        $this->expectExceptionMessage('identities must match');
+
+        $this->handler()->handle($request);
     }
 
     private function handler(int $maxBodyBytes = 1_048_576): McpHttpHandler

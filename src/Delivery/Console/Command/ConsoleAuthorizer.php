@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace Kumwe\CMS\Delivery\Console\Command;
 
+use Kumwe\CMS\Application\Authorization\AuthenticationStrength;
+use Kumwe\CMS\Application\Authorization\ExecutionContext;
+use Kumwe\CMS\Application\Authorization\SiteContext;
 use Kumwe\CMS\Identity\Application\Authentication\AccessTokenVerifier;
-use Kumwe\CMS\Identity\Application\Authentication\AuthenticatedPrincipal;
 use Kumwe\CMS\Identity\Application\Authorization\InsufficientCapability;
 use Kumwe\CMS\Identity\Domain\Capability;
 
@@ -16,7 +18,7 @@ final readonly class ConsoleAuthorizer
     }
 
     /** @param array<string, string> $options */
-    public function require(array $options, string $capability): AuthenticatedPrincipal
+    public function require(array $options, string $capability): ExecutionContext
     {
         $token = CommandInput::secretFile(CommandInput::required($options, 'token-file'));
         $principal = $this->tokens->verify($token);
@@ -24,6 +26,10 @@ final readonly class ConsoleAuthorizer
             throw new InsufficientCapability($capability);
         }
 
-        return $principal;
+        return $principal->context(
+            SiteContext::default(),
+            AuthenticationStrength::BearerToken,
+            'cli-' . bin2hex(random_bytes(16)),
+        );
     }
 }

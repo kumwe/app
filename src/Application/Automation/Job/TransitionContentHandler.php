@@ -6,6 +6,7 @@ namespace Kumwe\CMS\Application\Automation\Job;
 
 use Kumwe\CMS\Application\Automation\JobHandler;
 use Kumwe\CMS\Application\Automation\PermanentFailure;
+use Kumwe\CMS\Application\Authorization\ExecutionContext;
 use Kumwe\CMS\Content\Application\ContentService;
 use Kumwe\CMS\Content\Domain\ContentStatus;
 
@@ -20,7 +21,7 @@ final readonly class TransitionContentHandler implements JobHandler
         return 'content.workflow.transition';
     }
 
-    public function handle(array $payload): void
+    public function handle(array $payload, ExecutionContext $context): void
     {
         $id = $payload['id'] ?? null;
         $version = $payload['version'] ?? null;
@@ -30,6 +31,6 @@ final readonly class TransitionContentHandler implements JobHandler
             throw new PermanentFailure('The content transition job payload is invalid.');
         }
 
-        $this->content->transition('system:scheduler', $id, $version, ContentStatus::from($status));
+        $this->content->transition($context, $id, $version, ContentStatus::from($status));
     }
 }

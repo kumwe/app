@@ -32,6 +32,7 @@ final class McpHandlersFixture
             self::withoutConstructor(ContentTransitionAuthorizer::class),
             self::withoutConstructor(McpMutationGuard::class),
             new SystemClock(),
+            AuthorizationContext::gateway(),
         );
     }
 
