@@ -686,7 +686,7 @@ final readonly class ApplicationAuthorizationMigrationRecovery
         foreach ($table->getForeignKeys() as $foreignKey) {
             if (
                 $this->names($foreignKey->getReferencingColumnNames()) === ['site_identifier']
-                && $foreignKey->getReferencedTableName()->getUnqualifiedName()->getIdentifier()->getValue()
+                && $foreignKey->getReferencedTableName()->getUnqualifiedName()->getValue()
                     === $this->tables->raw('sites')
             ) {
                 return $foreignKey;

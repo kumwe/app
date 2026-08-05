@@ -426,7 +426,8 @@ final readonly class DoctrineNonTransactionalMigrationRecovery implements NonTra
     private function prefixedTables(): array
     {
         $tables = array_values(array_filter(array_map(
-            static fn (\Doctrine\DBAL\Schema\Name\OptionallyQualifiedName $table): string => $table->toString(),
+            static fn (\Doctrine\DBAL\Schema\Name\OptionallyQualifiedName $table): string =>
+                $table->getUnqualifiedName()->getValue(),
             $this->database->createSchemaManager()->introspectTableNames(),
         ), fn (string $table): bool => $this->hasPrefix($table)));
         sort($tables, SORT_STRING);
@@ -462,7 +463,7 @@ final readonly class DoctrineNonTransactionalMigrationRecovery implements NonTra
             throw new RuntimeException('Interrupted Core recovery found an unnamed foreign key.');
         }
 
-        return $name->toString();
+        return $name->getIdentifier()->getValue();
     }
 
     /** @param array<mixed> $value */
