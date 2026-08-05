@@ -88,6 +88,7 @@ load_secret() {
 
 load_secret APP_SECRET
 load_secret EXTENSION_RUNTIME_SIGNING_KEY
+load_secret EXTENSION_RUNTIME_PREVIOUS_KEYS
 load_secret DB_PASSWORD
 load_secret REDIS_PASSWORD
 
