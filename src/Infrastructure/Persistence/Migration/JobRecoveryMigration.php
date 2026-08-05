@@ -34,7 +34,12 @@ final readonly class JobRecoveryMigration implements Migration
     {
         $schema = $database->createSchemaManager();
         $platform = $database->getDatabasePlatform();
-        $jobs = $schema->introspectTable($this->tables->raw('jobs'));
+        $jobsTable = $this->tables->raw('jobs');
+        $idempotencyTable = $this->tables->raw('idempotency');
+        if ($jobsTable === '' || $idempotencyTable === '') {
+            throw new \RuntimeException('Migration table names must not be empty.');
+        }
+        $jobs = $schema->introspectTableByUnquotedName($jobsTable);
         $jobRecoveryIndex = $this->tables->raw('idx_job_recovery');
         if (!$jobs->hasColumn('lease_token')) {
             $database->executeStatement(sprintf(
@@ -50,7 +55,7 @@ final readonly class JobRecoveryMigration implements Migration
             ));
         }
 
-        $idempotency = $schema->introspectTable($this->tables->raw('idempotency'));
+        $idempotency = $schema->introspectTableByUnquotedName($idempotencyTable);
         $idempotencyLeaseIndex = $this->tables->raw('idx_idempotency_lease');
         if (!$idempotency->hasColumn('owner_token')) {
             $database->executeStatement(sprintf(
