@@ -375,11 +375,3 @@ final readonly class SecretOnceIdempotencyMiddleware implements MiddlewareInterf
         return (int) $value;
     }
 }
-
-final class SecretOnceResponseRollback extends RuntimeException
-{
-    public function __construct(public readonly ResponseInterface $response)
-    {
-        parent::__construct('The secret-returning request failed and was rolled back.');
-    }
-}
