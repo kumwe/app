@@ -18,6 +18,7 @@ use Kumwe\CMS\Extension\Application\ExtensionServiceProvider;
 use Kumwe\CMS\Extension\Domain\ExtensionIdentifier;
 use Kumwe\CMS\Extension\Domain\PackageChecksum;
 use Kumwe\CMS\Extension\Domain\PackageSignature;
+use Kumwe\CMS\Extension\Runtime\ExtensionContainer;
 use Kumwe\CMS\Extension\Runtime\ExtensionRuntimeLoader;
 use Kumwe\CMS\Extension\Runtime\RuntimeCanonicalJson;
 use Kumwe\CMS\Extension\Runtime\RuntimePublicationKeyRing;
@@ -392,7 +393,7 @@ final class TrustStoreTest extends TestCase
 /** @internal */
 final class NonEmptyTestProvider implements ExtensionServiceProvider
 {
-    public function register(Container $container): void
+    public function register(ExtensionContainer $container): void
     {
     }
 }
