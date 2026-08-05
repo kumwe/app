@@ -82,6 +82,7 @@ final class ConfigurationFactory
         if (!$decoded instanceof \stdClass) {
             throw new InvalidArgumentException('EXTENSION_RUNTIME_PREVIOUS_KEYS must be a JSON object.');
         }
+        /** @var array<string, string> $keys */
         $keys = [];
         foreach (get_object_vars($decoded) as $keyId => $key) {
             if (!is_string($key)) {
