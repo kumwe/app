@@ -400,6 +400,7 @@ jobs:
               trap '\''rm -f "$password_file"'\'' EXIT
               printf %s "$KUMWE_ACCEPTANCE_ADMIN_PASSWORD" > "$password_file"
               /usr/local/bin/kumwe-entrypoint php bin/kumwe token:create \
+                --site=default \
                 --email=administrator@kumwe.test \
                 --name=deployment-acceptance \
                 --capabilities=automation.manage,content.read,content.create,content.update,content.submit,content.review,content.publish,users.manage \
@@ -416,6 +417,7 @@ jobs:
               trap '\''rm -f "$token_file"'\'' EXIT
               printf %s "$KUMWE_ACCEPTANCE_API_TOKEN" > "$token_file"
               /usr/local/bin/kumwe-entrypoint php bin/kumwe token:create \
+                --site=default \
                 --email=administrator@kumwe.test \
                 --name=deployment-read-only \
                 --capabilities=content.read \
