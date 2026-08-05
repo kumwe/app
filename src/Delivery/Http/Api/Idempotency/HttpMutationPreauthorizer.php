@@ -92,7 +92,7 @@ final readonly class HttpMutationPreauthorizer
         }
         if (preg_match('#^/api/v1/users/([^/]+)(?:/roles/([^/]+))?$#D', $path, $match) === 1) {
             $this->assert($context, 'users.manage', AuthorizationResource::item('user', rawurldecode($match[1])));
-            if (isset($match[2]) && $match[2] !== '') {
+            if (isset($match[2])) {
                 $roleId = rawurldecode($match[2]);
                 $this->assert($context, 'users.manage', AuthorizationResource::item('role', $roleId));
                 if ($method === 'PUT') {

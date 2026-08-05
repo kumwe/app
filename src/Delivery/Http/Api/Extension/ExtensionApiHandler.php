@@ -8,7 +8,6 @@ use InvalidArgumentException;
 use Kumwe\CMS\Delivery\Http\Api\ProblemDetailsResponseFactory;
 use Kumwe\CMS\Delivery\Http\Api\ApiExecutionContext;
 use Kumwe\CMS\Extension\Application\ExtensionManager;
-use Kumwe\CMS\Identity\Application\Authentication\AuthenticatedPrincipal;
 use Laminas\Diactoros\Response\EmptyResponse;
 use Laminas\Diactoros\Response\JsonResponse;
 use Psr\Http\Message\ResponseInterface;
@@ -66,11 +65,4 @@ final readonly class ExtensionApiHandler implements RequestHandlerInterface
         return $vendor . '/' . $name;
     }
 
-    private function principal(ServerRequestInterface $request): AuthenticatedPrincipal
-    {
-        $principal = $request->getAttribute(AuthenticatedPrincipal::REQUEST_ATTRIBUTE);
-        return $principal instanceof AuthenticatedPrincipal
-            ? $principal
-            : throw new \LogicException('Extension mutations require an authenticated principal.');
-    }
 }

@@ -16,7 +16,6 @@ use Kumwe\CMS\Delivery\Http\Api\Concurrency\IfMatch;
 use Kumwe\CMS\Delivery\Http\Api\Concurrency\RequireIfMatchMiddleware;
 use Kumwe\CMS\Delivery\Http\Api\ProblemDetailsResponseFactory;
 use Kumwe\CMS\Delivery\Http\Api\ApiExecutionContext;
-use Kumwe\CMS\Identity\Application\Authentication\AuthenticatedPrincipal;
 use Laminas\Diactoros\Response\EmptyResponse;
 use Laminas\Diactoros\Response\JsonResponse;
 use Psr\Http\Message\ResponseInterface;
@@ -202,17 +201,6 @@ final readonly class AutomationApiHandler implements RequestHandlerInterface
         }
 
         return $id;
-    }
-
-    private function principal(ServerRequestInterface $request): AuthenticatedPrincipal
-    {
-        $principal = $request->getAttribute(AuthenticatedPrincipal::REQUEST_ATTRIBUTE);
-
-        if (!$principal instanceof AuthenticatedPrincipal) {
-            throw new InvalidArgumentException('An authenticated principal is required.');
-        }
-
-        return $principal;
     }
 
     /** @param array<string, mixed> $schedule */

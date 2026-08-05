@@ -20,6 +20,7 @@ use Kumwe\CMS\Identity\Domain\UserStatus;
 use Kumwe\CMS\Infrastructure\Persistence\TransactionManager;
 use Psr\Clock\ClockInterface;
 use Ramsey\Uuid\Uuid;
+use RuntimeException;
 
 final readonly class AccessControlService
 {
@@ -52,7 +53,22 @@ final readonly class AccessControlService
     public function capabilities(ExecutionContext $context): array
     {
         $this->authorize($context, AuthorizationResource::collection('capability'));
-        return $this->filterPaged($context, 'capability', $this->repository->capabilities(...), 'code');
+        $rows = $this->filterPaged(
+            $context,
+            'capability',
+            $this->repository->capabilities(...),
+            'code',
+        );
+
+        return array_map(static function (array $row): array {
+            $code = $row['code'] ?? null;
+            $description = $row['description'] ?? null;
+            if (!is_string($code) || !is_string($description)) {
+                throw new RuntimeException('A capability record is invalid.');
+            }
+
+            return ['code' => $code, 'description' => $description];
+        }, $rows);
     }
 
     /** @return list<array<string, mixed>> */

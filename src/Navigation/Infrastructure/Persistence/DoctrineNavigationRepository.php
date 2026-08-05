@@ -104,8 +104,8 @@ final readonly class DoctrineNavigationRepository implements NavigationRepositor
             }
         }
 
-        /** @var list<string> $ids */
-        return $ids;
+        /** @var array<non-empty-string> $ids */
+        return array_values($ids);
     }
 
     public function deleteMenu(string $id, int $expectedVersion): void

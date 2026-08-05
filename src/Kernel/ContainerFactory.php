@@ -218,6 +218,11 @@ final class ContainerFactory
 {
     private object $provenance;
 
+    public function __construct()
+    {
+        $this->provenance = new \stdClass();
+    }
+
     public function create(Environment $environment): Container
     {
         // The proof never crosses the production composition boundary. In-process PHP
