@@ -216,19 +216,12 @@ use Twig\Loader\FilesystemLoader;
 
 final class ContainerFactory
 {
-    private object $provenance;
-
-    public function __construct()
-    {
-        $this->provenance = new \stdClass();
-    }
-
     public function create(Environment $environment): Container
     {
         // The proof never crosses the production composition boundary. In-process PHP
         // extensions execute with the same process authority as core and are trusted code;
         // integrations that need isolation must use an out-of-process delivery adapter.
-        $this->provenance = new \stdClass();
+        $kernelProof = new \stdClass();
         $configuration = (new ConfigurationFactory())->create($environment);
         $container = new Container();
         $root = dirname(__DIR__, 2);
@@ -251,11 +244,11 @@ final class ContainerFactory
         ], true);
 
         $this->registerLogging($container, $configuration);
-        $this->registerPersistence($container, $configuration);
+        $this->registerPersistence($container, $configuration, $kernelProof);
         $this->registerExtensions($container, $configuration, $root);
         $this->registerMcp($container, $root);
         $this->registerHttp($container, $configuration, $root);
-        $this->registerConsole($container);
+        $this->registerConsole($container, $kernelProof);
 
         return $container;
     }
@@ -277,8 +270,9 @@ final class ContainerFactory
     private function registerPersistence(
         Container $container,
         ApplicationConfiguration $configuration,
+        object $kernelProof,
     ): void {
-        $provenance = $this->provenance;
+        $provenance = $kernelProof;
         $databaseConfiguration = $configuration->database;
         $container->share(Connection::class, static fn (): Connection =>
             (new DoctrineConnectionFactory($databaseConfiguration))->create(), true);
@@ -1398,9 +1392,9 @@ final class ContainerFactory
         self::service($container, ActiveExtensionSet::class)->registerRoutes($application);
     }
 
-    private function registerConsole(Container $container): void
+    private function registerConsole(Container $container, object $kernelProof): void
     {
-        $provenance = $this->provenance;
+        $provenance = $kernelProof;
         $container->share(PurgeAdministratorSessionsHandler::class, static fn (
             Container $container,
         ): PurgeAdministratorSessionsHandler => new PurgeAdministratorSessionsHandler(
