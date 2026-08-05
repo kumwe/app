@@ -165,7 +165,10 @@ final class ExtensionApiHandlerTest extends TestCase
                 $principal,
             )
             ->withAttribute(ExecutionContext::REQUEST_ATTRIBUTE, $context)
-            ->withBody((new StreamFactory())->createStream(json_encode($body, JSON_THROW_ON_ERROR)));
+            ->withBody((new StreamFactory())->createStream(json_encode(
+                $body === [] ? (object) [] : $body,
+                JSON_THROW_ON_ERROR,
+            )));
     }
 
     private function authorizationDenied(string $capability): AuthorizationDenied

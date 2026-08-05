@@ -277,9 +277,9 @@ use Redis;
 
 final class ContainerFactory
 {
-    public function create(Environment $environment, bool $console = true, bool $loadRuntime = true): Container
+    public function create(Environment $environment): Container
     {
-        return $this->build($environment, $console, $loadRuntime);
+        return $this->build($environment, true, true);
     }
 
     /** Builds recovery surfaces without executing any installed extension code. */
@@ -1499,14 +1499,17 @@ final class ContainerFactory
             BearerAuthenticationMiddleware::OPTION_REQUIRED_CAPABILITIES => ['content.restore'],
         ]);
 
-        foreach (['content-types', 'workflows'] as $model) {
+        foreach ([
+            '/api/v1/content-types' => 'content-types',
+            '/api/v1/workflows' => 'workflows',
+        ] as $path => $model) {
             self::apiRoute($application->get(
-                '/api/v1/' . $model,
+                $path,
                 ContentModelApiHandler::class,
                 'api.v1.' . $model . '.list',
             ), 'content.read');
             self::apiRoute($application->post(
-                '/api/v1/' . $model,
+                $path,
                 [
                     RequireIdempotencyKeyMiddleware::class,
                     PersistentIdempotencyMiddleware::class,
@@ -1515,12 +1518,12 @@ final class ContainerFactory
                 'api.v1.' . $model . '.create',
             ), 'content.update');
             self::apiRoute($application->get(
-                '/api/v1/' . $model . '/{id}',
+                $path . '/{id}',
                 ContentModelApiHandler::class,
                 'api.v1.' . $model . '.read',
             ), 'content.read');
             self::apiRoute($application->patch(
-                '/api/v1/' . $model . '/{id}',
+                $path . '/{id}',
                 [
                     RequireIdempotencyKeyMiddleware::class,
                     PersistentIdempotencyMiddleware::class,

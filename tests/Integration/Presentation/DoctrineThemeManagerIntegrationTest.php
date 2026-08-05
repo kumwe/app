@@ -35,13 +35,13 @@ use Kumwe\CMS\Infrastructure\Persistence\Migration\IsolateThemeSurfacesMigration
 use Kumwe\CMS\Infrastructure\Persistence\Migration\TokenAndTrustLifecycleMigration;
 use Kumwe\CMS\Infrastructure\Persistence\TableNames;
 use Kumwe\CMS\Identity\Application\Authorization\InsufficientCapability;
+use Kumwe\CMS\Kernel\Configuration\ConfigurationFactory;
 use Kumwe\CMS\Presentation\Application\ThemeActivationGuard;
 use Kumwe\CMS\Presentation\Application\ThemeCapabilityPolicy;
 use Kumwe\CMS\Presentation\Application\ThemeMutationAuthorizer;
 use Kumwe\CMS\Presentation\Application\ThemePackageValidator;
 use Kumwe\CMS\Presentation\Infrastructure\DoctrineAdministratorThemeRecovery;
 use Kumwe\CMS\Presentation\ThemeSurface;
-use Kumwe\CMS\Shared\Infrastructure\Configuration\ConfigurationFactory;
 use Kumwe\CMS\Shared\Infrastructure\Configuration\Environment;
 use Kumwe\CMS\Tests\Support\AuthorizationContext;
 use PHPUnit\Framework\Attributes\CoversClass;

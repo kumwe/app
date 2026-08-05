@@ -135,7 +135,7 @@ final class McpThemeIntegrationTest extends TestCase
             $this->createStub(SiteSettings::class),
             $extensions,
             $trust,
-            $this->withoutConstructor(AdministratorIdentityGateway::class),
+            $this->createStub(AdministratorIdentityGateway::class),
             $this->withoutConstructor(AutomationManagementService::class),
             new McpMutationGuard($database, $tables, $clock, $transactions),
             $clock,

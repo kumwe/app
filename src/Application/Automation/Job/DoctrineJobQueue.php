@@ -7,6 +7,7 @@ namespace Kumwe\CMS\Application\Automation\Job;
 use DateInterval;
 use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use Doctrine\DBAL\Types\Types;
 use InvalidArgumentException;
 use JsonException;
@@ -126,13 +127,16 @@ final readonly class DoctrineJobQueue implements JobQueue
         return $this->transactions->transactional(function () use ($queue, $workerId, $leaseSeconds): ?StoredJob {
             $now = $this->clock->now();
             $reaped = 0;
+            $jobOwnershipId = $this->database->getDatabasePlatform() instanceof PostgreSQLPlatform
+                ? 'CAST(j.id AS VARCHAR)'
+                : 'j.id';
 
             while ($reaped < self::EXHAUSTED_REAP_LIMIT) {
                 $row = $this->database->fetchAssociative(sprintf(
                     'SELECT j.* FROM %s j WHERE j.queue = ? AND (j.execution_scope = ? OR '
                     . '(j.execution_scope = ? AND EXISTS (SELECT 1 FROM %s o INNER JOIN %s s '
                     . 'ON s.identifier = o.site_identifier WHERE o.resource_type = ? '
-                    . 'AND o.resource_id = j.id AND s.enabled = ?))) AND ('
+                    . 'AND o.resource_id = %s AND s.enabled = ?))) AND ('
                     . "(j.status = 'pending' AND j.available_at <= ?) OR "
                     . "(j.status = 'reserved' AND (j.lease_expires_at IS NULL OR j.lease_expires_at <= ?))"
                     . ') ORDER BY j.priority DESC, j.available_at, j.created_at, j.id '
@@ -140,6 +144,7 @@ final readonly class DoctrineJobQueue implements JobQueue
                     $this->tables->quoted('jobs'),
                     $this->tables->quoted('resource_site_ownership'),
                     $this->tables->quoted('sites'),
+                    $jobOwnershipId,
                 ), [
                     $queue,
                     JobExecutionClass::Installation->value,

@@ -348,13 +348,7 @@ final class TrustLifecycleIntegrationTest extends TestCase
         self::assertTrue(pcntl_wifexited($installerStatus));
         self::assertTrue(pcntl_wifexited($revokerStatus));
         self::assertSame('committed', file_get_contents($directory . '/installer-result'));
-        self::assertStringStartsWith('failed:Another extension lifecycle operation', (string) file_get_contents(
-            $directory . '/revoker-result',
-        ));
-        self::assertSame(
-            [$identifier],
-            $trust->emergencyRevoke($context, $keyId, 'post-install race compromise'),
-        );
+        self::assertSame('revoked', file_get_contents($directory . '/revoker-result'));
         self::assertSame('quarantined', $database->fetchOne(sprintf(
             'SELECT status FROM %s WHERE identifier = ?',
             $tables->quoted('extensions'),

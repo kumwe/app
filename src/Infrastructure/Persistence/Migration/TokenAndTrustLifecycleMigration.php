@@ -10,6 +10,7 @@ use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Platforms\AbstractMySQLPlatform;
 use Doctrine\DBAL\Platforms\AbstractPlatform;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
+use Doctrine\DBAL\Platforms\SQLitePlatform;
 use Doctrine\DBAL\Schema\Schema;
 use Doctrine\DBAL\Types\Types;
 use Kumwe\CMS\Extension\Application\Package\ArchiveEntryType;
@@ -380,14 +381,18 @@ final readonly class TokenAndTrustLifecycleMigration implements Migration
 
     private function transitionLegacyReleases(Connection $database, DateTimeImmutable $now): void
     {
+        $extensionId = $database->getDatabasePlatform() instanceof PostgreSQLPlatform
+            ? 'CAST(e.id AS VARCHAR)'
+            : 'e.id';
         $rows = $database->fetchAllAssociative(sprintf(
             'SELECT r.id, r.version, r.package_sha256, r.signature_algorithm, r.signing_key_id, '
             . 'r.signature_base64, e.identifier, e.extension_type, e.service_provider, e.runtime_path, '
             . 'e.status FROM %s e '
-            . 'INNER JOIN %s r ON r.extension_id = e.id AND r.version = e.installed_version '
+            . 'INNER JOIN %s r ON r.extension_id = %s AND r.version = e.installed_version '
             . "WHERE r.trust_state = 'needs_reverification' ORDER BY e.identifier",
             $this->tables->quoted('extensions'),
             $this->tables->quoted('extension_releases'),
+            $extensionId,
         ));
         $runtimeChanged = false;
         foreach ($rows as $row) {
@@ -599,6 +604,9 @@ final readonly class TokenAndTrustLifecycleMigration implements Migration
             return;
         }
         $platform = $database->getDatabasePlatform();
+        if ($platform instanceof SQLitePlatform) {
+            return;
+        }
         if ($platform instanceof AbstractMySQLPlatform) {
             $database->executeStatement(sprintf(
                 'ALTER TABLE %s MODIFY %s %s NOT NULL',

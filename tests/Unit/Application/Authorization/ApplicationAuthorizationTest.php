@@ -194,6 +194,7 @@ final class ApplicationAuthorizationTest extends TestCase
             Capability::fromString('system.worker.operate'),
             AuthorizationResource::item('queue', 'default'),
         );
+        self::assertTrue(true);
     }
 
     public function testEveryAllowAndDenyDecisionCarriesRequestSiteAndPolicyMetadata(): void

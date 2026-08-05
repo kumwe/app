@@ -67,7 +67,6 @@ final readonly class AuthorizationPolicyRegistry
         if (
             $action->value() === 'users.manage'
             && !$scope->isGlobal()
-            && $scope->type() !== 'site'
         ) {
             return false;
         }
