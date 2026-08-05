@@ -6,7 +6,11 @@ namespace Kumwe\CMS\Content\Domain;
 
 final class SchemaCompatibilityChecker
 {
-    /** @param array<string, mixed> $before @param array<string, mixed> $after @return list<string> */
+    /**
+     * @param array<string, mixed> $before
+     * @param array<string, mixed> $after
+     * @return list<string>
+     */
     public function breakingChanges(array $before, array $after): array
     {
         $changes = [];
@@ -75,6 +79,7 @@ final class SchemaCompatibilityChecker
             $changes[] = 'disallowed additional fields';
         }
         sort($changes, SORT_STRING);
+        /** @var list<string> $changes */
         return $changes;
     }
 }

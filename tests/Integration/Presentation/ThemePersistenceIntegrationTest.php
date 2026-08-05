@@ -187,6 +187,10 @@ final class ThemePersistenceIntegrationTest extends TestCase
     public function testFailedAuthoritativeGenerationLeavesPreviousMaterializationUntouched(): void
     {
         [$database, $tables] = $this->schema();
+        $initialGeneration = (int) $database->fetchOne(sprintf(
+            'SELECT generation FROM %s WHERE singleton_key = 1',
+            $tables->quoted('extension_runtime_generation'),
+        ));
         $directory = sys_get_temp_dir() . '/kumwe-map-' . bin2hex(random_bytes(8));
         self::assertTrue(mkdir($directory, 0700, true));
         $map = $directory . '/extensions.json';
@@ -211,7 +215,7 @@ final class ThemePersistenceIntegrationTest extends TestCase
             self::fail('Generation failure was not propagated.');
         } catch (Throwable) {
             self::assertSame('{"generation":0,"extensions":[]}', file_get_contents($map));
-            self::assertSame(0, (int) $database->fetchOne(sprintf(
+            self::assertSame($initialGeneration, (int) $database->fetchOne(sprintf(
                 'SELECT generation FROM %s WHERE singleton_key = 1',
                 $tables->quoted('extension_runtime_generation'),
             )));
@@ -421,10 +425,11 @@ final class ThemePersistenceIntegrationTest extends TestCase
 
             self::assertFalse($compiler->isCurrent($state));
         } finally {
-            unlink($map);
-            unlink($map . '.lock');
-            unlink($map . '.verified');
-            unlink($map . '.ready');
+            foreach ([$map, $map . '.lock', $map . '.verified', $map . '.ready'] as $file) {
+                if (is_file($file)) {
+                    unlink($file);
+                }
+            }
             rmdir($directory . '/assets');
             rmdir($directory . '/extensions');
             rmdir($directory);
@@ -508,10 +513,11 @@ final class ThemePersistenceIntegrationTest extends TestCase
             self::assertSame($first->generation, $second->generation);
             self::assertTrue($compiler->isCurrent($second));
         } finally {
-            unlink($map);
-            unlink($map . '.lock');
-            unlink($map . '.verified');
-            unlink($map . '.ready');
+            foreach ([$map, $map . '.lock', $map . '.verified', $map . '.ready'] as $file) {
+                if (is_file($file)) {
+                    unlink($file);
+                }
+            }
             rmdir($directory . '/assets');
             rmdir($directory . '/extensions');
             rmdir($directory);

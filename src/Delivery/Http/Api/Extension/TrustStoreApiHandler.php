@@ -89,6 +89,7 @@ final readonly class TrustStoreApiHandler implements RequestHandlerInterface
         if (!is_array($value) || array_is_list($value)) {
             throw new InvalidArgumentException('The request body must be a JSON object.');
         }
+        /** @var array<string, mixed> $value */
         return $value;
     }
 

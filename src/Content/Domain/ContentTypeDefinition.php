@@ -63,6 +63,7 @@ final readonly class ContentTypeDefinition
         $fields = [];
         foreach ($properties as $key => $fieldSchema) {
             if (is_string($key) && is_array($fieldSchema) && !array_is_list($fieldSchema)) {
+                /** @var array<string, mixed> $fieldSchema */
                 $fields[] = new FieldDefinition($key, $fieldSchema, in_array($key, $required, true));
             }
         }

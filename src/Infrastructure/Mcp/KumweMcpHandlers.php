@@ -127,7 +127,10 @@ final readonly class KumweMcpHandlers
         )];
     }
 
-    /** @param array<string, mixed> $data @return array<string, mixed> */
+    /**
+     * @param array<string, mixed> $data
+     * @return array<string, mixed>
+     */
     public function createContent(
         string $operationId,
         string $title,
@@ -150,7 +153,10 @@ final readonly class KumweMcpHandlers
         )->toArray());
     }
 
-    /** @param array<string, mixed> $data @return array<string, mixed> */
+    /**
+     * @param array<string, mixed> $data
+     * @return array<string, mixed>
+     */
     public function updateContent(
         string $operationId,
         string $id,

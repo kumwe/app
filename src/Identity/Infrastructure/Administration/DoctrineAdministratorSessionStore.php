@@ -7,6 +7,7 @@ namespace Kumwe\CMS\Identity\Infrastructure\Administration;
 use DateInterval;
 use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use Doctrine\DBAL\Types\Types;
 use InvalidArgumentException;
 use Kumwe\CMS\Application\Authorization\AuthorizationGateway;
@@ -187,11 +188,15 @@ final readonly class DoctrineAdministratorSessionStore implements AdministratorS
         );
         return $this->transactions->transactional(function () use ($context): int {
             $now = $this->clock->now();
+            $sessionOwnershipId = $this->database->getDatabasePlatform() instanceof PostgreSQLPlatform
+                ? 'CAST(s.id AS VARCHAR)'
+                : 's.id';
             $sessionIds = $this->database->fetchFirstColumn(sprintf(
-                'SELECT s.id FROM %s s INNER JOIN %s o ON o.resource_type = ? AND o.resource_id = s.id '
+                'SELECT s.id FROM %s s INNER JOIN %s o ON o.resource_type = ? AND o.resource_id = %s '
                 . 'AND o.site_identifier = ? WHERE s.expires_at <= ? ORDER BY s.id FOR UPDATE',
                 $this->tables->quoted('administrator_sessions'),
                 $this->tables->quoted('resource_site_ownership'),
+                $sessionOwnershipId,
             ), ['administrator_session', $context->site()->identifier(), $now], [
                 Types::STRING,
                 Types::STRING,

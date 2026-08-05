@@ -78,7 +78,7 @@ final class TrustLifecycleIntegrationTest extends TestCase
             'id' => Uuid::uuid7()->toString(),
             'extension_id' => $extensionId,
             'version' => '1.0.0',
-            'manifest' => ['identifier' => $identifier],
+            'manifest' => self::manifest($identifier, 'Integration\\Provider'),
             'package_sha256' => str_repeat('a', 64),
             'artifact_sha256' => str_repeat('a', 64),
             'deployed_tree_sha256' => str_repeat('b', 64),
@@ -174,7 +174,7 @@ final class TrustLifecycleIntegrationTest extends TestCase
             'id' => Uuid::uuid7()->toString(),
             'extension_id' => $extensionId,
             'version' => '1.0.0',
-            'manifest' => ['identifier' => $identifier],
+            'manifest' => self::manifest($identifier, 'Disabled\\Provider'),
             'package_sha256' => str_repeat('a', 64),
             'artifact_sha256' => str_repeat('a', 64),
             'deployed_tree_sha256' => str_repeat('b', 64),
@@ -292,7 +292,7 @@ final class TrustLifecycleIntegrationTest extends TestCase
                         'id' => Uuid::uuid7()->toString(),
                         'extension_id' => $extensionId,
                         'version' => '1.0.0',
-                        'manifest' => ['identifier' => $identifier],
+                        'manifest' => self::manifest($identifier, 'Race\\Provider'),
                         'package_sha256' => (string) $checksum,
                         'artifact_sha256' => (string) $checksum,
                         'deployed_tree_sha256' => str_repeat('b', 64),
@@ -347,6 +347,7 @@ final class TrustLifecycleIntegrationTest extends TestCase
         pcntl_waitpid($revoker, $revokerStatus);
         self::assertTrue(pcntl_wifexited($installerStatus));
         self::assertTrue(pcntl_wifexited($revokerStatus));
+        $database->close();
         self::assertSame('committed', file_get_contents($directory . '/installer-result'));
         self::assertSame('revoked', file_get_contents($directory . '/revoker-result'));
         self::assertSame('quarantined', $database->fetchOne(sprintf(
@@ -364,5 +365,19 @@ final class TrustLifecycleIntegrationTest extends TestCase
             }
             usleep(1_000);
         }
+    }
+
+    /** @return array<string, mixed> */
+    private static function manifest(string $identifier, string $provider): array
+    {
+        return [
+            'schema' => 1,
+            'name' => $identifier,
+            'type' => 'plugin',
+            'version' => '1.0.0',
+            'provider' => $provider,
+            'autoload' => ['psr-4' => [str_replace('/', '\\', $identifier) . '\\' => 'src/']],
+            'requires' => ['kumwe' => '^2.0.0', 'php' => '^8.5.0'],
+        ];
     }
 }

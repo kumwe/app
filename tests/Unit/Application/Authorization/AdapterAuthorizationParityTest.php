@@ -46,7 +46,6 @@ use Kumwe\CMS\Infrastructure\Persistence\TransactionManager;
 use Kumwe\CMS\Navigation\Application\NavigationService;
 use Kumwe\CMS\Site\Application\SiteSettings;
 use Kumwe\CMS\Tests\Support\AuthorizationContext;
-use Kumwe\CMS\Workflow\Application\ContentTransitionAuthorizer;
 use Kumwe\CMS\Workflow\Domain\Workflow;
 use Laminas\Diactoros\ServerRequestFactory;
 use PHPUnit\Framework\Attributes\CoversNothing;
@@ -98,7 +97,6 @@ final class AdapterAuthorizationParityTest extends TestCase
             $result = (new ManageContentCommand(
                 $this->content($repository),
                 new ConsoleAuthorizer($tokens),
-                new ContentTransitionAuthorizer(),
             ))->execute([
                 'create',
                 '--site=default',

@@ -51,6 +51,7 @@ final class ThemeCommandTest extends TestCase
         self::assertSame(0, $this->command($extensions)->execute([
             'acme/corporate',
             '--surface=site',
+            '--site=default',
             '--token-file=' . $this->tokenFile,
         ], $output));
         self::assertSame(['Activated acme/corporate.'], $output->lines);
@@ -65,6 +66,7 @@ final class ThemeCommandTest extends TestCase
         self::assertSame(1, $this->command($extensions)->execute([
             'acme/corporate',
             '--surface=administrator',
+            '--site=default',
             '--token-file=' . $this->tokenFile,
         ], $output));
         self::assertStringContainsString('step-up authentication', $output->errors[0]);

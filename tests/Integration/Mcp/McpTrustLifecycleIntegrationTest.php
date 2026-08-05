@@ -13,11 +13,14 @@ use Kumwe\CMS\Extension\Domain\ExtensionIdentifier;
 use Kumwe\CMS\Extension\Domain\PackageChecksum;
 use Kumwe\CMS\Extension\Domain\PackageSignature;
 use Kumwe\CMS\Infrastructure\Mcp\KumweMcpHandlers;
+use Kumwe\CMS\Infrastructure\Mcp\McpMutationGuard;
+use Kumwe\CMS\Infrastructure\Persistence\TransactionManager;
 use Kumwe\CMS\Infrastructure\Persistence\TableNames;
 use Kumwe\CMS\Shared\Infrastructure\Configuration\Environment;
 use Kumwe\CMS\Tests\Support\TestKernelFactory;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
+use Psr\Clock\ClockInterface;
 use Ramsey\Uuid\Uuid;
 use RuntimeException;
 
@@ -46,7 +49,6 @@ final class McpTrustLifecycleIntegrationTest extends TestCase
         $operationId = 'mcp-trust-race-' . Uuid::uuid7()->toString();
         $startedLock = 'kumwe:mcp-started:' . substr($marker, 0, 24);
         $releaseLock = 'kumwe:mcp-release:' . substr($marker, 0, 24);
-        $trigger = 'mcp_trust_' . substr($marker, 0, 20);
         $ddlTable = $tables->raw('mcp_race_' . substr($marker, 0, 20));
         $resultFile = sys_get_temp_dir() . '/kumwe-mcp-trust-' . $marker;
         $keypair = sodium_crypto_sign_keypair();
@@ -84,7 +86,7 @@ final class McpTrustLifecycleIntegrationTest extends TestCase
             'id' => Uuid::uuid7()->toString(),
             'extension_id' => $extensionId,
             'version' => '1.0.0',
-            'manifest' => ['identifier' => $identifier],
+            'manifest' => self::manifest($identifier, 'McpRace\\Provider'),
             'package_sha256' => (string) $checksum,
             'artifact_sha256' => (string) $checksum,
             'deployed_tree_sha256' => str_repeat('b', 64),
@@ -102,33 +104,36 @@ final class McpTrustLifecycleIntegrationTest extends TestCase
 
         $releaseAcquired = $database->fetchOne('SELECT GET_LOCK(?, 0)', [$releaseLock]);
         self::assertContains($releaseAcquired, [1, '1', true]);
-        try {
-            $database->executeStatement(sprintf(
-                'CREATE TRIGGER %s BEFORE UPDATE ON %s FOR EACH ROW BEGIN '
-                . 'IF NEW.idempotency_key = %s AND NEW.operation = %s AND NEW.state = %s THEN '
-                . 'SET @kumwe_mcp_probe_started = GET_LOCK(%s, 0); '
-                . 'SET @kumwe_mcp_probe_release = GET_LOCK(%s, 15); END IF; END',
-                $database->quoteSingleIdentifier($trigger),
-                $tables->quoted('idempotency'),
-                self::sqlLiteral($operationId),
-                self::sqlLiteral('mcp.trust-key.emergency-revoke'),
-                self::sqlLiteral('completed'),
-                self::sqlLiteral($startedLock),
-                self::sqlLiteral($releaseLock),
-            ));
-        } catch (\Throwable $exception) {
-            $database->fetchOne('SELECT RELEASE_LOCK(?)', [$releaseLock]);
-            throw $exception;
-        }
 
         $revoker = pcntl_fork();
         if ($revoker === 0) {
             try {
                 $child = TestKernelFactory::create(Environment::fromGlobals());
+                $childDatabase = $child->get(Connection::class);
+                $childTables = $child->get(TableNames::class);
+                $clock = $child->get(ClockInterface::class);
+                $transactions = $child->get(TransactionManager::class);
                 $handlers = $child->get(KumweMcpHandlers::class);
-                if (!$handlers instanceof KumweMcpHandlers) {
-                    throw new RuntimeException('MCP handlers are unavailable.');
+                if (
+                    !$childDatabase instanceof Connection
+                    || !$childTables instanceof TableNames
+                    || !$clock instanceof ClockInterface
+                    || !$transactions instanceof TransactionManager
+                    || !$handlers instanceof KumweMcpHandlers
+                ) {
+                    throw new RuntimeException('MCP lifecycle race services are unavailable.');
                 }
+                $handlers = self::withMutationGuard($handlers, new McpMutationGuard(
+                    $childDatabase,
+                    $childTables,
+                    $clock,
+                    new CommitBarrierTransactionManager(
+                        $transactions,
+                        $childDatabase,
+                        $startedLock,
+                        $releaseLock,
+                    ),
+                ));
                 $result = $handlers->forContext(TestKernelFactory::administratorContext($child))->revokeTrustKey(
                     $operationId,
                     $keyId,
@@ -143,10 +148,6 @@ final class McpTrustLifecycleIntegrationTest extends TestCase
         }
         if ($revoker < 0) {
             $database->fetchOne('SELECT RELEASE_LOCK(?)', [$releaseLock]);
-            $database->executeStatement(sprintf(
-                'DROP TRIGGER IF EXISTS %s',
-                $database->quoteSingleIdentifier($trigger),
-            ));
             self::fail('The MCP trust revoker process could not be started.');
         }
 
@@ -182,10 +183,6 @@ final class McpTrustLifecycleIntegrationTest extends TestCase
             $database->fetchOne('SELECT RELEASE_LOCK(?)', [$releaseLock]);
             pcntl_waitpid($revoker, $revokerStatus);
             $tableCreated = $database->createSchemaManager()->tablesExist([$ddlTable]);
-            $database->executeStatement(sprintf(
-                'DROP TRIGGER IF EXISTS %s',
-                $database->quoteSingleIdentifier($trigger),
-            ));
             if ($tableCreated) {
                 $database->executeStatement(sprintf(
                     'DROP TABLE %s',
@@ -225,8 +222,84 @@ final class McpTrustLifecycleIntegrationTest extends TestCase
         }
     }
 
-    private static function sqlLiteral(string $value): string
+    private static function withMutationGuard(
+        KumweMcpHandlers $handlers,
+        McpMutationGuard $mutations,
+    ): KumweMcpHandlers
     {
-        return "'" . str_replace("'", "''", $value) . "'";
+        $reflection = new \ReflectionClass($handlers);
+        $constructor = $reflection->getConstructor()
+            ?? throw new RuntimeException('MCP handlers have no constructor.');
+        $arguments = [];
+        foreach ($constructor->getParameters() as $parameter) {
+            if ($parameter->getName() === 'mutations') {
+                $arguments[] = $mutations;
+                continue;
+            }
+            $arguments[] = $reflection->getProperty($parameter->getName())->getValue($handlers);
+        }
+        $result = $reflection->newInstanceArgs($arguments);
+        if (!$result instanceof KumweMcpHandlers) {
+            throw new RuntimeException('The MCP handlers could not be recomposed for the transaction race.');
+        }
+
+        return $result;
+    }
+
+    /** @return array<string, mixed> */
+    private static function manifest(string $identifier, string $provider): array
+    {
+        return [
+            'schema' => 1,
+            'name' => $identifier,
+            'type' => 'plugin',
+            'version' => '1.0.0',
+            'provider' => $provider,
+            'autoload' => ['psr-4' => [str_replace('/', '\\', $identifier) . '\\' => 'src/']],
+            'requires' => ['kumwe' => '^2.0.0', 'php' => '^8.5.0'],
+        ];
+    }
+}
+
+final readonly class CommitBarrierTransactionManager implements TransactionManager
+{
+    public function __construct(
+        private TransactionManager $inner,
+        private Connection $database,
+        private string $startedLock,
+        private string $releaseLock,
+    ) {
+    }
+
+    public function transactional(callable $operation): mixed
+    {
+        return $this->inner->transactional(function () use ($operation): mixed {
+            $result = $operation();
+            $started = $this->database->fetchOne('SELECT GET_LOCK(?, 0)', [$this->startedLock]);
+            if (!in_array($started, [1, '1', true], true)) {
+                throw new RuntimeException('The MCP commit barrier could not publish its synchronization point.');
+            }
+            try {
+                $released = $this->database->fetchOne('SELECT GET_LOCK(?, 15)', [$this->releaseLock]);
+                if (!in_array($released, [1, '1', true], true)) {
+                    throw new RuntimeException('The MCP commit barrier timed out.');
+                }
+            } finally {
+                $this->database->fetchOne('SELECT RELEASE_LOCK(?)', [$this->releaseLock]);
+                $this->database->fetchOne('SELECT RELEASE_LOCK(?)', [$this->startedLock]);
+            }
+
+            return $result;
+        });
+    }
+
+    public function afterCommit(callable $operation): void
+    {
+        $this->inner->afterCommit($operation);
+    }
+
+    public function afterRollback(callable $operation): void
+    {
+        $this->inner->afterRollback($operation);
     }
 }

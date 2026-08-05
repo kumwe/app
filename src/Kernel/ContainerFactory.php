@@ -1501,9 +1501,9 @@ final class ContainerFactory
 
         foreach (
             [
-                '/api/v1/content-types' => 'content-types',
-                '/api/v1/workflows' => 'workflows',
-            ] as $path => $model
+                '/api/v1/content-types' => ['content-types', '/api/v1/content-types/{id}'],
+                '/api/v1/workflows' => ['workflows', '/api/v1/workflows/{id}'],
+            ] as $path => [$model, $resourcePath]
         ) {
             self::apiRoute($application->get(
                 $path,
@@ -1520,12 +1520,12 @@ final class ContainerFactory
                 'api.v1.' . $model . '.create',
             ), 'content.update');
             self::apiRoute($application->get(
-                $path . '/{id}',
+                $resourcePath,
                 ContentModelApiHandler::class,
                 'api.v1.' . $model . '.read',
             ), 'content.read');
             self::apiRoute($application->patch(
-                $path . '/{id}',
+                $resourcePath,
                 [
                     RequireIdempotencyKeyMiddleware::class,
                     PersistentIdempotencyMiddleware::class,

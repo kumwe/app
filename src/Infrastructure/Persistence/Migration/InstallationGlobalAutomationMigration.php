@@ -64,7 +64,9 @@ final readonly class InstallationGlobalAutomationMigration implements Repeatable
                 'extensions.runtime.rebuild',
                 'system.idempotency.purge',
             ]);
-            $this->assertColumn($manager->introspectTable($this->tables->raw($name))->getColumn('execution_scope'));
+            $this->assertColumn(
+                $manager->introspectTableByUnquotedName($this->tables->raw($name))->getColumn('execution_scope'),
+            );
         }
     }
 

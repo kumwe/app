@@ -7,6 +7,7 @@ namespace Kumwe\CMS\Extension\Runtime;
 use DateInterval;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
+use Doctrine\DBAL\Platforms\SQLitePlatform;
 use Doctrine\DBAL\Types\Types;
 use InvalidArgumentException;
 use Kumwe\CMS\Extension\Application\Trust\TrustRuntimeInvalidator;
@@ -282,6 +283,7 @@ final readonly class ExtensionRuntimeMapCompiler implements TrustRuntimeInvalida
                 $success = false;
                 $cached = apcu_fetch($cacheKey, $success);
                 if ($success && is_array($cached) && !array_is_list($cached)) {
+                    /** @var array<string, mixed> $cached */
                     return $this->materializationState($cached);
                 }
             }
@@ -298,6 +300,8 @@ final readonly class ExtensionRuntimeMapCompiler implements TrustRuntimeInvalida
             if (!is_array($marker) || array_is_list($marker)) {
                 return RuntimeMaterializationState::unavailable($this->identity->leaseId);
             }
+            /** @var array<string, mixed> $document */
+            /** @var array<string, mixed> $marker */
             $this->verifyMarker($marker, $payload);
             $this->verifyDocument($document, false);
             $state = $this->materializationState($document);
@@ -325,6 +329,7 @@ final readonly class ExtensionRuntimeMapCompiler implements TrustRuntimeInvalida
             if (!is_array($marker) || array_is_list($marker)) {
                 return false;
             }
+            /** @var array<string, mixed> $marker */
             $base = [
                 'format' => $marker['format'] ?? null,
                 'generation' => $marker['generation'] ?? null,
@@ -692,7 +697,7 @@ final readonly class ExtensionRuntimeMapCompiler implements TrustRuntimeInvalida
         if (!$this->database->isTransactionActive()) {
             throw new RuntimeException('The runtime generation may be locked only inside a transaction.');
         }
-        $suffix = $this->database->getDatabasePlatform() instanceof \Doctrine\DBAL\Platforms\AbstractSQLitePlatform
+        $suffix = $this->database->getDatabasePlatform() instanceof SQLitePlatform
             ? ''
             : ' FOR UPDATE';
         $result = $this->database->fetchOne(sprintf(
@@ -700,11 +705,12 @@ final readonly class ExtensionRuntimeMapCompiler implements TrustRuntimeInvalida
             $this->tables->quoted('extension_runtime_generation'),
             $suffix,
         ));
-        if (!is_numeric($result) || (int) $result < 0) {
+        $generation = $this->databaseInteger($result, 'extension runtime generation');
+        if ($generation < 0) {
             throw new RuntimeException('The extension runtime generation is invalid.');
         }
 
-        return (int) $result;
+        return $generation;
     }
 
     /** @return array<string, mixed>|null */
@@ -719,7 +725,10 @@ final readonly class ExtensionRuntimeMapCompiler implements TrustRuntimeInvalida
         return $row === false ? null : $row;
     }
 
-    /** @param array<string, mixed> $publication @return array<string, mixed> */
+    /**
+     * @param array<string, mixed> $publication
+     * @return array<string, mixed>
+     */
     private function verifiedDocument(array $publication, bool $assertArtifacts = true): array
     {
         $payload = $publication['payload'] ?? null;
@@ -729,9 +738,14 @@ final readonly class ExtensionRuntimeMapCompiler implements TrustRuntimeInvalida
         if (!is_array($payload) || array_is_list($payload)) {
             throw new RuntimeException('The authoritative runtime publication payload is invalid.');
         }
+        /** @var array<string, mixed> $payload */
         $this->verifyDocument($payload, $assertArtifacts);
+        $publicationGeneration = $this->databaseInteger(
+            $publication['generation'] ?? null,
+            'runtime publication generation',
+        );
         if (
-            (int) ($publication['generation'] ?? -1) !== ($payload['generation'] ?? null)
+            $publicationGeneration !== ($payload['generation'] ?? null)
             || ($publication['state_sha256'] ?? null) !== ($payload['state_sha256'] ?? null)
             || ($publication['action'] ?? null) !== ($payload['action'] ?? null)
             || ($publication['signing_key_id'] ?? null) !== ($payload['signing_key_id'] ?? null)
@@ -799,6 +813,7 @@ final readonly class ExtensionRuntimeMapCompiler implements TrustRuntimeInvalida
             if (!is_array($extension) || array_is_list($extension)) {
                 throw new RuntimeException('A runtime publication extension is invalid.');
             }
+            /** @var array<string, mixed> $extension */
             $root = $this->requiredString($extension, 'root');
             if (
                 !$this->safeRelativeRuntime($root)
@@ -913,9 +928,10 @@ final readonly class ExtensionRuntimeMapCompiler implements TrustRuntimeInvalida
             $id = $row['id'] ?? null;
             $runtimePath = $row['runtime_path'] ?? null;
             $generation = $row['retire_after_generation'] ?? null;
-            if (!is_string($id) || !is_string($runtimePath) || !is_numeric($generation)) {
+            if (!is_string($id) || !is_string($runtimePath)) {
                 throw new RuntimeException('A runtime retirement record is invalid.');
             }
+            $retireAfterGeneration = $this->databaseInteger($generation, 'retirement generation');
             $claim = bin2hex(random_bytes(32));
             $claimed = $this->database->executeStatement(sprintf(
                 'UPDATE %s SET claim_token = ?, claim_until = ? WHERE id = ? AND cleaned_at IS NULL '
@@ -927,26 +943,26 @@ final readonly class ExtensionRuntimeMapCompiler implements TrustRuntimeInvalida
             if ($claimed !== 1) {
                 continue;
             }
-            $referenced = $this->database->fetchOne(sprintf(
+            $referenced = $this->databaseInteger($this->database->fetchOne(sprintf(
                 'SELECT COUNT(*) FROM %s WHERE runtime_path = ?',
                 $this->tables->quoted('extensions'),
-            ), [$runtimePath]);
-            $pending = $this->database->fetchOne(sprintf(
+            ), [$runtimePath]), 'runtime reference count');
+            $pending = $this->databaseInteger($this->database->fetchOne(sprintf(
                 "SELECT COUNT(*) FROM %s WHERE runtime_path = ? AND transaction_outcome = 'unknown'",
                 $this->tables->quoted('extension_install_operations'),
-            ), [$runtimePath]);
-            if ((int) $referenced !== 0 || (int) $pending !== 0) {
+            ), [$runtimePath]), 'pending runtime operation count');
+            if ($referenced !== 0 || $pending !== 0) {
                 $this->database->delete($this->tables->raw('extension_runtime_retirements'), [
                     'id' => $id,
                     'claim_token' => $claim,
                 ]);
                 continue;
             }
-            $blockers = $this->database->fetchOne(sprintf(
+            $blockers = $this->databaseInteger($this->database->fetchOne(sprintf(
                 'SELECT COUNT(*) FROM %s WHERE lease_until >= ? AND generation < ?',
                 $this->tables->quoted('extension_runtime_materializations'),
-            ), [$now, (int) $generation], [Types::DATETIME_IMMUTABLE, Types::BIGINT]);
-            if ((int) $blockers !== 0) {
+            ), [$now, $retireAfterGeneration], [Types::DATETIME_IMMUTABLE, Types::BIGINT]), 'runtime lease count');
+            if ($blockers !== 0) {
                 $this->releaseRetirementClaim($id, $claim);
                 continue;
             }
@@ -1042,6 +1058,9 @@ final readonly class ExtensionRuntimeMapCompiler implements TrustRuntimeInvalida
         );
         $iterator->setMaxDepth(2);
         foreach ($iterator as $item) {
+            if (!$item instanceof \SplFileInfo) {
+                continue;
+            }
             if (++$inspected > 1_000) {
                 break;
             }
@@ -1156,6 +1175,9 @@ final readonly class ExtensionRuntimeMapCompiler implements TrustRuntimeInvalida
             \RecursiveIteratorIterator::CHILD_FIRST,
         );
         foreach ($iterator as $item) {
+            if (!$item instanceof \SplFileInfo) {
+                continue;
+            }
             if ($item->isLink() || $item->isFile()) {
                 unlink($item->getPathname());
             } elseif ($item->isDir()) {
@@ -1315,7 +1337,10 @@ final readonly class ExtensionRuntimeMapCompiler implements TrustRuntimeInvalida
         return 'kumwe.runtime.publication.' . hash('sha256', RuntimeCanonicalJson::encode($identity));
     }
 
-    /** @param array<string, mixed> $prior @param list<array<string, mixed>> $next */
+    /**
+     * @param array<string, mixed> $prior
+     * @param list<array<string, mixed>> $next
+     */
     private function assertAdministratorRecoveryTransition(array $prior, array $next, string $identifier): void
     {
         $before = $this->extensionsByIdentifier($prior['extensions'] ?? null);
@@ -1368,6 +1393,7 @@ final readonly class ExtensionRuntimeMapCompiler implements TrustRuntimeInvalida
             if (!is_array($extension) || array_is_list($extension)) {
                 throw new RuntimeException('The signed runtime extension entry is invalid.');
             }
+            /** @var array<string, mixed> $extension */
             $identifier = $this->requiredString($extension, 'identifier');
             if (isset($indexed[$identifier])) {
                 throw new RuntimeException('The signed runtime extension list contains duplicates.');
@@ -1384,7 +1410,10 @@ final readonly class ExtensionRuntimeMapCompiler implements TrustRuntimeInvalida
             && !str_contains($runtimePath, '..');
     }
 
-    /** @param list<mixed> $values @return array<string, true> */
+    /**
+     * @param list<mixed> $values
+     * @return array<string, true>
+     */
     private function stringSet(array $values): array
     {
         $set = [];
@@ -1395,6 +1424,15 @@ final readonly class ExtensionRuntimeMapCompiler implements TrustRuntimeInvalida
         }
 
         return $set;
+    }
+
+    private function databaseInteger(mixed $value, string $description): int
+    {
+        if (!is_int($value) && (!is_string($value) || preg_match('/^[0-9]+$/D', $value) !== 1)) {
+            throw new RuntimeException('The ' . $description . ' is invalid.');
+        }
+
+        return (int) $value;
     }
 
     /** @param array<string, mixed> $row */

@@ -8,6 +8,7 @@ use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Schema\PrimaryKeyConstraint;
 use Doctrine\DBAL\Schema\Schema;
+use Doctrine\DBAL\Types\Type;
 use Doctrine\DBAL\Types\Types;
 use Kumwe\CMS\Infrastructure\Persistence\TableNames;
 use Ramsey\Uuid\Uuid;
@@ -39,10 +40,26 @@ final readonly class IsolateThemeSurfacesMigration implements RepeatableMigratio
 
     public function up(Connection $database): void
     {
+        $extensionIdColumn = $database->createSchemaManager()
+            ->introspectTableByUnquotedName($this->tables->raw('extensions'))
+            ->getColumn('id');
+        $extensionIdType = Type::lookupName($extensionIdColumn->getType());
+        $extensionIdOptions = [
+            'notnull' => false,
+            'length' => $extensionIdColumn->getLength(),
+            'fixed' => $extensionIdColumn->getFixed(),
+            'unsigned' => $extensionIdColumn->getUnsigned(),
+        ];
+        if ($extensionIdColumn->getCharset() !== null) {
+            $extensionIdOptions['charset'] = $extensionIdColumn->getCharset();
+        }
+        if ($extensionIdColumn->getCollation() !== null) {
+            $extensionIdOptions['collation'] = $extensionIdColumn->getCollation();
+        }
         $schema = new Schema();
         $activations = $schema->createTable($this->tables->raw('theme_activations'));
         $activations->addColumn('surface', Types::STRING, ['length' => 32]);
-        $activations->addColumn('extension_id', Types::GUID, ['notnull' => false]);
+        $activations->addColumn('extension_id', $extensionIdType, $extensionIdOptions);
         $activations->addColumn('version', Types::BIGINT, ['default' => 1]);
         $activations->addColumn('activated_by', Types::STRING, ['length' => 191, 'notnull' => false]);
         $activations->addColumn('activated_at', Types::DATETIME_IMMUTABLE);
@@ -59,7 +76,7 @@ final readonly class IsolateThemeSurfacesMigration implements RepeatableMigratio
 
         $siteActivations = $schema->createTable($this->tables->raw('site_theme_activations'));
         $siteActivations->addColumn('site_identifier', Types::STRING, ['length' => 191]);
-        $siteActivations->addColumn('extension_id', Types::GUID, ['notnull' => false]);
+        $siteActivations->addColumn('extension_id', $extensionIdType, $extensionIdOptions);
         $siteActivations->addColumn('version', Types::BIGINT, ['default' => 1]);
         $siteActivations->addColumn('activated_by', Types::STRING, ['length' => 191, 'notnull' => false]);
         $siteActivations->addColumn('activated_at', Types::DATETIME_IMMUTABLE);
@@ -157,16 +174,20 @@ final readonly class IsolateThemeSurfacesMigration implements RepeatableMigratio
 
         $schemaManager = $database->createSchemaManager();
         foreach ($schema->getTables() as $table) {
-            if (!$schemaManager->tablesExist([$table->getName()])) {
+            if (!$schemaManager->tablesExist([$table->getObjectName()->toString()])) {
                 $schemaManager->createTable($table);
             }
         }
 
-        $extensionMigrations = $schemaManager->introspectTable($this->tables->raw('extension_migrations'));
-        if (!$extensionMigrations->hasColumn('migration_sha256')) {
+        $extensionMigrationsName = $this->tables->raw('extension_migrations');
+        if (
+            $schemaManager->tablesExist([$extensionMigrationsName])
+            && !$schemaManager->introspectTableByUnquotedName($extensionMigrationsName)
+                ->hasColumn('migration_sha256')
+        ) {
             $before = $schemaManager->introspectSchema();
             $after = clone $before;
-            $after->getTable($this->tables->raw('extension_migrations'))->addColumn(
+            $after->getTable($extensionMigrationsName)->addColumn(
                 'migration_sha256',
                 Types::STRING,
                 ['length' => 64, 'fixed' => true, 'notnull' => false],

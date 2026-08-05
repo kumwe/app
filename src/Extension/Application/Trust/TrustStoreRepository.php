@@ -8,7 +8,11 @@ use DateTimeImmutable;
 
 interface TrustStoreRepository
 {
-    /** @template T @param callable(): T $operation @return T */
+    /**
+     * @template T
+     * @param callable(): T $operation
+     * @return T
+     */
     public function synchronizedLifecycle(callable $operation): mixed;
 
     public function lifecycleReady(): bool;

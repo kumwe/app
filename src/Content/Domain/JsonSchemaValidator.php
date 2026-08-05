@@ -22,6 +22,7 @@ final class JsonSchemaValidator
         $violations = [];
         $this->validateSchema($schema, '$', $violations);
         if ($violations !== []) {
+            /** @var non-empty-list<string> $violations */
             throw new InvalidArgumentException('Unsupported content schema: ' . implode('; ', $violations));
         }
     }
@@ -33,11 +34,15 @@ final class JsonSchemaValidator
         $violations = [];
         $this->validateValue($schema, $value, '$', $violations);
         if ($violations !== []) {
+            /** @var non-empty-list<string> $violations */
             throw new InvalidContentData($violations);
         }
     }
 
-    /** @param array<string, mixed> $schema @param list<string> $violations */
+    /**
+     * @param array<string, mixed> $schema
+     * @param list<string> $violations
+     */
     private function validateSchema(array $schema, string $path, array &$violations): void
     {
         if ($schema !== [] && array_is_list($schema)) {
@@ -45,8 +50,8 @@ final class JsonSchemaValidator
             return;
         }
         foreach (array_keys($schema) as $keyword) {
-            if (!is_string($keyword) || !in_array($keyword, self::KEYWORDS, true)) {
-                $violations[] = $path . ' contains unsupported keyword ' . (string) $keyword;
+            if (!in_array($keyword, self::KEYWORDS, true)) {
+                $violations[] = $path . ' contains unsupported keyword ' . $keyword;
             }
         }
         $type = $schema['type'] ?? null;
@@ -128,6 +133,7 @@ final class JsonSchemaValidator
                     ) {
                         $violations[] = $path . '.properties contains an invalid field';
                     } else {
+                        /** @var array<string, mixed> $child */
                         $this->validateSchema($child, $path . '.properties.' . $key, $violations);
                     }
                 }
@@ -145,7 +151,9 @@ final class JsonSchemaValidator
                 if (!is_array($schema[$keyword])) {
                     $violations[] = $path . '.' . $keyword . ' must be a schema';
                 } else {
-                    $this->validateSchema($schema[$keyword], $path . '.' . $keyword, $violations);
+                    /** @var array<string, mixed> $itemSchema */
+                    $itemSchema = $schema[$keyword];
+                    $this->validateSchema($itemSchema, $path . '.' . $keyword, $violations);
                 }
             }
         }
@@ -161,6 +169,7 @@ final class JsonSchemaValidator
                 if (!is_array($child)) {
                     $violations[] = $path . '.' . $keyword . '[' . $index . '] must be a schema';
                 } else {
+                    /** @var array<string, mixed> $child */
                     $this->validateSchema($child, $path . '.' . $keyword . '[' . $index . ']', $violations);
                 }
             }
@@ -178,7 +187,10 @@ final class JsonSchemaValidator
         }
     }
 
-    /** @param array<string, mixed> $schema @param list<string> $violations */
+    /**
+     * @param array<string, mixed> $schema
+     * @param list<string> $violations
+     */
     private function validateValue(array $schema, mixed $value, string $path, array &$violations): void
     {
         $type = $schema['type'] ?? null;
@@ -194,10 +206,12 @@ final class JsonSchemaValidator
         }
         if (is_string($value)) {
             $length = mb_strlen($value);
-            if (isset($schema['minLength']) && $length < (int) $schema['minLength']) {
+            $minLength = $schema['minLength'] ?? null;
+            if (is_int($minLength) && $length < $minLength) {
                 $violations[] = $path . ' is shorter than minLength';
             }
-            if (isset($schema['maxLength']) && $length > (int) $schema['maxLength']) {
+            $maxLength = $schema['maxLength'] ?? null;
+            if (is_int($maxLength) && $length > $maxLength) {
                 $violations[] = $path . ' is longer than maxLength';
             }
             if (
@@ -216,23 +230,29 @@ final class JsonSchemaValidator
             }
         }
         if (is_int($value) || is_float($value)) {
-            if (isset($schema['minimum']) && $value < (float) $schema['minimum']) {
+            $minimum = $schema['minimum'] ?? null;
+            if ((is_int($minimum) || is_float($minimum)) && $value < $minimum) {
                 $violations[] = $path . ' is below minimum';
             }
-            if (isset($schema['maximum']) && $value > (float) $schema['maximum']) {
+            $maximum = $schema['maximum'] ?? null;
+            if ((is_int($maximum) || is_float($maximum)) && $value > $maximum) {
                 $violations[] = $path . ' is above maximum';
             }
         }
         if (is_array($value) && array_is_list($value)) {
-            if (isset($schema['minItems']) && count($value) < (int) $schema['minItems']) {
+            $minItems = $schema['minItems'] ?? null;
+            if (is_int($minItems) && count($value) < $minItems) {
                 $violations[] = $path . ' has fewer than minItems';
             }
-            if (isset($schema['maxItems']) && count($value) > (int) $schema['maxItems']) {
+            $maxItems = $schema['maxItems'] ?? null;
+            if (is_int($maxItems) && count($value) > $maxItems) {
                 $violations[] = $path . ' has more than maxItems';
             }
             if (isset($schema['items']) && is_array($schema['items'])) {
+                /** @var array<string, mixed> $itemSchema */
+                $itemSchema = $schema['items'];
                 foreach ($value as $index => $item) {
-                    $this->validateValue($schema['items'], $item, $path . '[' . $index . ']', $violations);
+                    $this->validateValue($itemSchema, $item, $path . '[' . $index . ']', $violations);
                 }
             }
         }
@@ -246,7 +266,9 @@ final class JsonSchemaValidator
             }
             foreach ($value as $key => $item) {
                 if (is_string($key) && isset($properties[$key]) && is_array($properties[$key])) {
-                    $this->validateValue($properties[$key], $item, $path . '.' . $key, $violations);
+                    /** @var array<string, mixed> $propertySchema */
+                    $propertySchema = $properties[$key];
+                    $this->validateValue($propertySchema, $item, $path . '.' . $key, $violations);
                 } elseif (($schema['additionalProperties'] ?? true) === false) {
                     $violations[] = $path . '.' . (string) $key . ' is not allowed';
                 }
@@ -261,6 +283,7 @@ final class JsonSchemaValidator
                 if (!is_array($child)) {
                     continue;
                 }
+                /** @var array<string, mixed> $child */
                 $childViolations = [];
                 $this->validateValue($child, $value, $path, $childViolations);
                 $matches += $childViolations === [] ? 1 : 0;

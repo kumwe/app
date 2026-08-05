@@ -137,7 +137,8 @@ final readonly class DenyByDefaultAuthorizationGateway implements AuthorizationG
         if ($principal !== null && str_starts_with($action->value(), 'system.')) {
             return new AuthorizationDecision(false, 'core.system-identity.v1', 'system_identity_required');
         }
-        $systemIdentity = $context->systemIdentity()?->value ?? '';
+        $identity = $context->systemIdentity();
+        $systemIdentity = $identity === null ? '' : $identity->value;
         $allowed = $principal !== null
             ? $principal->allows(
                 $action,

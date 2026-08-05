@@ -38,6 +38,7 @@ final readonly class ManageAccessCommand implements Command
             $action = array_shift($arguments) ?? 'users';
             $options = CommandInput::options($arguments);
             $context = $this->authorization->require($options, 'users.manage');
+            /** @var array<string, mixed> $result */
             $result = match ($action) {
                 'users' => ['items' => $this->access->users($context)],
                 'roles' => [
@@ -165,7 +166,10 @@ final readonly class ManageAccessCommand implements Command
         )];
     }
 
-    /** @param array<string, string> $options @return array{revoked_tokens: int} */
+    /**
+     * @param array<string, string> $options
+     * @return array{revoked_tokens: int}
+     */
     private function emergencyRevokeUserTokens(array $options, ExecutionContext $context): array
     {
         return ['revoked_tokens' => $this->access->emergencyRevokeAllSubjectTokens(

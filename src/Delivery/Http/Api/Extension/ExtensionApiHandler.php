@@ -18,6 +18,7 @@ use Laminas\Diactoros\Response\JsonResponse;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\RequestHandlerInterface;
+use stdClass;
 
 final readonly class ExtensionApiHandler implements RequestHandlerInterface
 {
@@ -99,12 +100,17 @@ final readonly class ExtensionApiHandler implements RequestHandlerInterface
     {
         $encoded = trim((string) $request->getBody());
         try {
-            $body = $encoded === '' ? [] : json_decode($encoded, true, 16, JSON_THROW_ON_ERROR);
+            $decoded = json_decode($encoded === '' ? '{}' : $encoded, false, 16, JSON_THROW_ON_ERROR);
         } catch (JsonException $exception) {
             throw new InvalidArgumentException('The extension activation body must be valid JSON.', 0, $exception);
         }
+        if (!$decoded instanceof stdClass) {
+            throw new InvalidArgumentException('The extension operation body must be a JSON object.');
+        }
+        /** @var array<string, mixed> $body */
+        $body = get_object_vars($decoded);
         $allowed = $allowsSurface ? ['surface', 'current_password'] : ['current_password'];
-        if (!is_array($body) || array_is_list($body) || array_diff(array_keys($body), $allowed) !== []) {
+        if (array_diff(array_keys($body), $allowed) !== []) {
             throw new InvalidArgumentException('The extension operation body contains unsupported fields.');
         }
         $surface = $allowsSurface ? ($body['surface'] ?? ($request->getQueryParams()['surface'] ?? null)) : null;

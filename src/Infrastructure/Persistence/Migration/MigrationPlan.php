@@ -97,7 +97,10 @@ final readonly class MigrationPlan
         }
     }
 
-    /** @param array<string, string> $applied @return list<Migration> */
+    /**
+     * @param array<string, string> $applied
+     * @return list<Migration>
+     */
     public function pending(array $applied): array
     {
         $this->assertCompatible($applied);
