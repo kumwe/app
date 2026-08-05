@@ -1499,10 +1499,12 @@ final class ContainerFactory
             BearerAuthenticationMiddleware::OPTION_REQUIRED_CAPABILITIES => ['content.restore'],
         ]);
 
-        foreach ([
-            '/api/v1/content-types' => 'content-types',
-            '/api/v1/workflows' => 'workflows',
-        ] as $path => $model) {
+        foreach (
+            [
+                '/api/v1/content-types' => 'content-types',
+                '/api/v1/workflows' => 'workflows',
+            ] as $path => $model
+        ) {
             self::apiRoute($application->get(
                 $path,
                 ContentModelApiHandler::class,
