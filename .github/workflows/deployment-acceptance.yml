@@ -453,6 +453,7 @@ jobs:
               trap '\''rm -f "$token_file"'\'' EXIT
               printf %s "$KUMWE_ACCEPTANCE_API_TOKEN" > "$token_file"
               php bin/kumwe automation create \
+                --site=default \
                 --token-file="$token_file" \
                 --name=deployment-acceptance \
                 --cron="* * * * *" \
