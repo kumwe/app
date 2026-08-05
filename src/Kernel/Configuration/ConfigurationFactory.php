@@ -75,17 +75,19 @@ final class ConfigurationFactory
             return [];
         }
         try {
-            $keys = json_decode($encoded, true, 16, JSON_THROW_ON_ERROR);
+            $decoded = json_decode($encoded, false, 16, JSON_THROW_ON_ERROR);
         } catch (JsonException $exception) {
             throw new InvalidArgumentException('EXTENSION_RUNTIME_PREVIOUS_KEYS must be valid JSON.', 0, $exception);
         }
-        if (!is_array($keys) || array_is_list($keys)) {
+        if (!$decoded instanceof \stdClass) {
             throw new InvalidArgumentException('EXTENSION_RUNTIME_PREVIOUS_KEYS must be a JSON object.');
         }
-        foreach ($keys as $keyId => $key) {
-            if (!is_string($keyId) || !is_string($key)) {
+        $keys = [];
+        foreach (get_object_vars($decoded) as $keyId => $key) {
+            if (!is_string($key)) {
                 throw new InvalidArgumentException('Previous runtime signing keys must map IDs to secrets.');
             }
+            $keys[$keyId] = $key;
         }
 
         return $keys;
