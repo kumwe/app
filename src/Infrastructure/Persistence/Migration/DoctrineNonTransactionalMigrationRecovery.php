@@ -299,7 +299,8 @@ final readonly class DoctrineNonTransactionalMigrationRecovery implements NonTra
         if (
             $primary !== null
             && array_map(
-                static fn (\Doctrine\DBAL\Schema\Name $name): string => $name->toString(),
+                static fn (\Doctrine\DBAL\Schema\Name\UnqualifiedName $name): string =>
+                    $name->getIdentifier()->getValue(),
                 $primary->getColumnNames(),
             ) === ['version']
         ) {

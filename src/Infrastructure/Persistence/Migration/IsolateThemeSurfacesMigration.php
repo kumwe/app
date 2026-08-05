@@ -44,12 +44,19 @@ final readonly class IsolateThemeSurfacesMigration implements RepeatableMigratio
             ->introspectTableByUnquotedName($this->tables->raw('extensions'))
             ->getColumn('id');
         $extensionIdType = Type::lookupName($extensionIdColumn->getType());
+        $platformOptions = [];
+        if ($extensionIdColumn->getCharset() !== null) {
+            $platformOptions['charset'] = $extensionIdColumn->getCharset();
+        }
+        if ($extensionIdColumn->getCollation() !== null) {
+            $platformOptions['collation'] = $extensionIdColumn->getCollation();
+        }
         $extensionIdOptions = [
             'notnull' => false,
             'length' => $extensionIdColumn->getLength(),
             'fixed' => $extensionIdColumn->getFixed(),
             'unsigned' => $extensionIdColumn->getUnsigned(),
-            'platformOptions' => $extensionIdColumn->getPlatformOptions(),
+            'platformOptions' => $platformOptions,
         ];
         $schema = new Schema();
         $activations = $schema->createTable($this->tables->raw('theme_activations'));

@@ -6,6 +6,7 @@ namespace Kumwe\CMS\Infrastructure\Persistence;
 
 use Doctrine\DBAL\Connection;
 use InvalidArgumentException;
+use RuntimeException;
 
 final readonly class TableNames
 {
@@ -29,6 +30,11 @@ final readonly class TableNames
     /** @return non-empty-string */
     public function quoted(string $name): string
     {
-        return $this->connection->quoteSingleIdentifier($this->raw($name));
+        $quoted = $this->connection->quoteSingleIdentifier($this->raw($name));
+        if ($quoted === '') {
+            throw new RuntimeException('The quoted database table name is empty.');
+        }
+
+        return $quoted;
     }
 }
