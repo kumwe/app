@@ -225,8 +225,7 @@ final class McpTrustLifecycleIntegrationTest extends TestCase
     private static function withMutationGuard(
         KumweMcpHandlers $handlers,
         McpMutationGuard $mutations,
-    ): KumweMcpHandlers
-    {
+    ): KumweMcpHandlers {
         $reflection = new \ReflectionClass($handlers);
         $constructor = $reflection->getConstructor()
             ?? throw new RuntimeException('MCP handlers have no constructor.');
