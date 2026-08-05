@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\CMS\Application\Automation\Job;
 
 use Kumwe\CMS\Application\Automation\JobHandler;
+use Kumwe\CMS\Application\Authorization\ExecutionContext;
 use Kumwe\CMS\Identity\Application\Administration\AdministratorSessionStore;
 
 final readonly class PurgeAdministratorSessionsHandler implements JobHandler
@@ -18,8 +19,8 @@ final readonly class PurgeAdministratorSessionsHandler implements JobHandler
         return 'system.sessions.purge';
     }
 
-    public function handle(array $payload): void
+    public function handle(array $payload, ExecutionContext $context): void
     {
-        $this->sessions->purgeExpired();
+        $this->sessions->purgeExpired($context);
     }
 }

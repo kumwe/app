@@ -10,8 +10,13 @@ use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Types\Types;
 use InvalidArgumentException;
 use JsonException;
+use Kumwe\CMS\Application\Authorization\AuthorizationGateway;
+use Kumwe\CMS\Application\Authorization\AuthorizationResource;
+use Kumwe\CMS\Application\Authorization\ExecutionContext;
+use Kumwe\CMS\Application\Authorization\ResourceSiteOwnershipWriter;
 use Kumwe\CMS\Application\Automation\JobQueue;
 use Kumwe\CMS\Application\Automation\StoredJob;
+use Kumwe\CMS\Identity\Domain\Capability;
 use Kumwe\CMS\Infrastructure\Persistence\TableNames;
 use Kumwe\CMS\Infrastructure\Persistence\TransactionManager;
 use Psr\Clock\ClockInterface;
@@ -29,10 +34,13 @@ final readonly class DoctrineJobQueue implements JobQueue
         private TransactionManager $transactions,
         private ClockInterface $clock,
         private string $release,
+        private AuthorizationGateway $authorization,
+        private ResourceSiteOwnershipWriter $ownership,
     ) {
     }
 
     public function enqueue(
+        ExecutionContext $context,
         string $type,
         array $payload,
         DateTimeImmutable $availableAt,
@@ -40,6 +48,7 @@ final readonly class DoctrineJobQueue implements JobQueue
         int $priority = 0,
         int $maximumAttempts = 5,
     ): string {
+        $this->authorize($context, AuthorizationResource::item('queue', $queue));
         $this->assertQueue($queue);
         $this->assertType($type);
         if ($priority < -100 || $priority > 100 || $maximumAttempts < 1 || $maximumAttempts > 100) {
@@ -48,39 +57,58 @@ final readonly class DoctrineJobQueue implements JobQueue
 
         $id = Uuid::uuid7()->toString();
         $now = $this->clock->now();
-        $this->database->insert($this->tables->raw('jobs'), [
-            'id' => $id,
-            'queue' => $queue,
-            'job_type' => $type,
-            'schema_version' => 1,
-            'payload' => $payload,
-            'priority' => $priority,
-            'status' => 'pending',
-            'available_at' => $availableAt < $now ? $now : $availableAt,
-            'lease_owner' => null,
-            'lease_token' => null,
-            'lease_acquired_at' => null,
-            'lease_expires_at' => null,
-            'attempts' => 0,
-            'maximum_attempts' => $maximumAttempts,
-            'schedule_id' => null,
-            'scheduled_for' => null,
-            'occurrence_key' => null,
-            'completed_at' => null,
-            'created_at' => $now,
-            'updated_at' => $now,
-        ], [
-            'payload' => Types::JSON,
-            'available_at' => Types::DATETIME_IMMUTABLE,
-            'created_at' => Types::DATETIME_IMMUTABLE,
-            'updated_at' => Types::DATETIME_IMMUTABLE,
-        ]);
+        $this->transactions->transactional(function () use (
+            $context,
+            $id,
+            $queue,
+            $type,
+            $payload,
+            $priority,
+            $maximumAttempts,
+            $availableAt,
+            $now,
+        ): void {
+            $this->database->insert($this->tables->raw('jobs'), [
+                'id' => $id,
+                'queue' => $queue,
+                'job_type' => $type,
+                'schema_version' => 1,
+                'payload' => $payload,
+                'priority' => $priority,
+                'status' => 'pending',
+                'available_at' => $availableAt < $now ? $now : $availableAt,
+                'lease_owner' => null,
+                'lease_token' => null,
+                'lease_acquired_at' => null,
+                'lease_expires_at' => null,
+                'attempts' => 0,
+                'maximum_attempts' => $maximumAttempts,
+                'schedule_id' => null,
+                'scheduled_for' => null,
+                'occurrence_key' => null,
+                'completed_at' => null,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ], [
+                'payload' => Types::JSON,
+                'available_at' => Types::DATETIME_IMMUTABLE,
+                'created_at' => Types::DATETIME_IMMUTABLE,
+                'updated_at' => Types::DATETIME_IMMUTABLE,
+            ]);
+            $this->ownership->record(AuthorizationResource::item('job', $id), $context->site());
+        });
 
         return $id;
     }
 
-    public function claim(string $queue, string $workerId, int $leaseSeconds): ?StoredJob
+    public function claim(
+        ExecutionContext $context,
+        string $queue,
+        string $workerId,
+        int $leaseSeconds,
+    ): ?StoredJob
     {
+        $this->authorizeWorker($context, AuthorizationResource::item('queue', $queue));
         $this->assertQueue($queue);
         $this->assertWorker($workerId);
         if ($leaseSeconds < 5 || $leaseSeconds > 3_600) {
@@ -148,8 +176,14 @@ final readonly class DoctrineJobQueue implements JobQueue
         });
     }
 
-    public function renew(StoredJob $job, string $workerId, int $leaseSeconds): void
+    public function renew(
+        ExecutionContext $context,
+        StoredJob $job,
+        string $workerId,
+        int $leaseSeconds,
+    ): void
     {
+        $this->authorizeWorker($context, AuthorizationResource::item('job', $job->id));
         $this->assertWorker($workerId);
         if ($leaseSeconds < 5 || $leaseSeconds > 3_600) {
             throw new InvalidArgumentException('A job lease must last between 5 and 3600 seconds.');
@@ -173,8 +207,9 @@ final readonly class DoctrineJobQueue implements JobQueue
         ]));
     }
 
-    public function complete(StoredJob $job, string $workerId): void
+    public function complete(ExecutionContext $context, StoredJob $job, string $workerId): void
     {
+        $this->authorizeWorker($context, AuthorizationResource::item('job', $job->id));
         $this->assertWorker($workerId);
         $now = $this->clock->now();
         $this->assertLeaseUpdated($this->database->executeStatement(sprintf(
@@ -188,8 +223,15 @@ final readonly class DoctrineJobQueue implements JobQueue
         ]));
     }
 
-    public function fail(StoredJob $job, string $workerId, Throwable $failure, bool $permanent): void
+    public function fail(
+        ExecutionContext $context,
+        StoredJob $job,
+        string $workerId,
+        Throwable $failure,
+        bool $permanent,
+    ): void
     {
+        $this->authorizeWorker($context, AuthorizationResource::item('job', $job->id));
         $this->assertWorker($workerId);
         $dead = $permanent || $job->attempts >= $job->maximumAttempts;
         $this->transactions->transactional(function () use ($job, $workerId, $failure, $permanent, $dead): void {
@@ -244,8 +286,18 @@ final readonly class DoctrineJobQueue implements JobQueue
         });
     }
 
-    public function heartbeat(string $workerId, string $queue, ?string $jobId = null): void
-    {
+    public function heartbeat(
+        ExecutionContext $context,
+        string $workerId,
+        string $queue,
+        ?string $jobId = null,
+    ): void {
+        $this->authorizeWorker(
+            $context,
+            $jobId === null
+                ? AuthorizationResource::item('queue', $queue)
+                : AuthorizationResource::item('job', $jobId),
+        );
         $this->assertWorker($workerId);
         $this->assertQueue($queue);
         $now = $this->clock->now();
@@ -276,9 +328,11 @@ final readonly class DoctrineJobQueue implements JobQueue
         );
     }
 
-    public function disconnect(string $workerId): void
+    public function disconnect(ExecutionContext $context, string $workerId, string $queue): void
     {
+        $this->authorizeWorker($context, AuthorizationResource::item('queue', $queue));
         $this->assertWorker($workerId);
+        $this->assertQueue($queue);
         $this->database->delete(
             $this->tables->raw('worker_heartbeats'),
             ['worker_id' => $workerId],
@@ -286,26 +340,46 @@ final readonly class DoctrineJobQueue implements JobQueue
         );
     }
 
-    public function all(int $limit = 100): array
+    public function all(ExecutionContext $context, int $limit = 100): array
     {
         if ($limit < 1 || $limit > 500) {
             throw new InvalidArgumentException('The job list limit must be between 1 and 500.');
         }
 
-        $rows = $this->database->fetchAllAssociative(sprintf(
-            'SELECT j.*, f.failure_classification, f.exception_type, f.error_message, f.failed_at '
-            . 'FROM %s j LEFT JOIN %s f ON f.job_id = j.id '
-            . 'ORDER BY j.created_at DESC, j.id DESC LIMIT %d',
-            $this->tables->quoted('jobs'),
-            $this->tables->quoted('failed_jobs'),
-            $limit,
-        ));
+        $result = [];
+        $offset = 0;
+        $pageSize = min(500, max(50, $limit));
+        do {
+            $rows = $this->database->fetchAllAssociative(sprintf(
+                'SELECT j.*, f.failure_classification, f.exception_type, f.error_message, f.failed_at '
+                . 'FROM %s j LEFT JOIN %s f ON f.job_id = j.id '
+                . 'ORDER BY j.created_at DESC, j.id DESC LIMIT %d OFFSET %d',
+                $this->tables->quoted('jobs'),
+                $this->tables->quoted('failed_jobs'),
+                $pageSize,
+                $offset,
+            ));
+            foreach (array_map($this->normalize(...), $rows) as $row) {
+                if (is_string($row['id'] ?? null) && $this->authorization->decide(
+                    $context,
+                    Capability::fromString('automation.manage'),
+                    AuthorizationResource::item('job', $row['id']),
+                )->allowed) {
+                    $result[] = $row;
+                    if (count($result) === $limit) {
+                        return $result;
+                    }
+                }
+            }
+            $offset += count($rows);
+        } while (count($rows) === $pageSize);
 
-        return array_map($this->normalize(...), $rows);
+        return $result;
     }
 
-    public function retry(string $id): void
+    public function retry(ExecutionContext $context, string $id): void
     {
+        $this->authorize($context, AuthorizationResource::item('job', $id));
         $this->transactions->transactional(function () use ($id): void {
             $now = $this->clock->now();
             $affected = $this->database->executeStatement(sprintf(
@@ -324,8 +398,9 @@ final readonly class DoctrineJobQueue implements JobQueue
         });
     }
 
-    public function cancel(string $id): void
+    public function cancel(ExecutionContext $context, string $id): void
     {
+        $this->authorize($context, AuthorizationResource::item('job', $id));
         $affected = $this->database->executeStatement(sprintf(
             "UPDATE %s SET status = 'canceled', updated_at = ? WHERE id = ? AND status = 'pending'",
             $this->tables->quoted('jobs'),
@@ -471,5 +546,23 @@ final readonly class DoctrineJobQueue implements JobQueue
         if (preg_match('/^[A-Za-z0-9][A-Za-z0-9._:-]{2,127}$/D', $worker) !== 1) {
             throw new InvalidArgumentException('The worker identifier is invalid.');
         }
+    }
+
+    private function authorize(ExecutionContext $context, AuthorizationResource $resource): void
+    {
+        $this->authorization->assertAllowed(
+            $context,
+            Capability::fromString('automation.manage'),
+            $resource,
+        );
+    }
+
+    private function authorizeWorker(ExecutionContext $context, AuthorizationResource $resource): void
+    {
+        $this->authorization->assertAllowed(
+            $context,
+            Capability::fromString('system.worker.operate'),
+            $resource,
+        );
     }
 }

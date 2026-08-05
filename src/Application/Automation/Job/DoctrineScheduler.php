@@ -11,11 +11,16 @@ use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Doctrine\DBAL\Types\Types;
 use InvalidArgumentException;
 use JsonException;
+use Kumwe\CMS\Application\Authorization\AuthorizationGateway;
+use Kumwe\CMS\Application\Authorization\AuthorizationResource;
+use Kumwe\CMS\Application\Authorization\ExecutionContext;
+use Kumwe\CMS\Application\Authorization\ResourceSiteOwnershipWriter;
 use Kumwe\CMS\Application\Automation\CronExpression;
 use Kumwe\CMS\Application\Automation\ScheduleOccurrenceKey;
 use Kumwe\CMS\Application\Automation\Scheduler;
 use Kumwe\CMS\Infrastructure\Persistence\TableNames;
 use Kumwe\CMS\Infrastructure\Persistence\TransactionManager;
+use Kumwe\CMS\Identity\Domain\Capability;
 use Psr\Clock\ClockInterface;
 use Ramsey\Uuid\Uuid;
 use RuntimeException;
@@ -27,16 +32,23 @@ final readonly class DoctrineScheduler implements Scheduler, ScheduleRepository
         private TableNames $tables,
         private TransactionManager $transactions,
         private ClockInterface $clock,
+        private AuthorizationGateway $authorization,
+        private ResourceSiteOwnershipWriter $ownership,
     ) {
     }
 
-    public function dispatchDue(int $limit = 100): int
+    public function dispatchDue(ExecutionContext $context, int $limit = 100): int
     {
+        $this->authorization->assertAllowed(
+            $context,
+            Capability::fromString('system.scheduler.dispatch'),
+            AuthorizationResource::collection('schedule'),
+        );
         if ($limit < 1 || $limit > 1_000) {
             throw new InvalidArgumentException('The scheduler dispatch limit must be between 1 and 1000.');
         }
 
-        return $this->transactions->transactional(function () use ($limit): int {
+        return $this->transactions->transactional(function () use ($context, $limit): int {
             $rows = $this->database->fetchAllAssociative(sprintf(
                 'SELECT * FROM %s WHERE enabled = ? AND next_run_at <= ? '
                 . 'ORDER BY next_run_at, id LIMIT %d FOR UPDATE SKIP LOCKED',
@@ -45,7 +57,7 @@ final readonly class DoctrineScheduler implements Scheduler, ScheduleRepository
             ), [true, $this->clock->now()], [Types::BOOLEAN, Types::DATETIME_IMMUTABLE]);
 
             foreach ($rows as $row) {
-                $this->dispatch($row);
+                $this->dispatch($row, $context->site());
             }
 
             return count($rows);
@@ -53,6 +65,7 @@ final readonly class DoctrineScheduler implements Scheduler, ScheduleRepository
     }
 
     public function create(
+        ExecutionContext $context,
         string $name,
         string $cronExpression,
         string $timezone,
@@ -61,6 +74,7 @@ final readonly class DoctrineScheduler implements Scheduler, ScheduleRepository
         string $queue,
         DateTimeImmutable $firstRun,
     ): string {
+        $this->authorize($context, AuthorizationResource::collection('schedule'));
         $name = trim($name);
         if ($name === '' || mb_strlen($name) > 160) {
             throw new InvalidArgumentException('A schedule name must contain 1 to 160 characters.');
@@ -73,44 +87,69 @@ final readonly class DoctrineScheduler implements Scheduler, ScheduleRepository
         $this->assertQueue($queue);
         $id = Uuid::uuid7()->toString();
         $now = $this->clock->now();
-        $this->database->insert($this->tables->raw('schedules'), [
-            'id' => $id,
-            'name' => $name,
-            'cron_expression' => $cronExpression,
-            'timezone' => $timezone,
-            'queue' => $queue,
-            'job_type' => $jobType,
-            'job_schema_version' => 1,
-            'payload' => $payload,
-            'priority' => 0,
-            'maximum_attempts' => 5,
-            'enabled' => true,
-            'next_run_at' => $firstRun < $now ? $now : $firstRun,
-            'last_run_at' => null,
-            'version' => 1,
-            'created_at' => $now,
-            'updated_at' => $now,
-        ], [
-            'payload' => Types::JSON,
-            'enabled' => Types::BOOLEAN,
-            'next_run_at' => Types::DATETIME_IMMUTABLE,
-            'created_at' => Types::DATETIME_IMMUTABLE,
-            'updated_at' => Types::DATETIME_IMMUTABLE,
-        ]);
+        $this->transactions->transactional(function () use (
+            $context,
+            $id,
+            $name,
+            $cronExpression,
+            $timezone,
+            $queue,
+            $jobType,
+            $payload,
+            $firstRun,
+            $now,
+        ): void {
+            $this->database->insert($this->tables->raw('schedules'), [
+                'id' => $id,
+                'name' => $name,
+                'cron_expression' => $cronExpression,
+                'timezone' => $timezone,
+                'queue' => $queue,
+                'job_type' => $jobType,
+                'job_schema_version' => 1,
+                'payload' => $payload,
+                'priority' => 0,
+                'maximum_attempts' => 5,
+                'enabled' => true,
+                'next_run_at' => $firstRun < $now ? $now : $firstRun,
+                'last_run_at' => null,
+                'version' => 1,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ], [
+                'payload' => Types::JSON,
+                'enabled' => Types::BOOLEAN,
+                'next_run_at' => Types::DATETIME_IMMUTABLE,
+                'created_at' => Types::DATETIME_IMMUTABLE,
+                'updated_at' => Types::DATETIME_IMMUTABLE,
+            ]);
+            $this->ownership->record(AuthorizationResource::item('schedule', $id), $context->site());
+        });
 
         return $id;
     }
 
-    public function all(): array
+    public function all(ExecutionContext $context): array
     {
-        return array_map($this->normalize(...), $this->database->fetchAllAssociative(sprintf(
+        $rows = array_map($this->normalize(...), $this->database->fetchAllAssociative(sprintf(
             'SELECT * FROM %s ORDER BY name',
             $this->tables->quoted('schedules'),
         )));
+
+        return array_values(array_filter(
+            $rows,
+            fn (array $row): bool => is_string($row['id'] ?? null)
+                && $this->authorization->decide(
+                    $context,
+                    Capability::fromString('automation.manage'),
+                    AuthorizationResource::item('schedule', $row['id']),
+                )->allowed,
+        ));
     }
 
-    public function find(string $id): ?array
+    public function find(ExecutionContext $context, string $id): ?array
     {
+        $this->authorize($context, AuthorizationResource::item('schedule', $id));
         $row = $this->database->fetchAssociative(sprintf(
             'SELECT * FROM %s WHERE id = ?',
             $this->tables->quoted('schedules'),
@@ -119,8 +158,13 @@ final readonly class DoctrineScheduler implements Scheduler, ScheduleRepository
         return $row === false ? null : $this->normalize($row);
     }
 
-    public function setEnabled(string $id, int $expectedVersion, bool $enabled): void
-    {
+    public function setEnabled(
+        ExecutionContext $context,
+        string $id,
+        int $expectedVersion,
+        bool $enabled,
+    ): void {
+        $this->authorize($context, AuthorizationResource::item('schedule', $id));
         if ($expectedVersion < 1) {
             throw new InvalidArgumentException('The expected schedule version must be positive.');
         }
@@ -140,32 +184,37 @@ final readonly class DoctrineScheduler implements Scheduler, ScheduleRepository
         }
     }
 
-    public function delete(string $id, int $expectedVersion): void
+    public function delete(ExecutionContext $context, string $id, int $expectedVersion): void
     {
+        $this->authorize($context, AuthorizationResource::item('schedule', $id));
         if ($expectedVersion < 1) {
             throw new InvalidArgumentException('The expected schedule version must be positive.');
         }
 
-        $affected = $this->database->executeStatement(sprintf(
-            'DELETE FROM %s WHERE id = ? AND version = ?',
-            $this->tables->quoted('schedules'),
-        ), [$id, $expectedVersion], [Types::GUID, Types::INTEGER]);
+        $this->transactions->transactional(function () use ($context, $id, $expectedVersion): void {
+            $affected = $this->database->executeStatement(sprintf(
+                'DELETE FROM %s WHERE id = ? AND version = ?',
+                $this->tables->quoted('schedules'),
+            ), [$id, $expectedVersion], [Types::GUID, Types::INTEGER]);
 
-        if ($affected !== 1) {
-            throw new InvalidArgumentException('The schedule does not exist or its version changed.');
-        }
+            if ((string) $affected !== '1') {
+                throw new InvalidArgumentException('The schedule does not exist or its version changed.');
+            }
+            $this->ownership->remove(AuthorizationResource::item('schedule', $id), $context->site());
+        });
     }
 
     /** @param array<string, mixed> $row */
-    private function dispatch(array $row): void
+    private function dispatch(array $row, \Kumwe\CMS\Application\Authorization\SiteContext $site): void
     {
         $id = $this->requiredString($row, 'id');
         $scheduledFor = $this->dateTime($row['next_run_at'] ?? null);
         $now = $this->clock->now();
+        $jobId = Uuid::uuid7()->toString();
 
         try {
             $this->database->insert($this->tables->raw('jobs'), [
-                'id' => Uuid::uuid7()->toString(),
+                'id' => $jobId,
                 'queue' => $this->requiredString($row, 'queue'),
                 'job_type' => $this->requiredString($row, 'job_type'),
                 'schema_version' => $this->integer($row, 'job_schema_version'),
@@ -187,6 +236,7 @@ final readonly class DoctrineScheduler implements Scheduler, ScheduleRepository
                 'created_at' => Types::DATETIME_IMMUTABLE,
                 'updated_at' => Types::DATETIME_IMMUTABLE,
             ]);
+            $this->ownership->record(AuthorizationResource::item('job', $jobId), $site);
         } catch (UniqueConstraintViolationException) {
             // A concurrent scheduler already emitted this occurrence.
         }
@@ -274,5 +324,14 @@ final readonly class DoctrineScheduler implements Scheduler, ScheduleRepository
         if (preg_match('/^[A-Za-z][A-Za-z0-9._:-]{2,127}$/D', $type) !== 1) {
             throw new InvalidArgumentException('The scheduled job type is invalid.');
         }
+    }
+
+    private function authorize(ExecutionContext $context, AuthorizationResource $resource): void
+    {
+        $this->authorization->assertAllowed(
+            $context,
+            Capability::fromString('automation.manage'),
+            $resource,
+        );
     }
 }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Kumwe\CMS\Site\Infrastructure\Persistence;
 
+use Kumwe\CMS\Application\Authorization\ExecutionContext;
 use Kumwe\CMS\Infrastructure\Redis\RedisRuntime;
 use Kumwe\CMS\Site\Application\SiteSettings;
 
@@ -28,15 +29,20 @@ final readonly class CachedSiteSettings implements SiteSettings
         return $settings;
     }
 
-    public function update(string $actorId, string $siteName, string $homepageSlug): void
+    public function managed(ExecutionContext $context): array
     {
-        $this->settings->update($actorId, $siteName, $homepageSlug);
+        return $this->settings->managed($context);
+    }
+
+    public function update(ExecutionContext $context, string $siteName, string $homepageSlug): void
+    {
+        $this->settings->update($context, $siteName, $homepageSlug);
         $this->redis->forgetCache(self::CACHE_KEY);
     }
 
-    public function updateAll(string $actorId, array $settings): void
+    public function updateAll(ExecutionContext $context, array $settings): void
     {
-        $this->settings->updateAll($actorId, $settings);
+        $this->settings->updateAll($context, $settings);
         $this->redis->forgetCache(self::CACHE_KEY);
     }
 }

@@ -10,7 +10,7 @@ use Kumwe\CMS\Content\Domain\ContentRevision;
 interface ContentRepository
 {
     /** @return list<ContentRecord> */
-    public function all(int $limit = 100, bool $includeDeleted = false): array;
+    public function all(int $limit = 100, bool $includeDeleted = false, int $offset = 0): array;
 
     public function find(string $id, bool $includeDeleted = false): ?ContentRecord;
 

@@ -7,10 +7,14 @@ namespace Kumwe\CMS\Site\Infrastructure\Persistence;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Types\Types;
 use InvalidArgumentException;
+use Kumwe\CMS\Application\Authorization\AuthorizationGateway;
+use Kumwe\CMS\Application\Authorization\AuthorizationResource;
+use Kumwe\CMS\Application\Authorization\ExecutionContext;
 use Kumwe\CMS\Audit\Application\AuditRecorder;
 use Kumwe\CMS\Audit\Domain\AuditEvent;
 use Kumwe\CMS\Infrastructure\Persistence\TableNames;
 use Kumwe\CMS\Infrastructure\Persistence\TransactionManager;
+use Kumwe\CMS\Identity\Domain\Capability;
 use Kumwe\CMS\Site\Application\SiteSettings;
 use Psr\Clock\ClockInterface;
 use Ramsey\Uuid\Uuid;
@@ -24,6 +28,7 @@ final readonly class DoctrineSiteSettings implements SiteSettings
         private TransactionManager $transactions,
         private AuditRecorder $audit,
         private ClockInterface $clock,
+        private AuthorizationGateway $authorization,
     ) {
     }
 
@@ -55,10 +60,18 @@ final readonly class DoctrineSiteSettings implements SiteSettings
         return $settings;
     }
 
-    public function update(string $actorId, string $siteName, string $homepageSlug): void
+    public function managed(ExecutionContext $context): array
     {
+        $this->authorize($context);
+
+        return $this->current();
+    }
+
+    public function update(ExecutionContext $context, string $siteName, string $homepageSlug): void
+    {
+        $this->authorize($context);
         $current = $this->current();
-        $this->updateAll($actorId, [
+        $this->updateAll($context, [
             'site_name' => $siteName,
             'homepage_slug' => $homepageSlug,
             'default_locale' => $current['default_locale'],
@@ -68,8 +81,10 @@ final readonly class DoctrineSiteSettings implements SiteSettings
     }
 
     /** @param array<string, mixed> $settings */
-    public function updateAll(string $actorId, array $settings): void
+    public function updateAll(ExecutionContext $context, array $settings): void
     {
+        $this->authorize($context);
+        $actorId = $context->actorId();
         $normalized = $this->validate($settings);
 
         $this->transactions->transactional(function () use ($actorId, $normalized): void {
@@ -88,6 +103,15 @@ final readonly class DoctrineSiteSettings implements SiteSettings
                 ['changed_keys' => array_keys($normalized)],
             ));
         });
+    }
+
+    private function authorize(ExecutionContext $context): void
+    {
+        $this->authorization->assertAllowed(
+            $context,
+            Capability::fromString('settings.manage'),
+            AuthorizationResource::item('site', $context->site()->identifier()),
+        );
     }
 
     /**

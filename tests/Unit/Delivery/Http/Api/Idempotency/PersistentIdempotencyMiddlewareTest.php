@@ -6,13 +6,21 @@ namespace Kumwe\CMS\Tests\Unit\Delivery\Http\Api\Idempotency;
 
 use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
+use Kumwe\CMS\Application\Authorization\AuthenticationStrength;
+use Kumwe\CMS\Application\Authorization\ExecutionContext;
+use Kumwe\CMS\Application\Authorization\SiteContext;
+use Kumwe\CMS\Content\Application\ContentService;
+use Kumwe\CMS\Delivery\Http\Api\Idempotency\HttpMutationPreauthorizer;
 use Kumwe\CMS\Delivery\Http\Api\Idempotency\IdempotencyKey;
 use Kumwe\CMS\Delivery\Http\Api\Idempotency\PersistentIdempotencyMiddleware;
 use Kumwe\CMS\Delivery\Http\Api\Idempotency\RequireIdempotencyKeyMiddleware;
 use Kumwe\CMS\Delivery\Http\Api\ProblemDetailsResponseFactory;
 use Kumwe\CMS\Identity\Application\Authentication\AuthenticatedPrincipal;
+use Kumwe\CMS\Identity\Application\Administration\AccessControlRepository;
+use Kumwe\CMS\Identity\Application\Administration\TokenDelegationPreauthorizer;
 use Kumwe\CMS\Infrastructure\Persistence\TableNames;
 use Kumwe\CMS\Infrastructure\Persistence\TransactionManager;
+use Kumwe\CMS\Tests\Support\AuthorizationContext;
 use Laminas\Diactoros\Response;
 use Laminas\Diactoros\ServerRequestFactory;
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -101,6 +109,15 @@ final class PersistentIdempotencyMiddlewareTest extends TestCase
                     return $operation();
                 }
             },
+            new HttpMutationPreauthorizer(
+                AuthorizationContext::gateway(),
+                (new \ReflectionClass(ContentService::class))->newInstanceWithoutConstructor(),
+                $this->createStub(AccessControlRepository::class),
+                new TokenDelegationPreauthorizer(
+                    $this->createStub(AccessControlRepository::class),
+                    AuthorizationContext::gateway(),
+                ),
+            ),
         );
     }
 
@@ -115,6 +132,13 @@ final class PersistentIdempotencyMiddlewareTest extends TestCase
 
     private function request(): ServerRequestInterface
     {
+        $principal = AuthorizationContext::principal(['content.create'], self::SUBJECT);
+        $context = $principal->context(
+            SiteContext::default(),
+            AuthenticationStrength::BearerToken,
+            'idempotency-middleware-test',
+        );
+
         return (new ServerRequestFactory())
             ->createServerRequest('POST', 'https://kumwe.test/api/v1/content')
             ->withAttribute(
@@ -123,7 +147,8 @@ final class PersistentIdempotencyMiddlewareTest extends TestCase
             )
             ->withAttribute(
                 AuthenticatedPrincipal::REQUEST_ATTRIBUTE,
-                AuthenticatedPrincipal::fromStrings(self::SUBJECT, ['content.create']),
-            );
+                $principal,
+            )
+            ->withAttribute(ExecutionContext::REQUEST_ATTRIBUTE, $context);
     }
 }

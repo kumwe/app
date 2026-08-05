@@ -22,12 +22,12 @@ final readonly class AdministratorExtensionActionHandler implements RequestHandl
     {
         $form = AdministratorRequest::form($request);
         $identifier = AdministratorRequest::required($form, 'identifier');
-        $actor = AdministratorRequest::session($request)->principal->subject();
+        $context = AdministratorRequest::context($request);
 
         match (AdministratorRequest::required($form, 'action')) {
-            'activate' => $this->extensions->activate($identifier, $actor),
-            'disable' => $this->extensions->disable($identifier, $actor),
-            'uninstall' => $this->extensions->uninstall($identifier, $actor),
+            'activate' => $this->extensions->activate($identifier, $context),
+            'disable' => $this->extensions->disable($identifier, $context),
+            'uninstall' => $this->extensions->uninstall($identifier, $context),
             default => throw new InvalidArgumentException('The extension action is not supported.'),
         };
 

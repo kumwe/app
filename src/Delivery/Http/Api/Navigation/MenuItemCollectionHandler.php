@@ -25,13 +25,13 @@ final readonly class MenuItemCollectionHandler implements RequestHandlerInterfac
             if (strtoupper($request->getMethod()) === 'GET') {
                 return new JsonResponse(['items' => array_map(
                     static fn (MenuItemRecord $item): array => $item->toArray(),
-                    $this->navigation->items($menuId),
+                    $this->navigation->items(NavigationApiRequest::context($request), $menuId),
                 )], 200, ['Cache-Control' => 'no-store']);
             }
 
             $body = NavigationApiRequest::json($request);
             $item = $this->navigation->createItem(
-                NavigationApiRequest::principal($request)->subject(),
+                NavigationApiRequest::context($request),
                 $menuId,
                 NavigationApiRequest::nullableString($body, 'parent_id'),
                 NavigationApiRequest::string($body, 'title'),

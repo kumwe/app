@@ -21,7 +21,7 @@ final readonly class MenuResourceHandler implements RequestHandlerInterface
     {
         try {
             $id = NavigationApiRequest::route($request, 'id');
-            $menu = $this->navigation->menu($id);
+            $menu = $this->navigation->menu(NavigationApiRequest::context($request), $id);
             $method = strtoupper($request->getMethod());
             if ($method === 'GET') {
                 return $this->responder->record($menu);
@@ -29,14 +29,14 @@ final readonly class MenuResourceHandler implements RequestHandlerInterface
 
             $version = NavigationApiRequest::expectedVersion($request, $menu->version);
             if ($method === 'DELETE') {
-                $this->navigation->deleteMenu(NavigationApiRequest::principal($request)->subject(), $id, $version);
+                $this->navigation->deleteMenu(NavigationApiRequest::context($request), $id, $version);
 
                 return new EmptyResponse(204, ['Cache-Control' => 'no-store']);
             }
 
             $body = NavigationApiRequest::json($request);
             return $this->responder->record($this->navigation->updateMenu(
-                NavigationApiRequest::principal($request)->subject(),
+                NavigationApiRequest::context($request),
                 $id,
                 $version,
                 array_key_exists('handle', $body) ? NavigationApiRequest::string($body, 'handle') : $menu->handle,

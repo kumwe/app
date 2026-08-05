@@ -7,6 +7,7 @@ namespace Kumwe\CMS\Delivery\Http\Api\Site;
 use InvalidArgumentException;
 use JsonException;
 use Kumwe\CMS\Delivery\Http\Api\ProblemDetailsResponseFactory;
+use Kumwe\CMS\Delivery\Http\Api\ApiExecutionContext;
 use Kumwe\CMS\Identity\Application\Authentication\AuthenticatedPrincipal;
 use Kumwe\CMS\Site\Application\SiteSettings;
 use Laminas\Diactoros\Response\JsonResponse;
@@ -23,7 +24,11 @@ final readonly class SiteSettingsApiHandler implements RequestHandlerInterface
     public function handle(ServerRequestInterface $request): ResponseInterface
     {
         if (strtoupper($request->getMethod()) === 'GET') {
-            return new JsonResponse($this->settings->current(), 200, ['Cache-Control' => 'no-store']);
+            return new JsonResponse(
+                $this->settings->managed(ApiExecutionContext::fromRequest($request)),
+                200,
+                ['Cache-Control' => 'no-store'],
+            );
         }
 
         try {
@@ -36,9 +41,13 @@ final readonly class SiteSettingsApiHandler implements RequestHandlerInterface
             if (!$principal instanceof AuthenticatedPrincipal) {
                 throw new \LogicException('Settings mutations require an authenticated principal.');
             }
-            $this->settings->updateAll($principal->subject(), $body);
+            $this->settings->updateAll(ApiExecutionContext::fromRequest($request), $body);
 
-            return new JsonResponse($this->settings->current(), 200, ['Cache-Control' => 'no-store']);
+            return new JsonResponse(
+                $this->settings->managed(ApiExecutionContext::fromRequest($request)),
+                200,
+                ['Cache-Control' => 'no-store'],
+            );
         } catch (JsonException | InvalidArgumentException $exception) {
             return $this->problems->create(
                 422,

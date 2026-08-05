@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace Kumwe\CMS\Extension\Runtime;
 
 use InvalidArgumentException;
-use Joomla\DI\Container;
 use JsonException;
 use Kumwe\CMS\Extension\Application\ExtensionServiceProvider;
+use Kumwe\CMS\Extension\Domain\ExtensionIdentifier;
 use RuntimeException;
 
 final readonly class ExtensionRuntimeLoader
@@ -16,7 +16,8 @@ final readonly class ExtensionRuntimeLoader
     {
     }
 
-    public function load(Container $container): ActiveExtensionSet
+    /** @param array<string, object> $allowedServices */
+    public function load(array $allowedServices): ActiveExtensionSet
     {
         $active = new ActiveExtensionSet();
 
@@ -40,18 +41,22 @@ final readonly class ExtensionRuntimeLoader
             }
 
             $providerClass = $extension['provider'] ?? null;
+            $identifier = $extension['identifier'] ?? null;
             $relativeRoot = $extension['root'] ?? null;
             $autoload = $extension['autoload'] ?? null;
             $type = $extension['type'] ?? null;
 
             if (
                 !is_string($providerClass)
+                || !is_string($identifier)
                 || !is_string($relativeRoot)
                 || !is_array($autoload)
                 || !is_string($type)
             ) {
                 throw new RuntimeException('A compiled extension entry is incomplete.');
             }
+
+            $identifier = ExtensionIdentifier::fromString($identifier)->value();
 
             $root = $this->safeRoot($relativeRoot);
             $this->registerAutoload($root, $autoload);
@@ -70,14 +75,15 @@ final readonly class ExtensionRuntimeLoader
                 ));
             }
 
+            $container = new RestrictedExtensionContainer($identifier, $allowedServices);
             $provider->register($container);
             $templatePath = $type === 'template' && is_dir($root . '/templates')
                 ? $root . '/templates'
                 : null;
-            $active->add($provider, $templatePath);
+            $active->add($identifier, $provider, $container, $templatePath);
         }
 
-        $active->boot($container);
+        $active->boot();
 
         return $active;
     }

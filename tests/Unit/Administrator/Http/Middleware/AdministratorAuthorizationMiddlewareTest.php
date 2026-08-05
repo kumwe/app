@@ -19,6 +19,7 @@ use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
+use Kumwe\CMS\Tests\Support\AuthorizationContext;
 
 #[CoversClass(AdministratorAuthorizationMiddleware::class)]
 #[UsesClass(AuthenticatedPrincipal::class)]
@@ -39,10 +40,10 @@ final class AdministratorAuthorizationMiddlewareTest extends TestCase
 
     public function testAllowsAdministratorWithEveryRequiredCapability(): void
     {
-        $principal = AuthenticatedPrincipal::fromStrings(self::SUBJECT, [
+        $principal = AuthorizationContext::principal([
             'navigation.manage',
             'administrator.access',
-        ]);
+        ], self::SUBJECT);
         $response = (new AdministratorAuthorizationMiddleware())->process(
             $this->request(['administrator.access', 'navigation.manage'], $principal),
             $this->successfulHandler(),
@@ -53,7 +54,7 @@ final class AdministratorAuthorizationMiddlewareTest extends TestCase
 
     public function testDeniesAdministratorMissingAnExactCapability(): void
     {
-        $principal = AuthenticatedPrincipal::fromStrings(self::SUBJECT, ['administrator.access']);
+        $principal = AuthorizationContext::principal(['administrator.access'], self::SUBJECT);
         $response = (new AdministratorAuthorizationMiddleware())->process(
             $this->request(['navigation.manage'], $principal),
             $this->neverHandler(),
@@ -71,7 +72,7 @@ final class AdministratorAuthorizationMiddlewareTest extends TestCase
 
     public function testFailsClosedWhenAdministratorRouteHasNoCapabilityPolicy(): void
     {
-        $principal = AuthenticatedPrincipal::fromStrings(self::SUBJECT, ['administrator.access']);
+        $principal = AuthorizationContext::principal(['administrator.access'], self::SUBJECT);
         $this->expectException(LogicException::class);
         $this->expectExceptionMessage('must declare required capabilities');
 

@@ -6,6 +6,11 @@ namespace Kumwe\CMS\Tests\Unit\Identity\Application\Administration;
 
 use DateTimeImmutable;
 use InvalidArgumentException;
+use Kumwe\CMS\Application\Authorization\AuthorizationDenied;
+use Kumwe\CMS\Application\Authorization\AuthorizationResource;
+use Kumwe\CMS\Application\Authorization\ExecutionContext;
+use Kumwe\CMS\Application\Authorization\ResourceSiteOwnershipWriter;
+use Kumwe\CMS\Application\Authorization\SiteContext;
 use Kumwe\CMS\Audit\Application\AuditRecorder;
 use Kumwe\CMS\Audit\Domain\AuditEvent;
 use Kumwe\CMS\Identity\Application\Administration\AccessControlRepository;
@@ -15,6 +20,7 @@ use Kumwe\CMS\Identity\Domain\Capability;
 use Kumwe\CMS\Identity\Domain\EmailAddress;
 use Kumwe\CMS\Identity\Domain\UserStatus;
 use Kumwe\CMS\Infrastructure\Persistence\TransactionManager;
+use Kumwe\CMS\Tests\Support\AuthorizationContext;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
@@ -53,7 +59,7 @@ final class AccessControlServiceTest extends TestCase
         ));
 
         $id = $this->service($repository, $passwords, $audit)->createUser(
-            self::ACTOR,
+            $this->context(),
             ' Editor@Example.Test ',
             ' Site Editor ',
             'correct horse battery staple',
@@ -74,7 +80,7 @@ final class AccessControlServiceTest extends TestCase
         $this->expectExceptionMessage('your own administrator account');
 
         $this->service($repository)->updateUser(
-            self::ACTOR,
+            $this->context(),
             self::ACTOR,
             'administrator@example.test',
             'Administrator',
@@ -90,26 +96,90 @@ final class AccessControlServiceTest extends TestCase
             self::isType('string'),
             self::ROLE,
             'content.update',
-            'content_type',
-            'news',
+            'content',
+            '018f22e2-7c8b-7ab0-8f3a-88e8026bb309',
             self::ACTOR,
             self::equalTo(new DateTimeImmutable('2026-08-04T10:00:00+00:00')),
         );
         $audit = $this->createMock(AuditRecorder::class);
         $audit->expects(self::once())->method('record')->with(self::callback(
             static fn (AuditEvent $event): bool => $event->action() === 'capability.grant'
-                && $event->metadata()['scope_identifier'] === 'news',
+                && $event->metadata()['scope_identifier'] === '018f22e2-7c8b-7ab0-8f3a-88e8026bb309',
         ));
 
         $grantId = $this->service($repository, audit: $audit)->grant(
-            self::ACTOR,
+            $this->context(['users.manage', 'content.update']),
             self::ROLE,
             ' Content.Update ',
-            'content_type',
-            ' news ',
+            'content',
+            ' 018f22e2-7c8b-7ab0-8f3a-88e8026bb309 ',
         );
 
         self::assertNotSame('', $grantId);
+    }
+
+    public function testCannotAssignRoleWhoseGrantsExceedActorsEffectiveAuthority(): void
+    {
+        $repository = $this->createMock(AccessControlRepository::class);
+        $repository->expects(self::once())->method('roleGrants')->with(self::ROLE)->willReturn([[
+            'capability' => 'content.publish',
+            'scope_type' => 'global',
+            'scope_identifier' => null,
+        ]]);
+        $repository->expects(self::never())->method('assignRole');
+
+        $this->expectException(AuthorizationDenied::class);
+
+        $this->service($repository)->assignRole($this->context(), self::USER, self::ROLE);
+    }
+
+    public function testCannotGrantCapabilityBroaderThanActorsEffectiveAuthority(): void
+    {
+        $repository = $this->createMock(AccessControlRepository::class);
+        $repository->expects(self::never())->method('grant');
+
+        $this->expectException(AuthorizationDenied::class);
+
+        $this->service($repository)->grant(
+            AuthorizationContext::principalFromGrantRows([
+                ['capability' => 'users.manage', 'scope_type' => 'global', 'scope_identifier' => null],
+                [
+                    'capability' => 'content.update',
+                    'scope_type' => 'content',
+                    'scope_identifier' => '018f22e2-7c8b-7ab0-8f3a-88e8026bb309',
+                ],
+            ], self::ACTOR)->context(
+                \Kumwe\CMS\Application\Authorization\SiteContext::default(),
+                \Kumwe\CMS\Application\Authorization\AuthenticationStrength::BearerToken,
+                'delegation-ceiling-test',
+            ),
+            self::ROLE,
+            'content.update',
+            'global',
+        );
+    }
+
+    public function testSiteScopedUsersManagerCannotSelfEscalateThroughGlobalRoleGrant(): void
+    {
+        $repository = $this->createMock(AccessControlRepository::class);
+        $repository->expects(self::never())->method('grant');
+        $context = AuthorizationContext::principalFromGrantRows([[
+            'capability' => 'users.manage',
+            'scope_type' => 'site',
+            'scope_identifier' => 'default',
+        ]], self::ACTOR)->context(
+            \Kumwe\CMS\Application\Authorization\SiteContext::default(),
+            \Kumwe\CMS\Application\Authorization\AuthenticationStrength::BearerToken,
+            'site-identity-escalation-test',
+        );
+
+        $this->expectException(AuthorizationDenied::class);
+        $this->service($repository)->grant(
+            $context,
+            self::ROLE,
+            'users.manage',
+            'global',
+        );
     }
 
     public function testRejectsMalformedGlobalGrantBeforePersistence(): void
@@ -120,7 +190,7 @@ final class AccessControlServiceTest extends TestCase
         $this->expectExceptionMessage('Global grants cannot have a scope identifier');
 
         $this->service($repository)->grant(
-            self::ACTOR,
+            $this->context(),
             self::ROLE,
             'content.update',
             'global',
@@ -136,7 +206,7 @@ final class AccessControlServiceTest extends TestCase
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('own administrator role');
 
-        $this->service($repository)->revokeRole(self::ACTOR, self::ACTOR, self::ROLE);
+        $this->service($repository)->revokeRole($this->context(), self::ACTOR, self::ROLE);
     }
 
     public function testRevokesTokenInsideAuditedTransaction(): void
@@ -153,15 +223,59 @@ final class AccessControlServiceTest extends TestCase
         ));
 
         $this->service($repository, audit: $audit)->revokeToken(
-            self::ACTOR,
+            $this->context(),
             '018f22e2-7c8b-7ab0-8f3a-88e8026bb305',
         );
+    }
+
+    public function testRevokingGrantAlsoRemovesItsInstallationOwnership(): void
+    {
+        $grantId = '018f22e2-7c8b-7ab0-8f3a-88e8026bb306';
+        $repository = $this->createMock(AccessControlRepository::class);
+        $repository->expects(self::once())->method('grantRecord')->with($grantId)->willReturn([
+            'role_id' => self::ROLE,
+            'capability' => 'content.update',
+            'scope_type' => 'global',
+            'scope_identifier' => null,
+        ]);
+        $repository->expects(self::once())->method('revokeGrant')->with($grantId);
+        $ownership = $this->createMock(ResourceSiteOwnershipWriter::class);
+        $ownership->expects(self::once())->method('remove')->with(
+            self::callback(static fn (AuthorizationResource $resource): bool => $resource->type() === 'grant'
+                && $resource->identifier() === $grantId),
+            self::callback(static fn (SiteContext $site): bool => $site->identifier() === SiteContext::DEFAULT),
+        );
+
+        $this->service(
+            $repository,
+            audit: $this->createStub(AuditRecorder::class),
+            ownership: $ownership,
+        )->revokeGrant($this->context(), $grantId);
+    }
+
+    public function testSiteScopedGrantCannotReadInstallationGlobalUsers(): void
+    {
+        $repository = $this->createMock(AccessControlRepository::class);
+        $repository->expects(self::never())->method('users');
+        $context = AuthorizationContext::principalFromGrantRows([[
+            'capability' => 'users.manage',
+            'scope_type' => 'site',
+            'scope_identifier' => 'default',
+        ]], self::ACTOR)->context(
+            \Kumwe\CMS\Application\Authorization\SiteContext::default(),
+            \Kumwe\CMS\Application\Authorization\AuthenticationStrength::BearerToken,
+            'access-page-test',
+        );
+
+        $this->expectException(AuthorizationDenied::class);
+        $this->service($repository)->users($context);
     }
 
     private function service(
         AccessControlRepository $repository,
         ?PasswordHasher $passwords = null,
         ?AuditRecorder $audit = null,
+        ?ResourceSiteOwnershipWriter $ownership = null,
     ): AccessControlService {
         $transactions = $this->createStub(TransactionManager::class);
         $transactions->method('transactional')->willReturnCallback(
@@ -176,6 +290,14 @@ final class AccessControlServiceTest extends TestCase
             $transactions,
             $audit ?? $this->createStub(AuditRecorder::class),
             $clock,
+            AuthorizationContext::gateway(),
+            $ownership ?? AuthorizationContext::ownershipWriter(),
         );
+    }
+
+    /** @param list<string> $capabilities */
+    private function context(array $capabilities = ['users.manage']): ExecutionContext
+    {
+        return AuthorizationContext::human($capabilities, self::ACTOR);
     }
 }

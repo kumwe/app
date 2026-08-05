@@ -30,9 +30,9 @@ final readonly class ManageSettingsCommand implements Command
         try {
             $action = array_shift($arguments) ?? 'get';
             $options = CommandInput::options($arguments);
-            $principal = $this->authorization->require($options, 'settings.manage');
+            $context = $this->authorization->require($options, 'settings.manage');
             if ($action === 'update') {
-                $this->settings->updateAll($principal->subject(), [
+                $this->settings->updateAll($context, [
                     'site_name' => CommandInput::required($options, 'site-name'),
                     'homepage_slug' => CommandInput::required($options, 'homepage-slug'),
                     'default_locale' => CommandInput::required($options, 'locale'),
@@ -42,7 +42,7 @@ final readonly class ManageSettingsCommand implements Command
             } elseif ($action !== 'get') {
                 throw new \InvalidArgumentException('Settings action must be get or update.');
             }
-            $output->line(CommandInput::render($this->settings->current()));
+            $output->line(CommandInput::render($this->settings->managed($context)));
             return 0;
         } catch (Throwable $exception) {
             $output->error($exception->getMessage());

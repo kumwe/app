@@ -12,7 +12,7 @@ use Throwable;
 
 final readonly class InstallExtensionCommand implements Command
 {
-    public function __construct(private ExtensionManager $extensions)
+    public function __construct(private ExtensionManager $extensions, private ConsoleAuthorizer $authorization)
     {
     }
 
@@ -39,9 +39,10 @@ final readonly class InstallExtensionCommand implements Command
             }
 
             $options = $this->options(array_slice($arguments, 1));
+            $context = $this->authorization->require($options, 'extensions.manage');
             $installed = $this->extensions->install(
                 $archive,
-                'system:cli',
+                $context,
                 $options['key-id'] ?? null,
                 $options['signature'] ?? null,
             );

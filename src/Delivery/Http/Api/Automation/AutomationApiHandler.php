@@ -15,6 +15,7 @@ use Kumwe\CMS\Delivery\Http\Api\Concurrency\EntityTag;
 use Kumwe\CMS\Delivery\Http\Api\Concurrency\IfMatch;
 use Kumwe\CMS\Delivery\Http\Api\Concurrency\RequireIfMatchMiddleware;
 use Kumwe\CMS\Delivery\Http\Api\ProblemDetailsResponseFactory;
+use Kumwe\CMS\Delivery\Http\Api\ApiExecutionContext;
 use Kumwe\CMS\Identity\Application\Authentication\AuthenticatedPrincipal;
 use Laminas\Diactoros\Response\EmptyResponse;
 use Laminas\Diactoros\Response\JsonResponse;
@@ -36,15 +37,18 @@ final readonly class AutomationApiHandler implements RequestHandlerInterface
         try {
             return match ($this->operation($request)) {
                 'schedules.list' => new JsonResponse([
-                    'items' => $this->automation->schedules(),
-                    'job_types' => $this->automation->jobTypes(),
+                    'items' => $this->automation->schedules(ApiExecutionContext::fromRequest($request)),
+                    'job_types' => $this->automation->jobTypes(ApiExecutionContext::fromRequest($request)),
                 ], 200, ['Cache-Control' => 'no-store']),
                 'schedules.read' => $this->schedule($request),
                 'schedules.create' => $this->createSchedule($request),
                 'schedules.update' => $this->updateSchedule($request),
                 'schedules.delete' => $this->deleteSchedule($request),
                 'jobs.list' => new JsonResponse([
-                    'items' => $this->automation->jobs($this->limit($request)),
+                    'items' => $this->automation->jobs(
+                        ApiExecutionContext::fromRequest($request),
+                        $this->limit($request),
+                    ),
                 ], 200, ['Cache-Control' => 'no-store']),
                 'jobs.retry' => $this->jobAction($request, true),
                 'jobs.cancel' => $this->jobAction($request, false),
@@ -75,7 +79,10 @@ final readonly class AutomationApiHandler implements RequestHandlerInterface
 
     private function schedule(ServerRequestInterface $request): ResponseInterface
     {
-        $schedule = $this->automation->schedule($this->routeId($request));
+        $schedule = $this->automation->schedule(
+            ApiExecutionContext::fromRequest($request),
+            $this->routeId($request),
+        );
 
         return new JsonResponse($schedule, 200, [
             'ETag' => (string) EntityTag::fromVersion($this->version($schedule)),
@@ -94,7 +101,7 @@ final readonly class AutomationApiHandler implements RequestHandlerInterface
 
         /** @var array<string, mixed> $payload */
         $id = $this->automation->createSchedule(
-            $this->principal($request)->subject(),
+            ApiExecutionContext::fromRequest($request),
             $this->string($body, 'name'),
             $this->string($body, 'cron_expression'),
             $this->string($body, 'timezone'),
@@ -113,7 +120,7 @@ final readonly class AutomationApiHandler implements RequestHandlerInterface
     private function updateSchedule(ServerRequestInterface $request): ResponseInterface
     {
         $id = $this->routeId($request);
-        $schedule = $this->automation->schedule($id);
+        $schedule = $this->automation->schedule(ApiExecutionContext::fromRequest($request), $id);
         $this->assertExpectedVersion($request, $this->version($schedule));
         $body = $this->json($request);
         $enabled = $body['enabled'] ?? null;
@@ -123,7 +130,7 @@ final readonly class AutomationApiHandler implements RequestHandlerInterface
         }
 
         $this->automation->setScheduleEnabled(
-            $this->principal($request)->subject(),
+            ApiExecutionContext::fromRequest($request),
             $id,
             $this->version($schedule),
             $enabled,
@@ -135,10 +142,10 @@ final readonly class AutomationApiHandler implements RequestHandlerInterface
     private function deleteSchedule(ServerRequestInterface $request): ResponseInterface
     {
         $id = $this->routeId($request);
-        $schedule = $this->automation->schedule($id);
+        $schedule = $this->automation->schedule(ApiExecutionContext::fromRequest($request), $id);
         $version = $this->version($schedule);
         $this->assertExpectedVersion($request, $version);
-        $this->automation->deleteSchedule($this->principal($request)->subject(), $id, $version);
+        $this->automation->deleteSchedule(ApiExecutionContext::fromRequest($request), $id, $version);
 
         return new EmptyResponse(204, ['Cache-Control' => 'no-store']);
     }
@@ -146,12 +153,12 @@ final readonly class AutomationApiHandler implements RequestHandlerInterface
     private function jobAction(ServerRequestInterface $request, bool $retry): ResponseInterface
     {
         $id = $this->routeId($request);
-        $actorId = $this->principal($request)->subject();
+        $context = ApiExecutionContext::fromRequest($request);
 
         if ($retry) {
-            $this->automation->retryJob($actorId, $id);
+            $this->automation->retryJob($context, $id);
         } else {
-            $this->automation->cancelJob($actorId, $id);
+            $this->automation->cancelJob($context, $id);
         }
 
         return new EmptyResponse(204, ['Cache-Control' => 'no-store']);

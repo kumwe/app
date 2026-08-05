@@ -22,7 +22,7 @@ final readonly class AdministratorUpdateContentHandler implements RequestHandler
         $form = AdministratorRequest::form($request);
         $id = AdministratorRequest::routeId($request);
         $this->content->update(
-            AdministratorRequest::session($request)->principal->subject(),
+            AdministratorRequest::context($request),
             $id,
             AdministratorRequest::positiveInteger($form, 'version'),
             AdministratorRequest::required($form, 'title'),

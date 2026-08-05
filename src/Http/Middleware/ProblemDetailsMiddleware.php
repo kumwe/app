@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Kumwe\CMS\Http\Middleware;
 
+use Kumwe\CMS\Application\Authorization\AuthorizationDenied;
 use Laminas\Diactoros\Response\JsonResponse;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -23,6 +24,15 @@ final readonly class ProblemDetailsMiddleware implements MiddlewareInterface
         try {
             return $handler->handle($request);
         } catch (Throwable $exception) {
+            if ($exception instanceof AuthorizationDenied) {
+                return new JsonResponse([
+                    'type' => 'urn:kumwe:problem:authorization-denied',
+                    'title' => 'Forbidden',
+                    'status' => 403,
+                    'detail' => 'The authenticated identity is not authorized for this operation.',
+                ], 403, ['Content-Type' => 'application/problem+json', 'Cache-Control' => 'no-store']);
+            }
+
             $requestAttribute = $request->getAttribute(RequestIdMiddleware::ATTRIBUTE, 'unknown');
             $requestId = is_string($requestAttribute) ? $requestAttribute : 'unknown';
             $this->logger->error('Unhandled request exception.', [

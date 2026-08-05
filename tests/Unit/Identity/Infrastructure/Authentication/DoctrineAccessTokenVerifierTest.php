@@ -7,14 +7,22 @@ namespace Kumwe\CMS\Tests\Unit\Identity\Infrastructure\Authentication;
 use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
 use Kumwe\CMS\Identity\Application\Authentication\AuthenticatedPrincipal;
+use Kumwe\CMS\Identity\Application\Authentication\PrincipalGrant;
 use Kumwe\CMS\Identity\Domain\Capability;
+use Kumwe\CMS\Identity\Domain\GrantScope;
 use Kumwe\CMS\Identity\Infrastructure\Authentication\DoctrineAccessTokenVerifier;
 use Kumwe\CMS\Infrastructure\Persistence\TableNames;
 use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
 use Psr\Clock\ClockInterface;
+use Kumwe\CMS\Tests\Support\AuthorizationContext;
 
 #[CoversClass(DoctrineAccessTokenVerifier::class)]
+#[UsesClass(AuthenticatedPrincipal::class)]
+#[UsesClass(Capability::class)]
+#[UsesClass(GrantScope::class)]
+#[UsesClass(PrincipalGrant::class)]
 final class DoctrineAccessTokenVerifierTest extends TestCase
 {
     private const string TOKEN = 'abcdefghijklmnopqrstuvwxyz0123456789ABCD';
@@ -29,6 +37,11 @@ final class DoctrineAccessTokenVerifierTest extends TestCase
             'subject_id' => self::SUBJECT,
             'capabilities' => '["content.read","content.update"]',
             'last_used_at' => null,
+            'security_epoch' => 1,
+        ]);
+        $database->expects(self::once())->method('fetchAllAssociative')->willReturn([
+            ['capability' => 'content.read', 'scope_type' => 'global', 'scope_identifier' => null],
+            ['capability' => 'content.update', 'scope_type' => 'content', 'scope_identifier' => 'news'],
         ]);
         $database->expects(self::once())->method('executeStatement');
 
@@ -36,11 +49,20 @@ final class DoctrineAccessTokenVerifierTest extends TestCase
             $database,
             new TableNames($database, 'kumwe_'),
             $this->clock(),
+            AuthorizationContext::provenance(),
         ))
             ->verify(self::TOKEN);
 
         self::assertInstanceOf(AuthenticatedPrincipal::class, $principal);
         self::assertTrue($principal->hasCapability(Capability::fromString('content.read')));
+        self::assertTrue($principal->allows(
+            Capability::fromString('content.update'),
+            [GrantScope::named('content', 'news')],
+        ));
+        self::assertFalse($principal->allows(
+            Capability::fromString('content.update'),
+            [GrantScope::named('content', 'another')],
+        ));
     }
 
     public function testRejectsMalformedTokenBeforeDatabaseLookup(): void
@@ -52,6 +74,7 @@ final class DoctrineAccessTokenVerifierTest extends TestCase
             $database,
             new TableNames($database, 'kumwe_'),
             $this->clock(),
+            AuthorizationContext::provenance(),
         ))
             ->verify('short'));
     }

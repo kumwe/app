@@ -12,6 +12,11 @@ use Joomla\Event\DispatcherInterface;
 use Joomla\Event\Event;
 use Kumwe\CMS\Audit\Application\AuditRecorder;
 use Kumwe\CMS\Audit\Domain\AuditEvent;
+use Kumwe\CMS\Application\Authorization\AuthorizationGateway;
+use Kumwe\CMS\Application\Authorization\AuthorizationResource;
+use Kumwe\CMS\Application\Authorization\ExecutionContext;
+use Kumwe\CMS\Application\Authorization\ResourceSiteOwnershipWriter;
+use Kumwe\CMS\Application\Authorization\SiteContext;
 use Kumwe\CMS\Extension\Application\ExtensionManager;
 use Kumwe\CMS\Extension\Application\Migration\ExtensionMigration;
 use Kumwe\CMS\Extension\Application\Migration\ExtensionMigrationRunner;
@@ -28,6 +33,7 @@ use Kumwe\CMS\Extension\Infrastructure\Trust\SodiumEd25519Verifier;
 use Kumwe\CMS\Extension\Runtime\ExtensionRuntimeMapCompiler;
 use Kumwe\CMS\Infrastructure\Persistence\TransactionManager;
 use Kumwe\CMS\Infrastructure\Persistence\TableNames;
+use Kumwe\CMS\Identity\Domain\Capability;
 use Psr\Clock\ClockInterface;
 use Ramsey\Uuid\Uuid;
 use RuntimeException;
@@ -50,24 +56,33 @@ final readonly class DoctrineExtensionManager implements ExtensionManager
         private ClockInterface $clock,
         private DispatcherInterface $events,
         private bool $allowUnsignedLocalPackages,
+        private AuthorizationGateway $authorization,
+        private ResourceSiteOwnershipWriter $ownership,
     ) {
     }
 
-    public function installed(): array
+    public function installed(ExecutionContext $context): array
     {
-        return $this->database->fetchAllAssociative(sprintf(
+        return array_values(array_filter($this->database->fetchAllAssociative(sprintf(
             'SELECT identifier, extension_type, installed_version, status, service_provider, registry_version, '
             . 'runtime_path, installed_at, updated_at FROM %s ORDER BY identifier',
             $this->tables->quoted('extensions'),
-        ));
+        )), fn (array $row): bool => is_string($row['identifier'] ?? null)
+            && $this->authorization->decide(
+                $context,
+                Capability::fromString('extensions.manage'),
+                AuthorizationResource::item('extension', $row['identifier']),
+            )->allowed));
     }
 
     public function install(
         string $archiveFile,
-        string $actorId,
+        ExecutionContext $context,
         ?string $signingKeyId = null,
         ?string $base64Signature = null,
     ): array {
+        $this->authorize($context, AuthorizationResource::collection('extension'));
+        $actorId = $context->actorId();
         $resolvedArchive = realpath($archiveFile);
 
         if (!is_string($resolvedArchive) || !is_file($resolvedArchive) || is_link($resolvedArchive)) {
@@ -178,8 +193,10 @@ final readonly class DoctrineExtensionManager implements ExtensionManager
         }
     }
 
-    public function activate(string $identifier, string $actorId): array
+    public function activate(string $identifier, ExecutionContext $context): array
     {
+        $this->authorize($context, AuthorizationResource::item('extension', $identifier));
+        $actorId = $context->actorId();
         ExtensionIdentifier::fromString($identifier);
         $manifest = $this->installedManifest($identifier);
         $this->dispatch('onKumweExtensionBeforeActivate', $manifest, $actorId);
@@ -189,8 +206,10 @@ final readonly class DoctrineExtensionManager implements ExtensionManager
         return $result;
     }
 
-    public function disable(string $identifier, string $actorId): array
+    public function disable(string $identifier, ExecutionContext $context): array
     {
+        $this->authorize($context, AuthorizationResource::item('extension', $identifier));
+        $actorId = $context->actorId();
         ExtensionIdentifier::fromString($identifier);
 
         $manifest = $this->installedManifest($identifier);
@@ -201,8 +220,10 @@ final readonly class DoctrineExtensionManager implements ExtensionManager
         return $result;
     }
 
-    public function uninstall(string $identifier, string $actorId): void
+    public function uninstall(string $identifier, ExecutionContext $context): void
     {
+        $this->authorize($context, AuthorizationResource::item('extension', $identifier));
+        $actorId = $context->actorId();
         ExtensionIdentifier::fromString($identifier);
         $installed = $this->findInstalled($identifier);
         $manifest = $this->installedManifest($identifier);
@@ -223,7 +244,17 @@ final readonly class DoctrineExtensionManager implements ExtensionManager
 
         try {
             $this->transactions->transactional(function () use ($identifier, $actorId): void {
-                $this->database->delete($this->tables->raw('extensions'), ['identifier' => $identifier]);
+                $affected = $this->database->delete(
+                    $this->tables->raw('extensions'),
+                    ['identifier' => $identifier],
+                );
+                if ((string) $affected !== '1') {
+                    throw new InvalidArgumentException('The requested extension is not installed.');
+                }
+                $this->ownership->remove(
+                    AuthorizationResource::item('extension', $identifier),
+                    SiteContext::default(),
+                );
                 $this->compiler->rebuild();
                 $this->audit($actorId, 'extension.uninstall', $identifier);
             });
@@ -273,6 +304,15 @@ final readonly class DoctrineExtensionManager implements ExtensionManager
         return $result;
     }
 
+    private function authorize(ExecutionContext $context, AuthorizationResource $resource): void
+    {
+        $this->authorization->assertAllowed(
+            $context,
+            Capability::fromString('extensions.manage'),
+            $resource,
+        );
+    }
+
     private function persistRelease(
         ExtensionManifest $manifest,
         string $manifestJson,
@@ -304,6 +344,10 @@ final readonly class DoctrineExtensionManager implements ExtensionManager
                 'installed_at' => $now,
                 'updated_at' => $now,
             ], ['installed_at' => Types::DATETIME_IMMUTABLE, 'updated_at' => Types::DATETIME_IMMUTABLE]);
+            $this->ownership->record(
+                AuthorizationResource::item('extension', $identifier),
+                SiteContext::default(),
+            );
         } else {
             $installedVersion = SemanticVersion::fromString($this->requiredString($existing, 'installed_version'));
 

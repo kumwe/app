@@ -9,6 +9,9 @@ use Kumwe\CMS\Application\Automation\AutomationManagementService;
 use Kumwe\CMS\Application\Automation\Job\ScheduleRepository;
 use Kumwe\CMS\Application\Automation\JobHandlerRegistry;
 use Kumwe\CMS\Application\Automation\JobQueue;
+use Kumwe\CMS\Application\Authorization\AuthenticationStrength;
+use Kumwe\CMS\Application\Authorization\ExecutionContext;
+use Kumwe\CMS\Application\Authorization\SiteContext;
 use Kumwe\CMS\Audit\Application\AuditRecorder;
 use Kumwe\CMS\Delivery\Http\Api\Automation\AutomationApiHandler;
 use Kumwe\CMS\Delivery\Http\Api\Concurrency\IfMatch;
@@ -21,6 +24,7 @@ use Laminas\Diactoros\StreamFactory;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Psr\Clock\ClockInterface;
+use Kumwe\CMS\Tests\Support\AuthorizationContext;
 
 #[CoversClass(AutomationApiHandler::class)]
 final class AutomationApiHandlerTest extends TestCase
@@ -31,10 +35,15 @@ final class AutomationApiHandlerTest extends TestCase
     public function testReadsScheduleWithStrongVersionEtag(): void
     {
         $schedules = $this->createStub(ScheduleRepository::class);
-        $schedules->method('find')->with(self::SCHEDULE)->willReturn($this->schedule());
+        $schedules->method('find')->with(
+            self::isInstanceOf(ExecutionContext::class),
+            self::SCHEDULE,
+        )->willReturn($this->schedule());
         $request = (new ServerRequestFactory())
             ->createServerRequest('GET', 'https://kumwe.test/api/v1/schedules/' . self::SCHEDULE)
-            ->withAttribute('id', self::SCHEDULE);
+            ->withAttribute('id', self::SCHEDULE)
+            ->withAttribute(AuthenticatedPrincipal::REQUEST_ATTRIBUTE, $this->principal())
+            ->withAttribute(ExecutionContext::REQUEST_ATTRIBUTE, $this->context());
 
         $response = $this->handler($schedules)->handle($request);
 
@@ -46,12 +55,16 @@ final class AutomationApiHandlerTest extends TestCase
     public function testRejectsStaleScheduleMutationWithoutWriting(): void
     {
         $schedules = $this->createMock(ScheduleRepository::class);
-        $schedules->method('find')->with(self::SCHEDULE)->willReturn($this->schedule());
+        $schedules->method('find')->with(
+            self::isInstanceOf(ExecutionContext::class),
+            self::SCHEDULE,
+        )->willReturn($this->schedule());
         $schedules->expects(self::never())->method('setEnabled');
         $request = (new ServerRequestFactory())
             ->createServerRequest('PATCH', 'https://kumwe.test/api/v1/schedules/' . self::SCHEDULE)
             ->withAttribute('id', self::SCHEDULE)
             ->withAttribute(AuthenticatedPrincipal::REQUEST_ATTRIBUTE, $this->principal())
+            ->withAttribute(ExecutionContext::REQUEST_ATTRIBUTE, $this->context())
             ->withAttribute(RequireIfMatchMiddleware::ATTRIBUTE, IfMatch::fromHeader('"v2"'))
             ->withBody((new StreamFactory())->createStream('{"enabled":false}'));
 
@@ -66,6 +79,7 @@ final class AutomationApiHandlerTest extends TestCase
         $request = (new ServerRequestFactory())
             ->createServerRequest('POST', 'https://kumwe.test/api/v1/schedules')
             ->withAttribute(AuthenticatedPrincipal::REQUEST_ATTRIBUTE, $this->principal())
+            ->withAttribute(ExecutionContext::REQUEST_ATTRIBUTE, $this->context())
             ->withBody((new StreamFactory())->createStream(json_encode([
                 'name' => 'Session maintenance',
                 'cron_expression' => '0 * * * *',
@@ -107,6 +121,7 @@ final class AutomationApiHandlerTest extends TestCase
             $transactions,
             $this->createStub(AuditRecorder::class),
             $clock,
+            AuthorizationContext::gateway(),
         );
 
         return new AutomationApiHandler($automation, new ProblemDetailsResponseFactory());
@@ -114,6 +129,15 @@ final class AutomationApiHandlerTest extends TestCase
 
     private function principal(): AuthenticatedPrincipal
     {
-        return AuthenticatedPrincipal::fromStrings(self::ACTOR, ['automation.manage']);
+        return AuthorizationContext::principal(['automation.manage'], self::ACTOR);
+    }
+
+    private function context(): ExecutionContext
+    {
+        return $this->principal()->context(
+            SiteContext::default(),
+            AuthenticationStrength::BearerToken,
+            'test-request-0001',
+        );
     }
 }

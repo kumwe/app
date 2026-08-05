@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\CMS\Delivery\Http\Api\Content;
 
 use Kumwe\CMS\Content\Application\ContentService;
+use Kumwe\CMS\Delivery\Http\Api\ApiExecutionContext;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\RequestHandlerInterface;
@@ -20,10 +21,11 @@ final readonly class ContentRestoreHandler implements RequestHandlerInterface
     {
         try {
             $id = ContentApiRequest::routeId($request);
-            $stored = $this->content->get($id, true);
+            $context = ApiExecutionContext::fromRequest($request);
+            $stored = $this->content->get($context, $id, true);
 
             return $this->responder->record($this->content->restore(
-                ContentApiRequest::principal($request)->subject(),
+                $context,
                 $id,
                 ContentApiRequest::expectedVersion($request, $stored->entry->version()),
             ));

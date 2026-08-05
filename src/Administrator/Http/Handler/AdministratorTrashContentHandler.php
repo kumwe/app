@@ -21,7 +21,7 @@ final readonly class AdministratorTrashContentHandler implements RequestHandlerI
     {
         $form = AdministratorRequest::form($request);
         $this->content->trash(
-            AdministratorRequest::session($request)->principal->subject(),
+            AdministratorRequest::context($request),
             AdministratorRequest::routeId($request),
             AdministratorRequest::positiveInteger($form, 'version'),
         );

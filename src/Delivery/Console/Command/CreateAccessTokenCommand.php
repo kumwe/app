@@ -13,8 +13,10 @@ use Throwable;
 
 final readonly class CreateAccessTokenCommand implements Command
 {
-    public function __construct(private AdministratorIdentityGateway $identities)
-    {
+    public function __construct(
+        private AdministratorIdentityGateway $identities,
+        private ConsoleAuthorizer $authorization,
+    ) {
     }
 
     public function name(): string
@@ -37,7 +39,9 @@ final readonly class CreateAccessTokenCommand implements Command
                 explode(',', $this->required($options, 'capabilities')),
             ), static fn (string $value): bool => $value !== ''));
             $expiresAt = isset($options['expires-at']) ? new DateTimeImmutable($options['expires-at']) : null;
+            $context = $this->authorization->require($options, 'users.manage');
             $created = $this->identities->issueAccessToken(
+                $context,
                 $this->required($options, 'email'),
                 $this->required($options, 'name'),
                 $capabilities,

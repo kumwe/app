@@ -6,6 +6,7 @@ namespace Kumwe\CMS\Application\Automation\Job;
 
 use Kumwe\CMS\Application\Automation\IdempotencyPurger;
 use Kumwe\CMS\Application\Automation\JobHandler;
+use Kumwe\CMS\Application\Authorization\ExecutionContext;
 
 final readonly class PurgeIdempotencyRecordsHandler implements JobHandler
 {
@@ -18,7 +19,7 @@ final readonly class PurgeIdempotencyRecordsHandler implements JobHandler
         return 'system.idempotency.purge';
     }
 
-    public function handle(array $payload): void
+    public function handle(array $payload, ExecutionContext $context): void
     {
         $batchSize = $payload['batch_size'] ?? 1_000;
         $maximumBatches = $payload['maximum_batches'] ?? 10;

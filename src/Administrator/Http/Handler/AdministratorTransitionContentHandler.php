@@ -25,7 +25,7 @@ final readonly class AdministratorTransitionContentHandler implements RequestHan
     {
         $form = AdministratorRequest::form($request);
         $id = AdministratorRequest::routeId($request);
-        $stored = $this->content->get($id);
+        $stored = $this->content->get(AdministratorRequest::context($request), $id);
         $target = ContentStatus::from(AdministratorRequest::required($form, 'status'));
         $this->authorization->assertAllowed(
             AdministratorRequest::session($request)->principal,
@@ -33,7 +33,7 @@ final readonly class AdministratorTransitionContentHandler implements RequestHan
             $target,
         );
         $this->content->transition(
-            AdministratorRequest::session($request)->principal->subject(),
+            AdministratorRequest::context($request),
             $id,
             AdministratorRequest::positiveInteger($form, 'version'),
             $target,

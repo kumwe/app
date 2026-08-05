@@ -6,9 +6,14 @@ namespace Kumwe\CMS\Navigation\Application;
 
 use DateTimeImmutable;
 use InvalidArgumentException;
+use Kumwe\CMS\Application\Authorization\AuthorizationGateway;
+use Kumwe\CMS\Application\Authorization\AuthorizationResource;
+use Kumwe\CMS\Application\Authorization\ExecutionContext;
+use Kumwe\CMS\Application\Authorization\ResourceSiteOwnershipWriter;
 use Kumwe\CMS\Audit\Application\AuditRecorder;
 use Kumwe\CMS\Audit\Domain\AuditEvent;
 use Kumwe\CMS\Infrastructure\Persistence\TransactionManager;
+use Kumwe\CMS\Identity\Domain\Capability;
 use Psr\Clock\ClockInterface;
 use Ramsey\Uuid\Uuid;
 
@@ -19,56 +24,77 @@ final readonly class NavigationService
         private AuditRecorder $audit,
         private TransactionManager $transactions,
         private ClockInterface $clock,
+        private AuthorizationGateway $authorization,
+        private ResourceSiteOwnershipWriter $ownership,
     ) {
     }
 
     /** @return list<MenuRecord> */
-    public function menus(): array
+    public function menus(ExecutionContext $context): array
     {
-        return $this->repository->menus();
+        return array_values(array_filter(
+            $this->repository->menus(),
+            fn (MenuRecord $menu): bool => $this->authorization->decide(
+                $context,
+                Capability::fromString('navigation.manage'),
+                AuthorizationResource::item('menu', $menu->id),
+            )->allowed,
+        ));
     }
 
-    public function menu(string $id): MenuRecord
+    public function menu(ExecutionContext $context, string $id): MenuRecord
     {
+        $this->authorize($context, AuthorizationResource::item('menu', $id));
         return $this->repository->menu($id) ?? throw new NavigationNotFound('The menu does not exist.');
     }
 
     /** @return list<MenuItemRecord> */
-    public function items(string $menuId): array
+    public function items(ExecutionContext $context, string $menuId): array
     {
-        $this->menu($menuId);
+        $this->menu($context, $menuId);
 
-        return $this->repository->items($menuId);
+        return array_values(array_filter(
+            $this->repository->items($menuId),
+            fn (MenuItemRecord $item): bool => $this->authorization->decide(
+                $context,
+                Capability::fromString('navigation.manage'),
+                AuthorizationResource::item('menu_item', $item->id),
+            )->allowed,
+        ));
     }
 
-    public function item(string $id): MenuItemRecord
+    public function item(ExecutionContext $context, string $id): MenuItemRecord
     {
+        $this->authorize($context, AuthorizationResource::item('menu_item', $id));
         return $this->repository->item($id) ?? throw new NavigationNotFound('The menu item does not exist.');
     }
 
-    public function createMenu(string $actorId, string $handle, string $title): MenuRecord
+    public function createMenu(ExecutionContext $context, string $handle, string $title): MenuRecord
     {
+        $this->authorize($context, AuthorizationResource::collection('menu'));
         $handle = $this->handle($handle);
         $title = $this->title($title);
         $now = $this->clock->now();
         $menu = new MenuRecord(Uuid::uuid7()->toString(), $handle, $title, 1, $now, $now);
 
-        return $this->transactions->transactional(function () use ($actorId, $menu, $now): MenuRecord {
+        return $this->transactions->transactional(function () use ($context, $menu, $now): MenuRecord {
             $this->repository->insertMenu($menu);
-            $this->audit($actorId, 'navigation.menu.create', 'menu', $menu->id, $now, ['version' => 1]);
+            $this->ownership->record(AuthorizationResource::item('menu', $menu->id), $context->site());
+            $this->audit($context->actorId(), 'navigation.menu.create', 'menu', $menu->id, $now, ['version' => 1]);
 
             return $menu;
         });
     }
 
     public function updateMenu(
-        string $actorId,
+        ExecutionContext $context,
         string $id,
         int $expectedVersion,
         string $handle,
         string $title,
     ): MenuRecord {
-        $stored = $this->menu($id);
+        $this->authorize($context, AuthorizationResource::item('menu', $id));
+        $stored = $this->menu($context, $id);
         $this->assertVersion($stored->version, $expectedVersion);
         $now = $this->clock->now();
         $updated = new MenuRecord(
@@ -81,13 +107,13 @@ final readonly class NavigationService
         );
 
         return $this->transactions->transactional(function () use (
-            $actorId,
+            $context,
             $updated,
             $expectedVersion,
             $now,
         ): MenuRecord {
             $this->repository->updateMenu($updated, $expectedVersion);
-            $this->audit($actorId, 'navigation.menu.update', 'menu', $updated->id, $now, [
+            $this->audit($context->actorId(), 'navigation.menu.update', 'menu', $updated->id, $now, [
                 'version' => $updated->version,
             ]);
 
@@ -95,26 +121,41 @@ final readonly class NavigationService
         });
     }
 
-    public function deleteMenu(string $actorId, string $id, int $expectedVersion): void
+    public function deleteMenu(ExecutionContext $context, string $id, int $expectedVersion): void
     {
-        $stored = $this->menu($id);
+        $this->authorize($context, AuthorizationResource::item('menu', $id));
+        $stored = $this->menu($context, $id);
         $this->assertVersion($stored->version, $expectedVersion);
         $now = $this->clock->now();
-        $this->transactions->transactional(function () use ($actorId, $id, $expectedVersion, $now): void {
+        $this->transactions->transactional(function () use (
+            $context,
+            $id,
+            $expectedVersion,
+            $now,
+        ): void {
+            $itemIds = $this->repository->itemIdsForMenuDeletion($id, $expectedVersion);
             $this->repository->deleteMenu($id, $expectedVersion);
-            $this->audit($actorId, 'navigation.menu.delete', 'menu', $id, $now);
+            foreach ($itemIds as $itemId) {
+                $this->ownership->remove(
+                    AuthorizationResource::item('menu_item', $itemId),
+                    $context->site(),
+                );
+            }
+            $this->ownership->remove(AuthorizationResource::item('menu', $id), $context->site());
+            $this->audit($context->actorId(), 'navigation.menu.delete', 'menu', $id, $now);
         });
     }
 
     public function createItem(
-        string $actorId,
+        ExecutionContext $context,
         string $menuId,
         ?string $parentId,
         string $title,
         string $slug,
         int $position,
     ): MenuItemRecord {
-        $this->menu($menuId);
+        $this->authorize($context, AuthorizationResource::item('menu', $menuId));
+        $this->menu($context, $menuId);
         $slug = $this->slug($slug);
         $position = $this->position($position);
         $path = $this->repository->pathForParent($menuId, $parentId, $slug);
@@ -132,16 +173,24 @@ final readonly class NavigationService
             $now,
         );
 
-        return $this->transactions->transactional(function () use ($actorId, $item, $now): MenuItemRecord {
+        return $this->transactions->transactional(function () use ($context, $item, $now): MenuItemRecord {
             $this->repository->insertItem($item);
-            $this->audit($actorId, 'navigation.item.create', 'menu_item', $item->id, $now, ['path' => $item->path]);
+            $this->ownership->record(AuthorizationResource::item('menu_item', $item->id), $context->site());
+            $this->audit(
+                $context->actorId(),
+                'navigation.item.create',
+                'menu_item',
+                $item->id,
+                $now,
+                ['path' => $item->path],
+            );
 
             return $item;
         });
     }
 
     public function updateItem(
-        string $actorId,
+        ExecutionContext $context,
         string $id,
         int $expectedVersion,
         ?string $parentId,
@@ -149,7 +198,8 @@ final readonly class NavigationService
         string $slug,
         int $position,
     ): MenuItemRecord {
-        $stored = $this->item($id);
+        $this->authorize($context, AuthorizationResource::item('menu_item', $id));
+        $stored = $this->item($context, $id);
         $this->assertVersion($stored->version, $expectedVersion);
         $slug = $this->slug($slug);
         $this->repository->assertMoveIsAcyclic($id, $stored->menuId, $parentId);
@@ -169,7 +219,7 @@ final readonly class NavigationService
         );
 
         return $this->transactions->transactional(function () use (
-            $actorId,
+            $context,
             $updated,
             $expectedVersion,
             $stored,
@@ -179,7 +229,7 @@ final readonly class NavigationService
             if ($stored->path !== $updated->path) {
                 $this->repository->moveDescendantPaths($updated->id, $stored->path, $updated->path, $now);
             }
-            $this->audit($actorId, 'navigation.item.update', 'menu_item', $updated->id, $now, [
+            $this->audit($context->actorId(), 'navigation.item.update', 'menu_item', $updated->id, $now, [
                 'path' => $updated->path,
                 'version' => $updated->version,
             ]);
@@ -188,14 +238,16 @@ final readonly class NavigationService
         });
     }
 
-    public function deleteItem(string $actorId, string $id, int $expectedVersion): void
+    public function deleteItem(ExecutionContext $context, string $id, int $expectedVersion): void
     {
-        $stored = $this->item($id);
+        $this->authorize($context, AuthorizationResource::item('menu_item', $id));
+        $stored = $this->item($context, $id);
         $this->assertVersion($stored->version, $expectedVersion);
         $now = $this->clock->now();
-        $this->transactions->transactional(function () use ($actorId, $id, $expectedVersion, $now): void {
+        $this->transactions->transactional(function () use ($context, $id, $expectedVersion, $now): void {
             $this->repository->deleteItem($id, $expectedVersion);
-            $this->audit($actorId, 'navigation.item.delete', 'menu_item', $id, $now);
+            $this->ownership->remove(AuthorizationResource::item('menu_item', $id), $context->site());
+            $this->audit($context->actorId(), 'navigation.item.delete', 'menu_item', $id, $now);
         });
     }
 
@@ -207,6 +259,15 @@ final readonly class NavigationService
         }
 
         return $handle;
+    }
+
+    private function authorize(ExecutionContext $context, AuthorizationResource $resource): void
+    {
+        $this->authorization->assertAllowed(
+            $context,
+            Capability::fromString('navigation.manage'),
+            $resource,
+        );
     }
 
     private function slug(string $slug): string

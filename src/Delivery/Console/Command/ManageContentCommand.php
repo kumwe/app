@@ -9,7 +9,7 @@ use Kumwe\CMS\Content\Application\ContentService;
 use Kumwe\CMS\Content\Domain\ContentStatus;
 use Kumwe\CMS\Delivery\Console\Command;
 use Kumwe\CMS\Delivery\Console\Output;
-use Kumwe\CMS\Identity\Application\Authentication\AuthenticatedPrincipal;
+use Kumwe\CMS\Application\Authorization\ExecutionContext;
 use Throwable;
 use Kumwe\CMS\Workflow\Application\ContentTransitionAuthorizer;
 
@@ -37,7 +37,7 @@ final readonly class ManageContentCommand implements Command
         try {
             $action = array_shift($arguments) ?? 'list';
             $options = CommandInput::options($arguments);
-            $principal = $this->authorization->require($options, match ($action) {
+            $context = $this->authorization->require($options, match ($action) {
                 'list', 'get' => 'content.read',
                 'create' => 'content.create',
                 'update' => 'content.update',
@@ -49,31 +49,35 @@ final readonly class ManageContentCommand implements Command
             $result = match ($action) {
                 'list' => ['items' => array_map(
                     static fn (ContentRecord $record): array => $record->toArray(),
-                    $this->content->list(includeDeleted: ($options['deleted'] ?? '0') === '1'),
+                    $this->content->list($context, includeDeleted: ($options['deleted'] ?? '0') === '1'),
                 )],
-                'get' => $this->content->get(CommandInput::required($options, 'id'), true)->toArray(),
+                'get' => $this->content->get(
+                    $context,
+                    CommandInput::required($options, 'id'),
+                    true,
+                )->toArray(),
                 'create' => $this->content->create(
-                    $principal->subject(),
+                    $context,
                     CommandInput::required($options, 'title'),
                     CommandInput::required($options, 'slug'),
                     CommandInput::jsonObject($options, 'data'),
                 )->toArray(),
                 'update' => $this->content->update(
-                    $principal->subject(),
+                    $context,
                     CommandInput::required($options, 'id'),
                     CommandInput::positiveInteger($options, 'version'),
                     CommandInput::required($options, 'title'),
                     CommandInput::required($options, 'slug'),
                     CommandInput::jsonObject($options, 'data'),
                 )->toArray(),
-                'transition' => $this->transition($options, $principal),
+                'transition' => $this->transition($options, $context),
                 'trash' => $this->content->trash(
-                    $principal->subject(),
+                    $context,
                     CommandInput::required($options, 'id'),
                     CommandInput::positiveInteger($options, 'version'),
                 )->toArray(),
                 'restore' => $this->content->restore(
-                    $principal->subject(),
+                    $context,
                     CommandInput::required($options, 'id'),
                     CommandInput::positiveInteger($options, 'version'),
                 )->toArray(),
@@ -92,14 +96,19 @@ final readonly class ManageContentCommand implements Command
      */
     private function transition(
         array $options,
-        AuthenticatedPrincipal $principal,
+        ExecutionContext $context,
     ): array {
         $id = CommandInput::required($options, 'id');
         $target = ContentStatus::from(CommandInput::required($options, 'status'));
-        $this->transitions->assertAllowed($principal, $this->content->get($id)->entry->status(), $target);
+        $principal = $context->principal() ?? throw new \LogicException('A CLI principal is required.');
+        $this->transitions->assertAllowed(
+            $principal,
+            $this->content->get($context, $id)->entry->status(),
+            $target,
+        );
 
         return $this->content->transition(
-            $principal->subject(),
+            $context,
             $id,
             CommandInput::positiveInteger($options, 'version'),
             $target,

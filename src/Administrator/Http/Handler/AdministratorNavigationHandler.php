@@ -7,6 +7,7 @@ namespace Kumwe\CMS\Administrator\Http\Handler;
 use InvalidArgumentException;
 use Kumwe\CMS\Administrator\Http\AdministratorRequest;
 use Kumwe\CMS\Administrator\Presentation\AdministratorRenderer;
+use Kumwe\CMS\Application\Authorization\ExecutionContext;
 use Kumwe\CMS\Navigation\Application\MenuItemRecord;
 use Kumwe\CMS\Navigation\Application\MenuRecord;
 use Kumwe\CMS\Navigation\Application\NavigationService;
@@ -27,17 +28,18 @@ final readonly class AdministratorNavigationHandler implements RequestHandlerInt
         $session = AdministratorRequest::session($request);
         if (strtoupper($request->getMethod()) === 'POST') {
             $form = AdministratorRequest::form($request);
-            $this->mutate($session->principal->subject(), $form);
+            $this->mutate(AdministratorRequest::context($request), $form);
 
             return new RedirectResponse('/administrator/navigation?saved=1', 303);
         }
 
-        $menus = $this->navigation->menus();
+        $context = AdministratorRequest::context($request);
+        $menus = $this->navigation->menus($context);
         $items = [];
         foreach ($menus as $menu) {
             $items[$menu->id] = array_map(
                 static fn (MenuItemRecord $item): array => $item->toArray(),
-                $this->navigation->items($menu->id),
+                $this->navigation->items($context, $menu->id),
             );
         }
 
@@ -51,29 +53,29 @@ final readonly class AdministratorNavigationHandler implements RequestHandlerInt
     }
 
     /** @param array<string, string> $form */
-    private function mutate(string $actorId, array $form): void
+    private function mutate(ExecutionContext $context, array $form): void
     {
         $action = AdministratorRequest::required($form, 'action');
         match ($action) {
             'menu.create' => $this->navigation->createMenu(
-                $actorId,
+                $context,
                 AdministratorRequest::required($form, 'handle'),
                 AdministratorRequest::required($form, 'title'),
             ),
             'menu.update' => $this->navigation->updateMenu(
-                $actorId,
+                $context,
                 AdministratorRequest::required($form, 'id'),
                 AdministratorRequest::positiveInteger($form, 'version'),
                 AdministratorRequest::required($form, 'handle'),
                 AdministratorRequest::required($form, 'title'),
             ),
             'menu.delete' => $this->navigation->deleteMenu(
-                $actorId,
+                $context,
                 AdministratorRequest::required($form, 'id'),
                 AdministratorRequest::positiveInteger($form, 'version'),
             ),
             'item.create' => $this->navigation->createItem(
-                $actorId,
+                $context,
                 AdministratorRequest::required($form, 'menu_id'),
                 $this->nullable($form, 'parent_id'),
                 AdministratorRequest::required($form, 'title'),
@@ -81,7 +83,7 @@ final readonly class AdministratorNavigationHandler implements RequestHandlerInt
                 $this->nonNegativeInteger($form, 'position'),
             ),
             'item.update' => $this->navigation->updateItem(
-                $actorId,
+                $context,
                 AdministratorRequest::required($form, 'id'),
                 AdministratorRequest::positiveInteger($form, 'version'),
                 $this->nullable($form, 'parent_id'),
@@ -90,7 +92,7 @@ final readonly class AdministratorNavigationHandler implements RequestHandlerInt
                 $this->nonNegativeInteger($form, 'position'),
             ),
             'item.delete' => $this->navigation->deleteItem(
-                $actorId,
+                $context,
                 AdministratorRequest::required($form, 'id'),
                 AdministratorRequest::positiveInteger($form, 'version'),
             ),

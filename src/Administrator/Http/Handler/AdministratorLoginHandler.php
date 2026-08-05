@@ -7,10 +7,14 @@ namespace Kumwe\CMS\Administrator\Http\Handler;
 use Kumwe\CMS\Administrator\Http\AdministratorRequest;
 use Kumwe\CMS\Administrator\Http\Middleware\AdministratorSessionMiddleware;
 use Kumwe\CMS\Administrator\Presentation\AdministratorRenderer;
+use Kumwe\CMS\Application\Authorization\AuthenticationStrength;
+use Kumwe\CMS\Application\Authorization\ExecutionContext;
+use Kumwe\CMS\Application\Authorization\SiteContext;
 use Kumwe\CMS\Identity\Application\Administration\AdministratorIdentityGateway;
 use Kumwe\CMS\Identity\Application\Administration\AdministratorSessionStore;
 use Kumwe\CMS\Identity\Application\Administration\AuthenticationThrottled;
 use Kumwe\CMS\Http\Middleware\TrustedProxyMiddleware;
+use Kumwe\CMS\Http\Middleware\RequestIdMiddleware;
 use Laminas\Diactoros\Response\HtmlResponse;
 use Laminas\Diactoros\Response\RedirectResponse;
 use Psr\Http\Message\ResponseInterface;
@@ -61,7 +65,12 @@ final readonly class AdministratorLoginHandler implements RequestHandlerInterfac
             ]), 401, ['Cache-Control' => 'no-store']);
         }
 
-        $created = $this->sessions->create($principal, $request->getHeaderLine('User-Agent'));
+        $requestId = $request->getAttribute(RequestIdMiddleware::ATTRIBUTE);
+        $created = $this->sessions->create($principal->context(
+            SiteContext::default(),
+            AuthenticationStrength::Password,
+            is_string($requestId) && $requestId !== '' ? $requestId : 'login-' . bin2hex(random_bytes(16)),
+        ), $request->getHeaderLine('User-Agent'));
 
         return new RedirectResponse('/administrator', 303, [
             'Cache-Control' => 'no-store',

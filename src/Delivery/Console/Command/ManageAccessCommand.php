@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Kumwe\CMS\Delivery\Console\Command;
 
+use Kumwe\CMS\Application\Authorization\ExecutionContext;
 use Kumwe\CMS\Delivery\Console\Command;
 use Kumwe\CMS\Delivery\Console\Output;
 use Kumwe\CMS\Identity\Application\Administration\AccessControlService;
@@ -31,35 +32,38 @@ final readonly class ManageAccessCommand implements Command
         try {
             $action = array_shift($arguments) ?? 'users';
             $options = CommandInput::options($arguments);
-            $actor = $this->authorization->require($options, 'users.manage')->subject();
+            $context = $this->authorization->require($options, 'users.manage');
             $result = match ($action) {
-                'users' => ['items' => $this->access->users()],
-                'roles' => ['items' => $this->access->roles(), 'capabilities' => $this->access->capabilities()],
-                'tokens' => ['items' => $this->access->tokens()],
+                'users' => ['items' => $this->access->users($context)],
+                'roles' => [
+                    'items' => $this->access->roles($context),
+                    'capabilities' => $this->access->capabilities($context),
+                ],
+                'tokens' => ['items' => $this->access->tokens($context)],
                 'create-user' => ['id' => $this->access->createUser(
-                    $actor,
+                    $context,
                     CommandInput::required($options, 'email'),
                     CommandInput::required($options, 'display-name'),
                     CommandInput::secretFile(CommandInput::required($options, 'password-file')),
                     UserStatus::from($options['status'] ?? 'active'),
                 )],
-                'update-user' => $this->updateUser($options, $actor),
+                'update-user' => $this->updateUser($options, $context),
                 'create-role' => ['id' => $this->access->createRole(
-                    $actor,
+                    $context,
                     CommandInput::required($options, 'code'),
                     CommandInput::required($options, 'name'),
                 )],
-                'assign-role' => $this->assignRole($options, $actor, false),
-                'revoke-role' => $this->assignRole($options, $actor, true),
+                'assign-role' => $this->assignRole($options, $context, false),
+                'revoke-role' => $this->assignRole($options, $context, true),
                 'grant' => ['id' => $this->access->grant(
-                    $actor,
+                    $context,
                     CommandInput::required($options, 'role'),
                     CommandInput::required($options, 'capability'),
                     $options['scope-type'] ?? 'global',
                     $this->optional($options, 'scope'),
                 )],
-                'revoke-grant' => $this->revokeGrant($options, $actor),
-                'revoke-token' => $this->revokeToken($options, $actor),
+                'revoke-grant' => $this->revokeGrant($options, $context),
+                'revoke-token' => $this->revokeToken($options, $context),
                 default => throw new \InvalidArgumentException('Unsupported access action.'),
             };
             $output->line(CommandInput::render($result));
@@ -74,10 +78,10 @@ final readonly class ManageAccessCommand implements Command
      * @param array<string, string> $options
      * @return array{updated: bool}
      */
-    private function updateUser(array $options, string $actor): array
+    private function updateUser(array $options, ExecutionContext $context): array
     {
         $this->access->updateUser(
-            $actor,
+            $context,
             CommandInput::required($options, 'id'),
             CommandInput::required($options, 'email'),
             CommandInput::required($options, 'display-name'),
@@ -91,10 +95,10 @@ final readonly class ManageAccessCommand implements Command
      * @param array<string, string> $options
      * @return array{updated: bool}
      */
-    private function assignRole(array $options, string $actor, bool $revoke): array
+    private function assignRole(array $options, ExecutionContext $context, bool $revoke): array
     {
         $arguments = [
-            $actor, CommandInput::required($options, 'user'),
+            $context, CommandInput::required($options, 'user'),
             CommandInput::required($options, 'role'),
         ];
         if ($revoke) {
@@ -109,9 +113,9 @@ final readonly class ManageAccessCommand implements Command
      * @param array<string, string> $options
      * @return array{updated: bool}
      */
-    private function revokeGrant(array $options, string $actor): array
+    private function revokeGrant(array $options, ExecutionContext $context): array
     {
-        $this->access->revokeGrant($actor, CommandInput::required($options, 'grant'));
+        $this->access->revokeGrant($context, CommandInput::required($options, 'grant'));
         return ['updated' => true];
     }
 
@@ -119,9 +123,9 @@ final readonly class ManageAccessCommand implements Command
      * @param array<string, string> $options
      * @return array{updated: bool}
      */
-    private function revokeToken(array $options, string $actor): array
+    private function revokeToken(array $options, ExecutionContext $context): array
     {
-        $this->access->revokeToken($actor, CommandInput::required($options, 'token'));
+        $this->access->revokeToken($context, CommandInput::required($options, 'token'));
         return ['updated' => true];
     }
 

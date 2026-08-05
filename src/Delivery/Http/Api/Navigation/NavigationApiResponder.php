@@ -6,6 +6,7 @@ namespace Kumwe\CMS\Delivery\Http\Api\Navigation;
 
 use DomainException;
 use InvalidArgumentException;
+use Kumwe\CMS\Application\Authorization\AuthorizationDenied;
 use Kumwe\CMS\Delivery\Http\Api\Concurrency\EntityTag;
 use Kumwe\CMS\Delivery\Http\Api\ProblemDetailsResponseFactory;
 use Kumwe\CMS\Navigation\Application\MenuItemRecord;
@@ -38,6 +39,13 @@ final readonly class NavigationApiResponder
     public function problem(Throwable $exception, string $instance): ResponseInterface
     {
         return match (true) {
+            $exception instanceof AuthorizationDenied => $this->problems->create(
+                403,
+                'Forbidden',
+                'The authenticated identity is not authorized for this operation.',
+                'urn:kumwe:problem:authorization-denied',
+                $instance,
+            ),
             $exception instanceof NavigationNotFound => $this->problems->create(
                 404,
                 'Navigation Not Found',

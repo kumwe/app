@@ -13,6 +13,7 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
+use Kumwe\CMS\Tests\Support\AuthorizationContext;
 
 #[CoversClass(ContentTransitionAuthorizer::class)]
 #[UsesClass(AuthenticatedPrincipal::class)]
@@ -40,7 +41,7 @@ final class ContentTransitionAuthorizerTest extends TestCase
         ContentStatus $to,
         string $capability,
     ): void {
-        $principal = AuthenticatedPrincipal::fromStrings(self::SUBJECT, [$capability]);
+        $principal = AuthorizationContext::principal([$capability], self::SUBJECT);
 
         (new ContentTransitionAuthorizer())->assertAllowed($principal, $from, $to);
 
@@ -49,7 +50,7 @@ final class ContentTransitionAuthorizerTest extends TestCase
 
     public function testReportsExactMissingCapability(): void
     {
-        $principal = AuthenticatedPrincipal::fromStrings(self::SUBJECT, ['content.read']);
+        $principal = AuthorizationContext::principal(['content.read'], self::SUBJECT);
 
         try {
             (new ContentTransitionAuthorizer())->assertAllowed(

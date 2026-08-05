@@ -18,12 +18,15 @@ final readonly class DoctrineAccessControlRepository implements AccessControlRep
     {
     }
 
-    public function users(): array
+    public function users(int $limit = 100, int $offset = 0): array
     {
+        $this->assertPage($limit, $offset);
         $users = $this->database->fetchAllAssociative(sprintf(
             'SELECT id, email, display_name, status, version, created_at, updated_at FROM %s '
-            . 'ORDER BY display_name, email',
+            . 'ORDER BY display_name, email, id LIMIT %d OFFSET %d',
             $this->tables->quoted('users'),
+            $limit,
+            $offset,
         ));
 
         foreach ($users as &$user) {
@@ -39,11 +42,14 @@ final readonly class DoctrineAccessControlRepository implements AccessControlRep
         return $users;
     }
 
-    public function roles(): array
+    public function roles(int $limit = 100, int $offset = 0): array
     {
+        $this->assertPage($limit, $offset);
         $roles = $this->database->fetchAllAssociative(sprintf(
-            'SELECT id, code, name, created_at FROM %s ORDER BY name',
+            'SELECT id, code, name, created_at FROM %s ORDER BY name, id LIMIT %d OFFSET %d',
             $this->tables->quoted('roles'),
+            $limit,
+            $offset,
         ));
 
         foreach ($roles as &$role) {
@@ -58,25 +64,32 @@ final readonly class DoctrineAccessControlRepository implements AccessControlRep
         return $roles;
     }
 
-    public function capabilities(): array
+    public function capabilities(int $limit = 100, int $offset = 0): array
     {
+        $this->assertPage($limit, $offset);
         /** @var list<array{code: string, description: string}> $rows */
         $rows = $this->database->fetchAllAssociative(sprintf(
-            'SELECT code, description FROM %s ORDER BY code',
+            'SELECT code, description FROM %s ORDER BY code LIMIT %d OFFSET %d',
             $this->tables->quoted('capabilities'),
+            $limit,
+            $offset,
         ));
 
         return $rows;
     }
 
-    public function tokens(): array
+    public function tokens(int $limit = 100, int $offset = 0): array
     {
+        $this->assertPage($limit, $offset);
         $tokens = $this->database->fetchAllAssociative(sprintf(
             'SELECT t.id, t.name, t.capabilities, t.expires_at, t.revoked_at, t.created_at, t.last_used_at, '
             . 'u.id AS subject_id, u.email AS subject_email, u.display_name AS subject_name '
-            . 'FROM %s t INNER JOIN %s u ON u.id = t.subject_id ORDER BY t.created_at DESC',
+            . 'FROM %s t INNER JOIN %s u ON u.id = t.subject_id '
+            . 'ORDER BY t.created_at DESC, t.id DESC LIMIT %d OFFSET %d',
             $this->tables->quoted('api_tokens'),
             $this->tables->quoted('users'),
+            $limit,
+            $offset,
         ));
 
         foreach ($tokens as &$token) {
@@ -118,6 +131,7 @@ final readonly class DoctrineAccessControlRepository implements AccessControlRep
             'display_name' => $displayName,
             'status' => $status,
             'version' => 1,
+            'security_epoch' => 1,
             'created_at' => $at,
             'updated_at' => $at,
         ], [
@@ -143,7 +157,8 @@ final readonly class DoctrineAccessControlRepository implements AccessControlRep
     ): void {
         $affected = $this->database->executeStatement(sprintf(
             'UPDATE %s SET email = ?, email_normalized = ?, display_name = ?, status = ?, '
-            . 'version = version + 1, updated_at = ? WHERE id = ? AND version = ?',
+            . 'version = version + 1, security_epoch = security_epoch + 1, updated_at = ? '
+            . 'WHERE id = ? AND version = ?',
             $this->tables->quoted('users'),
         ), [$email, $email, $displayName, $status, $at, $id, $expectedVersion], [
             Types::STRING,
@@ -182,6 +197,7 @@ final readonly class DoctrineAccessControlRepository implements AccessControlRep
             ], [
                 'assigned_at' => Types::DATETIME_IMMUTABLE,
             ]);
+            $this->bumpUserSecurityEpoch($userId);
         }
     }
 
@@ -191,6 +207,7 @@ final readonly class DoctrineAccessControlRepository implements AccessControlRep
             $this->database->delete($this->tables->raw('user_roles'), ['user_id' => $userId, 'role_id' => $roleId]),
             'role assignment',
         );
+        $this->bumpUserSecurityEpoch($userId);
     }
 
     public function grant(
@@ -213,14 +230,22 @@ final readonly class DoctrineAccessControlRepository implements AccessControlRep
         ], [
             'granted_at' => Types::DATETIME_IMMUTABLE,
         ]);
+        $this->bumpRoleSecurityEpochs($roleId);
     }
 
     public function revokeGrant(string $grantId): void
     {
+        $roleId = $this->database->fetchOne(sprintf(
+            'SELECT role_id FROM %s WHERE id = ?',
+            $this->tables->quoted('role_capability_grants'),
+        ), [$grantId]);
         $this->assertChanged(
             $this->database->delete($this->tables->raw('role_capability_grants'), ['id' => $grantId]),
             'capability grant',
         );
+        if (is_string($roleId)) {
+            $this->bumpRoleSecurityEpochs($roleId);
+        }
     }
 
     public function revokeToken(string $tokenId, DateTimeImmutable $at): void
@@ -230,6 +255,16 @@ final readonly class DoctrineAccessControlRepository implements AccessControlRep
             $this->tables->quoted('api_tokens'),
         ), [$at, $tokenId], [Types::DATETIME_IMMUTABLE, Types::STRING]);
         $this->assertChanged($affected, 'active API token');
+    }
+
+    public function userIdByEmail(string $normalizedEmail): ?string
+    {
+        $id = $this->database->fetchOne(sprintf(
+            "SELECT id FROM %s WHERE email_normalized = ? AND status = 'active'",
+            $this->tables->quoted('users'),
+        ), [$normalizedEmail]);
+
+        return is_string($id) ? $id : null;
     }
 
     public function roleCode(string $roleId): ?string
@@ -242,6 +277,61 @@ final readonly class DoctrineAccessControlRepository implements AccessControlRep
         return is_string($code) ? $code : null;
     }
 
+    public function roleGrants(string $roleId): array
+    {
+        /** @var list<array{capability: string, scope_type: string, scope_identifier: ?string}> $rows */
+        $rows = $this->database->fetchAllAssociative(sprintf(
+            'SELECT capability_code AS capability, scope_type, scope_identifier FROM %s '
+            . 'WHERE role_id = ? ORDER BY capability_code, scope_type, scope_identifier',
+            $this->tables->quoted('role_capability_grants'),
+        ), [$roleId]);
+
+        return $rows;
+    }
+
+    public function userGrants(string $userId): array
+    {
+        /** @var list<array{capability: string, scope_type: string, scope_identifier: ?string}> $rows */
+        $rows = $this->database->fetchAllAssociative(sprintf(
+            'SELECT DISTINCT g.capability_code AS capability, g.scope_type, g.scope_identifier '
+            . 'FROM %s ur INNER JOIN %s g ON g.role_id = ur.role_id WHERE ur.user_id = ? '
+            . 'ORDER BY g.capability_code, g.scope_type, g.scope_identifier',
+            $this->tables->quoted('user_roles'),
+            $this->tables->quoted('role_capability_grants'),
+        ), [$userId]);
+
+        return $rows;
+    }
+
+    public function grantRecord(string $grantId): ?array
+    {
+        $row = $this->database->fetchAssociative(sprintf(
+            'SELECT role_id, capability_code AS capability, scope_type, scope_identifier FROM %s WHERE id = ?',
+            $this->tables->quoted('role_capability_grants'),
+        ), [$grantId]);
+
+        if ($row === false) {
+            return null;
+        }
+
+        foreach (['role_id', 'capability', 'scope_type'] as $field) {
+            if (!is_string($row[$field] ?? null)) {
+                throw new InvalidArgumentException('A stored capability grant is invalid.');
+            }
+        }
+        $scopeIdentifier = $row['scope_identifier'] ?? null;
+        if ($scopeIdentifier !== null && !is_string($scopeIdentifier)) {
+            throw new InvalidArgumentException('A stored capability grant scope is invalid.');
+        }
+
+        return [
+            'role_id' => $row['role_id'],
+            'capability' => $row['capability'],
+            'scope_type' => $row['scope_type'],
+            'scope_identifier' => $scopeIdentifier,
+        ];
+    }
+
     private function assertChanged(int|string $affected, string $resource): void
     {
         if ((string) $affected !== '1') {
@@ -250,5 +340,30 @@ final readonly class DoctrineAccessControlRepository implements AccessControlRep
                 $resource,
             ));
         }
+    }
+
+    private function assertPage(int $limit, int $offset): void
+    {
+        if ($limit < 1 || $limit > 500 || $offset < 0) {
+            throw new InvalidArgumentException('The access-control page is invalid.');
+        }
+    }
+
+    private function bumpUserSecurityEpoch(string $userId): void
+    {
+        $this->database->executeStatement(sprintf(
+            'UPDATE %s SET security_epoch = security_epoch + 1 WHERE id = ?',
+            $this->tables->quoted('users'),
+        ), [$userId]);
+    }
+
+    private function bumpRoleSecurityEpochs(string $roleId): void
+    {
+        $this->database->executeStatement(sprintf(
+            'UPDATE %s SET security_epoch = security_epoch + 1 WHERE id IN '
+            . '(SELECT user_id FROM %s WHERE role_id = ?)',
+            $this->tables->quoted('users'),
+            $this->tables->quoted('user_roles'),
+        ), [$roleId]);
     }
 }

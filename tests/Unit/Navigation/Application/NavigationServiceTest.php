@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace Kumwe\CMS\Tests\Unit\Navigation\Application;
 
 use DateTimeImmutable;
+use Kumwe\CMS\Application\Authorization\AuthorizationResource;
+use Kumwe\CMS\Application\Authorization\ResourceSiteOwnershipWriter;
+use Kumwe\CMS\Application\Authorization\SiteContext;
 use Kumwe\CMS\Audit\Application\AuditRecorder;
 use Kumwe\CMS\Audit\Domain\AuditEvent;
 use Kumwe\CMS\Infrastructure\Persistence\TransactionManager;
@@ -13,6 +16,7 @@ use Kumwe\CMS\Navigation\Application\MenuRecord;
 use Kumwe\CMS\Navigation\Application\NavigationRepository;
 use Kumwe\CMS\Navigation\Application\NavigationService;
 use Kumwe\CMS\Navigation\Application\NavigationVersionConflict;
+use Kumwe\CMS\Tests\Support\AuthorizationContext;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
@@ -44,7 +48,7 @@ final class NavigationServiceTest extends TestCase
                 && $event->subjectType() === 'menu',
         ));
 
-        $menu = $this->service($repository, $audit)->createMenu(self::ACTOR, ' Main_Menu ', ' Main menu ');
+        $menu = $this->service($repository, $audit)->createMenu($this->context(), ' Main_Menu ', ' Main menu ');
 
         self::assertSame('main_menu', $menu->handle);
         self::assertSame('Main menu', $menu->title);
@@ -95,7 +99,7 @@ final class NavigationServiceTest extends TestCase
         ));
 
         $updated = $this->service($repository, $audit, $now)->updateItem(
-            self::ACTOR,
+            $this->context(),
             self::ITEM,
             4,
             self::PARENT,
@@ -130,7 +134,7 @@ final class NavigationServiceTest extends TestCase
         $this->expectException(NavigationVersionConflict::class);
 
         $this->service($repository, $this->createStub(AuditRecorder::class), $now)->updateItem(
-            self::ACTOR,
+            $this->context(),
             self::ITEM,
             3,
             null,
@@ -140,10 +144,85 @@ final class NavigationServiceTest extends TestCase
         );
     }
 
+    public function testMenuDeletionRemovesCascadedItemOwnershipInsideTheTransaction(): void
+    {
+        $now = new DateTimeImmutable('2026-08-04T10:00:00+00:00');
+        $repository = $this->createMock(NavigationRepository::class);
+        $repository->method('menu')->with(self::MENU)->willReturn(new MenuRecord(
+            self::MENU,
+            'main',
+            'Main',
+            3,
+            $now,
+            $now,
+        ));
+        $repository->expects(self::once())->method('itemIdsForMenuDeletion')->with(self::MENU, 3)->willReturn([
+            self::ITEM,
+            self::PARENT,
+        ]);
+        $repository->expects(self::once())->method('deleteMenu')->with(self::MENU, 3);
+        $removed = [];
+        $ownership = $this->createMock(ResourceSiteOwnershipWriter::class);
+        $ownership->expects(self::exactly(3))->method('remove')->with(
+            self::callback(static function (AuthorizationResource $resource) use (&$removed): bool {
+                $removed[] = $resource->type() . ':' . $resource->identifier();
+
+                return true;
+            }),
+            self::callback(static fn (SiteContext $site): bool => $site->identifier() === SiteContext::DEFAULT),
+        );
+
+        $this->service(
+            $repository,
+            $this->createStub(AuditRecorder::class),
+            $now,
+            $ownership,
+        )->deleteMenu($this->context(), self::MENU, 3);
+
+        self::assertSame([
+            'menu_item:' . self::ITEM,
+            'menu_item:' . self::PARENT,
+            'menu:' . self::MENU,
+        ], $removed);
+    }
+
+    public function testItemDeletionRemovesExactOwnership(): void
+    {
+        $now = new DateTimeImmutable('2026-08-04T10:00:00+00:00');
+        $repository = $this->createMock(NavigationRepository::class);
+        $repository->method('item')->with(self::ITEM)->willReturn(new MenuItemRecord(
+            self::ITEM,
+            self::MENU,
+            null,
+            'One',
+            'one',
+            '/one',
+            0,
+            2,
+            $now,
+            $now,
+        ));
+        $repository->expects(self::once())->method('deleteItem')->with(self::ITEM, 2);
+        $ownership = $this->createMock(ResourceSiteOwnershipWriter::class);
+        $ownership->expects(self::once())->method('remove')->with(
+            self::callback(static fn (AuthorizationResource $resource): bool => $resource->type() === 'menu_item'
+                && $resource->identifier() === self::ITEM),
+            self::callback(static fn (SiteContext $site): bool => $site->identifier() === SiteContext::DEFAULT),
+        );
+
+        $this->service(
+            $repository,
+            $this->createStub(AuditRecorder::class),
+            $now,
+            $ownership,
+        )->deleteItem($this->context(), self::ITEM, 2);
+    }
+
     private function service(
         NavigationRepository $repository,
         AuditRecorder $audit,
         ?DateTimeImmutable $now = null,
+        ?ResourceSiteOwnershipWriter $ownership = null,
     ): NavigationService {
         $clock = $this->createStub(ClockInterface::class);
         $clock->method('now')->willReturn($now ?? new DateTimeImmutable('2026-08-04T10:00:00+00:00'));
@@ -152,6 +231,18 @@ final class NavigationServiceTest extends TestCase
             static fn (callable $operation): mixed => $operation(),
         );
 
-        return new NavigationService($repository, $audit, $transactions, $clock);
+        return new NavigationService(
+            $repository,
+            $audit,
+            $transactions,
+            $clock,
+            AuthorizationContext::gateway(),
+            $ownership ?? AuthorizationContext::ownershipWriter(),
+        );
+    }
+
+    private function context(): \Kumwe\CMS\Application\Authorization\ExecutionContext
+    {
+        return AuthorizationContext::human(['navigation.manage'], self::ACTOR);
     }
 }

@@ -21,7 +21,7 @@ final readonly class AdministratorRestoreContentHandler implements RequestHandle
     {
         $form = AdministratorRequest::form($request);
         $this->content->restore(
-            AdministratorRequest::session($request)->principal->subject(),
+            AdministratorRequest::context($request),
             AdministratorRequest::routeId($request),
             AdministratorRequest::positiveInteger($form, 'version'),
         );

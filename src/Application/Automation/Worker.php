@@ -4,29 +4,46 @@ declare(strict_types=1);
 
 namespace Kumwe\CMS\Application\Automation;
 
+use Kumwe\CMS\Application\Authorization\AuthorizationGateway;
+use Kumwe\CMS\Application\Authorization\AuthorizationResource;
+use Kumwe\CMS\Application\Authorization\ExecutionContext;
+use Kumwe\CMS\Identity\Domain\Capability;
 use RuntimeException;
 use Throwable;
 
 final readonly class Worker
 {
-    public function __construct(private JobQueue $queue, private JobHandlerRegistry $handlers)
-    {
+    public function __construct(
+        private JobQueue $queue,
+        private JobHandlerRegistry $handlers,
+        private AuthorizationGateway $authorization,
+    ) {
     }
 
-    public function runOnce(string $queueName, string $workerId, int $leaseSeconds = 60): bool
-    {
-        $this->queue->heartbeat($workerId, $queueName);
-        $job = $this->queue->claim($queueName, $workerId, $leaseSeconds);
+    public function runOnce(
+        ExecutionContext $context,
+        string $queueName,
+        string $workerId,
+        int $leaseSeconds = 60,
+    ): bool {
+        $this->authorization->assertAllowed(
+            $context,
+            Capability::fromString('system.worker.operate'),
+            AuthorizationResource::item('queue', $queueName),
+        );
+        $this->queue->heartbeat($context, $workerId, $queueName);
+        $job = $this->queue->claim($context, $queueName, $workerId, $leaseSeconds);
 
         if ($job === null) {
             return false;
         }
 
-        $this->queue->heartbeat($workerId, $queueName, $job->id);
+        $this->queue->heartbeat($context, $workerId, $queueName, $job->id);
         $handler = $this->handlers->find($job->type);
 
         if ($handler === null) {
             $this->queue->fail(
+                $context,
                 $job,
                 $workerId,
                 new RuntimeException('No handler is registered for the job type.'),
@@ -40,35 +57,31 @@ final readonly class Worker
             if ($handler instanceof LeaseAwareJobHandler) {
                 $handler->handleWithLease(
                     $job->payload,
+                    $context,
                     new JobLeaseContext(
                         $job->id,
                         $leaseSeconds,
-                        function (int $seconds) use ($job, $workerId, $queueName): void {
-                            $this->queue->renew($job, $workerId, $seconds);
-                            $this->queue->heartbeat($workerId, $queueName, $job->id);
+                        function (int $seconds) use ($context, $job, $workerId, $queueName): void {
+                            $this->queue->renew($context, $job, $workerId, $seconds);
+                            $this->queue->heartbeat($context, $workerId, $queueName, $job->id);
                         },
                     ),
                 );
             } else {
-                $handler->handle($job->payload);
+                $handler->handle($job->payload, $context);
             }
+            $this->queue->complete($context, $job, $workerId);
         } catch (PermanentFailure $failure) {
-            $this->queue->fail($job, $workerId, $failure, true);
-
-            return true;
+            $this->queue->fail($context, $job, $workerId, $failure, true);
         } catch (Throwable $failure) {
-            $this->queue->fail($job, $workerId, $failure, false);
-
-            return true;
+            $this->queue->fail($context, $job, $workerId, $failure, false);
         }
-
-        $this->queue->complete($job, $workerId);
 
         return true;
     }
 
-    public function disconnect(string $workerId): void
+    public function disconnect(ExecutionContext $context, string $workerId, string $queueName): void
     {
-        $this->queue->disconnect($workerId);
+        $this->queue->disconnect($context, $workerId, $queueName);
     }
 }

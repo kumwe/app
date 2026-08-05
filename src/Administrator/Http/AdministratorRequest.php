@@ -7,6 +7,7 @@ namespace Kumwe\CMS\Administrator\Http;
 use DateTimeImmutable;
 use InvalidArgumentException;
 use JsonException;
+use Kumwe\CMS\Application\Authorization\ExecutionContext;
 use Kumwe\CMS\Content\Domain\PublicationWindow;
 use Kumwe\CMS\Identity\Application\Administration\AdministratorSession;
 use Psr\Http\Message\ServerRequestInterface;
@@ -115,6 +116,16 @@ final class AdministratorRequest
         }
 
         return $session;
+    }
+
+    public static function context(ServerRequestInterface $request): ExecutionContext
+    {
+        $context = $request->getAttribute(ExecutionContext::REQUEST_ATTRIBUTE);
+        if (!$context instanceof ExecutionContext) {
+            throw new InvalidArgumentException('An administrator execution context is required.');
+        }
+
+        return $context;
     }
 
     /** @return array<string, true> */

@@ -25,7 +25,7 @@ final readonly class AdministratorSettingsHandler implements RequestHandlerInter
 
         if (strtoupper($request->getMethod()) === 'POST') {
             $form = AdministratorRequest::form($request);
-            $this->settings->updateAll($session->principal->subject(), [
+            $this->settings->updateAll(AdministratorRequest::context($request), [
                 'site_name' => AdministratorRequest::required($form, 'site_name'),
                 'homepage_slug' => AdministratorRequest::required($form, 'homepage_slug'),
                 'default_locale' => AdministratorRequest::required($form, 'default_locale'),
@@ -39,7 +39,7 @@ final readonly class AdministratorSettingsHandler implements RequestHandlerInter
         return new HtmlResponse($this->renderer->render('settings', [
             'csrf' => $session->csrfToken,
             'capabilities' => AdministratorRequest::capabilityMap($request),
-            'settings' => $this->settings->current(),
+            'settings' => $this->settings->managed(AdministratorRequest::context($request)),
             'saved' => ($request->getQueryParams()['saved'] ?? null) === '1',
         ]), 200, ['Cache-Control' => 'no-store']);
     }

@@ -8,6 +8,7 @@ use DateTimeImmutable;
 use InvalidArgumentException;
 use JsonException;
 use Kumwe\CMS\Delivery\Http\Api\ProblemDetailsResponseFactory;
+use Kumwe\CMS\Delivery\Http\Api\ApiExecutionContext;
 use Kumwe\CMS\Identity\Application\Administration\AccessControlService;
 use Kumwe\CMS\Identity\Application\Administration\AdministratorIdentityGateway;
 use Kumwe\CMS\Identity\Application\Authentication\AuthenticatedPrincipal;
@@ -35,15 +36,15 @@ final readonly class AccessControlApiHandler implements RequestHandlerInterface
 
             return match ($operation) {
                 'users.list' => new JsonResponse(
-                    ['items' => $this->access->users()],
+                    ['items' => $this->access->users(ApiExecutionContext::fromRequest($request))],
                     200,
                     ['Cache-Control' => 'no-store'],
                 ),
                 'users.create' => $this->createUser($request),
                 'users.update' => $this->updateUser($request),
                 'roles.list' => new JsonResponse([
-                    'items' => $this->access->roles(),
-                    'capabilities' => $this->access->capabilities(),
+                    'items' => $this->access->roles(ApiExecutionContext::fromRequest($request)),
+                    'capabilities' => $this->access->capabilities(ApiExecutionContext::fromRequest($request)),
                 ], 200, ['Cache-Control' => 'no-store']),
                 'roles.create' => $this->createRole($request),
                 'roles.assign' => $this->assignRole($request),
@@ -52,7 +53,7 @@ final readonly class AccessControlApiHandler implements RequestHandlerInterface
                 'grants.revoke' => $this->revokeGrant($request),
                 'tokens.create' => $this->createToken($request),
                 'tokens.list' => new JsonResponse(
-                    ['items' => $this->access->tokens()],
+                    ['items' => $this->access->tokens(ApiExecutionContext::fromRequest($request))],
                     200,
                     ['Cache-Control' => 'no-store'],
                 ),
@@ -100,7 +101,7 @@ final readonly class AccessControlApiHandler implements RequestHandlerInterface
     {
         $body = $this->json($request);
         $id = $this->access->createUser(
-            $this->principal($request)->subject(),
+            ApiExecutionContext::fromRequest($request),
             $this->string($body, 'email'),
             $this->string($body, 'display_name'),
             $this->string($body, 'password'),
@@ -117,7 +118,7 @@ final readonly class AccessControlApiHandler implements RequestHandlerInterface
     {
         $body = $this->json($request);
         $this->access->updateUser(
-            $this->principal($request)->subject(),
+            ApiExecutionContext::fromRequest($request),
             $this->route($request, 'id'),
             $this->string($body, 'email'),
             $this->string($body, 'display_name'),
@@ -132,7 +133,7 @@ final readonly class AccessControlApiHandler implements RequestHandlerInterface
     {
         $body = $this->json($request);
         $id = $this->access->createRole(
-            $this->principal($request)->subject(),
+            ApiExecutionContext::fromRequest($request),
             $this->string($body, 'code'),
             $this->string($body, 'name'),
         );
@@ -143,7 +144,7 @@ final readonly class AccessControlApiHandler implements RequestHandlerInterface
     private function assignRole(ServerRequestInterface $request): ResponseInterface
     {
         $this->access->assignRole(
-            $this->principal($request)->subject(),
+            ApiExecutionContext::fromRequest($request),
             $this->route($request, 'id'),
             $this->route($request, 'roleId'),
         );
@@ -154,7 +155,7 @@ final readonly class AccessControlApiHandler implements RequestHandlerInterface
     private function revokeRole(ServerRequestInterface $request): ResponseInterface
     {
         $this->access->revokeRole(
-            $this->principal($request)->subject(),
+            ApiExecutionContext::fromRequest($request),
             $this->route($request, 'id'),
             $this->route($request, 'roleId'),
         );
@@ -166,7 +167,7 @@ final readonly class AccessControlApiHandler implements RequestHandlerInterface
     {
         $body = $this->json($request);
         $id = $this->access->grant(
-            $this->principal($request)->subject(),
+            ApiExecutionContext::fromRequest($request),
             $this->route($request, 'id'),
             $this->string($body, 'capability'),
             $this->optionalString($body, 'scope_type') ?? 'global',
@@ -179,7 +180,7 @@ final readonly class AccessControlApiHandler implements RequestHandlerInterface
     private function revokeGrant(ServerRequestInterface $request): ResponseInterface
     {
         $this->access->revokeGrant(
-            $this->principal($request)->subject(),
+            ApiExecutionContext::fromRequest($request),
             $this->route($request, 'grantId'),
         );
 
@@ -201,11 +202,11 @@ final readonly class AccessControlApiHandler implements RequestHandlerInterface
         /** @var list<string> $capabilities */
         $expiresAt = $this->optionalString($body, 'expires_at');
         $created = $this->identities->issueAccessToken(
+            ApiExecutionContext::fromRequest($request),
             $this->string($body, 'email'),
             $this->string($body, 'name'),
             $capabilities,
             $expiresAt === null ? null : new DateTimeImmutable($expiresAt),
-            $this->principal($request)->subject(),
         );
 
         return new JsonResponse($created, 201, ['Cache-Control' => 'no-store']);
@@ -214,7 +215,7 @@ final readonly class AccessControlApiHandler implements RequestHandlerInterface
     private function revokeToken(ServerRequestInterface $request): ResponseInterface
     {
         $this->access->revokeToken(
-            $this->principal($request)->subject(),
+            ApiExecutionContext::fromRequest($request),
             $this->route($request, 'tokenId'),
         );
 

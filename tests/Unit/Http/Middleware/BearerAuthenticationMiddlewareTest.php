@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Kumwe\CMS\Tests\Unit\Http\Middleware;
 
 use InvalidArgumentException;
+use Kumwe\CMS\Application\Authorization\AuthenticationStrength;
+use Kumwe\CMS\Application\Authorization\ExecutionContext;
 use Kumwe\CMS\Http\Middleware\BearerAuthenticationMiddleware;
 use Kumwe\CMS\Identity\Application\Authentication\AccessTokenVerifier;
 use Kumwe\CMS\Identity\Application\Authentication\AuthenticatedPrincipal;
@@ -17,6 +19,7 @@ use Mezzio\Router\RouteResult;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
+use Kumwe\CMS\Tests\Support\AuthorizationContext;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
@@ -103,14 +106,19 @@ final class BearerAuthenticationMiddlewareTest extends TestCase
 
     public function testAttachesPrincipalWhenEveryExactCapabilityIsPresent(): void
     {
-        $principal = AuthenticatedPrincipal::fromStrings(self::SUBJECT, ['content.read', 'content.update']);
+        $principal = AuthorizationContext::principal(['content.read', 'content.update'], self::SUBJECT);
         $verifier = $this->createMock(AccessTokenVerifier::class);
         $verifier->method('verify')->with(self::TOKEN)->willReturn($principal);
         $handler = $this->createMock(RequestHandlerInterface::class);
         $handler->expects(self::once())->method('handle')->with(self::callback(
-            static fn (ServerRequestInterface $request): bool => $request->getAttribute(
-                AuthenticatedPrincipal::REQUEST_ATTRIBUTE,
-            ) === $principal,
+            static function (ServerRequestInterface $request) use ($principal): bool {
+                $context = $request->getAttribute(ExecutionContext::REQUEST_ATTRIBUTE);
+
+                return $request->getAttribute(AuthenticatedPrincipal::REQUEST_ATTRIBUTE) === $principal
+                    && $context instanceof ExecutionContext
+                    && $context->principal() === $principal
+                    && $context->authenticationStrength() === AuthenticationStrength::BearerToken;
+            },
         ))->willReturn(new TextResponse('', 204));
         $response = (new BearerAuthenticationMiddleware($verifier))->process(
             $this->protectedRequest(['content.update', 'content.read'])
@@ -123,7 +131,7 @@ final class BearerAuthenticationMiddlewareTest extends TestCase
 
     public function testMissingExactCapabilityReturnsInsufficientScope(): void
     {
-        $principal = AuthenticatedPrincipal::fromStrings(self::SUBJECT, ['content.read']);
+        $principal = AuthorizationContext::principal(['content.read'], self::SUBJECT);
         $verifier = $this->createMock(AccessTokenVerifier::class);
         $verifier->method('verify')->willReturn($principal);
         $response = (new BearerAuthenticationMiddleware($verifier))->process(
@@ -141,7 +149,7 @@ final class BearerAuthenticationMiddlewareTest extends TestCase
 
     public function testWildcardRouteCapabilityIsRejectedAsConfigurationError(): void
     {
-        $principal = AuthenticatedPrincipal::fromStrings(self::SUBJECT, ['content.read']);
+        $principal = AuthorizationContext::principal(['content.read'], self::SUBJECT);
         $verifier = $this->createMock(AccessTokenVerifier::class);
         $verifier->method('verify')->willReturn($principal);
 

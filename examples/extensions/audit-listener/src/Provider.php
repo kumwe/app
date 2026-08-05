@@ -4,32 +4,33 @@ declare(strict_types=1);
 
 namespace KumweExample\AuditListener;
 
-use Joomla\DI\Container;
-use Joomla\Event\DispatcherInterface;
 use Joomla\Event\EventInterface;
+use Kumwe\CMS\Extension\Runtime\ExtensionContainer;
+use Kumwe\CMS\Extension\Runtime\ExtensionEventRegistrar;
+use Kumwe\CMS\Extension\Runtime\ExtensionRouteRegistrar;
 use Kumwe\CMS\Extension\Runtime\RuntimeExtension;
-use Mezzio\Application;
-use Psr\Log\LoggerInterface;
 
 final class Provider implements RuntimeExtension
 {
-    public function register(Container $container): void
+    public function register(ExtensionContainer $container): void
     {
     }
 
-    public function boot(Container $container): void
+    public function boot(ExtensionContainer $container): void
     {
-        $container->get(DispatcherInterface::class)->addListener(
+        $events = $container->get(ExtensionEventRegistrar::class);
+        if (!$events instanceof ExtensionEventRegistrar) {
+            throw new \LogicException('The safe extension event registrar is unavailable.');
+        }
+        $events->listen(
             'onKumweExtensionAfterActivate',
-            function (EventInterface $event) use ($container): void {
-                $container->get(LoggerInterface::class)->info('An extension was activated.', [
-                    'identifier' => $event->getArgument('identifier'),
-                ]);
+            function (EventInterface $event): void {
+                $event->getArgument('identifier');
             },
         );
     }
 
-    public function registerRoutes(Application $application): void
+    public function registerRoutes(ExtensionRouteRegistrar $routes): void
     {
     }
 }

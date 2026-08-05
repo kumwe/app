@@ -6,10 +6,14 @@ namespace Kumwe\CMS\Application\Automation;
 
 use DateTimeImmutable;
 use InvalidArgumentException;
+use Kumwe\CMS\Application\Authorization\AuthorizationGateway;
+use Kumwe\CMS\Application\Authorization\AuthorizationResource;
+use Kumwe\CMS\Application\Authorization\ExecutionContext;
 use Kumwe\CMS\Application\Automation\Job\ScheduleRepository;
 use Kumwe\CMS\Audit\Application\AuditRecorder;
 use Kumwe\CMS\Audit\Domain\AuditEvent;
 use Kumwe\CMS\Infrastructure\Persistence\TransactionManager;
+use Kumwe\CMS\Identity\Domain\Capability;
 use Psr\Clock\ClockInterface;
 use Ramsey\Uuid\Uuid;
 
@@ -22,38 +26,41 @@ final readonly class AutomationManagementService
         private TransactionManager $transactions,
         private AuditRecorder $audit,
         private ClockInterface $clock,
+        private AuthorizationGateway $authorization,
     ) {
     }
 
     /** @return list<array<string, mixed>> */
-    public function schedules(): array
+    public function schedules(ExecutionContext $context): array
     {
-        return $this->schedules->all();
+        return $this->schedules->all($context);
     }
 
     /** @return array<string, mixed> */
-    public function schedule(string $id): array
+    public function schedule(ExecutionContext $context, string $id): array
     {
         $this->assertId($id);
 
-        return $this->schedules->find($id) ?? throw new AutomationNotFound('The schedule does not exist.');
+        return $this->schedules->find($context, $id)
+            ?? throw new AutomationNotFound('The schedule does not exist.');
     }
 
     /** @return list<array<string, mixed>> */
-    public function jobs(int $limit = 100): array
+    public function jobs(ExecutionContext $context, int $limit = 100): array
     {
-        return $this->jobs->all($limit);
+        return $this->jobs->all($context, $limit);
     }
 
     /** @return list<string> */
-    public function jobTypes(): array
+    public function jobTypes(ExecutionContext $context): array
     {
+        $this->authorize($context, AuthorizationResource::collection('job'));
         return $this->handlers->types();
     }
 
     /** @param array<string, mixed> $payload */
     public function createSchedule(
-        string $actorId,
+        ExecutionContext $context,
         string $name,
         string $cronExpression,
         string $timezone,
@@ -62,11 +69,14 @@ final readonly class AutomationManagementService
         string $queue,
         DateTimeImmutable $firstRun,
     ): string {
+        $this->authorize($context, AuthorizationResource::collection('schedule'));
+        $actorId = $context->actorId();
         if ($this->handlers->find($jobType) === null) {
             throw new InvalidArgumentException('The schedule job type has no registered handler.');
         }
 
         return $this->transactions->transactional(function () use (
+            $context,
             $actorId,
             $name,
             $cronExpression,
@@ -77,6 +87,7 @@ final readonly class AutomationManagementService
             $firstRun,
         ): string {
             $id = $this->schedules->create(
+                $context,
                 $name,
                 $cronExpression,
                 $timezone,
@@ -92,14 +103,22 @@ final readonly class AutomationManagementService
     }
 
     public function setScheduleEnabled(
-        string $actorId,
+        ExecutionContext $context,
         string $id,
         int $expectedVersion,
         bool $enabled,
     ): void {
+        $this->authorize($context, AuthorizationResource::item('schedule', $id));
+        $actorId = $context->actorId();
         $this->assertId($id);
-        $this->transactions->transactional(function () use ($actorId, $id, $expectedVersion, $enabled): void {
-            $this->schedules->setEnabled($id, $expectedVersion, $enabled);
+        $this->transactions->transactional(function () use (
+            $context,
+            $actorId,
+            $id,
+            $expectedVersion,
+            $enabled,
+        ): void {
+            $this->schedules->setEnabled($context, $id, $expectedVersion, $enabled);
             $this->record(
                 $actorId,
                 $enabled ? 'automation.schedule.enable' : 'automation.schedule.disable',
@@ -109,29 +128,35 @@ final readonly class AutomationManagementService
         });
     }
 
-    public function deleteSchedule(string $actorId, string $id, int $expectedVersion): void
+    public function deleteSchedule(ExecutionContext $context, string $id, int $expectedVersion): void
     {
+        $this->authorize($context, AuthorizationResource::item('schedule', $id));
+        $actorId = $context->actorId();
         $this->assertId($id);
-        $this->transactions->transactional(function () use ($actorId, $id, $expectedVersion): void {
-            $this->schedules->delete($id, $expectedVersion);
+        $this->transactions->transactional(function () use ($context, $actorId, $id, $expectedVersion): void {
+            $this->schedules->delete($context, $id, $expectedVersion);
             $this->record($actorId, 'automation.schedule.delete', 'schedule', $id);
         });
     }
 
-    public function retryJob(string $actorId, string $id): void
+    public function retryJob(ExecutionContext $context, string $id): void
     {
+        $this->authorize($context, AuthorizationResource::item('job', $id));
+        $actorId = $context->actorId();
         $this->assertId($id);
-        $this->transactions->transactional(function () use ($actorId, $id): void {
-            $this->jobs->retry($id);
+        $this->transactions->transactional(function () use ($context, $actorId, $id): void {
+            $this->jobs->retry($context, $id);
             $this->record($actorId, 'automation.job.retry', 'job', $id);
         });
     }
 
-    public function cancelJob(string $actorId, string $id): void
+    public function cancelJob(ExecutionContext $context, string $id): void
     {
+        $this->authorize($context, AuthorizationResource::item('job', $id));
+        $actorId = $context->actorId();
         $this->assertId($id);
-        $this->transactions->transactional(function () use ($actorId, $id): void {
-            $this->jobs->cancel($id);
+        $this->transactions->transactional(function () use ($context, $actorId, $id): void {
+            $this->jobs->cancel($context, $id);
             $this->record($actorId, 'automation.job.cancel', 'job', $id);
         });
     }
@@ -141,6 +166,15 @@ final readonly class AutomationManagementService
         if (!Uuid::isValid($id) || strtolower($id) !== $id) {
             throw new InvalidArgumentException('Automation resource identifiers must be canonical UUIDs.');
         }
+    }
+
+    private function authorize(ExecutionContext $context, AuthorizationResource $resource): void
+    {
+        $this->authorization->assertAllowed(
+            $context,
+            Capability::fromString('automation.manage'),
+            $resource,
+        );
     }
 
     /** @param array<string, mixed> $metadata */

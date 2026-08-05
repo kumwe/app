@@ -5,11 +5,17 @@ declare(strict_types=1);
 namespace Kumwe\CMS\Identity\Application\Administration;
 
 use InvalidArgumentException;
+use Kumwe\CMS\Application\Authorization\AuthorizationGateway;
+use Kumwe\CMS\Application\Authorization\AuthorizationResource;
+use Kumwe\CMS\Application\Authorization\ExecutionContext;
+use Kumwe\CMS\Application\Authorization\ResourceSiteOwnershipWriter;
+use Kumwe\CMS\Application\Authorization\SiteContext;
 use Kumwe\CMS\Audit\Application\AuditRecorder;
 use Kumwe\CMS\Audit\Domain\AuditEvent;
 use Kumwe\CMS\Identity\Application\Security\PasswordHasher;
 use Kumwe\CMS\Identity\Domain\Capability;
 use Kumwe\CMS\Identity\Domain\EmailAddress;
+use Kumwe\CMS\Identity\Domain\GrantScope;
 use Kumwe\CMS\Identity\Domain\UserStatus;
 use Kumwe\CMS\Infrastructure\Persistence\TransactionManager;
 use Psr\Clock\ClockInterface;
@@ -23,40 +29,47 @@ final readonly class AccessControlService
         private TransactionManager $transactions,
         private AuditRecorder $audit,
         private ClockInterface $clock,
+        private AuthorizationGateway $authorization,
+        private ResourceSiteOwnershipWriter $ownership,
     ) {
     }
 
     /** @return list<array<string, mixed>> */
-    public function users(): array
+    public function users(ExecutionContext $context): array
     {
-        return $this->repository->users();
+        $this->authorize($context, AuthorizationResource::collection('user'));
+        return $this->filterPaged($context, 'user', $this->repository->users(...));
     }
 
     /** @return list<array<string, mixed>> */
-    public function roles(): array
+    public function roles(ExecutionContext $context): array
     {
-        return $this->repository->roles();
+        $this->authorize($context, AuthorizationResource::collection('role'));
+        return $this->filterPaged($context, 'role', $this->repository->roles(...));
     }
 
     /** @return list<array{code: string, description: string}> */
-    public function capabilities(): array
+    public function capabilities(ExecutionContext $context): array
     {
-        return $this->repository->capabilities();
+        $this->authorize($context, AuthorizationResource::collection('capability'));
+        return $this->filterPaged($context, 'capability', $this->repository->capabilities(...), 'code');
     }
 
     /** @return list<array<string, mixed>> */
-    public function tokens(): array
+    public function tokens(ExecutionContext $context): array
     {
-        return $this->repository->tokens();
+        $this->authorize($context, AuthorizationResource::collection('api_token'));
+        return $this->filterPaged($context, 'api_token', $this->repository->tokens(...));
     }
 
     public function createUser(
-        string $actorId,
+        ExecutionContext $context,
         string $email,
         string $displayName,
         string $password,
         UserStatus $status = UserStatus::Active,
     ): string {
+        $this->authorize($context, AuthorizationResource::collection('user'));
         $id = Uuid::uuid7()->toString();
         $email = EmailAddress::fromString($email)->value();
         $displayName = $this->displayName($displayName);
@@ -69,7 +82,7 @@ final readonly class AccessControlService
             $displayName,
             $status,
             $hash,
-            $actorId,
+            $context,
             $at,
         ): string {
             $this->repository->insertUser(
@@ -80,21 +93,23 @@ final readonly class AccessControlService
                 $hash,
                 $at,
             );
-            $this->audit($actorId, 'user.create', 'user', $id, ['status' => $status->value]);
+            $this->ownership->record(AuthorizationResource::item('user', $id), SiteContext::default());
+            $this->audit($context->actorId(), 'user.create', 'user', $id, ['status' => $status->value]);
 
             return $id;
         });
     }
 
     public function updateUser(
-        string $actorId,
+        ExecutionContext $context,
         string $id,
         string $email,
         string $displayName,
         UserStatus $status,
         int $expectedVersion,
     ): void {
-        if ($id === $actorId && !$status->canAuthenticate()) {
+        $this->authorize($context, AuthorizationResource::item('user', $id));
+        if ($id === $context->actorId() && !$status->canAuthenticate()) {
             throw new InvalidArgumentException('You cannot disable or suspend your own administrator account.');
         }
 
@@ -102,7 +117,7 @@ final readonly class AccessControlService
         $displayName = $this->displayName($displayName);
         $at = $this->clock->now();
         $this->transactions->transactional(function () use (
-            $actorId,
+            $context,
             $id,
             $email,
             $displayName,
@@ -118,12 +133,13 @@ final readonly class AccessControlService
                 $expectedVersion,
                 $at,
             );
-            $this->audit($actorId, 'user.update', 'user', $id, ['status' => $status->value]);
+            $this->audit($context->actorId(), 'user.update', 'user', $id, ['status' => $status->value]);
         });
     }
 
-    public function createRole(string $actorId, string $code, string $name): string
+    public function createRole(ExecutionContext $context, string $code, string $name): string
     {
+        $this->authorize($context, AuthorizationResource::collection('role'));
         $code = strtolower(trim($code));
         $name = trim($name);
         if (preg_match('/^[a-z][a-z0-9._-]{1,63}$/D', $code) !== 1) {
@@ -135,16 +151,27 @@ final readonly class AccessControlService
 
         $id = Uuid::uuid7()->toString();
         $at = $this->clock->now();
-        return $this->transactions->transactional(function () use ($actorId, $id, $code, $name, $at): string {
+        return $this->transactions->transactional(function () use ($context, $id, $code, $name, $at): string {
             $this->repository->insertRole($id, $code, $name, $at);
-            $this->audit($actorId, 'role.create', 'role', $id, ['code' => $code]);
+            $this->ownership->record(AuthorizationResource::item('role', $id), SiteContext::default());
+            $this->audit($context->actorId(), 'role.create', 'role', $id, ['code' => $code]);
 
             return $id;
         });
     }
 
-    public function assignRole(string $actorId, string $userId, string $roleId): void
+    public function assignRole(ExecutionContext $context, string $userId, string $roleId): void
     {
+        $this->authorize($context, AuthorizationResource::item('user', $userId));
+        $this->authorize($context, AuthorizationResource::item('role', $roleId));
+        foreach ($this->repository->roleGrants($roleId) as $grant) {
+            $this->authorization->assertCanDelegate(
+                $context,
+                Capability::fromString($grant['capability']),
+                $this->scope($grant['scope_type'], $grant['scope_identifier']),
+            );
+        }
+        $actorId = $context->actorId();
         $at = $this->clock->now();
         $this->transactions->transactional(function () use ($actorId, $userId, $roleId, $at): void {
             $this->repository->assignRole($userId, $roleId, $actorId, $at);
@@ -152,8 +179,11 @@ final readonly class AccessControlService
         });
     }
 
-    public function revokeRole(string $actorId, string $userId, string $roleId): void
+    public function revokeRole(ExecutionContext $context, string $userId, string $roleId): void
     {
+        $this->authorize($context, AuthorizationResource::item('user', $userId));
+        $this->authorize($context, AuthorizationResource::item('role', $roleId));
+        $actorId = $context->actorId();
         if ($actorId === $userId && $this->repository->roleCode($roleId) === 'administrator') {
             throw new InvalidArgumentException('You cannot remove your own administrator role.');
         }
@@ -164,12 +194,14 @@ final readonly class AccessControlService
     }
 
     public function grant(
-        string $actorId,
+        ExecutionContext $context,
         string $roleId,
         string $capability,
         string $scopeType = 'global',
         ?string $scopeIdentifier = null,
     ): string {
+        $this->authorize($context, AuthorizationResource::item('role', $roleId));
+        $actorId = $context->actorId();
         $capability = Capability::fromString($capability)->value();
         $scopeType = strtolower(trim($scopeType));
         if (preg_match('/^[a-z][a-z0-9._-]{0,62}$/D', $scopeType) !== 1) {
@@ -181,6 +213,8 @@ final readonly class AccessControlService
                 'Global grants cannot have a scope identifier; scoped grants require one.',
             );
         }
+        $scope = $this->scope($scopeType, $scopeIdentifier);
+        $this->authorization->assertCanDelegate($context, Capability::fromString($capability), $scope);
 
         $id = Uuid::uuid7()->toString();
         $at = $this->clock->now();
@@ -202,6 +236,7 @@ final readonly class AccessControlService
                 $actorId,
                 $at,
             );
+            $this->ownership->record(AuthorizationResource::item('grant', $id), SiteContext::default());
             $this->audit($actorId, 'capability.grant', 'role', $roleId, [
                 'capability' => $capability,
                 'scope_type' => $scopeType,
@@ -212,16 +247,27 @@ final readonly class AccessControlService
         });
     }
 
-    public function revokeGrant(string $actorId, string $grantId): void
+    public function revokeGrant(ExecutionContext $context, string $grantId): void
     {
+        $this->authorize($context, AuthorizationResource::item('grant', $grantId));
+        $grant = $this->repository->grantRecord($grantId)
+            ?? throw new InvalidArgumentException('The capability grant does not exist.');
+        $this->authorize($context, AuthorizationResource::item('role', $grant['role_id']));
+        $actorId = $context->actorId();
         $this->transactions->transactional(function () use ($actorId, $grantId): void {
             $this->repository->revokeGrant($grantId);
+            $this->ownership->remove(
+                AuthorizationResource::item('grant', $grantId),
+                SiteContext::default(),
+            );
             $this->audit($actorId, 'capability.revoke', 'grant', $grantId);
         });
     }
 
-    public function revokeToken(string $actorId, string $tokenId): void
+    public function revokeToken(ExecutionContext $context, string $tokenId): void
     {
+        $this->authorize($context, AuthorizationResource::item('api_token', $tokenId));
+        $actorId = $context->actorId();
         $at = $this->clock->now();
         $this->transactions->transactional(function () use ($actorId, $tokenId, $at): void {
             $this->repository->revokeToken($tokenId, $at);
@@ -237,6 +283,58 @@ final readonly class AccessControlService
         }
 
         return $name;
+    }
+
+    private function authorize(ExecutionContext $context, AuthorizationResource $resource): void
+    {
+        $this->authorization->assertAllowed(
+            $context,
+            Capability::fromString('users.manage'),
+            $resource,
+        );
+    }
+
+    /**
+     * @param callable(int, int): list<array<string, mixed>> $page
+     * @return list<array<string, mixed>>
+     */
+    private function filterPaged(
+        ExecutionContext $context,
+        string $resourceType,
+        callable $page,
+        string $identifierField = 'id',
+        int $limit = 100,
+    ): array {
+        $result = [];
+        $offset = 0;
+        $pageSize = 100;
+        do {
+            /** @var list<array<string, mixed>> $rows */
+            $rows = $page($pageSize, $offset);
+            foreach ($rows as $row) {
+                $identifier = $row[$identifierField] ?? null;
+                if (is_string($identifier) && $this->authorization->decide(
+                    $context,
+                    Capability::fromString('users.manage'),
+                    AuthorizationResource::item($resourceType, $identifier),
+                )->allowed) {
+                    $result[] = $row;
+                    if (count($result) === $limit) {
+                        return $result;
+                    }
+                }
+            }
+            $offset += count($rows);
+        } while (count($rows) === $pageSize);
+
+        return $result;
+    }
+
+    private function scope(string $type, ?string $identifier): GrantScope
+    {
+        return $type === 'global'
+            ? GrantScope::global()
+            : GrantScope::named($type, $identifier ?? '');
     }
 
     /** @param array<string, mixed> $metadata */

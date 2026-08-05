@@ -33,7 +33,7 @@ final readonly class AdministratorExtensionsHandler implements RequestHandlerInt
             return new HtmlResponse($this->renderer->render('extensions', [
                 'csrf' => $session->csrfToken,
                 'capabilities' => AdministratorRequest::capabilityMap($request),
-                'extensions' => $this->extensions->installed(),
+                'extensions' => $this->extensions->installed(AdministratorRequest::context($request)),
             ]), 200, ['Cache-Control' => 'no-store']);
         }
 
@@ -54,7 +54,7 @@ final readonly class AdministratorExtensionsHandler implements RequestHandlerInt
             $upload->moveTo($temporary);
             $this->extensions->install(
                 $temporary,
-                $session->principal->subject(),
+                AdministratorRequest::context($request),
                 ($form['key_id'] ?? '') === '' ? null : $form['key_id'],
                 ($form['signature'] ?? '') === '' ? null : $form['signature'],
             );
@@ -62,7 +62,7 @@ final readonly class AdministratorExtensionsHandler implements RequestHandlerInt
             return new HtmlResponse($this->renderer->render('extensions', [
                 'csrf' => $session->csrfToken,
                 'capabilities' => AdministratorRequest::capabilityMap($request),
-                'extensions' => $this->extensions->installed(),
+                'extensions' => $this->extensions->installed(AdministratorRequest::context($request)),
                 'error' => $exception->getMessage(),
             ]), 422, ['Cache-Control' => 'no-store']);
         } finally {

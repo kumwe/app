@@ -6,6 +6,7 @@ namespace Kumwe\CMS\Delivery\Http\Mcp;
 
 use Kumwe\CMS\Infrastructure\Mcp\KumweMcpHandlers;
 use Kumwe\CMS\Infrastructure\Mcp\KumweMcpServerFactory;
+use Kumwe\CMS\Application\Authorization\ExecutionContext;
 use Kumwe\CMS\Identity\Application\Authentication\AuthenticatedPrincipal;
 use Mcp\Server\Transport\Http\Middleware\CorsMiddleware;
 use Mcp\Server\Transport\Http\Middleware\DnsRebindingProtectionMiddleware;
@@ -73,6 +74,14 @@ final readonly class McpHttpHandler implements RequestHandlerInterface
             ],
             maxBodyBytes: $this->maxBodyBytes,
         );
-        return $this->servers->create($this->handlers->forPrincipal($principal))->run($transport);
+        $context = $request->getAttribute(ExecutionContext::REQUEST_ATTRIBUTE);
+        if (!$context instanceof ExecutionContext) {
+            throw new \LogicException('MCP HTTP requests require an execution context.');
+        }
+        if ($context->principal()?->subject() !== $principal->subject()) {
+            throw new \LogicException('MCP principal and execution context identities must match.');
+        }
+
+        return $this->servers->create($this->handlers->forContext($context))->run($transport);
     }
 }

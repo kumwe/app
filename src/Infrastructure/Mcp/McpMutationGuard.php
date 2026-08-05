@@ -9,6 +9,7 @@ use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Doctrine\DBAL\Types\Types;
 use InvalidArgumentException;
 use JsonException;
+use Kumwe\CMS\Application\Authorization\ExecutionContext;
 use Kumwe\CMS\Identity\Application\Authentication\AuthenticatedPrincipal;
 use Kumwe\CMS\Infrastructure\Persistence\TableNames;
 use Psr\Clock\ClockInterface;
@@ -32,17 +33,21 @@ final readonly class McpMutationGuard
      * @return TResult
      */
     public function run(
-        AuthenticatedPrincipal $principal,
+        ExecutionContext $context,
         string $operation,
         string $operationId,
         array $input,
         callable $mutation,
     ): array {
+        $principal = $context->principal()
+            ?? throw new InvalidArgumentException('MCP mutations require a human execution context.');
         if (preg_match('/^[A-Za-z0-9][A-Za-z0-9._:-]{15,127}$/D', $operationId) !== 1) {
             throw new InvalidArgumentException('MCP operationId must be a stable 16 to 128 character identifier.');
         }
         $digest = hash('sha256', $this->canonicalJson($input));
         $now = $this->clock->now();
+        $authorizationFingerprint = $context->authorizationFingerprint();
+        $leaseOwner = bin2hex(random_bytes(24));
 
         try {
             $this->database->insert($this->tables->raw('idempotency'), [
@@ -51,27 +56,40 @@ final readonly class McpMutationGuard
                 'subject' => $principal->subject(),
                 'operation' => 'mcp.' . $operation,
                 'request_digest' => $digest,
+                'authorization_fingerprint' => $authorizationFingerprint,
+                'lease_owner' => $leaseOwner,
+                'lease_expires_at' => $now->modify('+2 minutes'),
                 'state' => 'in_progress',
                 'created_at' => $now,
                 'expires_at' => $now->modify('+24 hours'),
             ], [
                 'created_at' => Types::DATETIME_IMMUTABLE,
+                'lease_expires_at' => Types::DATETIME_IMMUTABLE,
                 'expires_at' => Types::DATETIME_IMMUTABLE,
             ]);
         } catch (UniqueConstraintViolationException) {
-            /** @var TResult $replayed */
-            $replayed = $this->replay($principal, $operation, $operationId, $digest);
-
-            return $replayed;
+            $replayed = $this->replay(
+                $principal,
+                $operation,
+                $operationId,
+                $digest,
+                $authorizationFingerprint,
+                $leaseOwner,
+            );
+            if ($replayed !== null) {
+                /** @var TResult $replayed */
+                return $replayed;
+            }
         }
 
         try {
             $result = $mutation();
             $encoded = json_encode($result, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
-            $this->database->executeStatement(sprintf(
+            $affected = $this->database->executeStatement(sprintf(
                 "UPDATE %s SET state = 'completed', result_status = 200, result_body = ?, "
                 . 'result_body_digest = ?, completed_at = ? '
-                . 'WHERE subject = ? AND operation = ? AND idempotency_key = ?',
+                . "WHERE subject = ? AND operation = ? AND idempotency_key = ? AND state = 'in_progress' "
+                . 'AND lease_owner = ?',
                 $this->tables->quoted('idempotency'),
             ), [
                 $encoded,
@@ -80,6 +98,7 @@ final readonly class McpMutationGuard
                 $principal->subject(),
                 'mcp.' . $operation,
                 $operationId,
+                $leaseOwner,
             ], [
                 Types::TEXT,
                 Types::STRING,
@@ -87,47 +106,141 @@ final readonly class McpMutationGuard
                 Types::STRING,
                 Types::STRING,
                 Types::STRING,
+                Types::STRING,
             ]);
+            if ((string) $affected !== '1') {
+                throw new RuntimeException('The MCP mutation lease was lost before its result could be committed.');
+            }
 
             return $result;
         } catch (Throwable $exception) {
-            $this->database->delete($this->tables->raw('idempotency'), [
-                'subject' => $principal->subject(),
-                'operation' => 'mcp.' . $operation,
-                'idempotency_key' => $operationId,
-            ]);
+            $this->database->executeStatement(sprintf(
+                "UPDATE %s SET state = 'failed' WHERE subject = ? AND operation = ? "
+                . "AND idempotency_key = ? AND state = 'in_progress' AND lease_owner = ?",
+                $this->tables->quoted('idempotency'),
+            ), [$principal->subject(), 'mcp.' . $operation, $operationId, $leaseOwner]);
             throw $exception;
         }
     }
 
-    /** @return array<string, mixed> */
+    /** @return array<string, mixed>|null */
     private function replay(
         AuthenticatedPrincipal $principal,
         string $operation,
         string $operationId,
         string $digest,
-    ): array {
+        string $authorizationFingerprint,
+        string $leaseOwner,
+    ): ?array {
         $row = $this->database->fetchAssociative(sprintf(
-            'SELECT request_digest, state, result_body FROM %s '
+            'SELECT request_digest, authorization_fingerprint, state, result_body, result_body_digest, '
+            . 'lease_expires_at, expires_at FROM %s '
             . 'WHERE subject = ? AND operation = ? AND idempotency_key = ?',
             $this->tables->quoted('idempotency'),
         ), [$principal->subject(), 'mcp.' . $operation, $operationId]);
-        $storedDigest = $row === false ? null : ($row['request_digest'] ?? null);
-        if ($row === false || !is_string($storedDigest) || !hash_equals($storedDigest, $digest)) {
+        if ($row === false) {
+            throw new RuntimeException('The MCP idempotency record could not be loaded.');
+        }
+        if ($this->expired($row['expires_at'] ?? null)) {
+            if ($this->acquire(
+                $principal,
+                $operation,
+                $operationId,
+                $digest,
+                $authorizationFingerprint,
+                $leaseOwner,
+            )) {
+                return null;
+            }
+
+            throw new RuntimeException('The MCP operation lease changed while it was being acquired.');
+        }
+        $storedDigest = $row['request_digest'] ?? null;
+        if (!is_string($storedDigest) || !hash_equals($storedDigest, $digest)) {
             throw new InvalidArgumentException('The MCP operationId was already used with different input.');
         }
-        if (($row['state'] ?? null) !== 'completed') {
-            throw new RuntimeException('The MCP operation is already in progress; retry later with the same ID.');
+        $storedFingerprint = $row['authorization_fingerprint'] ?? null;
+        if (!is_string($storedFingerprint) || !hash_equals($storedFingerprint, $authorizationFingerprint)) {
+            throw new InvalidArgumentException(
+                'The MCP operationId belongs to a different credential or authorization state.',
+            );
         }
-        $result = $row['result_body'] ?? null;
-        if (is_string($result)) {
-            $result = json_decode($result, true, 64, JSON_THROW_ON_ERROR);
+        $state = $row['state'] ?? null;
+        if ($state === 'completed') {
+            $resultBody = $row['result_body'] ?? null;
+            $resultDigest = $row['result_body_digest'] ?? null;
+            if (
+                !is_string($resultBody)
+                || !is_string($resultDigest)
+                || !hash_equals($resultDigest, hash('sha256', $resultBody))
+            ) {
+                throw new RuntimeException('The stored MCP operation result failed its integrity check.');
+            }
+            $result = json_decode($resultBody, true, 64, JSON_THROW_ON_ERROR);
+            if (!is_array($result) || array_is_list($result)) {
+                throw new RuntimeException('The stored MCP operation result is invalid.');
+            }
+            /** @var array<string, mixed> $result */
+            return $result;
         }
-        if (!is_array($result) || array_is_list($result)) {
-            throw new RuntimeException('The stored MCP operation result is invalid.');
+        if (
+            $state === 'failed'
+            || $this->leaseExpired($row['lease_expires_at'] ?? null)
+        ) {
+            if ($this->acquire(
+                $principal,
+                $operation,
+                $operationId,
+                $digest,
+                $authorizationFingerprint,
+                $leaseOwner,
+            )) {
+                return null;
+            }
         }
-        /** @var array<string, mixed> $result */
-        return $result;
+        throw new RuntimeException('The MCP operation is already in progress; retry later with the same ID.');
+    }
+
+    private function acquire(
+        AuthenticatedPrincipal $principal,
+        string $operation,
+        string $operationId,
+        string $digest,
+        string $authorizationFingerprint,
+        string $leaseOwner,
+    ): bool {
+        $now = $this->clock->now();
+        $affected = $this->database->executeStatement(sprintf(
+            "UPDATE %s SET state = 'in_progress', request_digest = ?, authorization_fingerprint = ?, "
+            . 'lease_owner = ?, lease_expires_at = ?, result_body = NULL, result_body_digest = NULL, '
+            . 'completed_at = NULL, created_at = ?, expires_at = ? '
+            . 'WHERE subject = ? AND operation = ? AND idempotency_key = ? '
+            . "AND (state = 'failed' OR lease_expires_at <= ? OR expires_at <= ?)",
+            $this->tables->quoted('idempotency'),
+        ), [
+            $digest, $authorizationFingerprint, $leaseOwner, $now->modify('+2 minutes'),
+            $now, $now->modify('+24 hours'), $principal->subject(), 'mcp.' . $operation, $operationId,
+            $now, $now,
+        ]);
+
+        return (string) $affected === '1';
+    }
+
+    private function leaseExpired(mixed $stored): bool
+    {
+        if ($stored instanceof \DateTimeInterface) {
+            return $stored <= $this->clock->now();
+        }
+        if (!is_string($stored)) {
+            throw new RuntimeException('The MCP idempotency lease is invalid.');
+        }
+
+        return new \DateTimeImmutable($stored) <= $this->clock->now();
+    }
+
+    private function expired(mixed $stored): bool
+    {
+        return $this->leaseExpired($stored);
     }
 
     /** @param array<string, mixed> $input @throws JsonException */

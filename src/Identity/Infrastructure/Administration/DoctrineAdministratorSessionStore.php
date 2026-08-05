@@ -9,11 +9,17 @@ use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Types\Types;
 use InvalidArgumentException;
+use Kumwe\CMS\Application\Authorization\AuthorizationGateway;
+use Kumwe\CMS\Application\Authorization\AuthorizationResource;
+use Kumwe\CMS\Application\Authorization\ExecutionContext;
+use Kumwe\CMS\Application\Authorization\ResourceSiteOwnershipWriter;
 use Kumwe\CMS\Identity\Application\Administration\AdministratorSession;
 use Kumwe\CMS\Identity\Application\Administration\AdministratorSessionStore;
 use Kumwe\CMS\Identity\Application\Administration\CreatedAdministratorSession;
 use Kumwe\CMS\Identity\Application\Authentication\AuthenticatedPrincipal;
+use Kumwe\CMS\Identity\Domain\Capability;
 use Kumwe\CMS\Infrastructure\Persistence\TableNames;
+use Kumwe\CMS\Infrastructure\Persistence\TransactionManager;
 use Psr\Clock\ClockInterface;
 use Ramsey\Uuid\Uuid;
 use RuntimeException;
@@ -25,6 +31,10 @@ final readonly class DoctrineAdministratorSessionStore implements AdministratorS
         private TableNames $tables,
         private ClockInterface $clock,
         private string $applicationSecret,
+        private AuthorizationGateway $authorization,
+        private TransactionManager $transactions,
+        private ResourceSiteOwnershipWriter $ownership,
+        private object $provenance,
         private int $lifetimeSeconds = 28_800,
     ) {
         if ($lifetimeSeconds < 300 || $lifetimeSeconds > 604_800) {
@@ -32,28 +42,50 @@ final readonly class DoctrineAdministratorSessionStore implements AdministratorS
         }
     }
 
-    public function create(AuthenticatedPrincipal $principal, string $userAgent): CreatedAdministratorSession
+    public function create(ExecutionContext $context, string $userAgent): CreatedAdministratorSession
     {
+        $this->authorization->assertAllowed(
+            $context,
+            Capability::fromString('administrator.access'),
+            AuthorizationResource::collection('administrator_session'),
+        );
+        $principal = $context->principal()
+            ?? throw new InvalidArgumentException('Administrator sessions require a human principal.');
         $id = Uuid::uuid7()->toString();
         $token = $this->base64Url(random_bytes(48));
         $csrf = $this->base64Url(random_bytes(32));
         $now = $this->clock->now();
         $expiresAt = $now->add(new DateInterval(sprintf('PT%dS', $this->lifetimeSeconds)));
-        $this->database->insert($this->tables->raw('administrator_sessions'), [
-            'id' => $id,
-            'user_id' => $principal->subject(),
-            'token_digest' => hash('sha256', $token),
-            'csrf_token' => $csrf,
-            'ip_digest' => null,
-            'user_agent_digest' => $this->fingerprint($userAgent),
-            'created_at' => $now,
-            'last_seen_at' => $now,
-            'expires_at' => $expiresAt,
-        ], [
-            'created_at' => Types::DATETIME_IMMUTABLE,
-            'last_seen_at' => Types::DATETIME_IMMUTABLE,
-            'expires_at' => Types::DATETIME_IMMUTABLE,
-        ]);
+        $this->transactions->transactional(function () use (
+            $context,
+            $principal,
+            $id,
+            $token,
+            $csrf,
+            $userAgent,
+            $now,
+            $expiresAt,
+        ): void {
+            $this->database->insert($this->tables->raw('administrator_sessions'), [
+                'id' => $id,
+                'user_id' => $principal->subject(),
+                'token_digest' => hash('sha256', $token),
+                'csrf_token' => $csrf,
+                'ip_digest' => null,
+                'user_agent_digest' => $this->fingerprint($userAgent),
+                'created_at' => $now,
+                'last_seen_at' => $now,
+                'expires_at' => $expiresAt,
+            ], [
+                'created_at' => Types::DATETIME_IMMUTABLE,
+                'last_seen_at' => Types::DATETIME_IMMUTABLE,
+                'expires_at' => Types::DATETIME_IMMUTABLE,
+            ]);
+            $this->ownership->record(
+                AuthorizationResource::item('administrator_session', $id),
+                $context->site(),
+            );
+        });
 
         return new CreatedAdministratorSession(
             $token,
@@ -69,7 +101,7 @@ final readonly class DoctrineAdministratorSessionStore implements AdministratorS
 
         $now = $this->clock->now();
         $row = $this->database->fetchAssociative(sprintf(
-            'SELECT s.id, s.user_id, s.csrf_token, s.expires_at, s.user_agent_digest '
+            'SELECT s.id, s.user_id, s.csrf_token, s.expires_at, s.user_agent_digest, u.security_epoch '
             . 'FROM %s s INNER JOIN %s u ON u.id = s.user_id '
             . "WHERE s.token_digest = ? AND s.expires_at > ? AND u.status = 'active'",
             $this->tables->quoted('administrator_sessions'),
@@ -103,45 +135,101 @@ final readonly class DoctrineAdministratorSessionStore implements AdministratorS
 
         return new AdministratorSession(
             $row['id'],
-            AuthenticatedPrincipal::fromStrings($row['user_id'], $this->capabilitiesFor($row['user_id'])),
+            AuthenticatedPrincipal::issueFromGrantRows(
+                $this->provenance,
+                $row['user_id'],
+                $this->grantsFor($row['user_id']),
+                'administrator-session:' . $row['id'],
+                $this->positiveInteger($row['security_epoch'] ?? null),
+            ),
             $row['csrf_token'],
             $expiresAt,
         );
     }
 
-    public function delete(string $sessionId): void
+    private function positiveInteger(mixed $value): int
     {
-        $this->database->delete($this->tables->raw('administrator_sessions'), ['id' => $sessionId]);
-    }
-
-    public function purgeExpired(): int
-    {
-        $affected = $this->database->executeStatement(sprintf(
-            'DELETE FROM %s WHERE expires_at <= ?',
-            $this->tables->quoted('administrator_sessions'),
-        ), [$this->clock->now()], [Types::DATETIME_IMMUTABLE]);
-
-        if (is_int($affected)) {
-            return $affected;
-        }
-        if (preg_match('/^[0-9]+$/D', $affected) !== 1) {
-            throw new RuntimeException('The expired administrator session count is invalid.');
+        if (!is_int($value) && (!is_string($value) || preg_match('/^[1-9][0-9]*$/D', $value) !== 1)) {
+            throw new InvalidArgumentException('Stored user security epoch is invalid.');
         }
 
-        return (int) $affected;
+        return (int) $value;
     }
 
-    /** @return list<string> */
-    private function capabilitiesFor(string $userId): array
+    public function delete(ExecutionContext $context, string $sessionId): void
     {
-        $values = $this->database->fetchFirstColumn(sprintf(
-            'SELECT DISTINCT g.capability_code FROM %s ur INNER JOIN %s g ON g.role_id = ur.role_id '
-            . "WHERE ur.user_id = ? AND g.scope_type = 'global' ORDER BY g.capability_code",
+        $this->authorization->assertAllowed(
+            $context,
+            Capability::fromString('administrator.access'),
+            AuthorizationResource::item('administrator_session', $sessionId),
+        );
+        $this->transactions->transactional(function () use ($context, $sessionId): void {
+            $affected = $this->database->delete(
+                $this->tables->raw('administrator_sessions'),
+                ['id' => $sessionId],
+            );
+            if ((string) $affected !== '1') {
+                throw new InvalidArgumentException('The administrator session does not exist.');
+            }
+            $this->ownership->remove(
+                AuthorizationResource::item('administrator_session', $sessionId),
+                $context->site(),
+            );
+        });
+    }
+
+    public function purgeExpired(ExecutionContext $context): int
+    {
+        $this->authorization->assertAllowed(
+            $context,
+            Capability::fromString('automation.manage'),
+            AuthorizationResource::collection('administrator_session'),
+        );
+        return $this->transactions->transactional(function () use ($context): int {
+            $now = $this->clock->now();
+            $sessionIds = $this->database->fetchFirstColumn(sprintf(
+                'SELECT s.id FROM %s s INNER JOIN %s o ON o.resource_type = ? AND o.resource_id = s.id '
+                . 'AND o.site_identifier = ? WHERE s.expires_at <= ? ORDER BY s.id FOR UPDATE',
+                $this->tables->quoted('administrator_sessions'),
+                $this->tables->quoted('resource_site_ownership'),
+            ), ['administrator_session', $context->site()->identifier(), $now], [
+                Types::STRING,
+                Types::STRING,
+                Types::DATETIME_IMMUTABLE,
+            ]);
+
+            foreach ($sessionIds as $sessionId) {
+                if (!is_string($sessionId) || $sessionId === '') {
+                    throw new RuntimeException('An expired administrator session identifier is invalid.');
+                }
+                $affected = $this->database->delete(
+                    $this->tables->raw('administrator_sessions'),
+                    ['id' => $sessionId],
+                );
+                if ((string) $affected !== '1') {
+                    throw new RuntimeException('An expired administrator session changed during deletion.');
+                }
+                $this->ownership->remove(
+                    AuthorizationResource::item('administrator_session', $sessionId),
+                    $context->site(),
+                );
+            }
+
+            return count($sessionIds);
+        });
+    }
+
+    /** @return list<array{capability: string, scope_type: string, scope_identifier: ?string}> */
+    private function grantsFor(string $userId): array
+    {
+        /** @var list<array{capability: string, scope_type: string, scope_identifier: ?string}> */
+        return $this->database->fetchAllAssociative(sprintf(
+            'SELECT DISTINCT g.capability_code AS capability, g.scope_type, g.scope_identifier '
+            . 'FROM %s ur INNER JOIN %s g ON g.role_id = ur.role_id WHERE ur.user_id = ? '
+            . 'ORDER BY g.capability_code, g.scope_type, g.scope_identifier',
             $this->tables->quoted('user_roles'),
             $this->tables->quoted('role_capability_grants'),
         ), [$userId]);
-
-        return array_values(array_filter($values, 'is_string'));
     }
 
     private function fingerprint(string $userAgent): string

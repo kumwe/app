@@ -6,13 +6,15 @@ namespace Kumwe\CMS\Delivery\Console\Command;
 
 use InvalidArgumentException;
 use Kumwe\CMS\Application\Automation\Scheduler;
+use Kumwe\CMS\Application\Authorization\SiteContext;
+use Kumwe\CMS\Application\Authorization\SystemPrincipal;
 use Kumwe\CMS\Delivery\Console\Command;
 use Kumwe\CMS\Delivery\Console\Output;
 use Throwable;
 
 final readonly class ScheduleRunCommand implements Command
 {
-    public function __construct(private Scheduler $scheduler)
+    public function __construct(private Scheduler $scheduler, private SystemPrincipal $system)
     {
     }
 
@@ -37,8 +39,13 @@ final readonly class ScheduleRunCommand implements Command
                 }
             }
 
+            $context = $this->system->context(
+                SiteContext::default(),
+                'scheduler-' . bin2hex(random_bytes(16)),
+            );
+
             do {
-                $dispatched = $this->scheduler->dispatchDue();
+                $dispatched = $this->scheduler->dispatchDue($context);
 
                 if (!$loop) {
                     $output->line(sprintf('Dispatched %d due schedule(s).', $dispatched));

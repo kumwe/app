@@ -12,6 +12,10 @@ use Kumwe\CMS\Application\Automation\JobQueue;
 use Kumwe\CMS\Application\Automation\LeaseAwareJobHandler;
 use Kumwe\CMS\Application\Automation\StoredJob;
 use Kumwe\CMS\Application\Automation\Worker;
+use Kumwe\CMS\Application\Authorization\ExecutionContext;
+use Kumwe\CMS\Application\Authorization\SiteContext;
+use Kumwe\CMS\Application\Authorization\SystemIdentity;
+use Kumwe\CMS\Tests\Support\AuthorizationContext;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Throwable;
@@ -24,9 +28,9 @@ final class WorkerTest extends TestCase
     {
         $queue = new RecordingJobQueue([$this->job('lease-aware')]);
         $handler = new RenewingHandler();
-        $worker = new Worker($queue, new JobHandlerRegistry([$handler]));
+        $worker = new Worker($queue, new JobHandlerRegistry([$handler]), AuthorizationContext::gateway());
 
-        self::assertTrue($worker->runOnce('default', 'worker-one', 30));
+        self::assertTrue($worker->runOnce($this->context(), 'default', 'worker-one', 30));
         self::assertSame([45], $queue->renewals);
         self::assertSame(['00000000-0000-7000-8000-000000000001'], $queue->completed);
         self::assertSame(3, $queue->heartbeats);
@@ -35,9 +39,13 @@ final class WorkerTest extends TestCase
     public function testTransientFailureIsReleasedThroughQueuePolicy(): void
     {
         $queue = new RecordingJobQueue([$this->job('failing')]);
-        $worker = new Worker($queue, new JobHandlerRegistry([new FailingHandler()]));
+        $worker = new Worker(
+            $queue,
+            new JobHandlerRegistry([new FailingHandler()]),
+            AuthorizationContext::gateway(),
+        );
 
-        self::assertTrue($worker->runOnce('default', 'worker-one'));
+        self::assertTrue($worker->runOnce($this->context(), 'default', 'worker-one'));
         self::assertSame([false], $queue->permanentFailures);
         self::assertSame([], $queue->completed);
     }
@@ -45,18 +53,18 @@ final class WorkerTest extends TestCase
     public function testUnknownTypeIsPermanentlyDeadLettered(): void
     {
         $queue = new RecordingJobQueue([$this->job('unknown')]);
-        $worker = new Worker($queue, new JobHandlerRegistry([]));
+        $worker = new Worker($queue, new JobHandlerRegistry([]), AuthorizationContext::gateway());
 
-        self::assertTrue($worker->runOnce('default', 'worker-one'));
+        self::assertTrue($worker->runOnce($this->context(), 'default', 'worker-one'));
         self::assertSame([true], $queue->permanentFailures);
     }
 
     public function testEmptyQueueOnlyPublishesIdleHeartbeat(): void
     {
         $queue = new RecordingJobQueue([]);
-        $worker = new Worker($queue, new JobHandlerRegistry([]));
+        $worker = new Worker($queue, new JobHandlerRegistry([]), AuthorizationContext::gateway());
 
-        self::assertFalse($worker->runOnce('default', 'worker-one'));
+        self::assertFalse($worker->runOnce($this->context(), 'default', 'worker-one'));
         self::assertSame(1, $queue->heartbeats);
     }
 
@@ -71,6 +79,14 @@ final class WorkerTest extends TestCase
             1,
             5,
             '00000000-0000-7000-8000-000000000101',
+        );
+    }
+
+    private function context(): ExecutionContext
+    {
+        return AuthorizationContext::system(SystemIdentity::Worker)->context(
+            SiteContext::default(),
+            'worker-test-request',
         );
     }
 }
@@ -94,6 +110,7 @@ final class RecordingJobQueue implements JobQueue
     }
 
     public function enqueue(
+        ExecutionContext $context,
         string $type,
         array $payload,
         DateTimeImmutable $availableAt,
@@ -104,45 +121,66 @@ final class RecordingJobQueue implements JobQueue
         return '00000000-0000-7000-8000-000000000001';
     }
 
-    public function claim(string $queue, string $workerId, int $leaseSeconds): ?StoredJob
+    public function claim(
+        ExecutionContext $context,
+        string $queue,
+        string $workerId,
+        int $leaseSeconds,
+    ): ?StoredJob
     {
         return array_shift($this->jobs);
     }
 
-    public function renew(StoredJob $job, string $workerId, int $leaseSeconds): void
+    public function renew(
+        ExecutionContext $context,
+        StoredJob $job,
+        string $workerId,
+        int $leaseSeconds,
+    ): void
     {
         $this->renewals[] = $leaseSeconds;
     }
 
-    public function complete(StoredJob $job, string $workerId): void
+    public function complete(ExecutionContext $context, StoredJob $job, string $workerId): void
     {
         $this->completed[] = $job->id;
     }
 
-    public function fail(StoredJob $job, string $workerId, Throwable $failure, bool $permanent): void
+    public function fail(
+        ExecutionContext $context,
+        StoredJob $job,
+        string $workerId,
+        Throwable $failure,
+        bool $permanent,
+    ): void
     {
         $this->permanentFailures[] = $permanent;
     }
 
-    public function heartbeat(string $workerId, string $queue, ?string $jobId = null): void
+    public function heartbeat(
+        ExecutionContext $context,
+        string $workerId,
+        string $queue,
+        ?string $jobId = null,
+    ): void
     {
         $this->heartbeats++;
     }
 
-    public function disconnect(string $workerId): void
+    public function disconnect(ExecutionContext $context, string $workerId, string $queue): void
     {
     }
 
-    public function all(int $limit = 100): array
+    public function all(ExecutionContext $context, int $limit = 100): array
     {
         return [];
     }
 
-    public function retry(string $id): void
+    public function retry(ExecutionContext $context, string $id): void
     {
     }
 
-    public function cancel(string $id): void
+    public function cancel(ExecutionContext $context, string $id): void
     {
     }
 }
@@ -154,12 +192,16 @@ final class RenewingHandler implements LeaseAwareJobHandler
         return 'lease-aware';
     }
 
-    public function handle(array $payload): void
+    public function handle(array $payload, ExecutionContext $context): void
     {
         throw new \LogicException('The lease-aware entry point must be used.');
     }
 
-    public function handleWithLease(array $payload, JobLeaseContext $lease): void
+    public function handleWithLease(
+        array $payload,
+        ExecutionContext $context,
+        JobLeaseContext $lease,
+    ): void
     {
         $lease->renew(45);
     }
@@ -172,7 +214,7 @@ final class FailingHandler implements JobHandler
         return 'failing';
     }
 
-    public function handle(array $payload): void
+    public function handle(array $payload, ExecutionContext $context): void
     {
         throw new \RuntimeException('Expected failure.');
     }
