@@ -87,11 +87,13 @@ final class TestKernelFactory
                 throw new RuntimeException('The integration password file could not be protected.');
             }
             $command = $container->get(CreateAdministratorCommand::class);
-            if (!$command instanceof CreateAdministratorCommand || $command->execute([
+            if (
+                !$command instanceof CreateAdministratorCommand || $command->execute([
                 '--email=' . self::EMAIL,
                 '--name=Integration Administrator',
                 '--password-file=' . $passwordFile,
-            ], self::output()) !== 0) {
+                ], self::output()) !== 0
+            ) {
                 throw new RuntimeException('The integration administrator could not be bootstrapped.');
             }
         } finally {

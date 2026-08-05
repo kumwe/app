@@ -170,10 +170,12 @@ final readonly class PersistentIdempotencyMiddleware implements MiddlewareInterf
                 );
             }
 
-            if (!hash_equals(
-                $this->requiredString($row, 'authorization_fingerprint'),
-                $authorizationFingerprint,
-            )) {
+            if (
+                !hash_equals(
+                    $this->requiredString($row, 'authorization_fingerprint'),
+                    $authorizationFingerprint,
+                )
+            ) {
                 return $this->problems->create(
                     409,
                     'Authorization Context Changed',
@@ -187,13 +189,15 @@ final readonly class PersistentIdempotencyMiddleware implements MiddlewareInterf
             if ($state === 'completed') {
                 return $this->replay($row);
             }
-            if ($state === 'failed' && $this->acquireFailed(
-                $id,
-                $digest,
-                $authorizationFingerprint,
-                $ownerToken,
-                $now,
-            )) {
+            if (
+                $state === 'failed' && $this->acquireFailed(
+                    $id,
+                    $digest,
+                    $authorizationFingerprint,
+                    $ownerToken,
+                    $now,
+                )
+            ) {
                 return null;
             }
 

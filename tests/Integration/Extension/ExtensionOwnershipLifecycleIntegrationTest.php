@@ -161,7 +161,8 @@ final class ExtensionOwnershipLifecycleIntegrationTest extends TestCase
             if (!$zip->addFromString('kumwe.json', $manifest)) {
                 throw new RuntimeException('The integration extension manifest could not be written.');
             }
-            if (!$zip->addFromString('src/Provider.php', <<<'PHP'
+            if (
+                !$zip->addFromString('src/Provider.php', <<<'PHP'
 <?php
 
 declare(strict_types=1);
@@ -186,7 +187,8 @@ final class Provider implements RuntimeExtension
     {
     }
 }
-PHP)) {
+PHP)
+            ) {
                 throw new RuntimeException('The integration extension provider could not be written.');
             }
         } finally {

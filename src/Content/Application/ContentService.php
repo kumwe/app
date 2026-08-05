@@ -51,11 +51,13 @@ final readonly class ContentService
         do {
             $page = $this->repository->all($pageSize, $includeDeleted, $offset);
             foreach ($page as $record) {
-                if ($this->authorization->decide(
-                    $context,
-                    Capability::fromString('content.read'),
-                    AuthorizationResource::item('content', $record->entry->id()),
-                )->allowed) {
+                if (
+                    $this->authorization->decide(
+                        $context,
+                        Capability::fromString('content.read'),
+                        AuthorizationResource::item('content', $record->entry->id()),
+                    )->allowed
+                ) {
                     $result[] = $record;
                     if (count($result) === $limit) {
                         return $result;

@@ -142,14 +142,16 @@ final readonly class McpMutationGuard
             throw new RuntimeException('The MCP idempotency record could not be loaded.');
         }
         if ($this->expired($row['expires_at'] ?? null)) {
-            if ($this->acquire(
-                $principal,
-                $operation,
-                $operationId,
-                $digest,
-                $authorizationFingerprint,
-                $leaseOwner,
-            )) {
+            if (
+                $this->acquire(
+                    $principal,
+                    $operation,
+                    $operationId,
+                    $digest,
+                    $authorizationFingerprint,
+                    $leaseOwner,
+                )
+            ) {
                 return null;
             }
 
@@ -187,14 +189,16 @@ final readonly class McpMutationGuard
             $state === 'failed'
             || $this->leaseExpired($row['lease_expires_at'] ?? null)
         ) {
-            if ($this->acquire(
-                $principal,
-                $operation,
-                $operationId,
-                $digest,
-                $authorizationFingerprint,
-                $leaseOwner,
-            )) {
+            if (
+                $this->acquire(
+                    $principal,
+                    $operation,
+                    $operationId,
+                    $digest,
+                    $authorizationFingerprint,
+                    $leaseOwner,
+                )
+            ) {
                 return null;
             }
         }

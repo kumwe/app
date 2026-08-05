@@ -105,8 +105,7 @@ final class DrainQueue implements JobQueue
         string $queue,
         string $workerId,
         int $leaseSeconds,
-    ): ?StoredJob
-    {
+    ): ?StoredJob {
         return array_shift($this->jobs);
     }
 
@@ -115,8 +114,7 @@ final class DrainQueue implements JobQueue
         StoredJob $job,
         string $workerId,
         int $leaseSeconds,
-    ): void
-    {
+    ): void {
     }
 
     public function complete(ExecutionContext $context, StoredJob $job, string $workerId): void
@@ -130,8 +128,7 @@ final class DrainQueue implements JobQueue
         string $workerId,
         Throwable $failure,
         bool $permanent,
-    ): void
-    {
+    ): void {
     }
 
     public function heartbeat(
@@ -139,8 +136,7 @@ final class DrainQueue implements JobQueue
         string $workerId,
         string $queue,
         ?string $jobId = null,
-    ): void
-    {
+    ): void {
     }
 
     public function disconnect(ExecutionContext $context, string $workerId, string $queue): void
