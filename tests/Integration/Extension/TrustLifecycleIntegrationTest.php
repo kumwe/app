@@ -370,13 +370,17 @@ final class TrustLifecycleIntegrationTest extends TestCase
     /** @return array<string, mixed> */
     private static function manifest(string $identifier, string $provider): array
     {
+        if (preg_match('/^([A-Z][A-Za-z0-9]*)\\\\/', $provider, $matches) !== 1) {
+            throw new \RuntimeException('The trust-race provider namespace is invalid.');
+        }
+
         return [
             'schema' => 1,
             'name' => $identifier,
             'type' => 'plugin',
             'version' => '1.0.0',
             'provider' => $provider,
-            'autoload' => ['psr-4' => [str_replace('/', '\\', $identifier) . '\\' => 'src/']],
+            'autoload' => ['psr-4' => [$matches[1] . '\\' => 'src/']],
             'requires' => ['kumwe' => '^2.0.0', 'php' => '^8.5.0'],
         ];
     }

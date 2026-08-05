@@ -51,6 +51,7 @@ final class McpTrustLifecycleIntegrationTest extends TestCase
         $releaseLock = 'kumwe:mcp-release:' . substr($marker, 0, 24);
         $ddlTable = $tables->raw('mcp_race_' . substr($marker, 0, 20));
         $resultFile = sys_get_temp_dir() . '/kumwe-mcp-trust-' . $marker;
+        $readyFile = $resultFile . '-ready';
         $keypair = sodium_crypto_sign_keypair();
         $publicKey = sodium_crypto_sign_publickey($keypair);
         $secretKey = sodium_crypto_sign_secretkey($keypair);
@@ -102,12 +103,11 @@ final class McpTrustLifecycleIntegrationTest extends TestCase
             'installed_at' => Types::DATETIME_IMMUTABLE,
         ]);
 
-        $releaseAcquired = $database->fetchOne('SELECT GET_LOCK(?, 0)', [$releaseLock]);
-        self::assertContains($releaseAcquired, [1, '1', true]);
-
+        $database->close();
         $revoker = pcntl_fork();
         if ($revoker === 0) {
             try {
+                self::waitForFile($readyFile);
                 $child = TestKernelFactory::create(Environment::fromGlobals());
                 $childDatabase = $child->get(Connection::class);
                 $childTables = $child->get(TableNames::class);
@@ -147,9 +147,12 @@ final class McpTrustLifecycleIntegrationTest extends TestCase
             exit(0);
         }
         if ($revoker < 0) {
-            $database->fetchOne('SELECT RELEASE_LOCK(?)', [$releaseLock]);
             self::fail('The MCP trust revoker process could not be started.');
         }
+
+        $releaseAcquired = $database->fetchOne('SELECT GET_LOCK(?, 0)', [$releaseLock]);
+        self::assertContains($releaseAcquired, [1, '1', true]);
+        self::assertNotFalse(file_put_contents($readyFile, 'ready'));
 
         $attempt = 'not-run';
         $tableCreated = false;
@@ -182,6 +185,7 @@ final class McpTrustLifecycleIntegrationTest extends TestCase
         } finally {
             $database->fetchOne('SELECT RELEASE_LOCK(?)', [$releaseLock]);
             pcntl_waitpid($revoker, $revokerStatus);
+            $database->close();
             $tableCreated = $database->createSchemaManager()->tablesExist([$ddlTable]);
             if ($tableCreated) {
                 $database->executeStatement(sprintf(
@@ -222,6 +226,17 @@ final class McpTrustLifecycleIntegrationTest extends TestCase
         }
     }
 
+    private static function waitForFile(string $file): void
+    {
+        $deadline = hrtime(true) + 15_000_000_000;
+        while (!is_file($file)) {
+            if (hrtime(true) >= $deadline) {
+                throw new RuntimeException('The MCP trust race parent did not become ready.');
+            }
+            usleep(1_000);
+        }
+    }
+
     private static function withMutationGuard(
         KumweMcpHandlers $handlers,
         McpMutationGuard $mutations,
@@ -248,13 +263,17 @@ final class McpTrustLifecycleIntegrationTest extends TestCase
     /** @return array<string, mixed> */
     private static function manifest(string $identifier, string $provider): array
     {
+        if (preg_match('/^([A-Z][A-Za-z0-9]*)\\\\/', $provider, $matches) !== 1) {
+            throw new RuntimeException('The MCP trust-race provider namespace is invalid.');
+        }
+
         return [
             'schema' => 1,
             'name' => $identifier,
             'type' => 'plugin',
             'version' => '1.0.0',
             'provider' => $provider,
-            'autoload' => ['psr-4' => [str_replace('/', '\\', $identifier) . '\\' => 'src/']],
+            'autoload' => ['psr-4' => [$matches[1] . '\\' => 'src/']],
             'requires' => ['kumwe' => '^2.0.0', 'php' => '^8.5.0'],
         ];
     }

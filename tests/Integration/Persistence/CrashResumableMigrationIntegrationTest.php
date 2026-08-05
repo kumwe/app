@@ -693,7 +693,7 @@ final class CrashResumableMigrationIntegrationTest extends TestCase
                 if ($constraintName === null) {
                     throw new RuntimeException('A crash-recovery test foreign key is unnamed.');
                 }
-                $manager->dropForeignKey($constraintName->toString(), $name);
+                $manager->dropForeignKey($constraintName->getIdentifier()->getValue(), $name);
             }
         }
         foreach (array_reverse($names) as $name) {
