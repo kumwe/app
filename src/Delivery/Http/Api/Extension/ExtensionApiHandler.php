@@ -64,5 +64,4 @@ final readonly class ExtensionApiHandler implements RequestHandlerInterface
         }
         return $vendor . '/' . $name;
     }
-
 }

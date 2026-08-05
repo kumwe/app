@@ -282,5 +282,4 @@ final readonly class AccessControlApiHandler implements RequestHandlerInterface
 
         return $value;
     }
-
 }
