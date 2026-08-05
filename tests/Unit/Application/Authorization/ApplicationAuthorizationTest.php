@@ -471,8 +471,7 @@ final class ApplicationAuthorizationTest extends TestCase
     private function content(
         ContentRepository $repository,
         ?ResourceSiteOwnershipWriter $ownership = null,
-    ): ContentService
-    {
+    ): ContentService {
         $transactions = $this->createStub(TransactionManager::class);
         $transactions->method('transactional')->willReturnCallback(
             static fn (callable $operation): mixed => $operation(),

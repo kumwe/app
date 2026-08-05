@@ -7,6 +7,7 @@ namespace Kumwe\CMS\Tests\Integration\Automation;
 use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Types\Types;
+use Kumwe\CMS\Application\Authorization\ExecutionContext;
 use Kumwe\CMS\Delivery\Http\Api\Idempotency\DoctrineIdempotencyPurger;
 use Kumwe\CMS\Delivery\Http\Api\Idempotency\IdempotencyKey;
 use Kumwe\CMS\Delivery\Http\Api\Idempotency\PersistentIdempotencyMiddleware;
@@ -14,8 +15,8 @@ use Kumwe\CMS\Delivery\Http\Api\Idempotency\RequireIdempotencyKeyMiddleware;
 use Kumwe\CMS\Delivery\Http\Api\Idempotency\ServerFailureResponse;
 use Kumwe\CMS\Identity\Application\Authentication\AuthenticatedPrincipal;
 use Kumwe\CMS\Infrastructure\Persistence\TableNames;
-use Kumwe\CMS\Kernel\ContainerFactory;
 use Kumwe\CMS\Shared\Infrastructure\Configuration\Environment;
+use Kumwe\CMS\Tests\Support\TestKernelFactory;
 use Laminas\Diactoros\Response;
 use Laminas\Diactoros\ServerRequestFactory;
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -36,7 +37,7 @@ final class IdempotencyRecoveryIntegrationTest extends TestCase
 
     public function testStaleOwnershipIsRecoveredAndTheCompletedResultIsReplayed(): void
     {
-        $container = (new ContainerFactory())->create(Environment::fromGlobals());
+        $container = TestKernelFactory::create(Environment::fromGlobals());
         $database = $container->get(Connection::class);
         $tables = $container->get(TableNames::class);
         $middleware = $container->get(PersistentIdempotencyMiddleware::class);
@@ -44,18 +45,23 @@ final class IdempotencyRecoveryIntegrationTest extends TestCase
         self::assertInstanceOf(TableNames::class, $tables);
         self::assertInstanceOf(PersistentIdempotencyMiddleware::class, $middleware);
         $key = 'recovery-' . substr(Uuid::uuid7()->toString(), 0, 24);
-        $request = $this->request($key);
-        $operation = 'POST /api/v1/recovery';
+        $context = TestKernelFactory::administratorContext($container);
+        $request = $this->request($key, $context);
+        $operation = 'POST /api/v1/content';
         $now = new DateTimeImmutable('now');
+        $ownerToken = Uuid::uuid7()->toString();
         $database->insert($tables->raw('idempotency'), [
             'id' => Uuid::uuid7()->toString(),
             'idempotency_key' => $key,
-            'subject' => self::SUBJECT,
+            'subject' => $context->actorId(),
             'operation' => $operation,
             'request_digest' => $this->digest($request),
+            'authorization_fingerprint' => $context->authorizationFingerprint(),
             'state' => 'in_progress',
-            'owner_token' => Uuid::uuid7()->toString(),
+            'owner_token' => $ownerToken,
             'locked_until' => $now->modify('-1 minute'),
+            'lease_owner' => $ownerToken,
+            'lease_expires_at' => $now->modify('-1 minute'),
             'result_status' => null,
             'result_body' => null,
             'result_headers' => null,
@@ -65,6 +71,7 @@ final class IdempotencyRecoveryIntegrationTest extends TestCase
             'expires_at' => $now->modify('+1 day'),
         ], [
             'locked_until' => Types::DATETIME_IMMUTABLE,
+            'lease_expires_at' => Types::DATETIME_IMMUTABLE,
             'created_at' => Types::DATETIME_IMMUTABLE,
             'expires_at' => Types::DATETIME_IMMUTABLE,
         ]);
@@ -100,7 +107,7 @@ final class IdempotencyRecoveryIntegrationTest extends TestCase
 
     public function testExceptionRemovesInProgressOwnershipForImmediateRetry(): void
     {
-        $container = (new ContainerFactory())->create(Environment::fromGlobals());
+        $container = TestKernelFactory::create(Environment::fromGlobals());
         $database = $container->get(Connection::class);
         $tables = $container->get(TableNames::class);
         $middleware = $container->get(PersistentIdempotencyMiddleware::class);
@@ -108,7 +115,8 @@ final class IdempotencyRecoveryIntegrationTest extends TestCase
         self::assertInstanceOf(TableNames::class, $tables);
         self::assertInstanceOf(PersistentIdempotencyMiddleware::class, $middleware);
         $key = 'exception-' . substr(Uuid::uuid7()->toString(), 0, 24);
-        $request = $this->request($key);
+        $context = TestKernelFactory::administratorContext($container);
+        $request = $this->request($key, $context);
 
         try {
             $middleware->process($request, new class implements RequestHandlerInterface {
@@ -125,12 +133,12 @@ final class IdempotencyRecoveryIntegrationTest extends TestCase
         self::assertSame(0, (int) $database->fetchOne(sprintf(
             'SELECT COUNT(*) FROM %s WHERE subject = ? AND operation = ? AND idempotency_key = ?',
             $tables->quoted('idempotency'),
-        ), [self::SUBJECT, 'POST /api/v1/recovery', $key]));
+        ), [$context->actorId(), 'POST /api/v1/content', $key]));
     }
 
     public function testServerFailureRollsBackMutationAndReleasesReservation(): void
     {
-        $container = (new ContainerFactory())->create(Environment::fromGlobals());
+        $container = TestKernelFactory::create(Environment::fromGlobals());
         $database = $container->get(Connection::class);
         $tables = $container->get(TableNames::class);
         $middleware = $container->get(PersistentIdempotencyMiddleware::class);
@@ -139,7 +147,8 @@ final class IdempotencyRecoveryIntegrationTest extends TestCase
         self::assertInstanceOf(PersistentIdempotencyMiddleware::class, $middleware);
         $key = 'server-failure-' . substr(Uuid::uuid7()->toString(), 0, 20);
         $auditId = Uuid::uuid7()->toString();
-        $request = $this->request($key);
+        $context = TestKernelFactory::administratorContext($container);
+        $request = $this->request($key, $context);
         $response = $middleware->process(
             $request,
             new class ($database, $tables, $auditId) implements RequestHandlerInterface {
@@ -178,14 +187,14 @@ final class IdempotencyRecoveryIntegrationTest extends TestCase
         self::assertSame(0, (int) $database->fetchOne(sprintf(
             'SELECT COUNT(*) FROM %s WHERE subject = ? AND operation = ? AND idempotency_key = ?',
             $tables->quoted('idempotency'),
-        ), [self::SUBJECT, 'POST /api/v1/recovery', $key]));
+        ), [$context->actorId(), 'POST /api/v1/content', $key]));
     }
 
     public function testPurgeCannotDeleteRecordReacquiredAfterCandidateSelection(): void
     {
         $environment = Environment::fromGlobals();
-        $primaryContainer = (new ContainerFactory())->create($environment);
-        $secondaryContainer = (new ContainerFactory())->create($environment);
+        $primaryContainer = TestKernelFactory::create($environment);
+        $secondaryContainer = TestKernelFactory::create($environment);
         $primary = $primaryContainer->get(Connection::class);
         $secondary = $secondaryContainer->get(Connection::class);
         $tables = $primaryContainer->get(TableNames::class);
@@ -203,11 +212,14 @@ final class IdempotencyRecoveryIntegrationTest extends TestCase
             'id' => $id,
             'idempotency_key' => 'purge-race-' . substr($id, 0, 20),
             'subject' => self::SUBJECT,
-            'operation' => 'POST /api/v1/recovery',
+            'operation' => 'POST /api/v1/content',
             'request_digest' => hash('sha256', 'expired-request'),
+            'authorization_fingerprint' => hash('sha256', 'expired-authorization'),
             'state' => 'completed',
             'owner_token' => null,
             'locked_until' => null,
+            'lease_owner' => null,
+            'lease_expires_at' => null,
             'result_status' => 200,
             'result_body' => $body,
             'result_headers' => ['Content-Type' => 'application/json'],
@@ -230,6 +242,8 @@ final class IdempotencyRecoveryIntegrationTest extends TestCase
             'state' => 'in_progress',
             'owner_token' => $newOwner,
             'locked_until' => $now->modify('+15 minutes'),
+            'lease_owner' => $newOwner,
+            'lease_expires_at' => $now->modify('+15 minutes'),
             'expires_at' => $now->modify('+1 day'),
             'result_status' => null,
             'result_body' => null,
@@ -238,6 +252,7 @@ final class IdempotencyRecoveryIntegrationTest extends TestCase
             'completed_at' => null,
         ], ['id' => $id], [
             'locked_until' => Types::DATETIME_IMMUTABLE,
+            'lease_expires_at' => Types::DATETIME_IMMUTABLE,
             'expires_at' => Types::DATETIME_IMMUTABLE,
             'id' => Types::GUID,
         ]);
@@ -249,18 +264,19 @@ final class IdempotencyRecoveryIntegrationTest extends TestCase
         ), [$id]));
     }
 
-    private function request(string $key): ServerRequestInterface
+    private function request(string $key, ExecutionContext $context): ServerRequestInterface
     {
         return (new ServerRequestFactory())
-            ->createServerRequest('POST', 'https://kumwe.test/api/v1/recovery')
+            ->createServerRequest('POST', 'https://kumwe.test/api/v1/content')
             ->withAttribute(
                 RequireIdempotencyKeyMiddleware::ATTRIBUTE,
                 IdempotencyKey::fromHeader($key),
             )
             ->withAttribute(
                 AuthenticatedPrincipal::REQUEST_ATTRIBUTE,
-                AuthenticatedPrincipal::fromStrings(self::SUBJECT, ['content.create']),
-            );
+                $context->principal(),
+            )
+            ->withAttribute(ExecutionContext::REQUEST_ATTRIBUTE, $context);
     }
 
     private function digest(ServerRequestInterface $request): string

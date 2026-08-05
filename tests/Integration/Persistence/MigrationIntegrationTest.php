@@ -5,20 +5,21 @@ declare(strict_types=1);
 namespace Kumwe\CMS\Tests\Integration\Persistence;
 
 use Doctrine\DBAL\Connection;
+use Kumwe\CMS\Delivery\Console\Command\MigrateCommand;
+use Kumwe\CMS\Delivery\Console\Output;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\ApplicationAuthorizationMigration;
-use Kumwe\CMS\Infrastructure\Persistence\Migration\MigrationRunner;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\CoreSchemaMigration;
-use Kumwe\CMS\Infrastructure\Persistence\Migration\JobRecoveryMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\DoctrineMigrationLock;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\DoctrineMigrationRepository;
+use Kumwe\CMS\Infrastructure\Persistence\Migration\IdempotencyLeaseNullabilityMigration;
+use Kumwe\CMS\Infrastructure\Persistence\Migration\JobRecoveryMigration;
+use Kumwe\CMS\Infrastructure\Persistence\Migration\MigrationRunner;
 use Kumwe\CMS\Infrastructure\Persistence\ReadinessProbe;
 use Kumwe\CMS\Infrastructure\Persistence\TableNames;
 use Kumwe\CMS\Kernel\ContainerFactory;
 use Kumwe\CMS\Shared\Infrastructure\Configuration\Environment;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
-use Kumwe\CMS\Delivery\Console\Command\MigrateCommand;
-use Kumwe\CMS\Delivery\Console\Output;
 
 #[CoversClass(MigrationRunner::class)]
 #[CoversClass(DoctrineMigrationLock::class)]
@@ -26,6 +27,7 @@ use Kumwe\CMS\Delivery\Console\Output;
 #[CoversClass(CoreSchemaMigration::class)]
 #[CoversClass(JobRecoveryMigration::class)]
 #[CoversClass(ApplicationAuthorizationMigration::class)]
+#[CoversClass(IdempotencyLeaseNullabilityMigration::class)]
 final class MigrationIntegrationTest extends TestCase
 {
     public function testDatabaseMigrationIsIdempotentAndReady(): void
@@ -56,11 +58,12 @@ final class MigrationIntegrationTest extends TestCase
         self::assertTrue($schema->introspectTable($tables->raw('users'))->hasColumn('security_epoch'));
         $idempotency = $schema->introspectTable($tables->raw('idempotency'));
         foreach (
-            ['authorization_fingerprint', 'lease_owner', 'lease_expires_at', 'owner_token', 'locked_until']
-            as $column
+            ['authorization_fingerprint', 'lease_owner', 'lease_expires_at', 'owner_token', 'locked_until'] as $column
         ) {
             self::assertTrue($idempotency->hasColumn($column));
         }
+        self::assertFalse($idempotency->getColumn('lease_owner')->getNotnull());
+        self::assertFalse($idempotency->getColumn('lease_expires_at')->getNotnull());
         self::assertTrue($schema->introspectTable($tables->raw('jobs'))->hasColumn('lease_token'));
         self::assertTrue($schema->tablesExist([
             $tables->raw('sites'),
@@ -78,6 +81,10 @@ final class MigrationIntegrationTest extends TestCase
             'SELECT version FROM %s WHERE version = ?',
             $tables->quoted('schema_migrations'),
         ), [JobRecoveryMigration::ID]));
+        self::assertSame(IdempotencyLeaseNullabilityMigration::ID, $database->fetchOne(sprintf(
+            'SELECT version FROM %s WHERE version = ?',
+            $tables->quoted('schema_migrations'),
+        ), [IdempotencyLeaseNullabilityMigration::ID]));
         self::assertSame('default', $database->fetchOne(sprintf(
             'SELECT site_identifier FROM %s WHERE resource_type = ? AND resource_id = ?',
             $tables->quoted('resource_site_ownership'),

@@ -106,8 +106,7 @@ final readonly class DoctrineJobQueue implements JobQueue
         string $queue,
         string $workerId,
         int $leaseSeconds,
-    ): ?StoredJob
-    {
+    ): ?StoredJob {
         $this->authorizeWorker($context, AuthorizationResource::item('queue', $queue));
         $this->assertQueue($queue);
         $this->assertWorker($workerId);
@@ -181,8 +180,7 @@ final readonly class DoctrineJobQueue implements JobQueue
         StoredJob $job,
         string $workerId,
         int $leaseSeconds,
-    ): void
-    {
+    ): void {
         $this->authorizeWorker($context, AuthorizationResource::item('job', $job->id));
         $this->assertWorker($workerId);
         if ($leaseSeconds < 5 || $leaseSeconds > 3_600) {
@@ -229,8 +227,7 @@ final readonly class DoctrineJobQueue implements JobQueue
         string $workerId,
         Throwable $failure,
         bool $permanent,
-    ): void
-    {
+    ): void {
         $this->authorizeWorker($context, AuthorizationResource::item('job', $job->id));
         $this->assertWorker($workerId);
         $dead = $permanent || $job->attempts >= $job->maximumAttempts;
@@ -360,11 +357,13 @@ final readonly class DoctrineJobQueue implements JobQueue
                 $offset,
             ));
             foreach (array_map($this->normalize(...), $rows) as $row) {
-                if (is_string($row['id'] ?? null) && $this->authorization->decide(
-                    $context,
-                    Capability::fromString('automation.manage'),
-                    AuthorizationResource::item('job', $row['id']),
-                )->allowed) {
+                if (
+                    is_string($row['id'] ?? null) && $this->authorization->decide(
+                        $context,
+                        Capability::fromString('automation.manage'),
+                        AuthorizationResource::item('job', $row['id']),
+                    )->allowed
+                ) {
                     $result[] = $row;
                     if (count($result) === $limit) {
                         return $result;

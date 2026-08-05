@@ -147,6 +147,7 @@ use Kumwe\CMS\Infrastructure\Persistence\Migration\MigrationRepository;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\MigrationRunner;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\ApplicationAuthorizationMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\CoreSchemaMigration;
+use Kumwe\CMS\Infrastructure\Persistence\Migration\IdempotencyLeaseNullabilityMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\JobRecoveryMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\DoctrineMigrationLock;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\DoctrineMigrationRepository;
@@ -473,6 +474,7 @@ final class ContainerFactory
                     new CoreSchemaMigration(self::service($container, TableNames::class)),
                     new ApplicationAuthorizationMigration(self::service($container, TableNames::class)),
                     new JobRecoveryMigration(self::service($container, TableNames::class)),
+                    new IdempotencyLeaseNullabilityMigration(self::service($container, TableNames::class)),
                 ],
                 authorization: self::service($container, AuthorizationGateway::class),
             ), true);
@@ -481,7 +483,7 @@ final class ContainerFactory
                 database: self::service($container, Connection::class),
                 logger: self::service($container, LoggerInterface::class),
                 tables: self::service($container, TableNames::class),
-                requiredMigration: JobRecoveryMigration::ID,
+                requiredMigration: IdempotencyLeaseNullabilityMigration::ID,
                 redis: self::service($container, RedisRuntime::class),
             ), true);
     }

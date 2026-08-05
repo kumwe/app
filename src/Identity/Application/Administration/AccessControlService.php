@@ -313,11 +313,13 @@ final readonly class AccessControlService
             $rows = $page($pageSize, $offset);
             foreach ($rows as $row) {
                 $identifier = $row[$identifierField] ?? null;
-                if (is_string($identifier) && $this->authorization->decide(
-                    $context,
-                    Capability::fromString('users.manage'),
-                    AuthorizationResource::item($resourceType, $identifier),
-                )->allowed) {
+                if (
+                    is_string($identifier) && $this->authorization->decide(
+                        $context,
+                        Capability::fromString('users.manage'),
+                        AuthorizationResource::item($resourceType, $identifier),
+                    )->allowed
+                ) {
                     $result[] = $row;
                     if (count($result) === $limit) {
                         return $result;

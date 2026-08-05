@@ -13,6 +13,7 @@ use Kumwe\CMS\Delivery\Http\Api\Concurrency\IfMatch;
 use Kumwe\CMS\Delivery\Http\Api\Concurrency\RequireIfMatchMiddleware;
 use Kumwe\CMS\Identity\Application\Authentication\AuthenticatedPrincipal;
 use Psr\Http\Message\ServerRequestInterface;
+use stdClass;
 
 final class ContentApiRequest
 {
@@ -20,17 +21,16 @@ final class ContentApiRequest
     public static function json(ServerRequestInterface $request): array
     {
         try {
-            $data = json_decode((string) $request->getBody(), true, 64, JSON_THROW_ON_ERROR);
+            $data = json_decode((string) $request->getBody(), false, 64, JSON_THROW_ON_ERROR);
         } catch (JsonException $exception) {
             throw new InvalidArgumentException('The request body must be valid JSON.', 0, $exception);
         }
 
-        if (!is_array($data) || array_is_list($data)) {
+        if (!$data instanceof stdClass) {
             throw new InvalidArgumentException('The request body must be a JSON object.');
         }
 
-        /** @var array<string, mixed> $data */
-        return $data;
+        return get_object_vars($data);
     }
 
     public static function principal(ServerRequestInterface $request): AuthenticatedPrincipal
@@ -73,14 +73,13 @@ final class ContentApiRequest
      */
     public static function data(array $body): array
     {
-        $data = $body['data'] ?? [];
+        $data = $body['data'] ?? new stdClass();
 
-        if (!is_array($data) || array_is_list($data)) {
+        if (!$data instanceof stdClass) {
             throw new InvalidArgumentException('The data field must be a JSON object.');
         }
 
-        /** @var array<string, mixed> $data */
-        return $data;
+        return self::normalizeObject($data);
     }
 
     /** @param array<string, mixed> $body */
@@ -116,5 +115,28 @@ final class ContentApiRequest
         }
 
         return $currentVersion;
+    }
+
+    /** @return array<string, mixed> */
+    private static function normalizeObject(stdClass $object): array
+    {
+        $normalized = [];
+        foreach (get_object_vars($object) as $name => $value) {
+            $normalized[$name] = self::normalizeValue($value);
+        }
+
+        return $normalized;
+    }
+
+    private static function normalizeValue(mixed $value): mixed
+    {
+        if ($value instanceof stdClass) {
+            return self::normalizeObject($value);
+        }
+        if (is_array($value)) {
+            return array_map(self::normalizeValue(...), $value);
+        }
+
+        return $value;
     }
 }

@@ -126,8 +126,7 @@ final class RecordingJobQueue implements JobQueue
         string $queue,
         string $workerId,
         int $leaseSeconds,
-    ): ?StoredJob
-    {
+    ): ?StoredJob {
         return array_shift($this->jobs);
     }
 
@@ -136,8 +135,7 @@ final class RecordingJobQueue implements JobQueue
         StoredJob $job,
         string $workerId,
         int $leaseSeconds,
-    ): void
-    {
+    ): void {
         $this->renewals[] = $leaseSeconds;
     }
 
@@ -152,8 +150,7 @@ final class RecordingJobQueue implements JobQueue
         string $workerId,
         Throwable $failure,
         bool $permanent,
-    ): void
-    {
+    ): void {
         $this->permanentFailures[] = $permanent;
     }
 
@@ -162,8 +159,7 @@ final class RecordingJobQueue implements JobQueue
         string $workerId,
         string $queue,
         ?string $jobId = null,
-    ): void
-    {
+    ): void {
         $this->heartbeats++;
     }
 
@@ -201,8 +197,7 @@ final class RenewingHandler implements LeaseAwareJobHandler
         array $payload,
         ExecutionContext $context,
         JobLeaseContext $lease,
-    ): void
-    {
+    ): void {
         $lease->renew(45);
     }
 }

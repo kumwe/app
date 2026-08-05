@@ -84,8 +84,7 @@ final readonly class AuthenticatedPrincipal
         array $capabilities,
         ?string $credentialId = null,
         int $securityEpoch = 1,
-    ): self
-    {
+    ): self {
         if (!array_is_list($capabilities)) {
             throw new InvalidArgumentException('Principal capability names must be a list.');
         }
@@ -118,8 +117,7 @@ final readonly class AuthenticatedPrincipal
         array $rows,
         ?string $credentialId = null,
         int $securityEpoch = 1,
-    ): self
-    {
+    ): self {
         $grants = [];
 
         foreach ($rows as $row) {
