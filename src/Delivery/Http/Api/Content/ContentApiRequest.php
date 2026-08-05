@@ -123,9 +123,10 @@ final class ContentApiRequest
     /** @return array<string, mixed> */
     private static function normalizeObject(stdClass $object): array
     {
-        /** @var array<string, mixed> $normalized */
+        /** @var array<string, mixed> $properties */
+        $properties = get_object_vars($object);
         $normalized = [];
-        foreach (get_object_vars($object) as $name => $value) {
+        foreach ($properties as $name => $value) {
             $normalized[$name] = self::normalizeValue($value);
         }
 
