@@ -118,7 +118,7 @@ final readonly class ExecutionContext
     public function authorizationFingerprint(): string
     {
         $identity = $this->principal?->authorizationFingerprint()
-            ?? 'system:' . $this->systemIdentity->value;
+            ?? 'system:' . ($this->systemIdentity->value ?? 'unknown');
 
         return hash('sha256', implode("\n", [
             $identity,
