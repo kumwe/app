@@ -392,7 +392,7 @@ jobs:
         run: |
           set -euo pipefail
           administrator_password="$(<"$KUMWE_ACCEPTANCE_ADMIN_PASSWORD_FILE")"
-          full_token_output="$(docker compose --file compose.production.yaml exec -T \
+          management_token_output="$(docker compose --file compose.production.yaml exec -T \
             --env KUMWE_ACCEPTANCE_ADMIN_PASSWORD="$administrator_password" \
             app /usr/local/bin/kumwe-entrypoint sh -euc '
               umask 077
@@ -402,20 +402,38 @@ jobs:
               /usr/local/bin/kumwe-entrypoint php bin/kumwe token:create \
                 --site=default \
                 --email=administrator@kumwe.test \
-                --name=deployment-acceptance \
-                --capabilities=automation.manage,content.read,content.create,content.update,content.submit,content.review,content.publish,users.manage \
+                --name=deployment-cli-management \
+                --capabilities=users.manage \
+                --audience=kumwe-cli \
+                --purpose=management \
                 --password-file="$password_file"
             ')"
           unset administrator_password
+          management_token="$(sed -n '2p' <<< "$management_token_output")"
+          [[ "$management_token" =~ ^[A-Za-z0-9_-]{32,}$ ]]
+          full_token_output="$(docker compose --file compose.production.yaml exec -T \
+            --env KUMWE_ACCEPTANCE_MANAGEMENT_TOKEN="$management_token" \
+            app /usr/local/bin/kumwe-entrypoint sh -euc '
+              umask 077
+              token_file=/tmp/kumwe-acceptance-management-token
+              trap '\''rm -f "$token_file"'\'' EXIT
+              printf %s "$KUMWE_ACCEPTANCE_MANAGEMENT_TOKEN" > "$token_file"
+              /usr/local/bin/kumwe-entrypoint php bin/kumwe token:create \
+                --site=default \
+                --email=administrator@kumwe.test \
+                --name=deployment-acceptance \
+                --capabilities=automation.manage,content.read,content.create,content.update,content.submit,content.review,content.publish,users.manage \
+                --token-file="$token_file"
+            ')"
           full_token="$(sed -n '2p' <<< "$full_token_output")"
           [[ "$full_token" =~ ^[A-Za-z0-9_-]{32,}$ ]]
           read_token_output="$(docker compose --file compose.production.yaml exec -T \
-            --env KUMWE_ACCEPTANCE_API_TOKEN="$full_token" \
+            --env KUMWE_ACCEPTANCE_MANAGEMENT_TOKEN="$management_token" \
             app /usr/local/bin/kumwe-entrypoint sh -euc '
               umask 077
-              token_file=/tmp/kumwe-acceptance-api-token
+              token_file=/tmp/kumwe-acceptance-management-token
               trap '\''rm -f "$token_file"'\'' EXIT
-              printf %s "$KUMWE_ACCEPTANCE_API_TOKEN" > "$token_file"
+              printf %s "$KUMWE_ACCEPTANCE_MANAGEMENT_TOKEN" > "$token_file"
               /usr/local/bin/kumwe-entrypoint php bin/kumwe token:create \
                 --site=default \
                 --email=administrator@kumwe.test \
@@ -423,6 +441,7 @@ jobs:
                 --capabilities=content.read \
                 --token-file="$token_file"
             ')"
+          unset management_token
           read_token="$(sed -n '2p' <<< "$read_token_output")"
           [[ "$read_token" =~ ^[A-Za-z0-9_-]{32,}$ ]]
           state_file="$RUNNER_TEMP/kumwe-probe-state-${{ matrix.database.driver }}.json"
