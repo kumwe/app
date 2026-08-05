@@ -11,8 +11,10 @@ use Throwable;
 
 final readonly class DisableExtensionCommand implements Command
 {
-    public function __construct(private ExtensionManager $extensions, private ConsoleAuthorizer $authorization)
-    {
+    public function __construct(
+        private ExtensionManager $extensions,
+        private ConsoleAuthorizer $authorization,
+    ) {
     }
 
     public function name(): string
@@ -29,8 +31,8 @@ final readonly class DisableExtensionCommand implements Command
     public function execute(array $arguments, Output $output): int
     {
         try {
-            $identifier = array_shift($arguments) ?? '';
-            $options = CommandInput::options($arguments);
+            $identifier = $arguments[0] ?? '';
+            $options = CommandInput::options(array_slice($arguments, 1));
             $context = $this->authorization->require($options, 'extensions.manage');
             $extension = $this->extensions->disable($identifier, $context);
             $installedIdentifier = $extension['identifier'] ?? $identifier;

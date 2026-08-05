@@ -11,6 +11,7 @@ use InvalidArgumentException;
 use JsonException;
 use Kumwe\CMS\Identity\Application\Administration\AccessControlRepository;
 use Kumwe\CMS\Infrastructure\Persistence\TableNames;
+use RuntimeException;
 
 final readonly class DoctrineAccessControlRepository implements AccessControlRepository
 {
@@ -78,19 +79,20 @@ final readonly class DoctrineAccessControlRepository implements AccessControlRep
         return $rows;
     }
 
-    public function tokens(int $limit = 100, int $offset = 0): array
+    public function tokens(string $siteIdentifier, int $limit = 100, int $offset = 0): array
     {
         $this->assertPage($limit, $offset);
         $tokens = $this->database->fetchAllAssociative(sprintf(
-            'SELECT t.id, t.name, t.capabilities, t.expires_at, t.revoked_at, t.created_at, t.last_used_at, '
+            'SELECT t.id, t.name, t.capabilities, t.security_epoch, t.audience, t.purpose, t.site_identifier, '
+            . 't.rotated_from, t.expires_at, t.revoked_at, t.revocation_reason, t.created_at, t.last_used_at, '
             . 'u.id AS subject_id, u.email AS subject_email, u.display_name AS subject_name '
             . 'FROM %s t INNER JOIN %s u ON u.id = t.subject_id '
-            . 'ORDER BY t.created_at DESC, t.id DESC LIMIT %d OFFSET %d',
+            . 'WHERE t.site_identifier = ? ORDER BY t.created_at DESC, t.id DESC LIMIT %d OFFSET %d',
             $this->tables->quoted('api_tokens'),
             $this->tables->quoted('users'),
             $limit,
             $offset,
-        ));
+        ), [$siteIdentifier]);
 
         foreach ($tokens as &$token) {
             $capabilities = $token['capabilities'] ?? null;
@@ -197,7 +199,7 @@ final readonly class DoctrineAccessControlRepository implements AccessControlRep
             ], [
                 'assigned_at' => Types::DATETIME_IMMUTABLE,
             ]);
-            $this->bumpUserSecurityEpoch($userId);
+            $this->incrementSecurityEpoch($userId);
         }
     }
 
@@ -207,7 +209,7 @@ final readonly class DoctrineAccessControlRepository implements AccessControlRep
             $this->database->delete($this->tables->raw('user_roles'), ['user_id' => $userId, 'role_id' => $roleId]),
             'role assignment',
         );
-        $this->bumpUserSecurityEpoch($userId);
+        $this->incrementSecurityEpoch($userId);
     }
 
     public function grant(
@@ -230,7 +232,7 @@ final readonly class DoctrineAccessControlRepository implements AccessControlRep
         ], [
             'granted_at' => Types::DATETIME_IMMUTABLE,
         ]);
-        $this->bumpRoleSecurityEpochs($roleId);
+        $this->incrementRoleMembersEpoch($roleId);
     }
 
     public function revokeGrant(string $grantId): void
@@ -244,7 +246,7 @@ final readonly class DoctrineAccessControlRepository implements AccessControlRep
             'capability grant',
         );
         if (is_string($roleId)) {
-            $this->bumpRoleSecurityEpochs($roleId);
+            $this->incrementRoleMembersEpoch($roleId);
         }
     }
 
@@ -265,6 +267,114 @@ final readonly class DoctrineAccessControlRepository implements AccessControlRep
         ), [$normalizedEmail]);
 
         return is_string($id) ? $id : null;
+    }
+
+    public function tokenSite(string $tokenId): ?string
+    {
+        $site = $this->database->fetchOne(sprintf(
+            'SELECT site_identifier FROM %s WHERE id = ?',
+            $this->tables->quoted('api_tokens'),
+        ), [$tokenId]);
+        return is_string($site) ? $site : null;
+    }
+
+    public function activeTokenForRotation(string $tokenId, bool $lock = false): ?array
+    {
+        $row = $this->database->fetchAssociative(sprintf(
+            'SELECT t.subject_id, u.email, t.capabilities, t.site_identifier, t.audience, t.purpose FROM %s t '
+            . 'INNER JOIN %s u ON u.id = t.subject_id WHERE t.id = ? AND t.revoked_at IS NULL '
+            . 'AND t.security_epoch = u.security_epoch '
+            . "AND t.expires_at > CURRENT_TIMESTAMP AND u.status = 'active'%s",
+            $this->tables->quoted('api_tokens'),
+            $this->tables->quoted('users'),
+            $lock ? ' FOR UPDATE' : '',
+        ), [$tokenId]);
+        if ($row === false) {
+            return null;
+        }
+        $capabilities = $row['capabilities'] ?? null;
+        if (is_string($capabilities)) {
+            $capabilities = json_decode($capabilities, true, 32, JSON_THROW_ON_ERROR);
+        }
+        if (!is_array($capabilities) || !array_is_list($capabilities)) {
+            throw new RuntimeException('The token capability inventory is invalid.');
+        }
+        foreach ($capabilities as $capability) {
+            if (!is_string($capability)) {
+                throw new RuntimeException('The token capability inventory is invalid.');
+            }
+        }
+        $subjectId = $row['subject_id'] ?? null;
+        $email = $row['email'] ?? null;
+        $site = $row['site_identifier'] ?? null;
+        $audience = $row['audience'] ?? null;
+        $purpose = $row['purpose'] ?? null;
+        if (
+            !is_string($subjectId)
+            || !is_string($email)
+            || !is_string($site)
+            || !is_string($audience)
+            || !is_string($purpose)
+        ) {
+            throw new RuntimeException('The active token rotation record is invalid.');
+        }
+        return [
+            'subject_id' => $subjectId,
+            'email' => $email,
+            'capabilities' => array_values($capabilities),
+            'site_identifier' => $site,
+            'audience' => $audience,
+            'purpose' => $purpose,
+        ];
+    }
+
+    public function revokeSubjectTokens(string $userId, DateTimeImmutable $at, string $reason): int
+    {
+        $this->incrementSecurityEpoch($userId);
+        return (int) $this->database->executeStatement(sprintf(
+            'UPDATE %s SET revoked_at = ?, revocation_reason = ? WHERE subject_id = ? AND revoked_at IS NULL',
+            $this->tables->quoted('api_tokens'),
+        ), [$at, $reason, $userId], [Types::DATETIME_IMMUTABLE, Types::STRING, Types::GUID]);
+    }
+
+    public function revokeSubjectTokensForSite(
+        string $userId,
+        string $siteIdentifier,
+        DateTimeImmutable $at,
+        string $reason,
+    ): int {
+        return (int) $this->database->executeStatement(sprintf(
+            'UPDATE %s SET revoked_at = ?, revocation_reason = ? '
+            . 'WHERE subject_id = ? AND site_identifier = ? AND revoked_at IS NULL',
+            $this->tables->quoted('api_tokens'),
+        ), [$at, $reason, $userId, $siteIdentifier], [
+            Types::DATETIME_IMMUTABLE,
+            Types::STRING,
+            Types::GUID,
+            Types::STRING,
+        ]);
+    }
+
+    public function lockUser(string $userId): void
+    {
+        $epoch = $this->database->fetchOne(sprintf(
+            'SELECT security_epoch FROM %s WHERE id = ? FOR UPDATE',
+            $this->tables->quoted('users'),
+        ), [$userId]);
+        if (!is_int($epoch) && (!is_string($epoch) || preg_match('/^[0-9]+$/D', $epoch) !== 1)) {
+            throw new InvalidArgumentException('The user does not exist or could not be locked.');
+        }
+    }
+
+    public function lockRole(string $roleId): void
+    {
+        $id = $this->database->fetchOne(sprintf(
+            'SELECT id FROM %s WHERE id = ? FOR UPDATE',
+            $this->tables->quoted('roles'),
+        ), [$roleId]);
+        if (!is_string($id)) {
+            throw new InvalidArgumentException('The role does not exist or could not be locked.');
+        }
     }
 
     public function roleCode(string $roleId): ?string
@@ -349,21 +459,24 @@ final readonly class DoctrineAccessControlRepository implements AccessControlRep
         }
     }
 
-    private function bumpUserSecurityEpoch(string $userId): void
+    private function incrementSecurityEpoch(string $userId): void
     {
-        $this->database->executeStatement(sprintf(
+        $this->assertChanged($this->database->executeStatement(sprintf(
             'UPDATE %s SET security_epoch = security_epoch + 1 WHERE id = ?',
             $this->tables->quoted('users'),
-        ), [$userId]);
+        ), [$userId], [Types::GUID]), 'user');
     }
 
-    private function bumpRoleSecurityEpochs(string $roleId): void
+    private function incrementRoleMembersEpoch(string $roleId): void
     {
-        $this->database->executeStatement(sprintf(
-            'UPDATE %s SET security_epoch = security_epoch + 1 WHERE id IN '
-            . '(SELECT user_id FROM %s WHERE role_id = ?)',
-            $this->tables->quoted('users'),
+        $users = $this->database->fetchFirstColumn(sprintf(
+            'SELECT user_id FROM %s WHERE role_id = ?',
             $this->tables->quoted('user_roles'),
         ), [$roleId]);
+        foreach ($users as $userId) {
+            if (is_string($userId)) {
+                $this->incrementSecurityEpoch($userId);
+            }
+        }
     }
 }

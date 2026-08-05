@@ -1,6 +1,6 @@
 # Template development
 
-A template is an extension with `"type": "template"`. It uses the same compatibility, dependency, signing, installation, and provider rules as other extensions. Kumwe activates one public template at a time and keeps the built-in views as a safe fallback.
+A template is an extension with `"type": "template"`. It uses the same compatibility, dependency, signing, installation, and provider rules as other extensions. Installation always leaves the package disabled. Public theme activation belongs to an explicit site; administrator activation is installation-wide. Each surface retains its built-in views as a safe fallback.
 
 ## Package layout
 
@@ -9,10 +9,19 @@ kumwe.json
 src/Provider.php
 templates/site/home.twig
 templates/site/page.twig
+templates/administrator/layout.twig
+templates/views/site/widget.twig
+templates/views/administrator/widget.twig
 assets/
 ```
 
-Active template paths are searched before Kumwe's built-in templates. Override only the named views the template owns. Keep administrator overrides separate from public views and declare their compatibility explicitly.
+Only a theme selected for a surface is searched before that surface's built-in templates. A site theme is never present in the administrator Twig loader, and an administrator theme is never present in the site loader. Administrator activation, disablement, and uninstall require the operator's current password. An active theme must be disabled on every surface before its package can be upgraded.
+
+Site activation requires compile-valid `home.twig` and `page.twig` entries. Administrator activation requires a compile-valid `layout.twig`. That layout is the complete administrator-theme override contract: login views and controller-specific pages always resolve from core or an explicitly namespaced extension, while built-in pages extend the selected layout. The emergency renderer never loads the active administrator theme and always uses the protected built-in layout.
+
+Theme mutations require `themes.site.manage` or `themes.administrator.manage` for every affected site or surface. REST, CLI, and MCP bind public activation to the authenticated site. A theme assigned to other sites must be managed from each of those site contexts before disablement or uninstall. Administrator activation, disablement, and uninstall also accept the operator's current password for step-up. Idempotency records retain only whether step-up was supplied, never the password itself.
+
+Stable namespaces are `@core-site`, `@core-admin`, `@site-theme`, and `@admin-theme`. Active extension views are isolated by both surface and an injective hexadecimal identifier namespace; `acme/tools` resolves as `@extension-61636d652f746f6f6c73`. Extension view files belong under `templates/views/site` or `templates/views/administrator` and cannot shadow unnamed core views.
 
 `site/page.twig` receives the public content record, including:
 
@@ -44,7 +53,7 @@ Twig auto-escapes normal output. Use `|raw` only for fields guaranteed to pass t
 
 ## Assets and presentation data
 
-Use content-addressed filenames or an extension-owned asset route so browser caches change with the package version. Render navigation or extension-provided blocks through an injected service or prepared view model rather than reading application tables.
+Use the versioned `/assets/extensions/{vendor}/{name}/{version}/...` path emitted for the installed package. Requests are authorized against the current extension release and signing-key state and use `no-store`, so a disabled, uninstalled, quarantined, or revoked release cannot leave publicly reachable bytes. Render navigation or extension-provided blocks through an injected service or prepared view model rather than reading application tables.
 
 Do not embed deployment URLs, database queries, secrets, permission decisions, or business rules in Twig. Put reusable behavior in an injected extension service and give the template a presentation-ready result.
 
@@ -52,9 +61,16 @@ Do not embed deployment URLs, database queries, secrets, permission decisions, o
 
 ```bash
 php bin/kumwe extension:install /absolute/acme-site-template.zip
-php bin/kumwe extension:activate acme/site-template
+php bin/kumwe extension:activate acme/site-template --surface=site \
+  --token-file=/run/secrets/kumwe-extension-token
 ```
 
-Production installation also supplies an enabled signing-key identifier and detached signature. Activation switches the compiled template path for the next request; restart workers if the template provider also registers services or jobs.
+Production installation also supplies an enabled signing-key identifier and detached signature. Activate administrator themes in the administrator application so current-password step-up authentication can be enforced. If a broken administrator theme cannot render, every failed themed render falls back to the non-overridable core environment, and an operator can atomically restore it with:
+
+```bash
+php bin/kumwe theme:administrator:recover --confirm=restore-core-administrator
+```
+
+Activation commits the selected surface and an immutable, signed runtime publication in one database transaction. Replace application replicas after lifecycle changes: each entrypoint materializes and verifies the database generation once before the process starts, and workers/schedulers drain if their loaded generation becomes stale. A failed local write leaves the durable publication pending for the next startup reconciliation.
 
 Verify the homepage, a direct page URL, menus, empty/missing optional fields, error pages, keyboard navigation, contrast, responsive layouts, CSP/security headers, and asset caching. Test on PHP 8.5 with MariaDB, MySQL, and PostgreSQL when the provider has persistence behavior.

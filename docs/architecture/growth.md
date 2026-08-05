@@ -8,7 +8,9 @@ Run multiple immutable web containers behind a load balancer, move sessions and 
 
 ## Large content models
 
-Add content types and fields through versioned schemas. Use dedicated aggregates or an ORM-backed bounded component when relationship management warrants it; use DBAL projections for search and reporting. Keep revisions, workflow, permissions, and audit behavior consistent across types.
+Content types and workflows are site-owned, immutable versioned definitions. A content entry pins the exact schema and workflow versions used when it was created, so publishing a later definition cannot reinterpret existing data. JSON data is validated on create and update, persisted workflow transitions carry their required capabilities, and public delivery follows the pinned workflow's public-state declaration and publication window. Manage definitions through the administrator, REST API, or `content-model` CLI command.
+
+When relationship management warrants a dedicated aggregate, keep the versioned definition as the delivery contract and place relationship persistence behind its own repository. Use DBAL projections for search and reporting while preserving revision, authorization, workflow, and audit behavior across types.
 
 ## Search and discovery
 

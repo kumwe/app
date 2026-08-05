@@ -12,7 +12,7 @@ The administrator controls application-level automation records. Starting, stopp
 
 ## REST integration
 
-All routes require `automation.manage`. Mutations also require `Idempotency-Key`; versioned schedule changes require `If-Match`.
+All routes require `automation.manage`, an exact site-bound bearer token, and `Kumwe-Site`. Mutations also require `Idempotency-Key`; versioned schedule changes require `If-Match`.
 
 | Method | Path | Purpose |
 |---|---|---|
@@ -42,18 +42,21 @@ Use `queue:work --once` and `schedule:run` without `--loop` for deployment smoke
 ```bash
 php bin/kumwe automation create \
   --token-file=/run/secrets/kumwe-automation-token \
+  --site=corporate \
   --name="Rebuild extension runtime" \
   --cron="0 2 * * *" \
   --timezone=UTC \
   --job=extensions.runtime.rebuild \
   --payload='{}'
-php bin/kumwe automation schedules --token-file=/run/secrets/kumwe-automation-token
-php bin/kumwe automation jobs --token-file=/run/secrets/kumwe-automation-token
+php bin/kumwe automation schedules --site=corporate --token-file=/run/secrets/kumwe-automation-token
+php bin/kumwe automation jobs --site=corporate --token-file=/run/secrets/kumwe-automation-token
 ```
 
 Cron expressions use minute, hour, day of month, month, and day of week. Lists, ranges, and steps are supported. Occurrences are calculated in the configured IANA timezone and stored in UTC. A unique occurrence key prevents duplicate dispatch by competing schedulers.
 
 Built-in job types include `system.sessions.purge`, `extensions.runtime.rebuild`, and `content.workflow.transition`. Extension providers may register namespaced handlers with versioned payload schemas. A handler must be safe to retry because a process can terminate after its external side effect but before completion is recorded.
+
+`extensions.runtime.rebuild` and `system.idempotency.purge` are declared installation-global jobs. Their scope is persisted on both schedules and queued occurrences; they remain claimable if the site used to create them is later disabled or deleted, and execute only as their dedicated internal materializer or maintenance principal. Site-owned jobs remain joined to a live, enabled owner. Creating, listing, retrying, canceling, enabling, or deleting installation-global work requires a global `automation.manage` grant; a site-scoped grant cannot cross that boundary.
 
 ## Operating rules
 

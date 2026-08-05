@@ -20,14 +20,15 @@ final readonly class ConsoleAuthorizer
     /** @param array<string, string> $options */
     public function require(array $options, string $capability): ExecutionContext
     {
+        $site = SiteContext::fromString(CommandInput::required($options, 'site'));
         $token = CommandInput::secretFile(CommandInput::required($options, 'token-file'));
-        $principal = $this->tokens->verify($token);
+        $principal = $this->tokens->verify($token, 'kumwe-cli', 'management', $site->identifier());
         if ($principal === null || !$principal->hasCapability(Capability::fromString($capability))) {
             throw new InsufficientCapability($capability);
         }
 
         return $principal->context(
-            SiteContext::default(),
+            $site,
             AuthenticationStrength::BearerToken,
             'cli-' . bin2hex(random_bytes(16)),
         );

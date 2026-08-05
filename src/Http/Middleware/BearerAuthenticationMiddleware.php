@@ -24,6 +24,9 @@ final readonly class BearerAuthenticationMiddleware implements MiddlewareInterfa
 {
     public const OPTION_AUTHENTICATION = 'authentication';
     public const OPTION_REQUIRED_CAPABILITIES = 'required_capabilities';
+    public const OPTION_TOKEN_AUDIENCE = 'token_audience';
+    public const OPTION_TOKEN_PURPOSE = 'token_purpose';
+    public const SITE_HEADER = 'Kumwe-Site';
 
     private const AUTHENTICATION_BEARER = 'bearer';
 
@@ -60,7 +63,14 @@ final readonly class BearerAuthenticationMiddleware implements MiddlewareInterfa
             return $this->unauthorized('invalid_request');
         }
 
-        $principal = $this->verifier->verify($token);
+        $siteIdentifier = $this->siteIdentifier($request);
+        if ($siteIdentifier === null) {
+            return $this->unauthorized('invalid_request');
+        }
+
+        $audience = $this->option($options, self::OPTION_TOKEN_AUDIENCE, 'kumwe-http');
+        $purpose = $this->option($options, self::OPTION_TOKEN_PURPOSE, 'api');
+        $principal = $this->verifier->verify($token, $audience, $purpose, $siteIdentifier);
 
         if ($principal === null) {
             return $this->unauthorized('invalid_token');
@@ -78,11 +88,35 @@ final readonly class BearerAuthenticationMiddleware implements MiddlewareInterfa
             $request
                 ->withAttribute(AuthenticatedPrincipal::REQUEST_ATTRIBUTE, $principal)
                 ->withAttribute(ExecutionContext::REQUEST_ATTRIBUTE, $principal->context(
-                    SiteContext::default(),
+                    SiteContext::fromString($siteIdentifier),
                     AuthenticationStrength::BearerToken,
                     $this->requestId($request),
                 )),
         );
+    }
+
+    private function siteIdentifier(ServerRequestInterface $request): ?string
+    {
+        $values = $request->getHeader(self::SITE_HEADER);
+        if (count($values) !== 1) {
+            return null;
+        }
+
+        try {
+            return SiteContext::fromString($values[0])->identifier();
+        } catch (InvalidArgumentException) {
+            return null;
+        }
+    }
+
+    /** @param array<string, mixed> $options */
+    private function option(array $options, string $name, string $default): string
+    {
+        $value = $options[$name] ?? $default;
+        if (!is_string($value) || $value === '') {
+            throw new LogicException(sprintf('Bearer route option %s must be a non-empty string.', $name));
+        }
+        return $value;
     }
 
     /** @return array<string, mixed> */

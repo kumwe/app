@@ -18,7 +18,10 @@ use Kumwe\CMS\Audit\Domain\AuditEvent;
 use Kumwe\CMS\Identity\Application\Administration\AdministratorIdentityGateway;
 use Kumwe\CMS\Identity\Application\Administration\AuthenticationRateLimiter;
 use Kumwe\CMS\Identity\Application\Administration\TokenDelegationPreauthorizer;
+use Kumwe\CMS\Identity\Application\Administration\TokenRotationPreauthorizer;
+use Kumwe\CMS\Identity\Application\Administration\AccessTokenQuotaPolicy;
 use Kumwe\CMS\Identity\Application\Authentication\AuthenticatedPrincipal;
+use Kumwe\CMS\Identity\Application\Authentication\AccessTokenContext;
 use Kumwe\CMS\Identity\Application\Security\PasswordHasher;
 use Kumwe\CMS\Identity\Domain\EmailAddress;
 use Kumwe\CMS\Identity\Domain\Capability;
@@ -30,6 +33,8 @@ use RuntimeException;
 
 final readonly class DoctrineAdministratorIdentityGateway implements AdministratorIdentityGateway
 {
+    private const DEFAULT_TOKEN_LIFETIME = '+30 days';
+    private const MAXIMUM_TOKEN_LIFETIME = '+90 days';
     /** @var list<string> */
     private const ADMINISTRATOR_CAPABILITIES = [
         'administrator.access', 'automation.manage', 'content.archive', 'content.create', 'content.delete',
@@ -46,9 +51,11 @@ final readonly class DoctrineAdministratorIdentityGateway implements Administrat
         private ClockInterface $clock,
         private AuthenticationRateLimiter $rateLimiter,
         private AuditRecorder $audit,
+        private AccessTokenQuotaPolicy $quota,
         private string $applicationSecret,
         private AuthorizationGateway $authorization,
         private TokenDelegationPreauthorizer $tokenDelegation,
+        private TokenRotationPreauthorizer $tokenRotation,
         private ResourceSiteOwnershipWriter $ownership,
         private object $provenance,
     ) {
@@ -188,7 +195,12 @@ final readonly class DoctrineAdministratorIdentityGateway implements Administrat
         string $name,
         array $capabilities,
         ?DateTimeImmutable $expiresAt = null,
+        string $audience = 'kumwe-http',
+        string $purpose = 'api',
+        ?string $rotatedFrom = null,
     ): array {
+        $actorId = $context->actorId();
+        $siteIdentifier = $context->site()->identifier();
         $name = trim($name);
 
         if ($name === '' || mb_strlen($name) > 191) {
@@ -196,12 +208,24 @@ final readonly class DoctrineAdministratorIdentityGateway implements Administrat
         }
         $delegation = $this->tokenDelegation->authorize($context, $email, $capabilities);
         $userId = $delegation->subjectId;
+        $tokenContext = AccessTokenContext::fromStrings($audience, $purpose);
+        $audience = $tokenContext->audience;
+        $purpose = $tokenContext->purpose;
+        $siteIdentifier = SiteContext::fromString($siteIdentifier)->identifier();
+
+        $uniqueCapabilities = $delegation->capabilities;
+
+        $now = $this->clock->now();
+        $expiresAt ??= $now->modify(self::DEFAULT_TOKEN_LIFETIME);
+        if ($expiresAt <= $now || $expiresAt > $now->modify(self::MAXIMUM_TOKEN_LIFETIME)) {
+            throw new InvalidArgumentException('API tokens must expire in the future and within 90 days.');
+        }
+        if ($rotatedFrom !== null && !Uuid::isValid($rotatedFrom)) {
+            throw new InvalidArgumentException('The rotated-from token ID must be a canonical UUID.');
+        }
 
         $token = $this->base64Url(random_bytes(48));
         $tokenId = Uuid::uuid7()->toString();
-        $actorId = $context->actorId();
-        $uniqueCapabilities = $delegation->capabilities;
-        $now = $this->clock->now();
         $this->transactions->transactional(function () use (
             $tokenId,
             $userId,
@@ -211,15 +235,70 @@ final readonly class DoctrineAdministratorIdentityGateway implements Administrat
             $expiresAt,
             $now,
             $actorId,
+            $audience,
+            $purpose,
+            $siteIdentifier,
+            $rotatedFrom,
+            $context,
+            $email,
         ): void {
+            $epoch = $this->database->fetchOne(sprintf(
+                "SELECT security_epoch FROM %s WHERE id = ? AND status = 'active' FOR UPDATE",
+                $this->tables->quoted('users'),
+            ), [$userId]);
+            if (!is_int($epoch) && (!is_string($epoch) || preg_match('/^[0-9]+$/D', $epoch) !== 1)) {
+                throw new RuntimeException('The user security epoch could not be locked.');
+            }
+            $lockedDelegation = $this->tokenDelegation->authorize($context, $email, $uniqueCapabilities);
+            if ($lockedDelegation->subjectId !== $userId) {
+                throw new RuntimeException('The token subject changed during issuance.');
+            }
+            $granted = $this->capabilitiesFor($userId, $siteIdentifier);
+            foreach ($uniqueCapabilities as $capability) {
+                if (!in_array($capability, $granted, true)) {
+                    throw new InvalidArgumentException(sprintf(
+                        'The user does not grant capability %s.',
+                        $capability,
+                    ));
+                }
+            }
+            $quotaSql = 'SELECT COUNT(*) FROM %s WHERE subject_id = ? AND site_identifier = ? '
+                . 'AND audience = ? AND purpose = ? AND security_epoch = ? '
+                . 'AND revoked_at IS NULL AND expires_at > CURRENT_TIMESTAMP';
+            $quotaParameters = [$userId, $siteIdentifier, $audience, $purpose, (int) $epoch];
+            if ($rotatedFrom !== null) {
+                $quotaSql .= ' AND id <> ?';
+                $quotaParameters[] = $rotatedFrom;
+            }
+            $activeCount = $this->database->fetchOne(sprintf(
+                $quotaSql,
+                $this->tables->quoted('api_tokens'),
+            ), $quotaParameters);
+            if (!is_int($activeCount)
+                && (!is_string($activeCount) || preg_match('/^[0-9]+$/D', $activeCount) !== 1)) {
+                throw new RuntimeException('The active token quota could not be read.');
+            }
+            $this->quota->assertAllowed(
+                $userId,
+                $siteIdentifier,
+                $audience,
+                $purpose,
+                (int) $activeCount,
+            );
             $this->database->insert($this->tables->raw('api_tokens'), [
                 'id' => $tokenId,
                 'subject_id' => $userId,
                 'token_digest' => hash('sha256', $token),
                 'name' => $name,
                 'capabilities' => $uniqueCapabilities,
+                'security_epoch' => (int) $epoch,
+                'audience' => $audience,
+                'purpose' => $purpose,
+                'site_identifier' => $siteIdentifier,
+                'rotated_from' => $rotatedFrom,
                 'expires_at' => $expiresAt,
                 'revoked_at' => null,
+                'revocation_reason' => null,
                 'created_at' => $now,
                 'last_used_at' => null,
             ], [
@@ -229,7 +308,7 @@ final readonly class DoctrineAdministratorIdentityGateway implements Administrat
             ]);
             $this->ownership->record(
                 AuthorizationResource::item('api_token', $tokenId),
-                SiteContext::default(),
+                $context->site(),
             );
             $this->audit->record(new AuditEvent(
                 Uuid::uuid7()->toString(),
@@ -239,11 +318,83 @@ final readonly class DoctrineAdministratorIdentityGateway implements Administrat
                 'api_token',
                 $tokenId,
                 'success',
-                ['subject_id' => $userId, 'capabilities' => $uniqueCapabilities],
+                [
+                    'subject_id' => $userId,
+                    'capabilities' => $uniqueCapabilities,
+                    'audience' => $audience,
+                    'purpose' => $purpose,
+                    'site_identifier' => $siteIdentifier,
+                    'expires_at' => $expiresAt->format(DATE_ATOM),
+                    'rotated_from' => $rotatedFrom,
+                ],
             ));
         });
 
         return ['token' => $token, 'token_id' => $tokenId];
+    }
+
+    public function rotateAccessToken(
+        ExecutionContext $context,
+        string $tokenId,
+        string $name,
+        ?DateTimeImmutable $expiresAt,
+    ): array {
+        $actorId = $context->actorId();
+        $this->tokenRotation->authorize($context, $tokenId);
+
+        return $this->transactions->transactional(function () use (
+            $context,
+            $name,
+            $expiresAt,
+            $actorId,
+            $tokenId,
+        ): array {
+            $rotation = $this->tokenRotation->authorize($context, $tokenId, true);
+            $created = $this->issueAccessToken(
+                $context,
+                $rotation->email,
+                $name,
+                $rotation->capabilities,
+                $expiresAt,
+                $rotation->audience,
+                $rotation->purpose,
+                $tokenId,
+            );
+            $now = $this->clock->now();
+            $affected = $this->database->executeStatement(sprintf(
+                'UPDATE %s SET revoked_at = ?, revocation_reason = ? WHERE id = ? AND revoked_at IS NULL',
+                $this->tables->quoted('api_tokens'),
+            ), [$now, 'rotated', $tokenId], [Types::DATETIME_IMMUTABLE, Types::STRING, Types::GUID]);
+            if ($affected !== 1) {
+                throw new RuntimeException('The replaced token changed during rotation.');
+            }
+            $this->audit->record(new AuditEvent(
+                Uuid::uuid7()->toString(),
+                $now,
+                $actorId,
+                'token.rotate',
+                'api_token',
+                $tokenId,
+                'success',
+                ['replacement_token_id' => $created['token_id']],
+            ));
+            return $created;
+        });
+    }
+
+    /** @return list<string> */
+    private function capabilitiesFor(string $userId, string $siteIdentifier = 'default'): array
+    {
+        $values = $this->database->fetchFirstColumn(sprintf(
+            'SELECT DISTINCT g.capability_code FROM %s ur INNER JOIN %s g ON g.role_id = ur.role_id '
+            . "WHERE ur.user_id = ? AND (g.scope_type = 'global' "
+            . "OR (g.scope_type = 'site' AND g.scope_identifier = ?)) "
+            . 'ORDER BY g.capability_code',
+            $this->tables->quoted('user_roles'),
+            $this->tables->quoted('role_capability_grants'),
+        ), [$userId, $siteIdentifier]);
+
+        return array_values(array_filter($values, 'is_string'));
     }
 
     /** @return list<array{capability: string, scope_type: string, scope_identifier: ?string}> */
@@ -263,4 +414,5 @@ final readonly class DoctrineAdministratorIdentityGateway implements Administrat
     {
         return rtrim(strtr(base64_encode($bytes), '+/', '-_'), '=');
     }
+
 }

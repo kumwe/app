@@ -13,15 +13,16 @@ use InvalidArgumentException;
 use JsonException;
 use Kumwe\CMS\Content\Application\ContentRecord;
 use Kumwe\CMS\Content\Application\ContentRepository;
+use Kumwe\CMS\Content\Application\SiteScopedContentRepository;
+use Kumwe\CMS\Application\Authorization\SiteContext;
 use Kumwe\CMS\Content\Domain\ContentEntry;
 use Kumwe\CMS\Content\Domain\ContentRevision;
-use Kumwe\CMS\Content\Domain\ContentStatus;
 use Kumwe\CMS\Content\Domain\PublicationWindow;
 use Kumwe\CMS\Content\Domain\VersionConflict;
 use Kumwe\CMS\Infrastructure\Persistence\TableNames;
 use RuntimeException;
 
-final readonly class DoctrineContentRepository implements ContentRepository
+final readonly class DoctrineContentRepository implements SiteScopedContentRepository
 {
     public function __construct(private Connection $database, private TableNames $tables)
     {
@@ -29,6 +30,15 @@ final readonly class DoctrineContentRepository implements ContentRepository
 
     public function all(int $limit = 100, bool $includeDeleted = false, int $offset = 0): array
     {
+        return $this->allForSite(SiteContext::default(), $limit, $includeDeleted, $offset);
+    }
+
+    public function allForSite(
+        SiteContext $site,
+        int $limit = 100,
+        bool $includeDeleted = false,
+        int $offset = 0,
+    ): array {
         if ($limit < 1 || $limit > 500) {
             throw new InvalidArgumentException('The content result limit must be between 1 and 500.');
         }
@@ -44,8 +54,10 @@ final readonly class DoctrineContentRepository implements ContentRepository
             ->setMaxResults($limit)
             ->setFirstResult($offset);
 
+        $query->where('e.site_identifier = :site')->setParameter('site', $site->identifier());
+
         if (!$includeDeleted) {
-            $query->where('e.deleted_at IS NULL');
+            $query->andWhere('e.deleted_at IS NULL');
         }
 
         return array_map($this->map(...), $query->executeQuery()->fetchAllAssociative());
@@ -53,11 +65,18 @@ final readonly class DoctrineContentRepository implements ContentRepository
 
     public function find(string $id, bool $includeDeleted = false): ?ContentRecord
     {
+        return $this->findForSite(SiteContext::default(), $id, $includeDeleted);
+    }
+
+    public function findForSite(SiteContext $site, string $id, bool $includeDeleted = false): ?ContentRecord
+    {
         $query = $this->database->createQueryBuilder()
             ->select(...$this->columns())
             ->from($this->tables->raw('content_entries'), 'e')
             ->where('e.id = :id')
-            ->setParameter('id', $id);
+            ->andWhere('e.site_identifier = :site')
+            ->setParameter('id', $id)
+            ->setParameter('site', $site->identifier());
 
         if (!$includeDeleted) {
             $query->andWhere('e.deleted_at IS NULL');
@@ -70,20 +89,43 @@ final readonly class DoctrineContentRepository implements ContentRepository
 
     public function findPublishedBySlug(string $slug, DateTimeImmutable $time): ?ContentRecord
     {
+        return $this->findPublishedBySlugForSite(SiteContext::default(), $slug, $time);
+    }
+
+    public function findPublishedBySlugForSite(SiteContext $site, string $slug, DateTimeImmutable $time): ?ContentRecord
+    {
         $query = $this->database->createQueryBuilder()
-            ->select(...$this->columns())
+            ->select(...[...$this->columns(), 'wv.public_states AS definition_public_states'])
             ->from($this->tables->raw('content_entries'), 'e')
             ->where('e.slug = :slug')
-            ->andWhere("e.workflow_state_key = 'published'")
+            ->innerJoin(
+                'e',
+                $this->tables->raw('workflow_definition_versions'),
+                'wv',
+                'wv.workflow_id = e.workflow_id AND wv.version = e.workflow_version',
+            )
+            ->andWhere('e.site_identifier = :site')
             ->andWhere('e.deleted_at IS NULL')
             ->andWhere('(e.publish_at IS NULL OR e.publish_at <= :visible_at)')
             ->andWhere('(e.unpublish_at IS NULL OR e.unpublish_at > :visible_at)')
             ->setParameter('slug', $slug)
+            ->setParameter('site', $site->identifier())
             ->setParameter('visible_at', $time, Types::DATETIME_IMMUTABLE)
-            ->setMaxResults(1);
-        $row = $query->executeQuery()->fetchAssociative();
-
-        return $row === false ? null : $this->map($row);
+            ->setMaxResults(50);
+        foreach ($query->executeQuery()->fetchAllAssociative() as $row) {
+            try {
+                $publicStates = is_string($row['definition_public_states'] ?? null)
+                    ? json_decode($row['definition_public_states'], true, 16, JSON_THROW_ON_ERROR)
+                    : $row['definition_public_states'];
+            } catch (JsonException $exception) {
+                throw new RuntimeException('Stored workflow public states are invalid.', 0, $exception);
+            }
+            if (is_array($publicStates)
+                && in_array($this->requiredString($row, 'workflow_state_key'), $publicStates, true)) {
+                return $this->map($row);
+            }
+        }
+        return null;
     }
 
     public function insert(ContentRecord $record): void
@@ -93,7 +135,10 @@ final readonly class DoctrineContentRepository implements ContentRepository
             'id' => $entry->id(),
             'content_type_id' => $record->contentTypeId,
             'workflow_id' => $record->workflowId,
-            'workflow_state_key' => $entry->status()->value,
+            'site_identifier' => $record->siteIdentifier,
+            'content_type_version' => $record->contentTypeVersion,
+            'workflow_version' => $record->workflowVersion,
+            'workflow_state_key' => $entry->statusKey(),
             'title' => $entry->title(),
             'slug' => $entry->slug(),
             'data' => $entry->data(),
@@ -114,7 +159,7 @@ final readonly class DoctrineContentRepository implements ContentRepository
             . 'unpublish_at = ?, version = ?, updated_at = ? WHERE id = ? AND version = ? AND deleted_at IS NULL',
             $this->tables->quoted('content_entries'),
         ), [
-            $entry->status()->value,
+            $entry->statusKey(),
             $entry->title(),
             $entry->slug(),
             $entry->data(),
@@ -190,7 +235,13 @@ final readonly class DoctrineContentRepository implements ContentRepository
     private function columns(): array
     {
         return [
-            'e.id', 'e.content_type_id', 'e.workflow_id', 'e.workflow_state_key', 'e.title', 'e.slug',
+            'e.id',
+            'e.site_identifier',
+            'e.content_type_id',
+            'e.workflow_id',
+            'e.content_type_version',
+            'e.workflow_version',
+            'e.workflow_state_key', 'e.title', 'e.slug',
             'e.data', 'e.publish_at', 'e.unpublish_at', 'e.version', 'e.created_at', 'e.updated_at', 'e.deleted_at',
         ];
     }
@@ -232,7 +283,7 @@ final readonly class DoctrineContentRepository implements ContentRepository
             $this->requiredString($row, 'title'),
             $this->requiredString($row, 'slug'),
             $data,
-            ContentStatus::from($this->requiredString($row, 'workflow_state_key')),
+            $this->requiredString($row, 'workflow_state_key'),
             $window,
             $this->integer($row, 'version'),
         );
@@ -244,6 +295,9 @@ final readonly class DoctrineContentRepository implements ContentRepository
             $this->dateTime($row['created_at'] ?? null),
             $this->dateTime($row['updated_at'] ?? null),
             $this->nullableDateTime($row['deleted_at'] ?? null),
+            $this->integer($row, 'content_type_version'),
+            $this->integer($row, 'workflow_version'),
+            $this->requiredString($row, 'site_identifier'),
         );
     }
 

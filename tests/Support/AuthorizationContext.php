@@ -26,10 +26,14 @@ final class AuthorizationContext
     private static ?object $provenance = null;
 
     /** @param list<string> $capabilities */
-    public static function human(array $capabilities, string $subject = self::SUBJECT): ExecutionContext
+    public static function human(
+        array $capabilities,
+        string $subject = self::SUBJECT,
+        string $site = SiteContext::DEFAULT,
+    ): ExecutionContext
     {
         return self::principal($capabilities, $subject)->context(
-            SiteContext::default(),
+            SiteContext::fromString($site),
             AuthenticationStrength::BearerToken,
             'test-request-0001',
         );
@@ -63,16 +67,12 @@ final class AuthorizationContext
 
     public static function gateway(
         ?AuthorizationDecisionRecorder $recorder = null,
+        ?ResourceSiteOwnership $ownership = null,
     ): DenyByDefaultAuthorizationGateway {
         return new DenyByDefaultAuthorizationGateway(
             self::provenance(),
             new AuthorizationPolicyRegistry(),
-            new class implements ResourceSiteOwnership {
-                public function siteFor(AuthorizationResource $resource): SiteContext
-                {
-                    return SiteContext::default();
-                }
-            },
+            $ownership ?? self::ownership(),
             $recorder ?? new class implements AuthorizationDecisionRecorder {
                 public function record(
                     ExecutionContext $context,
@@ -83,6 +83,20 @@ final class AuthorizationContext
                 }
             },
         );
+    }
+
+    public static function ownership(string $site = SiteContext::DEFAULT): ResourceSiteOwnership
+    {
+        return new class($site) implements ResourceSiteOwnership {
+            public function __construct(private string $site)
+            {
+            }
+
+            public function siteFor(AuthorizationResource $resource): SiteContext
+            {
+                return SiteContext::fromString($this->site);
+            }
+        };
     }
 
     public static function ownershipWriter(): ResourceSiteOwnershipWriter
@@ -96,5 +110,18 @@ final class AuthorizationContext
             {
             }
         };
+    }
+
+    public static function siteScoped(string $capability, string $site = SiteContext::DEFAULT): ExecutionContext
+    {
+        return self::principalFromGrantRows([[
+            'capability' => $capability,
+            'scope_type' => 'site',
+            'scope_identifier' => $site,
+        ]])->context(
+            SiteContext::fromString($site),
+            AuthenticationStrength::BearerToken,
+            'test-request-scoped-0001',
+        );
     }
 }

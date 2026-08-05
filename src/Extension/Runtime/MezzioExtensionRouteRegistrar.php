@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\CMS\Extension\Runtime;
 
 use InvalidArgumentException;
+use Kumwe\CMS\Extension\Application\Trust\TrustStore;
 use Kumwe\CMS\Extension\Domain\ExtensionIdentifier;
 use Mezzio\Application;
 use Psr\Http\Server\RequestHandlerInterface;
@@ -13,7 +14,11 @@ final readonly class MezzioExtensionRouteRegistrar implements ExtensionRouteRegi
 {
     private string $extension;
 
-    public function __construct(private Application $application, string $extension)
+    public function __construct(
+        private Application $application,
+        string $extension,
+        private TrustStore $trust,
+    )
     {
         $this->extension = ExtensionIdentifier::fromString($extension)->value();
     }
@@ -38,6 +43,11 @@ final readonly class MezzioExtensionRouteRegistrar implements ExtensionRouteRegi
             }
         }
 
-        $this->application->route($path, $handler, $methods, $name);
+        $this->application->route(
+            $path,
+            new TrustEnforcingRequestHandler($handler, $this->trust, $this->extension),
+            $methods,
+            $name,
+        );
     }
 }

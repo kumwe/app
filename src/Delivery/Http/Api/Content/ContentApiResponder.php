@@ -8,6 +8,7 @@ use DomainException;
 use InvalidArgumentException;
 use Kumwe\CMS\Application\Authorization\AuthorizationDenied;
 use Kumwe\CMS\Content\Application\ContentNotFound;
+use Kumwe\CMS\Content\Application\ContentModelNotFound;
 use Kumwe\CMS\Content\Application\ContentRecord;
 use Kumwe\CMS\Content\Domain\VersionConflict;
 use Kumwe\CMS\Delivery\Http\Api\Concurrency\EntityTag;
@@ -50,7 +51,8 @@ final readonly class ContentApiResponder
                 'urn:kumwe:problem:insufficient-capability',
                 $instance,
             ),
-            $exception instanceof ContentNotFound => $this->problems->create(
+            $exception instanceof ContentNotFound,
+            $exception instanceof ContentModelNotFound => $this->problems->create(
                 404,
                 'Content Not Found',
                 $exception->getMessage(),

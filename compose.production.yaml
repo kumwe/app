@@ -4,11 +4,19 @@ x-kumwe-environment: &kumwe-environment
   APP_ENV: production
   APP_DEBUG: 'false'
   APP_BASE_URL: ${KUMWE_BASE_URL:?Set KUMWE_BASE_URL to the canonical HTTPS URL}
+  APP_PUBLIC_SITE: ${KUMWE_PUBLIC_SITE:-default}
   APP_TRUSTED_HOSTS: ${KUMWE_TRUSTED_HOSTS:?Set KUMWE_TRUSTED_HOSTS}
   APP_TRUSTED_PROXIES: ${KUMWE_TRUSTED_PROXIES:-}
   APP_MAX_BODY_BYTES: ${KUMWE_MAX_BODY_BYTES:-8388608}
   APP_ADMIN_SESSION_SECONDS: ${KUMWE_ADMIN_SESSION_SECONDS:-28800}
   KUMWE_RELEASE: ${KUMWE_RELEASE:?Set KUMWE_RELEASE to the deployed 2.x release}
+  KUMWE_DEPLOYMENT_ID: ${KUMWE_DEPLOYMENT_ID:?Set a stable deployment identifier}
+  KUMWE_REPLICA_ID: ${KUMWE_REPLICA_ID:?Set a stable replica identifier unique when scaled}
+  # Entrypoint defaults this to the unique container hostname; schedulers may inject a pod UID.
+  KUMWE_INSTANCE_ID: ${KUMWE_INSTANCE_ID:-}
+  EXTENSION_RUNTIME_SIGNING_KEY_ID: ${KUMWE_RUNTIME_SIGNING_KEY_ID:-runtime-v1}
+  EXTENSION_RUNTIME_SIGNING_KEY_FILE: /run/secrets/runtime_signing_key
+  EXTENSION_RUNTIME_PREVIOUS_KEYS_FILE: /run/secrets/runtime_previous_keys
   EXTENSIONS_ALLOW_UNSIGNED_LOCAL: 'false'
   APP_SECRET_FILE: /run/secrets/app_secret
   DB_DRIVER: ${KUMWE_DB_DRIVER:-mariadb}
@@ -28,12 +36,14 @@ x-kumwe-runtime: &kumwe-runtime
   image: ${KUMWE_APP_IMAGE_REF:-ghcr.io/kumwe/cms/app:latest}
   pull_policy: ${KUMWE_APPLICATION_PULL_POLICY:-always}
   # Compose file-backed secrets preserve host ownership. Bootstrap as root only
-  # long enough to read them. CLI processes drop immediately; PHP-FPM creates
-  # its configured www-data request-worker pool from the capability-limited master.
+  # long enough to read them, then every PHP process—including the FPM master—
+  # drops to www-data before application code runs.
   user: '0:0'
   environment: *kumwe-environment
   secrets:
     - app_secret
+    - runtime_signing_key
+    - runtime_previous_keys
     - db_password
     - redis_password
   read_only: true
@@ -93,6 +103,9 @@ services:
 
   app:
     <<: *kumwe-runtime
+    environment:
+      <<: *kumwe-environment
+      KUMWE_PROCESS_ID: app-runtime
     command: [php-fpm, -F]
     depends_on:
       migrate:
@@ -109,6 +122,9 @@ services:
 
   worker:
     <<: *kumwe-runtime
+    environment:
+      <<: *kumwe-environment
+      KUMWE_PROCESS_ID: queue-worker
     profiles: [automation]
     command: [php, bin/kumwe, queue:work]
     depends_on:
@@ -123,6 +139,9 @@ services:
 
   scheduler:
     <<: *kumwe-runtime
+    environment:
+      <<: *kumwe-environment
+      KUMWE_PROCESS_ID: scheduler
     profiles: [automation]
     command: [php, bin/kumwe, schedule:run, --loop]
     depends_on:
@@ -137,6 +156,9 @@ services:
 
   migrate:
     <<: *kumwe-runtime
+    environment:
+      <<: *kumwe-environment
+      KUMWE_PROCESS_ID: migration
     command: [php, bin/kumwe, database:migrate]
     depends_on:
       database:
@@ -248,6 +270,10 @@ services:
 secrets:
   app_secret:
     file: ${KUMWE_APP_SECRET_FILE:?Set KUMWE_APP_SECRET_FILE}
+  runtime_signing_key:
+    file: ${KUMWE_RUNTIME_SIGNING_KEY_FILE:?Set KUMWE_RUNTIME_SIGNING_KEY_FILE}
+  runtime_previous_keys:
+    file: ${KUMWE_RUNTIME_PREVIOUS_KEYS_FILE:?Set KUMWE_RUNTIME_PREVIOUS_KEYS_FILE to a JSON key-ring file (use {})}
   db_password:
     file: ${KUMWE_DB_PASSWORD_FILE:?Set KUMWE_DB_PASSWORD_FILE}
   redis_password:

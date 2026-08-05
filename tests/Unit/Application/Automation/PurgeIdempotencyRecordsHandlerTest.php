@@ -18,7 +18,7 @@ final class PurgeIdempotencyRecordsHandlerTest extends TestCase
     public function testProcessesBoundedBatchesUntilTheBacklogIsDrained(): void
     {
         $purger = new CountingIdempotencyPurger([100, 100, 25]);
-        $handler = new PurgeIdempotencyRecordsHandler($purger);
+        $handler = $this->handler($purger);
 
         $handler->handle(['batch_size' => 100, 'maximum_batches' => 10], $this->context());
 
@@ -28,18 +28,37 @@ final class PurgeIdempotencyRecordsHandlerTest extends TestCase
     public function testHonoursMaximumBatchLimit(): void
     {
         $purger = new CountingIdempotencyPurger([100, 100, 100]);
-        $handler = new PurgeIdempotencyRecordsHandler($purger);
+        $handler = $this->handler($purger);
 
         $handler->handle(['batch_size' => 100, 'maximum_batches' => 2], $this->context());
 
         self::assertSame(2, $purger->calls);
     }
 
+    public function testRejectsAnOrdinaryWorkerPrincipalBeforePurging(): void
+    {
+        $purger = new CountingIdempotencyPurger([]);
+
+        $this->expectException(\Kumwe\CMS\Application\Authorization\AuthorizationDenied::class);
+        $this->handler($purger)->handle([], AuthorizationContext::system(SystemIdentity::Worker)->context(
+            SiteContext::default(),
+            'wrong-global-principal',
+        ));
+    }
+
     private function context(): \Kumwe\CMS\Application\Authorization\ExecutionContext
     {
-        return AuthorizationContext::system(SystemIdentity::Worker)->context(
+        return AuthorizationContext::system(SystemIdentity::InstallationMaintenance)->context(
             SiteContext::default(),
             'idempotency-purge-test',
+        );
+    }
+
+    private function handler(IdempotencyPurger $purger): PurgeIdempotencyRecordsHandler
+    {
+        return new PurgeIdempotencyRecordsHandler(
+            $purger,
+            AuthorizationContext::gateway(),
         );
     }
 }

@@ -85,4 +85,48 @@ final readonly class RedisRuntime
 
         return $result === 1;
     }
+
+    public function acquireLease(string $key, int $seconds): ?RedisLease
+    {
+        $token = bin2hex(random_bytes(32));
+        $script = "if redis.call('exists', KEYS[1]) == 1 then return false end "
+            . "redis.call('set', KEYS[1], ARGV[1], 'EX', ARGV[2]); return 1";
+        $result = $this->redis->eval(
+            $script,
+            ['lock:' . $key, $token, (string) $seconds],
+            1,
+        );
+        if ($result === false || $result === null) {
+            return null;
+        }
+        if ($result !== 1) {
+            throw new RuntimeException('Redis returned an invalid extension registry lease result.');
+        }
+
+        return new RedisLease($this, $key, $token, $seconds);
+    }
+
+    public function renewLease(string $key, string $token, int $seconds): bool
+    {
+        $script = "if redis.call('get', KEYS[1]) == ARGV[1] then "
+            . "return redis.call('expire', KEYS[1], ARGV[2]) else return 0 end";
+
+        return $this->redis->eval(
+            $script,
+            ['lock:' . $key, $token, (string) $seconds],
+            1,
+        ) === 1;
+    }
+
+    public function releaseLease(string $key, string $token): bool
+    {
+        $script = "if redis.call('get', KEYS[1]) == ARGV[1] then "
+            . "return redis.call('del', KEYS[1]) else return 0 end";
+
+        return $this->redis->eval(
+            $script,
+            ['lock:' . $key, $token],
+            1,
+        ) === 1;
+    }
 }

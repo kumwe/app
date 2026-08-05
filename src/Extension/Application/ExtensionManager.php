@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\CMS\Extension\Application;
 
 use Kumwe\CMS\Application\Authorization\ExecutionContext;
+use Kumwe\CMS\Presentation\ThemeSurface;
 
 interface ExtensionManager
 {
@@ -20,10 +21,23 @@ interface ExtensionManager
     ): array;
 
     /** @return array<string, mixed> */
-    public function activate(string $identifier, ExecutionContext $context): array;
+    public function activate(
+        string $identifier,
+        ExecutionContext $context,
+        ?ThemeSurface $surface = null,
+        #[\SensitiveParameter] ?string $stepUpCredential = null,
+    ): array;
 
     /** @return array<string, mixed> */
-    public function disable(string $identifier, ExecutionContext $context): array;
+    public function disable(
+        string $identifier,
+        ExecutionContext $context,
+        #[\SensitiveParameter] ?string $stepUpCredential = null,
+    ): array;
 
-    public function uninstall(string $identifier, ExecutionContext $context): void;
+    public function uninstall(
+        string $identifier,
+        ExecutionContext $context,
+        #[\SensitiveParameter] ?string $stepUpCredential = null,
+    ): void;
 }

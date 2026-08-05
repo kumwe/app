@@ -181,14 +181,11 @@ limited_login_status="$(http_status "$probe_root/limited-login.body" "$probe_roo
     --data-urlencode "password=$limited_admin_password" \
     "$base_url/administrator/login")"
 unset limited_admin_password limited_admin_request
-[[ "$limited_login_status" == 303 ]] || fail "limited user login returned HTTP $limited_login_status"
-limited_session_cookie="$(header_value set-cookie "$probe_root/limited-login.headers" | cut -d';' -f1)"
-[[ "$limited_session_cookie" == kumwe_administrator=* ]] || fail 'limited user login did not issue a session cookie'
-limited_admin_status="$(http_status "$probe_root/limited-admin.body" "$probe_root/limited-admin.headers" \
-    --header "User-Agent: $user_agent" --header "Cookie: $limited_session_cookie" \
-    "$base_url/administrator")"
-[[ "$limited_admin_status" == 403 ]] \
-    || fail "user without administrator.access received HTTP $limited_admin_status instead of 403"
+[[ "$limited_login_status" == 403 ]] \
+    || fail "user without administrator.access logged in with HTTP $limited_login_status instead of 403"
+limited_session_cookie="$(header_value set-cookie "$probe_root/limited-login.headers")"
+[[ -z "$limited_session_cookie" ]] \
+    || fail 'user without administrator.access received an administrator session cookie'
 
 api_request="{\"title\":\"API $page_marker\",\"slug\":\"api-$page_slug\",\"data\":{\"body\":\"API $page_marker\"}}"
 idempotency_key="create-$unique_suffix"

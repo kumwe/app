@@ -14,7 +14,9 @@ use Kumwe\CMS\Application\Authorization\AuthorizationGateway;
 use Kumwe\CMS\Application\Authorization\AuthorizationResource;
 use Kumwe\CMS\Application\Authorization\ExecutionContext;
 use Kumwe\CMS\Application\Authorization\ResourceSiteOwnershipWriter;
+use Kumwe\CMS\Application\Automation\JobExecutionClass;
 use Kumwe\CMS\Application\Automation\JobQueue;
+use Kumwe\CMS\Application\Automation\JobExecutionScope;
 use Kumwe\CMS\Application\Automation\StoredJob;
 use Kumwe\CMS\Identity\Domain\Capability;
 use Kumwe\CMS\Infrastructure\Persistence\TableNames;
@@ -36,6 +38,7 @@ final readonly class DoctrineJobQueue implements JobQueue
         private string $release,
         private AuthorizationGateway $authorization,
         private ResourceSiteOwnershipWriter $ownership,
+        private JobExecutionScope $jobScope,
     ) {
     }
 
@@ -51,6 +54,8 @@ final readonly class DoctrineJobQueue implements JobQueue
         $this->authorize($context, AuthorizationResource::item('queue', $queue));
         $this->assertQueue($queue);
         $this->assertType($type);
+        $this->authorizeJobType($context, $type);
+        $executionClass = $this->jobScope->executionClass($type);
         if ($priority < -100 || $priority > 100 || $maximumAttempts < 1 || $maximumAttempts > 100) {
             throw new InvalidArgumentException('Job priority or maximum attempts are outside the supported range.');
         }
@@ -63,6 +68,7 @@ final readonly class DoctrineJobQueue implements JobQueue
             $queue,
             $type,
             $payload,
+            $executionClass,
             $priority,
             $maximumAttempts,
             $availableAt,
@@ -72,6 +78,7 @@ final readonly class DoctrineJobQueue implements JobQueue
                 'id' => $id,
                 'queue' => $queue,
                 'job_type' => $type,
+                'execution_scope' => $executionClass->value,
                 'schema_version' => 1,
                 'payload' => $payload,
                 'priority' => $priority,
@@ -95,7 +102,9 @@ final readonly class DoctrineJobQueue implements JobQueue
                 'created_at' => Types::DATETIME_IMMUTABLE,
                 'updated_at' => Types::DATETIME_IMMUTABLE,
             ]);
-            $this->ownership->record(AuthorizationResource::item('job', $id), $context->site());
+            if ($executionClass === JobExecutionClass::Site) {
+                $this->ownership->record(AuthorizationResource::item('job', $id), $context->site());
+            }
         });
 
         return $id;
@@ -120,19 +129,45 @@ final readonly class DoctrineJobQueue implements JobQueue
 
             while ($reaped < self::EXHAUSTED_REAP_LIMIT) {
                 $row = $this->database->fetchAssociative(sprintf(
-                    'SELECT * FROM %s WHERE queue = ? AND ('
-                    . "(status = 'pending' AND available_at <= ?) OR "
-                    . "(status = 'reserved' AND (lease_expires_at IS NULL OR lease_expires_at <= ?))"
-                    . ') ORDER BY priority DESC, available_at, created_at, id '
+                    'SELECT j.* FROM %s j WHERE j.queue = ? AND (j.execution_scope = ? OR '
+                    . '(j.execution_scope = ? AND EXISTS (SELECT 1 FROM %s o INNER JOIN %s s '
+                    . 'ON s.identifier = o.site_identifier WHERE o.resource_type = ? '
+                    . 'AND o.resource_id = j.id AND s.enabled = ?))) AND ('
+                    . "(j.status = 'pending' AND j.available_at <= ?) OR "
+                    . "(j.status = 'reserved' AND (j.lease_expires_at IS NULL OR j.lease_expires_at <= ?))"
+                    . ') ORDER BY j.priority DESC, j.available_at, j.created_at, j.id '
                     . 'LIMIT 1 FOR UPDATE SKIP LOCKED',
                     $this->tables->quoted('jobs'),
-                ), [$queue, $now, $now], [
+                    $this->tables->quoted('resource_site_ownership'),
+                    $this->tables->quoted('sites'),
+                ), [
+                    $queue,
+                    JobExecutionClass::Installation->value,
+                    JobExecutionClass::Site->value,
+                    'job',
+                    true,
+                    $now,
+                    $now,
+                ], [
                     Types::STRING,
+                    Types::STRING,
+                    Types::STRING,
+                    Types::STRING,
+                    Types::BOOLEAN,
                     Types::DATETIME_IMMUTABLE,
                     Types::DATETIME_IMMUTABLE,
                 ]);
 
                 if ($row === false || !is_string($row['id'] ?? null)) {
+                    return null;
+                }
+
+                $executionClass = $this->jobScope->assertStoredClass(
+                    $this->requiredString($row, 'job_type'),
+                    $this->requiredString($row, 'execution_scope'),
+                );
+                if ($executionClass === JobExecutionClass::Site
+                    && !$this->lockEnabledOwner($this->requiredString($row, 'id'))) {
                     return null;
                 }
 
@@ -181,7 +216,7 @@ final readonly class DoctrineJobQueue implements JobQueue
         string $workerId,
         int $leaseSeconds,
     ): void {
-        $this->authorizeWorker($context, AuthorizationResource::item('job', $job->id));
+        $this->authorizeWorker($context, AuthorizationResource::item('queue', $job->queue));
         $this->assertWorker($workerId);
         if ($leaseSeconds < 5 || $leaseSeconds > 3_600) {
             throw new InvalidArgumentException('A job lease must last between 5 and 3600 seconds.');
@@ -207,7 +242,7 @@ final readonly class DoctrineJobQueue implements JobQueue
 
     public function complete(ExecutionContext $context, StoredJob $job, string $workerId): void
     {
-        $this->authorizeWorker($context, AuthorizationResource::item('job', $job->id));
+        $this->authorizeWorker($context, AuthorizationResource::item('queue', $job->queue));
         $this->assertWorker($workerId);
         $now = $this->clock->now();
         $this->assertLeaseUpdated($this->database->executeStatement(sprintf(
@@ -228,7 +263,7 @@ final readonly class DoctrineJobQueue implements JobQueue
         Throwable $failure,
         bool $permanent,
     ): void {
-        $this->authorizeWorker($context, AuthorizationResource::item('job', $job->id));
+        $this->authorizeWorker($context, AuthorizationResource::item('queue', $job->queue));
         $this->assertWorker($workerId);
         $dead = $permanent || $job->attempts >= $job->maximumAttempts;
         $this->transactions->transactional(function () use ($job, $workerId, $failure, $permanent, $dead): void {
@@ -289,12 +324,7 @@ final readonly class DoctrineJobQueue implements JobQueue
         string $queue,
         ?string $jobId = null,
     ): void {
-        $this->authorizeWorker(
-            $context,
-            $jobId === null
-                ? AuthorizationResource::item('queue', $queue)
-                : AuthorizationResource::item('job', $jobId),
-        );
+        $this->authorizeWorker($context, AuthorizationResource::item('queue', $queue));
         $this->assertWorker($workerId);
         $this->assertQueue($queue);
         $now = $this->clock->now();
@@ -357,13 +387,7 @@ final readonly class DoctrineJobQueue implements JobQueue
                 $offset,
             ));
             foreach (array_map($this->normalize(...), $rows) as $row) {
-                if (
-                    is_string($row['id'] ?? null) && $this->authorization->decide(
-                        $context,
-                        Capability::fromString('automation.manage'),
-                        AuthorizationResource::item('job', $row['id']),
-                    )->allowed
-                ) {
+                if (is_string($row['id'] ?? null) && $this->canManageRow($context, $row)) {
                     $result[] = $row;
                     if (count($result) === $limit) {
                         return $result;
@@ -378,7 +402,7 @@ final readonly class DoctrineJobQueue implements JobQueue
 
     public function retry(ExecutionContext $context, string $id): void
     {
-        $this->authorize($context, AuthorizationResource::item('job', $id));
+        $this->authorizeJob($context, $id);
         $this->transactions->transactional(function () use ($id): void {
             $now = $this->clock->now();
             $affected = $this->database->executeStatement(sprintf(
@@ -399,7 +423,7 @@ final readonly class DoctrineJobQueue implements JobQueue
 
     public function cancel(ExecutionContext $context, string $id): void
     {
-        $this->authorize($context, AuthorizationResource::item('job', $id));
+        $this->authorizeJob($context, $id);
         $affected = $this->database->executeStatement(sprintf(
             "UPDATE %s SET status = 'canceled', updated_at = ? WHERE id = ? AND status = 'pending'",
             $this->tables->quoted('jobs'),
@@ -434,6 +458,7 @@ final readonly class DoctrineJobQueue implements JobQueue
             $this->integer($row, 'attempts'),
             $this->integer($row, 'maximum_attempts'),
             $this->requiredString($row, 'lease_token'),
+            $this->requiredString($row, 'execution_scope'),
         );
     }
 
@@ -563,5 +588,70 @@ final readonly class DoctrineJobQueue implements JobQueue
             Capability::fromString('system.worker.operate'),
             $resource,
         );
+    }
+
+    private function authorizeJobType(ExecutionContext $context, string $jobType): void
+    {
+        if (!$this->jobScope->isInstallationGlobal($jobType)) {
+            return;
+        }
+
+        $this->authorization->assertAllowed(
+            $context,
+            Capability::fromString('automation.manage'),
+            AuthorizationResource::item('automation_installation', $jobType),
+        );
+    }
+
+    /** @param array<string, mixed> $row */
+    private function canManageRow(ExecutionContext $context, array $row): bool
+    {
+        $jobType = $this->requiredString($row, 'job_type');
+        $executionClass = $this->jobScope->assertStoredClass(
+            $jobType,
+            $this->requiredString($row, 'execution_scope'),
+        );
+        $resource = $executionClass === JobExecutionClass::Installation
+            ? AuthorizationResource::item('automation_installation', $jobType)
+            : AuthorizationResource::item('job', $this->requiredString($row, 'id'));
+
+        return $this->authorization->decide(
+            $context,
+            Capability::fromString('automation.manage'),
+            $resource,
+        )->allowed;
+    }
+
+    private function authorizeJob(ExecutionContext $context, string $id): void
+    {
+        $row = $this->database->fetchAssociative(sprintf(
+            'SELECT id, job_type, execution_scope FROM %s WHERE id = ?',
+            $this->tables->quoted('jobs'),
+        ), [$id]);
+        if ($row === false) {
+            throw new InvalidArgumentException('The job does not exist.');
+        }
+
+        $jobType = $this->requiredString($row, 'job_type');
+        $executionClass = $this->jobScope->assertStoredClass(
+            $jobType,
+            $this->requiredString($row, 'execution_scope'),
+        );
+        $this->authorize(
+            $context,
+            $executionClass === JobExecutionClass::Installation
+                ? AuthorizationResource::item('automation_installation', $jobType)
+                : AuthorizationResource::item('job', $id),
+        );
+    }
+
+    private function lockEnabledOwner(string $jobId): bool
+    {
+        return $this->database->fetchOne(sprintf(
+            'SELECT s.identifier FROM %s o INNER JOIN %s s ON s.identifier = o.site_identifier '
+            . 'WHERE o.resource_type = ? AND o.resource_id = ? AND s.enabled = ? FOR UPDATE',
+            $this->tables->quoted('resource_site_ownership'),
+            $this->tables->quoted('sites'),
+        ), ['job', $jobId, true], [Types::STRING, Types::STRING, Types::BOOLEAN]) !== false;
     }
 }

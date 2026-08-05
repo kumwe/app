@@ -5,26 +5,24 @@ declare(strict_types=1);
 namespace Kumwe\CMS\Infrastructure\Persistence\Migration;
 
 use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\Platforms\AbstractMySQLPlatform;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use Kumwe\CMS\Application\Authorization\AuthorizationGateway;
 use Kumwe\CMS\Application\Authorization\AuthorizationResource;
 use Kumwe\CMS\Application\Authorization\ExecutionContext;
 use Kumwe\CMS\Identity\Domain\Capability;
 use Kumwe\CMS\Infrastructure\Persistence\TransactionManager;
-use RuntimeException;
 
 final readonly class MigrationRunner
 {
-    /**
-     * @param list<Migration> $migrations
-     */
     public function __construct(
         private Connection $database,
         private MigrationRepository $repository,
         private MigrationLock $lock,
         private TransactionManager $transactions,
-        private array $migrations,
+        private MigrationPlan $plan,
         private AuthorizationGateway $authorization,
+        private NonTransactionalMigrationRecovery $nonTransactionalRecovery,
     ) {
     }
 
@@ -34,16 +32,17 @@ final readonly class MigrationRunner
         return $this->lock->synchronized(function (): MigrationResult {
             $this->repository->ensureLedger();
             $applied = $this->repository->applied();
-            $pending = $this->orderedMigrations();
+            $this->nonTransactionalRecovery->assertKnownAttempts($this->plan->ids());
+            $this->plan->assertCompatible($applied);
             $completed = [];
 
-            foreach ($pending as $migration) {
+            foreach ($this->plan->all() as $migration) {
                 $id = $migration->id();
                 $checksum = $migration->checksum();
 
                 if (isset($applied[$id])) {
-                    if (!hash_equals($applied[$id], $checksum)) {
-                        throw new RuntimeException(sprintf('Migration checksum drift detected for "%s".', $id));
+                    if ($this->database->getDatabasePlatform() instanceof AbstractMySQLPlatform) {
+                        $this->nonTransactionalRecovery->reconcileApplied($migration);
                     }
 
                     continue;
@@ -56,8 +55,17 @@ final readonly class MigrationRunner
                     $this->repository->record($id, $checksum, $elapsed);
                 };
 
-                if ($this->database->getDatabasePlatform() instanceof PostgreSQLPlatform) {
+                $platform = $this->database->getDatabasePlatform();
+                if ($platform instanceof PostgreSQLPlatform) {
                     $this->transactions->transactional($operation);
+                } elseif ($platform instanceof AbstractMySQLPlatform) {
+                    $action = $this->nonTransactionalRecovery->prepare($migration);
+                    if ($action === NonTransactionalMigrationAction::Execute) {
+                        $migration->up($this->database);
+                    }
+                    $elapsed = max(0, (int) round((hrtime(true) - $started) / 1_000_000));
+                    $this->repository->record($id, $checksum, $elapsed);
+                    $this->nonTransactionalRecovery->complete($migration);
                 } else {
                     $operation();
                 }
@@ -75,40 +83,9 @@ final readonly class MigrationRunner
     {
         $this->authorize($context);
         $this->repository->ensureLedger();
-        $applied = $this->repository->applied();
+        $this->nonTransactionalRecovery->assertKnownAttempts($this->plan->ids());
 
-        return array_values(array_filter(
-            $this->orderedMigrations(),
-            static fn (Migration $migration): bool => !isset($applied[$migration->id()]),
-        ));
-    }
-
-    /**
-     * @return list<Migration>
-     */
-    private function orderedMigrations(): array
-    {
-        $migrations = $this->migrations;
-        usort($migrations, static fn (Migration $left, Migration $right): int => $left->id() <=> $right->id());
-        $seen = [];
-
-        foreach ($migrations as $migration) {
-            if (isset($seen[$migration->id()])) {
-                throw new RuntimeException(sprintf('Duplicate migration ID "%s".', $migration->id()));
-            }
-
-            if (preg_match('/^[0-9]{14}_[a-z0-9_]+$/', $migration->id()) !== 1) {
-                throw new RuntimeException(sprintf('Migration ID "%s" is invalid.', $migration->id()));
-            }
-
-            if (preg_match('/^[a-f0-9]{64}$/', $migration->checksum()) !== 1) {
-                throw new RuntimeException(sprintf('Migration checksum for "%s" is invalid.', $migration->id()));
-            }
-
-            $seen[$migration->id()] = true;
-        }
-
-        return $migrations;
+        return $this->plan->pending($this->repository->applied());
     }
 
     private function authorize(ExecutionContext $context): void

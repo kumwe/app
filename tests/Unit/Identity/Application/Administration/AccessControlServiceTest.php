@@ -209,9 +209,50 @@ final class AccessControlServiceTest extends TestCase
         $this->service($repository)->revokeRole($this->context(), self::ACTOR, self::ROLE);
     }
 
+    public function testSiteScopedManagerCannotReadInstallationWideIdentityInventory(): void
+    {
+        $repository = $this->createMock(AccessControlRepository::class);
+        $repository->expects(self::never())->method('users');
+
+        $this->expectException(AuthorizationDenied::class);
+        $this->service($repository)->users(AuthorizationContext::siteScoped('users.manage'));
+    }
+
+    public function testManagerCannotMintAnInstallationWideGrantItDoesNotHold(): void
+    {
+        $repository = $this->createMock(AccessControlRepository::class);
+        $repository->expects(self::never())->method('grant');
+
+        $this->expectException(AuthorizationDenied::class);
+        $this->service($repository)->grant(
+            AuthorizationContext::human(['users.manage'], self::ACTOR),
+            self::ROLE,
+            'extensions.manage',
+        );
+    }
+
+    public function testManagerCannotAssignARoleContainingCapabilitiesItCannotDelegate(): void
+    {
+        $repository = $this->createMock(AccessControlRepository::class);
+        $repository->method('roleGrants')->with(self::ROLE)->willReturn([[
+            'capability' => 'extensions.manage',
+            'scope_type' => 'global',
+            'scope_identifier' => null,
+        ]]);
+        $repository->expects(self::never())->method('assignRole');
+
+        $this->expectException(AuthorizationDenied::class);
+        $this->service($repository)->assignRole(
+            AuthorizationContext::human(['users.manage'], self::ACTOR),
+            self::USER,
+            self::ROLE,
+        );
+    }
+
     public function testRevokesTokenInsideAuditedTransaction(): void
     {
         $repository = $this->createMock(AccessControlRepository::class);
+        $repository->expects(self::once())->method('tokenSite')->willReturn('default');
         $repository->expects(self::once())->method('revokeToken')->with(
             '018f22e2-7c8b-7ab0-8f3a-88e8026bb305',
             self::equalTo(new DateTimeImmutable('2026-08-04T10:00:00+00:00')),
@@ -269,6 +310,36 @@ final class AccessControlServiceTest extends TestCase
 
         $this->expectException(AuthorizationDenied::class);
         $this->service($repository)->users($context);
+    }
+
+    public function testSiteTokenRevocationLocksTheSameUserRowUsedByIssuance(): void
+    {
+        $repository = $this->createMock(AccessControlRepository::class);
+        $order = 0;
+        $repository->expects(self::once())
+            ->method('lockUser')
+            ->with(self::USER)
+            ->willReturnCallback(static function () use (&$order): void {
+                self::assertSame(0, $order++);
+            });
+        $repository->expects(self::once())
+            ->method('revokeSubjectTokensForSite')
+            ->with(
+                self::USER,
+                'default',
+                self::equalTo(new DateTimeImmutable('2026-08-04T10:00:00+00:00')),
+                'site compromise',
+            )
+            ->willReturnCallback(static function () use (&$order): int {
+                self::assertSame(1, $order++);
+                return 2;
+            });
+
+        self::assertSame(2, $this->service($repository)->revokeSubjectTokens(
+            AuthorizationContext::siteScoped('users.manage'),
+            self::USER,
+            'site compromise',
+        ));
     }
 
     private function service(

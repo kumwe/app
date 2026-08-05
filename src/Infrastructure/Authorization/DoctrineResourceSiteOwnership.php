@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\CMS\Infrastructure\Authorization;
 
 use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\Types\Types;
 use Kumwe\CMS\Application\Authorization\AuthorizationResource;
 use Kumwe\CMS\Application\Authorization\AuthorizationResourceOwnershipUnknown;
 use Kumwe\CMS\Application\Authorization\ResourceSiteOwnership;
@@ -20,6 +21,9 @@ final readonly class DoctrineResourceSiteOwnership implements ResourceSiteOwners
 
     public function siteFor(AuthorizationResource $resource): SiteContext
     {
+        if ($resource->type() === 'site') {
+            return SiteContext::fromString($resource->identifier());
+        }
         if ($resource->identifier() === '*' || $this->isIntrinsic($resource)) {
             return SiteContext::default();
         }
@@ -35,9 +39,15 @@ final readonly class DoctrineResourceSiteOwnership implements ResourceSiteOwners
     private function lookup(AuthorizationResource $resource): ?string
     {
         $site = $this->database->fetchOne(sprintf(
-            'SELECT site_identifier FROM %s WHERE resource_type = ? AND resource_id = ?',
+            'SELECT o.site_identifier FROM %s o INNER JOIN %s s ON s.identifier = o.site_identifier '
+            . 'WHERE o.resource_type = ? AND o.resource_id = ? AND s.enabled = ?',
             $this->tables->quoted('resource_site_ownership'),
-        ), [$resource->type(), $resource->identifier()]);
+            $this->tables->quoted('sites'),
+        ), [$resource->type(), $resource->identifier(), true], [
+            Types::STRING,
+            Types::STRING,
+            Types::BOOLEAN,
+        ]);
 
         return is_string($site) && $site !== '' ? $site : null;
     }
@@ -46,11 +56,12 @@ final readonly class DoctrineResourceSiteOwnership implements ResourceSiteOwners
     {
         return match ($resource->type()) {
             'administrator' => true,
+            'automation_installation' => true,
             'database_schema' => $resource->identifier() === 'current',
             'extension_runtime_map' => $resource->identifier() === 'active',
+            'extension_trust_key' => true,
             // Queues are configured transport partitions, not durable business resources.
             'queue' => true,
-            'site' => $resource->identifier() === SiteContext::DEFAULT,
             'theme' => in_array($resource->identifier(), ['site', 'administrator'], true),
             default => false,
         };

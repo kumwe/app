@@ -1,0 +1,51 @@
+{% extends "layout.twig" %}
+{% block title %}Content models · Kumwe{% endblock %}
+{% block content %}
+  <div class="page-heading"><div><p class="eyebrow">Structured content</p><h1>Content models</h1><p class="help">Publish immutable schema and workflow versions. Existing entries remain pinned to their original definition.</p></div><a class="button" href="/administrator/content/new">Create content</a></div>
+  <section class="model-layout">
+    <div class="stack">
+      <div class="section-heading"><h2>Content types</h2><span class="count-badge">{{ content_types|length }}</span></div>
+      {% for type in content_types %}
+        <details class="panel model-card"><summary><strong>{{ type.name }}</strong><span>{{ type.handle }} · v{{ type.version }}</span></summary>
+          {% if capabilities['content.update'] is defined %}
+          <form method="post" class="stack compact-form"><input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="kind" value="content_type"><input type="hidden" name="action" value="update"><input type="hidden" name="id" value="{{ type.id }}"><input type="hidden" name="version" value="{{ type.version }}">
+            <label>Name<input name="name" value="{{ type.name }}" required></label><label>Workflow<select name="workflow">{% for workflow in workflows %}<option value="{{ workflow.id }}" {{ workflow.id == type.workflow_id ? 'selected' : '' }}>{{ workflow.name }} · v{{ workflow.version }}</option>{% endfor %}</select></label>
+            <label>JSON Schema<textarea name="schema" rows="12" required>{{ type.schema_json }}</textarea></label><label class="check"><input type="checkbox" name="allow_breaking" value="1"> Publish an explicitly breaking version</label><button class="primary" type="submit">Publish version {{ type.version + 1 }}</button>
+          </form>
+          {% else %}<pre>{{ type.schema_json }}</pre>{% endif %}
+        </details>
+      {% endfor %}
+      {% if capabilities['content.update'] is defined %}
+      <details class="panel model-card create-card"><summary><strong>New content type</strong><span>Define a reusable schema</span></summary>
+        <form method="post" class="stack compact-form"><input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="kind" value="content_type"><input type="hidden" name="action" value="create"><div class="two-column"><label>Handle<input name="handle" placeholder="article" pattern="[a-z][a-z0-9_-]*" required></label><label>Name<input name="name" placeholder="Article" required></label></div><label>Workflow<select name="workflow">{% for workflow in workflows %}<option value="{{ workflow.id }}">{{ workflow.name }} · v{{ workflow.version }}</option>{% endfor %}</select></label><label>JSON Schema<textarea name="schema" rows="12" required>{
+  "type": "object",
+  "properties": {"body": {"type": "string", "title": "Body"}},
+  "required": ["body"],
+  "additionalProperties": false
+}</textarea></label><button class="primary" type="submit">Create content type</button></form>
+      </details>
+      {% endif %}
+    </div>
+    <div class="stack">
+      <div class="section-heading"><h2>Workflows</h2><span class="count-badge">{{ workflows|length }}</span></div>
+      {% for workflow in workflows %}
+        <details class="panel model-card"><summary><strong>{{ workflow.name }}</strong><span>{{ workflow.handle }} · v{{ workflow.version }}</span></summary>
+          {% if capabilities['content.update'] is defined %}
+          <form method="post" class="stack compact-form"><input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="kind" value="workflow"><input type="hidden" name="action" value="update"><input type="hidden" name="id" value="{{ workflow.id }}"><input type="hidden" name="version" value="{{ workflow.version }}"><label>Name<input name="name" value="{{ workflow.name }}" required></label><label>States<textarea name="states" rows="11" required>{{ workflow.states_json }}</textarea></label><label>Transitions<textarea name="transitions" rows="11" required>{{ workflow.transitions_json }}</textarea></label><label class="check"><input type="checkbox" name="allow_breaking" value="1"> Publish an explicitly breaking version</label><button class="primary" type="submit">Publish version {{ workflow.version + 1 }}</button></form>
+          {% else %}<h3>States</h3><pre>{{ workflow.states_json }}</pre><h3>Transitions</h3><pre>{{ workflow.transitions_json }}</pre>{% endif %}
+        </details>
+      {% endfor %}
+      {% if capabilities['content.update'] is defined %}
+      <details class="panel model-card create-card"><summary><strong>New workflow</strong><span>Define states and guarded transitions</span></summary>
+        <form method="post" class="stack compact-form"><input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="kind" value="workflow"><input type="hidden" name="action" value="create"><div class="two-column"><label>Handle<input name="handle" placeholder="editorial" pattern="[a-z][a-z0-9_-]*" required></label><label>Name<input name="name" placeholder="Editorial" required></label></div><label>States<textarea name="states" rows="9" required>[
+  {"key":"draft","name":"Draft","initial":true,"public":false},
+  {"key":"published","name":"Published","initial":false,"public":true}
+]</textarea></label><label>Transitions<textarea name="transitions" rows="7" required>[
+  {"from":"draft","to":"published","required_capability":"content.publish"},
+  {"from":"published","to":"draft","required_capability":"content.unpublish"}
+]</textarea></label><button class="primary" type="submit">Create workflow</button></form>
+      </details>
+      {% endif %}
+    </div>
+  </section>
+{% endblock %}

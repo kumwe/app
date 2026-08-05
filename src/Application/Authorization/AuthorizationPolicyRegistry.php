@@ -13,7 +13,7 @@ final readonly class AuthorizationPolicyRegistry
     private const ACTION_RESOURCES = [
         'administrator.access' => ['administrator_session'],
         'administrator.bootstrap' => ['administrator'],
-        'automation.manage' => ['administrator_session', 'job', 'queue', 'schedule'],
+        'automation.manage' => ['administrator_session', 'automation_installation', 'job', 'queue', 'schedule'],
         'content.archive' => ['content'],
         'content.create' => ['content'],
         'content.delete' => ['content'],
@@ -24,7 +24,7 @@ final readonly class AuthorizationPolicyRegistry
         'content.submit' => ['content'],
         'content.unpublish' => ['content'],
         'content.update' => ['content'],
-        'extensions.manage' => ['extension', 'extension_runtime_map'],
+        'extensions.manage' => ['extension', 'extension_runtime_map', 'extension_trust_key'],
         'navigation.manage' => ['menu', 'menu_item'],
         'settings.manage' => ['site'],
         'system.migrate' => ['database_schema'],
@@ -32,7 +32,7 @@ final readonly class AuthorizationPolicyRegistry
         'system.worker.operate' => ['job', 'queue'],
         'themes.administrator.manage' => ['theme'],
         'themes.site.manage' => ['theme'],
-        'users.manage' => ['api_token', 'capability', 'grant', 'role', 'user'],
+        'users.manage' => ['api_token', 'capability', 'grant', 'role', 'site', 'user'],
     ];
 
     public function supports(Capability $action, AuthorizationResource $resource): bool
@@ -57,10 +57,17 @@ final readonly class AuthorizationPolicyRegistry
         if (
             in_array(
                 $action->value(),
-                ['extensions.manage', 'themes.administrator.manage', 'users.manage'],
+                ['extensions.manage', 'themes.administrator.manage'],
                 true,
             )
             && !$scope->isGlobal()
+        ) {
+            return false;
+        }
+        if (
+            $action->value() === 'users.manage'
+            && !$scope->isGlobal()
+            && $scope->type() !== 'site'
         ) {
             return false;
         }
@@ -77,9 +84,14 @@ final readonly class AuthorizationPolicyRegistry
     public function requiresGlobalGrant(Capability $action, AuthorizationResource $resource): bool
     {
         return match ($action->value()) {
-            'extensions.manage' => in_array($resource->type(), ['extension', 'extension_runtime_map'], true),
+            'automation.manage' => $resource->type() === 'automation_installation',
+            'extensions.manage' => in_array(
+                $resource->type(),
+                ['extension', 'extension_runtime_map', 'extension_trust_key'],
+                true,
+            ),
             'themes.administrator.manage' => $resource->type() === 'theme',
-            'users.manage' => in_array($resource->type(), ['api_token', 'capability', 'grant', 'role', 'user'], true),
+            'users.manage' => in_array($resource->type(), ['capability', 'grant', 'role', 'user'], true),
             default => false,
         };
     }

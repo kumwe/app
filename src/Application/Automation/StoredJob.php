@@ -18,6 +18,7 @@ final readonly class StoredJob
         public int $attempts,
         public int $maximumAttempts,
         public string $leaseToken,
+        public string $executionClass = JobExecutionClass::Site->value,
     ) {
         if (
             preg_match(
@@ -26,6 +27,9 @@ final readonly class StoredJob
             ) !== 1
         ) {
             throw new InvalidArgumentException('A stored job requires a canonical lease fencing token.');
+        }
+        if (JobExecutionClass::tryFrom($this->executionClass) === null) {
+            throw new InvalidArgumentException('A stored job execution class is invalid.');
         }
     }
 }

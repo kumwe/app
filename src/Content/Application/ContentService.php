@@ -9,12 +9,14 @@ use Kumwe\CMS\Application\Authorization\AuthorizationGateway;
 use Kumwe\CMS\Application\Authorization\AuthorizationResource;
 use Kumwe\CMS\Application\Authorization\ExecutionContext;
 use Kumwe\CMS\Application\Authorization\ResourceSiteOwnershipWriter;
+use Kumwe\CMS\Application\Authorization\SiteContext;
 use Kumwe\CMS\Audit\Application\AuditRecorder;
 use Kumwe\CMS\Audit\Domain\AuditEvent;
 use Kumwe\CMS\Content\Domain\ContentEntry;
 use Kumwe\CMS\Content\Domain\ContentRevision;
 use Kumwe\CMS\Content\Domain\ContentStatus;
 use Kumwe\CMS\Content\Domain\ExpectedVersion;
+use Kumwe\CMS\Content\Domain\JsonSchemaValidator;
 use Kumwe\CMS\Content\Domain\PublicationWindow;
 use Kumwe\CMS\Infrastructure\Persistence\TransactionManager;
 use Kumwe\CMS\Identity\Domain\Capability;
@@ -35,6 +37,8 @@ final readonly class ContentService
         private Workflow $workflow,
         private AuthorizationGateway $authorization,
         private ResourceSiteOwnershipWriter $ownership,
+        private ?ContentModelRepository $models = null,
+        private ?JsonSchemaValidator $schemas = null,
     ) {
     }
 
@@ -49,7 +53,9 @@ final readonly class ContentService
         $pageSize = min(500, max(50, $limit));
 
         do {
-            $page = $this->repository->all($pageSize, $includeDeleted, $offset);
+            $page = $this->repository instanceof SiteScopedContentRepository
+                ? $this->repository->allForSite($context->site(), $pageSize, $includeDeleted, $offset)
+                : $this->repository->all($pageSize, $includeDeleted, $offset);
             foreach ($page as $record) {
                 if (
                     $this->authorization->decide(
@@ -73,12 +79,22 @@ final readonly class ContentService
     public function get(ExecutionContext $context, string $id, bool $includeDeleted = false): ContentRecord
     {
         $this->authorize($context, 'content.read', $id);
-        return $this->repository->find($id, $includeDeleted) ?? throw new ContentNotFound($id);
+        $record = $this->repository instanceof SiteScopedContentRepository
+            ? $this->repository->findForSite($context->site(), $id, $includeDeleted)
+            : $this->repository->find($id, $includeDeleted);
+
+        return $record ?? throw new ContentNotFound($id);
     }
 
-    public function publishedBySlug(string $slug): ?ContentRecord
+    public function publishedBySlug(string $slug, ?SiteContext $site = null): ?ContentRecord
     {
-        return $this->repository->findPublishedBySlug($slug, $this->clock->now());
+        return $this->repository instanceof SiteScopedContentRepository
+            ? $this->repository->findPublishedBySlugForSite(
+                $site ?? SiteContext::default(),
+                $slug,
+                $this->clock->now(),
+            )
+            : $this->repository->findPublishedBySlug($slug, $this->clock->now());
     }
 
     /**
@@ -90,27 +106,45 @@ final readonly class ContentService
         string $slug,
         array $data,
         ?PublicationWindow $window = null,
+        string $contentTypeIdentifier = self::CORE_PAGE_TYPE_ID,
     ): ContentRecord {
         $this->authorization->assertAllowed(
             $context,
             Capability::fromString('content.create'),
             AuthorizationResource::collection('content'),
         );
+        $type = $this->models?->contentType($context->site(), $contentTypeIdentifier);
+        if ($this->models !== null && $type === null) {
+            throw new ContentModelNotFound('content type', $contentTypeIdentifier);
+        }
+        $workflowDefinition = $type === null
+            ? null
+            : $this->models?->workflow($context->site(), $type->workflowId, $type->workflowVersion);
+        if ($type !== null && $workflowDefinition === null) {
+            throw new ContentModelNotFound('workflow', $type->workflowId, $type->workflowVersion);
+        }
+        if ($type !== null) {
+            ($this->schemas ?? new JsonSchemaValidator())->assertValid($type->schema(), $data);
+        }
         $now = $this->clock->now();
         $entry = ContentEntry::create(
             Uuid::uuid7()->toString(),
             $title,
             $slug,
             $data,
-            ContentStatus::Draft,
+            $workflowDefinition?->initialState() ?? ContentStatus::Draft,
             $window,
         );
         $record = new ContentRecord(
             $entry,
-            self::CORE_PAGE_TYPE_ID,
-            self::CORE_WORKFLOW_ID,
+            $type?->id ?? self::CORE_PAGE_TYPE_ID,
+            $workflowDefinition?->id ?? self::CORE_WORKFLOW_ID,
             $now,
             $now,
+            null,
+            $type?->version ?? 1,
+            $workflowDefinition?->version ?? 1,
+            $context->site()->identifier(),
         );
 
         return $this->transactions->transactional(function () use ($record, $context, $now): ContentRecord {
@@ -140,6 +174,13 @@ final readonly class ContentService
     ): ContentRecord {
         $this->authorize($context, 'content.update', $id);
         $stored = $this->get($context, $id);
+        $type = $this->models?->contentType($context->site(), $stored->contentTypeId, $stored->contentTypeVersion);
+        if ($this->models !== null && $type === null) {
+            throw new ContentModelNotFound('content type', $stored->contentTypeId, $stored->contentTypeVersion);
+        }
+        if ($type !== null) {
+            ($this->schemas ?? new JsonSchemaValidator())->assertValid($type->schema(), $data);
+        }
         $expected = new ExpectedVersion($expectedVersion);
         $entry = $stored->entry->revise($expected, $title, $slug, $data, $window);
 
@@ -164,22 +205,18 @@ final readonly class ContentService
         ExecutionContext $context,
         string $id,
         int $expectedVersion,
-        ContentStatus $target,
+        ContentStatus|string $target,
     ): ContentRecord {
         $this->authorize($context, 'content.read', $id);
         $stored = $this->get($context, $id);
-        $from = $stored->entry->status();
-        $requiredCapability = match (true) {
-            $from === ContentStatus::Draft && $target === ContentStatus::Review => 'content.submit',
-            $from === ContentStatus::Review && $target === ContentStatus::Draft => 'content.review',
-            $target === ContentStatus::Published => 'content.publish',
-            $from === ContentStatus::Published && $target === ContentStatus::Draft => 'content.unpublish',
-            $target === ContentStatus::Archived => 'content.archive',
-            $from === ContentStatus::Archived && $target === ContentStatus::Draft => 'content.restore',
-            default => 'content.update',
-        };
-        $this->authorize($context, $requiredCapability, $id);
-        $entry = $stored->entry->transition(new ExpectedVersion($expectedVersion), $this->workflow, $target);
+        $required = $this->transitionCapabilityForRecord($context, $stored, $target);
+        $this->authorize($context, $required->value(), $id);
+        $definition = $this->models?->workflow($context->site(), $stored->workflowId, $stored->workflowVersion);
+        $entry = $stored->entry->transition(
+            new ExpectedVersion($expectedVersion),
+            $definition === null ? $this->workflow : new Workflow($definition),
+            $target,
+        );
         $now = $this->clock->now();
         $updated = $stored->withEntry($entry, $now);
 
@@ -192,10 +229,52 @@ final readonly class ContentService
             $this->repository->update($updated, $expectedVersion);
             $this->captureRevision($updated->entry, $now);
             $this->recordAudit($context->actorId(), 'content.transition', $updated->entry, $now, [
-                'status' => $updated->entry->status()->value,
+                'status' => $updated->entry->statusKey(),
             ]);
 
             return $updated;
+        });
+    }
+
+    public function transitionCapability(
+        ExecutionContext $context,
+        string $id,
+        ContentStatus|string $target,
+    ): Capability {
+        $this->authorize($context, 'content.read', $id);
+
+        return $this->transitionCapabilityForRecord($context, $this->get($context, $id), $target);
+    }
+
+    private function transitionCapabilityForRecord(
+        ExecutionContext $context,
+        ContentRecord $stored,
+        ContentStatus|string $target,
+    ): Capability {
+        $definition = $this->models?->workflow($context->site(), $stored->workflowId, $stored->workflowVersion);
+        if ($definition !== null) {
+            return $definition->transition(
+                $stored->entry->statusKey(),
+                $target instanceof ContentStatus ? $target->value : $target,
+            )->requiredCapability;
+        }
+        if ($this->models !== null) {
+            throw new ContentModelNotFound('workflow', $stored->workflowId, $stored->workflowVersion);
+        }
+
+        $from = $stored->entry->status();
+        if (!$from instanceof ContentStatus || !$target instanceof ContentStatus) {
+            throw new \DomainException('A persisted workflow definition is required for custom states.');
+        }
+
+        return Capability::fromString(match (true) {
+            $from === ContentStatus::Draft && $target === ContentStatus::Review => 'content.submit',
+            $from === ContentStatus::Review && $target === ContentStatus::Draft => 'content.review',
+            $target === ContentStatus::Published => 'content.publish',
+            $from === ContentStatus::Published && $target === ContentStatus::Draft => 'content.unpublish',
+            $target === ContentStatus::Archived => 'content.archive',
+            $from === ContentStatus::Archived && $target === ContentStatus::Draft => 'content.restore',
+            default => 'content.update',
         });
     }
 

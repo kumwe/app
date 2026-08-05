@@ -15,6 +15,8 @@ use Kumwe\CMS\Application\Authorization\SiteContext;
 use Kumwe\CMS\Application\Authorization\SystemIdentity;
 use Kumwe\CMS\Application\Authorization\SystemPrincipal;
 use Kumwe\CMS\Application\Automation\AutomationManagementService;
+use Kumwe\CMS\Application\Automation\GlobalJobPrincipals;
+use Kumwe\CMS\Application\Automation\JobExecutionScope;
 use Kumwe\CMS\Application\Automation\JobHandlerRegistry;
 use Kumwe\CMS\Application\Automation\JobQueue;
 use Kumwe\CMS\Application\Automation\Scheduler;
@@ -29,8 +31,11 @@ use Kumwe\CMS\Delivery\Console\Command\ManageContentCommand;
 use Kumwe\CMS\Delivery\Console\Command\ScheduleRunCommand;
 use Kumwe\CMS\Delivery\Console\Output;
 use Kumwe\CMS\Extension\Application\ExtensionManager;
+use Kumwe\CMS\Extension\Application\Trust\TrustStore;
 use Kumwe\CMS\Extension\Runtime\RestrictedExtensionContainer;
 use Kumwe\CMS\Identity\Application\Administration\AccessControlService;
+use Kumwe\CMS\Identity\Application\Administration\AdministratorIdentityGateway;
+use Kumwe\CMS\Identity\Application\Administration\TokenRotationPreauthorizer;
 use Kumwe\CMS\Identity\Application\Authentication\AccessTokenVerifier;
 use Kumwe\CMS\Identity\Application\Authentication\AuthenticatedPrincipal;
 use Kumwe\CMS\Identity\Domain\Capability;
@@ -96,6 +101,7 @@ final class AdapterAuthorizationParityTest extends TestCase
                 new ContentTransitionAuthorizer(),
             ))->execute([
                 'create',
+                '--site=default',
                 '--token-file=' . $tokenFile,
                 '--title=Denied',
                 '--slug=denied',
@@ -151,7 +157,19 @@ final class AdapterAuthorizationParityTest extends TestCase
         $queue = $this->createMock(JobQueue::class);
         $queue->expects(self::never())->method('heartbeat');
         $queue->expects(self::never())->method('claim');
-        $worker = new Worker($queue, new JobHandlerRegistry([]), AuthorizationContext::gateway());
+        $ownership = AuthorizationContext::ownership();
+        $worker = new Worker(
+            $queue,
+            new JobHandlerRegistry([]),
+            AuthorizationContext::gateway(ownership: $ownership),
+            $ownership,
+            AuthorizationContext::system(SystemIdentity::Worker),
+            new JobExecutionScope(),
+            new GlobalJobPrincipals(
+                AuthorizationContext::system(SystemIdentity::InstallationMaintenance),
+                AuthorizationContext::system(SystemIdentity::ExtensionMaterializer),
+            ),
+        );
 
         $this->expectException(AuthorizationDenied::class);
         $worker->runOnce(AuthorizationContext::human(['automation.manage']), 'default', 'worker-test');
@@ -238,11 +256,13 @@ final class AdapterAuthorizationParityTest extends TestCase
             $this->withoutConstructor(AccessControlService::class),
             $this->createStub(SiteSettings::class),
             $this->createStub(ExtensionManager::class),
+            $this->withoutConstructor(TrustStore::class),
+            $this->createStub(AdministratorIdentityGateway::class),
             $this->withoutConstructor(AutomationManagementService::class),
-            new ContentTransitionAuthorizer(),
             $this->withoutConstructor(McpMutationGuard::class),
             $this->clock(),
             AuthorizationContext::gateway(),
+            $this->withoutConstructor(TokenRotationPreauthorizer::class),
         );
     }
 

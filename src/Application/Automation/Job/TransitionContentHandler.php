@@ -8,7 +8,6 @@ use Kumwe\CMS\Application\Automation\JobHandler;
 use Kumwe\CMS\Application\Automation\PermanentFailure;
 use Kumwe\CMS\Application\Authorization\ExecutionContext;
 use Kumwe\CMS\Content\Application\ContentService;
-use Kumwe\CMS\Content\Domain\ContentStatus;
 
 final readonly class TransitionContentHandler implements JobHandler
 {
@@ -31,6 +30,6 @@ final readonly class TransitionContentHandler implements JobHandler
             throw new PermanentFailure('The content transition job payload is invalid.');
         }
 
-        $this->content->transition($context, $id, $version, ContentStatus::from($status));
+        $this->content->transition($context, $id, $version, $status);
     }
 }

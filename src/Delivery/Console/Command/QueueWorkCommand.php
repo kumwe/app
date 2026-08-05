@@ -11,12 +11,18 @@ use Kumwe\CMS\Application\Authorization\SiteContext;
 use Kumwe\CMS\Application\Authorization\SystemPrincipal;
 use Kumwe\CMS\Delivery\Console\Command;
 use Kumwe\CMS\Delivery\Console\Output;
+use Kumwe\CMS\Extension\Runtime\ExtensionRuntimeMapCompiler;
+use Kumwe\CMS\Extension\Runtime\RuntimeMaterializationState;
 use Throwable;
 
 final readonly class QueueWorkCommand implements Command
 {
-    public function __construct(private Worker $worker, private SystemPrincipal $system)
-    {
+    public function __construct(
+        private Worker $worker,
+        private SystemPrincipal $system,
+        private ?ExtensionRuntimeMapCompiler $runtime = null,
+        private ?RuntimeMaterializationState $loadedRuntime = null,
+    ) {
     }
 
     public function name(): string
@@ -60,19 +66,9 @@ final readonly class QueueWorkCommand implements Command
             $leaseSeconds = $this->integerOption($options, 'lease-seconds', 60, 5, 3_600);
             $maximumJobs = $this->integerOption($options, 'max-jobs', 0, 0, 1_000_000);
             $maximumRuntime = $this->integerOption($options, 'max-runtime', 0, 0, 604_800);
-
-            $host = gethostname();
-            $host = $host === false ? 'kumwe' : $host;
-            $safeHost = preg_replace('/[^A-Za-z0-9._-]/', '-', $host);
-            $safeHost = $safeHost === null || $safeHost === '' ? 'kumwe' : $safeHost;
-            $processId = getmypid();
-            $processId = $processId === false ? 1 : $processId;
-            $workerId = sprintf(
-                '%s:%d:%s',
-                $safeHost,
-                $processId,
-                bin2hex(random_bytes(4)),
-            );
+            $workerId = $this->loadedRuntime === null
+                ? 'worker:' . bin2hex(random_bytes(16))
+                : 'runtime:' . $this->loadedRuntime->replicaId;
             $output->line(sprintf('Kumwe worker %s is consuming queue %s.', $workerId, $queue));
             $context = $this->system->context(
                 SiteContext::default(),
@@ -95,6 +91,9 @@ final readonly class QueueWorkCommand implements Command
             $handledJobs = 0;
 
             do {
+                if ($this->runtime !== null && $this->loadedRuntime !== null) {
+                    $this->runtime->assertLoadedGenerationCurrent($this->loadedRuntime);
+                }
                 $handled = $this->worker->runOnce($context, $queue, $workerId, $leaseSeconds);
                 $handledJobs += $handled ? 1 : 0;
 

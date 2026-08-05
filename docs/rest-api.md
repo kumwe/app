@@ -8,9 +8,10 @@ Send the opaque value returned by the administrator or `token:create`:
 
 ```http
 Authorization: Bearer TOKEN
+Kumwe-Site: corporate
 ```
 
-Tokens are stored as SHA-256 digests, may expire, and carry an explicit capability set. Route authorization and workflow authorization both apply. A token with `content.read` cannot publish merely because it can reach the transition endpoint.
+Every authenticated request must contain exactly one canonical `Kumwe-Site` header. The value is validated and must exactly match the site recorded on the token; Kumwe never derives this security context from `Host`, `Forwarded`, or `X-Forwarded-*`. Tokens are stored as SHA-256 digests, may expire, and carry an explicit capability set. Disabled or deleted sites fail authentication immediately. Route authorization and workflow authorization both apply. A token with `content.read` cannot publish merely because it can reach the transition endpoint.
 
 ## Retry and concurrency contract
 
@@ -32,12 +33,26 @@ Updates and deletes of versioned content, menus, and menu items require the late
 
 Transition authorization follows the same capability map as the administrator. See [Administrator](administration.md#content-and-publishing).
 
+### Content types and workflows
+
+Content model definitions are site-scoped and versioned. Reads require `content.read`; publishing a new definition version requires `content.update`. Definition updates require the current `ETag` in `If-Match`, and all create/update requests require `Idempotency-Key`.
+
+| Method | Path | Purpose |
+|---|---|---|
+| `GET`, `POST` | `/api/v1/content-types` | List or create content types |
+| `GET`, `PATCH` | `/api/v1/content-types/{id}` | Read or publish a new schema version |
+| `GET`, `POST` | `/api/v1/workflows` | List or create workflows |
+| `GET`, `PATCH` | `/api/v1/workflows/{id}` | Read or publish a new workflow version |
+
+A content-type schema uses the supported JSON Schema subset in the OpenAPI contract. A workflow contains named states, exactly one non-public initial state, public-state flags, and directed transitions with a required capability. Entering a public state always requires `content.publish`; leaving one always requires `content.unpublish`. Existing content remains pinned to its original definition versions. Breaking changes are rejected unless the caller explicitly supplies `allow_breaking: true`; that override publishes a new version and never mutates historical versions.
+
 ```bash
 curl --request POST https://cms.example.org/api/v1/content \
   --header "Authorization: Bearer $KUMWE_TOKEN" \
+  --header 'Kumwe-Site: corporate' \
   --header 'Content-Type: application/json' \
   --header 'Idempotency-Key: page-create-20260804-001' \
-  --data '{"title":"About us","slug":"about-us","data":{"body":"<p>About our team.</p>"}}'
+  --data '{"content_type":"page","title":"About us","slug":"about-us","data":{"body":"<p>About our team.</p>"}}'
 ```
 
 Keep the returned `ETag` and use it for the next versioned mutation:
@@ -45,6 +60,7 @@ Keep the returned `ETag` and use it for the next versioned mutation:
 ```bash
 curl --request POST https://cms.example.org/api/v1/content/CONTENT_ID/transition \
   --header "Authorization: Bearer $KUMWE_TOKEN" \
+  --header 'Kumwe-Site: corporate' \
   --header 'Content-Type: application/json' \
   --header 'Idempotency-Key: page-review-20260804-001' \
   --header 'If-Match: "v1"' \

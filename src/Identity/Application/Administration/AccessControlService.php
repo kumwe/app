@@ -74,8 +74,17 @@ final readonly class AccessControlService
     /** @return list<array<string, mixed>> */
     public function tokens(ExecutionContext $context): array
     {
-        $this->authorize($context, AuthorizationResource::collection('api_token'));
-        return $this->filterPaged($context, 'api_token', $this->repository->tokens(...));
+        $this->authorize($context, AuthorizationResource::item('site', $context->site()->identifier()));
+        $siteIdentifier = $context->site()->identifier();
+        return $this->filterPaged(
+            $context,
+            'api_token',
+            fn (int $limit, int $offset): array => $this->repository->tokens(
+                $siteIdentifier,
+                $limit,
+                $offset,
+            ),
+        );
     }
 
     public function createUser(
@@ -180,16 +189,11 @@ final readonly class AccessControlService
     {
         $this->authorize($context, AuthorizationResource::item('user', $userId));
         $this->authorize($context, AuthorizationResource::item('role', $roleId));
-        foreach ($this->repository->roleGrants($roleId) as $grant) {
-            $this->authorization->assertCanDelegate(
-                $context,
-                Capability::fromString($grant['capability']),
-                $this->scope($grant['scope_type'], $grant['scope_identifier']),
-            );
-        }
         $actorId = $context->actorId();
         $at = $this->clock->now();
-        $this->transactions->transactional(function () use ($actorId, $userId, $roleId, $at): void {
+        $this->transactions->transactional(function () use ($context, $actorId, $userId, $roleId, $at): void {
+            $this->repository->lockRole($roleId);
+            $this->assertCanDelegateRole($context, $roleId);
             $this->repository->assignRole($userId, $roleId, $actorId, $at);
             $this->audit($actorId, 'role.assign', 'user', $userId, ['role_id' => $roleId]);
         });
@@ -242,7 +246,15 @@ final readonly class AccessControlService
             $scopeIdentifier,
             $actorId,
             $at,
+            $context,
+            $scope,
         ): string {
+            $this->repository->lockRole($roleId);
+            $this->authorization->assertCanDelegate(
+                $context,
+                Capability::fromString($capability),
+                $scope,
+            );
             $this->repository->grant(
                 $id,
                 $roleId,
@@ -283,11 +295,70 @@ final readonly class AccessControlService
     public function revokeToken(ExecutionContext $context, string $tokenId): void
     {
         $this->authorize($context, AuthorizationResource::item('api_token', $tokenId));
+        if ($this->repository->tokenSite($tokenId) !== $context->site()->identifier()) {
+            throw new InvalidArgumentException('A token cannot be revoked outside its site context.');
+        }
         $actorId = $context->actorId();
         $at = $this->clock->now();
         $this->transactions->transactional(function () use ($actorId, $tokenId, $at): void {
             $this->repository->revokeToken($tokenId, $at);
             $this->audit($actorId, 'token.revoke', 'api_token', $tokenId);
+        });
+    }
+
+    public function revokeSubjectTokens(ExecutionContext $context, string $userId, string $reason): int
+    {
+        $this->authorize($context, AuthorizationResource::item('site', $context->site()->identifier()));
+        $actorId = $context->actorId();
+        $reason = trim($reason);
+        if ($reason === '' || mb_strlen($reason) > 500) {
+            throw new InvalidArgumentException('An emergency revocation reason of 1 to 500 characters is required.');
+        }
+        $at = $this->clock->now();
+
+        return $this->transactions->transactional(function () use (
+            $context,
+            $actorId,
+            $userId,
+            $reason,
+            $at,
+        ): int {
+            $this->repository->lockUser($userId);
+            $count = $this->repository->revokeSubjectTokensForSite(
+                $userId,
+                $context->site()->identifier(),
+                $at,
+                $reason,
+            );
+            $this->audit($actorId, 'token.revoke_subject_site', 'user', $userId, [
+                'revoked_tokens' => $count,
+                'reason' => $reason,
+                'site_identifier' => $context->site()->identifier(),
+            ]);
+
+            return $count;
+        });
+    }
+
+    public function emergencyRevokeAllSubjectTokens(
+        ExecutionContext $context,
+        string $userId,
+        string $reason,
+    ): int {
+        $this->authorize($context, AuthorizationResource::item('user', $userId));
+        $reason = trim($reason);
+        if ($reason === '' || mb_strlen($reason) > 500) {
+            throw new InvalidArgumentException('An emergency revocation reason of 1 to 500 characters is required.');
+        }
+        $at = $this->clock->now();
+        return $this->transactions->transactional(function () use ($context, $userId, $reason, $at): int {
+            $this->repository->lockUser($userId);
+            $count = $this->repository->revokeSubjectTokens($userId, $at, $reason);
+            $this->audit($context->actorId(), 'token.emergency_revoke_all', 'user', $userId, [
+                'revoked_tokens' => $count,
+                'reason' => $reason,
+            ]);
+            return $count;
         });
     }
 
@@ -353,6 +424,17 @@ final readonly class AccessControlService
         return $type === 'global'
             ? GrantScope::global()
             : GrantScope::named($type, $identifier ?? '');
+    }
+
+    private function assertCanDelegateRole(ExecutionContext $context, string $roleId): void
+    {
+        foreach ($this->repository->roleGrants($roleId) as $grant) {
+            $this->authorization->assertCanDelegate(
+                $context,
+                Capability::fromString($grant['capability']),
+                $this->scope($grant['scope_type'], $grant['scope_identifier']),
+            );
+        }
     }
 
     /** @param array<string, mixed> $metadata */

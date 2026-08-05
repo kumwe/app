@@ -83,9 +83,6 @@ final readonly class JobRecoveryMigration implements Migration
             $this->tables->quoted('schedules'),
         ), ['system.idempotency.purge']);
         if ($exists !== false) {
-            if (is_string($exists) && $exists !== '') {
-                $this->ensureScheduleOwnership($database, $exists);
-            }
             return;
         }
         $now = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
@@ -112,26 +109,6 @@ final readonly class JobRecoveryMigration implements Migration
             'next_run_at' => Types::DATETIME_IMMUTABLE,
             'created_at' => Types::DATETIME_IMMUTABLE,
             'updated_at' => Types::DATETIME_IMMUTABLE,
-        ]);
-        $this->ensureScheduleOwnership($database, '00000000-0000-7000-8000-000000000802');
-    }
-
-    private function ensureScheduleOwnership(Connection $database, string $scheduleId): void
-    {
-        if (!$database->createSchemaManager()->tablesExist([$this->tables->raw('resource_site_ownership')])) {
-            return;
-        }
-        $exists = $database->fetchOne(sprintf(
-            'SELECT 1 FROM %s WHERE resource_type = ? AND resource_id = ?',
-            $this->tables->quoted('resource_site_ownership'),
-        ), ['schedule', $scheduleId]);
-        if ($exists !== false) {
-            return;
-        }
-        $database->insert($this->tables->raw('resource_site_ownership'), [
-            'resource_type' => 'schedule',
-            'resource_id' => $scheduleId,
-            'site_identifier' => 'default',
         ]);
     }
 }

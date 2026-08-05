@@ -8,6 +8,9 @@ use Kumwe\CMS\Http\Handler\ApiIndexHandler;
 use Kumwe\CMS\Http\Handler\HomePageHandler;
 use Kumwe\CMS\Http\Handler\LivenessHandler;
 use Kumwe\CMS\Kernel\ContainerFactory;
+use Kumwe\CMS\Presentation\Twig\AdministratorTwigEnvironment;
+use Kumwe\CMS\Presentation\Twig\RecoveryAdministratorTwigEnvironment;
+use Kumwe\CMS\Presentation\Twig\SiteTwigEnvironment;
 use Kumwe\CMS\Shared\Infrastructure\Configuration\Environment;
 use Laminas\Diactoros\ServerRequestFactory;
 use Mezzio\Application;
@@ -25,6 +28,14 @@ final class KernelTest extends TestCase
         $container = (new ContainerFactory())->create(Environment::fromGlobals());
 
         self::assertSame($container->get(Application::class), $container->get(Application::class));
+        self::assertNotSame(
+            $container->get(SiteTwigEnvironment::class),
+            $container->get(AdministratorTwigEnvironment::class),
+        );
+        self::assertNotSame(
+            $container->get(AdministratorTwigEnvironment::class),
+            $container->get(RecoveryAdministratorTwigEnvironment::class),
+        );
     }
 
     public function testPublicHealthAndProtectedBoundaries(): void

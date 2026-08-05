@@ -5,19 +5,21 @@ declare(strict_types=1);
 namespace Kumwe\CMS\Http\Handler;
 
 use Kumwe\CMS\Content\Application\ContentService;
+use Kumwe\CMS\Application\Authorization\SiteContext;
+use Kumwe\CMS\Presentation\SiteRenderer;
 use Kumwe\CMS\Site\Application\SiteSettings;
 use Laminas\Diactoros\Response\HtmlResponse;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\RequestHandlerInterface;
-use Twig\Environment;
 
 final readonly class PublishedContentHandler implements RequestHandlerInterface
 {
     public function __construct(
         private ContentService $content,
         private SiteSettings $settings,
-        private Environment $twig,
+        private SiteRenderer $renderer,
+        private ?SiteContext $site = null,
     ) {
     }
 
@@ -29,7 +31,7 @@ final readonly class PublishedContentHandler implements RequestHandlerInterface
             return $this->notFound();
         }
 
-        $record = $this->content->publishedBySlug($slug);
+        $record = $this->content->publishedBySlug($slug, $this->site ?? SiteContext::default());
 
         if ($record === null) {
             return $this->notFound();
@@ -41,7 +43,7 @@ final readonly class PublishedContentHandler implements RequestHandlerInterface
         }
 
         return new HtmlResponse(
-            $this->twig->render('site/page.twig', ['entry' => $record->toArray()]),
+            $this->renderer->render('page', ['entry' => $record->toArray()]),
             200,
             $headers,
         );

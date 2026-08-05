@@ -43,16 +43,18 @@ final readonly class TokenDelegationPreauthorizer
         $this->authorization->assertAllowed(
             $context,
             Capability::fromString('users.manage'),
-            AuthorizationResource::collection('api_token'),
+            AuthorizationResource::item('site', $context->site()->identifier()),
         );
         $normalizedEmail = EmailAddress::fromString($email)->value();
         $subjectId = $this->repository->userIdByEmail($normalizedEmail)
             ?? throw new InvalidArgumentException('The requested active token subject does not exist.');
-        $this->authorization->assertAllowed(
-            $context,
-            Capability::fromString('users.manage'),
-            AuthorizationResource::item('user', $subjectId),
-        );
+        if ($subjectId !== $context->actorId()) {
+            $this->authorization->assertAllowed(
+                $context,
+                Capability::fromString('users.manage'),
+                AuthorizationResource::item('user', $subjectId),
+            );
+        }
 
         $targetGrants = $this->repository->userGrants($subjectId);
         foreach (array_keys($requested) as $capability) {

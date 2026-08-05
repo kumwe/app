@@ -6,8 +6,6 @@ namespace Kumwe\CMS\Administrator\Http\Handler;
 
 use Kumwe\CMS\Administrator\Http\AdministratorRequest;
 use Kumwe\CMS\Content\Application\ContentService;
-use Kumwe\CMS\Content\Domain\ContentStatus;
-use Kumwe\CMS\Workflow\Application\ContentTransitionAuthorizer;
 use Laminas\Diactoros\Response\RedirectResponse;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -17,7 +15,6 @@ final readonly class AdministratorTransitionContentHandler implements RequestHan
 {
     public function __construct(
         private ContentService $content,
-        private ContentTransitionAuthorizer $authorization,
     ) {
     }
 
@@ -25,18 +22,11 @@ final readonly class AdministratorTransitionContentHandler implements RequestHan
     {
         $form = AdministratorRequest::form($request);
         $id = AdministratorRequest::routeId($request);
-        $stored = $this->content->get(AdministratorRequest::context($request), $id);
-        $target = ContentStatus::from(AdministratorRequest::required($form, 'status'));
-        $this->authorization->assertAllowed(
-            AdministratorRequest::session($request)->principal,
-            $stored->entry->status(),
-            $target,
-        );
         $this->content->transition(
             AdministratorRequest::context($request),
             $id,
             AdministratorRequest::positiveInteger($form, 'version'),
-            $target,
+            AdministratorRequest::required($form, 'status'),
         );
 
         return new RedirectResponse('/administrator/content/' . $id . '/edit', 303);

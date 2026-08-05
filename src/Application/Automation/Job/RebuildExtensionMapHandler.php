@@ -31,6 +31,6 @@ final readonly class RebuildExtensionMapHandler implements JobHandler
             Capability::fromString('extensions.manage'),
             AuthorizationResource::collection('extension_runtime_map'),
         );
-        $this->compiler->rebuild();
+        $this->compiler->materialize();
     }
 }

@@ -17,6 +17,7 @@ use Kumwe\CMS\Delivery\Http\Api\ProblemDetailsResponseFactory;
 use Kumwe\CMS\Identity\Application\Authentication\AuthenticatedPrincipal;
 use Kumwe\CMS\Identity\Application\Administration\AccessControlRepository;
 use Kumwe\CMS\Identity\Application\Administration\TokenDelegationPreauthorizer;
+use Kumwe\CMS\Identity\Application\Administration\TokenRotationPreauthorizer;
 use Kumwe\CMS\Infrastructure\Persistence\TableNames;
 use Kumwe\CMS\Infrastructure\Persistence\TransactionManager;
 use Kumwe\CMS\Tests\Support\AuthorizationContext;
@@ -75,6 +76,7 @@ final class PersistentIdempotencyAuthorizationTest extends TestCase
                     $this->createStub(AccessControlRepository::class),
                     AuthorizationContext::gateway(),
                 ),
+                $this->rotation($this->createStub(AccessControlRepository::class)),
             ),
         ))->process($request, $handler);
     }
@@ -121,6 +123,7 @@ final class PersistentIdempotencyAuthorizationTest extends TestCase
                     $this->createStub(AccessControlRepository::class),
                     AuthorizationContext::gateway(),
                 ),
+                $this->rotation($this->createStub(AccessControlRepository::class)),
             ),
         ))->process($request, $handler);
     }
@@ -170,6 +173,7 @@ final class PersistentIdempotencyAuthorizationTest extends TestCase
                 (new ReflectionClass(ContentService::class))->newInstanceWithoutConstructor(),
                 $repository,
                 new TokenDelegationPreauthorizer($repository, AuthorizationContext::gateway()),
+                $this->rotation($repository),
             ),
         ))->process($request, $handler);
     }
@@ -184,12 +188,31 @@ final class PersistentIdempotencyAuthorizationTest extends TestCase
         };
     }
 
+    private function rotation(AccessControlRepository $repository): TokenRotationPreauthorizer
+    {
+        $gateway = AuthorizationContext::gateway();
+        return new TokenRotationPreauthorizer(
+            $repository,
+            $gateway,
+            new TokenDelegationPreauthorizer($repository, $gateway),
+        );
+    }
+
     private function transactions(): TransactionManager
     {
         return new class implements TransactionManager {
             public function transactional(callable $operation): mixed
             {
                 return $operation();
+            }
+
+            public function afterCommit(callable $operation): void
+            {
+                $operation();
+            }
+
+            public function afterRollback(callable $operation): void
+            {
             }
         };
     }

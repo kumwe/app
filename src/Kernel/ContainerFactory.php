@@ -17,6 +17,8 @@ use Kumwe\CMS\Application\Automation\Job\RebuildExtensionMapHandler;
 use Kumwe\CMS\Application\Automation\Job\ScheduleRepository;
 use Kumwe\CMS\Application\Automation\Job\TransitionContentHandler;
 use Kumwe\CMS\Application\Automation\JobHandlerRegistry;
+use Kumwe\CMS\Application\Automation\GlobalJobPrincipals;
+use Kumwe\CMS\Application\Automation\JobExecutionScope;
 use Kumwe\CMS\Application\Automation\JobQueue;
 use Kumwe\CMS\Application\Automation\IdempotencyPurger;
 use Kumwe\CMS\Application\Automation\Scheduler;
@@ -26,10 +28,14 @@ use Kumwe\CMS\Application\Authorization\AuthorizationPolicyRegistry;
 use Kumwe\CMS\Application\Authorization\DenyByDefaultAuthorizationGateway;
 use Kumwe\CMS\Application\Authorization\ResourceSiteOwnership;
 use Kumwe\CMS\Application\Authorization\ResourceSiteOwnershipWriter;
+use Kumwe\CMS\Application\Authorization\SiteContext;
 use Kumwe\CMS\Application\Authorization\StructuredLogAuthorizationDecisionRecorder;
 use Kumwe\CMS\Application\Authorization\SystemIdentity;
 use Kumwe\CMS\Application\Authorization\SystemPrincipal;
+use Kumwe\CMS\Application\Operations\ExpiredMigrationLockRecovery;
+use Kumwe\CMS\Application\Operations\MigrationLockRecoveryService;
 use Kumwe\CMS\Administrator\Http\Handler\AdministratorContentEditorHandler;
+use Kumwe\CMS\Administrator\Http\Handler\AdministratorContentModelsHandler;
 use Kumwe\CMS\Administrator\Http\Handler\AdministratorAccessControlHandler;
 use Kumwe\CMS\Administrator\Http\Handler\AdministratorAutomationHandler;
 use Kumwe\CMS\Administrator\Http\Handler\AdministratorCreateContentHandler;
@@ -48,23 +54,44 @@ use Kumwe\CMS\Administrator\Http\Middleware\AdministratorCsrfMiddleware;
 use Kumwe\CMS\Administrator\Http\Middleware\AdministratorAuthorizationMiddleware;
 use Kumwe\CMS\Administrator\Http\Middleware\AdministratorSessionMiddleware;
 use Kumwe\CMS\Administrator\Presentation\AdministratorRenderer;
+use Kumwe\CMS\Administrator\Presentation\RecoveryAdministratorRenderer;
 use Kumwe\CMS\Audit\Application\AuditRecorder;
 use Kumwe\CMS\Audit\Infrastructure\Persistence\DoctrineAuditRecorder;
 use Kumwe\CMS\Content\Application\ContentRepository;
+use Kumwe\CMS\Content\Application\ContentModelRepository;
+use Kumwe\CMS\Content\Application\ContentModelService;
 use Kumwe\CMS\Content\Application\ContentService;
+use Kumwe\CMS\Content\Domain\JsonSchemaValidator;
+use Kumwe\CMS\Content\Domain\SchemaCompatibilityChecker;
+use Kumwe\CMS\Content\Infrastructure\Persistence\DoctrineContentModelRepository;
 use Kumwe\CMS\Content\Infrastructure\Persistence\DoctrineContentRepository;
 use Kumwe\CMS\Extension\Application\ExtensionManager;
+use Kumwe\CMS\Extension\Application\Install\ExtensionInstallReconciler;
 use Kumwe\CMS\Extension\Application\Migration\ExtensionMigrationRunner;
 use Kumwe\CMS\Extension\Application\Package\ArchiveReader;
 use Kumwe\CMS\Extension\Application\Package\PackageSafetyPolicy;
-use Kumwe\CMS\Extension\Infrastructure\Package\ZipArchiveReader;
+use Kumwe\CMS\Extension\Application\Trust\ExtensionArtifactVerifier;
+use Kumwe\CMS\Extension\Application\Trust\TrustKeySignatureVerifier;
+use Kumwe\CMS\Extension\Application\Trust\TrustRuntimeInvalidator;
+use Kumwe\CMS\Extension\Application\Trust\TrustStore;
+use Kumwe\CMS\Extension\Application\Trust\TrustStoreRepository;
 use Kumwe\CMS\Extension\Infrastructure\DoctrineExtensionManager;
+use Kumwe\CMS\Extension\Infrastructure\Package\ZipArchiveReader;
+use Kumwe\CMS\Extension\Infrastructure\ExtensionRegistryFenceAllocator;
 use Kumwe\CMS\Extension\Infrastructure\RedisLockedExtensionManager;
+use Kumwe\CMS\Extension\Infrastructure\Trust\DoctrineTrustStoreRepository;
+use Kumwe\CMS\Extension\Infrastructure\Trust\FilesystemExtensionArtifactVerifier;
+use Kumwe\CMS\Extension\Infrastructure\Trust\SodiumTrustKeySignatureVerifier;
 use Kumwe\CMS\Extension\Runtime\ActiveExtensionSet;
 use Kumwe\CMS\Extension\Runtime\ExtensionRuntimeLoader;
 use Kumwe\CMS\Extension\Runtime\ExtensionEventRegistrar;
 use Kumwe\CMS\Extension\Runtime\JoomlaExtensionEventRegistrar;
+use Kumwe\CMS\Extension\Runtime\LocalRuntimeReadinessProbe;
 use Kumwe\CMS\Extension\Runtime\ExtensionRuntimeMapCompiler;
+use Kumwe\CMS\Extension\Runtime\RuntimeArtifactDigester;
+use Kumwe\CMS\Extension\Runtime\RuntimeIdentity;
+use Kumwe\CMS\Extension\Runtime\RuntimeMaterializationState;
+use Kumwe\CMS\Extension\Runtime\RuntimePublicationKeyRing;
 use Kumwe\CMS\Delivery\Console\Command\CreateAccessTokenCommand;
 use Kumwe\CMS\Delivery\Console\Command\CreateAdministratorCommand;
 use Kumwe\CMS\Delivery\Console\Command\ConsoleAuthorizer;
@@ -76,14 +103,20 @@ use Kumwe\CMS\Delivery\Console\Command\ListExtensionsCommand;
 use Kumwe\CMS\Delivery\Console\Command\ManageAutomationCommand;
 use Kumwe\CMS\Delivery\Console\Command\ManageAccessCommand;
 use Kumwe\CMS\Delivery\Console\Command\ManageContentCommand;
+use Kumwe\CMS\Delivery\Console\Command\ManageContentModelsCommand;
 use Kumwe\CMS\Delivery\Console\Command\ManageNavigationCommand;
 use Kumwe\CMS\Delivery\Console\Command\ManageSettingsCommand;
+use Kumwe\CMS\Delivery\Console\Command\ManageTrustStoreCommand;
 use Kumwe\CMS\Delivery\Console\Command\McpServeCommand;
 use Kumwe\CMS\Delivery\Console\Command\MigrateCommand;
+use Kumwe\CMS\Delivery\Console\Command\MaterializeExtensionRuntimeCommand;
+use Kumwe\CMS\Delivery\Console\Command\WatchExtensionRuntimeCommand;
 use Kumwe\CMS\Delivery\Console\Command\MigrationStatusCommand;
 use Kumwe\CMS\Delivery\Console\Command\QueueWorkCommand;
+use Kumwe\CMS\Delivery\Console\Command\RecoverMigrationLockCommand;
 use Kumwe\CMS\Delivery\Console\Command\ScheduleRunCommand;
 use Kumwe\CMS\Delivery\Console\Command\UninstallExtensionCommand;
+use Kumwe\CMS\Delivery\Console\Command\RecoverAdministratorThemeCommand;
 use Kumwe\CMS\Delivery\Console\ConsoleApplication;
 use Kumwe\CMS\Delivery\Console\Output;
 use Kumwe\CMS\Delivery\Console\StreamOutput;
@@ -91,13 +124,17 @@ use Kumwe\CMS\Delivery\Http\Api\Idempotency\RequireIdempotencyKeyMiddleware;
 use Kumwe\CMS\Delivery\Http\Api\Idempotency\DoctrineIdempotencyPurger;
 use Kumwe\CMS\Delivery\Http\Api\Idempotency\PersistentIdempotencyMiddleware;
 use Kumwe\CMS\Delivery\Http\Api\Idempotency\HttpMutationPreauthorizer;
+use Kumwe\CMS\Delivery\Http\Api\Idempotency\SecretOnceIdempotencyMiddleware;
 use Kumwe\CMS\Delivery\Http\Api\Concurrency\RequireIfMatchMiddleware;
 use Kumwe\CMS\Delivery\Http\Api\Content\ContentApiResponder;
 use Kumwe\CMS\Delivery\Http\Api\Content\ContentCollectionHandler;
 use Kumwe\CMS\Delivery\Http\Api\Content\ContentItemHandler;
+use Kumwe\CMS\Delivery\Http\Api\Content\ContentModelApiHandler;
 use Kumwe\CMS\Delivery\Http\Api\Content\ContentRestoreHandler;
 use Kumwe\CMS\Delivery\Http\Api\Content\ContentTransitionHandler;
 use Kumwe\CMS\Delivery\Http\Api\Extension\ExtensionApiHandler;
+use Kumwe\CMS\Delivery\Http\Api\Extension\TrustStoreApiHandler;
+use Kumwe\CMS\Delivery\Http\Api\Extension\TrustLifecycleMiddleware;
 use Kumwe\CMS\Delivery\Http\Api\Automation\AutomationApiHandler;
 use Kumwe\CMS\Delivery\Http\Api\Identity\AccessControlApiHandler;
 use Kumwe\CMS\Delivery\Http\Api\Navigation\MenuCollectionHandler;
@@ -112,6 +149,7 @@ use Kumwe\CMS\Delivery\Http\Api\ProblemDetailsResponseFactory;
 use Kumwe\CMS\Delivery\Http\Mcp\McpHttpHandler;
 use Kumwe\CMS\Http\Handler\ApiIndexHandler;
 use Kumwe\CMS\Http\Handler\HomePageHandler;
+use Kumwe\CMS\Http\Handler\ExtensionAssetHandler;
 use Kumwe\CMS\Http\Handler\LivenessHandler;
 use Kumwe\CMS\Http\Handler\NotFoundHandler;
 use Kumwe\CMS\Http\Handler\PublishedContentHandler;
@@ -131,8 +169,11 @@ use Kumwe\CMS\Identity\Application\Administration\AdministratorIdentityGateway;
 use Kumwe\CMS\Identity\Application\Administration\AdministratorSessionStore;
 use Kumwe\CMS\Identity\Application\Administration\AuthenticationRateLimiter;
 use Kumwe\CMS\Identity\Application\Administration\TokenDelegationPreauthorizer;
+use Kumwe\CMS\Identity\Application\Administration\TokenRotationPreauthorizer;
 use Kumwe\CMS\Identity\Application\Administration\AccessControlRepository;
 use Kumwe\CMS\Identity\Application\Administration\AccessControlService;
+use Kumwe\CMS\Identity\Application\Administration\AccessTokenQuotaPolicy;
+use Kumwe\CMS\Identity\Application\Administration\FixedAccessTokenQuotaPolicy;
 use Kumwe\CMS\Identity\Application\Security\PasswordHasher;
 use Kumwe\CMS\Identity\Infrastructure\Administration\DoctrineAccessControlRepository;
 use Kumwe\CMS\Identity\Infrastructure\Administration\DoctrineAdministratorIdentityGateway;
@@ -143,14 +184,24 @@ use Kumwe\CMS\Identity\Infrastructure\Security\NativePasswordHasher;
 use Kumwe\CMS\Infrastructure\Persistence\DoctrineConnectionFactory;
 use Kumwe\CMS\Infrastructure\Persistence\DoctrineTransactionManager;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\MigrationLock;
+use Kumwe\CMS\Infrastructure\Persistence\Migration\MigrationPlan;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\MigrationRepository;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\MigrationRunner;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\ApplicationAuthorizationMigration;
+use Kumwe\CMS\Infrastructure\Persistence\Migration\ApplicationAuthorizationMigrationRecovery;
+use Kumwe\CMS\Infrastructure\Persistence\Migration\AuthorizationRecoveryIntegrationMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\CoreSchemaMigration;
+use Kumwe\CMS\Infrastructure\Persistence\Migration\ContentModelRuntimeMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\IdempotencyLeaseNullabilityMigration;
-use Kumwe\CMS\Infrastructure\Persistence\Migration\JobRecoveryMigration;
+use Kumwe\CMS\Infrastructure\Persistence\Migration\IsolateThemeSurfacesMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\DoctrineMigrationLock;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\DoctrineMigrationRepository;
+use Kumwe\CMS\Infrastructure\Persistence\Migration\DoctrineNonTransactionalMigrationRecovery;
+use Kumwe\CMS\Infrastructure\Persistence\Migration\JobRecoveryMigration;
+use Kumwe\CMS\Infrastructure\Persistence\Migration\InstallationGlobalAutomationMigration;
+use Kumwe\CMS\Infrastructure\Persistence\Migration\NonTransactionalMigrationRecovery;
+use Kumwe\CMS\Infrastructure\Persistence\Migration\SiteAutomationContextMigration;
+use Kumwe\CMS\Infrastructure\Persistence\Migration\TokenAndTrustLifecycleMigration;
 use Kumwe\CMS\Infrastructure\Persistence\ReadinessProbe;
 use Kumwe\CMS\Infrastructure\Persistence\TransactionManager;
 use Kumwe\CMS\Infrastructure\Persistence\TableNames;
@@ -172,7 +223,19 @@ use Kumwe\CMS\Site\Infrastructure\Persistence\CachedSiteSettings;
 use Kumwe\CMS\Navigation\Application\NavigationRepository;
 use Kumwe\CMS\Navigation\Application\NavigationService;
 use Kumwe\CMS\Navigation\Infrastructure\Persistence\DoctrineNavigationRepository;
-use Kumwe\CMS\Workflow\Application\ContentTransitionAuthorizer;
+use Kumwe\CMS\Presentation\Application\ThemeActivationGuard;
+use Kumwe\CMS\Presentation\Application\ThemePackageValidator;
+use Kumwe\CMS\Presentation\Application\ThemeMutationAuthorizer;
+use Kumwe\CMS\Presentation\Infrastructure\DoctrineThemeActivationGuard;
+use Kumwe\CMS\Presentation\Infrastructure\DoctrineAdministratorThemeRecovery;
+use Kumwe\CMS\Presentation\Infrastructure\ConsoleAdministratorThemeRecovery;
+use Kumwe\CMS\Presentation\Application\AdministratorThemeRecovery;
+use Kumwe\CMS\Presentation\Infrastructure\DoctrineThemeMutationAuthorizer;
+use Kumwe\CMS\Presentation\SiteRenderer;
+use Kumwe\CMS\Presentation\Twig\AdministratorTwigEnvironment;
+use Kumwe\CMS\Presentation\Twig\IsolatedTwigEnvironmentFactory;
+use Kumwe\CMS\Presentation\Twig\RecoveryAdministratorTwigEnvironment;
+use Kumwe\CMS\Presentation\Twig\SiteTwigEnvironment;
 use Kumwe\CMS\Workflow\Domain\Workflow;
 use Laminas\Diactoros\ResponseFactory;
 use Laminas\Diactoros\ServerRequestFactory;
@@ -211,12 +274,21 @@ use Psr\Http\Message\StreamFactoryInterface;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 use Redis;
-use Twig\Environment as TwigEnvironment;
-use Twig\Loader\FilesystemLoader;
 
 final class ContainerFactory
 {
-    public function create(Environment $environment): Container
+    public function create(Environment $environment, bool $console = true, bool $loadRuntime = true): Container
+    {
+        return $this->build($environment, $console, $loadRuntime);
+    }
+
+    /** Builds recovery surfaces without executing any installed extension code. */
+    public function createRecovery(Environment $environment): Container
+    {
+        return $this->build($environment, true, false);
+    }
+
+    private function build(Environment $environment, bool $console, bool $loadRuntime): Container
     {
         // The proof never crosses the production composition boundary. In-process PHP
         // extensions execute with the same process authority as core and are trusted code;
@@ -244,11 +316,13 @@ final class ContainerFactory
         ], true);
 
         $this->registerLogging($container, $configuration);
-        $this->registerPersistence($container, $configuration, $kernelProof);
-        $this->registerExtensions($container, $configuration, $root);
+        $this->registerPersistence($container, $configuration, $root, $kernelProof);
+        $this->registerExtensions($container, $configuration, $root, $loadRuntime);
         $this->registerMcp($container, $root);
         $this->registerHttp($container, $configuration, $root);
-        $this->registerConsole($container, $kernelProof);
+        if ($console) {
+            $this->registerConsole($container, $kernelProof);
+        }
 
         return $container;
     }
@@ -270,6 +344,7 @@ final class ContainerFactory
     private function registerPersistence(
         Container $container,
         ApplicationConfiguration $configuration,
+        string $root,
         object $kernelProof,
     ): void {
         $provenance = $kernelProof;
@@ -293,6 +368,7 @@ final class ContainerFactory
             self::service($container, RedisRuntime::class),
         ), true);
         $container->share(PasswordHasher::class, new NativePasswordHasher(), true);
+        $container->share(AccessTokenQuotaPolicy::class, new FixedAccessTokenQuotaPolicy(), true);
         $container->share(Workflow::class, new Workflow(), true);
         $container->share(AuthorizationGateway::class, static fn (Container $container): AuthorizationGateway =>
             new DenyByDefaultAuthorizationGateway(
@@ -317,11 +393,46 @@ final class ContainerFactory
                 self::service($container, Connection::class),
                 self::service($container, TableNames::class),
             ), true);
+        $container->share(
+            ApplicationAuthorizationMigrationRecovery::class,
+            static fn (Container $container): ApplicationAuthorizationMigrationRecovery =>
+                new ApplicationAuthorizationMigrationRecovery(
+                    self::service($container, Connection::class),
+                    self::service($container, TableNames::class),
+                ),
+            true,
+        );
+        $container->share(
+            NonTransactionalMigrationRecovery::class,
+            static fn (Container $container): NonTransactionalMigrationRecovery =>
+                new DoctrineNonTransactionalMigrationRecovery(
+                    self::service($container, Connection::class),
+                    self::service($container, TableNames::class),
+                    self::service($container, ApplicationAuthorizationMigrationRecovery::class),
+                ),
+            true,
+        );
         $container->share(MigrationLock::class, static fn (Container $container): MigrationLock =>
             new DoctrineMigrationLock(
                 self::service($container, Connection::class),
                 self::service($container, TableNames::class),
             ), true);
+        $container->share(ExpiredMigrationLockRecovery::class, static function (
+            Container $container,
+        ): ExpiredMigrationLockRecovery {
+            $lock = self::service($container, MigrationLock::class);
+            if (!$lock instanceof ExpiredMigrationLockRecovery) {
+                throw new \RuntimeException('The migration lock has no expired-owner recovery implementation.');
+            }
+
+            return $lock;
+        }, true);
+        $container->share(MigrationLockRecoveryService::class, static fn (
+            Container $container,
+        ): MigrationLockRecoveryService => new MigrationLockRecoveryService(
+            self::service($container, ExpiredMigrationLockRecovery::class),
+            self::service($container, AuthorizationGateway::class),
+        ), true);
         $container->share(AccessTokenVerifier::class, static fn (Container $container): AccessTokenVerifier =>
             new DoctrineAccessTokenVerifier(
                 self::service($container, Connection::class),
@@ -329,6 +440,12 @@ final class ContainerFactory
                 self::service($container, ClockInterface::class),
                 $provenance,
             ), true);
+        $container->share(TrustStoreRepository::class, static fn (Container $container): TrustStoreRepository =>
+            new DoctrineTrustStoreRepository(
+                self::service($container, Connection::class),
+                self::service($container, TableNames::class),
+            ), true);
+        $container->share(TrustKeySignatureVerifier::class, new SodiumTrustKeySignatureVerifier(), true);
         $container->share(AdministratorIdentityGateway::class, static fn (
             Container $container,
         ): AdministratorIdentityGateway => new DoctrineAdministratorIdentityGateway(
@@ -339,9 +456,11 @@ final class ContainerFactory
             self::service($container, ClockInterface::class),
             self::service($container, AuthenticationRateLimiter::class),
             self::service($container, AuditRecorder::class),
+            self::service($container, AccessTokenQuotaPolicy::class),
             $configuration->secret,
             self::service($container, AuthorizationGateway::class),
             self::service($container, TokenDelegationPreauthorizer::class),
+            self::service($container, TokenRotationPreauthorizer::class),
             self::service($container, ResourceSiteOwnershipWriter::class),
             $provenance,
         ), true);
@@ -368,6 +487,24 @@ final class ContainerFactory
                 self::service($container, Connection::class),
                 self::service($container, TableNames::class),
             ), true);
+        $container->share(ContentModelRepository::class, static fn (Container $container): ContentModelRepository =>
+            new DoctrineContentModelRepository(
+                self::service($container, Connection::class),
+                self::service($container, TableNames::class),
+            ), true);
+        $container->share(JsonSchemaValidator::class, new JsonSchemaValidator(), true);
+        $container->share(SchemaCompatibilityChecker::class, new SchemaCompatibilityChecker(), true);
+        $container->share(ContentModelService::class, static fn (Container $container): ContentModelService =>
+            new ContentModelService(
+                self::service($container, ContentModelRepository::class),
+                self::service($container, JsonSchemaValidator::class),
+                self::service($container, SchemaCompatibilityChecker::class),
+                self::service($container, AuthorizationGateway::class),
+                self::service($container, ResourceSiteOwnershipWriter::class),
+                self::service($container, AuditRecorder::class),
+                self::service($container, TransactionManager::class),
+                self::service($container, ClockInterface::class),
+            ), true);
         $container->share(ContentService::class, static fn (Container $container): ContentService =>
             new ContentService(
                 self::service($container, ContentRepository::class),
@@ -377,8 +514,9 @@ final class ContainerFactory
                 self::service($container, Workflow::class),
                 self::service($container, AuthorizationGateway::class),
                 self::service($container, ResourceSiteOwnershipWriter::class),
+                self::service($container, ContentModelRepository::class),
+                self::service($container, JsonSchemaValidator::class),
             ), true);
-        $container->share(ContentTransitionAuthorizer::class, new ContentTransitionAuthorizer(), true);
         $container->share(NavigationRepository::class, static fn (Container $container): NavigationRepository =>
             new DoctrineNavigationRepository(
                 self::service($container, Connection::class),
@@ -405,6 +543,13 @@ final class ContainerFactory
             self::service($container, AccessControlRepository::class),
             self::service($container, AuthorizationGateway::class),
         ), true);
+        $container->share(TokenRotationPreauthorizer::class, static fn (
+            Container $container,
+        ): TokenRotationPreauthorizer => new TokenRotationPreauthorizer(
+            self::service($container, AccessControlRepository::class),
+            self::service($container, AuthorizationGateway::class),
+            self::service($container, TokenDelegationPreauthorizer::class),
+        ), true);
         $container->share(AccessControlService::class, static fn (Container $container): AccessControlService =>
             new AccessControlService(
                 self::service($container, AccessControlRepository::class),
@@ -430,6 +575,8 @@ final class ContainerFactory
                 self::service($container, DoctrineSiteSettings::class),
                 self::service($container, RedisRuntime::class),
             ), true);
+        $container->share(JobExecutionScope::class, static fn (): JobExecutionScope =>
+            new JobExecutionScope(), true);
         $container->share(JobQueue::class, static fn (Container $container): JobQueue =>
             new DoctrineJobQueue(
                 self::service($container, Connection::class),
@@ -439,6 +586,7 @@ final class ContainerFactory
                 $configuration->release,
                 self::service($container, AuthorizationGateway::class),
                 self::service($container, ResourceSiteOwnershipWriter::class),
+                self::service($container, JobExecutionScope::class),
             ), true);
         $container->share(DoctrineScheduler::class, static fn (
             Container $container,
@@ -448,7 +596,10 @@ final class ContainerFactory
             self::service($container, TransactionManager::class),
             self::service($container, ClockInterface::class),
             self::service($container, AuthorizationGateway::class),
+            self::service($container, ResourceSiteOwnership::class),
             self::service($container, ResourceSiteOwnershipWriter::class),
+            SystemPrincipal::issue($provenance, SystemIdentity::Scheduler),
+            self::service($container, JobExecutionScope::class),
         ), true);
         $container->alias(Scheduler::class, DoctrineScheduler::class);
         $container->alias(ScheduleRepository::class, DoctrineScheduler::class);
@@ -462,28 +613,57 @@ final class ContainerFactory
             self::service($container, AuditRecorder::class),
             self::service($container, ClockInterface::class),
             self::service($container, AuthorizationGateway::class),
+            self::service($container, JobExecutionScope::class),
         ), true);
+        $container->share(MigrationPlan::class, static fn (Container $container): MigrationPlan =>
+            new MigrationPlan(
+                [
+                    new CoreSchemaMigration(self::service($container, TableNames::class)),
+                    new ApplicationAuthorizationMigration(self::service($container, TableNames::class)),
+                    new JobRecoveryMigration(self::service($container, TableNames::class)),
+                    new IdempotencyLeaseNullabilityMigration(self::service($container, TableNames::class)),
+                    new AuthorizationRecoveryIntegrationMigration(self::service($container, TableNames::class)),
+                    new TokenAndTrustLifecycleMigration(
+                        self::service($container, TableNames::class),
+                        $root . '/extensions',
+                    ),
+                    new SiteAutomationContextMigration(self::service($container, TableNames::class)),
+                    new IsolateThemeSurfacesMigration(self::service($container, TableNames::class)),
+                    new InstallationGlobalAutomationMigration(self::service($container, TableNames::class)),
+                    new ContentModelRuntimeMigration(self::service($container, TableNames::class)),
+                ],
+                [
+                    // Previously distributed builds used a DBAL-equivalent static-analysis rewrite, then
+                    // included a later ownership backfill here. The immutable source is restored;
+                    // AuthorizationRecoveryIntegrationMigration owns and verifies the idempotent postcondition.
+                    JobRecoveryMigration::ID => [
+                        '5e55e74ae3027ecc5d4843e045cf19a3e07d0b7be1f2ce556807bb67eda61947',
+                        '4d7fc30104c21bda0c00947fb82bce1333daa0d542e7292ee4e96bbda1c83b5d',
+                    ],
+                ],
+            ), true);
         $container->share(MigrationRunner::class, static fn (Container $container): MigrationRunner =>
             new MigrationRunner(
                 database: self::service($container, Connection::class),
                 repository: self::service($container, MigrationRepository::class),
                 lock: self::service($container, MigrationLock::class),
                 transactions: self::service($container, TransactionManager::class),
-                migrations: [
-                    new CoreSchemaMigration(self::service($container, TableNames::class)),
-                    new ApplicationAuthorizationMigration(self::service($container, TableNames::class)),
-                    new JobRecoveryMigration(self::service($container, TableNames::class)),
-                    new IdempotencyLeaseNullabilityMigration(self::service($container, TableNames::class)),
-                ],
+                plan: self::service($container, MigrationPlan::class),
                 authorization: self::service($container, AuthorizationGateway::class),
+                nonTransactionalRecovery: self::service($container, NonTransactionalMigrationRecovery::class),
             ), true);
         $container->share(ReadinessProbe::class, static fn (Container $container): ReadinessProbe =>
             new ReadinessProbe(
                 database: self::service($container, Connection::class),
                 logger: self::service($container, LoggerInterface::class),
                 tables: self::service($container, TableNames::class),
-                requiredMigration: IdempotencyLeaseNullabilityMigration::ID,
+                migrations: self::service($container, MigrationRepository::class),
+                plan: self::service($container, MigrationPlan::class),
+                recovery: self::service($container, NonTransactionalMigrationRecovery::class),
                 redis: self::service($container, RedisRuntime::class),
+                trust: self::service($container, TrustStore::class),
+                runtime: self::service($container, ExtensionRuntimeMapCompiler::class),
+                materialization: self::service($container, RuntimeMaterializationState::class),
             ), true);
     }
 
@@ -494,30 +674,43 @@ final class ContainerFactory
     ): void {
         $container->share(ResponseFactoryInterface::class, new ResponseFactory(), true);
         $container->share(StreamFactoryInterface::class, new StreamFactory(), true);
-        $container->share(FilesystemLoader::class, static function (
+        $container->share(IsolatedTwigEnvironmentFactory::class, static fn (
             Container $container,
-        ) use ($root): FilesystemLoader {
-            $loader = new FilesystemLoader();
-
-            foreach (self::service($container, ActiveExtensionSet::class)->templatePaths() as $path) {
-                $loader->addPath($path);
-            }
-
-            $loader->addPath($root . '/templates');
-
-            return $loader;
-        }, true);
-        $container->share(TwigEnvironment::class, static fn (Container $container): TwigEnvironment =>
-            new TwigEnvironment(
-                self::service($container, FilesystemLoader::class),
-                [
-                    'autoescape' => 'html',
-                    'cache' => $configuration->isProduction() ? $root . '/storage/cache/twig' : false,
-                    'strict_variables' => true,
-                ],
-            ), true);
+        ): IsolatedTwigEnvironmentFactory => new IsolatedTwigEnvironmentFactory(
+            self::service($container, ActiveExtensionSet::class),
+            $root . '/templates',
+            $root . '/storage/cache/twig',
+            $configuration->isProduction(),
+        ), true);
+        $container->share(SiteTwigEnvironment::class, static fn (
+            Container $container,
+        ): SiteTwigEnvironment => self::service($container, IsolatedTwigEnvironmentFactory::class)->site(
+            SiteContext::fromString($configuration->publicSite),
+        ), true);
+        $container->share(AdministratorTwigEnvironment::class, static fn (
+            Container $container,
+        ): AdministratorTwigEnvironment => self::service(
+            $container,
+            IsolatedTwigEnvironmentFactory::class,
+        )->administrator(), true);
+        $container->share(RecoveryAdministratorTwigEnvironment::class, static fn (
+            Container $container,
+        ): RecoveryAdministratorTwigEnvironment => self::service(
+            $container,
+            IsolatedTwigEnvironmentFactory::class,
+        )->recoveryAdministrator(), true);
+        $container->share(SiteRenderer::class, static fn (Container $container): SiteRenderer =>
+            new SiteRenderer(self::service($container, SiteTwigEnvironment::class)), true);
+        $container->share(RecoveryAdministratorRenderer::class, static fn (
+            Container $container,
+        ): RecoveryAdministratorRenderer => new RecoveryAdministratorRenderer(
+            self::service($container, RecoveryAdministratorTwigEnvironment::class),
+        ), true);
         $container->share(AdministratorRenderer::class, static fn (Container $container): AdministratorRenderer =>
-            new AdministratorRenderer(self::service($container, TwigEnvironment::class)), true);
+            new AdministratorRenderer(
+                self::service($container, AdministratorTwigEnvironment::class),
+                self::service($container, RecoveryAdministratorRenderer::class),
+            ), true);
         $container->share(RouterInterface::class, static fn (): RouterInterface =>
             new FastRouteRouter(null, null, [
                 'cache_enabled' => $configuration->isProduction(),
@@ -558,7 +751,7 @@ final class ContainerFactory
         }, true);
 
         $this->registerMiddleware($container, $configuration);
-        $this->registerHandlers($container);
+        $this->registerHandlers($container, $configuration, $root);
         $container->share(Application::class, function (Container $container): Application {
             $application = new Application(
                 self::service($container, MiddlewareFactoryInterface::class),
@@ -576,9 +769,16 @@ final class ContainerFactory
         Container $container,
         ApplicationConfiguration $configuration,
         string $root,
+        bool $loadRuntime,
     ): void {
         $mapFile = $root . '/storage/cache/extensions.json';
         $extensionRoot = $root . '/extensions';
+        $publicAssetRoot = $root . '/public/assets/extensions';
+        $keyRing = new RuntimePublicationKeyRing(
+            $configuration->runtimeSigningKeyId,
+            $configuration->runtimeSigningKey,
+            $configuration->runtimePreviousSigningKeys,
+        );
         $container->share(ArchiveReader::class, new ZipArchiveReader(), true);
         $container->share(PackageSafetyPolicy::class, new PackageSafetyPolicy(), true);
         $container->share(ExtensionMigrationRunner::class, static fn (
@@ -594,40 +794,106 @@ final class ContainerFactory
             self::service($container, Connection::class),
             self::service($container, TableNames::class),
             $mapFile,
-        ), true);
-        $container->share(DoctrineExtensionManager::class, static fn (
-            Container $container,
-        ): DoctrineExtensionManager => new DoctrineExtensionManager(
-            self::service($container, Connection::class),
-            self::service($container, TableNames::class),
             $extensionRoot,
-            $root . '/public/assets/extensions',
-            self::service($container, ArchiveReader::class),
-            self::service($container, PackageSafetyPolicy::class),
-            self::service($container, ExtensionMigrationRunner::class),
-            self::service($container, ExtensionRuntimeMapCompiler::class),
+            $publicAssetRoot,
+            self::service($container, ClockInterface::class),
+            new RuntimeIdentity(
+                $configuration->deploymentId,
+                $configuration->replicaId,
+                $configuration->processId,
+                $configuration->instanceId,
+            ),
+            $keyRing,
+            new RuntimeArtifactDigester(),
+        ), true);
+        $container->share(TrustRuntimeInvalidator::class, static fn (Container $container): TrustRuntimeInvalidator =>
+            self::service($container, ExtensionRuntimeMapCompiler::class), true);
+        $container->share(ExtensionArtifactVerifier::class, new FilesystemExtensionArtifactVerifier(
+            $extensionRoot,
+        ), true);
+        $container->share(TrustStore::class, static fn (Container $container): TrustStore => new TrustStore(
+            self::service($container, TrustStoreRepository::class),
+            self::service($container, TrustKeySignatureVerifier::class),
+            self::service($container, ExtensionArtifactVerifier::class),
+            self::service($container, TrustRuntimeInvalidator::class),
             self::service($container, TransactionManager::class),
             self::service($container, AuditRecorder::class),
             self::service($container, ClockInterface::class),
-            self::service($container, DispatcherInterface::class),
-            $configuration->allowUnsignedLocalExtensions,
             self::service($container, AuthorizationGateway::class),
-            self::service($container, ResourceSiteOwnershipWriter::class),
+            $configuration->allowUnsignedLocalExtensions,
+        ), true);
+        $container->share(ThemeActivationGuard::class, static fn (
+            Container $container,
+        ): ThemeActivationGuard => new DoctrineThemeActivationGuard(
+            self::service($container, Connection::class),
+            self::service($container, TableNames::class),
+            self::service($container, PasswordHasher::class),
+            self::service($container, AuthenticationRateLimiter::class),
+        ), true);
+        $container->share(DoctrineThemeMutationAuthorizer::class, static fn (
+            Container $container,
+        ): DoctrineThemeMutationAuthorizer => new DoctrineThemeMutationAuthorizer(
+            self::service($container, Connection::class),
+            self::service($container, TableNames::class),
+            self::service($container, AuthorizationGateway::class),
+        ), true);
+        $container->alias(ThemeMutationAuthorizer::class, DoctrineThemeMutationAuthorizer::class);
+        $container->share(ThemePackageValidator::class, new ThemePackageValidator($root . '/templates'), true);
+        $container->share(ExtensionRegistryFenceAllocator::class, static fn (
+            Container $container,
+        ): ExtensionRegistryFenceAllocator => new ExtensionRegistryFenceAllocator(
+            self::service($container, Connection::class),
+            self::service($container, TableNames::class),
+            self::service($container, ClockInterface::class),
         ), true);
         $container->share(ExtensionManager::class, static fn (Container $container): ExtensionManager =>
             new RedisLockedExtensionManager(
-                self::service($container, DoctrineExtensionManager::class),
+                new DoctrineExtensionManager(
+                    self::service($container, Connection::class),
+                    self::service($container, TableNames::class),
+                    $extensionRoot,
+                    $publicAssetRoot,
+                    self::service($container, ArchiveReader::class),
+                    self::service($container, PackageSafetyPolicy::class),
+                    self::service($container, ExtensionMigrationRunner::class),
+                    self::service($container, ExtensionRuntimeMapCompiler::class),
+                    self::service($container, TransactionManager::class),
+                    self::service($container, AuditRecorder::class),
+                    self::service($container, ClockInterface::class),
+                    self::service($container, DispatcherInterface::class),
+                    self::service($container, ThemeActivationGuard::class),
+                    self::service($container, ThemePackageValidator::class),
+                    self::service($container, ThemeMutationAuthorizer::class),
+                    self::service($container, TrustStore::class),
+                    self::service($container, AuthorizationGateway::class),
+                    self::service($container, ResourceSiteOwnershipWriter::class),
+                ),
                 self::service($container, RedisRuntime::class),
                 self::service($container, AuthorizationGateway::class),
+                self::service($container, ExtensionRegistryFenceAllocator::class),
+                self::service($container, TrustStore::class),
             ), true);
-        $active = (new ExtensionRuntimeLoader($mapFile, $extensionRoot))->load([
-            ContentService::class => self::service($container, ContentService::class),
-            ExtensionEventRegistrar::class => new JoomlaExtensionEventRegistrar(
-                self::service($container, DispatcherInterface::class),
-            ),
-            NavigationService::class => self::service($container, NavigationService::class),
-            SiteSettings::class => self::service($container, SiteSettings::class),
-        ]);
+        $container->alias(ExtensionInstallReconciler::class, ExtensionManager::class);
+        $compiler = self::service($container, ExtensionRuntimeMapCompiler::class);
+        $materialization = $compiler->inspectLocal();
+        $container->share(RuntimeMaterializationState::class, $materialization, true);
+        $active = $loadRuntime
+            && $materialization->trusted
+            && $materialization->publication !== null
+            ? (new ExtensionRuntimeLoader(
+                $materialization->publication,
+                $extensionRoot,
+                $keyRing,
+                self::service($container, TrustStore::class),
+            ))->load([
+                ContentService::class => self::service($container, ContentService::class),
+                ExtensionEventRegistrar::class => new JoomlaExtensionEventRegistrar(
+                    self::service($container, DispatcherInterface::class),
+                ),
+                NavigationService::class => self::service($container, NavigationService::class),
+                SiteSettings::class => self::service($container, SiteSettings::class),
+            ])
+            : new ActiveExtensionSet(self::service($container, TrustStore::class));
         $container->share(ActiveExtensionSet::class, $active, true);
     }
 
@@ -670,7 +936,26 @@ final class ContainerFactory
                 self::service($container, ContentService::class),
                 self::service($container, AccessControlRepository::class),
                 self::service($container, TokenDelegationPreauthorizer::class),
+                self::service($container, TokenRotationPreauthorizer::class),
+                self::service($container, ContentModelRepository::class),
             ),
+        ), true);
+        $container->share(SecretOnceIdempotencyMiddleware::class, static fn (
+            Container $container,
+        ): SecretOnceIdempotencyMiddleware => new SecretOnceIdempotencyMiddleware(
+            self::service($container, Connection::class),
+            self::service($container, TableNames::class),
+            self::service($container, ClockInterface::class),
+            self::service($container, ProblemDetailsResponseFactory::class),
+            new HttpMutationPreauthorizer(
+                self::service($container, AuthorizationGateway::class),
+                self::service($container, ContentService::class),
+                self::service($container, AccessControlRepository::class),
+                self::service($container, TokenDelegationPreauthorizer::class),
+                self::service($container, TokenRotationPreauthorizer::class),
+                self::service($container, ContentModelRepository::class),
+            ),
+            self::service($container, TransactionManager::class),
         ), true);
         $container->share(RequireIfMatchMiddleware::class, static function (
             Container $container,
@@ -723,19 +1008,25 @@ final class ContainerFactory
         $container->share(DispatchMiddleware::class, new DispatchMiddleware(), true);
     }
 
-    private function registerHandlers(Container $container): void
-    {
+    private function registerHandlers(
+        Container $container,
+        ApplicationConfiguration $configuration,
+        string $root,
+    ): void {
         $container->share(HomePageHandler::class, static fn (Container $container): HomePageHandler =>
             new HomePageHandler(
                 self::service($container, ContentService::class),
                 self::service($container, SiteSettings::class),
-                self::service($container, TwigEnvironment::class),
+                self::service($container, SiteRenderer::class),
+                SiteContext::fromString($configuration->publicSite),
             ), true);
         $container->share(LivenessHandler::class, new LivenessHandler(), true);
         $container->share(ApiIndexHandler::class, new ApiIndexHandler(), true);
         $container->share(NotFoundHandler::class, new NotFoundHandler(), true);
         $container->share(ReadinessHandler::class, static fn (Container $container): ReadinessHandler =>
-            new ReadinessHandler(self::service($container, ReadinessProbe::class)), true);
+            new ReadinessHandler(new LocalRuntimeReadinessProbe(
+                self::service($container, ExtensionRuntimeMapCompiler::class),
+            )), true);
         $container->share(RobotsHandler::class, static fn (Container $container): RobotsHandler =>
             new RobotsHandler(self::service($container, SiteSettings::class)), true);
         $container->share(SafePlanFactory::class, static fn (Container $container): SafePlanFactory =>
@@ -759,12 +1050,17 @@ final class ContainerFactory
             self::service($container, ContentService::class),
             self::service($container, ContentApiResponder::class),
         ), true);
+        $container->share(ContentModelApiHandler::class, static fn (
+            Container $container,
+        ): ContentModelApiHandler => new ContentModelApiHandler(
+            self::service($container, ContentModelService::class),
+            self::service($container, ContentApiResponder::class),
+        ), true);
         $container->share(ContentTransitionHandler::class, static fn (
             Container $container,
         ): ContentTransitionHandler => new ContentTransitionHandler(
             self::service($container, ContentService::class),
             self::service($container, ContentApiResponder::class),
-            self::service($container, ContentTransitionAuthorizer::class),
         ), true);
         $container->share(ContentRestoreHandler::class, static fn (
             Container $container,
@@ -777,7 +1073,17 @@ final class ContainerFactory
         ): PublishedContentHandler => new PublishedContentHandler(
             self::service($container, ContentService::class),
             self::service($container, SiteSettings::class),
-            self::service($container, TwigEnvironment::class),
+            self::service($container, SiteRenderer::class),
+            SiteContext::fromString($configuration->publicSite),
+        ), true);
+        $container->share(ExtensionAssetHandler::class, static fn (
+            Container $container,
+        ): ExtensionAssetHandler => new ExtensionAssetHandler(
+            self::service($container, Connection::class),
+            self::service($container, TableNames::class),
+            self::service($container, ClockInterface::class),
+            self::service($container, StreamFactoryInterface::class),
+            $root . '/public/assets/extensions',
         ), true);
         $configuration = self::service($container, ApplicationConfiguration::class);
         $secureCookie = parse_url($configuration->baseUrl, PHP_URL_SCHEME) === 'https';
@@ -806,6 +1112,13 @@ final class ContainerFactory
             Container $container,
         ): AdministratorContentEditorHandler => new AdministratorContentEditorHandler(
             self::service($container, ContentService::class),
+            self::service($container, ContentModelService::class),
+            self::service($container, AdministratorRenderer::class),
+        ), true);
+        $container->share(AdministratorContentModelsHandler::class, static fn (
+            Container $container,
+        ): AdministratorContentModelsHandler => new AdministratorContentModelsHandler(
+            self::service($container, ContentModelService::class),
             self::service($container, AdministratorRenderer::class),
         ), true);
         $container->share(AdministratorCreateContentHandler::class, static fn (
@@ -822,7 +1135,6 @@ final class ContainerFactory
             Container $container,
         ): AdministratorTransitionContentHandler => new AdministratorTransitionContentHandler(
             self::service($container, ContentService::class),
-            self::service($container, ContentTransitionAuthorizer::class),
         ), true);
         $container->share(AdministratorTrashContentHandler::class, static fn (
             Container $container,
@@ -838,6 +1150,7 @@ final class ContainerFactory
             Container $container,
         ): AdministratorExtensionsHandler => new AdministratorExtensionsHandler(
             self::service($container, ExtensionManager::class),
+            self::service($container, TrustStore::class),
             self::service($container, AdministratorRenderer::class),
             dirname(__DIR__, 2) . '/storage/tmp',
         ), true);
@@ -845,6 +1158,7 @@ final class ContainerFactory
             Container $container,
         ): AdministratorExtensionActionHandler => new AdministratorExtensionActionHandler(
             self::service($container, ExtensionManager::class),
+            self::service($container, TrustStore::class),
         ), true);
         $container->share(AdministratorSettingsHandler::class, static fn (
             Container $container,
@@ -916,6 +1230,17 @@ final class ContainerFactory
         ): ExtensionApiHandler => new ExtensionApiHandler(
             self::service($container, ExtensionManager::class),
             self::service($container, ProblemDetailsResponseFactory::class),
+        ), true);
+        $container->share(TrustStoreApiHandler::class, static fn (
+            Container $container,
+        ): TrustStoreApiHandler => new TrustStoreApiHandler(
+            self::service($container, TrustStore::class),
+            self::service($container, ProblemDetailsResponseFactory::class),
+        ), true);
+        $container->share(TrustLifecycleMiddleware::class, static fn (
+            Container $container,
+        ): TrustLifecycleMiddleware => new TrustLifecycleMiddleware(
+            self::service($container, TrustStore::class),
         ), true);
         $container->share(AutomationApiHandler::class, static fn (
             Container $container,
@@ -1012,6 +1337,16 @@ final class ContainerFactory
             [AdministratorCsrfMiddleware::class, AdministratorRestoreContentHandler::class],
             'administrator.content.restore',
         ), 'content.restore');
+        self::administratorRoute($application->get(
+            '/administrator/content-models',
+            AdministratorContentModelsHandler::class,
+            'administrator.content-models',
+        ), 'content.read');
+        self::administratorRoute($application->post(
+            '/administrator/content-models',
+            [AdministratorCsrfMiddleware::class, AdministratorContentModelsHandler::class],
+            'administrator.content-models.update',
+        ), 'content.update');
         self::administratorRoute($application->post(
             '/administrator/logout',
             [AdministratorCsrfMiddleware::class, AdministratorLogoutHandler::class],
@@ -1073,6 +1408,7 @@ final class ContainerFactory
             'administrator.automation.update',
         ), 'automation.manage');
         $application->get('/pages/{slug}', PublishedContentHandler::class, 'site.content.page');
+        $application->get('/assets/extensions/{path:.+}', ExtensionAssetHandler::class, 'site.extension.asset');
         $application->get('/api/v1', ApiIndexHandler::class, 'api.v1.index');
 
         $contentCollection = $application->get(
@@ -1162,6 +1498,38 @@ final class ContainerFactory
             BearerAuthenticationMiddleware::OPTION_AUTHENTICATION => 'bearer',
             BearerAuthenticationMiddleware::OPTION_REQUIRED_CAPABILITIES => ['content.restore'],
         ]);
+
+        foreach (['content-types', 'workflows'] as $model) {
+            self::apiRoute($application->get(
+                '/api/v1/' . $model,
+                ContentModelApiHandler::class,
+                'api.v1.' . $model . '.list',
+            ), 'content.read');
+            self::apiRoute($application->post(
+                '/api/v1/' . $model,
+                [
+                    RequireIdempotencyKeyMiddleware::class,
+                    PersistentIdempotencyMiddleware::class,
+                    ContentModelApiHandler::class,
+                ],
+                'api.v1.' . $model . '.create',
+            ), 'content.update');
+            self::apiRoute($application->get(
+                '/api/v1/' . $model . '/{id}',
+                ContentModelApiHandler::class,
+                'api.v1.' . $model . '.read',
+            ), 'content.read');
+            self::apiRoute($application->patch(
+                '/api/v1/' . $model . '/{id}',
+                [
+                    RequireIdempotencyKeyMiddleware::class,
+                    PersistentIdempotencyMiddleware::class,
+                    RequireIfMatchMiddleware::class,
+                    ContentModelApiHandler::class,
+                ],
+                'api.v1.' . $model . '.update',
+            ), 'content.update');
+        }
 
         self::apiRoute($application->get(
             '/api/v1/menus',
@@ -1274,6 +1642,30 @@ final class ContainerFactory
             ExtensionApiHandler::class,
             'api.v1.extensions.list',
         ), 'extensions.manage');
+        self::apiRoute($application->get(
+            '/api/v1/extension-trust-keys',
+            TrustStoreApiHandler::class,
+            'api.v1.extension-trust-keys.list',
+        ), 'extensions.manage');
+        foreach (
+            [
+            ['POST', '/api/v1/extension-trust-keys', 'api.v1.extension-trust-keys.create'],
+            ['POST', '/api/v1/extension-trust-keys/{keyId}/rotate', 'api.v1.extension-trust-keys.rotate'],
+            ['DELETE', '/api/v1/extension-trust-keys/{keyId}', 'api.v1.extension-trust-keys.revoke'],
+            ] as [$method, $path, $name]
+        ) {
+            self::apiRoute($application->route(
+                $path,
+                [
+                    TrustLifecycleMiddleware::class,
+                    RequireIdempotencyKeyMiddleware::class,
+                    PersistentIdempotencyMiddleware::class,
+                    TrustStoreApiHandler::class,
+                ],
+                [$method],
+                $name,
+            ), 'extensions.manage');
+        }
         foreach (
             [
             ['POST', '/api/v1/extensions/{vendor}/{name}/activate', 'api.v1.extensions.activate'],
@@ -1284,6 +1676,7 @@ final class ContainerFactory
             self::apiRoute($application->route(
                 $path,
                 [
+                    TrustLifecycleMiddleware::class,
                     RequireIdempotencyKeyMiddleware::class,
                     PersistentIdempotencyMiddleware::class,
                     ExtensionApiHandler::class,
@@ -1303,13 +1696,18 @@ final class ContainerFactory
             ['DELETE', '/api/v1/grants/{grantId}', 'api.v1.role-grants.revoke'],
             ['POST', '/api/v1/tokens', 'api.v1.tokens.create'],
             ['DELETE', '/api/v1/tokens/{tokenId}', 'api.v1.tokens.revoke'],
+            ['POST', '/api/v1/tokens/{tokenId}/rotate', 'api.v1.tokens.rotate'],
+            ['DELETE', '/api/v1/users/{id}/tokens', 'api.v1.tokens.emergency-revoke'],
+            ['DELETE', '/api/v1/users/{id}/tokens/emergency', 'api.v1.tokens.emergency-revoke-all'],
             ] as [$method, $path, $name]
         ) {
             self::apiRoute($application->route(
                 $path,
                 [
                     RequireIdempotencyKeyMiddleware::class,
-                    PersistentIdempotencyMiddleware::class,
+                    in_array($name, ['api.v1.tokens.create', 'api.v1.tokens.rotate'], true)
+                        ? SecretOnceIdempotencyMiddleware::class
+                        : PersistentIdempotencyMiddleware::class,
                     AccessControlApiHandler::class,
                 ],
                 [$method],
@@ -1388,6 +1786,10 @@ final class ContainerFactory
 
         $mcpRoute = $application->route('/mcp', McpHttpHandler::class, ['GET', 'POST', 'DELETE'], 'mcp');
         self::apiRoute($mcpRoute);
+        $mcpRoute->setOptions(array_replace($mcpRoute->getOptions(), [
+            BearerAuthenticationMiddleware::OPTION_TOKEN_AUDIENCE => 'kumwe-mcp',
+            BearerAuthenticationMiddleware::OPTION_TOKEN_PURPOSE => 'mcp',
+        ]));
         $application->route('/mcp', McpHttpHandler::class, ['OPTIONS'], 'mcp.options');
         self::service($container, ActiveExtensionSet::class)->registerRoutes($application);
     }
@@ -1395,6 +1797,24 @@ final class ContainerFactory
     private function registerConsole(Container $container, object $kernelProof): void
     {
         $provenance = $kernelProof;
+        $recoveryCapability = new \stdClass();
+        $container->share(AdministratorThemeRecovery::class, static fn (
+            Container $container,
+        ): AdministratorThemeRecovery => new ConsoleAdministratorThemeRecovery(
+            new DoctrineAdministratorThemeRecovery(
+                self::service($container, Connection::class),
+                self::service($container, TableNames::class),
+                self::service($container, TransactionManager::class),
+                self::service($container, AuditRecorder::class),
+                self::service($container, ClockInterface::class),
+                self::service($container, ExtensionRuntimeMapCompiler::class),
+                $recoveryCapability,
+            ),
+            self::service($container, RedisRuntime::class),
+            self::service($container, ExtensionRegistryFenceAllocator::class),
+            self::service($container, TrustStore::class),
+            $recoveryCapability,
+        ), true);
         $container->share(PurgeAdministratorSessionsHandler::class, static fn (
             Container $container,
         ): PurgeAdministratorSessionsHandler => new PurgeAdministratorSessionsHandler(
@@ -1410,6 +1830,7 @@ final class ContainerFactory
             Container $container,
         ): PurgeIdempotencyRecordsHandler => new PurgeIdempotencyRecordsHandler(
             self::service($container, IdempotencyPurger::class),
+            self::service($container, AuthorizationGateway::class),
         ), true);
         $container->share(RebuildExtensionMapHandler::class, static fn (
             Container $container,
@@ -1429,22 +1850,49 @@ final class ContainerFactory
                 self::service($container, RebuildExtensionMapHandler::class),
                 self::service($container, TransitionContentHandler::class),
             ]), true);
+        $container->share(GlobalJobPrincipals::class, static fn (): GlobalJobPrincipals => new GlobalJobPrincipals(
+            SystemPrincipal::issue($provenance, SystemIdentity::InstallationMaintenance),
+            SystemPrincipal::issue($provenance, SystemIdentity::ExtensionMaterializer),
+        ), true);
         $container->share(Worker::class, static fn (Container $container): Worker => new Worker(
             self::service($container, JobQueue::class),
             self::service($container, JobHandlerRegistry::class),
             self::service($container, AuthorizationGateway::class),
+            self::service($container, ResourceSiteOwnership::class),
+            SystemPrincipal::issue($provenance, SystemIdentity::Worker),
+            self::service($container, JobExecutionScope::class),
+            self::service($container, GlobalJobPrincipals::class),
         ), true);
         $container->share(Output::class, static fn (): Output => StreamOutput::standard(), true);
         $container->share(MigrateCommand::class, static fn (Container $container): MigrateCommand =>
             new MigrateCommand(
                 self::service($container, MigrationRunner::class),
+                self::service($container, ExtensionRuntimeMapCompiler::class),
                 SystemPrincipal::issue($provenance, SystemIdentity::Migration),
             ), true);
+        $container->share(MaterializeExtensionRuntimeCommand::class, static fn (
+            Container $container,
+        ): MaterializeExtensionRuntimeCommand => new MaterializeExtensionRuntimeCommand(
+            self::service($container, ExtensionRuntimeMapCompiler::class),
+            self::service($container, ExtensionInstallReconciler::class),
+        ), true);
+        $container->share(WatchExtensionRuntimeCommand::class, static fn (
+            Container $container,
+        ): WatchExtensionRuntimeCommand => new WatchExtensionRuntimeCommand(
+            self::service($container, ExtensionRuntimeMapCompiler::class),
+            self::service($container, ExtensionInstallReconciler::class),
+        ), true);
         $container->share(MigrationStatusCommand::class, static fn (Container $container): MigrationStatusCommand =>
             new MigrationStatusCommand(
                 self::service($container, MigrationRunner::class),
                 SystemPrincipal::issue($provenance, SystemIdentity::Migration),
             ), true);
+        $container->share(RecoverMigrationLockCommand::class, static fn (
+            Container $container,
+        ): RecoverMigrationLockCommand => new RecoverMigrationLockCommand(
+            self::service($container, MigrationLockRecoveryService::class),
+            SystemPrincipal::issue($provenance, SystemIdentity::Migration),
+        ), true);
         $container->share(HealthCheckCommand::class, static fn (Container $container): HealthCheckCommand =>
             new HealthCheckCommand(self::service($container, ReadinessProbe::class)), true);
         $container->share(CreateAdministratorCommand::class, static fn (
@@ -1489,15 +1937,24 @@ final class ContainerFactory
             self::service($container, ExtensionManager::class),
             self::service($container, ConsoleAuthorizer::class),
         ), true);
+        $container->share(RecoverAdministratorThemeCommand::class, static fn (
+            Container $container,
+        ): RecoverAdministratorThemeCommand => new RecoverAdministratorThemeCommand(
+            self::service($container, AdministratorThemeRecovery::class),
+        ), true);
         $container->share(QueueWorkCommand::class, static fn (Container $container): QueueWorkCommand =>
             new QueueWorkCommand(
                 self::service($container, Worker::class),
                 SystemPrincipal::issue($provenance, SystemIdentity::Worker),
+                self::service($container, ExtensionRuntimeMapCompiler::class),
+                self::service($container, RuntimeMaterializationState::class),
             ), true);
         $container->share(ScheduleRunCommand::class, static fn (Container $container): ScheduleRunCommand =>
             new ScheduleRunCommand(
                 self::service($container, Scheduler::class),
                 SystemPrincipal::issue($provenance, SystemIdentity::Scheduler),
+                self::service($container, ExtensionRuntimeMapCompiler::class),
+                self::service($container, RuntimeMaterializationState::class),
             ), true);
         $container->share(ConsoleAuthorizer::class, static fn (Container $container): ConsoleAuthorizer =>
             new ConsoleAuthorizer(self::service($container, AccessTokenVerifier::class)), true);
@@ -1511,8 +1968,13 @@ final class ContainerFactory
             new ManageContentCommand(
                 self::service($container, ContentService::class),
                 self::service($container, ConsoleAuthorizer::class),
-                self::service($container, ContentTransitionAuthorizer::class),
             ), true);
+        $container->share(ManageContentModelsCommand::class, static fn (
+            Container $container,
+        ): ManageContentModelsCommand => new ManageContentModelsCommand(
+            self::service($container, ContentModelService::class),
+            self::service($container, ConsoleAuthorizer::class),
+        ), true);
         $container->share(ManageNavigationCommand::class, static fn (
             Container $container,
         ): ManageNavigationCommand => new ManageNavigationCommand(
@@ -1527,8 +1989,15 @@ final class ContainerFactory
         $container->share(ManageAccessCommand::class, static fn (Container $container): ManageAccessCommand =>
             new ManageAccessCommand(
                 self::service($container, AccessControlService::class),
+                self::service($container, AdministratorIdentityGateway::class),
                 self::service($container, ConsoleAuthorizer::class),
             ), true);
+        $container->share(ManageTrustStoreCommand::class, static fn (
+            Container $container,
+        ): ManageTrustStoreCommand => new ManageTrustStoreCommand(
+            self::service($container, TrustStore::class),
+            self::service($container, ConsoleAuthorizer::class),
+        ), true);
         $container->share(McpServeCommand::class, static fn (Container $container): McpServeCommand =>
             new McpServeCommand(
                 self::service($container, KumweMcpServerFactory::class),
@@ -1539,7 +2008,10 @@ final class ContainerFactory
         $container->share(ConsoleApplication::class, static fn (Container $container): ConsoleApplication =>
             new ConsoleApplication([
                 self::service($container, MigrateCommand::class),
+                self::service($container, MaterializeExtensionRuntimeCommand::class),
+                self::service($container, WatchExtensionRuntimeCommand::class),
                 self::service($container, MigrationStatusCommand::class),
+                self::service($container, RecoverMigrationLockCommand::class),
                 self::service($container, HealthCheckCommand::class),
                 self::service($container, CreateAdministratorCommand::class),
                 self::service($container, CreateAccessTokenCommand::class),
@@ -1548,13 +2020,16 @@ final class ContainerFactory
                 self::service($container, ActivateExtensionCommand::class),
                 self::service($container, DisableExtensionCommand::class),
                 self::service($container, UninstallExtensionCommand::class),
+                self::service($container, RecoverAdministratorThemeCommand::class),
                 self::service($container, QueueWorkCommand::class),
                 self::service($container, ScheduleRunCommand::class),
                 self::service($container, ManageAutomationCommand::class),
                 self::service($container, ManageContentCommand::class),
+                self::service($container, ManageContentModelsCommand::class),
                 self::service($container, ManageNavigationCommand::class),
                 self::service($container, ManageSettingsCommand::class),
                 self::service($container, ManageAccessCommand::class),
+                self::service($container, ManageTrustStoreCommand::class),
                 self::service($container, McpServeCommand::class),
             ], self::service($container, Output::class)), true);
     }
@@ -1567,6 +2042,7 @@ final class ContainerFactory
                 self::service($container, Connection::class),
                 self::service($container, TableNames::class),
                 self::service($container, ClockInterface::class),
+                self::service($container, TransactionManager::class),
             ), true);
         $container->share(SessionStoreInterface::class, static fn (Container $container): SessionStoreInterface =>
             new FileSessionStore(
@@ -1582,11 +2058,13 @@ final class ContainerFactory
                 self::service($container, AccessControlService::class),
                 self::service($container, SiteSettings::class),
                 self::service($container, ExtensionManager::class),
+                self::service($container, TrustStore::class),
+                self::service($container, AdministratorIdentityGateway::class),
                 self::service($container, AutomationManagementService::class),
-                self::service($container, ContentTransitionAuthorizer::class),
                 self::service($container, McpMutationGuard::class),
                 self::service($container, ClockInterface::class),
                 self::service($container, AuthorizationGateway::class),
+                self::service($container, TokenRotationPreauthorizer::class),
             ), true);
         $container->share(KumweMcpServerFactory::class, static fn (Container $container): KumweMcpServerFactory =>
             new KumweMcpServerFactory(
@@ -1607,6 +2085,8 @@ final class ContainerFactory
         $route->setOptions([
             BearerAuthenticationMiddleware::OPTION_AUTHENTICATION => 'bearer',
             BearerAuthenticationMiddleware::OPTION_REQUIRED_CAPABILITIES => $capabilities,
+            BearerAuthenticationMiddleware::OPTION_TOKEN_AUDIENCE => 'kumwe-http',
+            BearerAuthenticationMiddleware::OPTION_TOKEN_PURPOSE => 'api',
         ]);
     }
 

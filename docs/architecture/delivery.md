@@ -7,9 +7,9 @@ Kumwe exposes application capabilities through four operator-facing surfaces:
 | Surface | Primary users | Security boundary |
 |---|---|---|
 | Administrator | Editors and site administrators | Session, CSRF token, capability grants |
-| CLI | Installers, operators, workers | Capability token file for management; protected host identity for bootstrap and process commands |
-| REST | Applications and automation | Bearer token, scoped capabilities, ETags, idempotency keys |
-| MCP | Approved AI clients and local tools | Bearer token for HTTP or protected token file for stdio, protocol checks |
+| CLI | Installers, operators, workers | Explicit `--site`, capability token file for management; protected host identity for bootstrap and process commands |
+| REST | Applications and automation | Bearer token plus exact `Kumwe-Site`, scoped capabilities, ETags, idempotency keys |
+| MCP | Approved AI clients and local tools | Bearer token plus exact site for HTTP or protected token file plus `--site` for stdio, protocol checks |
 
 A core use case is complete only when every relevant surface either exposes it through the same application service or documents why that surface is intentionally read-only. Authorization is enforced in the application layer as well as at the route boundary; hiding a navigation link is not authorization.
 
@@ -17,7 +17,7 @@ A core use case is complete only when every relevant surface either exposes it t
 
 Users receive roles (shown as groups in the administrator), and roles receive capability grants. Grants can be global or scoped to a component or content type. The built-in capability catalog covers administrator access, content lifecycle actions, navigation, users and roles, settings, extensions, and automation.
 
-Every administrator route declares its required capability. Browser forms require a CSRF token. API tokens receive an explicit subset of the creating user's effective capabilities and are stored only as digests. Workflow transitions require their action-specific capability, so review, publish, unpublish, archive, and restore may be assigned separately.
+Every administrator route declares its required capability. Browser forms require a CSRF token. API tokens receive an explicit subset of the creating user's effective capabilities, are bound to one site and adapter purpose, and are stored only as digests. HTTP and CLI callers must repeat that exact site explicitly; host metadata is never an authority source. Workflow transitions require their action-specific capability, so review, publish, unpublish, archive, and restore may be assigned separately.
 
 ## Consistency and errors
 

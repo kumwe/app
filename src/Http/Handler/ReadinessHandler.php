@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Kumwe\CMS\Http\Handler;
 
-use Kumwe\CMS\Infrastructure\Persistence\ReadinessProbe;
+use Kumwe\CMS\Infrastructure\Persistence\ReadinessStatus;
 use Laminas\Diactoros\Response\JsonResponse;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -12,7 +12,7 @@ use Psr\Http\Server\RequestHandlerInterface;
 
 final readonly class ReadinessHandler implements RequestHandlerInterface
 {
-    public function __construct(private ReadinessProbe $probe)
+    public function __construct(private ReadinessStatus $probe)
     {
     }
 

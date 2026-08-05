@@ -26,6 +26,7 @@ final readonly class AdministratorCreateContentHandler implements RequestHandler
             AdministratorRequest::required($form, 'slug'),
             AdministratorRequest::contentData($form),
             AdministratorRequest::publicationWindow($form),
+            AdministratorRequest::required($form, 'content_type'),
         );
 
         return new RedirectResponse('/administrator/content/' . $entry->entry->id() . '/edit', 303);

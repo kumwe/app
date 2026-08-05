@@ -51,6 +51,8 @@ final readonly class CreateAccessTokenCommand implements Command
                 $this->required($options, 'name'),
                 $capabilities,
                 $expiresAt,
+                $options['audience'] ?? 'kumwe-http',
+                $options['purpose'] ?? 'api',
             );
             $output->line('Store this token now; Kumwe will not display it again:');
             $output->line($created['token']);

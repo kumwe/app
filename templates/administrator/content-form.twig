@@ -1,4 +1,4 @@
-{% extends "administrator/layout.twig" %}
+{% extends "layout.twig" %}
 {% block title %}{{ entry ? 'Edit ' ~ entry.title : 'Create page' }} · Kumwe{% endblock %}
 {% block content %}
   <div class="page-heading">
@@ -10,6 +10,17 @@
     <form action="{{ entry ? '/administrator/content/' ~ entry.id : '/administrator/content' }}" method="post" class="panel stack">
       <input type="hidden" name="_csrf" value="{{ csrf }}">
       {% if entry %}<input type="hidden" name="version" value="{{ entry.version }}">{% endif %}
+      {% if entry %}
+        <input type="hidden" name="content_type" value="{{ entry.content_type_id }}">
+      {% else %}
+        <label>Content type
+          <select name="content_type" required>
+            {% for type in content_types %}
+              <option value="{{ type.id }}">{{ type.name }} ({{ type.handle }})</option>
+            {% endfor %}
+          </select>
+        </label>
+      {% endif %}
       <label>Title
         <input type="text" name="title" maxlength="255" value="{{ entry.title|default('') }}" required>
       </label>
@@ -29,28 +40,11 @@
     {% if entry %}
       <aside class="panel stack">
         <div><p class="eyebrow">Workflow</p><h2>{{ entry.status|capitalize }}</h2><p>Version {{ entry.version }}</p></div>
-        {% set targets = {
-          'draft': ['review', 'archived'],
-          'review': ['draft', 'published', 'archived'],
-          'published': ['draft', 'archived'],
-          'archived': ['draft']
-        } %}
-        {% set transition_capability = {
-          'draft:review': 'content.submit',
-          'draft:archived': 'content.archive',
-          'review:draft': 'content.review',
-          'review:published': 'content.publish',
-          'review:archived': 'content.archive',
-          'published:draft': 'content.unpublish',
-          'published:archived': 'content.archive',
-          'archived:draft': 'content.restore'
-        } %}
-        {% for target in targets[entry.status] %}
-          {% set required = transition_capability[entry.status ~ ':' ~ target] %}
-          {% if capabilities[required] is defined %}
+        {% for transition in workflow.transitions %}
+          {% if transition.from == entry.status and capabilities[transition.required_capability] is defined %}
           <form action="/administrator/content/{{ entry.id }}/transition" method="post">
-            <input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="version" value="{{ entry.version }}"><input type="hidden" name="status" value="{{ target }}">
-            <button class="button full" type="submit">Move to {{ target|capitalize }}</button>
+            <input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="version" value="{{ entry.version }}"><input type="hidden" name="status" value="{{ transition.to }}">
+            <button class="button full" type="submit">Move to {{ transition.to|replace({'_': ' '})|title }}</button>
           </form>
           {% endif %}
         {% endfor %}

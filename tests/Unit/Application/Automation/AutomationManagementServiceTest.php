@@ -151,6 +151,7 @@ final class AutomationManagementServiceTest extends TestCase
             $audit ?? $this->createStub(AuditRecorder::class),
             $clock,
             AuthorizationContext::gateway(),
+            new \Kumwe\CMS\Application\Automation\JobExecutionScope(),
         );
     }
 

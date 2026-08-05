@@ -7,6 +7,8 @@ namespace Kumwe\CMS\Tests\Unit\Delivery\Console\Command;
 use DateTimeImmutable;
 use Kumwe\CMS\Application\Automation\JobHandler;
 use Kumwe\CMS\Application\Automation\JobHandlerRegistry;
+use Kumwe\CMS\Application\Automation\GlobalJobPrincipals;
+use Kumwe\CMS\Application\Automation\JobExecutionScope;
 use Kumwe\CMS\Application\Automation\JobQueue;
 use Kumwe\CMS\Application\Automation\StoredJob;
 use Kumwe\CMS\Application\Automation\Worker;
@@ -53,8 +55,21 @@ final class QueueWorkCommandTest extends TestCase
     /** @param list<JobHandler> $handlers */
     private function command(JobQueue $queue, array $handlers): QueueWorkCommand
     {
+        $ownership = AuthorizationContext::ownership();
+
         return new QueueWorkCommand(
-            new Worker($queue, new JobHandlerRegistry($handlers), AuthorizationContext::gateway()),
+            new Worker(
+                $queue,
+                new JobHandlerRegistry($handlers),
+                AuthorizationContext::gateway(ownership: $ownership),
+                $ownership,
+                AuthorizationContext::system(SystemIdentity::Worker),
+                new JobExecutionScope(),
+                new GlobalJobPrincipals(
+                    AuthorizationContext::system(SystemIdentity::InstallationMaintenance),
+                    AuthorizationContext::system(SystemIdentity::ExtensionMaterializer),
+                ),
+            ),
             AuthorizationContext::system(SystemIdentity::Worker),
         );
     }

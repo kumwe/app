@@ -10,11 +10,12 @@ This is the recommended reproducible deployment.
 
 ### 1. Prepare the release and secrets
 
-Obtain `compose.production.yaml` from the matching signed release. Create three independent secrets outside the project:
+Obtain `compose.production.yaml` from the matching signed release. Create four independent secrets outside the project:
 
 ```bash
 install -d -m 0700 /srv/kumwe/secrets
 openssl rand -base64 48 > /srv/kumwe/secrets/app-secret
+openssl rand -base64 48 > /srv/kumwe/secrets/runtime-signing-key
 openssl rand -base64 32 | tr -d '\n' > /srv/kumwe/secrets/database-password
 openssl rand -base64 32 | tr -d '\n' > /srv/kumwe/secrets/redis-password
 chmod 0600 /srv/kumwe/secrets/*
@@ -30,6 +31,9 @@ export KUMWE_BASE_URL=https://cms.example.org
 export KUMWE_TRUSTED_HOSTS=cms.example.org
 export KUMWE_TRUSTED_PROXIES=10.20.0.10
 export KUMWE_APP_SECRET_FILE=/srv/kumwe/secrets/app-secret
+export KUMWE_RUNTIME_SIGNING_KEY_FILE=/srv/kumwe/secrets/runtime-signing-key
+export KUMWE_DEPLOYMENT_ID=production-2-0-0
+export KUMWE_REPLICA_ID=cms-primary
 export KUMWE_DB_PASSWORD_FILE=/srv/kumwe/secrets/database-password
 export KUMWE_REDIS_PASSWORD_FILE=/srv/kumwe/secrets/redis-password
 ```
@@ -101,6 +105,10 @@ Requirements for a native installation:
 - writable `storage/` and `extensions/` for the PHP-FPM service account;
 - a web server whose only document root is `/srv/kumwe/public`;
 - separate long-running `queue:work` and `schedule:run --loop` services.
+
+Give each native long-running service a stable, distinct `KUMWE_PROCESS_ID` override (for example,
+`application-runtime`, `queue-worker`, and `scheduler`). Keep the generated deployment and replica
+identities stable for that deployment; concurrently running replicas must use distinct replica IDs.
 
 Composer scripts never run with a web-server identity or an unrestricted database administrator account. After installation, remove interactive shell access that is not operationally required and protect `.env` from the web server and backups according to the site's secret policy.
 

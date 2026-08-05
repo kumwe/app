@@ -30,10 +30,11 @@ final readonly class AdministratorAccessControlHandler implements RequestHandler
     public function handle(ServerRequestInterface $request): ResponseInterface
     {
         $session = AdministratorRequest::session($request);
+        $context = AdministratorRequest::context($request);
         $createdToken = null;
         if (strtoupper($request->getMethod()) === 'POST') {
             $form = AdministratorRequest::form($request);
-            $createdToken = $this->mutate(AdministratorRequest::context($request), $form);
+            $createdToken = $this->mutate($context, $form);
             if ($createdToken === null) {
                 return new RedirectResponse('/administrator/access?saved=1', 303);
             }
@@ -118,6 +119,21 @@ final readonly class AdministratorAccessControlHandler implements RequestHandler
             'token.revoke' => $this->after(function () use ($context, $form): void {
                 $this->access->revokeToken($context, AdministratorRequest::required($form, 'token_id'));
             }),
+            'token.rotate' => $this->identities->rotateAccessToken(
+                $context,
+                AdministratorRequest::required($form, 'token_id'),
+                AdministratorRequest::required($form, 'token_name'),
+                trim($form['expires_at'] ?? '') === ''
+                    ? null
+                    : new DateTimeImmutable($form['expires_at']),
+            ),
+            'token.emergency_revoke' => $this->after(function () use ($context, $form): void {
+                $this->access->emergencyRevokeAllSubjectTokens(
+                    $context,
+                    AdministratorRequest::required($form, 'user_id'),
+                    AdministratorRequest::required($form, 'reason'),
+                );
+            }),
             default => throw new InvalidArgumentException('The access-control action is not supported.'),
         };
     }
@@ -148,6 +164,8 @@ final readonly class AdministratorAccessControlHandler implements RequestHandler
             AdministratorRequest::required($form, 'token_name'),
             $capabilities,
             $expiresAt === '' ? null : new DateTimeImmutable($expiresAt),
+            $form['audience'] ?? 'kumwe-http',
+            $form['purpose'] ?? 'api',
         );
     }
 }

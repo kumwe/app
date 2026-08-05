@@ -57,6 +57,9 @@ final readonly class AccessControlApiHandler implements RequestHandlerInterface
                     ['Cache-Control' => 'no-store'],
                 ),
                 'tokens.revoke' => $this->revokeToken($request),
+                'tokens.rotate' => $this->rotateToken($request),
+                'tokens.emergency_revoke' => $this->revokeSubjectTokens($request),
+                'tokens.emergency_revoke_all' => $this->emergencyRevokeAllSubjectTokens($request),
                 default => throw new InvalidArgumentException('The identity operation is not supported.'),
             };
         } catch (Throwable $exception) {
@@ -92,6 +95,11 @@ final readonly class AccessControlApiHandler implements RequestHandlerInterface
             $path === '/api/v1/tokens' && $method === 'POST' => 'tokens.create',
             $path === '/api/v1/tokens' && $method === 'GET' => 'tokens.list',
             preg_match('#^/api/v1/tokens/[^/]+$#D', $path) === 1 && $method === 'DELETE' => 'tokens.revoke',
+            preg_match('#^/api/v1/tokens/[^/]+/rotate$#D', $path) === 1 && $method === 'POST' => 'tokens.rotate',
+            preg_match('#^/api/v1/users/[^/]+/tokens$#D', $path) === 1 && $method === 'DELETE' =>
+                'tokens.emergency_revoke',
+            preg_match('#^/api/v1/users/[^/]+/tokens/emergency$#D', $path) === 1 && $method === 'DELETE' =>
+                'tokens.emergency_revoke_all',
             default => throw new InvalidArgumentException('The identity operation is not supported.'),
         };
     }
@@ -206,9 +214,49 @@ final readonly class AccessControlApiHandler implements RequestHandlerInterface
             $this->string($body, 'name'),
             $capabilities,
             $expiresAt === null ? null : new DateTimeImmutable($expiresAt),
+            $this->optionalString($body, 'audience') ?? 'kumwe-http',
+            $this->optionalString($body, 'purpose') ?? 'api',
         );
 
+        $created['secret_returned'] = true;
+
         return new JsonResponse($created, 201, ['Cache-Control' => 'no-store']);
+    }
+
+    private function rotateToken(ServerRequestInterface $request): ResponseInterface
+    {
+        $body = $this->json($request);
+        $expiresAt = $this->optionalString($body, 'expires_at');
+        $created = $this->identities->rotateAccessToken(
+            ApiExecutionContext::fromRequest($request),
+            $this->route($request, 'tokenId'),
+            $this->string($body, 'name'),
+            $expiresAt === null ? null : new DateTimeImmutable($expiresAt),
+        );
+        $created['secret_returned'] = true;
+        return new JsonResponse($created, 201, ['Cache-Control' => 'no-store']);
+    }
+
+    private function revokeSubjectTokens(ServerRequestInterface $request): ResponseInterface
+    {
+        $body = $this->json($request);
+        $count = $this->access->revokeSubjectTokens(
+            ApiExecutionContext::fromRequest($request),
+            $this->route($request, 'id'),
+            $this->string($body, 'reason'),
+        );
+        return new JsonResponse(['revoked_tokens' => $count], 200, ['Cache-Control' => 'no-store']);
+    }
+
+    private function emergencyRevokeAllSubjectTokens(ServerRequestInterface $request): ResponseInterface
+    {
+        $body = $this->json($request);
+        $count = $this->access->emergencyRevokeAllSubjectTokens(
+            ApiExecutionContext::fromRequest($request),
+            $this->route($request, 'id'),
+            $this->string($body, 'reason'),
+        );
+        return new JsonResponse(['revoked_tokens' => $count], 200, ['Cache-Control' => 'no-store']);
     }
 
     private function revokeToken(ServerRequestInterface $request): ResponseInterface

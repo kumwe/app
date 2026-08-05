@@ -9,6 +9,8 @@ use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Types\Types;
 use InvalidArgumentException;
 use JsonException;
+use Kumwe\CMS\Application\Authorization\SiteContext;
+use Kumwe\CMS\Identity\Application\Authentication\AccessTokenContext;
 use Kumwe\CMS\Identity\Application\Authentication\AccessTokenVerifier;
 use Kumwe\CMS\Identity\Application\Authentication\AuthenticatedPrincipal;
 use Kumwe\CMS\Infrastructure\Persistence\TableNames;
@@ -24,21 +26,42 @@ final readonly class DoctrineAccessTokenVerifier implements AccessTokenVerifier
     ) {
     }
 
-    public function verify(string $token): ?AuthenticatedPrincipal
+    public function verify(
+        string $token,
+        string $audience = 'kumwe-http',
+        string $purpose = 'api',
+        string $siteIdentifier = 'default',
+    ): ?AuthenticatedPrincipal
     {
+        try {
+            $context = AccessTokenContext::fromStrings($audience, $purpose);
+            $siteIdentifier = SiteContext::fromString($siteIdentifier)->identifier();
+        } catch (InvalidArgumentException) {
+            return null;
+        }
         $length = strlen($token);
         if ($length < 32 || $length > 512 || preg_match('/^[A-Za-z0-9._~+\/-]+=*$/D', $token) !== 1) {
             return null;
         }
 
         $row = $this->database->fetchAssociative(sprintf(
-            'SELECT t.id, t.subject_id, t.capabilities, t.last_used_at, u.security_epoch FROM %s t '
+            'SELECT t.id, t.subject_id, t.capabilities, t.last_used_at, t.site_identifier, '
+            . 'u.security_epoch FROM %s t '
             . 'INNER JOIN %s u ON u.id = t.subject_id '
-            . "WHERE t.token_digest = ? AND t.revoked_at IS NULL AND "
-            . "(t.expires_at IS NULL OR t.expires_at > CURRENT_TIMESTAMP) AND u.status = 'active'",
+            . 'INNER JOIN %s s ON s.identifier = t.site_identifier '
+            . 'WHERE t.token_digest = ? AND t.revoked_at IS NULL AND t.expires_at > CURRENT_TIMESTAMP '
+            . "AND t.audience = ? AND t.purpose = ? AND t.site_identifier = ? "
+            . "AND t.security_epoch = u.security_epoch AND u.status = 'active' AND s.enabled = ?",
             $this->tables->quoted('api_tokens'),
             $this->tables->quoted('users'),
-        ), [hash('sha256', $token)]);
+            $this->tables->quoted('sites'),
+        ), [hash('sha256', $token), $context->audience, $context->purpose, $siteIdentifier, true], [
+            Types::STRING,
+            Types::STRING,
+            Types::STRING,
+            Types::STRING,
+            Types::BOOLEAN,
+        ]);
 
         if (
             $row === false

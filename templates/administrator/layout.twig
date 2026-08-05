@@ -6,14 +6,17 @@
   <meta name="color-scheme" content="light dark">
   <title>{% block title %}Kumwe Administrator{% endblock %}</title>
   <link rel="stylesheet" href="/assets/administrator.css">
+  <script src="/assets/administrator.js" defer></script>
 </head>
 <body>
   <header class="topbar">
     <a class="brand" href="/administrator">Kumwe</a>
     {% if csrf is defined %}
-      <nav aria-label="Administrator">
+      <button class="navigation-toggle" type="button" aria-label="Toggle navigation" aria-expanded="false" data-navigation-toggle>Menu</button>
+      <nav aria-label="Administrator" data-admin-navigation>
         {% if capabilities['content.read'] is defined %}<a href="/administrator">Content</a>{% endif %}
         {% if capabilities['content.create'] is defined %}<a href="/administrator/content/new">New page</a>{% endif %}
+        {% if capabilities['content.read'] is defined %}<a href="/administrator/content-models">Models</a>{% endif %}
         {% if capabilities['navigation.manage'] is defined %}<a href="/administrator/navigation">Menus</a>{% endif %}
         {% if capabilities['users.manage'] is defined %}<a href="/administrator/access">Users &amp; access</a>{% endif %}
         {% if capabilities['extensions.manage'] is defined %}<a href="/administrator/extensions">Extensions</a>{% endif %}

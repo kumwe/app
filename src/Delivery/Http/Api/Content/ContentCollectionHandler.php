@@ -40,6 +40,7 @@ final readonly class ContentCollectionHandler implements RequestHandlerInterface
                 ContentApiRequest::requiredString($body, 'slug'),
                 ContentApiRequest::data($body),
                 ContentApiRequest::publicationWindow($body),
+                ContentApiRequest::optionalString($body, 'content_type', ContentService::CORE_PAGE_TYPE_ID),
             );
 
             return $this->responder->record($record, 201, [

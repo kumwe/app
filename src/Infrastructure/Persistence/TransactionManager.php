@@ -12,4 +12,10 @@ interface TransactionManager
      * @return T
      */
     public function transactional(callable $operation): mixed;
+
+    /** Runs after the outermost transaction commits, or immediately when no transaction is active. */
+    public function afterCommit(callable $operation): void;
+
+    /** Runs if the transaction scope that registered it rolls back. */
+    public function afterRollback(callable $operation): void;
 }

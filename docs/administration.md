@@ -9,6 +9,7 @@ Production sessions use secure, HTTP-only, same-site cookies. Every browser muta
 The administrator navigation links to:
 
 - **Content:** page list, editor, workflow actions, trash, and restore;
+- **Content models:** versioned content-type schemas and workflow definitions;
 - **Navigation:** menus and nested menu items;
 - **Users and access:** users, groups, capability grants, assignments, and API/MCP tokens;
 - **Extensions:** package upload, activation, disable, and uninstall;
@@ -35,7 +36,7 @@ Each edit creates an immutable revision and audit event. The built-in workflow s
 | Trash | Any active state | Trashed | `content.delete` |
 | Restore trash | Trashed | Draft | `content.restore` |
 
-The editor displays only valid actions for the current state. Public page URLs are `/pages/{slug}`. Slugs are unique within the page type and use lowercase letters, numbers, and hyphens.
+The editor displays only valid actions for the current state. Public page URLs are `/pages/{slug}`. Slugs are unique within the selected site and use lowercase letters, numbers, and hyphens.
 
 Pages store a title, slug, workflow state, optional publication window, and structured JSON data. A basic page commonly uses:
 
@@ -47,6 +48,8 @@ Pages store a title, slug, workflow state, optional publication window, and stru
 ```
 
 Templates decide how fields render. Apply an organization-approved rich-text sanitization policy to any custom editor that stores HTML.
+
+Open **Content models** to create content types and workflows or publish a new version of an existing definition. Content types declare their JSON field schema and select a workflow version. Workflows declare states, their public visibility, and capability-protected transitions. The content editor validates its structured JSON against the pinned schema and renders the valid transitions from the pinned workflow. A definition update never changes the meaning of existing content; incompatible field or state removal requires an explicit breaking-change confirmation and still creates a new immutable version.
 
 ## Menus and navigation
 
@@ -97,7 +100,7 @@ Database credentials, Redis credentials, trusted proxies, application secrets, r
 
 Open **Extensions** to upload an extension ZIP, inspect installed versions, activate or disable an extension, or uninstall it. Production accepts packages signed by an enabled trusted key. Development may allow unsigned local packages with `EXTENSIONS_ALLOW_UNSIGNED_LOCAL=true`.
 
-Activation stages files outside the public root, applies declared migrations, updates the registry, and rebuilds the runtime map. Activating a template disables the previous active template. Restart long-running workers after any activation or removal.
+Installation stages files outside the public root, applies checksum-bound declared migrations, records the disabled release, and publishes an immutable runtime generation. Activation is a separate operation. Site theme selection is owned by the selected site; the administrator theme is installation-wide. Replacing one assignment disables the previous theme only when no other site or surface still uses it. Administrator-theme activation, disablement, and uninstall require current-password step-up authentication. Active themes must be disabled for every assigned site or surface before upgrade. Replicas reconcile the authoritative database publication at startup and remain unready until the locally loaded generation is trusted and current. Restart long-running workers after any activation or removal.
 
 See [Extension development](extensions.md) and [Template development](templates.md).
 

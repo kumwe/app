@@ -4,17 +4,22 @@ declare(strict_types=1);
 
 namespace Kumwe\CMS\Delivery\Console\Command;
 
+use DateTimeImmutable;
 use Kumwe\CMS\Application\Authorization\ExecutionContext;
 use Kumwe\CMS\Delivery\Console\Command;
 use Kumwe\CMS\Delivery\Console\Output;
 use Kumwe\CMS\Identity\Application\Administration\AccessControlService;
+use Kumwe\CMS\Identity\Application\Administration\AdministratorIdentityGateway;
 use Kumwe\CMS\Identity\Domain\UserStatus;
 use Throwable;
 
 final readonly class ManageAccessCommand implements Command
 {
-    public function __construct(private AccessControlService $access, private ConsoleAuthorizer $authorization)
-    {
+    public function __construct(
+        private AccessControlService $access,
+        private AdministratorIdentityGateway $identities,
+        private ConsoleAuthorizer $authorization,
+    ) {
     }
 
     public function name(): string
@@ -64,6 +69,9 @@ final readonly class ManageAccessCommand implements Command
                 )],
                 'revoke-grant' => $this->revokeGrant($options, $context),
                 'revoke-token' => $this->revokeToken($options, $context),
+                'rotate-token' => $this->rotateToken($options, $context),
+                'revoke-user-tokens' => $this->revokeUserTokens($options, $context),
+                'emergency-revoke-user-tokens' => $this->emergencyRevokeUserTokens($options, $context),
                 default => throw new \InvalidArgumentException('Unsupported access action.'),
             };
             $output->line(CommandInput::render($result));
@@ -127,6 +135,44 @@ final readonly class ManageAccessCommand implements Command
     {
         $this->access->revokeToken($context, CommandInput::required($options, 'token'));
         return ['updated' => true];
+    }
+
+    /**
+     * @param array<string, string> $options
+     * @return array{token: string, token_id: string}
+     */
+    private function rotateToken(array $options, ExecutionContext $context): array
+    {
+        $expiresAt = $this->optional($options, 'expires-at');
+        return $this->identities->rotateAccessToken(
+            $context,
+            CommandInput::required($options, 'token'),
+            CommandInput::required($options, 'name'),
+            $expiresAt === null ? null : new DateTimeImmutable($expiresAt),
+        );
+    }
+
+    /**
+     * @param array<string, string> $options
+     * @return array{revoked_tokens: int}
+     */
+    private function revokeUserTokens(array $options, ExecutionContext $context): array
+    {
+        return ['revoked_tokens' => $this->access->revokeSubjectTokens(
+            $context,
+            CommandInput::required($options, 'user'),
+            CommandInput::required($options, 'reason'),
+        )];
+    }
+
+    /** @param array<string, string> $options @return array{revoked_tokens: int} */
+    private function emergencyRevokeUserTokens(array $options, ExecutionContext $context): array
+    {
+        return ['revoked_tokens' => $this->access->emergencyRevokeAllSubjectTokens(
+            $context,
+            CommandInput::required($options, 'user'),
+            CommandInput::required($options, 'reason'),
+        )];
     }
 
     /** @param array<string, string> $options */

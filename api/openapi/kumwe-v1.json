@@ -3,7 +3,7 @@
   "info": {
     "title": "Kumwe CMS API",
     "version": "1.0.0",
-    "description": "Authenticated content management, public discovery, and health endpoints for Kumwe CMS 2.0."
+    "description": "Authenticated, explicitly site-bound content management, public discovery, and health endpoints for Kumwe CMS 2.0."
   },
   "jsonSchemaDialect": "https://json-schema.org/draft/2020-12/schema",
   "servers": [{"url": "/"}],
@@ -19,7 +19,7 @@
       "get": {
         "operationId": "listContent",
         "summary": "List content",
-        "security": [{"bearerAuth": []}],
+        "security": [{"bearerAuth": [], "siteContext": []}],
         "parameters": [{
           "name": "include_deleted",
           "in": "query",
@@ -37,7 +37,7 @@
       "post": {
         "operationId": "createContent",
         "summary": "Create a draft",
-        "security": [{"bearerAuth": []}],
+        "security": [{"bearerAuth": [], "siteContext": []}],
         "parameters": [{"$ref": "#/components/parameters/IdempotencyKey"}],
         "requestBody": {
           "required": true,
@@ -58,7 +58,7 @@
       "get": {
         "operationId": "getContent",
         "summary": "Read content",
-        "security": [{"bearerAuth": []}],
+        "security": [{"bearerAuth": [], "siteContext": []}],
         "responses": {
           "200": {"$ref": "#/components/responses/ContentRecord"},
           "401": {"$ref": "#/components/responses/Unauthorized"},
@@ -69,7 +69,7 @@
       "patch": {
         "operationId": "updateContent",
         "summary": "Update content",
-        "security": [{"bearerAuth": []}],
+        "security": [{"bearerAuth": [], "siteContext": []}],
         "parameters": [
           {"$ref": "#/components/parameters/IdempotencyKey"},
           {"$ref": "#/components/parameters/IfMatch"}
@@ -91,7 +91,7 @@
       "delete": {
         "operationId": "trashContent",
         "summary": "Move content to trash",
-        "security": [{"bearerAuth": []}],
+        "security": [{"bearerAuth": [], "siteContext": []}],
         "parameters": [
           {"$ref": "#/components/parameters/IdempotencyKey"},
           {"$ref": "#/components/parameters/IfMatch"}
@@ -110,7 +110,7 @@
       "post": {
         "operationId": "transitionContent",
         "summary": "Move content through its workflow",
-        "security": [{"bearerAuth": []}],
+        "security": [{"bearerAuth": [], "siteContext": []}],
         "parameters": [
           {"$ref": "#/components/parameters/ContentId"},
           {"$ref": "#/components/parameters/IdempotencyKey"},
@@ -135,7 +135,7 @@
       "post": {
         "operationId": "restoreContent",
         "summary": "Restore trashed content",
-        "security": [{"bearerAuth": []}],
+        "security": [{"bearerAuth": [], "siteContext": []}],
         "parameters": [
           {"$ref": "#/components/parameters/ContentId"},
           {"$ref": "#/components/parameters/IdempotencyKey"},
@@ -151,73 +151,108 @@
         }
       }
     },
+    "/api/v1/content-types": {
+      "get": {"operationId": "listContentTypes", "summary": "List published content type heads", "security": [{"bearerAuth": [], "siteContext": []}], "responses": {"200": {"description": "Content type collection"}}},
+      "post": {"operationId": "createContentType", "summary": "Create a versioned content type", "security": [{"bearerAuth": [], "siteContext": []}], "parameters": [{"$ref": "#/components/parameters/IdempotencyKey"}], "requestBody": {"required": true, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ContentTypeMutation"}}}}, "responses": {"201": {"description": "Content type created"}, "422": {"$ref": "#/components/responses/Unprocessable"}}}
+    },
+    "/api/v1/content-types/{id}": {
+      "get": {"operationId": "getContentType", "summary": "Read a content type", "security": [{"bearerAuth": [], "siteContext": []}], "parameters": [{"$ref": "#/components/parameters/ModelId"}], "responses": {"200": {"description": "Content type definition"}, "404": {"$ref": "#/components/responses/NotFound"}}},
+      "patch": {"operationId": "publishContentType", "summary": "Publish the next content type version", "security": [{"bearerAuth": [], "siteContext": []}], "parameters": [{"$ref": "#/components/parameters/ModelId"}, {"$ref": "#/components/parameters/IdempotencyKey"}, {"$ref": "#/components/parameters/IfMatch"}], "requestBody": {"required": true, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ContentTypeMutation"}}}}, "responses": {"200": {"description": "Content type version published"}, "412": {"$ref": "#/components/responses/PreconditionFailed"}, "422": {"$ref": "#/components/responses/Unprocessable"}}}
+    },
+    "/api/v1/workflows": {
+      "get": {"operationId": "listWorkflows", "summary": "List published workflow heads", "security": [{"bearerAuth": [], "siteContext": []}], "responses": {"200": {"description": "Workflow collection"}}},
+      "post": {"operationId": "createWorkflow", "summary": "Create a versioned workflow", "security": [{"bearerAuth": [], "siteContext": []}], "parameters": [{"$ref": "#/components/parameters/IdempotencyKey"}], "requestBody": {"required": true, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/WorkflowMutation"}}}}, "responses": {"201": {"description": "Workflow created"}, "422": {"$ref": "#/components/responses/Unprocessable"}}}
+    },
+    "/api/v1/workflows/{id}": {
+      "get": {"operationId": "getWorkflow", "summary": "Read a workflow", "security": [{"bearerAuth": [], "siteContext": []}], "parameters": [{"$ref": "#/components/parameters/ModelId"}], "responses": {"200": {"description": "Workflow definition"}, "404": {"$ref": "#/components/responses/NotFound"}}},
+      "patch": {"operationId": "publishWorkflow", "summary": "Publish the next workflow version", "security": [{"bearerAuth": [], "siteContext": []}], "parameters": [{"$ref": "#/components/parameters/ModelId"}, {"$ref": "#/components/parameters/IdempotencyKey"}, {"$ref": "#/components/parameters/IfMatch"}], "requestBody": {"required": true, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/WorkflowMutation"}}}}, "responses": {"200": {"description": "Workflow version published"}, "412": {"$ref": "#/components/responses/PreconditionFailed"}, "422": {"$ref": "#/components/responses/Unprocessable"}}}
+    },
     "/api/v1/menus": {
-      "get": {"operationId": "listMenus", "security": [{"bearerAuth": []}], "responses": {"200": {"description": "Menu collection"}}},
-      "post": {"operationId": "createMenu", "security": [{"bearerAuth": []}], "parameters": [{"$ref": "#/components/parameters/IdempotencyKey"}], "responses": {"201": {"description": "Menu created"}}}
+      "get": {"operationId": "listMenus", "security": [{"bearerAuth": [], "siteContext": []}], "responses": {"200": {"description": "Menu collection"}}},
+      "post": {"operationId": "createMenu", "security": [{"bearerAuth": [], "siteContext": []}], "parameters": [{"$ref": "#/components/parameters/IdempotencyKey"}], "responses": {"201": {"description": "Menu created"}}}
     },
     "/api/v1/menus/{id}": {
-      "get": {"operationId": "getMenu", "security": [{"bearerAuth": []}], "responses": {"200": {"description": "Menu"}}},
-      "patch": {"operationId": "updateMenu", "security": [{"bearerAuth": []}], "parameters": [{"$ref": "#/components/parameters/IdempotencyKey"}, {"$ref": "#/components/parameters/IfMatch"}], "responses": {"200": {"description": "Menu updated"}}},
-      "delete": {"operationId": "deleteMenu", "security": [{"bearerAuth": []}], "parameters": [{"$ref": "#/components/parameters/IdempotencyKey"}, {"$ref": "#/components/parameters/IfMatch"}], "responses": {"204": {"description": "Menu deleted"}}}
+      "get": {"operationId": "getMenu", "security": [{"bearerAuth": [], "siteContext": []}], "responses": {"200": {"description": "Menu"}}},
+      "patch": {"operationId": "updateMenu", "security": [{"bearerAuth": [], "siteContext": []}], "parameters": [{"$ref": "#/components/parameters/IdempotencyKey"}, {"$ref": "#/components/parameters/IfMatch"}], "responses": {"200": {"description": "Menu updated"}}},
+      "delete": {"operationId": "deleteMenu", "security": [{"bearerAuth": [], "siteContext": []}], "parameters": [{"$ref": "#/components/parameters/IdempotencyKey"}, {"$ref": "#/components/parameters/IfMatch"}], "responses": {"204": {"description": "Menu deleted"}}}
     },
     "/api/v1/menus/{menuId}/items": {
-      "get": {"operationId": "listMenuItems", "security": [{"bearerAuth": []}], "responses": {"200": {"description": "Menu items"}}},
-      "post": {"operationId": "createMenuItem", "security": [{"bearerAuth": []}], "parameters": [{"$ref": "#/components/parameters/IdempotencyKey"}], "responses": {"201": {"description": "Menu item created"}}}
+      "get": {"operationId": "listMenuItems", "security": [{"bearerAuth": [], "siteContext": []}], "responses": {"200": {"description": "Menu items"}}},
+      "post": {"operationId": "createMenuItem", "security": [{"bearerAuth": [], "siteContext": []}], "parameters": [{"$ref": "#/components/parameters/IdempotencyKey"}], "responses": {"201": {"description": "Menu item created"}}}
     },
     "/api/v1/menu-items/{id}": {
-      "get": {"operationId": "getMenuItem", "security": [{"bearerAuth": []}], "responses": {"200": {"description": "Menu item"}}},
-      "patch": {"operationId": "updateMenuItem", "security": [{"bearerAuth": []}], "parameters": [{"$ref": "#/components/parameters/IdempotencyKey"}, {"$ref": "#/components/parameters/IfMatch"}], "responses": {"200": {"description": "Menu item updated"}}},
-      "delete": {"operationId": "deleteMenuItem", "security": [{"bearerAuth": []}], "parameters": [{"$ref": "#/components/parameters/IdempotencyKey"}, {"$ref": "#/components/parameters/IfMatch"}], "responses": {"204": {"description": "Menu item deleted"}}}
+      "get": {"operationId": "getMenuItem", "security": [{"bearerAuth": [], "siteContext": []}], "responses": {"200": {"description": "Menu item"}}},
+      "patch": {"operationId": "updateMenuItem", "security": [{"bearerAuth": [], "siteContext": []}], "parameters": [{"$ref": "#/components/parameters/IdempotencyKey"}, {"$ref": "#/components/parameters/IfMatch"}], "responses": {"200": {"description": "Menu item updated"}}},
+      "delete": {"operationId": "deleteMenuItem", "security": [{"bearerAuth": [], "siteContext": []}], "parameters": [{"$ref": "#/components/parameters/IdempotencyKey"}, {"$ref": "#/components/parameters/IfMatch"}], "responses": {"204": {"description": "Menu item deleted"}}}
     },
     "/api/v1/users": {
-      "get": {"operationId": "listUsers", "security": [{"bearerAuth": []}], "responses": {"200": {"description": "User collection"}}},
-      "post": {"operationId": "createUser", "security": [{"bearerAuth": []}], "parameters": [{"$ref": "#/components/parameters/IdempotencyKey"}], "responses": {"201": {"description": "User created"}}}
+      "get": {"operationId": "listUsers", "security": [{"bearerAuth": [], "siteContext": []}], "responses": {"200": {"description": "User collection"}}},
+      "post": {"operationId": "createUser", "security": [{"bearerAuth": [], "siteContext": []}], "parameters": [{"$ref": "#/components/parameters/IdempotencyKey"}], "responses": {"201": {"description": "User created"}}}
     },
     "/api/v1/users/{id}": {
-      "patch": {"operationId": "updateUser", "security": [{"bearerAuth": []}], "parameters": [{"$ref": "#/components/parameters/IdempotencyKey"}], "responses": {"204": {"description": "User updated"}}}
+      "patch": {"operationId": "updateUser", "security": [{"bearerAuth": [], "siteContext": []}], "parameters": [{"$ref": "#/components/parameters/IdempotencyKey"}], "responses": {"204": {"description": "User updated"}}}
     },
     "/api/v1/roles": {
-      "get": {"operationId": "listRoles", "security": [{"bearerAuth": []}], "responses": {"200": {"description": "Role collection"}}},
-      "post": {"operationId": "createRole", "security": [{"bearerAuth": []}], "parameters": [{"$ref": "#/components/parameters/IdempotencyKey"}], "responses": {"201": {"description": "Role created"}}}
+      "get": {"operationId": "listRoles", "security": [{"bearerAuth": [], "siteContext": []}], "responses": {"200": {"description": "Role collection"}}},
+      "post": {"operationId": "createRole", "security": [{"bearerAuth": [], "siteContext": []}], "parameters": [{"$ref": "#/components/parameters/IdempotencyKey"}], "responses": {"201": {"description": "Role created"}}}
     },
     "/api/v1/users/{id}/roles/{roleId}": {
-      "put": {"operationId": "assignRole", "security": [{"bearerAuth": []}], "parameters": [{"$ref": "#/components/parameters/IdempotencyKey"}], "responses": {"204": {"description": "Role assigned"}}},
-      "delete": {"operationId": "revokeRole", "security": [{"bearerAuth": []}], "parameters": [{"$ref": "#/components/parameters/IdempotencyKey"}], "responses": {"204": {"description": "Role revoked"}}}
+      "put": {"operationId": "assignRole", "security": [{"bearerAuth": [], "siteContext": []}], "parameters": [{"$ref": "#/components/parameters/IdempotencyKey"}], "responses": {"204": {"description": "Role assigned"}}},
+      "delete": {"operationId": "revokeRole", "security": [{"bearerAuth": [], "siteContext": []}], "parameters": [{"$ref": "#/components/parameters/IdempotencyKey"}], "responses": {"204": {"description": "Role revoked"}}}
     },
     "/api/v1/roles/{id}/grants": {
-      "post": {"operationId": "createGrant", "security": [{"bearerAuth": []}], "parameters": [{"$ref": "#/components/parameters/IdempotencyKey"}], "responses": {"201": {"description": "Capability granted"}}}
+      "post": {"operationId": "createGrant", "security": [{"bearerAuth": [], "siteContext": []}], "parameters": [{"$ref": "#/components/parameters/IdempotencyKey"}], "responses": {"201": {"description": "Capability granted"}}}
     },
     "/api/v1/grants/{grantId}": {
-      "delete": {"operationId": "revokeGrant", "security": [{"bearerAuth": []}], "parameters": [{"$ref": "#/components/parameters/IdempotencyKey"}], "responses": {"204": {"description": "Grant revoked"}}}
+      "delete": {"operationId": "revokeGrant", "security": [{"bearerAuth": [], "siteContext": []}], "parameters": [{"$ref": "#/components/parameters/IdempotencyKey"}], "responses": {"204": {"description": "Grant revoked"}}}
     },
     "/api/v1/tokens": {
-      "get": {"operationId": "listTokens", "security": [{"bearerAuth": []}], "responses": {"200": {"description": "Token metadata without secrets"}}},
-      "post": {"operationId": "createToken", "security": [{"bearerAuth": []}], "parameters": [{"$ref": "#/components/parameters/IdempotencyKey"}], "responses": {"201": {"description": "Token created; secret returned once"}}}
+      "get": {"operationId": "listTokens", "security": [{"bearerAuth": [], "siteContext": []}], "responses": {"200": {"description": "Token metadata without secrets"}}},
+      "post": {"operationId": "createToken", "security": [{"bearerAuth": [], "siteContext": []}], "parameters": [{"$ref": "#/components/parameters/IdempotencyKey"}], "responses": {"201": {"description": "Token created; secret returned once"}}}
     },
     "/api/v1/tokens/{tokenId}": {
-      "delete": {"operationId": "revokeToken", "security": [{"bearerAuth": []}], "parameters": [{"$ref": "#/components/parameters/IdempotencyKey"}], "responses": {"204": {"description": "Token revoked"}}}
+      "delete": {"operationId": "revokeToken", "security": [{"bearerAuth": [], "siteContext": []}], "parameters": [{"$ref": "#/components/parameters/IdempotencyKey"}], "responses": {"204": {"description": "Token revoked"}}}
+    },
+    "/api/v1/tokens/{tokenId}/rotate": {
+      "post": {"operationId": "rotateToken", "security": [{"bearerAuth": [], "siteContext": []}], "parameters": [{"$ref": "#/components/parameters/IdempotencyKey"}], "responses": {"201": {"description": "Replacement token created; old token revoked atomically"}}}
+    },
+    "/api/v1/users/{id}/tokens": {
+      "delete": {"operationId": "revokeUserSiteTokens", "security": [{"bearerAuth": [], "siteContext": []}], "parameters": [{"$ref": "#/components/parameters/IdempotencyKey"}], "responses": {"200": {"description": "All user tokens for the authenticated site revoked"}}}
+    },
+    "/api/v1/users/{id}/tokens/emergency": {
+      "delete": {"operationId": "emergencyRevokeAllUserTokens", "security": [{"bearerAuth": [], "siteContext": []}], "parameters": [{"$ref": "#/components/parameters/IdempotencyKey"}], "responses": {"200": {"description": "All user tokens revoked globally and security epoch advanced; global grant required"}}}
     },
     "/api/v1/settings": {
-      "get": {"operationId": "getSettings", "security": [{"bearerAuth": []}], "responses": {"200": {"description": "Site settings"}}},
-      "put": {"operationId": "updateSettings", "security": [{"bearerAuth": []}], "parameters": [{"$ref": "#/components/parameters/IdempotencyKey"}], "responses": {"200": {"description": "Site settings updated"}}}
+      "get": {"operationId": "getSettings", "security": [{"bearerAuth": [], "siteContext": []}], "responses": {"200": {"description": "Site settings"}}},
+      "put": {"operationId": "updateSettings", "security": [{"bearerAuth": [], "siteContext": []}], "parameters": [{"$ref": "#/components/parameters/IdempotencyKey"}], "responses": {"200": {"description": "Site settings updated"}}}
     },
     "/api/v1/extensions": {
-      "get": {"operationId": "listExtensions", "security": [{"bearerAuth": []}], "responses": {"200": {"description": "Installed extensions"}}}
+      "get": {"operationId": "listExtensions", "security": [{"bearerAuth": [], "siteContext": []}], "responses": {"200": {"description": "Installed extensions"}}}
+    },
+    "/api/v1/extension-trust-keys": {
+      "get": {"operationId": "listExtensionTrustKeys", "security": [{"bearerAuth": [], "siteContext": []}], "responses": {"200": {"description": "Extension trust-key inventory without key secrets"}}},
+      "post": {"operationId": "addExtensionTrustKey", "security": [{"bearerAuth": [], "siteContext": []}], "parameters": [{"$ref": "#/components/parameters/IdempotencyKey"}], "responses": {"201": {"description": "Extension trust key added"}}}
+    },
+    "/api/v1/extension-trust-keys/{keyId}/rotate": {
+      "post": {"operationId": "rotateExtensionTrustKey", "security": [{"bearerAuth": [], "siteContext": []}], "parameters": [{"$ref": "#/components/parameters/IdempotencyKey"}], "responses": {"204": {"description": "Replacement key added; old key retained during overlap"}}}
+    },
+    "/api/v1/extension-trust-keys/{keyId}": {
+      "delete": {"operationId": "revokeExtensionTrustKey", "security": [{"bearerAuth": [], "siteContext": []}], "parameters": [{"$ref": "#/components/parameters/IdempotencyKey"}], "responses": {"200": {"description": "Emergency revocation quarantined affected releases"}, "204": {"description": "Rotation finalized after all active releases stopped using the key"}}}
     },
     "/api/v1/extensions/{vendor}/{name}/activate": {
-      "post": {"operationId": "activateExtension", "security": [{"bearerAuth": []}], "parameters": [{"$ref": "#/components/parameters/IdempotencyKey"}], "responses": {"200": {"description": "Extension activated"}}}
+      "post": {"operationId": "activateExtension", "security": [{"bearerAuth": [], "siteContext": []}], "parameters": [{"$ref": "#/components/parameters/IdempotencyKey"}], "requestBody": {"required": false, "content": {"application/json": {"schema": {"type": "object", "additionalProperties": false, "properties": {"surface": {"type": "string", "enum": ["site", "administrator"]}, "current_password": {"type": "string", "minLength": 1, "maxLength": 4096, "writeOnly": true}}}}}}, "responses": {"200": {"description": "Extension activated"}, "403": {"description": "Theme capability or step-up authentication required"}, "429": {"description": "Step-up authentication throttled"}}}
     },
     "/api/v1/extensions/{vendor}/{name}/disable": {
-      "post": {"operationId": "disableExtension", "security": [{"bearerAuth": []}], "parameters": [{"$ref": "#/components/parameters/IdempotencyKey"}], "responses": {"200": {"description": "Extension disabled"}}}
+      "post": {"operationId": "disableExtension", "security": [{"bearerAuth": [], "siteContext": []}], "parameters": [{"$ref": "#/components/parameters/IdempotencyKey"}], "requestBody": {"required": false, "content": {"application/json": {"schema": {"type": "object", "additionalProperties": false, "properties": {"current_password": {"type": "string", "minLength": 1, "maxLength": 4096, "writeOnly": true}}}}}}, "responses": {"200": {"description": "Extension disabled"}, "403": {"description": "Theme capability or step-up authentication required"}, "429": {"description": "Step-up authentication throttled"}}}
     },
     "/api/v1/extensions/{vendor}/{name}": {
-      "delete": {"operationId": "uninstallExtension", "security": [{"bearerAuth": []}], "parameters": [{"$ref": "#/components/parameters/IdempotencyKey"}], "responses": {"204": {"description": "Extension uninstalled"}}}
+      "delete": {"operationId": "uninstallExtension", "security": [{"bearerAuth": [], "siteContext": []}], "parameters": [{"$ref": "#/components/parameters/IdempotencyKey"}], "requestBody": {"required": false, "content": {"application/json": {"schema": {"type": "object", "additionalProperties": false, "properties": {"current_password": {"type": "string", "minLength": 1, "maxLength": 4096, "writeOnly": true}}}}}}, "responses": {"204": {"description": "Extension uninstalled"}, "403": {"description": "Theme capability or step-up authentication required"}, "429": {"description": "Step-up authentication throttled"}}}
     },
     "/api/v1/schedules": {
       "get": {
         "operationId": "listSchedules",
         "summary": "List automation schedules and registered job types",
-        "security": [{"bearerAuth": []}],
+        "security": [{"bearerAuth": [], "siteContext": []}],
         "responses": {
           "200": {"description": "Schedule collection"},
           "401": {"$ref": "#/components/responses/Unauthorized"},
@@ -227,7 +262,7 @@
       "post": {
         "operationId": "createSchedule",
         "summary": "Create an automation schedule",
-        "security": [{"bearerAuth": []}],
+        "security": [{"bearerAuth": [], "siteContext": []}],
         "parameters": [{"$ref": "#/components/parameters/IdempotencyKey"}],
         "requestBody": {
           "required": true,
@@ -249,7 +284,7 @@
       "get": {
         "operationId": "getSchedule",
         "summary": "Read an automation schedule",
-        "security": [{"bearerAuth": []}],
+        "security": [{"bearerAuth": [], "siteContext": []}],
         "responses": {
           "200": {"description": "Schedule with its current ETag"},
           "401": {"$ref": "#/components/responses/Unauthorized"},
@@ -260,7 +295,7 @@
       "patch": {
         "operationId": "setScheduleEnabled",
         "summary": "Enable or disable an automation schedule",
-        "security": [{"bearerAuth": []}],
+        "security": [{"bearerAuth": [], "siteContext": []}],
         "parameters": [
           {"$ref": "#/components/parameters/IdempotencyKey"},
           {"$ref": "#/components/parameters/IfMatch"}
@@ -282,7 +317,7 @@
       "delete": {
         "operationId": "deleteSchedule",
         "summary": "Delete an automation schedule",
-        "security": [{"bearerAuth": []}],
+        "security": [{"bearerAuth": [], "siteContext": []}],
         "parameters": [
           {"$ref": "#/components/parameters/IdempotencyKey"},
           {"$ref": "#/components/parameters/IfMatch"}
@@ -301,7 +336,7 @@
       "get": {
         "operationId": "listJobs",
         "summary": "List recent and failed automation jobs",
-        "security": [{"bearerAuth": []}],
+        "security": [{"bearerAuth": [], "siteContext": []}],
         "parameters": [{
           "name": "limit", "in": "query", "schema": {"type": "integer", "minimum": 1, "maximum": 500}
         }],
@@ -316,7 +351,7 @@
       "post": {
         "operationId": "retryJob",
         "summary": "Retry a dead automation job",
-        "security": [{"bearerAuth": []}],
+        "security": [{"bearerAuth": [], "siteContext": []}],
         "parameters": [
           {"name": "id", "in": "path", "required": true, "schema": {"type": "string", "format": "uuid"}},
           {"$ref": "#/components/parameters/IdempotencyKey"}
@@ -334,7 +369,7 @@
       "post": {
         "operationId": "cancelJob",
         "summary": "Cancel a pending automation job",
-        "security": [{"bearerAuth": []}],
+        "security": [{"bearerAuth": [], "siteContext": []}],
         "parameters": [
           {"name": "id", "in": "path", "required": true, "schema": {"type": "string", "format": "uuid"}},
           {"$ref": "#/components/parameters/IdempotencyKey"}
@@ -352,7 +387,7 @@
       "post": {
         "operationId": "previewSafePlan",
         "summary": "Create a non-executable review plan",
-        "security": [{"bearerAuth": []}],
+        "security": [{"bearerAuth": [], "siteContext": []}],
         "parameters": [{"$ref": "#/components/parameters/IdempotencyKey"}],
         "requestBody": {
           "required": true,
@@ -381,11 +416,20 @@
   },
   "components": {
     "securitySchemes": {
-      "bearerAuth": {"type": "http", "scheme": "bearer", "bearerFormat": "Kumwe opaque access token"}
+      "bearerAuth": {"type": "http", "scheme": "bearer", "bearerFormat": "Kumwe opaque access token"},
+      "siteContext": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "Kumwe-Site",
+        "description": "Canonical site identifier. It must exactly match the site bound into the bearer token; host and forwarding headers never select a site."
+      }
     },
     "parameters": {
       "ContentId": {
         "name": "id", "in": "path", "required": true, "schema": {"type": "string", "format": "uuid"}
+      },
+      "ModelId": {
+        "name": "id", "in": "path", "required": true, "description": "Definition UUID or stable handle", "schema": {"type": "string", "minLength": 1, "maxLength": 100}
       },
       "IdempotencyKey": {
         "name": "Idempotency-Key",
@@ -428,7 +472,7 @@
           "title": {"type": "string"},
           "slug": {"type": "string", "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"},
           "data": {"type": "object", "additionalProperties": true},
-          "status": {"type": "string", "enum": ["draft", "review", "published", "archived"]},
+          "status": {"type": "string", "pattern": "^[a-z][a-z0-9_-]{0,39}$"},
           "publish_at": {"type": ["string", "null"], "format": "date-time"},
           "unpublish_at": {"type": ["string", "null"], "format": "date-time"},
           "version": {"type": "integer", "minimum": 1},
@@ -452,6 +496,7 @@
         "properties": {
           "title": {"type": "string", "minLength": 1},
           "slug": {"type": "string", "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"},
+          "content_type": {"type": "string", "description": "Content type UUID or handle; defaults to the core page type"},
           "data": {"type": "object", "additionalProperties": true},
           "publish_at": {"type": ["string", "null"], "format": "date-time"},
           "unpublish_at": {"type": ["string", "null"], "format": "date-time"}
@@ -473,7 +518,31 @@
       "ContentTransition": {
         "type": "object",
         "required": ["status"],
-        "properties": {"status": {"type": "string", "enum": ["draft", "review", "published", "archived"]}},
+        "properties": {"status": {"type": "string", "pattern": "^[a-z][a-z0-9_-]{0,39}$"}},
+        "additionalProperties": false
+      },
+      "ContentTypeMutation": {
+        "type": "object",
+        "required": ["name", "workflow", "schema"],
+        "properties": {
+          "handle": {"type": "string", "pattern": "^[a-z][a-z0-9_-]{0,99}$"},
+          "name": {"type": "string", "minLength": 1, "maxLength": 255},
+          "workflow": {"type": "string"},
+          "schema": {"type": "object"},
+          "allow_breaking": {"type": "boolean", "default": false}
+        },
+        "additionalProperties": false
+      },
+      "WorkflowMutation": {
+        "type": "object",
+        "required": ["name", "states", "transitions"],
+        "properties": {
+          "handle": {"type": "string", "pattern": "^[a-z][a-z0-9_-]{0,99}$"},
+          "name": {"type": "string", "minLength": 1, "maxLength": 255},
+          "states": {"type": "array", "minItems": 1, "items": {"type": "object"}},
+          "transitions": {"type": "array", "items": {"type": "object"}},
+          "allow_breaking": {"type": "boolean", "default": false}
+        },
         "additionalProperties": false
       },
       "ScheduleCreate": {
