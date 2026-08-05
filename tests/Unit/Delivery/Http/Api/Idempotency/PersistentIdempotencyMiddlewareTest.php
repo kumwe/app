@@ -58,9 +58,15 @@ final class PersistentIdempotencyMiddlewareTest extends TestCase
     {
         $database = $this->database();
         $database->expects(self::once())->method('insert');
-        $database->expects(self::once())->method('executeStatement')->willReturnCallback(
-            static function (string $sql): int {
-                self::assertStringContainsString('owner_token = ? AND locked_until > ?', $sql);
+        $call = 0;
+        $database->expects(self::exactly(2))->method('executeStatement')->willReturnCallback(
+            static function (string $sql) use (&$call): int {
+                ++$call;
+                if ($call === 1) {
+                    self::assertStringContainsString('owner_token = ? AND locked_until > ?', $sql);
+                } else {
+                    self::assertStringContainsString('DELETE FROM', $sql);
+                }
                 return 0;
             },
         );

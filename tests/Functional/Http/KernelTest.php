@@ -93,17 +93,25 @@ final class KernelTest extends TestCase
             'APP_DEBUG' => 'false',
             'APP_BASE_URL' => 'https://kumwe.test',
             'APP_TRUSTED_HOSTS' => 'kumwe.test',
-            'APP_SECRET' => str_repeat('a', 32),
-            'DB_DRIVER' => 'pgsql',
-            'DB_HOST' => 'postgres',
-            'DB_PORT' => '5432',
-            'DB_NAME' => 'kumwe',
-            'DB_USER' => 'kumwe',
-            'DB_PASSWORD' => 'secret',
-            'DB_TABLE_PREFIX' => 'kumwe_',
-            'DB_SERVER_VERSION' => '17',
-            'DB_SSLMODE' => 'require',
-            'REDIS_HOST' => 'redis',
+            'APP_SECRET' => $this->environment('APP_SECRET', str_repeat('a', 32)),
+            'DB_DRIVER' => $this->environment('DB_DRIVER', 'pgsql'),
+            'DB_HOST' => $this->environment('DB_HOST', '127.0.0.1'),
+            'DB_PORT' => $this->environment('DB_PORT', '5432'),
+            'DB_NAME' => $this->environment('DB_NAME', 'kumwe_test'),
+            'DB_USER' => $this->environment('DB_USER', 'kumwe'),
+            'DB_PASSWORD' => $this->environment('DB_PASSWORD', 'kumwe_test'),
+            'DB_TABLE_PREFIX' => $this->environment('DB_TABLE_PREFIX', 'kumwe_'),
+            'DB_SERVER_VERSION' => $this->environment('DB_SERVER_VERSION', '17'),
+            'DB_SSLMODE' => $this->environment('DB_SSLMODE', 'disable'),
+            'REDIS_HOST' => $this->environment('REDIS_HOST', '127.0.0.1'),
+            'REDIS_PORT' => $this->environment('REDIS_PORT', '6379'),
         ];
+    }
+
+    private function environment(string $name, string $fallback): string
+    {
+        $value = getenv($name);
+
+        return is_string($value) && $value !== '' ? $value : $fallback;
     }
 }

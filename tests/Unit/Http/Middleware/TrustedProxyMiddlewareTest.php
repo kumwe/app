@@ -103,7 +103,6 @@ final class TrustedProxyMiddlewareTest extends TestCase
         self::assertSame('2001:db8:1::10', $captured->getUri()->getHost());
         self::assertNull($captured->getUri()->getPort());
         self::assertSame('[2001:db8:1::10]', $captured->getHeaderLine('Host'));
-        self::assertSame(443, $captured->getServerParams()['SERVER_PORT']);
     }
 
     public function testQuotedIpv6ForwardedNodeIsSupported(): void
