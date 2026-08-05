@@ -81,6 +81,7 @@ jobs:
             echo 'KUMWE_DEPLOYMENT_ID=distribution-acceptance'
             echo 'KUMWE_REPLICA_ID=distribution-runner'
             echo 'KUMWE_PROCESS_ID=distribution-runtime'
+            echo 'KUMWE_INSTANCE_ID=distribution-instance'
           } >> "$GITHUB_ENV"
 
       - name: Build release ZIP with production dependencies
