@@ -235,8 +235,10 @@ final readonly class ExtensionRuntimeLoader
                     }
                 }
                 $resolved = realpath($file);
-                if (is_link($file) || !is_file($file) || !is_string($resolved)
-                    || !str_starts_with($resolved, $resolvedBase . '/')) {
+                if (
+                    is_link($file) || !is_file($file) || !is_string($resolved)
+                    || !str_starts_with($resolved, $resolvedBase . '/')
+                ) {
                     throw new RuntimeException('An extension autoload target is not a trusted regular file.');
                 }
                 require $resolved;

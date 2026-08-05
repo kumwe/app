@@ -22,11 +22,13 @@ final readonly class GlobalJobPrincipals
         $indexed = [];
         foreach ($principals as $principal) {
             $identity = $principal->identity();
-            if (!in_array(
-                $identity,
-                [SystemIdentity::ExtensionMaterializer, SystemIdentity::InstallationMaintenance],
-                true,
-            )) {
+            if (
+                !in_array(
+                    $identity,
+                    [SystemIdentity::ExtensionMaterializer, SystemIdentity::InstallationMaintenance],
+                    true,
+                )
+            ) {
                 throw new InvalidArgumentException('A global job principal uses an unsupported system identity.');
             }
             if (isset($indexed[$identity->value])) {

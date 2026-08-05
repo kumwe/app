@@ -29,8 +29,14 @@ final readonly class ExtensionAssetHandler implements RequestHandlerInterface
     public function handle(ServerRequestInterface $request): ResponseInterface
     {
         $path = $request->getAttribute('path');
-        if (!is_string($path) || preg_match('#^[a-z0-9][a-z0-9._-]*/[a-z0-9][a-z0-9._-]*/[0-9A-Za-z.+-]+/[A-Za-z0-9][A-Za-z0-9._/-]*$#D', $path) !== 1
-            || str_contains($path, '..')) {
+        $assetPattern = '#^[a-z0-9][a-z0-9._-]*/'
+            . '[a-z0-9][a-z0-9._-]*/'
+            . '[0-9A-Za-z.+-]+/'
+            . '[A-Za-z0-9][A-Za-z0-9._/-]*$#D';
+        if (
+            !is_string($path) || preg_match($assetPattern, $path) !== 1
+            || str_contains($path, '..')
+        ) {
             return new EmptyResponse(404, ['Cache-Control' => 'no-store']);
         }
         $segments = explode('/', $path);
@@ -54,8 +60,10 @@ final readonly class ExtensionAssetHandler implements RequestHandlerInterface
         $root = realpath($this->assetRoot);
         $file = $this->assetRoot . '/' . $path;
         $resolved = realpath($file);
-        if (!is_string($root) || !is_string($resolved) || !str_starts_with($resolved, $root . '/')
-            || !is_file($resolved) || is_link($file)) {
+        if (
+            !is_string($root) || !is_string($resolved) || !str_starts_with($resolved, $root . '/')
+            || !is_file($resolved) || is_link($file)
+        ) {
             return new EmptyResponse(404, ['Cache-Control' => 'no-store']);
         }
         $candidate = $root;

@@ -186,10 +186,12 @@ final readonly class McpMutationGuard
             if (!hash_equals($storedDigest, $digest)) {
                 throw new InvalidArgumentException('The MCP operationId was already used with different input.');
             }
-            if (!hash_equals(
-                $this->string($row, 'authorization_fingerprint'),
-                $context->authorizationFingerprint(),
-            )) {
+            if (
+                !hash_equals(
+                    $this->string($row, 'authorization_fingerprint'),
+                    $context->authorizationFingerprint(),
+                )
+            ) {
                 throw new InvalidArgumentException(
                     'The MCP operationId belongs to a different credential or authorization state.',
                 );

@@ -30,8 +30,7 @@ final class AuthorizationContext
         array $capabilities,
         string $subject = self::SUBJECT,
         string $site = SiteContext::DEFAULT,
-    ): ExecutionContext
-    {
+    ): ExecutionContext {
         return self::principal($capabilities, $subject)->context(
             SiteContext::fromString($site),
             AuthenticationStrength::BearerToken,
@@ -87,7 +86,7 @@ final class AuthorizationContext
 
     public static function ownership(string $site = SiteContext::DEFAULT): ResourceSiteOwnership
     {
-        return new class($site) implements ResourceSiteOwnership {
+        return new class ($site) implements ResourceSiteOwnership {
             public function __construct(private string $site)
             {
             }

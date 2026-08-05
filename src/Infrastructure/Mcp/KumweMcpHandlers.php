@@ -135,8 +135,7 @@ final readonly class KumweMcpHandlers
         string $body = '',
         ?string $contentType = null,
         array $data = [],
-    ): array
-    {
+    ): array {
         $this->require('content.create');
         $this->preauthorize($operationId, 'content.create', AuthorizationResource::collection('content'));
 

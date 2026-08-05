@@ -242,8 +242,10 @@ final class TrustLifecycleIntegrationTest extends TestCase
                 $childTrust = $child->get(TrustStore::class);
                 $childDatabase = $child->get(Connection::class);
                 $childTables = $child->get(TableNames::class);
-                if (!$childTrust instanceof TrustStore || !$childDatabase instanceof Connection
-                    || !$childTables instanceof TableNames) {
+                if (
+                    !$childTrust instanceof TrustStore || !$childDatabase instanceof Connection
+                    || !$childTables instanceof TableNames
+                ) {
                     throw new \RuntimeException('Installer dependencies are unavailable.');
                 }
                 $childTrust->synchronizedLifecycle(function () use (

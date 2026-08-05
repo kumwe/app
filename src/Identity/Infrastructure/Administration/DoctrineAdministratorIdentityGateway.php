@@ -274,8 +274,10 @@ final readonly class DoctrineAdministratorIdentityGateway implements Administrat
                 $quotaSql,
                 $this->tables->quoted('api_tokens'),
             ), $quotaParameters);
-            if (!is_int($activeCount)
-                && (!is_string($activeCount) || preg_match('/^[0-9]+$/D', $activeCount) !== 1)) {
+            if (
+                !is_int($activeCount)
+                && (!is_string($activeCount) || preg_match('/^[0-9]+$/D', $activeCount) !== 1)
+            ) {
                 throw new RuntimeException('The active token quota could not be read.');
             }
             $this->quota->assertAllowed(
@@ -414,5 +416,4 @@ final readonly class DoctrineAdministratorIdentityGateway implements Administrat
     {
         return rtrim(strtr(base64_encode($bytes), '+/', '-_'), '=');
     }
-
 }

@@ -34,8 +34,7 @@ final readonly class Worker
         string $workerId,
         int $leaseSeconds = 60,
         int $maximumHandlerSeconds = 240,
-    ): bool
-    {
+    ): bool {
         $this->authorization->assertAllowed(
             $context,
             Capability::fromString('system.worker.operate'),

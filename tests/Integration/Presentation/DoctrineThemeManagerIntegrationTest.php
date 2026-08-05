@@ -581,8 +581,7 @@ final class DoctrineThemeManagerIntegrationTest extends TestCase
     private function manager(
         AuditRecorder $audit,
         ?ThemeMutationAuthorizer $themeAuthorization = null,
-    ): DoctrineExtensionManager
-    {
+    ): DoctrineExtensionManager {
         $clock = new DoctrineThemeClock();
         $transactions = new DoctrineTransactionManager($this->database);
         $authorization = AuthorizationContext::gateway();
@@ -658,7 +657,8 @@ final class DoctrineThemeManagerIntegrationTest extends TestCase
 
     private function resetRegistry(): void
     {
-        foreach ([
+        foreach (
+            [
             'extension_install_operations',
             'extension_runtime_materializations',
             'extension_runtime_retirements',
@@ -667,7 +667,8 @@ final class DoctrineThemeManagerIntegrationTest extends TestCase
             'extensions',
             'extension_runtime_publications',
             'audit_events',
-        ] as $table) {
+            ] as $table
+        ) {
             $this->database->executeStatement(sprintf('DELETE FROM %s', $this->tables->quoted($table)));
         }
         $this->database->executeStatement(sprintf(
@@ -812,8 +813,7 @@ JSON;
         array $capabilities = ['extensions.manage', 'themes.site.manage'],
         ?string $actor = null,
         string $site = 'default',
-    ): ExecutionContext
-    {
+    ): ExecutionContext {
         return AuthorizationContext::human($capabilities, $actor ?? self::actor(), $site);
     }
 }

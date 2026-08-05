@@ -344,8 +344,10 @@ final readonly class ContentModelService
             $edge = $transition->from . '>' . $transition->to;
             if (!isset($afterTransitions[$edge])) {
                 $changes[] = 'removed transition ' . $edge;
-            } elseif ($transition->requiredCapability->value()
-                !== $afterTransitions[$edge]->requiredCapability->value()) {
+            } elseif (
+                $transition->requiredCapability->value()
+                !== $afterTransitions[$edge]->requiredCapability->value()
+            ) {
                 $changes[] = 'changed capability of transition ' . $edge;
             }
         }

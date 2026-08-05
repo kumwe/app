@@ -113,7 +113,7 @@ final readonly class AdministratorExtensionActionHandler implements RequestHandl
                 'status' => 403,
                 'detail' => $exception->getMessage(),
             ], 403, ['Cache-Control' => 'no-store']);
-        } catch (AuthorizationDenied|InsufficientCapability $exception) {
+        } catch (AuthorizationDenied | InsufficientCapability $exception) {
             return new JsonResponse([
                 'type' => 'urn:kumwe:problem:insufficient-capability',
                 'title' => 'Forbidden',

@@ -151,9 +151,11 @@ final readonly class DoctrineExtensionManager
             $archive = $final . '/.kumwe-package.zip';
             if (!is_file($archive) || is_link($archive)) {
                 $installed = $this->findInstalledOrNull($this->requiredString($row, 'identifier'));
-                if ($installed !== null
+                if (
+                    $installed !== null
                     && ($installed['installed_version'] ?? null) === $this->requiredString($row, 'version')
-                    && ($installed['runtime_path'] ?? null) === $runtimePath) {
+                    && ($installed['runtime_path'] ?? null) === $runtimePath
+                ) {
                     $this->markInstallOperation(
                         $operationId,
                         'committed',
@@ -324,9 +326,11 @@ final readonly class DoctrineExtensionManager
         );
         if (($operation['transaction_outcome'] ?? null) === ExtensionInstallOutcome::Committed->value) {
             $installed = $this->findInstalledOrNull($manifest->identifier()->value());
-            if ($installed !== null
+            if (
+                $installed !== null
                 && ($installed['installed_version'] ?? null) === (string) $manifest->version()
-                && ($installed['runtime_path'] ?? null) === $relativeRuntime) {
+                && ($installed['runtime_path'] ?? null) === $relativeRuntime
+            ) {
                 return $installed;
             }
             $this->database->delete($this->tables->raw('extension_install_operations'), [
@@ -601,8 +605,7 @@ final readonly class DoctrineExtensionManager
         ExtensionRegistryLease $lease,
         ?ThemeSurface $surface = null,
         ?ExecutionContext $context = null,
-    ): array
-    {
+    ): array {
         /** @var array<string, mixed> $result */
         $result = $this->transactions->transactional(function () use (
             $identifier,
@@ -828,8 +831,7 @@ final readonly class DoctrineExtensionManager
         ?string $extensionId,
         string $actorId,
         SiteContext $site,
-    ): void
-    {
+    ): void {
         if ($surface === ThemeSurface::Site) {
             $this->themeActivation($surface, $site);
             $affected = $this->database->executeStatement(sprintf(
@@ -912,8 +914,7 @@ final readonly class DoctrineExtensionManager
     private function assertThemeCapabilities(
         array $installed,
         ExecutionContext $context,
-    ): void
-    {
+    ): void {
         if (($installed['extension_type'] ?? null) !== ExtensionType::Template->value) {
             return;
         }
@@ -1033,7 +1034,8 @@ final readonly class DoctrineExtensionManager
                 $this->tables->quoted('extension_install_operations'),
             ), [$operationId]);
             if ($existing !== false) {
-                foreach ([
+                foreach (
+                    [
                     'identifier' => $manifest->identifier()->value(),
                     'version' => (string) $manifest->version(),
                     'package_sha256' => $packageSha256,
@@ -1043,7 +1045,8 @@ final readonly class DoctrineExtensionManager
                     'site_identifier' => $site->identifier(),
                     'signing_key_id' => $signingKeyId,
                     'package_signature' => $packageSignature,
-                ] as $field => $expected) {
+                    ] as $field => $expected
+                ) {
                     if (($existing[$field] ?? null) !== $expected) {
                         throw new RuntimeException('An extension install operation ID collision was detected.');
                     }
@@ -1250,10 +1253,12 @@ final readonly class DoctrineExtensionManager
             throw new RuntimeException('The extension archive could not be locked for snapshotting.');
         }
         $openStat = fstat($input);
-        if (!is_array($pathStat) || !is_array($openStat)
+        if (
+            !is_array($pathStat) || !is_array($openStat)
             || ($openStat['mode'] & 0170000) !== 0100000
             || $pathStat['dev'] !== $openStat['dev']
-            || $pathStat['ino'] !== $openStat['ino']) {
+            || $pathStat['ino'] !== $openStat['ino']
+        ) {
             flock($input, LOCK_UN);
             fclose($input);
             throw new RuntimeException('The extension archive changed before its private snapshot was opened.');

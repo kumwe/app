@@ -27,8 +27,10 @@ final readonly class FilesystemExtensionArtifactVerifier implements ExtensionArt
         $root = $this->safeRoot($runtimePath);
         $artifact = $root . '/' . self::ARTIFACT;
         $actualArtifact = is_file($artifact) && !is_link($artifact) ? hash_file('sha256', $artifact) : false;
-        if (!is_string($actualArtifact) || !hash_equals($packageDigest, $actualArtifact)
-            || !hash_equals($artifactDigest, $actualArtifact)) {
+        if (
+            !is_string($actualArtifact) || !hash_equals($packageDigest, $actualArtifact)
+            || !hash_equals($artifactDigest, $actualArtifact)
+        ) {
             throw new UntrustedPackage('The retained extension package does not match its signed digest.');
         }
         if (!hash_equals($treeDigest, self::treeDigest($root))) {

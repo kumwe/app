@@ -89,22 +89,26 @@ final readonly class ApplicationAuthorizationMigrationRecovery
 
         $users = $manager->introspectTable($this->tables->raw('users'));
         $idempotency = $manager->introspectTable($this->tables->raw('idempotency'));
-        if ($users->hasColumn('security_epoch')
+        if (
+            $users->hasColumn('security_epoch')
             || $manager->tablesExist([$this->tables->raw('sites')])
             || $manager->tablesExist([$this->tables->raw('resource_site_ownership')])
             || $idempotency->hasColumn('authorization_fingerprint')
             || $idempotency->hasColumn('lease_owner')
-            || $idempotency->hasColumn('lease_expires_at')) {
+            || $idempotency->hasColumn('lease_expires_at')
+        ) {
             throw new RuntimeException(
                 'The application-authorization parent schema is already partial; recovery has no durable baseline.',
             );
         }
 
         foreach (array_keys(self::CAPABILITIES) as $capability) {
-            if ($this->database->fetchOne(sprintf(
-                'SELECT code FROM %s WHERE code = ?',
-                $this->tables->quoted('capabilities'),
-            ), [$capability]) !== false) {
+            if (
+                $this->database->fetchOne(sprintf(
+                    'SELECT code FROM %s WHERE code = ?',
+                    $this->tables->quoted('capabilities'),
+                ), [$capability]) !== false
+            ) {
                 throw new RuntimeException(
                     'The application-authorization parent data already contains migration-owned capabilities.',
                 );
@@ -160,11 +164,13 @@ final readonly class ApplicationAuthorizationMigrationRecovery
      */
     private function state(array $state): array
     {
-        if (($state['strategy'] ?? null) !== self::STRATEGY
+        if (
+            ($state['strategy'] ?? null) !== self::STRATEGY
             || !is_array($state['administrator_roles'] ?? null)
             || !array_is_list($state['administrator_roles'])
             || !is_array($state['administrator_security_epochs'] ?? null)
-            || !array_is_list($state['administrator_security_epochs'])) {
+            || !array_is_list($state['administrator_security_epochs'])
+        ) {
             throw new RuntimeException('The application-authorization recovery state is invalid.');
         }
 
@@ -188,8 +194,10 @@ final readonly class ApplicationAuthorizationMigrationRecovery
             }
             $userId = $entry['user_id'] ?? null;
             $epoch = $entry['epoch'] ?? null;
-            if (!is_string($userId) || $userId === '' || !is_int($epoch) || $epoch < 2
-                || array_keys($entry) !== ['user_id', 'epoch'] || isset($epochs[$userId])) {
+            if (
+                !is_string($userId) || $userId === '' || !is_int($epoch) || $epoch < 2
+                || array_keys($entry) !== ['user_id', 'epoch'] || isset($epochs[$userId])
+            ) {
                 throw new RuntimeException('The application-authorization recovery epoch is invalid.');
             }
             $epochs[$userId] = $epoch;
@@ -365,12 +373,14 @@ final readonly class ApplicationAuthorizationMigrationRecovery
         $this->assertCompatiblePartialSchema($schema);
         $users = $schema->getTable($this->tables->raw('users'));
         $idempotency = $schema->getTable($this->tables->raw('idempotency'));
-        if (!$users->hasColumn('security_epoch')
+        if (
+            !$users->hasColumn('security_epoch')
             || !$schema->hasTable($this->tables->raw('sites'))
             || !$schema->hasTable($this->tables->raw('resource_site_ownership'))
             || !$idempotency->hasColumn('authorization_fingerprint')
             || !$idempotency->hasColumn('lease_owner')
-            || !$idempotency->hasColumn('lease_expires_at')) {
+            || !$idempotency->hasColumn('lease_expires_at')
+        ) {
             throw new RuntimeException('Application-authorization recovery did not reach its schema postcondition.');
         }
         $ownership = $schema->getTable($this->tables->raw('resource_site_ownership'));
@@ -393,9 +403,11 @@ final readonly class ApplicationAuthorizationMigrationRecovery
 
             return;
         }
-        if (count($rows) !== 1
+        if (
+            count($rows) !== 1
             || ($rows[0]['identifier'] ?? null) !== SiteContext::DEFAULT
-            || ($rows[0]['name'] ?? null) !== 'Default site') {
+            || ($rows[0]['name'] ?? null) !== 'Default site'
+        ) {
             throw new RuntimeException('The interrupted site seed is divergent.');
         }
     }
@@ -433,9 +445,11 @@ final readonly class ApplicationAuthorizationMigrationRecovery
                         'granted_at' => $this->now(),
                         'granted_by' => null,
                     ], ['granted_at' => Types::DATETIME_IMMUTABLE]);
-                } elseif (count($grants) !== 1
+                } elseif (
+                    count($grants) !== 1
                     || ($grants[0]['scope_type'] ?? null) !== 'global'
-                    || ($grants[0]['scope_identifier'] ?? null) !== null) {
+                    || ($grants[0]['scope_identifier'] ?? null) !== null
+                ) {
                     throw new RuntimeException(sprintf('The interrupted grant for "%s" is divergent.', $code));
                 }
             }
@@ -510,8 +524,10 @@ final readonly class ApplicationAuthorizationMigrationRecovery
         foreach ($rows as $row) {
             $type = $row['resource_type'] ?? null;
             $id = $row['resource_id'] ?? null;
-            if (!is_string($type) || !is_string($id) || !array_key_exists($type, $expected)
-                || ($row['site_identifier'] ?? null) !== SiteContext::DEFAULT) {
+            if (
+                !is_string($type) || !is_string($id) || !array_key_exists($type, $expected)
+                || ($row['site_identifier'] ?? null) !== SiteContext::DEFAULT
+            ) {
                 throw new RuntimeException('The application-authorization ownership postcondition is divergent.');
             }
             $actual[$type][] = $id;
@@ -573,10 +589,12 @@ final readonly class ApplicationAuthorizationMigrationRecovery
         bool $fixed,
     ): void {
         $column = $table->getColumn($name);
-        if (!$column->getType() instanceof StringType
+        if (
+            !$column->getType() instanceof StringType
             || $column->getLength() !== $length
             || $column->getNotnull() !== $notNull
-            || $column->getFixed() !== $fixed) {
+            || $column->getFixed() !== $fixed
+        ) {
             throw new RuntimeException(sprintf(
                 'The interrupted column "%s.%s" is divergent.',
                 $table->getObjectName()->toString(),
@@ -588,9 +606,11 @@ final readonly class ApplicationAuthorizationMigrationRecovery
     private function assertIntegerColumn(Table $table, string $name, bool $notNull, string $default): void
     {
         $column = $table->getColumn($name);
-        if (!$column->getType() instanceof IntegerType
+        if (
+            !$column->getType() instanceof IntegerType
             || $column->getNotnull() !== $notNull
-            || (string) $column->getDefault() !== $default) {
+            || (string) $column->getDefault() !== $default
+        ) {
             throw new RuntimeException(sprintf(
                 'The interrupted column "%s.%s" is divergent.',
                 $table->getObjectName()->toString(),
@@ -602,8 +622,10 @@ final readonly class ApplicationAuthorizationMigrationRecovery
     private function assertDateTimeColumn(Table $table, string $name, bool $notNull): void
     {
         $column = $table->getColumn($name);
-        if ((!$column->getType() instanceof DateTimeImmutableType && !$column->getType() instanceof DateTimeType)
-            || $column->getNotnull() !== $notNull) {
+        if (
+            (!$column->getType() instanceof DateTimeImmutableType && !$column->getType() instanceof DateTimeType)
+            || $column->getNotnull() !== $notNull
+        ) {
             throw new RuntimeException(sprintf(
                 'The interrupted column "%s.%s" is divergent.',
                 $table->getObjectName()->toString(),
@@ -651,10 +673,12 @@ final readonly class ApplicationAuthorizationMigrationRecovery
             if ($this->constraintName($foreignKey) !== 'fk_resource_site') {
                 continue;
             }
-            if ($this->names($foreignKey->getReferencingColumnNames()) !== ['site_identifier']
+            if (
+                $this->names($foreignKey->getReferencingColumnNames()) !== ['site_identifier']
                 || $this->names($foreignKey->getReferencedColumnNames()) !== ['identifier']
                 || $foreignKey->getReferencedTableName()->toString() !== $this->tables->raw('sites')
-                || $foreignKey->getOnDeleteAction() !== ReferentialAction::CASCADE) {
+                || $foreignKey->getOnDeleteAction() !== ReferentialAction::CASCADE
+            ) {
                 throw new RuntimeException('The interrupted ownership foreign key is divergent.');
             }
 

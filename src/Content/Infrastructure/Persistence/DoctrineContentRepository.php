@@ -120,8 +120,10 @@ final readonly class DoctrineContentRepository implements SiteScopedContentRepos
             } catch (JsonException $exception) {
                 throw new RuntimeException('Stored workflow public states are invalid.', 0, $exception);
             }
-            if (is_array($publicStates)
-                && in_array($this->requiredString($row, 'workflow_state_key'), $publicStates, true)) {
+            if (
+                is_array($publicStates)
+                && in_array($this->requiredString($row, 'workflow_state_key'), $publicStates, true)
+            ) {
                 return $this->map($row);
             }
         }

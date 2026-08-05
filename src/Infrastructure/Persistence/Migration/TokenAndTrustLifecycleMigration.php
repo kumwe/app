@@ -512,8 +512,10 @@ final readonly class TokenAndTrustLifecycleMigration implements Migration
     ): bool {
         $keyId = $release['signing_key_id'] ?? null;
         $signature = $release['signature_base64'] ?? null;
-        if (($release['signature_algorithm'] ?? null) !== 'ed25519'
-            || !is_string($keyId) || !is_string($signature)) {
+        if (
+            ($release['signature_algorithm'] ?? null) !== 'ed25519'
+            || !is_string($keyId) || !is_string($signature)
+        ) {
             return false;
         }
         $key = $database->fetchAssociative(sprintf(
@@ -521,9 +523,11 @@ final readonly class TokenAndTrustLifecycleMigration implements Migration
             . 'revoked_at FROM %s WHERE key_id = ?',
             $this->tables->quoted('extension_trust_keys'),
         ), [$keyId]);
-        if ($key === false || ($key['algorithm'] ?? null) !== 'ed25519'
+        if (
+            $key === false || ($key['algorithm'] ?? null) !== 'ed25519'
             || !in_array($key['enabled'] ?? null, [true, 1, '1', 't', 'true'], true)
-            || ($key['revoked_at'] ?? null) !== null || !is_string($key['public_key_base64'] ?? null)) {
+            || ($key['revoked_at'] ?? null) !== null || !is_string($key['public_key_base64'] ?? null)
+        ) {
             return false;
         }
         $expiresAt = $key['expires_at'] ?? null;
@@ -537,9 +541,11 @@ final readonly class TokenAndTrustLifecycleMigration implements Migration
         [$vendor, $name] = explode('/', $identifier, 2);
         $keyVendor = $key['vendor_namespace'] ?? null;
         $pattern = $key['extension_pattern'] ?? null;
-        if ($expiresAt <= $now || !is_string($keyVendor) || !is_string($pattern)
+        if (
+            $expiresAt <= $now || !is_string($keyVendor) || !is_string($pattern)
             || ($keyVendor !== '*' && $keyVendor !== $vendor)
-            || ($pattern !== '*' && $pattern !== $name)) {
+            || ($pattern !== '*' && $pattern !== $name)
+        ) {
             return false;
         }
         try {

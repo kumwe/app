@@ -76,8 +76,7 @@ final readonly class ExtensionRuntimeMapCompiler implements TrustRuntimeInvalida
     public function reconcileAndMaterialize(
         bool $acknowledgeLoaded = true,
         bool $publishReadiness = true,
-    ): RuntimeMaterializationState
-    {
+    ): RuntimeMaterializationState {
         for ($attempt = 1; $attempt <= 3; ++$attempt) {
             try {
                 $this->database->transactional(function (): void {
@@ -153,8 +152,7 @@ final readonly class ExtensionRuntimeMapCompiler implements TrustRuntimeInvalida
     public function materializeLatest(
         bool $acknowledgeLoaded = false,
         bool $publishReadiness = true,
-    ): RuntimeMaterializationState
-    {
+    ): RuntimeMaterializationState {
         $generation = $this->currentGeneration();
         $publication = $this->publication($generation)
             ?? throw new RuntimeException('The authoritative runtime publication is missing.');
@@ -497,8 +495,7 @@ final readonly class ExtensionRuntimeMapCompiler implements TrustRuntimeInvalida
         array $extensions,
         bool $requireCurrent = true,
         bool $currentSignatureOnly = false,
-    ): int
-    {
+    ): int {
         if ($action === '' || strlen($action) > 127) {
             throw new InvalidArgumentException('A runtime publication action is required.');
         }

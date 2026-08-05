@@ -70,10 +70,12 @@ final readonly class InstallationGlobalAutomationMigration implements Repeatable
 
     private function assertColumn(Column $column): void
     {
-        if (!$column->getType() instanceof StringType
+        if (
+            !$column->getType() instanceof StringType
             || $column->getLength() !== 16
             || $column->getNotnull() !== true
-            || $column->getDefault() !== JobExecutionClass::Site->value) {
+            || $column->getDefault() !== JobExecutionClass::Site->value
+        ) {
             throw new RuntimeException('The persisted automation execution-scope column is divergent.');
         }
     }

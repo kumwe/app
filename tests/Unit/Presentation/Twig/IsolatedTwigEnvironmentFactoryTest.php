@@ -30,11 +30,13 @@ final class IsolatedTwigEnvironmentFactoryTest extends TestCase
     protected function setUp(): void
     {
         $this->root = sys_get_temp_dir() . '/kumwe-theme-test-' . bin2hex(random_bytes(8));
-        foreach ([
+        foreach (
+            [
             '/core/site', '/core/administrator', '/site-theme', '/regional-theme', '/admin-theme',
             '/extension/site', '/extension/administrator', '/extension/collision-a',
             '/extension/collision-b', '/cache',
-        ] as $directory) {
+            ] as $directory
+        ) {
             self::assertTrue(mkdir($this->root . $directory, 0700, true));
         }
 

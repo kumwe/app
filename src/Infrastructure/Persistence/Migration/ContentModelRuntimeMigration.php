@@ -4,10 +4,14 @@ declare(strict_types=1);
 
 namespace Kumwe\CMS\Infrastructure\Persistence\Migration;
 
+use DateTimeImmutable;
+use DateTimeInterface;
+use DateTimeZone;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Schema\PrimaryKeyConstraint;
 use Doctrine\DBAL\Schema\Schema;
 use Doctrine\DBAL\Types\Types;
+use JsonException;
 use Kumwe\CMS\Application\Authorization\SiteContext;
 use Kumwe\CMS\Infrastructure\Persistence\TableNames;
 use RuntimeException;
@@ -205,8 +209,8 @@ final readonly class ContentModelRuntimeMigration implements RepeatableMigration
                 'states' => $stateDocuments,
                 'transitions' => $transitionDocuments,
                 'public_states' => $publicStates,
-                'created_at' => $workflow['created_at'],
-                'published_at' => $workflow['updated_at'],
+                'created_at' => $this->date($workflow['created_at'] ?? null),
+                'published_at' => $this->date($workflow['updated_at'] ?? null),
             ], [
                 'states' => Types::JSON,
                 'transitions' => Types::JSON,
@@ -223,13 +227,15 @@ final readonly class ContentModelRuntimeMigration implements RepeatableMigration
         foreach ($types as $type) {
             $id = $this->string($type, 'id');
             $version = $this->integer($type, 'version');
-            if (!$this->versionExists(
-                $database,
-                'content_type_definition_versions',
-                'content_type_id',
-                $id,
-                $version,
-            )) {
+            if (
+                !$this->versionExists(
+                    $database,
+                    'content_type_definition_versions',
+                    'content_type_id',
+                    $id,
+                    $version,
+                )
+            ) {
                 $database->insert($this->tables->raw('content_type_definition_versions'), [
                     'content_type_id' => $id,
                     'version' => $version,
@@ -241,9 +247,9 @@ final readonly class ContentModelRuntimeMigration implements RepeatableMigration
                         $database,
                         $this->string($type, 'workflow_id'),
                     ),
-                    'validation_schema' => $type['field_schema'],
-                    'created_at' => $type['created_at'],
-                    'published_at' => $type['updated_at'],
+                    'validation_schema' => $this->jsonObject($type['field_schema'] ?? null),
+                    'created_at' => $this->date($type['created_at'] ?? null),
+                    'published_at' => $this->date($type['updated_at'] ?? null),
                 ], [
                     'validation_schema' => Types::JSON,
                     'created_at' => Types::DATETIME_IMMUTABLE,
@@ -336,5 +342,37 @@ final readonly class ContentModelRuntimeMigration implements RepeatableMigration
     private function boolean(mixed $value): bool
     {
         return $value === true || $value === 1 || $value === '1';
+    }
+
+    private function date(mixed $value): DateTimeImmutable
+    {
+        if ($value instanceof DateTimeImmutable) {
+            return $value;
+        }
+        if ($value instanceof DateTimeInterface) {
+            return DateTimeImmutable::createFromInterface($value);
+        }
+        if (is_string($value) && $value !== '') {
+            return new DateTimeImmutable($value, new DateTimeZone('UTC'));
+        }
+
+        throw new RuntimeException('Stored content model timestamp is invalid.');
+    }
+
+    /** @return array<string, mixed> */
+    private function jsonObject(mixed $value): array
+    {
+        if (is_string($value)) {
+            try {
+                $value = json_decode($value, true, 64, JSON_THROW_ON_ERROR);
+            } catch (JsonException $exception) {
+                throw new RuntimeException('Stored content model schema is invalid.', 0, $exception);
+            }
+        }
+        if (!is_array($value) || ($value !== [] && array_is_list($value))) {
+            throw new RuntimeException('Stored content model schema must be a JSON object.');
+        }
+
+        return $value;
     }
 }

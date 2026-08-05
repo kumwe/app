@@ -18,8 +18,7 @@ final readonly class MezzioExtensionRouteRegistrar implements ExtensionRouteRegi
         private Application $application,
         string $extension,
         private TrustStore $trust,
-    )
-    {
+    ) {
         $this->extension = ExtensionIdentifier::fromString($extension)->value();
     }
 

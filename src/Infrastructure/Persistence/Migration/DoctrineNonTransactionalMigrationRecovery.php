@@ -234,8 +234,10 @@ final readonly class DoctrineNonTransactionalMigrationRecovery implements NonTra
 
             return self::STRATEGY_APPLICATION_AUTHORIZATION;
         }
-        if ($migration instanceof RepeatableMigration
-            || in_array($migration->id(), self::CURRENT_REPEATABLE_MIGRATIONS, true)) {
+        if (
+            $migration instanceof RepeatableMigration
+            || in_array($migration->id(), self::CURRENT_REPEATABLE_MIGRATIONS, true)
+        ) {
             return self::STRATEGY_REPEAT;
         }
 
@@ -285,21 +287,25 @@ final readonly class DoctrineNonTransactionalMigrationRecovery implements NonTra
         if ($actual !== $expected) {
             throw new RuntimeException('The non-transactional migration journal schema is divergent.');
         }
-        if (!$table->getColumn('version')->getType() instanceof StringType
+        if (
+            !$table->getColumn('version')->getType() instanceof StringType
             || $table->getColumn('version')->getLength() !== 191
             || !$table->getColumn('checksum')->getType() instanceof StringType
             || $table->getColumn('checksum')->getLength() !== 64
             || !$table->getColumn('checksum')->getFixed()
             || !$table->getColumn('baseline_tables')->getType() instanceof JsonType
-            || !$table->getColumn('recovery_state')->getType() instanceof JsonType) {
+            || !$table->getColumn('recovery_state')->getType() instanceof JsonType
+        ) {
             throw new RuntimeException('The non-transactional migration journal columns are divergent.');
         }
         $primary = $table->getPrimaryKeyConstraint();
-        if ($primary !== null
+        if (
+            $primary !== null
             && array_map(
                 static fn (\Doctrine\DBAL\Schema\Name $name): string => $name->toString(),
                 $primary->getColumnNames(),
-            ) === ['version']) {
+            ) === ['version']
+        ) {
             return;
         }
         throw new RuntimeException('The non-transactional migration journal primary key is divergent.');

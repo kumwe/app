@@ -176,7 +176,7 @@ final class SecretOnceIdempotencyMiddlewareTest extends TestCase
         string $setting,
         bool $fail,
     ): RequestHandlerInterface {
-        return new class($database, $tables, $setting, $fail) implements RequestHandlerInterface {
+        return new class ($database, $tables, $setting, $fail) implements RequestHandlerInterface {
             public int $calls = 0;
 
             public function __construct(
