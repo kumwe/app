@@ -375,7 +375,7 @@ jobs:
           administrator_password="$(<"$KUMWE_ACCEPTANCE_ADMIN_PASSWORD_FILE")"
           full_token_output="$(docker compose --file compose.production.yaml exec -T \
             --env KUMWE_ACCEPTANCE_ADMIN_PASSWORD="$administrator_password" \
-            app sh -euc '
+            app /usr/local/bin/kumwe-entrypoint sh -euc '
               umask 077
               password_file=/tmp/kumwe-acceptance-admin-password
               trap '\''rm -f "$password_file"'\'' EXIT
@@ -391,7 +391,7 @@ jobs:
           [[ "$full_token" =~ ^[A-Za-z0-9_-]{32,}$ ]]
           read_token_output="$(docker compose --file compose.production.yaml exec -T \
             --env KUMWE_ACCEPTANCE_API_TOKEN="$full_token" \
-            app sh -euc '
+            app /usr/local/bin/kumwe-entrypoint sh -euc '
               umask 077
               token_file=/tmp/kumwe-acceptance-api-token
               trap '\''rm -f "$token_file"'\'' EXIT
