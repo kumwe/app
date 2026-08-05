@@ -16,11 +16,11 @@ RUN set -eux; \
         libzip-dev \
         oniguruma-dev \
         postgresql-dev; \
-    docker-php-ext-install -j"$(getconf _NPROCESSORS_ONLN)" intl mbstring pdo_mysql pdo_pgsql zip; \
+    docker-php-ext-install -j"$(getconf _NPROCESSORS_ONLN)" intl mbstring pcntl pdo_mysql pdo_pgsql zip; \
     pecl install redis-6.3.0; \
     docker-php-ext-enable redis; \
     apk del .build-dependencies; \
-    php -r 'foreach (["ctype", "fileinfo", "filter", "intl", "mbstring", "openssl", "Zend OPcache", "pdo", "pdo_mysql", "pdo_pgsql", "redis", "sodium", "zip"] as $extension) { if (!extension_loaded($extension)) { fwrite(STDERR, "Missing PHP extension: {$extension}\n"); exit(1); } }'; \
+    php -r 'foreach (["ctype", "fileinfo", "filter", "intl", "mbstring", "openssl", "Zend OPcache", "pcntl", "pdo", "pdo_mysql", "pdo_pgsql", "redis", "sodium", "zip"] as $extension) { if (!extension_loaded($extension)) { fwrite(STDERR, "Missing PHP extension: {$extension}\n"); exit(1); } }'; \
     { \
         echo 'expose_php=Off'; \
         echo 'display_errors=Off'; \

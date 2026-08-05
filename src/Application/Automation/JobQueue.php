@@ -21,11 +21,16 @@ interface JobQueue
 
     public function claim(string $queue, string $workerId, int $leaseSeconds): ?StoredJob;
 
+    /** Renew an active lease without changing its fencing token. */
+    public function renew(StoredJob $job, string $workerId, int $leaseSeconds): void;
+
     public function complete(StoredJob $job, string $workerId): void;
 
     public function fail(StoredJob $job, string $workerId, Throwable $failure, bool $permanent): void;
 
     public function heartbeat(string $workerId, string $queue, ?string $jobId = null): void;
+
+    public function disconnect(string $workerId): void;
 
     /** @return list<array<string, mixed>> */
     public function all(int $limit = 100): array;

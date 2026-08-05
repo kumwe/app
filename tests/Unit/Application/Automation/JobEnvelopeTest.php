@@ -53,6 +53,18 @@ final class JobEnvelopeTest extends TestCase
         self::assertTrue($pending->isClaimableAt($retryAt));
     }
 
+    public function testLeaseCanBeRenewedOnlyByItsActiveOwner(): void
+    {
+        $now = new DateTimeImmutable('2026-08-04T12:00:00+00:00');
+        $reserved = $this->pendingJob()->claim('worker-1', $now, 30);
+        $renewed = $reserved->renewLease('worker-1', $now->modify('+20 seconds'), 60);
+
+        self::assertSame('2026-08-04T12:01:20+00:00', $renewed->lease()?->expiresAt()->format('c'));
+
+        $this->expectException(DomainException::class);
+        $renewed->renewLease('worker-2', $now->modify('+30 seconds'), 60);
+    }
+
     public function testExpiredFinalLeaseMovesJobToDeadState(): void
     {
         $now = new DateTimeImmutable('2026-08-04T12:00:00+00:00');

@@ -21,6 +21,8 @@ use Throwable;
 
 final readonly class DoctrineJobQueue implements JobQueue
 {
+    public const int EXHAUSTED_REAP_LIMIT = 100;
+
     public function __construct(
         private Connection $database,
         private TableNames $tables,
@@ -56,6 +58,7 @@ final readonly class DoctrineJobQueue implements JobQueue
             'status' => 'pending',
             'available_at' => $availableAt < $now ? $now : $availableAt,
             'lease_owner' => null,
+            'lease_token' => null,
             'lease_acquired_at' => null,
             'lease_expires_at' => null,
             'attempts' => 0,
@@ -85,37 +88,89 @@ final readonly class DoctrineJobQueue implements JobQueue
         }
 
         return $this->transactions->transactional(function () use ($queue, $workerId, $leaseSeconds): ?StoredJob {
-            $row = $this->database->fetchAssociative(sprintf(
-                "SELECT * FROM %s WHERE queue = ? AND status = 'pending' AND available_at <= ? "
-                . 'ORDER BY priority DESC, available_at, created_at, id LIMIT 1 FOR UPDATE SKIP LOCKED',
-                $this->tables->quoted('jobs'),
-            ), [$queue, $this->clock->now()], [Types::STRING, Types::DATETIME_IMMUTABLE]);
+            $now = $this->clock->now();
+            $reaped = 0;
 
-            if ($row === false || !is_string($row['id'] ?? null)) {
-                return null;
+            while ($reaped < self::EXHAUSTED_REAP_LIMIT) {
+                $row = $this->database->fetchAssociative(sprintf(
+                    'SELECT * FROM %s WHERE queue = ? AND ('
+                    . "(status = 'pending' AND available_at <= ?) OR "
+                    . "(status = 'reserved' AND (lease_expires_at IS NULL OR lease_expires_at <= ?))"
+                    . ') ORDER BY priority DESC, available_at, created_at, id '
+                    . 'LIMIT 1 FOR UPDATE SKIP LOCKED',
+                    $this->tables->quoted('jobs'),
+                ), [$queue, $now, $now], [
+                    Types::STRING,
+                    Types::DATETIME_IMMUTABLE,
+                    Types::DATETIME_IMMUTABLE,
+                ]);
+
+                if ($row === false || !is_string($row['id'] ?? null)) {
+                    return null;
+                }
+
+                $attempts = $this->integer($row, 'attempts');
+                if ($attempts >= $this->integer($row, 'maximum_attempts')) {
+                    $this->deadLetterExpired($row, $now);
+                    $reaped++;
+                    continue;
+                }
+
+                $token = Uuid::uuid7()->toString();
+                $affected = $this->database->executeStatement(sprintf(
+                    "UPDATE %s SET status = 'reserved', lease_owner = ?, lease_token = ?, lease_acquired_at = ?, "
+                    . 'lease_expires_at = ?, attempts = attempts + 1, updated_at = ? WHERE id = ? AND ('
+                    . "(status = 'pending' AND available_at <= ?) OR "
+                    . "(status = 'reserved' AND (lease_expires_at IS NULL OR lease_expires_at <= ?)))",
+                    $this->tables->quoted('jobs'),
+                ), [
+                    $workerId,
+                    $token,
+                    $now,
+                    $now->add(new DateInterval(sprintf('PT%dS', $leaseSeconds))),
+                    $now,
+                    $row['id'],
+                    $now,
+                    $now,
+                ], [
+                    Types::STRING, Types::STRING, Types::DATETIME_IMMUTABLE, Types::DATETIME_IMMUTABLE,
+                    Types::DATETIME_IMMUTABLE, Types::GUID, Types::DATETIME_IMMUTABLE,
+                    Types::DATETIME_IMMUTABLE,
+                ]);
+                $this->assertLeaseUpdated($affected);
+                $row['attempts'] = $attempts + 1;
+                $row['lease_token'] = $token;
+
+                return $this->map($row);
             }
 
-            $now = $this->clock->now();
-            $affected = $this->database->executeStatement(sprintf(
-                "UPDATE %s SET status = 'reserved', lease_owner = ?, lease_acquired_at = ?, "
-                . 'lease_expires_at = ?, attempts = attempts + 1, updated_at = ? '
-                . "WHERE id = ? AND status = 'pending'",
-                $this->tables->quoted('jobs'),
-            ), [
-                $workerId,
-                $now,
-                $now->add(new DateInterval(sprintf('PT%dS', $leaseSeconds))),
-                $now,
-                $row['id'],
-            ], [
-                Types::STRING, Types::DATETIME_IMMUTABLE, Types::DATETIME_IMMUTABLE,
-                Types::DATETIME_IMMUTABLE, Types::GUID,
-            ]);
-            $this->assertLeaseUpdated($affected);
-            $row['attempts'] = $this->integer($row, 'attempts') + 1;
-
-            return $this->map($row);
+            return null;
         });
+    }
+
+    public function renew(StoredJob $job, string $workerId, int $leaseSeconds): void
+    {
+        $this->assertWorker($workerId);
+        if ($leaseSeconds < 5 || $leaseSeconds > 3_600) {
+            throw new InvalidArgumentException('A job lease must last between 5 and 3600 seconds.');
+        }
+
+        $now = $this->clock->now();
+        $this->assertLeaseUpdated($this->database->executeStatement(sprintf(
+            'UPDATE %s SET lease_expires_at = ?, updated_at = ? WHERE id = ? '
+            . "AND status = 'reserved' AND lease_owner = ? AND lease_token = ? AND lease_expires_at > ?",
+            $this->tables->quoted('jobs'),
+        ), [
+            $now->add(new DateInterval(sprintf('PT%dS', $leaseSeconds))),
+            $now,
+            $job->id,
+            $workerId,
+            $job->leaseToken,
+            $now,
+        ], [
+            Types::DATETIME_IMMUTABLE, Types::DATETIME_IMMUTABLE, Types::GUID,
+            Types::STRING, Types::STRING, Types::DATETIME_IMMUTABLE,
+        ]));
     }
 
     public function complete(StoredJob $job, string $workerId): void
@@ -123,12 +178,13 @@ final readonly class DoctrineJobQueue implements JobQueue
         $this->assertWorker($workerId);
         $now = $this->clock->now();
         $this->assertLeaseUpdated($this->database->executeStatement(sprintf(
-            "UPDATE %s SET status = 'completed', lease_owner = NULL, lease_acquired_at = NULL, "
+            "UPDATE %s SET status = 'completed', lease_owner = NULL, lease_token = NULL, lease_acquired_at = NULL, "
             . 'lease_expires_at = NULL, completed_at = ?, updated_at = ? '
-            . "WHERE id = ? AND status = 'reserved' AND lease_owner = ?",
+            . "WHERE id = ? AND status = 'reserved' AND lease_owner = ? AND lease_token = ? AND lease_expires_at > ?",
             $this->tables->quoted('jobs'),
-        ), [$now, $now, $job->id, $workerId], [
+        ), [$now, $now, $job->id, $workerId, $job->leaseToken, $now], [
             Types::DATETIME_IMMUTABLE, Types::DATETIME_IMMUTABLE, Types::GUID, Types::STRING,
+            Types::STRING, Types::DATETIME_IMMUTABLE,
         ]));
     }
 
@@ -141,21 +197,31 @@ final readonly class DoctrineJobQueue implements JobQueue
             if (!$dead) {
                 $delay = min(3_600, 2 ** min($job->attempts, 11));
                 $this->assertLeaseUpdated($this->database->executeStatement(sprintf(
-                    "UPDATE %s SET status = 'pending', lease_owner = NULL, lease_acquired_at = NULL, "
+                    "UPDATE %s SET status = 'pending', lease_owner = NULL, lease_token = NULL, "
+                    . 'lease_acquired_at = NULL, '
                     . 'lease_expires_at = NULL, available_at = ?, updated_at = ? '
-                    . "WHERE id = ? AND status = 'reserved' AND lease_owner = ?",
+                    . "WHERE id = ? AND status = 'reserved' AND lease_owner = ? "
+                    . 'AND lease_token = ? AND lease_expires_at > ?',
                     $this->tables->quoted('jobs'),
-                ), [$now->add(new DateInterval(sprintf('PT%dS', $delay))), $now, $job->id, $workerId], [
+                ), [
+                    $now->add(new DateInterval(sprintf('PT%dS', $delay))), $now, $job->id,
+                    $workerId, $job->leaseToken, $now,
+                ], [
                     Types::DATETIME_IMMUTABLE, Types::DATETIME_IMMUTABLE, Types::GUID, Types::STRING,
+                    Types::STRING, Types::DATETIME_IMMUTABLE,
                 ]));
                 return;
             }
 
             $this->assertLeaseUpdated($this->database->executeStatement(sprintf(
-                "UPDATE %s SET status = 'dead', lease_owner = NULL, lease_acquired_at = NULL, "
-                . "lease_expires_at = NULL, updated_at = ? WHERE id = ? AND status = 'reserved' AND lease_owner = ?",
+                "UPDATE %s SET status = 'dead', lease_owner = NULL, lease_token = NULL, lease_acquired_at = NULL, "
+                . "lease_expires_at = NULL, updated_at = ? WHERE id = ? AND status = 'reserved' AND lease_owner = ? "
+                . 'AND lease_token = ? AND lease_expires_at > ?',
                 $this->tables->quoted('jobs'),
-            ), [$now, $job->id, $workerId], [Types::DATETIME_IMMUTABLE, Types::GUID, Types::STRING]));
+            ), [$now, $job->id, $workerId, $job->leaseToken, $now], [
+                Types::DATETIME_IMMUTABLE, Types::GUID, Types::STRING, Types::STRING,
+                Types::DATETIME_IMMUTABLE,
+            ]));
             $this->database->insert($this->tables->raw('failed_jobs'), [
                 'id' => Uuid::uuid7()->toString(),
                 'job_id' => $job->id,
@@ -210,6 +276,16 @@ final readonly class DoctrineJobQueue implements JobQueue
         );
     }
 
+    public function disconnect(string $workerId): void
+    {
+        $this->assertWorker($workerId);
+        $this->database->delete(
+            $this->tables->raw('worker_heartbeats'),
+            ['worker_id' => $workerId],
+            ['worker_id' => Types::STRING],
+        );
+    }
+
     public function all(int $limit = 100): array
     {
         if ($limit < 1 || $limit > 500) {
@@ -234,6 +310,7 @@ final readonly class DoctrineJobQueue implements JobQueue
             $now = $this->clock->now();
             $affected = $this->database->executeStatement(sprintf(
                 "UPDATE %s SET status = 'pending', attempts = 0, available_at = ?, lease_owner = NULL, "
+                . 'lease_token = NULL, '
                 . 'lease_acquired_at = NULL, lease_expires_at = NULL, completed_at = NULL, updated_at = ? '
                 . "WHERE id = ? AND status = 'dead'",
                 $this->tables->quoted('jobs'),
@@ -282,7 +359,44 @@ final readonly class DoctrineJobQueue implements JobQueue
             $this->integer($row, 'schema_version'),
             $this->integer($row, 'attempts'),
             $this->integer($row, 'maximum_attempts'),
+            $this->requiredString($row, 'lease_token'),
         );
+    }
+
+    /** @param array<string, mixed> $row */
+    private function deadLetterExpired(array $row, DateTimeImmutable $now): void
+    {
+        $affected = $this->database->executeStatement(sprintf(
+            "UPDATE %s SET status = 'dead', lease_owner = NULL, lease_token = NULL, "
+            . 'lease_acquired_at = NULL, lease_expires_at = NULL, updated_at = ? WHERE id = ? AND '
+            . "((status = 'pending' AND attempts >= maximum_attempts) OR (status = 'reserved' "
+            . 'AND attempts >= maximum_attempts AND (lease_expires_at IS NULL OR lease_expires_at <= ?)))',
+            $this->tables->quoted('jobs'),
+        ), [$now, $this->requiredString($row, 'id'), $now], [
+            Types::DATETIME_IMMUTABLE, Types::GUID, Types::DATETIME_IMMUTABLE,
+        ]);
+        $this->assertLeaseUpdated($affected);
+        $this->database->insert($this->tables->raw('failed_jobs'), [
+            'id' => Uuid::uuid7()->toString(),
+            'job_id' => $this->requiredString($row, 'id'),
+            'queue' => $this->requiredString($row, 'queue'),
+            'job_type' => $this->requiredString($row, 'job_type'),
+            'schema_version' => $this->integer($row, 'schema_version'),
+            'payload' => is_string($row['payload'] ?? null)
+                ? json_decode($row['payload'], true, 64, JSON_THROW_ON_ERROR)
+                : ($row['payload'] ?? []),
+            'attempts' => $this->integer($row, 'attempts'),
+            'maximum_attempts' => $this->integer($row, 'maximum_attempts'),
+            'failure_classification' => 'transient',
+            'exception_type' => 'Kumwe\\CMS\\Application\\Automation\\ExpiredJobLease',
+            'error_message' => 'The final worker lease expired before the job completed.',
+            'failed_at' => $now,
+            'created_at' => $now,
+        ], [
+            'payload' => Types::JSON,
+            'failed_at' => Types::DATETIME_IMMUTABLE,
+            'created_at' => Types::DATETIME_IMMUTABLE,
+        ]);
     }
 
     /**

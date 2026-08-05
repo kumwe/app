@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Kumwe\CMS\Application\Automation;
 
+use DateInterval;
 use DateTimeImmutable;
 use DomainException;
 use InvalidArgumentException;
@@ -53,5 +54,19 @@ final readonly class JobLease
         if ($this->isExpiredAt($time)) {
             throw new DomainException('The job lease has expired.');
         }
+    }
+
+    public function renew(string $owner, DateTimeImmutable $time, int $leaseSeconds): self
+    {
+        if ($leaseSeconds < 1) {
+            throw new InvalidArgumentException('A renewed lease must last at least one second.');
+        }
+        $this->assertActiveOwner($owner, $time);
+
+        return new self(
+            $this->owner,
+            $this->acquiredAt,
+            $time->add(new DateInterval(sprintf('PT%dS', $leaseSeconds))),
+        );
     }
 }
