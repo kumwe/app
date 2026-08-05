@@ -426,7 +426,7 @@ final class CrashResumableMigrationIntegrationTest extends TestCase
                 $runner = new MigrationRunner(
                     $database,
                     $repository,
-                    new DoctrineMigrationLock($database, $tables),
+                    new DirectCrashRecoveryMigrationLock(),
                     new DoctrineTransactionManager($database),
                     new MigrationPlan(
                         [$core, $authorization, $jobs, $integration],

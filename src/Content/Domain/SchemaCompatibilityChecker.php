@@ -79,7 +79,6 @@ final class SchemaCompatibilityChecker
             $changes[] = 'disallowed additional fields';
         }
         sort($changes, SORT_STRING);
-        /** @var list<string> $changes */
         return $changes;
     }
 }

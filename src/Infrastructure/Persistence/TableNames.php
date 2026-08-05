@@ -16,6 +16,7 @@ final readonly class TableNames
         }
     }
 
+    /** @return non-empty-string */
     public function raw(string $name): string
     {
         if (preg_match('/^[a-z][a-z0-9_]{0,62}$/D', $name) !== 1) {
@@ -25,6 +26,7 @@ final readonly class TableNames
         return $this->prefix . $name;
     }
 
+    /** @return non-empty-string */
     public function quoted(string $name): string
     {
         return $this->connection->quoteSingleIdentifier($this->raw($name));
