@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - master
+      - modernization
   pull_request:
   schedule:
     - cron: '17 3 * * 1'
