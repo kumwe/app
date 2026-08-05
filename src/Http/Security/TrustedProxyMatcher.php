@@ -68,7 +68,9 @@ final readonly class TrustedProxyMatcher
             throw new InvalidArgumentException(sprintf('Trusted proxy range "%s" is invalid.', $range));
         }
 
-        [$address, $prefix] = array_pad(explode('/', $range, 2), 2, null);
+        $parts = explode('/', $range, 2);
+        $address = $parts[0];
+        $prefix = $parts[1] ?? null;
         $packed = @inet_pton($address);
 
         if ($packed === false) {
@@ -108,7 +110,8 @@ final readonly class TrustedProxyMatcher
         $masked = substr($address, 0, $wholeBytes);
 
         if ($remainingBits > 0) {
-            $masked .= chr(ord($address[$wholeBytes]) & (0xFF << (8 - $remainingBits)));
+            $maskedByte = ord($address[$wholeBytes]) & (0xFF << (8 - $remainingBits));
+            $masked .= chr(max(0, min(255, $maskedByte)));
             ++$wholeBytes;
         }
 

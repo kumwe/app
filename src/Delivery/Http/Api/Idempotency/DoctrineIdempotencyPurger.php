@@ -39,20 +39,20 @@ final readonly class DoctrineIdempotencyPurger implements IdempotencyPurger
         if ($batchSize < 1 || $batchSize > 10_000) {
             throw new InvalidArgumentException('Idempotency purge batch size must be between 1 and 10000.');
         }
-        $ids = $this->database->fetchFirstColumn(sprintf(
+        $ids = array_values($this->database->fetchFirstColumn(sprintf(
             "SELECT id FROM %s WHERE expires_at <= ? AND ((state IN ('completed', 'failed') "
             . "AND owner_token IS NULL) OR (state = 'in_progress' "
             . 'AND (locked_until IS NULL OR locked_until <= ?))) ORDER BY expires_at, id LIMIT %d',
             $this->tables->quoted('idempotency'),
             $batchSize,
-        ), [$cutoff, $cutoff], [Types::DATETIME_IMMUTABLE, Types::DATETIME_IMMUTABLE]);
+        ), [$cutoff, $cutoff], [Types::DATETIME_IMMUTABLE, Types::DATETIME_IMMUTABLE]));
 
         foreach ($ids as $id) {
             if (!is_string($id) || $id === '') {
                 throw new \RuntimeException('An idempotency purge candidate has an invalid identifier.');
             }
         }
-        /** @var list<string> $ids */
+        /** @var list<non-empty-string> $ids */
         return $ids;
     }
 
