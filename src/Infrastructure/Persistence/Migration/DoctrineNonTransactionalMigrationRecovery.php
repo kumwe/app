@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Kumwe\CMS\Infrastructure\Persistence\Migration;
 
 use Doctrine\DBAL\Connection;
-use Doctrine\DBAL\Schema\Column;
 use Doctrine\DBAL\Schema\ForeignKeyConstraint;
 use Doctrine\DBAL\Schema\PrimaryKeyConstraint;
 use Doctrine\DBAL\Schema\Table;
@@ -279,12 +278,10 @@ final readonly class DoctrineNonTransactionalMigrationRecovery implements NonTra
 
         $table = $schema->introspectTableByUnquotedName($name);
         $expected = ['baseline_tables', 'checksum', 'recovery_state', 'started_at', 'updated_at', 'version'];
-        $actual = array_map(
-            static fn (Column $column): string => $column->getObjectName()->toString(),
-            $table->getColumns(),
-        );
-        sort($actual, SORT_STRING);
-        if ($actual !== $expected) {
+        if (
+            count($table->getColumns()) !== count($expected)
+            || array_any($expected, static fn (string $column): bool => !$table->hasColumn($column))
+        ) {
             throw new RuntimeException('The non-transactional migration journal schema is divergent.');
         }
         if (

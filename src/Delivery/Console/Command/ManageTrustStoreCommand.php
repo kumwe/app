@@ -34,7 +34,6 @@ final readonly class ManageTrustStoreCommand implements Command
             $action = array_shift($arguments) ?? 'list';
             $options = CommandInput::options($arguments);
             $actor = $this->authorization->require($options, 'extensions.manage');
-            /** @var array<string, mixed> $result */
             $result = match ($action) {
                 'list' => ['items' => $this->trust->keys($actor)],
                 'add' => $this->add($actor, $options),

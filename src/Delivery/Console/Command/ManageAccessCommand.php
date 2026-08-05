@@ -38,7 +38,6 @@ final readonly class ManageAccessCommand implements Command
             $action = array_shift($arguments) ?? 'users';
             $options = CommandInput::options($arguments);
             $context = $this->authorization->require($options, 'users.manage');
-            /** @var array<string, mixed> $result */
             $result = match ($action) {
                 'users' => ['items' => $this->access->users($context)],
                 'roles' => [

@@ -49,13 +49,8 @@ final readonly class IsolateThemeSurfacesMigration implements RepeatableMigratio
             'length' => $extensionIdColumn->getLength(),
             'fixed' => $extensionIdColumn->getFixed(),
             'unsigned' => $extensionIdColumn->getUnsigned(),
+            'platformOptions' => $extensionIdColumn->getPlatformOptions(),
         ];
-        if ($extensionIdColumn->getCharset() !== null) {
-            $extensionIdOptions['charset'] = $extensionIdColumn->getCharset();
-        }
-        if ($extensionIdColumn->getCollation() !== null) {
-            $extensionIdOptions['collation'] = $extensionIdColumn->getCollation();
-        }
         $schema = new Schema();
         $activations = $schema->createTable($this->tables->raw('theme_activations'));
         $activations->addColumn('surface', Types::STRING, ['length' => 32]);
@@ -118,7 +113,10 @@ final readonly class IsolateThemeSurfacesMigration implements RepeatableMigratio
         $materializations->addPrimaryKeyConstraint(
             PrimaryKeyConstraint::editor()->setUnquotedColumnNames('replica_id')->create(),
         );
-        $materializations->addIndex(['generation', 'last_seen_at'], 'idx_runtime_materialization_generation');
+        $materializations->addIndex(
+            ['generation', 'last_seen_at'],
+            $this->indexName('idx_runtime_materialization_generation', 'extension_runtime_materializations'),
+        );
 
         $retirements = $schema->createTable($this->tables->raw('extension_runtime_retirements'));
         $retirements->addColumn('id', Types::GUID);
@@ -132,10 +130,13 @@ final readonly class IsolateThemeSurfacesMigration implements RepeatableMigratio
         $retirements->addPrimaryKeyConstraint(
             PrimaryKeyConstraint::editor()->setUnquotedColumnNames('id')->create(),
         );
-        $retirements->addUniqueIndex(['runtime_sha256'], 'uniq_runtime_retirement_path');
+        $retirements->addUniqueIndex(
+            ['runtime_sha256'],
+            $this->indexName('uniq_runtime_retirement_path', 'extension_runtime_retirements'),
+        );
         $retirements->addIndex(
             ['cleaned_at', 'retain_until', 'retire_after_generation'],
-            'idx_runtime_retirement_ready',
+            $this->indexName('idx_runtime_retirement_ready', 'extension_runtime_retirements'),
         );
 
         $fence = $schema->createTable($this->tables->raw('extension_registry_fence'));
@@ -168,9 +169,12 @@ final readonly class IsolateThemeSurfacesMigration implements RepeatableMigratio
         );
         $operations->addUniqueIndex(
             ['identifier', 'version', 'package_sha256'],
-            'uniq_extension_install_operation',
+            $this->indexName('uniq_extension_install_operation', 'extension_install_operations'),
         );
-        $operations->addIndex(['state', 'updated_at'], 'idx_extension_install_reconcile');
+        $operations->addIndex(
+            ['state', 'updated_at'],
+            $this->indexName('idx_extension_install_reconcile', 'extension_install_operations'),
+        );
 
         $schemaManager = $database->createSchemaManager();
         foreach ($schema->getTables() as $table) {
@@ -298,6 +302,11 @@ final readonly class IsolateThemeSurfacesMigration implements RepeatableMigratio
                 ], ['granted_at' => Types::DATETIME_IMMUTABLE]);
             }
         }
+    }
+
+    private function indexName(string $base, string $table): string
+    {
+        return $base . '_' . substr(hash('sha256', $this->tables->raw($table)), 0, 16);
     }
 
     /** @return array<string, string> */
