@@ -665,6 +665,7 @@ final class MigrationIntegrationTest extends TestCase
             }
             self::assertSame('ok', file_get_contents($raceDirectory . '/writer-result'));
             self::assertSame('ok', file_get_contents($raceDirectory . '/materializer-result'));
+            $database->close();
             $finalGeneration = $compiler->materialize();
             $finalMap = json_decode((string) file_get_contents($mapFile), true, 16, JSON_THROW_ON_ERROR);
             self::assertIsArray($finalMap);

@@ -16,6 +16,7 @@ use Kumwe\CMS\Infrastructure\Mcp\KumweMcpHandlers;
 use Kumwe\CMS\Infrastructure\Mcp\McpMutationGuard;
 use Kumwe\CMS\Infrastructure\Persistence\TransactionManager;
 use Kumwe\CMS\Infrastructure\Persistence\TableNames;
+use Kumwe\CMS\Kernel\ContainerFactory;
 use Kumwe\CMS\Shared\Infrastructure\Configuration\Environment;
 use Kumwe\CMS\Tests\Support\TestKernelFactory;
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -108,7 +109,7 @@ final class McpTrustLifecycleIntegrationTest extends TestCase
         if ($revoker === 0) {
             try {
                 self::waitForFile($readyFile);
-                $child = TestKernelFactory::create(Environment::fromGlobals());
+                $child = (new ContainerFactory())->create(Environment::fromGlobals());
                 $childDatabase = $child->get(Connection::class);
                 $childTables = $child->get(TableNames::class);
                 $clock = $child->get(ClockInterface::class);
