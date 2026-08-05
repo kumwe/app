@@ -11,6 +11,7 @@ use Doctrine\DBAL\Platforms\AbstractMySQLPlatform;
 use Doctrine\DBAL\Platforms\AbstractPlatform;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use Doctrine\DBAL\Platforms\SQLitePlatform;
+use Doctrine\DBAL\Schema\PrimaryKeyConstraint;
 use Doctrine\DBAL\Schema\Schema;
 use Doctrine\DBAL\Types\Types;
 use Kumwe\CMS\Extension\Application\Package\ArchiveEntryType;
@@ -234,7 +235,9 @@ final readonly class TokenAndTrustLifecycleMigration implements Migration
             $table->addColumn('generation', Types::BIGINT, ['default' => 0]);
             $table->addColumn('updated_at', Types::DATETIME_IMMUTABLE);
             $table->addColumn('lifecycle_state', Types::STRING, ['length' => 32, 'default' => 'migrating']);
-            $table->addPrimaryKeyConstraint(['singleton_key']);
+            $table->addPrimaryKeyConstraint(
+                PrimaryKeyConstraint::editor()->setUnquotedColumnNames('singleton_key')->create(),
+            );
             foreach ($generationSchema->toSql($platform) as $statement) {
                 $database->executeStatement($statement);
             }
@@ -312,7 +315,9 @@ final readonly class TokenAndTrustLifecycleMigration implements Migration
             $table->addColumn('state', Types::STRING, ['length' => 32]);
             $table->addColumn('created_at', Types::DATETIME_IMMUTABLE);
             $table->addColumn('materialized_at', Types::DATETIME_IMMUTABLE, ['notnull' => false]);
-            $table->addPrimaryKeyConstraint(['id']);
+            $table->addPrimaryKeyConstraint(
+                PrimaryKeyConstraint::editor()->setUnquotedColumnNames('id')->create(),
+            );
             $table->addIndex(['state', 'generation'], $this->tables->raw('idx_extension_runtime_outbox'));
             foreach ($schema->toSql($platform) as $statement) {
                 $database->executeStatement($statement);
