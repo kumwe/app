@@ -40,7 +40,11 @@ Start from `.env.example` for development. Production Compose maps operator-faci
 | `KUMWE_RELEASE` | Running release identifier | Exact deployed version |
 | `EXTENSIONS_ALLOW_UNSIGNED_LOCAL` | Allow unsigned local packages | `false` in production |
 
-Never set `APP_TRUSTED_PROXIES` to all networks. Kumwe must know which intermediary is allowed to supply forwarded request information.
+`APP_TRUSTED_PROXIES` accepts individual IPv4/IPv6 addresses and CIDR ranges (for example,
+`10.20.0.10,192.0.2.0/24,2001:db8:5::/64`). Never set it to all networks. Kumwe accepts `Forwarded`, or the
+`X-Forwarded-For`, `X-Forwarded-Proto`, `X-Forwarded-Host`, and `X-Forwarded-Port` family, only from a matching
+immediate peer. Configure the edge proxy to replace client-supplied forwarding headers. Kumwe walks proxy chains
+from right to left and stops at the first untrusted address; malformed or ambiguous metadata is discarded atomically.
 
 ## Database
 

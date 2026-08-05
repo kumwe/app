@@ -268,6 +268,7 @@ jobs:
             echo 'KUMWE_INFRASTRUCTURE_PULL_POLICY=always'
             echo 'KUMWE_BASE_URL=https://kumwe.test'
             echo 'KUMWE_TRUSTED_HOSTS=kumwe.test,127.0.0.1,localhost'
+            echo 'KUMWE_TRUSTED_PROXIES=172.16.0.0/12,192.168.0.0/16'
             echo 'KUMWE_HTTP_BIND=127.0.0.1'
             echo 'KUMWE_HTTP_PORT=18080'
             echo 'KUMWE_RELEASE=2.0.0-acceptance'
@@ -338,6 +339,34 @@ jobs:
           test "$(docker inspect --format '{{.State.Health.Status}}' kumwe-web-1)" = healthy
           test "$(docker inspect --format '{{.State.Status}}' kumwe-worker-1)" = running
           test "$(docker inspect --format '{{.State.Status}}' kumwe-scheduler-1)" = running
+
+      - name: Exercise the deployed reverse-proxy trust boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          response_headers="$RUNNER_TEMP/kumwe-proxy-response-headers"
+          curl --fail --silent --show-error \
+            --dump-header "$response_headers" \
+            --output /dev/null \
+            --header 'Forwarded: for=203.0.113.50;proto=https;host=kumwe.test' \
+            http://127.0.0.1:18080/health/live
+          grep --ignore-case --quiet '^Strict-Transport-Security:' "$response_headers"
+
+          trusted_proxies="$KUMWE_TRUSTED_PROXIES"
+          export KUMWE_TRUSTED_PROXIES=198.18.0.0/15
+          docker compose --file compose.production.yaml up \
+            --detach --wait --force-recreate app web
+          status="$(curl --silent --show-error \
+            --output /dev/null \
+            --write-out '%{http_code}' \
+            --header 'Host: attacker.test' \
+            --header 'Forwarded: for=203.0.113.50;proto=https;host=kumwe.test' \
+            http://127.0.0.1:18080/health/live)"
+          test "$status" = 400
+
+          export KUMWE_TRUSTED_PROXIES="$trusted_proxies"
+          docker compose --file compose.production.yaml up \
+            --detach --wait --force-recreate app web
 
       - name: Exercise administration, REST, authorization and idempotency
         shell: bash

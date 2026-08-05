@@ -45,8 +45,10 @@ For a managed database, keep the application variables but omit or profile out t
 ## Proxy boundary
 
 - Forward only the canonical hostname.
-- Send `X-Forwarded-Proto: https` and the original host.
-- Set `KUMWE_TRUSTED_PROXIES` to actual proxy address ranges, never all networks.
+- Replace client-supplied forwarding headers at the public edge, then send either RFC 7239 `Forwarded` or
+  `X-Forwarded-For`, `X-Forwarded-Proto`, `X-Forwarded-Host`, and, for non-default ports, `X-Forwarded-Port`.
+- Set `KUMWE_TRUSTED_PROXIES` to the exact IPv4/IPv6 addresses or CIDR ranges of every trusted proxy hop, never all
+  networks. The immediate address observed by PHP must match this list before Kumwe uses any forwarded value.
 - Keep the Compose HTTP binding on loopback or a private interface.
 - Match request-size limits at the proxy, nginx, PHP, and Kumwe boundary.
 - Apply connection and rate controls at the edge in addition to Kumwe's account and token controls.

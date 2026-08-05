@@ -59,15 +59,30 @@ final readonly class TrustedHostMatcher
             }
 
             $address = substr($host, 1, $closingBracket - 1);
+            $remainder = substr($host, $closingBracket + 1);
 
-            if (filter_var($address, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6) === false) {
+            if (
+                filter_var($address, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6) === false
+                || $remainder !== '' && (!$this->validPortSuffix($remainder))
+            ) {
                 throw new InvalidArgumentException('The IPv6 Host header is malformed.');
             }
 
             return $address;
         }
 
-        $host = explode(':', $host, 2)[0];
+        if (substr_count($host, ':') > 1) {
+            throw new InvalidArgumentException('IPv6 Host headers must use brackets.');
+        }
+
+        if (str_contains($host, ':')) {
+            [$host, $port] = explode(':', $host, 2);
+
+            if (!$this->validPort($port)) {
+                throw new InvalidArgumentException('The Host header port is malformed.');
+            }
+        }
+
         $host = rtrim($host, '.');
 
         if (
@@ -79,6 +94,16 @@ final readonly class TrustedHostMatcher
         }
 
         return $host;
+    }
+
+    private function validPortSuffix(string $suffix): bool
+    {
+        return str_starts_with($suffix, ':') && $this->validPort(substr($suffix, 1));
+    }
+
+    private function validPort(string $port): bool
+    {
+        return preg_match('/^[1-9][0-9]{0,4}$/D', $port) === 1 && (int) $port <= 65_535;
     }
 
     private function assertValidPattern(string $pattern): void
