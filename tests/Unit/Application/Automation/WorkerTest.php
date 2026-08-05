@@ -182,8 +182,7 @@ final class WorkerTest extends TestCase
         string $type,
         string $id = '00000000-0000-7000-8000-000000000001',
         JobExecutionClass $executionClass = JobExecutionClass::Site,
-    ): StoredJob
-    {
+    ): StoredJob {
         return new StoredJob(
             $id,
             'default',

@@ -166,8 +166,10 @@ final readonly class DoctrineJobQueue implements JobQueue
                     $this->requiredString($row, 'job_type'),
                     $this->requiredString($row, 'execution_scope'),
                 );
-                if ($executionClass === JobExecutionClass::Site
-                    && !$this->lockEnabledOwner($this->requiredString($row, 'id'))) {
+                if (
+                    $executionClass === JobExecutionClass::Site
+                    && !$this->lockEnabledOwner($this->requiredString($row, 'id'))
+                ) {
                     return null;
                 }
 

@@ -45,16 +45,20 @@ final class SchemaCompatibilityChecker
             foreach (['minimum', 'minLength', 'minItems'] as $minimum) {
                 $newMinimum = $new[$minimum] ?? null;
                 $oldMinimum = $definition[$minimum] ?? null;
-                if ((is_int($newMinimum) || is_float($newMinimum))
-                    && (!(is_int($oldMinimum) || is_float($oldMinimum)) || $newMinimum > $oldMinimum)) {
+                if (
+                    (is_int($newMinimum) || is_float($newMinimum))
+                    && (!(is_int($oldMinimum) || is_float($oldMinimum)) || $newMinimum > $oldMinimum)
+                ) {
                     $changes[] = 'raised ' . $minimum . ' of ' . (string) $key;
                 }
             }
             foreach (['maximum', 'maxLength', 'maxItems'] as $maximum) {
                 $newMaximum = $new[$maximum] ?? null;
                 $oldMaximum = $definition[$maximum] ?? null;
-                if ((is_int($newMaximum) || is_float($newMaximum))
-                    && (!(is_int($oldMaximum) || is_float($oldMaximum)) || $newMaximum < $oldMaximum)) {
+                if (
+                    (is_int($newMaximum) || is_float($newMaximum))
+                    && (!(is_int($oldMaximum) || is_float($oldMaximum)) || $newMaximum < $oldMaximum)
+                ) {
                     $changes[] = 'lowered ' . $maximum . ' of ' . (string) $key;
                 }
             }
@@ -64,8 +68,10 @@ final class SchemaCompatibilityChecker
                 $changes[] = 'made field required ' . $key;
             }
         }
-        if (($before['additionalProperties'] ?? true) !== false
-            && ($after['additionalProperties'] ?? true) === false) {
+        if (
+            ($before['additionalProperties'] ?? true) !== false
+            && ($after['additionalProperties'] ?? true) === false
+        ) {
             $changes[] = 'disallowed additional fields';
         }
         sort($changes, SORT_STRING);

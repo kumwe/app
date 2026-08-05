@@ -80,8 +80,10 @@ final class JsonSchemaValidator
         if (isset($schema['additionalProperties']) && !is_bool($schema['additionalProperties'])) {
             $violations[] = $path . '.additionalProperties must be a boolean';
         }
-        if (isset($schema['enum'])
-            && (!is_array($schema['enum']) || !array_is_list($schema['enum']) || $schema['enum'] === [])) {
+        if (
+            isset($schema['enum'])
+            && (!is_array($schema['enum']) || !array_is_list($schema['enum']) || $schema['enum'] === [])
+        ) {
             $violations[] = $path . '.enum must be a non-empty list';
         }
         foreach (['minLength', 'maxLength', 'minItems', 'maxItems'] as $keyword) {
@@ -90,9 +92,11 @@ final class JsonSchemaValidator
             }
         }
         foreach ([['minLength', 'maxLength'], ['minItems', 'maxItems']] as [$minimum, $maximum]) {
-            if (is_int($schema[$minimum] ?? null)
+            if (
+                is_int($schema[$minimum] ?? null)
                 && is_int($schema[$maximum] ?? null)
-                && $schema[$minimum] > $schema[$maximum]) {
+                && $schema[$minimum] > $schema[$maximum]
+            ) {
                 $violations[] = $path . '.' . $minimum . ' cannot exceed ' . $maximum;
             }
         }
@@ -104,9 +108,11 @@ final class JsonSchemaValidator
         }
         $minimumBound = $schema['minimum'] ?? null;
         $maximumBound = $schema['maximum'] ?? null;
-        if ((is_int($minimumBound) || is_float($minimumBound))
+        if (
+            (is_int($minimumBound) || is_float($minimumBound))
             && (is_int($maximumBound) || is_float($maximumBound))
-            && $minimumBound > $maximumBound) {
+            && $minimumBound > $maximumBound
+        ) {
             $violations[] = $path . '.minimum cannot exceed maximum';
         }
         $properties = $schema['properties'] ?? null;
@@ -115,9 +121,11 @@ final class JsonSchemaValidator
                 $violations[] = $path . '.properties must be an object';
             } else {
                 foreach ($properties as $key => $child) {
-                    if (!is_string($key)
+                    if (
+                        !is_string($key)
                         || preg_match('/^[a-z][a-z0-9_]{0,62}$/D', $key) !== 1
-                        || !is_array($child)) {
+                        || !is_array($child)
+                    ) {
                         $violations[] = $path . '.properties contains an invalid field';
                     } else {
                         $this->validateSchema($child, $path . '.properties.' . $key, $violations);
@@ -158,8 +166,10 @@ final class JsonSchemaValidator
             }
         }
         $pattern = $schema['pattern'] ?? null;
-        if ($pattern !== null && (!is_string($pattern)
-            || @preg_match('/' . str_replace('/', '\\/', $pattern) . '/u', '') === false)) {
+        if (
+            $pattern !== null && (!is_string($pattern)
+            || @preg_match('/' . str_replace('/', '\\/', $pattern) . '/u', '') === false)
+        ) {
             $violations[] = $path . '.pattern must be a valid regular expression';
         }
         $formats = ['date-time', 'date', 'email', 'uri', 'uuid'];
@@ -190,14 +200,18 @@ final class JsonSchemaValidator
             if (isset($schema['maxLength']) && $length > (int) $schema['maxLength']) {
                 $violations[] = $path . ' is longer than maxLength';
             }
-            if (isset($schema['pattern'])
+            if (
+                isset($schema['pattern'])
                 && is_string($schema['pattern'])
-                && preg_match('/' . str_replace('/', '\\/', $schema['pattern']) . '/u', $value) !== 1) {
+                && preg_match('/' . str_replace('/', '\\/', $schema['pattern']) . '/u', $value) !== 1
+            ) {
                 $violations[] = $path . ' does not match pattern';
             }
-            if (isset($schema['format'])
+            if (
+                isset($schema['format'])
                 && is_string($schema['format'])
-                && !$this->matchesFormat($schema['format'], $value)) {
+                && !$this->matchesFormat($schema['format'], $value)
+            ) {
                 $violations[] = $path . ' is not a valid ' . $schema['format'];
             }
         }

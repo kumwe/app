@@ -62,14 +62,18 @@ final readonly class WorkflowDefinition
             if (isset($edges[$edge])) {
                 throw new InvalidArgumentException('Workflow transitions must be unique.');
             }
-            if (!$publicStates[$transition->from]
+            if (
+                !$publicStates[$transition->from]
                 && $publicStates[$transition->to]
-                && $transition->requiredCapability->value() !== 'content.publish') {
+                && $transition->requiredCapability->value() !== 'content.publish'
+            ) {
                 throw new InvalidArgumentException('Entering a public workflow state requires content.publish.');
             }
-            if ($publicStates[$transition->from]
+            if (
+                $publicStates[$transition->from]
                 && !$publicStates[$transition->to]
-                && $transition->requiredCapability->value() !== 'content.unpublish') {
+                && $transition->requiredCapability->value() !== 'content.unpublish'
+            ) {
                 throw new InvalidArgumentException('Leaving a public workflow state requires content.unpublish.');
             }
             $edges[$edge] = true;

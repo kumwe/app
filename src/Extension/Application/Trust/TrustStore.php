@@ -157,8 +157,10 @@ final readonly class TrustStore
                 if ($old === null) {
                     throw new InvalidArgumentException('The active trust key to rotate does not exist.');
                 }
-                if (($old['vendor_namespace'] ?? null) !== $values['vendor_namespace']
-                    || ($old['extension_pattern'] ?? null) !== $values['extension_pattern']) {
+                if (
+                    ($old['vendor_namespace'] ?? null) !== $values['vendor_namespace']
+                    || ($old['extension_pattern'] ?? null) !== $values['extension_pattern']
+                ) {
                     throw new InvalidArgumentException(
                         'A replacement key must preserve the old key namespace constraints.',
                     );
@@ -334,16 +336,17 @@ final readonly class TrustStore
         array $entry,
         array $release,
         ExtensionIdentifier $extension,
-    ): void
-    {
+    ): void {
         $manifestValue = $release['manifest'] ?? null;
         $manifest = ExtensionManifest::fromJson(is_string($manifestValue)
             ? $manifestValue
             : json_encode($manifestValue, JSON_THROW_ON_ERROR));
-        if (!$manifest->identifier()->equals($extension)
+        if (
+            !$manifest->identifier()->equals($extension)
             || (string) $manifest->version() !== ($release['installed_version'] ?? null)
             || $manifest->serviceProvider() !== ($release['service_provider'] ?? null)
-            || $manifest->type()->value !== ($release['extension_type'] ?? null)) {
+            || $manifest->type()->value !== ($release['extension_type'] ?? null)
+        ) {
             throw new UntrustedPackage('The installed extension manifest does not match its runtime inventory.');
         }
         $expected = [
@@ -471,8 +474,10 @@ final readonly class TrustStore
     private function activeKey(string $keyId): ?array
     {
         foreach ($this->repository->all() as $key) {
-            if (($key['key_id'] ?? null) !== $keyId || !(bool) ($key['enabled'] ?? false)
-                || ($key['revoked_at'] ?? null) !== null) {
+            if (
+                ($key['key_id'] ?? null) !== $keyId || !(bool) ($key['enabled'] ?? false)
+                || ($key['revoked_at'] ?? null) !== null
+            ) {
                 continue;
             }
             $expiresAt = $key['expires_at'] ?? null;

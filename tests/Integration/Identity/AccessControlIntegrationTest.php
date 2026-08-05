@@ -95,10 +95,12 @@ final class AccessControlIntegrationTest extends TestCase
         $tables = $container->get(TableNames::class);
         self::assertInstanceOf(Connection::class, $database);
         self::assertInstanceOf(TableNames::class, $tables);
-        if ($database->fetchOne(sprintf(
-            'SELECT identifier FROM %s WHERE identifier = ?',
-            $tables->quoted('sites'),
-        ), ['other-site']) === false) {
+        if (
+            $database->fetchOne(sprintf(
+                'SELECT identifier FROM %s WHERE identifier = ?',
+                $tables->quoted('sites'),
+            ), ['other-site']) === false
+        ) {
             $database->insert($tables->raw('sites'), [
                 'identifier' => 'other-site',
                 'name' => 'Other integration site',

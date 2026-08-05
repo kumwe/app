@@ -487,8 +487,10 @@ final class MemoryTrustStoreRepository implements TrustStoreRepository
             return null;
         }
         [$vendor, $name] = explode('/', $extensionIdentifier, 2);
-        if (($key['vendor_namespace'] !== '*' && $key['vendor_namespace'] !== $vendor)
-            || ($key['extension_pattern'] !== '*' && $key['extension_pattern'] !== $name)) {
+        if (
+            ($key['vendor_namespace'] !== '*' && $key['vendor_namespace'] !== $vendor)
+            || ($key['extension_pattern'] !== '*' && $key['extension_pattern'] !== $name)
+        ) {
             return null;
         }
         return $key;

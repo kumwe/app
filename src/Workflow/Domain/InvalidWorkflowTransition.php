@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\CMS\Workflow\Domain;
 
 use DomainException;
+
 final class InvalidWorkflowTransition extends DomainException
 {
     public function __construct(string|\BackedEnum $from, string|\BackedEnum $to)

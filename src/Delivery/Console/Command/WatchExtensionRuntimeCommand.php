@@ -90,8 +90,10 @@ final readonly class WatchExtensionRuntimeCommand implements Command
             return (int) $value;
         }
         foreach ($arguments as $argument) {
-            if ($argument !== '--once' && !str_starts_with($argument, '--interval=')
-                && !str_starts_with($argument, '--reload-pid=')) {
+            if (
+                $argument !== '--once' && !str_starts_with($argument, '--interval=')
+                && !str_starts_with($argument, '--reload-pid=')
+            ) {
                 throw new \InvalidArgumentException('Unknown runtime watcher option.');
             }
         }

@@ -135,10 +135,12 @@ final readonly class ExtensionMigrationRunner
         }
         $runtimePath = $release['runtime_path'] ?? null;
         $treeDigest = $release['deployed_tree_sha256'] ?? null;
-        if (!is_string($runtimePath)
+        if (
+            !is_string($runtimePath)
             || preg_match('#^[a-z0-9][a-z0-9._-]*/[a-z0-9][a-z0-9._-]*/[0-9A-Za-z.+-]+$#D', $runtimePath) !== 1
             || !is_string($treeDigest)
-            || preg_match('/^[a-f0-9]{64}$/D', $treeDigest) !== 1) {
+            || preg_match('/^[a-f0-9]{64}$/D', $treeDigest) !== 1
+        ) {
             throw new RuntimeException('The installed release cannot anchor a legacy migration checksum.');
         }
         $extensionRoot = dirname($incomingRoot, 3);
@@ -163,17 +165,21 @@ final readonly class ExtensionMigrationRunner
         $autoload = is_array($autoloadDocument) && !array_is_list($autoloadDocument)
             ? ($autoloadDocument['psr-4'] ?? [])
             : [];
-        if (!is_array($migrations) || !in_array($migrationClass, $migrations, true)
-            || !is_array($autoload) || array_is_list($autoload)) {
+        if (
+            !is_array($migrations) || !in_array($migrationClass, $migrations, true)
+            || !is_array($autoload) || array_is_list($autoload)
+        ) {
             throw new RuntimeException('The installed release does not declare the legacy migration class.');
         }
 
         $source = null;
         $matchedPrefix = '';
         foreach ($autoload as $prefix => $relativePath) {
-            if (!is_string($prefix) || !is_string($relativePath)
+            if (
+                !is_string($prefix) || !is_string($relativePath)
                 || !str_starts_with($migrationClass, $prefix)
-                || strlen($prefix) <= strlen($matchedPrefix)) {
+                || strlen($prefix) <= strlen($matchedPrefix)
+            ) {
                 continue;
             }
             $relativeClass = str_replace('\\', '/', substr($migrationClass, strlen($prefix))) . '.php';
@@ -184,8 +190,10 @@ final readonly class ExtensionMigrationRunner
             throw new RuntimeException('The installed legacy migration source is not autoloadable.');
         }
         $resolved = realpath($source);
-        if (!is_string($resolved) || !is_file($resolved) || is_link($source)
-            || !str_starts_with($resolved, $root . '/')) {
+        if (
+            !is_string($resolved) || !is_file($resolved) || is_link($source)
+            || !str_starts_with($resolved, $root . '/')
+        ) {
             throw new RuntimeException('The installed legacy migration source is missing or unsafe.');
         }
         $candidate = $root;
@@ -256,8 +264,10 @@ final readonly class ExtensionMigrationRunner
                     }
                 }
                 $resolved = realpath($file);
-                if (is_link($file) || !is_file($file) || !is_string($resolved)
-                    || !str_starts_with($resolved, $resolvedBase . '/')) {
+                if (
+                    is_link($file) || !is_file($file) || !is_string($resolved)
+                    || !str_starts_with($resolved, $resolvedBase . '/')
+                ) {
                     throw new RuntimeException('An extension migration autoload target is not a trusted file.');
                 }
                 require $resolved;

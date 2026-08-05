@@ -41,11 +41,13 @@ final readonly class DoctrineTrustStoreRepository implements TrustStoreRepositor
         }
         $releases = $schema->introspectTable($this->tables->raw('extension_releases'));
         $trustGeneration = $schema->introspectTable($this->tables->raw('extension_trust_generation'));
-        if (!$trustGeneration->hasColumn('lifecycle_state')
+        if (
+            !$trustGeneration->hasColumn('lifecycle_state')
             || $this->database->fetchOne(sprintf(
                 'SELECT lifecycle_state FROM %s WHERE singleton_key = 1',
                 $this->tables->quoted('extension_trust_generation'),
-            )) !== 'ready') {
+            )) !== 'ready'
+        ) {
             return false;
         }
         return $releases->hasColumn('artifact_sha256')

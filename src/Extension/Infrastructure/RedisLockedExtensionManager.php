@@ -101,8 +101,7 @@ final readonly class RedisLockedExtensionManager implements ExtensionManager, Ex
         string $identifier,
         ExecutionContext $context,
         #[\SensitiveParameter] ?string $stepUpCredential = null,
-    ): void
-    {
+    ): void {
         $this->authorize($context, AuthorizationResource::item('extension', $identifier));
         $this->trust->synchronizedLifecycle(fn (): array => $this->locked(
             function (DatabaseFencedExtensionRegistryLease $lease) use (

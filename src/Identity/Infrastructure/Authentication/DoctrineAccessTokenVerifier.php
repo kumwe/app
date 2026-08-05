@@ -31,8 +31,7 @@ final readonly class DoctrineAccessTokenVerifier implements AccessTokenVerifier
         string $audience = 'kumwe-http',
         string $purpose = 'api',
         string $siteIdentifier = 'default',
-    ): ?AuthenticatedPrincipal
-    {
+    ): ?AuthenticatedPrincipal {
         try {
             $context = AccessTokenContext::fromStrings($audience, $purpose);
             $siteIdentifier = SiteContext::fromString($siteIdentifier)->identifier();
