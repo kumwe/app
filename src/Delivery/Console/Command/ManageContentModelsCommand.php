@@ -32,7 +32,8 @@ final readonly class ManageContentModelsCommand implements Command
         try {
             $action = array_shift($arguments) ?? 'list';
             $options = CommandInput::options($arguments);
-            $context = $this->authorization->require($options, in_array($action, ['list', 'get'], true) ? 'content.read' : 'content.update');
+            $capability = in_array($action, ['list', 'get'], true) ? 'content.read' : 'content.update';
+            $context = $this->authorization->require($options, $capability);
             $workflow = CommandInput::required($options, 'kind') === 'workflow';
             $result = match ($action) {
                 'list' => ['items' => array_map(
