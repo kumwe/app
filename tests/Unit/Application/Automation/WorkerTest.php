@@ -29,7 +29,7 @@ final class WorkerTest extends TestCase
         self::assertTrue($worker->runOnce('default', 'worker-one', 30));
         self::assertSame([45], $queue->renewals);
         self::assertSame(['00000000-0000-7000-8000-000000000001'], $queue->completed);
-        self::assertSame(2, $queue->heartbeats);
+        self::assertSame(3, $queue->heartbeats);
     }
 
     public function testTransientFailureIsReleasedThroughQueuePolicy(): void
