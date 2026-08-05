@@ -111,10 +111,10 @@ final readonly class DoctrineNonTransactionalMigrationRecovery implements NonTra
         }
         $this->assertJournalSchema();
 
-        return (int) $this->database->fetchOne(sprintf(
+        return $this->nonNegativeInteger($this->database->fetchOne(sprintf(
             'SELECT COUNT(*) FROM %s',
             $this->tables->quoted(self::TABLE),
-        )) > 0;
+        )), 'migration recovery attempt count') > 0;
     }
 
     public function prepare(Migration $migration): NonTransactionalMigrationAction
@@ -277,7 +277,7 @@ final readonly class DoctrineNonTransactionalMigrationRecovery implements NonTra
         $schema = $this->database->createSchemaManager();
         $name = $this->tables->raw(self::TABLE);
 
-        $table = $schema->introspectTable($name);
+        $table = $schema->introspectTableByUnquotedName($name);
         $expected = ['baseline_tables', 'checksum', 'recovery_state', 'started_at', 'updated_at', 'version'];
         $actual = array_map(
             static fn (Column $column): string => $column->getObjectName()->toString(),
@@ -348,7 +348,10 @@ final readonly class DoctrineNonTransactionalMigrationRecovery implements NonTra
         }
     }
 
-    /** @param array<string, mixed> $attempt @return list<string> */
+    /**
+     * @param array<string, mixed> $attempt
+     * @return list<string>
+     */
     private function baseline(array $attempt): array
     {
         $baseline = $this->decode($attempt['baseline_tables'] ?? null, 'Core migration baseline');
@@ -365,7 +368,10 @@ final readonly class DoctrineNonTransactionalMigrationRecovery implements NonTra
         return $baseline;
     }
 
-    /** @param array<string, mixed> $attempt @return array<string, mixed> */
+    /**
+     * @param array<string, mixed> $attempt
+     * @return array<string, mixed>
+     */
     private function state(array $attempt): array
     {
         $state = $this->decode($attempt['recovery_state'] ?? null, 'migration recovery state');
@@ -406,7 +412,7 @@ final readonly class DoctrineNonTransactionalMigrationRecovery implements NonTra
 
         $schema = $this->database->createSchemaManager();
         foreach ($created as $tableName) {
-            $table = $schema->introspectTable($tableName);
+            $table = $schema->introspectTableByUnquotedName($tableName);
             foreach ($table->getForeignKeys() as $foreignKey) {
                 $schema->dropForeignKey($this->constraintName($foreignKey), $tableName);
             }
@@ -421,10 +427,10 @@ final readonly class DoctrineNonTransactionalMigrationRecovery implements NonTra
     /** @return list<string> */
     private function prefixedTables(): array
     {
-        $tables = array_values(array_filter(
-            $this->database->createSchemaManager()->listTableNames(),
-            fn (string $table): bool => $this->hasPrefix($table),
-        ));
+        $tables = array_values(array_filter(array_map(
+            static fn (\Doctrine\DBAL\Schema\Name\OptionallyQualifiedName $table): string => $table->toString(),
+            $this->database->createSchemaManager()->introspectTableNames(),
+        ), fn (string $table): bool => $this->hasPrefix($table)));
         sort($tables, SORT_STRING);
 
         return $tables;
@@ -446,7 +452,7 @@ final readonly class DoctrineNonTransactionalMigrationRecovery implements NonTra
             ['version' => $id],
             ['updated_at' => Types::DATETIME_IMMUTABLE],
         );
-        if ($updated !== 1) {
+        if ($updated !== 1 && $this->attempt($id) === null) {
             throw new RuntimeException(sprintf('The migration attempt "%s" lost its journal row.', $id));
         }
     }
@@ -492,5 +498,14 @@ final readonly class DoctrineNonTransactionalMigrationRecovery implements NonTra
     private function now(): \DateTimeImmutable
     {
         return new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
+    }
+
+    private function nonNegativeInteger(mixed $value, string $label): int
+    {
+        if (!is_int($value) && (!is_string($value) || preg_match('/^[0-9]+$/D', $value) !== 1)) {
+            throw new RuntimeException(sprintf('The %s is invalid.', $label));
+        }
+
+        return (int) $value;
     }
 }

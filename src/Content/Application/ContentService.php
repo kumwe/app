@@ -113,13 +113,13 @@ final readonly class ContentService
             Capability::fromString('content.create'),
             AuthorizationResource::collection('content'),
         );
-        $type = $this->models?->contentType($context->site(), $contentTypeIdentifier);
+        $type = $this->models === null ? null : $this->models->contentType($context->site(), $contentTypeIdentifier);
         if ($this->models !== null && $type === null) {
             throw new ContentModelNotFound('content type', $contentTypeIdentifier);
         }
-        $workflowDefinition = $type === null
+        $workflowDefinition = $type === null || $this->models === null
             ? null
-            : $this->models?->workflow($context->site(), $type->workflowId, $type->workflowVersion);
+            : $this->models->workflow($context->site(), $type->workflowId, $type->workflowVersion);
         if ($type !== null && $workflowDefinition === null) {
             throw new ContentModelNotFound('workflow', $type->workflowId, $type->workflowVersion);
         }
@@ -132,18 +132,18 @@ final readonly class ContentService
             $title,
             $slug,
             $data,
-            $workflowDefinition?->initialState() ?? ContentStatus::Draft,
+            $workflowDefinition === null ? ContentStatus::Draft : $workflowDefinition->initialState(),
             $window,
         );
         $record = new ContentRecord(
             $entry,
-            $type?->id ?? self::CORE_PAGE_TYPE_ID,
-            $workflowDefinition?->id ?? self::CORE_WORKFLOW_ID,
+            $type === null ? self::CORE_PAGE_TYPE_ID : $type->id,
+            $workflowDefinition === null ? self::CORE_WORKFLOW_ID : $workflowDefinition->id,
             $now,
             $now,
             null,
-            $type?->version ?? 1,
-            $workflowDefinition?->version ?? 1,
+            $type === null ? 1 : $type->version,
+            $workflowDefinition === null ? 1 : $workflowDefinition->version,
             $context->site()->identifier(),
         );
 
@@ -174,7 +174,9 @@ final readonly class ContentService
     ): ContentRecord {
         $this->authorize($context, 'content.update', $id);
         $stored = $this->get($context, $id);
-        $type = $this->models?->contentType($context->site(), $stored->contentTypeId, $stored->contentTypeVersion);
+        $type = $this->models === null
+            ? null
+            : $this->models->contentType($context->site(), $stored->contentTypeId, $stored->contentTypeVersion);
         if ($this->models !== null && $type === null) {
             throw new ContentModelNotFound('content type', $stored->contentTypeId, $stored->contentTypeVersion);
         }
@@ -211,7 +213,9 @@ final readonly class ContentService
         $stored = $this->get($context, $id);
         $required = $this->transitionCapabilityForRecord($context, $stored, $target);
         $this->authorize($context, $required->value(), $id);
-        $definition = $this->models?->workflow($context->site(), $stored->workflowId, $stored->workflowVersion);
+        $definition = $this->models === null
+            ? null
+            : $this->models->workflow($context->site(), $stored->workflowId, $stored->workflowVersion);
         $entry = $stored->entry->transition(
             new ExpectedVersion($expectedVersion),
             $definition === null ? $this->workflow : new Workflow($definition),
@@ -251,7 +255,9 @@ final readonly class ContentService
         ContentRecord $stored,
         ContentStatus|string $target,
     ): Capability {
-        $definition = $this->models?->workflow($context->site(), $stored->workflowId, $stored->workflowVersion);
+        $definition = $this->models === null
+            ? null
+            : $this->models->workflow($context->site(), $stored->workflowId, $stored->workflowVersion);
         if ($definition !== null) {
             return $definition->transition(
                 $stored->entry->statusKey(),

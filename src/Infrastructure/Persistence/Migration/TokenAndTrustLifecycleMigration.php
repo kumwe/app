@@ -54,7 +54,7 @@ final readonly class TokenAndTrustLifecycleMigration implements Migration
     {
         $schema = $database->createSchemaManager();
         $platform = $database->getDatabasePlatform();
-        $users = $schema->introspectTable($this->tables->raw('users'));
+        $users = $schema->introspectTableByUnquotedName($this->tables->raw('users'));
         if (!$users->hasColumn('security_epoch')) {
             $database->executeStatement(sprintf(
                 'ALTER TABLE %s ADD security_epoch BIGINT NOT NULL DEFAULT 1',
@@ -62,7 +62,7 @@ final readonly class TokenAndTrustLifecycleMigration implements Migration
             ));
         }
 
-        $tokens = $schema->introspectTable($this->tables->raw('api_tokens'));
+        $tokens = $schema->introspectTableByUnquotedName($this->tables->raw('api_tokens'));
         $this->add(
             $database,
             $tokens->hasColumn('security_epoch'),
@@ -99,7 +99,7 @@ final readonly class TokenAndTrustLifecycleMigration implements Migration
             'api_tokens',
             'revocation_reason VARCHAR(500) DEFAULT NULL',
         );
-        $tokens = $schema->introspectTable($this->tables->raw('api_tokens'));
+        $tokens = $schema->introspectTableByUnquotedName($this->tables->raw('api_tokens'));
         $tokenInventoryIndex = $this->tables->raw('idx_api_token_inventory');
         if (!$tokens->hasIndex($tokenInventoryIndex)) {
             $database->executeStatement(sprintf(
@@ -123,7 +123,7 @@ final readonly class TokenAndTrustLifecycleMigration implements Migration
             $this->tables->quoted('api_tokens'),
         ));
 
-        $keys = $schema->introspectTable($this->tables->raw('extension_trust_keys'));
+        $keys = $schema->introspectTableByUnquotedName($this->tables->raw('extension_trust_keys'));
         $this->add(
             $database,
             $keys->hasColumn('vendor_namespace'),
@@ -177,7 +177,7 @@ final readonly class TokenAndTrustLifecycleMigration implements Migration
         ), [$now->modify('+1 year')], [Types::DATETIME_IMMUTABLE]);
         $this->requireExpiry($database, 'extension_trust_keys');
 
-        $releases = $schema->introspectTable($this->tables->raw('extension_releases'));
+        $releases = $schema->introspectTableByUnquotedName($this->tables->raw('extension_releases'));
         $this->add(
             $database,
             $releases->hasColumn('artifact_sha256'),
@@ -197,7 +197,7 @@ final readonly class TokenAndTrustLifecycleMigration implements Migration
             "trust_state VARCHAR(32) NOT NULL DEFAULT 'needs_reverification'",
         );
 
-        $idempotency = $schema->introspectTable($this->tables->raw('idempotency'));
+        $idempotency = $schema->introspectTableByUnquotedName($this->tables->raw('idempotency'));
         $this->add(
             $database,
             $idempotency->hasColumn('owner_token'),
@@ -234,12 +234,12 @@ final readonly class TokenAndTrustLifecycleMigration implements Migration
             $table->addColumn('generation', Types::BIGINT, ['default' => 0]);
             $table->addColumn('updated_at', Types::DATETIME_IMMUTABLE);
             $table->addColumn('lifecycle_state', Types::STRING, ['length' => 32, 'default' => 'migrating']);
-            $table->setPrimaryKey(['singleton_key']);
+            $table->addPrimaryKeyConstraint(['singleton_key']);
             foreach ($generationSchema->toSql($platform) as $statement) {
                 $database->executeStatement($statement);
             }
         }
-        $trustGenerationSchema = $database->createSchemaManager()->introspectTable($trustGeneration);
+        $trustGenerationSchema = $database->createSchemaManager()->introspectTableByUnquotedName($trustGeneration);
         $this->add(
             $database,
             $trustGenerationSchema->hasColumn('lifecycle_state'),
@@ -312,7 +312,7 @@ final readonly class TokenAndTrustLifecycleMigration implements Migration
             $table->addColumn('state', Types::STRING, ['length' => 32]);
             $table->addColumn('created_at', Types::DATETIME_IMMUTABLE);
             $table->addColumn('materialized_at', Types::DATETIME_IMMUTABLE, ['notnull' => false]);
-            $table->setPrimaryKey(['id']);
+            $table->addPrimaryKeyConstraint(['id']);
             $table->addIndex(['state', 'generation'], $this->tables->raw('idx_extension_runtime_outbox'));
             foreach ($schema->toSql($platform) as $statement) {
                 $database->executeStatement($statement);
@@ -537,10 +537,13 @@ final readonly class TokenAndTrustLifecycleMigration implements Migration
             return false;
         }
         $expiresAt = $key['expires_at'] ?? null;
+        if (!$expiresAt instanceof DateTimeImmutable && (!is_string($expiresAt) || $expiresAt === '')) {
+            return false;
+        }
         try {
             $expiresAt = $expiresAt instanceof DateTimeImmutable
                 ? $expiresAt
-                : new DateTimeImmutable((string) $expiresAt);
+                : new DateTimeImmutable($expiresAt);
         } catch (Throwable) {
             return false;
         }
@@ -599,7 +602,7 @@ final readonly class TokenAndTrustLifecycleMigration implements Migration
     private function requireExpiry(Connection $database, string $table): void
     {
         $column = $database->createSchemaManager()
-            ->introspectTable($this->tables->raw($table))
+            ->introspectTableByUnquotedName($this->tables->raw($table))
             ->getColumn('expires_at');
         if ($column->getNotnull()) {
             return;

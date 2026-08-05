@@ -67,7 +67,10 @@ final class CommandInput
         return $value;
     }
 
-    /** @param array<string, string> $options @return list<array<string, mixed>> */
+    /**
+     * @param array<string, string> $options
+     * @return list<array<string, mixed>>
+     */
     public static function jsonObjectList(array $options, string $name): array
     {
         $value = json_decode(self::required($options, $name), true, 64, JSON_THROW_ON_ERROR);

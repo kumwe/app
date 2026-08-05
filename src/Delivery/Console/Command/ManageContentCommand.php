@@ -10,14 +10,12 @@ use Kumwe\CMS\Delivery\Console\Command;
 use Kumwe\CMS\Delivery\Console\Output;
 use Kumwe\CMS\Application\Authorization\ExecutionContext;
 use Throwable;
-use Kumwe\CMS\Workflow\Application\ContentTransitionAuthorizer;
 
 final readonly class ManageContentCommand implements Command
 {
     public function __construct(
         private ContentService $content,
         private ConsoleAuthorizer $authorization,
-        ?ContentTransitionAuthorizer $_legacyTransitions = null,
     ) {
     }
 

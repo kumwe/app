@@ -66,7 +66,11 @@ final readonly class TrustStore
         return $this->runtime->materialize();
     }
 
-    /** @template T @param callable(): T $operation @return T */
+    /**
+     * @template T
+     * @param callable(): T $operation
+     * @return T
+     */
     public function synchronizedLifecycle(callable $operation): mixed
     {
         return $this->repository->synchronizedLifecycle($operation);
@@ -204,12 +208,17 @@ final readonly class TrustStore
                 $this->repository->advanceGeneration($now);
                 $this->runtime->advance($auditAction, $keyId);
                 $this->record($context, $auditAction, $keyId, ['reason' => $reason]);
-                $this->transactions->afterCommit(fn (): mixed => $this->materializeBestEffort());
+                $this->transactions->afterCommit(function (): void {
+                    $this->materializeBestEffort();
+                });
             });
         });
     }
 
-    /** Immediately revokes a key and quarantines every active release signed by it. */
+    /**
+     * Immediately revokes a key and quarantines every active release signed by it.
+     * @return list<string>
+     */
     public function emergencyRevoke(ExecutionContext $context, string $keyId, string $reason): array
     {
         $this->authorize($context, AuthorizationResource::item('extension_trust_key', $keyId));
@@ -227,7 +236,9 @@ final readonly class TrustStore
                     'reason' => $reason,
                     'quarantined_extensions' => $quarantined,
                 ]);
-                $this->transactions->afterCommit(fn (): mixed => $this->materializeBestEffort());
+                $this->transactions->afterCommit(function (): void {
+                    $this->materializeBestEffort();
+                });
                 return $quarantined;
             });
         });
@@ -331,7 +342,10 @@ final readonly class TrustStore
         return $release;
     }
 
-    /** @param array<string, mixed> $entry @param array<string, mixed> $release */
+    /**
+     * @param array<string, mixed> $entry
+     * @param array<string, mixed> $release
+     */
     private function assertRuntimeEntryMatches(
         array $entry,
         array $release,
@@ -409,7 +423,9 @@ final readonly class TrustStore
             if ($this->repository->quarantineExtension($identifier, $now)) {
                 $this->repository->advanceGeneration($now);
                 $this->runtime->advance('extension.trust.quarantine', $identifier);
-                $this->transactions->afterCommit(fn (): mixed => $this->materializeBestEffort());
+                $this->transactions->afterCommit(function (): void {
+                    $this->materializeBestEffort();
+                });
             }
         });
     }

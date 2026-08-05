@@ -373,6 +373,7 @@ final readonly class ContentModelRuntimeMigration implements RepeatableMigration
             throw new RuntimeException('Stored content model schema must be a JSON object.');
         }
 
+        /** @var array<string, mixed> $value */
         return $value;
     }
 }

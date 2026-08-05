@@ -39,8 +39,8 @@ final readonly class DoctrineTrustStoreRepository implements TrustStoreRepositor
         if (!$schema->tablesExist($required)) {
             return false;
         }
-        $releases = $schema->introspectTable($this->tables->raw('extension_releases'));
-        $trustGeneration = $schema->introspectTable($this->tables->raw('extension_trust_generation'));
+        $releases = $schema->introspectTableByUnquotedName($this->tables->raw('extension_releases'));
+        $trustGeneration = $schema->introspectTableByUnquotedName($this->tables->raw('extension_trust_generation'));
         if (
             !$trustGeneration->hasColumn('lifecycle_state')
             || $this->database->fetchOne(sprintf(

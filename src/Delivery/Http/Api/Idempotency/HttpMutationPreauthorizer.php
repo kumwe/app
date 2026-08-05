@@ -223,10 +223,12 @@ final readonly class HttpMutationPreauthorizer
         if ($method === 'PATCH' && preg_match('#^/api/v1/(content-types|workflows)/([^/]+)$#D', $path, $match) === 1) {
             $type = $match[1] === 'content-types' ? 'content_type' : 'workflow';
             $identifier = rawurldecode($match[2]);
-            $definition = $type === 'content_type'
-                ? $this->models?->contentType($context->site(), $identifier)
-                : $this->models?->workflow($context->site(), $identifier);
-            $resourceId = $definition?->id ?? $identifier;
+            $definition = $this->models === null
+                ? null
+                : ($type === 'content_type'
+                    ? $this->models->contentType($context->site(), $identifier)
+                    : $this->models->workflow($context->site(), $identifier));
+            $resourceId = $definition === null ? $identifier : $definition->id;
             $this->assert($context, 'content.update', AuthorizationResource::item($type, $resourceId));
             return;
         }

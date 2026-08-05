@@ -269,11 +269,12 @@ final readonly class DoctrineContentModelRepository implements ContentModelRepos
             if (!is_array($state)) {
                 throw new RuntimeException('Stored workflow state is invalid.');
             }
+            /** @var array<string, mixed> $state */
             $states[] = new WorkflowStateDefinition(
-                (string) ($state['key'] ?? ''),
-                (string) ($state['name'] ?? ''),
-                (bool) ($state['initial'] ?? false),
-                (bool) ($state['public'] ?? false),
+                $this->string($state, 'key'),
+                $this->string($state, 'name'),
+                $this->boolean($state, 'initial'),
+                $this->boolean($state, 'public'),
             );
         }
         $transitions = [];
@@ -281,10 +282,11 @@ final readonly class DoctrineContentModelRepository implements ContentModelRepos
             if (!is_array($transition)) {
                 throw new RuntimeException('Stored workflow transition is invalid.');
             }
+            /** @var array<string, mixed> $transition */
             $transitions[] = new WorkflowTransitionDefinition(
-                (string) ($transition['from'] ?? ''),
-                (string) ($transition['to'] ?? ''),
-                Capability::fromString((string) ($transition['required_capability'] ?? '')),
+                $this->string($transition, 'from'),
+                $this->string($transition, 'to'),
+                Capability::fromString($this->string($transition, 'required_capability')),
             );
         }
         return new WorkflowDefinition(
@@ -328,23 +330,42 @@ final readonly class DoctrineContentModelRepository implements ContentModelRepos
         return (int) $value;
     }
 
-    /** @param array<string, mixed> $row @return array<string, mixed> */
+    /** @param array<string, mixed> $row */
+    private function boolean(array $row, string $key): bool
+    {
+        $value = $row[$key] ?? null;
+        if (!is_bool($value)) {
+            throw new RuntimeException('Stored definition ' . $key . ' is invalid.');
+        }
+
+        return $value;
+    }
+
+    /**
+     * @param array<string, mixed> $row
+     * @return array<string, mixed>
+     */
     private function jsonObject(array $row, string $key): array
     {
         $value = $this->json($row[$key] ?? null);
         if (!is_array($value) || ($value !== [] && array_is_list($value))) {
             throw new RuntimeException('Stored definition ' . $key . ' must be a JSON object.');
         }
+        /** @var array<string, mixed> $value */
         return $value;
     }
 
-    /** @param array<string, mixed> $row @return list<mixed> */
+    /**
+     * @param array<string, mixed> $row
+     * @return list<mixed>
+     */
     private function jsonList(array $row, string $key): array
     {
         $value = $this->json($row[$key] ?? null);
         if (!is_array($value) || !array_is_list($value)) {
             throw new RuntimeException('Stored definition ' . $key . ' must be a JSON list.');
         }
+        /** @var list<mixed> $value */
         return $value;
     }
 

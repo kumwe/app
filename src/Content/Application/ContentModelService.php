@@ -124,6 +124,7 @@ final readonly class ContentModelService
         $this->schemas->assertSupported($schema);
         $breaking = $this->compatibility->breakingChanges($current->schema(), $schema);
         if ($breaking !== [] && !$allowBreaking) {
+            /** @var non-empty-list<string> $breaking */
             throw new IncompatibleDefinition($breaking);
         }
         $workflow = $this->repository->workflow($context->site(), $workflowIdentifier)
@@ -186,7 +187,10 @@ final readonly class ContentModelService
         return $definition;
     }
 
-    /** @param list<array<string, mixed>> $states @param list<array<string, mixed>> $transitions */
+    /**
+     * @param list<array<string, mixed>> $states
+     * @param list<array<string, mixed>> $transitions
+     */
     public function createWorkflow(
         ExecutionContext $context,
         string $handle,
@@ -219,7 +223,10 @@ final readonly class ContentModelService
         });
     }
 
-    /** @param list<array<string, mixed>> $states @param list<array<string, mixed>> $transitions */
+    /**
+     * @param list<array<string, mixed>> $states
+     * @param list<array<string, mixed>> $transitions
+     */
     public function updateWorkflow(
         ExecutionContext $context,
         string $id,
@@ -253,6 +260,7 @@ final readonly class ContentModelService
         );
         $breaking = $this->workflowBreakingChanges($current, $definition);
         if ($breaking !== [] && !$allowBreaking) {
+            /** @var non-empty-list<string> $breaking */
             throw new IncompatibleDefinition($breaking);
         }
         return $this->transactions->transactional(function () use (
@@ -276,7 +284,10 @@ final readonly class ContentModelService
         });
     }
 
-    /** @param list<array<string, mixed>> $states @param list<array<string, mixed>> $transitions */
+    /**
+     * @param list<array<string, mixed>> $states
+     * @param list<array<string, mixed>> $transitions
+     */
     private function buildWorkflow(
         string $id,
         ExecutionContext $context,
@@ -289,16 +300,20 @@ final readonly class ContentModelService
         DateTimeImmutable $published,
     ): WorkflowDefinition {
         $mappedStates = array_map(static fn (array $state): WorkflowStateDefinition => new WorkflowStateDefinition(
-            (string) ($state['key'] ?? ''),
-            (string) ($state['name'] ?? ''),
-            (bool) ($state['initial'] ?? false),
-            (bool) ($state['public'] ?? false),
+            self::documentString($state, 'key'),
+            self::documentString($state, 'name'),
+            self::documentBoolean($state, 'initial'),
+            self::documentBoolean($state, 'public'),
         ), $states);
         $mappedTransitions = array_map(
             static fn (array $transition): WorkflowTransitionDefinition => new WorkflowTransitionDefinition(
-                (string) ($transition['from'] ?? ''),
-                (string) ($transition['to'] ?? ''),
-                Capability::fromString((string) ($transition['required_capability'] ?? 'content.update')),
+                self::documentString($transition, 'from'),
+                self::documentString($transition, 'to'),
+                Capability::fromString(self::documentString(
+                    $transition,
+                    'required_capability',
+                    'content.update',
+                )),
             ),
             $transitions,
         );
@@ -313,6 +328,22 @@ final readonly class ContentModelService
             $created,
             $published,
         );
+    }
+
+    /** @param array<string, mixed> $document */
+    private static function documentString(array $document, string $key, string $default = ''): string
+    {
+        $value = $document[$key] ?? $default;
+
+        return is_string($value) ? $value : $default;
+    }
+
+    /** @param array<string, mixed> $document */
+    private static function documentBoolean(array $document, string $key): bool
+    {
+        $value = $document[$key] ?? false;
+
+        return is_bool($value) && $value;
     }
 
     /** @return list<string> */

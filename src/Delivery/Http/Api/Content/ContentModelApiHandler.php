@@ -108,7 +108,10 @@ final readonly class ContentModelApiHandler implements RequestHandlerInterface
         ]);
     }
 
-    /** @param array<string, mixed> $body @return array<string, mixed> */
+    /**
+     * @param array<string, mixed> $body
+     * @return array<string, mixed>
+     */
     private function object(array $body, string $key): array
     {
         $value = $body[$key] ?? null;
@@ -119,7 +122,10 @@ final readonly class ContentModelApiHandler implements RequestHandlerInterface
         return $this->normalizeObject($value);
     }
 
-    /** @param array<string, mixed> $body @return list<array<string, mixed>> */
+    /**
+     * @param array<string, mixed> $body
+     * @return list<array<string, mixed>>
+     */
     private function list(array $body, string $key): array
     {
         $value = $body[$key] ?? null;
@@ -141,7 +147,9 @@ final readonly class ContentModelApiHandler implements RequestHandlerInterface
     private function normalizeObject(stdClass $object): array
     {
         $normalized = [];
-        foreach (get_object_vars($object) as $key => $value) {
+        /** @var array<string, mixed> $properties */
+        $properties = get_object_vars($object);
+        foreach ($properties as $key => $value) {
             $normalized[$key] = $this->normalizeValue($value);
         }
 

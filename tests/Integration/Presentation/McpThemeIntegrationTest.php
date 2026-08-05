@@ -27,6 +27,7 @@ use Kumwe\CMS\Infrastructure\Persistence\Migration\ApplicationAuthorizationMigra
 use Kumwe\CMS\Infrastructure\Persistence\Migration\AuthorizationRecoveryIntegrationMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\JobRecoveryMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\IsolateThemeSurfacesMigration;
+use Kumwe\CMS\Infrastructure\Persistence\Migration\TokenAndTrustLifecycleMigration;
 use Kumwe\CMS\Infrastructure\Persistence\DoctrineTransactionManager;
 use Kumwe\CMS\Infrastructure\Persistence\TableNames;
 use Kumwe\CMS\Infrastructure\Time\SystemClock;
@@ -108,6 +109,7 @@ final class McpThemeIntegrationTest extends TestCase
         (new ApplicationAuthorizationMigration($tables))->up($database);
         (new JobRecoveryMigration($tables))->up($database);
         (new AuthorizationRecoveryIntegrationMigration($tables))->up($database);
+        (new TokenAndTrustLifecycleMigration($tables, sys_get_temp_dir()))->up($database);
         (new IsolateThemeSurfacesMigration($tables))->up($database);
         $clock = new SystemClock();
         $transactions = new DoctrineTransactionManager($database);

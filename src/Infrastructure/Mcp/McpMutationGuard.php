@@ -330,10 +330,14 @@ final readonly class McpMutationGuard
             throw new RuntimeException('The MCP idempotency record disappeared during acquisition.');
         }
 
+        /** @var array<string, mixed> $row */
         return $row;
     }
 
-    /** @param array<string, mixed> $row @return array<string, mixed> */
+    /**
+     * @param array<string, mixed> $row
+     * @return array<string, mixed>
+     */
     private function decodeResult(array $row): array
     {
         $body = $this->string($row, 'result_body');
@@ -345,6 +349,7 @@ final readonly class McpMutationGuard
             throw new RuntimeException('The stored MCP operation result is invalid.');
         }
 
+        /** @var array<string, mixed> $result */
         return $result;
     }
 

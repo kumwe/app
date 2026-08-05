@@ -68,6 +68,7 @@ final readonly class DoctrineExtensionManager
     ) {
     }
 
+    /** @return list<array<string, mixed>> */
     public function installed(ExecutionContext $context): array
     {
         $installed = $this->database->fetchAllAssociative(sprintf(
@@ -205,12 +206,13 @@ final readonly class DoctrineExtensionManager
 
     public function hasPendingInstallOperations(): bool
     {
-        return (int) $this->database->fetchOne(sprintf(
+        return $this->databaseInteger($this->database->fetchOne(sprintf(
             "SELECT COUNT(*) FROM %s WHERE transaction_outcome = 'unknown'",
             $this->tables->quoted('extension_install_operations'),
-        )) > 0;
+        )), 'pending extension install count') > 0;
     }
 
+    /** @return array<string, mixed> */
     public function install(
         string $archiveFile,
         ExecutionContext $context,
@@ -479,6 +481,7 @@ final readonly class DoctrineExtensionManager
         }
     }
 
+    /** @return array<string, mixed> */
     public function activate(
         string $identifier,
         ExecutionContext $context,
@@ -519,6 +522,7 @@ final readonly class DoctrineExtensionManager
         return $result;
     }
 
+    /** @return array<string, mixed> */
     public function disable(
         string $identifier,
         ExecutionContext $context,
@@ -881,7 +885,7 @@ final readonly class DoctrineExtensionManager
             $this->tables->quoted('site_theme_activations'),
         ), [$extensionId, $extensionId]);
 
-        if ((int) $count !== 0) {
+        if ($this->databaseInteger($count, 'active theme assignment count') !== 0) {
             return;
         }
 
@@ -986,7 +990,7 @@ final readonly class DoctrineExtensionManager
             'SELECT fence FROM %s WHERE singleton_key = 1',
             $this->tables->quoted('extension_registry_fence'),
         ));
-        if (!is_numeric($current) || (int) $current !== $lease->fence()) {
+        if ($this->databaseInteger($current, 'extension registry fence') !== $lease->fence()) {
             throw new RuntimeException('A newer extension registry lease fenced this operation.');
         }
     }
@@ -998,7 +1002,7 @@ final readonly class DoctrineExtensionManager
             'SELECT fence FROM %s WHERE singleton_key = 1',
             $this->tables->quoted('extension_registry_fence'),
         ));
-        if (!is_numeric($current) || (int) $current !== $lease->fence()) {
+        if ($this->databaseInteger($current, 'extension registry fence') !== $lease->fence()) {
             throw new RuntimeException('A newer extension registry lease fenced this operation.');
         }
     }
@@ -1164,14 +1168,14 @@ final readonly class DoctrineExtensionManager
                 $this->tables->quoted('site_theme_activations'),
             ), [($site ?? SiteContext::default())->identifier(), $extensionId]);
 
-            return (int) $active === 1;
+            return $this->databaseInteger($active, 'site theme assignment count') === 1;
         }
         $active = $this->database->fetchOne(sprintf(
             'SELECT COUNT(*) FROM %s WHERE surface = ? AND extension_id = ?',
             $this->tables->quoted('theme_activations'),
         ), [$surface->value, $extensionId]);
 
-        return (int) $active === 1;
+        return $this->databaseInteger($active, 'administrator theme assignment count') === 1;
     }
 
     private function isAnyThemeActive(string $extensionId): bool
@@ -1183,7 +1187,16 @@ final readonly class DoctrineExtensionManager
             $this->tables->quoted('site_theme_activations'),
         ), [$extensionId, $extensionId]);
 
-        return (int) $active > 0;
+        return $this->databaseInteger($active, 'theme assignment count') > 0;
+    }
+
+    private function databaseInteger(mixed $value, string $description): int
+    {
+        if (!is_int($value) && (!is_string($value) || preg_match('/^[0-9]+$/D', $value) !== 1)) {
+            throw new RuntimeException('The ' . $description . ' is invalid.');
+        }
+
+        return (int) $value;
     }
 
     private function assertCompatible(ExtensionManifest $manifest): void

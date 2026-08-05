@@ -229,7 +229,7 @@ final class DoctrineThemeManagerIntegrationTest extends TestCase
             'SELECT status FROM %s WHERE identifier = ?',
             $this->tables->quoted('extensions'),
         ), ['acme/corporate']));
-        self::assertFalse($this->database->fetchOne(sprintf(
+        self::assertNull($this->database->fetchOne(sprintf(
             'SELECT extension_id FROM %s WHERE site_identifier = ?',
             $this->tables->quoted('site_theme_activations'),
         ), ['default']));
@@ -303,7 +303,7 @@ final class DoctrineThemeManagerIntegrationTest extends TestCase
             $capability,
         ))->recover($capability, new FixedExtensionRegistryLease(1));
 
-        self::assertFalse($this->database->fetchOne(sprintf(
+        self::assertNull($this->database->fetchOne(sprintf(
             "SELECT extension_id FROM %s WHERE surface = 'administrator'",
             $this->tables->quoted('theme_activations'),
         )));
@@ -694,10 +694,6 @@ final class DoctrineThemeManagerIntegrationTest extends TestCase
             'UPDATE %s SET fence = 1 WHERE singleton_key = 1',
             $this->tables->quoted('extension_registry_fence'),
         ));
-        $this->database->executeStatement(sprintf(
-            'UPDATE %s SET fence = 0, updated_at = CURRENT_TIMESTAMP WHERE singleton_key = 1',
-            $this->tables->quoted('extension_registry_fence'),
-        ));
     }
 
     private function persistTheme(): void
@@ -752,7 +748,7 @@ JSON;
 
     private function assertActivationWasRolledBack(): void
     {
-        self::assertFalse($this->database->fetchOne(sprintf(
+        self::assertNull($this->database->fetchOne(sprintf(
             'SELECT extension_id FROM %s WHERE site_identifier = ?',
             $this->tables->quoted('site_theme_activations'),
         ), ['default']));

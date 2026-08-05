@@ -46,10 +46,15 @@ final readonly class AdministratorContentEditorHandler implements RequestHandler
         );
         $workflow = null;
         if (is_array($entry)) {
+            $workflowId = $entry['workflow_id'] ?? null;
+            $workflowVersion = $entry['workflow_version'] ?? null;
+            if (!is_string($workflowId) || !is_int($workflowVersion)) {
+                throw new \RuntimeException('The stored content workflow reference is invalid.');
+            }
             $workflow = $this->models->workflow(
                 $context,
-                (string) $entry['workflow_id'],
-                (int) $entry['workflow_version'],
+                $workflowId,
+                $workflowVersion,
             )->toArray();
         }
 

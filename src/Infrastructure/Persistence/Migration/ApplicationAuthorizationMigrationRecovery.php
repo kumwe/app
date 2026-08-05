@@ -87,8 +87,8 @@ final readonly class ApplicationAuthorizationMigrationRecovery
             }
         }
 
-        $users = $manager->introspectTable($this->tables->raw('users'));
-        $idempotency = $manager->introspectTable($this->tables->raw('idempotency'));
+        $users = $manager->introspectTableByUnquotedName($this->tables->raw('users'));
+        $idempotency = $manager->introspectTableByUnquotedName($this->tables->raw('idempotency'));
         if (
             $users->hasColumn('security_epoch')
             || $manager->tablesExist([$this->tables->raw('sites')])
@@ -194,9 +194,11 @@ final readonly class ApplicationAuthorizationMigrationRecovery
             }
             $userId = $entry['user_id'] ?? null;
             $epoch = $entry['epoch'] ?? null;
+            $keys = array_keys($entry);
+            sort($keys, SORT_STRING);
             if (
                 !is_string($userId) || $userId === '' || !is_int($epoch) || $epoch < 2
-                || array_keys($entry) !== ['user_id', 'epoch'] || isset($epochs[$userId])
+                || $keys !== ['epoch', 'user_id'] || isset($epochs[$userId])
             ) {
                 throw new RuntimeException('The application-authorization recovery epoch is invalid.');
             }
@@ -292,13 +294,13 @@ final readonly class ApplicationAuthorizationMigrationRecovery
         if (!$ownership->hasIndex('idx_resource_site')) {
             $ownership->addIndex(['site_identifier', 'resource_type'], 'idx_resource_site');
         }
-        if (!$this->hasForeignKey($ownership, 'fk_resource_site')) {
+        if ($this->ownershipForeignKey($ownership) === null) {
             $ownership->addForeignKeyConstraint(
                 $sitesName,
                 ['site_identifier'],
                 ['identifier'],
                 ['onDelete' => 'CASCADE'],
-                'fk_resource_site',
+                'fk_resource_site_' . substr(hash('sha256', $ownershipName), 0, 16),
             );
         }
 
@@ -361,7 +363,7 @@ final readonly class ApplicationAuthorizationMigrationRecovery
             if ($ownership->hasIndex('idx_resource_site')) {
                 $this->assertIndex($ownership, 'idx_resource_site', ['site_identifier', 'resource_type']);
             }
-            if ($this->hasForeignKey($ownership, 'fk_resource_site')) {
+            if ($this->ownershipForeignKey($ownership) !== null) {
                 $this->assertOwnershipForeignKey($ownership);
             }
         }
@@ -606,10 +608,12 @@ final readonly class ApplicationAuthorizationMigrationRecovery
     private function assertIntegerColumn(Table $table, string $name, bool $notNull, string $default): void
     {
         $column = $table->getColumn($name);
+        $actualDefault = $column->getDefault();
         if (
             !$column->getType() instanceof IntegerType
             || $column->getNotnull() !== $notNull
-            || (string) $column->getDefault() !== $default
+            || (!is_int($actualDefault) && !is_string($actualDefault))
+            || (string) $actualDefault !== $default
         ) {
             throw new RuntimeException(sprintf(
                 'The interrupted column "%s.%s" is divergent.',
@@ -669,46 +673,36 @@ final readonly class ApplicationAuthorizationMigrationRecovery
 
     private function assertOwnershipForeignKey(Table $table): void
     {
+        $foreignKey = $this->ownershipForeignKey($table);
+        if ($foreignKey === null) {
+            throw new RuntimeException('The interrupted ownership foreign key is missing.');
+        }
+        if (
+            $this->names($foreignKey->getReferencedColumnNames()) !== ['identifier']
+            || $foreignKey->getOnDeleteAction() !== ReferentialAction::CASCADE
+        ) {
+            throw new RuntimeException('The interrupted ownership foreign key is divergent.');
+        }
+    }
+
+    private function ownershipForeignKey(Table $table): ?ForeignKeyConstraint
+    {
         foreach ($table->getForeignKeys() as $foreignKey) {
-            if ($this->constraintName($foreignKey) !== 'fk_resource_site') {
-                continue;
-            }
             if (
-                $this->names($foreignKey->getReferencingColumnNames()) !== ['site_identifier']
-                || $this->names($foreignKey->getReferencedColumnNames()) !== ['identifier']
-                || $foreignKey->getReferencedTableName()->toString() !== $this->tables->raw('sites')
-                || $foreignKey->getOnDeleteAction() !== ReferentialAction::CASCADE
+                $this->names($foreignKey->getReferencingColumnNames()) === ['site_identifier']
+                && $foreignKey->getReferencedTableName()->toString() === $this->tables->raw('sites')
             ) {
-                throw new RuntimeException('The interrupted ownership foreign key is divergent.');
-            }
-
-            return;
-        }
-        throw new RuntimeException('The interrupted ownership foreign key is missing.');
-    }
-
-    private function hasForeignKey(Table $table, string $name): bool
-    {
-        foreach ($table->getForeignKeys() as $foreignKey) {
-            if ($this->constraintName($foreignKey) === $name) {
-                return true;
+                return $foreignKey;
             }
         }
 
-        return false;
+        return null;
     }
 
-    private function constraintName(ForeignKeyConstraint $constraint): string
-    {
-        $name = $constraint->getObjectName();
-        if ($name === null) {
-            throw new RuntimeException('An interrupted foreign key is unnamed.');
-        }
-
-        return $name->toString();
-    }
-
-    /** @param non-empty-list<Name> $names @return non-empty-list<string> */
+    /**
+     * @param non-empty-list<Name> $names
+     * @return non-empty-list<string>
+     */
     private function names(array $names): array
     {
         return array_map(static fn (Name $name): string => $name->toString(), $names);

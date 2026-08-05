@@ -69,6 +69,9 @@ final readonly class DoctrineAdministratorThemeRecovery
                     $this->tables->quoted('theme_activations'),
                     $this->tables->quoted('site_theme_activations'),
                 ), [$extensionId, $extensionId]);
+                if (!is_int($active) && (!is_string($active) || preg_match('/^[0-9]+$/D', $active) !== 1)) {
+                    throw new RuntimeException('The active theme assignment count is invalid.');
+                }
                 if ((int) $active === 0) {
                     $this->database->executeStatement(sprintf(
                         "UPDATE %s SET status = 'disabled', registry_version = registry_version + 1, updated_at = ? "

@@ -15,7 +15,10 @@ final readonly class WorkflowDefinition
     /** @var list<WorkflowTransitionDefinition> */
     private array $transitions;
 
-    /** @param list<WorkflowStateDefinition> $states @param list<WorkflowTransitionDefinition> $transitions */
+    /**
+     * @param list<WorkflowStateDefinition> $states
+     * @param list<WorkflowTransitionDefinition> $transitions
+     */
     public function __construct(
         public string $id,
         public SiteContext $site,
@@ -72,7 +75,11 @@ final readonly class WorkflowDefinition
             if (
                 $publicStates[$transition->from]
                 && !$publicStates[$transition->to]
-                && $transition->requiredCapability->value() !== 'content.unpublish'
+                && !in_array(
+                    $transition->requiredCapability->value(),
+                    ['content.unpublish', 'content.archive'],
+                    true,
+                )
             ) {
                 throw new InvalidArgumentException('Leaving a public workflow state requires content.unpublish.');
             }

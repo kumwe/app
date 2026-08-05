@@ -455,6 +455,7 @@ final class AccessControlIntegrationTest extends TestCase
         $tables = $container->get(TableNames::class);
         self::assertInstanceOf(Connection::class, $database);
         self::assertInstanceOf(TableNames::class, $tables);
+        $database->close();
         $revokedAt = $database->fetchOne(sprintf(
             'SELECT revoked_at FROM %s WHERE id = ?',
             $tables->quoted('api_tokens'),

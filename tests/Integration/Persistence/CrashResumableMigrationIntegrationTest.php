@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\CMS\Tests\Integration\Persistence;
 
 use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\DriverManager;
 use Doctrine\DBAL\Platforms\AbstractMySQLPlatform;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use Doctrine\DBAL\Schema\PrimaryKeyConstraint;
@@ -139,7 +140,11 @@ final class CrashResumableMigrationIntegrationTest extends TestCase
             self::assertTrue(array_any(
                 $ownership->getForeignKeys(),
                 fn (\Doctrine\DBAL\Schema\ForeignKeyConstraint $foreignKey): bool =>
-                    $foreignKey->getObjectName()?->toString() === 'fk_resource_site',
+                    array_map(
+                        static fn (\Doctrine\DBAL\Schema\Name $name): string => $name->toString(),
+                        $foreignKey->getReferencingColumnNames(),
+                    ) === ['site_identifier']
+                    && $foreignKey->getReferencedTableName()->toString() === $tables->raw('sites'),
             ));
         } finally {
             $this->dropPrefixTables($database, $tables);
@@ -246,7 +251,9 @@ final class CrashResumableMigrationIntegrationTest extends TestCase
                 'ALTER TABLE %s ADD CONSTRAINT %s FOREIGN KEY (site_identifier) REFERENCES %s (identifier) '
                 . 'ON DELETE RESTRICT',
                 $tables->quoted('resource_site_ownership'),
-                $database->quoteSingleIdentifier('fk_resource_site'),
+                $database->quoteSingleIdentifier(
+                    'fk_resource_site_' . substr(hash('sha256', $tables->raw('resource_site_ownership')), 0, 16),
+                ),
                 $tables->quoted('sites'),
             ));
 
@@ -393,15 +400,7 @@ final class CrashResumableMigrationIntegrationTest extends TestCase
 
     public function testPushedJobRecoveryChecksumsReconcileThroughTheForwardMigration(): void
     {
-        $container = (new ContainerFactory())->create(Environment::fromGlobals());
-        $database = $container->get(Connection::class);
-        self::assertInstanceOf(Connection::class, $database);
-        if ($database->getDatabasePlatform() instanceof PostgreSQLPlatform) {
-            self::markTestSkipped(
-                'The immutable parent migration uses schema-global PostgreSQL index names; '
-                . 'checksum reconciliation is covered by the normal-prefix PostgreSQL upgrade tests.',
-            );
-        }
+        $database = DriverManager::getConnection(['driver' => 'pdo_sqlite', 'memory' => true]);
         $historicalChecksums = [
             '5e55e74ae3027ecc5d4843e045cf19a3e07d0b7be1f2ce556807bb67eda61947',
             '4d7fc30104c21bda0c00947fb82bce1333daa0d542e7292ee4e96bbda1c83b5d',

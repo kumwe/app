@@ -34,6 +34,7 @@ final readonly class ManageTrustStoreCommand implements Command
             $action = array_shift($arguments) ?? 'list';
             $options = CommandInput::options($arguments);
             $actor = $this->authorization->require($options, 'extensions.manage');
+            /** @var array<string, mixed> $result */
             $result = match ($action) {
                 'list' => ['items' => $this->trust->keys($actor)],
                 'add' => $this->add($actor, $options),
@@ -51,7 +52,10 @@ final readonly class ManageTrustStoreCommand implements Command
         }
     }
 
-    /** @param array<string, string> $options @return array{updated: bool} */
+    /**
+     * @param array<string, string> $options
+     * @return array{updated: bool}
+     */
     private function add(ExecutionContext $actor, array $options): array
     {
         $this->trust->add(
@@ -65,7 +69,10 @@ final readonly class ManageTrustStoreCommand implements Command
         return ['updated' => true];
     }
 
-    /** @param array<string, string> $options @return array{updated: bool} */
+    /**
+     * @param array<string, string> $options
+     * @return array{updated: bool}
+     */
     private function rotate(ExecutionContext $actor, array $options): array
     {
         $this->trust->rotate(
@@ -80,7 +87,10 @@ final readonly class ManageTrustStoreCommand implements Command
         return ['updated' => true];
     }
 
-    /** @param array<string, string> $options @return array{updated: bool} */
+    /**
+     * @param array<string, string> $options
+     * @return array{updated: bool}
+     */
     private function revoke(ExecutionContext $actor, array $options): array
     {
         $this->trust->revoke(
@@ -91,7 +101,10 @@ final readonly class ManageTrustStoreCommand implements Command
         return ['updated' => true];
     }
 
-    /** @param array<string, string> $options @return array{updated: bool} */
+    /**
+     * @param array<string, string> $options
+     * @return array{updated: bool}
+     */
     private function finalizeRotation(ExecutionContext $actor, array $options): array
     {
         $this->trust->finalizeRotation(
@@ -102,7 +115,10 @@ final readonly class ManageTrustStoreCommand implements Command
         return ['updated' => true];
     }
 
-    /** @param array<string, string> $options @return array{quarantined: list<string>} */
+    /**
+     * @param array<string, string> $options
+     * @return array{quarantined: list<string>}
+     */
     private function emergencyRevoke(ExecutionContext $actor, array $options): array
     {
         return ['quarantined' => $this->trust->emergencyRevoke(

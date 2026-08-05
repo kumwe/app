@@ -321,7 +321,7 @@ final readonly class DoctrineAccessControlRepository implements AccessControlRep
         return [
             'subject_id' => $subjectId,
             'email' => $email,
-            'capabilities' => array_values($capabilities),
+            'capabilities' => $capabilities,
             'site_identifier' => $site,
             'audience' => $audience,
             'purpose' => $purpose,

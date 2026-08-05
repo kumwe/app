@@ -129,7 +129,9 @@ final readonly class AdministratorContentModelsHandler implements RequestHandler
     private function normalizeObject(stdClass $object): array
     {
         $normalized = [];
-        foreach (get_object_vars($object) as $key => $value) {
+        /** @var array<string, mixed> $properties */
+        $properties = get_object_vars($object);
+        foreach ($properties as $key => $value) {
             $normalized[$key] = $this->normalizeValue($value);
         }
 
