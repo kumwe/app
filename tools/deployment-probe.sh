@@ -55,6 +55,7 @@ require_value KUMWE_PROBE_ADMIN_EMAIL
 require_value KUMWE_PROBE_ADMIN_PASSWORD
 require_value KUMWE_PROBE_API_TOKEN
 require_value KUMWE_PROBE_MCP_HOST
+require_value KUMWE_PROBE_MCP_TOKEN
 require_value KUMWE_PROBE_READ_TOKEN
 require_value KUMWE_PROBE_SITE
 [[ "$KUMWE_PROBE_MCP_HOST" =~ ^[][A-Za-z0-9.:-]+$ ]] \
@@ -229,7 +230,7 @@ read_status="$(http_status "$probe_root/read.body" "$probe_root/read.headers" \
 mcp_initialize='{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-11-25","capabilities":{},"clientInfo":{"name":"kumwe-deployment-probe","version":"2.0.0"}}}'
 mcp_status="$(http_status "$probe_root/mcp-initialize.body" "$probe_root/mcp-initialize.headers" \
     --request POST \
-    --header "Authorization: Bearer $KUMWE_PROBE_API_TOKEN" \
+    --header "Authorization: Bearer $KUMWE_PROBE_MCP_TOKEN" \
     --header "Kumwe-Site: $KUMWE_PROBE_SITE" \
     --header "Host: $KUMWE_PROBE_MCP_HOST" \
     --header 'Accept: application/json, text/event-stream' \
@@ -245,7 +246,7 @@ mcp_session="$(header_value mcp-session-id "$probe_root/mcp-initialize.headers")
 
 mcp_status="$(http_status "$probe_root/mcp-initialized.body" "$probe_root/mcp-initialized.headers" \
     --request POST \
-    --header "Authorization: Bearer $KUMWE_PROBE_API_TOKEN" \
+    --header "Authorization: Bearer $KUMWE_PROBE_MCP_TOKEN" \
     --header "Kumwe-Site: $KUMWE_PROBE_SITE" \
     --header "Host: $KUMWE_PROBE_MCP_HOST" \
     --header 'Accept: application/json, text/event-stream' \
@@ -258,7 +259,7 @@ mcp_status="$(http_status "$probe_root/mcp-initialized.body" "$probe_root/mcp-in
 
 mcp_status="$(http_status "$probe_root/mcp-read.body" "$probe_root/mcp-read.headers" \
     --request POST \
-    --header "Authorization: Bearer $KUMWE_PROBE_API_TOKEN" \
+    --header "Authorization: Bearer $KUMWE_PROBE_MCP_TOKEN" \
     --header "Kumwe-Site: $KUMWE_PROBE_SITE" \
     --header "Host: $KUMWE_PROBE_MCP_HOST" \
     --header 'Accept: application/json, text/event-stream' \
@@ -274,7 +275,7 @@ jq -e '.id == 2 and .result != null and .error == null' "$probe_root/mcp-read.bo
 mcp_write='{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"kumwe_content_create","arguments":{"operationId":"acceptance-content-0001","title":"MCP acceptance","slug":"mcp-acceptance","body":"Created through MCP"}}}'
 mcp_status="$(http_status "$probe_root/mcp-write.body" "$probe_root/mcp-write.headers" \
     --request POST \
-    --header "Authorization: Bearer $KUMWE_PROBE_API_TOKEN" \
+    --header "Authorization: Bearer $KUMWE_PROBE_MCP_TOKEN" \
     --header "Kumwe-Site: $KUMWE_PROBE_SITE" \
     --header "Host: $KUMWE_PROBE_MCP_HOST" \
     --header 'Accept: application/json, text/event-stream' \
@@ -290,7 +291,7 @@ jq -e '.id == 3 and .result != null and .error == null' "$probe_root/mcp-write.b
 mcp_write_replay="${mcp_write/\"id\":3/\"id\":4}"
 mcp_status="$(http_status "$probe_root/mcp-replay.body" "$probe_root/mcp-replay.headers" \
     --request POST \
-    --header "Authorization: Bearer $KUMWE_PROBE_API_TOKEN" \
+    --header "Authorization: Bearer $KUMWE_PROBE_MCP_TOKEN" \
     --header "Kumwe-Site: $KUMWE_PROBE_SITE" \
     --header "Host: $KUMWE_PROBE_MCP_HOST" \
     --header 'Accept: application/json, text/event-stream' \
