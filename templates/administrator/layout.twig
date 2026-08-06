@@ -35,7 +35,7 @@
           <span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24"><path fill="currentColor" d="m12 2 8.7 5v10L12 22l-8.7-5V7L12 2Zm0 3.1L6 8.5v7l6 3.4 6-3.4v-7l-6-3.4Z"/></svg></span>
           <span class="brand-copy"><strong>Kumwe</strong><span>Administrator</span></span>
         </a>
-        <nav class="administrator-navigation">
+        <nav class="administrator-navigation" aria-label="Administrator navigation">
           {% for group in ['Workspace', 'Structure', 'System'] %}
             <section class="navigation-group" aria-labelledby="navigation-group-{{ group|lower }}">
               <h2 class="navigation-group-title" id="navigation-group-{{ group|lower }}">{{ group }}</h2>

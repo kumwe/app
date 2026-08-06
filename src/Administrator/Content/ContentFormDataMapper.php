@@ -17,11 +17,10 @@ final readonly class ContentFormDataMapper
     public function map(ContentTypeDefinition $definition, array $body): array
     {
         [$present, $value] = $this->mapObject($definition->schema(), $body, []);
-        if (!$present || !is_array($value) || array_is_list($value)) {
+        if (!$present) {
             return [];
         }
 
-        /** @var array<string, mixed> $value */
         return $value;
     }
 
@@ -99,13 +98,10 @@ final readonly class ContentFormDataMapper
         }
 
         if ($type === 'array') {
-            $lines = preg_split('/\R/u', $raw) ?: [];
+            $splitLines = preg_split('/\R/u', $raw);
+            $lines = $splitLines === false ? [] : $splitLines;
             $items = [];
-            $itemSchema = $schema['items'] ?? ['type' => 'string'];
-            if (!is_array($itemSchema) || array_is_list($itemSchema)) {
-                $itemSchema = ['type' => 'string'];
-            }
-            /** @var array<string, mixed> $itemSchema */
+            $itemSchema = $this->associativeArray($schema['items'] ?? null, ['type' => 'string']);
             foreach ($lines as $index => $line) {
                 $line = trim($line);
                 if ($line === '') {
@@ -143,5 +139,25 @@ final readonly class ContentFormDataMapper
         }
 
         return [true, $raw];
+    }
+
+    /**
+     * @param array<string, mixed> $fallback
+     * @return array<string, mixed>
+     */
+    private function associativeArray(mixed $value, array $fallback): array
+    {
+        if (!is_array($value) || array_is_list($value)) {
+            return $fallback;
+        }
+
+        $result = [];
+        foreach ($value as $key => $item) {
+            if (is_string($key)) {
+                $result[$key] = $item;
+            }
+        }
+
+        return $result;
     }
 }

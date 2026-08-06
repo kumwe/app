@@ -79,6 +79,7 @@ The [documentation index](docs/README.md) organizes guides by task:
 | Deploy, monitor, back up, recover, and upgrade | [Operations](docs/operations/README.md) |
 | Understand or evolve the design | [Architecture](docs/architecture/README.md) |
 | Test and contribute | [Development](docs/development.md) and [contributing](CONTRIBUTING.md) |
+| Run the complete CMS locally | [Production demonstration](docs/demonstration.md) |
 
 The machine-readable API contract is [api/openapi/kumwe-v1.json](api/openapi/kumwe-v1.json). Run `php bin/kumwe list` from an installed release for the CLI command index.
 

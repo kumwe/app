@@ -65,21 +65,29 @@ final readonly class ContentBrowseQuery
     /** @return array<string, int|string> */
     public function toQueryParameters(): array
     {
-        return array_filter([
-            'q' => $this->search,
-            'status' => $this->status,
-            'type' => $this->contentType,
-            'scope' => $this->scope,
-            'sort' => $this->sort,
-            'page' => $this->page,
-            'per_page' => $this->perPage,
-        ], static fn (int|string $value, string $key): bool => match ($key) {
-            'q', 'status', 'type' => $value !== '',
-            'scope' => $value !== 'active',
-            'sort' => $value !== 'updated_desc',
-            'page' => $value !== 1,
-            'per_page' => $value !== 25,
-            default => true,
-        }, ARRAY_FILTER_USE_BOTH);
+        $parameters = [];
+        if ($this->search !== '') {
+            $parameters['q'] = $this->search;
+        }
+        if ($this->status !== '') {
+            $parameters['status'] = $this->status;
+        }
+        if ($this->contentType !== '') {
+            $parameters['type'] = $this->contentType;
+        }
+        if ($this->scope !== 'active') {
+            $parameters['scope'] = $this->scope;
+        }
+        if ($this->sort !== 'updated_desc') {
+            $parameters['sort'] = $this->sort;
+        }
+        if ($this->page !== 1) {
+            $parameters['page'] = $this->page;
+        }
+        if ($this->perPage !== 25) {
+            $parameters['per_page'] = $this->perPage;
+        }
+
+        return $parameters;
     }
 }

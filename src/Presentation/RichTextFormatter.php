@@ -13,8 +13,11 @@ final class RichTextFormatter
             return '';
         }
 
+        /** @var list<string> $blocks */
         $blocks = [];
+        /** @var list<string> $paragraph */
         $paragraph = [];
+        /** @var list<string> $list */
         $list = [];
         $flushParagraph = static function () use (&$blocks, &$paragraph): void {
             if ($paragraph === []) {
@@ -64,15 +67,14 @@ final class RichTextFormatter
         $offset = 0;
         $pattern = '/\*\*([^*\n]+)\*\*|\[([^\]\n]+)\]\(([^)\s]+)\)/';
         while (preg_match($pattern, $source, $match, PREG_OFFSET_CAPTURE, $offset) === 1) {
-            /** @var array<int, array{string, int}> $match */
             $token = $match[0][0];
             $position = $match[0][1];
             $output .= $this->escape(substr($source, $offset, $position - $offset));
-            if (($match[1][1] ?? -1) >= 0) {
-                $output .= '<strong>' . $this->escape((string) $match[1][0]) . '</strong>';
+            if ($match[1][1] >= 0) {
+                $output .= '<strong>' . $this->escape($match[1][0]) . '</strong>';
             } else {
-                $label = (string) ($match[2][0] ?? '');
-                $url = (string) ($match[3][0] ?? '');
+                $label = $match[2][0];
+                $url = $match[3][0];
                 $output .= $this->link($label, $url, $token);
             }
             $offset = $position + strlen($token);

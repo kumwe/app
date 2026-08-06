@@ -55,6 +55,15 @@ final readonly class AdministratorContentEditorHandler implements RequestHandler
                 $workflowVersion,
             )->toArray();
         }
+        $values = [];
+        $storedData = $entry['data'] ?? null;
+        if (is_array($storedData)) {
+            foreach ($storedData as $key => $value) {
+                if (is_string($key)) {
+                    $values[$key] = $value;
+                }
+            }
+        }
 
         return new HtmlResponse($this->renderer->render('content-form', [
             'csrf' => $session->csrfToken,
@@ -64,7 +73,7 @@ final readonly class AdministratorContentEditorHandler implements RequestHandler
             'content_type' => $selectedType->toArray(),
             'fields' => ($this->form ?? new ContentFormPresenter())->fields(
                 $selectedType,
-                is_array($entry['data'] ?? null) ? $entry['data'] : [],
+                $values,
             ),
             'workflow' => $workflow,
             'media_assets' => $this->media === null ? [] : array_map(

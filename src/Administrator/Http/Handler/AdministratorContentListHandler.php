@@ -58,7 +58,12 @@ final readonly class AdministratorContentListHandler implements RequestHandlerIn
 
     private function query(ServerRequestInterface $request): ContentBrowseQuery
     {
-        $query = $request->getQueryParams();
+        $query = [];
+        foreach ($request->getQueryParams() as $key => $value) {
+            if (is_string($key)) {
+                $query[$key] = $value;
+            }
+        }
         return new ContentBrowseQuery(
             $this->string($query, 'q'),
             $this->string($query, 'status'),

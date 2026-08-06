@@ -119,7 +119,10 @@ final readonly class ContentModelFormMapper
         return $transitions;
     }
 
-    /** @param array<string, string> $form @return array<string, mixed> */
+    /**
+     * @param array<string, string> $form
+     * @return array<string, mixed>
+     */
     private function fieldSchema(array $form, int $index, string $type): array
     {
         $schema = match ($type) {
@@ -157,7 +160,8 @@ final readonly class ContentModelFormMapper
                 $schema['maxLength'] = (int) $maximum;
             }
         }
-        $options = preg_split('/\R/u', trim($form['field_' . $index . '_options'] ?? '')) ?: [];
+        $splitOptions = preg_split('/\R/u', trim($form['field_' . $index . '_options'] ?? ''));
+        $options = $splitOptions === false ? [] : $splitOptions;
         $options = array_values(array_filter(
             array_map('trim', $options),
             static fn (string $option): bool => $option !== '',
