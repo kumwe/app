@@ -93,6 +93,10 @@ test.describe('authenticated administrator', () => {
     await expect(page.locator('textarea[name="payload"]')).toHaveCount(0);
     await expect(page.getByLabel('Job type')).toBeVisible();
     await expectAccessible(page);
-    await expect(page).toHaveScreenshot('automation.png', { fullPage: true });
+    await expect(page).toHaveScreenshot('automation.png', {
+      fullPage: true,
+      mask: [page.locator('[data-visual-dynamic]')],
+      maskColor: '#ffffff',
+    });
   });
 });

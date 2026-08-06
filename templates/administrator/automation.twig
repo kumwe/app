@@ -13,7 +13,7 @@
         <tbody>{% for schedule in schedules %}<tr>
           <td><span class="content-title"><strong>{{ schedule.name }}</strong><span><code>{{ schedule.cron_expression }}</code></span></span></td>
           <td><span class="content-title"><strong>{{ schedule.job_type }}</strong><span>{{ schedule.queue }}</span></span></td>
-          <td>{{ schedule.next_run_at ?: 'Not scheduled' }}</td>
+          <td><span data-visual-dynamic>{{ schedule.next_run_at ?: 'Not scheduled' }}</span></td>
           <td><span class="status status-{{ schedule.enabled ? 'published' : 'draft' }}">{{ schedule.enabled ? 'Enabled' : 'Disabled' }}</span></td>
           <td class="actions"><form action="/administrator/automation" method="post"><input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="id" value="{{ schedule.id }}"><input type="hidden" name="version" value="{{ schedule.version }}"><button class="link-button" name="action" value="schedule.{{ schedule.enabled ? 'disable' : 'enable' }}">{{ schedule.enabled ? 'Disable' : 'Enable' }}</button><button class="link-button danger" name="action" value="schedule.delete" data-confirm="Delete the {{ schedule.name }} schedule?">Delete</button></form></td>
         </tr>{% endfor %}</tbody>
