@@ -6,7 +6,7 @@ This guide starts a development installation with Docker Compose. MariaDB is the
 
 - Docker Engine with Docker Compose v2
 - Git
-- Port 8080 available
+- One available host TCP port; `8080` is the default and is configurable
 
 ## Start MariaDB, Redis, and Kumwe
 
@@ -16,11 +16,32 @@ cd cms
 cp .env.example .env
 docker compose run --rm app composer install
 docker compose run --rm app php bin/kumwe database:migrate
-docker compose up -d
+docker compose up -d --wait
 curl --fail http://localhost:8080/health/ready
 ```
 
-The source directory is mounted into the PHP 8.5 development container. MariaDB and Redis data persist in named volumes.
+The source directory is mounted into the PHP 8.5 development container. MariaDB and Redis data persist in named volumes. The application container starts only after both dependencies are healthy, verifies the local extension runtime before accepting traffic, refreshes its readiness marker continuously, and uses the development router so committed CSS, JavaScript, images, and other public files bypass the application front controller.
+
+## Choose another HTTP port
+
+The application listens on port `8080` inside the container. `KUMWE_HTTP_BIND` and `KUMWE_HTTP_PORT` select the host interface and host port. `APP_BASE_URL` remains the canonical URL used by Kumwe, so its port must match the published host port.
+
+For example, edit `.env` as follows to use <http://localhost:9900>:
+
+```dotenv
+KUMWE_HTTP_BIND=127.0.0.1
+KUMWE_HTTP_PORT=9900
+APP_BASE_URL=http://localhost:9900
+```
+
+Apply the updated mapping and wait for application readiness:
+
+```bash
+docker compose up -d --wait
+curl --fail http://localhost:9900/health/ready
+```
+
+Set `KUMWE_HTTP_BIND=0.0.0.0` only when the development site intentionally needs to be reachable from other machines, and update `APP_TRUSTED_HOSTS` and `APP_BASE_URL` for the hostname clients will use.
 
 ## Choose another database
 
@@ -37,7 +58,7 @@ Then start the database and run the same migration command. To change engines af
 ```bash
 docker compose down --volumes
 docker compose run --rm app php bin/kumwe database:migrate
-docker compose up -d
+docker compose up -d --wait
 ```
 
 `down --volumes` permanently deletes the development database and Redis data. It is not an upgrade method.
@@ -56,7 +77,7 @@ docker compose run --rm app php bin/kumwe user:create-admin \
 rm .admin-password
 ```
 
-Visit <http://localhost:8080/administrator> and sign in.
+Visit <http://localhost:8080/administrator> when using the default port and sign in.
 
 ## Build the first site
 
@@ -80,5 +101,7 @@ docker compose run --rm app php bin/kumwe app:health
 docker compose logs --tail=100 app database redis
 docker compose down
 ```
+
+A `503` from `/health/ready` means the application has deliberately not accepted traffic. Inspect `docker compose logs app` for migration, database, Redis, extension-runtime, or filesystem errors. A successful `docker compose up -d --wait` confirms the container health check before returning.
 
 Continue with the [administrator guide](administration.md), [configuration reference](configuration.md), or [production installation](operations/install.md).
