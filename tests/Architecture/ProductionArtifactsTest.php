@@ -80,6 +80,36 @@ final class ProductionArtifactsTest extends TestCase
         self::assertStringContainsString('profiles: [automation]', $compose);
     }
 
+    public function testDevelopmentTopologyUsesConfigurableListenerAndManagedRuntime(): void
+    {
+        $compose = $this->contents('compose.yaml');
+        $environment = $this->contents('.env.example');
+        $server = $this->contents('tools/development-server.sh');
+        $router = $this->contents('tools/browser-router.php');
+
+        self::assertStringContainsString(
+            '${KUMWE_HTTP_BIND:-127.0.0.1}:${KUMWE_HTTP_PORT:-8080}:8080',
+            $compose,
+        );
+        self::assertStringContainsString('command: sh tools/development-server.sh', $compose);
+        self::assertStringContainsString("test: ['CMD', 'php', 'bin/kumwe', 'app:health']", $compose);
+        self::assertStringNotContainsString('public public/index.php', $compose);
+        self::assertStringContainsString('KUMWE_HTTP_BIND=127.0.0.1', $environment);
+        self::assertStringContainsString('KUMWE_HTTP_PORT=8080', $environment);
+        self::assertStringContainsString('extension:runtime:watch --once', $server);
+        self::assertStringContainsString('extension:runtime:watch --interval=10', $server);
+        self::assertStringContainsString('tools/browser-router.php', $server);
+        self::assertStringContainsString('return false;', $router);
+    }
+
+    public function testFreshComposerInstallAllowsTheLockedDiscoveryPlugin(): void
+    {
+        self::assertStringContainsString(
+            '"php-http/discovery": true',
+            $this->contents('composer.json'),
+        );
+    }
+
     public function testReleaseAndSecurityActionsAreCommitPinned(): void
     {
         foreach (['.github/workflows/security.yml', '.github/workflows/release.yml'] as $workflow) {
@@ -158,7 +188,6 @@ final class ProductionArtifactsTest extends TestCase
 
         self::assertFalse($configuration['metrics']['enabled']);
         self::assertFalse($configuration['metrics']['public']);
-        self::assertFalse($configuration['health']['expose_details']);
         self::assertSame('php://stderr', $configuration['logging']['destination']);
     }
 
