@@ -56,8 +56,11 @@ require_value KUMWE_PROBE_ADMIN_PASSWORD
 require_value KUMWE_PROBE_API_TOKEN
 require_value KUMWE_PROBE_MCP_HOST
 require_value KUMWE_PROBE_READ_TOKEN
+require_value KUMWE_PROBE_SITE
 [[ "$KUMWE_PROBE_MCP_HOST" =~ ^[][A-Za-z0-9.:-]+$ ]] \
     || fail 'KUMWE_PROBE_MCP_HOST is not an exact host or IP address'
+[[ "$KUMWE_PROBE_SITE" =~ ^[a-z0-9][a-z0-9._:-]{0,190}$ ]] \
+    || fail 'KUMWE_PROBE_SITE is not a valid exact site identifier'
 
 probe_root="$(mktemp -d)"
 cleanup() {
@@ -152,6 +155,7 @@ grep --fixed-strings --quiet "$page_marker" "$probe_root/published.body" \
 limited_status="$(http_status "$probe_root/limited.body" "$probe_root/limited.headers" \
     --request POST \
     --header "Authorization: Bearer $KUMWE_PROBE_READ_TOKEN" \
+    --header "Kumwe-Site: $KUMWE_PROBE_SITE" \
     --header 'Content-Type: application/json' \
     --header "Idempotency-Key: denied-$unique_suffix" \
     --data "{\"title\":\"Denied\",\"slug\":\"denied-$unique_suffix\",\"data\":{}}" \
@@ -168,6 +172,7 @@ limited_admin_create_status="$(http_status "$probe_root/limited-admin-create.bod
     "$probe_root/limited-admin-create.headers" \
     --request POST \
     --header "Authorization: Bearer $KUMWE_PROBE_API_TOKEN" \
+    --header "Kumwe-Site: $KUMWE_PROBE_SITE" \
     --header 'Content-Type: application/json' \
     --header "Idempotency-Key: limited-user-$unique_suffix" \
     --data "$limited_admin_request" \
@@ -192,6 +197,7 @@ idempotency_key="create-$unique_suffix"
 api_status="$(http_status "$probe_root/api.body" "$probe_root/api.headers" \
     --request POST \
     --header "Authorization: Bearer $KUMWE_PROBE_API_TOKEN" \
+    --header "Kumwe-Site: $KUMWE_PROBE_SITE" \
     --header 'Content-Type: application/json' \
     --header "Idempotency-Key: $idempotency_key" \
     --data "$api_request" \
@@ -203,6 +209,7 @@ api_content_id="$(jq -er '.id' "$probe_root/api.body")"
 replay_status="$(http_status "$probe_root/replay.body" "$probe_root/replay.headers" \
     --request POST \
     --header "Authorization: Bearer $KUMWE_PROBE_API_TOKEN" \
+    --header "Kumwe-Site: $KUMWE_PROBE_SITE" \
     --header 'Content-Type: application/json' \
     --header "Idempotency-Key: $idempotency_key" \
     --data "$api_request" \
@@ -215,6 +222,7 @@ cmp --silent "$probe_root/api.body" "$probe_root/replay.body" \
 
 read_status="$(http_status "$probe_root/read.body" "$probe_root/read.headers" \
     --header "Authorization: Bearer $KUMWE_PROBE_API_TOKEN" \
+    --header "Kumwe-Site: $KUMWE_PROBE_SITE" \
     "$base_url/api/v1/content/$api_content_id")"
 [[ "$read_status" == 200 ]] || fail "REST content read returned HTTP $read_status"
 
@@ -222,6 +230,7 @@ mcp_initialize='{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protoco
 mcp_status="$(http_status "$probe_root/mcp-initialize.body" "$probe_root/mcp-initialize.headers" \
     --request POST \
     --header "Authorization: Bearer $KUMWE_PROBE_API_TOKEN" \
+    --header "Kumwe-Site: $KUMWE_PROBE_SITE" \
     --header "Host: $KUMWE_PROBE_MCP_HOST" \
     --header 'Accept: application/json, text/event-stream' \
     --header 'Content-Type: application/json' \
@@ -237,6 +246,7 @@ mcp_session="$(header_value mcp-session-id "$probe_root/mcp-initialize.headers")
 mcp_status="$(http_status "$probe_root/mcp-initialized.body" "$probe_root/mcp-initialized.headers" \
     --request POST \
     --header "Authorization: Bearer $KUMWE_PROBE_API_TOKEN" \
+    --header "Kumwe-Site: $KUMWE_PROBE_SITE" \
     --header "Host: $KUMWE_PROBE_MCP_HOST" \
     --header 'Accept: application/json, text/event-stream' \
     --header 'Content-Type: application/json' \
@@ -249,6 +259,7 @@ mcp_status="$(http_status "$probe_root/mcp-initialized.body" "$probe_root/mcp-in
 mcp_status="$(http_status "$probe_root/mcp-read.body" "$probe_root/mcp-read.headers" \
     --request POST \
     --header "Authorization: Bearer $KUMWE_PROBE_API_TOKEN" \
+    --header "Kumwe-Site: $KUMWE_PROBE_SITE" \
     --header "Host: $KUMWE_PROBE_MCP_HOST" \
     --header 'Accept: application/json, text/event-stream' \
     --header 'Content-Type: application/json' \
@@ -264,6 +275,7 @@ mcp_write='{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"kumwe
 mcp_status="$(http_status "$probe_root/mcp-write.body" "$probe_root/mcp-write.headers" \
     --request POST \
     --header "Authorization: Bearer $KUMWE_PROBE_API_TOKEN" \
+    --header "Kumwe-Site: $KUMWE_PROBE_SITE" \
     --header "Host: $KUMWE_PROBE_MCP_HOST" \
     --header 'Accept: application/json, text/event-stream' \
     --header 'Content-Type: application/json' \
@@ -279,6 +291,7 @@ mcp_write_replay="${mcp_write/\"id\":3/\"id\":4}"
 mcp_status="$(http_status "$probe_root/mcp-replay.body" "$probe_root/mcp-replay.headers" \
     --request POST \
     --header "Authorization: Bearer $KUMWE_PROBE_API_TOKEN" \
+    --header "Kumwe-Site: $KUMWE_PROBE_SITE" \
     --header "Host: $KUMWE_PROBE_MCP_HOST" \
     --header 'Accept: application/json, text/event-stream' \
     --header 'Content-Type: application/json' \

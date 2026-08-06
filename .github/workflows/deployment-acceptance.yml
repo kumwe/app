@@ -451,6 +451,7 @@ jobs:
           KUMWE_PROBE_API_TOKEN="$full_token" \
           KUMWE_PROBE_MCP_HOST=kumwe.test \
           KUMWE_PROBE_READ_TOKEN="$read_token" \
+          KUMWE_PROBE_SITE=default \
           KUMWE_PROBE_STATE_FILE="$state_file" \
             bash tools/deployment-probe.sh
           echo "KUMWE_ACCEPTANCE_API_TOKEN=$full_token" >> "$GITHUB_ENV"
@@ -500,6 +501,7 @@ jobs:
             "http://127.0.0.1:18080/pages/$page_slug" >/dev/null
           curl --fail --silent --show-error --retry 20 --retry-connrefused \
             --header "Authorization: Bearer $KUMWE_ACCEPTANCE_API_TOKEN" \
+            --header "Kumwe-Site: default" \
             "http://127.0.0.1:18080/api/v1/content/$api_content_id" >/dev/null
 
       - name: Install database recovery client
