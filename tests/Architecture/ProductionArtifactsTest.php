@@ -92,7 +92,10 @@ final class ProductionArtifactsTest extends TestCase
             $compose,
         );
         self::assertStringContainsString('command: sh tools/development-server.sh', $compose);
-        self::assertStringContainsString("test: ['CMD', 'php', 'bin/kumwe', 'app:health']", $compose);
+        self::assertStringContainsString(
+            "file_get_contents('http://127.0.0.1:8080/health/ready')",
+            $compose,
+        );
         self::assertStringNotContainsString('public public/index.php', $compose);
         self::assertStringContainsString('KUMWE_HTTP_BIND=127.0.0.1', $environment);
         self::assertStringContainsString('KUMWE_HTTP_PORT=8080', $environment);
