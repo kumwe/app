@@ -51,7 +51,7 @@
       <header class="administrator-topbar">
         <button class="topbar-action navigation-toggle" type="button" aria-label="Open administrator navigation" aria-expanded="false" data-navigation-toggle><svg aria-hidden="true"><use href="#kumwe-icon-menu"></use></svg></button>
         <div class="topbar-context"><strong>{% block context_title %}Administrator workspace{% endblock %}</strong><span>{% block context_subtitle %}Manage your website with confidence{% endblock %}</span></div>
-        <button class="command-trigger" type="button" data-open-command-palette><svg width="16" height="16" aria-hidden="true"><use href="#kumwe-icon-search"></use></svg><span>Search administrator</span><kbd>⌘ K</kbd></button>
+        <button class="command-trigger" type="button" aria-label="Search administrator" data-open-command-palette><svg width="16" height="16" aria-hidden="true"><use href="#kumwe-icon-search"></use></svg><span>Search administrator</span><kbd>⌘ K</kbd></button>
         <a class="topbar-action" href="/" target="_blank" rel="noopener" aria-label="View website" data-secondary-action><svg aria-hidden="true"><use href="#kumwe-icon-external"></use></svg></a>
         <form action="/administrator/logout" method="post"><input type="hidden" name="_csrf" value="{{ csrf }}"><button class="topbar-action" type="submit" aria-label="Sign out"><svg aria-hidden="true"><use href="#kumwe-icon-signout"></use></svg></button></form>
       </header>

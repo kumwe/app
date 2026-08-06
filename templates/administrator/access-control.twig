@@ -23,7 +23,7 @@
   </div>
   {% endif %}
 
-  <section class="panel stack"><h2>Users</h2><div class="table-wrap"><table><thead><tr><th>User</th><th>Status</th><th>Groups</th><th>Manage</th></tr></thead><tbody>
+  <section class="panel stack"><h2>Users</h2><div class="table-wrap" tabindex="0" role="region" aria-label="Users"><table><thead><tr><th>User</th><th>Status</th><th>Groups</th><th>Manage</th></tr></thead><tbody>
   {% for user in users %}{% set user_form = 'user-' ~ user.id %}<tr>
     <td><input form="{{ user_form }}" name="display_name" value="{{ user.display_name }}"><input form="{{ user_form }}" type="email" name="email" value="{{ user.email }}"></td>
     <td><select form="{{ user_form }}" name="status">{% for status in ['pending','active','suspended','disabled'] %}<option value="{{ status }}" {% if status == user.status %}selected{% endif %}>{{ status|title }}</option>{% endfor %}</select></td>
@@ -63,7 +63,7 @@
     <button class="primary" type="submit">Create token</button>
   </form></section>
 
-  <section class="panel stack"><h2>API / MCP tokens</h2><div class="table-wrap"><table>
+  <section class="panel stack"><h2>API / MCP tokens</h2><div class="table-wrap" tabindex="0" role="region" aria-label="API and MCP tokens"><table>
     <thead><tr><th>Token</th><th>User</th><th>Capabilities</th><th>Expiry</th><th>Status</th><th>Manage</th></tr></thead>
     <tbody>{% for token in tokens %}<tr>
       <td><strong>{{ token.name }}</strong><br><small>{{ token.id }}</small></td>

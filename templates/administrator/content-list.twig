@@ -21,7 +21,7 @@
     {% if entries is empty %}
       <div class="empty-state"><div class="empty-state-content"><span class="empty-state-icon"><svg aria-hidden="true"><use href="#kumwe-icon-search"></use></svg></span><h2>No matching content</h2><p>Adjust the filters or create a new content item.</p>{% if capabilities['content.create'] is defined %}<a class="button primary" href="/administrator/content/new">Create content</a>{% endif %}</div></div>
     {% else %}
-      <div class="table-wrap"><table><thead><tr><th>Content</th><th>Status</th><th>Address</th><th>Updated</th><th><span class="sr-only">Actions</span></th></tr></thead><tbody>
+      <div class="table-wrap" tabindex="0" role="region" aria-label="Content results"><table><thead><tr><th>Content</th><th>Status</th><th>Address</th><th>Updated</th><th><span class="sr-only">Actions</span></th></tr></thead><tbody>
         {% for entry in entries %}<tr class="{{ entry.deleted_at ? 'muted' : '' }}">
           <td><span class="content-title"><strong>{{ entry.title }}</strong><span>Version {{ entry.version }}{% if entry.deleted_at %} · Trashed{% endif %}</span></span></td>
           <td><span class="status status-{{ entry.deleted_at ? 'trashed' : entry.status }}">{{ entry.deleted_at ? 'Trashed' : entry.status|replace({'_': ' '})|title }}</span></td>
