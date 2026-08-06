@@ -10,11 +10,19 @@ Docker Engine with Compose v2 is the shortest path. The default database is Mari
 git clone https://github.com/Kumwe/cms.git
 cd cms
 cp .env.example .env
-docker compose run --rm app composer install
+docker compose run --rm app composer install --no-interaction --prefer-dist
 docker compose run --rm app php bin/kumwe database:migrate
-docker compose up -d
+docker compose up -d --wait
 curl --fail http://localhost:8080/health/ready
 ```
+
+The development server serves compiled browser assets through the dedicated router and continuously verifies the local extension runtime, so `/health/ready` remains meaningful after startup. To use another host port, change the single Compose setting in `.env` before starting the services:
+
+```dotenv
+KUMWE_HTTP_PORT=9900
+```
+
+Compose then publishes `http://localhost:9900`, injects the matching application base URL, and keeps the container listening internally on port 8080. `KUMWE_HTTP_BIND` controls the host interface and defaults to `127.0.0.1`; changing `APP_BASE_URL` alone does not publish a Docker port. Run `docker compose up -d --wait` after changing the listener so Compose recreates the app service and waits for HTTP readiness.
 
 Create the owner account from a protected password file:
 
@@ -28,7 +36,7 @@ docker compose run --rm app php bin/kumwe user:create-admin \
 rm .admin-password
 ```
 
-Open <http://localhost:8080/administrator>. The [getting-started guide](docs/getting-started.md) continues through the first page, menu, user group, and homepage configuration.
+Open <http://localhost:8080/administrator>. The [getting-started guide](docs/getting-started.md) continues through the first page, menu, user group, and homepage configuration. Until a managed homepage is published, the public root renders Kumwe's complete responsive first-run presentation rather than a raw payload or unstyled placeholder.
 
 ## Capabilities
 

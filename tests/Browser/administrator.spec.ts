@@ -37,12 +37,65 @@ test('login is accessible and visually stable', async ({ page }) => {
   await expect(page).toHaveScreenshot('login.png', { fullPage: true });
 });
 
-test('public presentation is responsive and accessible', async ({ page }) => {
+test('public presentation is responsive, substantial, and ready', async ({ page, request }, testInfo) => {
+  const readiness = await request.get('/health/ready');
+  expect(readiness.status()).toBe(200);
+
   await page.goto('/');
-  await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+  await expect(
+    page.getByRole('heading', { level: 1, name: /Content systems ready for what comes next/ }),
+  ).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Structure once. Publish with confidence.' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'One content core. Every delivery surface.' })).toBeVisible();
+  await expect(page.getByRole('link', { name: /Open administrator/ }).first()).toBeVisible();
   await expectStylesLoaded(page);
   await expectAccessible(page);
-  await expect(page).toHaveScreenshot('public-home.png', { fullPage: true });
+
+  const visualContract = await page.evaluate(() => {
+    const element = (selector: string): HTMLElement => {
+      const match = document.querySelector(selector);
+      if (!(match instanceof HTMLElement)) {
+        throw new Error(`Missing visual-contract element: ${selector}`);
+      }
+
+      return match;
+    };
+    const columns = (selector: string): number =>
+      getComputedStyle(element(selector)).gridTemplateColumns.trim().split(/\s+/).length;
+
+    return {
+      viewportWidth: window.innerWidth,
+      horizontalOverflow: document.documentElement.scrollWidth - window.innerWidth,
+      headerHeight: Math.round(element('.site-header').getBoundingClientRect().height),
+      heroColumns: columns('.welcome-hero-grid'),
+      capabilityColumns: columns('.welcome-card-grid'),
+      surfaceColumns: columns('.welcome-surface-list'),
+      headingSize: Math.round(Number.parseFloat(getComputedStyle(element('h1')).fontSize) * 10) / 10,
+      bodyBackground: getComputedStyle(document.body).backgroundColor,
+      platformBackground: getComputedStyle(element('.welcome-platform')).backgroundColor,
+      primaryBackground: getComputedStyle(element('.welcome-primary')).backgroundColor,
+    };
+  });
+  const mobile = testInfo.project.name.startsWith('mobile-');
+  expect(visualContract).toEqual({
+    viewportWidth: mobile ? 412 : 1440,
+    horizontalOverflow: 0,
+    headerHeight: mobile ? 73 : 81,
+    heroColumns: mobile ? 1 : 2,
+    capabilityColumns: mobile ? 1 : 3,
+    surfaceColumns: mobile ? 1 : 2,
+    headingSize: mobile ? 61.8 : 97.9,
+    bodyBackground: 'rgb(245, 248, 251)',
+    platformBackground: 'rgb(7, 24, 45)',
+    primaryBackground: 'rgb(7, 24, 45)',
+  });
+
+  await page.screenshot({
+    path: testInfo.outputPath('public-home.png'),
+    fullPage: true,
+    animations: 'disabled',
+    caret: 'hide',
+  });
 });
 
 test.describe('authenticated administrator', () => {

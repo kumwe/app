@@ -47,6 +47,20 @@ Start from `.env.example` for development. Production Compose maps operator-faci
 | `KUMWE_PROCESS_ID` | Stable process role identity | `app-runtime`, `queue-worker`, or `scheduler` |
 | `EXTENSIONS_ALLOW_UNSIGNED_LOCAL` | Allow unsigned local packages | `false` in production |
 
+### Development Compose HTTP binding
+
+The development `compose.yaml` has an explicit host-port contract separate from the container's fixed internal port:
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `KUMWE_HTTP_HOST` | `localhost` | Hostname used to derive the development `APP_BASE_URL` |
+| `KUMWE_HTTP_BIND` | `127.0.0.1` | Host interface on which Docker publishes the port |
+| `KUMWE_HTTP_PORT` | `8080` | Published host port and canonical development URL port |
+
+Set `KUMWE_HTTP_PORT=9900` to serve the Compose installation at `http://localhost:9900`. Compose injects the corresponding `APP_BASE_URL` automatically while the PHP server continues to listen on port 8080 inside the container. `APP_BASE_URL` remains the canonical setting for direct PHP execution and production mapping, but changing it alone cannot alter a Docker port publication.
+
+The development app starts through `tools/development-server.sh`. That launcher verifies the signed extension runtime before accepting traffic, refreshes the readiness marker continuously, and uses the dedicated static-file router. A successfully migrated development site must therefore keep `/health/ready` at HTTP 200 and serve compiled CSS, JavaScript, media, and extension assets directly.
+
 `APP_TRUSTED_PROXIES` accepts individual IPv4/IPv6 addresses and CIDR ranges (for example,
 `10.20.0.10,192.0.2.0/24,2001:db8:5::/64`). Never set it to all networks. Kumwe accepts `Forwarded`, or the
 `X-Forwarded-For`, `X-Forwarded-Proto`, `X-Forwarded-Host`, and `X-Forwarded-Port` family, only from a matching
