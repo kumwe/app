@@ -82,6 +82,12 @@ jobs:
           grep -Fq "/assets/build/${administrator_css}" "$evidence/administrator-login.html"
           grep -Fq "/assets/build/${site_css}" "$evidence/public-home.html"
 
+          # Readiness markers expire after 30 seconds. This proves that the
+          # managed development watcher keeps readiness valid after startup.
+          sleep 35
+          test "$(curl --fail --silent --show-error \
+            http://127.0.0.1:9900/health/ready)" = '{"status":"ready"}'
+
       - name: Show service logs
         if: always()
         run: docker compose logs --no-color app database redis
