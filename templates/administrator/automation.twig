@@ -8,7 +8,7 @@
   <div class="editor-grid">
     <section class="panel">
       <header class="panel-header"><div><h2>Schedules</h2><p>Recurring jobs use explicit queues, timezones, and typed configuration.</p></div></header>
-      {% if schedules is empty %}<div class="panel-body"><p class="text-muted">No schedules configured.</p></div>{% else %}<div class="table-wrap" tabindex="0" role="region" aria-label="Automation schedules"><table>
+      {% if schedules is empty %}<div class="panel-body"><p class="text-muted">No schedules configured.</p></div>{% else %}<div class="table-wrap automation-schedules" tabindex="0" role="region" aria-label="Automation schedules"><table>
         <thead><tr><th>Name</th><th>Job</th><th>Next run</th><th>Status</th><th><span class="sr-only">Actions</span></th></tr></thead>
         <tbody>{% for schedule in schedules %}<tr>
           <td><span class="content-title"><strong>{{ schedule.name }}</strong><span><code>{{ schedule.cron_expression }}</code></span></span></td>
@@ -20,7 +20,7 @@
       </table></div>{% endif %}
     </section>
 
-    <aside class="panel panel-body stack">
+    <aside class="panel panel-body stack automation-builder">
       <div><p class="eyebrow">New schedule</p><h2>Configure recurring work</h2><p class="text-muted text-small">Only registered job types are available. Inputs change to match the selected job.</p></div>
       <form action="/administrator/automation" method="post" class="stack"><input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="action" value="schedule.create">
         <label>Name<input name="name" maxlength="160" required></label>
