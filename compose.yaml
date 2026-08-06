@@ -7,18 +7,36 @@ services:
       dockerfile: docker/dev/Dockerfile
     user: '${KUMWE_UID:-1000}:${KUMWE_GID:-1000}'
     working_dir: /app
-    command: php -S 0.0.0.0:8080 -t public public/index.php
+    command: sh tools/development-server.sh
+    init: true
     env_file:
       - .env
+    environment:
+      # Development Compose has one host-port source of truth. Direct PHP
+      # processes may continue to use APP_BASE_URL from .env.
+      APP_BASE_URL: "http://${KUMWE_HTTP_HOST:-localhost}:${KUMWE_HTTP_PORT:-8080}"
     volumes:
       - ./:/app
     ports:
-      - '8080:8080'
+      - "${KUMWE_HTTP_BIND:-127.0.0.1}:${KUMWE_HTTP_PORT:-8080}:8080"
     depends_on:
       database:
         condition: service_healthy
       redis:
         condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - php
+        - -r
+        - >-
+          $$body = @file_get_contents('http://127.0.0.1:8080/health/ready');
+          $$data = is_string($$body) ? json_decode($$body, true) : null;
+          exit(is_array($$data) && ($$data['status'] ?? null) === 'ready' ? 0 : 1);
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
 
   database:
     image: ${KUMWE_DATABASE_IMAGE:-mariadb:lts}

@@ -21,8 +21,8 @@ export default defineConfig({
   snapshotPathTemplate: '{testDir}/screenshots/{projectName}/{arg}{ext}',
   webServer: process.env.KUMWE_BROWSER_START_SERVER === '1'
     ? {
-        command: 'php -S 127.0.0.1:8080 -t public tools/browser-router.php',
-        url: 'http://127.0.0.1:8080/health/live',
+        command: 'sh tools/development-server.sh',
+        url: 'http://127.0.0.1:8080/health/ready',
         reuseExistingServer: false,
         timeout: 30_000,
       }
