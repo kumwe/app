@@ -90,11 +90,13 @@ final readonly class ContentService
         do {
             $batch = $this->repository->searchForSite($context->site(), $query, $batchSize, $offset);
             foreach ($batch as $record) {
-                if (!$this->authorization->decide(
-                    $context,
-                    Capability::fromString('content.read'),
-                    AuthorizationResource::item('content', $record->entry->id()),
-                )->allowed) {
+                if (
+                    !$this->authorization->decide(
+                        $context,
+                        Capability::fromString('content.read'),
+                        AuthorizationResource::item('content', $record->entry->id()),
+                    )->allowed
+                ) {
                     continue;
                 }
                 if ($authorizedSeen++ < $skip) {

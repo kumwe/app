@@ -81,7 +81,8 @@ final class AutomationJobFormRegistry
                     ));
                 }
                 $value = (int) $raw;
-                if (($field->minimum !== null && $value < $field->minimum)
+                if (
+                    ($field->minimum !== null && $value < $field->minimum)
                     || ($field->maximum !== null && $value > $field->maximum)
                 ) {
                     throw new InvalidArgumentException(sprintf(

@@ -10,7 +10,7 @@
   {% for module in site_assets.modules %}<script type="module" src="{{ module }}"></script>{% endfor %}
 </head>
 <body>
-  {% import 'site/_navigation.twig' as navigation_tree %}
+  {% import '_navigation.twig' as navigation_tree %}
   <a class="sr-only" href="#site-content">Skip to content</a>
   <header class="site-header"><div class="site-container site-header-inner">
     <a class="site-brand" href="/">{{ site_name }}</a>

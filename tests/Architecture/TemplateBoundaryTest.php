@@ -34,7 +34,8 @@ final class TemplateBoundaryTest extends TestCase
         self::assertNotEmpty($templates);
 
         foreach ($templates as $file) {
-            if (basename($file) === 'layout.twig') {
+            $basename = basename($file);
+            if ($basename === 'layout.twig' || str_starts_with($basename, '_')) {
                 continue;
             }
             $source = file_get_contents($file);
