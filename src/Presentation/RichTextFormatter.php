@@ -73,6 +73,11 @@ final class RichTextFormatter
             if ($match[1][1] >= 0) {
                 $output .= '<strong>' . $this->escape($match[1][0]) . '</strong>';
             } else {
+                if (!isset($match[2], $match[3])) {
+                    $output .= $this->escape($token);
+                    $offset = $position + strlen($token);
+                    continue;
+                }
                 $label = $match[2][0];
                 $url = $match[3][0];
                 $output .= $this->link($label, $url, $token);
