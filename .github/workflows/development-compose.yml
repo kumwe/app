@@ -57,19 +57,30 @@ jobs:
             public/assets/build/.vite/manifest.json)"
           administrator_module="$(jq -er '."assets/administrator/main.ts".file' \
             public/assets/build/.vite/manifest.json)"
+          evidence="$RUNNER_TEMP/development-compose-evidence"
+          install -d "$evidence"
 
           curl --fail --silent --show-error \
-            "http://127.0.0.1:9900/assets/build/${administrator_css}" \
-            | grep -Fq -- '--kumwe-font-sans'
+            --output "$evidence/administrator.css" \
+            "http://127.0.0.1:9900/assets/build/${administrator_css}"
           curl --fail --silent --show-error \
-            "http://127.0.0.1:9900/assets/build/${site_css}" \
-            | grep -Fq -- '--site-font'
-          test "$(curl --fail --silent --show-error \
-            "http://127.0.0.1:9900/assets/build/${administrator_module}" | wc -c)" -gt 1000
-          curl --fail --silent --show-error http://127.0.0.1:9900/administrator/login \
-            | grep -Fq "/assets/build/${administrator_css}"
-          curl --fail --silent --show-error http://127.0.0.1:9900/ \
-            | grep -Fq "/assets/build/${site_css}"
+            --output "$evidence/site.css" \
+            "http://127.0.0.1:9900/assets/build/${site_css}"
+          curl --fail --silent --show-error \
+            --output "$evidence/administrator.js" \
+            "http://127.0.0.1:9900/assets/build/${administrator_module}"
+          curl --fail --silent --show-error \
+            --output "$evidence/administrator-login.html" \
+            http://127.0.0.1:9900/administrator/login
+          curl --fail --silent --show-error \
+            --output "$evidence/public-home.html" \
+            http://127.0.0.1:9900/
+
+          grep -Fq -- '--kumwe-font-sans' "$evidence/administrator.css"
+          grep -Fq -- '--site-font' "$evidence/site.css"
+          test "$(wc -c < "$evidence/administrator.js")" -gt 1000
+          grep -Fq "/assets/build/${administrator_css}" "$evidence/administrator-login.html"
+          grep -Fq "/assets/build/${site_css}" "$evidence/public-home.html"
 
       - name: Show service logs
         if: always()
