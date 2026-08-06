@@ -105,14 +105,34 @@ final class ApplicationAuthorizationTest extends TestCase
         );
     }
 
-    public function testRegistryRejectsUnsupportedDelegationScope(): void
+    public function testRegistryAllowsContentModelResourcesAndDelegationScopes(): void
+    {
+        $gateway = AuthorizationContext::gateway();
+        $gateway->assertAllowed(
+            $this->context('content.read', 'content_type', self::PAGE_ONE),
+            Capability::fromString('content.read'),
+            AuthorizationResource::item('content_type', self::PAGE_ONE),
+        );
+        $gateway->assertAllowed(
+            $this->context('content.update', 'workflow', self::PAGE_TWO),
+            Capability::fromString('content.update'),
+            AuthorizationResource::item('workflow', self::PAGE_TWO),
+        );
+        $gateway->assertCanDelegate(
+            AuthorizationContext::human(['content.update']),
+            Capability::fromString('content.update'),
+            GrantScope::named('content_type', self::PAGE_ONE),
+        );
+    }
+
+    public function testRegistryRejectsUnrelatedDelegationScope(): void
     {
         $this->expectException(AuthorizationDenied::class);
 
         AuthorizationContext::gateway()->assertCanDelegate(
             AuthorizationContext::human(['content.update']),
             Capability::fromString('content.update'),
-            GrantScope::named('content_type', 'news'),
+            GrantScope::named('menu', 'primary'),
         );
     }
 
