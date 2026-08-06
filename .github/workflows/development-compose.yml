@@ -1,0 +1,80 @@
+name: Development Compose acceptance
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: development-compose-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  development-compose:
+    name: Fresh install, custom port, readiness and assets
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+
+      - name: Configure a custom local listener
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp .env.example .env
+          sed -i 's/^KUMWE_HTTP_PORT=8080$/KUMWE_HTTP_PORT=9900/' .env
+          sed -i 's#^APP_BASE_URL=http://localhost:8080$#APP_BASE_URL=http://localhost:9900#' .env
+          printf 'KUMWE_UID=%s\nKUMWE_GID=%s\n' "$(id -u)" "$(id -g)" >> .env
+          docker compose config --quiet
+
+      - name: Install locked dependencies through the documented container
+        run: docker compose run --rm app composer install --no-interaction --prefer-dist
+
+      - name: Migrate a fresh development database
+        run: docker compose run --rm app php bin/kumwe database:migrate
+
+      - name: Start the documented development topology
+        run: docker compose up -d --wait --wait-timeout 180
+
+      - name: Verify the custom port, readiness and compiled assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(docker compose port app 8080)" = '127.0.0.1:9900'
+          test "$(curl --fail --silent --show-error \
+            --retry 20 --retry-delay 1 --retry-connrefused \
+            http://127.0.0.1:9900/health/ready)" = '{"status":"ready"}'
+
+          administrator_css="$(jq -er '."assets/administrator/main.ts".css[0]' \
+            public/assets/build/.vite/manifest.json)"
+          site_css="$(jq -er '."assets/site/main.ts".css[0]' \
+            public/assets/build/.vite/manifest.json)"
+          administrator_module="$(jq -er '."assets/administrator/main.ts".file' \
+            public/assets/build/.vite/manifest.json)"
+
+          curl --fail --silent --show-error \
+            "http://127.0.0.1:9900/assets/build/${administrator_css}" \
+            | grep -Fq -- '--kumwe-font-sans'
+          curl --fail --silent --show-error \
+            "http://127.0.0.1:9900/assets/build/${site_css}" \
+            | grep -Fq -- '--site-font'
+          test "$(curl --fail --silent --show-error \
+            "http://127.0.0.1:9900/assets/build/${administrator_module}" | wc -c)" -gt 1000
+          curl --fail --silent --show-error http://127.0.0.1:9900/administrator/login \
+            | grep -Fq "/assets/build/${administrator_css}"
+          curl --fail --silent --show-error http://127.0.0.1:9900/ \
+            | grep -Fq "/assets/build/${site_css}"
+
+      - name: Show service logs
+        if: always()
+        run: docker compose logs --no-color app database redis
+
+      - name: Remove the acceptance topology
+        if: always()
+        run: docker compose down --volumes --remove-orphans
