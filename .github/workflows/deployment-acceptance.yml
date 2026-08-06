@@ -457,11 +457,12 @@ jobs:
                 --purpose=mcp \
                 --token-file="$token_file"
             ')"
-          unset management_token
           read_token="$(sed -n '2p' <<< "$read_token_output")"
           [[ "$read_token" =~ ^[A-Za-z0-9_-]{32,}$ ]]
           mcp_token="$(sed -n '2p' <<< "$mcp_token_output")"
           [[ "$mcp_token" =~ ^[A-Za-z0-9_-]{32,}$ ]]
+          echo "KUMWE_ACCEPTANCE_CLI_TOKEN=$management_token" >> "$GITHUB_ENV"
+          unset management_token
           state_file="$RUNNER_TEMP/kumwe-probe-state-${{ matrix.database.driver }}.json"
           KUMWE_PROBE_BASE_URL=http://127.0.0.1:18080 \
           KUMWE_PROBE_ADMIN_EMAIL=administrator@kumwe.test \
@@ -485,12 +486,12 @@ jobs:
           [[ "$redis_response" == PONG ]]
           docker compose --file compose.production.yaml --profile automation stop worker scheduler
           automation_output="$(docker compose --file compose.production.yaml exec -T \
-            --env "KUMWE_ACCEPTANCE_API_TOKEN=$KUMWE_ACCEPTANCE_API_TOKEN" \
+            --env "KUMWE_ACCEPTANCE_CLI_TOKEN=$KUMWE_ACCEPTANCE_CLI_TOKEN" \
             app /usr/local/bin/kumwe-entrypoint sh -euc '
               umask 077
               token_file="$(mktemp)"
               trap '\''rm -f "$token_file"'\'' EXIT
-              printf %s "$KUMWE_ACCEPTANCE_API_TOKEN" > "$token_file"
+              printf %s "$KUMWE_ACCEPTANCE_CLI_TOKEN" > "$token_file"
               php bin/kumwe automation create \
                 --site=default \
                 --token-file="$token_file" \
