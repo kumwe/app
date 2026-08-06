@@ -8,6 +8,9 @@ Kumwe develops and releases on PHP 8.5. Every persistence and deployment change 
 cp .env.example .env
 docker compose run --rm app composer install
 docker compose run --rm app composer qa
+docker compose run --rm app php bin/kumwe database:migrate
+docker compose up -d --wait
+curl --fail http://localhost:8080/health/ready
 npm ci
 npm run check
 npm run build
@@ -26,6 +29,8 @@ npm run test:browser
 ```
 
 Frontend dependencies are locked in `package-lock.json`. Production serves the committed hashed files under `public/assets/build`; rebuilding them must leave that directory unchanged. Browser tests run Chromium at desktop and mobile viewports, scan rendered pages against WCAG 2.2 AA rules, and compare screenshots under `tests/Browser/screenshots`.
+
+The dedicated development-Compose acceptance workflow performs the documented fresh install on a non-default host port, verifies the HTTP readiness endpoint and both public and administrator asset delivery, waits beyond the 30-second runtime-marker lifetime, and verifies readiness again. Changes to local startup, routing, ports, assets, or runtime materialization must keep this workflow green.
 
 Run integration tests once for each database group in [Getting started](getting-started.md#choose-another-database). A change that passes only the default database is not portable.
 
