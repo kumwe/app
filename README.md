@@ -12,9 +12,19 @@ cd cms
 cp .env.example .env
 docker compose run --rm app composer install
 docker compose run --rm app php bin/kumwe database:migrate
-docker compose up -d
+docker compose up -d --wait
 curl --fail http://localhost:8080/health/ready
 ```
+
+The development listener defaults to `127.0.0.1:8080`. To use another host port, keep the published port and canonical application URL aligned in `.env`:
+
+```dotenv
+KUMWE_HTTP_BIND=127.0.0.1
+KUMWE_HTTP_PORT=9900
+APP_BASE_URL=http://localhost:9900
+```
+
+After changing these values, run `docker compose up -d --wait` and open <http://localhost:9900>. The container continues to listen internally on port 8080; `KUMWE_HTTP_PORT` controls the host mapping. The managed development launcher verifies and refreshes extension-runtime readiness and lets the PHP server deliver the committed Vite CSS and JavaScript directly.
 
 Create the owner account from a protected password file:
 
@@ -28,7 +38,7 @@ docker compose run --rm app php bin/kumwe user:create-admin \
 rm .admin-password
 ```
 
-Open <http://localhost:8080/administrator>. The [getting-started guide](docs/getting-started.md) continues through the first page, menu, user group, and homepage configuration.
+Open <http://localhost:8080/administrator> when using the default port. The [getting-started guide](docs/getting-started.md) continues through the first page, menu, user group, and homepage configuration.
 
 ## Capabilities
 
