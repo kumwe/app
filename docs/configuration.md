@@ -53,6 +53,19 @@ Start from `.env.example` for development. Production Compose maps operator-faci
 immediate peer. Configure the edge proxy to replace client-supplied forwarding headers. Kumwe walks proxy chains
 from right to left and stops at the first untrusted address; malformed or ambiguous metadata is discarded atomically.
 
+## Compose HTTP listener
+
+The PHP development server and production nginx container listen internally on port `8080`. Compose publishes that internal listener through operator-facing variables:
+
+| Variable | Meaning | Default |
+|---|---|---|
+| `KUMWE_HTTP_BIND` | Host interface on which Compose publishes the web service | `127.0.0.1` |
+| `KUMWE_HTTP_PORT` | Host TCP port mapped to container port `8080` | `8080` |
+
+`APP_BASE_URL` is not a Docker port-mapping instruction. It is Kumwe's canonical externally visible URL. Keep its scheme, hostname, and port aligned with the address clients use. For example, a local listener on port `9900` requires both `KUMWE_HTTP_PORT=9900` and `APP_BASE_URL=http://localhost:9900`. Production Compose uses `KUMWE_BASE_URL` to populate `APP_BASE_URL` while retaining the same `KUMWE_HTTP_BIND` and `KUMWE_HTTP_PORT` listener variables.
+
+Changing the host mapping requires Compose to recreate the web-facing service. `docker compose up -d --wait` applies the change and waits for the application health check.
+
 ## Database
 
 | Variable | MariaDB default | MySQL | PostgreSQL |
