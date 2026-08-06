@@ -41,8 +41,8 @@
     <aside class="panel">
       <header class="panel-header"><div><h2>Quick actions</h2><p>Common site-management tasks.</p></div></header>
       <div class="panel-body quick-actions">
-        {% for item in administrator_navigation if item.id in ['create-content', 'media', 'navigation', 'models', 'access', 'settings'] %}
-          <a class="quick-action" href="{{ item.href }}"><svg aria-hidden="true"><use href="#kumwe-icon-{{ item.icon }}"></use></svg><span><strong>{{ item.label }}</strong><span>{{ item.description }}</span></span></a>
+        {% for item in administrator_navigation %}
+          {% if item.id in ['create-content', 'media', 'navigation', 'models', 'access', 'settings'] %}<a class="quick-action" href="{{ item.href }}"><svg aria-hidden="true"><use href="#kumwe-icon-{{ item.icon }}"></use></svg><span><strong>{{ item.label }}</strong><span>{{ item.description }}</span></span></a>{% endif %}
         {% endfor %}
       </div>
     </aside>

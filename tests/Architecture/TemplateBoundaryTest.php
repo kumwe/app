@@ -6,6 +6,8 @@ namespace Kumwe\CMS\Tests\Architecture;
 
 use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\TestCase;
+use Twig\Environment as TwigEnvironment;
+use Twig\Loader\FilesystemLoader;
 
 #[CoversNothing]
 final class TemplateBoundaryTest extends TestCase
@@ -41,6 +43,22 @@ final class TemplateBoundaryTest extends TestCase
             $source = file_get_contents($file);
             self::assertIsString($source);
             self::assertStringContainsString('{% extends "layout.twig" %}', $source, $file);
+        }
+    }
+
+    public function testCoreTemplatesCompileAgainstTheSupportedTwigSyntax(): void
+    {
+        foreach (['administrator', 'site'] as $surface) {
+            $directory = $this->root . '/templates/' . $surface;
+            $templates = glob($directory . '/*.twig');
+            self::assertIsArray($templates);
+            self::assertNotEmpty($templates);
+            $twig = new TwigEnvironment(new FilesystemLoader($directory));
+
+            foreach ($templates as $file) {
+                $twig->load(basename($file));
+                self::addToAssertionCount(1);
+            }
         }
     }
 

@@ -40,8 +40,8 @@
             <section class="navigation-group" aria-labelledby="navigation-group-{{ group|lower }}">
               <h2 class="navigation-group-title" id="navigation-group-{{ group|lower }}">{{ group }}</h2>
               <ul>
-                {% for item in administrator_navigation if item.group == group %}
-                  <li><a href="{{ item.href }}"{% if active_navigation == item.id %} aria-current="page"{% endif %}><svg aria-hidden="true"><use href="#kumwe-icon-{{ item.icon }}"></use></svg><span>{{ item.label }}</span></a></li>
+                {% for item in administrator_navigation %}
+                  {% if item.group == group %}<li><a href="{{ item.href }}"{% if active_navigation == item.id %} aria-current="page"{% endif %}><svg aria-hidden="true"><use href="#kumwe-icon-{{ item.icon }}"></use></svg><span>{{ item.label }}</span></a></li>{% endif %}
                 {% endfor %}
               </ul>
             </section>
