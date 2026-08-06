@@ -8,9 +8,11 @@ Production sessions use secure, HTTP-only, same-site cookies. Every browser muta
 
 The administrator navigation links to:
 
-- **Content:** page list, editor, workflow actions, trash, and restore;
-- **Content models:** versioned content-type schemas and workflow definitions;
-- **Navigation:** menus and nested menu items;
+- **Dashboard:** publishing totals, recent work, and permission-aware shortcuts;
+- **Content:** searchable, filterable and paginated content, graphical editing, workflow actions, trash, and restore;
+- **Media:** searchable images and documents, upload, reuse, and deletion;
+- **Content models:** graphical field definitions and publishing workflow controls;
+- **Navigation:** menus, nested items, ordering, and the public-site menu tree;
 - **Users and access:** users, groups, capability grants, assignments, and API/MCP tokens;
 - **Extensions:** package upload, activation, disable, and uninstall;
 - **Automation:** schedules, recent jobs, retries, and cancellation;
@@ -38,22 +40,19 @@ Each edit creates an immutable revision and audit event. The built-in workflow s
 
 The editor displays only valid actions for the current state. Public page URLs are `/pages/{slug}`. Slugs are unique within the selected site and use lowercase letters, numbers, and hyphens.
 
-Pages store a title, slug, workflow state, optional publication window, and structured JSON data. A basic page commonly uses:
+Pages store a title, slug, workflow state, optional publication window, and schema-validated structured data. Editors work with generated text, rich-text, number, date, choice, boolean, list, nested-group, URL, and media fields; routine authoring does not require reading or writing JSON. The built-in rich-text control stores a portable constrained format and renders only escaped headings, emphasis, lists, and safe links. Extensions that store HTML must still apply an organization-approved sanitization policy. Templates decide how named fields render.
 
-```json
-{
-  "body": "<p>Welcome to our website.</p>",
-  "summary": "Homepage introduction"
-}
-```
+Open **Content models** to create content types and workflows or publish a new version of an existing definition. Add and arrange graphical field rows, choose validation and required-field controls, then select the workflow version. The workflow builder declares named states, the initial state, public visibility, and capability-protected transitions. Kumwe generates the persisted JSON Schema and workflow definition from those controls, validates every entry against the pinned schema, and shows only transitions valid for the current state and editor. Advanced integrations may still submit the documented schema format through REST or CLI. A definition update never changes the meaning of existing content; incompatible field or state removal requires explicit breaking-change confirmation and still creates a new immutable version.
 
-Templates decide how fields render. Apply an organization-approved rich-text sanitization policy to any custom editor that stores HTML.
+## Media library
 
-Open **Content models** to create content types and workflows or publish a new version of an existing definition. Content types declare their JSON field schema and select a workflow version. Workflows declare states, their public visibility, and capability-protected transitions. The content editor validates its structured JSON against the pinned schema and renders the valid transitions from the pinned workflow. A definition update never changes the meaning of existing content; incompatible field or state removal requires an explicit breaking-change confirmation and still creates a new immutable version.
+Open **Media** to upload JPEG, PNG, GIF, WebP, AVIF, or PDF files. Kumwe verifies the file's detected MIME type and configured request-size limit, stores it outside the public document root under the current site, and records upload and deletion audit events. Media URLs contain an immutable identifier and are delivered with a long-lived public cache policy.
+
+Search and filter the library, copy a public URL, or choose a media item directly from a generated URL/media field in the content editor. Deleting an asset requires `content.delete`; it does not rewrite existing content, so confirm that an asset is unused before removal. Media directories are included in the standard backup and restore contract.
 
 ## Menus and navigation
 
-Open **Navigation** to create a named menu, change its handle or title, and create nested items. An item has a title, slug, parent, position, computed path, and optimistic version. Kumwe rejects cycles and rebuilds descendant paths when parentage changes. Deleting a menu deletes its contained items only after explicit confirmation.
+Open **Navigation** to create a named menu, change its handle or title, and create nested items. Drag items to change their order, or use the graphical parent and position controls when JavaScript is unavailable. An item has a title, slug, parent, position, computed path, and optimistic version. Kumwe rejects cycles and rebuilds descendant paths when parentage changes. The built-in public presentation renders the `main` menu (or the first available menu) recursively. Deleting a menu deletes its contained items only after explicit confirmation.
 
 Menu management requires `navigation.manage`. Template or module code reads navigation through the navigation application service; it must not query navigation tables directly.
 
@@ -106,7 +105,7 @@ See [Extension development](extensions.md) and [Template development](templates.
 
 ## Automation
 
-Users with `automation.manage` can create, enable, disable, or delete recurring schedules and inspect recent jobs. Dead jobs may be retried after correcting the cause; pending jobs may be cancelled. Job payloads are validated JSON and job types come from the registered handler catalog.
+Users with `automation.manage` can create, enable, disable, or delete recurring schedules and inspect recent jobs. Dead jobs may be retried after correcting the cause; pending jobs may be cancelled. Job types and their graphical fields come from the registered handler catalog; submitted values are converted to the validated internal payload without JSON authoring.
 
 The browser manages durable records only. Use the deployment platform to start, stop, or scale workers and schedulers. See [Workers and scheduler](automation.md).
 

@@ -1,0 +1,26 @@
+{
+  "name": "@kumwe/cms-administrator",
+  "version": "2.0.0-dev",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.12"
+  },
+  "scripts": {
+    "build": "vite build",
+    "check": "tsc --noEmit",
+    "test:browser": "playwright test",
+    "test:browser:report": "playwright show-report test-results/playwright-report",
+    "test:browser:update": "playwright test --update-snapshots"
+  },
+  "dependencies": {
+    "lit": "3.3.3"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "4.12.1",
+    "@playwright/test": "1.62.1",
+    "@types/node": "26.1.2",
+    "typescript": "7.0.2",
+    "vite": "8.2.0"
+  }
+}

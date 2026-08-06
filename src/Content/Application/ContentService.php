@@ -76,6 +76,46 @@ final readonly class ContentService
         return $result;
     }
 
+    public function browse(ExecutionContext $context, ContentBrowseQuery $query): ContentPage
+    {
+        if (!$this->repository instanceof ContentSearchRepository) {
+            throw new \RuntimeException('The configured content repository does not support administrator browsing.');
+        }
+
+        $skip = ($query->page - 1) * $query->perPage;
+        $authorizedSeen = 0;
+        $offset = 0;
+        $batchSize = 100;
+        $items = [];
+        do {
+            $batch = $this->repository->searchForSite($context->site(), $query, $batchSize, $offset);
+            foreach ($batch as $record) {
+                if (!$this->authorization->decide(
+                    $context,
+                    Capability::fromString('content.read'),
+                    AuthorizationResource::item('content', $record->entry->id()),
+                )->allowed) {
+                    continue;
+                }
+                if ($authorizedSeen++ < $skip) {
+                    continue;
+                }
+                $items[] = $record;
+                if (count($items) > $query->perPage) {
+                    break 2;
+                }
+            }
+            $offset += count($batch);
+        } while (count($batch) === $batchSize);
+
+        $hasNext = count($items) > $query->perPage;
+        if ($hasNext) {
+            array_pop($items);
+        }
+
+        return new ContentPage($items, $query, $query->page > 1, $hasNext);
+    }
+
     public function get(ExecutionContext $context, string $id, bool $includeDeleted = false): ContentRecord
     {
         $this->authorize($context, 'content.read', $id);

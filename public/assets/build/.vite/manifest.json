@@ -1,0 +1,20 @@
+{
+  "assets/administrator/main.ts": {
+    "file": "js/administrator-BXzApyqJ.js",
+    "name": "administrator",
+    "src": "assets/administrator/main.ts",
+    "isEntry": true,
+    "css": [
+      "css/administrator-1imZNrg7.css"
+    ]
+  },
+  "assets/site/main.ts": {
+    "file": "js/site-09k0J-Zi.js",
+    "name": "site",
+    "src": "assets/site/main.ts",
+    "isEntry": true,
+    "css": [
+      "css/site-ncDsjPPB.css"
+    ]
+  }
+}

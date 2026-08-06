@@ -60,12 +60,14 @@ Visit <http://localhost:8080/administrator> and sign in.
 
 ## Build the first site
 
-1. Create a page and save it as a draft.
-2. Submit the draft for review and publish it.
-3. Create a menu under **Navigation** and add the page.
-4. Open **Settings**, enter the site name, and select the page slug as the homepage.
-5. Open `/` and `/pages/{slug}` in a private browser window.
-6. Under **Users and access**, create an editor group, grant only the required content capabilities, and assign a test user.
+1. Open **Content models** and review the graphical fields and workflow used by pages.
+2. Create a page with the generated fields and save it as a draft.
+3. Upload an image under **Media** and choose it from a media-enabled content field.
+4. Submit the draft for review and publish it.
+5. Create a `main` menu under **Navigation**, add the page, and order it.
+6. Open **Settings**, enter the site name, and select the page slug as the homepage.
+7. Open `/` and `/pages/{slug}` in a private browser window and confirm the managed menu appears.
+8. Under **Users and access**, create an editor group, grant only the required content capabilities, and assign a test user.
 
 Publishing dates are optional. A published page is public only after `publish_at` and before `unpublish_at` when those values are present.
 

@@ -1,7 +1,8 @@
 {% extends "layout.twig" %}
 {% block title %}Extensions · Kumwe{% endblock %}
+{% block context_title %}Extensions{% endblock %}
 {% block content %}
-  <div class="page-heading"><div><p class="eyebrow">Platform</p><h1>Extensions</h1></div></div>
+  <div class="page-heading"><div><p class="eyebrow">Platform</p><h1>Extensions</h1><p>Install verified packages, manage activation, and maintain the signing trust boundary.</p></div></div>
   {% if error is defined %}<div class="alert" role="alert">{{ error }}</div>{% endif %}
   <div class="editor-grid">
     <section class="panel stack">

@@ -8,7 +8,7 @@ Multiple workers safely claim work with database row locks. Transient failures u
 
 Users with `automation.manage` can open **Automation** to create schedules, select a registered job type, set cron/timezone/queue/first run and a JSON payload, enable or disable schedules, delete schedules, inspect recent jobs, retry dead jobs, and cancel pending jobs. Every mutation is CSRF-protected and audited.
 
-The administrator controls application-level automation records. Starting, stopping, or scaling worker and scheduler processes remains a deployment operation.
+The administrator controls application-level automation records. Schedule creation uses typed graphical fields supplied by the registered job form; routine administrators do not author payload JSON. Trusted extensions may register graphical fields for their own job type through `AutomationJobFormRegistry`. Starting, stopping, or scaling worker and scheduler processes remains a deployment operation.
 
 ## REST integration
 

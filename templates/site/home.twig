@@ -1,5 +1,5 @@
-<!doctype html>
-<html lang="en">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{{ site_name }}</title></head>
-<body><main><h1>{{ site_name }}</h1><p>The homepage is ready for content. Sign in to the administrator and publish the configured homepage.</p></main></body>
-</html>
+{% extends "layout.twig" %}
+{% block title %}{{ site_name }}{% endblock %}
+{% block content %}
+  <section class="home-hero"><div class="site-container home-hero-content"><p class="eyebrow">Welcome</p><h1>{{ site_name }}</h1><p>Your website is ready for its story. Publish the configured homepage from the Kumwe administrator to replace this welcome screen.</p><a class="site-button" href="/administrator">Open administrator</a><div class="empty-home-card">Create content, add it to the main menu, and choose its slug as the homepage in Site settings. Public navigation and presentation update from the same managed content.</div></div></section>
+{% endblock %}

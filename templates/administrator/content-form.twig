@@ -1,54 +1,50 @@
 {% extends "layout.twig" %}
-{% block title %}{{ entry ? 'Edit ' ~ entry.title : 'Create page' }} · Kumwe{% endblock %}
+{% import "_fields.twig" as field_renderer %}
+{% block title %}{{ entry ? 'Edit ' ~ entry.title : 'Create content' }} · Kumwe{% endblock %}
+{% block context_title %}{{ entry ? 'Edit content' : 'Create content' }}{% endblock %}
 {% block content %}
-  <div class="page-heading">
-    <div><p class="eyebrow">Content editor</p><h1>{{ entry ? entry.title : 'Create page' }}</h1></div>
-    <a class="button" href="/administrator">Back to content</a>
-  </div>
+  <header class="page-heading">
+    <div><p class="eyebrow">{{ content_type.name }}</p><h1>{{ entry ? entry.title : 'Create content' }}</h1><p>{{ entry ? 'Update fields, publication timing and workflow state.' : 'Complete the fields below; Kumwe validates them against the content model.' }}</p></div>
+    <div class="page-actions"><a class="button" href="/administrator/content">Back to content</a>{% if entry and entry.status == 'published' %}<a class="button" href="/pages/{{ entry.slug }}" target="_blank" rel="noopener">View page</a>{% endif %}</div>
+  </header>
+
+  {% if not entry and content_types|length > 1 %}
+    <form class="panel panel-body form-grid" action="/administrator/content/new" method="get"><label>Content type<select name="content_type" data-content-type-selector>{% for type in content_types %}<option value="{{ type.id }}"{% if type.id == content_type.id %} selected{% endif %}>{{ type.name }}</option>{% endfor %}</select></label><div><span class="field-help">Changing the type changes the fields available for this item.</span><noscript><button type="submit">Use selected type</button></noscript></div></form>
+  {% endif %}
 
   <div class="editor-grid">
-    <form action="{{ entry ? '/administrator/content/' ~ entry.id : '/administrator/content' }}" method="post" class="panel stack">
+    <form action="{{ entry ? '/administrator/content/' ~ entry.id : '/administrator/content' }}" method="post" class="panel editor-main editor-form stack">
       <input type="hidden" name="_csrf" value="{{ csrf }}">
+      <input type="hidden" name="content_type" value="{{ content_type.id }}">
       {% if entry %}<input type="hidden" name="version" value="{{ entry.version }}">{% endif %}
-      {% if entry %}
-        <input type="hidden" name="content_type" value="{{ entry.content_type_id }}">
-      {% else %}
-        <label>Content type
-          <select name="content_type" required>
-            {% for type in content_types %}
-              <option value="{{ type.id }}">{{ type.name }} ({{ type.handle }})</option>
-            {% endfor %}
-          </select>
-        </label>
-      {% endif %}
-      <label>Title
-        <input type="text" name="title" maxlength="255" value="{{ entry.title|default('') }}" required>
-      </label>
-      <label>URL slug
-        <span class="input-prefix"><span>/pages/</span><input type="text" name="slug" maxlength="160" pattern="[a-z0-9]+(-[a-z0-9]+)*" value="{{ entry.slug|default('') }}" required></span>
-      </label>
-      <label>Content data (JSON object)
-        <textarea name="data" rows="18" spellcheck="false">{{ entry.data_json|default('{\n  "body": ""\n}') }}</textarea>
-      </label>
       <div class="two-column">
-        <label>Publish at (optional)<input type="datetime-local" name="publish_at" value="{{ entry.publication_window.starts_at|default('') ? entry.publication_window.starts_at|date('Y-m-d\\TH:i') : '' }}"></label>
-        <label>Unpublish at (optional)<input type="datetime-local" name="unpublish_at" value="{{ entry.publication_window.ends_at|default('') ? entry.publication_window.ends_at|date('Y-m-d\\TH:i') : '' }}"></label>
+        <label>Title<input type="text" name="title" maxlength="255" value="{{ entry.title|default('') }}" required data-title-input></label>
+        <label>URL slug<span class="input-prefix"><span>/pages/</span><input type="text" name="slug" maxlength="160" pattern="[a-z0-9]+(-[a-z0-9]+)*" value="{{ entry.slug|default('') }}" required data-slug-input></span></label>
       </div>
-      <button class="primary" type="submit">{{ entry ? 'Save changes' : 'Create draft' }}</button>
+      <kumwe-schema-form class="stack">{{ field_renderer.render(fields) }}</kumwe-schema-form>
+      <fieldset class="field-group stack"><legend>Publication timing</legend><p class="field-help">Leave these fields empty to publish immediately when the workflow reaches a public state.</p><div class="two-column"><label>Publish at<input type="datetime-local" name="publish_at" value="{{ entry.publication_window.starts_at|default('') ? entry.publication_window.starts_at|date('Y-m-d\\TH:i') : '' }}"></label><label>Unpublish at<input type="datetime-local" name="unpublish_at" value="{{ entry.publication_window.ends_at|default('') ? entry.publication_window.ends_at|date('Y-m-d\\TH:i') : '' }}"></label></div></fieldset>
+      <div class="page-actions"><button class="primary" type="submit">{{ entry ? 'Save changes' : 'Create draft' }}</button><a class="button" href="/administrator/content">Cancel</a></div>
     </form>
 
-    {% if entry %}
-      <aside class="panel stack">
-        <div><p class="eyebrow">Workflow</p><h2>{{ entry.status|capitalize }}</h2><p>Version {{ entry.version }}</p></div>
-        {% for transition in workflow.transitions %}
-          {% if transition.from == entry.status and capabilities[transition.required_capability] is defined %}
-          <form action="/administrator/content/{{ entry.id }}/transition" method="post">
-            <input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="version" value="{{ entry.version }}"><input type="hidden" name="status" value="{{ transition.to }}">
-            <button class="button full" type="submit">Move to {{ transition.to|replace({'_': ' '})|title }}</button>
-          </form>
-          {% endif %}
-        {% endfor %}
-      </aside>
-    {% endif %}
+    <aside class="editor-sidebar stack">
+      <section class="panel panel-body stack">
+        <div><p class="eyebrow">Content model</p><h2>{{ content_type.name }}</h2><p class="text-muted text-small">{{ fields|length }} top-level fields · model version {{ content_type.version }}</p></div>
+        {% if capabilities['content.update'] is defined %}<a href="/administrator/content-models">Manage content model</a>{% endif %}
+      </section>
+      {% if entry %}<section class="panel panel-body stack"><div class="workflow-state"><span class="workflow-state-dot" aria-hidden="true"></span><div><p class="eyebrow">Workflow state</p><h2>{{ entry.status|replace({'_': ' '})|title }}</h2><p class="text-muted text-small">Content version {{ entry.version }}</p></div></div><div class="workflow-actions">
+        {% set available_transition = false %}
+        {% for transition in workflow.transitions %}{% if transition.from == entry.status and capabilities[transition.required_capability] is defined %}{% set available_transition = true %}<form action="/administrator/content/{{ entry.id }}/transition" method="post"><input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="version" value="{{ entry.version }}"><input type="hidden" name="status" value="{{ transition.to }}"><button class="full{% if transition.to == 'published' %} primary{% endif %}" type="submit">Move to {{ transition.to|replace({'_': ' '})|title }}</button></form>{% endif %}{% endfor %}
+        {% if not available_transition %}<p class="text-muted text-small">No workflow action is available for your permissions and the current state.</p>{% endif %}
+      </div></section>{% endif %}
+    </aside>
   </div>
+  {% if media_assets is not empty %}
+    <kumwe-media-picker>
+      <dialog class="media-dialog" aria-labelledby="media-dialog-title">
+        <div class="media-dialog-header"><div><p class="eyebrow">Media library</p><h2 id="media-dialog-title">Choose a file</h2></div><form method="dialog"><button type="submit" aria-label="Close media library">Close</button></form></div>
+        <label class="media-dialog-search">Filter media<input type="search" placeholder="Search file names" data-media-filter></label>
+        <div class="media-picker-grid">{% for asset in media_assets %}<button type="button" class="media-picker-item" data-select-media data-media-url="{{ asset.url }}" data-media-name="{{ asset.name }}">{% if asset.is_image %}<img src="{{ asset.url }}" alt="" loading="lazy">{% else %}<span class="media-file-placeholder" aria-hidden="true">PDF</span>{% endif %}<span>{{ asset.name }}</span></button>{% endfor %}</div>
+      </dialog>
+    </kumwe-media-picker>
+  {% endif %}
 {% endblock %}

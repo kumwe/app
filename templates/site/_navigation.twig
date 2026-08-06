@@ -1,0 +1,11 @@
+{% macro branch(items, current_path) %}
+  {% import _self as navigation_tree %}
+  <ul>
+    {% for item in items %}
+      <li>
+        <a href="{{ item.href }}"{% if current_path == item.href %} aria-current="page"{% endif %}>{{ item.title }}</a>
+        {% if item.children is not empty %}{{ navigation_tree.branch(item.children, current_path) }}{% endif %}
+      </li>
+    {% endfor %}
+  </ul>
+{% endmacro %}

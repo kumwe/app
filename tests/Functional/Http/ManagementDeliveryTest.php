@@ -87,6 +87,7 @@ final class ManagementDeliveryTest extends TestCase
             '/administrator/settings',
             '/administrator/automation',
             '/administrator/content-models',
+            '/administrator/media',
             ] as $path
         ) {
             $response = $application->handle(

@@ -5,9 +5,9 @@
 /.phpunit.result.cache
 /.php-cs-fixer.cache
 /.phpstan.cache/
+/node_modules/
 /build/
 /coverage/
-/public/assets/build/
 /storage/cache/*
 /storage/logs/*
 /storage/sessions/*

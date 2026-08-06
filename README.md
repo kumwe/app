@@ -32,7 +32,8 @@ Open <http://localhost:8080/administrator>. The [getting-started guide](docs/get
 
 ## Capabilities
 
-- Create, revise, review, schedule, publish, unpublish, archive, trash, and restore content.
+- Create, revise, review, schedule, publish, unpublish, archive, trash, and restore content through generated graphical fields and workflow controls.
+- Search and filter content, manage reusable media, order nested menus, and render the same managed navigation in the built-in public presentation.
 - Manage menus, nested navigation, users, groups, scoped capability grants, API tokens, site settings, extensions, and templates from the administrator when the signed-in user has permission.
 - Apply the same content, navigation, identity, and extension rules through application services shared by the browser, CLI, REST, MCP, workers, and scheduler.
 - Install signed plugins, components, modules, templates, languages, and packages without rebuilding the application image.
@@ -85,9 +86,13 @@ The machine-readable API contract is [api/openapi/kumwe-v1.json](api/openapi/kum
 
 ```bash
 composer qa
+npm ci
+npm run check
+npm run build
+npm run test:browser
 ```
 
-Pull requests additionally build and start the complete CMS, migrate a clean database, exercise HTTP and CLI behavior, and run the supported database matrix. Release jobs build and scan the exact images and ZIP artifact, generate SBOMs and provenance, and publish signed checksums. See [Development and testing](docs/development.md) for the local and CI contracts.
+Pull requests additionally build and start the complete CMS, migrate a clean database, exercise HTTP and CLI behavior, run browser/accessibility/responsive/visual tests, and run the supported database matrix. Release jobs build and scan the exact images and ZIP artifact, generate SBOMs and provenance, and publish signed checksums. See [Development and testing](docs/development.md) for the local and CI contracts.
 
 ## License
 

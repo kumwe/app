@@ -7,6 +7,8 @@ namespace Kumwe\CMS\Http\Handler;
 use Kumwe\CMS\Content\Application\ContentService;
 use Kumwe\CMS\Application\Authorization\SiteContext;
 use Kumwe\CMS\Presentation\SiteRenderer;
+use Kumwe\CMS\Presentation\RichTextFormatter;
+use Kumwe\CMS\Navigation\Application\PublicNavigation;
 use Kumwe\CMS\Site\Application\SiteSettings;
 use Laminas\Diactoros\Response\HtmlResponse;
 use Psr\Http\Message\ResponseInterface;
@@ -20,7 +22,9 @@ final readonly class HomePageHandler implements RequestHandlerInterface
         private ContentService $content,
         private SiteSettings $settings,
         private SiteRenderer $renderer,
+        private RichTextFormatter $richText,
         private ?SiteContext $site = null,
+        private ?PublicNavigation $navigation = null,
     ) {
     }
 
@@ -34,7 +38,9 @@ final readonly class HomePageHandler implements RequestHandlerInterface
         $template = $record === null ? 'home' : 'page';
         $variables = $record === null
             ? ['site_name' => $settings['site_name']]
-            : ['site_name' => $settings['site_name'], 'entry' => $record->toArray()];
+            : ['site_name' => $settings['site_name'], 'entry' => $this->present($record->toArray())];
+        $variables['navigation'] = $this->navigation?->items() ?? [];
+        $variables['current_path'] = '/';
 
         $headers = [
             'Cache-Control' => 'public, max-age=60, stale-while-revalidate=300',
@@ -44,6 +50,19 @@ final readonly class HomePageHandler implements RequestHandlerInterface
         }
 
         return new HtmlResponse($this->renderer->render($template, $variables), 200, $headers);
+    }
+
+    /**
+     * @param array<string, mixed> $entry
+     * @return array<string, mixed>
+     */
+    private function present(array $entry): array
+    {
+        $data = $entry['data'] ?? null;
+        $body = is_array($data) && is_string($data['body'] ?? null) ? $data['body'] : '';
+        $entry['body_html'] = $this->richText->format($body);
+
+        return $entry;
     }
 
     /** @param array<string, mixed> $settings */

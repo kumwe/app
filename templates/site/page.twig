@@ -1,7 +1,5 @@
-<!doctype html>
-<html lang="en">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>{{ entry.title }}</title></head>
-<body>
-  <main><article><h1>{{ entry.title }}</h1><div>{{ entry.data.body|default('')|nl2br }}</div></article></main>
-</body>
-</html>
+{% extends "layout.twig" %}
+{% block title %}{{ entry.title }} · {{ site_name }}{% endblock %}
+{% block content %}
+  <article class="article-shell"><header><p class="eyebrow">{{ entry.status|replace({'_': ' '})|title }}</p><h1>{{ entry.title }}</h1><p class="article-meta">Updated <time datetime="{{ entry.updated_at }}">{{ entry.updated_at|date('F j, Y') }}</time></p></header><div class="article-body">{{ entry.body_html|raw }}</div></article>
+{% endblock %}

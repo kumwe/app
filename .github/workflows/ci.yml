@@ -43,6 +43,133 @@ jobs:
       - name: Require a committed reproducible lock file
         run: git diff --exit-code -- composer.lock
 
+  frontend:
+    name: Administrator frontend
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+
+      - name: Install Node.js
+        uses: actions/setup-node@e51e5fe84fc33b4c73ebe40526b2694712b5b858
+        with:
+          node-version: '22.12.0'
+
+      - name: Install and audit locked frontend dependencies
+        run: |
+          npm ci
+          npm audit --audit-level=high
+
+      - name: Type-check and build immutable browser assets
+        run: |
+          npm run check
+          npm run build
+          git diff --exit-code -- public/assets/build
+
+  browser:
+    name: Browser, accessibility and visual regression
+    needs: frontend
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    services:
+      database:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: kumwe_browser
+          POSTGRES_USER: kumwe
+          POSTGRES_PASSWORD: kumwe_browser
+        ports:
+          - '5432:5432'
+        options: >-
+          --health-cmd "pg_isready -U kumwe -d kumwe_browser"
+          --health-interval 5s --health-timeout 5s --health-retries 20
+      redis:
+        image: redis:8-alpine
+        ports:
+          - '6379:6379'
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s --health-timeout 3s --health-retries 20
+    env:
+      APP_ENV: testing
+      APP_DEBUG: 'false'
+      APP_BASE_URL: http://127.0.0.1:8080
+      APP_PUBLIC_SITE: default
+      APP_TRUSTED_HOSTS: 127.0.0.1,localhost
+      EXTENSIONS_ALLOW_UNSIGNED_LOCAL: 'true'
+      DB_DRIVER: pgsql
+      DB_HOST: 127.0.0.1
+      DB_PORT: 5432
+      DB_NAME: kumwe_browser
+      DB_USER: kumwe
+      DB_PASSWORD: kumwe_browser
+      DB_TABLE_PREFIX: kumwe_
+      DB_SSLMODE: disable
+      DB_SERVER_VERSION: '17'
+      REDIS_HOST: 127.0.0.1
+      REDIS_PORT: 6379
+      REDIS_DATABASE: 0
+      REDIS_NAMESPACE: kumwe.browser
+      KUMWE_BROWSER_ADMIN_EMAIL: browser-administrator@kumwe.test
+      KUMWE_BROWSER_ADMIN_PASSWORD: browser administrator password
+      KUMWE_BROWSER_START_SERVER: '1'
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+
+      - name: Install PHP
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240
+        with:
+          php-version: '8.5'
+          extensions: ctype, fileinfo, filter, intl, json, mbstring, openssl, pdo, pdo_pgsql, redis, sodium, zip
+          coverage: none
+          tools: composer:v2
+
+      - name: Install Node.js
+        uses: actions/setup-node@e51e5fe84fc33b4c73ebe40526b2694712b5b858
+        with:
+          node-version: '22.12.0'
+
+      - name: Install locked application dependencies
+        run: |
+          composer install --no-interaction --prefer-dist
+          npm ci
+
+      - name: Migrate and create the browser-test administrator
+        shell: bash
+        run: |
+          set -euo pipefail
+          app_secret="$(openssl rand -base64 48 | tr -d '\n')"
+          echo "APP_SECRET=$app_secret" >> "$GITHUB_ENV"
+          export APP_SECRET="$app_secret"
+          password_file="$RUNNER_TEMP/browser-administrator-password"
+          install -m 0600 /dev/null "$password_file"
+          printf %s "$KUMWE_BROWSER_ADMIN_PASSWORD" > "$password_file"
+          php bin/kumwe database:migrate
+          php bin/kumwe user:create-admin \
+            --site=default \
+            --email="$KUMWE_BROWSER_ADMIN_EMAIL" \
+            --name="Browser Administrator" \
+            --password-file="$password_file"
+
+      - name: Install the Chromium test runtime
+        run: npx playwright install --with-deps chromium
+
+      - name: Exercise browser, accessibility and visual contracts
+        run: npm run test:browser
+
+      - name: Upload browser and screenshot evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: browser-evidence
+          path: |
+            test-results
+            tests/Browser/screenshots
+          if-no-files-found: warn
+          retention-days: 14
+
   quality:
     name: PHP 8.5 quality
     runs-on: ubuntu-24.04

@@ -4,33 +4,70 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#0c1c35">
   <title>{% block title %}Kumwe Administrator{% endblock %}</title>
-  <link rel="stylesheet" href="/assets/administrator.css">
-  <script src="/assets/administrator.js" defer></script>
+  {% for stylesheet in administrator_assets.stylesheets %}<link rel="stylesheet" href="{{ stylesheet }}">{% endfor %}
+  {% for module in administrator_assets.modules %}<script type="module" src="{{ module }}"></script>{% endfor %}
 </head>
 <body>
-  <header class="topbar">
-    <a class="brand" href="/administrator">Kumwe</a>
-    {% if csrf is defined %}
-      <button class="navigation-toggle" type="button" aria-label="Toggle navigation" aria-expanded="false" data-navigation-toggle>Menu</button>
-      <nav aria-label="Administrator" data-admin-navigation>
-        {% if capabilities['content.read'] is defined %}<a href="/administrator">Content</a>{% endif %}
-        {% if capabilities['content.create'] is defined %}<a href="/administrator/content/new">New page</a>{% endif %}
-        {% if capabilities['content.read'] is defined %}<a href="/administrator/content-models">Models</a>{% endif %}
-        {% if capabilities['navigation.manage'] is defined %}<a href="/administrator/navigation">Menus</a>{% endif %}
-        {% if capabilities['users.manage'] is defined %}<a href="/administrator/access">Users &amp; access</a>{% endif %}
-        {% if capabilities['extensions.manage'] is defined %}<a href="/administrator/extensions">Extensions</a>{% endif %}
-        {% if capabilities['automation.manage'] is defined %}<a href="/administrator/automation">Automation</a>{% endif %}
-        {% if capabilities['settings.manage'] is defined %}<a href="/administrator/settings">Settings</a>{% endif %}
-        <form action="/administrator/logout" method="post">
-          <input type="hidden" name="_csrf" value="{{ csrf }}">
-          <button class="link-button" type="submit">Sign out</button>
-        </form>
-      </nav>
-    {% endif %}
-  </header>
-  <main class="shell">
-    {% block content %}{% endblock %}
-  </main>
+  <a class="skip-link" href="#administrator-content">Skip to content</a>
+  <svg class="sr-only" aria-hidden="true" focusable="false">
+    <symbol id="kumwe-icon-dashboard" viewBox="0 0 24 24"><path d="M4 13h6V4H4v9Zm0 7h6v-4H4v4Zm10 0h6v-9h-6v9Zm0-16v4h6V4h-6Z"/></symbol>
+    <symbol id="kumwe-icon-content" viewBox="0 0 24 24"><path d="M6 3.8h9l3 3V20H6V3.8Z"/><path d="M15 3.8V7h3M9 11h6M9 14.5h6"/></symbol>
+    <symbol id="kumwe-icon-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="kumwe-icon-media" viewBox="0 0 24 24"><rect x="3.5" y="4" width="17" height="16" rx="2"/><circle cx="9" cy="9" r="1.5"/><path d="m5 17 4.5-4 3 2.5 2-2 4.5 3.7"/></symbol>
+    <symbol id="kumwe-icon-models" viewBox="0 0 24 24"><path d="m12 3 8 4.5-8 4.5-8-4.5L12 3Z"/><path d="m4 12 8 4.5 8-4.5M4 16.5l8 4.5 8-4.5"/></symbol>
+    <symbol id="kumwe-icon-navigation" viewBox="0 0 24 24"><circle cx="6" cy="5" r="2"/><circle cx="18" cy="12" r="2"/><circle cx="6" cy="19" r="2"/><path d="M8 5h3a3 3 0 0 1 3 3v1a3 3 0 0 0 3 3M8 19h3a3 3 0 0 0 3-3v-1a3 3 0 0 1 3-3"/></symbol>
+    <symbol id="kumwe-icon-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3.5 19v-1.5A4.5 4.5 0 0 1 8 13h2a4.5 4.5 0 0 1 4.5 4.5V19M16 5.5a3 3 0 0 1 0 5.8M17 14a4.5 4.5 0 0 1 3.5 4.4V19"/></symbol>
+    <symbol id="kumwe-icon-extensions" viewBox="0 0 24 24"><path d="M9 4H4v5M15 4h5v5M9 20H4v-5M15 20h5v-5"/><rect x="8" y="8" width="8" height="8" rx="1.5"/></symbol>
+    <symbol id="kumwe-icon-automation" viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 0 2.3-5.7L4 8.5"/><path d="M4 4v4.5h4.5M12 7v5l3 2"/></symbol>
+    <symbol id="kumwe-icon-settings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19 13.5v-3l-2-.7a7 7 0 0 0-.7-1.6l.9-1.9-2.1-2.1-1.9.9a7 7 0 0 0-1.6-.7L11 2.5H8l-.7 2a7 7 0 0 0-1.6.7l-1.9-.9-2.1 2.1.9 1.9a7 7 0 0 0-.7 1.6l-2 .7v3l2 .7a7 7 0 0 0 .7 1.6l-.9 1.9 2.1 2.1 1.9-.9a7 7 0 0 0 1.6.7l.7 2h3l.7-2a7 7 0 0 0 1.6-.7l1.9.9 2.1-2.1-.9-1.9a7 7 0 0 0 .7-1.6l2-.7Z" transform="translate(1.5) scale(.88)"/></symbol>
+    <symbol id="kumwe-icon-search" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 4 4"/></symbol>
+    <symbol id="kumwe-icon-menu" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></symbol>
+    <symbol id="kumwe-icon-external" viewBox="0 0 24 24"><path d="M14 5h5v5M19 5l-8 8"/><path d="M17 13v5H6V7h5"/></symbol>
+    <symbol id="kumwe-icon-signout" viewBox="0 0 24 24"><path d="M10 5H5v14h5M14 8l4 4-4 4M8 12h10"/></symbol>
+  </svg>
+
+  {% if csrf is defined %}
+    <div class="administrator-shell" data-administrator-shell>
+      <aside class="administrator-sidebar" aria-label="Administrator navigation">
+        <a class="administrator-brand" href="/administrator">
+          <span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24"><path fill="currentColor" d="m12 2 8.7 5v10L12 22l-8.7-5V7L12 2Zm0 3.1L6 8.5v7l6 3.4 6-3.4v-7l-6-3.4Z"/></svg></span>
+          <span class="brand-copy"><strong>Kumwe</strong><span>Administrator</span></span>
+        </a>
+        <nav class="administrator-navigation">
+          {% for group in ['Workspace', 'Structure', 'System'] %}
+            <section class="navigation-group" aria-labelledby="navigation-group-{{ group|lower }}">
+              <h2 class="navigation-group-title" id="navigation-group-{{ group|lower }}">{{ group }}</h2>
+              <ul>
+                {% for item in administrator_navigation if item.group == group %}
+                  <li><a href="{{ item.href }}"{% if active_navigation == item.id %} aria-current="page"{% endif %}><svg aria-hidden="true"><use href="#kumwe-icon-{{ item.icon }}"></use></svg><span>{{ item.label }}</span></a></li>
+                {% endfor %}
+              </ul>
+            </section>
+          {% endfor %}
+        </nav>
+      </aside>
+      <header class="administrator-topbar">
+        <button class="topbar-action navigation-toggle" type="button" aria-label="Open administrator navigation" aria-expanded="false" data-navigation-toggle><svg aria-hidden="true"><use href="#kumwe-icon-menu"></use></svg></button>
+        <div class="topbar-context"><strong>{% block context_title %}Administrator workspace{% endblock %}</strong><span>{% block context_subtitle %}Manage your website with confidence{% endblock %}</span></div>
+        <button class="command-trigger" type="button" data-open-command-palette><svg width="16" height="16" aria-hidden="true"><use href="#kumwe-icon-search"></use></svg><span>Search administrator</span><kbd>⌘ K</kbd></button>
+        <a class="topbar-action" href="/" target="_blank" rel="noopener" aria-label="View website" data-secondary-action><svg aria-hidden="true"><use href="#kumwe-icon-external"></use></svg></a>
+        <form action="/administrator/logout" method="post"><input type="hidden" name="_csrf" value="{{ csrf }}"><button class="topbar-action" type="submit" aria-label="Sign out"><svg aria-hidden="true"><use href="#kumwe-icon-signout"></use></svg></button></form>
+      </header>
+      <button class="navigation-backdrop" type="button" aria-label="Close administrator navigation" data-navigation-backdrop></button>
+      <main class="administrator-main" id="administrator-content" tabindex="-1"><div class="administrator-content">
+  {% else %}
+    <main class="login-page" id="administrator-content">
+  {% endif %}
+  {% block content %}{% endblock %}
+  {% if csrf is defined %}
+      </div></main>
+      <script type="application/json" id="administrator-command-data">{{ administrator_commands_json|raw }}</script>
+      <kumwe-command-palette></kumwe-command-palette>
+    </div>
+  {% else %}
+    </main>
+  {% endif %}
 </body>
 </html>

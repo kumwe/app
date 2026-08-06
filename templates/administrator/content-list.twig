@@ -1,46 +1,41 @@
 {% extends "layout.twig" %}
 {% block title %}Content · Kumwe{% endblock %}
+{% block context_title %}Content{% endblock %}
 {% block content %}
-  <div class="page-heading">
-    <div><p class="eyebrow">Website</p><h1>Content</h1></div>
-    {% if capabilities['content.create'] is defined %}<a class="button primary" href="/administrator/content/new">Create page</a>{% endif %}
-  </div>
+  <header class="page-heading">
+    <div><p class="eyebrow">Publishing</p><h1>Content</h1><p>Find, review and publish every item on this site.</p></div>
+    <div class="page-actions">{% if capabilities['content.create'] is defined %}<a class="button primary" href="/administrator/content/new"><svg aria-hidden="true"><use href="#kumwe-icon-plus"></use></svg>Create content</a>{% endif %}</div>
+  </header>
 
-  {% if entries is empty %}
-    <section class="empty-state"><h2>Your site is ready</h2><p>Create the first page, submit it for review, then publish it.</p></section>
-  {% else %}
-    <div class="table-wrap">
-      <table>
-        <thead><tr><th>Title</th><th>Status</th><th>Address</th><th>Updated</th><th><span class="sr-only">Actions</span></th></tr></thead>
-        <tbody>
-        {% for entry in entries %}
-          <tr class="{{ entry.deleted_at ? 'muted' : '' }}">
-            <td><strong>{{ entry.title }}</strong>{% if entry.deleted_at %}<span class="tag">Trashed</span>{% endif %}</td>
-            <td><span class="status status-{{ entry.status }}">{{ entry.status|capitalize }}</span></td>
-            <td>{% if entry.status == 'published' and not entry.deleted_at %}<a href="/pages/{{ entry.slug }}" target="_blank" rel="noopener">/pages/{{ entry.slug }}</a>{% else %}/pages/{{ entry.slug }}{% endif %}</td>
-            <td><time datetime="{{ entry.updated_at }}">{{ entry.updated_at|date('Y-m-d H:i') }} UTC</time></td>
-            <td class="actions">
-              {% if not entry.deleted_at %}
-                {% if capabilities['content.update'] is defined %}<a href="/administrator/content/{{ entry.id }}/edit">Edit</a>{% endif %}
-                {% if capabilities['content.delete'] is defined %}
-                <form action="/administrator/content/{{ entry.id }}/trash" method="post">
-                  <input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="version" value="{{ entry.version }}">
-                  <button class="link-button danger" type="submit">Trash</button>
-                </form>
-                {% endif %}
-              {% else %}
-                {% if capabilities['content.restore'] is defined %}
-                <form action="/administrator/content/{{ entry.id }}/restore" method="post">
-                  <input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="version" value="{{ entry.version }}">
-                  <button class="link-button" type="submit">Restore</button>
-                </form>
-                {% endif %}
-              {% endif %}
-            </td>
-          </tr>
-        {% endfor %}
-        </tbody>
-      </table>
-    </div>
-  {% endif %}
+  <section class="panel">
+    <form class="table-toolbar" action="/administrator/content" method="get" role="search">
+      <label class="search-field">Search<input type="search" name="q" value="{{ filters.q }}" placeholder="Title or URL slug"></label>
+      <label>Status<select name="status"><option value="">All statuses</option>{% for status in ['draft','review','published','archived'] %}<option value="{{ status }}"{% if filters.status == status %} selected{% endif %}>{{ status|title }}</option>{% endfor %}</select></label>
+      <label>Content type<select name="type"><option value="">All types</option>{% for type in content_types %}<option value="{{ type.id }}"{% if filters.type == type.id %} selected{% endif %}>{{ type.name }}</option>{% endfor %}</select></label>
+      <label>Visibility<select name="scope"><option value="active"{% if filters.scope == 'active' %} selected{% endif %}>Active</option><option value="trashed"{% if filters.scope == 'trashed' %} selected{% endif %}>Trashed</option><option value="all"{% if filters.scope == 'all' %} selected{% endif %}>All</option></select></label>
+      <label>Sort<select name="sort"><option value="updated_desc"{% if filters.sort == 'updated_desc' %} selected{% endif %}>Recently updated</option><option value="updated_asc"{% if filters.sort == 'updated_asc' %} selected{% endif %}>Oldest updated</option><option value="title_asc"{% if filters.sort == 'title_asc' %} selected{% endif %}>Title A–Z</option><option value="title_desc"{% if filters.sort == 'title_desc' %} selected{% endif %}>Title Z–A</option></select></label>
+      <input type="hidden" name="per_page" value="{{ filters.per_page }}"><button class="toolbar-submit" type="submit">Apply filters</button>
+      {% if filters.q or filters.status or filters.type or filters.scope != 'active' or filters.sort != 'updated_desc' %}<a class="button" href="/administrator/content">Clear</a>{% endif %}
+    </form>
+
+    {% if entries is empty %}
+      <div class="empty-state"><div class="empty-state-content"><span class="empty-state-icon"><svg aria-hidden="true"><use href="#kumwe-icon-search"></use></svg></span><h2>No matching content</h2><p>Adjust the filters or create a new content item.</p>{% if capabilities['content.create'] is defined %}<a class="button primary" href="/administrator/content/new">Create content</a>{% endif %}</div></div>
+    {% else %}
+      <div class="table-wrap"><table><thead><tr><th>Content</th><th>Status</th><th>Address</th><th>Updated</th><th><span class="sr-only">Actions</span></th></tr></thead><tbody>
+        {% for entry in entries %}<tr class="{{ entry.deleted_at ? 'muted' : '' }}">
+          <td><span class="content-title"><strong>{{ entry.title }}</strong><span>Version {{ entry.version }}{% if entry.deleted_at %} · Trashed{% endif %}</span></span></td>
+          <td><span class="status status-{{ entry.deleted_at ? 'trashed' : entry.status }}">{{ entry.deleted_at ? 'Trashed' : entry.status|replace({'_': ' '})|title }}</span></td>
+          <td>{% if entry.status == 'published' and not entry.deleted_at %}<a href="/pages/{{ entry.slug }}" target="_blank" rel="noopener">/pages/{{ entry.slug }}</a>{% else %}<span class="text-muted">/pages/{{ entry.slug }}</span>{% endif %}</td>
+          <td class="nowrap"><time datetime="{{ entry.updated_at }}">{{ entry.updated_at|date('M j, Y H:i') }}</time></td>
+          <td class="actions">
+            {% if not entry.deleted_at %}
+              {% if capabilities['content.update'] is defined %}<a href="/administrator/content/{{ entry.id }}/edit">Edit</a>{% endif %}
+              {% if capabilities['content.delete'] is defined %}<form action="/administrator/content/{{ entry.id }}/trash" method="post"><input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="version" value="{{ entry.version }}"><button class="link-button danger" type="submit" data-confirm="Move ‘{{ entry.title }}’ to trash?">Trash</button></form>{% endif %}
+            {% elseif capabilities['content.restore'] is defined %}<form action="/administrator/content/{{ entry.id }}/restore" method="post"><input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="version" value="{{ entry.version }}"><button class="link-button" type="submit">Restore</button></form>{% endif %}
+          </td>
+        </tr>{% endfor %}
+      </tbody></table></div>
+    {% endif %}
+    <footer class="pagination"><span>Page {{ filters.page }} · showing up to {{ filters.per_page }} items</span><nav class="pagination-actions" aria-label="Content pages">{% if has_previous %}<a class="button" href="{{ previous_url }}" rel="prev">Previous</a>{% endif %}{% if has_next %}<a class="button" href="{{ next_url }}" rel="next">Next</a>{% endif %}</nav></footer>
+  </section>
 {% endblock %}

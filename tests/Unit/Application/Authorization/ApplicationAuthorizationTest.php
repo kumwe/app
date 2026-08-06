@@ -114,6 +114,11 @@ final class ApplicationAuthorizationTest extends TestCase
             AuthorizationResource::item('content_type', self::PAGE_ONE),
         )->allowed);
         self::assertTrue($gateway->decide(
+            AuthorizationContext::human(['content.read']),
+            Capability::fromString('content.read'),
+            AuthorizationResource::collection('media'),
+        )->allowed);
+        self::assertTrue($gateway->decide(
             $this->context('content.update', 'workflow', self::PAGE_TWO),
             Capability::fromString('content.update'),
             AuthorizationResource::item('workflow', self::PAGE_TWO),

@@ -1,0 +1,19 @@
+{% macro render(fields) %}
+  {% for field in fields %}
+    {% if field.kind == 'group' %}
+      <fieldset class="field-group stack"><legend>{{ field.label }}</legend>{% if field.description %}<p class="field-help">{{ field.description }}</p>{% endif %}{{ _self.render(field.children) }}</fieldset>
+    {% elseif field.input == 'checkbox' %}
+      <label class="check"><input type="checkbox" name="{{ field.name }}" value="1"{% if field.checked %} checked{% endif %}{% if field.required %} required{% endif %}><span>{{ field.label }}{% if field.description %}<small>{{ field.description }}</small>{% endif %}</span></label>
+    {% elseif field.input == 'select' %}
+      <label>{{ field.label }}{% if field.description %}<small>{{ field.description }}</small>{% endif %}<select name="{{ field.name }}"{% if field.required %} required{% endif %}><option value="">Choose…</option>{% for option in field.options %}<option value="{{ option.value }}"{% if option.value == field.value %} selected{% endif %}>{{ option.label }}</option>{% endfor %}</select></label>
+    {% elseif field.input == 'rich-text' %}
+      <kumwe-rich-text>
+        <label class="rich-text-source"><span>{{ field.label }}</span>{% if field.description %}<small>{{ field.description }}</small>{% endif %}<textarea name="{{ field.name }}" rows="14"{% if field.required %} required{% endif %}{% if field.min_length is not null %} minlength="{{ field.min_length }}"{% endif %}{% if field.max_length is not null %} maxlength="{{ field.max_length }}"{% endif %}>{{ field.value }}</textarea></label>
+      </kumwe-rich-text>
+    {% elseif field.input in ['textarea', 'lines'] %}
+      <label>{{ field.label }}{% if field.description %}<small>{{ field.description }}</small>{% endif %}<textarea name="{{ field.name }}" rows="{{ field.input == 'lines' ? 6 : 12 }}"{% if field.required %} required{% endif %}{% if field.min_length is not null %} minlength="{{ field.min_length }}"{% endif %}{% if field.max_length is not null %} maxlength="{{ field.max_length }}"{% endif %}>{{ field.value }}</textarea>{% if field.input == 'lines' %}<small>Enter one item per line.</small>{% endif %}</label>
+    {% else %}
+      <label>{{ field.label }}{% if field.description %}<small>{{ field.description }}</small>{% endif %}{% if field.accepts_media %}<span class="media-input"><input id="{{ field.id }}" type="{{ field.input }}" name="{{ field.name }}" value="{{ field.value }}"{% if field.required %} required{% endif %}{% if field.pattern %} pattern="{{ field.pattern }}"{% endif %}><button class="js-only" type="button" data-open-media-picker data-media-target="{{ field.id }}">Choose media</button></span>{% else %}<input id="{{ field.id }}" type="{{ field.input }}" name="{{ field.name }}" value="{{ field.value }}"{% if field.required %} required{% endif %}{% if field.min is not null %} min="{{ field.min }}"{% endif %}{% if field.max is not null %} max="{{ field.max }}"{% endif %}{% if field.min_length is not null %} minlength="{{ field.min_length }}"{% endif %}{% if field.max_length is not null %} maxlength="{{ field.max_length }}"{% endif %}{% if field.pattern %} pattern="{{ field.pattern }}"{% endif %}{% if field.step %} step="{{ field.step }}"{% endif %}>{% endif %}</label>
+    {% endif %}
+  {% endfor %}
+{% endmacro %}

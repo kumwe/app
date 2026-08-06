@@ -1,0 +1,101 @@
+import './styles.css';
+import './components/command-palette';
+import './components/field-builder';
+import './components/workflow-builder';
+import './components/menu-tree';
+import './components/schema-form';
+import './components/media-picker';
+import './components/job-fields';
+import './components/rich-text';
+
+document.documentElement.classList.add('js');
+
+const focusableSelector = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+function setupNavigation(): void {
+  const shell = document.querySelector<HTMLElement>('[data-administrator-shell]');
+  const toggle = document.querySelector<HTMLButtonElement>('[data-navigation-toggle]');
+  const backdrop = document.querySelector<HTMLButtonElement>('[data-navigation-backdrop]');
+  if (!shell || !toggle) return;
+
+  const setOpen = (open: boolean): void => {
+    shell.toggleAttribute('data-navigation-open', open);
+    toggle.setAttribute('aria-expanded', String(open));
+    document.body.classList.toggle('navigation-locked', open);
+    if (open) {
+      shell.querySelector<HTMLElement>(focusableSelector)?.focus();
+    } else {
+      toggle.focus();
+    }
+  };
+
+  toggle.addEventListener('click', () => setOpen(!shell.hasAttribute('data-navigation-open')));
+  backdrop?.addEventListener('click', () => setOpen(false));
+  shell.querySelectorAll<HTMLAnchorElement>('.administrator-navigation a').forEach((link) => {
+    link.addEventListener('click', () => setOpen(false));
+  });
+  window.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && shell.hasAttribute('data-navigation-open')) setOpen(false);
+  });
+}
+
+function setupConfirmations(): void {
+  document.querySelectorAll<HTMLElement>('[data-confirm]').forEach((element) => {
+    element.addEventListener('click', (event) => {
+      const message = element.dataset.confirm ?? 'Continue with this action?';
+      if (!window.confirm(message)) event.preventDefault();
+    });
+  });
+}
+
+function setupDismissibleNotices(): void {
+  document.querySelectorAll<HTMLButtonElement>('[data-dismiss-notice]').forEach((button) => {
+    button.addEventListener('click', () => button.closest<HTMLElement>('[role="status"], [role="alert"]')?.remove());
+  });
+}
+
+function setupContentTypeSelector(): void {
+  const selector = document.querySelector<HTMLSelectElement>('[data-content-type-selector]');
+  if (!selector) return;
+  selector.addEventListener('change', () => {
+    const url = new URL(window.location.href);
+    url.searchParams.set('content_type', selector.value);
+    window.location.assign(url);
+  });
+}
+
+function setupSlugSuggestion(): void {
+  const title = document.querySelector<HTMLInputElement>('[data-title-input]');
+  const slug = document.querySelector<HTMLInputElement>('[data-slug-input]');
+  if (!title || !slug) return;
+  let userEdited = slug.value.trim() !== '';
+  slug.addEventListener('input', () => { userEdited = slug.value.trim() !== ''; });
+  title.addEventListener('input', () => {
+    if (userEdited) return;
+    slug.value = title.value
+      .normalize('NFKD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .slice(0, 160);
+  });
+}
+
+function setupCopyButtons(): void {
+  document.querySelectorAll<HTMLButtonElement>('[data-copy-value]').forEach((button) => {
+    button.addEventListener('click', async () => {
+      await navigator.clipboard.writeText(button.dataset.copyValue ?? '');
+      const label = button.textContent;
+      button.textContent = 'Copied';
+      window.setTimeout(() => { button.textContent = label; }, 1600);
+    });
+  });
+}
+
+setupNavigation();
+setupConfirmations();
+setupDismissibleNotices();
+setupContentTypeSelector();
+setupSlugSuggestion();
+setupCopyButtons();

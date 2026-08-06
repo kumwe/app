@@ -8,6 +8,9 @@ Kumwe develops and releases on PHP 8.5. Every persistence and deployment change 
 cp .env.example .env
 docker compose run --rm app composer install
 docker compose run --rm app composer qa
+npm ci
+npm run check
+npm run build
 ```
 
 Individual checks:
@@ -19,7 +22,10 @@ composer analyse
 composer test:unit
 composer test:integration
 composer security:audit
+npm run test:browser
 ```
+
+Frontend dependencies are locked in `package-lock.json`. Production serves the committed hashed files under `public/assets/build`; rebuilding them must leave that directory unchanged. Browser tests run Chromium at desktop and mobile viewports, scan rendered pages against WCAG 2.2 AA rules, and compare screenshots under `tests/Browser/screenshots`.
 
 Run integration tests once for each database group in [Getting started](getting-started.md#choose-another-database). A change that passes only the default database is not portable.
 
@@ -47,6 +53,7 @@ Pull-request CI must do more than run PHPUnit. For each supported database it:
 7. exercises administrator login/CSRF/capabilities, public rendering, REST authentication/idempotency/concurrency, MCP initialization, queue work, and scheduling;
 8. restarts application processes and proves durable state remains available;
 9. scans source and the exact runtime images and publishes test evidence.
+10. runs browser, responsive, accessibility, and visual-regression tests against a migrated installation.
 
 Artifact tests separately install the Composer project and release ZIP into empty directories, apply configuration, migrate, start the application, and run the same acceptance probe. A release tag may publish images or archives only after these tests succeed.
 
