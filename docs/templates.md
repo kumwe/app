@@ -23,12 +23,15 @@ Theme mutations require `themes.site.manage` or `themes.administrator.manage` fo
 
 Stable namespaces are `@core-site`, `@core-admin`, `@site-theme`, and `@admin-theme`. Active extension views are isolated by both surface and an injective hexadecimal identifier namespace; `acme/tools` resolves as `@extension-61636d652f746f6f6c73`. Extension view files belong under `templates/views/site` or `templates/views/administrator` and cannot shadow unnamed core views.
 
+The built-in administrator uses Twig-rendered semantic HTML as its no-JavaScript baseline. Vite compiles TypeScript and Lit interactive islands into committed, immutable assets, so production never runs Node or `npm install`. First-party custom elements use the `kumwe-*` prefix. Trusted runtime extensions may obtain `AdministratorNavigationRegistry` from their restricted container and register an `AdministratorNavigationItem` that points to an extension-owned route. Every item declares a capability and is removed from the rendered navigation and command palette when the signed-in user lacks it. Extensions must not patch the core layout, assume a single-page application, or depend on private bundle modules.
+
 `site/page.twig` receives the public content record, including:
 
 - `site_name` from browser-managed settings;
 - `entry.id`, `entry.title`, `entry.slug`, and workflow status;
 - structured `entry.data` fields;
 - publication, version, and timestamp values.
+- the recursively prepared `navigation` tree and `current_path` used by the built-in public shell.
 
 Example:
 

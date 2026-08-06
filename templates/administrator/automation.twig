@@ -1,86 +1,48 @@
 {% extends "layout.twig" %}
 {% block title %}Automation · Kumwe{% endblock %}
+{% block context_title %}Automation{% endblock %}
 {% block content %}
-  <div class="page-heading">
-    <div><p class="eyebrow">Operations</p><h1>Automation</h1></div>
-  </div>
-  {% if saved %}<p class="notice" role="status">Automation updated.</p>{% endif %}
+  <header class="page-heading"><div><p class="eyebrow">Operations</p><h1>Automation</h1><p>Schedule registered work, inspect delivery, and recover failed jobs without server access.</p></div></header>
+  {% if saved %}<div class="notice success" role="status"><span>Automation updated.</span><button class="notice-dismiss" type="button" aria-label="Dismiss" data-dismiss-notice>×</button></div>{% endif %}
 
-  <section class="panel stack">
-    <h2>Create schedule</h2>
-    <form action="/administrator/automation" method="post" class="form-grid">
-      <input type="hidden" name="_csrf" value="{{ csrf }}">
-      <input type="hidden" name="action" value="schedule.create">
-      <label>Name<input name="name" maxlength="160" required></label>
-      <label>Cron expression<input name="cron_expression" value="0 * * * *" maxlength="120" required></label>
-      <label>Timezone<input name="timezone" value="UTC" maxlength="80" required></label>
-      <label>Queue<input name="queue" value="default" maxlength="64" required></label>
-      <label>Job type<select name="job_type" required>
-        {% for type in job_types %}<option value="{{ type }}">{{ type }}</option>{% endfor %}
-      </select></label>
-      <label>First run (UTC)<input type="datetime-local" name="first_run" required></label>
-      <label class="full-row">Payload (JSON object)<textarea name="payload" rows="5">{}</textarea></label>
-      <button class="primary" type="submit">Create schedule</button>
-    </form>
-  </section>
-
-  <section class="panel stack">
-    <h2>Schedules</h2>
-    <div class="table-wrap"><table>
-      <thead><tr><th>Name</th><th>Job</th><th>Next run</th><th>Status</th><th>Actions</th></tr></thead>
-      <tbody>
-      {% for schedule in schedules %}
-        <tr>
-          <td><strong>{{ schedule.name }}</strong><small><code>{{ schedule.cron_expression }}</code></small></td>
-          <td><code>{{ schedule.job_type }}</code><small>{{ schedule.queue }}</small></td>
+  <div class="editor-grid">
+    <section class="panel">
+      <header class="panel-header"><div><h2>Schedules</h2><p>Recurring jobs use explicit queues, timezones, and typed configuration.</p></div></header>
+      {% if schedules is empty %}<div class="panel-body"><p class="text-muted">No schedules configured.</p></div>{% else %}<div class="table-wrap"><table>
+        <thead><tr><th>Name</th><th>Job</th><th>Next run</th><th>Status</th><th><span class="sr-only">Actions</span></th></tr></thead>
+        <tbody>{% for schedule in schedules %}<tr>
+          <td><span class="content-title"><strong>{{ schedule.name }}</strong><span><code>{{ schedule.cron_expression }}</code></span></span></td>
+          <td><span class="content-title"><strong>{{ schedule.job_type }}</strong><span>{{ schedule.queue }}</span></span></td>
           <td>{{ schedule.next_run_at ?: 'Not scheduled' }}</td>
-          <td><span class="status">{{ schedule.enabled ? 'Enabled' : 'Disabled' }}</span></td>
-          <td class="actions">
-            <form action="/administrator/automation" method="post">
-              <input type="hidden" name="_csrf" value="{{ csrf }}">
-              <input type="hidden" name="id" value="{{ schedule.id }}">
-              <input type="hidden" name="version" value="{{ schedule.version }}">
-              <button name="action" value="schedule.{{ schedule.enabled ? 'disable' : 'enable' }}">
-                {{ schedule.enabled ? 'Disable' : 'Enable' }}
-              </button>
-              <button class="danger" name="action" value="schedule.delete">Delete</button>
-            </form>
-          </td>
-        </tr>
-      {% else %}
-        <tr><td colspan="5">No schedules configured.</td></tr>
-      {% endfor %}
-      </tbody>
-    </table></div>
-  </section>
+          <td><span class="status status-{{ schedule.enabled ? 'published' : 'draft' }}">{{ schedule.enabled ? 'Enabled' : 'Disabled' }}</span></td>
+          <td class="actions"><form action="/administrator/automation" method="post"><input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="id" value="{{ schedule.id }}"><input type="hidden" name="version" value="{{ schedule.version }}"><button class="link-button" name="action" value="schedule.{{ schedule.enabled ? 'disable' : 'enable' }}">{{ schedule.enabled ? 'Disable' : 'Enable' }}</button><button class="link-button danger" name="action" value="schedule.delete" data-confirm="Delete the {{ schedule.name }} schedule?">Delete</button></form></td>
+        </tr>{% endfor %}</tbody>
+      </table></div>{% endif %}
+    </section>
 
-  <section class="panel stack">
-    <h2>Recent jobs</h2>
-    <div class="table-wrap"><table>
-      <thead><tr><th>Job</th><th>Status</th><th>Attempts</th><th>Available</th><th>Actions</th></tr></thead>
-      <tbody>
-      {% for job in jobs %}
-        <tr>
-          <td><strong>{{ job.job_type }}</strong><small><code>{{ job.id }}</code> · {{ job.queue }}</small>
-            {% if job.error_message %}<div class="alert">{{ job.error_message }}</div>{% endif %}</td>
-          <td><span class="status status-{{ job.status }}">{{ job.status|title }}</span></td>
-          <td>{{ job.attempts }} / {{ job.maximum_attempts }}</td>
-          <td>{{ job.available_at }}</td>
-          <td class="actions">
-            {% if job.status in ['dead', 'pending'] %}
-              <form action="/administrator/automation" method="post">
-                <input type="hidden" name="_csrf" value="{{ csrf }}">
-                <input type="hidden" name="id" value="{{ job.id }}">
-                {% if job.status == 'dead' %}<button name="action" value="job.retry">Retry</button>{% endif %}
-                {% if job.status == 'pending' %}<button name="action" value="job.cancel">Cancel</button>{% endif %}
-              </form>
-            {% else %}<span class="muted">No action</span>{% endif %}
-          </td>
-        </tr>
-      {% else %}
-        <tr><td colspan="5">No jobs recorded.</td></tr>
-      {% endfor %}
-      </tbody>
-    </table></div>
+    <aside class="panel panel-body stack">
+      <div><p class="eyebrow">New schedule</p><h2>Configure recurring work</h2><p class="text-muted text-small">Only registered job types are available. Inputs change to match the selected job.</p></div>
+      <form action="/administrator/automation" method="post" class="stack"><input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="action" value="schedule.create">
+        <label>Name<input name="name" maxlength="160" required></label>
+        <div class="two-column"><label>Cron expression<input name="cron_expression" value="0 * * * *" maxlength="120" required></label><label>Timezone<input name="timezone" value="UTC" maxlength="80" required></label></div>
+        <div class="two-column"><label>Queue<input name="queue" value="default" maxlength="64" required></label><label>First run (UTC)<input type="datetime-local" name="first_run" required></label></div>
+        <kumwe-job-fields class="stack">
+          <label>Job type<select name="job_type" required data-job-type>{% for type in job_types %}<option value="{{ type.type }}">{{ type.label }}</option>{% endfor %}</select></label>
+          {% for type in job_types %}<fieldset class="field-group stack" data-job-fields="{{ type.type }}"{% if not loop.first %} hidden{% endif %}><legend>{{ type.label }} settings</legend>
+            {% if type.fields is empty %}<p class="text-muted text-small">This job does not require additional configuration.</p>{% endif %}
+            {% for field in type.fields %}<label>{{ field.label }}{% if field.help %}<small>{{ field.help }}</small>{% endif %}{% if field.type == 'select' %}<select name="{{ field.name }}"{% if field.required %} required{% endif %}>{% for option in field.options %}<option value="{{ option }}">{{ option }}</option>{% endfor %}</select>{% else %}<input type="{{ field.type == 'integer' ? 'number' : 'text' }}" name="{{ field.name }}" value="{{ field.default }}"{% if field.required %} required{% endif %}{% if field.minimum is not null %} min="{{ field.minimum }}"{% endif %}{% if field.maximum is not null %} max="{{ field.maximum }}"{% endif %}>{% endif %}</label>{% endfor %}
+          </fieldset>{% endfor %}
+        </kumwe-job-fields>
+        <button class="primary full" type="submit">Create schedule</button>
+      </form>
+    </aside>
+  </div>
+
+  <section class="panel" style="margin-top: 1.25rem">
+    <header class="panel-header"><div><h2>Recent jobs</h2><p>Delivery attempts and recoverable failures across registered queues.</p></div></header>
+    <div class="table-wrap"><table><thead><tr><th>Job</th><th>Status</th><th>Attempts</th><th>Available</th><th><span class="sr-only">Actions</span></th></tr></thead><tbody>
+      {% for job in jobs %}<tr><td><span class="content-title"><strong>{{ job.job_type }}</strong><span><code>{{ job.id }}</code> · {{ job.queue }}</span>{% if job.error_message %}<span class="text-small">{{ job.error_message }}</span>{% endif %}</span></td><td><span class="status status-{{ job.status }}">{{ job.status|title }}</span></td><td>{{ job.attempts }} / {{ job.maximum_attempts }}</td><td>{{ job.available_at }}</td><td class="actions">{% if job.status in ['dead', 'pending'] %}<form action="/administrator/automation" method="post"><input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="id" value="{{ job.id }}">{% if job.status == 'dead' %}<button class="link-button" name="action" value="job.retry">Retry</button>{% endif %}{% if job.status == 'pending' %}<button class="link-button danger" name="action" value="job.cancel">Cancel</button>{% endif %}</form>{% else %}<span class="text-muted">No action</span>{% endif %}</td></tr>
+      {% else %}<tr><td colspan="5">No jobs recorded.</td></tr>{% endfor %}
+    </tbody></table></div>
   </section>
 {% endblock %}

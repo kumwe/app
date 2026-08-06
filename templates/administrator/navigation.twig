@@ -1,57 +1,36 @@
 {% extends "layout.twig" %}
-{% block title %}Navigation · Kumwe{% endblock %}
+{% block title %}Menus · Kumwe{% endblock %}
+{% block context_title %}Menus{% endblock %}
 {% block content %}
-  <div class="page-heading"><div><p class="eyebrow">Site structure</p><h1>Menus and navigation</h1></div></div>
-  {% if saved %}<p class="notice" role="status">Navigation updated.</p>{% endif %}
+  <header class="page-heading"><div><p class="eyebrow">Site structure</p><h1>Menus and navigation</h1><p>Arrange the links visitors use to move through the public website.</p></div><div class="page-actions"><a class="button" href="/" target="_blank" rel="noopener">View website</a></div></header>
+  {% if saved %}<div class="notice success" role="status"><span>Navigation updated. Public pages use the saved menu immediately.</span><button class="notice-dismiss" type="button" aria-label="Dismiss notice" data-dismiss-notice>×</button></div>{% endif %}
 
-  {% if capabilities['navigation.manage'] is defined %}
-    <section class="panel stack">
-      <h2>Create a menu</h2>
-      <form action="/administrator/navigation" method="post" class="form-grid">
-        <input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="action" value="menu.create">
-        <label>Handle<input name="handle" pattern="[a-z][a-z0-9_]*" required></label>
-        <label>Title<input name="title" maxlength="255" required></label>
-        <button class="primary" type="submit">Create menu</button>
-      </form>
-    </section>
+  {% if menus is empty %}
+    <section class="empty-state"><div class="empty-state-content"><span class="empty-state-icon"><svg aria-hidden="true"><use href="#kumwe-icon-navigation"></use></svg></span><h2>Create the main menu</h2><p>Start with one menu, then add published pages in the order visitors should see them.</p></div></section>
   {% endif %}
 
   {% for menu in menus %}
-    <section class="panel stack resource-panel">
-      <form action="/administrator/navigation" method="post" class="form-grid">
-        <input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="action" value="menu.update">
-        <input type="hidden" name="id" value="{{ menu.id }}"><input type="hidden" name="version" value="{{ menu.version }}">
-        <label>Handle<input name="handle" value="{{ menu.handle }}" required></label>
-        <label>Title<input name="title" value="{{ menu.title }}" required></label>
-        {% if capabilities['navigation.manage'] is defined %}<button type="submit">Save menu</button>{% endif %}
-      </form>
+    <section class="panel menu-card">
+      <header class="panel-header"><div><h2>{{ menu.title }}</h2><p><code>{{ menu.handle }}</code> · {{ items[menu.id]|length }} links · version {{ menu.version }}</p></div></header>
+      <div class="panel-body stack">
+        <form action="/administrator/navigation" method="post" class="form-grid"><input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="action" value="menu.update"><input type="hidden" name="id" value="{{ menu.id }}"><input type="hidden" name="version" value="{{ menu.version }}"><label>Menu handle<input name="handle" value="{{ menu.handle }}" pattern="[a-z][a-z0-9_]*" required></label><label>Menu title<input name="title" value="{{ menu.title }}" maxlength="255" required></label><button type="submit">Save menu details</button></form>
+        <kumwe-menu-tree class="stack">
+          <div class="stack-compact">
+            {% for item in items[menu.id] %}
+              <article class="panel-body menu-item" data-menu-item="{{ item.id }}" style="--menu-depth: {{ item.path|split('/')|length - 2 }}">
+                <form id="menu-item-{{ item.id }}" action="/administrator/navigation" method="post" class="menu-item-grid"><input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="id" value="{{ item.id }}"><input type="hidden" name="version" value="{{ item.version }}"><label>Label<input name="title" value="{{ item.title }}" required></label><label>Page slug<input name="slug" value="{{ item.slug }}" pattern="[a-z0-9]+(-[a-z0-9]+)*" required></label><label>Parent<select name="parent_id"><option value="">Top level</option>{% for candidate in items[menu.id] if candidate.id != item.id %}<option value="{{ candidate.id }}"{% if candidate.id == item.parent_id %} selected{% endif %}>{{ candidate.path }}</option>{% endfor %}</select></label><label>Position<input type="number" min="0" name="position" value="{{ item.position }}" data-position-input></label><div class="page-actions"><button name="action" value="item.update">Save</button><button class="danger" name="action" value="item.delete" data-confirm="Delete the ‘{{ item.title }}’ menu item?">Delete</button></div></form>
+                <p class="field-help">Public address: <a href="/pages/{{ item.slug }}" target="_blank" rel="noopener">/pages/{{ item.slug }}</a> · Tree path {{ item.path }}</p>
+              </article>
+            {% else %}<div class="empty-state"><div class="empty-state-content"><h3>No links yet</h3><p>Add the first public page below.</p></div></div>{% endfor %}
+          </div>
+          {% if items[menu.id] is not empty %}<form action="/administrator/navigation" method="post" class="page-actions"><input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="action" value="item.reorder"><input type="hidden" name="menu_id" value="{{ menu.id }}"><input type="hidden" name="order" value="{% for item in items[menu.id] %}{{ not loop.first ? ',' : '' }}{{ item.id }}{% endfor %}" data-order-input><button type="submit">Save dragged order</button><span class="field-help">Drag rows into order, then save.</span></form>{% endif %}
+        </kumwe-menu-tree>
 
-      <div class="table-wrap"><table><thead><tr><th>Path</th><th>Title</th><th>Parent</th><th>Position</th><th>Actions</th></tr></thead><tbody>
-      {% for item in items[menu.id] %}
-        {% set item_form = 'menu-item-' ~ item.id %}
-        <tr>
-          <td><input form="{{ item_form }}" name="slug" value="{{ item.slug }}" aria-label="Slug for {{ item.title }}"><small>{{ item.path }}</small></td>
-          <td><input form="{{ item_form }}" name="title" value="{{ item.title }}" aria-label="Title for {{ item.path }}"></td>
-          <td><select form="{{ item_form }}" name="parent_id"><option value="">Root</option>{% for candidate in items[menu.id] if candidate.id != item.id %}<option value="{{ candidate.id }}" {% if candidate.id == item.parent_id %}selected{% endif %}>{{ candidate.path }}</option>{% endfor %}</select></td>
-          <td><input form="{{ item_form }}" type="number" min="0" name="position" value="{{ item.position }}"></td>
-          <td class="actions"><form id="{{ item_form }}" action="/administrator/navigation" method="post"><input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="id" value="{{ item.id }}"><input type="hidden" name="version" value="{{ item.version }}"></form>
-            {% if capabilities['navigation.manage'] is defined %}<button form="{{ item_form }}" name="action" value="item.update">Save</button><button form="{{ item_form }}" class="danger" name="action" value="item.delete">Delete</button>{% endif %}</td>
-        </tr>
-      {% else %}<tr><td colspan="5">No menu items yet.</td></tr>{% endfor %}
-      </tbody></table></div>
-
-      {% if capabilities['navigation.manage'] is defined %}
-        <form action="/administrator/navigation" method="post" class="form-grid">
-          <input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="action" value="item.create"><input type="hidden" name="menu_id" value="{{ menu.id }}">
-          <label>Title<input name="title" required></label><label>Slug<input name="slug" pattern="[a-z0-9]+(-[a-z0-9]+)*" required></label>
-          <label>Parent<select name="parent_id"><option value="">Root</option>{% for item in items[menu.id] %}<option value="{{ item.id }}">{{ item.path }}</option>{% endfor %}</select></label>
-          <label>Position<input type="number" min="0" name="position" value="0"></label><button class="primary" type="submit">Add item</button>
-        </form>
-        <form action="/administrator/navigation" method="post" onsubmit="return confirm('Delete this menu and all its items?')">
-          <input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="action" value="menu.delete"><input type="hidden" name="id" value="{{ menu.id }}"><input type="hidden" name="version" value="{{ menu.version }}">
-          <button class="danger" type="submit">Delete menu</button>
-        </form>
-      {% endif %}
+        <details class="advanced-definition"><summary>Add a menu item</summary><form action="/administrator/navigation" method="post" class="form-grid panel-body"><input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="action" value="item.create"><input type="hidden" name="menu_id" value="{{ menu.id }}"><label>Link label<input name="title" required></label><label>Page slug<input name="slug" pattern="[a-z0-9]+(-[a-z0-9]+)*" required></label><label>Parent<select name="parent_id"><option value="">Top level</option>{% for item in items[menu.id] %}<option value="{{ item.id }}">{{ item.path }}</option>{% endfor %}</select></label><label>Position<input type="number" min="0" name="position" value="{{ items[menu.id]|length }}"></label><button class="primary" type="submit">Add link</button></form></details>
+        <details class="advanced-definition"><summary>Danger zone</summary><form action="/administrator/navigation" method="post" class="panel-body stack"><input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="action" value="menu.delete"><input type="hidden" name="id" value="{{ menu.id }}"><input type="hidden" name="version" value="{{ menu.version }}"><p class="field-help">Deleting this menu also deletes every link it contains.</p><button class="danger" type="submit" data-confirm="Delete ‘{{ menu.title }}’ and all its links?">Delete menu</button></form></details>
+      </div>
     </section>
   {% endfor %}
+
+  <section class="panel panel-body stack"><div><p class="eyebrow">New navigation</p><h2>Create a menu</h2></div><form action="/administrator/navigation" method="post" class="form-grid"><input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="action" value="menu.create"><label>Handle<input name="handle" value="{{ menus is empty ? 'main' : '' }}" pattern="[a-z][a-z0-9_]*" required></label><label>Title<input name="title" value="{{ menus is empty ? 'Main menu' : '' }}" maxlength="255" required></label><button class="primary" type="submit">Create menu</button></form></section>
 {% endblock %}

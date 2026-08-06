@@ -56,6 +56,15 @@ final readonly class AdministratorNavigationHandler implements RequestHandlerInt
     private function mutate(ExecutionContext $context, array $form): void
     {
         $action = AdministratorRequest::required($form, 'action');
+        if ($action === 'item.reorder') {
+            $this->reorder(
+                $context,
+                AdministratorRequest::required($form, 'menu_id'),
+                AdministratorRequest::required($form, 'order'),
+            );
+
+            return;
+        }
         match ($action) {
             'menu.create' => $this->navigation->createMenu(
                 $context,
@@ -98,6 +107,43 @@ final readonly class AdministratorNavigationHandler implements RequestHandlerInt
             ),
             default => throw new InvalidArgumentException('The navigation action is not supported.'),
         };
+    }
+
+    private function reorder(ExecutionContext $context, string $menuId, string $order): void
+    {
+        $identifiers = array_values(array_filter(
+            array_map('trim', explode(',', $order)),
+            static fn (string $identifier): bool => $identifier !== '',
+        ));
+        if (count($identifiers) !== count(array_unique($identifiers))) {
+            throw new InvalidArgumentException('The menu item order contains duplicate items.');
+        }
+        $current = $this->navigation->items($context, $menuId);
+        $byId = [];
+        foreach ($current as $item) {
+            $byId[$item->id] = $item;
+        }
+        if (count($identifiers) !== count($byId)) {
+            throw new InvalidArgumentException('The menu item order is incomplete.');
+        }
+        foreach ($identifiers as $position => $identifier) {
+            $item = $byId[$identifier] ?? null;
+            if (!$item instanceof MenuItemRecord) {
+                throw new InvalidArgumentException('The menu item order contains an unknown item.');
+            }
+            if ($item->position === $position) {
+                continue;
+            }
+            $this->navigation->updateItem(
+                $context,
+                $item->id,
+                $item->version,
+                $item->parentId,
+                $item->title,
+                $item->slug,
+                $position,
+            );
+        }
     }
 
     /** @param array<string, string> $form */

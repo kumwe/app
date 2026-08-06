@@ -1,0 +1,37 @@
+{% extends "layout.twig" %}
+{% block title %}Media · Kumwe{% endblock %}
+{% block context_title %}Media library{% endblock %}
+{% block content %}
+  <header class="page-heading"><div><p class="eyebrow">Workspace</p><h1>Media library</h1><p>Upload, find and reuse images and documents across your content.</p></div></header>
+  {% if uploaded %}<div class="notice success" role="status"><span>Media uploaded successfully.</span><button class="notice-dismiss" type="button" aria-label="Dismiss" data-dismiss-notice>×</button></div>{% endif %}
+  {% if deleted %}<div class="notice success" role="status"><span>Media deleted successfully.</span><button class="notice-dismiss" type="button" aria-label="Dismiss" data-dismiss-notice>×</button></div>{% endif %}
+  {% if error %}<div class="notice danger" role="alert">{{ error }}</div>{% endif %}
+
+  <section class="media-layout{% if capabilities['content.update'] is not defined %} media-layout-single{% endif %}">
+    {% if capabilities['content.update'] is defined %}
+    <form class="panel panel-body media-upload stack" action="/administrator/media" method="post" enctype="multipart/form-data">
+      <input type="hidden" name="_csrf" value="{{ csrf }}">
+      <div><p class="eyebrow">Add media</p><h2>Upload a file</h2><p class="text-muted text-small">JPEG, PNG, GIF, WebP, AVIF or PDF. The server upload limit applies.</p></div>
+      <label class="file-drop"><input type="file" name="media" accept="image/jpeg,image/png,image/gif,image/webp,image/avif,application/pdf" required><span><strong>Choose a file</strong><small>or drop it here</small></span></label>
+      <button class="primary full" type="submit">Upload media</button>
+    </form>
+    {% endif %}
+
+    <section class="panel media-library-panel">
+      <form class="table-toolbar" action="/administrator/media" method="get">
+        <label class="search-field">Search<input type="search" name="q" value="{{ query }}" placeholder="File name"></label>
+        <label>File type<select name="kind"><option value="all"{% if kind == 'all' %} selected{% endif %}>All files</option><option value="image"{% if kind == 'image' %} selected{% endif %}>Images</option><option value="document"{% if kind == 'document' %} selected{% endif %}>Documents</option></select></label>
+        <button class="toolbar-submit" type="submit">Apply</button>{% if query or kind != 'all' %}<a class="button" href="/administrator/media">Clear</a>{% endif %}
+      </form>
+      {% if assets is empty %}
+        <div class="empty-state"><div class="empty-state-content"><div class="empty-state-icon"><svg aria-hidden="true"><use href="#kumwe-icon-media"></use></svg></div><h2>No media found</h2><p>{% if query or kind != 'all' %}Try a broader search or clear the filters.{% else %}Upload the first image or document to make it available to editors.{% endif %}</p></div></div>
+      {% else %}
+        <div class="media-grid">{% for asset in assets %}<article class="media-card">
+          <div class="media-preview">{% if asset.is_image %}<img src="{{ asset.url }}" alt="Preview of {{ asset.name }}" loading="lazy">{% else %}<span class="media-file-placeholder" aria-hidden="true">PDF</span>{% endif %}</div>
+          <div class="media-card-body"><strong title="{{ asset.name }}">{{ asset.name }}</strong><span>{{ asset.size_label }} · {{ asset.created_at|date('M j, Y') }}</span><div class="media-card-actions"><a href="{{ asset.url }}" target="_blank" rel="noopener">View</a><button class="link-button js-only" type="button" data-copy-value="{{ asset.url }}">Copy URL</button>{% if capabilities['content.delete'] is defined %}<form action="/administrator/media/{{ asset.id }}/delete" method="post"><input type="hidden" name="_csrf" value="{{ csrf }}"><button class="link-button danger" type="submit" data-confirm="Delete {{ asset.name }}? Content using its URL will show a broken link.">Delete</button></form>{% endif %}</div></div>
+        </article>{% endfor %}</div>
+        <nav class="pagination" aria-label="Media pages"><span>{{ total }} file{{ total == 1 ? '' : 's' }} · Page {{ page }} of {{ pages }}</span><span class="pagination-actions">{% if page > 1 %}<a class="button" href="?q={{ query|url_encode }}&kind={{ kind|url_encode }}&page={{ page - 1 }}">Previous</a>{% endif %}{% if page < pages %}<a class="button" href="?q={{ query|url_encode }}&kind={{ kind|url_encode }}&page={{ page + 1 }}">Next</a>{% endif %}</span></nav>
+      {% endif %}
+    </section>
+  </section>
+{% endblock %}

@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace Kumwe\CMS\Administrator\Http\Handler;
 
-use JsonException;
+use Kumwe\CMS\Administrator\Content\ContentFormPresenter;
 use Kumwe\CMS\Administrator\Http\AdministratorRequest;
 use Kumwe\CMS\Administrator\Presentation\AdministratorRenderer;
 use Kumwe\CMS\Content\Application\ContentService;
 use Kumwe\CMS\Content\Application\ContentModelService;
 use Kumwe\CMS\Content\Domain\ContentTypeDefinition;
+use Kumwe\CMS\Media\Application\MediaAsset;
+use Kumwe\CMS\Media\Application\MediaService;
 use Laminas\Diactoros\Response\HtmlResponse;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -21,10 +23,11 @@ final readonly class AdministratorContentEditorHandler implements RequestHandler
         private ContentService $content,
         private ContentModelService $models,
         private AdministratorRenderer $renderer,
+        private ?ContentFormPresenter $form = null,
+        private ?MediaService $media = null,
     ) {
     }
 
-    /** @throws JsonException */
     public function handle(ServerRequestInterface $request): ResponseInterface
     {
         $session = AdministratorRequest::session($request);
@@ -33,17 +36,12 @@ final readonly class AdministratorContentEditorHandler implements RequestHandler
 
         if (is_string($id) && $id !== '') {
             $entry = $this->content->get(AdministratorRequest::context($request), $id, true)->toArray();
-            $entry['data_json'] = json_encode(
-                $entry['data'],
-                JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR,
-            );
         }
 
         $context = AdministratorRequest::context($request);
-        $types = array_map(
-            static fn (ContentTypeDefinition $type): array => $type->toArray(),
-            $this->models->contentTypes($context),
-        );
+        $definitions = $this->models->contentTypes($context);
+        $types = array_map(static fn (ContentTypeDefinition $type): array => $type->toArray(), $definitions);
+        $selectedType = $this->selectedType($request, $definitions, $entry);
         $workflow = null;
         if (is_array($entry)) {
             $workflowId = $entry['workflow_id'] ?? null;
@@ -63,7 +61,48 @@ final readonly class AdministratorContentEditorHandler implements RequestHandler
             'capabilities' => AdministratorRequest::capabilityMap($request),
             'entry' => $entry,
             'content_types' => $types,
+            'content_type' => $selectedType->toArray(),
+            'fields' => ($this->form ?? new ContentFormPresenter())->fields(
+                $selectedType,
+                is_array($entry['data'] ?? null) ? $entry['data'] : [],
+            ),
             'workflow' => $workflow,
+            'media_assets' => $this->media === null ? [] : array_map(
+                static fn (MediaAsset $asset): array => $asset->toArray(),
+                $this->media->browse($context, perPage: 48)->items,
+            ),
         ]), 200, ['Cache-Control' => 'no-store']);
+    }
+
+    /**
+     * @param list<ContentTypeDefinition> $definitions
+     * @param array<string, mixed>|null $entry
+     */
+    private function selectedType(
+        ServerRequestInterface $request,
+        array $definitions,
+        ?array $entry,
+    ): ContentTypeDefinition {
+        if ($entry !== null) {
+            $id = $entry['content_type_id'] ?? null;
+            $version = $entry['content_type_version'] ?? null;
+            if (!is_string($id) || !is_int($version)) {
+                throw new \RuntimeException('The stored content type reference is invalid.');
+            }
+            return $this->models->contentType(AdministratorRequest::context($request), $id, $version);
+        }
+        if ($definitions === []) {
+            throw new \RuntimeException('At least one content type is required before content can be created.');
+        }
+        $requested = $request->getQueryParams()['content_type'] ?? '';
+        if (is_string($requested) && $requested !== '') {
+            foreach ($definitions as $definition) {
+                if ($definition->id === $requested || $definition->handle === $requested) {
+                    return $definition;
+                }
+            }
+        }
+
+        return $definitions[0];
     }
 }

@@ -1,7 +1,8 @@
 {% extends "layout.twig" %}
 {% block title %}Users and access · Kumwe{% endblock %}
+{% block context_title %}Users & access{% endblock %}
 {% block content %}
-  <div class="page-heading"><div><p class="eyebrow">Identity</p><h1>Users, groups and permissions</h1></div></div>
+  <div class="page-heading"><div><p class="eyebrow">Identity</p><h1>Users, groups and permissions</h1><p>Give people the smallest access they need and keep credentials isolated by delivery channel.</p></div></div>
   {% if saved %}<p class="notice" role="status">Access control updated.</p>{% endif %}
   {% if created_token %}<div class="alert token-result" role="status"><strong>Copy this token now. It will not be shown again.</strong><code>{{ created_token.token }}</code><small>ID: {{ created_token.token_id }}</small></div>{% endif %}
 
@@ -56,7 +57,7 @@
   <section class="panel stack"><h2>Create API / MCP token</h2><form method="post" action="/administrator/access" class="form-grid">
     <input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="action" value="token.create">
     <label>User email<input type="email" name="token_email" required></label><label>Token name<input name="token_name" required></label>
-    <label>Capabilities<input name="token_capabilities" placeholder="content.read,navigation.read" required></label><label>Expires at<input type="datetime-local" name="expires_at"></label>
+    <label>Capabilities<small>Select the smallest set this client must use.</small><select name="token_capabilities[]" multiple size="8" required>{% for option in available_capabilities %}<option value="{{ option.code }}">{{ option.code }} — {{ option.description }}</option>{% endfor %}</select></label><label>Expires at<input type="datetime-local" name="expires_at"></label>
     <label>Audience<select name="audience" required><option value="kumwe-http">HTTP API</option><option value="kumwe-cli">CLI</option><option value="kumwe-mcp">MCP</option></select></label>
     <label>Purpose<select name="purpose" required><option value="api">API</option><option value="management">CLI management</option><option value="mcp">MCP</option></select></label>
     <button class="primary" type="submit">Create token</button>

@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Kumwe\CMS\Administrator\Http\Handler;
 
 use JsonException;
+use Kumwe\CMS\Administrator\Content\ContentModelFormMapper;
+use Kumwe\CMS\Administrator\Content\ContentModelFormPresenter;
 use Kumwe\CMS\Administrator\Http\AdministratorRequest;
 use Kumwe\CMS\Administrator\Presentation\AdministratorRenderer;
 use Kumwe\CMS\Content\Application\ContentModelService;
@@ -19,8 +21,12 @@ use stdClass;
 
 final readonly class AdministratorContentModelsHandler implements RequestHandlerInterface
 {
-    public function __construct(private ContentModelService $models, private AdministratorRenderer $renderer)
-    {
+    public function __construct(
+        private ContentModelService $models,
+        private AdministratorRenderer $renderer,
+        private ?ContentModelFormMapper $mapper = null,
+        private ?ContentModelFormPresenter $presenter = null,
+    ) {
     }
 
     public function handle(ServerRequestInterface $request): ResponseInterface
@@ -31,8 +37,12 @@ final readonly class AdministratorContentModelsHandler implements RequestHandler
             $kind = AdministratorRequest::required($form, 'kind');
             $action = AdministratorRequest::required($form, 'action');
             if ($kind === 'workflow') {
-                $states = $this->objectList($form['states'] ?? '', 'states');
-                $transitions = $this->objectList($form['transitions'] ?? '', 'transitions');
+                $states = ($form['workflow_mode'] ?? '') === 'builder'
+                    ? ($this->mapper ?? new ContentModelFormMapper())->workflowStates($form)
+                    : $this->objectList($form['states'] ?? '', 'states');
+                $transitions = ($form['workflow_mode'] ?? '') === 'builder'
+                    ? ($this->mapper ?? new ContentModelFormMapper())->workflowTransitions($form)
+                    : $this->objectList($form['transitions'] ?? '', 'transitions');
                 if ($action === 'create') {
                     $this->models->createWorkflow(
                         $context,
@@ -53,7 +63,9 @@ final readonly class AdministratorContentModelsHandler implements RequestHandler
                     );
                 }
             } elseif ($kind === 'content_type') {
-                $schema = $this->object($form['schema'] ?? '', 'schema');
+                $schema = ($form['schema_mode'] ?? '') === 'builder'
+                    ? ($this->mapper ?? new ContentModelFormMapper())->contentTypeSchema($form)
+                    : $this->object($form['schema'] ?? '', 'schema');
                 if ($action === 'create') {
                     $this->models->createContentType(
                         $context,
@@ -154,6 +166,7 @@ final readonly class AdministratorContentModelsHandler implements RequestHandler
     private function contentTypeDocument(ContentTypeDefinition $definition): array
     {
         return $definition->toArray() + [
+            'builder_fields' => ($this->presenter ?? new ContentModelFormPresenter())->fields($definition->schema()),
             'schema_json' => json_encode(
                 $definition->schema(),
                 JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR,

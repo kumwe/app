@@ -1,50 +1,99 @@
 {% extends "layout.twig" %}
 {% block title %}Content models · Kumwe{% endblock %}
+{% block context_title %}Content models{% endblock %}
 {% block content %}
-  <div class="page-heading"><div><p class="eyebrow">Structured content</p><h1>Content models</h1><p class="help">Publish immutable schema and workflow versions. Existing entries remain pinned to their original definition.</p></div><a class="button" href="/administrator/content/new">Create content</a></div>
+  <header class="page-heading"><div><p class="eyebrow">Structure</p><h1>Content models</h1><p>Define the fields people complete and the workflow that moves content safely toward publication.</p></div><div class="page-actions"><a class="button" href="/administrator/content/new">Create content</a></div></header>
+
+  <div class="notice" role="status"><span><strong>Versioned by design.</strong> Publishing a model creates an immutable version. Existing content remains pinned to the version it was created with.</span><button class="notice-dismiss" type="button" aria-label="Dismiss notice" data-dismiss-notice>×</button></div>
+
   <section class="model-layout">
     <div class="stack">
-      <div class="section-heading"><h2>Content types</h2><span class="count-badge">{{ content_types|length }}</span></div>
+      <div class="section-heading"><div><p class="eyebrow">Authoring</p><h2>Content types</h2></div><span class="count-badge">{{ content_types|length }}</span></div>
       {% for type in content_types %}
-        <details class="panel model-card"><summary><strong>{{ type.name }}</strong><span>{{ type.handle }} · v{{ type.version }}</span></summary>
+        <details class="panel model-card">
+          <summary><span><strong>{{ type.name }}</strong><br><span>{{ type.handle }} · version {{ type.version }}</span></span></summary>
           {% if capabilities['content.update'] is defined %}
-          <form method="post" class="stack compact-form"><input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="kind" value="content_type"><input type="hidden" name="action" value="update"><input type="hidden" name="id" value="{{ type.id }}"><input type="hidden" name="version" value="{{ type.version }}">
-            <label>Name<input name="name" value="{{ type.name }}" required></label><label>Workflow<select name="workflow">{% for workflow in workflows %}<option value="{{ workflow.id }}" {{ workflow.id == type.workflow_id ? 'selected' : '' }}>{{ workflow.name }} · v{{ workflow.version }}</option>{% endfor %}</select></label>
-            <label>JSON Schema<textarea name="schema" rows="12" required>{{ type.schema_json }}</textarea></label><label class="check"><input type="checkbox" name="allow_breaking" value="1"> Publish an explicitly breaking version</label><button class="primary" type="submit">Publish version {{ type.version + 1 }}</button>
-          </form>
-          {% else %}<pre>{{ type.schema_json }}</pre>{% endif %}
+            <form method="post" class="stack">
+              <input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="kind" value="content_type"><input type="hidden" name="action" value="update"><input type="hidden" name="id" value="{{ type.id }}"><input type="hidden" name="version" value="{{ type.version }}"><input type="hidden" name="schema_mode" value="builder">
+              <div class="two-column"><label>Name<input name="name" value="{{ type.name }}" required></label><label>Workflow<select name="workflow">{% for workflow in workflows %}<option value="{{ workflow.id }}"{% if workflow.id == type.workflow_id %} selected{% endif %}>{{ workflow.name }} · v{{ workflow.version }}</option>{% endfor %}</select></label></div>
+              <kumwe-field-builder class="stack">
+                <div class="section-heading"><div><h3>Authoring fields</h3><p class="field-help">Each row becomes a graphical field in the content editor.</p></div><button type="button" data-add-field>Add field</button></div>
+                <div data-field-rows>
+                  {% for field in type.builder_fields %}
+                    <div class="builder-row" data-field-row>
+                      <label>Key<input name="field_{{ loop.index0 }}_key" value="{{ field.key }}" pattern="[a-z][a-z0-9_]*" required></label>
+                      <label>Label<input name="field_{{ loop.index0 }}_title" value="{{ field.title }}" required></label>
+                      <label>Field type<select name="field_{{ loop.index0 }}_type">{% for option, label in {'string':'Short text','text':'Long text','integer':'Whole number','number':'Number','boolean':'Yes / no','date':'Date','date-time':'Date and time','email':'Email address','url':'Web address','media':'Media URL','string-list':'List of text'} %}<option value="{{ option }}"{% if field.type == option %} selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
+                      <button class="remove-row" type="button" data-remove-field aria-label="Remove {{ field.title }}">Remove</button>
+                      <div class="builder-options"><label>Description<input name="field_{{ loop.index0 }}_description" value="{{ field.description }}"></label><label>Minimum<input type="number" name="field_{{ loop.index0 }}_minimum" value="{{ field.minimum }}"></label><label>Maximum<input type="number" name="field_{{ loop.index0 }}_maximum" value="{{ field.maximum }}"></label><label>Choices<small>One choice per line; optional.</small><textarea name="field_{{ loop.index0 }}_options" rows="3">{{ field.options }}</textarea></label><label class="check"><input type="checkbox" name="field_{{ loop.index0 }}_required" value="1"{% if field.required %} checked{% endif %}><span>Required field</span></label></div>
+                    </div>
+                  {% endfor %}
+                </div>
+                <template data-field-template><div class="builder-row" data-field-row><label>Key<input name="field___INDEX___key" pattern="[a-z][a-z0-9_]*" required></label><label>Label<input name="field___INDEX___title" required></label><label>Field type<select name="field___INDEX___type"><option value="string">Short text</option><option value="text">Long text</option><option value="integer">Whole number</option><option value="number">Number</option><option value="boolean">Yes / no</option><option value="date">Date</option><option value="date-time">Date and time</option><option value="email">Email address</option><option value="url">Web address</option><option value="media">Media URL</option><option value="string-list">List of text</option></select></label><button class="remove-row" type="button" data-remove-field>Remove</button><div class="builder-options"><label>Description<input name="field___INDEX___description"></label><label>Minimum<input type="number" name="field___INDEX___minimum"></label><label>Maximum<input type="number" name="field___INDEX___maximum"></label><label>Choices<textarea name="field___INDEX___options" rows="3"></textarea></label><label class="check"><input type="checkbox" name="field___INDEX___required" value="1"><span>Required field</span></label></div></div></template>
+                <noscript><p class="notice warning">JavaScript is off. You can edit existing fields; enable JavaScript to add another row.</p></noscript>
+              </kumwe-field-builder>
+              <label class="check"><input type="checkbox" name="allow_breaking" value="1"><span>Publish an explicitly breaking version<small>Use only after reviewing existing content and integration consumers.</small></span></label>
+              <details class="advanced-definition"><summary>Inspect generated JSON Schema</summary><pre>{{ type.schema_json }}</pre></details>
+              <button class="primary" type="submit">Publish version {{ type.version + 1 }}</button>
+            </form>
+          {% else %}<div class="model-details"><details class="advanced-definition"><summary>Inspect definition</summary><pre>{{ type.schema_json }}</pre></details></div>{% endif %}
         </details>
       {% endfor %}
+
       {% if capabilities['content.update'] is defined %}
-      <details class="panel model-card create-card"><summary><strong>New content type</strong><span>Define a reusable schema</span></summary>
-        <form method="post" class="stack compact-form"><input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="kind" value="content_type"><input type="hidden" name="action" value="create"><div class="two-column"><label>Handle<input name="handle" placeholder="article" pattern="[a-z][a-z0-9_-]*" required></label><label>Name<input name="name" placeholder="Article" required></label></div><label>Workflow<select name="workflow">{% for workflow in workflows %}<option value="{{ workflow.id }}">{{ workflow.name }} · v{{ workflow.version }}</option>{% endfor %}</select></label><label>JSON Schema<textarea name="schema" rows="12" required>{
-  "type": "object",
-  "properties": {"body": {"type": "string", "title": "Body"}},
-  "required": ["body"],
-  "additionalProperties": false
-}</textarea></label><button class="primary" type="submit">Create content type</button></form>
-      </details>
+        <details class="panel model-card" open>
+          <summary><span><strong>Create a content type</strong><br><span>Build a reusable authoring form</span></span></summary>
+          <form method="post" class="stack"><input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="kind" value="content_type"><input type="hidden" name="action" value="create"><input type="hidden" name="schema_mode" value="builder">
+            <div class="two-column"><label>Handle<input name="handle" placeholder="article" pattern="[a-z][a-z0-9_-]*" required></label><label>Name<input name="name" placeholder="Article" required></label></div>
+            <label>Workflow<select name="workflow">{% for workflow in workflows %}<option value="{{ workflow.id }}">{{ workflow.name }} · v{{ workflow.version }}</option>{% endfor %}</select></label>
+            <kumwe-field-builder class="stack"><div class="section-heading"><div><h3>Authoring fields</h3><p class="field-help">Start with the main body and add the fields editors need.</p></div><button type="button" data-add-field>Add field</button></div><div data-field-rows>
+              <div class="builder-row" data-field-row><label>Key<input name="field_0_key" value="body" required></label><label>Label<input name="field_0_title" value="Body" required></label><label>Field type<select name="field_0_type"><option value="text">Long text</option><option value="string">Short text</option></select></label><button class="remove-row" type="button" data-remove-field>Remove</button><div class="builder-options"><label>Description<input name="field_0_description" value="The main content shown on the page."></label><label>Minimum<input type="number" name="field_0_minimum"></label><label>Maximum<input type="number" name="field_0_maximum" value="50000"></label><label>Choices<textarea name="field_0_options" rows="3"></textarea></label><label class="check"><input type="checkbox" name="field_0_required" value="1" checked><span>Required field</span></label></div></div>
+            </div><template data-field-template><div class="builder-row" data-field-row><label>Key<input name="field___INDEX___key" pattern="[a-z][a-z0-9_]*" required></label><label>Label<input name="field___INDEX___title" required></label><label>Field type<select name="field___INDEX___type"><option value="string">Short text</option><option value="text">Long text</option><option value="integer">Whole number</option><option value="number">Number</option><option value="boolean">Yes / no</option><option value="date">Date</option><option value="date-time">Date and time</option><option value="email">Email address</option><option value="url">Web address</option><option value="media">Media URL</option><option value="string-list">List of text</option></select></label><button class="remove-row" type="button" data-remove-field>Remove</button><div class="builder-options"><label>Description<input name="field___INDEX___description"></label><label>Minimum<input type="number" name="field___INDEX___minimum"></label><label>Maximum<input type="number" name="field___INDEX___maximum"></label><label>Choices<textarea name="field___INDEX___options" rows="3"></textarea></label><label class="check"><input type="checkbox" name="field___INDEX___required" value="1"><span>Required field</span></label></div></div></template></kumwe-field-builder>
+            <button class="primary" type="submit">Create content type</button>
+          </form>
+        </details>
       {% endif %}
     </div>
+
     <div class="stack">
-      <div class="section-heading"><h2>Workflows</h2><span class="count-badge">{{ workflows|length }}</span></div>
+      <div class="section-heading"><div><p class="eyebrow">Publishing</p><h2>Workflows</h2></div><span class="count-badge">{{ workflows|length }}</span></div>
       {% for workflow in workflows %}
-        <details class="panel model-card"><summary><strong>{{ workflow.name }}</strong><span>{{ workflow.handle }} · v{{ workflow.version }}</span></summary>
+        <details class="panel model-card">
+          <summary><span><strong>{{ workflow.name }}</strong><br><span>{{ workflow.handle }} · version {{ workflow.version }}</span></span></summary>
           {% if capabilities['content.update'] is defined %}
-          <form method="post" class="stack compact-form"><input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="kind" value="workflow"><input type="hidden" name="action" value="update"><input type="hidden" name="id" value="{{ workflow.id }}"><input type="hidden" name="version" value="{{ workflow.version }}"><label>Name<input name="name" value="{{ workflow.name }}" required></label><label>States<textarea name="states" rows="11" required>{{ workflow.states_json }}</textarea></label><label>Transitions<textarea name="transitions" rows="11" required>{{ workflow.transitions_json }}</textarea></label><label class="check"><input type="checkbox" name="allow_breaking" value="1"> Publish an explicitly breaking version</label><button class="primary" type="submit">Publish version {{ workflow.version + 1 }}</button></form>
-          {% else %}<h3>States</h3><pre>{{ workflow.states_json }}</pre><h3>Transitions</h3><pre>{{ workflow.transitions_json }}</pre>{% endif %}
+            <form method="post" class="stack"><input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="kind" value="workflow"><input type="hidden" name="action" value="update"><input type="hidden" name="id" value="{{ workflow.id }}"><input type="hidden" name="version" value="{{ workflow.version }}"><input type="hidden" name="workflow_mode" value="builder"><label>Name<input name="name" value="{{ workflow.name }}" required></label>
+              <kumwe-workflow-builder class="stack">
+                <div class="section-heading"><h3>States</h3><button type="button" data-add-workflow-row="state">Add state</button></div>
+                <div class="stack-compact" data-state-rows>{% for state in workflow.states %}<div class="builder-row builder-row-expanded" data-workflow-row><label>Key<input name="state_{{ loop.index0 }}_key" value="{{ state.key }}" pattern="[a-z][a-z0-9_-]*" required></label><label>Name<input name="state_{{ loop.index0 }}_name" value="{{ state.name }}" required></label><label class="check"><input type="radio" name="initial_state_key" value="{{ state.key }}"{% if state.initial %} checked{% endif %}><span>Initial</span></label><label class="check"><input type="checkbox" name="state_{{ loop.index0 }}_public" value="1"{% if state.public %} checked{% endif %}><span>Public</span></label><button class="remove-row" type="button" data-remove-workflow-row>Remove</button></div>{% endfor %}</div>
+                <template data-state-template><div class="builder-row builder-row-expanded" data-workflow-row><label>Key<input name="state___INDEX___key" pattern="[a-z][a-z0-9_-]*" required></label><label>Name<input name="state___INDEX___name" required></label><label class="check"><input type="radio" name="initial_state_key" value=""><span>Initial</span></label><label class="check"><input type="checkbox" name="state___INDEX___public" value="1"><span>Public</span></label><button class="remove-row" type="button" data-remove-workflow-row>Remove</button></div></template>
+                <div class="section-heading"><h3>Transitions</h3><button type="button" data-add-workflow-row="transition">Add transition</button></div>
+                <div class="stack-compact" data-transition-rows>{% for transition in workflow.transitions %}<div class="builder-row builder-row-expanded" data-workflow-row><label>From<input name="transition_{{ loop.index0 }}_from" value="{{ transition.from }}" required></label><label>To<input name="transition_{{ loop.index0 }}_to" value="{{ transition.to }}" required></label><label>Required permission<select name="transition_{{ loop.index0 }}_capability">{% for permission in ['content.update','content.submit','content.review','content.publish','content.unpublish','content.archive','content.restore'] %}<option value="{{ permission }}"{% if permission == transition.required_capability %} selected{% endif %}>{{ permission }}</option>{% endfor %}</select></label><button class="remove-row" type="button" data-remove-workflow-row>Remove</button></div>{% endfor %}</div>
+                <template data-transition-template><div class="builder-row builder-row-expanded" data-workflow-row><label>From<input name="transition___INDEX___from" required></label><label>To<input name="transition___INDEX___to" required></label><label>Required permission<select name="transition___INDEX___capability"><option value="content.update">content.update</option><option value="content.submit">content.submit</option><option value="content.review">content.review</option><option value="content.publish">content.publish</option><option value="content.unpublish">content.unpublish</option><option value="content.archive">content.archive</option><option value="content.restore">content.restore</option></select></label><button class="remove-row" type="button" data-remove-workflow-row>Remove</button></div></template>
+              </kumwe-workflow-builder>
+              <label class="check"><input type="checkbox" name="allow_breaking" value="1"><span>Publish an explicitly breaking version</span></label>
+              <details class="advanced-definition"><summary>Inspect generated workflow definition</summary><pre>{{ workflow.states_json }}
+
+{{ workflow.transitions_json }}</pre></details>
+              <button class="primary" type="submit">Publish version {{ workflow.version + 1 }}</button>
+            </form>
+          {% else %}<div class="model-details"><details class="advanced-definition"><summary>Inspect definition</summary><pre>{{ workflow.states_json }}
+
+{{ workflow.transitions_json }}</pre></details></div>{% endif %}
         </details>
       {% endfor %}
+
       {% if capabilities['content.update'] is defined %}
-      <details class="panel model-card create-card"><summary><strong>New workflow</strong><span>Define states and guarded transitions</span></summary>
-        <form method="post" class="stack compact-form"><input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="kind" value="workflow"><input type="hidden" name="action" value="create"><div class="two-column"><label>Handle<input name="handle" placeholder="editorial" pattern="[a-z][a-z0-9_-]*" required></label><label>Name<input name="name" placeholder="Editorial" required></label></div><label>States<textarea name="states" rows="9" required>[
-  {"key":"draft","name":"Draft","initial":true,"public":false},
-  {"key":"published","name":"Published","initial":false,"public":true}
-]</textarea></label><label>Transitions<textarea name="transitions" rows="7" required>[
-  {"from":"draft","to":"published","required_capability":"content.publish"},
-  {"from":"published","to":"draft","required_capability":"content.unpublish"}
-]</textarea></label><button class="primary" type="submit">Create workflow</button></form>
-      </details>
+        <details class="panel model-card"><summary><span><strong>Create a workflow</strong><br><span>Define review and publication states</span></span></summary>
+          <form method="post" class="stack"><input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="kind" value="workflow"><input type="hidden" name="action" value="create"><input type="hidden" name="workflow_mode" value="builder"><div class="two-column"><label>Handle<input name="handle" placeholder="editorial" pattern="[a-z][a-z0-9_-]*" required></label><label>Name<input name="name" placeholder="Editorial" required></label></div>
+            <kumwe-workflow-builder class="stack"><div class="section-heading"><h3>States</h3><button type="button" data-add-workflow-row="state">Add state</button></div><div class="stack-compact" data-state-rows>
+              {% for key, name in {'draft':'Draft','review':'Review','published':'Published'} %}{% set index = loop.index0 %}<div class="builder-row builder-row-expanded" data-workflow-row><label>Key<input name="state_{{ index }}_key" value="{{ key }}" required></label><label>Name<input name="state_{{ index }}_name" value="{{ name }}" required></label><label class="check"><input type="radio" name="initial_state_key" value="{{ key }}"{% if key == 'draft' %} checked{% endif %}><span>Initial</span></label><label class="check"><input type="checkbox" name="state_{{ index }}_public" value="1"{% if key == 'published' %} checked{% endif %}><span>Public</span></label><button class="remove-row" type="button" data-remove-workflow-row>Remove</button></div>{% endfor %}
+            </div><template data-state-template><div class="builder-row builder-row-expanded" data-workflow-row><label>Key<input name="state___INDEX___key" required></label><label>Name<input name="state___INDEX___name" required></label><label class="check"><input type="radio" name="initial_state_key"><span>Initial</span></label><label class="check"><input type="checkbox" name="state___INDEX___public" value="1"><span>Public</span></label><button class="remove-row" type="button" data-remove-workflow-row>Remove</button></div></template>
+            <div class="section-heading"><h3>Transitions</h3><button type="button" data-add-workflow-row="transition">Add transition</button></div><div class="stack-compact" data-transition-rows>
+              {% set defaults = [{'from':'draft','to':'review','capability':'content.submit'},{'from':'review','to':'draft','capability':'content.review'},{'from':'review','to':'published','capability':'content.publish'},{'from':'published','to':'draft','capability':'content.unpublish'}] %}{% for transition in defaults %}<div class="builder-row builder-row-expanded" data-workflow-row><label>From<input name="transition_{{ loop.index0 }}_from" value="{{ transition.from }}" required></label><label>To<input name="transition_{{ loop.index0 }}_to" value="{{ transition.to }}" required></label><label>Required permission<input name="transition_{{ loop.index0 }}_capability" value="{{ transition.capability }}" required></label><button class="remove-row" type="button" data-remove-workflow-row>Remove</button></div>{% endfor %}
+            </div><template data-transition-template><div class="builder-row builder-row-expanded" data-workflow-row><label>From<input name="transition___INDEX___from" required></label><label>To<input name="transition___INDEX___to" required></label><label>Required permission<select name="transition___INDEX___capability"><option value="content.update">content.update</option><option value="content.submit">content.submit</option><option value="content.review">content.review</option><option value="content.publish">content.publish</option><option value="content.unpublish">content.unpublish</option><option value="content.archive">content.archive</option><option value="content.restore">content.restore</option></select></label><button class="remove-row" type="button" data-remove-workflow-row>Remove</button></div></template></kumwe-workflow-builder>
+            <button class="primary" type="submit">Create workflow</button>
+          </form>
+        </details>
       {% endif %}
     </div>
   </section>

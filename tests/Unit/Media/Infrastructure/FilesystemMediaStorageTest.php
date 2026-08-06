@@ -1,0 +1,91 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Kumwe\CMS\Tests\Unit\Media\Infrastructure;
+
+use DateTimeImmutable;
+use InvalidArgumentException;
+use Kumwe\CMS\Application\Authorization\SiteContext;
+use Kumwe\CMS\Media\Application\MediaAsset;
+use Kumwe\CMS\Media\Infrastructure\FilesystemMediaStorage;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\UsesClass;
+use PHPUnit\Framework\TestCase;
+
+#[CoversClass(FilesystemMediaStorage::class)]
+#[UsesClass(MediaAsset::class)]
+#[UsesClass(SiteContext::class)]
+final class FilesystemMediaStorageTest extends TestCase
+{
+    private string $directory;
+
+    protected function setUp(): void
+    {
+        $this->directory = sys_get_temp_dir() . '/kumwe-media-' . bin2hex(random_bytes(8));
+        self::assertTrue(mkdir($this->directory, 0700, true));
+    }
+
+    protected function tearDown(): void
+    {
+        if (!is_dir($this->directory)) {
+            return;
+        }
+        $iterator = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator($this->directory, \FilesystemIterator::SKIP_DOTS),
+            \RecursiveIteratorIterator::CHILD_FIRST,
+        );
+        foreach ($iterator as $file) {
+            if (!$file instanceof \SplFileInfo) {
+                continue;
+            }
+            $file->isDir() ? rmdir($file->getPathname()) : unlink($file->getPathname());
+        }
+        rmdir($this->directory);
+    }
+
+    public function testStoresSiteScopedMediaWithImmutablePublicMetadata(): void
+    {
+        $source = $this->directory . '/source.png';
+        $pixel = base64_decode(
+            'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
+            true,
+        );
+        self::assertIsString($pixel);
+        self::assertNotFalse(file_put_contents($source, $pixel));
+        $storage = new FilesystemMediaStorage($this->directory . '/library');
+        $asset = $storage->store(
+            SiteContext::default(),
+            $source,
+            'Editorial hero.png',
+            1024,
+            new DateTimeImmutable('2026-08-06T12:00:00+00:00'),
+        );
+
+        self::assertSame('image/png', $asset->mimeType);
+        self::assertSame('Editorial hero.png', $asset->name);
+        self::assertSame($asset->id, $storage->all(SiteContext::default())[0]->id);
+        self::assertNull($storage->find(SiteContext::fromString('another-site'), $asset->id));
+        self::assertStringContainsString(rawurlencode($asset->name), $asset->toArray()['url']);
+
+        $storage->delete(SiteContext::default(), $asset->id);
+        self::assertNull($storage->find(SiteContext::default(), $asset->id));
+    }
+
+    public function testRejectsExecutableOrUnknownUploads(): void
+    {
+        $source = $this->directory . '/payload.php';
+        self::assertNotFalse(file_put_contents($source, '<?php echo "unsafe";'));
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Only JPEG, PNG, GIF, WebP, AVIF and PDF');
+
+        (new FilesystemMediaStorage($this->directory . '/library'))->store(
+            SiteContext::default(),
+            $source,
+            'payload.php',
+            1024,
+            new DateTimeImmutable(),
+        );
+    }
+}

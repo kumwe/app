@@ -8,6 +8,7 @@ use DateTimeImmutable;
 use DateTimeZone;
 use InvalidArgumentException;
 use JsonException;
+use Kumwe\CMS\Administrator\Automation\AutomationJobFormRegistry;
 use Kumwe\CMS\Administrator\Http\AdministratorRequest;
 use Kumwe\CMS\Administrator\Presentation\AdministratorRenderer;
 use Kumwe\CMS\Application\Automation\AutomationManagementService;
@@ -23,6 +24,7 @@ final readonly class AdministratorAutomationHandler implements RequestHandlerInt
     public function __construct(
         private AutomationManagementService $automation,
         private AdministratorRenderer $renderer,
+        private ?AutomationJobFormRegistry $forms = null,
     ) {
     }
 
@@ -37,12 +39,13 @@ final readonly class AdministratorAutomationHandler implements RequestHandlerInt
         }
 
         $context = AdministratorRequest::context($request);
+        $jobTypes = $this->automation->jobTypes($context);
         return new HtmlResponse($this->renderer->render('automation', [
             'csrf' => $session->csrfToken,
             'capabilities' => AdministratorRequest::capabilityMap($request),
             'schedules' => $this->automation->schedules($context),
             'jobs' => $this->automation->jobs($context, 200),
-            'job_types' => $this->automation->jobTypes($context),
+            'job_types' => ($this->forms ?? AutomationJobFormRegistry::core())->definitions($jobTypes),
             'saved' => ($request->getQueryParams()['saved'] ?? null) === '1',
         ]), 200, ['Cache-Control' => 'no-store']);
     }
@@ -54,13 +57,14 @@ final readonly class AdministratorAutomationHandler implements RequestHandlerInt
 
         switch ($action) {
             case 'schedule.create':
+                $jobType = AdministratorRequest::required($form, 'job_type');
                 $this->automation->createSchedule(
                     $context,
                     AdministratorRequest::required($form, 'name'),
                     AdministratorRequest::required($form, 'cron_expression'),
                     AdministratorRequest::required($form, 'timezone'),
-                    AdministratorRequest::required($form, 'job_type'),
-                    $this->payload($form),
+                    $jobType,
+                    $this->payload($form, $jobType),
                     AdministratorRequest::required($form, 'queue'),
                     $this->firstRun(AdministratorRequest::required($form, 'first_run')),
                 );
@@ -96,8 +100,11 @@ final readonly class AdministratorAutomationHandler implements RequestHandlerInt
      * @param array<string, string> $form
      * @return array<string, mixed>
      */
-    private function payload(array $form): array
+    private function payload(array $form, string $jobType): array
     {
+        if (!array_key_exists('payload', $form)) {
+            return ($this->forms ?? AutomationJobFormRegistry::core())->payload($jobType, $form);
+        }
         try {
             $payload = json_decode($form['payload'] ?? '{}', true, 32, JSON_THROW_ON_ERROR);
         } catch (JsonException $exception) {

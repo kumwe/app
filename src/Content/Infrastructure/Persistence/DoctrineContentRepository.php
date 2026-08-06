@@ -12,7 +12,9 @@ use Doctrine\DBAL\Types\Types;
 use InvalidArgumentException;
 use JsonException;
 use Kumwe\CMS\Content\Application\ContentRecord;
+use Kumwe\CMS\Content\Application\ContentBrowseQuery;
 use Kumwe\CMS\Content\Application\ContentRepository;
+use Kumwe\CMS\Content\Application\ContentSearchRepository;
 use Kumwe\CMS\Content\Application\SiteScopedContentRepository;
 use Kumwe\CMS\Application\Authorization\SiteContext;
 use Kumwe\CMS\Content\Domain\ContentEntry;
@@ -22,7 +24,7 @@ use Kumwe\CMS\Content\Domain\VersionConflict;
 use Kumwe\CMS\Infrastructure\Persistence\TableNames;
 use RuntimeException;
 
-final readonly class DoctrineContentRepository implements SiteScopedContentRepository
+final readonly class DoctrineContentRepository implements SiteScopedContentRepository, ContentSearchRepository
 {
     public function __construct(private Connection $database, private TableNames $tables)
     {
@@ -61,6 +63,52 @@ final readonly class DoctrineContentRepository implements SiteScopedContentRepos
         }
 
         return array_map($this->map(...), $query->executeQuery()->fetchAllAssociative());
+    }
+
+    public function searchForSite(
+        SiteContext $site,
+        ContentBrowseQuery $query,
+        int $limit,
+        int $offset,
+    ): array {
+        if ($limit < 1 || $limit > 500 || $offset < 0) {
+            throw new InvalidArgumentException('The content browser window is invalid.');
+        }
+
+        $builder = $this->database->createQueryBuilder()
+            ->select(...$this->columns())
+            ->from($this->tables->raw('content_entries'), 'e')
+            ->where('e.site_identifier = :site')
+            ->setParameter('site', $site->identifier())
+            ->setMaxResults($limit)
+            ->setFirstResult($offset);
+
+        if ($query->scope === 'active') {
+            $builder->andWhere('e.deleted_at IS NULL');
+        } elseif ($query->scope === 'trashed') {
+            $builder->andWhere('e.deleted_at IS NOT NULL');
+        }
+        if ($query->status !== '') {
+            $builder->andWhere('e.workflow_state_key = :workflow_state')
+                ->setParameter('workflow_state', $query->status);
+        }
+        if ($query->contentType !== '') {
+            $builder->andWhere('e.content_type_id = :content_type')
+                ->setParameter('content_type', $query->contentType);
+        }
+        if ($query->search !== '') {
+            $builder->andWhere('(LOWER(e.title) LIKE :content_search OR LOWER(e.slug) LIKE :content_search)')
+                ->setParameter('content_search', '%' . mb_strtolower($query->search) . '%');
+        }
+
+        match ($query->sort) {
+            'updated_asc' => $builder->orderBy('e.updated_at', 'ASC')->addOrderBy('e.id', 'ASC'),
+            'title_asc' => $builder->orderBy('e.title', 'ASC')->addOrderBy('e.id', 'ASC'),
+            'title_desc' => $builder->orderBy('e.title', 'DESC')->addOrderBy('e.id', 'DESC'),
+            default => $builder->orderBy('e.updated_at', 'DESC')->addOrderBy('e.id', 'DESC'),
+        };
+
+        return array_map($this->map(...), $builder->executeQuery()->fetchAllAssociative());
     }
 
     public function find(string $id, bool $includeDeleted = false): ?ContentRecord

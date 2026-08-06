@@ -26,6 +26,6 @@ final readonly class AdministratorRestoreContentHandler implements RequestHandle
             AdministratorRequest::positiveInteger($form, 'version'),
         );
 
-        return new RedirectResponse('/administrator', 303);
+        return new RedirectResponse('/administrator/content', 303);
     }
 }

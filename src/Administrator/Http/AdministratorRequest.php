@@ -14,20 +14,34 @@ use Psr\Http\Message\ServerRequestInterface;
 
 final class AdministratorRequest
 {
-    /** @return array<string, string> */
-    public static function form(ServerRequestInterface $request): array
+    /** @return array<array-key, mixed> */
+    public static function parsedBody(ServerRequestInterface $request): array
     {
         $parsed = $request->getParsedBody();
-
         if (!is_array($parsed)) {
             parse_str((string) $request->getBody(), $parsed);
         }
+
+        return is_array($parsed) ? $parsed : [];
+    }
+
+    /** @return array<string, string> */
+    public static function form(ServerRequestInterface $request): array
+    {
+        $parsed = self::parsedBody($request);
 
         $form = [];
 
         foreach ($parsed as $key => $value) {
             if (is_string($key) && is_string($value)) {
                 $form[$key] = $value;
+                continue;
+            }
+            if (is_string($key) && is_array($value) && array_is_list($value)) {
+                $strings = array_values(array_filter($value, 'is_string'));
+                if (count($strings) === count($value)) {
+                    $form[$key] = implode(',', $strings);
+                }
             }
         }
 

@@ -1,0 +1,85 @@
+import AxeBuilder from '@axe-core/playwright';
+import { expect, test, type Page } from '@playwright/test';
+
+const administratorEmail = process.env.KUMWE_BROWSER_ADMIN_EMAIL ?? 'browser-administrator@kumwe.test';
+const administratorPassword = process.env.KUMWE_BROWSER_ADMIN_PASSWORD ?? 'browser administrator password';
+
+async function expectAccessible(page: Page): Promise<void> {
+  const scan = await new AxeBuilder({ page })
+    .withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa'])
+    .analyze();
+  expect(scan.violations, JSON.stringify(scan.violations, null, 2)).toEqual([]);
+}
+
+async function signIn(page: Page): Promise<void> {
+  await page.goto('/administrator/login');
+  await page.getByLabel('Email address').fill(administratorEmail);
+  await page.getByLabel('Password').fill(administratorPassword);
+  await page.getByRole('button', { name: 'Sign in to Kumwe' }).click();
+  await expect(page).toHaveURL(/\/administrator$/);
+}
+
+test('login is accessible and visually stable', async ({ page }) => {
+  await page.goto('/administrator/login');
+  await expect(page.getByRole('heading', { name: 'Sign in' })).toBeVisible();
+  await expectAccessible(page);
+  await expect(page).toHaveScreenshot('login.png', { fullPage: true });
+});
+
+test('public presentation is responsive and accessible', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+  await expectAccessible(page);
+  await expect(page).toHaveScreenshot('public-home.png', { fullPage: true });
+});
+
+test.describe('authenticated administrator', () => {
+  test.beforeEach(async ({ page }) => signIn(page));
+
+  test('dashboard supports desktop and responsive navigation', async ({ page, isMobile }) => {
+    await expect(page.getByRole('heading', { name: 'Good work starts with a clear view.' })).toBeVisible();
+    if (isMobile) {
+      const toggle = page.getByRole('button', { name: 'Open administrator navigation' });
+      await toggle.click();
+      await expect(page.getByRole('navigation', { name: 'Administrator navigation' })).toBeVisible();
+      await page.keyboard.press('Escape');
+      await expect(toggle).toBeFocused();
+    }
+    await expectAccessible(page);
+    await expect(page).toHaveScreenshot('dashboard.png', { fullPage: true });
+  });
+
+  test('content discovery and graphical editor work without raw JSON', async ({ page }) => {
+    await page.goto('/administrator/content');
+    await expect(page.getByRole('heading', { name: 'Content', exact: true })).toBeVisible();
+    await page.getByRole('searchbox', { name: 'Search' }).fill('launch');
+    await page.getByRole('button', { name: 'Apply filters' }).click();
+    await expect(page).toHaveURL(/q=launch/);
+    await expectAccessible(page);
+
+    await page.goto('/administrator/content/new');
+    await expect(page.getByRole('heading', { name: 'Create content' })).toBeVisible();
+    await expect(page.getByText('JSON', { exact: true })).toHaveCount(0);
+    await expect(page.getByRole('textbox', { name: 'Rich text editor' })).toBeVisible();
+    await expect(page.getByRole('toolbar', { name: 'Text formatting' })).toBeVisible();
+    await expectAccessible(page);
+    await expect(page).toHaveScreenshot('content-editor.png', { fullPage: true });
+  });
+
+  test('media library is usable and accessible', async ({ page }) => {
+    await page.goto('/administrator/media');
+    await expect(page.getByRole('heading', { name: 'Media library' })).toBeVisible();
+    await expect(page.getByLabel('File type')).toBeVisible();
+    await expectAccessible(page);
+    await expect(page).toHaveScreenshot('media-library.png', { fullPage: true });
+  });
+
+  test('automation uses generated job controls rather than JSON', async ({ page }) => {
+    await page.goto('/administrator/automation');
+    await expect(page.getByRole('heading', { name: 'Automation' })).toBeVisible();
+    await expect(page.locator('textarea[name="payload"]')).toHaveCount(0);
+    await expect(page.getByLabel('Job type')).toBeVisible();
+    await expectAccessible(page);
+    await expect(page).toHaveScreenshot('automation.png', { fullPage: true });
+  });
+});
