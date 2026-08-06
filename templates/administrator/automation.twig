@@ -8,7 +8,7 @@
   <div class="editor-grid">
     <section class="panel">
       <header class="panel-header"><div><h2>Schedules</h2><p>Recurring jobs use explicit queues, timezones, and typed configuration.</p></div></header>
-      {% if schedules is empty %}<div class="panel-body"><p class="text-muted">No schedules configured.</p></div>{% else %}<div class="table-wrap"><table>
+      {% if schedules is empty %}<div class="panel-body"><p class="text-muted">No schedules configured.</p></div>{% else %}<div class="table-wrap" tabindex="0" role="region" aria-label="Automation schedules"><table>
         <thead><tr><th>Name</th><th>Job</th><th>Next run</th><th>Status</th><th><span class="sr-only">Actions</span></th></tr></thead>
         <tbody>{% for schedule in schedules %}<tr>
           <td><span class="content-title"><strong>{{ schedule.name }}</strong><span><code>{{ schedule.cron_expression }}</code></span></span></td>
@@ -40,7 +40,7 @@
 
   <section class="panel" style="margin-top: 1.25rem">
     <header class="panel-header"><div><h2>Recent jobs</h2><p>Delivery attempts and recoverable failures across registered queues.</p></div></header>
-    <div class="table-wrap"><table><thead><tr><th>Job</th><th>Status</th><th>Attempts</th><th>Available</th><th><span class="sr-only">Actions</span></th></tr></thead><tbody>
+    <div class="table-wrap" tabindex="0" role="region" aria-label="Recent automation jobs"><table><thead><tr><th>Job</th><th>Status</th><th>Attempts</th><th>Available</th><th><span class="sr-only">Actions</span></th></tr></thead><tbody>
       {% for job in jobs %}<tr><td><span class="content-title"><strong>{{ job.job_type }}</strong><span><code>{{ job.id }}</code> · {{ job.queue }}</span>{% if job.error_message %}<span class="text-small">{{ job.error_message }}</span>{% endif %}</span></td><td><span class="status status-{{ job.status }}">{{ job.status|title }}</span></td><td>{{ job.attempts }} / {{ job.maximum_attempts }}</td><td>{{ job.available_at }}</td><td class="actions">{% if job.status in ['dead', 'pending'] %}<form action="/administrator/automation" method="post"><input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="id" value="{{ job.id }}">{% if job.status == 'dead' %}<button class="link-button" name="action" value="job.retry">Retry</button>{% endif %}{% if job.status == 'pending' %}<button class="link-button danger" name="action" value="job.cancel">Cancel</button>{% endif %}</form>{% else %}<span class="text-muted">No action</span>{% endif %}</td></tr>
       {% else %}<tr><td colspan="5">No jobs recorded.</td></tr>{% endfor %}
     </tbody></table></div>
