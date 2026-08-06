@@ -11,6 +11,16 @@ async function expectAccessible(page: Page): Promise<void> {
   expect(scan.violations, JSON.stringify(scan.violations, null, 2)).toEqual([]);
 }
 
+async function expectStylesLoaded(page: Page): Promise<void> {
+  const failedStylesheets = await page.evaluate(() =>
+    [...document.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]')]
+      .filter((stylesheet) => stylesheet.sheet === null)
+      .map((stylesheet) => stylesheet.href),
+  );
+  expect(failedStylesheets).toEqual([]);
+  expect(await page.locator('link[rel="stylesheet"]').count()).toBeGreaterThan(0);
+}
+
 async function signIn(page: Page): Promise<void> {
   await page.goto('/administrator/login');
   await page.getByLabel('Email address').fill(administratorEmail);
@@ -22,6 +32,7 @@ async function signIn(page: Page): Promise<void> {
 test('login is accessible and visually stable', async ({ page }) => {
   await page.goto('/administrator/login');
   await expect(page.getByRole('heading', { name: 'Sign in' })).toBeVisible();
+  await expectStylesLoaded(page);
   await expectAccessible(page);
   await expect(page).toHaveScreenshot('login.png', { fullPage: true });
 });
@@ -29,6 +40,7 @@ test('login is accessible and visually stable', async ({ page }) => {
 test('public presentation is responsive and accessible', async ({ page }) => {
   await page.goto('/');
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+  await expectStylesLoaded(page);
   await expectAccessible(page);
   await expect(page).toHaveScreenshot('public-home.png', { fullPage: true });
 });
@@ -38,6 +50,7 @@ test.describe('authenticated administrator', () => {
 
   test('dashboard supports desktop and responsive navigation', async ({ page, isMobile }) => {
     await expect(page.getByRole('heading', { name: 'Good work starts with a clear view.' })).toBeVisible();
+    await expectStylesLoaded(page);
     if (isMobile) {
       const toggle = page.getByRole('button', { name: 'Open administrator navigation' });
       await toggle.click();

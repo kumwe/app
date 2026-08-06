@@ -18,11 +18,13 @@ final class AdministratorRequest
     public static function parsedBody(ServerRequestInterface $request): array
     {
         $parsed = $request->getParsedBody();
-        if (!is_array($parsed)) {
-            parse_str((string) $request->getBody(), $parsed);
+        if (is_array($parsed)) {
+            return $parsed;
         }
 
-        return is_array($parsed) ? $parsed : [];
+        $form = [];
+        parse_str((string) $request->getBody(), $form);
+        return $form;
     }
 
     /** @return array<string, string> */
