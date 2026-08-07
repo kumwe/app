@@ -6,6 +6,7 @@ namespace Kumwe\CMS\Extension\Domain;
 
 use InvalidArgumentException;
 use JsonException;
+use Kumwe\CMS\Extension\Contribution\ManifestContributionSet;
 use ValueError;
 
 final readonly class ExtensionManifest
@@ -34,6 +35,8 @@ final readonly class ExtensionManifest
     /** @var list<string> */
     private array $assets;
 
+    private ManifestContributionSet $contributions;
+
     /**
      * @param array<mixed> $dependencies
      * @param array<mixed> $autoload
@@ -59,7 +62,12 @@ final readonly class ExtensionManifest
         array $routes = [],
         array $events = [],
         array $assets = [],
+        ?ManifestContributionSet $contributions = null,
+        private int $schemaVersion = 1,
     ) {
+        if (!in_array($schemaVersion, [1, 2], true)) {
+            throw new InvalidArgumentException('The extension manifest schema is unsupported.');
+        }
         if (
             strlen($serviceProvider) > 255
             || preg_match('/^[A-Za-z_][A-Za-z0-9_]*(?:\\\\[A-Za-z_][A-Za-z0-9_]*)+$/D', $serviceProvider) !== 1
@@ -124,6 +132,7 @@ final readonly class ExtensionManifest
         $this->routes = $this->objectList($routes, 'routes');
         $this->events = $this->objectList($events, 'events');
         $this->assets = $this->pathList($assets, 'assets');
+        $this->contributions = $contributions ?? ManifestContributionSet::legacy($identifier, $this->permissions);
     }
 
     public static function fromJson(string $json): self
@@ -142,8 +151,28 @@ final readonly class ExtensionManifest
             throw new InvalidArgumentException('The extension manifest root must be a JSON object.');
         }
 
-        if (($data['schema'] ?? null) !== 1) {
-            throw new InvalidArgumentException('The extension manifest schema must be 1.');
+        $schema = $data['schema'] ?? null;
+        if (!in_array($schema, [1, 2], true)) {
+            throw new InvalidArgumentException('The extension manifest schema must be 1 or 2.');
+        }
+        if ($schema === 2) {
+            self::assertKnownKeys($data, [
+                'schema',
+                'name',
+                'type',
+                'version',
+                'provider',
+                'requires',
+                'dependencies',
+                'autoload',
+                'migrations',
+                'configuration',
+                'permissions',
+                'routes',
+                'events',
+                'assets',
+                'contributions',
+            ], 'The extension manifest');
         }
 
         $name = self::requiredString($data, 'name');
@@ -162,6 +191,28 @@ final readonly class ExtensionManifest
         $routes = $data['routes'] ?? [];
         $events = $data['events'] ?? [];
         $assets = $data['assets'] ?? [];
+        $identifier = ExtensionIdentifier::fromString($name);
+        $contributions = $schema === 2
+            ? ManifestContributionSet::fromManifest(
+                $identifier,
+                self::requiredObject($data, 'contributions'),
+            )
+            : null;
+
+        if ($schema === 2) {
+            $declaredCapabilities = array_map(
+                static fn (\Kumwe\CMS\Extension\Contribution\CapabilityDefinition $definition): string =>
+                    $definition->id,
+                $contributions->capabilities(),
+            );
+            if (!array_key_exists('permissions', $data)) {
+                $permissions = $declaredCapabilities;
+            } elseif (!is_array($permissions) || $permissions !== $declaredCapabilities) {
+                throw new InvalidArgumentException(
+                    'Schema-2 permissions must exactly match the ordered contributed capability identifiers.',
+                );
+            }
+        }
 
         if (!is_array($dependencyData) || !array_is_list($dependencyData)) {
             throw new InvalidArgumentException('The extension dependencies field must be a JSON array.');
@@ -201,7 +252,7 @@ final readonly class ExtensionManifest
         }
 
         return new self(
-            ExtensionIdentifier::fromString($name),
+            $identifier,
             $type,
             SemanticVersion::fromString($version),
             $provider,
@@ -217,7 +268,14 @@ final readonly class ExtensionManifest
             is_array($routes) ? $routes : throw new InvalidArgumentException('Routes must be a list.'),
             is_array($events) ? $events : throw new InvalidArgumentException('Events must be a list.'),
             is_array($assets) ? $assets : throw new InvalidArgumentException('Assets must be a list.'),
+            $contributions,
+            $schema,
         );
+    }
+
+    public function schemaVersion(): int
+    {
+        return $this->schemaVersion;
     }
 
     public function identifier(): ExtensionIdentifier
@@ -292,6 +350,21 @@ final readonly class ExtensionManifest
     public function assets(): array
     {
         return $this->assets;
+    }
+
+    public function contributions(): ManifestContributionSet
+    {
+        return $this->contributions;
+    }
+
+    /** @param array<string, mixed> $values @param list<string> $allowed */
+    private static function assertKnownKeys(array $values, array $allowed, string $field): void
+    {
+        $unknown = array_diff(array_keys($values), $allowed);
+        if ($unknown !== []) {
+            sort($unknown, SORT_STRING);
+            throw new InvalidArgumentException(sprintf('%s contains unknown key %s.', $field, $unknown[0]));
+        }
     }
 
     /**
