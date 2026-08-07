@@ -8,6 +8,7 @@ use Kumwe\CMS\Application\Authorization\SiteContext;
 use Kumwe\CMS\Content\Application\ContentRecord;
 use Kumwe\CMS\Content\Application\ContentService;
 use Kumwe\CMS\Navigation\Application\PublicNavigation;
+use Kumwe\CMS\Presentation\Application\SitePresentation;
 
 /** Resolves public content through the site's managed navigation and homepage settings. */
 final readonly class PublicPageLocator
@@ -52,7 +53,7 @@ final readonly class PublicPageLocator
             return null;
         }
 
-        $contentId = $this->navigation->contentIdForPath($path);
+        $contentId = $this->navigation->contentIdForPath($path, $this->primaryMenu());
         if ($contentId !== null) {
             return $this->content->publishedById($contentId, $this->site);
         }
@@ -77,7 +78,7 @@ final readonly class PublicPageLocator
         }
 
         $navigation = $this->rawNavigation();
-        $path = $this->navigation->pathForContent($record->entry->id())
+        $path = $this->navigation->pathForContent($record->entry->id(), $this->primaryMenu())
             ?? $this->pathForContentId($navigation, $record->entry->id())
             ?? $this->pathForLegacySlug($navigation, $record->entry->slug());
 
@@ -109,7 +110,17 @@ final readonly class PublicPageLocator
     {
         $contentId = $this->settings->current()['homepage_content_id'] ?? null;
 
-        return $this->navigation->items(is_string($contentId) && $contentId !== '' ? $contentId : null);
+        return $this->navigation->items(
+            is_string($contentId) && $contentId !== '' ? $contentId : null,
+            $this->primaryMenu(),
+        );
+    }
+
+    private function primaryMenu(): string
+    {
+        return SitePresentation::from(
+            $this->settings->current()['presentation'] ?? SitePresentation::defaults(),
+        )->primaryMenu();
     }
 
     /**

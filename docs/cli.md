@@ -134,10 +134,16 @@ php bin/kumwe settings update \
   --homepage-content=CONTENT_UUID \
   --locale=en \
   --timezone=Africa/Windhoek \
-  --search-indexing-enabled=1
+  --search-indexing-enabled=1 \
+  --presentation-logo=/media/LOGO_ID/logo.svg \
+  --presentation-primary-menu=main \
+  --presentation-active-scheme=corporate \
+  --presentation-button-style=solid \
+  --presentation-button-shape=rounded \
+  --presentation-header-style=glass
 ```
 
-Only browser-managed site settings belong here. Change database, Redis, proxy, release, and secret configuration through the deployment environment.
+Presentation options omitted from an update retain their current database values. Use `--presentation-footer=TEXT` for the public footer, `--presentation-schemes-json='[...]'` to replace the reusable validated scheme list, or `--presentation-json='{...}'` to replace the complete presentation object returned by `settings get`. Only browser-managed site settings belong here. Change database, Redis, proxy, release, and secret configuration through the deployment environment.
 
 ## Users, groups, and grants
 

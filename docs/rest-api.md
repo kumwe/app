@@ -115,7 +115,7 @@ Both settings routes require `settings.manage`.
 | `GET` | `/api/v1/settings` | Read browser-managed site settings |
 | `PUT` | `/api/v1/settings` | Validate and replace site settings |
 
-The `PUT` request requires `Idempotency-Key` and identifies the homepage with `homepage_content_id`, a stable Page UUID rather than a slug. Infrastructure variables and secrets are deliberately absent from this resource. Search-indexing changes take effect on public page headers and the dynamic `/robots.txt` response without restarting containers.
+The `PUT` request requires `Idempotency-Key` and identifies the homepage with `homepage_content_id`, a stable Page UUID rather than a slug. Its `presentation` object manages the global logo and footer, primary menu handle, active reusable color scheme, complete validated scheme list, button treatment and shape, and header treatment. The OpenAPI `SitePresentation`, `PresentationScheme`, and `PresentationColors` schemas are the authoritative wire contract. Infrastructure variables and secrets are deliberately absent from this resource. Presentation and search-indexing changes take effect without restarting containers.
 
 ## Extensions
 

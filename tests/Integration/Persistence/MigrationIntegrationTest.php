@@ -24,6 +24,7 @@ use Kumwe\CMS\Infrastructure\Persistence\Migration\ApplicationAuthorizationMigra
 use Kumwe\CMS\Infrastructure\Persistence\Migration\AuthorizationRecoveryIntegrationMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\CoreSchemaMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\ContentModelRuntimeMigration;
+use Kumwe\CMS\Infrastructure\Persistence\Migration\DatabaseDrivenPresentationMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\DynamicSiteContentMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\DoctrineMigrationLock;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\DoctrineMigrationRepository;
@@ -51,6 +52,7 @@ use ZipArchive;
 #[CoversClass(CoreSchemaMigration::class)]
 #[CoversClass(ContentModelRuntimeMigration::class)]
 #[CoversClass(DynamicSiteContentMigration::class)]
+#[CoversClass(DatabaseDrivenPresentationMigration::class)]
 #[CoversClass(JobRecoveryMigration::class)]
 #[CoversClass(ApplicationAuthorizationMigration::class)]
 #[CoversClass(IdempotencyLeaseNullabilityMigration::class)]
@@ -235,6 +237,10 @@ final class MigrationIntegrationTest extends TestCase
             'SELECT version FROM %s WHERE version = ?',
             $tables->quoted('schema_migrations'),
         ), [DynamicSiteContentMigration::ID]));
+        self::assertSame(DatabaseDrivenPresentationMigration::ID, $database->fetchOne(sprintf(
+            'SELECT version FROM %s WHERE version = ?',
+            $tables->quoted('schema_migrations'),
+        ), [DatabaseDrivenPresentationMigration::ID]));
         $navigationItems = $schema->introspectTable($tables->raw('navigation_items'));
         foreach (['target_type', 'content_id', 'target_url'] as $column) {
             self::assertTrue(
@@ -245,7 +251,8 @@ final class MigrationIntegrationTest extends TestCase
         $models = new DoctrineContentModelRepository($database, $tables);
         $page = $models->contentType(SiteContext::default(), 'page');
         self::assertNotNull($page);
-        self::assertSame(2, $page->version);
+        self::assertSame(3, $page->version);
+        self::assertArrayNotHasKey('brand_logo', $page->schema()['properties']);
         $workflow = $models->workflow(SiteContext::default(), $page->workflowId, $page->workflowVersion);
         self::assertNotNull($workflow);
         self::assertSame('draft', $workflow->initialState());
@@ -261,6 +268,28 @@ final class MigrationIntegrationTest extends TestCase
         ), ['site.homepage_content_id']);
         self::assertIsString($homepageSetting);
         self::assertSame($homepageId, json_decode($homepageSetting, true, flags: JSON_THROW_ON_ERROR));
+        $presentationSetting = $database->fetchOne(sprintf(
+            'SELECT setting_value FROM %s WHERE setting_key = ?',
+            $tables->quoted('site_settings'),
+        ), ['site.presentation']);
+        self::assertIsString($presentationSetting);
+        $presentation = json_decode($presentationSetting, true, flags: JSON_THROW_ON_ERROR);
+        self::assertIsArray($presentation);
+        self::assertSame('corporate', $presentation['active_scheme']);
+        self::assertSame('main', $presentation['primary_menu']);
+        self::assertSame(
+            '/media/00000000-0000-7000-8000-000000000901/kumwe-symbol.svg',
+            $presentation['logo'],
+        );
+        $homepageData = $database->fetchAssociative(sprintf(
+            'SELECT data, content_type_version FROM %s WHERE id = ?',
+            $tables->quoted('content_entries'),
+        ), [$homepageId]);
+        self::assertIsArray($homepageData);
+        self::assertSame('3', (string) $homepageData['content_type_version']);
+        $homepageFields = json_decode((string) $homepageData['data'], true, flags: JSON_THROW_ON_ERROR);
+        self::assertIsArray($homepageFields);
+        self::assertArrayNotHasKey('brand_logo', $homepageFields);
         self::assertSame('published', $database->fetchOne(sprintf(
             'SELECT workflow_state_key FROM %s WHERE id = ?',
             $tables->quoted('content_entries'),

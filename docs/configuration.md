@@ -18,8 +18,14 @@ The settings screen manages:
 | Default locale | Default language/locale identifier |
 | Timezone | Site scheduling and display timezone |
 | Search indexing enabled | Whether public indexing is permitted |
+| Site logo and footer | Global public identity, independent of homepage fields |
+| Primary menu | Database menu used for public navigation and canonical paths |
+| Presentation schemes | Reusable validated palettes, active scheme, browser color mode |
+| Interaction treatment | Button style, button shape, and header treatment |
 
 Saving settings requires `settings.manage`, a valid administrator session, and a CSRF token. The update records the actor and changed keys in the audit log. Settings supplied by an extension must declare a schema, validation rules, secret classification, and capability before they appear in the interface.
+
+The clean installation seeds the corporate navy-and-teal scheme, plus ocean and graphite alternatives. Administrators can add, edit, remove, and select schemes without editing JSON or CSS. Kumwe validates every color as an exact `#RRGGBB` token, enforces WCAG AA text contrast for the core foreground/background pairs, and renders only fixed CSS-property names, so database-managed design choices cannot inject arbitrary stylesheet rules. The built-in Twig site reads the selected values immediately; an installed site template may replace markup while still receiving the same managed presentation view model.
 
 Disabling search indexing makes the dynamic `/robots.txt` disallow crawling and adds `X-Robots-Tag: noindex, nofollow, noarchive` to public page responses. It is a crawler instruction, not access control; keep private content unpublished and protected by authorization.
 

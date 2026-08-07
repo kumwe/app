@@ -16,6 +16,7 @@ use Kumwe\CMS\Content\Application\ContentService;
 use Kumwe\CMS\Infrastructure\Persistence\TableNames;
 use Kumwe\CMS\Infrastructure\Persistence\TransactionManager;
 use Kumwe\CMS\Identity\Domain\Capability;
+use Kumwe\CMS\Presentation\Application\SitePresentation;
 use Kumwe\CMS\Site\Application\SiteSettings;
 use Psr\Clock\ClockInterface;
 use Ramsey\Uuid\Uuid;
@@ -47,6 +48,7 @@ final readonly class DoctrineSiteSettings implements SiteSettings
             'default_locale' => 'en',
             'timezone' => 'UTC',
             'search_indexing_enabled' => true,
+            'presentation' => SitePresentation::defaults(),
         ];
 
         foreach ($rows as $row) {
@@ -57,7 +59,10 @@ final readonly class DoctrineSiteSettings implements SiteSettings
                 continue;
             }
 
-            $settings[self::keyMap()[$key]] = $value;
+            $publicKey = self::keyMap()[$key];
+            $settings[$publicKey] = $publicKey === 'presentation'
+                ? SitePresentation::from($value)->toArray()
+                : $value;
         }
 
         return $settings;
@@ -81,6 +86,7 @@ final readonly class DoctrineSiteSettings implements SiteSettings
             'default_locale' => $current['default_locale'],
             'timezone' => $current['timezone'],
             'search_indexing_enabled' => $current['search_indexing_enabled'],
+            'presentation' => $current['presentation'],
         ]);
     }
 
@@ -98,6 +104,19 @@ final readonly class DoctrineSiteSettings implements SiteSettings
                     'The homepage must be a published Page for this site inside its publication window.',
                 );
             }
+        }
+        $presentation = $normalized['presentation'];
+        if (!is_array($presentation) || !is_string($presentation['primary_menu'] ?? null)) {
+            throw new InvalidArgumentException('The primary menu setting is invalid.');
+        }
+        $menu = $this->database->fetchOne(sprintf(
+            'SELECT m.id FROM %s m INNER JOIN %s o ON o.resource_type = ? AND o.resource_id = m.id '
+            . 'WHERE m.handle = ? AND o.site_identifier = ?',
+            $this->tables->quoted('navigation_menus'),
+            $this->tables->quoted('resource_site_ownership'),
+        ), ['menu', $presentation['primary_menu'], $context->site()->identifier()]);
+        if ($menu === false) {
+            throw new InvalidArgumentException('The primary menu must be a managed menu for this site.');
         }
 
         $this->transactions->transactional(function () use ($actorId, $normalized): void {
@@ -172,6 +191,7 @@ final readonly class DoctrineSiteSettings implements SiteSettings
                 $settings['search_indexing_enabled'] ?? true,
                 FILTER_VALIDATE_BOOL,
             ),
+            'presentation' => SitePresentation::from($settings['presentation'] ?? null)->toArray(),
         ];
     }
 
@@ -243,6 +263,7 @@ final readonly class DoctrineSiteSettings implements SiteSettings
             'site.default_locale' => 'default_locale',
             'site.timezone' => 'timezone',
             'search.indexing_enabled' => 'search_indexing_enabled',
+            'site.presentation' => 'presentation',
         ];
     }
 }

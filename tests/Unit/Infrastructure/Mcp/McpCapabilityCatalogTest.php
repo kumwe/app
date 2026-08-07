@@ -69,6 +69,12 @@ final class McpCapabilityCatalogTest extends TestCase
         self::assertArrayHasKey('homepageContentId', $tool['inputSchema']['properties']);
         self::assertContains('homepageContentId', $tool['inputSchema']['required']);
         self::assertArrayNotHasKey('homepageSlug', $tool['inputSchema']['properties']);
+        self::assertArrayHasKey('presentation', $tool['inputSchema']['properties']);
+        self::assertContains('presentation', $tool['inputSchema']['required']);
+        self::assertSame(
+            ['solid', 'soft', 'outline'],
+            $tool['inputSchema']['properties']['presentation']['properties']['button_style']['enum'],
+        );
     }
 
     public function testExtensionActivationPublishesThemeSurfaceSemantics(): void

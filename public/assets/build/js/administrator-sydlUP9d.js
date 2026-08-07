@@ -1147,6 +1147,107 @@ var KumweRichText = class KumweRichText extends i {
 };
 KumweRichText = __decorate([t("kumwe-rich-text")], KumweRichText);
 //#endregion
+//#region assets/administrator/components/presentation-schemes.ts
+var KumwePresentationSchemes = class KumwePresentationSchemes extends i {
+	static styles = i$3`:host { display: contents; }`;
+	createRenderRoot() {
+		return this;
+	}
+	connectedCallback() {
+		super.connectedCallback();
+		this.addEventListener("click", this.handleClick);
+		this.addEventListener("input", this.handleInput);
+		this.synchronize();
+	}
+	disconnectedCallback() {
+		this.removeEventListener("click", this.handleClick);
+		this.removeEventListener("input", this.handleInput);
+		super.disconnectedCallback();
+	}
+	handleClick = (event) => {
+		const target = event.target;
+		if (!(target instanceof HTMLElement)) return;
+		if (target.closest("[data-add-presentation-scheme]")) {
+			event.preventDefault();
+			this.addScheme();
+			return;
+		}
+		const remove = target.closest("[data-remove-presentation-scheme]");
+		if (!remove) return;
+		event.preventDefault();
+		if (this.rows().length <= 1) return;
+		remove.closest("[data-presentation-scheme-row]")?.remove();
+		this.synchronize();
+	};
+	handleInput = (event) => {
+		const target = event.target;
+		if (!(target instanceof HTMLInputElement)) return;
+		const row = target.closest("[data-presentation-scheme-row]");
+		if (!row) return;
+		if (target.matches("[data-presentation-scheme-name]")) {
+			const heading = row.querySelector("[data-presentation-scheme-heading]");
+			if (heading) heading.textContent = target.value.trim() || "Unnamed scheme";
+		}
+		if (target.matches("[data-presentation-scheme-name], [data-presentation-scheme-handle]")) this.synchronize();
+	};
+	addScheme() {
+		if (this.rows().length >= 12) return;
+		const template = this.querySelector("template[data-presentation-scheme-template]");
+		const container = this.querySelector("[data-presentation-scheme-rows]");
+		if (!template || !container) return;
+		const index = this.nextIndex();
+		const fragment = template.content.cloneNode(true);
+		fragment.querySelectorAll("[name], [for], [id], [value]").forEach((element) => {
+			for (const attribute of [
+				"name",
+				"for",
+				"id",
+				"value"
+			]) {
+				const value = element.getAttribute(attribute);
+				if (value?.includes("__INDEX__")) element.setAttribute(attribute, value.replaceAll("__INDEX__", String(index)));
+			}
+		});
+		container.append(fragment);
+		this.synchronize();
+		this.rows().at(-1)?.querySelector("[data-presentation-scheme-name]")?.focus();
+	}
+	synchronize() {
+		const rows = this.rows();
+		rows.forEach((row) => {
+			const remove = row.querySelector("[data-remove-presentation-scheme]");
+			if (remove) remove.disabled = rows.length <= 1;
+		});
+		const add = this.querySelector("[data-add-presentation-scheme]");
+		if (add) add.disabled = rows.length >= 12;
+		const active = document.querySelector("[data-active-presentation-scheme]");
+		if (!active) return;
+		const selected = active.value;
+		const schemes = rows.map((row) => ({
+			handle: row.querySelector("[data-presentation-scheme-handle]")?.value.trim() ?? "",
+			name: row.querySelector("[data-presentation-scheme-name]")?.value.trim() ?? ""
+		})).filter((scheme) => scheme.handle !== "");
+		active.replaceChildren(...schemes.map((scheme) => {
+			const option = document.createElement("option");
+			option.value = scheme.handle;
+			option.textContent = scheme.name || scheme.handle;
+			return option;
+		}));
+		active.value = schemes.some((scheme) => scheme.handle === selected) ? selected : schemes[0]?.handle ?? "";
+	}
+	rows() {
+		return [...this.querySelectorAll("[data-presentation-scheme-row]")];
+	}
+	nextIndex() {
+		const indices = [...this.querySelectorAll("input[name^=\"scheme_\"][name$=\"_handle\"]")].map((input) => /^scheme_(\d+)_handle$/.exec(input.name)?.[1]).filter((value) => value !== void 0).map(Number);
+		return indices.length === 0 ? 0 : Math.max(...indices) + 1;
+	}
+	render() {
+		return b`<slot></slot>`;
+	}
+};
+KumwePresentationSchemes = __decorate([t("kumwe-presentation-schemes")], KumwePresentationSchemes);
+//#endregion
 //#region assets/administrator/main.ts
 document.documentElement.classList.add("js");
 var focusableSelector = "a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex=\"-1\"])";

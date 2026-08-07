@@ -292,6 +292,13 @@
   .builder-row-expanded { grid-template-columns: repeat(3, minmax(0, 1fr)) auto; }
   .builder-options { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .65rem; }
   .remove-row { align-self: end; min-width: 2.75rem; padding-inline: .7rem !important; color: var(--kumwe-danger) !important; }
+  .presentation-scheme-row { display: grid; grid-template-columns: 1fr; align-items: stretch; padding: 1rem; }
+  .builder-row-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
+  .builder-row-heading h3 { margin: 0; }
+  .builder-row-heading .remove-row { align-self: start; }
+  .presentation-color-grid { display: grid; grid-template-columns: repeat(5, minmax(6.5rem, 1fr)); gap: .75rem; }
+  .presentation-color-grid label { color: var(--kumwe-text-muted); font-size: .72rem; }
+  .presentation-color-grid input[type="color"] { width: 100%; min-height: 3rem; padding: .25rem; cursor: pointer; }
   .advanced-definition { border: 1px dashed var(--kumwe-border-strong); border-radius: .65rem; }
   .advanced-definition summary { padding: .75rem; color: var(--kumwe-text-muted); cursor: pointer; font-size: .8rem; font-weight: 620; }
   .advanced-definition pre { margin: 0 .75rem .75rem; }
@@ -364,6 +371,7 @@
     .builder-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .builder-options { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .remove-row { justify-self: start; }
+    .presentation-color-grid { grid-template-columns: repeat(3, minmax(6.5rem, 1fr)); }
   }
 
   @media (max-width: 62rem) {
@@ -396,6 +404,7 @@
     .two-column, .three-column, .form-grid, .quick-actions, .admin-grid { grid-template-columns: 1fr; }
     .media-input { display: grid; }
     .builder-row, .builder-row-expanded, .builder-options, .menu-item-grid { grid-template-columns: 1fr; }
+    .presentation-color-grid { grid-template-columns: repeat(2, minmax(6.5rem, 1fr)); }
     .table-toolbar > * { width: 100%; }
     .table-toolbar label { min-width: 0; }
     .pagination { align-items: stretch; }

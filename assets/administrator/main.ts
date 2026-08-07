@@ -7,6 +7,7 @@ import './components/schema-form';
 import './components/media-picker';
 import './components/job-fields';
 import './components/rich-text';
+import './components/presentation-schemes';
 
 document.documentElement.classList.add('js');
 
