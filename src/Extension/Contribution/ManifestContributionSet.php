@@ -65,9 +65,10 @@ final readonly class ManifestContributionSet
         }
     }
 
-    /** @param array<string, mixed> $data */
+    /** @param array<mixed> $data */
     public static function fromManifest(ExtensionIdentifier $extension, array $data): self
     {
+        $data = self::object($data, 'contributions');
         self::knownKeys($data, ['version', 'capabilities', 'administrator'], 'contributions');
         if (($data['version'] ?? null) !== self::SPI_VERSION) {
             throw new InvalidArgumentException('The extension contribution SPI version must be 1.');

@@ -147,7 +147,11 @@ final class AdministratorRouteRegistry
         AdministratorRouteDefinition $definition,
     ): string {
         if ($owner->identifier() === ContributionOwner::CORE) {
-            return $definition->path;
+            $path = $definition->path;
+            if ($path === '') {
+                throw new \LogicException('A core administrator route path cannot be empty.');
+            }
+            return $path;
         }
         $suffix = $definition->path === '/' ? '' : $definition->path;
         return '/administrator/extensions/' . $owner->identifier() . $suffix;
