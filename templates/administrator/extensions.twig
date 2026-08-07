@@ -42,6 +42,29 @@
               </form>
             </div>
           </div>
+          <details class="advanced-definition">
+            <summary>Declared contributions · manifest schema {{ extension.manifest_schema }}</summary>
+            <div class="stack">
+              {% if extension.contributions.capabilities is empty and extension.contributions.administrator.workspaces is empty and extension.contributions.administrator.navigation is empty and extension.contributions.administrator.routes is empty and extension.contributions.administrator.views is empty %}
+                <p>This release has no typed contribution declarations.</p>
+              {% endif %}
+              {% if extension.contributions.capabilities is not empty %}
+                <div><strong>Capabilities</strong><ul>{% for contribution in extension.contributions.capabilities %}<li><code>{{ contribution.id }}</code> · {{ contribution.label }} · {{ contribution.active ? 'active' : 'inactive' }}</li>{% endfor %}</ul></div>
+              {% endif %}
+              {% if extension.contributions.administrator.workspaces is not empty %}
+                <div><strong>Administrator workspaces</strong><ul>{% for contribution in extension.contributions.administrator.workspaces %}<li><code>{{ contribution.id }}</code> · {{ contribution.label }} · {{ contribution.active ? 'active' : 'inactive' }}</li>{% endfor %}</ul></div>
+              {% endif %}
+              {% if extension.contributions.administrator.navigation is not empty %}
+                <div><strong>Administrator navigation</strong><ul>{% for contribution in extension.contributions.administrator.navigation %}<li><code>{{ contribution.id }}</code> · {{ contribution.path }} · {{ contribution.capability }} · {{ contribution.active ? 'active' : 'inactive' }}</li>{% endfor %}</ul></div>
+              {% endif %}
+              {% if extension.contributions.administrator.routes is not empty %}
+                <div><strong>Administrator routes</strong><ul>{% for contribution in extension.contributions.administrator.routes %}<li><code>{{ contribution.name }}</code> · {{ contribution.methods|join(', ') }} {{ contribution.path }} · {{ contribution.capability }} · {{ contribution.active ? 'active' : 'inactive' }}</li>{% endfor %}</ul></div>
+              {% endif %}
+              {% if extension.contributions.administrator.views is not empty %}
+                <div><strong>Templates and views</strong><ul>{% for contribution in extension.contributions.administrator.views %}<li><code>{{ contribution.name }}</code> · {{ contribution.template }} · {{ contribution.active ? 'active' : 'inactive' }}</li>{% endfor %}</ul></div>
+              {% endif %}
+            </div>
+          </details>
         </article>
       {% endfor %}
     </section>

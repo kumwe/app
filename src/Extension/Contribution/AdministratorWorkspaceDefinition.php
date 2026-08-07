@@ -6,7 +6,7 @@ namespace Kumwe\CMS\Extension\Contribution;
 
 use InvalidArgumentException;
 
-final readonly class AdministratorWorkspaceDefinition
+final readonly class AdministratorWorkspaceDefinition implements ContributionDefinition
 {
     public function __construct(
         public string $id,
@@ -33,6 +33,11 @@ final readonly class AdministratorWorkspaceDefinition
         if (preg_match('/^[a-z][a-z0-9-]*(?:\.[a-z][a-z0-9-]*){1,7}$/D', $identifier) !== 1) {
             throw new InvalidArgumentException(sprintf('A contributed administrator %s identifier is invalid.', $kind));
         }
+    }
+
+    public function identifier(): string
+    {
+        return $this->id;
     }
 
     /** @return array{id: string, label: string, description: string, priority: int} */

@@ -41,11 +41,11 @@ final readonly class ManifestContributionSet
         iterable $routes = [],
         iterable $views = [],
     ) {
-        $this->capabilities = $this->index($capabilities, 'capability', static fn (object $item): string => $item->id);
-        $this->workspaces = $this->index($workspaces, 'workspace', static fn (object $item): string => $item->id);
-        $this->navigation = $this->index($navigation, 'navigation', static fn (object $item): string => $item->id);
-        $this->routes = $this->index($routes, 'route', static fn (object $item): string => $item->name);
-        $this->views = $this->index($views, 'view', static fn (object $item): string => $item->name);
+        $this->capabilities = $this->index($capabilities, 'capability');
+        $this->workspaces = $this->index($workspaces, 'workspace');
+        $this->navigation = $this->index($navigation, 'navigation');
+        $this->routes = $this->index($routes, 'route');
+        $this->views = $this->index($views, 'view');
 
         foreach ($this->navigation as $item) {
             if (!isset($this->workspaces[$item->workspace])) {
@@ -193,7 +193,10 @@ final readonly class ManifestContributionSet
     {
         return [
             'version' => self::SPI_VERSION,
-            'capabilities' => array_map(static fn (CapabilityDefinition $item): array => $item->toArray(), $this->capabilities()),
+            'capabilities' => array_map(
+                static fn (CapabilityDefinition $item): array => $item->toArray(),
+                $this->capabilities(),
+            ),
             'administrator' => [
                 'workspaces' => array_map(
                     static fn (AdministratorWorkspaceDefinition $item): array => $item->toArray(),
@@ -216,19 +219,22 @@ final readonly class ManifestContributionSet
     }
 
     /**
-     * @template T of object
+     * @template T of ContributionDefinition
      * @param iterable<T> $items
-     * @param callable(T): string $key
      * @return array<string, T>
      */
-    private function index(iterable $items, string $kind, callable $key): array
+    private function index(iterable $items, string $kind): array
     {
         $result = [];
         foreach ($items as $item) {
-            $identifier = $key($item);
+            $identifier = $item->identifier();
             $this->owner->assertOwns($identifier, $kind);
             if (isset($result[$identifier])) {
-                throw new InvalidArgumentException(sprintf('Contribution %s %s is declared more than once.', $kind, $identifier));
+                throw new InvalidArgumentException(sprintf(
+                    'Contribution %s %s is declared more than once.',
+                    $kind,
+                    $identifier,
+                ));
             }
             $result[$identifier] = $item;
         }

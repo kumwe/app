@@ -99,6 +99,21 @@ final readonly class TrustStore
         });
     }
 
+    /** @return list<string> Active identifiers whose current release still passes live trust enforcement. */
+    public function trustedActiveRuntimeIdentifiers(): array
+    {
+        $trusted = [];
+        foreach ($this->activeRuntimeIdentifiers() as $identifier) {
+            try {
+                $this->enforceRuntimeTrust($identifier);
+                $trusted[] = $identifier;
+            } catch (UntrustedPackage | InvalidArgumentException) {
+                // enforceRuntimeTrust quarantines invalid releases; navigation fails closed immediately.
+            }
+        }
+        return $trusted;
+    }
+
     public function add(
         ExecutionContext $context,
         string $keyId,
@@ -383,6 +398,15 @@ final readonly class TrustStore
         }
         if (($entry['autoload'] ?? null) !== $manifest->autoload()) {
             throw new RuntimePublicationMismatch('The compiled extension autoload map is not authoritative.');
+        }
+        if (($entry['manifest_schema'] ?? 1) !== $manifest->schemaVersion()) {
+            throw new RuntimePublicationMismatch('The compiled extension manifest schema is not authoritative.');
+        }
+        if (
+            ($entry['contributions'] ?? $manifest->contributions()->toArray())
+            !== $manifest->contributions()->toArray()
+        ) {
+            throw new RuntimePublicationMismatch('The compiled extension contributions are not authoritative.');
         }
     }
 

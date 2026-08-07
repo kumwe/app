@@ -1,8 +1,8 @@
 {
-  "schema": 1,
+  "schema": 2,
   "name": "kumwe/announcements-example",
   "type": "component",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "provider": "KumweExample\\Announcements\\Provider",
   "autoload": {"psr-4": {"KumweExample\\Announcements\\": "src/"}},
   "requires": {"kumwe": "^2.0.0", "php": "^8.5.0"},
@@ -12,8 +12,46 @@
     "type": "object",
     "properties": {"heading": {"type": "string", "default": "Announcements"}}
   },
-  "permissions": ["announcements.manage"],
-  "routes": [{"name": "announcements.index", "path": "/announcements", "methods": ["GET"]}],
+  "permissions": ["kumwe.announcements-example.manage"],
+  "routes": [],
   "events": [],
-  "assets": []
+  "assets": [],
+  "contributions": {
+    "version": 1,
+    "capabilities": [{
+      "id": "kumwe.announcements-example.manage",
+      "label": "Manage announcements example",
+      "description": "Open and manage the announcements conformance workspace."
+    }],
+    "administrator": {
+      "workspaces": [{
+        "id": "kumwe.announcements-example.workspace",
+        "label": "Announcements",
+        "description": "Example component workspace contributions.",
+        "priority": 150
+      }],
+      "navigation": [{
+        "id": "kumwe.announcements-example.navigation",
+        "workspace": "kumwe.announcements-example.workspace",
+        "label": "Announcements",
+        "description": "Open the graphical announcements example",
+        "path": "/",
+        "icon": "extensions",
+        "capability": "kumwe.announcements-example.manage",
+        "priority": 10,
+        "keywords": "announcements example component contribution"
+      }],
+      "routes": [{
+        "name": "kumwe.announcements-example.index",
+        "path": "/",
+        "methods": ["GET"],
+        "capability": "kumwe.announcements-example.manage",
+        "view": "kumwe.announcements-example.index"
+      }],
+      "views": [{
+        "name": "kumwe.announcements-example.index",
+        "template": "announcements.twig"
+      }]
+    }
+  }
 }

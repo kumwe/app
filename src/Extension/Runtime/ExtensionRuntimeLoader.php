@@ -8,6 +8,8 @@ use InvalidArgumentException;
 use Kumwe\CMS\Extension\Application\ExtensionServiceProvider;
 use Kumwe\CMS\Extension\Application\Trust\TrustStore;
 use Kumwe\CMS\Extension\Domain\ExtensionIdentifier;
+use Kumwe\CMS\Extension\Contribution\ExtensionContributionRegistrySet;
+use Kumwe\CMS\Extension\Contribution\ManifestContributionSet;
 use Kumwe\CMS\Presentation\ThemeSurface;
 use RuntimeException;
 
@@ -22,9 +24,12 @@ final readonly class ExtensionRuntimeLoader
     }
 
     /** @param array<string, object> $allowedServices */
-    public function load(array $allowedServices): ActiveExtensionSet
+    public function load(
+        array $allowedServices,
+        ExtensionContributionRegistrySet $contributions,
+    ): ActiveExtensionSet
     {
-        $active = new ActiveExtensionSet($this->trust);
+        $active = new ActiveExtensionSet($contributions, $this->trust);
         $this->publication->assertIntegrity($this->keys);
         $map = $this->publication->document;
 
@@ -48,6 +53,8 @@ final readonly class ExtensionRuntimeLoader
             $treeDigest = $extension['deployed_tree_sha256'] ?? null;
             $themeSurfaces = $extension['theme_surfaces'] ?? [];
             $themeSites = $extension['theme_sites'] ?? [];
+            $manifestSchema = $extension['manifest_schema'] ?? 1;
+            $declaredContributions = $extension['contributions'] ?? null;
 
             if (
                 !is_string($providerClass)
@@ -65,10 +72,22 @@ final readonly class ExtensionRuntimeLoader
                 || !array_is_list($themeSurfaces)
                 || !is_array($themeSites)
                 || !array_is_list($themeSites)
+                || !is_int($manifestSchema)
+                || !in_array($manifestSchema, [1, 2], true)
+                || ($manifestSchema === 2 && !is_array($declaredContributions))
             ) {
                 throw new RuntimeException('A compiled extension entry is incomplete.');
             }
-            $identifier = ExtensionIdentifier::fromString($identifier)->value();
+            $extensionIdentifier = ExtensionIdentifier::fromString($identifier);
+            $identifier = $extensionIdentifier->value();
+            $declared = $manifestSchema === 2
+                ? ManifestContributionSet::fromManifest(
+                    $extensionIdentifier,
+                    is_array($declaredContributions)
+                        ? $declaredContributions
+                        : throw new RuntimeException('Schema-2 runtime contributions are unavailable.'),
+                )
+                : ManifestContributionSet::legacy($extensionIdentifier, []);
             $root = $this->safeRoot($relativeRoot);
             $this->registerAutoload($root, $autoload);
 
@@ -97,7 +116,7 @@ final readonly class ExtensionRuntimeLoader
             }
             $container = new RestrictedExtensionContainer($identifier, $services);
             $provider->register($container);
-            $active->add($identifier, $provider, $container);
+            $active->add($identifier, $provider, $container, $declared, $manifestSchema === 2);
 
             if ($type !== 'template') {
                 foreach ([ThemeSurface::Site, ThemeSurface::Administrator] as $surface) {
@@ -139,6 +158,7 @@ final readonly class ExtensionRuntimeLoader
             }
         }
 
+        $active->contribute();
         $active->boot();
 
         return $active;

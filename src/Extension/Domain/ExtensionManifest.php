@@ -180,10 +180,16 @@ final readonly class ExtensionManifest
         $version = self::requiredString($data, 'version');
         $provider = self::requiredString($data, 'provider');
         $requires = self::requiredObject($data, 'requires');
+        if ($schema === 2) {
+            self::assertKnownKeys($requires, ['kumwe', 'php'], 'The extension requirements object');
+        }
         $kumweConstraint = self::requiredString($requires, 'kumwe');
         $phpConstraint = self::requiredString($requires, 'php');
         $dependencyData = $data['dependencies'] ?? [];
         $autoload = self::requiredObject($data, 'autoload');
+        if ($schema === 2) {
+            self::assertKnownKeys($autoload, ['psr-4'], 'The extension autoload object');
+        }
         $autoloadData = $autoload['psr-4'] ?? [];
         $migrations = $data['migrations'] ?? [];
         $configuration = $data['configuration'] ?? [];
@@ -227,6 +233,13 @@ final readonly class ExtensionManifest
         foreach ($dependencyData as $dependency) {
             if (!is_array($dependency) || array_is_list($dependency)) {
                 throw new InvalidArgumentException('Each extension dependency must be a JSON object.');
+            }
+            if ($schema === 2) {
+                self::assertKnownKeys(
+                    $dependency,
+                    ['name', 'constraint', 'optional'],
+                    'An extension dependency',
+                );
             }
 
             $dependencyName = self::requiredString($dependency, 'name');
