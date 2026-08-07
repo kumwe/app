@@ -149,8 +149,7 @@ final readonly class DoctrineContentRepository implements SiteScopedContentRepos
         SiteContext $site,
         string $id,
         DateTimeImmutable $time,
-    ): ?ContentRecord
-    {
+    ): ?ContentRecord {
         return $this->findPublishedForSite($site, 'id', $id, $time);
     }
 
@@ -164,8 +163,7 @@ final readonly class DoctrineContentRepository implements SiteScopedContentRepos
         string $identityColumn,
         string $identity,
         DateTimeImmutable $time,
-    ): ?ContentRecord
-    {
+    ): ?ContentRecord {
         if (!in_array($identityColumn, ['id', 'slug'], true)) {
             throw new InvalidArgumentException('The published content identity column is invalid.');
         }

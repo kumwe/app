@@ -185,8 +185,7 @@ final class PublicPageLocatorTest extends TestCase
         array $byId,
         array $additionalBySlug = [],
         ?SiteSettings $settings = null,
-    ): PublicPageLocator
-    {
+    ): PublicPageLocator {
         $bySlug = $additionalBySlug;
         foreach ($byId as $record) {
             $bySlug[$record->entry->slug()] = $record;
