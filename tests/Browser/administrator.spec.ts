@@ -44,6 +44,13 @@ async function ensureAnnouncementsActive(page: Page): Promise<void> {
     await expect(page).toHaveURL(/\/administrator\/extensions$/);
   }
   await expect(extension).toContainText(/component · 2\.0\.0 · active/);
+  await expect.poll(async () => {
+    await page.goto('/administrator');
+    return page.getByRole('link', { name: 'Announcements', exact: true }).count();
+  }, {
+    message: 'the active extension navigation to reach the local signed runtime map',
+    timeout: 25_000,
+  }).toBeGreaterThan(0);
 }
 
 test('login is accessible and visually stable', async ({ page }, testInfo) => {
@@ -151,7 +158,7 @@ test.describe('authenticated administrator', () => {
     await page.goto('/administrator/business-definitions?new=1');
     await expect(page.getByRole('heading', { name: 'Business definitions' })).toBeVisible();
     await expect(page.locator('textarea[name="definition_json"]')).toHaveCount(0);
-    await page.getByLabel('Stable handle').fill(handle);
+    await page.getByLabel('Stable handle', { exact: true }).fill(handle);
     await page.getByLabel('Singular label').fill('Browser invoice');
     await page.getByLabel('Plural label').fill('Browser invoices');
     await page.getByRole('button', { name: 'Add field' }).click();
@@ -329,7 +336,13 @@ test.describe('authenticated administrator', () => {
       await expect(page).toHaveURL(/\/administrator\/extensions$/);
       await expect(extension).toContainText(/component · 2\.0\.0 · disabled/);
 
-      await page.goto('/administrator');
+      await expect.poll(async () => {
+        await page.goto('/administrator');
+        return page.getByRole('link', { name: 'Announcements', exact: true }).count();
+      }, {
+        message: 'the disabled extension navigation to leave the local signed runtime map',
+        timeout: 25_000,
+      }).toBe(0);
       if (isMobile) {
         await page.getByRole('button', { name: 'Open administrator navigation' }).click();
       }
