@@ -145,6 +145,40 @@ test.describe('authenticated administrator', () => {
     await page.screenshot({ path: testInfo.outputPath('content-editor.png'), fullPage: true });
   });
 
+  test('business definitions publish through graphical compatibility gates', async ({ page }, testInfo) => {
+    const suffix = `${Date.now()}_${Math.floor(Math.random() * 10000)}`;
+    const handle = `site.default.browser_invoice_${suffix}`;
+    await page.goto('/administrator/business-definitions?new=1');
+    await expect(page.getByRole('heading', { name: 'Business definitions' })).toBeVisible();
+    await expect(page.locator('textarea[name="definition_json"]')).toHaveCount(0);
+    await page.getByLabel('Stable handle').fill(handle);
+    await page.getByLabel('Singular label').fill('Browser invoice');
+    await page.getByLabel('Plural label').fill('Browser invoices');
+    await page.getByRole('button', { name: 'Add field' }).click();
+    const field = page.locator('[data-row="field"]').last();
+    await field.getByLabel('Handle').fill('reference');
+    await field.getByLabel('Label').fill('Reference');
+    await field.getByLabel('Type').selectOption('core.text');
+    await field.getByLabel('Length').fill('120');
+    await field.getByText('Required', { exact: true }).click();
+    await page.getByRole('button', { name: 'Save and validate draft' }).click();
+    await expect(page).toHaveURL(/\/administrator\/business-definitions\?definition=/);
+    await expect(page.getByRole('heading', { name: 'Compatibility plan' })).toBeVisible();
+    await expect(page.getByText('Draft checksum')).toBeVisible();
+    await expectAccessible(page);
+    await page.screenshot({
+      path: testInfo.outputPath('business-definition-draft.png'),
+      fullPage: true,
+      animations: 'disabled',
+      caret: 'hide',
+    });
+    page.once('dialog', (dialog) => dialog.accept());
+    await page.getByRole('button', { name: /Publish version 1/ }).click();
+    await expect(page.getByRole('heading', { name: 'Version history' })).toBeVisible();
+    await expect(page.getByText('Version 1', { exact: true })).toBeVisible();
+    await expectAccessible(page);
+  });
+
   test('published content links through a typed menu to its canonical path', async ({ page }) => {
     const suffix = `${Date.now()}-${Math.floor(Math.random() * 10000)}`;
     const title = `Browser About ${suffix}`;

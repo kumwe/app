@@ -10,7 +10,7 @@ The repository contains small, inspectable packages under [`examples/extensions`
 
 | Example | Demonstrates |
 |---|---|
-| [`announcements`](../examples/extensions/announcements) | Schema-2 capability, administrator workspace/navigation/route/view, injected application service, and portable migration |
+| [`announcements`](../examples/extensions/announcements) | Schema-2 shell contributions, package-owned field/entity definitions, injected service, and portable migration |
 | [`audit-listener`](../examples/extensions/audit-listener) | Plugin provider and Joomla Event listener registration |
 | [`minimal-template`](../examples/extensions/minimal-template) | Template override and packaged public asset |
 
@@ -96,6 +96,12 @@ Schema 2 is required for application-shell contributions. A minimal graphical co
 Identifiers use `vendor/name`; compatibility and dependency constraints use semantic versions. The manifest is installation input and part of the extension's compatibility contract. Do not infer registration by scanning PHP files.
 
 Schema-2 manifests reject unknown root, requirement, autoload, dependency, and contribution keys. Every contribution identifier must begin with the extension namespace (`acme/announcements` becomes `acme.announcements`). Lists are bounded, paths cannot traverse, route methods are restricted, and navigation/routes must reference capabilities, workspaces, and views owned by the same package. `permissions`, when present, must exactly match the deterministically ordered contributed capability identifiers.
+
+### Business-definition contributions
+
+The optional `contributions.business` object contains strict `field_types` and `definitions` lists. A provider must register byte-equivalent typed objects through `ExtensionContributionRegistrar::fieldType()` and `businessDefinition()`; missing, additional, or changed runtime registrations reject the provider. Field-type and entity handles use the package namespace. Published field types are immutable under their identifier, and entity upgrades advance `definition_version` by one.
+
+Package definitions are synchronized transactionally on install and upgrade, become available only while the package is active and trusted, and preserve their catalog/version history through disable, quarantine, trust revocation, and uninstall. See [Business definitions](business-definitions.md) for the complete schema, compatibility, and lifecycle contract.
 
 Valid schema-1 manifests remain installable and retain their service registration, boot, legacy route, migration, event, asset, and permission behavior. Schema 1 cannot publish the new shell contribution surfaces. Move those packages to schema 2 and the contribution provider contract when adding workspace, navigation, guarded administrator route, or administrator view declarations.
 
