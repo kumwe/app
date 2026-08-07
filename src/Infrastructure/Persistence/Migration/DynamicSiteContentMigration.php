@@ -80,7 +80,11 @@ final readonly class DynamicSiteContentMigration implements RepeatableMigration
         if (!$items->hasIndex('idx_navigation_content')) {
             $items->addIndex(['content_id'], 'idx_navigation_content');
         }
-        $foreignKey = 'fk_' . substr(hash('sha256', $items->getName() . ':content_id'), 0, 24);
+        $foreignKey = 'fk_' . substr(
+            hash('sha256', $items->getObjectName()->toString() . ':content_id'),
+            0,
+            24,
+        );
         if (!$items->hasForeignKey($foreignKey)) {
             $items->addForeignKeyConstraint(
                 $this->tables->raw('content_entries'),
