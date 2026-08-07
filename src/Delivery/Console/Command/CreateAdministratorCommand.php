@@ -27,7 +27,7 @@ final readonly class CreateAdministratorCommand implements Command
 
     public function description(): string
     {
-        return 'Create the first administrator from a protected password file.';
+        return 'Create an administrator from a protected password file.';
     }
 
     /** @param list<string> $arguments */
@@ -45,7 +45,7 @@ final readonly class CreateAdministratorCommand implements Command
                 $this->required($options, 'name'),
                 $password,
             );
-            $output->line(sprintf('Created initial administrator %s.', $id));
+            $output->line(sprintf('Created administrator %s.', $id));
 
             return 0;
         } catch (Throwable $exception) {
@@ -110,7 +110,7 @@ final readonly class CreateAdministratorCommand implements Command
 
         if (strlen($password) < 12) {
             throw new InvalidArgumentException(
-                'The initial administrator password must contain at least 12 characters.',
+                'The administrator password must contain at least 12 characters.',
             );
         }
 
