@@ -245,7 +245,8 @@ final readonly class SitePresentation
     /** @param array<string, string> $colors */
     private static function assertAccessibleColors(string $handle, array $colors): void
     {
-        foreach ([
+        foreach (
+            [
             ['ink', 'canvas'],
             ['navy', 'canvas'],
             ['navy', 'surface'],
@@ -253,7 +254,8 @@ final readonly class SitePresentation
             ['accent_strong', 'surface'],
             ['accent_strong', 'accent_soft'],
             ['on_accent', 'navy'],
-        ] as [$foreground, $background]) {
+            ] as [$foreground, $background]
+        ) {
             if (self::contrast($colors[$foreground], $colors[$background]) < 4.5) {
                 throw new InvalidArgumentException(sprintf(
                     'Presentation scheme %s colors %s and %s must meet WCAG AA text contrast.',
