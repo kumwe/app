@@ -30,7 +30,7 @@ npm run test:browser
 
 Frontend dependencies are locked in `package-lock.json`. Production serves the committed hashed files under `public/assets/build`; rebuilding them must leave that directory unchanged. Browser tests run Chromium at desktop and mobile viewports, scan rendered pages against WCAG 2.2 AA rules, and compare screenshots under `tests/Browser/screenshots`.
 
-The dedicated development-Compose acceptance workflow repeats the documented fresh installation on port 9900. It verifies the Compose-injected base URL, the host-port mapping, HTTP readiness, administrator and public CSS/JavaScript delivery, the styled first-run page, and readiness again after the 30-second runtime-marker lifetime. Changes to development startup, ports, routing, assets, or runtime materialization must keep this executable regression green.
+The dedicated development-Compose acceptance workflow repeats the documented fresh installation on port 9900. It verifies the Compose-injected base URL, the host-port mapping, HTTP readiness, administrator and public CSS/JavaScript delivery, the database-seeded example homepage and menu, and readiness again after the 30-second runtime-marker lifetime. Changes to development startup, ports, routing, assets, or runtime materialization must keep this executable regression green.
 
 Run integration tests once for each database group in [Getting started](getting-started.md#choose-another-database). A change that passes only the default database is not portable.
 

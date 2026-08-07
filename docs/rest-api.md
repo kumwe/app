@@ -78,7 +78,7 @@ All navigation routes require `navigation.manage`.
 | `GET`, `POST` | `/api/v1/menus/{menuId}/items` | List or create items in a menu |
 | `GET`, `PATCH`, `DELETE` | `/api/v1/menu-items/{id}` | Read, move/update, or delete an item |
 
-Creating or moving an item validates its parent, rejects cycles, recalculates paths, and applies the change in one transaction. Use the ETag returned by resource reads for updates and deletes.
+Creating or moving an item validates its parent, rejects cycles and reserved system prefixes, recalculates descendant paths, and applies the change in one transaction. `target_type=content` references a same-site content UUID; `anchor` uses a safe `#fragment`; and `url` accepts a safe root-relative, HTTP(S), or mail destination. A content item's complete menu path is the public canonical URL. Use the ETag returned by resource reads for updates and deletes.
 
 ## Users, groups, grants, and tokens
 
@@ -115,7 +115,7 @@ Both settings routes require `settings.manage`.
 | `GET` | `/api/v1/settings` | Read browser-managed site settings |
 | `PUT` | `/api/v1/settings` | Validate and replace site settings |
 
-The `PUT` request requires `Idempotency-Key`. Infrastructure variables and secrets are deliberately absent from this resource. Search-indexing changes take effect on public page headers and the dynamic `/robots.txt` response without restarting containers.
+The `PUT` request requires `Idempotency-Key` and identifies the homepage with `homepage_content_id`, a stable Page UUID rather than a slug. Infrastructure variables and secrets are deliberately absent from this resource. Search-indexing changes take effect on public page headers and the dynamic `/robots.txt` response without restarting containers.
 
 ## Extensions
 

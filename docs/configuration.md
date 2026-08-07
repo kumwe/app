@@ -14,7 +14,7 @@ The settings screen manages:
 | Setting | Purpose |
 |---|---|
 | Site name | Public name used by the active template |
-| Homepage slug | Published page rendered at `/` |
+| Homepage page | Stable ID of the managed Page rendered at `/` |
 | Default locale | Default language/locale identifier |
 | Timezone | Site scheduling and display timezone |
 | Search indexing enabled | Whether public indexing is permitted |

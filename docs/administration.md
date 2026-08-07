@@ -38,7 +38,7 @@ Each edit creates an immutable revision and audit event. The built-in workflow s
 | Trash | Any active state | Trashed | `content.delete` |
 | Restore trash | Trashed | Draft | `content.restore` |
 
-The editor displays only valid actions for the current state. Public page URLs are `/pages/{slug}`. Slugs are unique within the selected site and use lowercase letters, numbers, and hyphens.
+The editor displays only valid actions for the current state. An unlinked page uses `/{slug}`. When it is linked from the public menu, the menu hierarchy becomes its canonical URL—for example `/about-us/contact-details`. The administrator's **View page** action uses the same resolver and is shown only when the workflow state and publication window make the page public. Legacy `/pages/{slug}` requests redirect to the canonical URL.
 
 Pages store a title, slug, workflow state, optional publication window, and schema-validated structured data. Editors work with generated text, rich-text, number, date, choice, boolean, list, nested-group, URL, and media fields; routine authoring does not require reading or writing JSON. The built-in rich-text control stores a portable constrained format and renders only escaped headings, emphasis, lists, and safe links. Extensions that store HTML must still apply an organization-approved sanitization policy. Templates decide how named fields render.
 
@@ -48,11 +48,15 @@ Open **Content models** to create content types and workflows or publish a new v
 
 Open **Media** to upload JPEG, PNG, GIF, WebP, AVIF, or PDF files. Kumwe verifies the file's detected MIME type and configured request-size limit, stores it outside the public document root under the current site, and records upload and deletion audit events. Media URLs contain an immutable identifier and are delivered with a long-lived public cache policy.
 
+The clean installation also exposes checksum-verified Kumwe symbol and wordmark SVGs as read-only media. SVG uploads remain disabled; bundled vectors contain no scripts, external references, or embedded raster data and are served with an isolated content-security policy.
+
 Search and filter the library, copy a public URL, or choose a media item directly from a generated URL/media field in the content editor. Deleting an asset requires `content.delete`; it does not rewrite existing content, so confirm that an asset is unused before removal. Media directories are included in the standard backup and restore contract.
 
 ## Menus and navigation
 
-Open **Navigation** to create a named menu, change its handle or title, and create nested items. Drag items to change their order, or use the graphical parent and position controls when JavaScript is unavailable. An item has a title, slug, parent, position, computed path, and optimistic version. Kumwe rejects cycles and rebuilds descendant paths when parentage changes. The built-in public presentation renders the `main` menu (or the first available menu) recursively. Deleting a menu deletes its contained items only after explicit confirmation.
+Open **Navigation** to create a named menu, change its handle or title, and create nested items. Each item has an explicit target type: **Page** selects managed content by stable ID, **Page section** stores a safe fragment such as `#platform`, and **Custom URL** accepts a validated root-relative, HTTP(S), or mail link. Selecting a page suggests its label and URL segment. The live calculated path combines the item's segment with its parents.
+
+Drag items to change their order, or use the graphical parent and position controls when JavaScript is unavailable. Kumwe rejects cycles, reserved system prefixes, unsafe targets, and paths beyond the portable database limit; moving a parent rebuilds descendant paths in the same transaction. The built-in public presentation renders the `main` menu (or the first available menu) recursively. Deleting a menu deletes its contained items only after explicit confirmation.
 
 Menu management requires `navigation.manage`. Template or module code reads navigation through the navigation application service; it must not query navigation tables directly.
 

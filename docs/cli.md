@@ -113,13 +113,15 @@ php bin/kumwe navigation create-menu \
 php bin/kumwe navigation items --site=corporate --token-file=/run/secrets/kumwe-operator-token --menu=MENU_ID
 php bin/kumwe navigation create-item \
   --site=corporate --token-file=/run/secrets/kumwe-operator-token --menu=MENU_ID \
-  --title=About --slug=about --position=10
+  --title=About --slug=about --position=10 \
+  --target-type=content --content=CONTENT_ID
 php bin/kumwe navigation update-item \
   --site=corporate --token-file=/run/secrets/kumwe-operator-token --id=ITEM_ID --version=1 \
-  --parent=PARENT_ID --title=Team --slug=team --position=20
+  --parent=PARENT_ID --title=Team --slug=team --position=20 \
+  --target-type=content --content=TEAM_CONTENT_ID
 ```
 
-Other actions are `update-menu`, `delete-menu`, and `delete-item`. Updates and deletes require `--id` and `--version`; pass an empty `--parent=` for a root item.
+Use `--target-type=anchor --target-url='#platform'` for a section link, or `--target-type=url --target-url=/administrator` for a safe custom destination. Other actions are `get-item`, `update-menu`, `delete-menu`, and `delete-item`. Updates and deletes require `--id` and `--version`; pass an empty `--parent=` for a root item.
 
 ## Settings
 
@@ -129,7 +131,7 @@ php bin/kumwe settings update \
   --token-file=/run/secrets/kumwe-operator-token \
   --site=corporate \
   --site-name='Example site' \
-  --homepage-slug=home \
+  --homepage-content=CONTENT_UUID \
   --locale=en \
   --timezone=Africa/Windhoek \
   --search-indexing-enabled=1

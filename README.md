@@ -36,7 +36,7 @@ docker compose run --rm app php bin/kumwe user:create-admin \
 rm .admin-password
 ```
 
-Open <http://localhost:8080/administrator>. The [getting-started guide](docs/getting-started.md) continues through the first page, menu, user group, and homepage configuration. Until a managed homepage is published, the public root renders Kumwe's complete responsive first-run presentation rather than a raw payload or unstyled placeholder.
+Open <http://localhost:8080/administrator>. The [getting-started guide](docs/getting-started.md) continues through the editable example homepage, typed menu links, user groups, and site configuration. A clean database ships with real published example content, navigation, settings, and read-only Kumwe logo media; the public presentation is therefore managed data from the first request rather than a hardcoded demonstration.
 
 ## Capabilities
 
