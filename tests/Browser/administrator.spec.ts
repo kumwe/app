@@ -181,7 +181,7 @@ test.describe('authenticated administrator', () => {
       caret: 'hide',
     });
     page.once('dialog', (dialog) => dialog.accept());
-    await page.getByRole('button', { name: /Publish version 1/ }).click();
+    await page.getByRole('button', { name: /Publish version 1/ }).press('Enter');
     await expect(page.getByRole('heading', { name: 'Version history' })).toBeVisible();
     await expect(page.getByText('Version 1', { exact: true })).toBeVisible();
     await expectAccessible(page);
