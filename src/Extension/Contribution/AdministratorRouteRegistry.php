@@ -131,6 +131,7 @@ final class AdministratorRouteRegistry
         return false;
     }
 
+    /** @return non-empty-string */
     private static function routeName(
         ContributionOwner $owner,
         AdministratorRouteDefinition $definition,
@@ -140,6 +141,7 @@ final class AdministratorRouteRegistry
             : 'administrator.extension.' . $definition->name;
     }
 
+    /** @return non-empty-string */
     private static function routePath(
         ContributionOwner $owner,
         AdministratorRouteDefinition $definition,

@@ -150,12 +150,13 @@ final readonly class ExtensionManifest
         if (!is_array($data) || array_is_list($data)) {
             throw new InvalidArgumentException('The extension manifest root must be a JSON object.');
         }
+        /** @var array<string, mixed> $data */
 
         $schema = $data['schema'] ?? null;
         if (!in_array($schema, [1, 2], true)) {
             throw new InvalidArgumentException('The extension manifest schema must be 1 or 2.');
         }
-        if ($schema === 2) {
+        if ($schema === 2 && $contributions !== null) {
             self::assertKnownKeys($data, [
                 'schema',
                 'name',
@@ -234,6 +235,7 @@ final readonly class ExtensionManifest
             if (!is_array($dependency) || array_is_list($dependency)) {
                 throw new InvalidArgumentException('Each extension dependency must be a JSON object.');
             }
+            /** @var array<string, mixed> $dependency */
             if ($schema === 2) {
                 self::assertKnownKeys(
                     $dependency,
@@ -370,7 +372,10 @@ final readonly class ExtensionManifest
         return $this->contributions;
     }
 
-    /** @param array<string, mixed> $values @param list<string> $allowed */
+    /**
+     * @param array<string, mixed> $values
+     * @param list<string> $allowed
+     */
     private static function assertKnownKeys(array $values, array $allowed, string $field): void
     {
         $unknown = array_diff(array_keys($values), $allowed);
@@ -479,8 +484,8 @@ final readonly class ExtensionManifest
     }
 
     /**
-     * @param array<mixed> $data
-     * @return array<mixed>
+     * @param array<string, mixed> $data
+     * @return array<string, mixed>
      */
     private static function requiredObject(array $data, string $field): array
     {
@@ -489,7 +494,7 @@ final readonly class ExtensionManifest
         if (!is_array($value) || array_is_list($value)) {
             throw new InvalidArgumentException(sprintf('The extension manifest %s field must be an object.', $field));
         }
-
+        /** @var array<string, mixed> $value */
         return $value;
     }
 
