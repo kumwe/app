@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\CMS\Infrastructure\Persistence\Migration;
 
 use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\Schema\PrimaryKeyConstraint;
 use Doctrine\DBAL\Schema\Table;
 use Doctrine\DBAL\Types\Types;
 use Kumwe\CMS\Infrastructure\Persistence\TableNames;
@@ -44,7 +45,9 @@ final readonly class ExtensionContributionCatalogMigration implements Migration
         $table->addColumn('extension_id', Types::GUID);
         $table->addColumn('capability_code', Types::STRING, ['length' => 191]);
         $table->addColumn('description', Types::STRING, ['length' => 500]);
-        $table->addPrimaryKeyConstraint(['capability_code'], 'pk_extension_contribution_capability');
+        $table->addPrimaryKeyConstraint(
+            PrimaryKeyConstraint::editor()->setUnquotedColumnNames('capability_code')->create(),
+        );
         $table->addIndex(['extension_id'], 'idx_extension_contribution_capability_owner');
         $table->addForeignKeyConstraint(
             $this->tables->raw('extensions'),

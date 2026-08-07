@@ -156,7 +156,7 @@ final readonly class ExtensionManifest
         if (!in_array($schema, [1, 2], true)) {
             throw new InvalidArgumentException('The extension manifest schema must be 1 or 2.');
         }
-        if ($schema === 2 && $contributions !== null) {
+        if ($schema === 2) {
             self::assertKnownKeys($data, [
                 'schema',
                 'name',
@@ -206,7 +206,7 @@ final readonly class ExtensionManifest
             )
             : null;
 
-        if ($schema === 2) {
+        if ($schema === 2 && $contributions !== null) {
             $declaredCapabilities = array_map(
                 static fn (\Kumwe\CMS\Extension\Contribution\CapabilityDefinition $definition): string =>
                     $definition->id,
