@@ -396,7 +396,10 @@ final readonly class KumweMcpHandlers
         return $this->settings->managed($this->context());
     }
 
-    /** @return array<string, mixed> */
+    /**
+     * @param array<string, mixed> $presentation
+     * @return array<string, mixed>
+     */
     public function updateSettings(
         string $operationId,
         string $siteName,
@@ -404,6 +407,7 @@ final readonly class KumweMcpHandlers
         string $defaultLocale,
         string $timezone,
         bool $searchIndexingEnabled,
+        array $presentation,
     ): array {
         $this->require('settings.manage');
         $this->preauthorize(
@@ -417,6 +421,7 @@ final readonly class KumweMcpHandlers
             'default_locale' => $defaultLocale,
             'timezone' => $timezone,
             'search_indexing_enabled' => $searchIndexingEnabled,
+            'presentation' => $presentation,
         ];
 
         return $this->mutations->run(

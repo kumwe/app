@@ -20,9 +20,9 @@ final readonly class PublicNavigation
     }
 
     /** @return list<array<string, mixed>> */
-    public function items(?string $homepageContentId = null): array
+    public function items(?string $homepageContentId = null, ?string $preferredHandle = null): array
     {
-        $menu = $this->publicMenu();
+        $menu = $this->publicMenu($preferredHandle);
         if (!$menu instanceof MenuRecord) {
             return [];
         }
@@ -52,9 +52,9 @@ final readonly class PublicNavigation
         return $this->branch($byParent, null, [], $pathByContent, $homepageContentId);
     }
 
-    public function contentIdForPath(string $path): ?string
+    public function contentIdForPath(string $path, ?string $preferredHandle = null): ?string
     {
-        $menu = $this->publicMenu();
+        $menu = $this->publicMenu($preferredHandle);
         if (!$menu instanceof MenuRecord) {
             return null;
         }
@@ -73,9 +73,9 @@ final readonly class PublicNavigation
         return null;
     }
 
-    public function pathForContent(string $contentId): ?string
+    public function pathForContent(string $contentId, ?string $preferredHandle = null): ?string
     {
-        $menu = $this->publicMenu();
+        $menu = $this->publicMenu($preferredHandle);
         if (!$menu instanceof MenuRecord) {
             return null;
         }
@@ -161,15 +161,16 @@ final readonly class PublicNavigation
             : ($item->contentId === null ? $item->path : ($pathByContent[$item->contentId] ?? $item->path));
     }
 
-    private function publicMenu(): ?MenuRecord
+    private function publicMenu(?string $preferredHandle = null): ?MenuRecord
     {
+        $preferredHandle ??= $this->preferredHandle;
         $fallback = null;
         foreach ($this->repository->menus() as $candidate) {
             if (!$this->belongsToPublicSite('menu', $candidate->id)) {
                 continue;
             }
             $fallback ??= $candidate;
-            if ($candidate->handle === $this->preferredHandle) {
+            if ($candidate->handle === $preferredHandle) {
                 return $candidate;
             }
         }

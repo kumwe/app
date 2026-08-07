@@ -28,6 +28,7 @@ The built-in administrator uses Twig-rendered semantic HTML as its no-JavaScript
 `site/page.twig` receives the public content record, including:
 
 - `site_name` from browser-managed settings;
+- `site_logo` and the validated `presentation` view model, including the active design tokens and interaction treatments;
 - `entry.id`, `entry.title`, `entry.slug`, and workflow status;
 - structured `entry.data` fields;
 - publication, version, and timestamp values.
@@ -59,6 +60,8 @@ Twig auto-escapes normal output. Use `|raw` only for fields guaranteed to pass t
 Use the versioned `/assets/extensions/{vendor}/{name}/{version}/...` path emitted for the installed package. Requests are authorized against the current extension release and signing-key state and use `no-store`, so a disabled, uninstalled, quarantined, or revoked release cannot leave publicly reachable bytes. Render navigation or extension-provided blocks through an injected service or prepared view model rather than reading application tables.
 
 Do not embed deployment URLs, database queries, secrets, permission decisions, or business rules in Twig. Put reusable behavior in an injected extension service and give the template a presentation-ready result.
+
+The built-in layout emits the fixed `presentation.css_variables` property map as element-level CSS custom properties and exposes the selected scheme, button, and header treatments as data attributes. Custom templates may use these values or replace the visual system, but must never render editor-supplied property names or raw CSS. Global identity belongs to `presentation.logo`; page-specific artwork remains structured content.
 
 ## Install and verify
 

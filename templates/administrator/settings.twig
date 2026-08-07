@@ -2,15 +2,106 @@
 {% block title %}Site settings · Kumwe{% endblock %}
 {% block context_title %}Site settings{% endblock %}
 {% block content %}
-  <header class="page-heading"><div><p class="eyebrow">Website</p><h1>Site settings</h1><p>Control the public identity, homepage, language, timezone, and search visibility.</p></div><div class="page-actions"><a class="button" href="/" target="_blank" rel="noopener">View website</a></div></header>
-  {% if saved %}<div class="notice success" role="status"><span>Settings saved.</span><button class="notice-dismiss" type="button" aria-label="Dismiss" data-dismiss-notice>×</button></div>{% endif %}
+  <header class="page-heading">
+    <div><p class="eyebrow">Website</p><h1>Site settings</h1><p>Control the public identity, homepage, menu, corporate design system, regional defaults, and search visibility.</p></div>
+    <div class="page-actions"><a class="button" href="/" target="_blank" rel="noopener">View website</a></div>
+  </header>
+  {% if saved %}<div class="notice success" role="status"><span>Settings and presentation saved.</span><button class="notice-dismiss" type="button" aria-label="Dismiss" data-dismiss-notice>×</button></div>{% endif %}
+  {% if error %}<div class="notice danger" role="alert"><span>{{ error }}</span></div>{% endif %}
+
   <div class="editor-grid">
-    <form class="panel editor-main editor-form stack" action="/administrator/settings" method="post"><input type="hidden" name="_csrf" value="{{ csrf }}">
-      <fieldset class="field-group stack"><legend>Public identity</legend><label>Site name<small>Shown in the built-in header, page titles, and public footer.</small><input name="site_name" value="{{ settings.site_name }}" maxlength="160" required></label><label>Homepage<small>Select the managed page rendered at the root address. Its content remains editable like every other page.</small><select name="homepage_content_id" required><option value="">Choose a page…</option>{% for page in pages %}<option value="{{ page.id }}"{% if page.id == settings.homepage_content_id %} selected{% endif %}>{{ page.title }} · {{ page.status|replace({'_': ' '})|title }} · /{{ page.slug }}</option>{% endfor %}</select></label></fieldset>
+    <form class="panel editor-main editor-form stack" action="/administrator/settings" method="post">
+      <input type="hidden" name="_csrf" value="{{ csrf }}">
+
+      <fieldset class="field-group stack">
+        <legend>Public identity</legend>
+        <label>Site name<small>Shown in the public header, page titles, and footer.</small><input name="site_name" value="{{ settings.site_name }}" maxlength="160" required></label>
+        <div class="stack"><label for="presentation-logo">Site logo<small>Choose a managed image or enter a root-relative URL. This identity is independent of the homepage content.</small></label><span class="media-input"><input id="presentation-logo" name="presentation_logo" value="{{ settings.presentation.logo }}" maxlength="2048"><button type="button" data-open-media-picker data-media-target="presentation-logo">Choose media</button></span></div>
+        <label>Footer text<input name="presentation_footer_text" value="{{ settings.presentation.footer_text }}" maxlength="255" required></label>
+        <label>Homepage<small>Select the managed page rendered at the root address. It remains editable like every other page.</small><select name="homepage_content_id" required><option value="">Choose a page…</option>{% for page in pages %}<option value="{{ page.id }}"{% if page.id == settings.homepage_content_id %} selected{% endif %}>{{ page.title }} · {{ page.status|replace({'_': ' '})|title }} · /{{ page.slug }}</option>{% endfor %}</select></label>
+        <label>Primary menu<small>The selected database menu supplies the public header links and canonical page paths.</small><select name="presentation_primary_menu" required><option value="{{ settings.presentation.primary_menu }}">{{ settings.presentation.primary_menu }} · Current menu</option>{% for menu in menus %}{% if menu.handle != settings.presentation.primary_menu %}<option value="{{ menu.handle }}">{{ menu.title }} · {{ menu.handle }}</option>{% endif %}{% endfor %}</select></label>
+      </fieldset>
+
+      <fieldset class="field-group stack">
+        <legend>Design system</legend>
+        <p class="field-help">Choose a coordinated scheme and interaction treatment. Every value below is stored as managed site data and used by the built-in public theme.</p>
+        <div class="two-column">
+          <label>Active color scheme<select name="presentation_active_scheme" required data-active-presentation-scheme>{% for scheme in settings.presentation.schemes %}<option value="{{ scheme.handle }}"{% if scheme.handle == settings.presentation.active_scheme %} selected{% endif %}>{{ scheme.name }}</option>{% endfor %}</select></label>
+          <label>Button treatment<select name="presentation_button_style" required><option value="solid"{% if settings.presentation.button_style == 'solid' %} selected{% endif %}>Solid corporate</option><option value="soft"{% if settings.presentation.button_style == 'soft' %} selected{% endif %}>Soft accent</option><option value="outline"{% if settings.presentation.button_style == 'outline' %} selected{% endif %}>Outline</option></select></label>
+          <label>Button shape<select name="presentation_button_shape" required><option value="square"{% if settings.presentation.button_shape == 'square' %} selected{% endif %}>Square</option><option value="rounded"{% if settings.presentation.button_shape == 'rounded' %} selected{% endif %}>Rounded</option><option value="pill"{% if settings.presentation.button_shape == 'pill' %} selected{% endif %}>Pill</option></select></label>
+          <label>Header treatment<select name="presentation_header_style" required><option value="solid"{% if settings.presentation.header_style == 'solid' %} selected{% endif %}>Solid</option><option value="glass"{% if settings.presentation.header_style == 'glass' %} selected{% endif %}>Corporate glass</option><option value="borderless"{% if settings.presentation.header_style == 'borderless' %} selected{% endif %}>Borderless</option></select></label>
+        </div>
+
+        <kumwe-presentation-schemes>
+          <div class="stack" data-presentation-scheme-rows>
+            {% for scheme in settings.presentation.schemes %}
+              <article class="builder-row builder-row-expanded presentation-scheme-row" data-presentation-scheme-row>
+                <div class="builder-row-heading"><div><p class="eyebrow">Color scheme</p><h3 data-presentation-scheme-heading>{{ scheme.name }}</h3></div><button class="remove-row" type="button" data-remove-presentation-scheme>Remove</button></div>
+                <div class="three-column">
+                  <label>Name<input name="scheme_{{ loop.index0 }}_name" value="{{ scheme.name }}" maxlength="80" required data-presentation-scheme-name></label>
+                  <label>Handle<input name="scheme_{{ loop.index0 }}_handle" value="{{ scheme.handle }}" pattern="[a-z][a-z0-9_]*" maxlength="64" required data-presentation-scheme-handle></label>
+                  <label>Browser color mode<select name="scheme_{{ loop.index0 }}_color_mode" required><option value="light"{% if scheme.color_mode == 'light' %} selected{% endif %}>Light</option><option value="dark"{% if scheme.color_mode == 'dark' %} selected{% endif %}>Dark</option></select></label>
+                </div>
+                <div class="presentation-color-grid">
+                  <label>Corporate navy<input type="color" name="scheme_{{ loop.index0 }}_navy" value="{{ scheme.colors.navy }}" required></label>
+                  <label>Primary text<input type="color" name="scheme_{{ loop.index0 }}_ink" value="{{ scheme.colors.ink }}" required></label>
+                  <label>Muted text<input type="color" name="scheme_{{ loop.index0 }}_muted" value="{{ scheme.colors.muted }}" required></label>
+                  <label>Page canvas<input type="color" name="scheme_{{ loop.index0 }}_canvas" value="{{ scheme.colors.canvas }}" required></label>
+                  <label>Surface<input type="color" name="scheme_{{ loop.index0 }}_surface" value="{{ scheme.colors.surface }}" required></label>
+                  <label>Border<input type="color" name="scheme_{{ loop.index0 }}_border" value="{{ scheme.colors.border }}" required></label>
+                  <label>Accent<input type="color" name="scheme_{{ loop.index0 }}_accent" value="{{ scheme.colors.accent }}" required></label>
+                  <label>Strong accent<input type="color" name="scheme_{{ loop.index0 }}_accent_strong" value="{{ scheme.colors.accent_strong }}" required></label>
+                  <label>Soft accent<input type="color" name="scheme_{{ loop.index0 }}_accent_soft" value="{{ scheme.colors.accent_soft }}" required></label>
+                  <label>On accent<input type="color" name="scheme_{{ loop.index0 }}_on_accent" value="{{ scheme.colors.on_accent }}" required></label>
+                </div>
+              </article>
+            {% endfor %}
+          </div>
+          <button type="button" data-add-presentation-scheme>Add color scheme</button>
+          <template data-presentation-scheme-template>
+            <article class="builder-row builder-row-expanded presentation-scheme-row" data-presentation-scheme-row>
+              <div class="builder-row-heading"><div><p class="eyebrow">Color scheme</p><h3 data-presentation-scheme-heading>New scheme</h3></div><button class="remove-row" type="button" data-remove-presentation-scheme>Remove</button></div>
+              <div class="three-column">
+                <label>Name<input name="scheme___INDEX___name" value="New scheme" maxlength="80" required data-presentation-scheme-name></label>
+                <label>Handle<input name="scheme___INDEX___handle" value="scheme___INDEX__" pattern="[a-z][a-z0-9_]*" maxlength="64" required data-presentation-scheme-handle></label>
+                <label>Browser color mode<select name="scheme___INDEX___color_mode" required><option value="light">Light</option><option value="dark">Dark</option></select></label>
+              </div>
+              <div class="presentation-color-grid">
+                <label>Corporate navy<input type="color" name="scheme___INDEX___navy" value="#07182d" required></label>
+                <label>Primary text<input type="color" name="scheme___INDEX___ink" value="#13233a" required></label>
+                <label>Muted text<input type="color" name="scheme___INDEX___muted" value="#5c6f84" required></label>
+                <label>Page canvas<input type="color" name="scheme___INDEX___canvas" value="#f5f8fb" required></label>
+                <label>Surface<input type="color" name="scheme___INDEX___surface" value="#ffffff" required></label>
+                <label>Border<input type="color" name="scheme___INDEX___border" value="#dce5ed" required></label>
+                <label>Accent<input type="color" name="scheme___INDEX___accent" value="#0c9189" required></label>
+                <label>Strong accent<input type="color" name="scheme___INDEX___accent_strong" value="#08726d" required></label>
+                <label>Soft accent<input type="color" name="scheme___INDEX___accent_soft" value="#dff6f4" required></label>
+                <label>On accent<input type="color" name="scheme___INDEX___on_accent" value="#ffffff" required></label>
+              </div>
+            </article>
+          </template>
+        </kumwe-presentation-schemes>
+      </fieldset>
+
       <fieldset class="field-group stack"><legend>Regional defaults</legend><div class="two-column"><label>Default locale<small>Use a language-region value such as en-NA.</small><input name="default_locale" value="{{ settings.default_locale }}" maxlength="35" required></label><label>Timezone<small>Use an IANA timezone such as Africa/Windhoek.</small><input name="timezone" value="{{ settings.timezone }}" maxlength="80" required></label></div></fieldset>
       <fieldset class="field-group stack"><legend>Search engines</legend><label class="check"><input type="checkbox" name="search_indexing_enabled" value="1"{% if settings.search_indexing_enabled %} checked{% endif %}><span>Allow search indexing<small>When disabled, Kumwe publishes no-index instructions. It does not make content private.</small></span></label></fieldset>
-      <div class="page-actions"><button class="primary" type="submit">Save settings</button></div>
+      <div class="page-actions"><button class="primary" type="submit">Save settings and design</button></div>
     </form>
-    <aside class="editor-sidebar stack"><section class="panel panel-body stack"><div><p class="eyebrow">Presentation</p><h2>Public website</h2></div><p class="text-muted text-small">The built-in public shell uses these settings together with the managed main menu. Site themes can override presentation without changing content.</p><a href="/administrator/navigation">Manage public menu</a></section><section class="panel panel-body stack"><div><p class="eyebrow">Protected boundary</p><h2>Infrastructure settings</h2></div><p class="text-muted text-small">Database, Redis, secrets, trusted proxies, and releases remain deployment configuration and cannot be changed from a browser session.</p></section></aside>
+
+    <aside class="editor-sidebar stack">
+      <section class="panel panel-body stack"><div><p class="eyebrow">Presentation</p><h2>Public website</h2></div><p class="text-muted text-small">The built-in Twig theme reads these database values on every site render. Installed site templates may override the markup while retaining managed content.</p><a href="/administrator/navigation">Manage public menus</a>{% if capabilities['extensions.manage'] is defined %}<a href="/administrator/extensions">Install or activate templates</a>{% endif %}</section>
+      <section class="panel panel-body stack"><div><p class="eyebrow">Shared contract</p><h2>Every management surface</h2></div><p class="text-muted text-small">The REST API, CLI, MCP tools, and this graphical form all update the same validated site-settings service.</p></section>
+      <section class="panel panel-body stack"><div><p class="eyebrow">Protected boundary</p><h2>Infrastructure settings</h2></div><p class="text-muted text-small">Database, Redis, secrets, trusted proxies, and releases remain deployment configuration and cannot be changed from a browser session.</p></section>
+    </aside>
   </div>
+
+  {% if media_assets is not empty %}
+    <kumwe-media-picker>
+      <dialog class="media-dialog" aria-labelledby="settings-media-dialog-title">
+        <div class="media-dialog-header"><div><p class="eyebrow">Media library</p><h2 id="settings-media-dialog-title">Choose the site logo</h2></div><form method="dialog"><button type="submit" aria-label="Close media library">Close</button></form></div>
+        <label class="media-dialog-search">Filter media<input type="search" placeholder="Search file names" data-media-filter></label>
+        <div class="media-picker-grid">{% for asset in media_assets %}<button type="button" class="media-picker-item" data-select-media data-media-url="{{ asset.url }}" data-media-name="{{ asset.name }}">{% if asset.is_image %}<img src="{{ asset.url }}" alt="" loading="lazy">{% endif %}<span>{{ asset.name }}</span></button>{% endfor %}</div>
+      </dialog>
+    </kumwe-media-picker>
+  {% endif %}
 {% endblock %}

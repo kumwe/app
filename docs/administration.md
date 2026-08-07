@@ -16,7 +16,7 @@ The administrator navigation links to:
 - **Users and access:** users, groups, capability grants, assignments, and API/MCP tokens;
 - **Extensions:** package upload, activation, disable, and uninstall;
 - **Automation:** schedules, recent jobs, retries, and cancellation;
-- **Settings:** public site configuration;
+- **Settings:** public identity, homepage, primary menu, color schemes, interaction styles, and regional defaults;
 - **Sign out:** invalidates the current administrator session.
 
 A missing section normally means the account lacks its management capability. A direct request to that route receives `403` rather than relying on hidden navigation.
@@ -56,7 +56,7 @@ Search and filter the library, copy a public URL, or choose a media item directl
 
 Open **Navigation** to create a named menu, change its handle or title, and create nested items. Each item has an explicit target type: **Page** selects managed content by stable ID, **Page section** stores a safe fragment such as `#platform`, and **Custom URL** accepts a validated root-relative, HTTP(S), or mail link. Selecting a page suggests its label and URL segment. The live calculated path combines the item's segment with its parents.
 
-Drag items to change their order, or use the graphical parent and position controls when JavaScript is unavailable. Kumwe rejects cycles, reserved system prefixes, unsafe targets, and paths beyond the portable database limit; moving a parent rebuilds descendant paths in the same transaction. The built-in public presentation renders the `main` menu (or the first available menu) recursively. Deleting a menu deletes its contained items only after explicit confirmation.
+Drag items to change their order, or use the graphical parent and position controls when JavaScript is unavailable. Kumwe rejects cycles, reserved system prefixes, unsafe targets, and paths beyond the portable database limit; moving a parent rebuilds descendant paths in the same transaction. The built-in public presentation renders the primary menu selected under **Settings** (falling back to the first available menu when that handle is unavailable) recursively. Deleting a menu deletes its contained items only after explicit confirmation.
 
 Menu management requires `navigation.manage`. Template or module code reads navigation through the navigation application service; it must not query navigation tables directly.
 
@@ -95,7 +95,9 @@ Capabilities are independent. For example, a reviewer may read and return conten
 
 ## Site settings
 
-Users with `settings.manage` can change the site name, homepage, default locale, timezone, and search-indexing policy under **Settings**. The homepage must identify a published, non-trashed page inside its publication window; until it is available, the public site renders a setup-safe placeholder. Disabling indexing changes the dynamic `/robots.txt` response and adds a no-index header to public pages; it does not make published content private.
+Users with `settings.manage` can change the site name, global logo, footer, homepage, primary menu, reusable color schemes, active scheme, button treatment and shape, header treatment, default locale, timezone, and search-indexing policy under **Settings**. The logo picker uses managed Media assets, and the scheme builder exposes graphical color controls rather than JSON or CSS. The homepage must identify a published, non-trashed page inside its publication window; until it is available, the public site renders a setup-safe placeholder. Disabling indexing changes the dynamic `/robots.txt` response and adds a no-index header to public pages; it does not make published content private.
+
+The built-in corporate presentation is a normal database-backed configuration, not a separate hard-coded welcome page. REST, CLI, MCP, and the administrator all update the same validated setting record. Site-template activation remains under **Extensions**, uses the same site context and authorization policy across every management adapter, and does not overwrite content or presentation data.
 
 Database credentials, Redis credentials, trusted proxies, application secrets, release identity, and container images remain deployment configuration. They are intentionally not editable in the browser. See [Configuration](configuration.md).
 

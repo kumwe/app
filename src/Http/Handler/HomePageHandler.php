@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Kumwe\CMS\Http\Handler;
 
+use Kumwe\CMS\Presentation\Application\SitePresentation;
 use Kumwe\CMS\Presentation\ContentPresenter;
 use Kumwe\CMS\Presentation\SiteRenderer;
 use Kumwe\CMS\Site\Application\PublicPageLocator;
@@ -29,13 +30,13 @@ final readonly class HomePageHandler implements RequestHandlerInterface
         $record = $this->pages->homepage();
         $template = $record === null ? 'home' : 'page';
         $entry = $record === null ? null : $this->presenter->present($record);
+        $presentation = SitePresentation::from(
+            $settings['presentation'] ?? SitePresentation::defaults(),
+        )->toView();
         $variables = $record === null
-            ? ['site_name' => $settings['site_name']]
-            : ['site_name' => $settings['site_name'], 'entry' => $entry];
-        $brandLogo = is_array($entry) && is_array($entry['data'] ?? null)
-            ? ($entry['data']['brand_logo'] ?? null)
-            : null;
-        $variables['site_logo'] = is_string($brandLogo) ? $brandLogo : null;
+            ? ['site_name' => $settings['site_name'], 'presentation' => $presentation]
+            : ['site_name' => $settings['site_name'], 'entry' => $entry, 'presentation' => $presentation];
+        $variables['site_logo'] = $presentation['logo'];
         $variables['navigation'] = $this->pages->navigation();
         $variables['current_path'] = '/';
         $variables['canonical_url'] = '/';

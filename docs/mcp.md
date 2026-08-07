@@ -40,7 +40,7 @@ The required `--site` value selects exactly one site for the lifetime of the std
 | `kumwe_menu_item_create`, `kumwe_menu_item_update` | `navigation.manage` | Link content, sections, or safe URLs and maintain menu paths |
 | `kumwe_menu_item_delete` | `navigation.manage` | Delete a versioned menu item |
 | `kumwe_settings_get` | `settings.manage` | Read browser-managed site settings |
-| `kumwe_settings_update` | `settings.manage` | Update validated settings, including the homepage content UUID |
+| `kumwe_settings_update` | `settings.manage` | Update validated identity, homepage, primary menu, schemes, and interaction styles |
 | `kumwe_user_list` | `users.manage` | List users, groups, and assignments |
 | `kumwe_token_list`, `kumwe_token_revoke` | `users.manage` | Inspect token metadata or revoke access |
 | `kumwe_extension_list` | `extensions.manage` | List installed extensions and state |

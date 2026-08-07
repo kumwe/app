@@ -172,6 +172,44 @@ test.describe('authenticated administrator', () => {
     await page.screenshot({ path: testInfo.outputPath('media-library.png'), fullPage: true });
   });
 
+  test('site identity and corporate schemes are managed graphically', async ({ page }, testInfo) => {
+    const handle = `browser_${testInfo.project.name.replaceAll('-', '_')}`;
+    await page.goto('/administrator/settings');
+    await expect(page.getByRole('heading', { name: 'Site settings' })).toBeVisible();
+    await expect(page.getByLabel('Active color scheme')).toHaveValue(/corporate|browser_/);
+
+    await page.getByRole('button', { name: 'Choose media' }).click();
+    const mediaDialog = page.getByRole('dialog', { name: 'Choose the site logo' });
+    await expect(mediaDialog).toBeVisible();
+    await mediaDialog.getByLabel('Filter media').fill('kumwe-symbol');
+    await mediaDialog.getByRole('button', { name: /kumwe-symbol\.svg/ }).click();
+    await expect(page.getByLabel('Site logo')).toHaveValue(/kumwe-symbol\.svg$/);
+
+    await page.getByRole('button', { name: 'Add color scheme' }).click();
+    const scheme = page.locator('[data-presentation-scheme-row]').last();
+    await scheme.getByLabel('Name').fill(`Browser ${testInfo.project.name}`);
+    await scheme.getByLabel('Handle').fill(handle);
+    await page.getByLabel('Active color scheme').selectOption(handle);
+    await page.getByLabel('Button treatment').selectOption('soft');
+    await page.getByLabel('Button shape').selectOption('pill');
+    await expectAccessible(page);
+    await page.getByRole('button', { name: 'Save settings and design' }).click();
+    await expect(page).toHaveURL(/\/administrator\/settings\?saved=1$/);
+
+    await page.goto('/');
+    await expect(page.locator('body')).toHaveAttribute('data-presentation-scheme', handle);
+    await expect(page.locator('body')).toHaveAttribute('data-button-style', 'soft');
+    await expect(page.locator('body')).toHaveAttribute('data-button-shape', 'pill');
+    await expectAccessible(page);
+
+    await page.goto('/administrator/settings');
+    await page.getByLabel('Active color scheme').selectOption('corporate');
+    await page.getByLabel('Button treatment').selectOption('solid');
+    await page.getByLabel('Button shape').selectOption('rounded');
+    await page.getByRole('button', { name: 'Save settings and design' }).click();
+    await expect(page).toHaveURL(/\/administrator\/settings\?saved=1$/);
+  });
+
   test('automation uses generated job controls rather than JSON', async ({ page }, testInfo) => {
     await page.goto('/administrator/automation');
     await expect(page.getByRole('heading', { name: 'Automation' })).toBeVisible();

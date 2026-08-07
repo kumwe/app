@@ -130,4 +130,38 @@ final class PublicNavigationTest extends TestCase
         self::assertSame('/#platform', $items[2]['href']);
         self::assertSame('/administrator', $items[3]['href']);
     }
+
+    public function testUsesTheDatabaseSelectedMenuHandle(): void
+    {
+        $repository = $this->createStub(NavigationRepository::class);
+        $time = new DateTimeImmutable('2026-08-07T17:00:00+00:00');
+        $repository->method('menus')->willReturn([
+            new MenuRecord('main-menu', 'main', 'Main', 1, $time, $time),
+            new MenuRecord('corporate-menu', 'corporate', 'Corporate', 1, $time, $time),
+        ]);
+        $repository->method('items')->willReturnMap([
+            ['main-menu', []],
+            ['corporate-menu', [
+                new MenuItemRecord(
+                    'corporate-home',
+                    'corporate-menu',
+                    null,
+                    'Corporate home',
+                    'home',
+                    '/home',
+                    0,
+                    1,
+                    $time,
+                    $time,
+                    'content',
+                    'home-content',
+                ),
+            ]],
+        ]);
+
+        $items = (new PublicNavigation($repository))->items('home-content', 'corporate');
+
+        self::assertSame(['Corporate home'], array_column($items, 'title'));
+        self::assertSame('/', $items[0]['href']);
+    }
 }

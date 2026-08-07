@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Kumwe\CMS\Http\Handler;
 
+use Kumwe\CMS\Presentation\Application\SitePresentation;
 use Kumwe\CMS\Presentation\ContentPresenter;
 use Kumwe\CMS\Presentation\SiteRenderer;
 use Kumwe\CMS\Site\Application\PublicPageLocator;
@@ -49,11 +50,9 @@ final readonly class PublishedContentHandler implements RequestHandlerInterface
         if ($settings['search_indexing_enabled'] !== true) {
             $headers['X-Robots-Tag'] = 'noindex, nofollow, noarchive';
         }
-        $homepage = $this->pages->homepage();
-        $homepageEntry = $homepage === null ? null : $this->presenter->present($homepage);
-        $brandLogo = is_array($homepageEntry) && is_array($homepageEntry['data'] ?? null)
-            ? ($homepageEntry['data']['brand_logo'] ?? null)
-            : null;
+        $presentation = SitePresentation::from(
+            $settings['presentation'] ?? SitePresentation::defaults(),
+        )->toView();
 
         return new HtmlResponse(
             $this->renderer->render('page', [
@@ -62,7 +61,8 @@ final readonly class PublishedContentHandler implements RequestHandlerInterface
                 'navigation' => $this->pages->navigation(),
                 'current_path' => $canonicalPath,
                 'canonical_url' => $canonicalPath,
-                'site_logo' => is_string($brandLogo) ? $brandLogo : null,
+                'site_logo' => $presentation['logo'],
+                'presentation' => $presentation,
             ]),
             200,
             $headers,

@@ -3,14 +3,20 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="color-scheme" content="light dark">
-  <meta name="theme-color" content="#08152a">
+  <meta name="color-scheme" content="{{ presentation.color_mode|default('light') }}">
+  <meta name="theme-color" content="{{ presentation.css_variables['--site-navy-950']|default('#07182d') }}">
   <title>{% block title %}{{ site_name }}{% endblock %}</title>
   {% if canonical_url %}<link rel="canonical" href="{{ canonical_url }}">{% endif %}
   {% for stylesheet in site_assets.stylesheets %}<link rel="stylesheet" href="{{ stylesheet }}">{% endfor %}
   {% for module in site_assets.modules %}<script type="module" src="{{ module }}"></script>{% endfor %}
 </head>
-<body>
+<body
+  data-presentation-scheme="{{ presentation.active_scheme|default('corporate') }}"
+  data-button-style="{{ presentation.button_style|default('solid') }}"
+  data-button-shape="{{ presentation.button_shape|default('rounded') }}"
+  data-header-style="{{ presentation.header_style|default('glass') }}"
+  style="{% for property, value in presentation.css_variables|default({}) %}{{ property }}:{{ value }};{% endfor %}"
+>
   {% import '_navigation.twig' as navigation_tree %}
   <a class="sr-only" href="#site-content">Skip to content</a>
   <header class="site-header"><div class="site-container site-header-inner">
@@ -21,6 +27,6 @@
     {% endif %}
   </div></header>
   <main class="site-main" id="site-content">{% block content %}{% endblock %}</main>
-  <footer class="site-footer"><div class="site-container"><span>{{ site_name }}</span><span>Powered by Kumwe CMS</span></div></footer>
+  <footer class="site-footer"><div class="site-container"><span>{{ site_name }}</span><span>{{ presentation.footer_text|default('Powered by Kumwe CMS') }}</span></div></footer>
 </body>
 </html>

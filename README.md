@@ -44,7 +44,7 @@ Open <http://localhost:8080/administrator>. The [getting-started guide](docs/get
 
 - Create, revise, review, schedule, publish, unpublish, archive, trash, and restore content through generated graphical fields and workflow controls.
 - Search and filter content, manage reusable media, order nested menus, and render the same managed navigation in the built-in public presentation.
-- Manage menus, nested navigation, users, groups, scoped capability grants, API tokens, site settings, extensions, and templates from the administrator when the signed-in user has permission.
+- Manage menus, nested navigation, users, groups, scoped capability grants, API tokens, site identity, reusable color schemes, interaction styles, extensions, and templates from the administrator when the signed-in user has permission.
 - Apply the same content, navigation, identity, and extension rules through application services shared by the browser, CLI, REST, MCP, workers, and scheduler.
 - Install signed plugins, components, modules, templates, languages, and packages without rebuilding the application image.
 - Run optimistic, retry-safe API mutations with capability-scoped tokens, ETags, persisted idempotency results, revisions, and audit events.

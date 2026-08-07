@@ -63,6 +63,7 @@ use Kumwe\CMS\Administrator\Http\Middleware\AdministratorAuthorizationMiddleware
 use Kumwe\CMS\Administrator\Http\Middleware\AdministratorSessionMiddleware;
 use Kumwe\CMS\Administrator\Presentation\AdministratorRenderer;
 use Kumwe\CMS\Administrator\Presentation\RecoveryAdministratorRenderer;
+use Kumwe\CMS\Administrator\Presentation\SitePresentationFormMapper;
 use Kumwe\CMS\Audit\Application\AuditRecorder;
 use Kumwe\CMS\Audit\Infrastructure\Persistence\DoctrineAuditRecorder;
 use Kumwe\CMS\Content\Application\ContentRepository;
@@ -201,6 +202,7 @@ use Kumwe\CMS\Infrastructure\Persistence\Migration\ApplicationAuthorizationMigra
 use Kumwe\CMS\Infrastructure\Persistence\Migration\AuthorizationRecoveryIntegrationMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\CoreSchemaMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\ContentModelRuntimeMigration;
+use Kumwe\CMS\Infrastructure\Persistence\Migration\DatabaseDrivenPresentationMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\DynamicSiteContentMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\IdempotencyLeaseNullabilityMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\IsolateThemeSurfacesMigration;
@@ -682,6 +684,7 @@ final class ContainerFactory
                     new InstallationGlobalAutomationMigration(self::service($container, TableNames::class)),
                     new ContentModelRuntimeMigration(self::service($container, TableNames::class)),
                     new DynamicSiteContentMigration(self::service($container, TableNames::class)),
+                    new DatabaseDrivenPresentationMigration(self::service($container, TableNames::class)),
                 ],
                 [
                     // Previously distributed builds used a DBAL-equivalent static-analysis rewrite, then
@@ -732,6 +735,7 @@ final class ContainerFactory
         $container->share(ContentFormDataMapper::class, new ContentFormDataMapper(), true);
         $container->share(ContentModelFormMapper::class, new ContentModelFormMapper(), true);
         $container->share(ContentModelFormPresenter::class, new ContentModelFormPresenter(), true);
+        $container->share(SitePresentationFormMapper::class, new SitePresentationFormMapper(), true);
         $container->share(RichTextFormatter::class, new RichTextFormatter(), true);
         $container->share(ContentPresenter::class, static fn (Container $container): ContentPresenter =>
             new ContentPresenter(self::service($container, RichTextFormatter::class)), true);
@@ -1275,6 +1279,9 @@ final class ContainerFactory
             self::service($container, SiteSettings::class),
             self::service($container, AdministratorRenderer::class),
             self::service($container, ContentService::class),
+            self::service($container, SitePresentationFormMapper::class),
+            self::service($container, MediaService::class),
+            self::service($container, NavigationService::class),
         ), true);
         $container->share(AdministratorNavigationHandler::class, static fn (
             Container $container,

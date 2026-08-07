@@ -604,14 +604,58 @@
       },
       "SiteSettings": {
         "type": "object",
-        "required": ["site_name", "homepage_content_id", "default_locale", "timezone", "search_indexing_enabled"],
+        "required": ["site_name", "homepage_content_id", "default_locale", "timezone", "search_indexing_enabled", "presentation"],
         "properties": {
           "site_name": {"type": "string", "minLength": 1, "maxLength": 160},
           "homepage_content_id": {"type": ["string", "null"], "format": "uuid"},
           "homepage_slug": {"type": "string", "deprecated": true, "description": "Legacy read compatibility; use homepage_content_id."},
           "default_locale": {"type": "string"},
           "timezone": {"type": "string"},
-          "search_indexing_enabled": {"type": "boolean"}
+          "search_indexing_enabled": {"type": "boolean"},
+          "presentation": {"$ref": "#/components/schemas/SitePresentation"}
+        },
+        "additionalProperties": false
+      },
+      "SitePresentation": {
+        "type": "object",
+        "required": ["logo", "footer_text", "primary_menu", "active_scheme", "button_style", "button_shape", "header_style", "schemes"],
+        "properties": {
+          "logo": {"type": "string", "maxLength": 2048, "description": "Root-relative public logo URL."},
+          "footer_text": {"type": "string", "minLength": 1, "maxLength": 255},
+          "primary_menu": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"},
+          "active_scheme": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"},
+          "button_style": {"type": "string", "enum": ["solid", "soft", "outline"]},
+          "button_shape": {"type": "string", "enum": ["square", "rounded", "pill"]},
+          "header_style": {"type": "string", "enum": ["solid", "glass", "borderless"]},
+          "schemes": {"type": "array", "minItems": 1, "maxItems": 12, "items": {"$ref": "#/components/schemas/PresentationScheme"}}
+        },
+        "additionalProperties": false
+      },
+      "PresentationScheme": {
+        "type": "object",
+        "required": ["handle", "name", "color_mode", "colors"],
+        "properties": {
+          "handle": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"},
+          "name": {"type": "string", "minLength": 1, "maxLength": 80},
+          "color_mode": {"type": "string", "enum": ["light", "dark"]},
+          "colors": {"$ref": "#/components/schemas/PresentationColors"}
+        },
+        "additionalProperties": false
+      },
+      "PresentationColors": {
+        "type": "object",
+        "required": ["navy", "ink", "muted", "canvas", "surface", "border", "accent", "accent_strong", "accent_soft", "on_accent"],
+        "properties": {
+          "navy": {"type": "string", "pattern": "^#[0-9a-fA-F]{6}$"},
+          "ink": {"type": "string", "pattern": "^#[0-9a-fA-F]{6}$"},
+          "muted": {"type": "string", "pattern": "^#[0-9a-fA-F]{6}$"},
+          "canvas": {"type": "string", "pattern": "^#[0-9a-fA-F]{6}$"},
+          "surface": {"type": "string", "pattern": "^#[0-9a-fA-F]{6}$"},
+          "border": {"type": "string", "pattern": "^#[0-9a-fA-F]{6}$"},
+          "accent": {"type": "string", "pattern": "^#[0-9a-fA-F]{6}$"},
+          "accent_strong": {"type": "string", "pattern": "^#[0-9a-fA-F]{6}$"},
+          "accent_soft": {"type": "string", "pattern": "^#[0-9a-fA-F]{6}$"},
+          "on_accent": {"type": "string", "pattern": "^#[0-9a-fA-F]{6}$"}
         },
         "additionalProperties": false
       },

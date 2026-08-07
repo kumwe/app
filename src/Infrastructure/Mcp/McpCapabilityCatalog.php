@@ -263,11 +263,12 @@ final class McpCapabilityCatalog
                     'homepageContentId' => ['type' => 'string', 'format' => 'uuid'],
                     'defaultLocale' => ['type' => 'string'], 'timezone' => ['type' => 'string'],
                     'searchIndexingEnabled' => ['type' => 'boolean'],
+                    'presentation' => $this->presentation(),
                 ],
                 $object,
                 [
                     'operationId', 'siteName', 'homepageContentId', 'defaultLocale', 'timezone',
-                    'searchIndexingEnabled',
+                    'searchIndexingEnabled', 'presentation',
                 ]
             ),
             $this->tool(
@@ -722,6 +723,57 @@ final class McpCapabilityCatalog
             'minLength' => 1,
             'maxLength' => 4_096,
             'writeOnly' => true,
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    private function presentation(): array
+    {
+        $colors = [];
+        foreach ([
+            'navy', 'ink', 'muted', 'canvas', 'surface', 'border', 'accent', 'accent_strong',
+            'accent_soft', 'on_accent',
+        ] as $color) {
+            $colors[$color] = ['type' => 'string', 'pattern' => '^#[0-9a-fA-F]{6}$'];
+        }
+
+        return [
+            'type' => 'object',
+            'properties' => [
+                'logo' => ['type' => 'string', 'maxLength' => 2_048],
+                'footer_text' => ['type' => 'string', 'minLength' => 1, 'maxLength' => 255],
+                'primary_menu' => ['type' => 'string', 'pattern' => '^[a-z][a-z0-9_]*$'],
+                'active_scheme' => ['type' => 'string', 'pattern' => '^[a-z][a-z0-9_]*$'],
+                'button_style' => ['type' => 'string', 'enum' => ['solid', 'soft', 'outline']],
+                'button_shape' => ['type' => 'string', 'enum' => ['square', 'rounded', 'pill']],
+                'header_style' => ['type' => 'string', 'enum' => ['solid', 'glass', 'borderless']],
+                'schemes' => [
+                    'type' => 'array',
+                    'minItems' => 1,
+                    'maxItems' => 12,
+                    'items' => [
+                        'type' => 'object',
+                        'properties' => [
+                            'handle' => ['type' => 'string', 'pattern' => '^[a-z][a-z0-9_]*$'],
+                            'name' => ['type' => 'string', 'minLength' => 1, 'maxLength' => 80],
+                            'color_mode' => ['type' => 'string', 'enum' => ['light', 'dark']],
+                            'colors' => [
+                                'type' => 'object',
+                                'properties' => $colors,
+                                'required' => array_keys($colors),
+                                'additionalProperties' => false,
+                            ],
+                        ],
+                        'required' => ['handle', 'name', 'color_mode', 'colors'],
+                        'additionalProperties' => false,
+                    ],
+                ],
+            ],
+            'required' => [
+                'logo', 'footer_text', 'primary_menu', 'active_scheme', 'button_style', 'button_shape',
+                'header_style', 'schemes',
+            ],
+            'additionalProperties' => false,
         ];
     }
 }
