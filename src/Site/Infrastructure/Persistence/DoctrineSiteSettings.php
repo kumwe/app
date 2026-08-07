@@ -109,13 +109,15 @@ final readonly class DoctrineSiteSettings implements SiteSettings
         if (!is_array($presentation) || !is_string($presentation['primary_menu'] ?? null)) {
             throw new InvalidArgumentException('The primary menu setting is invalid.');
         }
-        $menu = $this->database->fetchOne(sprintf(
-            'SELECT m.id FROM %s m INNER JOIN %s o ON o.resource_type = ? AND o.resource_id = m.id '
-            . 'WHERE m.handle = ? AND o.site_identifier = ?',
+        $menuId = $this->database->fetchOne(sprintf(
+            'SELECT id FROM %s WHERE handle = ?',
             $this->tables->quoted('navigation_menus'),
+        ), [$presentation['primary_menu']]);
+        $owned = is_string($menuId) && $menuId !== '' && $this->database->fetchOne(sprintf(
+            'SELECT resource_id FROM %s WHERE resource_type = ? AND resource_id = ? AND site_identifier = ?',
             $this->tables->quoted('resource_site_ownership'),
-        ), ['menu', $presentation['primary_menu'], $context->site()->identifier()]);
-        if ($menu === false) {
+        ), ['menu', $menuId, $context->site()->identifier()]) !== false;
+        if (!$owned) {
             throw new InvalidArgumentException('The primary menu must be a managed menu for this site.');
         }
 
