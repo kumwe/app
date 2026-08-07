@@ -10,7 +10,7 @@ The repository contains small, inspectable packages under [`examples/extensions`
 
 | Example | Demonstrates |
 |---|---|
-| [`announcements`](../examples/extensions/announcements) | Component provider, namespaced route, permission, configuration schema, and portable Doctrine migration |
+| [`announcements`](../examples/extensions/announcements) | Schema-2 capability, administrator workspace/navigation/route/view, injected application service, and portable migration |
 | [`audit-listener`](../examples/extensions/audit-listener) | Plugin provider and Joomla Event listener registration |
 | [`minimal-template`](../examples/extensions/minimal-template) | Template override and packaged public asset |
 
@@ -26,11 +26,11 @@ templates/
 assets/
 ```
 
-Minimal manifest:
+Schema 2 is required for application-shell contributions. A minimal graphical component declaration is:
 
 ```json
 {
-  "schema": 1,
+  "schema": 2,
   "name": "acme/announcements",
   "type": "component",
   "version": "1.0.0",
@@ -54,15 +54,54 @@ Minimal manifest:
   },
   "routes": [],
   "events": [],
-  "assets": []
+  "assets": [],
+  "contributions": {
+    "version": 1,
+    "capabilities": [{
+      "id": "acme.announcements.manage",
+      "label": "Manage announcements",
+      "description": "Open and manage the announcements workspace."
+    }],
+    "administrator": {
+      "workspaces": [{
+        "id": "acme.announcements.workspace",
+        "label": "Announcements",
+        "description": "Announcement publishing work.",
+        "priority": 150
+      }],
+      "navigation": [{
+        "id": "acme.announcements.navigation",
+        "workspace": "acme.announcements.workspace",
+        "label": "Announcements",
+        "description": "Open announcements",
+        "path": "/",
+        "icon": "extensions",
+        "capability": "acme.announcements.manage",
+        "priority": 10,
+        "keywords": "announcements"
+      }],
+      "routes": [{
+        "name": "acme.announcements.index",
+        "path": "/",
+        "methods": ["GET"],
+        "capability": "acme.announcements.manage",
+        "view": "acme.announcements.index"
+      }],
+      "views": [{"name": "acme.announcements.index", "template": "index.twig"}]
+    }
+  }
 }
 ```
 
 Identifiers use `vendor/name`; compatibility and dependency constraints use semantic versions. The manifest is installation input and part of the extension's compatibility contract. Do not infer registration by scanning PHP files.
 
+Schema-2 manifests reject unknown root, requirement, autoload, dependency, and contribution keys. Every contribution identifier must begin with the extension namespace (`acme/announcements` becomes `acme.announcements`). Lists are bounded, paths cannot traverse, route methods are restricted, and navigation/routes must reference capabilities, workspaces, and views owned by the same package. `permissions`, when present, must exactly match the deterministically ordered contributed capability identifiers.
+
+Valid schema-1 manifests remain installable and retain their service registration, boot, legacy route, migration, event, asset, and permission behavior. Schema 1 cannot publish the new shell contribution surfaces. Move those packages to schema 2 and the contribution provider contract when adding workspace, navigation, guarded administrator route, or administrator view declarations.
+
 ## Provider and runtime contract
 
-Every provider implements `Kumwe\CMS\Extension\Application\ExtensionServiceProvider`, Kumwe's Joomla DI service-provider contract. Providers needing lifecycle or routes implement `Kumwe\CMS\Extension\Runtime\RuntimeExtension`:
+Every provider implements `Kumwe\CMS\Extension\Application\ExtensionServiceProvider`, Kumwe's Joomla DI service-provider contract. A schema-2 contributor also implements `ExtensionContributionProvider`; legacy lifecycle hooks remain on `RuntimeExtension`:
 
 ```php
 <?php
@@ -71,30 +110,58 @@ declare(strict_types=1);
 
 namespace Acme\Announcements;
 
-use Joomla\DI\Container;
+use Kumwe\CMS\Extension\Contribution\AdministratorNavigationDefinition;
+use Kumwe\CMS\Extension\Contribution\CapabilityDefinition;
+use Kumwe\CMS\Extension\Contribution\ExtensionContributionProvider;
+use Kumwe\CMS\Extension\Contribution\ExtensionContributionRegistrar;
+use Kumwe\CMS\Extension\Runtime\ExtensionContainer;
+use Kumwe\CMS\Extension\Runtime\ExtensionRouteRegistrar;
 use Kumwe\CMS\Extension\Runtime\RuntimeExtension;
-use Mezzio\Application;
 
-final class Provider implements RuntimeExtension
+final class Provider implements RuntimeExtension, ExtensionContributionProvider
 {
-    public function register(Container $container): void
+    public function register(ExtensionContainer $container): void
     {
-        // Register repositories, application services, handlers, and jobs.
+        // Compose application services and typed handler factories.
     }
 
-    public function boot(Container $container): void
+    public function contribute(
+        ExtensionContributionRegistrar $contributions,
+        ExtensionContainer $container,
+    ): void {
+        $contributions->capability(new CapabilityDefinition(
+            'acme.announcements.manage',
+            'Manage announcements',
+            'Open and manage the announcements workspace.',
+        ));
+        // Register every manifest-declared workspace, navigation item, view, and route exactly once.
+    }
+
+    public function boot(ExtensionContainer $container): void
     {
         // Attach typed Joomla Event listeners.
     }
 
-    public function registerRoutes(Application $application): void
+    public function registerRoutes(ExtensionRouteRegistrar $routes): void
     {
-        // Register stable namespaced routes with capability middleware.
+        // Schema-1 compatibility routes only; use typed contributions for administrator pages.
     }
 }
 ```
 
-Resolve infrastructure dependencies only while composing services. Inject dependencies into ordinary classes. Domain code must not read environment variables, obtain a container, or query Kumwe tables.
+The runtime order is service registration for every active provider, one owner-bound contribution phase, boot, and route compilation. A provider cannot retain or obtain a global registry. Its registrar closes after reconciliation and rejects duplicate, undeclared, omitted, foreign-owned, or changed definitions. Resolve infrastructure dependencies only while composing services. Inject dependencies into ordinary classes. Domain code must not read environment variables, obtain a container, or query Kumwe tables.
+
+## Administrator contribution contract
+
+- Core and extension navigation use the same workspace/navigation registries and capability filter.
+- Extension route names become `administrator.extension.{declared-name}`. Paths are rooted at `/administrator/extensions/{vendor}/{name}`; the declared `/` maps to that exact root.
+- Every route references a capability and view owned by the contributor. Missing references, duplicate names, duplicate method/path pairs, mixed safe/mutating methods, unsafe paths, and collisions fail application bootstrap.
+- Mutating routes receive administrator CSRF middleware automatically. The normal administrator session middleware and the route's declared capability policy always apply.
+- Route handlers are constructed by an `AdministratorRouteHandlerFactory`. Factories receive the administrator renderer, not the application container. The example handler calls an injected application service and passes a presentation model to its declared Twig view.
+- Administrator views live under `templates/views/administrator`. Rendering is allowed only through the owning view declaration and its injective Twig namespace.
+- Live trust is checked when navigation is presented and when a contributed route executes. Disable, uninstall, quarantine, key revocation, or another trust failure therefore removes navigation and makes a previously compiled route unavailable.
+
+Contribution capability definitions enter the normal capability catalog but are not automatically granted. Assign them explicitly to a role. Package ownership is diagnostic and lifecycle metadata, never a browser editor for executable declarations.
 
 ## Events
 
@@ -199,6 +266,18 @@ Test at least:
 - route authentication, capability denial, CSRF for browser forms, idempotency and ETags for API writes;
 - event failure semantics and retry-safe queued side effects;
 - runtime-map rebuild and worker restart;
+- declared/provider contribution reconciliation, collision and ownership failure;
+- authorized and unauthorized navigation plus direct-route denial;
+- disable, reactivation, uninstall, trust revocation, and recovery-container absence;
+- desktop/mobile graphical output, keyboard use, WCAG 2.2 AA checks, and stable screenshots;
 - template and asset output under the production security headers.
+
+The announcements example is the conformance reference. Its browser fixture packages and signs the real example, installs it disabled, activates it, grants the contributed capability to only the administrator role, and proves the graphical lifecycle without a core route or navigation entry.
+
+## Upgrade and recovery notes
+
+The forward migration adds `extension_contribution_capabilities`, linking package-owned capability codes to installed extensions. Installation and upgrade synchronize only the current release's declared capabilities. Removing a capability on upgrade or uninstall removes dependent grants through existing foreign keys; extension-owned data tables are not dropped. Back up identity/grant data before intentionally removing a published capability.
+
+The signed runtime publication now carries `manifest_schema` and canonical contribution declarations. Older schema-1 publications remain readable through defaults, while schema-2 publications are compared with the installed manifest before code loads. After deploying this change, run core migrations, materialize the current runtime generation, and replace long-lived processes. If materialization is stale or invalid, readiness remains closed; use the existing runtime repair operation. Recovery composition deliberately skips extension loading and exposes only core navigation/templates, so an invalid contributed page cannot block extension management recovery.
 
 See [Architecture: extensions](architecture/extensions.md), [Templates](templates.md), and [Development](development.md).
