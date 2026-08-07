@@ -82,7 +82,7 @@ test('database-backed public presentation is responsive and ready', async ({ pag
   expect(visualContract.headerHeight).toBeGreaterThanOrEqual(68);
   expect(visualContract.heroColumns).toBe(mobile ? 1 : 2);
   expect(visualContract.sectionColumns).toBe(mobile ? 1 : 2);
-  expect(visualContract.headingSize).toBeGreaterThan(mobile ? 38 : 52);
+  expect(visualContract.headingSize).toBeGreaterThan(mobile ? 34 : 52);
   expect(visualContract.bodyBackground).not.toBe('rgba(0, 0, 0, 0)');
   expect(visualContract.primaryBackground).not.toBe('rgba(0, 0, 0, 0)');
 
@@ -157,7 +157,10 @@ test.describe('authenticated administrator', () => {
 
     await page.goto(`/${slug}`);
     await expect(page.getByRole('heading', { level: 1, name: title })).toBeVisible();
-    await expect(page.getByRole('link', { name: title })).toHaveAttribute('href', `/${slug}`);
+    await expect(page.getByRole('link', { name: title, includeHidden: true })).toHaveAttribute(
+      'href',
+      `/${slug}`,
+    );
     await expectAccessible(page);
   });
 

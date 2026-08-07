@@ -90,8 +90,8 @@ final class DevelopmentExperienceTest extends TestCase
         foreach (
             [
                 'entry.data',
-                'page.capabilities.body_html',
-                'page.platform.body_html',
+                'capabilities.body_html',
+                'platform.body_html',
             ] as $contract
         ) {
             self::assertStringContainsString($contract, $template);
