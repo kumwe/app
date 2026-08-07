@@ -15,9 +15,10 @@ $recoveryCommands = [
     'extension:runtime:watch',
     'extension:trust',
     'database:migrate',
+    'user:create-admin',
 ];
 $factory = new ContainerFactory();
 
 return in_array($command, $recoveryCommands, true)
     ? $factory->createRecovery(Environment::fromGlobals())
-    : $factory->create(Environment::fromGlobals(), true, true);
+    : $factory->create(Environment::fromGlobals());
