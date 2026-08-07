@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace Kumwe\CMS\Extension\Contribution;
 
 use InvalidArgumentException;
+use Kumwe\CMS\BusinessDefinition\Domain\DefinitionOwner;
+use Kumwe\CMS\BusinessDefinition\Domain\EntityTypeDefinition;
+use Kumwe\CMS\BusinessDefinition\Domain\FieldTypeDefinition;
 use Kumwe\CMS\Extension\Domain\ExtensionIdentifier;
 
 final readonly class ManifestContributionSet
@@ -26,12 +29,20 @@ final readonly class ManifestContributionSet
     /** @var array<string, AdministratorViewDefinition> */
     private array $views;
 
+    /** @var array<string, FieldTypeDefinition> */
+    private array $fieldTypes;
+
+    /** @var array<string, EntityTypeDefinition> */
+    private array $businessDefinitions;
+
     /**
      * @param iterable<CapabilityDefinition> $capabilities
      * @param iterable<AdministratorWorkspaceDefinition> $workspaces
      * @param iterable<AdministratorNavigationDefinition> $navigation
      * @param iterable<AdministratorRouteDefinition> $routes
      * @param iterable<AdministratorViewDefinition> $views
+     * @param iterable<FieldTypeDefinition> $fieldTypes
+     * @param iterable<EntityTypeDefinition> $businessDefinitions
      */
     public function __construct(
         public ContributionOwner $owner,
@@ -40,12 +51,16 @@ final readonly class ManifestContributionSet
         iterable $navigation = [],
         iterable $routes = [],
         iterable $views = [],
+        iterable $fieldTypes = [],
+        iterable $businessDefinitions = [],
     ) {
         $this->capabilities = $this->index($capabilities, 'capability');
         $this->workspaces = $this->index($workspaces, 'workspace');
         $this->navigation = $this->index($navigation, 'navigation');
         $this->routes = $this->index($routes, 'route');
         $this->views = $this->index($views, 'view');
+        $this->fieldTypes = $this->businessIndex($fieldTypes, 'field type');
+        $this->businessDefinitions = $this->businessIndex($businessDefinitions, 'business definition');
 
         foreach ($this->navigation as $item) {
             if (!isset($this->workspaces[$item->workspace])) {
@@ -63,19 +78,33 @@ final readonly class ManifestContributionSet
                 throw new InvalidArgumentException('Contributed administrator routes must reference a declared view.');
             }
         }
+        $businessOwner = $owner->identifier() === ContributionOwner::CORE
+            ? DefinitionOwner::core()
+            : DefinitionOwner::extension($owner->identifier());
+        foreach ($this->fieldTypes as $fieldType) {
+            $businessOwner->assertOwns($fieldType->id);
+        }
+        foreach ($this->businessDefinitions as $definition) {
+            $businessOwner->assertOwns($definition->handle);
+            if ($definition->owner != $businessOwner) {
+                throw new InvalidArgumentException('A business definition contribution has inconsistent ownership.');
+            }
+        }
     }
 
     /** @param array<mixed> $data */
     public static function fromManifest(ExtensionIdentifier $extension, array $data): self
     {
         $data = self::object($data, 'contributions');
-        self::knownKeys($data, ['version', 'capabilities', 'administrator'], 'contributions');
+        self::knownKeys($data, ['version', 'capabilities', 'administrator', 'business'], 'contributions');
         if (($data['version'] ?? null) !== self::SPI_VERSION) {
             throw new InvalidArgumentException('The extension contribution SPI version must be 1.');
         }
         $owner = ContributionOwner::extension($extension->value());
         $administrator = self::object($data['administrator'] ?? [], 'contributions.administrator');
         self::knownKeys($administrator, ['workspaces', 'navigation', 'routes', 'views'], 'administrator contributions');
+        $business = self::object($data['business'] ?? [], 'contributions.business');
+        self::knownKeys($business, ['field_types', 'definitions'], 'business contributions');
 
         $capabilities = array_map(static function (array $item) use ($owner): CapabilityDefinition {
             self::knownKeys($item, ['id', 'label', 'description'], 'capability contribution');
@@ -149,7 +178,32 @@ final readonly class ManifestContributionSet
             return $definition;
         }, self::objects($administrator['views'] ?? [], 'contributions.administrator.views'));
 
-        return new self($owner, $capabilities, $workspaces, $navigation, $routes, $views);
+        $businessOwner = DefinitionOwner::extension($extension->value());
+        $fieldTypes = array_map(static function (array $item) use ($businessOwner): FieldTypeDefinition {
+            $definition = FieldTypeDefinition::fromArray($item);
+            $businessOwner->assertOwns($definition->id);
+            return $definition;
+        }, self::objects($business['field_types'] ?? [], 'contributions.business.field_types'));
+        $businessDefinitions = array_map(static function (array $item) use (
+            $businessOwner,
+        ): EntityTypeDefinition {
+            $definition = EntityTypeDefinition::fromArray($item);
+            if ($definition->owner != $businessOwner) {
+                throw new InvalidArgumentException('A contributed business definition must belong to its package.');
+            }
+            return $definition;
+        }, self::objects($business['definitions'] ?? [], 'contributions.business.definitions'));
+
+        return new self(
+            $owner,
+            $capabilities,
+            $workspaces,
+            $navigation,
+            $routes,
+            $views,
+            $fieldTypes,
+            $businessDefinitions,
+        );
     }
 
     /** @param list<string> $permissions */
@@ -189,6 +243,18 @@ final readonly class ManifestContributionSet
         return array_values($this->views);
     }
 
+    /** @return list<FieldTypeDefinition> */
+    public function fieldTypes(): array
+    {
+        return array_values($this->fieldTypes);
+    }
+
+    /** @return list<EntityTypeDefinition> */
+    public function businessDefinitions(): array
+    {
+        return array_values($this->businessDefinitions);
+    }
+
     /**
      * @return array{
      *     version: int,
@@ -198,6 +264,10 @@ final readonly class ManifestContributionSet
      *         navigation: list<array<string, mixed>>,
      *         routes: list<array<string, mixed>>,
      *         views: list<array<string, mixed>>
+     *     },
+     *     business: array{
+     *         field_types: list<array<string, mixed>>,
+     *         definitions: list<array<string, mixed>>
      *     }
      * }
      */
@@ -227,6 +297,16 @@ final readonly class ManifestContributionSet
                     $this->views(),
                 ),
             ],
+            'business' => [
+                'field_types' => array_map(
+                    static fn (FieldTypeDefinition $item): array => $item->toArray(),
+                    $this->fieldTypes(),
+                ),
+                'definitions' => array_map(
+                    static fn (EntityTypeDefinition $item): array => $item->toArray(),
+                    $this->businessDefinitions(),
+                ),
+            ],
         ];
     }
 
@@ -241,6 +321,29 @@ final readonly class ManifestContributionSet
         foreach ($items as $item) {
             $identifier = $item->identifier();
             $this->owner->assertOwns($identifier, $kind);
+            if (isset($result[$identifier])) {
+                throw new InvalidArgumentException(sprintf(
+                    'Contribution %s %s is declared more than once.',
+                    $kind,
+                    $identifier,
+                ));
+            }
+            $result[$identifier] = $item;
+        }
+        ksort($result, SORT_STRING);
+        return $result;
+    }
+
+    /**
+     * @template T of FieldTypeDefinition|EntityTypeDefinition
+     * @param iterable<T> $items
+     * @return array<string, T>
+     */
+    private function businessIndex(iterable $items, string $kind): array
+    {
+        $result = [];
+        foreach ($items as $item) {
+            $identifier = $item instanceof FieldTypeDefinition ? $item->id : $item->handle;
             if (isset($result[$identifier])) {
                 throw new InvalidArgumentException(sprintf(
                     'Contribution %s %s is declared more than once.',
