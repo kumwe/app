@@ -113,7 +113,7 @@
   textarea { min-height: 7.5rem; resize: vertical; }
   input:hover, select:hover, textarea:hover { border-color: color-mix(in srgb, var(--kumwe-border-strong), var(--kumwe-accent) 28%); }
   input:focus, select:focus, textarea:focus { outline: 0; border-color: var(--kumwe-accent); box-shadow: var(--kumwe-focus); }
-  input[type="checkbox"], input[type="radio"] { width: 1.1rem; min-height: 1.1rem; accent-color: var(--kumwe-accent); }
+  input[type="checkbox"], input[type="radio"] { width: 1.5rem; height: 1.5rem; min-height: 1.5rem; accent-color: var(--kumwe-accent); }
   input[readonly], input:disabled, select:disabled, textarea:disabled { background: var(--kumwe-surface-subtle); color: var(--kumwe-text-muted); cursor: not-allowed; }
   label { display: grid; gap: .38rem; color: var(--kumwe-text); font-size: .88rem; font-weight: 650; }
   label small, .field-help { color: var(--kumwe-text-muted); font-size: .78rem; font-weight: 450; }
