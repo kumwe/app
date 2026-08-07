@@ -359,6 +359,7 @@ final readonly class DoctrineBusinessDefinitionRepository implements BusinessDef
             if (!is_array($change) || array_is_list($change)) {
                 throw new RuntimeException('Stored business compatibility change is invalid.');
             }
+            /** @var non-empty-array<string, mixed> $change */
             $classification = CompatibilityClassification::tryFrom($this->string($change, 'classification'))
                 ?? throw new RuntimeException('Stored compatibility classification is invalid.');
             $changes[] = new CompatibilityChange(

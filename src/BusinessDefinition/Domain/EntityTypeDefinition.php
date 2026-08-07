@@ -163,7 +163,7 @@ final readonly class EntityTypeDefinition
         if ($workflowDocument !== null && (!is_array($workflowDocument) || array_is_list($workflowDocument))) {
             throw new InvalidBusinessDefinition('A business workflow binding must be an object or null.');
         }
-        /** @var array<string, mixed>|null $workflowDocument */
+        /** @var non-empty-array<string, mixed>|null $workflowDocument */
         $metadata = $document['compatibility_metadata'] ?? [];
         if (!is_array($metadata) || ($metadata !== [] && array_is_list($metadata))) {
             throw new InvalidBusinessDefinition('Business compatibility metadata must be an object.');
