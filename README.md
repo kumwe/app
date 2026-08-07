@@ -107,6 +107,6 @@ Pull requests additionally build and start the complete CMS, migrate a clean dat
 
 ## License
 
-Copyright (C) 2022–2026 Llewellyn van der Merwe and contributors.
+Copyright (C) 2022–2026 Vast Development Method.
 
 Kumwe is licensed under the GNU General Public License version 2.0; see [LICENSE](LICENSE).
