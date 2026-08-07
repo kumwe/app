@@ -26,6 +26,7 @@ use Kumwe\CMS\Infrastructure\Persistence\Migration\CoreSchemaMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\ContentModelRuntimeMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\DatabaseDrivenPresentationMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\DynamicSiteContentMigration;
+use Kumwe\CMS\Infrastructure\Persistence\Migration\ExtensionContributionCatalogMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\DoctrineMigrationLock;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\DoctrineMigrationRepository;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\IdempotencyLeaseNullabilityMigration;
@@ -53,6 +54,7 @@ use ZipArchive;
 #[CoversClass(ContentModelRuntimeMigration::class)]
 #[CoversClass(DynamicSiteContentMigration::class)]
 #[CoversClass(DatabaseDrivenPresentationMigration::class)]
+#[CoversClass(ExtensionContributionCatalogMigration::class)]
 #[CoversClass(JobRecoveryMigration::class)]
 #[CoversClass(ApplicationAuthorizationMigration::class)]
 #[CoversClass(IdempotencyLeaseNullabilityMigration::class)]
@@ -241,6 +243,13 @@ final class MigrationIntegrationTest extends TestCase
             'SELECT version FROM %s WHERE version = ?',
             $tables->quoted('schema_migrations'),
         ), [DatabaseDrivenPresentationMigration::ID]));
+        self::assertSame(ExtensionContributionCatalogMigration::ID, $database->fetchOne(sprintf(
+            'SELECT version FROM %s WHERE version = ?',
+            $tables->quoted('schema_migrations'),
+        ), [ExtensionContributionCatalogMigration::ID]));
+        self::assertTrue($schema->tablesExist([
+            $tables->raw('extension_contribution_capabilities'),
+        ]));
         $navigationItems = $schema->introspectTable($tables->raw('navigation_items'));
         foreach (['target_type', 'content_id', 'target_url'] as $column) {
             self::assertTrue(
