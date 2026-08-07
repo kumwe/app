@@ -24,7 +24,7 @@ KUMWE_HTTP_PORT=9900
 
 Compose then publishes `http://localhost:9900`, injects the matching application base URL, and keeps the container listening internally on port 8080. `KUMWE_HTTP_BIND` controls the host interface and defaults to `127.0.0.1`; changing `APP_BASE_URL` alone does not publish a Docker port. Run `docker compose up -d --wait` after changing the listener so Compose recreates the app service and waits for HTTP readiness.
 
-Create the owner account from a protected password file:
+Create an administrator account from a protected password file:
 
 ```bash
 install -m 0600 /dev/null .admin-password
@@ -35,6 +35,8 @@ docker compose run --rm app php bin/kumwe user:create-admin \
   --password-file=/app/.admin-password
 rm .admin-password
 ```
+
+Repeat the same command with a different email address whenever another full administrator is required. The host-authorized command reuses the canonical `administrator` role, restores any missing global administrator grants, and refuses an existing email without changing that account's password. Run all pending migrations first; the password file must be absolute inside the container, readable by the application user, and inaccessible to group and other users.
 
 Open <http://localhost:8080/administrator>. The [getting-started guide](docs/getting-started.md) continues through the editable example homepage, typed menu links, user groups, and site configuration. A clean database ships with real published example content, navigation, settings, and read-only Kumwe logo media; the public presentation is therefore managed data from the first request rather than a hardcoded demonstration.
 
@@ -70,7 +72,7 @@ Every database engine runs the same application services and migrations. Choose 
 | Release ZIP | Hosts without server-side Composer | [Production install](docs/operations/install.md#release-zip) |
 | Git checkout and development Compose | Contributors and extension development | [Getting started](docs/getting-started.md) |
 
-All methods install the same application. Configuration is supplied through environment variables or protected secret files, migrations run through `bin/kumwe`, and the first administrator is created explicitly; public registration cannot claim a new installation.
+All methods install the same application. Configuration is supplied through environment variables or protected secret files, migrations run through `bin/kumwe`, and administrator accounts are created explicitly; public registration cannot claim a new installation.
 
 ## Documentation
 
