@@ -41,10 +41,12 @@ final readonly class ActionDefinition
     /** @param array<string, mixed> $document */
     public static function fromArray(array $document): self
     {
-        if (array_diff(array_keys($document), [
+        if (
+            array_diff(array_keys($document), [
             'handle', 'label', 'capability', 'bulk', 'administrator', 'portal', 'public', 'high_impact',
             'condition', 'transition',
-        ]) !== []) {
+            ]) !== []
+        ) {
             throw new InvalidBusinessDefinition('A business action contains an unknown property.');
         }
         $condition = $document['condition'] ?? null;

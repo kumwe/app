@@ -194,8 +194,10 @@ final readonly class BusinessDefinitionsHandler implements RequestHandlerInterfa
     private function import(ServerRequestInterface $request): string
     {
         $upload = $request->getUploadedFiles()['definition_file'] ?? null;
-        if (!$upload instanceof UploadedFileInterface || $upload->getError() !== UPLOAD_ERR_OK
-            || $upload->getSize() === null || $upload->getSize() > 1_048_576) {
+        if (
+            !$upload instanceof UploadedFileInterface || $upload->getError() !== UPLOAD_ERR_OK
+            || $upload->getSize() === null || $upload->getSize() > 1_048_576
+        ) {
             throw new \InvalidArgumentException('Select a business-definition JSON file no larger than 1 MiB.');
         }
         return (string) $upload->getStream();

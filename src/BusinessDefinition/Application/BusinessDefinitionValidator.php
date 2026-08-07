@@ -68,9 +68,11 @@ final readonly class BusinessDefinitionValidator
                 if ($relationship->kind === RelationshipKind::OwnedLineCollection) {
                     $ownershipEdges[$definition->handle][] = $target->handle;
                 }
-                if ($relationship->onDelete === DeleteBehavior::Cascade
+                if (
+                    $relationship->onDelete === DeleteBehavior::Cascade
                     && $relationship->kind !== RelationshipKind::OwnedLineCollection
-                    && $definition->owner != $target->owner) {
+                    && $definition->owner != $target->owner
+                ) {
                     throw new InvalidBusinessDefinition('Cascade deletion cannot cross definition ownership.');
                 }
             }
@@ -101,8 +103,10 @@ final readonly class BusinessDefinitionValidator
             throw new InvalidBusinessDefinition('Business field ' . $field . ' has an invalid unit.');
         }
         $target = $configuration['target'] ?? null;
-        if ($target !== null && (!is_string($target)
-            || preg_match('/^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)+$/D', $target) !== 1)) {
+        if (
+            $target !== null && (!is_string($target)
+            || preg_match('/^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)+$/D', $target) !== 1)
+        ) {
             throw new InvalidBusinessDefinition('Business field ' . $field . ' has an invalid entity target.');
         }
         $maxBytes = $configuration['max_bytes'] ?? null;

@@ -151,9 +151,11 @@ final readonly class BusinessDefinitionService
                     'Administrator-authored definitions must be saved as version-zero drafts.',
                 );
             }
-            if ($definition->siteIdentifier !== $context->site()->identifier()
+            if (
+                $definition->siteIdentifier !== $context->site()->identifier()
                 || $definition->owner->type !== DefinitionOwnerType::Site
-                || $definition->owner->identifier !== $context->site()->identifier()) {
+                || $definition->owner->identifier !== $context->site()->identifier()
+            ) {
                 throw new InvalidBusinessDefinition(
                     'An administrator may edit only definitions owned by the current site.',
                 );

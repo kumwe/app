@@ -27,6 +27,7 @@ use Kumwe\CMS\BusinessDefinition\Domain\EntityTypeDefinition;
 use Kumwe\CMS\BusinessDefinition\Domain\InvalidBusinessDefinition;
 use Kumwe\CMS\Infrastructure\Persistence\TableNames;
 use LogicException;
+use Ramsey\Uuid\Uuid;
 use RuntimeException;
 
 final readonly class DoctrineBusinessDefinitionRepository implements BusinessDefinitionRepository
@@ -54,12 +55,16 @@ final readonly class DoctrineBusinessDefinitionRepository implements BusinessDef
 
     public function draft(SiteContext $site, string $identifier): ?DefinitionDraft
     {
+        $identity = Uuid::isValid($identifier) ? '(h.id = ? OR h.handle = ?)' : 'h.handle = ?';
         $row = $this->database->fetchAssociative(sprintf(
             'SELECT d.* FROM %s d INNER JOIN %s h ON h.id = d.definition_id '
-            . 'WHERE h.site_identifier = ? AND (h.id = ? OR h.handle = ?)',
+            . 'WHERE h.site_identifier = ? AND %s',
             $this->tables->quoted('business_definition_drafts'),
             $this->tables->quoted('business_definitions'),
-        ), [$site->identifier(), $identifier, $identifier]);
+            $identity,
+        ), Uuid::isValid($identifier)
+            ? [$site->identifier(), $identifier, $identifier]
+            : [$site->identifier(), $identifier]);
         if ($row === false) {
             return null;
         }
@@ -76,14 +81,18 @@ final readonly class DoctrineBusinessDefinitionRepository implements BusinessDef
 
     public function published(SiteContext $site, string $identifier, ?int $version = null): ?DefinitionVersionRecord
     {
+        $identity = Uuid::isValid($identifier) ? '(h.id = ? OR h.handle = ?)' : 'h.handle = ?';
         $sql = sprintf(
             'SELECT v.* FROM %s v INNER JOIN %s h ON h.id = v.definition_id '
-            . 'WHERE h.site_identifier = ? AND (h.id = ? OR h.handle = ?) AND v.version = %s',
+            . 'WHERE h.site_identifier = ? AND %s AND v.version = %s',
             $this->tables->quoted('business_definition_versions'),
             $this->tables->quoted('business_definitions'),
+            $identity,
             $version === null ? 'h.published_version' : '?',
         );
-        $parameters = [$site->identifier(), $identifier, $identifier];
+        $parameters = Uuid::isValid($identifier)
+            ? [$site->identifier(), $identifier, $identifier]
+            : [$site->identifier(), $identifier];
         if ($version !== null) {
             $parameters[] = $version;
         }
@@ -94,12 +103,16 @@ final readonly class DoctrineBusinessDefinitionRepository implements BusinessDef
 
     public function history(SiteContext $site, string $identifier): array
     {
+        $identity = Uuid::isValid($identifier) ? '(h.id = ? OR h.handle = ?)' : 'h.handle = ?';
         $rows = $this->database->fetchAllAssociative(sprintf(
             'SELECT v.* FROM %s v INNER JOIN %s h ON h.id = v.definition_id '
-            . 'WHERE h.site_identifier = ? AND (h.id = ? OR h.handle = ?) ORDER BY v.version DESC',
+            . 'WHERE h.site_identifier = ? AND %s ORDER BY v.version DESC',
             $this->tables->quoted('business_definition_versions'),
             $this->tables->quoted('business_definitions'),
-        ), [$site->identifier(), $identifier, $identifier]);
+            $identity,
+        ), Uuid::isValid($identifier)
+            ? [$site->identifier(), $identifier, $identifier]
+            : [$site->identifier(), $identifier]);
 
         return array_map($this->mapVersion(...), $rows);
     }
@@ -202,8 +215,10 @@ final readonly class DoctrineBusinessDefinitionRepository implements BusinessDef
         int $expectedDraftRevision,
     ): DefinitionVersionRecord {
         $this->assertTransaction('Business-definition publication');
-        if (!hash_equals($definition->checksum(), $plan->toChecksum)
-            || $definition->definitionVersion !== $plan->toVersion) {
+        if (
+            !hash_equals($definition->checksum(), $plan->toChecksum)
+            || $definition->definitionVersion !== $plan->toVersion
+        ) {
             throw new InvalidBusinessDefinition('A publication does not match its compatibility plan.');
         }
         $affected = $this->database->executeStatement(sprintf(
@@ -266,11 +281,13 @@ final readonly class DoctrineBusinessDefinitionRepository implements BusinessDef
         DateTimeImmutable $now,
     ): DefinitionVersionRecord {
         $this->assertTransaction('Business-definition status mutation');
-        if (!in_array(
-            $status,
-            [DefinitionStatus::Superseded, DefinitionStatus::Deprecated, DefinitionStatus::Rejected],
-            true,
-        )) {
+        if (
+            !in_array(
+                $status,
+                [DefinitionStatus::Superseded, DefinitionStatus::Deprecated, DefinitionStatus::Rejected],
+                true,
+            )
+        ) {
             throw new InvalidBusinessDefinition('The requested definition status transition is unsupported.');
         }
         $entry = $this->entryRow($site, $identifier)
@@ -406,10 +423,14 @@ final readonly class DoctrineBusinessDefinitionRepository implements BusinessDef
     /** @return array<string, mixed>|null */
     private function entryRow(SiteContext $site, string $identifier): ?array
     {
+        $identity = Uuid::isValid($identifier) ? '(id = ? OR handle = ?)' : 'handle = ?';
         $row = $this->database->fetchAssociative(sprintf(
-            'SELECT * FROM %s WHERE site_identifier = ? AND (id = ? OR handle = ?)',
+            'SELECT * FROM %s WHERE site_identifier = ? AND %s',
             $this->tables->quoted('business_definitions'),
-        ), [$site->identifier(), $identifier, $identifier]);
+            $identity,
+        ), Uuid::isValid($identifier)
+            ? [$site->identifier(), $identifier, $identifier]
+            : [$site->identifier(), $identifier]);
 
         return $row === false ? null : $row;
     }
@@ -417,9 +438,11 @@ final readonly class DoctrineBusinessDefinitionRepository implements BusinessDef
     /** @param array<string, mixed> $row */
     private function assertSameOwner(EntityTypeDefinition $definition, array $row): void
     {
-        if ($this->string($row, 'id') !== $definition->id
+        if (
+            $this->string($row, 'id') !== $definition->id
             || $this->string($row, 'owner_type') !== $definition->owner->type->value
-            || $this->string($row, 'owner_identifier') !== $definition->owner->identifier) {
+            || $this->string($row, 'owner_identifier') !== $definition->owner->identifier
+        ) {
             throw new InvalidBusinessDefinition('A business-definition identity or owner cannot be changed.');
         }
     }

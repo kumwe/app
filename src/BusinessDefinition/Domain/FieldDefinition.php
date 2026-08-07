@@ -83,8 +83,10 @@ final readonly class FieldDefinition
         if (($precision === null) !== ($scale === null)) {
             throw new InvalidBusinessDefinition('Business field precision and scale must be declared together.');
         }
-        if ($precision !== null && $scale !== null
-            && ($precision < 1 || $precision > 65 || $scale < 0 || $scale > $precision)) {
+        if (
+            $precision !== null && $scale !== null
+            && ($precision < 1 || $precision > 65 || $scale < 0 || $scale > $precision)
+        ) {
             throw new InvalidBusinessDefinition('A business field precision or scale is invalid.');
         }
         if (in_array($type, ['core.decimal', 'core.money', 'core.quantity'], true) && $precision === null) {

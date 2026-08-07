@@ -63,11 +63,13 @@ final class BusinessDefinitionCompatibilityAnalyzer
                 );
             }
         }
-        if ($before->singularLabel !== $after->singularLabel
+        if (
+            $before->singularLabel !== $after->singularLabel
             || $before->pluralLabel !== $after->pluralLabel
             || $before->auditEnabled !== $after->auditEnabled
             || $before->revisionsEnabled !== $after->revisionsEnabled
-            || $before->compatibilityMetadata() !== $after->compatibilityMetadata()) {
+            || $before->compatibilityMetadata() !== $after->compatibilityMetadata()
+        ) {
             $changes[] = new CompatibilityChange(
                 '/definition/behavior',
                 CompatibilityClassification::BehaviorChanging,
@@ -156,10 +158,12 @@ final class BusinessDefinitionCompatibilityAnalyzer
                     CompatibilityClassification::DataMigrationRequired,
                     'Tighten persisted constraints for field ' . $handle . '.',
                 );
-            } elseif ($field->length !== $candidate->length
+            } elseif (
+                $field->length !== $candidate->length
                 || $field->precision !== $candidate->precision
                 || $field->scale !== $candidate->scale
-                || $field->unique !== $candidate->unique) {
+                || $field->unique !== $candidate->unique
+            ) {
                 $changes[] = new CompatibilityChange(
                     '/fields/' . $handle . '/constraints',
                     CompatibilityClassification::Additive,
@@ -190,12 +194,14 @@ final class BusinessDefinitionCompatibilityAnalyzer
                     'Change type-specific configuration for field ' . $handle . '.',
                 );
             }
-            if ($field->formula?->toArray() !== $candidate->formula?->toArray()
+            if (
+                $field->formula?->toArray() !== $candidate->formula?->toArray()
                 || $field->immutableAfterCreate !== $candidate->immutableAfterCreate
                 || $field->sensitivity !== $candidate->sensitivity
                 || $field->default !== $candidate->default
                 || $field->validators !== $candidate->validators
-                || $field->normalizers !== $candidate->normalizers) {
+                || $field->normalizers !== $candidate->normalizers
+            ) {
                 $changes[] = new CompatibilityChange(
                     '/fields/' . $handle . '/behavior',
                     CompatibilityClassification::BehaviorChanging,
@@ -204,11 +210,13 @@ final class BusinessDefinitionCompatibilityAnalyzer
             }
             $oldPresentation = $field->toArray();
             $newPresentation = $candidate->toArray();
-            foreach ([
+            foreach (
+                [
                 'handle', 'type', 'required', 'nullable', 'length', 'precision', 'scale', 'configuration',
                 'formula', 'immutable_after_create', 'sensitivity', 'default', 'validators', 'normalizers',
                 'unique', 'indexed',
-            ] as $handled) {
+                ] as $handled
+            ) {
                 unset($oldPresentation[$handled], $newPresentation[$handled]);
             }
             if ($oldPresentation !== $newPresentation) {

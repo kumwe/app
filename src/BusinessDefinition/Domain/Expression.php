@@ -123,11 +123,13 @@ final readonly class Expression
         if (!is_string($operator) || !isset(self::OPERATORS[$operator])) {
             throw new InvalidBusinessDefinition('A condition or formula operator is unsupported.');
         }
-        if (!is_string($type) || !in_array(
-            $type,
-            ['any', 'null', 'boolean', 'integer', 'decimal', 'string', 'date', 'time', 'datetime'],
-            true,
-        )) {
+        if (
+            !is_string($type) || !in_array(
+                $type,
+                ['any', 'null', 'boolean', 'integer', 'decimal', 'string', 'date', 'time', 'datetime'],
+                true,
+            )
+        ) {
             throw new InvalidBusinessDefinition('A condition or formula type is unsupported.');
         }
         ++$operations;
@@ -135,8 +137,10 @@ final readonly class Expression
             throw new InvalidBusinessDefinition('A condition or formula exceeds 128 operations.');
         }
         if ($operator === 'literal') {
-            if (array_diff(array_keys($document), ['op', 'type', 'value']) !== []
-                || !array_key_exists('value', $document)) {
+            if (
+                array_diff(array_keys($document), ['op', 'type', 'value']) !== []
+                || !array_key_exists('value', $document)
+            ) {
                 throw new InvalidBusinessDefinition('A literal expression has an invalid shape.');
             }
             $value = $document['value'];
@@ -175,8 +179,10 @@ final readonly class Expression
             $parsed[] = self::parse($argument, $depth + 1, $operations);
         }
         $scale = $document['scale'] ?? null;
-        if ($scale !== null && (!is_int($scale) || $scale < 0 || $scale > 30
-            || $operator !== 'divide' || $type !== 'decimal')) {
+        if (
+            $scale !== null && (!is_int($scale) || $scale < 0 || $scale > 30
+            || $operator !== 'divide' || $type !== 'decimal')
+        ) {
             throw new InvalidBusinessDefinition('Expression scale is supported only for decimal division.');
         }
         if ($operator === 'divide' && $type === 'decimal' && !is_int($scale)) {
@@ -206,12 +212,14 @@ final readonly class Expression
     /** @param list<Expression> $arguments */
     private static function assertOperatorType(string $operator, string $type, array $arguments): void
     {
-        if (in_array(
-            $operator,
-            ['eq', 'ne', 'lt', 'lte', 'gt', 'gte', 'and', 'or', 'not', 'is_null', 'in', 'contains'],
-            true,
-        )
-            && $type !== 'boolean') {
+        if (
+            in_array(
+                $operator,
+                ['eq', 'ne', 'lt', 'lte', 'gt', 'gte', 'and', 'or', 'not', 'is_null', 'in', 'contains'],
+                true,
+            )
+            && $type !== 'boolean'
+        ) {
             throw new InvalidBusinessDefinition(sprintf('Expression operator %s must produce boolean.', $operator));
         }
         if (in_array($operator, ['and', 'or', 'not'], true)) {
@@ -259,9 +267,11 @@ final readonly class Expression
             self::assertSameArgumentTypes($operator, $arguments);
         }
         if ($operator === 'if') {
-            if ($arguments[0]->type !== 'boolean'
+            if (
+                $arguments[0]->type !== 'boolean'
                 || !self::resultCompatible($type, $arguments[1]->type)
-                || !self::resultCompatible($type, $arguments[2]->type)) {
+                || !self::resultCompatible($type, $arguments[2]->type)
+            ) {
                 throw new InvalidBusinessDefinition('Expression operator if has incompatible argument types.');
             }
         }

@@ -124,8 +124,10 @@ final readonly class DoctrinePackageDefinitionSynchronizer implements PackageDef
                 $this->tables->quoted('business_field_types'),
             ), [$definition->id]);
             if ($existing !== false) {
-                if (($existing['owner_type'] ?? null) !== DefinitionOwnerType::Extension->value
-                    || ($existing['owner_identifier'] ?? null) !== $owner->identifier) {
+                if (
+                    ($existing['owner_type'] ?? null) !== DefinitionOwnerType::Extension->value
+                    || ($existing['owner_identifier'] ?? null) !== $owner->identifier
+                ) {
                     throw new InvalidBusinessDefinition('A package attempted to claim another owner\'s field type.');
                 }
                 if (!is_string($existing['checksum'] ?? null) || !hash_equals($existing['checksum'], $checksum)) {
@@ -230,8 +232,10 @@ final readonly class DoctrinePackageDefinitionSynchronizer implements PackageDef
             );
         }
         foreach ($this->repository->catalog($site) as $entry) {
-            if ($entry->owner != $owner || in_array($entry->handle, $declared, true)
-                || $entry->publishedVersion === null) {
+            if (
+                $entry->owner != $owner || in_array($entry->handle, $declared, true)
+                || $entry->publishedVersion === null
+            ) {
                 continue;
             }
             $this->repository->changeStatus(
@@ -284,8 +288,10 @@ final readonly class DoctrinePackageDefinitionSynchronizer implements PackageDef
         $handles = array_map(static fn (EntityTypeDefinition $item): string => $item->handle, $packageDefinitions);
         $graph = $packageDefinitions;
         foreach ($this->repository->catalog($site) as $entry) {
-            if ($entry->publishedVersion === null || $entry->owner == $packageOwner
-                || in_array($entry->handle, $handles, true)) {
+            if (
+                $entry->publishedVersion === null || $entry->owner == $packageOwner
+                || in_array($entry->handle, $handles, true)
+            ) {
                 continue;
             }
             $published = $this->repository->published($site, $entry->id);
