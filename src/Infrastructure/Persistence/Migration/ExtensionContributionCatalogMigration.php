@@ -44,7 +44,7 @@ final readonly class ExtensionContributionCatalogMigration implements Migration
         $table->addColumn('extension_id', Types::GUID);
         $table->addColumn('capability_code', Types::STRING, ['length' => 191]);
         $table->addColumn('description', Types::STRING, ['length' => 500]);
-        $table->setPrimaryKey(['capability_code']);
+        $table->addPrimaryKeyConstraint(['capability_code'], 'pk_extension_contribution_capability');
         $table->addIndex(['extension_id'], 'idx_extension_contribution_capability_owner');
         $table->addForeignKeyConstraint(
             $this->tables->raw('extensions'),

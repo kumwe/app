@@ -45,7 +45,7 @@ final readonly class AdministratorRouteDefinition implements ContributionDefinit
         ) {
             throw new InvalidArgumentException('A contributed route cannot mix safe and mutating methods.');
         }
-        /** @var non-empty-list<string> $values */
+        /** @var non-empty-list<non-falsy-string> $values */
         $this->methods = $values;
         $this->capability = Capability::fromString($capability)->value();
     }

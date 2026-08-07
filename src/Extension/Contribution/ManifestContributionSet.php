@@ -65,7 +65,7 @@ final readonly class ManifestContributionSet
         }
     }
 
-    /** @param array<mixed> $data */
+    /** @param array<string, mixed> $data */
     public static function fromManifest(ExtensionIdentifier $extension, array $data): self
     {
         self::knownKeys($data, ['version', 'capabilities', 'administrator'], 'contributions');
@@ -188,7 +188,18 @@ final readonly class ManifestContributionSet
         return array_values($this->views);
     }
 
-    /** @return array<string, mixed> */
+    /**
+     * @return array{
+     *     version: int,
+     *     capabilities: list<array<string, mixed>>,
+     *     administrator: array{
+     *         workspaces: list<array<string, mixed>>,
+     *         navigation: list<array<string, mixed>>,
+     *         routes: list<array<string, mixed>>,
+     *         views: list<array<string, mixed>>
+     *     }
+     * }
+     */
     public function toArray(): array
     {
         return [
@@ -252,7 +263,10 @@ final readonly class ManifestContributionSet
         return $value;
     }
 
-    /** @param mixed $value @return list<array<string, mixed>> */
+    /**
+     * @param mixed $value
+     * @return list<array<string, mixed>>
+     */
     private static function objects(mixed $value, string $field): array
     {
         if (!is_array($value) || !array_is_list($value) || count($value) > 128) {
@@ -269,7 +283,10 @@ final readonly class ManifestContributionSet
         return $result;
     }
 
-    /** @param array<string, mixed> $values @param list<string> $allowed */
+    /**
+     * @param array<string, mixed> $values
+     * @param list<string> $allowed
+     */
     private static function knownKeys(array $values, array $allowed, string $field): void
     {
         $unknown = array_diff(array_keys($values), $allowed);

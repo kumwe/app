@@ -82,7 +82,10 @@ final readonly class AdministratorRenderer
         }
     }
 
-    /** @param array<string, mixed> $data @return array<string, mixed> */
+    /**
+     * @param array<string, mixed> $data
+     * @return array<string, mixed>
+     */
     private function sharedData(
         array $data,
         ?AdministratorNavigationRegistry $navigationRegistry = null,
