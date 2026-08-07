@@ -25,7 +25,7 @@
         {% for entry in entries %}<tr class="{{ entry.deleted_at ? 'muted' : '' }}">
           <td><span class="content-title"><strong>{{ entry.title }}</strong><span>Version {{ entry.version }}{% if entry.deleted_at %} · Trashed{% endif %}</span></span></td>
           <td><span class="status status-{{ entry.deleted_at ? 'trashed' : entry.status }}">{{ entry.deleted_at ? 'Trashed' : entry.status|replace({'_': ' '})|title }}</span></td>
-          <td>{% if entry.status == 'published' and not entry.deleted_at %}<a href="/pages/{{ entry.slug }}" target="_blank" rel="noopener">/pages/{{ entry.slug }}</a>{% else %}<span class="text-muted">/pages/{{ entry.slug }}</span>{% endif %}</td>
+          <td>{% if entry.public_url %}<a href="{{ entry.public_url }}" target="_blank" rel="noopener">{{ entry.public_url }}</a>{% else %}<span class="text-muted">/{{ entry.slug }} · not public</span>{% endif %}</td>
           <td class="nowrap"><time datetime="{{ entry.updated_at }}">{{ entry.updated_at|date('M j, Y H:i') }}</time></td>
           <td class="actions">
             {% if not entry.deleted_at %}

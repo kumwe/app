@@ -68,6 +68,17 @@ final class NavigationApiRequest
     }
 
     /** @param array<string, mixed> $body */
+    public static function targetType(array $body): string
+    {
+        $targetType = self::string($body, 'target_type');
+        if (!in_array($targetType, ['content', 'anchor', 'url'], true)) {
+            throw new InvalidArgumentException('The target_type field must be content, anchor or url.');
+        }
+
+        return $targetType;
+    }
+
+    /** @param array<string, mixed> $body */
     public static function integer(array $body, string $name, int $default = 0): int
     {
         $value = $body[$name] ?? $default;

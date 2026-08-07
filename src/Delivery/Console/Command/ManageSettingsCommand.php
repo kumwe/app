@@ -34,7 +34,7 @@ final readonly class ManageSettingsCommand implements Command
             if ($action === 'update') {
                 $this->settings->updateAll($context, [
                     'site_name' => CommandInput::required($options, 'site-name'),
-                    'homepage_slug' => CommandInput::required($options, 'homepage-slug'),
+                    'homepage_content_id' => CommandInput::required($options, 'homepage-content'),
                     'default_locale' => CommandInput::required($options, 'locale'),
                     'timezone' => CommandInput::required($options, 'timezone'),
                     'search_indexing_enabled' => ($options['search-indexing-enabled'] ?? '1') === '1',

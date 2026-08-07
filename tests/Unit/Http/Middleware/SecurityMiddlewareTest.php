@@ -88,6 +88,24 @@ final class SecurityMiddlewareTest extends TestCase
         self::assertNotSame('', $response->getHeaderLine('Strict-Transport-Security'));
     }
 
+    public function testSvgMediaReceivesAnIsolatedContentSecurityPolicy(): void
+    {
+        $handler = new class implements RequestHandlerInterface {
+            public function handle(ServerRequestInterface $request): ResponseInterface
+            {
+                return new TextResponse('<svg/>', 200, ['Content-Type' => 'image/svg+xml']);
+            }
+        };
+
+        $response = (new SecurityHeadersMiddleware(true))->process($this->request(), $handler);
+
+        self::assertSame(
+            "default-src 'none'; style-src 'unsafe-inline'; sandbox",
+            $response->getHeaderLine('Content-Security-Policy'),
+        );
+        self::assertSame('same-origin', $response->getHeaderLine('Cross-Origin-Resource-Policy'));
+    }
+
     private function request(): ServerRequestInterface
     {
         return (new ServerRequestFactory())->createServerRequest('GET', 'https://kumwe.test/');

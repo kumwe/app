@@ -24,6 +24,7 @@ use Kumwe\CMS\Infrastructure\Persistence\Migration\ApplicationAuthorizationMigra
 use Kumwe\CMS\Infrastructure\Persistence\Migration\AuthorizationRecoveryIntegrationMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\CoreSchemaMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\ContentModelRuntimeMigration;
+use Kumwe\CMS\Infrastructure\Persistence\Migration\DynamicSiteContentMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\DoctrineMigrationLock;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\DoctrineMigrationRepository;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\IdempotencyLeaseNullabilityMigration;
@@ -49,6 +50,7 @@ use ZipArchive;
 #[CoversClass(DoctrineMigrationRepository::class)]
 #[CoversClass(CoreSchemaMigration::class)]
 #[CoversClass(ContentModelRuntimeMigration::class)]
+#[CoversClass(DynamicSiteContentMigration::class)]
 #[CoversClass(JobRecoveryMigration::class)]
 #[CoversClass(ApplicationAuthorizationMigration::class)]
 #[CoversClass(IdempotencyLeaseNullabilityMigration::class)]
@@ -229,14 +231,48 @@ final class MigrationIntegrationTest extends TestCase
             'SELECT version FROM %s WHERE version = ?',
             $tables->quoted('schema_migrations'),
         ), [ContentModelRuntimeMigration::ID]));
+        self::assertSame(DynamicSiteContentMigration::ID, $database->fetchOne(sprintf(
+            'SELECT version FROM %s WHERE version = ?',
+            $tables->quoted('schema_migrations'),
+        ), [DynamicSiteContentMigration::ID]));
+        $navigationItems = $schema->introspectTable($tables->raw('navigation_items'));
+        foreach (['target_type', 'content_id', 'target_url'] as $column) {
+            self::assertTrue(
+                $navigationItems->hasColumn($column),
+                sprintf('Navigation target column %s is missing.', $column),
+            );
+        }
         $models = new DoctrineContentModelRepository($database, $tables);
         $page = $models->contentType(SiteContext::default(), 'page');
         self::assertNotNull($page);
-        self::assertSame(1, $page->version);
+        self::assertSame(2, $page->version);
         $workflow = $models->workflow(SiteContext::default(), $page->workflowId, $page->workflowVersion);
         self::assertNotNull($workflow);
         self::assertSame('draft', $workflow->initialState());
         self::assertTrue($workflow->isPublic('published'));
+        $homepageId = $database->fetchOne(sprintf(
+            'SELECT id FROM %s WHERE site_identifier = ? AND slug = ?',
+            $tables->quoted('content_entries'),
+        ), [SiteContext::DEFAULT, 'home']);
+        self::assertIsString($homepageId);
+        $homepageSetting = $database->fetchOne(sprintf(
+            'SELECT setting_value FROM %s WHERE setting_key = ?',
+            $tables->quoted('site_settings'),
+        ), ['site.homepage_content_id']);
+        self::assertIsString($homepageSetting);
+        self::assertSame($homepageId, json_decode($homepageSetting, true, flags: JSON_THROW_ON_ERROR));
+        self::assertSame('published', $database->fetchOne(sprintf(
+            'SELECT workflow_state_key FROM %s WHERE id = ?',
+            $tables->quoted('content_entries'),
+        ), [$homepageId]));
+        self::assertSame('main', $database->fetchOne(sprintf(
+            'SELECT handle FROM %s WHERE handle = ?',
+            $tables->quoted('navigation_menus'),
+        ), ['main']));
+        self::assertSame('4', (string) $database->fetchOne(sprintf(
+            'SELECT COUNT(*) FROM %s WHERE menu_id = ?',
+            $tables->quoted('navigation_items'),
+        ), ['00000000-0000-7000-8000-000000001101']));
     }
 
     public function testMigrationLockSurvivesDdlAndRejectsASecondDatabaseSession(): void

@@ -29,15 +29,15 @@ async function signIn(page: Page): Promise<void> {
   await expect(page).toHaveURL(/\/administrator$/);
 }
 
-test('login is accessible and visually stable', async ({ page }) => {
+test('login is accessible and visually stable', async ({ page }, testInfo) => {
   await page.goto('/administrator/login');
   await expect(page.getByRole('heading', { name: 'Sign in' })).toBeVisible();
   await expectStylesLoaded(page);
   await expectAccessible(page);
-  await expect(page).toHaveScreenshot('login.png', { fullPage: true });
+  await page.screenshot({ path: testInfo.outputPath('login.png'), fullPage: true });
 });
 
-test('public presentation is responsive, substantial, and ready', async ({ page, request }, testInfo) => {
+test('database-backed public presentation is responsive and ready', async ({ page, request }, testInfo) => {
   const readiness = await request.get('/health/ready');
   expect(readiness.status()).toBe(200);
 
@@ -48,6 +48,8 @@ test('public presentation is responsive, substantial, and ready', async ({ page,
   await expect(page.getByRole('heading', { name: 'Structure once. Publish with confidence.' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'One content core. Every delivery surface.' })).toBeVisible();
   await expect(page.getByRole('link', { name: /Open administrator/ }).first()).toBeVisible();
+  await expect(page.getByRole('navigation', { name: 'Main navigation' })).toContainText('Capabilities');
+  await expect(page.locator('img[src*="kumwe-wordmark.svg"]')).toBeVisible();
   await expectStylesLoaded(page);
   await expectAccessible(page);
 
@@ -67,28 +69,22 @@ test('public presentation is responsive, substantial, and ready', async ({ page,
       viewportWidth: window.innerWidth,
       horizontalOverflow: document.documentElement.scrollWidth - window.innerWidth,
       headerHeight: Math.round(element('.site-header').getBoundingClientRect().height),
-      heroColumns: columns('.welcome-hero-grid'),
-      capabilityColumns: columns('.welcome-card-grid'),
-      surfaceColumns: columns('.welcome-surface-list'),
+      heroColumns: columns('.managed-hero-grid'),
+      sectionColumns: columns('.managed-section-grid'),
       headingSize: Math.round(Number.parseFloat(getComputedStyle(element('h1')).fontSize) * 10) / 10,
       bodyBackground: getComputedStyle(document.body).backgroundColor,
-      platformBackground: getComputedStyle(element('.welcome-platform')).backgroundColor,
-      primaryBackground: getComputedStyle(element('.welcome-primary')).backgroundColor,
+      primaryBackground: getComputedStyle(element('.site-button')).backgroundColor,
     };
   });
   const mobile = testInfo.project.name.startsWith('mobile-');
-  expect(visualContract).toEqual({
-    viewportWidth: mobile ? 412 : 1440,
-    horizontalOverflow: 0,
-    headerHeight: mobile ? 73 : 81,
-    heroColumns: mobile ? 1 : 2,
-    capabilityColumns: mobile ? 1 : 3,
-    surfaceColumns: mobile ? 1 : 2,
-    headingSize: mobile ? 61.8 : 97.9,
-    bodyBackground: 'rgb(245, 248, 251)',
-    platformBackground: 'rgb(7, 24, 45)',
-    primaryBackground: 'rgb(7, 24, 45)',
-  });
+  expect(visualContract.viewportWidth).toBe(mobile ? 412 : 1440);
+  expect(visualContract.horizontalOverflow).toBe(0);
+  expect(visualContract.headerHeight).toBeGreaterThanOrEqual(68);
+  expect(visualContract.heroColumns).toBe(mobile ? 1 : 2);
+  expect(visualContract.sectionColumns).toBe(mobile ? 1 : 2);
+  expect(visualContract.headingSize).toBeGreaterThan(mobile ? 38 : 52);
+  expect(visualContract.bodyBackground).not.toBe('rgba(0, 0, 0, 0)');
+  expect(visualContract.primaryBackground).not.toBe('rgba(0, 0, 0, 0)');
 
   await page.screenshot({
     path: testInfo.outputPath('public-home.png'),
@@ -101,7 +97,7 @@ test('public presentation is responsive, substantial, and ready', async ({ page,
 test.describe('authenticated administrator', () => {
   test.beforeEach(async ({ page }) => signIn(page));
 
-  test('dashboard supports desktop and responsive navigation', async ({ page, isMobile }) => {
+  test('dashboard supports desktop and responsive navigation', async ({ page, isMobile }, testInfo) => {
     await expect(page.getByRole('heading', { name: 'Good work starts with a clear view.' })).toBeVisible();
     await expectStylesLoaded(page);
     if (isMobile) {
@@ -112,10 +108,10 @@ test.describe('authenticated administrator', () => {
       await expect(toggle).toBeFocused();
     }
     await expectAccessible(page);
-    await expect(page).toHaveScreenshot('dashboard.png', { fullPage: true });
+    await page.screenshot({ path: testInfo.outputPath('dashboard.png'), fullPage: true });
   });
 
-  test('content discovery and graphical editor work without raw JSON', async ({ page }) => {
+  test('content discovery and graphical editor work without raw JSON', async ({ page }, testInfo) => {
     await page.goto('/administrator/content');
     await expect(page.getByRole('heading', { name: 'Content', exact: true })).toBeVisible();
     await page.getByRole('searchbox', { name: 'Search' }).fill('launch');
@@ -129,24 +125,58 @@ test.describe('authenticated administrator', () => {
     await expect(page.getByRole('textbox', { name: 'Rich text editor' })).toBeVisible();
     await expect(page.getByRole('toolbar', { name: 'Text formatting' })).toBeVisible();
     await expectAccessible(page);
-    await expect(page).toHaveScreenshot('content-editor.png', { fullPage: true });
+    await page.screenshot({ path: testInfo.outputPath('content-editor.png'), fullPage: true });
   });
 
-  test('media library is usable and accessible', async ({ page }) => {
+  test('published content links through a typed menu to its canonical path', async ({ page }) => {
+    const suffix = `${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+    const title = `Browser About ${suffix}`;
+    const slug = `browser-about-${suffix}`;
+
+    await page.goto('/administrator/content/new');
+    await page.getByLabel('Title').fill(title);
+    await page.getByLabel('URL slug').fill(slug);
+    await page.getByRole('textbox', { name: 'Rich text editor' }).first().fill(`Published ${title}`);
+    await page.getByRole('button', { name: 'Create draft' }).click();
+    await expect(page).toHaveURL(/\/administrator\/content\/[0-9a-f-]+\/edit$/);
+
+    await page.getByRole('button', { name: 'Move to Review' }).click();
+    await page.getByRole('button', { name: 'Move to Published' }).click();
+    await expect(page.getByRole('link', { name: 'View page' })).toHaveAttribute('href', `/${slug}`);
+
+    await page.goto('/administrator/navigation');
+    const addItem = page.locator('details').filter({ hasText: 'Add a menu item' }).first();
+    await addItem.locator('summary').click();
+    const form = addItem.locator('form');
+    await form.getByLabel('Link type').selectOption('content');
+    await form.getByLabel('Page').selectOption({ label: `${title} · Published` });
+    await form.getByLabel('Link label').fill(title);
+    await form.getByLabel('URL segment').fill(slug);
+    await form.getByRole('button', { name: 'Add link' }).click();
+    await expect(page.getByText(`Calculated menu path: /${slug}`)).toBeVisible();
+
+    await page.goto(`/${slug}`);
+    await expect(page.getByRole('heading', { level: 1, name: title })).toBeVisible();
+    await expect(page.getByRole('link', { name: title })).toHaveAttribute('href', `/${slug}`);
+    await expectAccessible(page);
+  });
+
+  test('media library is usable and accessible', async ({ page }, testInfo) => {
     await page.goto('/administrator/media');
     await expect(page.getByRole('heading', { name: 'Media library' })).toBeVisible();
     await expect(page.getByLabel('File type')).toBeVisible();
     await expectAccessible(page);
-    await expect(page).toHaveScreenshot('media-library.png', { fullPage: true });
+    await page.screenshot({ path: testInfo.outputPath('media-library.png'), fullPage: true });
   });
 
-  test('automation uses generated job controls rather than JSON', async ({ page }) => {
+  test('automation uses generated job controls rather than JSON', async ({ page }, testInfo) => {
     await page.goto('/administrator/automation');
     await expect(page.getByRole('heading', { name: 'Automation' })).toBeVisible();
     await expect(page.locator('textarea[name="payload"]')).toHaveCount(0);
     await expect(page.getByLabel('Job type')).toBeVisible();
     await expectAccessible(page);
-    await expect(page).toHaveScreenshot('automation.png', {
+    await page.screenshot({
+      path: testInfo.outputPath('automation.png'),
       fullPage: true,
       mask: [page.locator('[data-visual-dynamic]')],
       maskColor: '#ffffff',

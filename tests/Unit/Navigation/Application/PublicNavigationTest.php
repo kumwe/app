@@ -33,9 +33,78 @@ final class PublicNavigationTest extends TestCase
             $menu,
         ]);
         $repository->method('items')->with('main-menu')->willReturn([
-            new MenuItemRecord('about', 'main-menu', null, 'About', 'about', '/about', 20, 1, $time, $time),
-            new MenuItemRecord('team', 'main-menu', 'about', 'Team', 'team', '/about/team', 10, 1, $time, $time),
-            new MenuItemRecord('home', 'main-menu', null, 'Home', 'home', '/home', 10, 1, $time, $time),
+            new MenuItemRecord(
+                'about',
+                'main-menu',
+                null,
+                'About',
+                'about',
+                '/about',
+                20,
+                1,
+                $time,
+                $time,
+                'content',
+                'about-content',
+            ),
+            new MenuItemRecord(
+                'team',
+                'main-menu',
+                'about',
+                'Team',
+                'team',
+                '/about/team',
+                10,
+                1,
+                $time,
+                $time,
+                'content',
+                'team-content',
+            ),
+            new MenuItemRecord(
+                'home',
+                'main-menu',
+                null,
+                'Home',
+                'home',
+                '/home',
+                10,
+                1,
+                $time,
+                $time,
+                'content',
+                'home-content',
+            ),
+            new MenuItemRecord(
+                'platform',
+                'main-menu',
+                null,
+                'Platform',
+                'platform',
+                '/platform',
+                30,
+                1,
+                $time,
+                $time,
+                'anchor',
+                'home-content',
+                '#platform',
+            ),
+            new MenuItemRecord(
+                'administrator',
+                'main-menu',
+                null,
+                'Administrator',
+                'administrator',
+                '/administrator',
+                40,
+                1,
+                $time,
+                $time,
+                'url',
+                null,
+                '/administrator',
+            ),
         ]);
 
         $ownership = new class implements ResourceSiteOwnership {
@@ -46,10 +115,19 @@ final class PublicNavigationTest extends TestCase
                     : SiteContext::default();
             }
         };
-        $items = (new PublicNavigation($repository, $ownership, SiteContext::default()))->items();
+        $navigation = new PublicNavigation($repository, $ownership, SiteContext::default());
+        $items = $navigation->items('home-content');
 
-        self::assertSame(['Home', 'About'], array_column($items, 'title'));
+        self::assertSame(['Home', 'About', 'Platform', 'Administrator'], array_column($items, 'title'));
+        self::assertSame('/', $items[0]['href']);
         self::assertSame('Team', $items[1]['children'][0]['title']);
-        self::assertSame('/pages/team', $items[1]['children'][0]['href']);
+        self::assertSame('/about/team', $items[1]['children'][0]['href']);
+        self::assertSame('/about/team', $items[1]['children'][0]['path']);
+        self::assertSame('content', $items[1]['children'][0]['target_type']);
+        self::assertSame('team-content', $items[1]['children'][0]['content_id']);
+        self::assertSame('team-content', $navigation->contentIdForPath('/about/team/'));
+        self::assertSame('/about/team', $navigation->pathForContent('team-content'));
+        self::assertSame('/#platform', $items[2]['href']);
+        self::assertSame('/administrator', $items[3]['href']);
     }
 }

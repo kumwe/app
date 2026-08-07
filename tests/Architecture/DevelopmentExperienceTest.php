@@ -57,7 +57,7 @@ final class DevelopmentExperienceTest extends TestCase
                 'composer install --no-interaction --prefer-dist',
                 'docker compose up -d --wait --wait-timeout 180',
                 'http://127.0.0.1:9900/health/ready',
-                '/assets/default-site.css',
+                'kumwe-wordmark.svg',
                 'sleep 35',
             ] as $contract
         ) {
@@ -70,33 +70,47 @@ final class DevelopmentExperienceTest extends TestCase
         );
     }
 
-    public function testFirstRunPresentationIsACompleteResponsiveSurface(): void
+    public function testFreshPresentationIsSeededManagedContent(): void
     {
-        $template = $this->contents('templates/site/home.twig');
-        $stylesheet = $this->contents('public/assets/default-site.css');
+        $migration = $this->contents('src/Infrastructure/Persistence/Migration/DynamicSiteContentMigration.php');
+        $template = $this->contents('templates/site/page.twig');
+        $stylesheet = $this->contents('assets/site/styles.css');
 
         foreach (
             [
                 'Content systems',
-                'Editor-first administration',
-                'Governed publishing',
                 'One content core. Every delivery surface.',
-                '/assets/default-site.css',
+                'site.homepage_content_id',
+                'kumwe-wordmark.svg',
             ] as $contract
         ) {
-            self::assertStringContainsString($contract, $template);
+            self::assertStringContainsString($contract, $migration);
         }
 
         foreach (
             [
-                '.welcome-hero-grid',
-                '.welcome-workspace',
-                '.welcome-card-grid',
-                '.welcome-platform-grid',
-                '@media (max-width: 46rem)',
+                'entry.data',
+                'page.capabilities.body_html',
+                'page.platform.body_html',
             ] as $contract
         ) {
-            self::assertStringContainsString($contract, $stylesheet);
+            self::assertStringContainsString($contract, $template);
+        }
+        self::assertStringContainsString('.managed-hero-grid', $stylesheet);
+        self::assertStringContainsString('@media (max-width: 46rem)', $stylesheet);
+        self::assertFileExists(
+            $this->root . '/resources/media/default/00000000-0000-7000-8000-000000000902.svg',
+        );
+        foreach ([
+            'resources/media/default/00000000-0000-7000-8000-000000000901.svg',
+            'resources/media/default/00000000-0000-7000-8000-000000000902.svg',
+        ] as $asset) {
+            $svg = $this->contents($asset);
+            self::assertStringStartsWith('<svg ', $svg);
+            self::assertDoesNotMatchRegularExpression(
+                '/<(?:script|foreignObject)|\bon[a-z]+\s*=|\b(?:href|xlink:href)\s*=/i',
+                $svg,
+            );
         }
     }
 

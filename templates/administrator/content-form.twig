@@ -5,7 +5,7 @@
 {% block content %}
   <header class="page-heading">
     <div><p class="eyebrow">{{ content_type.name }}</p><h1>{{ entry ? entry.title : 'Create content' }}</h1><p>{{ entry ? 'Update fields, publication timing and workflow state.' : 'Complete the fields below; Kumwe validates them against the content model.' }}</p></div>
-    <div class="page-actions"><a class="button" href="/administrator/content">Back to content</a>{% if entry and entry.status == 'published' %}<a class="button" href="/pages/{{ entry.slug }}" target="_blank" rel="noopener">View page</a>{% endif %}</div>
+    <div class="page-actions"><a class="button" href="/administrator/content">Back to content</a>{% if entry and entry.public_url %}<a class="button" href="{{ entry.public_url }}" target="_blank" rel="noopener">View page</a>{% endif %}</div>
   </header>
 
   {% if not entry and content_types|length > 1 %}
@@ -19,7 +19,7 @@
       {% if entry %}<input type="hidden" name="version" value="{{ entry.version }}">{% endif %}
       <div class="two-column">
         <label>Title<input type="text" name="title" maxlength="255" value="{{ entry.title|default('') }}" required data-title-input></label>
-        <label>URL slug<span class="input-prefix"><span>/pages/</span><input type="text" name="slug" maxlength="160" pattern="[a-z0-9]+(-[a-z0-9]+)*" value="{{ entry.slug|default('') }}" required data-slug-input></span></label>
+        <label>URL slug<small>Used as /{{ entry.slug|default('your-page') }} until a menu path becomes canonical.</small><span class="input-prefix"><span>/</span><input type="text" name="slug" maxlength="160" pattern="[a-z0-9]+(-[a-z0-9]+)*" value="{{ entry.slug|default('') }}" required data-slug-input></span></label>
       </div>
       <kumwe-schema-form class="stack">{{ field_renderer.render(fields) }}</kumwe-schema-form>
       <fieldset class="field-group stack"><legend>Publication timing</legend><p class="field-help">Leave these fields empty to publish immediately when the workflow reaches a public state.</p><div class="two-column"><label>Publish at<input type="datetime-local" name="publish_at" value="{{ entry.publication_window.starts_at|default('') ? entry.publication_window.starts_at|date('Y-m-d\\TH:i') : '' }}"></label><label>Unpublish at<input type="datetime-local" name="unpublish_at" value="{{ entry.publication_window.ends_at|default('') ? entry.publication_window.ends_at|date('Y-m-d\\TH:i') : '' }}"></label></div></fieldset>

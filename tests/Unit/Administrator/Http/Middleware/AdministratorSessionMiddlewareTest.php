@@ -6,6 +6,8 @@ namespace Kumwe\CMS\Tests\Unit\Administrator\Http\Middleware;
 
 use DateTimeImmutable;
 use Kumwe\CMS\Administrator\Http\Middleware\AdministratorSessionMiddleware;
+use Kumwe\CMS\Application\Authorization\ExecutionContext;
+use Kumwe\CMS\Application\Authorization\SiteContext;
 use Kumwe\CMS\Identity\Application\Administration\AdministratorSession;
 use Kumwe\CMS\Identity\Application\Administration\AdministratorSessionStore;
 use Kumwe\CMS\Tests\Support\AuthorizationContext;
@@ -79,5 +81,42 @@ final class AdministratorSessionMiddlewareTest extends TestCase
         });
 
         self::assertSame(204, $response->getStatusCode());
+    }
+
+    public function testConfiguredPublicSiteIsAttachedToAdministratorRequests(): void
+    {
+        $principal = AuthorizationContext::principalFromGrantRows([[
+            'capability' => 'administrator.access',
+            'scope_type' => 'administrator_session',
+            'scope_identifier' => self::SESSION,
+        ]]);
+        $sessions = $this->createStub(AdministratorSessionStore::class);
+        $sessions->method('find')->willReturn(new AdministratorSession(
+            self::SESSION,
+            $principal,
+            'csrf-token',
+            new DateTimeImmutable('+1 hour'),
+        ));
+        $request = (new ServerRequestFactory())
+            ->createServerRequest('GET', 'https://kumwe.test/administrator')
+            ->withCookieParams([AdministratorSessionMiddleware::COOKIE_NAME => 'opaque-session-token']);
+
+        $response = (new AdministratorSessionMiddleware(
+            $sessions,
+            AuthorizationContext::gateway(ownership: AuthorizationContext::ownership('corporate')),
+            SiteContext::fromString('corporate'),
+        ))->process($request, new class implements RequestHandlerInterface {
+            public function handle(ServerRequestInterface $request): ResponseInterface
+            {
+                $context = $request->getAttribute(ExecutionContext::REQUEST_ATTRIBUTE);
+
+                return new TextResponse(
+                    $context instanceof ExecutionContext ? $context->site()->identifier() : 'missing',
+                );
+            }
+        });
+
+        self::assertSame(200, $response->getStatusCode());
+        self::assertSame('corporate', (string) $response->getBody());
     }
 }

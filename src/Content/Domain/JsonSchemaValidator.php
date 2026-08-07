@@ -13,7 +13,7 @@ final class JsonSchemaValidator
     private const KEYWORDS = [
         'type', 'title', 'description', 'default', 'properties', 'required', 'additionalProperties',
         'items', 'enum', 'const', 'minLength', 'maxLength', 'minimum', 'maximum', 'minItems', 'maxItems',
-        'pattern', 'format', 'anyOf', 'oneOf', 'allOf',
+        'pattern', 'format', 'anyOf', 'oneOf', 'allOf', 'x-kumwe-field',
     ];
 
     /** @param array<string, mixed> $schema */
@@ -181,9 +181,12 @@ final class JsonSchemaValidator
         ) {
             $violations[] = $path . '.pattern must be a valid regular expression';
         }
-        $formats = ['date-time', 'date', 'email', 'uri', 'uuid'];
+        $formats = ['date-time', 'date', 'email', 'uri', 'uri-reference', 'uuid'];
         if (isset($schema['format']) && !in_array($schema['format'], $formats, true)) {
             $violations[] = $path . '.format is unsupported';
+        }
+        if (isset($schema['x-kumwe-field']) && $schema['x-kumwe-field'] !== 'media') {
+            $violations[] = $path . '.x-kumwe-field is unsupported';
         }
     }
 
@@ -318,11 +321,38 @@ final class JsonSchemaValidator
             'date' => \DateTimeImmutable::createFromFormat('!Y-m-d', $value) !== false,
             'email' => filter_var($value, FILTER_VALIDATE_EMAIL) !== false,
             'uri' => filter_var($value, FILTER_VALIDATE_URL) !== false,
+            'uri-reference' => $this->isUriReference($value),
             'uuid' => preg_match(
                 '/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iD',
                 $value,
             ) === 1,
             default => false,
         };
+    }
+
+    private function isUriReference(string $value): bool
+    {
+        if (filter_var($value, FILTER_VALIDATE_URL) !== false) {
+            return true;
+        }
+        if (preg_match('/^#[A-Za-z][A-Za-z0-9._:-]{0,190}$/D', $value) === 1) {
+            return true;
+        }
+        if (
+            $value === ''
+            || preg_match('/[\x00-\x20\x7f]/', $value) === 1
+            || str_contains($value, '\\')
+            || !str_starts_with($value, '/')
+            || str_starts_with($value, '//')
+        ) {
+            return false;
+        }
+        $path = parse_url($value, PHP_URL_PATH);
+        $decoded = is_string($path) ? rawurldecode($path) : null;
+
+        return is_string($decoded)
+            && !str_contains($decoded, '\\')
+            && !str_contains($decoded, '//')
+            && preg_match('#(?:^|/)\.{1,2}(?:/|$)#D', $decoded) !== 1;
     }
 }

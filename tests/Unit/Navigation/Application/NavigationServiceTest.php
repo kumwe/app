@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\CMS\Tests\Unit\Navigation\Application;
 
 use DateTimeImmutable;
+use InvalidArgumentException;
 use Kumwe\CMS\Application\Authorization\AuthorizationResource;
 use Kumwe\CMS\Application\Authorization\ResourceSiteOwnershipWriter;
 use Kumwe\CMS\Application\Authorization\SiteContext;
@@ -69,6 +70,9 @@ final class NavigationServiceTest extends TestCase
             4,
             $now->modify('-1 day'),
             $now->modify('-1 hour'),
+            'url',
+            null,
+            'https://example.com/guides',
         );
         $repository = $this->createMock(NavigationRepository::class);
         $repository->method('item')->with(self::ITEM)->willReturn($stored);
@@ -84,7 +88,9 @@ final class NavigationServiceTest extends TestCase
         )->willReturn('/resources/documentation');
         $repository->expects(self::once())->method('updateItem')->with(self::callback(
             static fn (MenuItemRecord $item): bool => $item->path === '/resources/documentation'
-                && $item->version === 5,
+                && $item->version === 5
+                && $item->targetType === 'url'
+                && $item->targetUrl === 'https://example.com/guides',
         ), 4);
         $repository->expects(self::once())->method('moveDescendantPaths')->with(
             self::ITEM,
@@ -110,6 +116,111 @@ final class NavigationServiceTest extends TestCase
 
         self::assertSame('/resources/documentation', $updated->path);
         self::assertSame(5, $updated->version);
+    }
+
+    public function testCreatesAValidatedAnchorTarget(): void
+    {
+        $now = new DateTimeImmutable('2026-08-04T10:00:00+00:00');
+        $repository = $this->createMock(NavigationRepository::class);
+        $repository->method('menu')->with(self::MENU)->willReturn(new MenuRecord(
+            self::MENU,
+            'main',
+            'Main',
+            1,
+            $now,
+            $now,
+        ));
+        $repository->expects(self::once())->method('pathForParent')->with(
+            self::MENU,
+            null,
+            'platform',
+        )->willReturn('/platform');
+        $repository->expects(self::once())->method('insertItem')->with(self::callback(
+            static fn (MenuItemRecord $item): bool => $item->targetType === 'anchor'
+                && $item->contentId === null
+                && $item->targetUrl === '#platform',
+        ));
+
+        $item = $this->service(
+            $repository,
+            $this->createStub(AuditRecorder::class),
+            $now,
+        )->createItem(
+            $this->context(),
+            self::MENU,
+            null,
+            'Platform',
+            'platform',
+            0,
+            'anchor',
+            null,
+            '#platform',
+        );
+
+        self::assertSame('anchor', $item->targetType);
+        self::assertSame('#platform', $item->targetUrl);
+    }
+
+    public function testRejectsAnUnsafeUrlTargetBeforeWriting(): void
+    {
+        $now = new DateTimeImmutable('2026-08-04T10:00:00+00:00');
+        $repository = $this->createMock(NavigationRepository::class);
+        $repository->method('menu')->with(self::MENU)->willReturn(new MenuRecord(
+            self::MENU,
+            'main',
+            'Main',
+            1,
+            $now,
+            $now,
+        ));
+        $repository->expects(self::never())->method('pathForParent');
+        $repository->expects(self::never())->method('insertItem');
+
+        $this->expectException(InvalidArgumentException::class);
+
+        $this->service(
+            $repository,
+            $this->createStub(AuditRecorder::class),
+            $now,
+        )->createItem(
+            $this->context(),
+            self::MENU,
+            null,
+            'Unsafe',
+            'unsafe',
+            0,
+            'url',
+            null,
+            'javascript:alert(1)',
+        );
+    }
+
+    public function testRejectsReservedPublicRoutePrefixes(): void
+    {
+        $now = new DateTimeImmutable('2026-08-04T10:00:00+00:00');
+        $repository = $this->createMock(NavigationRepository::class);
+        $repository->method('menu')->with(self::MENU)->willReturn(new MenuRecord(
+            self::MENU,
+            'main',
+            'Main',
+            1,
+            $now,
+            $now,
+        ));
+        $repository->method('pathForParent')->willReturn('/administrator');
+        $repository->expects(self::never())->method('insertItem');
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('reserved system prefix');
+
+        $this->service($repository, $this->createStub(AuditRecorder::class), $now)->createItem(
+            $this->context(),
+            self::MENU,
+            null,
+            'Administrator page',
+            'administrator',
+            0,
+        );
     }
 
     public function testRejectsStaleVersionBeforeMoveOrWrite(): void

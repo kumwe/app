@@ -3,7 +3,7 @@
   <ul>
     {% for item in items %}
       <li>
-        <a href="{{ item.href }}"{% if current_path == item.href %} aria-current="page"{% endif %}>{{ item.title }}</a>
+        <a href="{{ item.href }}"{% if not (item.href starts with '#') and current_path == (item.href|split('#')|first) %} aria-current="page"{% endif %}>{{ item.title }}</a>
         {% if item.children is not empty %}{{ navigation_tree.branch(item.children, current_path) }}{% endif %}
       </li>
     {% endfor %}

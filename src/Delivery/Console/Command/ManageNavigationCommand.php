@@ -43,6 +43,10 @@ final readonly class ManageNavigationCommand implements Command
                     static fn (MenuItemRecord $item): array => $item->toArray(),
                     $this->navigation->items($context, CommandInput::required($options, 'menu')),
                 )],
+                'get-item' => $this->navigation->item(
+                    $context,
+                    CommandInput::required($options, 'id'),
+                )->toArray(),
                 'create-menu' => $this->navigation->createMenu(
                     $context,
                     CommandInput::required($options, 'handle'),
@@ -56,23 +60,8 @@ final readonly class ManageNavigationCommand implements Command
                     CommandInput::required($options, 'title'),
                 )->toArray(),
                 'delete-menu' => $this->deleteMenu($options, $context),
-                'create-item' => $this->navigation->createItem(
-                    $context,
-                    CommandInput::required($options, 'menu'),
-                    $this->optional($options, 'parent'),
-                    CommandInput::required($options, 'title'),
-                    CommandInput::required($options, 'slug'),
-                    (int) ($options['position'] ?? 0),
-                )->toArray(),
-                'update-item' => $this->navigation->updateItem(
-                    $context,
-                    CommandInput::required($options, 'id'),
-                    CommandInput::positiveInteger($options, 'version'),
-                    $this->optional($options, 'parent'),
-                    CommandInput::required($options, 'title'),
-                    CommandInput::required($options, 'slug'),
-                    (int) ($options['position'] ?? 0),
-                )->toArray(),
+                'create-item' => $this->createItem($options, $context),
+                'update-item' => $this->updateItem($options, $context),
                 'delete-item' => $this->deleteItem($options, $context),
                 default => throw new \InvalidArgumentException('Unsupported navigation action.'),
             };
@@ -110,6 +99,55 @@ final readonly class ManageNavigationCommand implements Command
             CommandInput::positiveInteger($options, 'version'),
         );
         return ['deleted' => true];
+    }
+
+    /**
+     * @param array<string, string> $options
+     * @return array<string, mixed>
+     */
+    private function createItem(array $options, ExecutionContext $context): array
+    {
+        return $this->navigation->createItem(
+            $context,
+            CommandInput::required($options, 'menu'),
+            $this->optional($options, 'parent'),
+            CommandInput::required($options, 'title'),
+            CommandInput::required($options, 'slug'),
+            (int) ($options['position'] ?? 0),
+            $this->optional($options, 'target-type'),
+            $this->optional($options, 'content'),
+            $this->optional($options, 'target-url'),
+        )->toArray();
+    }
+
+    /**
+     * @param array<string, string> $options
+     * @return array<string, mixed>
+     */
+    private function updateItem(array $options, ExecutionContext $context): array
+    {
+        $item = $this->navigation->item($context, CommandInput::required($options, 'id'));
+        $targetChanged = array_key_exists('target-type', $options)
+            || array_key_exists('content', $options)
+            || array_key_exists('target-url', $options);
+        $targetType = $targetChanged
+            ? ($this->optional($options, 'target-type') ?? $item->targetType)
+            : null;
+
+        return $this->navigation->updateItem(
+            $context,
+            $item->id,
+            CommandInput::positiveInteger($options, 'version'),
+            array_key_exists('parent', $options) ? $this->optional($options, 'parent') : $item->parentId,
+            CommandInput::required($options, 'title'),
+            CommandInput::required($options, 'slug'),
+            (int) ($options['position'] ?? $item->position),
+            $targetType,
+            array_key_exists('content', $options) ? $this->optional($options, 'content') : $item->contentId,
+            array_key_exists('target-url', $options)
+                ? $this->optional($options, 'target-url')
+                : $item->targetUrl,
+        )->toArray();
     }
 
     /** @param array<string, string> $options */

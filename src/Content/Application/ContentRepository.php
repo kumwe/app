@@ -14,6 +14,8 @@ interface ContentRepository
 
     public function find(string $id, bool $includeDeleted = false): ?ContentRecord;
 
+    public function findPublishedById(string $id, DateTimeImmutable $time): ?ContentRecord;
+
     public function findPublishedBySlug(string $slug, DateTimeImmutable $time): ?ContentRecord;
 
     public function insert(ContentRecord $record): void;

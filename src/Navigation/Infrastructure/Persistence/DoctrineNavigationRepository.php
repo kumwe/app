@@ -67,7 +67,10 @@ final readonly class DoctrineNavigationRepository implements NavigationRepositor
             'version' => $menu->version,
             'created_at' => $menu->createdAt,
             'updated_at' => $menu->updatedAt,
-        ], ['created_at' => Types::DATETIME_IMMUTABLE, 'updated_at' => Types::DATETIME_IMMUTABLE]);
+        ], [
+            'created_at' => Types::DATETIME_IMMUTABLE,
+            'updated_at' => Types::DATETIME_IMMUTABLE,
+        ]);
     }
 
     public function updateMenu(MenuRecord $menu, int $expectedVersion): void
@@ -126,24 +129,36 @@ final readonly class DoctrineNavigationRepository implements NavigationRepositor
             'slug' => $item->slug,
             'path' => $item->path,
             'position' => $item->position,
+            'target_type' => $item->targetType,
+            'content_id' => $item->contentId,
+            'target_url' => $item->targetUrl,
             'version' => $item->version,
             'created_at' => $item->createdAt,
             'updated_at' => $item->updatedAt,
-        ], ['created_at' => Types::DATETIME_IMMUTABLE, 'updated_at' => Types::DATETIME_IMMUTABLE]);
+        ], [
+            'id' => Types::GUID,
+            'menu_id' => Types::GUID,
+            'parent_id' => Types::GUID,
+            'target_type' => Types::STRING,
+            'content_id' => Types::GUID,
+            'target_url' => Types::STRING,
+            'created_at' => Types::DATETIME_IMMUTABLE,
+            'updated_at' => Types::DATETIME_IMMUTABLE,
+        ]);
     }
 
     public function updateItem(MenuItemRecord $item, int $expectedVersion): void
     {
         $affected = $this->database->executeStatement(sprintf(
-            'UPDATE %s SET parent_id = ?, title = ?, slug = ?, path = ?, position = ?, version = ?, '
-            . 'updated_at = ? WHERE id = ? AND version = ?',
+            'UPDATE %s SET parent_id = ?, title = ?, slug = ?, path = ?, position = ?, target_type = ?, '
+            . 'content_id = ?, target_url = ?, version = ?, updated_at = ? WHERE id = ? AND version = ?',
             $this->tables->quoted('navigation_items'),
         ), [
-            $item->parentId, $item->title, $item->slug, $item->path, $item->position, $item->version,
-            $item->updatedAt, $item->id, $expectedVersion,
+            $item->parentId, $item->title, $item->slug, $item->path, $item->position, $item->targetType,
+            $item->contentId, $item->targetUrl, $item->version, $item->updatedAt, $item->id, $expectedVersion,
         ], [
-            Types::GUID, Types::STRING, Types::STRING, Types::STRING, Types::INTEGER, Types::INTEGER,
-            Types::DATETIME_IMMUTABLE, Types::GUID, Types::INTEGER,
+            Types::GUID, Types::STRING, Types::STRING, Types::STRING, Types::INTEGER, Types::STRING,
+            Types::GUID, Types::STRING, Types::INTEGER, Types::DATETIME_IMMUTABLE, Types::GUID, Types::INTEGER,
         ]);
         $this->assertChanged($affected, 'menu item');
     }
@@ -256,6 +271,9 @@ final readonly class DoctrineNavigationRepository implements NavigationRepositor
             $this->requiredInteger($row, 'version'),
             $this->dateTime($row['created_at'] ?? null),
             $this->dateTime($row['updated_at'] ?? null),
+            is_string($row['target_type'] ?? null) ? $row['target_type'] : 'content',
+            $this->nullableString($row, 'content_id'),
+            $this->nullableString($row, 'target_url'),
         );
     }
 
@@ -286,6 +304,20 @@ final readonly class DoctrineNavigationRepository implements NavigationRepositor
         }
 
         return (int) $value;
+    }
+
+    /** @param array<string, mixed> $row */
+    private function nullableString(array $row, string $field): ?string
+    {
+        $value = $row[$field] ?? null;
+        if ($value === null || $value === '') {
+            return null;
+        }
+        if (!is_string($value)) {
+            throw new RuntimeException(sprintf('Navigation field %s is invalid.', $field));
+        }
+
+        return $value;
     }
 
     private function dateTime(mixed $value): DateTimeImmutable

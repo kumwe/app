@@ -63,6 +63,9 @@ final readonly class ContentModelFormPresenter
         if ($type === 'string' && $format === 'uri') {
             return 'url';
         }
+        if ($type === 'string' && ($field['x-kumwe-field'] ?? null) === 'media') {
+            return 'media';
+        }
         if ($type === 'string' && is_int($field['maxLength'] ?? null) && $field['maxLength'] > 240) {
             return 'text';
         }

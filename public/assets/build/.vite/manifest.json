@@ -1,20 +1,20 @@
 {
   "assets/administrator/main.ts": {
-    "file": "js/administrator-Bn7sWrfd.js",
+    "file": "js/administrator-hHhio_1S.js",
     "name": "administrator",
     "src": "assets/administrator/main.ts",
     "isEntry": true,
     "css": [
-      "css/administrator-CBeCyMGd.css"
+      "css/administrator-CoL6osMV.css"
     ]
   },
   "assets/site/main.ts": {
-    "file": "js/site-09k0J-Zi.js",
+    "file": "js/site-BTNdc7Sr.js",
     "name": "site",
     "src": "assets/site/main.ts",
     "isEntry": true,
     "css": [
-      "css/site-ncDsjPPB.css"
+      "css/site-KU3JFhgk.css"
     ]
   }
 }
