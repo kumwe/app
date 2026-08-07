@@ -183,7 +183,7 @@ test.describe('authenticated administrator', () => {
     await expect(mediaDialog).toBeVisible();
     await mediaDialog.getByLabel('Filter media').fill('kumwe-symbol');
     await mediaDialog.getByRole('button', { name: /kumwe-symbol\.svg/ }).click();
-    await expect(page.getByLabel('Site logo')).toHaveValue(/kumwe-symbol\.svg$/);
+    await expect(page.locator('#presentation-logo')).toHaveValue(/kumwe-symbol\.svg$/);
 
     await page.getByRole('button', { name: 'Add color scheme' }).click();
     const scheme = page.locator('[data-presentation-scheme-row]').last();
