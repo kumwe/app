@@ -408,15 +408,17 @@ final readonly class ContentService
 
     private function assertPublicSlug(string $slug): void
     {
-        if (in_array(strtolower(trim($slug)), [
-            'administrator',
-            'api',
-            'assets',
-            'health',
-            'mcp',
-            'media',
-            'pages',
-        ], true)) {
+        if (
+            in_array(strtolower(trim($slug)), [
+                'administrator',
+                'api',
+                'assets',
+                'health',
+                'mcp',
+                'media',
+                'pages',
+            ], true)
+        ) {
             throw new InvalidArgumentException('A content slug cannot use a reserved system route.');
         }
     }
