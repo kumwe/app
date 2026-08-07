@@ -23,7 +23,13 @@ Runtime publication keys are independent from the application/session secret. A 
 
 ## Services and events
 
-Providers register services through Joomla DI. Runtime extensions attach typed Joomla Event listeners during boot and register namespaced Mezzio routes during route compilation. Events describe completed facts or explicit lifecycle decisions; they are not an invisible replacement for application-service calls.
+Providers register services through a restricted Joomla DI adapter. After every active provider has registered services, the runtime runs a separate typed contribution phase with a registrar bound to the signed publication's extension identifier. The registrar reconciles concrete capability, administrator workspace/navigation, route, and view definitions against the inspected schema-2 manifest before boot or route compilation. It closes after that phase; delivery handlers and templates cannot mutate registries.
+
+ContainerFactory remains the composition root. It creates one registry family, sends core navigation through the same permission-aware path, and supplies only explicitly allowed application services to extension containers. Registries use typed definition objects and independent register/remove/inventory behavior, so another registry family can be introduced without a central callback switch.
+
+Contributed routes are compiled under `/administrator/extensions/{vendor}/{name}`, receive the normal administrator session/capability pipeline, add CSRF enforcement for mutations, and wrap execution in live trust enforcement. Views are resolved only through the contributor's registered name and isolated Twig namespace. Duplicate identifiers, route method/path collisions, missing owned references, and provider/manifest drift fail closed.
+
+Runtime extensions attach typed Joomla Event listeners during boot and may retain legacy namespaced routes during route compilation for schema-1 compatibility. Events describe completed facts or explicit lifecycle decisions; they are not an invisible replacement for application-service calls.
 
 Event names and payload objects are public extension API. Document whether listeners may stop propagation, whether failure aborts the transaction, and whether delivery occurs before or after commit. Side effects that may be slow or retried should enqueue a versioned job or consume an outbox event rather than execute during the web transaction.
 
@@ -33,6 +39,8 @@ Extensions use Doctrine DBAL or an ORM contained behind their own repository int
 
 ## Compatibility promise
 
-Kumwe treats extension manifests, provider interfaces, typed events, service IDs explicitly documented for extensions, capability names, API schemas, and migration contracts as versioned interfaces. Internal controller classes, template implementation details, and raw database tables are not stable APIs.
+Kumwe treats extension manifests, the contribution SPI version, typed definition and provider interfaces, typed events, service IDs explicitly documented for extensions, capability names, API schemas, and migration contracts as versioned interfaces. Schema-1 packages continue to load but cannot opt into typed shell contributions without a schema-2 manifest. Internal controller classes, registry implementations, template implementation details, and raw database tables are not stable APIs.
+
+Recovery construction uses the same core contribution path but never evaluates the signed extension publication, instantiates providers, or adds extension template namespaces. Runtime generations that are stale, altered, disabled, uninstalled, quarantined, or no longer trusted cannot expose executable contributions.
 
 See [Extension development](../extensions.md) for package construction and lifecycle commands.
