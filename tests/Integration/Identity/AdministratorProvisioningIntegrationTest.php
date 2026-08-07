@@ -5,14 +5,16 @@ declare(strict_types=1);
 namespace Kumwe\CMS\Tests\Integration\Identity;
 
 use Doctrine\DBAL\Connection;
+use Joomla\DI\Container;
 use Kumwe\CMS\Delivery\Console\Command\CreateAdministratorCommand;
+use Kumwe\CMS\Delivery\Console\Command\MigrateCommand;
 use Kumwe\CMS\Delivery\Console\Output;
 use Kumwe\CMS\Identity\Application\Administration\AdministratorIdentityGateway;
 use Kumwe\CMS\Identity\Domain\Capability;
 use Kumwe\CMS\Identity\Infrastructure\Administration\DoctrineAdministratorIdentityGateway;
 use Kumwe\CMS\Infrastructure\Persistence\TableNames;
+use Kumwe\CMS\Kernel\ContainerFactory;
 use Kumwe\CMS\Shared\Infrastructure\Configuration\Environment;
-use Kumwe\CMS\Tests\Support\TestKernelFactory;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
@@ -23,7 +25,7 @@ final class AdministratorProvisioningIntegrationTest extends TestCase
 {
     public function testCreatesMultipleAdministratorsAndReusesTheCanonicalRole(): void
     {
-        $container = TestKernelFactory::create(Environment::fromGlobals());
+        $container = $this->recoveryContainer();
         $command = $container->get(CreateAdministratorCommand::class);
         $identities = $container->get(AdministratorIdentityGateway::class);
         $database = $container->get(Connection::class);
@@ -81,7 +83,7 @@ final class AdministratorProvisioningIntegrationTest extends TestCase
 
     public function testDuplicateEmailFailsWithoutResettingTheExistingPassword(): void
     {
-        $container = TestKernelFactory::create(Environment::fromGlobals());
+        $container = $this->recoveryContainer();
         $command = $container->get(CreateAdministratorCommand::class);
         $identities = $container->get(AdministratorIdentityGateway::class);
         self::assertInstanceOf(CreateAdministratorCommand::class, $command);
@@ -112,6 +114,17 @@ final class AdministratorProvisioningIntegrationTest extends TestCase
         self::assertStringContainsString('already exists', $duplicateOutput->errors[0]);
         self::assertNotNull($identities->authenticate($email, $originalPassword, 'integration-original'));
         self::assertNull($identities->authenticate($email, $replacementPassword, 'integration-replacement'));
+    }
+
+    private function recoveryContainer(): Container
+    {
+        $container = (new ContainerFactory())->createRecovery(Environment::fromGlobals());
+        $migrate = $container->get(MigrateCommand::class);
+        self::assertInstanceOf(MigrateCommand::class, $migrate);
+        $output = new AdministratorProvisioningOutput();
+        self::assertSame(0, $migrate->execute([], $output), implode("\n", $output->errors));
+
+        return $container;
     }
 
     /** @return array{int, AdministratorProvisioningOutput} */
