@@ -88,14 +88,24 @@ final readonly class EntityTypeDefinition
             'relationship',
         );
         $this->views = self::unique($views, static fn (ViewDefinition $view): string => $view->handle, 'view');
-        $this->actions = self::unique($actions, static fn (ActionDefinition $action): string => $action->handle, 'action');
+        $this->actions = self::unique(
+            $actions,
+            static fn (ActionDefinition $action): string => $action->handle,
+            'action',
+        );
         if (!$administratorExposure && !$portalExposure && !$publicExposure) {
             throw new InvalidBusinessDefinition('A business entity requires at least one declared exposure surface.');
         }
-        if (!$portalExposure && array_filter($this->views, static fn (ViewDefinition $view): bool => $view->portal) !== []) {
+        if (!$portalExposure && array_filter(
+            $this->views,
+            static fn (ViewDefinition $view): bool => $view->portal,
+        ) !== []) {
             throw new InvalidBusinessDefinition('A portal view requires entity-level portal exposure.');
         }
-        if (!$publicExposure && array_filter($this->views, static fn (ViewDefinition $view): bool => $view->public) !== []) {
+        if (!$publicExposure && array_filter(
+            $this->views,
+            static fn (ViewDefinition $view): bool => $view->public,
+        ) !== []) {
             throw new InvalidBusinessDefinition('A public view requires entity-level public exposure.');
         }
         CanonicalDefinitionJson::encode($compatibilityMetadata);
@@ -346,8 +356,13 @@ final readonly class EntityTypeDefinition
             $fields[$field->handle] = $field;
         }
         $identityType = $this->identityStrategy === IdentityStrategy::Uuid ? 'core.uuid' : 'core.reference_identity';
-        if (count(array_filter($this->fields, static fn (FieldDefinition $field): bool => $field->type === $identityType)) !== 1) {
-            throw new InvalidBusinessDefinition('A business definition requires exactly one field matching its identity strategy.');
+        if (count(array_filter(
+            $this->fields,
+            static fn (FieldDefinition $field): bool => $field->type === $identityType,
+        )) !== 1) {
+            throw new InvalidBusinessDefinition(
+                'A business definition requires exactly one field matching its identity strategy.',
+            );
         }
         foreach ($this->fields as $field) {
             foreach ([$field->formula, $field->visibilityCondition, $field->editabilityCondition] as $expression) {
@@ -403,14 +418,22 @@ final readonly class EntityTypeDefinition
         $visited = [];
         $walk = function (string $handle) use (&$walk, &$visiting, &$visited, $fields): void {
             if (isset($visiting[$handle])) {
-                throw new InvalidBusinessDefinition('A business field dependency cycle was detected at ' . $handle . '.');
+                throw new InvalidBusinessDefinition(
+                    'A business field dependency cycle was detected at ' . $handle . '.',
+                );
             }
             if (isset($visited[$handle])) {
                 return;
             }
             $visiting[$handle] = true;
-            foreach ($fields[$handle]->formula?->dependencies() ?? [] as $dependency) {
-                $walk($dependency);
+            foreach ([
+                $fields[$handle]->formula,
+                $fields[$handle]->visibilityCondition,
+                $fields[$handle]->editabilityCondition,
+            ] as $expression) {
+                foreach ($expression?->dependencies() ?? [] as $dependency) {
+                    $walk($dependency);
+                }
             }
             unset($visiting[$handle]);
             $visited[$handle] = true;

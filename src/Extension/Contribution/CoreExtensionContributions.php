@@ -121,6 +121,17 @@ final class CoreExtensionContributions
                 'menus links tree site navigation',
             ),
             new AdministratorNavigationDefinition(
+                'core.business-definitions',
+                'core.structure',
+                'Business definitions',
+                'Operational entities, fields and relationships',
+                '/administrator/business-definitions',
+                'models',
+                'content.read',
+                105,
+                'entities fields relationships views actions workflows schema',
+            ),
+            new AdministratorNavigationDefinition(
                 'core.access',
                 'core.system',
                 'Users & access',

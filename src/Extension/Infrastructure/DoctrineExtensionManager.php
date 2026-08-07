@@ -17,6 +17,7 @@ use Kumwe\CMS\Application\Authorization\ResourceSiteOwnershipWriter;
 use Kumwe\CMS\Application\Authorization\SiteContext;
 use Kumwe\CMS\Audit\Application\AuditRecorder;
 use Kumwe\CMS\Audit\Domain\AuditEvent;
+use Kumwe\CMS\BusinessDefinition\Application\PackageDefinitionSynchronizer;
 use Kumwe\CMS\Extension\Application\ExtensionRegistryLease;
 use Kumwe\CMS\Extension\Application\Install\ExtensionInstallOutcome;
 use Kumwe\CMS\Extension\Application\Migration\ExtensionMigrationRunner;
@@ -65,6 +66,7 @@ final readonly class DoctrineExtensionManager
         private TrustStore $trust,
         private AuthorizationGateway $authorization,
         private ResourceSiteOwnershipWriter $ownership,
+        private ?PackageDefinitionSynchronizer $businessDefinitions = null,
     ) {
     }
 
@@ -455,6 +457,7 @@ final readonly class DoctrineExtensionManager
                     $relativeRuntime,
                     $site,
                     $deployedTreeDigest,
+                    $actorId,
                 );
                 $this->compiler->cancelRetirement($relativeRuntime);
                 $this->audit($actorId, 'extension.install', $manifest->identifier()->value(), [
@@ -607,6 +610,7 @@ final readonly class DoctrineExtensionManager
             ), [$installed['id']]), 'is_string'));
             $this->assertThemeCapabilities($installed, $context);
             $this->clearThemeActivations($installed, $actorId, $context->site());
+            $this->businessDefinitions?->setActive($identifier, false, $actorId);
             $affected = $this->database->delete($this->tables->raw('extensions'), ['identifier' => $identifier]);
             if ((string) $affected !== '1') {
                 throw new InvalidArgumentException('The requested extension is not installed.');
@@ -697,6 +701,8 @@ final readonly class DoctrineExtensionManager
                 throw new InvalidArgumentException('The requested extension is not installed.');
             }
 
+            $this->businessDefinitions?->setActive($identifier, $persistedStatus === 'active', $actorId);
+
             $this->audit($actorId, $action, $identifier, $surface === null ? [] : [
                 'surface' => $surface->value,
             ]);
@@ -716,6 +722,7 @@ final readonly class DoctrineExtensionManager
         string $relativeRuntime,
         SiteContext $site,
         string $deployedTreeDigest,
+        string $actorId,
     ): void {
         $identifier = $manifest->identifier()->value();
         $existing = $this->findInstalledOrNull($identifier);
@@ -812,6 +819,36 @@ final readonly class DoctrineExtensionManager
                 'optional' => $dependency->isOptional(),
             ], ['optional' => Types::BOOLEAN]);
         }
+        $installed = $this->findInstalled($identifier);
+        try {
+            $this->businessDefinitions?->synchronize(
+                $identifier,
+                (string) $manifest->version(),
+                $site,
+                $manifest->contributions()->fieldTypes(),
+                $manifest->contributions()->businessDefinitions(),
+                ($installed['status'] ?? null) === 'active',
+                $actorId,
+            );
+        } catch (Throwable $failure) {
+            $this->transactions->afterRollback(function () use ($actorId, $identifier, $failure): void {
+                try {
+                    $this->audit->record(new AuditEvent(
+                        Uuid::uuid7()->toString(),
+                        $this->clock->now(),
+                        $actorId,
+                        'business_definition.package.synchronize.reject',
+                        'business_definition',
+                        str_replace('/', ':', $identifier),
+                        'rejected',
+                        ['reason' => substr($failure->getMessage(), 0, 500)],
+                    ));
+                } catch (Throwable) {
+                    // The synchronization failure remains authoritative if failure auditing is unavailable.
+                }
+            });
+            throw $failure;
+        }
     }
 
     private function synchronizeContributionCapabilities(ExtensionManifest $manifest, string $extensionId): void
@@ -895,6 +932,12 @@ final readonly class DoctrineExtensionManager
         unset($capability);
         foreach (['workspaces', 'navigation', 'routes', 'views'] as $kind) {
             foreach ($contributions['administrator'][$kind] as &$item) {
+                $item['active'] = $active;
+            }
+            unset($item);
+        }
+        foreach (['field_types', 'definitions'] as $kind) {
+            foreach ($contributions['business'][$kind] as &$item) {
                 $item['active'] = $active;
             }
             unset($item);

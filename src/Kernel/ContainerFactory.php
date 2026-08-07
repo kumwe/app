@@ -66,6 +66,15 @@ use Kumwe\CMS\Administrator\Presentation\RecoveryAdministratorRenderer;
 use Kumwe\CMS\Administrator\Presentation\SitePresentationFormMapper;
 use Kumwe\CMS\Audit\Application\AuditRecorder;
 use Kumwe\CMS\Audit\Infrastructure\Persistence\DoctrineAuditRecorder;
+use Kumwe\CMS\BusinessDefinition\Application\BusinessDefinitionCompatibilityAnalyzer;
+use Kumwe\CMS\BusinessDefinition\Application\BusinessDefinitionRepository;
+use Kumwe\CMS\BusinessDefinition\Application\BusinessDefinitionService;
+use Kumwe\CMS\BusinessDefinition\Application\BusinessDefinitionValidator;
+use Kumwe\CMS\BusinessDefinition\Application\PackageDefinitionSynchronizer;
+use Kumwe\CMS\BusinessDefinition\Administrator\BusinessDefinitionFormMapper;
+use Kumwe\CMS\BusinessDefinition\Delivery\Administrator\BusinessDefinitionsHandler;
+use Kumwe\CMS\BusinessDefinition\Infrastructure\Persistence\DoctrineBusinessDefinitionRepository;
+use Kumwe\CMS\BusinessDefinition\Infrastructure\Persistence\DoctrinePackageDefinitionSynchronizer;
 use Kumwe\CMS\Content\Application\ContentRepository;
 use Kumwe\CMS\Content\Application\ContentModelRepository;
 use Kumwe\CMS\Content\Application\ContentModelService;
@@ -202,6 +211,7 @@ use Kumwe\CMS\Infrastructure\Persistence\Migration\MigrationRunner;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\ApplicationAuthorizationMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\ApplicationAuthorizationMigrationRecovery;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\AuthorizationRecoveryIntegrationMigration;
+use Kumwe\CMS\Infrastructure\Persistence\Migration\BusinessDefinitionCatalogMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\CoreSchemaMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\ContentModelRuntimeMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\DatabaseDrivenPresentationMigration;
@@ -511,6 +521,17 @@ final class ContainerFactory
                 self::service($container, Connection::class),
                 self::service($container, TableNames::class),
             ), true);
+        $container->share(BusinessDefinitionRepository::class, static fn (
+            Container $container,
+        ): BusinessDefinitionRepository => new DoctrineBusinessDefinitionRepository(
+            self::service($container, Connection::class),
+            self::service($container, TableNames::class),
+        ), true);
+        $container->share(
+            BusinessDefinitionCompatibilityAnalyzer::class,
+            new BusinessDefinitionCompatibilityAnalyzer(),
+            true,
+        );
         $container->share(ContentModelRepository::class, static fn (Container $container): ContentModelRepository =>
             new DoctrineContentModelRepository(
                 self::service($container, Connection::class),
@@ -684,6 +705,7 @@ final class ContainerFactory
                     new DynamicSiteContentMigration(self::service($container, TableNames::class)),
                     new DatabaseDrivenPresentationMigration(self::service($container, TableNames::class)),
                     new ExtensionContributionCatalogMigration(self::service($container, TableNames::class)),
+                    new BusinessDefinitionCatalogMigration(self::service($container, TableNames::class)),
                 ],
                 [
                     // Previously distributed builds used a DBAL-equivalent static-analysis rewrite, then
@@ -861,6 +883,17 @@ final class ContainerFactory
             self::service($container, TableNames::class),
             self::service($container, ClockInterface::class),
         ), true);
+        $container->share(PackageDefinitionSynchronizer::class, static fn (
+            Container $container,
+        ): PackageDefinitionSynchronizer => new DoctrinePackageDefinitionSynchronizer(
+            self::service($container, Connection::class),
+            self::service($container, TableNames::class),
+            self::service($container, BusinessDefinitionRepository::class),
+            self::service($container, BusinessDefinitionCompatibilityAnalyzer::class),
+            self::service($container, ResourceSiteOwnershipWriter::class),
+            self::service($container, AuditRecorder::class),
+            self::service($container, ClockInterface::class),
+        ), true);
         $container->share(ExtensionRuntimeMapCompiler::class, static fn (
             Container $container,
         ): ExtensionRuntimeMapCompiler => new ExtensionRuntimeMapCompiler(
@@ -894,11 +927,29 @@ final class ContainerFactory
             self::service($container, ClockInterface::class),
             self::service($container, AuthorizationGateway::class),
             $configuration->allowUnsignedLocalExtensions,
+            self::service($container, PackageDefinitionSynchronizer::class),
         ), true);
         $contributionRegistries = new ExtensionContributionRegistrySet(
             self::service($container, TrustStore::class),
         );
         $container->share(ExtensionContributionRegistrySet::class, $contributionRegistries, true);
+        $container->share(
+            BusinessDefinitionValidator::class,
+            new BusinessDefinitionValidator($contributionRegistries->fieldTypes()),
+            true,
+        );
+        $container->share(BusinessDefinitionService::class, static fn (
+            Container $container,
+        ): BusinessDefinitionService => new BusinessDefinitionService(
+            self::service($container, BusinessDefinitionRepository::class),
+            self::service($container, BusinessDefinitionValidator::class),
+            self::service($container, BusinessDefinitionCompatibilityAnalyzer::class),
+            self::service($container, AuthorizationGateway::class),
+            self::service($container, ResourceSiteOwnershipWriter::class),
+            self::service($container, AuditRecorder::class),
+            self::service($container, TransactionManager::class),
+            self::service($container, ClockInterface::class),
+        ), true);
         $container->share(
             AdministratorNavigationRegistry::class,
             $contributionRegistries->navigation(),
@@ -950,6 +1001,7 @@ final class ContainerFactory
                     self::service($container, TrustStore::class),
                     self::service($container, AuthorizationGateway::class),
                     self::service($container, ResourceSiteOwnershipWriter::class),
+                    self::service($container, PackageDefinitionSynchronizer::class),
                 ),
                 self::service($container, RedisRuntime::class),
                 self::service($container, AuthorizationGateway::class),
@@ -1210,6 +1262,14 @@ final class ContainerFactory
             self::service($container, ContentModelService::class),
             self::service($container, AdministratorRenderer::class),
             self::service($container, PublicPageLocator::class),
+        ), true);
+        $container->share(BusinessDefinitionsHandler::class, static fn (
+            Container $container,
+        ): BusinessDefinitionsHandler => new BusinessDefinitionsHandler(
+            self::service($container, BusinessDefinitionService::class),
+            new BusinessDefinitionFormMapper(),
+            self::service($container, ExtensionContributionRegistrySet::class)->fieldTypes(),
+            self::service($container, AdministratorRenderer::class),
         ), true);
         $container->share(AdministratorContentEditorHandler::class, static fn (
             Container $container,
@@ -1491,6 +1551,16 @@ final class ContainerFactory
             '/administrator/content-models',
             [AdministratorCsrfMiddleware::class, AdministratorContentModelsHandler::class],
             'administrator.content-models.update',
+        ), 'content.update');
+        self::administratorRoute($application->get(
+            '/administrator/business-definitions',
+            BusinessDefinitionsHandler::class,
+            'administrator.business-definitions',
+        ), 'content.read');
+        self::administratorRoute($application->post(
+            '/administrator/business-definitions',
+            [AdministratorCsrfMiddleware::class, BusinessDefinitionsHandler::class],
+            'administrator.business-definitions.update',
         ), 'content.update');
         self::administratorRoute($application->post(
             '/administrator/logout',

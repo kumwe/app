@@ -7,6 +7,8 @@ namespace Kumwe\CMS\BusinessDefinition\Domain;
 /** Exact base-10 arithmetic used by definition formulas without PHP floats. */
 final readonly class DecimalValue
 {
+    private const MAX_DIGITS = 4096;
+
     private function __construct(private bool $negative, private string $digits, private int $scale)
     {
     }
@@ -20,6 +22,9 @@ final readonly class DecimalValue
         $negative = str_starts_with($value, '-');
         $unsigned = ltrim($value, '-');
         [$integer, $fraction] = array_pad(explode('.', $unsigned, 2), 2, '');
+        if (strlen($integer) + strlen($fraction) > self::MAX_DIGITS) {
+            throw new InvalidBusinessDefinition('A decimal value exceeds 4096 digits.');
+        }
         $digits = ltrim($integer . $fraction, '0');
 
         return new self($digits !== '' && $negative, $digits === '' ? '0' : $digits, strlen($fraction));
@@ -127,6 +132,9 @@ final readonly class DecimalValue
     {
         $digits = ltrim($digits, '0');
         $digits = $digits === '' ? '0' : $digits;
+        if (strlen($digits) > self::MAX_DIGITS) {
+            throw new InvalidBusinessDefinition('A decimal result exceeds 4096 digits.');
+        }
         while ($scale > 0 && str_ends_with($digits, '0')) {
             $digits = substr($digits, 0, -1);
             --$scale;

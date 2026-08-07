@@ -58,6 +58,7 @@ final readonly class AdministratorRenderer
             'dashboard' => 'core.dashboard',
             'content-list', 'content-form' => 'core.content',
             'content-models' => 'core.models',
+            'business-definitions' => 'core.business-definitions',
             'navigation' => 'core.navigation',
             'access-control' => 'core.access',
             'extensions' => 'core.extensions',

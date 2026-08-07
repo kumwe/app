@@ -24,7 +24,9 @@ final class BusinessDefinitionContributionRegistry
             throw new InvalidBusinessDefinition('A contributed business definition has inconsistent ownership.');
         }
         if (isset($this->definitions[$definition->handle])) {
-            throw new InvalidBusinessDefinition('Business definition ' . $definition->handle . ' is already registered.');
+            throw new InvalidBusinessDefinition(
+                'Business definition ' . $definition->handle . ' is already registered.',
+            );
         }
         $this->definitions[$definition->handle] = ['owner' => $owner, 'definition' => $definition];
         ksort($this->definitions, SORT_STRING);
