@@ -164,6 +164,10 @@ final readonly class BusinessDefinitionCatalogMigration implements Migration
         return $table;
     }
 
+    /**
+     * @param non-empty-string $firstColumn
+     * @param non-empty-string ...$columns
+     */
     private function primaryKey(Table $table, string $firstColumn, string ...$columns): void
     {
         $table->addPrimaryKeyConstraint(

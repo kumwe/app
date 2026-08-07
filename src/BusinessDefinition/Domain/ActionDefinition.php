@@ -53,7 +53,7 @@ final readonly class ActionDefinition
         if ($condition !== null && (!is_array($condition) || array_is_list($condition))) {
             throw new InvalidBusinessDefinition('A business action condition must be an object.');
         }
-        /** @var array<string, mixed>|null $condition */
+        /** @var non-empty-array<string, mixed>|null $condition */
 
         return new self(
             self::string($document, 'handle'),
