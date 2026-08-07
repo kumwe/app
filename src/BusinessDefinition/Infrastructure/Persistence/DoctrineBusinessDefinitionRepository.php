@@ -391,19 +391,14 @@ final readonly class DoctrineBusinessDefinitionRepository implements BusinessDef
             'definition_id' => $definition->id,
             'version' => $definition->definitionVersion,
         ]);
-        foreach ($definition->dependencyGraph() as $kind => $dependencies) {
-            if ($kind === 'fields') {
-                foreach ($dependencies as $source => $targets) {
-                    foreach ($targets as $target) {
-                        $this->insertDependency($definition, 'field', $source . '>' . $target);
-                    }
-                }
-                continue;
+        $graph = $definition->dependencyGraph();
+        foreach ($graph['fields'] as $source => $targets) {
+            foreach ($targets as $target) {
+                $this->insertDependency($definition, 'field', $source . '>' . $target);
             }
-            foreach ($dependencies as $handle) {
-                if (!is_string($handle)) {
-                    throw new InvalidBusinessDefinition('A definition dependency handle is invalid.');
-                }
+        }
+        foreach (['entity' => 'entities', 'field_type' => 'field_types'] as $kind => $collection) {
+            foreach ($graph[$collection] as $handle) {
                 $this->insertDependency($definition, $kind, $handle);
             }
         }
@@ -513,7 +508,10 @@ final readonly class DoctrineBusinessDefinitionRepository implements BusinessDef
         throw new RuntimeException('Stored business-definition property ' . $key . ' is invalid.');
     }
 
-    /** @param array<string, mixed> $row @return array<string, mixed> */
+    /**
+     * @param array<string, mixed> $row
+     * @return array<string, mixed>
+     */
     private function jsonObject(array $row, string $key): array
     {
         $value = $row[$key] ?? null;
@@ -531,7 +529,10 @@ final readonly class DoctrineBusinessDefinitionRepository implements BusinessDef
         return $value;
     }
 
-    /** @param array<string, mixed> $row @return list<mixed> */
+    /**
+     * @param array<string, mixed> $row
+     * @return list<mixed>
+     */
     private function arrayList(array $row, string $key): array
     {
         $value = $row[$key] ?? null;

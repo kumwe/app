@@ -140,6 +140,7 @@ final readonly class EntityTypeDefinition
         ) {
             throw new InvalidBusinessDefinition('A business entity definition owner must be a strict object.');
         }
+        /** @var array<string, mixed> $owner */
         $ownerType = DefinitionOwnerType::tryFrom(self::string($owner, 'type'))
             ?? throw new InvalidBusinessDefinition('A business entity definition owner type is invalid.');
         $fields = array_map(
@@ -162,6 +163,7 @@ final readonly class EntityTypeDefinition
         if ($workflowDocument !== null && (!is_array($workflowDocument) || array_is_list($workflowDocument))) {
             throw new InvalidBusinessDefinition('A business workflow binding must be an object or null.');
         }
+        /** @var array<string, mixed>|null $workflowDocument */
         $metadata = $document['compatibility_metadata'] ?? [];
         if (!is_array($metadata) || ($metadata !== [] && array_is_list($metadata))) {
             throw new InvalidBusinessDefinition('Business compatibility metadata must be an object.');
@@ -329,7 +331,7 @@ final readonly class EntityTypeDefinition
         return CanonicalDefinitionJson::checksum($this->toArray());
     }
 
-    /** @return array<string, list<string>> */
+    /** @return array{fields: array<string, list<string>>, entities: list<string>, field_types: list<string>} */
     public function dependencyGraph(): array
     {
         $fieldDependencies = [];
@@ -408,7 +410,7 @@ final readonly class EntityTypeDefinition
             }
         }
         $transitions = [];
-        foreach ($this->workflow?->transitions ?? [] as $transition) {
+        foreach ($this->workflow->transitions ?? [] as $transition) {
             $transitions[$transition['handle']] = true;
         }
         foreach ($this->actions as $action) {
@@ -506,7 +508,10 @@ final readonly class EntityTypeDefinition
         return $value;
     }
 
-    /** @param array<string, mixed> $document @return list<array<string, mixed>> */
+    /**
+     * @param array<string, mixed> $document
+     * @return list<array<string, mixed>>
+     */
     private static function objects(array $document, string $key): array
     {
         $value = $document[$key] ?? [];

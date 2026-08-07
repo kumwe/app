@@ -62,7 +62,7 @@ final readonly class DoctrinePackageDefinitionSynchronizer implements PackageDef
         );
         $validationTypes = new FieldTypeRegistry();
         foreach ($this->activePersistedFieldTypes() as [$persistedOwner, $fieldType]) {
-            if ($persistedOwner == $owner) {
+            if ($persistedOwner->toArray() === $owner->toArray()) {
                 continue;
             }
             if (!$validationTypes->has($fieldType->id)) {
@@ -76,7 +76,10 @@ final readonly class DoctrinePackageDefinitionSynchronizer implements PackageDef
             }
         }
         foreach ($definitions as $definition) {
-            if ($definition->owner != $owner || $definition->status !== DefinitionStatus::Published) {
+            if (
+                $definition->owner->toArray() !== $owner->toArray()
+                || $definition->status !== DefinitionStatus::Published
+            ) {
                 throw new InvalidBusinessDefinition('A package definition has invalid ownership, site, or status.');
             }
         }
@@ -207,7 +210,7 @@ final readonly class DoctrinePackageDefinitionSynchronizer implements PackageDef
             $draftDocument['definition_version'] = 0;
             $draft = EntityTypeDefinition::fromArray($draftDocument);
             $entry = $this->repository->entry($site, $draft->handle);
-            if ($entry !== null && $entry->owner != $owner) {
+            if ($entry !== null && $entry->owner->toArray() !== $owner->toArray()) {
                 throw new InvalidBusinessDefinition('A package attempted to replace another owner\'s definition.');
             }
             $saved = $this->repository->saveDraft(
@@ -233,7 +236,7 @@ final readonly class DoctrinePackageDefinitionSynchronizer implements PackageDef
         }
         foreach ($this->repository->catalog($site) as $entry) {
             if (
-                $entry->owner != $owner || in_array($entry->handle, $declared, true)
+                $entry->owner->toArray() !== $owner->toArray() || in_array($entry->handle, $declared, true)
                 || $entry->publishedVersion === null
             ) {
                 continue;
@@ -257,7 +260,11 @@ final readonly class DoctrinePackageDefinitionSynchronizer implements PackageDef
         ), [true], [Types::BOOLEAN]);
         $result = [];
         foreach ($rows as $row) {
-            $ownerType = DefinitionOwnerType::tryFrom((string) ($row['owner_type'] ?? ''))
+            $ownerTypeValue = $row['owner_type'] ?? null;
+            if (!is_string($ownerTypeValue)) {
+                throw new InvalidBusinessDefinition('A persisted field-type owner is invalid.');
+            }
+            $ownerType = DefinitionOwnerType::tryFrom($ownerTypeValue)
                 ?? throw new InvalidBusinessDefinition('A persisted field-type owner is invalid.');
             $identifier = $row['owner_identifier'] ?? null;
             $payload = $row['canonical_payload'] ?? null;
@@ -289,7 +296,8 @@ final readonly class DoctrinePackageDefinitionSynchronizer implements PackageDef
         $graph = $packageDefinitions;
         foreach ($this->repository->catalog($site) as $entry) {
             if (
-                $entry->publishedVersion === null || $entry->owner == $packageOwner
+                $entry->publishedVersion === null
+                || $entry->owner->toArray() === $packageOwner->toArray()
                 || in_array($entry->handle, $handles, true)
             ) {
                 continue;
@@ -311,7 +319,7 @@ final readonly class DoctrinePackageDefinitionSynchronizer implements PackageDef
             $actorId,
             $action,
             'business_definition',
-            $subject,
+            str_replace('/', ':', $subject),
             'success',
             $metadata,
         ));

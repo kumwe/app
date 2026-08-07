@@ -17,7 +17,7 @@ final class BusinessDefinitionCompatibilityAnalyzer
 {
     public function analyze(?EntityTypeDefinition $before, EntityTypeDefinition $draft): CompatibilityPlan
     {
-        $next = ($before?->definitionVersion ?? 0) + 1;
+        $next = ($before->definitionVersion ?? 0) + 1;
         $published = $draft->published($next);
         $changes = [];
         if ($before === null) {
@@ -350,7 +350,10 @@ final class BusinessDefinitionCompatibilityAnalyzer
         return $result;
     }
 
-    /** @param list<ActionDefinition|ViewDefinition> $values @return array<string, array<string, mixed>> */
+    /**
+     * @param list<ActionDefinition|ViewDefinition> $values
+     * @return array<string, array<string, mixed>>
+     */
     private static function documents(array $values): array
     {
         $result = [];

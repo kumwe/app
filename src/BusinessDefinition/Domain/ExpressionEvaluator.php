@@ -81,6 +81,8 @@ final class ExpressionEvaluator
                     'multiply' => $result * $operand,
                     default => throw new InvalidBusinessDefinition('The integer formula operation is unsupported.'),
                 };
+                // PHP promotes overflowing integer arithmetic to float at runtime.
+                /** @phpstan-ignore function.alreadyNarrowedType */
                 if (!is_int($next)) {
                     throw new InvalidBusinessDefinition('An integer formula exceeded the platform integer range.');
                 }

@@ -6,6 +6,7 @@ namespace Kumwe\CMS\Tests\Integration\BusinessDefinition;
 
 use Doctrine\DBAL\Connection;
 use Kumwe\CMS\BusinessDefinition\Application\BusinessDefinitionService;
+use Kumwe\CMS\BusinessDefinition\Domain\CanonicalDefinitionJson;
 use Kumwe\CMS\BusinessDefinition\Domain\EntityTypeDefinition;
 use Kumwe\CMS\BusinessDefinition\Domain\InvalidBusinessDefinition;
 use Kumwe\CMS\Infrastructure\Persistence\TableNames;
@@ -44,7 +45,10 @@ final class BusinessDefinitionRuntimeIntegrationTest extends TestCase
         if (is_string($storedGraph)) {
             $storedGraph = json_decode($storedGraph, true, 32, JSON_THROW_ON_ERROR);
         }
-        self::assertSame($published->definition->dependencyGraph(), $storedGraph);
+        self::assertSame(
+            CanonicalDefinitionJson::encode($published->definition->dependencyGraph()),
+            CanonicalDefinitionJson::encode($storedGraph),
+        );
         self::assertCount(1, $service->history($context, $published->definition->id));
         self::assertSame([], array_values(array_filter(
             $database->createSchemaManager()->listTableNames(),

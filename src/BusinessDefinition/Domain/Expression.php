@@ -39,6 +39,7 @@ final readonly class Expression
     /** @var list<Expression> */
     private array $arguments;
 
+    /** @param list<Expression> $arguments */
     private function __construct(
         public string $operator,
         public string $type,
@@ -298,7 +299,10 @@ final readonly class Expression
         }
     }
 
-    /** @param list<Expression> $arguments @param list<string> $argumentTypes */
+    /**
+     * @param list<Expression> $arguments
+     * @param list<string> $argumentTypes
+     */
     private static function assertResultAndArgumentTypes(
         string $operator,
         string $type,

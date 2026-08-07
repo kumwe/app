@@ -93,7 +93,10 @@ final readonly class FieldTypeDefinition
         return trim($value);
     }
 
-    /** @param array<string, mixed> $document @param list<string> $allowed */
+    /**
+     * @param array<string, mixed> $document
+     * @param list<string> $allowed
+     */
     private static function knownKeys(array $document, array $allowed): void
     {
         if (array_diff(array_keys($document), $allowed) !== []) {

@@ -20,7 +20,7 @@ final class BusinessDefinitionContributionRegistry
     public function register(DefinitionOwner $owner, EntityTypeDefinition $definition): void
     {
         $owner->assertOwns($definition->handle);
-        if ($definition->owner != $owner) {
+        if ($definition->owner->toArray() !== $owner->toArray()) {
             throw new InvalidBusinessDefinition('A contributed business definition has inconsistent ownership.');
         }
         if (isset($this->definitions[$definition->handle])) {
@@ -55,7 +55,7 @@ final class BusinessDefinitionContributionRegistry
             static fn (array $item): EntityTypeDefinition => $item['definition'],
             array_filter(
                 $this->definitions,
-                static fn (array $item): bool => $item['owner'] == $owner,
+                static fn (array $item): bool => $item['owner']->toArray() === $owner->toArray(),
             ),
         ));
     }
@@ -63,7 +63,7 @@ final class BusinessDefinitionContributionRegistry
     public function remove(DefinitionOwner $owner): void
     {
         foreach ($this->definitions as $handle => $item) {
-            if ($item['owner'] == $owner) {
+            if ($item['owner']->toArray() === $owner->toArray()) {
                 unset($this->definitions[$handle]);
             }
         }

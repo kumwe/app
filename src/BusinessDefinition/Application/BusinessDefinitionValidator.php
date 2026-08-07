@@ -71,7 +71,7 @@ final readonly class BusinessDefinitionValidator
                 if (
                     $relationship->onDelete === DeleteBehavior::Cascade
                     && $relationship->kind !== RelationshipKind::OwnedLineCollection
-                    && $definition->owner != $target->owner
+                    && $definition->owner->toArray() !== $target->owner->toArray()
                 ) {
                     throw new InvalidBusinessDefinition('Cascade deletion cannot cross definition ownership.');
                 }

@@ -145,8 +145,10 @@ final readonly class DecimalValue
 
     private static function compareAbs(string $left, string $right): int
     {
-        $left = ltrim($left, '0') ?: '0';
-        $right = ltrim($right, '0') ?: '0';
+        $left = ltrim($left, '0');
+        $left = $left === '' ? '0' : $left;
+        $right = ltrim($right, '0');
+        $right = $right === '' ? '0' : $right;
         if (strlen($left) !== strlen($right)) {
             return strlen($left) <=> strlen($right);
         }
@@ -190,7 +192,9 @@ final readonly class DecimalValue
             $result .= (string) $digit;
         }
 
-        return ltrim(strrev($result), '0') ?: '0';
+        $result = ltrim(strrev($result), '0');
+
+        return $result === '' ? '0' : $result;
     }
 
     /** @return array{0: string, 1: string} */
@@ -198,8 +202,11 @@ final readonly class DecimalValue
     {
         $quotient = '';
         $remainder = '0';
-        foreach (str_split(ltrim($numerator, '0') ?: '0') as $digit) {
-            $remainder = ltrim(($remainder === '0' ? '' : $remainder) . $digit, '0') ?: '0';
+        $numerator = ltrim($numerator, '0');
+        $numerator = $numerator === '' ? '0' : $numerator;
+        foreach (str_split($numerator) as $digit) {
+            $remainder = ltrim(($remainder === '0' ? '' : $remainder) . $digit, '0');
+            $remainder = $remainder === '' ? '0' : $remainder;
             $value = 0;
             while (self::compareAbs($remainder, $denominator) >= 0) {
                 $remainder = self::subtractAbs($remainder, $denominator);
@@ -208,6 +215,8 @@ final readonly class DecimalValue
             $quotient .= (string) $value;
         }
 
-        return [ltrim($quotient, '0') ?: '0', $remainder];
+        $quotient = ltrim($quotient, '0');
+
+        return [$quotient === '' ? '0' : $quotient, $remainder];
     }
 }
