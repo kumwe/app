@@ -3,6 +3,8 @@ import { expect, test, type Page } from '@playwright/test';
 
 const administratorEmail = process.env.KUMWE_BROWSER_ADMIN_EMAIL ?? 'browser-administrator@kumwe.test';
 const administratorPassword = process.env.KUMWE_BROWSER_ADMIN_PASSWORD ?? 'browser administrator password';
+const limitedEmail = process.env.KUMWE_BROWSER_LIMITED_EMAIL ?? 'browser-limited@kumwe.test';
+const limitedPassword = process.env.KUMWE_BROWSER_LIMITED_PASSWORD ?? 'browser limited password';
 
 async function expectAccessible(page: Page): Promise<void> {
   const scan = await new AxeBuilder({ page })
@@ -21,12 +23,27 @@ async function expectStylesLoaded(page: Page): Promise<void> {
   expect(await page.locator('link[rel="stylesheet"]').count()).toBeGreaterThan(0);
 }
 
-async function signIn(page: Page): Promise<void> {
+async function signIn(
+  page: Page,
+  email = administratorEmail,
+  password = administratorPassword,
+): Promise<void> {
   await page.goto('/administrator/login');
-  await page.getByLabel('Email address').fill(administratorEmail);
-  await page.getByLabel('Password').fill(administratorPassword);
+  await page.getByLabel('Email address').fill(email);
+  await page.getByLabel('Password').fill(password);
   await page.getByRole('button', { name: 'Sign in to Kumwe' }).click();
   await expect(page).toHaveURL(/\/administrator$/);
+}
+
+async function ensureAnnouncementsActive(page: Page): Promise<void> {
+  await page.goto('/administrator/extensions');
+  const extension = page.locator('article').filter({ hasText: 'kumwe/announcements-example' }).first();
+  const activate = extension.getByRole('button', { name: 'Activate' });
+  if (await activate.count()) {
+    await activate.click();
+    await expect(page).toHaveURL(/\/administrator\/extensions$/);
+  }
+  await expect(extension).toContainText(/component · 2\.0\.0 · active/);
 }
 
 test('login is accessible and visually stable', async ({ page }, testInfo) => {
@@ -222,5 +239,74 @@ test.describe('authenticated administrator', () => {
       mask: [page.locator('[data-visual-dynamic]')],
       maskColor: '#ffffff',
     });
+  });
+
+  test('typed component navigation opens an accessible graphical page', async ({
+    page,
+    isMobile,
+  }, testInfo) => {
+    await ensureAnnouncementsActive(page);
+    await page.goto('/administrator');
+    if (isMobile) {
+      await page.getByRole('button', { name: 'Open administrator navigation' }).click();
+    }
+    const workspace = page.locator('.navigation-group').filter({
+      has: page.getByRole('heading', { name: 'Announcements', exact: true }),
+    });
+    await expect(workspace.getByRole('link', { name: 'Announcements' })).toBeVisible();
+    await workspace.getByRole('link', { name: 'Announcements' }).click();
+    await expect(page).toHaveURL(/\/administrator\/extensions\/kumwe\/announcements-example$/);
+    await expect(page.getByRole('heading', { level: 1, name: 'Announcements' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Component announcements' })).toBeVisible();
+    await expect(page.getByText('Contribution contract active')).toBeVisible();
+    await expectStylesLoaded(page);
+    await expectAccessible(page);
+    await page.screenshot({
+      path: testInfo.outputPath('announcements-contribution.png'),
+      fullPage: true,
+      animations: 'disabled',
+      caret: 'hide',
+    });
+  });
+
+  test('component navigation and guarded route are unavailable without its capability', async ({
+    page,
+    isMobile,
+  }) => {
+    await ensureAnnouncementsActive(page);
+    await page.context().clearCookies();
+    await signIn(page, limitedEmail, limitedPassword);
+    if (isMobile) {
+      await page.getByRole('button', { name: 'Open administrator navigation' }).click();
+    }
+    await expect(page.getByRole('link', { name: 'Announcements' })).toHaveCount(0);
+    const response = await page.goto('/administrator/extensions/kumwe/announcements-example');
+    expect(response?.status()).toBe(403);
+  });
+
+  test('disabling removes component navigation and reactivation restores it', async ({
+    page,
+    isMobile,
+  }) => {
+    await ensureAnnouncementsActive(page);
+    try {
+      const extension = page.locator('article').filter({ hasText: 'kumwe/announcements-example' }).first();
+      await extension.getByRole('button', { name: 'Disable' }).click();
+      await expect(page).toHaveURL(/\/administrator\/extensions$/);
+      await expect(extension).toContainText(/component · 2\.0\.0 · disabled/);
+
+      await page.goto('/administrator');
+      if (isMobile) {
+        await page.getByRole('button', { name: 'Open administrator navigation' }).click();
+      }
+      await expect(page.getByRole('link', { name: 'Announcements' })).toHaveCount(0);
+    } finally {
+      await ensureAnnouncementsActive(page);
+    }
+    await page.goto('/administrator');
+    if (isMobile) {
+      await page.getByRole('button', { name: 'Open administrator navigation' }).click();
+    }
+    await expect(page.getByRole('link', { name: 'Announcements' })).toBeVisible();
   });
 });

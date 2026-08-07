@@ -113,6 +113,8 @@ jobs:
       REDIS_NAMESPACE: kumwe.browser
       KUMWE_BROWSER_ADMIN_EMAIL: browser-administrator@kumwe.test
       KUMWE_BROWSER_ADMIN_PASSWORD: browser administrator password
+      KUMWE_BROWSER_LIMITED_EMAIL: browser-limited@kumwe.test
+      KUMWE_BROWSER_LIMITED_PASSWORD: browser limited password
       KUMWE_BROWSER_START_SERVER: '1'
     steps:
       - name: Check out repository
@@ -152,6 +154,7 @@ jobs:
             --email="$KUMWE_BROWSER_ADMIN_EMAIL" \
             --name="Browser Administrator" \
             --password-file="$password_file"
+          php tests/Support/prepare-browser-contribution.php
 
       - name: Install the Chromium test runtime
         run: npx playwright install --with-deps chromium

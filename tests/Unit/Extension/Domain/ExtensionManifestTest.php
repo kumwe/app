@@ -104,6 +104,65 @@ JSON);
         ExtensionManifest::fromJson($json);
     }
 
+    public function testSchemaOneRemainsPermissiveAndHasNoTypedShellContributions(): void
+    {
+        $manifest = ExtensionManifest::fromJson(str_replace(
+            '"schema": 1,',
+            '"schema": 1, "legacy_package_metadata": true,',
+            $this->manifestJson(),
+        ));
+
+        self::assertSame(1, $manifest->schemaVersion());
+        self::assertSame([], $manifest->contributions()->capabilities());
+        self::assertSame([], $manifest->contributions()->routes());
+    }
+
+    public function testSchemaTwoRejectsForeignContributionOwnership(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('cannot claim capability identifier foreign.manage');
+
+        ExtensionManifest::fromJson(<<<'JSON'
+{
+  "schema": 2,
+  "name": "acme/editor",
+  "type": "component",
+  "version": "2.0.0",
+  "provider": "Acme\\Editor\\Provider",
+  "autoload": {"psr-4": {"Acme\\Editor\\": "src/"}},
+  "requires": {"kumwe": "^2.0.0", "php": "^8.5.0"},
+  "contributions": {
+    "version": 1,
+    "capabilities": [{
+      "id": "foreign.manage",
+      "label": "Foreign",
+      "description": "Invalid foreign ownership."
+    }],
+    "administrator": {}
+  }
+}
+JSON);
+    }
+
+    public function testSchemaTwoRejectsUnknownNestedKeys(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('requirements object contains unknown key platform');
+
+        ExtensionManifest::fromJson(<<<'JSON'
+{
+  "schema": 2,
+  "name": "acme/editor",
+  "type": "component",
+  "version": "2.0.0",
+  "provider": "Acme\\Editor\\Provider",
+  "autoload": {"psr-4": {"Acme\\Editor\\": "src/"}},
+  "requires": {"kumwe": "^2.0.0", "php": "^8.5.0", "platform": "unknown"},
+  "contributions": {"version": 1, "capabilities": [], "administrator": {}}
+}
+JSON);
+    }
+
     private function manifestJson(): string
     {
         return <<<'JSON'
