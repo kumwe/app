@@ -297,7 +297,10 @@ final readonly class FieldDefinition
         return $value;
     }
 
-    /** @param array<string, mixed> $document @return array<string, scalar|list<scalar|null>|null> */
+    /**
+     * @param array<string, mixed> $document
+     * @return array<string, scalar|list<scalar|null>|null>
+     */
     private static function configuration(array $document): array
     {
         $value = $document['configuration'] ?? [];
@@ -308,7 +311,11 @@ final readonly class FieldDefinition
         return $value;
     }
 
-    /** @param array<string, mixed> $document @param list<string> $default @return list<string> */
+    /**
+     * @param array<string, mixed> $document
+     * @param list<string> $default
+     * @return list<string>
+     */
     private static function stringList(array $document, string $key, array $default = []): array
     {
         $value = $document[$key] ?? $default;
@@ -325,7 +332,10 @@ final readonly class FieldDefinition
         return $result;
     }
 
-    /** @param array<string, mixed> $document @return list<array<string, mixed>> */
+    /**
+     * @param array<string, mixed> $document
+     * @return list<array<string, mixed>>
+     */
     private static function objectList(array $document, string $key): array
     {
         $value = $document[$key] ?? [];
@@ -357,7 +367,10 @@ final readonly class FieldDefinition
         return Expression::fromArray($value);
     }
 
-    /** @param list<string> $values @return list<string> */
+    /**
+     * @param list<string> $values
+     * @return list<string>
+     */
     private static function identifiers(array $values, string $kind, int $maximum): array
     {
         if (count($values) > $maximum || count($values) !== count(array_unique($values))) {

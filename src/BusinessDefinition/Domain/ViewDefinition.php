@@ -95,7 +95,10 @@ final readonly class ViewDefinition
         return trim($value);
     }
 
-    /** @param array<string, mixed> $document @return list<string> */
+    /**
+     * @param array<string, mixed> $document
+     * @return list<string>
+     */
     private static function list(array $document, string $key): array
     {
         $value = $document[$key] ?? [];
@@ -122,7 +125,10 @@ final readonly class ViewDefinition
         return $value;
     }
 
-    /** @param list<string> $values @return list<string> */
+    /**
+     * @param list<string> $values
+     * @return list<string>
+     */
     private static function identifiers(array $values, bool $mayBeEmpty): array
     {
         if (

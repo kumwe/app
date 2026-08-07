@@ -98,7 +98,10 @@ final readonly class BusinessDefinitionFormMapper
         ]);
     }
 
-    /** @param array<string, string> $form @return list<array<string, mixed>> */
+    /**
+     * @param array<string, string> $form
+     * @return list<array<string, mixed>>
+     */
     private function relationships(array $form): array
     {
         $result = [];
@@ -122,7 +125,10 @@ final readonly class BusinessDefinitionFormMapper
         return $result;
     }
 
-    /** @param array<string, string> $form @return list<array<string, mixed>> */
+    /**
+     * @param array<string, string> $form
+     * @return list<array<string, mixed>>
+     */
     private function views(array $form): array
     {
         $result = [];
@@ -145,7 +151,10 @@ final readonly class BusinessDefinitionFormMapper
         return $result;
     }
 
-    /** @param array<string, string> $form @return list<array<string, mixed>> */
+    /**
+     * @param array<string, string> $form
+     * @return list<array<string, mixed>>
+     */
     private function actions(array $form): array
     {
         $result = [];
@@ -170,7 +179,10 @@ final readonly class BusinessDefinitionFormMapper
         return $result;
     }
 
-    /** @param array<string, string> $form @return array<string, mixed>|null */
+    /**
+     * @param array<string, string> $form
+     * @return array<string, mixed>|null
+     */
     private function workflow(array $form): ?array
     {
         if (!$this->checked($form, 'workflow_enabled')) {
@@ -195,7 +207,10 @@ final readonly class BusinessDefinitionFormMapper
         ];
     }
 
-    /** @param array<string, string> $form @return array<string, mixed> */
+    /**
+     * @param array<string, string> $form
+     * @return array<string, mixed>
+     */
     private function formula(array $form, int $index): array
     {
         $type = $this->value($form, "field_{$index}_formula_type", 'string');
@@ -224,7 +239,10 @@ final readonly class BusinessDefinitionFormMapper
         return $document;
     }
 
-    /** @param array<string, string> $form @return array<string, mixed>|null */
+    /**
+     * @param array<string, string> $form
+     * @return array<string, mixed>|null
+     */
     private function condition(array $form, string $prefix): ?array
     {
         $field = $this->value($form, $prefix . '_field');
@@ -244,7 +262,10 @@ final readonly class BusinessDefinitionFormMapper
         return ['op' => $operator, 'type' => 'boolean', 'args' => $arguments];
     }
 
-    /** @param array<string, string> $form @return array<string, mixed>|null */
+    /**
+     * @param array<string, string> $form
+     * @return array<string, mixed>|null
+     */
     private function preservedExpression(array $form, string $prefix): ?array
     {
         $json = $this->value($form, $prefix . '_preserved');
@@ -277,7 +298,10 @@ final readonly class BusinessDefinitionFormMapper
         };
     }
 
-    /** @param array<string, string> $form @return list<array<string, mixed>> */
+    /**
+     * @param array<string, string> $form
+     * @return list<array<string, mixed>>
+     */
     private function validators(array $form, int $index): array
     {
         $rule = $this->value($form, "field_{$index}_validator");
@@ -310,7 +334,10 @@ final readonly class BusinessDefinitionFormMapper
         ]];
     }
 
-    /** @param array<string, string> $form @return array<string, scalar|list<scalar|null>|null> */
+    /**
+     * @param array<string, string> $form
+     * @return array<string, scalar|list<scalar|null>|null>
+     */
     private function configuration(array $form, int $index): array
     {
         $json = $this->value($form, "field_{$index}_configuration_preserved");
@@ -361,14 +388,21 @@ final readonly class BusinessDefinitionFormMapper
         };
     }
 
-    /** @param array<string, string> $form @param list<string> $default @return list<string> */
+    /**
+     * @param array<string, string> $form
+     * @param list<string> $default
+     * @return list<string>
+     */
     private function list(array $form, string $key, array $default = []): array
     {
         $value = $this->value($form, $key);
         if ($value === '') {
             return $default;
         }
-        $items = preg_split('/[\r\n,]+/u', $value) ?: [];
+        $items = preg_split('/[\r\n,]+/u', $value);
+        if ($items === false) {
+            $items = [];
+        }
         return array_values(array_unique(array_filter(
             array_map('trim', $items),
             static fn (string $item): bool => $item !== '',

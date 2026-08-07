@@ -60,7 +60,7 @@ final class FieldTypeRegistry
             static fn (array $item): FieldTypeDefinition => $item['definition'],
             array_filter(
                 $this->definitions,
-                static fn (array $item): bool => $item['owner'] == $owner,
+                static fn (array $item): bool => $item['owner']->toArray() === $owner->toArray(),
             ),
         ));
     }
@@ -68,7 +68,7 @@ final class FieldTypeRegistry
     public function remove(DefinitionOwner $owner): void
     {
         foreach ($this->definitions as $identifier => $item) {
-            if ($item['owner'] == $owner) {
+            if ($item['owner']->toArray() === $owner->toArray()) {
                 unset($this->definitions[$identifier]);
             }
         }

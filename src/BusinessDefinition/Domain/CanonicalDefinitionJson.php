@@ -56,10 +56,7 @@ final class CanonicalDefinitionJson
         if (count($value) > 512) {
             throw new InvalidBusinessDefinition('A business-definition collection exceeds 512 entries.');
         }
-        foreach ($value as $key => $item) {
-            if (!is_int($key) && !is_string($key)) {
-                throw new InvalidBusinessDefinition('A business-definition key is invalid.');
-            }
+        foreach ($value as $item) {
             self::assertSafe($item, $depth + 1);
         }
     }

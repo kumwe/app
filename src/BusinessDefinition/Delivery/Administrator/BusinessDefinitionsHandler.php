@@ -122,7 +122,7 @@ final readonly class BusinessDefinitionsHandler implements RequestHandlerInterfa
                 $selected = '';
             }
         }
-        $definition = $draft?->definition ?? $published?->definition;
+        $definition = $draft->definition ?? $published?->definition;
 
         return new HtmlResponse($this->renderer->render('business-definitions', [
             'csrf' => AdministratorRequest::session($request)->csrfToken,

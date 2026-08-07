@@ -86,7 +86,7 @@ final readonly class ManifestContributionSet
         }
         foreach ($this->businessDefinitions as $definition) {
             $businessOwner->assertOwns($definition->handle);
-            if ($definition->owner != $businessOwner) {
+            if ($definition->owner->toArray() !== $businessOwner->toArray()) {
                 throw new InvalidArgumentException('A business definition contribution has inconsistent ownership.');
             }
         }
@@ -188,7 +188,7 @@ final readonly class ManifestContributionSet
             $businessOwner,
         ): EntityTypeDefinition {
             $definition = EntityTypeDefinition::fromArray($item);
-            if ($definition->owner != $businessOwner) {
+            if ($definition->owner->toArray() !== $businessOwner->toArray()) {
                 throw new InvalidArgumentException('A contributed business definition must belong to its package.');
             }
             return $definition;

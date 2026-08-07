@@ -164,10 +164,10 @@ final readonly class BusinessDefinitionCatalogMigration implements Migration
         return $table;
     }
 
-    private function primaryKey(Table $table, string ...$columns): void
+    private function primaryKey(Table $table, string $firstColumn, string ...$columns): void
     {
         $table->addPrimaryKeyConstraint(
-            PrimaryKeyConstraint::editor()->setUnquotedColumnNames(...$columns)->create(),
+            PrimaryKeyConstraint::editor()->setUnquotedColumnNames($firstColumn, ...$columns)->create(),
         );
     }
 }

@@ -335,7 +335,7 @@ final readonly class BusinessDefinitionService
                 if (isset($graph[$relationship->target])) {
                     continue;
                 }
-                $related = $this->repository->draft($site, $relationship->target)?->definition
+                $related = $this->repository->draft($site, $relationship->target)->definition
                     ?? $this->repository->published($site, $relationship->target)?->definition;
                 if ($related === null) {
                     continue;
