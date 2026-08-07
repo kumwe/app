@@ -29,7 +29,16 @@ final readonly class BusinessDefinitionValidator
             }
             $byHandle[$definition->handle] = $definition;
             foreach ($definition->fields() as $field) {
-                $this->fieldTypes->get($field->type);
+                $fieldType = $this->fieldTypes->get($field->type);
+                $unknown = array_diff(array_keys($field->configuration), $fieldType->configurationKeys);
+                if ($unknown !== []) {
+                    throw new InvalidBusinessDefinition(sprintf(
+                        'Business field %s has unsupported %s configuration.',
+                        $field->handle,
+                        implode(', ', $unknown),
+                    ));
+                }
+                $this->validateFieldConfiguration($field->handle, $field->configuration);
             }
         }
         $ownershipEdges = [];
@@ -67,6 +76,39 @@ final readonly class BusinessDefinitionValidator
             }
         }
         $this->assertAcyclicOwnership($ownershipEdges);
+    }
+
+    /** @param array<string, scalar|list<scalar|null>|null> $configuration */
+    private function validateFieldConfiguration(string $field, array $configuration): void
+    {
+        $options = $configuration['options'] ?? null;
+        if ($options !== null) {
+            if (!is_array($options) || !array_is_list($options) || $options === [] || count($options) > 256) {
+                throw new InvalidBusinessDefinition('Business field ' . $field . ' has invalid options.');
+            }
+            foreach ($options as $option) {
+                if (!is_string($option) || $option === '' || strlen($option) > 191) {
+                    throw new InvalidBusinessDefinition('Business field ' . $field . ' has an invalid option.');
+                }
+            }
+        }
+        $currency = $configuration['currency'] ?? null;
+        if ($currency !== null && (!is_string($currency) || preg_match('/^[A-Z]{3}$/D', $currency) !== 1)) {
+            throw new InvalidBusinessDefinition('Business field ' . $field . ' has an invalid ISO currency.');
+        }
+        $unit = $configuration['unit'] ?? null;
+        if ($unit !== null && (!is_string($unit) || preg_match('/^[A-Za-z0-9._%\/-]{1,32}$/D', $unit) !== 1)) {
+            throw new InvalidBusinessDefinition('Business field ' . $field . ' has an invalid unit.');
+        }
+        $target = $configuration['target'] ?? null;
+        if ($target !== null && (!is_string($target)
+            || preg_match('/^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)+$/D', $target) !== 1)) {
+            throw new InvalidBusinessDefinition('Business field ' . $field . ' has an invalid entity target.');
+        }
+        $maxBytes = $configuration['max_bytes'] ?? null;
+        if ($maxBytes !== null && (!is_int($maxBytes) || $maxBytes < 1 || $maxBytes > 1_048_576)) {
+            throw new InvalidBusinessDefinition('Business field ' . $field . ' has an invalid JSON byte bound.');
+        }
     }
 
     /** @param array<string, list<string>> $edges */

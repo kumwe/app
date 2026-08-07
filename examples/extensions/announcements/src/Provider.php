@@ -56,6 +56,10 @@ final class Provider implements RuntimeExtension, ExtensionContributionProvider
             'Manage announcements example',
             'Open and manage the announcements conformance workspace.',
         ));
+        $contributions->fieldType(BusinessDefinitions::severity());
+        foreach (BusinessDefinitions::all() as $definition) {
+            $contributions->businessDefinition($definition);
+        }
         $contributions->administratorWorkspace(new AdministratorWorkspaceDefinition(
             'kumwe.announcements-example.workspace',
             'Announcements',

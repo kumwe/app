@@ -11,6 +11,7 @@ use Kumwe\CMS\Application\Authorization\AuthorizationResource;
 use Kumwe\CMS\Application\Authorization\ExecutionContext;
 use Kumwe\CMS\Audit\Application\AuditRecorder;
 use Kumwe\CMS\Audit\Domain\AuditEvent;
+use Kumwe\CMS\BusinessDefinition\Application\PackageDefinitionSynchronizer;
 use Kumwe\CMS\Extension\Domain\ExtensionIdentifier;
 use Kumwe\CMS\Extension\Domain\ExtensionManifest;
 use Kumwe\CMS\Extension\Domain\PackageChecksum;
@@ -34,6 +35,7 @@ final readonly class TrustStore
         private ClockInterface $clock,
         private AuthorizationGateway $authorization,
         private bool $allowUnsignedLocalPackages = false,
+        private ?PackageDefinitionSynchronizer $businessDefinitions = null,
     ) {
     }
 
@@ -245,6 +247,9 @@ final readonly class TrustStore
                 $now = $this->clock->now();
                 $this->repository->revoke($keyId, $context->actorId(), $reason, $now);
                 $quarantined = $this->repository->quarantineExtensionsForKey($keyId, $now);
+                foreach ($quarantined as $identifier) {
+                    $this->businessDefinitions?->setActive($identifier, false, $context->actorId());
+                }
                 $this->repository->advanceGeneration($now);
                 $this->runtime->advance('extension.trust_key.revoke.emergency', $keyId);
                 $this->record($context, 'extension.trust_key.revoke.emergency', $keyId, [
@@ -445,6 +450,7 @@ final readonly class TrustStore
             $this->repository->lockGeneration();
             $now = $this->clock->now();
             if ($this->repository->quarantineExtension($identifier, $now)) {
+                $this->businessDefinitions?->setActive($identifier, false, 'system:trust-quarantine');
                 $this->repository->advanceGeneration($now);
                 $this->runtime->advance('extension.trust.quarantine', $identifier);
                 $this->transactions->afterCommit(function (): void {

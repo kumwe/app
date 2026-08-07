@@ -20,7 +20,9 @@ final readonly class WorkflowBinding
     {
         $states = array_values(array_unique($states));
         if ($states === [] || count($states) > 64 || !in_array($initialState, $states, true)) {
-            throw new InvalidBusinessDefinition('A workflow binding requires a bounded state set and valid initial state.');
+            throw new InvalidBusinessDefinition(
+                'A workflow binding requires a bounded state set and valid initial state.',
+            );
         }
         foreach ($states as $state) {
             if (preg_match('/^[a-z][a-z0-9_]{0,62}$/D', $state) !== 1) {
@@ -41,7 +43,7 @@ final readonly class WorkflowBinding
                 || !in_array($transition['from'], $states, true)
                 || !in_array($transition['to'], $states, true)
                 || $transition['from'] === $transition['to']
-                || preg_match('/^[a-z][a-z0-9]*(?:[._:-][a-z0-9]+)*$/D', $transition['capability']) !== 1
+                || preg_match('/^[a-z][a-z0-9-]*(?:[._:][a-z0-9-]+)*$/D', $transition['capability']) !== 1
                 || isset($seen[$transition['handle']])) {
                 throw new InvalidBusinessDefinition('A workflow transition is invalid or duplicated.');
             }

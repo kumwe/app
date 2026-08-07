@@ -15,10 +15,14 @@ final readonly class FieldDefinition
     /** @var list<string> */
     public array $placements;
 
+    /** @var array<string, scalar|list<scalar|null>|null> */
+    public array $configuration;
+
     /**
      * @param list<string> $normalizers
      * @param list<array<string, mixed>> $validators
      * @param list<string> $placements
+     * @param array<string, scalar|list<scalar|null>|null> $configuration
      */
     public function __construct(
         public string $handle,
@@ -31,6 +35,7 @@ final readonly class FieldDefinition
         public ?int $length = null,
         public ?int $precision = null,
         public ?int $scale = null,
+        array $configuration = [],
         array $normalizers = [],
         array $validators = [],
         public bool $unique = false,
@@ -78,17 +83,45 @@ final readonly class FieldDefinition
         if (($precision === null) !== ($scale === null)) {
             throw new InvalidBusinessDefinition('Business field precision and scale must be declared together.');
         }
-        if ($precision !== null && ($precision < 1 || $precision > 65 || $scale < 0 || $scale > $precision)) {
+        if ($precision !== null && $scale !== null
+            && ($precision < 1 || $precision > 65 || $scale < 0 || $scale > $precision)) {
             throw new InvalidBusinessDefinition('A business field precision or scale is invalid.');
         }
         if (in_array($type, ['core.decimal', 'core.money', 'core.quantity'], true) && $precision === null) {
             throw new InvalidBusinessDefinition('Exact numeric fields require explicit precision and scale.');
         }
+        if ($configuration !== [] && array_is_list($configuration)) {
+            throw new InvalidBusinessDefinition('Business field configuration must be an object.');
+        }
+        foreach ($configuration as $key => $value) {
+            if (!is_string($key) || preg_match('/^[a-z][a-z0-9_]{0,62}$/D', $key) !== 1) {
+                throw new InvalidBusinessDefinition('A business field configuration key is invalid.');
+            }
+            if (is_array($value)) {
+                if (!array_is_list($value) || count($value) > 256) {
+                    throw new InvalidBusinessDefinition('A business field configuration list is invalid.');
+                }
+                foreach ($value as $item) {
+                    if ((!is_scalar($item) && $item !== null) || is_float($item)) {
+                        throw new InvalidBusinessDefinition('A business field configuration value is invalid.');
+                    }
+                }
+                continue;
+            }
+            if ((!is_scalar($value) && $value !== null) || is_float($value)) {
+                throw new InvalidBusinessDefinition('A business field configuration value is invalid.');
+            }
+        }
+        CanonicalDefinitionJson::encode($configuration);
+        ksort($configuration, SORT_STRING);
+        $this->configuration = $configuration;
         if ($computed && (!$readOnly || !$serverOnly || $formula === null)) {
             throw new InvalidBusinessDefinition('A computed field must be server-only, read-only, and have a formula.');
         }
         if ($type === 'core.secret' && ($searchable || $filterable || $sortable || $reportable || $exportable)) {
-            throw new InvalidBusinessDefinition('A secret field cannot be searched, filtered, sorted, reported, or exported.');
+            throw new InvalidBusinessDefinition(
+                'A secret field cannot be searched, filtered, sorted, reported, or exported.',
+            );
         }
         if ($type === 'core.secret' && $sensitivity !== Sensitivity::Secret) {
             throw new InvalidBusinessDefinition('An encrypted secret field requires secret sensitivity.');
@@ -118,7 +151,8 @@ final readonly class FieldDefinition
     {
         $allowed = [
             'handle', 'label', 'type', 'description', 'required', 'nullable', 'default', 'length', 'precision',
-            'scale', 'normalizers', 'validators', 'unique', 'indexed', 'immutable_after_create', 'server_only',
+            'scale', 'configuration', 'normalizers', 'validators', 'unique', 'indexed',
+            'immutable_after_create', 'server_only',
             'computed', 'read_only', 'create_visible', 'update_visible', 'read_visible', 'searchable', 'filterable',
             'sortable', 'reportable', 'exportable', 'sensitivity', 'localized', 'help_text', 'form_group', 'order',
             'placements', 'visibility_condition', 'editability_condition', 'formula',
@@ -138,6 +172,7 @@ final readonly class FieldDefinition
             self::optionalInteger($document, 'length'),
             self::optionalInteger($document, 'precision'),
             self::optionalInteger($document, 'scale'),
+            self::configuration($document),
             self::stringList($document, 'normalizers'),
             self::objectList($document, 'validators'),
             self::boolean($document, 'unique'),
@@ -181,6 +216,7 @@ final readonly class FieldDefinition
             'length' => $this->length,
             'precision' => $this->precision,
             'scale' => $this->scale,
+            'configuration' => $this->configuration,
             'normalizers' => $this->normalizers,
             'validators' => $this->validators,
             'unique' => $this->unique,
@@ -256,6 +292,17 @@ final readonly class FieldDefinition
         if ($value !== null && !is_int($value)) {
             throw new InvalidBusinessDefinition('Business field property ' . $key . ' must be an integer or null.');
         }
+        return $value;
+    }
+
+    /** @param array<string, mixed> $document @return array<string, scalar|list<scalar|null>|null> */
+    private static function configuration(array $document): array
+    {
+        $value = $document['configuration'] ?? [];
+        if (!is_array($value) || ($value !== [] && array_is_list($value))) {
+            throw new InvalidBusinessDefinition('Business field configuration must be an object.');
+        }
+        /** @var array<string, scalar|list<scalar|null>|null> $value */
         return $value;
     }
 

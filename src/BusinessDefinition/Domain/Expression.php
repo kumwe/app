@@ -131,22 +131,32 @@ final readonly class Expression
             throw new InvalidBusinessDefinition('A condition or formula type is unsupported.');
         }
         ++$operations;
+        if ($operations > self::MAX_OPERATIONS) {
+            throw new InvalidBusinessDefinition('A condition or formula exceeds 128 operations.');
+        }
         if ($operator === 'literal') {
-            if (array_key_exists('args', $document) || array_key_exists('field', $document)) {
+            if (array_diff(array_keys($document), ['op', 'type', 'value']) !== []
+                || !array_key_exists('value', $document)) {
                 throw new InvalidBusinessDefinition('A literal expression has an invalid shape.');
             }
-            $value = $document['value'] ?? null;
+            $value = $document['value'];
             self::assertLiteral($type, $value);
 
             return new self($operator, $type, [], $value);
         }
         if ($operator === 'field') {
+            if (array_diff(array_keys($document), ['op', 'type', 'field']) !== []) {
+                throw new InvalidBusinessDefinition('A field expression has an invalid shape.');
+            }
             $field = $document['field'] ?? null;
             if (!is_string($field) || preg_match('/^[a-z][a-z0-9_]{0,62}$/D', $field) !== 1) {
                 throw new InvalidBusinessDefinition('A field expression references an invalid field.');
             }
 
             return new self($operator, $type, [], null, $field);
+        }
+        if (array_diff(array_keys($document), ['op', 'type', 'args', 'scale']) !== []) {
+            throw new InvalidBusinessDefinition('An operator expression has an invalid shape.');
         }
         $arguments = $document['args'] ?? null;
         if (!is_array($arguments) || !array_is_list($arguments)) {
@@ -165,7 +175,8 @@ final readonly class Expression
             $parsed[] = self::parse($argument, $depth + 1, $operations);
         }
         $scale = $document['scale'] ?? null;
-        if ($scale !== null && (!is_int($scale) || $scale < 0 || $scale > 30 || $operator !== 'divide')) {
+        if ($scale !== null && (!is_int($scale) || $scale < 0 || $scale > 30
+            || $operator !== 'divide' || $type !== 'decimal')) {
             throw new InvalidBusinessDefinition('Expression scale is supported only for decimal division.');
         }
         if ($operator === 'divide' && $type === 'decimal' && !is_int($scale)) {
@@ -195,27 +206,117 @@ final readonly class Expression
     /** @param list<Expression> $arguments */
     private static function assertOperatorType(string $operator, string $type, array $arguments): void
     {
-        if (in_array($operator, ['eq', 'ne', 'lt', 'lte', 'gt', 'gte', 'and', 'or', 'not', 'is_null', 'in', 'contains'], true)
+        if (in_array(
+            $operator,
+            ['eq', 'ne', 'lt', 'lte', 'gt', 'gte', 'and', 'or', 'not', 'is_null', 'in', 'contains'],
+            true,
+        )
             && $type !== 'boolean') {
             throw new InvalidBusinessDefinition(sprintf('Expression operator %s must produce boolean.', $operator));
         }
         if (in_array($operator, ['and', 'or', 'not'], true)) {
             foreach ($arguments as $argument) {
                 if ($argument->type !== 'boolean') {
-                    throw new InvalidBusinessDefinition(sprintf('Expression operator %s requires boolean arguments.', $operator));
+                    throw new InvalidBusinessDefinition(sprintf(
+                        'Expression operator %s requires boolean arguments.',
+                        $operator,
+                    ));
                 }
             }
         }
         if (in_array($operator, ['add', 'subtract', 'multiply', 'divide'], true)) {
             if (!in_array($type, ['integer', 'decimal'], true)) {
-                throw new InvalidBusinessDefinition(sprintf('Expression operator %s requires a numeric result.', $operator));
+                throw new InvalidBusinessDefinition(sprintf(
+                    'Expression operator %s requires a numeric result.',
+                    $operator,
+                ));
             }
             foreach ($arguments as $argument) {
                 if ($argument->type !== $type) {
-                    throw new InvalidBusinessDefinition(sprintf('Expression operator %s has incompatible types.', $operator));
+                    throw new InvalidBusinessDefinition(sprintf(
+                        'Expression operator %s has incompatible types.',
+                        $operator,
+                    ));
                 }
             }
         }
+        if (in_array($operator, ['eq', 'ne'], true)) {
+            self::assertSameArgumentTypes($operator, $arguments);
+        }
+        if (in_array($operator, ['lt', 'lte', 'gt', 'gte'], true)) {
+            self::assertSameArgumentTypes($operator, $arguments);
+            if (!in_array($arguments[0]->type, ['integer', 'decimal', 'string', 'date', 'time', 'datetime'], true)) {
+                throw new InvalidBusinessDefinition('Ordered comparison arguments have an unsupported type.');
+            }
+        }
+        if ($operator === 'contains') {
+            self::assertResultAndArgumentTypes($operator, $type, 'boolean', $arguments, ['string']);
+        }
+        if ($operator === 'concat') {
+            self::assertResultAndArgumentTypes($operator, $type, 'string', $arguments, ['string']);
+        }
+        if ($operator === 'in') {
+            self::assertSameArgumentTypes($operator, $arguments);
+        }
+        if ($operator === 'if') {
+            if ($arguments[0]->type !== 'boolean'
+                || !self::resultCompatible($type, $arguments[1]->type)
+                || !self::resultCompatible($type, $arguments[2]->type)) {
+                throw new InvalidBusinessDefinition('Expression operator if has incompatible argument types.');
+            }
+        }
+        if ($operator === 'coalesce') {
+            foreach ($arguments as $argument) {
+                if (!self::resultCompatible($type, $argument->type)) {
+                    throw new InvalidBusinessDefinition('Expression operator coalesce has incompatible types.');
+                }
+            }
+        }
+    }
+
+    /** @param list<Expression> $arguments */
+    private static function assertSameArgumentTypes(string $operator, array $arguments): void
+    {
+        $expected = $arguments[0]->type;
+        foreach ($arguments as $argument) {
+            if ($argument->type !== $expected) {
+                throw new InvalidBusinessDefinition(sprintf(
+                    'Expression operator %s has incompatible argument types.',
+                    $operator,
+                ));
+            }
+        }
+    }
+
+    /** @param list<Expression> $arguments @param list<string> $argumentTypes */
+    private static function assertResultAndArgumentTypes(
+        string $operator,
+        string $type,
+        string $resultType,
+        array $arguments,
+        array $argumentTypes,
+    ): void {
+        if ($type !== $resultType) {
+            throw new InvalidBusinessDefinition(sprintf(
+                'Expression operator %s has an incompatible result type.',
+                $operator,
+            ));
+        }
+        foreach ($arguments as $argument) {
+            if (!in_array($argument->type, $argumentTypes, true)) {
+                throw new InvalidBusinessDefinition(sprintf(
+                    'Expression operator %s has incompatible argument types.',
+                    $operator,
+                ));
+            }
+        }
+    }
+
+    private static function resultCompatible(string $resultType, string $argumentType): bool
+    {
+        return $resultType === 'any'
+            || $argumentType === $resultType
+            || $argumentType === 'null';
     }
 
     /** @param list<string> $dependencies */

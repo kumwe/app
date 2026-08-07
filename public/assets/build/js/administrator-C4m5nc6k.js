@@ -1248,6 +1248,57 @@ var KumwePresentationSchemes = class KumwePresentationSchemes extends i {
 };
 KumwePresentationSchemes = __decorate([t("kumwe-presentation-schemes")], KumwePresentationSchemes);
 //#endregion
+//#region assets/administrator/components/business-definition-editor.ts
+var KumweDefinitionEditor = class extends i {
+	createRenderRoot() {
+		return this;
+	}
+	render() {
+		return b`<slot></slot>`;
+	}
+	connectedCallback() {
+		super.connectedCallback();
+		this.addEventListener("click", this.handleClick);
+	}
+	disconnectedCallback() {
+		this.removeEventListener("click", this.handleClick);
+		super.disconnectedCallback();
+	}
+	handleClick = (event) => {
+		const target = event.target;
+		if (!(target instanceof HTMLElement)) return;
+		const remove = target.closest("[data-remove]");
+		if (remove) {
+			remove.closest("[data-row]")?.remove();
+			return;
+		}
+		const kind = target.closest("[data-add]")?.dataset.add;
+		if (!kind) return;
+		const template = this.querySelector(`template[data-template="${kind}"]`);
+		const rows = this.querySelector(`[data-rows="${kind}"]`);
+		if (!template || !rows || rows.children.length >= this.limit(kind)) return;
+		const index = this.nextIndex(kind);
+		const wrapper = document.createElement("template");
+		wrapper.innerHTML = template.innerHTML.replaceAll("__INDEX__", String(index));
+		rows.append(wrapper.content.cloneNode(true));
+		rows.lastElementChild?.querySelector("input, select, textarea")?.focus();
+	};
+	nextIndex(kind) {
+		const names = Array.from(this.querySelectorAll(`[name^="${kind}_"]`)).map((input) => Number(input.name.match(new RegExp(`^${kind}_(\\d+)_`))?.[1] ?? -1));
+		return Math.max(-1, ...names) + 1;
+	}
+	limit(kind) {
+		return {
+			field: 256,
+			relationship: 128,
+			view: 64,
+			action: 64,
+			transition: 128
+		}[kind] ?? 0;
+	}
+};
+customElements.define("kumwe-definition-editor", KumweDefinitionEditor);
+//#endregion
 //#region assets/administrator/main.ts
 document.documentElement.classList.add("js");
 var focusableSelector = "a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex=\"-1\"])";

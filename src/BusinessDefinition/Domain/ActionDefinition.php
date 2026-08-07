@@ -21,7 +21,7 @@ final readonly class ActionDefinition
         if (preg_match('/^[a-z][a-z0-9_]{0,62}$/D', $handle) !== 1 || $label === '' || strlen($label) > 120) {
             throw new InvalidBusinessDefinition('A business action identity is invalid.');
         }
-        if (preg_match('/^[a-z][a-z0-9]*(?:[._:-][a-z0-9]+)*$/D', $capability) !== 1) {
+        if (preg_match('/^[a-z][a-z0-9-]*(?:[._:][a-z0-9-]+)*$/D', $capability) !== 1) {
             throw new InvalidBusinessDefinition('A business action capability is invalid.');
         }
         if ($public) {

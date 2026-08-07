@@ -70,7 +70,10 @@ final readonly class CompatibilityPlan
             'to_checksum' => $this->toChecksum,
             'requires_confirmation' => $this->requiresConfirmation(),
             'destructive' => $this->destructive(),
-            'changes' => array_map(static fn (CompatibilityChange $change): array => $change->toArray(), $this->changes),
+            'changes' => array_map(
+                static fn (CompatibilityChange $change): array => $change->toArray(),
+                $this->changes,
+            ),
         ];
     }
 }

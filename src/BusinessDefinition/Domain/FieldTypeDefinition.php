@@ -24,7 +24,11 @@ final readonly class FieldTypeDefinition
         if (!in_array($valueType, ['string', 'integer', 'boolean', 'object', 'collection', 'reference'], true)) {
             throw new InvalidBusinessDefinition('A field type value family is unsupported.');
         }
-        if (!in_array($storageType, ['guid', 'string', 'text', 'integer', 'boolean', 'date', 'time', 'datetime', 'json'], true)) {
+        if (!in_array(
+            $storageType,
+            ['guid', 'string', 'text', 'integer', 'boolean', 'date', 'time', 'datetime', 'json'],
+            true,
+        )) {
             throw new InvalidBusinessDefinition('A field type storage family is unsupported.');
         }
         if (count($configurationKeys) > 32 || count($configurationKeys) !== count(array_unique($configurationKeys))) {

@@ -63,6 +63,17 @@ final class BusinessDefinitionCompatibilityAnalyzer
                 );
             }
         }
+        if ($before->singularLabel !== $after->singularLabel
+            || $before->pluralLabel !== $after->pluralLabel
+            || $before->auditEnabled !== $after->auditEnabled
+            || $before->revisionsEnabled !== $after->revisionsEnabled
+            || $before->compatibilityMetadata() !== $after->compatibilityMetadata()) {
+            $changes[] = new CompatibilityChange(
+                '/definition/behavior',
+                CompatibilityClassification::BehaviorChanging,
+                'Change labels, audit policy, revision policy, or compatibility metadata.',
+            );
+        }
         foreach (
             [
                 'administrator' => [$before->administratorExposure, $after->administratorExposure],
@@ -113,23 +124,98 @@ final class BusinessDefinitionCompatibilityAnalyzer
                         : CompatibilityClassification::CompatibleConstraintTightening,
                     'Make field ' . $handle . ' required.',
                 );
+            } elseif ($field->required && !$candidate->required) {
+                $changes[] = new CompatibilityChange(
+                    '/fields/' . $handle . '/required',
+                    CompatibilityClassification::Additive,
+                    'Make field ' . $handle . ' optional.',
+                );
             }
-            if (($candidate->length !== null && ($field->length === null || $candidate->length < $field->length))
-                || ($candidate->precision !== null && $field->precision !== null
-                    && ($candidate->precision < $field->precision || $candidate->scale < $field->scale))) {
+            if ($field->nullable && !$candidate->nullable) {
+                $changes[] = new CompatibilityChange(
+                    '/fields/' . $handle . '/nullable',
+                    CompatibilityClassification::DataMigrationRequired,
+                    'Disallow null values for field ' . $handle . '.',
+                );
+            } elseif (!$field->nullable && $candidate->nullable) {
+                $changes[] = new CompatibilityChange(
+                    '/fields/' . $handle . '/nullable',
+                    CompatibilityClassification::Additive,
+                    'Allow null values for field ' . $handle . '.',
+                );
+            }
+            $constraintsTightened = ($candidate->length !== null
+                    && ($field->length === null || $candidate->length < $field->length))
+                || ($candidate->precision !== null && $candidate->scale !== null
+                    && $field->precision !== null && $field->scale !== null
+                    && ($candidate->precision < $field->precision || $candidate->scale < $field->scale))
+                || (!$field->unique && $candidate->unique);
+            if ($constraintsTightened) {
                 $changes[] = new CompatibilityChange(
                     '/fields/' . $handle . '/constraints',
                     CompatibilityClassification::DataMigrationRequired,
                     'Tighten persisted constraints for field ' . $handle . '.',
                 );
+            } elseif ($field->length !== $candidate->length
+                || $field->precision !== $candidate->precision
+                || $field->scale !== $candidate->scale
+                || $field->unique !== $candidate->unique) {
+                $changes[] = new CompatibilityChange(
+                    '/fields/' . $handle . '/constraints',
+                    CompatibilityClassification::Additive,
+                    'Relax persisted constraints for field ' . $handle . '.',
+                );
+            }
+            if ($field->indexed !== $candidate->indexed) {
+                $changes[] = new CompatibilityChange(
+                    '/fields/' . $handle . '/indexed',
+                    CompatibilityClassification::DataMigrationRequired,
+                    sprintf('%s the persisted index for field %s.', $candidate->indexed ? 'Add' : 'Remove', $handle),
+                );
+            }
+            $removedOptions = array_diff(
+                self::stringConfiguration($field, 'options'),
+                self::stringConfiguration($candidate, 'options'),
+            );
+            if ($removedOptions !== []) {
+                $changes[] = new CompatibilityChange(
+                    '/fields/' . $handle . '/configuration/options',
+                    CompatibilityClassification::DataMigrationRequired,
+                    'Remove accepted options from field ' . $handle . '.',
+                );
+            } elseif ($field->configuration !== $candidate->configuration) {
+                $changes[] = new CompatibilityChange(
+                    '/fields/' . $handle . '/configuration',
+                    CompatibilityClassification::BehaviorChanging,
+                    'Change type-specific configuration for field ' . $handle . '.',
+                );
             }
             if ($field->formula?->toArray() !== $candidate->formula?->toArray()
                 || $field->immutableAfterCreate !== $candidate->immutableAfterCreate
-                || $field->sensitivity !== $candidate->sensitivity) {
+                || $field->sensitivity !== $candidate->sensitivity
+                || $field->default !== $candidate->default
+                || $field->validators !== $candidate->validators
+                || $field->normalizers !== $candidate->normalizers) {
                 $changes[] = new CompatibilityChange(
                     '/fields/' . $handle . '/behavior',
                     CompatibilityClassification::BehaviorChanging,
                     'Change computed, immutability, or sensitivity behavior for field ' . $handle . '.',
+                );
+            }
+            $oldPresentation = $field->toArray();
+            $newPresentation = $candidate->toArray();
+            foreach ([
+                'handle', 'type', 'required', 'nullable', 'length', 'precision', 'scale', 'configuration',
+                'formula', 'immutable_after_create', 'sensitivity', 'default', 'validators', 'normalizers',
+                'unique', 'indexed',
+            ] as $handled) {
+                unset($oldPresentation[$handled], $newPresentation[$handled]);
+            }
+            if ($oldPresentation !== $newPresentation) {
+                $changes[] = new CompatibilityChange(
+                    '/fields/' . $handle . '/presentation',
+                    CompatibilityClassification::BehaviorChanging,
+                    'Change delivery, visibility, localization, or presentation metadata for field ' . $handle . '.',
                 );
             }
         }
@@ -142,6 +228,16 @@ final class BusinessDefinitionCompatibilityAnalyzer
                 'Add field ' . $handle . '.',
             );
         }
+    }
+
+    /** @return list<string> */
+    private static function stringConfiguration(FieldDefinition $field, string $key): array
+    {
+        $value = $field->configuration[$key] ?? [];
+        if (!is_array($value) || !array_is_list($value)) {
+            return [];
+        }
+        return array_values(array_filter($value, 'is_string'));
     }
 
     /** @param list<CompatibilityChange> $changes */

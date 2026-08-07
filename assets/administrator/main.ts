@@ -8,6 +8,7 @@ import './components/media-picker';
 import './components/job-fields';
 import './components/rich-text';
 import './components/presentation-schemes';
+import './components/business-definition-editor';
 
 document.documentElement.classList.add('js');
 

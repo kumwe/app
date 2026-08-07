@@ -123,7 +123,11 @@ final readonly class ViewDefinition
     /** @param list<string> $values @return list<string> */
     private static function identifiers(array $values, bool $mayBeEmpty): array
     {
-        if ((!$mayBeEmpty && $values === []) || count($values) > 128 || count($values) !== count(array_unique($values))) {
+        if (
+            (!$mayBeEmpty && $values === [])
+            || count($values) > 128
+            || count($values) !== count(array_unique($values))
+        ) {
             throw new InvalidBusinessDefinition('Business view field references are empty, duplicated, or unbounded.');
         }
         foreach ($values as $value) {

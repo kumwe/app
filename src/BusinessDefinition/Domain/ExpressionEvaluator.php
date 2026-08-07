@@ -21,7 +21,7 @@ final class ExpressionEvaluator
                 throw new InvalidBusinessDefinition('Formula inputs cannot contain PHP floats.');
             }
 
-            return $value;
+            return self::typed($expression->type, $value);
         }
         $values = array_map(
             static fn (Expression $item): mixed => self::evaluate($item, $fields),
@@ -55,7 +55,9 @@ final class ExpressionEvaluator
     private static function compare(string $type, mixed $left, mixed $right): int
     {
         if ($type === 'decimal') {
-            return DecimalValue::fromString(self::string($left))->compare(DecimalValue::fromString(self::string($right)));
+            return DecimalValue::fromString(self::string($left))->compare(
+                DecimalValue::fromString(self::string($right)),
+            );
         }
         if (is_int($left) && is_int($right)) {
             return $left <=> $right;
@@ -73,12 +75,16 @@ final class ExpressionEvaluator
             $result = self::integer(array_shift($values));
             foreach ($values as $value) {
                 $operand = self::integer($value);
-                $result = match ($operation) {
+                $next = match ($operation) {
                     'add' => $result + $operand,
                     'subtract' => $result - $operand,
                     'multiply' => $result * $operand,
                     default => throw new InvalidBusinessDefinition('The integer formula operation is unsupported.'),
                 };
+                if (!is_int($next)) {
+                    throw new InvalidBusinessDefinition('An integer formula exceeded the platform integer range.');
+                }
+                $result = $next;
             }
 
             return $result;
@@ -105,6 +111,9 @@ final class ExpressionEvaluator
             $right = self::integer($values[1]);
             if ($right === 0) {
                 throw new InvalidBusinessDefinition('A formula attempted division by zero.');
+            }
+            if ($left === PHP_INT_MIN && $right === -1) {
+                throw new InvalidBusinessDefinition('An integer formula exceeded the platform integer range.');
             }
 
             return intdiv($left, $right);
@@ -137,6 +146,25 @@ final class ExpressionEvaluator
     {
         if (!is_string($value)) {
             throw new InvalidBusinessDefinition('A formula expected a string value.');
+        }
+
+        return $value;
+    }
+
+    private static function typed(string $type, mixed $value): mixed
+    {
+        $valid = match ($type) {
+            'any' => is_null($value) || is_bool($value) || is_int($value) || is_string($value),
+            'null' => $value === null,
+            'boolean' => is_bool($value),
+            'integer' => is_int($value),
+            'decimal' => is_string($value)
+                && preg_match('/^-?(?:0|[1-9][0-9]*)(?:\.[0-9]+)?$/D', $value) === 1,
+            'string', 'date', 'time', 'datetime' => is_string($value),
+            default => false,
+        };
+        if (!$valid) {
+            throw new InvalidBusinessDefinition('A formula field value does not match its declared type.');
         }
 
         return $value;
