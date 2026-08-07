@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Kumwe\CMS\Extension\Contribution;
 
+use Kumwe\CMS\BusinessDefinition\Domain\BuiltInFieldTypes;
+
 final class CoreExtensionContributions
 {
     /** @var array<string, string> */
@@ -19,6 +21,9 @@ final class CoreExtensionContributions
 
     public static function register(ExtensionContributionRegistrar $registrar): void
     {
+        foreach (BuiltInFieldTypes::all() as $fieldType) {
+            $registrar->fieldType($fieldType);
+        }
         foreach (self::CAPABILITIES as $id => $description) {
             $registrar->capability(new CapabilityDefinition(
                 $id,

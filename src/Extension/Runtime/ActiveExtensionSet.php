@@ -120,6 +120,7 @@ final class ActiveExtensionSet
             $provider->contribute($registrar, $extension['container']);
             $registrar->complete();
         }
+        $this->contributions->validateBusinessDefinitions();
     }
 
     public function registerRoutes(Application $application, AdministratorRenderer $renderer): void

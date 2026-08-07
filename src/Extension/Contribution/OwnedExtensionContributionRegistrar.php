@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace Kumwe\CMS\Extension\Contribution;
 
 use InvalidArgumentException;
+use Kumwe\CMS\BusinessDefinition\Domain\DefinitionOwner;
+use Kumwe\CMS\BusinessDefinition\Domain\EntityTypeDefinition;
+use Kumwe\CMS\BusinessDefinition\Domain\FieldTypeDefinition;
 
 final class OwnedExtensionContributionRegistrar implements ExtensionContributionRegistrar
 {
@@ -28,6 +31,8 @@ final class OwnedExtensionContributionRegistrar implements ExtensionContribution
             'navigation' => $this->index($declared->navigation()),
             'view' => $this->index($declared->views()),
             'route' => $this->index($declared->routes()),
+            'field_type' => $this->businessIndex($declared->fieldTypes()),
+            'business_definition' => $this->businessIndex($declared->businessDefinitions()),
         ];
     }
 
@@ -61,6 +66,18 @@ final class OwnedExtensionContributionRegistrar implements ExtensionContribution
     ): void {
         $this->accept('route', $definition->name, $definition->toArray());
         $this->registries->routes()->register($this->owner, $definition, $factory);
+    }
+
+    public function fieldType(FieldTypeDefinition $definition): void
+    {
+        $this->accept('field_type', $definition->id, $definition->toArray());
+        $this->registries->fieldTypes()->register($this->businessOwner(), $definition);
+    }
+
+    public function businessDefinition(EntityTypeDefinition $definition): void
+    {
+        $this->accept('business_definition', $definition->handle, $definition->toArray());
+        $this->registries->businessDefinitions()->register($this->businessOwner(), $definition);
     }
 
     public function complete(): void
@@ -122,5 +139,26 @@ final class OwnedExtensionContributionRegistrar implements ExtensionContribution
             $result[$item->identifier()] = $item->toArray();
         }
         return $result;
+    }
+
+    /**
+     * @param iterable<FieldTypeDefinition|EntityTypeDefinition> $items
+     * @return array<string, array<string, mixed>>
+     */
+    private function businessIndex(iterable $items): array
+    {
+        $result = [];
+        foreach ($items as $item) {
+            $identifier = $item instanceof FieldTypeDefinition ? $item->id : $item->handle;
+            $result[$identifier] = $item->toArray();
+        }
+        return $result;
+    }
+
+    private function businessOwner(): DefinitionOwner
+    {
+        return $this->owner->identifier() === ContributionOwner::CORE
+            ? DefinitionOwner::core()
+            : DefinitionOwner::extension($this->owner->identifier());
     }
 }

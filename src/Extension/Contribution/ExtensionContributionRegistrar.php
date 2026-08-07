@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Kumwe\CMS\Extension\Contribution;
 
+use Kumwe\CMS\BusinessDefinition\Domain\EntityTypeDefinition;
+use Kumwe\CMS\BusinessDefinition\Domain\FieldTypeDefinition;
+
 interface ExtensionContributionRegistrar
 {
     public function capability(CapabilityDefinition $definition): void;
@@ -18,4 +21,8 @@ interface ExtensionContributionRegistrar
         AdministratorRouteDefinition $definition,
         AdministratorRouteHandlerFactory $factory,
     ): void;
+
+    public function fieldType(FieldTypeDefinition $definition): void;
+
+    public function businessDefinition(EntityTypeDefinition $definition): void;
 }
