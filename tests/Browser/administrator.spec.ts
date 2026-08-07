@@ -48,7 +48,7 @@ test('database-backed public presentation is responsive and ready', async ({ pag
   await expect(page.getByRole('heading', { name: 'Structure once. Publish with confidence.' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'One content core. Every delivery surface.' })).toBeVisible();
   await expect(page.getByRole('link', { name: /Open administrator/ }).first()).toBeVisible();
-  await expect(page.getByRole('navigation', { name: 'Main navigation' })).toContainText('Capabilities');
+  await expect(page.locator('nav[aria-label="Main navigation"]')).toContainText('Capabilities');
   await expect(page.locator('img[src*="kumwe-wordmark.svg"]')).toBeVisible();
   await expectStylesLoaded(page);
   await expectAccessible(page);
@@ -122,8 +122,8 @@ test.describe('authenticated administrator', () => {
     await page.goto('/administrator/content/new');
     await expect(page.getByRole('heading', { name: 'Create content' })).toBeVisible();
     await expect(page.getByText('JSON', { exact: true })).toHaveCount(0);
-    await expect(page.getByRole('textbox', { name: 'Rich text editor' })).toBeVisible();
-    await expect(page.getByRole('toolbar', { name: 'Text formatting' })).toBeVisible();
+    await expect(page.getByRole('textbox', { name: 'Rich text editor' }).first()).toBeVisible();
+    await expect(page.getByRole('toolbar', { name: 'Text formatting' }).first()).toBeVisible();
     await expectAccessible(page);
     await page.screenshot({ path: testInfo.outputPath('content-editor.png'), fullPage: true });
   });
@@ -149,7 +149,7 @@ test.describe('authenticated administrator', () => {
     await addItem.locator('summary').click();
     const form = addItem.locator('form');
     await form.getByLabel('Link type').selectOption('content');
-    await form.getByLabel('Page').selectOption({ label: `${title} · Published` });
+    await form.locator('select[name="content_id"]').selectOption({ label: `${title} · Published` });
     await form.getByLabel('Link label').fill(title);
     await form.getByLabel('URL segment').fill(slug);
     await form.getByRole('button', { name: 'Add link' }).click();

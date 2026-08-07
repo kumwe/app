@@ -1,20 +1,27 @@
 {% extends "layout.twig" %}
 {% block title %}{{ entry.title }} · {{ site_name }}{% endblock %}
 {% block content %}
-  {% set page = entry.data %}
-  <article class="managed-page{% if page.heading or page.summary or page.logo %} managed-page-landing{% endif %}">
-    {% if page.heading or page.summary or page.logo %}
+  {% set page = entry.data|default({}) %}
+  {% set heading = page.heading|default('') %}
+  {% set summary = page.summary|default('') %}
+  {% set logo = page.logo|default('') %}
+  {% set primary_action = page.primary_action|default(null) %}
+  {% set secondary_action = page.secondary_action|default(null) %}
+  {% set capabilities = page.capabilities|default(null) %}
+  {% set platform = page.platform|default(null) %}
+  <article class="managed-page{% if heading or summary or logo %} managed-page-landing{% endif %}">
+    {% if heading or summary or logo %}
       <header class="managed-hero"><div class="site-container managed-hero-grid"><div class="managed-hero-copy">
-        {% if page.eyebrow %}<p class="eyebrow">{{ page.eyebrow }}</p>{% endif %}
-        <h1>{{ page.heading|default(entry.title) }}</h1>
-        {% if page.summary %}<p class="managed-summary">{{ page.summary }}</p>{% endif %}
-        {% if page.primary_action or page.secondary_action %}<div class="managed-actions">{% if page.primary_action %}<a class="site-button" href="{{ page.primary_action.url }}">{{ page.primary_action.label }}</a>{% endif %}{% if page.secondary_action %}<a class="site-button secondary" href="{{ page.secondary_action.url }}">{{ page.secondary_action.label }}</a>{% endif %}</div>{% endif %}
-      </div>{% if page.logo %}<div class="managed-hero-logo"><img src="{{ page.logo }}" alt="{{ site_name }}" loading="eager"></div>{% endif %}</div></header>
+        {% if page.eyebrow|default('') %}<p class="eyebrow">{{ page.eyebrow }}</p>{% endif %}
+        <h1>{{ heading|default(entry.title, true) }}</h1>
+        {% if summary %}<p class="managed-summary">{{ summary }}</p>{% endif %}
+        {% if primary_action or secondary_action %}<div class="managed-actions">{% if primary_action and primary_action.url|default('') and primary_action.label|default('') %}<a class="site-button" href="{{ primary_action.url }}">{{ primary_action.label }}</a>{% endif %}{% if secondary_action and secondary_action.url|default('') and secondary_action.label|default('') %}<a class="site-button secondary" href="{{ secondary_action.url }}">{{ secondary_action.label }}</a>{% endif %}</div>{% endif %}
+      </div>{% if logo %}<div class="managed-hero-logo"><img src="{{ logo }}" alt="{{ site_name }}" loading="eager"></div>{% endif %}</div></header>
     {% else %}
       <header class="article-heading site-container"><h1>{{ entry.title }}</h1></header>
     {% endif %}
-    {% if entry.body_html %}<section class="managed-section"><div class="site-container article-body">{{ entry.body_html|raw }}</div></section>{% endif %}
-    {% if page.capabilities %}<section class="managed-section managed-section-accent"{% if page.capabilities.anchor %} id="{{ page.capabilities.anchor }}"{% endif %}><div class="site-container managed-section-grid"><h2>{{ page.capabilities.heading }}</h2><div class="article-body">{{ page.capabilities.body_html|raw }}</div></div></section>{% endif %}
-    {% if page.platform %}<section class="managed-section"{% if page.platform.anchor %} id="{{ page.platform.anchor }}"{% endif %}><div class="site-container managed-section-grid"><h2>{{ page.platform.heading }}</h2><div class="article-body">{{ page.platform.body_html|raw }}</div></div></section>{% endif %}
+    {% if entry.body_html|default('') %}<section class="managed-section"><div class="site-container article-body">{{ entry.body_html|raw }}</div></section>{% endif %}
+    {% if capabilities %}<section class="managed-section managed-section-accent"{% if capabilities.anchor|default('') %} id="{{ capabilities.anchor }}"{% endif %}><div class="site-container managed-section-grid"><h2>{{ capabilities.heading|default('') }}</h2><div class="article-body">{{ capabilities.body_html|default('')|raw }}</div></div></section>{% endif %}
+    {% if platform %}<section class="managed-section"{% if platform.anchor|default('') %} id="{{ platform.anchor }}"{% endif %}><div class="site-container managed-section-grid"><h2>{{ platform.heading|default('') }}</h2><div class="article-body">{{ platform.body_html|default('')|raw }}</div></div></section>{% endif %}
   </article>
 {% endblock %}
