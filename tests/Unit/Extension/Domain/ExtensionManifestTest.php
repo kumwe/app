@@ -36,6 +36,74 @@ final class ExtensionManifestTest extends TestCase
         ExtensionManifest::fromJson(str_replace('acme/library', 'acme/editor', $this->manifestJson()));
     }
 
+    public function testParsesStrictSchemaTwoContributionContracts(): void
+    {
+        $manifest = ExtensionManifest::fromJson(<<<'JSON'
+{
+  "schema": 2,
+  "name": "acme/editor",
+  "type": "component",
+  "version": "2.0.0",
+  "provider": "Acme\\Editor\\Provider",
+  "autoload": {"psr-4": {"Acme\\Editor\\": "src/"}},
+  "requires": {"kumwe": "^2.0.0", "php": "^8.5.0"},
+  "contributions": {
+    "version": 1,
+    "capabilities": [{
+      "id": "acme.editor.manage",
+      "label": "Manage editor",
+      "description": "Open and manage the editor workspace."
+    }],
+    "administrator": {
+      "workspaces": [{
+        "id": "acme.editor.workspace",
+        "label": "Editor",
+        "description": "Editor operations",
+        "priority": 300
+      }],
+      "navigation": [{
+        "id": "acme.editor.navigation",
+        "workspace": "acme.editor.workspace",
+        "label": "Editor",
+        "description": "Open editor",
+        "path": "/",
+        "icon": "content",
+        "capability": "acme.editor.manage",
+        "priority": 10,
+        "keywords": "editor"
+      }],
+      "routes": [{
+        "name": "acme.editor.index",
+        "path": "/",
+        "methods": ["GET"],
+        "capability": "acme.editor.manage",
+        "view": "acme.editor.index"
+      }],
+      "views": [{"name": "acme.editor.index", "template": "index.twig"}]
+    }
+  }
+}
+JSON);
+
+        self::assertSame(2, $manifest->schemaVersion());
+        self::assertSame(['acme.editor.manage'], $manifest->permissions());
+        self::assertSame('acme.editor.index', $manifest->contributions()->routes()[0]->name);
+        self::assertSame('index.twig', $manifest->contributions()->views()[0]->template);
+    }
+
+    public function testSchemaTwoRejectsUnknownAndForeignOwnedContributions(): void
+    {
+        $json = str_replace(
+            '"schema": 1,',
+            '"schema": 2, "unknown": true,',
+            $this->manifestJson(),
+        );
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('unknown key unknown');
+        ExtensionManifest::fromJson($json);
+    }
+
     private function manifestJson(): string
     {
         return <<<'JSON'
