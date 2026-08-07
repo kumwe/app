@@ -51,6 +51,7 @@ async function ensureAnnouncementsActive(page: Page): Promise<void> {
     message: 'the active extension navigation to reach the local signed runtime map',
     timeout: 25_000,
   }).toBeGreaterThan(0);
+  await page.goto('/administrator/extensions');
 }
 
 test('login is accessible and visually stable', async ({ page }, testInfo) => {
@@ -165,7 +166,7 @@ test.describe('authenticated administrator', () => {
     const field = page.locator('[data-row="field"]').last();
     await field.getByLabel('Handle').fill('reference');
     await field.getByLabel('Label').fill('Reference');
-    await field.getByLabel('Type').selectOption('core.text');
+    await field.locator('select').first().selectOption('core.text');
     await field.getByLabel('Length').fill('120');
     await field.getByText('Required', { exact: true }).click();
     await page.getByRole('button', { name: 'Save and validate draft' }).click();
