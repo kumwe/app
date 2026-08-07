@@ -19,6 +19,12 @@ interface SiteScopedContentRepository extends ContentRepository
 
     public function findForSite(SiteContext $site, string $id, bool $includeDeleted = false): ?ContentRecord;
 
+    public function findPublishedByIdForSite(
+        SiteContext $site,
+        string $id,
+        DateTimeImmutable $time,
+    ): ?ContentRecord;
+
     public function findPublishedBySlugForSite(
         SiteContext $site,
         string $slug,

@@ -61,4 +61,16 @@ final class JsonSchemaValidatorTest extends TestCase
             'unevaluatedProperties' => false,
         ]);
     }
+
+    public function testAcceptsSafeRootRelativeMediaReferences(): void
+    {
+        $validator = new JsonSchemaValidator();
+        $schema = ['type' => 'string', 'format' => 'uri-reference'];
+
+        $validator->assertValid($schema, '/media/00000000-0000-7000-8000-000000000901/kumwe-symbol.svg');
+        $validator->assertValid($schema, '#platform');
+
+        $this->expectException(InvalidContentData::class);
+        $validator->assertValid($schema, '/../private/logo.svg');
+    }
 }

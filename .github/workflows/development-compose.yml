@@ -78,9 +78,6 @@ jobs:
             --output "$evidence/site.css" \
             "http://127.0.0.1:9900/assets/build/${site_css}"
           curl --fail --silent --show-error \
-            --output "$evidence/default-site.css" \
-            http://127.0.0.1:9900/assets/default-site.css
-          curl --fail --silent --show-error \
             --output "$evidence/administrator.js" \
             "http://127.0.0.1:9900/assets/build/${administrator_module}"
           curl --fail --silent --show-error \
@@ -92,11 +89,11 @@ jobs:
 
           grep -Fq -- '--kumwe-font-sans' "$evidence/administrator.css"
           grep -Fq -- '--site-font' "$evidence/site.css"
-          grep -Fq -- '.welcome-hero-grid' "$evidence/default-site.css"
+          grep -Fq -- '.managed-hero-grid' "$evidence/site.css"
           test "$(wc -c < "$evidence/administrator.js")" -gt 1000
           grep -Fq "/assets/build/${administrator_css}" "$evidence/administrator-login.html"
-          grep -Fq '/assets/default-site.css' "$evidence/public-home.html"
           grep -Fq 'Content systems' "$evidence/public-home.html"
+          grep -Fq 'kumwe-wordmark.svg' "$evidence/public-home.html"
 
           # Readiness markers expire after 30 seconds. This proves that the
           # managed development watcher keeps readiness valid after startup.

@@ -12,6 +12,7 @@ use Kumwe\CMS\Application\Authorization\AuthorizationResource;
 use Kumwe\CMS\Application\Authorization\ExecutionContext;
 use Kumwe\CMS\Audit\Application\AuditRecorder;
 use Kumwe\CMS\Audit\Domain\AuditEvent;
+use Kumwe\CMS\Content\Application\ContentService;
 use Kumwe\CMS\Infrastructure\Persistence\TableNames;
 use Kumwe\CMS\Infrastructure\Persistence\TransactionManager;
 use Kumwe\CMS\Identity\Domain\Capability;
@@ -29,6 +30,7 @@ final readonly class DoctrineSiteSettings implements SiteSettings
         private AuditRecorder $audit,
         private ClockInterface $clock,
         private AuthorizationGateway $authorization,
+        private ?ContentService $content = null,
     ) {
     }
 
@@ -40,6 +42,7 @@ final readonly class DoctrineSiteSettings implements SiteSettings
         ));
         $settings = [
             'site_name' => 'Kumwe',
+            'homepage_content_id' => null,
             'homepage_slug' => 'home',
             'default_locale' => 'en',
             'timezone' => 'UTC',
@@ -73,6 +76,7 @@ final readonly class DoctrineSiteSettings implements SiteSettings
         $current = $this->current();
         $this->updateAll($context, [
             'site_name' => $siteName,
+            'homepage_content_id' => $current['homepage_content_id'],
             'homepage_slug' => $homepageSlug,
             'default_locale' => $current['default_locale'],
             'timezone' => $current['timezone'],
@@ -85,7 +89,16 @@ final readonly class DoctrineSiteSettings implements SiteSettings
     {
         $this->authorize($context);
         $actorId = $context->actorId();
-        $normalized = $this->validate($settings);
+        $normalized = $this->validate(array_replace($this->current(), $settings));
+        $homepageId = $normalized['homepage_content_id'];
+        if (is_string($homepageId) && $this->content !== null) {
+            $homepage = $this->content->publishedById($homepageId, $context->site());
+            if ($homepage === null || $homepage->contentTypeId !== ContentService::CORE_PAGE_TYPE_ID) {
+                throw new InvalidArgumentException(
+                    'The homepage must be a published Page for this site inside its publication window.',
+                );
+            }
+        }
 
         $this->transactions->transactional(function () use ($actorId, $normalized): void {
             foreach (self::keyMap() as $storageKey => $publicKey) {
@@ -121,12 +134,20 @@ final readonly class DoctrineSiteSettings implements SiteSettings
     private function validate(array $settings): array
     {
         $siteName = $this->stringSetting($settings, 'site_name');
+        $homepageContentId = $settings['homepage_content_id'] ?? null;
         $homepageSlug = $this->stringSetting($settings, 'homepage_slug');
         $locale = $this->stringSetting($settings, 'default_locale');
         $timezone = $this->stringSetting($settings, 'timezone');
 
         if ($siteName === '' || mb_strlen($siteName) > 160) {
             throw new InvalidArgumentException('The site name must contain 1 to 160 characters.');
+        }
+
+        if ($homepageContentId === '') {
+            $homepageContentId = null;
+        }
+        if ($homepageContentId !== null && (!is_string($homepageContentId) || !Uuid::isValid($homepageContentId))) {
+            throw new InvalidArgumentException('The homepage content identifier must be a canonical UUID or null.');
         }
 
         if (preg_match('/^[a-z0-9]+(?:-[a-z0-9]+)*$/D', $homepageSlug) !== 1) {
@@ -143,6 +164,7 @@ final readonly class DoctrineSiteSettings implements SiteSettings
 
         return [
             'site_name' => $siteName,
+            'homepage_content_id' => $homepageContentId === null ? null : strtolower($homepageContentId),
             'homepage_slug' => $homepageSlug,
             'default_locale' => str_replace('_', '-', $locale),
             'timezone' => $timezone,
@@ -216,6 +238,7 @@ final readonly class DoctrineSiteSettings implements SiteSettings
     {
         return [
             'site.name' => 'site_name',
+            'site.homepage_content_id' => 'homepage_content_id',
             'site.homepage_slug' => 'homepage_slug',
             'site.default_locale' => 'default_locale',
             'site.timezone' => 'timezone',

@@ -140,12 +140,39 @@ final readonly class DoctrineContentRepository implements SiteScopedContentRepos
         return $this->findPublishedBySlugForSite(SiteContext::default(), $slug, $time);
     }
 
+    public function findPublishedById(string $id, DateTimeImmutable $time): ?ContentRecord
+    {
+        return $this->findPublishedByIdForSite(SiteContext::default(), $id, $time);
+    }
+
+    public function findPublishedByIdForSite(
+        SiteContext $site,
+        string $id,
+        DateTimeImmutable $time,
+    ): ?ContentRecord
+    {
+        return $this->findPublishedForSite($site, 'id', $id, $time);
+    }
+
     public function findPublishedBySlugForSite(SiteContext $site, string $slug, DateTimeImmutable $time): ?ContentRecord
     {
+        return $this->findPublishedForSite($site, 'slug', $slug, $time);
+    }
+
+    private function findPublishedForSite(
+        SiteContext $site,
+        string $identityColumn,
+        string $identity,
+        DateTimeImmutable $time,
+    ): ?ContentRecord
+    {
+        if (!in_array($identityColumn, ['id', 'slug'], true)) {
+            throw new InvalidArgumentException('The published content identity column is invalid.');
+        }
         $query = $this->database->createQueryBuilder()
             ->select(...[...$this->columns(), 'wv.public_states AS definition_public_states'])
             ->from($this->tables->raw('content_entries'), 'e')
-            ->where('e.slug = :slug')
+            ->where(sprintf('e.%s = :identity', $identityColumn))
             ->innerJoin(
                 'e',
                 $this->tables->raw('workflow_definition_versions'),
@@ -156,7 +183,7 @@ final readonly class DoctrineContentRepository implements SiteScopedContentRepos
             ->andWhere('e.deleted_at IS NULL')
             ->andWhere('(e.publish_at IS NULL OR e.publish_at <= :visible_at)')
             ->andWhere('(e.unpublish_at IS NULL OR e.unpublish_at > :visible_at)')
-            ->setParameter('slug', $slug)
+            ->setParameter('identity', $identity)
             ->setParameter('site', $site->identifier())
             ->setParameter('visible_at', $time, Types::DATETIME_IMMUTABLE)
             ->setMaxResults(50);

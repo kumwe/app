@@ -29,6 +29,7 @@ final readonly class AdministratorSessionMiddleware implements MiddlewareInterfa
     public function __construct(
         private AdministratorSessionStore $sessions,
         private AuthorizationGateway $authorization,
+        private ?SiteContext $site = null,
     ) {
     }
 
@@ -53,7 +54,7 @@ final readonly class AdministratorSessionMiddleware implements MiddlewareInterfa
         }
 
         $context = $session->principal->context(
-            SiteContext::default(),
+            $this->site ?? SiteContext::default(),
             AuthenticationStrength::Password,
             $this->requestId($request),
         );

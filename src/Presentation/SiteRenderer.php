@@ -9,8 +9,11 @@ use Kumwe\CMS\Presentation\Twig\SiteTwigEnvironment;
 
 final readonly class SiteRenderer
 {
-    public function __construct(private SiteTwigEnvironment $twig, private ?ViteAssetManifest $assets = null)
-    {
+    public function __construct(
+        private SiteTwigEnvironment $twig,
+        private ?ViteAssetManifest $assets = null,
+        private string $baseUrl = '',
+    ) {
     }
 
     /** @param array<string, mixed> $data */
@@ -20,6 +23,10 @@ final readonly class SiteRenderer
             'assets/site/main.ts',
             '/assets/site.css',
         )->toArray();
+        $canonicalUrl = $data['canonical_url'] ?? null;
+        if (is_string($canonicalUrl) && str_starts_with($canonicalUrl, '/') && $this->baseUrl !== '') {
+            $data['canonical_url'] = rtrim($this->baseUrl, '/') . $canonicalUrl;
+        }
         return $this->twig->render($template . '.twig', $data);
     }
 }

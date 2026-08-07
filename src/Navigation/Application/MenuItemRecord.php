@@ -19,6 +19,9 @@ final readonly class MenuItemRecord
         public int $version,
         public DateTimeImmutable $createdAt,
         public DateTimeImmutable $updatedAt,
+        public string $targetType = 'content',
+        public ?string $contentId = null,
+        public ?string $targetUrl = null,
     ) {
     }
 
@@ -33,6 +36,9 @@ final readonly class MenuItemRecord
             'slug' => $this->slug,
             'path' => $this->path,
             'position' => $this->position,
+            'target_type' => $this->targetType,
+            'content_id' => $this->contentId,
+            'target_url' => $this->targetUrl,
             'version' => $this->version,
             'created_at' => $this->createdAt->format(DATE_ATOM),
             'updated_at' => $this->updatedAt->format(DATE_ATOM),

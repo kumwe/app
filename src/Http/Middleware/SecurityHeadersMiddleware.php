@@ -24,6 +24,11 @@ final readonly class SecurityHeadersMiddleware implements MiddlewareInterface
         foreach ((new SecurityHeaders($this->production && $secure))->values() as $name => $value) {
             $response = $response->withHeader($name, $value);
         }
+        if (str_starts_with(strtolower($response->getHeaderLine('Content-Type')), 'image/svg+xml')) {
+            $response = $response
+                ->withHeader('Content-Security-Policy', "default-src 'none'; style-src 'unsafe-inline'; sandbox")
+                ->withHeader('Cross-Origin-Resource-Policy', 'same-origin');
+        }
 
         return $response;
     }

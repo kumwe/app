@@ -8,6 +8,8 @@ use InvalidArgumentException;
 use Kumwe\CMS\Administrator\Http\AdministratorRequest;
 use Kumwe\CMS\Administrator\Presentation\AdministratorRenderer;
 use Kumwe\CMS\Application\Authorization\ExecutionContext;
+use Kumwe\CMS\Content\Application\ContentRecord;
+use Kumwe\CMS\Content\Application\ContentService;
 use Kumwe\CMS\Navigation\Application\MenuItemRecord;
 use Kumwe\CMS\Navigation\Application\MenuRecord;
 use Kumwe\CMS\Navigation\Application\NavigationService;
@@ -19,8 +21,11 @@ use Psr\Http\Server\RequestHandlerInterface;
 
 final readonly class AdministratorNavigationHandler implements RequestHandlerInterface
 {
-    public function __construct(private NavigationService $navigation, private AdministratorRenderer $renderer)
-    {
+    public function __construct(
+        private NavigationService $navigation,
+        private AdministratorRenderer $renderer,
+        private ?ContentService $content = null,
+    ) {
     }
 
     public function handle(ServerRequestInterface $request): ResponseInterface
@@ -48,6 +53,14 @@ final readonly class AdministratorNavigationHandler implements RequestHandlerInt
             'capabilities' => AdministratorRequest::capabilityMap($request),
             'menus' => array_map(static fn (MenuRecord $menu): array => $menu->toArray(), $menus),
             'items' => $items,
+            'content_targets' => $this->content === null ? [] : array_map(
+                static fn (ContentRecord $record): array => $record->toArray(),
+                array_values(array_filter(
+                    $this->content->list($context, 500),
+                    static fn (ContentRecord $record): bool =>
+                        $record->contentTypeId === ContentService::CORE_PAGE_TYPE_ID,
+                )),
+            ),
             'saved' => ($request->getQueryParams()['saved'] ?? null) === '1',
         ]), 200, ['Cache-Control' => 'no-store']);
     }
@@ -90,6 +103,9 @@ final readonly class AdministratorNavigationHandler implements RequestHandlerInt
                 AdministratorRequest::required($form, 'title'),
                 AdministratorRequest::required($form, 'slug'),
                 $this->nonNegativeInteger($form, 'position'),
+                $form['target_type'] ?? 'content',
+                $this->nullable($form, 'content_id'),
+                $this->nullable($form, 'target_url'),
             ),
             'item.update' => $this->navigation->updateItem(
                 $context,
@@ -99,6 +115,9 @@ final readonly class AdministratorNavigationHandler implements RequestHandlerInt
                 AdministratorRequest::required($form, 'title'),
                 AdministratorRequest::required($form, 'slug'),
                 $this->nonNegativeInteger($form, 'position'),
+                $form['target_type'] ?? 'content',
+                $this->nullable($form, 'content_id'),
+                $this->nullable($form, 'target_url'),
             ),
             'item.delete' => $this->navigation->deleteItem(
                 $context,

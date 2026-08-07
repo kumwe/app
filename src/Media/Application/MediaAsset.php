@@ -15,6 +15,7 @@ final readonly class MediaAsset
         public int $size,
         public DateTimeImmutable $createdAt,
         public string $path,
+        public bool $deletable = true,
     ) {
     }
 
@@ -30,6 +31,7 @@ final readonly class MediaAsset
             'created_at' => $this->createdAt->format(DATE_ATOM),
             'url' => '/media/' . rawurlencode($this->id) . '/' . rawurlencode($this->name),
             'is_image' => str_starts_with($this->mimeType, 'image/'),
+            'deletable' => $this->deletable,
         ];
     }
 

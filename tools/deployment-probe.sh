@@ -148,10 +148,16 @@ transition_content review
 transition_content published
 
 published_status="$(http_status "$probe_root/published.body" "$probe_root/published.headers" \
-    "$base_url/pages/$page_slug")"
+    "$base_url/$page_slug")"
 [[ "$published_status" == 200 ]] || fail "published page returned HTTP $published_status"
 grep --fixed-strings --quiet "$page_marker" "$probe_root/published.body" \
     || fail 'published page did not contain the administrator-authored content'
+
+legacy_status="$(http_status "$probe_root/legacy.body" "$probe_root/legacy.headers" \
+    "$base_url/pages/$page_slug")"
+[[ "$legacy_status" == 308 ]] || fail "legacy page URL returned HTTP $legacy_status instead of 308"
+[[ "$(header_value location "$probe_root/legacy.headers")" == "/$page_slug" ]] \
+    || fail 'legacy page URL did not redirect to the canonical root slug'
 
 limited_status="$(http_status "$probe_root/limited.body" "$probe_root/limited.headers" \
     --request POST \

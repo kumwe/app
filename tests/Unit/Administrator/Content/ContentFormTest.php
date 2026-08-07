@@ -70,7 +70,8 @@ final class ContentFormTest extends TestCase
 
         self::assertSame('string', $schema['properties']['body']['type']);
         self::assertSame(10, $schema['properties']['body']['minLength']);
-        self::assertSame('uri', $schema['properties']['hero_image']['format']);
+        self::assertSame('uri-reference', $schema['properties']['hero_image']['format']);
+        self::assertSame('media', $schema['properties']['hero_image']['x-kumwe-field']);
         self::assertSame(['body'], $schema['required']);
 
         $states = $mapper->workflowStates([
@@ -107,7 +108,12 @@ final class ContentFormTest extends TestCase
                 'type' => 'object',
                 'properties' => [
                     'body' => ['type' => 'string', 'title' => 'Body'],
-                    'hero_image' => ['type' => 'string', 'format' => 'uri', 'title' => 'Hero image'],
+                    'hero_image' => [
+                        'type' => 'string',
+                        'format' => 'uri-reference',
+                        'x-kumwe-field' => 'media',
+                        'title' => 'Hero image',
+                    ],
                     'priority' => ['type' => 'integer', 'minimum' => 1, 'maximum' => 5],
                     'featured' => ['type' => 'boolean'],
                     'metadata' => [

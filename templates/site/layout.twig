@@ -4,8 +4,9 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="light dark">
-  <meta name="theme-color" content="#0c1c35">
+  <meta name="theme-color" content="#08152a">
   <title>{% block title %}{{ site_name }}{% endblock %}</title>
+  {% if canonical_url %}<link rel="canonical" href="{{ canonical_url }}">{% endif %}
   {% for stylesheet in site_assets.stylesheets %}<link rel="stylesheet" href="{{ stylesheet }}">{% endfor %}
   {% for module in site_assets.modules %}<script type="module" src="{{ module }}"></script>{% endfor %}
 </head>
@@ -13,13 +14,13 @@
   {% import '_navigation.twig' as navigation_tree %}
   <a class="sr-only" href="#site-content">Skip to content</a>
   <header class="site-header"><div class="site-container site-header-inner">
-    <a class="site-brand" href="/">{{ site_name }}</a>
+    <a class="site-brand" href="/">{% if site_logo %}<img src="{{ site_logo }}" width="42" height="42" alt="">{% endif %}<span>{{ site_name }}</span></a>
     {% if navigation is not empty %}
       <button class="site-navigation-toggle" type="button" aria-label="Open site navigation" aria-expanded="false" data-site-navigation-toggle>Menu</button>
       <nav class="site-navigation" aria-label="Main navigation" data-site-navigation>{{ navigation_tree.branch(navigation, current_path) }}</nav>
     {% endif %}
   </div></header>
   <main class="site-main" id="site-content">{% block content %}{% endblock %}</main>
-  <footer class="site-footer"><div class="site-container">Powered by Kumwe CMS</div></footer>
+  <footer class="site-footer"><div class="site-container"><span>{{ site_name }}</span><span>Powered by Kumwe CMS</span></div></footer>
 </body>
 </html>

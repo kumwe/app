@@ -1218,10 +1218,40 @@ function setupCopyButtons() {
 		});
 	});
 }
+function setupNavigationTargets() {
+	document.querySelectorAll("[data-navigation-target-form]").forEach((form) => {
+		const type = form.querySelector("[data-navigation-target-type]");
+		const contentField = form.querySelector("[data-navigation-content-field]");
+		const urlField = form.querySelector("[data-navigation-url-field]");
+		const content = form.querySelector("[data-navigation-content]");
+		const url = urlField?.querySelector("input");
+		const title = form.querySelector("[data-navigation-title]");
+		const slug = form.querySelector("[data-navigation-slug]");
+		if (!type || !contentField || !urlField || !content || !url) return;
+		const sync = () => {
+			const contentTarget = type.value === "content";
+			contentField.hidden = type.value === "url";
+			urlField.hidden = contentTarget;
+			content.disabled = type.value === "url";
+			url.disabled = contentTarget;
+			content.required = contentTarget;
+			url.required = !contentTarget;
+		};
+		type.addEventListener("change", sync);
+		content.addEventListener("change", () => {
+			const option = content.selectedOptions[0];
+			if (!option || option.value === "") return;
+			if (title && title.value.trim() === "") title.value = option.textContent?.split(" · ")[0]?.trim() ?? "";
+			if (slug && slug.value.trim() === "") slug.value = option.dataset.slug ?? "";
+		});
+		sync();
+	});
+}
 setupNavigation();
 setupConfirmations();
 setupDismissibleNotices();
 setupContentTypeSelector();
 setupSlugSuggestion();
 setupCopyButtons();
+setupNavigationTargets();
 //#endregion

@@ -169,6 +169,19 @@ final class McpCapabilityCatalog
                 ['menuId']
             ),
             $this->tool(
+                'kumwe_menu_item_get',
+                'Read menu item',
+                'Read one menu item and its resolved target metadata.',
+                'getMenuItem',
+                'navigation.manage',
+                true,
+                false,
+                true,
+                ['id' => ['type' => 'string']],
+                $object,
+                ['id']
+            ),
+            $this->tool(
                 'kumwe_menu_item_create',
                 'Create menu item',
                 'Create a menu item.',
@@ -181,9 +194,47 @@ final class McpCapabilityCatalog
                     'operationId' => $this->operationId(), 'menuId' => ['type' => 'string'],
                     'title' => ['type' => 'string'], 'slug' => ['type' => 'string'],
                     'position' => ['type' => 'integer', 'minimum' => 0], 'parentId' => ['type' => 'string'],
+                    'targetType' => ['type' => 'string', 'enum' => ['content', 'anchor', 'url']],
+                    'contentId' => ['type' => 'string'], 'targetUrl' => ['type' => 'string'],
                 ],
                 $object,
-                ['operationId', 'menuId', 'title', 'slug']
+                ['operationId', 'menuId', 'title', 'slug', 'targetType']
+            ),
+            $this->tool(
+                'kumwe_menu_item_update',
+                'Update menu item',
+                'Update a versioned menu item, its parent and its typed target.',
+                'updateMenuItem',
+                'navigation.manage',
+                false,
+                false,
+                true,
+                [
+                    'operationId' => $this->operationId(), 'id' => ['type' => 'string'],
+                    'version' => ['type' => 'integer', 'minimum' => 1],
+                    'title' => ['type' => 'string'], 'slug' => ['type' => 'string'],
+                    'position' => ['type' => 'integer', 'minimum' => 0], 'parentId' => ['type' => 'string'],
+                    'targetType' => ['type' => 'string', 'enum' => ['content', 'anchor', 'url']],
+                    'contentId' => ['type' => 'string'], 'targetUrl' => ['type' => 'string'],
+                ],
+                $object,
+                ['operationId', 'id', 'version', 'title', 'slug']
+            ),
+            $this->tool(
+                'kumwe_menu_item_delete',
+                'Delete menu item',
+                'Delete one menu item at an expected version.',
+                'deleteMenuItem',
+                'navigation.manage',
+                false,
+                false,
+                true,
+                [
+                    'operationId' => $this->operationId(), 'id' => ['type' => 'string'],
+                    'version' => ['type' => 'integer', 'minimum' => 1],
+                ],
+                $object,
+                ['operationId', 'id', 'version']
             ),
             $this->tool(
                 'kumwe_settings_get',
@@ -208,13 +259,14 @@ final class McpCapabilityCatalog
                 true,
                 [
                     'operationId' => $this->operationId(),
-                    'siteName' => ['type' => 'string'], 'homepageSlug' => ['type' => 'string'],
+                    'siteName' => ['type' => 'string'],
+                    'homepageContentId' => ['type' => 'string', 'format' => 'uuid'],
                     'defaultLocale' => ['type' => 'string'], 'timezone' => ['type' => 'string'],
                     'searchIndexingEnabled' => ['type' => 'boolean'],
                 ],
                 $object,
                 [
-                    'operationId', 'siteName', 'homepageSlug', 'defaultLocale', 'timezone',
+                    'operationId', 'siteName', 'homepageContentId', 'defaultLocale', 'timezone',
                     'searchIndexingEnabled',
                 ]
             ),

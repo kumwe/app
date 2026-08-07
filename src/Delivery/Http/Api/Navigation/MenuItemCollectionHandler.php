@@ -37,6 +37,11 @@ final readonly class MenuItemCollectionHandler implements RequestHandlerInterfac
                 NavigationApiRequest::string($body, 'title'),
                 NavigationApiRequest::string($body, 'slug'),
                 NavigationApiRequest::integer($body, 'position'),
+                array_key_exists('target_type', $body)
+                    ? NavigationApiRequest::targetType($body)
+                    : null,
+                NavigationApiRequest::nullableString($body, 'content_id'),
+                NavigationApiRequest::nullableString($body, 'target_url'),
             );
 
             return $this->responder->record($item, 201, ['Location' => '/api/v1/menu-items/' . $item->id]);

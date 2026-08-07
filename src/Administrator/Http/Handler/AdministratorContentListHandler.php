@@ -11,6 +11,7 @@ use Kumwe\CMS\Content\Application\ContentModelService;
 use Kumwe\CMS\Content\Application\ContentRecord;
 use Kumwe\CMS\Content\Application\ContentService;
 use Kumwe\CMS\Content\Domain\ContentTypeDefinition;
+use Kumwe\CMS\Site\Application\PublicPageLocator;
 use Laminas\Diactoros\Response\HtmlResponse;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -22,6 +23,7 @@ final readonly class AdministratorContentListHandler implements RequestHandlerIn
         private ContentService $content,
         private ContentModelService $models,
         private AdministratorRenderer $renderer,
+        private ?PublicPageLocator $publicPages = null,
     ) {
     }
 
@@ -35,7 +37,7 @@ final readonly class AdministratorContentListHandler implements RequestHandlerIn
         return new HtmlResponse($this->renderer->render('content-list', [
             'csrf' => $session->csrfToken,
             'capabilities' => AdministratorRequest::capabilityMap($request),
-            'entries' => array_map(static fn (ContentRecord $record): array => $record->toArray(), $page->items),
+            'entries' => array_map(fn (ContentRecord $record): array => $this->present($record), $page->items),
             'content_types' => array_map(
                 static fn (ContentTypeDefinition $type): array => $type->toArray(),
                 $this->models->contentTypes(AdministratorRequest::context($request)),
@@ -93,5 +95,11 @@ final readonly class AdministratorContentListHandler implements RequestHandlerIn
     {
         $parameters = http_build_query($query->toQueryParameters(), '', '&', PHP_QUERY_RFC3986);
         return '/administrator/content' . ($parameters === '' ? '' : '?' . $parameters);
+    }
+
+    /** @return array<string, mixed> */
+    private function present(ContentRecord $record): array
+    {
+        return $record->toArray() + ['public_url' => $this->publicPages?->publicPathFor($record)];
     }
 }
