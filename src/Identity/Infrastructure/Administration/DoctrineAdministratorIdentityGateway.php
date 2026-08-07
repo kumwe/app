@@ -110,23 +110,19 @@ final readonly class DoctrineAdministratorIdentityGateway implements Administrat
             throw new InvalidArgumentException('The administrator display name must contain 1 to 191 characters.');
         }
 
-        return $this->transactions->transactional(function () use ($address, $displayName, $password): string {
-            $userCount = $this->database->fetchOne(sprintf(
-                'SELECT COUNT(*) FROM %s',
-                $this->tables->quoted('users'),
-            ));
-            if (
-                !is_int($userCount)
-                && (!is_string($userCount) || preg_match('/^[0-9]+$/D', $userCount) !== 1)
-            ) {
-                throw new RuntimeException('The current user count could not be read.');
-            }
-            if ((int) $userCount !== 0) {
-                throw new RuntimeException('The initial administrator can only be created before any user exists.');
-            }
+        $passwordHash = $this->passwords->hash($password);
+
+        return $this->transactions->transactional(function () use (
+            $context,
+            $address,
+            $displayName,
+            $passwordHash,
+        ): string {
+            $this->lockAdministratorProvisioning();
+            $this->assertAdministratorCapabilitiesAvailable();
+            $this->assertEmailAvailable($address);
 
             $userId = Uuid::uuid7()->toString();
-            $roleId = Uuid::uuid7()->toString();
             $now = $this->clock->now();
             $this->database->insert($this->tables->raw('users'), [
                 'id' => $userId,
@@ -142,42 +138,141 @@ final readonly class DoctrineAdministratorIdentityGateway implements Administrat
             $this->ownership->record(AuthorizationResource::item('user', $userId), SiteContext::default());
             $this->database->insert($this->tables->raw('password_credentials'), [
                 'user_id' => $userId,
-                'password_hash' => $this->passwords->hash($password),
+                'password_hash' => $passwordHash,
                 'changed_at' => $now,
             ], ['changed_at' => Types::DATETIME_IMMUTABLE]);
-            $this->database->insert($this->tables->raw('roles'), [
-                'id' => $roleId,
-                'code' => 'administrator',
-                'name' => 'Administrator',
-                'created_at' => $now,
-            ], ['created_at' => Types::DATETIME_IMMUTABLE]);
-            $this->ownership->record(AuthorizationResource::item('role', $roleId), SiteContext::default());
+
+            $roleId = $this->administratorRoleId($now);
+            $this->ensureAdministratorGrants($roleId, $userId, $now);
             $this->database->insert($this->tables->raw('user_roles'), [
                 'user_id' => $userId,
                 'role_id' => $roleId,
                 'assigned_at' => $now,
                 'assigned_by' => $userId,
             ], ['assigned_at' => Types::DATETIME_IMMUTABLE]);
-
-            foreach (self::ADMINISTRATOR_CAPABILITIES as $capability) {
-                $grantId = Uuid::uuid7()->toString();
-                $this->database->insert($this->tables->raw('role_capability_grants'), [
-                    'id' => $grantId,
+            $this->audit->record(new AuditEvent(
+                Uuid::uuid7()->toString(),
+                $now,
+                $context->actorId(),
+                'administrator.create',
+                'user',
+                $userId,
+                'success',
+                [
+                    'email' => $address->value(),
                     'role_id' => $roleId,
-                    'capability_code' => $capability,
-                    'scope_type' => 'global',
-                    'scope_identifier' => null,
-                    'granted_at' => $now,
-                    'granted_by' => $userId,
-                ], ['granted_at' => Types::DATETIME_IMMUTABLE]);
-                $this->ownership->record(
-                    AuthorizationResource::item('grant', $grantId),
-                    SiteContext::default(),
-                );
-            }
+                    'authority' => 'host-bootstrap',
+                ],
+            ));
 
             return $userId;
         });
+    }
+
+    private function lockAdministratorProvisioning(): void
+    {
+        $site = $this->database->fetchOne(sprintf(
+            'SELECT identifier FROM %s WHERE identifier = ? FOR UPDATE',
+            $this->tables->quoted('sites'),
+        ), [SiteContext::DEFAULT]);
+
+        if ($site !== SiteContext::DEFAULT) {
+            throw new RuntimeException(
+                'The default site is unavailable. Run database:migrate before creating an administrator.',
+            );
+        }
+    }
+
+    private function assertAdministratorCapabilitiesAvailable(): void
+    {
+        $placeholders = implode(', ', array_fill(0, count(self::ADMINISTRATOR_CAPABILITIES), '?'));
+        $available = $this->database->fetchFirstColumn(sprintf(
+            'SELECT code FROM %s WHERE code IN (%s)',
+            $this->tables->quoted('capabilities'),
+            $placeholders,
+        ), self::ADMINISTRATOR_CAPABILITIES);
+        $missing = array_values(array_diff(
+            self::ADMINISTRATOR_CAPABILITIES,
+            array_values(array_filter($available, 'is_string')),
+        ));
+
+        if ($missing !== []) {
+            throw new RuntimeException(sprintf(
+                'The database is missing administrator capabilities (%s). Run database:migrate before retrying.',
+                implode(', ', $missing),
+            ));
+        }
+    }
+
+    private function assertEmailAvailable(EmailAddress $address): void
+    {
+        $existing = $this->database->fetchOne(sprintf(
+            'SELECT id FROM %s WHERE email_normalized = ?',
+            $this->tables->quoted('users'),
+        ), [$address->value()]);
+
+        if ($existing !== false) {
+            throw new InvalidArgumentException(sprintf(
+                'A user with email %s already exists. Use a different email for a new administrator.',
+                $address->value(),
+            ));
+        }
+    }
+
+    private function administratorRoleId(DateTimeImmutable $now): string
+    {
+        $existing = $this->database->fetchOne(sprintf(
+            'SELECT id FROM %s WHERE code = ?',
+            $this->tables->quoted('roles'),
+        ), ['administrator']);
+
+        if ($existing !== false) {
+            if (!is_string($existing) || $existing === '') {
+                throw new RuntimeException('The administrator role identifier is invalid.');
+            }
+
+            return $existing;
+        }
+
+        $roleId = Uuid::uuid7()->toString();
+        $this->database->insert($this->tables->raw('roles'), [
+            'id' => $roleId,
+            'code' => 'administrator',
+            'name' => 'Administrator',
+            'created_at' => $now,
+        ], ['created_at' => Types::DATETIME_IMMUTABLE]);
+        $this->ownership->record(AuthorizationResource::item('role', $roleId), SiteContext::default());
+
+        return $roleId;
+    }
+
+    private function ensureAdministratorGrants(string $roleId, string $userId, DateTimeImmutable $now): void
+    {
+        foreach (self::ADMINISTRATOR_CAPABILITIES as $capability) {
+            $existing = $this->database->fetchOne(sprintf(
+                'SELECT id FROM %s WHERE role_id = ? AND capability_code = ? '
+                . "AND scope_type = 'global' AND scope_identifier IS NULL LIMIT 1",
+                $this->tables->quoted('role_capability_grants'),
+            ), [$roleId, $capability]);
+            if ($existing !== false) {
+                continue;
+            }
+
+            $grantId = Uuid::uuid7()->toString();
+            $this->database->insert($this->tables->raw('role_capability_grants'), [
+                'id' => $grantId,
+                'role_id' => $roleId,
+                'capability_code' => $capability,
+                'scope_type' => 'global',
+                'scope_identifier' => null,
+                'granted_at' => $now,
+                'granted_by' => $userId,
+            ], ['granted_at' => Types::DATETIME_IMMUTABLE]);
+            $this->ownership->record(
+                AuthorizationResource::item('grant', $grantId),
+                SiteContext::default(),
+            );
+        }
     }
 
     private function positiveInteger(mixed $value): int
