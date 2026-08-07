@@ -51,7 +51,7 @@ final class ExtensionContributionLifecycleIntegrationTest extends TestCase
         self::assertInstanceOf(Connection::class, $database);
         self::assertInstanceOf(TableNames::class, $tables);
         $context = TestKernelFactory::administratorContext($container);
-        $marker = strtolower(substr(str_replace('-', '', Uuid::uuid7()->toString()), 0, 16));
+        $marker = strtolower(substr(str_replace('-', '', Uuid::uuid7()->toString()), 0, 8));
         $identifier = 'integration/contributions-' . $marker;
         $namespace = str_replace('/', '.', $identifier);
         $capability = $namespace . '.manage';

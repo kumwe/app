@@ -86,8 +86,7 @@ final readonly class AdministratorRenderer
     private function sharedData(
         array $data,
         ?AdministratorNavigationRegistry $navigationRegistry = null,
-    ): array
-    {
+    ): array {
         $capabilities = $data['capabilities'] ?? [];
         if (!is_array($capabilities) || array_is_list($capabilities)) {
             $capabilities = [];
