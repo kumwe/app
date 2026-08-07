@@ -169,7 +169,7 @@ test.describe('authenticated administrator', () => {
     await field.locator('select').first().selectOption('core.text');
     await field.getByLabel('Length').fill('120');
     await field.getByText('Required', { exact: true }).click();
-    await page.getByRole('button', { name: 'Save and validate draft' }).click();
+    await page.getByRole('button', { name: 'Save and validate draft' }).press('Enter');
     await expect(page).toHaveURL(/\/administrator\/business-definitions\?definition=/);
     await expect(page.getByRole('heading', { name: 'Compatibility plan' })).toBeVisible();
     await expect(page.getByText('Draft checksum')).toBeVisible();
