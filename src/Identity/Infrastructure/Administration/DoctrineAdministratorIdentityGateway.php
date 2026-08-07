@@ -6,6 +6,7 @@ namespace Kumwe\CMS\Identity\Infrastructure\Administration;
 
 use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\Platforms\SQLitePlatform;
 use Doctrine\DBAL\Types\Types;
 use InvalidArgumentException;
 use Kumwe\CMS\Application\Authorization\AuthorizationGateway;
@@ -171,9 +172,13 @@ final readonly class DoctrineAdministratorIdentityGateway implements Administrat
 
     private function lockAdministratorProvisioning(): void
     {
+        $lock = $this->database->getDatabasePlatform() instanceof SQLitePlatform
+            ? ''
+            : ' FOR UPDATE';
         $site = $this->database->fetchOne(sprintf(
-            'SELECT identifier FROM %s WHERE identifier = ? FOR UPDATE',
+            'SELECT identifier FROM %s WHERE identifier = ?%s',
             $this->tables->quoted('sites'),
+            $lock,
         ), [SiteContext::DEFAULT]);
 
         if ($site !== SiteContext::DEFAULT) {
