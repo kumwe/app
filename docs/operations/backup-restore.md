@@ -106,7 +106,7 @@ refuses to restore a MariaDB backup as MySQL or PostgreSQL, or any other driver 
 
 ## Recovery acceptance
 
-Point an isolated deployment at the restored database and filesystem targets. Confirm readiness, owner and limited-user login, public rendering, content revisions and workflow, menus, role grants, settings, active extensions/templates, API idempotency, MCP initialization, one reversible mutation, one worker job, and one scheduler iteration. Compare important media and extension checksums.
+Point an isolated deployment at the restored database and filesystem targets. Confirm readiness, owner and limited-user login, public rendering, content revisions and workflow, business-definition catalog/version/checksum counts, menus, role grants, settings, active extensions/templates, API idempotency, MCP initialization, one reversible mutation, one worker job, and one scheduler iteration. Compare important media and extension checksums.
 
 Cut over only after application and business fixtures pass. Never restore over the active database or active media/extension directories.
 

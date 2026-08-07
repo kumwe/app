@@ -23,6 +23,8 @@ final class DeliveryParityTest extends TestCase
         'administrator.content.restore' => 'content.restore',
         'administrator.content-models' => 'content.read',
         'administrator.content-models.update' => 'content.update',
+        'administrator.business-definitions' => 'content.read',
+        'administrator.business-definitions.update' => 'content.update',
         'administrator.extensions' => 'extensions.manage',
         'administrator.extensions.install' => 'extensions.manage',
         'administrator.extensions.action' => 'extensions.manage',

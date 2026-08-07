@@ -27,6 +27,7 @@ use Kumwe\CMS\Infrastructure\Persistence\Migration\ContentModelRuntimeMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\DatabaseDrivenPresentationMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\DynamicSiteContentMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\ExtensionContributionCatalogMigration;
+use Kumwe\CMS\Infrastructure\Persistence\Migration\BusinessDefinitionCatalogMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\DoctrineMigrationLock;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\DoctrineMigrationRepository;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\IdempotencyLeaseNullabilityMigration;
@@ -55,6 +56,7 @@ use ZipArchive;
 #[CoversClass(DynamicSiteContentMigration::class)]
 #[CoversClass(DatabaseDrivenPresentationMigration::class)]
 #[CoversClass(ExtensionContributionCatalogMigration::class)]
+#[CoversClass(BusinessDefinitionCatalogMigration::class)]
 #[CoversClass(JobRecoveryMigration::class)]
 #[CoversClass(ApplicationAuthorizationMigration::class)]
 #[CoversClass(IdempotencyLeaseNullabilityMigration::class)]
@@ -249,6 +251,17 @@ final class MigrationIntegrationTest extends TestCase
         ), [ExtensionContributionCatalogMigration::ID]));
         self::assertTrue($schema->tablesExist([
             $tables->raw('extension_contribution_capabilities'),
+        ]));
+        self::assertSame(BusinessDefinitionCatalogMigration::ID, $database->fetchOne(sprintf(
+            'SELECT version FROM %s WHERE version = ?',
+            $tables->quoted('schema_migrations'),
+        ), [BusinessDefinitionCatalogMigration::ID]));
+        self::assertTrue($schema->tablesExist([
+            $tables->raw('business_field_types'),
+            $tables->raw('business_definitions'),
+            $tables->raw('business_definition_drafts'),
+            $tables->raw('business_definition_versions'),
+            $tables->raw('business_definition_dependencies'),
         ]));
         $navigationItems = $schema->introspectTable($tables->raw('navigation_items'));
         foreach (['target_type', 'content_id', 'target_url'] as $column) {

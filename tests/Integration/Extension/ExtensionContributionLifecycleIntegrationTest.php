@@ -91,8 +91,14 @@ final class ExtensionContributionLifecycleIntegrationTest extends TestCase
             self::assertSame(2, $diagnostic['manifest_schema']);
             self::assertFalse($diagnostic['contributions']['active']);
             self::assertFalse($diagnostic['contributions']['capabilities'][0]['active']);
+            self::assertFalse($diagnostic['contributions']['business']['field_types'][0]['active']);
+            self::assertSame(2, count($diagnostic['contributions']['business']['definitions']));
+            self::assertSame(2, $this->definitionCount($database, $tables, $identifier));
+            self::assertSame(2, $this->versionCount($database, $tables, $identifier));
+            self::assertSame(0, $this->activeDefinitionCount($database, $tables, $identifier));
 
             $manager->activate($identifier, $context);
+            self::assertSame(2, $this->activeDefinitionCount($database, $tables, $identifier));
             $trust->synchronizeRuntimeMaterialization();
             $runtime = TestKernelFactory::create($environment);
             $active = $runtime->get(ActiveExtensionSet::class);
@@ -116,6 +122,7 @@ final class ExtensionContributionLifecycleIntegrationTest extends TestCase
             );
 
             $manager->disable($identifier, $context);
+            self::assertSame(0, $this->activeDefinitionCount($database, $tables, $identifier));
             self::assertSame([], $registries->navigation()->visible([$capability => true]));
 
             $manager->activate($identifier, $context);
@@ -127,6 +134,7 @@ final class ExtensionContributionLifecycleIntegrationTest extends TestCase
                 [$identifier],
                 $trust->emergencyRevoke($context, $keyId, 'Contribution lifecycle trust exercise.'),
             );
+            self::assertSame(0, $this->activeDefinitionCount($database, $tables, $identifier));
             self::assertSame([], $registries->navigation()->visible([$capability => true]));
             $quarantined = TestKernelFactory::create($environment)->get(ActiveExtensionSet::class);
             self::assertInstanceOf(ActiveExtensionSet::class, $quarantined);
@@ -135,6 +143,9 @@ final class ExtensionContributionLifecycleIntegrationTest extends TestCase
             $manager->uninstall($identifier, $context);
             $installed = false;
             self::assertTrue($database->createSchemaManager()->tablesExist([$dataTable]));
+            self::assertSame(2, $this->definitionCount($database, $tables, $identifier));
+            self::assertSame(2, $this->versionCount($database, $tables, $identifier));
+            self::assertSame(0, $this->activeDefinitionCount($database, $tables, $identifier));
         } finally {
             if ($installed) {
                 try {
@@ -149,6 +160,31 @@ final class ExtensionContributionLifecycleIntegrationTest extends TestCase
                 unlink($archive);
             }
         }
+    }
+
+    private function definitionCount(Connection $database, TableNames $tables, string $owner): int
+    {
+        return (int) $database->fetchOne(sprintf(
+            'SELECT COUNT(*) FROM %s WHERE owner_identifier = ?',
+            $tables->quoted('business_definitions'),
+        ), [$owner]);
+    }
+
+    private function activeDefinitionCount(Connection $database, TableNames $tables, string $owner): int
+    {
+        return (int) $database->fetchOne(sprintf(
+            'SELECT COUNT(*) FROM %s WHERE owner_identifier = ? AND owner_active = ?',
+            $tables->quoted('business_definitions'),
+        ), [$owner, true], [\Doctrine\DBAL\Types\Types::STRING, \Doctrine\DBAL\Types\Types::BOOLEAN]);
+    }
+
+    private function versionCount(Connection $database, TableNames $tables, string $owner): int
+    {
+        return (int) $database->fetchOne(sprintf(
+            'SELECT COUNT(*) FROM %s v INNER JOIN %s d ON d.id = v.definition_id WHERE d.owner_identifier = ?',
+            $tables->quoted('business_definition_versions'),
+            $tables->quoted('business_definitions'),
+        ), [$owner]);
     }
 
     /** @return array<string, mixed> */

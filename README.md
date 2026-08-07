@@ -47,6 +47,7 @@ Open <http://localhost:8080/administrator>. The [getting-started guide](docs/get
 - Manage menus, nested navigation, users, groups, scoped capability grants, API tokens, site identity, reusable color schemes, interaction styles, extensions, and templates from the administrator when the signed-in user has permission.
 - Apply the same content, navigation, identity, and extension rules through application services shared by the browser, CLI, REST, MCP, workers, and scheduler.
 - Install signed plugins, components, modules, templates, languages, and packages without rebuilding the application image.
+- Graphically author and immutably publish typed business definitions with exact fields, relationships, views, actions, workflows, safe formulas, compatibility plans, and extension-owned contributions.
 - Run optimistic, retry-safe API mutations with capability-scoped tokens, ETags, persisted idempotency results, revisions, and audit events.
 - Run durable jobs and recurring schedules with bounded retries, leases, occurrence keys, and failure records.
 - Deploy immutable nginx and PHP-FPM images with MariaDB by default, or select MySQL or PostgreSQL.
@@ -82,6 +83,7 @@ The [documentation index](docs/README.md) organizes guides by task:
 |---|---|
 | Install and configure a site | [Getting started](docs/getting-started.md) and [configuration](docs/configuration.md) |
 | Administer content, navigation, users, and settings | [Administrator](docs/administration.md) |
+| Define operational entities and extension schemas | [Business definitions](docs/business-definitions.md) |
 | Operate Kumwe from a shell | [Command-line interface](docs/cli.md) |
 | Integrate an application or AI client | [REST API](docs/rest-api.md) and [MCP](docs/mcp.md) |
 | Create extensions, events, migrations, or templates | [Extensions](docs/extensions.md) and [templates](docs/templates.md) |
