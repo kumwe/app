@@ -14,7 +14,7 @@ final readonly class AdministratorViewDefinition implements ContributionDefiniti
         if (
             preg_match('#^(?:[A-Za-z0-9_.-]+/)*[A-Za-z0-9_.-]+\.twig$#D', $template) !== 1
             || str_contains($template, '..')
-    ) {
+        ) {
             throw new InvalidArgumentException('A contributed administrator view template path is unsafe.');
         }
     }

@@ -27,8 +27,7 @@ final readonly class ExtensionRuntimeLoader
     public function load(
         array $allowedServices,
         ExtensionContributionRegistrySet $contributions,
-    ): ActiveExtensionSet
-    {
+    ): ActiveExtensionSet {
         $active = new ActiveExtensionSet($contributions, $this->trust);
         $this->publication->assertIntegrity($this->keys);
         $map = $this->publication->document;

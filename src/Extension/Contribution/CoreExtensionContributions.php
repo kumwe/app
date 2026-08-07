@@ -26,11 +26,13 @@ final class CoreExtensionContributions
                 $description,
             ));
         }
-        foreach ([
-            ['core.workspace', 'Workspace', 'Daily content and publishing work.', 10],
-            ['core.structure', 'Structure', 'Content structure and public navigation.', 20],
-            ['core.system', 'System', 'Identity, extensions, automation, and settings.', 30],
-        ] as [$id, $label, $description, $priority]) {
+        foreach (
+            [
+                ['core.workspace', 'Workspace', 'Daily content and publishing work.', 10],
+                ['core.structure', 'Structure', 'Content structure and public navigation.', 20],
+                ['core.system', 'System', 'Identity, extensions, automation, and settings.', 30],
+            ] as [$id, $label, $description, $priority]
+        ) {
             $registrar->administratorWorkspace(new AdministratorWorkspaceDefinition(
                 $id,
                 $label,
