@@ -20,32 +20,23 @@ final readonly class PublicNavigation
     }
 
     /** @return list<array<string, mixed>> */
-    public function items(): array
+    public function items(?string $homepageContentId = null): array
     {
-        $menus = $this->repository->menus();
-        $menu = null;
-        $fallback = null;
-        foreach ($menus as $candidate) {
-            if (!$this->belongsToPublicSite('menu', $candidate->id)) {
-                continue;
-            }
-            $fallback ??= $candidate;
-            if ($candidate->handle === $this->preferredHandle) {
-                $menu = $candidate;
-                break;
-            }
-        }
-        $menu ??= $fallback;
+        $menu = $this->publicMenu();
         if (!$menu instanceof MenuRecord) {
             return [];
         }
 
         $byParent = [];
+        $pathByContent = [];
         foreach ($this->repository->items($menu->id) as $item) {
             if (!$this->belongsToPublicSite('menu_item', $item->id)) {
                 continue;
             }
             $byParent[$item->parentId ?? ''][] = $item;
+            if ($item->targetType === 'content' && $item->contentId !== null) {
+                $pathByContent[$item->contentId] ??= $item->path;
+            }
         }
         foreach ($byParent as &$siblings) {
             usort($siblings, static fn (MenuItemRecord $left, MenuItemRecord $right): int => [
@@ -58,16 +49,62 @@ final readonly class PublicNavigation
         }
         unset($siblings);
 
-        return $this->branch($byParent, null, []);
+        return $this->branch($byParent, null, [], $pathByContent, $homepageContentId);
+    }
+
+    public function contentIdForPath(string $path): ?string
+    {
+        $menu = $this->publicMenu();
+        if (!$menu instanceof MenuRecord) {
+            return null;
+        }
+        $path = '/' . trim($path, '/');
+        foreach ($this->repository->items($menu->id) as $item) {
+            if (
+                $item->path === $path
+                && $item->targetType === 'content'
+                && $item->contentId !== null
+                && $this->belongsToPublicSite('menu_item', $item->id)
+            ) {
+                return $item->contentId;
+            }
+        }
+
+        return null;
+    }
+
+    public function pathForContent(string $contentId): ?string
+    {
+        $menu = $this->publicMenu();
+        if (!$menu instanceof MenuRecord) {
+            return null;
+        }
+        foreach ($this->repository->items($menu->id) as $item) {
+            if (
+                $item->targetType === 'content'
+                && $item->contentId === $contentId
+                && $this->belongsToPublicSite('menu_item', $item->id)
+            ) {
+                return $item->path;
+            }
+        }
+
+        return null;
     }
 
     /**
      * @param array<string, list<MenuItemRecord>> $byParent
      * @param array<string, true> $ancestors
+     * @param array<string, string> $pathByContent
      * @return list<array<string, mixed>>
      */
-    private function branch(array $byParent, ?string $parentId, array $ancestors): array
-    {
+    private function branch(
+        array $byParent,
+        ?string $parentId,
+        array $ancestors,
+        array $pathByContent,
+        ?string $homepageContentId,
+    ): array {
         $branch = [];
         foreach ($byParent[$parentId ?? ''] ?? [] as $item) {
             if (isset($ancestors[$item->id])) {
@@ -78,12 +115,66 @@ final readonly class PublicNavigation
             $branch[] = [
                 'id' => $item->id,
                 'title' => $item->title,
-                'href' => '/pages/' . rawurlencode($item->slug),
+                'target_type' => $item->targetType,
+                'content_id' => $item->contentId,
+                'target_url' => $item->targetUrl,
+                'href' => $this->href($item, $pathByContent, $homepageContentId),
                 'path' => $item->path,
-                'children' => $this->branch($byParent, $item->id, $nextAncestors),
+                'children' => $this->branch(
+                    $byParent,
+                    $item->id,
+                    $nextAncestors,
+                    $pathByContent,
+                    $homepageContentId,
+                ),
             ];
         }
         return $branch;
+    }
+
+    /** @param array<string, string> $pathByContent */
+    private function href(
+        MenuItemRecord $item,
+        array $pathByContent,
+        ?string $homepageContentId,
+    ): string {
+        if ($item->targetType === 'url') {
+            return $item->targetUrl ?? $item->path;
+        }
+        if ($item->targetType === 'anchor') {
+            $fragment = $item->targetUrl ?? '';
+            if ($item->contentId === null) {
+                return $fragment === '' ? $item->path : $fragment;
+            }
+            $path = $item->contentId === $homepageContentId
+                ? '/'
+                : ($pathByContent[$item->contentId] ?? '');
+            if ($path === '') {
+                return $fragment;
+            }
+
+            return $path === '/' ? '/' . $fragment : rtrim($path, '/') . $fragment;
+        }
+
+        return $item->contentId !== null && $item->contentId === $homepageContentId
+            ? '/'
+            : ($item->contentId === null ? $item->path : ($pathByContent[$item->contentId] ?? $item->path));
+    }
+
+    private function publicMenu(): ?MenuRecord
+    {
+        $fallback = null;
+        foreach ($this->repository->menus() as $candidate) {
+            if (!$this->belongsToPublicSite('menu', $candidate->id)) {
+                continue;
+            }
+            $fallback ??= $candidate;
+            if ($candidate->handle === $this->preferredHandle) {
+                return $candidate;
+            }
+        }
+
+        return $fallback;
     }
 
     private function belongsToPublicSite(string $type, string $id): bool

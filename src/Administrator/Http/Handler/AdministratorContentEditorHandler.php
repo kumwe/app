@@ -12,6 +12,7 @@ use Kumwe\CMS\Content\Application\ContentModelService;
 use Kumwe\CMS\Content\Domain\ContentTypeDefinition;
 use Kumwe\CMS\Media\Application\MediaAsset;
 use Kumwe\CMS\Media\Application\MediaService;
+use Kumwe\CMS\Site\Application\PublicPageLocator;
 use Laminas\Diactoros\Response\HtmlResponse;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -25,6 +26,7 @@ final readonly class AdministratorContentEditorHandler implements RequestHandler
         private AdministratorRenderer $renderer,
         private ?ContentFormPresenter $form = null,
         private ?MediaService $media = null,
+        private ?PublicPageLocator $publicPages = null,
     ) {
     }
 
@@ -35,7 +37,8 @@ final readonly class AdministratorContentEditorHandler implements RequestHandler
         $entry = null;
 
         if (is_string($id) && $id !== '') {
-            $entry = $this->content->get(AdministratorRequest::context($request), $id, true)->toArray();
+            $record = $this->content->get(AdministratorRequest::context($request), $id, true);
+            $entry = $record->toArray() + ['public_url' => $this->publicPages?->publicPathFor($record)];
         }
 
         $context = AdministratorRequest::context($request);

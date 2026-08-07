@@ -34,7 +34,7 @@
         <div class="panel-body"><p class="text-muted">There is no content yet. Create the first item to begin publishing.</p></div>
       {% else %}
         <div class="table-wrap" tabindex="0" role="region" aria-label="Recently updated content"><table><thead><tr><th>Content</th><th>Status</th><th>Updated</th><th><span class="sr-only">Action</span></th></tr></thead><tbody>
-          {% for entry in entries %}<tr><td><span class="content-title"><strong>{{ entry.title }}</strong><span>/pages/{{ entry.slug }}</span></span></td><td><span class="status status-{{ entry.deleted_at ? 'trashed' : entry.status }}">{{ entry.deleted_at ? 'Trashed' : entry.status|replace({'_': ' '})|title }}</span></td><td><time datetime="{{ entry.updated_at }}">{{ entry.updated_at|date('M j, H:i') }}</time></td><td class="actions">{% if not entry.deleted_at and capabilities['content.update'] is defined %}<a href="/administrator/content/{{ entry.id }}/edit">Edit</a>{% endif %}</td></tr>{% endfor %}
+          {% for entry in entries %}<tr><td><span class="content-title"><strong>{{ entry.title }}</strong><span>{{ entry.public_url|default('/' ~ entry.slug) }}</span></span></td><td><span class="status status-{{ entry.deleted_at ? 'trashed' : entry.status }}">{{ entry.deleted_at ? 'Trashed' : entry.status|replace({'_': ' '})|title }}</span></td><td><time datetime="{{ entry.updated_at }}">{{ entry.updated_at|date('M j, H:i') }}</time></td><td class="actions">{% if not entry.deleted_at and capabilities['content.update'] is defined %}<a href="/administrator/content/{{ entry.id }}/edit">Edit</a>{% endif %}</td></tr>{% endfor %}
         </tbody></table></div>
       {% endif %}
     </section>

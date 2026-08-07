@@ -4,43 +4,41 @@ declare(strict_types=1);
 
 namespace Kumwe\CMS\Http\Handler;
 
-use Kumwe\CMS\Content\Application\ContentService;
-use Kumwe\CMS\Application\Authorization\SiteContext;
+use Kumwe\CMS\Presentation\ContentPresenter;
 use Kumwe\CMS\Presentation\SiteRenderer;
-use Kumwe\CMS\Presentation\RichTextFormatter;
-use Kumwe\CMS\Navigation\Application\PublicNavigation;
+use Kumwe\CMS\Site\Application\PublicPageLocator;
 use Kumwe\CMS\Site\Application\SiteSettings;
 use Laminas\Diactoros\Response\HtmlResponse;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\RequestHandlerInterface;
-use RuntimeException;
 
 final readonly class HomePageHandler implements RequestHandlerInterface
 {
     public function __construct(
-        private ContentService $content,
+        private PublicPageLocator $pages,
         private SiteSettings $settings,
         private SiteRenderer $renderer,
-        private RichTextFormatter $richText,
-        private ?SiteContext $site = null,
-        private ?PublicNavigation $navigation = null,
+        private ContentPresenter $presenter,
     ) {
     }
 
     public function handle(ServerRequestInterface $request): ResponseInterface
     {
         $settings = $this->settings->current();
-        $record = $this->content->publishedBySlug(
-            $this->requiredSetting($settings, 'homepage_slug'),
-            $this->site ?? SiteContext::default(),
-        );
+        $record = $this->pages->homepage();
         $template = $record === null ? 'home' : 'page';
+        $entry = $record === null ? null : $this->presenter->present($record);
         $variables = $record === null
             ? ['site_name' => $settings['site_name']]
-            : ['site_name' => $settings['site_name'], 'entry' => $this->present($record->toArray())];
-        $variables['navigation'] = $this->navigation?->items() ?? [];
+            : ['site_name' => $settings['site_name'], 'entry' => $entry];
+        $brandLogo = is_array($entry) && is_array($entry['data'] ?? null)
+            ? ($entry['data']['brand_logo'] ?? null)
+            : null;
+        $variables['site_logo'] = is_string($brandLogo) ? $brandLogo : null;
+        $variables['navigation'] = $this->pages->navigation();
         $variables['current_path'] = '/';
+        $variables['canonical_url'] = '/';
 
         $headers = [
             'Cache-Control' => 'public, max-age=60, stale-while-revalidate=300',
@@ -50,29 +48,5 @@ final readonly class HomePageHandler implements RequestHandlerInterface
         }
 
         return new HtmlResponse($this->renderer->render($template, $variables), 200, $headers);
-    }
-
-    /**
-     * @param array<string, mixed> $entry
-     * @return array<string, mixed>
-     */
-    private function present(array $entry): array
-    {
-        $data = $entry['data'] ?? null;
-        $body = is_array($data) && is_string($data['body'] ?? null) ? $data['body'] : '';
-        $entry['body_html'] = $this->richText->format($body);
-
-        return $entry;
-    }
-
-    /** @param array<string, mixed> $settings */
-    private function requiredSetting(array $settings, string $name): string
-    {
-        $value = $settings[$name] ?? null;
-        if (!is_string($value) || $value === '') {
-            throw new RuntimeException(sprintf('The required site setting %s is invalid.', $name));
-        }
-
-        return $value;
     }
 }

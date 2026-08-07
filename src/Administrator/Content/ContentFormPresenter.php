@@ -81,7 +81,7 @@ final readonly class ContentFormPresenter
                 'max_length' => $fieldSchema['maxLength'] ?? null,
                 'pattern' => is_string($fieldSchema['pattern'] ?? null) ? $fieldSchema['pattern'] : null,
                 'step' => $type === 'number' ? 'any' : null,
-                'accepts_media' => $type === 'string' && ($fieldSchema['format'] ?? null) === 'uri',
+                'accepts_media' => $type === 'string' && ($fieldSchema['x-kumwe-field'] ?? null) === 'media',
             ];
         }
 
@@ -133,6 +133,9 @@ final readonly class ContentFormPresenter
         }
         if ($format === 'uri') {
             return 'url';
+        }
+        if ($format === 'uri-reference') {
+            return 'text';
         }
         $maximum = $schema['maxLength'] ?? null;
         if ($key === 'body') {

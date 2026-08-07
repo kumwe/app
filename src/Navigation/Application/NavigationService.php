@@ -12,6 +12,7 @@ use Kumwe\CMS\Application\Authorization\ExecutionContext;
 use Kumwe\CMS\Application\Authorization\ResourceSiteOwnershipWriter;
 use Kumwe\CMS\Audit\Application\AuditRecorder;
 use Kumwe\CMS\Audit\Domain\AuditEvent;
+use Kumwe\CMS\Content\Application\ContentService;
 use Kumwe\CMS\Infrastructure\Persistence\TransactionManager;
 use Kumwe\CMS\Identity\Domain\Capability;
 use Psr\Clock\ClockInterface;
@@ -26,6 +27,7 @@ final readonly class NavigationService
         private ClockInterface $clock,
         private AuthorizationGateway $authorization,
         private ResourceSiteOwnershipWriter $ownership,
+        private ?ContentService $content = null,
     ) {
     }
 
@@ -153,12 +155,24 @@ final readonly class NavigationService
         string $title,
         string $slug,
         int $position,
+        ?string $targetType = null,
+        ?string $contentId = null,
+        ?string $targetUrl = null,
     ): MenuItemRecord {
         $this->authorize($context, AuthorizationResource::item('menu', $menuId));
         $this->menu($context, $menuId);
         $slug = $this->slug($slug);
         $position = $this->position($position);
+        $legacyUntargetedContent = $targetType === null;
+        [$targetType, $contentId, $targetUrl] = $this->target(
+            $context,
+            $targetType ?? 'content',
+            $contentId,
+            $targetUrl,
+            $legacyUntargetedContent,
+        );
         $path = $this->repository->pathForParent($menuId, $parentId, $slug);
+        $this->assertPublicPath($path);
         $now = $this->clock->now();
         $item = new MenuItemRecord(
             Uuid::uuid7()->toString(),
@@ -171,6 +185,9 @@ final readonly class NavigationService
             1,
             $now,
             $now,
+            $targetType,
+            $contentId,
+            $targetUrl,
         );
 
         return $this->transactions->transactional(function () use ($context, $item, $now): MenuItemRecord {
@@ -197,13 +214,31 @@ final readonly class NavigationService
         string $title,
         string $slug,
         int $position,
+        ?string $targetType = null,
+        ?string $contentId = null,
+        ?string $targetUrl = null,
     ): MenuItemRecord {
         $this->authorize($context, AuthorizationResource::item('menu_item', $id));
         $stored = $this->item($context, $id);
         $this->assertVersion($stored->version, $expectedVersion);
         $slug = $this->slug($slug);
+        [$targetType, $contentId, $targetUrl] = $this->target(
+            $context,
+            $targetType ?? $stored->targetType,
+            $targetType === null ? $stored->contentId : $contentId,
+            $targetType === null ? $stored->targetUrl : $targetUrl,
+            $targetType === null,
+        );
         $this->repository->assertMoveIsAcyclic($id, $stored->menuId, $parentId);
         $path = $this->repository->pathForParent($stored->menuId, $parentId, $slug);
+        $this->assertPublicPath($path);
+        if ($stored->path !== $path) {
+            foreach ($this->repository->items($stored->menuId) as $candidate) {
+                if (str_starts_with($candidate->path, $stored->path . '/')) {
+                    $this->assertPublicPath($path . substr($candidate->path, strlen($stored->path)));
+                }
+            }
+        }
         $now = $this->clock->now();
         $updated = new MenuItemRecord(
             $stored->id,
@@ -216,6 +251,9 @@ final readonly class NavigationService
             $stored->version + 1,
             $stored->createdAt,
             $now,
+            $targetType,
+            $contentId,
+            $targetUrl,
         );
 
         return $this->transactions->transactional(function () use (
@@ -297,6 +335,111 @@ final readonly class NavigationService
         }
 
         return $position;
+    }
+
+    /** @return array{string, ?string, ?string} */
+    private function target(
+        ExecutionContext $context,
+        string $targetType,
+        ?string $contentId,
+        ?string $targetUrl,
+        bool $allowUntargetedContent = false,
+    ): array {
+        $targetType = strtolower(trim($targetType));
+        $contentId = $this->nullable($contentId);
+        $targetUrl = $this->nullable($targetUrl);
+
+        if (!in_array($targetType, ['content', 'anchor', 'url'], true)) {
+            throw new InvalidArgumentException('A navigation target type must be content, anchor or url.');
+        }
+        if ($targetType === 'content' && $targetUrl !== null) {
+            throw new InvalidArgumentException('A content navigation target cannot contain a target URL.');
+        }
+        if ($targetType === 'content' && $contentId === null && !$allowUntargetedContent) {
+            throw new InvalidArgumentException('A content navigation target must reference content.');
+        }
+        if ($targetType === 'anchor') {
+            if (
+                $targetUrl === null
+                || preg_match('/^#[A-Za-z][A-Za-z0-9._:-]{0,190}$/D', $targetUrl) !== 1
+            ) {
+                throw new InvalidArgumentException('An anchor navigation target must contain a safe fragment.');
+            }
+        }
+        if ($targetType === 'url') {
+            if ($contentId !== null) {
+                throw new InvalidArgumentException('A URL navigation target cannot reference content.');
+            }
+            if ($targetUrl === null || !$this->safeUrl($targetUrl)) {
+                throw new InvalidArgumentException('A URL navigation target must contain a safe URL.');
+            }
+        }
+        if ($contentId !== null) {
+            if (
+                preg_match(
+                    '/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iD',
+                    $contentId,
+                ) !== 1
+            ) {
+                throw new InvalidArgumentException('A navigation content target must be a canonical UUID.');
+            }
+            $this->content?->get($context, $contentId);
+        }
+
+        return [$targetType, $contentId, $targetUrl];
+    }
+
+    private function nullable(?string $value): ?string
+    {
+        if ($value === null) {
+            return null;
+        }
+        $value = trim($value);
+
+        return $value === '' ? null : $value;
+    }
+
+    private function safeUrl(string $url): bool
+    {
+        if (preg_match('/[\x00-\x20\x7f]/', $url) === 1 || str_contains($url, '\\')) {
+            return false;
+        }
+        if (str_starts_with($url, '/') && !str_starts_with($url, '//')) {
+            return true;
+        }
+        $scheme = parse_url($url, PHP_URL_SCHEME);
+        if (!is_string($scheme)) {
+            return false;
+        }
+        $scheme = strtolower($scheme);
+        if ($scheme === 'mailto') {
+            return filter_var(substr($url, 7), FILTER_VALIDATE_EMAIL) !== false;
+        }
+        if (!in_array($scheme, ['http', 'https'], true)) {
+            return false;
+        }
+
+        return filter_var($url, FILTER_VALIDATE_URL) !== false
+            && is_string(parse_url($url, PHP_URL_HOST));
+    }
+
+    private function assertPublicPath(string $path): void
+    {
+        if (strlen($path) > 512) {
+            throw new InvalidArgumentException('A navigation path cannot exceed 512 bytes.');
+        }
+        $firstSegment = explode('/', ltrim($path, '/'), 2)[0] ?? '';
+        if (in_array($firstSegment, [
+            'administrator',
+            'api',
+            'assets',
+            'health',
+            'mcp',
+            'media',
+            'pages',
+        ], true)) {
+            throw new InvalidArgumentException('A navigation path cannot use a reserved system prefix.');
+        }
     }
 
     private function assertVersion(int $actual, int $expected): void

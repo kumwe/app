@@ -88,4 +88,33 @@ final class FilesystemMediaStorageTest extends TestCase
             new DateTimeImmutable(),
         );
     }
+
+    public function testExposesBundledSvgAsReadOnlyMediaWithoutAllowingSvgUploads(): void
+    {
+        $id = '018f22e2-7c8b-7ab0-8f3a-88e8026bb710';
+        $bundled = $this->directory . '/bundled/default';
+        self::assertTrue(mkdir($bundled, 0700, true));
+        $svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1 1"><path d="M0 0h1v1H0z"/></svg>';
+        self::assertNotFalse(file_put_contents($bundled . '/' . $id . '.svg', $svg));
+        self::assertNotFalse(file_put_contents($bundled . '/' . $id . '.json', json_encode([
+            'name' => 'brand.svg',
+            'mime_type' => 'image/svg+xml',
+            'extension' => 'svg',
+            'size' => strlen($svg),
+            'sha256' => hash('sha256', $svg),
+            'created_at' => '2026-08-07T00:00:00+00:00',
+        ], JSON_THROW_ON_ERROR)));
+        $storage = new FilesystemMediaStorage($this->directory . '/library', $this->directory . '/bundled');
+
+        $asset = $storage->find(SiteContext::default(), $id);
+
+        self::assertNotNull($asset);
+        self::assertSame('image/svg+xml', $asset->mimeType);
+        self::assertFalse($asset->deletable);
+        $storage->delete(SiteContext::default(), $id);
+        self::assertNotNull($storage->find(SiteContext::default(), $id));
+
+        $this->expectException(InvalidArgumentException::class);
+        $storage->store(SiteContext::default(), $asset->path, 'brand.svg', 1024, new DateTimeImmutable());
+    }
 }

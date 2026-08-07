@@ -35,6 +35,9 @@ final readonly class MenuItemResourceHandler implements RequestHandlerInterface
             }
 
             $body = NavigationApiRequest::json($request);
+            $targetChanged = array_key_exists('target_type', $body)
+                || array_key_exists('content_id', $body)
+                || array_key_exists('target_url', $body);
             return $this->responder->record($this->navigation->updateItem(
                 NavigationApiRequest::context($request),
                 $id,
@@ -47,6 +50,17 @@ final readonly class MenuItemResourceHandler implements RequestHandlerInterface
                 array_key_exists('position', $body)
                     ? NavigationApiRequest::integer($body, 'position')
                     : $item->position,
+                $targetChanged
+                    ? (array_key_exists('target_type', $body)
+                        ? NavigationApiRequest::targetType($body)
+                        : $item->targetType)
+                    : null,
+                array_key_exists('content_id', $body)
+                    ? NavigationApiRequest::nullableString($body, 'content_id')
+                    : $item->contentId,
+                array_key_exists('target_url', $body)
+                    ? NavigationApiRequest::nullableString($body, 'target_url')
+                    : $item->targetUrl,
             ));
         } catch (Throwable $exception) {
             return $this->responder->problem($exception, (string) $request->getUri());

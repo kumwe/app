@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\CMS\Content\Application;
 
 use DateTimeImmutable;
+use InvalidArgumentException;
 use Kumwe\CMS\Application\Authorization\AuthorizationGateway;
 use Kumwe\CMS\Application\Authorization\AuthorizationResource;
 use Kumwe\CMS\Application\Authorization\ExecutionContext;
@@ -139,6 +140,17 @@ final readonly class ContentService
             : $this->repository->findPublishedBySlug($slug, $this->clock->now());
     }
 
+    public function publishedById(string $id, ?SiteContext $site = null): ?ContentRecord
+    {
+        return $this->repository instanceof SiteScopedContentRepository
+            ? $this->repository->findPublishedByIdForSite(
+                $site ?? SiteContext::default(),
+                $id,
+                $this->clock->now(),
+            )
+            : $this->repository->findPublishedById($id, $this->clock->now());
+    }
+
     /**
      * @param array<array-key, mixed> $data
      */
@@ -155,6 +167,7 @@ final readonly class ContentService
             Capability::fromString('content.create'),
             AuthorizationResource::collection('content'),
         );
+        $this->assertPublicSlug($slug);
         $type = $this->models === null ? null : $this->models->contentType($context->site(), $contentTypeIdentifier);
         if ($this->models !== null && $type === null) {
             throw new ContentModelNotFound('content type', $contentTypeIdentifier);
@@ -215,6 +228,7 @@ final readonly class ContentService
         ?PublicationWindow $window = null,
     ): ContentRecord {
         $this->authorize($context, 'content.update', $id);
+        $this->assertPublicSlug($slug);
         $stored = $this->get($context, $id);
         $type = $this->models === null
             ? null
@@ -390,6 +404,21 @@ final readonly class ContentService
             Capability::fromString($action),
             AuthorizationResource::item('content', $id),
         );
+    }
+
+    private function assertPublicSlug(string $slug): void
+    {
+        if (in_array(strtolower(trim($slug)), [
+            'administrator',
+            'api',
+            'assets',
+            'health',
+            'mcp',
+            'media',
+            'pages',
+        ], true)) {
+            throw new InvalidArgumentException('A content slug cannot use a reserved system route.');
+        }
     }
 
     /** @param array<string, mixed> $metadata */

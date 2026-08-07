@@ -29,6 +29,7 @@ final readonly class AdministratorLoginHandler implements RequestHandlerInterfac
         private AdministratorRenderer $renderer,
         private bool $secureCookie,
         private int $sessionLifetime,
+        private ?SiteContext $site = null,
     ) {
     }
 
@@ -67,7 +68,7 @@ final readonly class AdministratorLoginHandler implements RequestHandlerInterfac
 
         $requestId = $request->getAttribute(RequestIdMiddleware::ATTRIBUTE);
         $created = $this->sessions->create($principal->context(
-            SiteContext::default(),
+            $this->site ?? SiteContext::default(),
             AuthenticationStrength::Password,
             is_string($requestId) && $requestId !== '' ? $requestId : 'login-' . bin2hex(random_bytes(16)),
         ), $request->getHeaderLine('User-Agent'));

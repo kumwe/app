@@ -22,31 +22,47 @@ final readonly class FilesystemMediaStorage implements MediaStorage
         'image/gif' => 'gif',
         'image/webp' => 'webp',
         'image/avif' => 'avif',
+        'image/svg+xml' => 'svg',
         'application/pdf' => 'pdf',
     ];
 
-    public function __construct(private string $root)
+    /** @var array<string, string> */
+    private const UPLOAD_MIME_EXTENSIONS = [
+        'image/jpeg' => 'jpg',
+        'image/png' => 'png',
+        'image/gif' => 'gif',
+        'image/webp' => 'webp',
+        'image/avif' => 'avif',
+        'application/pdf' => 'pdf',
+    ];
+
+    public function __construct(private string $root, private ?string $bundledRoot = null)
     {
     }
 
     public function all(SiteContext $site): array
     {
-        $directory = $this->siteDirectory($site);
-        if (!is_dir($directory)) {
-            return [];
-        }
-        $files = glob($directory . '/*.json');
-        if (!is_array($files)) {
-            return [];
-        }
         $assets = [];
-        foreach ($files as $metadata) {
-            $id = pathinfo($metadata, PATHINFO_FILENAME);
-            $asset = $this->find($site, $id);
-            if ($asset instanceof MediaAsset) {
-                $assets[] = $asset;
+        foreach ($this->directories($site) as [$directory, $deletable]) {
+            if (!is_dir($directory)) {
+                continue;
+            }
+            $files = glob($directory . '/*.json');
+            if (!is_array($files)) {
+                continue;
+            }
+            foreach ($files as $metadata) {
+                $id = pathinfo($metadata, PATHINFO_FILENAME);
+                if (isset($assets[$id])) {
+                    continue;
+                }
+                $asset = $this->findInDirectory($directory, $id, $deletable);
+                if ($asset instanceof MediaAsset) {
+                    $assets[$id] = $asset;
+                }
             }
         }
+        $assets = array_values($assets);
         usort($assets, static fn (MediaAsset $left, MediaAsset $right): int => [
             $right->createdAt->getTimestamp(),
             $right->id,
@@ -63,7 +79,18 @@ final readonly class FilesystemMediaStorage implements MediaStorage
         if (!Uuid::isValid($id)) {
             return null;
         }
-        $directory = $this->siteDirectory($site);
+        foreach ($this->directories($site) as [$directory, $deletable]) {
+            $asset = $this->findInDirectory($directory, $id, $deletable);
+            if ($asset instanceof MediaAsset) {
+                return $asset;
+            }
+        }
+
+        return null;
+    }
+
+    private function findInDirectory(string $directory, string $id, bool $deletable): ?MediaAsset
+    {
         $metadataPath = $directory . '/' . strtolower($id) . '.json';
         if (!is_file($metadataPath) || is_link($metadataPath)) {
             return null;
@@ -81,10 +108,13 @@ final readonly class FilesystemMediaStorage implements MediaStorage
         $size = $metadata['size'] ?? null;
         $created = $metadata['created_at'] ?? null;
         $extension = $metadata['extension'] ?? null;
+        $sha256 = $metadata['sha256'] ?? null;
         if (
             !is_string($name) || !is_string($mime) || !is_int($size)
             || !is_string($created) || !is_string($extension)
             || (self::MIME_EXTENSIONS[$mime] ?? null) !== $extension
+            || ($sha256 !== null && (!is_string($sha256) || preg_match('/^[a-f0-9]{64}$/D', $sha256) !== 1))
+            || (!$deletable && !is_string($sha256))
         ) {
             return null;
         }
@@ -101,6 +131,10 @@ final readonly class FilesystemMediaStorage implements MediaStorage
         if (!is_int($actualSize) || $actualSize !== $size) {
             return null;
         }
+        $actualHash = is_string($sha256) ? hash_file('sha256', $resolved) : null;
+        if (is_string($sha256) && (!is_string($actualHash) || !hash_equals($sha256, $actualHash))) {
+            return null;
+        }
 
         try {
             $createdAt = new DateTimeImmutable($created);
@@ -108,7 +142,7 @@ final readonly class FilesystemMediaStorage implements MediaStorage
             return null;
         }
 
-        return new MediaAsset(strtolower($id), $name, $mime, $size, $createdAt, $resolved);
+        return new MediaAsset(strtolower($id), $name, $mime, $size, $createdAt, $resolved, $deletable);
     }
 
     public function store(
@@ -126,10 +160,10 @@ final readonly class FilesystemMediaStorage implements MediaStorage
             throw new InvalidArgumentException('The media file is empty or exceeds the configured upload limit.');
         }
         $mime = (new \finfo(FILEINFO_MIME_TYPE))->file($source);
-        if (!is_string($mime) || !isset(self::MIME_EXTENSIONS[$mime])) {
+        if (!is_string($mime) || !isset(self::UPLOAD_MIME_EXTENSIONS[$mime])) {
             throw new InvalidArgumentException('Only JPEG, PNG, GIF, WebP, AVIF and PDF files are supported.');
         }
-        $extension = self::MIME_EXTENSIONS[$mime];
+        $extension = self::UPLOAD_MIME_EXTENSIONS[$mime];
         $name = $this->displayName($originalName, $extension);
         $id = Uuid::uuid7()->toString();
         $directory = $this->siteDirectory($site);
@@ -144,11 +178,16 @@ final readonly class FilesystemMediaStorage implements MediaStorage
         }
         $metadataPath = $directory . '/' . $id . '.json';
         try {
+            $sha256 = hash_file('sha256', $path);
+            if (!is_string($sha256)) {
+                throw new RuntimeException('The stored media checksum could not be calculated.');
+            }
             $metadata = json_encode([
                 'name' => $name,
                 'mime_type' => $mime,
                 'extension' => $extension,
                 'size' => $size,
+                'sha256' => $sha256,
                 'created_at' => $createdAt->format(DATE_ATOM),
             ], JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
             if (file_put_contents($metadataPath, $metadata, LOCK_EX) === false || !chmod($metadataPath, 0640)) {
@@ -165,7 +204,7 @@ final readonly class FilesystemMediaStorage implements MediaStorage
 
     public function delete(SiteContext $site, string $id): void
     {
-        $asset = $this->find($site, $id);
+        $asset = $this->findInDirectory($this->siteDirectory($site), $id, true);
         if (!$asset instanceof MediaAsset) {
             return;
         }
@@ -181,6 +220,17 @@ final readonly class FilesystemMediaStorage implements MediaStorage
     private function siteDirectory(SiteContext $site): string
     {
         return rtrim($this->root, '/') . '/' . $site->identifier();
+    }
+
+    /** @return list<array{string, bool}> */
+    private function directories(SiteContext $site): array
+    {
+        $directories = [[$this->siteDirectory($site), true]];
+        if ($this->bundledRoot !== null) {
+            $directories[] = [rtrim($this->bundledRoot, '/') . '/' . $site->identifier(), false];
+        }
+
+        return $directories;
     }
 
     private function displayName(string $originalName, string $extension): string

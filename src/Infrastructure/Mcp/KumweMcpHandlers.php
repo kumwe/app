@@ -266,6 +266,14 @@ final readonly class KumweMcpHandlers
     }
 
     /** @return array<string, mixed> */
+    public function getMenuItem(string $id): array
+    {
+        $this->require('navigation.manage');
+
+        return $this->navigation->item($this->context(), $id)->toArray();
+    }
+
+    /** @return array<string, mixed> */
     public function createMenuItem(
         string $operationId,
         string $menuId,
@@ -273,10 +281,22 @@ final readonly class KumweMcpHandlers
         string $slug,
         int $position = 0,
         string $parentId = '',
+        string $targetType = '',
+        string $contentId = '',
+        string $targetUrl = '',
     ): array {
         $this->require('navigation.manage');
         $this->preauthorize($operationId, 'navigation.manage', AuthorizationResource::item('menu', $menuId));
-        $input = compact('menuId', 'title', 'slug', 'position', 'parentId');
+        $input = compact(
+            'menuId',
+            'title',
+            'slug',
+            'position',
+            'parentId',
+            'targetType',
+            'contentId',
+            'targetUrl',
+        );
         return $this->mutations->run(
             $this->context($operationId),
             'menu-item.create',
@@ -289,7 +309,82 @@ final readonly class KumweMcpHandlers
                 $title,
                 $slug,
                 $position,
+                $targetType === '' ? null : $targetType,
+                $contentId === '' ? null : $contentId,
+                $targetUrl === '' ? null : $targetUrl,
             )->toArray()
+        );
+    }
+
+    /** @return array<string, mixed> */
+    public function updateMenuItem(
+        string $operationId,
+        string $id,
+        int $version,
+        string $title,
+        string $slug,
+        ?int $position = null,
+        ?string $parentId = null,
+        ?string $targetType = null,
+        ?string $contentId = null,
+        ?string $targetUrl = null,
+    ): array {
+        $this->require('navigation.manage');
+        $this->preauthorize($operationId, 'navigation.manage', AuthorizationResource::item('menu_item', $id));
+        $stored = $this->navigation->item($this->context($operationId), $id);
+        $targetChanged = $targetType !== null || $contentId !== null || $targetUrl !== null;
+        $input = compact(
+            'id',
+            'version',
+            'title',
+            'slug',
+            'position',
+            'parentId',
+            'targetType',
+            'contentId',
+            'targetUrl',
+        );
+
+        return $this->mutations->run(
+            $this->context($operationId),
+            'menu-item.update',
+            $operationId,
+            $input,
+            fn (): array => $this->navigation->updateItem(
+                $this->context($operationId),
+                $id,
+                $version,
+                $parentId === null ? $stored->parentId : ($parentId === '' ? null : $parentId),
+                $title,
+                $slug,
+                $position ?? $stored->position,
+                $targetChanged ? ($targetType ?? $stored->targetType) : null,
+                $targetChanged
+                    ? ($contentId === null ? $stored->contentId : ($contentId === '' ? null : $contentId))
+                    : null,
+                $targetChanged
+                    ? ($targetUrl === null ? $stored->targetUrl : ($targetUrl === '' ? null : $targetUrl))
+                    : null,
+            )->toArray(),
+        );
+    }
+
+    /** @return array{deleted: bool} */
+    public function deleteMenuItem(string $operationId, string $id, int $version): array
+    {
+        $this->require('navigation.manage');
+        $this->preauthorize($operationId, 'navigation.manage', AuthorizationResource::item('menu_item', $id));
+
+        return $this->mutations->run(
+            $this->context($operationId),
+            'menu-item.delete',
+            $operationId,
+            compact('id', 'version'),
+            function () use ($operationId, $id, $version): array {
+                $this->navigation->deleteItem($this->context($operationId), $id, $version);
+
+                return ['deleted' => true];
+            },
         );
     }
 
@@ -305,7 +400,7 @@ final readonly class KumweMcpHandlers
     public function updateSettings(
         string $operationId,
         string $siteName,
-        string $homepageSlug,
+        string $homepageContentId,
         string $defaultLocale,
         string $timezone,
         bool $searchIndexingEnabled,
@@ -318,7 +413,7 @@ final readonly class KumweMcpHandlers
         );
         $values = [
             'site_name' => $siteName,
-            'homepage_slug' => $homepageSlug,
+            'homepage_content_id' => $homepageContentId,
             'default_locale' => $defaultLocale,
             'timezone' => $timezone,
             'search_indexing_enabled' => $searchIndexingEnabled,

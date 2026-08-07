@@ -10,6 +10,7 @@ use Kumwe\CMS\Content\Application\ContentRecord;
 use Kumwe\CMS\Content\Application\ContentService;
 use Kumwe\CMS\Content\Application\ContentModelService;
 use Kumwe\CMS\Content\Domain\ContentTypeDefinition;
+use Kumwe\CMS\Site\Application\PublicPageLocator;
 use Laminas\Diactoros\Response\HtmlResponse;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -21,6 +22,7 @@ final readonly class AdministratorDashboardHandler implements RequestHandlerInte
         private ContentService $content,
         private ContentModelService $models,
         private AdministratorRenderer $renderer,
+        private ?PublicPageLocator $publicPages = null,
     ) {
     }
 
@@ -50,7 +52,7 @@ final readonly class AdministratorDashboardHandler implements RequestHandlerInte
             'counts' => $counts,
             'published_percent' => min(100, (int) round(($counts['published'] / $active) * 100)),
             'entries' => array_map(
-                static fn (ContentRecord $record): array => $record->toArray(),
+                fn (ContentRecord $record): array => $this->present($record),
                 array_slice($records, 0, 6),
             ),
             'content_types' => array_map(
@@ -58,5 +60,11 @@ final readonly class AdministratorDashboardHandler implements RequestHandlerInte
                 $this->models->contentTypes($context),
             ),
         ]), 200, ['Cache-Control' => 'no-store']);
+    }
+
+    /** @return array<string, mixed> */
+    private function present(ContentRecord $record): array
+    {
+        return $record->toArray() + ['public_url' => $this->publicPages?->publicPathFor($record)];
     }
 }

@@ -93,9 +93,41 @@ function setupCopyButtons(): void {
   });
 }
 
+function setupNavigationTargets(): void {
+  document.querySelectorAll<HTMLFormElement>('[data-navigation-target-form]').forEach((form) => {
+    const type = form.querySelector<HTMLSelectElement>('[data-navigation-target-type]');
+    const contentField = form.querySelector<HTMLElement>('[data-navigation-content-field]');
+    const urlField = form.querySelector<HTMLElement>('[data-navigation-url-field]');
+    const content = form.querySelector<HTMLSelectElement>('[data-navigation-content]');
+    const url = urlField?.querySelector<HTMLInputElement>('input');
+    const title = form.querySelector<HTMLInputElement>('[data-navigation-title]');
+    const slug = form.querySelector<HTMLInputElement>('[data-navigation-slug]');
+    if (!type || !contentField || !urlField || !content || !url) return;
+
+    const sync = (): void => {
+      const contentTarget = type.value === 'content';
+      contentField.hidden = type.value === 'url';
+      urlField.hidden = contentTarget;
+      content.disabled = type.value === 'url';
+      url.disabled = contentTarget;
+      content.required = contentTarget;
+      url.required = !contentTarget;
+    };
+    type.addEventListener('change', sync);
+    content.addEventListener('change', () => {
+      const option = content.selectedOptions[0];
+      if (!option || option.value === '') return;
+      if (title && title.value.trim() === '') title.value = option.textContent?.split(' · ')[0]?.trim() ?? '';
+      if (slug && slug.value.trim() === '') slug.value = option.dataset.slug ?? '';
+    });
+    sync();
+  });
+}
+
 setupNavigation();
 setupConfirmations();
 setupDismissibleNotices();
 setupContentTypeSelector();
 setupSlugSuggestion();
 setupCopyButtons();
+setupNavigationTargets();

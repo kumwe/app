@@ -201,6 +201,7 @@ use Kumwe\CMS\Infrastructure\Persistence\Migration\ApplicationAuthorizationMigra
 use Kumwe\CMS\Infrastructure\Persistence\Migration\AuthorizationRecoveryIntegrationMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\CoreSchemaMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\ContentModelRuntimeMigration;
+use Kumwe\CMS\Infrastructure\Persistence\Migration\DynamicSiteContentMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\IdempotencyLeaseNullabilityMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\IsolateThemeSurfacesMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\DoctrineMigrationLock;
@@ -226,6 +227,7 @@ use Kumwe\CMS\Infrastructure\Time\SystemClock;
 use Kumwe\CMS\Kernel\Configuration\ApplicationConfiguration;
 use Kumwe\CMS\Kernel\Configuration\ConfigurationFactory;
 use Kumwe\CMS\Shared\Infrastructure\Configuration\Environment;
+use Kumwe\CMS\Site\Application\PublicPageLocator;
 use Kumwe\CMS\Site\Application\SiteSettings;
 use Kumwe\CMS\Site\Infrastructure\Persistence\DoctrineSiteSettings;
 use Kumwe\CMS\Site\Infrastructure\Persistence\CachedSiteSettings;
@@ -245,6 +247,7 @@ use Kumwe\CMS\Presentation\Infrastructure\ConsoleAdministratorThemeRecovery;
 use Kumwe\CMS\Presentation\Application\AdministratorThemeRecovery;
 use Kumwe\CMS\Presentation\Infrastructure\DoctrineThemeMutationAuthorizer;
 use Kumwe\CMS\Presentation\Asset\ViteAssetManifest;
+use Kumwe\CMS\Presentation\ContentPresenter;
 use Kumwe\CMS\Presentation\SiteRenderer;
 use Kumwe\CMS\Presentation\RichTextFormatter;
 use Kumwe\CMS\Presentation\Twig\AdministratorTwigEnvironment;
@@ -538,7 +541,10 @@ final class ContainerFactory
                 self::service($container, ContentModelRepository::class),
                 self::service($container, JsonSchemaValidator::class),
             ), true);
-        $container->share(MediaStorage::class, new FilesystemMediaStorage($root . '/storage/media'), true);
+        $container->share(MediaStorage::class, new FilesystemMediaStorage(
+            $root . '/storage/media',
+            $root . '/resources/media',
+        ), true);
         $container->share(MediaService::class, static fn (Container $container): MediaService => new MediaService(
             self::service($container, MediaStorage::class),
             self::service($container, AuthorizationGateway::class),
@@ -565,6 +571,7 @@ final class ContainerFactory
                 self::service($container, ClockInterface::class),
                 self::service($container, AuthorizationGateway::class),
                 self::service($container, ResourceSiteOwnershipWriter::class),
+                self::service($container, ContentService::class),
             ), true);
         $container->share(AccessControlRepository::class, static fn (
             Container $container,
@@ -604,11 +611,19 @@ final class ContainerFactory
             self::service($container, AuditRecorder::class),
             self::service($container, ClockInterface::class),
             self::service($container, AuthorizationGateway::class),
+            self::service($container, ContentService::class),
         ), true);
         $container->share(SiteSettings::class, static fn (Container $container): SiteSettings =>
             new CachedSiteSettings(
                 self::service($container, DoctrineSiteSettings::class),
                 self::service($container, RedisRuntime::class),
+            ), true);
+        $container->share(PublicPageLocator::class, static fn (Container $container): PublicPageLocator =>
+            new PublicPageLocator(
+                self::service($container, ContentService::class),
+                self::service($container, SiteSettings::class),
+                self::service($container, PublicNavigation::class),
+                SiteContext::fromString($configuration->publicSite),
             ), true);
         $container->share(JobExecutionScope::class, static fn (): JobExecutionScope =>
             new JobExecutionScope(), true);
@@ -666,6 +681,7 @@ final class ContainerFactory
                     new IsolateThemeSurfacesMigration(self::service($container, TableNames::class)),
                     new InstallationGlobalAutomationMigration(self::service($container, TableNames::class)),
                     new ContentModelRuntimeMigration(self::service($container, TableNames::class)),
+                    new DynamicSiteContentMigration(self::service($container, TableNames::class)),
                 ],
                 [
                     // Previously distributed builds used a DBAL-equivalent static-analysis rewrite, then
@@ -717,6 +733,8 @@ final class ContainerFactory
         $container->share(ContentModelFormMapper::class, new ContentModelFormMapper(), true);
         $container->share(ContentModelFormPresenter::class, new ContentModelFormPresenter(), true);
         $container->share(RichTextFormatter::class, new RichTextFormatter(), true);
+        $container->share(ContentPresenter::class, static fn (Container $container): ContentPresenter =>
+            new ContentPresenter(self::service($container, RichTextFormatter::class)), true);
         $container->share(ResponseFactoryInterface::class, new ResponseFactory(), true);
         $container->share(StreamFactoryInterface::class, new StreamFactory(), true);
         $container->share(IsolatedTwigEnvironmentFactory::class, static fn (
@@ -748,6 +766,7 @@ final class ContainerFactory
             new SiteRenderer(
                 self::service($container, SiteTwigEnvironment::class),
                 self::service($container, ViteAssetManifest::class),
+                $configuration->baseUrl,
             ), true);
         $container->share(RecoveryAdministratorRenderer::class, static fn (
             Container $container,
@@ -1024,6 +1043,7 @@ final class ContainerFactory
         ): AdministratorSessionMiddleware => new AdministratorSessionMiddleware(
             self::service($container, AdministratorSessionStore::class),
             self::service($container, AuthorizationGateway::class),
+            SiteContext::fromString($configuration->publicSite),
         ), true);
         $container->share(
             AdministratorAuthorizationMiddleware::class,
@@ -1070,12 +1090,10 @@ final class ContainerFactory
     ): void {
         $container->share(HomePageHandler::class, static fn (Container $container): HomePageHandler =>
             new HomePageHandler(
-                self::service($container, ContentService::class),
+                self::service($container, PublicPageLocator::class),
                 self::service($container, SiteSettings::class),
                 self::service($container, SiteRenderer::class),
-                self::service($container, RichTextFormatter::class),
-                SiteContext::fromString($configuration->publicSite),
-                self::service($container, PublicNavigation::class),
+                self::service($container, ContentPresenter::class),
             ), true);
         $container->share(LivenessHandler::class, new LivenessHandler(), true);
         $container->share(ApiIndexHandler::class, new ApiIndexHandler(), true);
@@ -1128,12 +1146,10 @@ final class ContainerFactory
         $container->share(PublishedContentHandler::class, static fn (
             Container $container,
         ): PublishedContentHandler => new PublishedContentHandler(
-            self::service($container, ContentService::class),
+            self::service($container, PublicPageLocator::class),
             self::service($container, SiteSettings::class),
             self::service($container, SiteRenderer::class),
-            self::service($container, RichTextFormatter::class),
-            SiteContext::fromString($configuration->publicSite),
-            self::service($container, PublicNavigation::class),
+            self::service($container, ContentPresenter::class),
         ), true);
         $container->share(ExtensionAssetHandler::class, static fn (
             Container $container,
@@ -1161,6 +1177,7 @@ final class ContainerFactory
             self::service($container, AdministratorRenderer::class),
             $secureCookie,
             $configuration->administratorSessionSeconds,
+            SiteContext::fromString($configuration->publicSite),
         ), true);
         $container->share(AdministratorLogoutHandler::class, static fn (
             Container $container,
@@ -1174,6 +1191,7 @@ final class ContainerFactory
             self::service($container, ContentService::class),
             self::service($container, ContentModelService::class),
             self::service($container, AdministratorRenderer::class),
+            self::service($container, PublicPageLocator::class),
         ), true);
         $container->share(AdministratorContentListHandler::class, static fn (
             Container $container,
@@ -1181,6 +1199,7 @@ final class ContainerFactory
             self::service($container, ContentService::class),
             self::service($container, ContentModelService::class),
             self::service($container, AdministratorRenderer::class),
+            self::service($container, PublicPageLocator::class),
         ), true);
         $container->share(AdministratorContentEditorHandler::class, static fn (
             Container $container,
@@ -1190,6 +1209,7 @@ final class ContainerFactory
             self::service($container, AdministratorRenderer::class),
             self::service($container, ContentFormPresenter::class),
             self::service($container, MediaService::class),
+            self::service($container, PublicPageLocator::class),
         ), true);
         $container->share(AdministratorMediaHandler::class, static fn (
             Container $container,
@@ -1254,12 +1274,14 @@ final class ContainerFactory
         ): AdministratorSettingsHandler => new AdministratorSettingsHandler(
             self::service($container, SiteSettings::class),
             self::service($container, AdministratorRenderer::class),
+            self::service($container, ContentService::class),
         ), true);
         $container->share(AdministratorNavigationHandler::class, static fn (
             Container $container,
         ): AdministratorNavigationHandler => new AdministratorNavigationHandler(
             self::service($container, NavigationService::class),
             self::service($container, AdministratorRenderer::class),
+            self::service($container, ContentService::class),
         ), true);
         $container->share(AdministratorAccessControlHandler::class, static fn (
             Container $container,
@@ -1908,6 +1930,7 @@ final class ContainerFactory
         ]));
         $application->route('/mcp', McpHttpHandler::class, ['OPTIONS'], 'mcp.options');
         self::service($container, ActiveExtensionSet::class)->registerRoutes($application);
+        $application->get('/{path:.+}', PublishedContentHandler::class, 'site.content.path');
     }
 
     private function registerConsole(Container $container, object $kernelProof): void

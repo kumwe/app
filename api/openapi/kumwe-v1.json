@@ -177,12 +177,12 @@
       "delete": {"operationId": "deleteMenu", "security": [{"bearerAuth": [], "siteContext": []}], "parameters": [{"$ref": "#/components/parameters/IdempotencyKey"}, {"$ref": "#/components/parameters/IfMatch"}], "responses": {"204": {"description": "Menu deleted"}}}
     },
     "/api/v1/menus/{menuId}/items": {
-      "get": {"operationId": "listMenuItems", "security": [{"bearerAuth": [], "siteContext": []}], "responses": {"200": {"description": "Menu items"}}},
-      "post": {"operationId": "createMenuItem", "security": [{"bearerAuth": [], "siteContext": []}], "parameters": [{"$ref": "#/components/parameters/IdempotencyKey"}], "responses": {"201": {"description": "Menu item created"}}}
+      "get": {"operationId": "listMenuItems", "security": [{"bearerAuth": [], "siteContext": []}], "responses": {"200": {"description": "Menu items", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/MenuItemCollection"}}}}}},
+      "post": {"operationId": "createMenuItem", "security": [{"bearerAuth": [], "siteContext": []}], "parameters": [{"$ref": "#/components/parameters/IdempotencyKey"}], "requestBody": {"required": true, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/MenuItemCreate"}}}}, "responses": {"201": {"description": "Menu item created", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/MenuItem"}}}}, "422": {"$ref": "#/components/responses/Unprocessable"}}}
     },
     "/api/v1/menu-items/{id}": {
-      "get": {"operationId": "getMenuItem", "security": [{"bearerAuth": [], "siteContext": []}], "responses": {"200": {"description": "Menu item"}}},
-      "patch": {"operationId": "updateMenuItem", "security": [{"bearerAuth": [], "siteContext": []}], "parameters": [{"$ref": "#/components/parameters/IdempotencyKey"}, {"$ref": "#/components/parameters/IfMatch"}], "responses": {"200": {"description": "Menu item updated"}}},
+      "get": {"operationId": "getMenuItem", "security": [{"bearerAuth": [], "siteContext": []}], "responses": {"200": {"description": "Menu item", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/MenuItem"}}}}}},
+      "patch": {"operationId": "updateMenuItem", "security": [{"bearerAuth": [], "siteContext": []}], "parameters": [{"$ref": "#/components/parameters/IdempotencyKey"}, {"$ref": "#/components/parameters/IfMatch"}], "requestBody": {"required": true, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/MenuItemPatch"}}}}, "responses": {"200": {"description": "Menu item updated", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/MenuItem"}}}}, "412": {"$ref": "#/components/responses/PreconditionFailed"}, "422": {"$ref": "#/components/responses/Unprocessable"}}},
       "delete": {"operationId": "deleteMenuItem", "security": [{"bearerAuth": [], "siteContext": []}], "parameters": [{"$ref": "#/components/parameters/IdempotencyKey"}, {"$ref": "#/components/parameters/IfMatch"}], "responses": {"204": {"description": "Menu item deleted"}}}
     },
     "/api/v1/users": {
@@ -223,8 +223,8 @@
       "delete": {"operationId": "emergencyRevokeAllUserTokens", "security": [{"bearerAuth": [], "siteContext": []}], "parameters": [{"$ref": "#/components/parameters/IdempotencyKey"}], "responses": {"200": {"description": "All user tokens revoked globally and security epoch advanced; global grant required"}}}
     },
     "/api/v1/settings": {
-      "get": {"operationId": "getSettings", "security": [{"bearerAuth": [], "siteContext": []}], "responses": {"200": {"description": "Site settings"}}},
-      "put": {"operationId": "updateSettings", "security": [{"bearerAuth": [], "siteContext": []}], "parameters": [{"$ref": "#/components/parameters/IdempotencyKey"}], "responses": {"200": {"description": "Site settings updated"}}}
+      "get": {"operationId": "getSettings", "security": [{"bearerAuth": [], "siteContext": []}], "responses": {"200": {"description": "Site settings", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/SiteSettings"}}}}}},
+      "put": {"operationId": "updateSettings", "security": [{"bearerAuth": [], "siteContext": []}], "parameters": [{"$ref": "#/components/parameters/IdempotencyKey"}], "requestBody": {"required": true, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/SiteSettings"}}}}, "responses": {"200": {"description": "Site settings updated", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/SiteSettings"}}}}}}
     },
     "/api/v1/extensions": {
       "get": {"operationId": "listExtensions", "security": [{"bearerAuth": [], "siteContext": []}], "responses": {"200": {"description": "Installed extensions"}}}
@@ -542,6 +542,76 @@
           "states": {"type": "array", "minItems": 1, "items": {"type": "object"}},
           "transitions": {"type": "array", "items": {"type": "object"}},
           "allow_breaking": {"type": "boolean", "default": false}
+        },
+        "additionalProperties": false
+      },
+      "MenuItem": {
+        "type": "object",
+        "required": ["id", "menu_id", "parent_id", "title", "slug", "path", "position", "target_type", "content_id", "target_url", "version", "created_at", "updated_at"],
+        "properties": {
+          "id": {"type": "string", "format": "uuid"},
+          "menu_id": {"type": "string", "format": "uuid"},
+          "parent_id": {"type": ["string", "null"], "format": "uuid"},
+          "title": {"type": "string"},
+          "slug": {"type": "string", "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"},
+          "path": {"type": "string", "pattern": "^/[a-z0-9/-]+$"},
+          "position": {"type": "integer", "minimum": 0},
+          "target_type": {"type": "string", "enum": ["content", "anchor", "url"]},
+          "content_id": {"type": ["string", "null"], "format": "uuid"},
+          "target_url": {"type": ["string", "null"]},
+          "version": {"type": "integer", "minimum": 1},
+          "created_at": {"type": "string", "format": "date-time"},
+          "updated_at": {"type": "string", "format": "date-time"}
+        },
+        "additionalProperties": false
+      },
+      "MenuItemCollection": {
+        "type": "object",
+        "required": ["items"],
+        "properties": {"items": {"type": "array", "items": {"$ref": "#/components/schemas/MenuItem"}}},
+        "additionalProperties": false
+      },
+      "MenuItemCreate": {
+        "type": "object",
+        "required": ["title", "slug", "target_type"],
+        "properties": {
+          "title": {"type": "string", "minLength": 1, "maxLength": 255},
+          "slug": {"type": "string", "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"},
+          "parent_id": {"type": ["string", "null"], "format": "uuid"},
+          "position": {"type": "integer", "minimum": 0, "default": 0},
+          "target_type": {"type": "string", "enum": ["content", "anchor", "url"], "default": "content"},
+          "content_id": {"type": ["string", "null"], "format": "uuid"},
+          "target_url": {
+            "type": ["string", "null"],
+            "description": "A #fragment for anchor targets, or a root-relative, http(s), or mailto URL for URL targets."
+          }
+        },
+        "additionalProperties": false
+      },
+      "MenuItemPatch": {
+        "type": "object",
+        "minProperties": 1,
+        "properties": {
+          "title": {"type": "string", "minLength": 1, "maxLength": 255},
+          "slug": {"type": "string", "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"},
+          "parent_id": {"type": ["string", "null"], "format": "uuid"},
+          "position": {"type": "integer", "minimum": 0},
+          "target_type": {"type": "string", "enum": ["content", "anchor", "url"]},
+          "content_id": {"type": ["string", "null"], "format": "uuid"},
+          "target_url": {"type": ["string", "null"]}
+        },
+        "additionalProperties": false
+      },
+      "SiteSettings": {
+        "type": "object",
+        "required": ["site_name", "homepage_content_id", "default_locale", "timezone", "search_indexing_enabled"],
+        "properties": {
+          "site_name": {"type": "string", "minLength": 1, "maxLength": 160},
+          "homepage_content_id": {"type": ["string", "null"], "format": "uuid"},
+          "homepage_slug": {"type": "string", "deprecated": true, "description": "Legacy read compatibility; use homepage_content_id."},
+          "default_locale": {"type": "string"},
+          "timezone": {"type": "string"},
+          "search_indexing_enabled": {"type": "boolean"}
         },
         "additionalProperties": false
       },
