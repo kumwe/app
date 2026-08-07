@@ -72,7 +72,8 @@ final class ExpressionPropertyTest extends TestCase
 
     public function testStrictAstShapesAndTypesRejectAmbiguousExecution(): void
     {
-        foreach ([
+        foreach (
+            [
             ['op' => 'field', 'type' => 'string', 'field' => 'name', 'value' => 'hidden'],
             [
                 'op' => 'add', 'type' => 'integer', 'args' => [
@@ -86,7 +87,8 @@ final class ExpressionPropertyTest extends TestCase
                     ['op' => 'literal', 'type' => 'integer', 'value' => 2],
                 ],
             ],
-        ] as $document) {
+            ] as $document
+        ) {
             try {
                 Expression::fromArray($document);
                 self::fail('An ambiguous or incorrectly typed AST was accepted.');

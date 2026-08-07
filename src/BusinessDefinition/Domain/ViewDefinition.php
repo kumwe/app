@@ -48,9 +48,11 @@ final readonly class ViewDefinition
     /** @param array<string, mixed> $document */
     public static function fromArray(array $document): self
     {
-        if (array_diff(array_keys($document), [
+        if (
+            array_diff(array_keys($document), [
             'handle', 'label', 'kind', 'fields', 'filters', 'sorts', 'administrator', 'portal', 'public',
-        ]) !== []) {
+            ]) !== []
+        ) {
             throw new InvalidBusinessDefinition('A business view contains an unknown property.');
         }
 

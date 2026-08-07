@@ -22,8 +22,10 @@ final readonly class DefinitionVersionRecord
         if (!hash_equals($definition->checksum(), $compatibility->toChecksum)) {
             throw new InvalidBusinessDefinition('A stored definition version and compatibility plan disagree.');
         }
-        if ($definition->status !== DefinitionStatus::Published
-            || $definition->definitionVersion !== $compatibility->toVersion) {
+        if (
+            $definition->status !== DefinitionStatus::Published
+            || $definition->definitionVersion !== $compatibility->toVersion
+        ) {
             throw new InvalidBusinessDefinition('A stored definition version has inconsistent canonical state.');
         }
         if ($status === DefinitionStatus::Draft) {

@@ -35,11 +35,13 @@ final readonly class RelationshipDefinition
         if ($kind === RelationshipKind::OwnedLineCollection && $onDelete !== DeleteBehavior::Cascade) {
             throw new InvalidBusinessDefinition('An owned line collection must cascade from its owner.');
         }
-        if ($ordered && !in_array($kind, [
+        if (
+            $ordered && !in_array($kind, [
             RelationshipKind::OneToMany,
             RelationshipKind::ManyToMany,
             RelationshipKind::OwnedLineCollection,
-        ], true)) {
+            ], true)
+        ) {
             throw new InvalidBusinessDefinition('Only collection relationships may be ordered.');
         }
     }
@@ -47,9 +49,11 @@ final readonly class RelationshipDefinition
     /** @param array<string, mixed> $document */
     public static function fromArray(array $document): self
     {
-        if (array_diff(array_keys($document), [
+        if (
+            array_diff(array_keys($document), [
             'handle', 'label', 'kind', 'target', 'inverse', 'required', 'unique', 'ordered', 'on_delete',
-        ]) !== []) {
+            ]) !== []
+        ) {
             throw new InvalidBusinessDefinition('A relationship contains an unknown property.');
         }
         $kind = RelationshipKind::tryFrom(self::string($document, 'kind'))

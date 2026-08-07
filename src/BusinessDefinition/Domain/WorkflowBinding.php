@@ -39,12 +39,14 @@ final readonly class WorkflowBinding
                     throw new InvalidBusinessDefinition('A workflow transition property is invalid.');
                 }
             }
-            if (preg_match('/^[a-z][a-z0-9_]{0,62}$/D', $transition['handle']) !== 1
+            if (
+                preg_match('/^[a-z][a-z0-9_]{0,62}$/D', $transition['handle']) !== 1
                 || !in_array($transition['from'], $states, true)
                 || !in_array($transition['to'], $states, true)
                 || $transition['from'] === $transition['to']
                 || preg_match('/^[a-z][a-z0-9-]*(?:[._:][a-z0-9-]+)*$/D', $transition['capability']) !== 1
-                || isset($seen[$transition['handle']])) {
+                || isset($seen[$transition['handle']])
+            ) {
                 throw new InvalidBusinessDefinition('A workflow transition is invalid or duplicated.');
             }
             $seen[$transition['handle']] = true;
@@ -62,8 +64,10 @@ final readonly class WorkflowBinding
         $initial = $document['initial_state'] ?? null;
         $states = $document['states'] ?? null;
         $transitions = $document['transitions'] ?? [];
-        if (!is_string($initial) || !is_array($states) || !array_is_list($states)
-            || !is_array($transitions) || !array_is_list($transitions)) {
+        if (
+            !is_string($initial) || !is_array($states) || !array_is_list($states)
+            || !is_array($transitions) || !array_is_list($transitions)
+        ) {
             throw new InvalidBusinessDefinition('A workflow binding has an invalid shape.');
         }
         $mappedStates = [];
@@ -75,8 +79,10 @@ final readonly class WorkflowBinding
         }
         $mappedTransitions = [];
         foreach ($transitions as $transition) {
-            if (!is_array($transition) || array_is_list($transition)
-                || array_diff(array_keys($transition), ['handle', 'from', 'to', 'capability']) !== []) {
+            if (
+                !is_array($transition) || array_is_list($transition)
+                || array_diff(array_keys($transition), ['handle', 'from', 'to', 'capability']) !== []
+            ) {
                 throw new InvalidBusinessDefinition('A workflow transition must be a strict object.');
             }
             $mapped = [];

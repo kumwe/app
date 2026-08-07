@@ -64,8 +64,10 @@ final readonly class EntityTypeDefinition
             throw new InvalidBusinessDefinition('A business entity handle must be a stable namespaced identifier.');
         }
         $owner->assertOwns($handle);
-        if ($singularLabel === '' || $pluralLabel === ''
-            || max(strlen($singularLabel), strlen($pluralLabel)) > 120) {
+        if (
+            $singularLabel === '' || $pluralLabel === ''
+            || max(strlen($singularLabel), strlen($pluralLabel)) > 120
+        ) {
             throw new InvalidBusinessDefinition('A business entity requires bounded singular and plural labels.');
         }
         if ($definitionVersion < 0) {
@@ -77,8 +79,10 @@ final readonly class EntityTypeDefinition
         if ($status !== DefinitionStatus::Draft && $definitionVersion < 1) {
             throw new InvalidBusinessDefinition('A published business definition requires a positive version.');
         }
-        if ($fields === [] || count($fields) > 256 || count($relationships) > 128
-            || count($views) > 64 || count($actions) > 64) {
+        if (
+            $fields === [] || count($fields) > 256 || count($relationships) > 128
+            || count($views) > 64 || count($actions) > 64
+        ) {
             throw new InvalidBusinessDefinition('A business entity definition collection is empty or unbounded.');
         }
         $this->fields = self::unique($fields, static fn (FieldDefinition $field): string => $field->handle, 'field');
@@ -96,16 +100,20 @@ final readonly class EntityTypeDefinition
         if (!$administratorExposure && !$portalExposure && !$publicExposure) {
             throw new InvalidBusinessDefinition('A business entity requires at least one declared exposure surface.');
         }
-        if (!$portalExposure && array_filter(
-            $this->views,
-            static fn (ViewDefinition $view): bool => $view->portal,
-        ) !== []) {
+        if (
+            !$portalExposure && array_filter(
+                $this->views,
+                static fn (ViewDefinition $view): bool => $view->portal,
+            ) !== []
+        ) {
             throw new InvalidBusinessDefinition('A portal view requires entity-level portal exposure.');
         }
-        if (!$publicExposure && array_filter(
-            $this->views,
-            static fn (ViewDefinition $view): bool => $view->public,
-        ) !== []) {
+        if (
+            !$publicExposure && array_filter(
+                $this->views,
+                static fn (ViewDefinition $view): bool => $view->public,
+            ) !== []
+        ) {
             throw new InvalidBusinessDefinition('A public view requires entity-level public exposure.');
         }
         CanonicalDefinitionJson::encode($compatibilityMetadata);
@@ -126,8 +134,10 @@ final readonly class EntityTypeDefinition
             throw new InvalidBusinessDefinition('A business entity definition contains an unknown property.');
         }
         $owner = $document['owner'] ?? null;
-        if (!is_array($owner) || array_is_list($owner)
-            || array_diff(array_keys($owner), ['type', 'identifier']) !== []) {
+        if (
+            !is_array($owner) || array_is_list($owner)
+            || array_diff(array_keys($owner), ['type', 'identifier']) !== []
+        ) {
             throw new InvalidBusinessDefinition('A business entity definition owner must be a strict object.');
         }
         $ownerType = DefinitionOwnerType::tryFrom(self::string($owner, 'type'))
@@ -356,10 +366,12 @@ final readonly class EntityTypeDefinition
             $fields[$field->handle] = $field;
         }
         $identityType = $this->identityStrategy === IdentityStrategy::Uuid ? 'core.uuid' : 'core.reference_identity';
-        if (count(array_filter(
-            $this->fields,
-            static fn (FieldDefinition $field): bool => $field->type === $identityType,
-        )) !== 1) {
+        if (
+            count(array_filter(
+                $this->fields,
+                static fn (FieldDefinition $field): bool => $field->type === $identityType,
+            )) !== 1
+        ) {
             throw new InvalidBusinessDefinition(
                 'A business definition requires exactly one field matching its identity strategy.',
             );
@@ -426,11 +438,13 @@ final readonly class EntityTypeDefinition
                 return;
             }
             $visiting[$handle] = true;
-            foreach ([
+            foreach (
+                [
                 $fields[$handle]->formula,
                 $fields[$handle]->visibilityCondition,
                 $fields[$handle]->editabilityCondition,
-            ] as $expression) {
+                ] as $expression
+            ) {
                 foreach ($expression?->dependencies() ?? [] as $dependency) {
                     $walk($dependency);
                 }

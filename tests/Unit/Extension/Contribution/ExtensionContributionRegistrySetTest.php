@@ -55,7 +55,15 @@ final class ExtensionContributionRegistrySetTest extends TestCase
         ]);
 
         self::assertSame(
-            ['core.dashboard', 'core.content', 'core.create-content', 'core.media', 'core.models', 'core.extensions'],
+            [
+                'core.dashboard',
+                'core.content',
+                'core.create-content',
+                'core.media',
+                'core.models',
+                'core.business-definitions',
+                'core.extensions',
+            ],
             array_column($visible, 'id'),
         );
         self::assertSame(
