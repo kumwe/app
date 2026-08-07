@@ -11,6 +11,12 @@ interface AdministratorIdentityGateway
 {
     public function authenticate(string $email, string $password, string $source): ?AuthenticatedPrincipal;
 
+    /**
+     * Provisions a distinct administrator through the trusted host bootstrap identity.
+     *
+     * The method name is retained for compatibility, but implementations must support provisioning
+     * additional administrators after the first account exists.
+     */
     public function createInitialAdministrator(
         ExecutionContext $context,
         string $email,
