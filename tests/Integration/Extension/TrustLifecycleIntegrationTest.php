@@ -342,6 +342,7 @@ final class TrustLifecycleIntegrationTest extends TestCase
         }
         self::assertGreaterThan(0, $revoker);
         self::waitForFile($revokerStarted);
+        self::waitForFile($directory . '/revoker-result');
         touch($release);
         pcntl_waitpid($installer, $installerStatus);
         pcntl_waitpid($revoker, $revokerStatus);
@@ -349,7 +350,14 @@ final class TrustLifecycleIntegrationTest extends TestCase
         self::assertTrue(pcntl_wifexited($revokerStatus));
         $database->close();
         self::assertSame('committed', file_get_contents($directory . '/installer-result'));
-        self::assertSame('revoked', file_get_contents($directory . '/revoker-result'));
+        self::assertStringStartsWith(
+            'failed:Another extension lifecycle operation is already in progress.',
+            (string) file_get_contents($directory . '/revoker-result'),
+        );
+        self::assertSame(
+            [$identifier],
+            $trust->emergencyRevoke($context, $keyId, 'race compromise after install'),
+        );
         self::assertSame('quarantined', $database->fetchOne(sprintf(
             'SELECT status FROM %s WHERE identifier = ?',
             $tables->quoted('extensions'),
