@@ -730,10 +730,12 @@ final class McpCapabilityCatalog
     private function presentation(): array
     {
         $colors = [];
-        foreach ([
+        foreach (
+            [
             'navy', 'ink', 'muted', 'canvas', 'surface', 'border', 'accent', 'accent_strong',
             'accent_soft', 'on_accent',
-        ] as $color) {
+            ] as $color
+        ) {
             $colors[$color] = ['type' => 'string', 'pattern' => '^#[0-9a-fA-F]{6}$'];
         }
 

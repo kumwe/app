@@ -39,7 +39,8 @@ final readonly class ManageSettingsCommand implements Command
                 if (!is_array($presentation) || array_is_list($presentation)) {
                     throw new \InvalidArgumentException('Stored presentation settings must be a JSON object.');
                 }
-                foreach ([
+                foreach (
+                    [
                     'presentation-logo' => 'logo',
                     'presentation-footer' => 'footer_text',
                     'presentation-primary-menu' => 'primary_menu',
@@ -47,7 +48,8 @@ final readonly class ManageSettingsCommand implements Command
                     'presentation-button-style' => 'button_style',
                     'presentation-button-shape' => 'button_shape',
                     'presentation-header-style' => 'header_style',
-                ] as $option => $key) {
+                    ] as $option => $key
+                ) {
                     if (array_key_exists($option, $options)) {
                         $presentation[$key] = $options[$option];
                     }
