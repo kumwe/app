@@ -5,29 +5,43 @@ declare(strict_types=1);
 namespace Kumwe\CMS\Administrator\Navigation;
 
 use InvalidArgumentException;
+use Kumwe\CMS\Extension\Application\Trust\TrustStore;
+use Kumwe\CMS\Extension\Contribution\AdministratorNavigationDefinition;
+use Kumwe\CMS\Extension\Contribution\AdministratorWorkspaceRegistry;
+use Kumwe\CMS\Extension\Contribution\CapabilityDefinitionRegistry;
+use Kumwe\CMS\Extension\Contribution\ContributionOwner;
+use Kumwe\CMS\Extension\Contribution\ExtensionContributionRegistrySet;
 
 final class AdministratorNavigationRegistry
 {
-    /** @var array<string, AdministratorNavigationItem> */
+    /** @var array<string, array{owner: ContributionOwner, definition: AdministratorNavigationDefinition}> */
     private array $items = [];
 
-    /** @param iterable<AdministratorNavigationItem> $items */
-    public function __construct(iterable $items = [])
-    {
-        foreach ($items as $item) {
-            $this->register($item);
-        }
+    public function __construct(
+        private readonly AdministratorWorkspaceRegistry $workspaces,
+        private readonly CapabilityDefinitionRegistry $capabilities,
+        private readonly ?TrustStore $trust = null,
+    ) {
     }
 
-    public function register(AdministratorNavigationItem $item): void
-    {
-        if (isset($this->items[$item->id])) {
+    public function registerOwned(
+        ContributionOwner $owner,
+        AdministratorNavigationDefinition $definition,
+    ): void {
+        $owner->assertOwns($definition->id, 'navigation');
+        if (!$this->workspaces->isOwnedBy($definition->workspace, $owner)) {
+            throw new InvalidArgumentException('Administrator navigation must reference an owned workspace.');
+        }
+        if (!$this->capabilities->isOwnedBy($definition->capability, $owner)) {
+            throw new InvalidArgumentException('Administrator navigation must reference an owned capability.');
+        }
+        if (isset($this->items[$definition->id])) {
             throw new InvalidArgumentException(sprintf(
                 'Administrator navigation item %s is already registered.',
-                $item->id,
+                $definition->id,
             ));
         }
-        $this->items[$item->id] = $item;
+        $this->items[$definition->id] = ['owner' => $owner, 'definition' => $definition];
     }
 
     /**
@@ -36,129 +50,121 @@ final class AdministratorNavigationRegistry
      */
     public function visible(array $capabilities): array
     {
+        $active = $this->activeExtensions();
         $items = array_values(array_filter(
             $this->items,
-            static fn (AdministratorNavigationItem $item): bool => isset($capabilities[$item->capability]),
+            static fn (array $entry): bool => isset($capabilities[$entry['definition']->capability])
+                && self::ownerIsActive($entry['owner'], $active),
         ));
-        usort($items, static fn (AdministratorNavigationItem $left, AdministratorNavigationItem $right): int =>
-            [$left->priority, $left->label] <=> [$right->priority, $right->label]);
+        usort($items, function (array $left, array $right): int {
+            $leftWorkspace = $this->workspaces->definition($left['definition']->workspace);
+            $rightWorkspace = $this->workspaces->definition($right['definition']->workspace);
+            return [
+                $leftWorkspace->priority,
+                $left['definition']->priority,
+                $left['definition']->label,
+                $left['definition']->id,
+            ] <=> [
+                $rightWorkspace->priority,
+                $right['definition']->priority,
+                $right['definition']->label,
+                $right['definition']->id,
+            ];
+        });
 
-        return array_map(static fn (AdministratorNavigationItem $item): array => $item->toArray(), $items);
+        return array_map(fn (array $entry): array => $this->present($entry), $items);
+    }
+
+    /**
+     * @param array<string, true> $capabilities
+     * @param list<array<string, int|string>>|null $visible
+     * @return list<array{id: string, label: string, description: string, priority: int, dom_id: string}>
+     */
+    public function visibleWorkspaces(array $capabilities, ?array $visible = null): array
+    {
+        $visible ??= $this->visible($capabilities);
+        $result = [];
+        foreach ($visible as $item) {
+            $workspaceId = (string) $item['workspace'];
+            if (isset($result[$workspaceId])) {
+                continue;
+            }
+            $workspace = $this->workspaces->definition($workspaceId);
+            $result[$workspaceId] = $workspace->toArray() + [
+                'dom_id' => preg_replace('/[^a-z0-9-]+/', '-', $workspaceId) ?? $workspaceId,
+            ];
+        }
+        return array_values($result);
+    }
+
+    /** @return list<array<string, mixed>> */
+    public function ownedBy(ContributionOwner $owner): array
+    {
+        $result = [];
+        foreach ($this->items as $entry) {
+            if ($entry['owner']->identifier() === $owner->identifier()) {
+                $result[] = $this->present($entry);
+            }
+        }
+        return $result;
+    }
+
+    public function remove(ContributionOwner $owner): void
+    {
+        foreach ($this->items as $identifier => $entry) {
+            if ($entry['owner']->identifier() === $owner->identifier()) {
+                unset($this->items[$identifier]);
+            }
+        }
     }
 
     public static function core(): self
     {
-        return new self([
-            new AdministratorNavigationItem(
-                'dashboard',
-                'Dashboard',
-                'Overview and publishing activity',
-                '/administrator',
-                'dashboard',
-                'Workspace',
-                'content.read',
-                10,
-                'home overview activity',
-            ),
-            new AdministratorNavigationItem(
-                'content',
-                'Content',
-                'Find, edit and publish content',
-                '/administrator/content',
-                'content',
-                'Workspace',
-                'content.read',
-                20,
-                'pages articles entries search',
-            ),
-            new AdministratorNavigationItem(
-                'create-content',
-                'Create content',
-                'Start a new content item',
-                '/administrator/content/new',
-                'plus',
-                'Workspace',
-                'content.create',
-                30,
-                'new page article entry',
-            ),
-            new AdministratorNavigationItem(
-                'media',
-                'Media',
-                'Browse and upload files',
-                '/administrator/media',
-                'media',
-                'Workspace',
-                'content.read',
-                40,
-                'images files uploads library',
-            ),
-            new AdministratorNavigationItem(
-                'models',
-                'Content models',
-                'Fields and publishing workflows',
-                '/administrator/content-models',
-                'models',
-                'Structure',
-                'content.read',
-                100,
-                'schemas fields types workflows states',
-            ),
-            new AdministratorNavigationItem(
-                'navigation',
-                'Menus',
-                'Public navigation structure',
-                '/administrator/navigation',
-                'navigation',
-                'Structure',
-                'navigation.manage',
-                110,
-                'menus links tree site navigation',
-            ),
-            new AdministratorNavigationItem(
-                'access',
-                'Users & access',
-                'People, groups and permissions',
-                '/administrator/access',
-                'users',
-                'System',
-                'users.manage',
-                200,
-                'users groups roles permissions tokens',
-            ),
-            new AdministratorNavigationItem(
-                'extensions',
-                'Extensions',
-                'Packages, trust and themes',
-                '/administrator/extensions',
-                'extensions',
-                'System',
-                'extensions.manage',
-                210,
-                'plugins modules packages themes templates',
-            ),
-            new AdministratorNavigationItem(
-                'automation',
-                'Automation',
-                'Schedules and background work',
-                '/administrator/automation',
-                'automation',
-                'System',
-                'automation.manage',
-                220,
-                'jobs schedules cron workers',
-            ),
-            new AdministratorNavigationItem(
-                'settings',
-                'Settings',
-                'Site identity and defaults',
-                '/administrator/settings',
-                'settings',
-                'System',
-                'settings.manage',
-                230,
-                'configuration site homepage seo',
-            ),
-        ]);
+        return (new ExtensionContributionRegistrySet())->navigation();
+    }
+
+    /**
+     * @param array{owner: ContributionOwner, definition: AdministratorNavigationDefinition} $entry
+     * @return array<string, int|string>
+     */
+    private function present(array $entry): array
+    {
+        $owner = $entry['owner'];
+        $definition = $entry['definition'];
+        $workspace = $this->workspaces->definition($definition->workspace);
+        $path = $owner->identifier() === ContributionOwner::CORE
+            ? $definition->path
+            : '/administrator/extensions/' . $owner->identifier()
+                . ($definition->path === '/' ? '' : $definition->path);
+        return [
+            'id' => $definition->id,
+            'owner' => $owner->identifier(),
+            'workspace' => $definition->workspace,
+            'label' => $definition->label,
+            'description' => $definition->description,
+            'href' => $path,
+            'icon' => $definition->icon,
+            'group' => $workspace->label,
+            'capability' => $definition->capability,
+            'priority' => $definition->priority,
+            'keywords' => $definition->keywords,
+        ];
+    }
+
+    /** @return array<string, true>|null */
+    private function activeExtensions(): ?array
+    {
+        if ($this->trust === null) {
+            return null;
+        }
+        return array_fill_keys($this->trust->trustedActiveRuntimeIdentifiers(), true);
+    }
+
+    /** @param array<string, true>|null $active */
+    private static function ownerIsActive(ContributionOwner $owner, ?array $active): bool
+    {
+        return $owner->identifier() === ContributionOwner::CORE
+            || $active === null
+            || isset($active[$owner->identifier()]);
     }
 }

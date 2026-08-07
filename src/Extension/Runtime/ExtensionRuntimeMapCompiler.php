@@ -633,6 +633,8 @@ final readonly class ExtensionRuntimeMapCompiler implements TrustRuntimeInvalida
                     optional: true,
                 ),
                 'autoload' => $manifest->autoload(),
+                'manifest_schema' => $manifest->schemaVersion(),
+                'contributions' => $manifest->contributions()->toArray(),
                 'theme_surfaces' => $themes[$identifier]['surfaces'] ?? [],
                 'theme_sites' => $themes[$identifier]['sites'] ?? [],
             ];

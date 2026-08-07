@@ -45,10 +45,9 @@ final readonly class ContributionOwner
     public function assertOwns(string $identifier, string $kind): void
     {
         if ($this->identifier === self::CORE) {
-            if (!str_starts_with($identifier, self::CORE . '.')) {
+            if ($kind !== 'capability' && !str_starts_with($identifier, self::CORE . '.')) {
                 throw new InvalidArgumentException(sprintf('Core %s identifiers must use the core namespace.', $kind));
             }
-
             return;
         }
 

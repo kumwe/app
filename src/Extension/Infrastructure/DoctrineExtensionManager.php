@@ -72,9 +72,12 @@ final readonly class DoctrineExtensionManager
     public function installed(ExecutionContext $context): array
     {
         $installed = $this->database->fetchAllAssociative(sprintf(
-            'SELECT identifier, extension_type, installed_version, status, service_provider, registry_version, '
-            . 'runtime_path, installed_at, updated_at FROM %s ORDER BY identifier',
+            'SELECT e.identifier, e.extension_type, e.installed_version, e.status, e.service_provider, '
+            . 'e.registry_version, e.runtime_path, e.installed_at, e.updated_at, r.manifest '
+            . 'FROM %s e INNER JOIN %s r ON r.extension_id = e.id AND r.version = e.installed_version '
+            . 'ORDER BY e.identifier',
             $this->tables->quoted('extensions'),
+            $this->tables->quoted('extension_releases'),
         ));
         $surfaces = $this->database->fetchAllAssociative(sprintf(
             'SELECT e.identifier, a.surface FROM %s a INNER JOIN %s e ON e.id = a.extension_id '
@@ -109,6 +112,21 @@ final readonly class DoctrineExtensionManager
         foreach ($installed as &$extension) {
             $identifier = $extension['identifier'] ?? null;
             $extension['theme_surfaces'] = is_string($identifier) ? ($byIdentifier[$identifier] ?? []) : [];
+            $manifestValue = $extension['manifest'] ?? null;
+            if (is_string($identifier) && (is_string($manifestValue) || is_array($manifestValue))) {
+                $manifest = ExtensionManifest::fromJson(is_string($manifestValue)
+                    ? $manifestValue
+                    : json_encode($manifestValue, JSON_THROW_ON_ERROR));
+                $extension['manifest_schema'] = $manifest->schemaVersion();
+                $extension['contributions'] = $this->contributionDiagnostics(
+                    $manifest,
+                    ($extension['status'] ?? null) === 'active',
+                );
+            } else {
+                $extension['manifest_schema'] = null;
+                $extension['contributions'] = [];
+            }
+            unset($extension['manifest']);
         }
         unset($extension);
 
@@ -583,11 +601,18 @@ final readonly class DoctrineExtensionManager
         ): void {
             $this->assertFence($lease);
             $installed = $this->findInstalled($identifier);
+            $capabilities = array_values(array_filter($this->database->fetchFirstColumn(sprintf(
+                'SELECT capability_code FROM %s WHERE extension_id = ? ORDER BY capability_code',
+                $this->tables->quoted('extension_contribution_capabilities'),
+            ), [$installed['id']]), 'is_string'));
             $this->assertThemeCapabilities($installed, $context);
             $this->clearThemeActivations($installed, $actorId, $context->site());
             $affected = $this->database->delete($this->tables->raw('extensions'), ['identifier' => $identifier]);
             if ((string) $affected !== '1') {
                 throw new InvalidArgumentException('The requested extension is not installed.');
+            }
+            foreach ($capabilities as $capability) {
+                $this->deleteContributionCapability($capability);
             }
             $this->ownership->remove(
                 AuthorizationResource::item('extension', $identifier),
@@ -757,6 +782,7 @@ final readonly class DoctrineExtensionManager
 
         $releaseId = Uuid::uuid7()->toString();
         $now = $this->clock->now();
+        $this->synchronizeContributionCapabilities($manifest, $extensionId);
         $manifestData = json_decode($manifestJson, true, 64, JSON_THROW_ON_ERROR);
         $this->database->insert($this->tables->raw('extension_releases'), [
             'id' => $releaseId,
@@ -786,6 +812,95 @@ final readonly class DoctrineExtensionManager
                 'optional' => $dependency->isOptional(),
             ], ['optional' => Types::BOOLEAN]);
         }
+    }
+
+    private function synchronizeContributionCapabilities(ExtensionManifest $manifest, string $extensionId): void
+    {
+        $definitions = [];
+        foreach ($manifest->contributions()->capabilities() as $definition) {
+            $definitions[$definition->id] = $definition->description;
+        }
+        ksort($definitions, SORT_STRING);
+
+        $existing = array_values(array_filter($this->database->fetchFirstColumn(sprintf(
+            'SELECT capability_code FROM %s WHERE extension_id = ? ORDER BY capability_code',
+            $this->tables->quoted('extension_contribution_capabilities'),
+        ), [$extensionId]), 'is_string'));
+        foreach ($definitions as $code => $description) {
+            $owner = $this->database->fetchOne(sprintf(
+                'SELECT extension_id FROM %s WHERE capability_code = ?',
+                $this->tables->quoted('extension_contribution_capabilities'),
+            ), [$code]);
+            if ($owner !== false && $owner !== $extensionId) {
+                throw new InvalidArgumentException(sprintf(
+                    'Capability %s is already owned by another extension.',
+                    $code,
+                ));
+            }
+            $capabilityExists = $this->database->fetchOne(sprintf(
+                'SELECT code FROM %s WHERE code = ?',
+                $this->tables->quoted('capabilities'),
+            ), [$code]);
+            if ($capabilityExists !== false && $owner === false) {
+                throw new InvalidArgumentException(sprintf('Capability %s collides with a core capability.', $code));
+            }
+            if ($capabilityExists === false) {
+                $this->database->insert($this->tables->raw('capabilities'), [
+                    'code' => $code,
+                    'description' => $description,
+                ]);
+            }
+            if ($owner === false) {
+                $this->database->insert($this->tables->raw('extension_contribution_capabilities'), [
+                    'extension_id' => $extensionId,
+                    'capability_code' => $code,
+                    'description' => $description,
+                ]);
+            } else {
+                $this->database->update($this->tables->raw('extension_contribution_capabilities'), [
+                    'description' => $description,
+                ], ['capability_code' => $code]);
+                $this->database->update($this->tables->raw('capabilities'), [
+                    'description' => $description,
+                ], ['code' => $code]);
+            }
+        }
+        foreach (array_diff($existing, array_keys($definitions)) as $removed) {
+            $this->deleteContributionCapability($removed);
+        }
+    }
+
+    private function deleteContributionCapability(string $capability): void
+    {
+        $grants = array_values(array_filter($this->database->fetchFirstColumn(sprintf(
+            'SELECT id FROM %s WHERE capability_code = ? ORDER BY id',
+            $this->tables->quoted('role_capability_grants'),
+        ), [$capability]), 'is_string'));
+        foreach ($grants as $grant) {
+            $this->ownership->remove(
+                AuthorizationResource::item('grant', $grant),
+                SiteContext::default(),
+            );
+        }
+        $this->database->delete($this->tables->raw('capabilities'), ['code' => $capability]);
+    }
+
+    /** @return array<string, mixed> */
+    private function contributionDiagnostics(ExtensionManifest $manifest, bool $active): array
+    {
+        $contributions = $manifest->contributions()->toArray();
+        foreach ($contributions['capabilities'] as &$capability) {
+            $capability['active'] = $active;
+        }
+        unset($capability);
+        foreach (['workspaces', 'navigation', 'routes', 'views'] as $kind) {
+            foreach ($contributions['administrator'][$kind] as &$item) {
+                $item['active'] = $active;
+            }
+            unset($item);
+        }
+        $contributions['active'] = $active;
+        return $contributions;
     }
 
     private function themeSurfacePath(string $identifier, ThemeSurface $surface): string

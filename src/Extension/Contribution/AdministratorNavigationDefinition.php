@@ -7,7 +7,7 @@ namespace Kumwe\CMS\Extension\Contribution;
 use InvalidArgumentException;
 use Kumwe\CMS\Identity\Domain\Capability;
 
-final readonly class AdministratorNavigationDefinition
+final readonly class AdministratorNavigationDefinition implements ContributionDefinition
 {
     public string $capability;
 
@@ -42,6 +42,11 @@ final readonly class AdministratorNavigationDefinition
         if ($priority < 0 || $priority > 100_000 || mb_strlen($keywords) > 500) {
             throw new InvalidArgumentException('Administrator navigation ordering or keywords are invalid.');
         }
+    }
+
+    public function identifier(): string
+    {
+        return $this->id;
     }
 
     /** @return array<string, int|string> */

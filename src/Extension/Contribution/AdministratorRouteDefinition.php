@@ -7,7 +7,7 @@ namespace Kumwe\CMS\Extension\Contribution;
 use InvalidArgumentException;
 use Kumwe\CMS\Identity\Domain\Capability;
 
-final readonly class AdministratorRouteDefinition
+final readonly class AdministratorRouteDefinition implements ContributionDefinition
 {
     /** @var non-empty-list<string> */
     public array $methods;
@@ -39,9 +39,20 @@ final readonly class AdministratorRouteDefinition
         }
         $values = array_keys($normalized);
         sort($values, SORT_STRING);
+        if (
+            array_intersect($values, ['DELETE', 'PATCH', 'POST', 'PUT']) !== []
+            && array_intersect($values, ['GET']) !== []
+        ) {
+            throw new InvalidArgumentException('A contributed route cannot mix safe and mutating methods.');
+        }
         /** @var non-empty-list<string> $values */
         $this->methods = $values;
         $this->capability = Capability::fromString($capability)->value();
+    }
+
+    public function identifier(): string
+    {
+        return $this->name;
     }
 
     /** @return array{name: string, path: string, methods: non-empty-list<string>, capability: string, view: string} */

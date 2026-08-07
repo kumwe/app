@@ -1,0 +1,19 @@
+{% extends "layout.twig" %}
+{% block title %}Announcements · {{ site_name }}{% endblock %}
+{% block context_title %}Announcements{% endblock %}
+{% block context_subtitle %}Trusted component contribution{% endblock %}
+{% block content %}
+  <div class="page-heading">
+    <div>
+      <p class="eyebrow">Example component</p>
+      <h1>Announcements</h1>
+      <p>A graphical administrator page supplied without a Kumwe core route or navigation edit.</p>
+    </div>
+  </div>
+  <section class="panel stack" aria-labelledby="announcement-list-title">
+    <div><p class="eyebrow">{{ site_name }}</p><h2 id="announcement-list-title">Component announcements</h2></div>
+    {% for announcement in announcements %}
+      <article class="stack"><h3>{{ announcement.title }}</h3><p>{{ announcement.message }}</p></article>
+    {% endfor %}
+  </section>
+{% endblock %}

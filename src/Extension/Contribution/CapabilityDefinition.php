@@ -7,7 +7,7 @@ namespace Kumwe\CMS\Extension\Contribution;
 use InvalidArgumentException;
 use Kumwe\CMS\Identity\Domain\Capability;
 
-final readonly class CapabilityDefinition
+final readonly class CapabilityDefinition implements ContributionDefinition
 {
     public string $id;
 
@@ -30,6 +30,11 @@ final readonly class CapabilityDefinition
         }
         $this->label = $label;
         $this->description = $description;
+    }
+
+    public function identifier(): string
+    {
+        return $this->id;
     }
 
     /** @return array{id: string, label: string, description: string} */

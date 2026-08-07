@@ -92,6 +92,8 @@ use Kumwe\CMS\Extension\Infrastructure\Trust\DoctrineTrustStoreRepository;
 use Kumwe\CMS\Extension\Infrastructure\Trust\FilesystemExtensionArtifactVerifier;
 use Kumwe\CMS\Extension\Infrastructure\Trust\SodiumTrustKeySignatureVerifier;
 use Kumwe\CMS\Extension\Runtime\ActiveExtensionSet;
+use Kumwe\CMS\Extension\Contribution\ExtensionContributionRegistrySet;
+use Kumwe\CMS\Extension\Contribution\AdministratorViewRegistry;
 use Kumwe\CMS\Extension\Runtime\ExtensionRuntimeLoader;
 use Kumwe\CMS\Extension\Runtime\ExtensionEventRegistrar;
 use Kumwe\CMS\Extension\Runtime\JoomlaExtensionEventRegistrar;
@@ -204,6 +206,7 @@ use Kumwe\CMS\Infrastructure\Persistence\Migration\CoreSchemaMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\ContentModelRuntimeMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\DatabaseDrivenPresentationMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\DynamicSiteContentMigration;
+use Kumwe\CMS\Infrastructure\Persistence\Migration\ExtensionContributionCatalogMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\IdempotencyLeaseNullabilityMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\IsolateThemeSurfacesMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\DoctrineMigrationLock;
@@ -322,11 +325,6 @@ final class ContainerFactory
         $container->alias(ContainerInterface::class, Container::class);
         $container->share(ApplicationConfiguration::class, $configuration, true);
         $container->share(ClockInterface::class, new SystemClock(), true);
-        $container->share(
-            AdministratorNavigationRegistry::class,
-            AdministratorNavigationRegistry::core(),
-            true,
-        );
         $container->share(AutomationJobFormRegistry::class, AutomationJobFormRegistry::core(), true);
         $container->share(Dispatcher::class, new Dispatcher(), true);
         $container->alias(DispatcherInterface::class, Dispatcher::class);
@@ -685,6 +683,7 @@ final class ContainerFactory
                     new ContentModelRuntimeMigration(self::service($container, TableNames::class)),
                     new DynamicSiteContentMigration(self::service($container, TableNames::class)),
                     new DatabaseDrivenPresentationMigration(self::service($container, TableNames::class)),
+                    new ExtensionContributionCatalogMigration(self::service($container, TableNames::class)),
                 ],
                 [
                     // Previously distributed builds used a DBAL-equivalent static-analysis rewrite, then
@@ -783,6 +782,7 @@ final class ContainerFactory
                 self::service($container, RecoveryAdministratorRenderer::class),
                 self::service($container, AdministratorNavigationRegistry::class),
                 self::service($container, ViteAssetManifest::class),
+                self::service($container, AdministratorViewRegistry::class),
             ), true);
         $container->share(RouterInterface::class, static fn (): RouterInterface =>
             new FastRouteRouter(null, null, [
@@ -895,6 +895,16 @@ final class ContainerFactory
             self::service($container, AuthorizationGateway::class),
             $configuration->allowUnsignedLocalExtensions,
         ), true);
+        $contributionRegistries = new ExtensionContributionRegistrySet(
+            self::service($container, TrustStore::class),
+        );
+        $container->share(ExtensionContributionRegistrySet::class, $contributionRegistries, true);
+        $container->share(
+            AdministratorNavigationRegistry::class,
+            $contributionRegistries->navigation(),
+            true,
+        );
+        $container->share(AdministratorViewRegistry::class, $contributionRegistries->views(), true);
         $container->share(ThemeActivationGuard::class, static fn (
             Container $container,
         ): ThemeActivationGuard => new DoctrineThemeActivationGuard(
@@ -964,14 +974,10 @@ final class ContainerFactory
                     self::service($container, DispatcherInterface::class),
                 ),
                 NavigationService::class => self::service($container, NavigationService::class),
-                AdministratorNavigationRegistry::class => self::service(
-                    $container,
-                    AdministratorNavigationRegistry::class,
-                ),
                 AutomationJobFormRegistry::class => self::service($container, AutomationJobFormRegistry::class),
                 SiteSettings::class => self::service($container, SiteSettings::class),
-            ])
-            : new ActiveExtensionSet(self::service($container, TrustStore::class));
+            ], $contributionRegistries)
+            : new ActiveExtensionSet($contributionRegistries, self::service($container, TrustStore::class));
         $container->share(ActiveExtensionSet::class, $active, true);
     }
 
@@ -1936,7 +1942,10 @@ final class ContainerFactory
             BearerAuthenticationMiddleware::OPTION_TOKEN_PURPOSE => 'mcp',
         ]));
         $application->route('/mcp', McpHttpHandler::class, ['OPTIONS'], 'mcp.options');
-        self::service($container, ActiveExtensionSet::class)->registerRoutes($application);
+        self::service($container, ActiveExtensionSet::class)->registerRoutes(
+            $application,
+            self::service($container, AdministratorRenderer::class),
+        );
         $application->get('/{path:.+}', PublishedContentHandler::class, 'site.content.path');
     }
 
