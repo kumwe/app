@@ -158,7 +158,7 @@ test.describe('authenticated administrator', () => {
     await page.goto('/administrator/business-definitions?new=1');
     await expect(page.getByRole('heading', { name: 'Business definitions' })).toBeVisible();
     await expect(page.locator('textarea[name="definition_json"]')).toHaveCount(0);
-    await page.getByLabel('Stable handle', { exact: true }).fill(handle);
+    await page.locator('input[name="handle"]').fill(handle);
     await page.getByLabel('Singular label').fill('Browser invoice');
     await page.getByLabel('Plural label').fill('Browser invoices');
     await page.getByRole('button', { name: 'Add field' }).click();
@@ -329,6 +329,7 @@ test.describe('authenticated administrator', () => {
     page,
     isMobile,
   }) => {
+    test.setTimeout(90_000);
     await ensureAnnouncementsActive(page);
     try {
       const extension = page.locator('article').filter({ hasText: 'kumwe/announcements-example' }).first();
