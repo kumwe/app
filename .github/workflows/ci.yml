@@ -30,18 +30,12 @@ jobs:
           extensions: apcu, ctype, fileinfo, filter, intl, json, mbstring, openssl, pcntl, pdo, pdo_mysql, pdo_pgsql, redis, sodium, zip
           coverage: none
           tools: composer:v2
-      - name: Resolve the declared dependency graph
-        run: composer update --no-interaction --prefer-dist --no-install
-      - name: Upload the resolved lock file
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: composer-lock
-          path: composer.lock
-          if-no-files-found: error
-          retention-days: 3
-      - name: Require a committed reproducible lock file
-        run: git diff --exit-code -- composer.lock
+      - name: Validate committed Composer metadata
+        run: composer validate --strict
+      - name: Verify the locked dependency graph
+        run: composer install --no-interaction --prefer-dist --dry-run
+      - name: Require immutable dependency metadata
+        run: git diff --exit-code -- composer.json composer.lock
 
   frontend:
     name: Administrator frontend
