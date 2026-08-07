@@ -112,6 +112,7 @@ final readonly class SitePresentation
         if (!is_array($value) || array_is_list($value)) {
             throw new InvalidArgumentException('Presentation settings must be an object.');
         }
+        /** @var array<string, mixed> $value */
 
         $logo = self::string($value, 'logo', 2_048, true);
         self::assertUrl($logo);
@@ -209,6 +210,7 @@ final readonly class SitePresentation
             if (!is_array($candidate) || array_is_list($candidate)) {
                 throw new InvalidArgumentException('Every presentation scheme must be an object.');
             }
+            /** @var array<string, mixed> $candidate */
             $handle = self::handle($candidate, 'handle', 'Scheme handle');
             if (isset($handles[$handle])) {
                 throw new InvalidArgumentException(sprintf('Presentation scheme %s is duplicated.', $handle));
@@ -218,6 +220,7 @@ final readonly class SitePresentation
             if (!is_array($colors) || array_is_list($colors)) {
                 throw new InvalidArgumentException(sprintf('Presentation scheme %s requires a color map.', $handle));
             }
+            /** @var array<string, mixed> $colors */
             $normalizedColors = [];
             foreach (self::COLOR_KEYS as $key) {
                 $color = $colors[$key] ?? null;
@@ -322,7 +325,10 @@ final readonly class SitePresentation
         return $handle;
     }
 
-    /** @param array<string, mixed> $values @param list<string> $allowed */
+    /**
+     * @param array<string, mixed> $values
+     * @param list<string> $allowed
+     */
     private static function choice(array $values, string $key, array $allowed): string
     {
         $value = self::string($values, $key, 32);
