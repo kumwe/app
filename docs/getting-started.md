@@ -78,18 +78,20 @@ docker compose run --rm app php bin/kumwe user:create-admin \
 rm .admin-password
 ```
 
-Visit <http://localhost:8080/administrator> and sign in. Before a managed homepage is published, `/` displays Kumwe's responsive first-run presentation. It is a real styled public template and automatically gives way to the selected published homepage.
+Visit <http://localhost:8080/administrator> and sign in. A clean installation already contains a published **Welcome to Kumwe** page, a `main` menu, site settings, and reusable Kumwe logo media. They are ordinary managed records: edit the example, replace it, or remove it after selecting another homepage.
 
 ## Build the first site
 
-1. Open **Content models** and review the graphical fields and workflow used by pages.
-2. Create a page with the generated fields and save it as a draft.
-3. Upload an image under **Media** and choose it from a media-enabled content field.
-4. Submit the draft for review and publish it.
-5. Create a `main` menu under **Navigation**, add the page, and order it.
-6. Open **Settings**, enter the site name, and select the page slug as the homepage.
-7. Open `/` and `/pages/{slug}` in a private browser window and confirm the managed menu appears.
-8. Under **Users and access**, create an editor group, grant only the required content capabilities, and assign a test user.
+1. Open **Content**, edit **Welcome to Kumwe**, and verify the change at `/`.
+2. Open **Content models** and review the graphical fields and workflow used by pages.
+3. Create an **About us** page with the generated fields and save it as a draft.
+4. Upload an image under **Media** and choose it from a media-enabled content field. The supplied SVG logos are reusable, read-only example assets.
+5. Submit the draft for review and publish it.
+6. Open **Navigation**, add the page as a typed **Page** target, and choose its label, URL segment, parent, and order.
+7. Open `/about-us`. Nest another page below the item and verify its calculated URL, such as `/about-us/contact-details`.
+8. Add a **Page section** target such as `#platform` or a validated custom URL when navigation is not a page route.
+9. Open **Settings**, enter the site name, and select a managed page as the homepage. The stable content ID is stored, so changing its slug does not disconnect `/`.
+10. Under **Users and access**, create an editor group, grant only the required content capabilities, and assign a test user.
 
 Publishing dates are optional. A published page is public only after `publish_at` and before `unpublish_at` when those values are present.
 
