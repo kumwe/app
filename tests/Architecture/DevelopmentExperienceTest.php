@@ -101,10 +101,12 @@ final class DevelopmentExperienceTest extends TestCase
         self::assertFileExists(
             $this->root . '/resources/media/default/00000000-0000-7000-8000-000000000902.svg',
         );
-        foreach ([
-            'resources/media/default/00000000-0000-7000-8000-000000000901.svg',
-            'resources/media/default/00000000-0000-7000-8000-000000000902.svg',
-        ] as $asset) {
+        foreach (
+            [
+                'resources/media/default/00000000-0000-7000-8000-000000000901.svg',
+                'resources/media/default/00000000-0000-7000-8000-000000000902.svg',
+            ] as $asset
+        ) {
             $svg = $this->contents($asset);
             self::assertStringStartsWith('<svg ', $svg);
             self::assertDoesNotMatchRegularExpression(

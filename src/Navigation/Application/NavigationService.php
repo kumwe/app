@@ -429,15 +429,17 @@ final readonly class NavigationService
             throw new InvalidArgumentException('A navigation path cannot exceed 512 bytes.');
         }
         $firstSegment = explode('/', ltrim($path, '/'), 2)[0] ?? '';
-        if (in_array($firstSegment, [
-            'administrator',
-            'api',
-            'assets',
-            'health',
-            'mcp',
-            'media',
-            'pages',
-        ], true)) {
+        if (
+            in_array($firstSegment, [
+                'administrator',
+                'api',
+                'assets',
+                'health',
+                'mcp',
+                'media',
+                'pages',
+            ], true)
+        ) {
             throw new InvalidArgumentException('A navigation path cannot use a reserved system prefix.');
         }
     }
