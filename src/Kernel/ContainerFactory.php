@@ -2835,6 +2835,8 @@ final class ContainerFactory
                 self::service($container, TrustStore::class),
                 self::service($container, AdministratorIdentityGateway::class),
                 self::service($container, AutomationManagementService::class),
+                self::service($container, BusinessDefinitionService::class),
+                self::service($container, BusinessSchemaService::class),
                 self::service($container, McpMutationGuard::class),
                 self::service($container, ClockInterface::class),
                 self::service($container, AuthorizationGateway::class),

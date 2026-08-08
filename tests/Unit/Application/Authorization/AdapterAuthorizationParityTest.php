@@ -6,6 +6,8 @@ namespace Kumwe\CMS\Tests\Unit\Application\Authorization;
 
 use DateTimeImmutable;
 use Kumwe\CMS\Administrator\Http\Handler\AdministratorCreateContentHandler;
+use Kumwe\CMS\BusinessDefinition\Application\BusinessDefinitionService;
+use Kumwe\CMS\BusinessSchema\Application\BusinessSchemaService;
 use Kumwe\CMS\Application\Authorization\AuthenticationStrength;
 use Kumwe\CMS\Application\Authorization\AuthorizationDenied;
 use Kumwe\CMS\Application\Authorization\AuthorizationGateway;
@@ -257,6 +259,8 @@ final class AdapterAuthorizationParityTest extends TestCase
             $this->withoutConstructor(TrustStore::class),
             $this->createStub(AdministratorIdentityGateway::class),
             $this->withoutConstructor(AutomationManagementService::class),
+            $this->withoutConstructor(BusinessDefinitionService::class),
+            $this->withoutConstructor(BusinessSchemaService::class),
             $this->withoutConstructor(McpMutationGuard::class),
             $this->clock(),
             AuthorizationContext::gateway(),

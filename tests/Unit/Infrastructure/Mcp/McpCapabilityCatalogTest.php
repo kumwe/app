@@ -40,6 +40,54 @@ final class McpCapabilityCatalogTest extends TestCase
         }
     }
 
+    public function testBusinessSchemaStagesAreSeparatelyGrantedAndHonestlyAnnotated(): void
+    {
+        $tools = [];
+        foreach ((new McpCapabilityCatalog())->tools() as $tool) {
+            $tools[$tool['name']] = $tool;
+        }
+
+        // Each stage carries only its own capability, so a token granted inspection cannot
+        // approve, and one granted approval cannot execute.
+        $expected = [
+            'kumwe_business_schema_definitions' => 'business.schema.read',
+            'kumwe_business_schema_plan_list' => 'business.schema.read',
+            'kumwe_business_schema_plan_get' => 'business.schema.read',
+            'kumwe_business_schema_plan_create' => 'business.schema.plan',
+            'kumwe_business_schema_plan_approve' => 'business.schema.approve',
+            'kumwe_business_schema_plan_execute' => 'business.schema.execute',
+            'kumwe_business_schema_plan_recover' => 'business.schema.recover',
+        ];
+        foreach ($expected as $name => $capability) {
+            self::assertArrayHasKey($name, $tools, sprintf('%s is not published.', $name));
+            self::assertSame($capability, $tools[$name]['capability'] ?? null);
+        }
+
+        // Applying or reconciling physical schema changes tables; a client must be told.
+        foreach (['kumwe_business_schema_plan_execute', 'kumwe_business_schema_plan_recover'] as $name) {
+            self::assertTrue($tools[$name]['destructive'], sprintf('%s must be marked destructive.', $name));
+            self::assertFalse($tools[$name]['readOnly']);
+        }
+        foreach (['kumwe_business_schema_plan_list', 'kumwe_business_schema_plan_get'] as $name) {
+            self::assertTrue($tools[$name]['readOnly']);
+            self::assertFalse($tools[$name]['destructive']);
+        }
+    }
+
+    public function testDestructivePurgePlanningIsNotReachableFromTheAgentSurface(): void
+    {
+        $names = array_column((new McpCapabilityCatalog())->tools(), 'name');
+
+        // Composing a purge plan requires re-proving a current password, which this surface
+        // cannot supply; publishing it would only produce a tool that always fails closed.
+        foreach ($names as $name) {
+            self::assertStringNotContainsString('purge', $name);
+        }
+        self::assertNotContains('business.schema.destructive', array_filter(
+            array_column((new McpCapabilityCatalog())->tools(), 'capability'),
+        ));
+    }
+
     public function testMenuItemMutationsPublishTypedTargets(): void
     {
         $tools = (new McpCapabilityCatalog())->tools();

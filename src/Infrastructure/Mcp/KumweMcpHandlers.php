@@ -27,6 +27,11 @@ use Kumwe\CMS\Identity\Domain\Capability;
 use Kumwe\CMS\Navigation\Application\MenuRecord;
 use Kumwe\CMS\Navigation\Application\MenuItemRecord;
 use Kumwe\CMS\Navigation\Application\NavigationService;
+use Kumwe\CMS\BusinessDefinition\Application\BusinessDefinitionService;
+use Kumwe\CMS\BusinessDefinition\Application\DefinitionVersionRecord;
+use Kumwe\CMS\BusinessSchema\Application\BusinessSchemaService;
+use Kumwe\CMS\BusinessSchema\Domain\SchemaPlan;
+use Kumwe\CMS\BusinessSchema\Domain\SchemaPlanStep;
 use Kumwe\CMS\Presentation\ThemeSurface;
 use Kumwe\CMS\Site\Application\SiteSettings;
 use Kumwe\CMS\Identity\Domain\UserStatus;
@@ -44,6 +49,8 @@ final readonly class KumweMcpHandlers
         private TrustStore $trust,
         private AdministratorIdentityGateway $identity,
         private AutomationManagementService $automation,
+        private BusinessDefinitionService $definitions,
+        private BusinessSchemaService $schema,
         private McpMutationGuard $mutations,
         private ClockInterface $clock,
         private AuthorizationGateway $authorization,
@@ -65,6 +72,8 @@ final readonly class KumweMcpHandlers
             $this->trust,
             $this->identity,
             $this->automation,
+            $this->definitions,
+            $this->schema,
             $this->mutations,
             $this->clock,
             $this->authorization,
@@ -102,6 +111,8 @@ final readonly class KumweMcpHandlers
             $this->trust,
             $this->identity,
             $this->automation,
+            $this->definitions,
+            $this->schema,
             $this->mutations,
             $this->clock,
             $this->authorization,
@@ -947,6 +958,236 @@ final readonly class KumweMcpHandlers
             'role' => 'user',
             'content' => sprintf('Review the Kumwe site with a %s focus and propose explicit changes.', $focus),
         ]];
+    }
+
+    /**
+     * Business definition and schema tools.
+     *
+     * These read and drive exactly the services the REST routes and console commands use.
+     * Composing a destructive purge plan is deliberately absent: it requires re-proving a
+     * current password, which an agent surface must not be able to satisfy.
+     */
+
+    /** @return array{items: list<array<string, mixed>>} */
+    public function listBusinessDefinitions(): array
+    {
+        $this->require('content.read');
+        $items = [];
+        foreach ($this->definitions->catalog($this->context()) as $entry) {
+            $items[] = [
+                'id' => $entry->id,
+                'handle' => $entry->handle,
+                'site' => $entry->siteIdentifier,
+                'owner' => $entry->owner->toArray(),
+                'owner_active' => $entry->ownerActive,
+                'draft_revision' => $entry->draftRevision,
+                'published_version' => $entry->publishedVersion,
+                'status' => $entry->status->value,
+            ];
+        }
+
+        return ['items' => $items];
+    }
+
+    /** @return array<string, mixed> */
+    public function getBusinessDefinition(string $handle, ?int $version = null): array
+    {
+        $this->require('content.read');
+
+        return $this->definitionVersion($this->definitions->published($this->context(), $handle, $version));
+    }
+
+    /** @return array<string, mixed> */
+    public function getBusinessDefinitionDraft(string $handle): array
+    {
+        $this->require('content.read');
+        $draft = $this->definitions->draft($this->context(), $handle);
+
+        return [
+            'revision' => $draft->revision,
+            'checksum' => $draft->checksum,
+            'updated_by' => $draft->updatedBy,
+            'updated_at' => $draft->updatedAt->format(DATE_ATOM),
+            'definition' => $draft->definition->toArray(),
+        ];
+    }
+
+    /** @return array{items: list<array<string, mixed>>} */
+    public function listBusinessDefinitionHistory(string $handle): array
+    {
+        $this->require('content.read');
+
+        return ['items' => array_map(
+            $this->definitionVersion(...),
+            $this->definitions->history($this->context(), $handle),
+        )];
+    }
+
+    /** @return array<string, mixed> */
+    public function previewBusinessDefinitionCompatibility(string $handle): array
+    {
+        $this->require('content.read');
+
+        return $this->definitions->previewDraft($this->context(), $handle)->toArray();
+    }
+
+    /** @return array<string, mixed> */
+    public function publishBusinessDefinition(
+        string $operationId,
+        string $handle,
+        int $expectedRevision,
+        bool $confirmed = false,
+    ): array {
+        $this->require('content.update');
+        $this->preauthorize($operationId, 'content.update', AuthorizationResource::collection('business_definition'));
+
+        return $this->mutations->run(
+            $this->context($operationId),
+            'business_definition.publish',
+            $operationId,
+            ['handle' => $handle, 'expectedRevision' => $expectedRevision, 'confirmed' => $confirmed],
+            fn (): array => $this->definitionVersion($this->definitions->publish(
+                $this->context($operationId),
+                $handle,
+                $expectedRevision,
+                $confirmed,
+            )),
+        );
+    }
+
+    /** @return array{items: list<array<string, mixed>>} */
+    public function listSchemaDefinitions(): array
+    {
+        $this->require('business.schema.read');
+
+        return ['items' => $this->schema->definitions($this->context())];
+    }
+
+    /** @return array{items: list<array<string, mixed>>} */
+    public function listSchemaPlans(): array
+    {
+        $this->require('business.schema.read');
+
+        return ['items' => array_map($this->schemaPlan(...), $this->schema->plans($this->context()))];
+    }
+
+    /** @return array<string, mixed> */
+    public function getSchemaPlan(string $planId): array
+    {
+        $this->require('business.schema.read');
+        $context = $this->context();
+
+        return [
+            ...$this->schemaPlan($this->schema->plan($context, $planId)),
+            'steps' => array_map(
+                static fn (SchemaPlanStep $step): array => $step->toArray(),
+                $this->schema->steps($context, $planId),
+            ),
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    public function createSchemaPlan(string $operationId, string $definitionId): array
+    {
+        $this->require('business.schema.plan');
+        $this->preauthorize($operationId, 'business.schema.plan', AuthorizationResource::collection('business_schema'));
+
+        return $this->mutations->run(
+            $this->context($operationId),
+            'business_schema.plan',
+            $operationId,
+            ['definitionId' => $definitionId],
+            fn (): array => $this->schemaPlan($this->schema->createPlan($this->context($operationId), $definitionId)),
+        );
+    }
+
+    /** @return array<string, mixed> */
+    public function approveSchemaPlan(
+        string $operationId,
+        string $planId,
+        string $expectedChecksum,
+        ?string $recoveryEvidenceId = null,
+    ): array {
+        $this->require('business.schema.approve');
+        $this->preauthorize(
+            $operationId,
+            'business.schema.approve',
+            AuthorizationResource::item('business_schema_plan', $planId),
+        );
+
+        // No confirmation is passed: a high-impact plan needs a re-proved password, which
+        // this surface cannot supply, so such a plan fails closed here by design.
+        return $this->mutations->run(
+            $this->context($operationId),
+            'business_schema.approve',
+            $operationId,
+            ['planId' => $planId, 'expectedChecksum' => $expectedChecksum],
+            fn (): array => $this->schemaPlan($this->schema->approve(
+                $this->context($operationId),
+                $planId,
+                $expectedChecksum,
+                null,
+                $recoveryEvidenceId,
+            )),
+        );
+    }
+
+    /** @return array<string, mixed> */
+    public function executeSchemaPlan(string $operationId, string $planId): array
+    {
+        $this->require('business.schema.execute');
+        $this->preauthorize(
+            $operationId,
+            'business.schema.execute',
+            AuthorizationResource::item('business_schema_plan', $planId),
+        );
+
+        return $this->mutations->run(
+            $this->context($operationId),
+            'business_schema.execute',
+            $operationId,
+            ['planId' => $planId],
+            fn (): array => $this->schema->execute($this->context($operationId), $planId)->toArray(),
+        );
+    }
+
+    /** @return array<string, mixed> */
+    public function recoverSchemaPlan(string $operationId, string $planId): array
+    {
+        $this->require('business.schema.recover');
+        $this->preauthorize(
+            $operationId,
+            'business.schema.recover',
+            AuthorizationResource::item('business_schema_plan', $planId),
+        );
+
+        return $this->mutations->run(
+            $this->context($operationId),
+            'business_schema.recover',
+            $operationId,
+            ['planId' => $planId],
+            fn (): array => $this->schema->recover($this->context($operationId), $planId)->toArray(),
+        );
+    }
+
+    /** @return array<string, mixed> */
+    private function definitionVersion(DefinitionVersionRecord $record): array
+    {
+        return [
+            'version' => $record->definition->definitionVersion,
+            'status' => $record->status->value,
+            'checksum' => $record->definition->checksum(),
+            'published_by' => $record->publishedBy,
+            'published_at' => $record->publishedAt->format(DATE_ATOM),
+            'compatibility' => $record->compatibility->toArray(),
+            'definition' => $record->definition->toArray(),
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    private function schemaPlan(SchemaPlan $plan): array
+    {
+        return [...$plan->toArray(), 'checksum' => $plan->checksum()];
     }
 
     private function require(string $capability): AuthenticatedPrincipal

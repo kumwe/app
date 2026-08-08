@@ -6,6 +6,8 @@ namespace Kumwe\CMS\Tests\Integration\Presentation;
 
 use Doctrine\DBAL\DriverManager;
 use Kumwe\CMS\Application\Automation\AutomationManagementService;
+use Kumwe\CMS\BusinessDefinition\Application\BusinessDefinitionService;
+use Kumwe\CMS\BusinessSchema\Application\BusinessSchemaService;
 use Kumwe\CMS\Application\Authorization\ExecutionContext;
 use Kumwe\CMS\Audit\Application\AuditRecorder;
 use Kumwe\CMS\Content\Application\ContentService;
@@ -139,6 +141,8 @@ final class McpThemeIntegrationTest extends TestCase
             $trust,
             $this->createStub(AdministratorIdentityGateway::class),
             $this->withoutConstructor(AutomationManagementService::class),
+            $this->withoutConstructor(BusinessDefinitionService::class),
+            $this->withoutConstructor(BusinessSchemaService::class),
             new McpMutationGuard($database, $tables, $clock, $transactions),
             $clock,
             AuthorizationContext::gateway(),
