@@ -485,24 +485,26 @@ final readonly class CanonicalDefinitionPhysicalSchemaCompiler implements Defini
     ): array {
         $nullable = !$field->required || $field->nullable;
         $physicalDefaults = $this->physicalDefaults($field);
-        /** @var \Closure(string, string, array<string, mixed>=, bool|null=): PhysicalColumnBlueprint $column */
-        $column = fn (
+        $column = function (
             string $logical,
             string $type,
             array $options = [],
             ?bool $isNullable = null,
-        ): PhysicalColumnBlueprint => new PhysicalColumnBlueprint(
-            $logical,
-            $this->names->column($logical),
-            $type,
-            [
-                ...(array_key_exists($logical, $physicalDefaults)
-                    ? ['default' => $physicalDefaults[$logical]]
-                    : []),
-                ...$options,
-            ],
-            $isNullable ?? $nullable,
-        );
+        ) use ($physicalDefaults, $nullable): PhysicalColumnBlueprint {
+            /** @var array<string, mixed> $options */
+            return new PhysicalColumnBlueprint(
+                $logical,
+                $this->names->column($logical),
+                $type,
+                [
+                    ...(array_key_exists($logical, $physicalDefaults)
+                        ? ['default' => $physicalDefaults[$logical]]
+                        : []),
+                    ...$options,
+                ],
+                $isNullable ?? $nullable,
+            );
+        };
 
         return match ($field->type) {
             'core.uuid', 'core.media_reference' => [$column($field->handle, 'guid')],
