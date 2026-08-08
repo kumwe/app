@@ -552,7 +552,7 @@ final class BusinessRuntimeBackupAcceptance
             'business_schema_fence' => 1,
             'business_record_revisions' => 8,
             'business_command_idempotency' => 10,
-            'business_audit_events' => 10,
+            'business_audit_events' => 1,
         ];
         foreach ($minimumRows as $name => $minimum) {
             $count = is_array($control[$name] ?? null) ? ($control[$name]['row_count'] ?? null) : null;

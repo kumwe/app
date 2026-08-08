@@ -485,7 +485,7 @@ final readonly class CanonicalDefinitionPhysicalSchemaCompiler implements Defini
     ): array {
         $nullable = !$field->required || $field->nullable;
         $physicalDefaults = $this->physicalDefaults($field);
-        /** @var callable(string, string, array<string, mixed>, ?bool): PhysicalColumnBlueprint $column */
+        /** @var \Closure(string, string, array<string, mixed>=, bool|null=): PhysicalColumnBlueprint $column */
         $column = fn (
             string $logical,
             string $type,
