@@ -13,6 +13,7 @@ interface BusinessSchemaPlanRepository
     /** @return list<SchemaPlan> */
     public function all(SiteContext $site): array;
 
+    /** @phpstan-impure */
     public function find(SiteContext $site, string $planId): ?SchemaPlan;
 
     public function latestForDefinition(SiteContext $site, string $definitionId): ?SchemaPlan;

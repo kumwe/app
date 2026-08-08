@@ -152,7 +152,7 @@ final readonly class DoctrineBusinessRecordIdempotencyRepository implements Busi
         if ($result !== null && (!is_array($result) || array_is_list($result))) {
             throw new BusinessRecordIdempotencyConflict('corrupt');
         }
-        /** @var array<string, mixed>|null $result */
+        /** @var non-empty-array<string, mixed>|null $result */
 
         $resultChecksum = $this->nullableString($row, 'result_checksum');
         if (
