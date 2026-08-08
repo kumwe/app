@@ -11,9 +11,13 @@ use Doctrine\DBAL\Platforms\MariaDBPlatform;
 use Doctrine\DBAL\Platforms\MySQLPlatform;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use Doctrine\DBAL\Schema\Column;
+use Doctrine\DBAL\Schema\PrimaryKeyConstraint;
+use Doctrine\DBAL\Schema\Table;
 use Doctrine\DBAL\Types\Type;
 use Kumwe\CMS\BusinessSchema\Domain\InvalidBusinessSchema;
 use Kumwe\CMS\BusinessSchema\Domain\PhysicalColumnBlueprint;
+use Kumwe\CMS\BusinessSchema\Domain\PhysicalTableBlueprint;
+use Kumwe\CMS\BusinessSchema\Domain\PhysicalTableKind;
 use Kumwe\CMS\BusinessSchema\Infrastructure\Schema\DoctrinePhysicalSchemaGateway;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
@@ -220,6 +224,27 @@ final class DoctrinePhysicalSchemaGatewayDefaultTest extends TestCase
                 [$expected->physicalName => 0],
             ));
         }
+    }
+
+    public function testExactTableComparisonReadsColumnNamesFromDbalListValues(): void
+    {
+        $gateway = $this->gateway(new PostgreSQLPlatform());
+        $column = self::column('record_id', 'guid');
+        $actual = new Table('kb_e_record_1234567890abcdef');
+        $actual->addColumn($column->physicalName, 'guid');
+        $actual->addPrimaryKeyConstraint(
+            PrimaryKeyConstraint::editor()->setUnquotedColumnNames($column->physicalName)->create(),
+        );
+        $expected = new PhysicalTableBlueprint(
+            'record',
+            'kb_e_record_1234567890abcdef',
+            PhysicalTableKind::Entity,
+            [$column],
+            [$column->physicalName],
+        );
+
+        self::assertSame([0], array_keys($actual->getColumns()));
+        self::assertTrue($this->invoke($gateway, 'tableMatches', [$actual, $expected]));
     }
 
     private function gateway(?AbstractPlatform $platform = null): DoctrinePhysicalSchemaGateway

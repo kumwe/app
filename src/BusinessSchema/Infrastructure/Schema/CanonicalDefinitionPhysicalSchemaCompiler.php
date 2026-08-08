@@ -6,7 +6,7 @@ namespace Kumwe\CMS\BusinessSchema\Infrastructure\Schema;
 
 use Kumwe\CMS\Application\Authorization\SiteContext;
 use Kumwe\CMS\BusinessDefinition\Application\BusinessDefinitionRepository;
-use Kumwe\CMS\BusinessDefinition\Application\FieldTypeRegistry;
+use Kumwe\CMS\BusinessDefinition\Application\FieldTypeDefinitionResolver;
 use Kumwe\CMS\BusinessDefinition\Domain\ComputationMode;
 use Kumwe\CMS\BusinessDefinition\Domain\DeleteBehavior;
 use Kumwe\CMS\BusinessDefinition\Domain\EntityTypeDefinition;
@@ -31,7 +31,7 @@ final readonly class CanonicalDefinitionPhysicalSchemaCompiler implements Defini
 {
     public function __construct(
         private BusinessDefinitionRepository $definitions,
-        private FieldTypeRegistry $fieldTypes,
+        private FieldTypeDefinitionResolver $fieldTypes,
         private PhysicalNameCompiler $names,
     ) {
     }
@@ -494,17 +494,17 @@ final readonly class CanonicalDefinitionPhysicalSchemaCompiler implements Defini
             array $options = [],
             ?bool $isNullable = null,
         ): PhysicalColumnBlueprint => new PhysicalColumnBlueprint(
-                $logical,
-                $this->names->column($logical),
-                $type,
-                [
-                    ...(array_key_exists($logical, $physicalDefaults)
-                        ? ['default' => $physicalDefaults[$logical]]
-                        : []),
-                    ...$options,
-                ],
-                $isNullable ?? $nullable,
-            );
+            $logical,
+            $this->names->column($logical),
+            $type,
+            [
+                ...(array_key_exists($logical, $physicalDefaults)
+                    ? ['default' => $physicalDefaults[$logical]]
+                    : []),
+                ...$options,
+            ],
+            $isNullable ?? $nullable,
+        );
 
         return match ($field->type) {
             'core.uuid', 'core.media_reference' => [$column($field->handle, 'guid')],

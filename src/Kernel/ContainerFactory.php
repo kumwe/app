@@ -77,6 +77,7 @@ use Kumwe\CMS\BusinessDefinition\Administrator\BusinessDefinitionFormMapper;
 use Kumwe\CMS\BusinessDefinition\Delivery\Administrator\BusinessDefinitionsHandler;
 use Kumwe\CMS\BusinessDefinition\Infrastructure\Persistence\DoctrineBusinessDefinitionRepository;
 use Kumwe\CMS\BusinessDefinition\Infrastructure\Persistence\DoctrinePackageDefinitionSynchronizer;
+use Kumwe\CMS\BusinessDefinition\Infrastructure\Persistence\DoctrinePersistedFieldTypeDefinitionResolver;
 use Kumwe\CMS\BusinessRecord\Application\BusinessRecordDefinitionResolver;
 use Kumwe\CMS\BusinessRecord\Application\BusinessRecordIdempotencyPurger;
 use Kumwe\CMS\BusinessRecord\Application\BusinessRecordIdempotencyRepository;
@@ -1053,6 +1054,13 @@ final class ContainerFactory
         );
         $container->share(ExtensionContributionRegistrySet::class, $contributionRegistries, true);
         $container->share(FieldTypeRegistry::class, $contributionRegistries->fieldTypes(), true);
+        $container->share(DoctrinePersistedFieldTypeDefinitionResolver::class, static fn (
+            Container $container,
+        ): DoctrinePersistedFieldTypeDefinitionResolver => new DoctrinePersistedFieldTypeDefinitionResolver(
+            self::service($container, Connection::class),
+            self::service($container, TableNames::class),
+            self::service($container, FieldTypeRegistry::class),
+        ), true);
         $container->share(
             PhysicalNameCompiler::class,
             new PhysicalNameCompiler($configuration->database->tablePrefix),
@@ -1062,7 +1070,7 @@ final class ContainerFactory
             Container $container,
         ): DefinitionPhysicalSchemaCompiler => new CanonicalDefinitionPhysicalSchemaCompiler(
             self::service($container, BusinessDefinitionRepository::class),
-            self::service($container, ExtensionContributionRegistrySet::class)->fieldTypes(),
+            self::service($container, DoctrinePersistedFieldTypeDefinitionResolver::class),
             self::service($container, PhysicalNameCompiler::class),
         ), true);
         $container->share(BusinessSchemaPlanner::class, static fn (

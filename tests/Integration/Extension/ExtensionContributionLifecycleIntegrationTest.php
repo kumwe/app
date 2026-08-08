@@ -96,6 +96,10 @@ final class ExtensionContributionLifecycleIntegrationTest extends TestCase
             self::assertSame(2, $this->definitionCount($database, $tables, $identifier));
             self::assertSame(2, $this->versionCount($database, $tables, $identifier));
             self::assertSame(0, $this->activeDefinitionCount($database, $tables, $identifier));
+            self::assertSame(2, $this->schemaPlanCount($database, $tables, $identifier));
+            $inactiveRegistries = $container->get(ExtensionContributionRegistrySet::class);
+            self::assertInstanceOf(ExtensionContributionRegistrySet::class, $inactiveRegistries);
+            self::assertFalse($inactiveRegistries->fieldTypes()->has($namespace . '.severity'));
 
             $manager->activate($identifier, $context);
             self::assertSame(2, $this->activeDefinitionCount($database, $tables, $identifier));
@@ -183,6 +187,15 @@ final class ExtensionContributionLifecycleIntegrationTest extends TestCase
         return (int) $database->fetchOne(sprintf(
             'SELECT COUNT(*) FROM %s v INNER JOIN %s d ON d.id = v.definition_id WHERE d.owner_identifier = ?',
             $tables->quoted('business_definition_versions'),
+            $tables->quoted('business_definitions'),
+        ), [$owner]);
+    }
+
+    private function schemaPlanCount(Connection $database, TableNames $tables, string $owner): int
+    {
+        return (int) $database->fetchOne(sprintf(
+            'SELECT COUNT(*) FROM %s p INNER JOIN %s d ON d.id = p.definition_id WHERE d.owner_identifier = ?',
+            $tables->quoted('business_schema_plans'),
             $tables->quoted('business_definitions'),
         ), [$owner]);
     }

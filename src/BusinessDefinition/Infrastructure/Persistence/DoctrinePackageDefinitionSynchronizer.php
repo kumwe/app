@@ -87,20 +87,20 @@ final readonly class DoctrinePackageDefinitionSynchronizer implements PackageDef
                 throw new InvalidBusinessDefinition('A package definition has invalid ownership, site, or status.');
             }
         }
-        $resultingGraph = $this->existingDefinitionGraph($site, $owner, $definitions);
-        if ($resultingGraph !== []) {
-            (new BusinessDefinitionValidator($validationTypes))->validateGraph($resultingGraph);
+        $validationGraph = $this->existingDefinitionGraph($site, $owner, $definitions);
+        if ($validationGraph !== []) {
+            (new BusinessDefinitionValidator($validationTypes))->validateGraph($validationGraph);
         }
         $this->synchronizeFieldTypes($owner, $releaseVersion, $fieldTypes, $active);
         $this->synchronizeDefinitions($owner, $site, $definitions, $actorId);
         $publishedGraph = [];
-        foreach ($resultingGraph as $definition) {
+        foreach ($definitions as $definition) {
             $record = $this->repository->published($site, $definition->handle);
             if ($record !== null) {
                 $publishedGraph[] = $record;
             }
         }
-        if (count($publishedGraph) === count($resultingGraph) && $publishedGraph !== []) {
+        if (count($publishedGraph) === count($definitions) && $publishedGraph !== []) {
             $this->schemaObserver?->observePublishedGraph(
                 $site,
                 $publishedGraph,
@@ -278,7 +278,8 @@ final readonly class DoctrinePackageDefinitionSynchronizer implements PackageDef
     private function activePersistedFieldTypes(): array
     {
         $rows = $this->database->fetchAllAssociative(sprintf(
-            'SELECT owner_type, owner_identifier, canonical_payload FROM %s WHERE active = ? ORDER BY identifier',
+            'SELECT identifier, owner_type, owner_identifier, checksum, canonical_payload FROM %s '
+            . 'WHERE active = ? ORDER BY identifier',
             $this->tables->quoted('business_field_types'),
         ), [true], [Types::BOOLEAN]);
         $result = [];
@@ -301,7 +302,19 @@ final readonly class DoctrinePackageDefinitionSynchronizer implements PackageDef
                 throw new InvalidBusinessDefinition('A persisted field-type payload is invalid.');
             }
             /** @var array<string, mixed> $payload */
-            $result[] = [new DefinitionOwner($ownerType, $identifier), FieldTypeDefinition::fromArray($payload)];
+            $fieldType = FieldTypeDefinition::fromArray($payload);
+            $persistedIdentifier = $row['identifier'] ?? null;
+            if (!is_string($persistedIdentifier) || $persistedIdentifier !== $fieldType->id) {
+                throw new InvalidBusinessDefinition('A persisted field-type identifier is inconsistent.');
+            }
+            $checksum = $row['checksum'] ?? null;
+            if (!is_string($checksum)
+                || !hash_equals($checksum, CanonicalDefinitionJson::checksum($fieldType->toArray()))) {
+                throw new InvalidBusinessDefinition('A persisted field-type checksum is invalid.');
+            }
+            $persistedOwner = new DefinitionOwner($ownerType, $identifier);
+            $persistedOwner->assertOwns($fieldType->id);
+            $result[] = [$persistedOwner, $fieldType];
         }
         return $result;
     }
@@ -315,19 +328,32 @@ final readonly class DoctrinePackageDefinitionSynchronizer implements PackageDef
         DefinitionOwner $packageOwner,
         array $packageDefinitions,
     ): array {
-        $handles = array_map(static fn (EntityTypeDefinition $item): string => $item->handle, $packageDefinitions);
         $graph = $packageDefinitions;
-        foreach ($this->repository->catalog($site) as $entry) {
-            if (
-                $entry->publishedVersion === null
-                || $entry->owner->toArray() === $packageOwner->toArray()
-                || in_array($entry->handle, $handles, true)
-            ) {
-                continue;
-            }
-            $published = $this->repository->published($site, $entry->id);
-            if ($published !== null && $entry->ownerActive) {
+        $known = [];
+        foreach ($packageDefinitions as $definition) {
+            $known[$definition->handle] = true;
+        }
+        for ($position = 0; isset($graph[$position]); $position++) {
+            foreach ($graph[$position]->dependencyGraph()['entities'] as $handle) {
+                if (isset($known[$handle])) {
+                    continue;
+                }
+                $known[$handle] = true;
+                $entry = $this->repository->entry($site, $handle);
+                if (
+                    $entry === null || $entry->publishedVersion === null || !$entry->ownerActive
+                    || $entry->owner->toArray() === $packageOwner->toArray()
+                ) {
+                    continue;
+                }
+                $published = $this->repository->published($site, $entry->id);
+                if ($published === null) {
+                    continue;
+                }
                 $graph[] = $published->definition;
+                if (count($graph) > 128) {
+                    throw new InvalidBusinessDefinition('A package definition dependency graph is unbounded.');
+                }
             }
         }
         return $graph;

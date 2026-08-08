@@ -20,7 +20,7 @@ use Throwable;
 
 final readonly class BusinessDefinitionValidator
 {
-    public function __construct(private FieldTypeRegistry $fieldTypes)
+    public function __construct(private FieldTypeDefinitionResolver $fieldTypes)
     {
     }
 
