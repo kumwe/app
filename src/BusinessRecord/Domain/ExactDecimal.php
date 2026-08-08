@@ -84,8 +84,10 @@ final readonly class ExactDecimal implements Stringable
 
         $leftDigits = str_replace('.', '', ltrim($left, '-'));
         $rightDigits = str_replace('.', '', ltrim($right, '-'));
-        $leftDigits = ltrim($leftDigits, '0') ?: '0';
-        $rightDigits = ltrim($rightDigits, '0') ?: '0';
+        $leftDigits = ltrim($leftDigits, '0');
+        $rightDigits = ltrim($rightDigits, '0');
+        $leftDigits = $leftDigits === '' ? '0' : $leftDigits;
+        $rightDigits = $rightDigits === '' ? '0' : $rightDigits;
         $comparison = strlen($leftDigits) <=> strlen($rightDigits);
         if ($comparison === 0) {
             $comparison = $leftDigits <=> $rightDigits;

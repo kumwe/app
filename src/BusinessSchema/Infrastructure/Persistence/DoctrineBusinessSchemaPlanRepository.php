@@ -329,6 +329,7 @@ final readonly class DoctrineBusinessSchemaPlanRepository implements BusinessSch
             throw new RuntimeException('Stored ' . $subject . ' must be a JSON object.');
         }
 
+        /** @var array<string, mixed> $value */
         return $value;
     }
 
@@ -410,7 +411,10 @@ final readonly class DoctrineBusinessSchemaPlanRepository implements BusinessSch
         }
     }
 
-    /** @param array<string, mixed> $row */
+    /**
+     * @param array<string, mixed> $row
+     * @param array<string, mixed>|null $expected
+     */
     private function assertLedgerDocument(array $row, string $column, ?array $expected): void
     {
         $actual = $row[$column] ?? null;
@@ -433,9 +437,13 @@ final readonly class DoctrineBusinessSchemaPlanRepository implements BusinessSch
     private function ledgerDate(mixed $value): string
     {
         try {
-            $date = $value instanceof DateTimeInterface
-                ? DateTimeImmutable::createFromInterface($value)
-                : new DateTimeImmutable((string) $value);
+            if ($value instanceof DateTimeInterface) {
+                $date = DateTimeImmutable::createFromInterface($value);
+            } elseif (is_string($value)) {
+                $date = new DateTimeImmutable($value);
+            } else {
+                throw new RuntimeException('Stored schema plan contains a non-textual ledger timestamp.');
+            }
         } catch (\Throwable $exception) {
             throw new RuntimeException('Stored schema plan contains an invalid ledger timestamp.', 0, $exception);
         }

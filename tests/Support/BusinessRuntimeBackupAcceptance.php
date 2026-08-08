@@ -126,9 +126,23 @@ final class BusinessRuntimeBackupAcceptance
     /** @return array{0: Container, 1: ExecutionContext} */
     private static function boot(): array
     {
+        self::clearDerivedRuntimeCache();
         $container = TestKernelFactory::create(Environment::fromGlobals());
 
         return [$container, TestKernelFactory::administratorContext($container)];
+    }
+
+    private static function clearDerivedRuntimeCache(): void
+    {
+        $runtimeMap = dirname(__DIR__, 2) . '/storage/cache/extensions.json';
+        foreach ([$runtimeMap, $runtimeMap . '.verified', $runtimeMap . '.ready'] as $path) {
+            if (!file_exists($path) && !is_link($path)) {
+                continue;
+            }
+            if (!is_file($path) || is_link($path) || !unlink($path)) {
+                throw new RuntimeException('The derived extension runtime cache could not be reset safely.');
+            }
+        }
     }
 
     /** @return array<string, mixed> */

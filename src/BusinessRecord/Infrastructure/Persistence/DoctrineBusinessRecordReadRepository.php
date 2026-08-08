@@ -59,7 +59,9 @@ final readonly class DoctrineBusinessRecordReadRepository implements BusinessRec
     ): ?StoredRecordIdentity {
         $table = $this->recordTable($resolved);
         $identityPhysical = $this->identityPhysical($resolved, $table);
+        /** @var list<mixed> $parameters */
         $parameters = [$recordId];
+        /** @var list<string> $types */
         $types = [$this->physicalType($table, $identityPhysical)];
         $where = [$this->quote($identityPhysical) . ' = ?'];
         $this->scope($table, $scope, $where, $parameters, $types);
@@ -146,7 +148,9 @@ final readonly class DoctrineBusinessRecordReadRepository implements BusinessRec
     ): ?BusinessRecord {
         $table = $this->recordTable($resolved);
         $identityPhysical = $this->identityPhysical($resolved, $table);
+        /** @var list<mixed> $parameters */
         $parameters = [$recordId];
+        /** @var list<string> $types */
         $types = [$this->physicalType($table, $identityPhysical)];
         $where = [$this->quote($identityPhysical) . ' = ?'];
         $this->scope($table, $scope, $where, $parameters, $types);
@@ -347,7 +351,9 @@ final readonly class DoctrineBusinessRecordReadRepository implements BusinessRec
             $identity = $target->definition->identityStrategy === IdentityStrategy::Uuid
                 ? $this->physical($table, 'record_id')
                 : $this->physical($table, $this->identityHandle($target->definition));
+            /** @var list<mixed> $parameters */
             $parameters = [$keys];
+            /** @var list<ArrayParameterType> $types */
             $types = [ArrayParameterType::STRING];
             $where = ['t.' . $this->quote($this->physical($table, 'record_id')) . ' IN (?)'];
             $this->qualifiedScope($table, 't', $scope, $where, $parameters, $types);
@@ -366,6 +372,9 @@ final readonly class DoctrineBusinessRecordReadRepository implements BusinessRec
                 foreach ($fieldHandles as $fieldHandle) {
                     $key = $record->values()[$fieldHandle] ?? null;
                     if ($key !== null) {
+                        if (!is_string($key)) {
+                            throw new BusinessRecordSchemaUnavailable('A stored entity reference is invalid.');
+                        }
                         $result[$record->recordKey][$fieldHandle] = $public[$key]
                             ?? throw new BusinessRecordSchemaUnavailable(
                                 'A stored entity reference has no target in this scope.',
@@ -473,7 +482,9 @@ final readonly class DoctrineBusinessRecordReadRepository implements BusinessRec
         bool $includeDeleted,
     ): array {
         $sourceTable = $this->recordTable($source);
+        /** @var list<mixed> $parameters */
         $parameters = [$sourceKeys];
+        /** @var list<string|ArrayParameterType> $types */
         $types = [ArrayParameterType::STRING];
         if ($relationship->kind === RelationshipKind::OwnedLineCollection) {
             $targetTable = $source->installation->blueprint->table('line:' . $relationship->handle)
@@ -508,7 +519,9 @@ final readonly class DoctrineBusinessRecordReadRepository implements BusinessRec
         }
 
         $targetTable = $this->recordTable($target);
+        /** @var list<mixed> $parameters */
         $parameters = [];
+        /** @var list<string|ArrayParameterType> $types */
         $types = [];
         $targetAlias = 't';
         $sourceAlias = 's';
@@ -600,7 +613,10 @@ final readonly class DoctrineBusinessRecordReadRepository implements BusinessRec
         return [$rows, $targetTable, false];
     }
 
-    /** @param array<string, mixed> $values @return array<string, mixed> */
+    /**
+     * @param array<string, mixed> $values
+     * @return array<string, mixed>
+     */
     private function visibleValues(EntityTypeDefinition $definition, array $values): array
     {
         $visible = [];
@@ -682,7 +698,11 @@ final readonly class DoctrineBusinessRecordReadRepository implements BusinessRec
         return $resolved;
     }
 
-    /** @param list<string> $where @param list<mixed> $parameters @param list<mixed> $types */
+    /**
+     * @param list<string> $where
+     * @param list<mixed> $parameters
+     * @param list<string|ArrayParameterType> $types
+     */
     private function qualifiedScope(
         PhysicalTableBlueprint $table,
         string $alias,
@@ -813,7 +833,11 @@ final readonly class DoctrineBusinessRecordReadRepository implements BusinessRec
         );
     }
 
-    /** @param list<string> $where @param list<mixed> $parameters @param list<string> $types */
+    /**
+     * @param list<string> $where
+     * @param list<mixed> $parameters
+     * @param list<string> $types
+     */
     private function scope(
         PhysicalTableBlueprint $table,
         RecordScope $scope,
@@ -944,13 +968,13 @@ final readonly class DoctrineBusinessRecordReadRepository implements BusinessRec
 
     private function physical(PhysicalTableBlueprint $table, string $logical): string
     {
-        return $table->column($logical)?->physicalName
+        return $table->column($logical)->physicalName
             ?? throw new BusinessRecordSchemaUnavailable('An installed business-record column is unavailable.');
     }
 
     private function type(PhysicalTableBlueprint $table, string $logical): string
     {
-        return $table->column($logical)?->doctrineType
+        return $table->column($logical)->doctrineType
             ?? throw new BusinessRecordSchemaUnavailable('An installed business-record column type is unavailable.');
     }
 
@@ -994,6 +1018,6 @@ final readonly class DoctrineBusinessRecordReadRepository implements BusinessRec
 
     private function quote(string $identifier): string
     {
-        return $this->database->getDatabasePlatform()->quoteIdentifier($identifier);
+        return $this->database->getDatabasePlatform()->quoteSingleIdentifier($identifier);
     }
 }

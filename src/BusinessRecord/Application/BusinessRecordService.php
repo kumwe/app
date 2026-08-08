@@ -1183,7 +1183,10 @@ final readonly class BusinessRecordService
         );
     }
 
-    /** @param list<string> $changedFields @param array<string, mixed> $evidence */
+    /**
+     * @param list<string> $changedFields
+     * @param array<string, mixed> $evidence
+     */
     private function recordMutation(
         ExecutionContext $context,
         ResolvedBusinessDefinition $resolved,
@@ -1251,7 +1254,10 @@ final readonly class BusinessRecordService
         ));
     }
 
-    /** @param array<string, mixed> $embeddedValues @return array<string, mixed> */
+    /**
+     * @param array<string, mixed> $embeddedValues
+     * @return array<string, mixed>
+     */
     private function relationshipEvidence(
         string $relationship,
         string $targetIdentity,
@@ -1285,7 +1291,11 @@ final readonly class BusinessRecordService
         return $snapshot;
     }
 
-    /** @param array<string, mixed> $before @param array<string, mixed> $after @return list<string> */
+    /**
+     * @param array<string, mixed> $before
+     * @param array<string, mixed> $after
+     * @return list<string>
+     */
     private function changed(array $before, array $after): array
     {
         $handles = array_values(array_unique([...array_keys($before), ...array_keys($after)]));

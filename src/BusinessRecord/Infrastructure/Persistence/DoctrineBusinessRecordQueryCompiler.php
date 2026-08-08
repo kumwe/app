@@ -82,7 +82,9 @@ final readonly class DoctrineBusinessRecordQueryCompiler
     ): CompiledRecordQuery {
         $table = $this->recordTable($resolved);
         $alias = 'r0';
+        /** @var list<mixed> $parameters */
         $parameters = [];
+        /** @var list<string> $types */
         $types = [];
         $where = $this->scopePredicates($table, $alias, $scope, $parameters, $types);
         $this->lifecyclePredicates($table, $alias, $specification, $where);
@@ -360,7 +362,10 @@ final readonly class DoctrineBusinessRecordQueryCompiler
         throw new InvalidBusinessRecordQuery('A business-record filter node is unsupported.');
     }
 
-    /** @param list<mixed> $parameters @param list<string> $types */
+    /**
+     * @param list<mixed> $parameters
+     * @param list<string> $types
+     */
     private function comparison(
         ResolvedBusinessDefinition $resolved,
         PhysicalTableBlueprint $table,
@@ -626,7 +631,11 @@ final readonly class DoctrineBusinessRecordQueryCompiler
         return [$order, $cursor];
     }
 
-    /** @param list<mixed> $cursorValues @param list<mixed> $parameters @param list<string> $types */
+    /**
+     * @param list<mixed> $cursorValues
+     * @param list<mixed> $parameters
+     * @param list<string> $types
+     */
     private function cursorPredicate(
         ResolvedBusinessDefinition $resolved,
         PhysicalTableBlueprint $table,
@@ -716,7 +725,10 @@ final readonly class DoctrineBusinessRecordQueryCompiler
         return '(' . implode(' OR ', $parts) . ')';
     }
 
-    /** @param list<mixed> $parameters @param list<string> $types */
+    /**
+     * @param list<mixed> $parameters
+     * @param list<string> $types
+     */
     private function seek(
         string $column,
         mixed $value,
@@ -771,7 +783,10 @@ final readonly class DoctrineBusinessRecordQueryCompiler
         return array_values(array_unique($projection));
     }
 
-    /** @param list<string> $projection @return list<string> */
+    /**
+     * @param list<string> $projection
+     * @return list<string>
+     */
     private function selectedPhysicalColumns(
         EntityTypeDefinition $definition,
         PhysicalTableBlueprint $table,
@@ -805,7 +820,10 @@ final readonly class DoctrineBusinessRecordQueryCompiler
         return array_values(array_unique($physical));
     }
 
-    /** @param list<RecordAggregate> $aggregates @param list<string> $where */
+    /**
+     * @param list<RecordAggregate> $aggregates
+     * @param list<string> $where
+     */
     private function aggregateSql(
         ResolvedBusinessDefinition $resolved,
         PhysicalTableBlueprint $table,
@@ -816,6 +834,7 @@ final readonly class DoctrineBusinessRecordQueryCompiler
         if ($aggregates === []) {
             return null;
         }
+        /** @var list<string> $select */
         $select = [];
         foreach ($aggregates as $aggregate) {
             if ($aggregate->function === AggregateFunction::Count) {
@@ -952,7 +971,7 @@ final readonly class DoctrineBusinessRecordQueryCompiler
             ? $this->physical($table, 'record_id')
             : $this->physical($table, $identity->handle);
         $parameters = [$normalized];
-        $types = [$table->physicalColumn($identityColumn)?->doctrineType ?? Types::STRING];
+        $types = [$table->physicalColumn($identityColumn)->doctrineType ?? Types::STRING];
         $where = ['x.' . $this->quote($identityColumn) . ' = ?'];
         array_push($where, ...$this->scopePredicates($table, 'x', $scope, $parameters, $types));
         if ($table->column('deleted_at') !== null) {
@@ -1087,19 +1106,19 @@ final readonly class DoctrineBusinessRecordQueryCompiler
 
     private function physical(PhysicalTableBlueprint $table, string $logical): string
     {
-        return $table->column($logical)?->physicalName
+        return $table->column($logical)->physicalName
             ?? throw new InvalidBusinessRecordQuery('An installed query column is unavailable.');
     }
 
     private function type(PhysicalTableBlueprint $table, string $logical): string
     {
-        return $table->column($logical)?->doctrineType
+        return $table->column($logical)->doctrineType
             ?? throw new InvalidBusinessRecordQuery('An installed query column type is unavailable.');
     }
 
     private function quote(string $identifier): string
     {
-        return $this->database->getDatabasePlatform()->quoteIdentifier($identifier);
+        return $this->database->getDatabasePlatform()->quoteSingleIdentifier($identifier);
     }
 
     private function escapeLike(string $value): string

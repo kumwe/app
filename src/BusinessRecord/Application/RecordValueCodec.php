@@ -34,6 +34,7 @@ final readonly class RecordValueCodec
         $this->fieldTypes = $fieldTypes ?? new FieldTypeRegistry();
     }
 
+    /** @param array<string, mixed> $input */
     public function identity(
         EntityTypeDefinition $definition,
         array $input,
@@ -723,35 +724,35 @@ final readonly class RecordValueCodec
 
         return match ($field->type) {
             'core.decimal' => ExactDecimal::fromString(
-                (string) $get($storage, $field->handle),
+                $this->storedString($get($storage, $field->handle)),
                 $this->precision($field),
                 $this->scale($field),
             ),
             'core.money' => new MoneyValue(
                 ExactDecimal::fromString(
-                    (string) $get($storage, $field->handle . '.amount'),
+                    $this->storedString($get($storage, $field->handle . '.amount')),
                     $this->precision($field),
                     $this->scale($field),
                 ),
-                (string) $get($storage, $field->handle . '.currency'),
+                $this->storedString($get($storage, $field->handle . '.currency')),
             ),
             'core.quantity' => new QuantityValue(
                 ExactDecimal::fromString(
-                    (string) $get($storage, $field->handle . '.amount'),
+                    $this->storedString($get($storage, $field->handle . '.amount')),
                     $this->precision($field),
                     $this->scale($field),
                 ),
-                (string) $get($storage, $field->handle . '.unit'),
+                $this->storedString($get($storage, $field->handle . '.unit')),
             ),
             'core.zoned_datetime' => ZonedDateTimeValue::fromStrings(
                 $this->dateTimeString($get($storage, $field->handle . '.instant')),
-                (string) $get($storage, $field->handle . '.timezone'),
+                $this->storedString($get($storage, $field->handle . '.timezone')),
             ),
             'core.secret' => new EncryptedEnvelope(
-                (string) $get($storage, $field->handle . '.ciphertext'),
-                (string) $get($storage, $field->handle . '.nonce'),
-                (string) $get($storage, $field->handle . '.key_id'),
-                (string) $get($storage, $field->handle . '.algorithm'),
+                $this->storedString($get($storage, $field->handle . '.ciphertext')),
+                $this->storedString($get($storage, $field->handle . '.nonce')),
+                $this->storedString($get($storage, $field->handle . '.key_id')),
+                $this->storedString($get($storage, $field->handle . '.algorithm')),
             ),
             'core.computed' => $this->computedFromStorage($field, $get($storage, $field->handle)),
             default => $get($storage, $field->handle),
@@ -783,7 +784,11 @@ final readonly class RecordValueCodec
             return $value;
         }
 
-        return ExactDecimal::fromString((string) $value, $this->precision($field), $this->scale($field));
+        return ExactDecimal::fromString(
+            $this->storedString($value),
+            $this->precision($field),
+            $this->scale($field),
+        );
     }
 
     private function dateTimeString(mixed $value): string
@@ -816,11 +821,13 @@ final readonly class RecordValueCodec
                 ? $value
                 : throw new InvalidArgumentException('A stored bigint field is invalid.'),
             'boolean' => $this->storedBoolean($value),
-            'date_immutable' => $value instanceof DateTimeImmutable ? $value : $this->date((string) $value),
+            'date_immutable' => $value instanceof DateTimeImmutable
+                ? $value
+                : $this->date($this->storedString($value)),
             'time_immutable' => $value instanceof DateTimeImmutable ? $value : $this->storedTime($value),
             'datetime_immutable', 'datetimetz_immutable' => $value instanceof DateTimeImmutable
                 ? $value
-                : new DateTimeImmutable((string) $value, new DateTimeZone('UTC')),
+                : new DateTimeImmutable($this->storedString($value), new DateTimeZone('UTC')),
             'json' => $this->storedJson($value),
             default => $value,
         };
@@ -837,6 +844,15 @@ final readonly class RecordValueCodec
         }
 
         return $integer;
+    }
+
+    private function storedString(mixed $value): string
+    {
+        if (!is_string($value)) {
+            throw new InvalidArgumentException('A stored textual field is invalid.');
+        }
+
+        return $value;
     }
 
     private function storedTime(mixed $value): DateTimeImmutable

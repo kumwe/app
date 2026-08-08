@@ -27,10 +27,7 @@ final class RecordValueGuard
             return;
         }
         if (is_array($value)) {
-            foreach ($value as $key => $item) {
-                if (!is_int($key) && !is_string($key)) {
-                    throw new InvalidArgumentException('A business-record value contains an invalid collection key.');
-                }
+            foreach ($value as $item) {
                 self::assertValue($item, $depth + 1, $nodes);
             }
             return;

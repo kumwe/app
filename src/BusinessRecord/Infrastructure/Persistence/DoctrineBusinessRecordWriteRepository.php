@@ -367,7 +367,13 @@ final readonly class DoctrineBusinessRecordWriteRepository implements BusinessRe
             $this->quote($positionColumn),
             $this->quote($targetColumn),
         ), [$source->recordKey], [$this->type($association, $sourceLogical)]);
-        $stored = array_map(static fn (mixed $value): string => (string) $value, $rows);
+        $stored = array_map(static function (mixed $value): string {
+            if (!is_string($value)) {
+                throw new BusinessRecordSchemaUnavailable('A stored relationship identity is invalid.');
+            }
+
+            return $value;
+        }, $rows);
         $expectedSet = $orderedRecordKeys;
         sort($stored, SORT_STRING);
         sort($expectedSet, SORT_STRING);
@@ -466,8 +472,11 @@ final readonly class DoctrineBusinessRecordWriteRepository implements BusinessRe
         int $expectedVersion,
         array $values,
     ): void {
+        /** @var list<string> $assignments */
         $assignments = [];
+        /** @var list<mixed> $parameters */
         $parameters = [];
+        /** @var list<string> $types */
         $types = [];
         $columnTypes = $this->types($table, $values);
         foreach ($values as $column => $value) {
@@ -504,8 +513,11 @@ final readonly class DoctrineBusinessRecordWriteRepository implements BusinessRe
         string $expectedTargetKey,
         array $values,
     ): void {
+        /** @var list<string> $assignments */
         $assignments = [];
+        /** @var list<mixed> $parameters */
         $parameters = [];
+        /** @var list<string> $types */
         $types = [];
         $columnTypes = $this->types($table, $values);
         foreach ($values as $column => $value) {
@@ -538,7 +550,7 @@ final readonly class DoctrineBusinessRecordWriteRepository implements BusinessRe
             $this->quote($table->physicalName),
             $this->quote($this->physical($table, 'record_id')),
         ), [$recordKey], [$this->type($table, 'record_id')]);
-        if ($actual === false || (int) $actual !== $expectedVersion) {
+        if ($actual === false || $this->storedInteger($actual) !== $expectedVersion) {
             $this->conflict($table, $recordKey, $expectedVersion);
         }
         throw new BusinessRelationshipRejected('The requested singular relationship does not exist.');
@@ -573,7 +585,7 @@ final readonly class DoctrineBusinessRecordWriteRepository implements BusinessRe
             $this->quote($this->physical($table, $sourceLogical)),
         ), [$sourceId], [$this->type($table, $sourceLogical)]);
 
-        return $value === false || $value === null ? 0 : ((int) $value) + 1;
+        return $value === false || $value === null ? 0 : $this->storedInteger($value) + 1;
     }
 
     private function conflict(PhysicalTableBlueprint $table, string $recordKey, int $expectedVersion): never
@@ -587,7 +599,7 @@ final readonly class DoctrineBusinessRecordWriteRepository implements BusinessRe
         if ($actual === false) {
             throw new BusinessRecordNotFound();
         }
-        throw new BusinessRecordVersionConflict($expectedVersion, (int) $actual);
+        throw new BusinessRecordVersionConflict($expectedVersion, $this->storedInteger($actual));
     }
 
     private function recordTable(ResolvedBusinessDefinition $resolved): PhysicalTableBlueprint
@@ -643,17 +655,20 @@ final readonly class DoctrineBusinessRecordWriteRepository implements BusinessRe
 
     private function physical(PhysicalTableBlueprint $table, string $logical): string
     {
-        return $table->column($logical)?->physicalName
+        return $table->column($logical)->physicalName
             ?? throw new BusinessRecordSchemaUnavailable('An installed business-record column is unavailable.');
     }
 
     private function type(PhysicalTableBlueprint $table, string $logical): string
     {
-        return $table->column($logical)?->doctrineType
+        return $table->column($logical)->doctrineType
             ?? throw new BusinessRecordSchemaUnavailable('An installed business-record column type is unavailable.');
     }
 
-    /** @param array<string, mixed> $values @return array<string, string> */
+    /**
+     * @param array<string, mixed> $values
+     * @return array<string, string>
+     */
     private function types(PhysicalTableBlueprint $table, array $values): array
     {
         $types = [];
@@ -677,7 +692,16 @@ final readonly class DoctrineBusinessRecordWriteRepository implements BusinessRe
 
     private function quote(string $identifier): string
     {
-        return $this->database->getDatabasePlatform()->quoteIdentifier($identifier);
+        return $this->database->getDatabasePlatform()->quoteSingleIdentifier($identifier);
+    }
+
+    private function storedInteger(mixed $value): int
+    {
+        if (!is_int($value) && (!is_string($value) || preg_match('/^-?[0-9]+$/D', $value) !== 1)) {
+            throw new BusinessRecordSchemaUnavailable('A stored business-record integer is invalid.');
+        }
+
+        return (int) $value;
     }
 
     private function assertTransaction(): void

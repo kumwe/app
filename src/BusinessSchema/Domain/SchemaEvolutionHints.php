@@ -232,6 +232,7 @@ final readonly class SchemaEvolutionHints
         foreach ($document as $logicalColumn => $literal) {
             SchemaDocument::assertIdentifier($logicalColumn, 'A schema backfill column');
             if (is_array($literal) && !array_is_list($literal)) {
+                /** @var array<string, mixed> $literal */
                 SchemaDocument::assertOnly($literal, ['expression'], 'A schema backfill expression');
                 $expressionDocument = $literal['expression'] ?? null;
                 if (!is_array($expressionDocument) || array_is_list($expressionDocument)) {

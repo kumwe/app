@@ -33,15 +33,17 @@ final readonly class FieldTypeDefinition
         ) {
             throw new InvalidBusinessDefinition('A field type storage family is unsupported.');
         }
-        $compatible = match ($storageType) {
-            'guid' => in_array($valueType, ['reference', 'string'], true),
-            'string', 'text' => in_array($valueType, ['reference', 'string'], true),
-            'integer' => $valueType === 'integer',
-            'boolean' => $valueType === 'boolean',
-            'date', 'time', 'datetime' => $valueType === 'string',
-            'json' => true,
-            default => false,
-        };
+        if (in_array($storageType, ['guid', 'string', 'text'], true)) {
+            $compatible = in_array($valueType, ['reference', 'string'], true);
+        } elseif ($storageType === 'integer') {
+            $compatible = $valueType === 'integer';
+        } elseif ($storageType === 'boolean') {
+            $compatible = $valueType === 'boolean';
+        } elseif (in_array($storageType, ['date', 'time', 'datetime'], true)) {
+            $compatible = $valueType === 'string';
+        } else {
+            $compatible = true;
+        }
         if (!$compatible) {
             throw new InvalidBusinessDefinition(
                 'A field type value family cannot be converted to its declared physical storage family.',

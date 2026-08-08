@@ -121,6 +121,7 @@ final readonly class DoctrineBusinessSchemaRecoveryEvidenceRepository implements
         if (!is_array($value) || ($value !== [] && array_is_list($value))) {
             throw new RuntimeException('Stored recovery evidence details are invalid.');
         }
+        /** @var array<string, mixed> $value */
         return $value;
     }
 

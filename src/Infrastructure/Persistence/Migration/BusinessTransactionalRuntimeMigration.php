@@ -69,7 +69,8 @@ final readonly class BusinessTransactionalRuntimeMigration implements Repeatable
     {
         $manager = $database->createSchemaManager();
         foreach ($this->controlTables() as $table) {
-            if (!$manager->tablesExist([$table->getName()])) {
+            $name = $table->getObjectName()->getUnqualifiedName()->getValue();
+            if (!$manager->tablesExist([$name])) {
                 $manager->createTable($table);
             }
         }
@@ -449,7 +450,10 @@ final readonly class BusinessTransactionalRuntimeMigration implements Repeatable
         return new DateTimeImmutable('now', new DateTimeZone('UTC'));
     }
 
-    /** @param non-empty-string $first @param non-empty-string ...$rest */
+    /**
+     * @param non-empty-string $first
+     * @param non-empty-string ...$rest
+     */
     private function primary(Table $table, string $first, string ...$rest): void
     {
         $table->addPrimaryKeyConstraint(

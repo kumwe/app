@@ -252,8 +252,8 @@ final readonly class BusinessSchemaService
                         );
                     }
                 } catch (Throwable $peerFailure) {
-                    $current = $this->plans->find($context->site(), $peer->id);
-                    if ($current === null || !$this->isGraphBootstrapPause($context, $current)) {
+                    $current = $this->plans->find($context->site(), $peer->id) ?? throw $peerFailure;
+                    if (!$this->isGraphBootstrapPause($context, $current)) {
                         throw $peerFailure;
                     }
                 }
