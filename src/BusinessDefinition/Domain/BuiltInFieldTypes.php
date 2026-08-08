@@ -88,6 +88,7 @@ final class BuiltInFieldTypes
                 'An owned ordered collection of line values.',
                 'collection',
                 'json',
+                ['target'],
             ),
             self::type(
                 'bounded_json',

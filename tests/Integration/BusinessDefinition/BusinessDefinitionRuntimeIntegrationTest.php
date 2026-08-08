@@ -120,7 +120,16 @@ final class BusinessDefinitionRuntimeIntegrationTest extends TestCase
             'audit_enabled' => true,
             'revisions_enabled' => true,
             'fields' => [
-                ['handle' => 'id', 'label' => 'ID', 'type' => 'core.uuid', 'required' => true, 'nullable' => false],
+                [
+                    'handle' => 'id',
+                    'label' => 'ID',
+                    'type' => 'core.uuid',
+                    'required' => true,
+                    'nullable' => false,
+                    'unique' => true,
+                    'indexed' => true,
+                    'immutable_after_create' => true,
+                ],
                 [
                     'handle' => 'amount',
                     'label' => 'Amount',

@@ -26,6 +26,11 @@ final readonly class BusinessDefinitionFormMapper
             $type = $this->required($form, "field_{$index}_type");
             $required = $this->checked($form, "field_{$index}_required");
             $computed = $this->checked($form, "field_{$index}_computed");
+            $identity = ($this->value($form, 'identity_strategy', 'uuid') === 'uuid' && $type === 'core.uuid')
+                || (
+                    $this->value($form, 'identity_strategy', 'uuid') === 'reference'
+                    && $type === 'core.reference_identity'
+                );
             $precision = $this->integerOrNull($form, "field_{$index}_precision");
             $scale = $this->integerOrNull($form, "field_{$index}_scale");
             $fields[] = [
@@ -42,9 +47,9 @@ final readonly class BusinessDefinitionFormMapper
                 'configuration' => $this->configuration($form, $index),
                 'normalizers' => $this->list($form, "field_{$index}_normalizers"),
                 'validators' => $this->validators($form, $index),
-                'unique' => $this->checked($form, "field_{$index}_unique"),
-                'indexed' => $this->checked($form, "field_{$index}_indexed"),
-                'immutable_after_create' => $this->checked($form, "field_{$index}_immutable"),
+                'unique' => $identity || $this->checked($form, "field_{$index}_unique"),
+                'indexed' => $identity || $this->checked($form, "field_{$index}_indexed"),
+                'immutable_after_create' => $identity || $this->checked($form, "field_{$index}_immutable"),
                 'server_only' => $computed || $this->checked($form, "field_{$index}_server_only"),
                 'computed' => $computed,
                 'read_only' => $computed || $this->checked($form, "field_{$index}_read_only"),
@@ -86,6 +91,7 @@ final readonly class BusinessDefinitionFormMapper
             'scope' => $this->value($form, 'scope', 'site'),
             'audit_enabled' => !$this->checked($form, 'audit_disabled'),
             'revisions_enabled' => !$this->checked($form, 'revisions_disabled'),
+            'soft_delete_enabled' => $this->checked($form, 'soft_delete_enabled'),
             'fields' => $fields,
             'relationships' => $this->relationships($form),
             'views' => $this->views($form),

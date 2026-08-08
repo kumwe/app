@@ -53,6 +53,7 @@ final readonly class EntityTypeDefinition
         public bool $administratorExposure = true,
         public bool $portalExposure = false,
         public bool $publicExposure = false,
+        public bool $softDeleteEnabled = false,
     ) {
         if (!Uuid::isValid($id)) {
             throw new InvalidBusinessDefinition('A business entity definition ID must be a canonical UUID.');
@@ -128,7 +129,7 @@ final readonly class EntityTypeDefinition
             'id', 'owner', 'site', 'handle', 'singular_label', 'plural_label', 'status', 'definition_version',
             'storage_mode', 'identity_strategy', 'scope', 'audit_enabled', 'revisions_enabled', 'fields',
             'relationships', 'views', 'actions', 'workflow', 'compatibility_metadata', 'administrator_exposure',
-            'portal_exposure', 'public_exposure',
+            'portal_exposure', 'public_exposure', 'soft_delete_enabled',
         ];
         if (array_diff(array_keys($document), $allowed) !== []) {
             throw new InvalidBusinessDefinition('A business entity definition contains an unknown property.');
@@ -197,6 +198,7 @@ final readonly class EntityTypeDefinition
             self::boolean($document, 'administrator_exposure', true),
             self::boolean($document, 'portal_exposure'),
             self::boolean($document, 'public_exposure'),
+            self::boolean($document, 'soft_delete_enabled'),
         );
     }
 
@@ -259,6 +261,7 @@ final readonly class EntityTypeDefinition
             $this->administratorExposure,
             $this->portalExposure,
             $this->publicExposure,
+            $this->softDeleteEnabled,
         );
     }
 
@@ -291,13 +294,14 @@ final readonly class EntityTypeDefinition
             $this->administratorExposure,
             $this->portalExposure,
             $this->publicExposure,
+            $this->softDeleteEnabled,
         );
     }
 
     /** @return array<string, mixed> */
     public function toArray(): array
     {
-        return [
+        $document = [
             'id' => $this->id,
             'owner' => $this->owner->toArray(),
             'site' => $this->siteIdentifier,
@@ -324,6 +328,13 @@ final readonly class EntityTypeDefinition
             'portal_exposure' => $this->portalExposure,
             'public_exposure' => $this->publicExposure,
         ];
+        // Preserve the canonical bytes/checksums of Session-2 definitions, where
+        // the absent property already meant hard-delete-only behavior.
+        if ($this->softDeleteEnabled) {
+            $document['soft_delete_enabled'] = true;
+        }
+
+        return $document;
     }
 
     public function checksum(): string
@@ -368,12 +379,11 @@ final readonly class EntityTypeDefinition
             $fields[$field->handle] = $field;
         }
         $identityType = $this->identityStrategy === IdentityStrategy::Uuid ? 'core.uuid' : 'core.reference_identity';
-        if (
-            count(array_filter(
-                $this->fields,
-                static fn (FieldDefinition $field): bool => $field->type === $identityType,
-            )) !== 1
-        ) {
+        $identityFields = array_values(array_filter(
+            $this->fields,
+            static fn (FieldDefinition $field): bool => $field->type === $identityType,
+        ));
+        if (count($identityFields) !== 1) {
             throw new InvalidBusinessDefinition(
                 'A business definition requires exactly one field matching its identity strategy.',
             );
