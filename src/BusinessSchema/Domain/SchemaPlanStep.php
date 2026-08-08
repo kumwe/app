@@ -9,14 +9,14 @@ use Kumwe\CMS\BusinessDefinition\Domain\CanonicalDefinitionJson;
 
 final readonly class SchemaPlanStep
 {
-    /** @var array<string, mixed>|null */
+    /** @var array<string, bool|int|string>|null */
     public ?array $cursor;
 
     /** @var array<string, mixed>|null */
     public ?array $outcome;
 
     /**
-     * @param array<string, mixed>|null $cursor
+     * @param array<string, bool|int|string>|null $cursor
      * @param array<string, mixed>|null $outcome
      */
     public function __construct(
@@ -54,6 +54,11 @@ final readonly class SchemaPlanStep
             if ($document !== null) {
                 SchemaDocument::assertObjectValue($document, 'A schema-plan cursor or outcome');
                 CanonicalDefinitionJson::encode($document);
+            }
+        }
+        foreach ($cursor ?? [] as $value) {
+            if (!is_bool($value) && !is_int($value) && !is_string($value)) {
+                throw new InvalidBusinessSchema('A schema-plan cursor contains an unsupported value.');
             }
         }
         $this->cursor = $cursor;
@@ -96,7 +101,7 @@ final readonly class SchemaPlanStep
             $state,
             SchemaDocument::integer($document, 'attempt'),
             SchemaDocument::nullableInteger($document, 'execution_fence'),
-            SchemaDocument::object($document, 'cursor', true),
+            self::cursor($document),
             SchemaDocument::nullableString($document, 'before_schema_checksum'),
             SchemaDocument::nullableString($document, 'after_schema_checksum'),
             SchemaDocument::object($document, 'outcome', true),
@@ -178,7 +183,7 @@ final readonly class SchemaPlanStep
         );
     }
 
-    /** @param array<string, mixed> $cursor */
+    /** @param array<string, bool|int|string> $cursor */
     public function checkpoint(array $cursor, DateTimeImmutable $at): self
     {
         if ($this->state !== SchemaStepStatus::Running) {
@@ -203,6 +208,23 @@ final readonly class SchemaPlanStep
             null,
             $at,
         );
+    }
+
+    /**
+     * @param array<string, mixed> $document
+     * @return array<string, bool|int|string>|null
+     */
+    private static function cursor(array $document): ?array
+    {
+        $cursor = SchemaDocument::object($document, 'cursor', true);
+        foreach ($cursor ?? [] as $value) {
+            if (!is_bool($value) && !is_int($value) && !is_string($value)) {
+                throw new InvalidBusinessSchema('A stored schema-plan cursor contains an unsupported value.');
+            }
+        }
+
+        /** @var array<string, bool|int|string>|null $cursor */
+        return $cursor;
     }
 
     /** @param array<string, mixed> $outcome */

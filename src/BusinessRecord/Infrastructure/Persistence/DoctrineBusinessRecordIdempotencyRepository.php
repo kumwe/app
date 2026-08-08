@@ -130,7 +130,7 @@ final readonly class DoctrineBusinessRecordIdempotencyRepository implements Busi
             return 0;
         }
 
-        return $this->database->executeStatement(sprintf(
+        return (int) $this->database->executeStatement(sprintf(
             'DELETE FROM %s WHERE id IN (?)',
             $this->tables->quoted('business_command_idempotency'),
         ), [$ids], [ArrayParameterType::STRING]);
@@ -152,6 +152,7 @@ final readonly class DoctrineBusinessRecordIdempotencyRepository implements Busi
         if ($result !== null && (!is_array($result) || array_is_list($result))) {
             throw new BusinessRecordIdempotencyConflict('corrupt');
         }
+        /** @var array<string, mixed>|null $result */
 
         $resultChecksum = $this->nullableString($row, 'result_checksum');
         if (

@@ -396,7 +396,7 @@ final readonly class BusinessSchemaExecutor
                                 $target->checksum(),
                                 $target,
                                 SchemaInstallationStatus::Active,
-                                $priorInstallation?->installedAt ?? $completedAt,
+                                $priorInstallation->installedAt ?? $completedAt,
                                 $completedAt,
                             );
                             $schemaChecksum = $target->checksum();
@@ -418,7 +418,6 @@ final readonly class BusinessSchemaExecutor
                             $finished,
                             $fence,
                             $context,
-                            $recovery,
                             $operatorRecovery,
                             $ownerIdentifier,
                             $result,
@@ -1152,7 +1151,11 @@ final readonly class BusinessSchemaExecutor
         );
     }
 
-    /** @template T @param callable(): T $operation @return T */
+    /**
+     * @template T
+     * @param callable(): T $operation
+     * @return T
+     */
     private function journal(callable $operation): mixed
     {
         return $this->transactions->transactional($operation);

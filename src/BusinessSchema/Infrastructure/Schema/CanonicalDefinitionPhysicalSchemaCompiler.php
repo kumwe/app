@@ -485,6 +485,7 @@ final readonly class CanonicalDefinitionPhysicalSchemaCompiler implements Defini
     ): array {
         $nullable = !$field->required || $field->nullable;
         $physicalDefaults = $this->physicalDefaults($field);
+        /** @var callable(string, string, array<string, mixed>, ?bool): PhysicalColumnBlueprint $column */
         $column = fn (
             string $logical,
             string $type,
@@ -507,7 +508,7 @@ final readonly class CanonicalDefinitionPhysicalSchemaCompiler implements Defini
             'core.uuid', 'core.media_reference' => [$column($field->handle, 'guid')],
             'core.entity_reference' => [$column(
                 $field->handle,
-                $referenceIdentity?->doctrineType
+                $referenceIdentity->doctrineType
                     ?? throw new InvalidBusinessSchema('An entity-reference storage mapping has no target identity.'),
                 $referenceIdentity->options,
             )],
@@ -608,15 +609,18 @@ final readonly class CanonicalDefinitionPhysicalSchemaCompiler implements Defini
             if (!is_bool($value) && !is_int($value) && !is_string($value)) {
                 throw new InvalidBusinessSchema('A composite database default component must be an exact scalar.');
             }
-            $valid = match ($component) {
-                'amount' => is_string($value)
-                    && preg_match('/^-?(?:0|[1-9][0-9]*)(?:\.[0-9]+)?$/D', $value) === 1,
-                'currency' => is_string($value) && preg_match('/^[A-Z]{3}$/D', $value) === 1,
-                'unit' => is_string($value) && $value !== '' && strlen($value) <= 63,
-                'instant' => is_string($value) && strtotime($value) !== false,
-                'timezone' => is_string($value) && in_array($value, timezone_identifiers_list(), true),
-                default => false,
-            };
+            if ($component === 'amount') {
+                $valid = is_string($value)
+                    && preg_match('/^-?(?:0|[1-9][0-9]*)(?:\.[0-9]+)?$/D', $value) === 1;
+            } elseif ($component === 'currency') {
+                $valid = is_string($value) && preg_match('/^[A-Z]{3}$/D', $value) === 1;
+            } elseif ($component === 'unit') {
+                $valid = is_string($value) && $value !== '' && strlen($value) <= 63;
+            } elseif ($component === 'instant') {
+                $valid = is_string($value) && strtotime($value) !== false;
+            } else {
+                $valid = is_string($value) && in_array($value, timezone_identifiers_list(), true);
+            }
             if (!$valid) {
                 throw new InvalidBusinessSchema('A composite database default component is invalid.');
             }
@@ -650,7 +654,7 @@ final readonly class CanonicalDefinitionPhysicalSchemaCompiler implements Defini
     /** @param callable(string, string, array<string, mixed>, ?bool): PhysicalColumnBlueprint $column */
     private function computedColumn(FieldDefinition $field, callable $column): PhysicalColumnBlueprint
     {
-        $resultType = $field->formula?->type
+        $resultType = $field->formula->type
             ?? throw new InvalidBusinessSchema('A stored computed field requires a typed formula.');
         [$type, $options] = match ($resultType) {
             'boolean' => ['boolean', []],
@@ -686,6 +690,7 @@ final readonly class CanonicalDefinitionPhysicalSchemaCompiler implements Defini
         return ['precision' => $field->precision, 'scale' => $field->scale];
     }
 
+    /** @param array<string, mixed> $options */
     private function control(
         string $logical,
         string $type,
@@ -894,7 +899,10 @@ final readonly class CanonicalDefinitionPhysicalSchemaCompiler implements Defini
         }
     }
 
-    /** @param list<string> $columns @param list<string> $prefix */
+    /**
+     * @param list<string> $columns
+     * @param list<string> $prefix
+     */
     private function leftPrefix(array $columns, array $prefix): bool
     {
         return array_slice($columns, 0, count($prefix)) === $prefix;

@@ -44,8 +44,8 @@ final readonly class PhysicalForeignKeyBlueprint
         if (!in_array($onDelete, self::ACTIONS, true) || !in_array($onUpdate, self::ACTIONS, true)) {
             throw new InvalidBusinessSchema('A foreign key uses an unsupported referential action.');
         }
-        $this->localColumns = array_values($localColumns);
-        $this->foreignColumns = array_values($foreignColumns);
+        $this->localColumns = $localColumns;
+        $this->foreignColumns = $foreignColumns;
     }
 
     /** @param array<string, mixed> $document */

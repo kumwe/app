@@ -46,7 +46,7 @@ final readonly class DoctrinePhysicalSchemaGateway implements PhysicalSchemaGate
                 continue;
             }
             ++$present;
-            $actual = $manager->introspectTableByUnquotedName($table->physicalName);
+            $actual = $manager->introspectTableByUnquotedName($this->nonEmpty($table->physicalName));
             if (!$this->tableMatches($actual, $table)) {
                 throw new BusinessSchemaConflict(sprintf(
                     'Physical schema drift was detected for compiled table %s: %s.',
@@ -77,13 +77,13 @@ final readonly class DoctrinePhysicalSchemaGateway implements PhysicalSchemaGate
             }
 
             return $this->tableMatches(
-                $manager->introspectTableByUnquotedName($planned->physicalName),
+                $manager->introspectTableByUnquotedName($this->nonEmpty($planned->physicalName)),
                 $planned,
                 false,
             );
         }
         $targetTable = $target->table($operation->table);
-        $physicalTable = $targetTable?->physicalName ?? $this->beforeTableName($operation);
+        $physicalTable = $targetTable->physicalName ?? $this->beforeTableName($operation);
         if ($physicalTable === null) {
             throw new InvalidBusinessSchema('A schema operation references an unknown table.');
         }
@@ -93,7 +93,7 @@ final readonly class DoctrinePhysicalSchemaGateway implements PhysicalSchemaGate
             SchemaOperationKind::DropTable => !$exists,
             SchemaOperationKind::RenameTable => $exists,
             default => $exists && $this->objectSatisfied(
-                $manager->introspectTableByUnquotedName($physicalTable),
+                $manager->introspectTableByUnquotedName($this->nonEmpty($physicalTable)),
                 $targetTable,
                 $operation,
             ),
@@ -142,7 +142,7 @@ final readonly class DoctrinePhysicalSchemaGateway implements PhysicalSchemaGate
         if (!$manager->tablesExist([$planned->physicalName])) {
             return false;
         }
-        $actual = $manager->introspectTableByUnquotedName($planned->physicalName);
+        $actual = $manager->introspectTableByUnquotedName($this->nonEmpty($planned->physicalName));
         if (!$this->tableMatches($actual, $planned, true)) {
             throw new BusinessSchemaConflict(
                 'A newly created table changed shape and cannot be compensated automatically.',
@@ -207,6 +207,7 @@ final readonly class DoctrinePhysicalSchemaGateway implements PhysicalSchemaGate
                 'A backfill requires a canonical column and exactly one literal or Expression value.',
             );
         }
+        /** @var array<string, mixed> $columnState */
         $column = PhysicalColumnBlueprint::fromArray($columnState);
         $targetColumn = $table->column($column->logicalName);
         if ($targetColumn === null || $targetColumn->physicalName !== $column->physicalName) {
@@ -242,6 +243,7 @@ final readonly class DoctrinePhysicalSchemaGateway implements PhysicalSchemaGate
                 if (!is_string($logical) || !is_array($document) || array_is_list($document)) {
                     throw new InvalidBusinessSchema('A backfill Expression dependency is invalid.');
                 }
+                /** @var array<string, mixed> $document */
                 $dependencies[$logical] = PhysicalColumnBlueprint::fromArray($document);
             }
             if (array_keys($dependencies) !== $expression->dependencies()) {
@@ -349,6 +351,7 @@ final readonly class DoctrinePhysicalSchemaGateway implements PhysicalSchemaGate
             if (!is_string($logical) || !is_array($document) || array_is_list($document)) {
                 throw new InvalidBusinessSchema('A schema transform dependency map is invalid.');
             }
+            /** @var array<string, mixed> $document */
             $dependencies[$logical] = PhysicalColumnBlueprint::fromArray($document);
         }
         if (
@@ -429,7 +432,7 @@ final readonly class DoctrinePhysicalSchemaGateway implements PhysicalSchemaGate
         SchemaOperation $operation,
         ?PhysicalTableBlueprint $target,
     ): void {
-        $tableName = $target?->physicalName ?? $this->beforeTableName($operation);
+        $tableName = $target->physicalName ?? $this->beforeTableName($operation);
         if ($tableName === null || !$schema->hasTable($tableName)) {
             throw new BusinessSchemaConflict('The schema operation table disappeared before execution.');
         }
@@ -457,7 +460,10 @@ final readonly class DoctrinePhysicalSchemaGateway implements PhysicalSchemaGate
             case SchemaOperationKind::RenameColumn:
                 $before = PhysicalColumnBlueprint::fromArray($this->state($operation->before, 'prior column'));
                 $column = $this->targetColumn($target, $operation->subject);
-                $table->renameColumn($before->physicalName, $column->physicalName);
+                $table->renameColumn(
+                    $this->nonEmpty($before->physicalName),
+                    $this->nonEmpty($column->physicalName),
+                );
                 $table->modifyColumn($column->physicalName, [
                     'type' => Type::getType($column->doctrineType),
                     ...$this->columnOptions($column),
@@ -486,7 +492,7 @@ final readonly class DoctrinePhysicalSchemaGateway implements PhysicalSchemaGate
                 $foreignKey = PhysicalForeignKeyBlueprint::fromArray(
                     $this->state($operation->before, 'prior foreign key'),
                 );
-                $table->removeForeignKey($foreignKey->physicalName);
+                $table->dropForeignKey($foreignKey->physicalName);
                 return;
 
             case SchemaOperationKind::AddPrimaryKey:
@@ -494,7 +500,9 @@ final readonly class DoctrinePhysicalSchemaGateway implements PhysicalSchemaGate
                     throw new InvalidBusinessSchema('An add-primary-key operation has no target table.');
                 }
                 $table->addPrimaryKeyConstraint(
-                    PrimaryKeyConstraint::editor()->setUnquotedColumnNames(...$target->primaryKey)->create(),
+                    PrimaryKeyConstraint::editor()
+                        ->setUnquotedColumnNames(...$this->nonEmptyNames($target->primaryKey))
+                        ->create(),
                 );
                 return;
 
@@ -517,7 +525,9 @@ final readonly class DoctrinePhysicalSchemaGateway implements PhysicalSchemaGate
             $this->addColumn($table, $column);
         }
         $table->addPrimaryKeyConstraint(
-            PrimaryKeyConstraint::editor()->setUnquotedColumnNames(...$blueprint->primaryKey)->create(),
+            PrimaryKeyConstraint::editor()
+                ->setUnquotedColumnNames(...$this->nonEmptyNames($blueprint->primaryKey))
+                ->create(),
         );
         foreach ($blueprint->indexes() as $index) {
             $this->addIndex($table, $index);
@@ -552,18 +562,18 @@ final readonly class DoctrinePhysicalSchemaGateway implements PhysicalSchemaGate
     private function addIndex(Table $table, PhysicalIndexBlueprint $index): void
     {
         if ($index->unique) {
-            $table->addUniqueIndex($index->columns, $index->physicalName, $index->options);
+            $table->addUniqueIndex($this->nonEmptyNames($index->columns), $index->physicalName, $index->options);
             return;
         }
-        $table->addIndex($index->columns, $index->physicalName, [], $index->options);
+        $table->addIndex($this->nonEmptyNames($index->columns), $index->physicalName, [], $index->options);
     }
 
     private function addForeignKey(Table $table, PhysicalForeignKeyBlueprint $foreignKey): void
     {
         $table->addForeignKeyConstraint(
             $foreignKey->foreignTable,
-            $foreignKey->localColumns,
-            $foreignKey->foreignColumns,
+            $this->nonEmptyNames($foreignKey->localColumns),
+            $this->nonEmptyNames($foreignKey->foreignColumns),
             ['onDelete' => $foreignKey->onDelete, 'onUpdate' => $foreignKey->onUpdate],
             $foreignKey->physicalName,
         );
@@ -585,23 +595,20 @@ final readonly class DoctrinePhysicalSchemaGateway implements PhysicalSchemaGate
                     $column,
                     $temporalPrecisions,
                 ),
-            SchemaOperationKind::AddColumn => ($column = PhysicalColumnBlueprint::fromArray(
+            SchemaOperationKind::AddColumn => $actual->hasColumn(($column = PhysicalColumnBlueprint::fromArray(
                 $this->state($operation->after, 'target column'),
-            )) !== null
-                && $actual->hasColumn($column->physicalName)
+            ))->physicalName)
                 && $this->columnMatches(
                     $actual->getColumn($column->physicalName),
                     $column,
                     $temporalPrecisions,
                 ),
-            SchemaOperationKind::RenameColumn => ($before = PhysicalColumnBlueprint::fromArray(
+            SchemaOperationKind::RenameColumn => !$actual->hasColumn(($before = PhysicalColumnBlueprint::fromArray(
                 $this->state($operation->before, 'prior column'),
-            )) !== null
-                && ($after = PhysicalColumnBlueprint::fromArray(
+            ))->physicalName)
+                && $actual->hasColumn(($after = PhysicalColumnBlueprint::fromArray(
                     $this->state($operation->after, 'target column'),
-                )) !== null
-                && !$actual->hasColumn($before->physicalName)
-                && $actual->hasColumn($after->physicalName)
+                ))->physicalName)
                 && $this->columnMatches(
                     $actual->getColumn($after->physicalName),
                     $after,
@@ -838,11 +845,16 @@ final readonly class DoctrinePhysicalSchemaGateway implements PhysicalSchemaGate
         ) {
             return false;
         }
-        foreach (['length' => 'getLength', 'precision' => 'getPrecision', 'scale' => 'getScale'] as $key => $method) {
+        foreach (['length', 'precision', 'scale'] as $key) {
             if ($this->physicalOptionIsNotIntrospectable($expected, $key)) {
                 continue;
             }
-            if (array_key_exists($key, $expected->options) && $actual->{$method}() !== $expected->options[$key]) {
+            $actualValue = match ($key) {
+                'length' => $actual->getLength(),
+                'precision' => $actual->getPrecision(),
+                'scale' => $actual->getScale(),
+            };
+            if (array_key_exists($key, $expected->options) && $actualValue !== $expected->options[$key]) {
                 return false;
             }
         }
@@ -1088,7 +1100,7 @@ final readonly class DoctrinePhysicalSchemaGateway implements PhysicalSchemaGate
             throw new InvalidBusinessSchema('A decimal physical default exceeds its declared precision.');
         }
         $fraction = str_pad($fraction, $scale, '0');
-        $negative = ($matches[1] ?? '') === '-' && ($integer !== '0' || trim($fraction, '0') !== '');
+        $negative = $matches[1] === '-' && ($integer !== '0' || trim($fraction, '0') !== '');
 
         return ($negative ? '-' : '') . $integer . ($scale === 0 ? '' : '.' . $fraction);
     }
@@ -1249,7 +1261,10 @@ final readonly class DoctrinePhysicalSchemaGateway implements PhysicalSchemaGate
         return $name->getIdentifier()->getValue();
     }
 
-    /** @param array<\Doctrine\DBAL\Schema\Name\UnqualifiedName> $names @return list<string> */
+    /**
+     * @param list<\Doctrine\DBAL\Schema\Name\UnqualifiedName> $names
+     * @return list<string>
+     */
     private function unqualifiedNames(array $names): array
     {
         return array_map(
@@ -1317,7 +1332,33 @@ final readonly class DoctrinePhysicalSchemaGateway implements PhysicalSchemaGate
         return $name;
     }
 
-    /** @param array<string, mixed>|null $state @return array<string, mixed> */
+    /** @return non-empty-string */
+    private function nonEmpty(string $identifier): string
+    {
+        if ($identifier === '') {
+            throw new InvalidBusinessSchema('A compiled physical identifier is empty.');
+        }
+
+        return $identifier;
+    }
+
+    /**
+     * @param list<string> $identifiers
+     * @return non-empty-list<non-empty-string>
+     */
+    private function nonEmptyNames(array $identifiers): array
+    {
+        if ($identifiers === []) {
+            throw new InvalidBusinessSchema('A compiled physical identifier list is empty.');
+        }
+
+        return array_map($this->nonEmpty(...), $identifiers);
+    }
+
+    /**
+     * @param array<string, mixed>|null $state
+     * @return array<string, mixed>
+     */
     private function state(?array $state, string $subject): array
     {
         if ($state === null) {
@@ -1327,7 +1368,10 @@ final readonly class DoctrinePhysicalSchemaGateway implements PhysicalSchemaGate
         return $state;
     }
 
-    /** @param array<string, mixed> $state */
+    /**
+     * @param array<string, mixed> $state
+     * @return non-empty-string
+     */
     private function physicalName(array $state): string
     {
         $name = $state['physical_name'] ?? null;
@@ -1345,6 +1389,7 @@ final readonly class DoctrinePhysicalSchemaGateway implements PhysicalSchemaGate
         if (!is_array($columnState) || array_is_list($columnState)) {
             throw new InvalidBusinessSchema('A backfill requires a canonical column.');
         }
+        /** @var array<string, mixed> $columnState */
         $column = PhysicalColumnBlueprint::fromArray($columnState);
         if (!$actual->hasColumn($column->physicalName)) {
             return false;

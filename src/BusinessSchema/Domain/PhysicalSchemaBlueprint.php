@@ -40,7 +40,7 @@ final readonly class PhysicalSchemaBlueprint
             static fn (PhysicalTableBlueprint $left, PhysicalTableBlueprint $right): int =>
                 [$left->logicalName, $left->physicalName] <=> [$right->logicalName, $right->physicalName],
         );
-        $this->tables = array_values($tables);
+        $this->tables = $tables;
     }
 
     /** @param array<string, mixed> $document */

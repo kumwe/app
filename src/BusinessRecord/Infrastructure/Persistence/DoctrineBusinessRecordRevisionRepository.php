@@ -155,6 +155,7 @@ final readonly class DoctrineBusinessRecordRevisionRepository implements Busines
             throw new BusinessRecordSchemaUnavailable('A stored business-record revision snapshot is malformed.');
         }
 
+        /** @var array<string, mixed> $decoded */
         return $decoded;
     }
 

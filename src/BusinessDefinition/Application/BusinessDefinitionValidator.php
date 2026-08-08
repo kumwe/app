@@ -183,13 +183,15 @@ final readonly class BusinessDefinitionValidator
         ) {
             return false;
         }
-        $expected = match ($relationship->kind) {
-            RelationshipKind::OneToOne => RelationshipKind::OneToOne,
-            RelationshipKind::ManyToOne => RelationshipKind::OneToMany,
-            RelationshipKind::OneToMany => RelationshipKind::ManyToOne,
-            RelationshipKind::ManyToMany => RelationshipKind::ManyToMany,
-            RelationshipKind::OwnedLineCollection => null,
-        };
+        if ($relationship->kind === RelationshipKind::OneToOne) {
+            $expected = RelationshipKind::OneToOne;
+        } elseif ($relationship->kind === RelationshipKind::ManyToOne) {
+            $expected = RelationshipKind::OneToMany;
+        } elseif ($relationship->kind === RelationshipKind::OneToMany) {
+            $expected = RelationshipKind::ManyToOne;
+        } else {
+            $expected = RelationshipKind::ManyToMany;
+        }
 
         return $inverse->kind === $expected
             && ($relationship->kind !== RelationshipKind::ManyToMany
@@ -585,9 +587,10 @@ final readonly class BusinessDefinitionValidator
 
     private function moneyDefault(mixed $value, FieldDefinition $field): bool
     {
-        if (!$this->compositeDefault($value, ['amount', 'currency'])) {
+        if (!is_array($value) || array_is_list($value) || !$this->compositeDefault($value, ['amount', 'currency'])) {
             return false;
         }
+        /** @var array{amount: mixed, currency: mixed} $value */
         $currency = $value['currency'];
         $configured = $field->configuration['currency'] ?? null;
 
@@ -599,9 +602,10 @@ final readonly class BusinessDefinitionValidator
 
     private function quantityDefault(mixed $value, FieldDefinition $field): bool
     {
-        if (!$this->compositeDefault($value, ['amount', 'unit'])) {
+        if (!is_array($value) || array_is_list($value) || !$this->compositeDefault($value, ['amount', 'unit'])) {
             return false;
         }
+        /** @var array{amount: mixed, unit: mixed} $value */
         $unit = $value['unit'];
         $configured = $field->configuration['unit'] ?? null;
 
@@ -663,15 +667,19 @@ final readonly class BusinessDefinitionValidator
 
     private function zonedDefault(mixed $value): bool
     {
-        return $this->compositeDefault($value, ['instant', 'timezone'])
-            && $this->instantDefault($value['instant'])
+        if (!is_array($value) || array_is_list($value) || !$this->compositeDefault($value, ['instant', 'timezone'])) {
+            return false;
+        }
+        /** @var array{instant: mixed, timezone: mixed} $value */
+        return $this->instantDefault($value['instant'])
             && is_string($value['timezone'])
             && in_array($value['timezone'], DateTimeZone::listIdentifiers(), true);
     }
 
     private function referenceDefault(mixed $value, FieldDefinition $field): bool
     {
-        return $this->stringDefault($value, min($field->length ?? 191, 191))
+        return is_string($value)
+            && $this->stringDefault($value, min($field->length ?? 191, 191))
             && $value !== ''
             && preg_match('/[\x00-\x1F\x7F]/', $value) !== 1;
     }
@@ -683,14 +691,16 @@ final readonly class BusinessDefinitionValidator
 
     private function emailDefault(mixed $value, FieldDefinition $field): bool
     {
-        return $this->stringDefault($value, $field->length ?? 320)
+        return is_string($value)
+            && $this->stringDefault($value, $field->length ?? 320)
             && filter_var($value, FILTER_VALIDATE_EMAIL) !== false;
     }
 
     private function urlDefault(mixed $value, FieldDefinition $field): bool
     {
         if (
-            !$this->stringDefault($value, $field->length ?? 4096)
+            !is_string($value)
+            || !$this->stringDefault($value, $field->length ?? 4096)
             || filter_var($value, FILTER_VALIDATE_URL) === false
         ) {
             return false;
@@ -702,7 +712,8 @@ final readonly class BusinessDefinitionValidator
 
     private function phoneDefault(mixed $value, FieldDefinition $field): bool
     {
-        return $this->stringDefault($value, $field->length ?? 64)
+        return is_string($value)
+            && $this->stringDefault($value, $field->length ?? 64)
             && preg_match('/^\+?[0-9][0-9 x#*]{2,62}$/D', $value) === 1;
     }
 

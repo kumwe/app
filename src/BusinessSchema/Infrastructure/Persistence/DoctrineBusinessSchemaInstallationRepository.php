@@ -149,6 +149,7 @@ final readonly class DoctrineBusinessSchemaInstallationRepository implements Bus
         if (!is_array($value) || array_is_list($value)) {
             throw new RuntimeException('Stored schema installation blueprint is invalid.');
         }
+        /** @var array<string, mixed> $value */
         return $value;
     }
 

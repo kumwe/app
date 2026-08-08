@@ -95,7 +95,7 @@ final readonly class SchemaPlan
         if ($approval !== null && !hash_equals($approval->approvedChecksum, $this->checksumFor($operations))) {
             throw new InvalidBusinessSchema('A schema-plan approval is bound to a different canonical plan.');
         }
-        $this->operations = array_values($operations);
+        $this->operations = $operations;
         $this->outcome = $outcome;
         $this->updatedAt = $updatedAt ?? $createdAt;
         if ($this->updatedAt < $createdAt) {

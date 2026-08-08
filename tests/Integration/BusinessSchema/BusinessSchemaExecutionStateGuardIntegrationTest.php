@@ -7,6 +7,7 @@ namespace Kumwe\CMS\Tests\Integration\BusinessSchema;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Exception as DbalException;
 use Doctrine\DBAL\Platforms\AbstractMySQLPlatform;
+use Doctrine\DBAL\TransactionIsolationLevel;
 use Doctrine\DBAL\Types\Types;
 use Kumwe\CMS\BusinessDefinition\Application\PackageDefinitionSynchronizer;
 use Kumwe\CMS\BusinessDefinition\Domain\EntityTypeDefinition;
@@ -348,6 +349,7 @@ final class BusinessSchemaExecutionStateGuardIntegrationTest extends TestCase
         self::assertInstanceOf(Connection::class, $secondaryDatabase);
 
         try {
+            $database->setTransactionIsolation(TransactionIsolationLevel::READ_COMMITTED);
             $database->beginTransaction();
             self::assertSame(1, $installations->find($definition->id)?->definitionVersion);
 

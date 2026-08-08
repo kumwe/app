@@ -182,7 +182,7 @@ final readonly class BusinessSchemaPlanner implements PublishedDefinitionSchemaO
                 foreach ($this->dependencyHandles($record->definition) as $handle) {
                     $dependencies[] = $byHandle[$handle]
                         ?? $this->compiler->compile(
-                            $this->definitions->published($site, $handle)?->definition
+                            $this->definitions->published($site, $handle)->definition
                                 ?? throw new BusinessSchemaNotFound($handle),
                             $site,
                         );
@@ -201,6 +201,7 @@ final readonly class BusinessSchemaPlanner implements PublishedDefinitionSchemaO
         });
     }
 
+    /** @param list<PhysicalSchemaBlueprint> $dependencyBlueprints */
     private function persistPlan(
         SiteContext $site,
         DefinitionVersionRecord $record,
@@ -299,6 +300,7 @@ final readonly class BusinessSchemaPlanner implements PublishedDefinitionSchemaO
     }
 
     /**
+     * @param list<PhysicalSchemaBlueprint> $dependencyBlueprints
      * @return list<SchemaOperation>
      */
     private function operations(
@@ -409,7 +411,18 @@ final readonly class BusinessSchemaPlanner implements PublishedDefinitionSchemaO
         return $this->number([...$drops, ...$creates, ...$alters, ...$repin]);
     }
 
-    /** @return list<array{SchemaOperationKind, SchemaRisk, string, string, ?array, ?array, bool, string}> */
+    /**
+     * @return list<array{
+     *   SchemaOperationKind,
+     *   SchemaRisk,
+     *   string,
+     *   string,
+     *   array<string, mixed>|null,
+     *   array<string, mixed>|null,
+     *   bool,
+     *   string
+     * }>
+     */
     private function tableOperations(
         PhysicalTableBlueprint $prior,
         PhysicalTableBlueprint $target,
@@ -516,7 +529,7 @@ final readonly class BusinessSchemaPlanner implements PublishedDefinitionSchemaO
                 );
                 continue;
             }
-            $value = $column->options['default'] ?? $this->backfillValue($hints, $logical);
+            $value = $this->backfillValueOrDefault($column, $hints, $logical);
             $nullable = new PhysicalColumnBlueprint(
                 $column->logicalName,
                 $column->physicalName,
@@ -626,7 +639,7 @@ final readonly class BusinessSchemaPlanner implements PublishedDefinitionSchemaO
                 continue;
             }
             if ($old->nullable && !$column->nullable) {
-                $value = $column->options['default'] ?? $this->backfillValue($hints, $logical);
+                $value = $this->backfillValueOrDefault($column, $hints, $logical);
                 $columnWork[] = $this->spec(
                     SchemaOperationKind::Backfill,
                     SchemaRisk::BackfillRequired,
@@ -691,7 +704,16 @@ final readonly class BusinessSchemaPlanner implements PublishedDefinitionSchemaO
     }
 
     /**
-     * @param list<array{SchemaOperationKind, SchemaRisk, string, string, ?array, ?array, bool, string}> $specs
+     * @param list<array{
+     *   SchemaOperationKind,
+     *   SchemaRisk,
+     *   string,
+     *   string,
+     *   array<string, mixed>|null,
+     *   array<string, mixed>|null,
+     *   bool,
+     *   string
+     * }> $specs
      * @return list<SchemaOperation>
      */
     private function number(array $specs): array
@@ -850,7 +872,20 @@ final readonly class BusinessSchemaPlanner implements PublishedDefinitionSchemaO
         return $blueprints;
     }
 
-    /** @return array{SchemaOperationKind, SchemaRisk, string, string, ?array, ?array, bool, string} */
+    /**
+     * @param array<string, mixed>|null $before
+     * @param array<string, mixed>|null $after
+     * @return array{
+     *   SchemaOperationKind,
+     *   SchemaRisk,
+     *   string,
+     *   string,
+     *   array<string, mixed>|null,
+     *   array<string, mixed>|null,
+     *   bool,
+     *   string
+     * }
+     */
     private function spec(
         SchemaOperationKind $kind,
         SchemaRisk $risk,
@@ -925,6 +960,22 @@ final readonly class BusinessSchemaPlanner implements PublishedDefinitionSchemaO
         $value = $hints->backfill($logicalColumn);
         if (!is_bool($value) && !is_int($value) && !is_string($value) && !$value instanceof Expression) {
             throw new InvalidBusinessSchema('A validated schema backfill value became unavailable.');
+        }
+
+        return $value;
+    }
+
+    private function backfillValueOrDefault(
+        PhysicalColumnBlueprint $column,
+        SchemaEvolutionHints $hints,
+        string $logicalColumn,
+    ): bool|int|string|Expression {
+        if (!array_key_exists('default', $column->options)) {
+            return $this->backfillValue($hints, $logicalColumn);
+        }
+        $value = $column->options['default'];
+        if (!is_bool($value) && !is_int($value) && !is_string($value)) {
+            throw new InvalidBusinessSchema('A non-null schema column has an invalid canonical default.');
         }
 
         return $value;

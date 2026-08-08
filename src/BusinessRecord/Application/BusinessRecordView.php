@@ -45,7 +45,10 @@ final readonly class BusinessRecordView
         $this->includes = $includes;
     }
 
-    /** @param list<string> $projection @param array<string, mixed>|null $resolvedValues */
+    /**
+     * @param list<string> $projection
+     * @param array<string, mixed>|null $resolvedValues
+     */
     public static function fromRecord(
         BusinessRecord $record,
         array $projection = [],

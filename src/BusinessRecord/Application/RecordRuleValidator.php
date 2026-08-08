@@ -383,7 +383,10 @@ final readonly class RecordRuleValidator
         $this->validateInvariants($definition, $values, $violations);
     }
 
-    /** @param array<string, mixed> $values @param list<ValidationViolation> $violations */
+    /**
+     * @param array<string, mixed> $values
+     * @param list<ValidationViolation> $violations
+     */
     private function validateInvariants(
         EntityTypeDefinition $definition,
         array $values,
@@ -513,7 +516,10 @@ final readonly class RecordRuleValidator
         return $value;
     }
 
-    /** @param array<string, mixed> $validator @return list<bool|int|string|null> */
+    /**
+     * @param array<string, mixed> $validator
+     * @return list<bool|int|string|null>
+     */
     private function validatorList(array $validator, string $key): array
     {
         $values = $validator[$key] ?? null;
@@ -531,7 +537,10 @@ final readonly class RecordRuleValidator
         return $result;
     }
 
-    /** @param array<string, mixed> $values @return array<string, scalar|null> */
+    /**
+     * @param array<string, mixed> $values
+     * @return array<string, bool|float|int|string|null>
+     */
     private function formulaValues(array $values): array
     {
         $result = [];
