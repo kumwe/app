@@ -82,6 +82,8 @@ final class EntityTypeDefinitionTest extends TestCase
                     'type' => 'core.uuid',
                     'required' => true,
                     'nullable' => false,
+                    'unique' => true,
+                    'indexed' => true,
                     'immutable_after_create' => true,
                     'server_only' => true,
                     'read_only' => true,

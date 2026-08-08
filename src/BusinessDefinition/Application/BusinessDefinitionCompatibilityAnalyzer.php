@@ -63,6 +63,15 @@ final class BusinessDefinitionCompatibilityAnalyzer
                 );
             }
         }
+        if ($before->softDeleteEnabled !== $after->softDeleteEnabled) {
+            $changes[] = new CompatibilityChange(
+                '/soft_delete_enabled',
+                $after->softDeleteEnabled
+                    ? CompatibilityClassification::Additive
+                    : CompatibilityClassification::Destructive,
+                sprintf('%s soft deletion and restore metadata.', $after->softDeleteEnabled ? 'Enable' : 'Disable'),
+            );
+        }
         if (
             $before->singularLabel !== $after->singularLabel
             || $before->pluralLabel !== $after->pluralLabel

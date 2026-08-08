@@ -6,6 +6,7 @@ namespace Kumwe\CMS\BusinessDefinition\Application;
 
 use Kumwe\CMS\BusinessDefinition\Domain\DeleteBehavior;
 use Kumwe\CMS\BusinessDefinition\Domain\EntityTypeDefinition;
+use Kumwe\CMS\BusinessDefinition\Domain\FieldDefinition;
 use Kumwe\CMS\BusinessDefinition\Domain\InvalidBusinessDefinition;
 use Kumwe\CMS\BusinessDefinition\Domain\RelationshipKind;
 use Kumwe\CMS\BusinessDefinition\Domain\RelationshipDefinition;
@@ -23,6 +24,7 @@ final readonly class BusinessDefinitionValidator
             throw new InvalidBusinessDefinition('A business definition graph is empty or unbounded.');
         }
         $byHandle = [];
+        $fieldTargets = [];
         foreach ($definitions as $definition) {
             if (isset($byHandle[$definition->handle])) {
                 throw new InvalidBusinessDefinition('Business entity ' . $definition->handle . ' is duplicated.');
@@ -39,9 +41,34 @@ final readonly class BusinessDefinitionValidator
                     ));
                 }
                 $this->validateFieldConfiguration($field->handle, $field->configuration);
+                $this->validateFieldRules($field);
+                if (in_array($field->type, ['core.entity_reference', 'core.ordered_lines'], true)) {
+                    $target = $field->configuration['target'] ?? null;
+                    if (!is_string($target)) {
+                        throw new InvalidBusinessDefinition(sprintf(
+                            'Business field %s requires a declared entity target.',
+                            $field->handle,
+                        ));
+                    }
+                    $fieldTargets[] = [$definition, $field, $target];
+                }
             }
         }
         $ownershipEdges = [];
+        foreach ($fieldTargets as [$definition, $field, $targetHandle]) {
+            $target = $byHandle[$targetHandle] ?? null;
+            if (!$target instanceof EntityTypeDefinition) {
+                throw new InvalidBusinessDefinition(sprintf(
+                    'Business field %s.%s targets an unavailable definition.',
+                    $definition->handle,
+                    $field->handle,
+                ));
+            }
+            $this->assertCompatibleScope($definition, $target);
+            if ($field->type === 'core.ordered_lines') {
+                $ownershipEdges[$definition->handle][] = $target->handle;
+            }
+        }
         foreach ($definitions as $definition) {
             foreach ($definition->relationships() as $relationship) {
                 $target = $byHandle[$relationship->target] ?? null;
@@ -52,9 +79,7 @@ final readonly class BusinessDefinitionValidator
                         $relationship->handle,
                     ));
                 }
-                if ($definition->siteIdentifier !== $target->siteIdentifier) {
-                    throw new InvalidBusinessDefinition('Business relationships cannot cross site scope.');
-                }
+                $this->assertCompatibleScope($definition, $target);
                 if ($relationship->inverse !== null) {
                     $inverse = array_values(array_filter(
                         $target->relationships(),
@@ -78,6 +103,90 @@ final readonly class BusinessDefinitionValidator
             }
         }
         $this->assertAcyclicOwnership($ownershipEdges);
+    }
+
+    private function assertCompatibleScope(EntityTypeDefinition $source, EntityTypeDefinition $target): void
+    {
+        if ($source->siteIdentifier !== $target->siteIdentifier) {
+            throw new InvalidBusinessDefinition('Business references cannot cross site scope.');
+        }
+        if ($source->scope !== $target->scope) {
+            throw new InvalidBusinessDefinition('Business references require matching scope modes.');
+        }
+    }
+
+    private function validateFieldRules(FieldDefinition $field): void
+    {
+        $normalizers = [
+            'trim', 'lowercase', 'uppercase', 'unicode_nfc', 'email', 'url', 'phone', 'decimal_scale',
+        ];
+        if (array_diff($field->normalizers, $normalizers) !== []) {
+            throw new InvalidBusinessDefinition('Business field ' . $field->handle . ' uses an unknown normalizer.');
+        }
+
+        $allowed = [
+            'pattern' => ['rule', 'value'],
+            'min_length' => ['rule', 'value'],
+            'max_length' => ['rule', 'value'],
+            'min' => ['rule', 'value'],
+            'max' => ['rule', 'value'],
+            'one_of' => ['rule', 'value'],
+            'email' => ['rule'],
+            'url' => ['rule'],
+            'uuid' => ['rule'],
+            'integer' => ['rule'],
+            'decimal' => ['rule'],
+        ];
+        foreach ($field->validators as $validator) {
+            $rule = $validator['rule'] ?? null;
+            if (!is_string($rule) || !isset($allowed[$rule])) {
+                throw new InvalidBusinessDefinition('Business field ' . $field->handle . ' uses an unknown validator.');
+            }
+            $keys = array_keys($validator);
+            sort($keys, SORT_STRING);
+            $expected = $allowed[$rule];
+            sort($expected, SORT_STRING);
+            if ($keys !== $expected) {
+                throw new InvalidBusinessDefinition(
+                    'Business field ' . $field->handle . ' has an invalid validator shape.',
+                );
+            }
+            $value = $validator['value'] ?? null;
+            if (
+                in_array($rule, ['min_length', 'max_length'], true)
+                && (!is_int($value) || $value < 0 || $value > 1_000_000)
+            ) {
+                throw new InvalidBusinessDefinition(
+                    'Business field ' . $field->handle . ' has an invalid length validator.',
+                );
+            }
+            if (
+                in_array($rule, ['min', 'max'], true)
+                && (!is_string($value) || preg_match('/^-?(?:0|[1-9][0-9]*)(?:\.[0-9]+)?$/D', $value) !== 1)
+            ) {
+                throw new InvalidBusinessDefinition(
+                    'Business field ' . $field->handle . ' has an invalid exact numeric validator.',
+                );
+            }
+            if (
+                $rule === 'one_of'
+                && (!is_array($value) || !array_is_list($value) || $value === [] || count($value) > 256)
+            ) {
+                throw new InvalidBusinessDefinition(
+                    'Business field ' . $field->handle . ' has an invalid one-of validator.',
+                );
+            }
+            if ($rule === 'pattern') {
+                if (!is_string($value) || $value === '' || strlen($value) > 512
+                    || preg_match('/\(\?(?:[=!<]|R|[0-9]|P|\()|\\\\[1-9]/', $value) === 1
+                    || @preg_match('~' . str_replace('~', '\\~', $value) . '~uD', '') === false
+                ) {
+                    throw new InvalidBusinessDefinition(
+                        'Business field ' . $field->handle . ' has an unsafe pattern validator.',
+                    );
+                }
+            }
+        }
     }
 
     /** @param array<string, scalar|list<scalar|null>|null> $configuration */
