@@ -47,6 +47,20 @@ The required `--site` value selects exactly one site for the lifetime of the std
 | `kumwe_extension_activate` | `extensions.manage` | Activate an installed extension and runtime map |
 | `kumwe_schedule_list` | `automation.manage` | List schedules |
 | `kumwe_schedule_create` | `automation.manage` | Create a validated recurring schedule |
+| `kumwe_business_definition_list`, `kumwe_business_definition_get` | `content.read` | List the definition catalogue or read a published version |
+| `kumwe_business_definition_draft`, `kumwe_business_definition_history` | `content.read` | Read the working draft or the published version history |
+| `kumwe_business_definition_compatibility` | `content.read` | Preview the compatibility plan the draft would publish |
+| `kumwe_business_definition_publish` | `content.update` | Publish the draft as a new immutable version at an expected revision |
+| `kumwe_business_schema_definitions`, `kumwe_business_schema_plan_list` | `business.schema.read` | List plannable definitions or existing plans |
+| `kumwe_business_schema_plan_get` | `business.schema.read` | Read a plan with its durable step journal and canonical checksum |
+| `kumwe_business_schema_plan_create` | `business.schema.plan` | Compile a deterministic plan; runs no DDL |
+| `kumwe_business_schema_plan_approve` | `business.schema.approve` | Approve the exact inspected plan checksum |
+| `kumwe_business_schema_plan_execute` | `business.schema.execute` | Apply an approved plan under the schema lock |
+| `kumwe_business_schema_plan_recover` | `business.schema.recover` | Resume or reconcile an interrupted plan |
+
+Each schema stage names only its own capability, so a token granted inspection cannot approve, and one granted approval cannot execute. `execute` and `recover` are annotated destructive because they change physical tables. Approval binds to the plan checksum read from `kumwe_business_schema_plan_get`: a plan that changed after inspection is refused rather than applied.
+
+Two schema operations are deliberately absent. Composing a destructive purge plan, and approving a high-impact plan, both require re-proving the caller's current password, which this surface cannot supply; publishing them would only produce tools that always fail closed. Use the administrator screen or the protected CLI for those.
 
 High-risk operations that would transmit a password, install an arbitrary package, delete state, or grant permissions are intentionally not MCP tools. Use the administrator, protected CLI, or REST endpoint with the operation's explicit safeguards.
 

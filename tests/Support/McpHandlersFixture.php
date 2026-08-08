@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Kumwe\CMS\Tests\Support;
 
 use Kumwe\CMS\Application\Automation\AutomationManagementService;
+use Kumwe\CMS\BusinessDefinition\Application\BusinessDefinitionService;
+use Kumwe\CMS\BusinessSchema\Application\BusinessSchemaService;
 use Kumwe\CMS\Content\Application\ContentService;
 use Kumwe\CMS\Extension\Application\Trust\TrustStore;
 use Kumwe\CMS\Extension\Infrastructure\RedisLockedExtensionManager;
@@ -33,6 +35,8 @@ final class McpHandlersFixture
             self::withoutConstructor(TrustStore::class),
             self::withoutConstructor(DoctrineAdministratorIdentityGateway::class),
             self::withoutConstructor(AutomationManagementService::class),
+            self::withoutConstructor(BusinessDefinitionService::class),
+            self::withoutConstructor(BusinessSchemaService::class),
             self::withoutConstructor(McpMutationGuard::class),
             new SystemClock(),
             AuthorizationContext::gateway(),
