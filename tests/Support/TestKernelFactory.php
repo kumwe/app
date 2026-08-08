@@ -14,6 +14,7 @@ use Kumwe\CMS\Delivery\Console\Command\MigrateCommand;
 use Kumwe\CMS\Delivery\Console\Command\QueueWorkCommand;
 use Kumwe\CMS\Delivery\Console\Command\ScheduleRunCommand;
 use Kumwe\CMS\Delivery\Console\Output;
+use Kumwe\CMS\Extension\Runtime\ExtensionRuntimeMapCompiler;
 use Kumwe\CMS\Identity\Application\Administration\AdministratorIdentityGateway;
 use Kumwe\CMS\Identity\Application\Authentication\AuthenticatedPrincipal;
 use Kumwe\CMS\Kernel\ContainerFactory;
@@ -29,12 +30,31 @@ final class TestKernelFactory
     public static function create(Environment $environment): Container
     {
         $container = (new ContainerFactory())->create($environment);
+        self::discardReplicaLocalRuntime($container);
         $migrate = $container->get(MigrateCommand::class);
         if (!$migrate instanceof MigrateCommand || $migrate->execute([], self::output()) !== 0) {
             throw new RuntimeException('The integration database could not be migrated.');
         }
 
         return $container;
+    }
+
+    /**
+     * Makes the test database the sole runtime authority for this process.
+     *
+     * Integration tests install, disable and uninstall extensions, so a completed run leaves
+     * storage/cache at a generation that a later run against a rebuilt database is behind.
+     * Materialization refuses to move backwards — correctly, because in production that would
+     * be a silent rollback — which made the suite pass only on a pristine working tree. Tests
+     * take the same decision an operator takes with `extension:runtime:materialize --repair`.
+     */
+    private static function discardReplicaLocalRuntime(Container $container): void
+    {
+        $compiler = $container->get(ExtensionRuntimeMapCompiler::class);
+        if (!$compiler instanceof ExtensionRuntimeMapCompiler) {
+            throw new RuntimeException('The extension runtime compiler is unavailable.');
+        }
+        $compiler->discardLocal();
     }
 
     public static function administratorContext(Container $container): ExecutionContext

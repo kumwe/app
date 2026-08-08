@@ -101,6 +101,46 @@ final class ExtensionContributionRegistrySetTest extends TestCase
         );
     }
 
+    public function testEveryDeclaredSurfaceAppearsInInventoryAndIsWithdrawnOnRemoval(): void
+    {
+        [$declared, $definitions] = $this->declarations();
+        $registries = new ExtensionContributionRegistrySet(withCore: false);
+        $registrar = $registries->registrar($declared->owner, $declared);
+        $registrar->capability($definitions['capability']);
+        $registrar->administratorWorkspace($definitions['workspace']);
+        $registrar->administratorNavigation($definitions['navigation']);
+        $registrar->administratorView($definitions['view']);
+        $registrar->administratorRoute($definitions['route'], $this->factory());
+        $registrar->complete();
+
+        // Inventory and removal both derive from the surface map, so a contribution kind
+        // cannot be discoverable while remaining un-removable on disable or trust revocation.
+        $inventory = $registries->inventory($declared->owner);
+        foreach ($registries->surfaceKeys() as $key) {
+            $segments = explode('.', $key);
+            $value = $inventory;
+            foreach ($segments as $segment) {
+                self::assertIsArray($value, sprintf('Surface %s is missing from the inventory.', $key));
+                self::assertArrayHasKey($segment, $value, sprintf('Surface %s is not inventoried.', $key));
+                $value = $value[$segment];
+            }
+            self::assertIsArray($value);
+        }
+
+        $registries->remove($declared->owner);
+
+        $emptied = $registries->inventory($declared->owner);
+        foreach ($registries->surfaceKeys() as $key) {
+            $value = $emptied;
+            foreach (explode('.', $key) as $segment) {
+                self::assertIsArray($value);
+                $value = $value[$segment] ?? null;
+            }
+            self::assertSame([], $value, sprintf('Surface %s survived owner removal.', $key));
+        }
+        self::assertSame([], $registries->navigation()->visible(['acme.editor.manage' => true]));
+    }
+
     public function testRejectsProviderDriftAndOmittedDeclarations(): void
     {
         [$declared, $definitions] = $this->declarations();

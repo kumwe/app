@@ -6,7 +6,7 @@ namespace Kumwe\CMS\Extension\Contribution;
 
 use InvalidArgumentException;
 
-final class CapabilityDefinitionRegistry
+final class CapabilityDefinitionRegistry implements ContributionSurface
 {
     /** @var array<string, array{owner: string, definition: CapabilityDefinition}> */
     private array $definitions = [];

@@ -15,4 +15,24 @@ enum UserStatus: string
     {
         return $this === self::Active;
     }
+
+    /**
+     * The authoritative lifecycle rule shared by the User aggregate and the access-control service.
+     *
+     * Disabling is terminal so that a revoked account cannot be silently restored, and suspension
+     * applies only to an account that is currently able to authenticate.
+     */
+    public function canTransitionTo(self $status): bool
+    {
+        if ($this === $status) {
+            return true;
+        }
+
+        return match ($status) {
+            self::Disabled => true,
+            self::Active => $this !== self::Disabled,
+            self::Suspended => $this === self::Active,
+            self::Pending => false,
+        };
+    }
 }

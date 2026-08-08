@@ -236,13 +236,6 @@ final readonly class JobEnvelope
         );
     }
 
-    public function deadLetter(string $worker, DateTimeImmutable $time): self
-    {
-        $this->assertActiveLease($worker, $time);
-
-        return $this->transition(JobStatus::DEAD, $this->availableAt, $this->attempts, null);
-    }
-
     private function assertActiveLease(string $worker, DateTimeImmutable $time): void
     {
         if ($this->status !== JobStatus::RESERVED || $this->lease === null) {

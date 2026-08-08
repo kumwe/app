@@ -138,6 +138,21 @@ final class AutomationJobFormRegistry
                 maximum: 100,
             ),
         ]);
+        $registry->register(
+            'business.record.idempotency.purge',
+            'Purge expired business-record idempotency entries',
+            [
+                new AutomationJobField('batch_size', 'Batch size', 'integer', default: 500, minimum: 1, maximum: 1_000),
+                new AutomationJobField(
+                    'maximum_batches',
+                    'Maximum batches',
+                    'integer',
+                    default: 10,
+                    minimum: 1,
+                    maximum: 100,
+                ),
+            ],
+        );
         $registry->register('system.sessions.purge', 'Purge expired administrator sessions');
         $registry->register('extensions.runtime.rebuild', 'Rebuild extension runtime map');
 

@@ -57,8 +57,8 @@ Doctrine DBAL creates only definition metadata tables: field types, catalog head
 
 Publication now feeds the separately authorized [transactional business runtime](business-runtime.md). It persists
 a deterministic schema plan but never runs DDL. The installed schema and one `BusinessRecordService` application
-boundary consume immutable versions; this session still exposes no generic REST, CLI, MCP, portal, or
-administrator record adapter.
+boundary consume immutable versions. Business records have no generic REST, CLI, MCP, portal, or administrator
+adapter.
 
 ## Verification contract
 

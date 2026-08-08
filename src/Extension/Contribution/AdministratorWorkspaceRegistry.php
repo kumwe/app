@@ -6,7 +6,7 @@ namespace Kumwe\CMS\Extension\Contribution;
 
 use InvalidArgumentException;
 
-final class AdministratorWorkspaceRegistry
+final class AdministratorWorkspaceRegistry implements ContributionSurface
 {
     /** @var array<string, array{owner: string, definition: AdministratorWorkspaceDefinition}> */
     private array $definitions = [];

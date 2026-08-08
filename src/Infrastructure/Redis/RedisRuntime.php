@@ -72,20 +72,6 @@ final readonly class RedisRuntime
         $this->redis->del('cache:' . $key);
     }
 
-    public function acquireLock(string $key, string $token, int $seconds): bool
-    {
-        return $this->redis->set('lock:' . $key, $token, ['nx', 'ex' => $seconds]) === true;
-    }
-
-    public function releaseLock(string $key, string $token): bool
-    {
-        $script = "if redis.call('get', KEYS[1]) == ARGV[1] then "
-            . "return redis.call('del', KEYS[1]) else return 0 end";
-        $result = $this->redis->eval($script, ['lock:' . $key, $token], 1);
-
-        return $result === 1;
-    }
-
     public function acquireLease(string $key, int $seconds): ?RedisLease
     {
         $token = bin2hex(random_bytes(32));

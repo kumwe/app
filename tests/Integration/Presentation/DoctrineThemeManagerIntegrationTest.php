@@ -37,7 +37,7 @@ use Kumwe\CMS\Infrastructure\Persistence\TableNames;
 use Kumwe\CMS\Identity\Application\Authorization\InsufficientCapability;
 use Kumwe\CMS\Kernel\Configuration\ConfigurationFactory;
 use Kumwe\CMS\Presentation\Application\ThemeActivationGuard;
-use Kumwe\CMS\Presentation\Application\ThemeCapabilityPolicy;
+use Kumwe\CMS\Tests\Support\CapabilityThemeAuthorizer;
 use Kumwe\CMS\Presentation\Application\ThemeMutationAuthorizer;
 use Kumwe\CMS\Presentation\Application\ThemePackageValidator;
 use Kumwe\CMS\Presentation\Infrastructure\DoctrineAdministratorThemeRecovery;
@@ -623,7 +623,7 @@ final class DoctrineThemeManagerIntegrationTest extends TestCase
             $this->createStub(DispatcherInterface::class),
             new AllowThemeActivationGuard(),
             new ThemePackageValidator($this->root . '/core'),
-            $themeAuthorization ?? new ThemeCapabilityPolicy(),
+            $themeAuthorization ?? new CapabilityThemeAuthorizer(),
             $trust,
             $authorization,
             AuthorizationContext::ownershipWriter(),

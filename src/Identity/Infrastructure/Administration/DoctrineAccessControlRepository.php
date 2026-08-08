@@ -149,6 +149,16 @@ final readonly class DoctrineAccessControlRepository implements AccessControlRep
         ]);
     }
 
+    public function userStatus(string $userId): ?string
+    {
+        $status = $this->database->fetchOne(sprintf(
+            'SELECT status FROM %s WHERE id = ?',
+            $this->tables->quoted('users'),
+        ), [$userId]);
+
+        return is_string($status) ? $status : null;
+    }
+
     public function updateUser(
         string $id,
         string $email,

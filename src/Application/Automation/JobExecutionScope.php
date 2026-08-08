@@ -12,6 +12,7 @@ final readonly class JobExecutionScope
 {
     /** @var array<string, SystemIdentity> */
     private const INSTALLATION_GLOBAL = [
+        'business.record.idempotency.purge' => SystemIdentity::InstallationMaintenance,
         'extensions.runtime.rebuild' => SystemIdentity::ExtensionMaterializer,
         'system.idempotency.purge' => SystemIdentity::InstallationMaintenance,
     ];

@@ -57,8 +57,9 @@ while records are pinned to them.
 ## Record application boundary
 
 `BusinessRecordService` is the single public application boundary. It provides create, read, browse, update,
-archive/delete, restore, action/transition, relate/unrelate, ordered-line reorder, and history operations. No REST,
-CLI, MCP, portal, or generic administrator record adapter is exposed in this foundation session.
+archive/delete, restore, action/transition, relate/unrelate, ordered-line reorder, and history operations. Business
+records have no REST, CLI, MCP, portal, or generic administrator adapter: every caller uses this application service
+directly.
 
 Every mutation supplies an application operation ID; every existing-record mutation also supplies the expected
 record version. One service-owned transaction resolves the exact installed or pinned definition, authorizes the

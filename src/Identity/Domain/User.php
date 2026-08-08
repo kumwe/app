@@ -114,7 +114,7 @@ final class User
 
     public function activate(): void
     {
-        if ($this->status === UserStatus::Disabled) {
+        if (!$this->status->canTransitionTo(UserStatus::Active)) {
             throw new DomainException('A disabled user cannot be reactivated.');
         }
 
@@ -123,7 +123,7 @@ final class User
 
     public function suspend(): void
     {
-        if ($this->status !== UserStatus::Active) {
+        if (!$this->status->canTransitionTo(UserStatus::Suspended)) {
             throw new DomainException('Only an active user can be suspended.');
         }
 
