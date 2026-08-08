@@ -227,6 +227,7 @@ final class BusinessDefinitions
             'required' => $required, 'nullable' => !$required, 'length' => $length,
             'unique' => $unique, 'indexed' => $indexed, 'filterable' => $filterable,
             'sortable' => $sortable, 'order' => 0,
+            'immutable_after_create' => $type === 'core.uuid',
             'configuration' => $configuration,
         ];
     }

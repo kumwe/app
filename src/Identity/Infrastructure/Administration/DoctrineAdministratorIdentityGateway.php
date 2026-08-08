@@ -39,6 +39,11 @@ final readonly class DoctrineAdministratorIdentityGateway implements Administrat
     /** @var list<string> */
     private const ADMINISTRATOR_CAPABILITIES = [
         'administrator.access', 'automation.manage', 'content.archive', 'content.create', 'content.delete',
+        'business.record.action', 'business.record.archive', 'business.record.browse', 'business.record.create',
+        'business.record.delete', 'business.record.history', 'business.record.read', 'business.record.relate',
+        'business.record.restore', 'business.record.update', 'business.schema.approve',
+        'business.schema.destructive', 'business.schema.execute', 'business.schema.plan', 'business.schema.read',
+        'business.schema.recover',
         'content.publish', 'content.read', 'content.restore', 'content.review', 'content.submit',
         'content.unpublish', 'content.update', 'extensions.manage', 'navigation.manage', 'settings.manage',
         'themes.administrator.manage', 'themes.site.manage', 'users.manage',
