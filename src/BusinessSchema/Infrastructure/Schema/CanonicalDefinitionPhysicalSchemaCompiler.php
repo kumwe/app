@@ -490,7 +490,10 @@ final readonly class CanonicalDefinitionPhysicalSchemaCompiler implements Defini
             string $type,
             array $options = [],
             ?bool $isNullable = null,
-        ) use ($physicalDefaults, $nullable): PhysicalColumnBlueprint {
+        ) use (
+            $physicalDefaults,
+            $nullable
+        ): PhysicalColumnBlueprint {
             /** @var array<string, mixed> $options */
             return new PhysicalColumnBlueprint(
                 $logical,
