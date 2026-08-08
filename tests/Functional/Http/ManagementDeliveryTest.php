@@ -10,6 +10,8 @@ use Kumwe\CMS\Administrator\Http\Middleware\AdministratorCsrfMiddleware;
 use Kumwe\CMS\Http\Middleware\BearerAuthenticationMiddleware;
 use Kumwe\CMS\Identity\Application\Administration\AdministratorSession;
 use Kumwe\CMS\Identity\Application\Authentication\AuthenticatedPrincipal;
+use Kumwe\CMS\Delivery\Console\Command;
+use Kumwe\CMS\Delivery\Console\ConsoleApplication;
 use Kumwe\CMS\Kernel\ContainerFactory;
 use Kumwe\CMS\Shared\Infrastructure\Configuration\Environment;
 use Kumwe\CMS\Tests\Support\AuthorizationContext;
@@ -267,6 +269,26 @@ final class ManagementDeliveryTest extends TestCase
                 sprintf('%s %s accepts a token from the wrong audience.', $method, $path),
             );
         }
+    }
+
+    public function testBusinessConsoleCommandsAreRegisteredOnTheRealApplication(): void
+    {
+        $container = (new ContainerFactory())->create(Environment::fromGlobals());
+        $console = $container->get(ConsoleApplication::class);
+        self::assertInstanceOf(ConsoleApplication::class, $console);
+
+        $property = new \ReflectionProperty(ConsoleApplication::class, 'commands');
+        $commands = $property->getValue($console);
+        self::assertIsArray($commands);
+        $names = [];
+        foreach ($commands as $command) {
+            self::assertInstanceOf(Command::class, $command);
+            $names[] = $command->name();
+        }
+
+        // Every business feature reachable over REST is reachable from a shell too.
+        self::assertContains('business-definition', $names);
+        self::assertContains('business-schema', $names);
     }
 
     public function testSchemaMutationsRequireTheirExactCapabilityAndValidCsrfToken(): void
