@@ -179,7 +179,7 @@ final class BusinessRecordRuntimeIntegrationTest extends TestCase
         self::assertInstanceOf(PackageDefinitionSynchronizer::class, $synchronizer);
         self::assertInstanceOf(TransactionManager::class, $transactions);
 
-        $suffix = strtolower(substr(str_replace('-', '', Uuid::uuid7()->toString()), 0, 12));
+        $suffix = strtolower(substr(str_replace('-', '', Uuid::uuid7()->toString()), -12));
         $extensionOwner = 'tests/runtime_' . $suffix;
         $fieldType = str_replace('/', '.', $extensionOwner) . '.observed_at';
         $fieldTypeDefinition = new FieldTypeDefinition(
@@ -314,7 +314,7 @@ final class BusinessRecordRuntimeIntegrationTest extends TestCase
         self::assertInstanceOf(Connection::class, $database);
         self::assertInstanceOf(TableNames::class, $tables);
 
-        $suffix = strtolower(substr(str_replace('-', '', Uuid::uuid7()->toString()), 0, 12));
+        $suffix = strtolower(substr(str_replace('-', '', Uuid::uuid7()->toString()), -12));
         $definition = NeutralBusinessFixture::install(
             $container,
             $context,

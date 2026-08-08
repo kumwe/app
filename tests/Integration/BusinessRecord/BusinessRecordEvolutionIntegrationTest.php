@@ -52,7 +52,7 @@ final class BusinessRecordEvolutionIntegrationTest extends TestCase
         self::assertInstanceOf(ClockInterface::class, $clock);
         self::assertInstanceOf(Connection::class, $database);
 
-        $suffix = strtolower(substr(str_replace('-', '', Uuid::uuid7()->toString()), 0, 12));
+        $suffix = strtolower(substr(str_replace('-', '', Uuid::uuid7()->toString()), -12));
         $definitionId = Uuid::uuid7()->toString();
         $v1 = NeutralBusinessFixture::install(
             $container,

@@ -735,7 +735,7 @@ final class NeutralBusinessFixture
 
     public static function idempotencyKey(string $operation): IdempotencyKey
     {
-        if (preg_match('/^[a-z][a-z0-9-]{0,31}$/D', $operation) !== 1) {
+        if (preg_match('/^[a-z][a-z0-9-]{0,63}$/D', $operation) !== 1) {
             throw new RuntimeException('A neutral fixture operation identifier is invalid.');
         }
 

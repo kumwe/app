@@ -57,7 +57,7 @@ final class BusinessRecordRelationshipIntegrationTest extends TestCase
         self::assertInstanceOf(BusinessDefinitionService::class, $definitions);
         self::assertInstanceOf(Connection::class, $database);
 
-        $suffix = strtolower(substr(str_replace('-', '', Uuid::uuid7()->toString()), 0, 12));
+        $suffix = strtolower(substr(str_replace('-', '', Uuid::uuid7()->toString()), -12));
         $targetDocument = NeutralBusinessFixture::relationTargetDocument($suffix, Uuid::uuid7()->toString());
         $targetDocument['fields'][] = [
             'handle' => 'classification',
@@ -589,7 +589,7 @@ final class BusinessRecordRelationshipIntegrationTest extends TestCase
         self::assertInstanceOf(ClockInterface::class, $clock);
         self::assertInstanceOf(Connection::class, $database);
 
-        $suffix = strtolower(substr(str_replace('-', '', Uuid::uuid7()->toString()), 0, 12));
+        $suffix = strtolower(substr(str_replace('-', '', Uuid::uuid7()->toString()), -12));
         $target = NeutralBusinessFixture::install(
             $container,
             $context,

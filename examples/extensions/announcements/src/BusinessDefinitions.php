@@ -79,7 +79,7 @@ final class BusinessDefinitions
                     'Title',
                     'core.text',
                     required: true,
-                    length: 200,
+                    length: 191,
                     indexed: true,
                     filterable: true,
                     sortable: true,

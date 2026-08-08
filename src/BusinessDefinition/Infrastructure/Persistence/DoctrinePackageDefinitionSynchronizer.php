@@ -87,20 +87,20 @@ final readonly class DoctrinePackageDefinitionSynchronizer implements PackageDef
                 throw new InvalidBusinessDefinition('A package definition has invalid ownership, site, or status.');
             }
         }
-        $validationGraph = $this->existingDefinitionGraph($site, $owner, $definitions);
-        if ($validationGraph !== []) {
-            (new BusinessDefinitionValidator($validationTypes))->validateGraph($validationGraph);
+        $resultingGraph = $this->existingDefinitionGraph($site, $owner, $definitions);
+        if ($resultingGraph !== []) {
+            (new BusinessDefinitionValidator($validationTypes))->validateGraph($resultingGraph);
         }
         $this->synchronizeFieldTypes($owner, $releaseVersion, $fieldTypes, $active);
         $this->synchronizeDefinitions($owner, $site, $definitions, $actorId);
         $publishedGraph = [];
-        foreach ($definitions as $definition) {
+        foreach ($resultingGraph as $definition) {
             $record = $this->repository->published($site, $definition->handle);
             if ($record !== null) {
                 $publishedGraph[] = $record;
             }
         }
-        if (count($publishedGraph) === count($definitions) && $publishedGraph !== []) {
+        if (count($publishedGraph) === count($resultingGraph) && $publishedGraph !== []) {
             $this->schemaObserver?->observePublishedGraph(
                 $site,
                 $publishedGraph,
@@ -308,8 +308,10 @@ final readonly class DoctrinePackageDefinitionSynchronizer implements PackageDef
                 throw new InvalidBusinessDefinition('A persisted field-type identifier is inconsistent.');
             }
             $checksum = $row['checksum'] ?? null;
-            if (!is_string($checksum)
-                || !hash_equals($checksum, CanonicalDefinitionJson::checksum($fieldType->toArray()))) {
+            if (
+                !is_string($checksum)
+                || !hash_equals($checksum, CanonicalDefinitionJson::checksum($fieldType->toArray()))
+            ) {
                 throw new InvalidBusinessDefinition('A persisted field-type checksum is invalid.');
             }
             $persistedOwner = new DefinitionOwner($ownerType, $identifier);

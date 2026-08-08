@@ -237,6 +237,6 @@ final class BusinessSchemaSourceBindingRecoveryIntegrationTest extends TestCase
 
     private static function suffix(): string
     {
-        return strtolower(substr(str_replace('-', '', Uuid::uuid7()->toString()), 0, 12));
+        return strtolower(substr(str_replace('-', '', Uuid::uuid7()->toString()), -12));
     }
 }

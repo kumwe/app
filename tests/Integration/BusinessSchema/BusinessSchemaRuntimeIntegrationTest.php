@@ -32,7 +32,7 @@ final class BusinessSchemaRuntimeIntegrationTest extends TestCase
         self::assertInstanceOf(Connection::class, $database);
         self::assertInstanceOf(TableNames::class, $tables);
         $context = TestKernelFactory::administratorContext($container);
-        $suffix = strtolower(substr(str_replace('-', '', Uuid::uuid7()->toString()), 0, 12));
+        $suffix = strtolower(substr(str_replace('-', '', Uuid::uuid7()->toString()), -12));
         $draft = $definitions->saveDraft($context, EntityTypeDefinition::fromArray(self::document($suffix)));
         $published = $definitions->publish($context, $draft->definition->id, $draft->revision);
 
