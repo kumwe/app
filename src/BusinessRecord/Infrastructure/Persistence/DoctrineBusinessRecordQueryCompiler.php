@@ -791,7 +791,10 @@ final readonly class DoctrineBusinessRecordQueryCompiler
         }
         foreach ($projection as $handle) {
             $field = $this->field($definition, $handle);
-            if ($field->computed && $field->computationMode === ComputationMode::Virtual) {
+            if (
+                $field->type === 'core.ordered_lines'
+                || ($field->computed && $field->computationMode === ComputationMode::Virtual)
+            ) {
                 continue;
             }
             foreach ($this->fieldColumns($definition, $table, $field) as $column) {

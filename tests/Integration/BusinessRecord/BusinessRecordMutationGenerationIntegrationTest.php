@@ -69,13 +69,12 @@ final class BusinessRecordMutationGenerationIntegrationTest extends TestCase
             $staleGeneration->assertMatches($resolvedV1);
             $primaryDatabase->commit();
 
-            $currentDraft = $definitions->draft($secondaryContext, $definitionId);
             $saved = $definitions->saveDraft(
                 $secondaryContext,
                 EntityTypeDefinition::fromArray(
                     NeutralBusinessFixture::evolutionDocument($suffix, $definitionId),
                 ),
-                $currentDraft->revision,
+                0,
             );
             $v2 = $definitions->publish(
                 $secondaryContext,
