@@ -38,7 +38,7 @@ final class BusinessRecordReferenceIdentityIntegrationTest extends TestCase
         self::assertInstanceOf(BusinessSchemaService::class, $schemas);
         self::assertInstanceOf(Connection::class, $database);
 
-        $suffix = strtolower(substr(str_replace('-', '', Uuid::uuid7()->toString()), 0, 12));
+        $suffix = strtolower(substr(str_replace('-', '', Uuid::uuid7()->toString()), -12));
         $target = NeutralBusinessFixture::install(
             $container,
             $context,

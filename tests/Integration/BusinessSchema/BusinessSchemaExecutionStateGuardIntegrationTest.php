@@ -44,7 +44,7 @@ final class BusinessSchemaExecutionStateGuardIntegrationTest extends TestCase
         self::assertInstanceOf(TransactionManager::class, $transactions);
         self::assertInstanceOf(BusinessSchemaService::class, $schemas);
 
-        $suffix = strtolower(substr(str_replace('-', '', Uuid::uuid7()->toString()), 0, 12));
+        $suffix = strtolower(substr(str_replace('-', '', Uuid::uuid7()->toString()), -12));
         $owner = 'testing/lifecycle_' . $suffix;
         $definition = EntityTypeDefinition::fromArray(self::extensionDocument(
             Uuid::uuid7()->toString(),
@@ -68,7 +68,8 @@ final class BusinessSchemaExecutionStateGuardIntegrationTest extends TestCase
         });
         $plan = $schemas->createPlan($context, $definition->id);
         if ($plan->status === SchemaPlanStatus::PendingApproval) {
-            $plan = $schemas->approve($context, $plan->id, $plan->checksum(), null, null);
+            $confirmation = $plan->risk->requiresHighImpactAuthorization() ? $plan->checksum() : null;
+            $plan = $schemas->approve($context, $plan->id, $plan->checksum(), $confirmation, null);
         }
         self::assertSame(SchemaPlanStatus::Approved, $plan->status);
         $schemas->execute($context, $plan->id);
@@ -216,7 +217,7 @@ final class BusinessSchemaExecutionStateGuardIntegrationTest extends TestCase
         self::assertInstanceOf(TableNames::class, $tables);
         self::assertInstanceOf(BusinessSchemaExecutionStateGuard::class, $guard);
 
-        $suffix = strtolower(substr(str_replace('-', '', Uuid::uuid7()->toString()), 0, 12));
+        $suffix = strtolower(substr(str_replace('-', '', Uuid::uuid7()->toString()), -12));
         $definition = NeutralBusinessFixture::install(
             $primary,
             $context,
@@ -297,7 +298,7 @@ final class BusinessSchemaExecutionStateGuardIntegrationTest extends TestCase
         self::assertInstanceOf(BusinessSchemaInstallationRepository::class, $installations);
         self::assertInstanceOf(Connection::class, $database);
 
-        $suffix = strtolower(substr(str_replace('-', '', Uuid::uuid7()->toString()), 0, 12));
+        $suffix = strtolower(substr(str_replace('-', '', Uuid::uuid7()->toString()), -12));
         $owner = 'testing/stale_lifecycle_' . $suffix;
         $definition = EntityTypeDefinition::fromArray(self::extensionDocument(
             Uuid::uuid7()->toString(),
@@ -366,11 +367,14 @@ final class BusinessSchemaExecutionStateGuardIntegrationTest extends TestCase
             });
             $upgrade = $secondarySchemas->createPlan($secondaryContext, $definition->id);
             if ($upgrade->status === SchemaPlanStatus::PendingApproval) {
+                $confirmation = $upgrade->risk->requiresHighImpactAuthorization()
+                    ? $upgrade->checksum()
+                    : null;
                 $upgrade = $secondarySchemas->approve(
                     $secondaryContext,
                     $upgrade->id,
                     $upgrade->checksum(),
-                    null,
+                    $confirmation,
                     null,
                 );
             }

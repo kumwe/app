@@ -23,7 +23,7 @@ final class BusinessSchemaPhysicalDefaultIntegrationTest extends TestCase
     {
         $container = TestKernelFactory::create(Environment::fromGlobals());
         $context = TestKernelFactory::administratorContext($container);
-        $suffix = strtolower(substr(str_replace('-', '', Uuid::uuid7()->toString()), 0, 12));
+        $suffix = strtolower(substr(str_replace('-', '', Uuid::uuid7()->toString()), -12));
         $definitionId = Uuid::uuid7()->toString();
         $document = NeutralBusinessFixture::document($suffix, $definitionId);
         $defaults = [

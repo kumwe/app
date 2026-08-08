@@ -55,7 +55,7 @@ final class BusinessRecordInverseRelationshipIntegrationTest extends TestCase
         self::assertInstanceOf(BusinessRecordService::class, $records);
         self::assertInstanceOf(ClockInterface::class, $clock);
 
-        $suffix = strtolower(substr(str_replace('-', '', Uuid::uuid7()->toString()), 0, 12));
+        $suffix = strtolower(substr(str_replace('-', '', Uuid::uuid7()->toString()), -12));
         $extensionIdentifier = 'testing/record_' . $suffix;
         $documents = NeutralBusinessFixture::inverseRelationshipDocuments(
             $suffix,

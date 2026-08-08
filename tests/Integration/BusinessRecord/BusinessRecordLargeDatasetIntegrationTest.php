@@ -37,7 +37,7 @@ final class BusinessRecordLargeDatasetIntegrationTest extends TestCase
         $records = $container->get(BusinessRecordService::class);
         self::assertInstanceOf(BusinessRecordService::class, $records);
 
-        $suffix = strtolower(substr(str_replace('-', '', Uuid::uuid7()->toString()), 0, 12));
+        $suffix = strtolower(substr(str_replace('-', '', Uuid::uuid7()->toString()), -12));
         $document = NeutralBusinessFixture::relationTargetDocument($suffix, Uuid::uuid7()->toString());
         $document['fields'][] = [
             'handle' => 'bucket',

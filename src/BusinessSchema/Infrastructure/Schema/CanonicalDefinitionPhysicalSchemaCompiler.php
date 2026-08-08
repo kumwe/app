@@ -202,7 +202,6 @@ final readonly class CanonicalDefinitionPhysicalSchemaCompiler implements Defini
         $identity = $this->column($columns, 'record_id');
         $this->ensureForeignKeyIndexes(
             $physicalTable,
-            [$identity->physicalName],
             $indexes,
             $foreignKeys,
         );
@@ -327,7 +326,6 @@ final readonly class CanonicalDefinitionPhysicalSchemaCompiler implements Defini
         ];
         $this->ensureForeignKeyIndexes(
             $physicalTable,
-            [$sourceColumn->physicalName, $targetColumn->physicalName],
             $indexes,
             $foreignKeys,
         );
@@ -458,7 +456,6 @@ final readonly class CanonicalDefinitionPhysicalSchemaCompiler implements Defini
         ), ...$fieldForeignKeys];
         $this->ensureForeignKeyIndexes(
             $physicalTable,
-            [$lineId->physicalName],
             $indexes,
             $foreignKeys,
         );
@@ -869,20 +866,15 @@ final readonly class CanonicalDefinitionPhysicalSchemaCompiler implements Defini
      * MySQL and MariaDB otherwise synthesize engine-named indexes for FK columns.
      * Persisting the portable support indexes keeps all three engines' introspection exact.
      *
-     * @param list<string> $primaryKey
      * @param list<PhysicalIndexBlueprint> $indexes
      * @param list<PhysicalForeignKeyBlueprint> $foreignKeys
      */
     private function ensureForeignKeyIndexes(
         string $physicalTable,
-        array $primaryKey,
         array &$indexes,
         array $foreignKeys,
     ): void {
         foreach ($foreignKeys as $foreignKey) {
-            if ($this->leftPrefix($primaryKey, $foreignKey->localColumns)) {
-                continue;
-            }
             $supported = false;
             foreach ($indexes as $index) {
                 if ($this->leftPrefix($index->columns, $foreignKey->localColumns)) {

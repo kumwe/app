@@ -54,13 +54,17 @@ final readonly class DoctrinePersistedFieldTypeDefinitionResolver implements Fie
         /** @var array<string, mixed> $payload */
         $definition = FieldTypeDefinition::fromArray($payload);
         $persistedIdentifier = $row['identifier'] ?? null;
-        if (!is_string($persistedIdentifier) || $persistedIdentifier !== $identifier
-            || $definition->id !== $identifier) {
+        if (
+            !is_string($persistedIdentifier) || $persistedIdentifier !== $identifier
+            || $definition->id !== $identifier
+        ) {
             throw new InvalidBusinessDefinition('A persisted field-type identifier is inconsistent.');
         }
         $checksum = $row['checksum'] ?? null;
-        if (!is_string($checksum)
-            || !hash_equals($checksum, CanonicalDefinitionJson::checksum($definition->toArray()))) {
+        if (
+            !is_string($checksum)
+            || !hash_equals($checksum, CanonicalDefinitionJson::checksum($definition->toArray()))
+        ) {
             throw new InvalidBusinessDefinition('A persisted field-type checksum is invalid.');
         }
         $ownerTypeValue = $row['owner_type'] ?? null;

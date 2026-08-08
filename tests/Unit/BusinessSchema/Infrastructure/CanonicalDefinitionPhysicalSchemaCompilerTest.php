@@ -9,10 +9,12 @@ use Kumwe\CMS\BusinessDefinition\Application\BusinessDefinitionRepository;
 use Kumwe\CMS\BusinessDefinition\Application\BusinessDefinitionValidator;
 use Kumwe\CMS\BusinessDefinition\Application\FieldTypeRegistry;
 use Kumwe\CMS\BusinessDefinition\Domain\EntityTypeDefinition;
+use Kumwe\CMS\BusinessSchema\Domain\PhysicalForeignKeyBlueprint;
 use Kumwe\CMS\BusinessSchema\Domain\PhysicalNameCompiler;
 use Kumwe\CMS\BusinessSchema\Infrastructure\Schema\CanonicalDefinitionPhysicalSchemaCompiler;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
+use ReflectionMethod;
 
 #[CoversClass(CanonicalDefinitionPhysicalSchemaCompiler::class)]
 final class CanonicalDefinitionPhysicalSchemaCompilerTest extends TestCase
@@ -128,6 +130,29 @@ final class CanonicalDefinitionPhysicalSchemaCompilerTest extends TestCase
         )->table('record')?->column('external_reference');
 
         self::assertSame(1000, $column?->options['length'] ?? null);
+    }
+
+    public function testForeignKeySupportIndexIsAlwaysExplicitInThePortableBlueprint(): void
+    {
+        $indexes = [];
+        $foreignKey = new PhysicalForeignKeyBlueprint(
+            'source',
+            'fk_source',
+            ['source_id'],
+            'parent_table',
+            ['record_id'],
+            'CASCADE',
+        );
+        $arguments = ['relation_table', &$indexes, [$foreignKey]];
+
+        (new ReflectionMethod(
+            CanonicalDefinitionPhysicalSchemaCompiler::class,
+            'ensureForeignKeyIndexes',
+        ))->invokeArgs($this->compiler(), $arguments);
+
+        self::assertCount(1, $indexes);
+        self::assertSame('foreign_key.source', $indexes[0]->logicalName);
+        self::assertSame(['source_id'], $indexes[0]->columns);
     }
 
     private function compiler(): CanonicalDefinitionPhysicalSchemaCompiler
