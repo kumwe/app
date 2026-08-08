@@ -73,11 +73,10 @@ final class BusinessRecordEvolutionIntegrationTest extends TestCase
         self::assertNull($v1View->values['evolution_code']);
         self::assertSame('draft', $v1View->values['status']);
 
-        $currentDraft = $definitions->draft($context, $definitionId);
         $draft = $definitions->saveDraft(
             $context,
             EntityTypeDefinition::fromArray(NeutralBusinessFixture::evolutionDocument($suffix, $definitionId)),
-            $currentDraft->revision,
+            0,
         );
         $v2 = $definitions->publish($context, $definitionId, $draft->revision, true)->definition;
         self::assertSame(2, $v2->definitionVersion);

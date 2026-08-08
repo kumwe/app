@@ -61,11 +61,10 @@ final class BusinessSchemaSourceBindingRecoveryIntegrationTest extends TestCase
         self::assertNotNull($source);
         self::assertSame(1, $source->definitionVersion);
 
-        $draft = $definitions->draft($context, $definitionId);
         $saved = $definitions->saveDraft(
             $context,
             EntityTypeDefinition::fromArray(self::document($definitionId, $handle, true)),
-            $draft->revision,
+            0,
         );
         $v2 = $definitions->publish($context, $definitionId, $saved->revision)->definition;
         self::assertSame(2, $v2->definitionVersion);

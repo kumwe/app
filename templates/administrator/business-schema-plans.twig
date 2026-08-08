@@ -123,7 +123,7 @@
             <div><p class="eyebrow">Comparison</p><h2>Generated operations</h2><p class="field-help">Before and after states are compiled from validated metadata. Operations cannot be edited on this screen.</p></div>
             <span class="count-badge">{{ plan.operations|length }}</span>
           </div>
-          <div class="table-wrap">
+          <div class="table-wrap" tabindex="0" role="region" aria-label="Business schema plans">
             <table class="schema-operations-table">
               <thead><tr><th>Step</th><th>Operation</th><th>Target</th><th>Comparison</th><th>Risk</th><th>Recovery</th></tr></thead>
               <tbody>
@@ -239,7 +239,7 @@
         {% if steps or plan.status in ['executing', 'completed', 'failed', 'recovery_required', 'compensated'] %}
           <section class="panel stack">
             <div class="section-heading"><div><p class="eyebrow">Durable journal</p><h2>Execution status</h2></div><span class="count-badge">{{ steps|length }}</span></div>
-            <div class="table-wrap"><table><thead><tr><th>Step</th><th>Operation</th><th>State</th><th>Attempts</th><th>Schema checksums</th><th>Outcome</th></tr></thead><tbody>
+            <div class="table-wrap" tabindex="0" role="region" aria-label="Schema plan execution steps"><table><thead><tr><th>Step</th><th>Operation</th><th>State</th><th>Attempts</th><th>Schema checksums</th><th>Outcome</th></tr></thead><tbody>
               {% for step in steps %}
                 <tr><td>{{ step.ordinal }}</td><td>{{ step.operation_kind|replace({'_':' '}) }}</td><td><span class="status status-{{ step.state|replace({'_':'-'}) }}">{{ step.state|replace({'_':' '}) }}</span></td><td>{{ step.attempt }}</td><td><code data-visual-mask>{{ step.before_schema_checksum|default('pending') }}</code><br>→ <code data-visual-mask>{{ step.after_schema_checksum|default('pending') }}</code></td><td>{{ step.error_code|default(step.completed_at ? 'completed' : 'pending') }}</td></tr>
               {% else %}<tr><td colspan="6">Execution has not started.</td></tr>{% endfor %}
@@ -251,7 +251,7 @@
           <section class="panel stack">
             <div class="section-heading"><div><p class="eyebrow">Installed metadata</p><h2>Current physical schema</h2></div><span class="status status-{{ installation.status }}">{{ installation.status }}</span></div>
             <dl class="definition-metadata"><div><dt>Installed version</dt><dd>v{{ installation.definition_version }}</dd></div><div><dt>Schema checksum</dt><dd><code data-visual-mask>{{ installation.schema_checksum }}</code></dd></div><div><dt>Owner</dt><dd>{{ installation.owner_identifier }}</dd></div></dl>
-            <div class="table-wrap"><table><thead><tr><th>Logical table</th><th>Physical table</th><th>Kind</th><th>Columns</th><th>Indexes</th><th>Relations</th></tr></thead><tbody>
+            <div class="table-wrap" tabindex="0" role="region" aria-label="Schema plan target blueprint"><table><thead><tr><th>Logical table</th><th>Physical table</th><th>Kind</th><th>Columns</th><th>Indexes</th><th>Relations</th></tr></thead><tbody>
               {% for table in installation.blueprint.tables %}<tr><td><code>{{ table.logical_name }}</code></td><td><code data-visual-mask>{{ table.physical_name }}</code></td><td>{{ table.kind|replace({'_':' '}) }}</td><td>{{ table.columns|length }}</td><td>{{ table.indexes|length }}</td><td>{{ table.foreign_keys|length }}</td></tr>{% endfor %}
             </tbody></table></div>
 

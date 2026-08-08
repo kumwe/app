@@ -117,7 +117,14 @@ final class BusinessSchemaExecutionStateGuardIntegrationTest extends TestCase
         });
         $upgrade = $schemas->createPlan($context, $definition->id);
         self::assertSame(SchemaPlanStatus::PendingApproval, $upgrade->status);
-        $approved = $schemas->approve($context, $upgrade->id, $upgrade->checksum(), null, null);
+        $confirmation = $upgrade->risk->requiresHighImpactAuthorization() ? $upgrade->checksum() : null;
+        $approved = $schemas->approve(
+            $context,
+            $upgrade->id,
+            $upgrade->checksum(),
+            $confirmation,
+            null,
+        );
         self::assertSame(SchemaPlanStatus::Approved, $approved->status);
         $plans = $primary->get(BusinessSchemaPlanRepository::class);
         $lock = $primary->get(BusinessSchemaExecutionLock::class);
@@ -322,7 +329,8 @@ final class BusinessSchemaExecutionStateGuardIntegrationTest extends TestCase
         });
         $plan = $schemas->createPlan($context, $definition->id);
         if ($plan->status === SchemaPlanStatus::PendingApproval) {
-            $plan = $schemas->approve($context, $plan->id, $plan->checksum(), null, null);
+            $confirmation = $plan->risk->requiresHighImpactAuthorization() ? $plan->checksum() : null;
+            $plan = $schemas->approve($context, $plan->id, $plan->checksum(), $confirmation, null);
         }
         $schemas->execute($context, $plan->id);
 

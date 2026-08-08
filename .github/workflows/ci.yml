@@ -212,7 +212,11 @@ jobs:
           git diff --exit-code
 
       - name: Static analysis
-        run: composer analyse
+        run: |
+          composer analyse || {
+            vendor/bin/phpstan analyse --no-progress --memory-limit=1G --error-format=raw
+            exit 1
+          }
 
       - name: Unit and architecture tests
         run: |

@@ -343,11 +343,10 @@ final class BusinessRecordRelationshipIntegrationTest extends TestCase
             'length' => 40,
             'filterable' => true,
         ];
-        $currentDraft = $definitions->draft($context, $target->id);
         $pendingDraft = $definitions->saveDraft(
             $context,
             EntityTypeDefinition::fromArray($pendingTargetDocument),
-            $currentDraft->revision,
+            0,
         );
         $pendingTarget = $definitions->publish(
             $context,
@@ -636,7 +635,7 @@ final class BusinessRecordRelationshipIntegrationTest extends TestCase
             NeutralBusinessFixture::idempotencyKey('disabled-relate-' . $suffix),
         ));
 
-        $transactions->run(function () use ($installations, $clock, $owner): void {
+        $transactions->transactional(function () use ($installations, $clock, $owner): void {
             $installation = $installations->find($owner->id);
             self::assertNotNull($installation);
             $installations->save($installation->disable($clock->now()));
