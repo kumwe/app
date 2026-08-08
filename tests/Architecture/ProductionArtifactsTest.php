@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Kumwe\CMS\Tests\Architecture;
 
+use Kumwe\CMS\Infrastructure\Persistence\Migration\BusinessTransactionalRuntimeMigration;
 use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\TestCase;
 
@@ -95,12 +96,22 @@ final class ProductionArtifactsTest extends TestCase
     public function testBackupToolsAreFailClosedAndRefuseNonV2Data(): void
     {
         $backup = $this->contents('tools/backup.sh');
+        $restore = $this->contents('tools/restore.sh');
         $verify = $this->contents('tools/restore-verify.sh');
 
         self::assertStringContainsString('set -Eeuo pipefail', $backup);
         self::assertStringContainsString('KUMWE_BACKUP_CONSISTENCY', $backup);
-        self::assertStringContainsString('20260804010000_create_kumwe_core', $backup);
+        self::assertStringContainsString(BusinessTransactionalRuntimeMigration::ID, $backup);
+        self::assertStringContainsString(BusinessTransactionalRuntimeMigration::ID, $restore);
         self::assertStringContainsString('mariadb|mysql|pgsql', $backup);
+        self::assertStringContainsString('--no-tablespaces', $backup);
+        self::assertStringContainsString('--set-gtid-purged=OFF', $backup);
+        self::assertStringNotContainsString('--routines', $backup);
+        self::assertStringNotContainsString('--events', $backup);
+        self::assertStringContainsString('${#table_prefix} -le 28', $backup);
+        self::assertStringContainsString('^[a-z][a-z0-9]*(_[a-z0-9]+)*_$', $backup);
+        self::assertStringContainsString('${#table_prefix} -le 28', $restore);
+        self::assertStringContainsString('database_table_prefix | length <= 28', $verify);
         self::assertStringContainsString('product_major: 2', $backup);
         self::assertStringContainsString('extension-assets.tar.gz', $backup);
         self::assertStringContainsString('set -Eeuo pipefail', $verify);
@@ -140,6 +151,7 @@ final class ProductionArtifactsTest extends TestCase
             $installer,
         );
         self::assertStringContainsString("'KUMWE_DEPLOYMENT_ID' =>", $installer);
+        self::assertStringContainsString('strlen($databasePrefix) > 28', $installer);
         self::assertStringContainsString("'KUMWE_REPLICA_ID' => 'primary-replica'", $installer);
         self::assertStringContainsString("'KUMWE_PROCESS_ID' => 'application-runtime'", $installer);
         self::assertStringContainsString("'KUMWE_INSTANCE_ID' => 'primary-instance'", $installer);

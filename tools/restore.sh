@@ -66,7 +66,7 @@ database_driver="${KUMWE_RESTORE_DB_DRIVER:-$manifest_driver}"
 [[ "$database_driver" == "$manifest_driver" ]] \
     || fail "backup database driver '$manifest_driver' cannot be restored as '$database_driver'"
 table_prefix="${KUMWE_RESTORE_DB_TABLE_PREFIX:-$(jq -r '.database_table_prefix' "${backup_directory}/manifest.json")}"
-[[ "$table_prefix" =~ ^[A-Za-z_][A-Za-z0-9_]{0,31}$ ]] \
+[[ ${#table_prefix} -le 28 && "$table_prefix" =~ ^[a-z][a-z0-9]*(_[a-z0-9]+)*_$ ]] \
     || fail 'restore database table prefix is invalid'
 
 database_password="$(<"$KUMWE_RESTORE_DB_PASSWORD_FILE")"
@@ -74,7 +74,7 @@ database_password="$(<"$KUMWE_RESTORE_DB_PASSWORD_FILE")"
 database_host="${KUMWE_RESTORE_DB_HOST:-database}"
 database_port="${KUMWE_RESTORE_DB_PORT:-$([[ "$database_driver" == pgsql ]] && echo 5432 || echo 3306)}"
 migration_table="${table_prefix}schema_migrations"
-required_migration='20260804010000_create_kumwe_core'
+required_migration='20260808010000_business_transactional_runtime'
 
 media_parent="$(dirname -- "$KUMWE_RESTORE_MEDIA_DIR")"
 extensions_parent="$(dirname -- "$KUMWE_RESTORE_EXTENSIONS_DIR")"
@@ -129,8 +129,13 @@ if [[ "$database_driver" == pgsql ]]; then
         --command="SELECT version FROM \"${migration_table}\" WHERE version = '${required_migration}'")"
     unset PGPASSWORD
 else
-    database_client="$(first_available_command mariadb mysql)" \
-        || fail 'a MariaDB or MySQL client is required'
+    if [[ "$database_driver" == mysql ]]; then
+        database_client="$(first_available_command mysql)" \
+            || fail 'the MySQL client is required for a MySQL restore'
+    else
+        database_client="$(first_available_command mariadb)" \
+            || fail 'the MariaDB client is required for a MariaDB restore'
+    fi
     export MYSQL_PWD="$database_password"
     connection_arguments=(
         --host="$database_host"

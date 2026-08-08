@@ -543,6 +543,7 @@ jobs:
           source_extensions="$recovery_root/source/extensions"
           source_extension_assets="$recovery_root/source/extension-assets"
           restore_root="$recovery_root/restored"
+          runtime_manifest="$recovery_root/business-runtime-source.json"
           restore_container="kumwe-restore-$DATABASE_DRIVER"
           database_password="$(<"$KUMWE_DB_PASSWORD_FILE")"
           cleanup_recovery() {
@@ -564,6 +565,7 @@ jobs:
           fi
           docker run --detach \
             --name "$restore_container" \
+            --network kumwe_backend \
             --publish "127.0.0.1::$DATABASE_PORT" \
             --health-cmd "$database_health" \
             --health-interval 2s \
@@ -594,6 +596,14 @@ jobs:
           [[ -n "$source_host" ]]
           docker compose --file compose.production.yaml --profile automation \
             stop web app worker scheduler
+          docker compose --file compose.production.yaml run \
+            --rm \
+            --no-deps \
+            --volume "$GITHUB_WORKSPACE/tests/Support:/var/www/kumwe/tests/Support:ro" \
+            app \
+            php tests/Support/business-runtime-backup-acceptance.php seed \
+            > "$runtime_manifest"
+          test -s "$runtime_manifest"
 
           export KUMWE_BACKUP_CONSISTENCY=quiesced
           export KUMWE_BACKUP_DIR="$backup_root"
@@ -621,6 +631,57 @@ jobs:
           export KUMWE_RESTORE_EXTENSION_ASSETS_DIR="$restore_root/extension-assets"
           export KUMWE_RESTORE_MEDIA_DIR="$restore_root/media"
           bash tools/restore.sh "$backup_path"
+          docker run --rm \
+            --network kumwe_backend \
+            --user 0:0 \
+            --cap-drop ALL \
+            --cap-add DAC_READ_SEARCH \
+            --cap-add SETGID \
+            --cap-add SETUID \
+            --security-opt no-new-privileges:true \
+            --read-only \
+            --tmpfs /tmp:rw,noexec,nosuid,nodev,size=64m,mode=1777 \
+            --tmpfs /run:rw,noexec,nosuid,nodev,size=16m,mode=755 \
+            --tmpfs /var/www/kumwe/storage/cache:rw,noexec,nosuid,nodev,size=64m,mode=700,uid=82,gid=82 \
+            --tmpfs /var/www/kumwe/storage/logs:rw,noexec,nosuid,nodev,size=16m,mode=700,uid=82,gid=82 \
+            --tmpfs /var/www/kumwe/storage/sessions:rw,noexec,nosuid,nodev,size=32m,mode=700,uid=82,gid=82 \
+            --tmpfs /var/www/kumwe/storage/tmp:rw,noexec,nosuid,nodev,size=64m,mode=700,uid=82,gid=82 \
+            --volume "$GITHUB_WORKSPACE/tests/Support:/var/www/kumwe/tests/Support:ro" \
+            --volume "$runtime_manifest:/run/business-runtime-source.json:ro" \
+            --volume "$KUMWE_APP_SECRET_FILE:/run/secrets/app_secret:ro" \
+            --volume "$KUMWE_RUNTIME_SIGNING_KEY_FILE:/run/secrets/runtime_signing_key:ro" \
+            --volume "$KUMWE_RUNTIME_PREVIOUS_KEYS_FILE:/run/secrets/runtime_previous_keys:ro" \
+            --volume "$KUMWE_DB_PASSWORD_FILE:/run/secrets/db_password:ro" \
+            --volume "$KUMWE_REDIS_PASSWORD_FILE:/run/secrets/redis_password:ro" \
+            --env APP_ENV=production \
+            --env APP_DEBUG=false \
+            --env APP_BASE_URL=https://kumwe.test \
+            --env APP_PUBLIC_SITE=default \
+            --env APP_TRUSTED_HOSTS=kumwe.test,127.0.0.1,localhost \
+            --env KUMWE_RELEASE=2.0.0-acceptance \
+            --env KUMWE_DEPLOYMENT_ID=acceptance-restore \
+            --env KUMWE_REPLICA_ID=acceptance-restore \
+            --env KUMWE_PROCESS_ID=acceptance-restore \
+            --env KUMWE_INSTANCE_ID=acceptance-restore \
+            --env APP_SECRET_FILE=/run/secrets/app_secret \
+            --env EXTENSION_RUNTIME_SIGNING_KEY_ID=runtime-v1 \
+            --env EXTENSION_RUNTIME_SIGNING_KEY_FILE=/run/secrets/runtime_signing_key \
+            --env EXTENSION_RUNTIME_PREVIOUS_KEYS_FILE=/run/secrets/runtime_previous_keys \
+            --env DB_DRIVER="$DATABASE_DRIVER" \
+            --env DB_HOST="$restore_container" \
+            --env DB_PORT="$DATABASE_PORT" \
+            --env DB_NAME=kumwe_restore \
+            --env DB_USER=kumwe \
+            --env DB_PASSWORD_FILE=/run/secrets/db_password \
+            --env DB_TABLE_PREFIX=kumwe_ \
+            --env DB_SSLMODE=disable \
+            --env DB_SERVER_VERSION="${{ matrix.database.server-version }}" \
+            --env REDIS_HOST=redis \
+            --env REDIS_PORT=6379 \
+            --env REDIS_PASSWORD_FILE=/run/secrets/redis_password \
+            kumwe-app:acceptance \
+            php tests/Support/business-runtime-backup-acceptance.php \
+              verify /run/business-runtime-source.json
           cmp "$source_media/probe.txt" "$restore_root/media/probe.txt"
           cmp "$source_extensions/probe.txt" "$restore_root/extensions/probe.txt"
           cmp "$source_extension_assets/probe.css" "$restore_root/extension-assets/probe.css"

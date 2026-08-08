@@ -77,6 +77,12 @@ $redisPassword = secretPrompt('Redis password (leave empty when Redis has no pas
 if ($databasePassword === '') {
     fail('Database password must not be empty.');
 }
+if (
+    strlen($databasePrefix) > 28
+    || preg_match('/^[a-z][a-z0-9]*(?:_[a-z0-9]+)*_$/D', $databasePrefix) !== 1
+) {
+    fail('Database table prefix must be canonical lowercase, end in one underscore, and use at most 28 bytes.');
+}
 
 $values = [
     'APP_ENV' => 'production',

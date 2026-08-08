@@ -187,6 +187,33 @@ test.describe('authenticated administrator', () => {
     await expectAccessible(page);
   });
 
+  test('schema plans are inspectable, capability-gated and visually stable', async ({ page }) => {
+    await page.goto('/administrator/business-schema-plans');
+    await expect(page.getByRole('heading', { name: 'Business schema plans' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Generated operations' })).toBeVisible();
+    await expect(page.getByText('Plan checksum', { exact: true })).toBeVisible();
+    await expect(page.getByText('Physical checksum', { exact: true })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Approve exact plan' })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Schema plans', exact: true })).toHaveAttribute(
+      'aria-current',
+      'page',
+    );
+    await expect(page.locator('textarea[name="sql"], textarea[name="plan"], input[name="sql"]')).toHaveCount(0);
+    await expect(page.locator('.schema-operations-table tbody tr')).not.toHaveCount(0);
+    const missingCsrf = await page.context().request.post('/administrator/business-schema-plans/plan', {
+      form: { definition_id: '018f22e2-7c8b-7ab0-8f3a-88e8026bb401' },
+    });
+    expect(missingCsrf.status()).toBe(403);
+    expect(await missingCsrf.text()).toContain('security token is invalid');
+    await expectStylesLoaded(page);
+    await expectAccessible(page);
+    await expect(page).toHaveScreenshot('schema-plans.png', {
+      fullPage: true,
+      mask: [page.locator('[data-visual-mask]')],
+      maskColor: '#d9e2e8',
+    });
+  });
+
   test('published content links through a typed menu to its canonical path', async ({ page }) => {
     const suffix = `${Date.now()}-${Math.floor(Math.random() * 10000)}`;
     const title = `Browser About ${suffix}`;
@@ -322,6 +349,9 @@ test.describe('authenticated administrator', () => {
       await page.getByRole('button', { name: 'Open administrator navigation' }).click();
     }
     await expect(page.getByRole('link', { name: 'Announcements' })).toHaveCount(0);
+    await expect(page.getByRole('link', { name: 'Schema plans', exact: true })).toHaveCount(0);
+    const schemaResponse = await page.goto('/administrator/business-schema-plans');
+    expect(schemaResponse?.status()).toBe(403);
     const response = await page.goto('/administrator/extensions/kumwe/announcements-example');
     expect(response?.status()).toBe(403);
   });

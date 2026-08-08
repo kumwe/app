@@ -55,7 +55,10 @@ The announcements example contributes a severity field type and related category
 
 Doctrine DBAL creates only definition metadata tables: field types, catalog heads, drafts, immutable versions, and dependency edges. The same migration and repository run on MariaDB, MySQL, and PostgreSQL. Complete database backups include these tables automatically; clean-target restore drills compare definition and version counts so publication history is part of recovery acceptance.
 
-This runtime stops at definition authoring and publication. It does not implement business-record tables, generic business-record CRUD, a REST or MCP record API, or dynamic record execution. A later runtime may consume published definitions only through an explicit, separately reviewed storage and application boundary.
+Publication now feeds the separately authorized [transactional business runtime](business-runtime.md). It persists
+a deterministic schema plan but never runs DDL. The installed schema and one `BusinessRecordService` application
+boundary consume immutable versions; this session still exposes no generic REST, CLI, MCP, portal, or
+administrator record adapter.
 
 ## Verification contract
 

@@ -58,7 +58,8 @@ jq -e '
         (.database_driver == "pgsql" and .database_format == "postgresql-custom")
         or ((.database_driver == "mariadb" or .database_driver == "mysql") and .database_format == "mysql-sql")
     )
-    and (.database_table_prefix | test("^[A-Za-z_][A-Za-z0-9_]{0,31}$"))
+    and (.database_table_prefix | length <= 28)
+    and (.database_table_prefix | test("^[a-z][a-z0-9]*(_[a-z0-9]+)*_$"))
     and .contents == ["database.dump", "extension-assets.tar.gz", "extensions.tar.gz", "media.tar.gz"]
 ' "${backup_directory}/manifest.json" >/dev/null \
     || fail 'manifest is not a supported Kumwe 2.x backup; Kumwe 1.x and unknown formats are refused'
