@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace Kumwe\CMS\Tests\Unit\Http\Middleware;
 
+use Kumwe\CMS\Application\Security\HighImpactAuthenticationRequired;
 use Kumwe\CMS\Http\Middleware\BodyLimitMiddleware;
 use Kumwe\CMS\Http\Middleware\ProblemDetailsMiddleware;
 use Kumwe\CMS\Http\Middleware\RequestIdMiddleware;
 use Kumwe\CMS\Http\Middleware\SecurityHeadersMiddleware;
 use Kumwe\CMS\Http\Middleware\TrustedHostMiddleware;
 use Kumwe\CMS\Http\Security\TrustedHostMatcher;
+use Kumwe\CMS\Identity\Application\Administration\AuthenticationThrottled;
 use Laminas\Diactoros\Response\TextResponse;
 use Laminas\Diactoros\ServerRequestFactory;
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -80,6 +82,31 @@ final class SecurityMiddlewareTest extends TestCase
         self::assertStringNotContainsString('database-password-was-here', (string) $response->getBody());
     }
 
+    public function testHighImpactAuthenticationFailureIsAProtectedStepUpProblem(): void
+    {
+        $response = (new ProblemDetailsMiddleware(new NullLogger(), false))->process(
+            $this->request(),
+            $this->failingHandler(new HighImpactAuthenticationRequired('credential-was-here')),
+        );
+
+        self::assertSame(403, $response->getStatusCode());
+        self::assertSame('no-store', $response->getHeaderLine('Cache-Control'));
+        self::assertStringContainsString('high-impact-authentication-required', (string) $response->getBody());
+        self::assertStringNotContainsString('credential-was-here', (string) $response->getBody());
+    }
+
+    public function testAuthenticationThrottleIsAProtectedRateLimitProblem(): void
+    {
+        $response = (new ProblemDetailsMiddleware(new NullLogger(), false))->process(
+            $this->request(),
+            $this->failingHandler(new AuthenticationThrottled()),
+        );
+
+        self::assertSame(429, $response->getStatusCode());
+        self::assertSame('no-store', $response->getHeaderLine('Cache-Control'));
+        self::assertStringContainsString('authentication-throttled', (string) $response->getBody());
+    }
+
     public function testSecurityHeadersAreApplied(): void
     {
         $response = (new SecurityHeadersMiddleware(true))->process($this->request(), $this->successfulHandler());
@@ -117,6 +144,20 @@ final class SecurityMiddlewareTest extends TestCase
             public function handle(ServerRequestInterface $request): ResponseInterface
             {
                 return new TextResponse('', 204);
+            }
+        };
+    }
+
+    private function failingHandler(\Throwable $exception): RequestHandlerInterface
+    {
+        return new class ($exception) implements RequestHandlerInterface {
+            public function __construct(private \Throwable $exception)
+            {
+            }
+
+            public function handle(ServerRequestInterface $request): ResponseInterface
+            {
+                throw $this->exception;
             }
         };
     }

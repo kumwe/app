@@ -8,14 +8,19 @@ A complete Kumwe backup contains:
 - exact SHA-256 checksums;
 - an optional Minisign signature over the checksum file.
 
+The database payload includes every generated business entity, junction, and ordered-line table together with
+business-schema installations, plans, step journals, fences, recovery evidence, record revisions, command
+idempotency outcomes, and audit rows. JSON control documents are canonical metadata or historical snapshots;
+authoritative business fields remain in their typed physical columns.
+
 Secrets, Redis data, application images, and signing private keys are never included. Redis is disposable coordination state; the relational database is authoritative.
 
 ## Supported formats
 
 | Driver | Backup format | Required client tools |
 |---|---|---|
-| `mariadb` | Transactional SQL | `mariadb`/`mysql`, `mariadb-dump`/`mysqldump` |
-| `mysql` | Transactional SQL | `mariadb`/`mysql`, `mariadb-dump`/`mysqldump` |
+| `mariadb` | Transactional SQL | `mariadb`, `mariadb-dump` tested as compatible with the server release |
+| `mysql` | Transactional SQL | `mysql`, `mysqldump` compatible with MySQL 8.4 |
 | `pgsql` | PostgreSQL custom archive | `psql`, `pg_dump`, `pg_restore` matching the server major line |
 
 A backup restores only to the same driver recorded in its manifest. Engine conversion is a separate logical migration and validation exercise.
@@ -69,13 +74,15 @@ published assets. Run it immediately after creation, after transfer, before rest
 Create an empty database using the same driver. Choose media, extension-code, and extension-asset paths that do
 not exist; their parent directories must already exist.
 
-Example MariaDB/MySQL database creation:
+Example MariaDB database creation:
 
 ```bash
 MYSQL_PWD="$(cat /run/secrets/database-password)" mariadb \
   --host=127.0.0.1 --port=3306 --user=kumwe \
   --execute='CREATE DATABASE kumwe_restore CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci'
 ```
+
+For MySQL, use the same arguments with the `mysql` client and a MySQL-compatible collation.
 
 Example PostgreSQL creation:
 
@@ -106,7 +113,18 @@ refuses to restore a MariaDB backup as MySQL or PostgreSQL, or any other driver 
 
 ## Recovery acceptance
 
-Point an isolated deployment at the restored database and filesystem targets. Confirm readiness, owner and limited-user login, public rendering, content revisions and workflow, business-definition catalog/version/checksum counts, menus, role grants, settings, active extensions/templates, API idempotency, MCP initialization, one reversible mutation, one worker job, and one scheduler iteration. Compare important media and extension checksums.
+Point an isolated deployment at the restored database and filesystem targets. Confirm readiness, owner and limited-user login, public rendering, content revisions and workflow, business-definition catalog/version/checksum counts, menus, role grants, settings, active extensions/templates, API idempotency, MCP initialization, one reversible mutation, one worker job, and one scheduler iteration. Compare important media and extension checksums. Also compare installed physical-blueprint checksums, generated table/junction/line counts, exact money and quantity values, encrypted secret envelopes, record revisions, command outcomes, and audit checksums; then execute one typed business-record command against each installed fixture.
+
+The automated clean-target gate seeds a stable neutral record and relationship graph through the application
+boundaries. Its source manifest hashes canonical blueprints, reconstructed physical schemas, every generated entity,
+junction and owned-line row, schema controls, revisions, idempotency outcomes, and business-record audit events. It
+records exact decimal, money, quantity, and microsecond temporal values plus hashes of the encrypted secret envelope;
+the fixture fails if secret plaintext appears in any inspected row or in the manifest. After an exact manifest match,
+the restored application executes and replays an optimistic typed update to prove that the clean target is writable.
+
+Record the successful clean-target drill as schema recovery evidence with its source-schema checksum, backup
+manifest checksum, release, driver, client/server identity, verifier, and drill reference. Destructive or locking
+schema approval rejects absent, stale, mismatched, or untested evidence.
 
 Cut over only after application and business fixtures pass. Never restore over the active database or active media/extension directories.
 

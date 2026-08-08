@@ -50,8 +50,8 @@ database_driver="${KUMWE_DB_DRIVER:-mariadb}"
 [[ "$database_driver" =~ ^(mariadb|mysql|pgsql)$ ]] \
     || fail 'KUMWE_DB_DRIVER must be mariadb, mysql or pgsql'
 table_prefix="${KUMWE_DB_TABLE_PREFIX:-kumwe_}"
-[[ "$table_prefix" =~ ^[A-Za-z_][A-Za-z0-9_]{0,31}$ ]] \
-    || fail 'KUMWE_DB_TABLE_PREFIX must be a portable SQL identifier prefix'
+[[ ${#table_prefix} -le 28 && "$table_prefix" =~ ^[a-z][a-z0-9]*(_[a-z0-9]+)*_$ ]] \
+    || fail 'KUMWE_DB_TABLE_PREFIX must be a canonical lowercase prefix of at most 28 bytes'
 [[ "${KUMWE_BACKUP_CONSISTENCY:-}" == 'quiesced' ]] \
     || fail 'set KUMWE_BACKUP_CONSISTENCY=quiesced after writes and media changes have been stopped'
 [[ -d "$KUMWE_BACKUP_DIR" ]] || fail 'KUMWE_BACKUP_DIR must be an existing directory'
@@ -121,7 +121,7 @@ install -d -m 0700 "$staging_directory"
 database_host="${KUMWE_DB_HOST:-database}"
 database_port="${KUMWE_DB_PORT:-$([[ "$database_driver" == pgsql ]] && echo 5432 || echo 3306)}"
 migration_table="${table_prefix}schema_migrations"
-required_migration='20260804010000_create_kumwe_core'
+required_migration='20260808010000_business_transactional_runtime'
 
 if [[ "$database_driver" == pgsql ]]; then
     require_command pg_dump
@@ -143,10 +143,19 @@ if [[ "$database_driver" == pgsql ]]; then
     database_format='postgresql-custom'
     unset PGPASSWORD
 else
-    database_client="$(first_available_command mariadb mysql)" \
-        || fail 'a MariaDB or MySQL client is required'
-    database_dump="$(first_available_command mariadb-dump mysqldump)" \
-        || fail 'mariadb-dump or mysqldump is required'
+    dump_arguments=()
+    if [[ "$database_driver" == mysql ]]; then
+        database_client="$(first_available_command mysql)" \
+            || fail 'the MySQL client is required for a MySQL backup'
+        database_dump="$(first_available_command mysqldump)" \
+            || fail 'mysqldump is required for a MySQL backup'
+        dump_arguments+=(--no-tablespaces --set-gtid-purged=OFF)
+    else
+        database_client="$(first_available_command mariadb)" \
+            || fail 'the MariaDB client is required for a MariaDB backup'
+        database_dump="$(first_available_command mariadb-dump)" \
+            || fail 'mariadb-dump is required for a MariaDB backup'
+    fi
     export MYSQL_PWD="$database_password"
     connection_arguments=(
         --host="$database_host"
@@ -167,11 +176,10 @@ else
         --single-transaction \
         --quick \
         --skip-lock-tables \
-        --routines \
         --triggers \
-        --events \
         --hex-blob \
         --default-character-set=utf8mb4 \
+        "${dump_arguments[@]}" \
         "$KUMWE_DB_NAME" > "${staging_directory}/database.dump"
     database_format='mysql-sql'
     unset MYSQL_PWD

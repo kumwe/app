@@ -85,7 +85,11 @@ from right to left and stops at the first untrusted address; malformed or ambigu
 
 `DB_NAME`, `DB_USER`, and `DB_PASSWORD` identify the database. Production containers load the password from `DB_PASSWORD_FILE`. `DB_SSLMODE` accepts `disable`, `prefer`, `require`, `verify-ca`, or `verify-full`; public or cross-network database connections should use certificate verification.
 
-The database account needs permission to create and alter Kumwe-prefixed tables while migrations run. It does not need global or server-administration privileges.
+The table prefix is a canonical lowercase identifier of at most 28 bytes. It starts with a letter, separates
+segments with one underscore, and ends in one underscore (for example, `tenant_eu_`). This preserves prefix
+identity and leaves room for every core table within the portable 63-byte identifier limit. The database account
+needs permission to create and alter Kumwe-prefixed tables while migrations run. It does not need global or
+server-administration privileges.
 
 ## Redis
 

@@ -26,7 +26,6 @@ final class BusinessDefinitionBoundaryTest extends TestCase
         }
         self::assertStringNotContainsString('Kumwe\\CMS\\Content\\', $source);
         self::assertDoesNotMatchRegularExpression('/\beval\s*\(/i', $source);
-        self::assertStringNotContainsString('business_records', $source);
         self::assertStringNotContainsString('EAV', $source);
     }
 }

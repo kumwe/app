@@ -7,13 +7,21 @@ inputs:
 runs:
   using: composite
   steps:
-    - name: Install MariaDB/MySQL client
-      if: inputs.driver != 'pgsql'
+    - name: Install MariaDB client
+      if: inputs.driver == 'mariadb'
       shell: bash
       run: |
         set -euo pipefail
         sudo apt-get update
         sudo apt-get install --yes jq mariadb-client
+
+    - name: Install MySQL client
+      if: inputs.driver == 'mysql'
+      shell: bash
+      run: |
+        set -euo pipefail
+        sudo apt-get update
+        sudo apt-get install --yes jq mysql-client-8.0
 
     - name: Install verified PostgreSQL 17 client
       if: inputs.driver == 'pgsql'

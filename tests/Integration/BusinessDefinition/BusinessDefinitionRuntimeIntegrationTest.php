@@ -31,6 +31,8 @@ final class BusinessDefinitionRuntimeIntegrationTest extends TestCase
         $context = TestKernelFactory::administratorContext($container);
         $suffix = strtolower(substr(str_replace('-', '', Uuid::uuid7()->toString()), 0, 10));
         $document = self::document($suffix);
+        $physicalTablesBeforePublication = $database->createSchemaManager()->listTableNames();
+        sort($physicalTablesBeforePublication, SORT_STRING);
 
         $draft = $service->saveDraft($context, EntityTypeDefinition::fromArray($document));
         self::assertSame(1, $draft->revision);
@@ -50,10 +52,13 @@ final class BusinessDefinitionRuntimeIntegrationTest extends TestCase
             CanonicalDefinitionJson::encode($storedGraph),
         );
         self::assertCount(1, $service->history($context, $published->definition->id));
-        self::assertSame([], array_values(array_filter(
-            $database->createSchemaManager()->listTableNames(),
-            static fn (string $name): bool => str_contains($name, 'business_record'),
-        )));
+        $physicalTablesAfterPublication = $database->createSchemaManager()->listTableNames();
+        sort($physicalTablesAfterPublication, SORT_STRING);
+        self::assertSame(
+            $physicalTablesBeforePublication,
+            $physicalTablesAfterPublication,
+            'Definition publication may persist a proposed plan but must never execute DDL.',
+        );
 
         $portable = $published->definition->toArray();
         $portable['id'] = Uuid::uuid7()->toString();

@@ -341,6 +341,7 @@ jobs:
           source_extensions="$recovery_root/source/extensions"
           source_extension_assets="$recovery_root/source/extension-assets"
           restore_root="$recovery_root/restored"
+          runtime_manifest="$recovery_root/business-runtime-source.json"
           password_file="$recovery_root/database-password"
           install -d -m 0700 \
             "$backup_root" \
@@ -353,6 +354,8 @@ jobs:
           printf 'acceptance-media' > "$source_media/probe.txt"
           printf 'acceptance-extension' > "$source_extensions/probe.txt"
           printf 'acceptance-extension-asset' > "$source_extension_assets/probe.css"
+          php tests/Support/business-runtime-backup-acceptance.php seed > "$runtime_manifest"
+          test -s "$runtime_manifest"
 
           if [[ "$DB_DRIVER" == pgsql ]]; then
             PGPASSWORD="$DB_PASSWORD" createdb \
@@ -380,24 +383,6 @@ jobs:
           export KUMWE_EXTENSION_ASSETS_DIR="$source_extension_assets"
           export KUMWE_MEDIA_DIR="$source_media"
           export KUMWE_RELEASE=2.0.0
-          if [[ "$DB_DRIVER" == pgsql ]]; then
-            source_definition_count="$(PGPASSWORD="$DB_PASSWORD" psql --tuples-only --no-align \
-              --host="$DB_HOST" --port="$DB_PORT" --username="$DB_USER" --dbname="$DB_NAME" \
-              --command="SELECT COUNT(*) FROM ${DB_TABLE_PREFIX}business_definitions")"
-            source_version_count="$(PGPASSWORD="$DB_PASSWORD" psql --tuples-only --no-align \
-              --host="$DB_HOST" --port="$DB_PORT" --username="$DB_USER" --dbname="$DB_NAME" \
-              --command="SELECT COUNT(*) FROM ${DB_TABLE_PREFIX}business_definition_versions")"
-          else
-            database_client="$DB_DRIVER"
-            [[ "$DB_DRIVER" == mysql ]] && database_client=mysql
-            source_definition_count="$("$database_client" --batch --skip-column-names \
-              --host="$DB_HOST" --port="$DB_PORT" --user="$DB_USER" --password="$DB_PASSWORD" "$DB_NAME" \
-              --execute="SELECT COUNT(*) FROM ${DB_TABLE_PREFIX}business_definitions")"
-            source_version_count="$("$database_client" --batch --skip-column-names \
-              --host="$DB_HOST" --port="$DB_PORT" --user="$DB_USER" --password="$DB_PASSWORD" "$DB_NAME" \
-              --execute="SELECT COUNT(*) FROM ${DB_TABLE_PREFIX}business_definition_versions")"
-          fi
-          [[ "$source_definition_count" -gt 0 && "$source_version_count" -gt 0 ]]
           backup_path="$(bash tools/backup.sh)"
 
           export KUMWE_RESTORE_DB_DRIVER="$DB_DRIVER"
@@ -411,24 +396,8 @@ jobs:
           export KUMWE_RESTORE_EXTENSION_ASSETS_DIR="$restore_root/extension-assets"
           export KUMWE_RESTORE_MEDIA_DIR="$restore_root/media"
           bash tools/restore.sh "$backup_path"
-          if [[ "$DB_DRIVER" == pgsql ]]; then
-            restored_definition_count="$(PGPASSWORD="$DB_PASSWORD" psql --tuples-only --no-align \
-              --host="$DB_HOST" --port="$DB_PORT" --username="$DB_USER" --dbname=kumwe_restore_test \
-              --command="SELECT COUNT(*) FROM ${DB_TABLE_PREFIX}business_definitions")"
-            restored_version_count="$(PGPASSWORD="$DB_PASSWORD" psql --tuples-only --no-align \
-              --host="$DB_HOST" --port="$DB_PORT" --username="$DB_USER" --dbname=kumwe_restore_test \
-              --command="SELECT COUNT(*) FROM ${DB_TABLE_PREFIX}business_definition_versions")"
-          else
-            restored_definition_count="$("$database_client" --batch --skip-column-names \
-              --host="$DB_HOST" --port="$DB_PORT" --user="$DB_USER" --password="$DB_PASSWORD" \
-              kumwe_restore_test --execute="SELECT COUNT(*) FROM ${DB_TABLE_PREFIX}business_definitions")"
-            restored_version_count="$("$database_client" --batch --skip-column-names \
-              --host="$DB_HOST" --port="$DB_PORT" --user="$DB_USER" --password="$DB_PASSWORD" \
-              kumwe_restore_test \
-              --execute="SELECT COUNT(*) FROM ${DB_TABLE_PREFIX}business_definition_versions")"
-          fi
-          [[ "$restored_definition_count" == "$source_definition_count" ]]
-          [[ "$restored_version_count" == "$source_version_count" ]]
+          DB_NAME=kumwe_restore_test \
+            php tests/Support/business-runtime-backup-acceptance.php verify "$runtime_manifest"
           cmp "$source_media/probe.txt" "$restore_root/media/probe.txt"
           cmp "$source_extensions/probe.txt" "$restore_root/extensions/probe.txt"
           cmp "$source_extension_assets/probe.css" "$restore_root/extension-assets/probe.css"

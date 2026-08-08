@@ -13,6 +13,7 @@ Use this index to install, operate, administer, integrate, extend, or evolve Kum
 
 - [Administrator](administration.md): content workflow, menus, users, groups, permissions, settings, tokens, extensions, and templates.
 - [Business definitions](business-definitions.md): typed entities, fields, relationships, safe formulas, publication, and extension ownership.
+- [Transactional business runtime](business-runtime.md): schema plans, typed relational records, bounded queries, recovery, and lifecycle.
 - [Command-line interface](cli.md): installation, health, tokens, extensions, workers, schedules, and MCP stdio.
 - [Workers and scheduler](automation.md): durable jobs, retries, recurring work, and worker operation.
 - [Templates](templates.md): build, install, activate, and verify a public design.
