@@ -6,6 +6,7 @@ namespace Kumwe\CMS\Infrastructure\Persistence;
 
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\DriverManager;
+use Kumwe\CMS\Infrastructure\Persistence\Type\DoctrineTemporalTypes;
 use Kumwe\CMS\Kernel\Configuration\DatabaseConfiguration;
 use Pdo\Mysql;
 
@@ -17,6 +18,7 @@ final readonly class DoctrineConnectionFactory
 
     public function create(): Connection
     {
+        DoctrineTemporalTypes::register();
         $driver = $this->configuration->driver === 'pgsql' ? 'pdo_pgsql' : 'pdo_mysql';
         $parameters = [
             'driver' => $driver,

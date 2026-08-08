@@ -20,7 +20,10 @@ final readonly class EntityTypeDefinition
     /** @var list<ActionDefinition> */
     private array $actions;
 
-    /** @var array<string, scalar|array<array-key, scalar|null>|null> */
+    /** @var list<RecordInvariantDefinition> */
+    private array $recordInvariants;
+
+    /** @var array<string, mixed> */
     private array $compatibilityMetadata;
 
     /**
@@ -28,7 +31,8 @@ final readonly class EntityTypeDefinition
      * @param list<RelationshipDefinition> $relationships
      * @param list<ViewDefinition> $views
      * @param list<ActionDefinition> $actions
-     * @param array<string, scalar|array<array-key, scalar|null>|null> $compatibilityMetadata
+     * @param array<string, mixed> $compatibilityMetadata
+     * @param list<RecordInvariantDefinition> $recordInvariants
      */
     public function __construct(
         public string $id,
@@ -54,6 +58,7 @@ final readonly class EntityTypeDefinition
         public bool $portalExposure = false,
         public bool $publicExposure = false,
         public bool $softDeleteEnabled = false,
+        array $recordInvariants = [],
     ) {
         if (!Uuid::isValid($id)) {
             throw new InvalidBusinessDefinition('A business entity definition ID must be a canonical UUID.');
@@ -98,6 +103,11 @@ final readonly class EntityTypeDefinition
             static fn (ActionDefinition $action): string => $action->handle,
             'action',
         );
+        $this->recordInvariants = self::unique(
+            $recordInvariants,
+            static fn (RecordInvariantDefinition $invariant): string => $invariant->handle,
+            'record invariant',
+        );
         if (!$administratorExposure && !$portalExposure && !$publicExposure) {
             throw new InvalidBusinessDefinition('A business entity requires at least one declared exposure surface.');
         }
@@ -129,7 +139,7 @@ final readonly class EntityTypeDefinition
             'id', 'owner', 'site', 'handle', 'singular_label', 'plural_label', 'status', 'definition_version',
             'storage_mode', 'identity_strategy', 'scope', 'audit_enabled', 'revisions_enabled', 'fields',
             'relationships', 'views', 'actions', 'workflow', 'compatibility_metadata', 'administrator_exposure',
-            'portal_exposure', 'public_exposure', 'soft_delete_enabled',
+            'portal_exposure', 'public_exposure', 'soft_delete_enabled', 'record_invariants',
         ];
         if (array_diff(array_keys($document), $allowed) !== []) {
             throw new InvalidBusinessDefinition('A business entity definition contains an unknown property.');
@@ -160,6 +170,10 @@ final readonly class EntityTypeDefinition
             static fn (array $action): ActionDefinition => ActionDefinition::fromArray($action),
             self::objects($document, 'actions'),
         );
+        $recordInvariants = array_map(
+            static fn (array $invariant): RecordInvariantDefinition => RecordInvariantDefinition::fromArray($invariant),
+            self::objects($document, 'record_invariants'),
+        );
         $workflowDocument = $document['workflow'] ?? null;
         if ($workflowDocument !== null && (!is_array($workflowDocument) || array_is_list($workflowDocument))) {
             throw new InvalidBusinessDefinition('A business workflow binding must be an object or null.');
@@ -169,7 +183,7 @@ final readonly class EntityTypeDefinition
         if (!is_array($metadata) || ($metadata !== [] && array_is_list($metadata))) {
             throw new InvalidBusinessDefinition('Business compatibility metadata must be an object.');
         }
-        /** @var array<string, scalar|array<array-key, scalar|null>|null> $metadata */
+        /** @var array<string, mixed> $metadata */
 
         return new self(
             self::string($document, 'id'),
@@ -199,6 +213,7 @@ final readonly class EntityTypeDefinition
             self::boolean($document, 'portal_exposure'),
             self::boolean($document, 'public_exposure'),
             self::boolean($document, 'soft_delete_enabled'),
+            $recordInvariants,
         );
     }
 
@@ -214,6 +229,42 @@ final readonly class EntityTypeDefinition
         return $this->relationships;
     }
 
+    /**
+     * Resolves both explicit relationships and the legacy field-shaped ordered-line contract.
+     * Ordered lines are always an owned, ordered collection whose lifecycle follows its owner.
+     */
+    public function runtimeRelationship(string $handle): ?RelationshipDefinition
+    {
+        foreach ($this->relationships as $relationship) {
+            if ($relationship->handle === $handle) {
+                return $relationship;
+            }
+        }
+        foreach ($this->fields as $field) {
+            if ($field->handle !== $handle || $field->type !== 'core.ordered_lines') {
+                continue;
+            }
+            $target = $field->configuration['target'] ?? null;
+            if (!is_string($target)) {
+                throw new InvalidBusinessDefinition('An ordered-line field requires a declared entity target.');
+            }
+
+            return new RelationshipDefinition(
+                $field->handle,
+                $field->label,
+                RelationshipKind::OwnedLineCollection,
+                $target,
+                null,
+                false,
+                false,
+                true,
+                DeleteBehavior::Cascade,
+            );
+        }
+
+        return null;
+    }
+
     /** @return list<ViewDefinition> */
     public function views(): array
     {
@@ -226,7 +277,13 @@ final readonly class EntityTypeDefinition
         return $this->actions;
     }
 
-    /** @return array<string, scalar|array<array-key, scalar|null>|null> */
+    /** @return list<RecordInvariantDefinition> */
+    public function recordInvariants(): array
+    {
+        return $this->recordInvariants;
+    }
+
+    /** @return array<string, mixed> */
     public function compatibilityMetadata(): array
     {
         return $this->compatibilityMetadata;
@@ -262,6 +319,7 @@ final readonly class EntityTypeDefinition
             $this->portalExposure,
             $this->publicExposure,
             $this->softDeleteEnabled,
+            $this->recordInvariants,
         );
     }
 
@@ -295,6 +353,7 @@ final readonly class EntityTypeDefinition
             $this->portalExposure,
             $this->publicExposure,
             $this->softDeleteEnabled,
+            $this->recordInvariants,
         );
     }
 
@@ -333,6 +392,12 @@ final readonly class EntityTypeDefinition
         if ($this->softDeleteEnabled) {
             $document['soft_delete_enabled'] = true;
         }
+        if ($this->recordInvariants !== []) {
+            $document['record_invariants'] = array_map(
+                static fn (RecordInvariantDefinition $invariant): array => $invariant->toArray(),
+                $this->recordInvariants,
+            );
+        }
 
         return $document;
     }
@@ -362,6 +427,16 @@ final readonly class EntityTypeDefinition
             static fn (RelationshipDefinition $relationship): string => $relationship->target,
             $this->relationships,
         )));
+        foreach ($this->fields as $field) {
+            if (!in_array($field->type, ['core.entity_reference', 'core.ordered_lines'], true)) {
+                continue;
+            }
+            $target = $field->configuration['target'] ?? null;
+            if (is_string($target)) {
+                $relations[] = $target;
+            }
+        }
+        $relations = array_values(array_unique($relations));
         sort($relations, SORT_STRING);
         $types = array_values(array_unique(array_map(
             static fn (FieldDefinition $field): string => $field->type,
@@ -389,6 +464,15 @@ final readonly class EntityTypeDefinition
             );
         }
         foreach ($this->fields as $field) {
+            if ($field->type === 'core.ordered_lines') {
+                foreach ($this->relationships as $relationship) {
+                    if ($relationship->handle === $field->handle) {
+                        throw new InvalidBusinessDefinition(
+                            'An ordered-line field and relationship cannot share a handle.',
+                        );
+                    }
+                }
+            }
             foreach ([$field->formula, $field->visibilityCondition, $field->editabilityCondition] as $expression) {
                 foreach ($expression?->dependencies() ?? [] as $dependency) {
                     if (!isset($fields[$dependency])) {
@@ -430,6 +514,13 @@ final readonly class EntityTypeDefinition
             foreach ($action->condition?->dependencies() ?? [] as $dependency) {
                 if (!isset($fields[$dependency])) {
                     throw new InvalidBusinessDefinition('A business action condition references a missing field.');
+                }
+            }
+        }
+        foreach ($this->recordInvariants as $invariant) {
+            foreach ($invariant->condition->dependencies() as $dependency) {
+                if (!isset($fields[$dependency])) {
+                    throw new InvalidBusinessDefinition('A record invariant references a missing field.');
                 }
             }
         }

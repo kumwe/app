@@ -61,6 +61,7 @@ final readonly class FieldDefinition
         public ?Expression $visibilityCondition = null,
         public ?Expression $editabilityCondition = null,
         public ?Expression $formula = null,
+        public ComputationMode $computationMode = ComputationMode::Virtual,
     ) {
         if (preg_match('/^[a-z][a-z0-9_]{0,62}$/D', $handle) !== 1) {
             throw new InvalidBusinessDefinition('A business field handle is invalid.');
@@ -85,9 +86,11 @@ final readonly class FieldDefinition
         }
         if (
             $precision !== null && $scale !== null
-            && ($precision < 1 || $precision > 65 || $scale < 0 || $scale > $precision)
+            && ($precision < 1 || $precision > 65 || $scale < 0 || $scale > 30 || $scale > $precision)
         ) {
-            throw new InvalidBusinessDefinition('A business field precision or scale is invalid.');
+            throw new InvalidBusinessDefinition(
+                'A business field precision or scale exceeds the portable DECIMAL(65, 30) bounds.',
+            );
         }
         if (in_array($type, ['core.decimal', 'core.money', 'core.quantity'], true) && $precision === null) {
             throw new InvalidBusinessDefinition('Exact numeric fields require explicit precision and scale.');
@@ -119,6 +122,25 @@ final readonly class FieldDefinition
         $this->configuration = $configuration;
         if ($computed && (!$readOnly || !$serverOnly || $formula === null)) {
             throw new InvalidBusinessDefinition('A computed field must be server-only, read-only, and have a formula.');
+        }
+        if (!$computed && $computationMode !== ComputationMode::Virtual) {
+            throw new InvalidBusinessDefinition('Only a computed field can use stored computation.');
+        }
+        if (
+            $computationMode === ComputationMode::Stored
+            && ($formula === null || !in_array(
+                $formula->type,
+                ['boolean', 'integer', 'decimal', 'string', 'date', 'time', 'datetime'],
+                true,
+            ))
+        ) {
+            throw new InvalidBusinessDefinition('A stored computation requires a portable scalar result type.');
+        }
+        if (
+            $computationMode === ComputationMode::Stored && $formula?->type === 'decimal'
+            && ($precision === null || $scale === null)
+        ) {
+            throw new InvalidBusinessDefinition('A stored decimal computation requires precision and scale.');
         }
         if ($type === 'core.secret' && ($searchable || $filterable || $sortable || $reportable || $exportable)) {
             throw new InvalidBusinessDefinition(
@@ -157,7 +179,7 @@ final readonly class FieldDefinition
             'immutable_after_create', 'server_only',
             'computed', 'read_only', 'create_visible', 'update_visible', 'read_visible', 'searchable', 'filterable',
             'sortable', 'reportable', 'exportable', 'sensitivity', 'localized', 'help_text', 'form_group', 'order',
-            'placements', 'visibility_condition', 'editability_condition', 'formula',
+            'placements', 'visibility_condition', 'editability_condition', 'formula', 'computation_mode',
         ];
         if (array_diff(array_keys($document), $allowed) !== []) {
             throw new InvalidBusinessDefinition('A business field contains an unknown property.');
@@ -201,13 +223,15 @@ final readonly class FieldDefinition
             self::expression($document, 'visibility_condition'),
             self::expression($document, 'editability_condition'),
             self::expression($document, 'formula'),
+            ComputationMode::tryFrom(self::optionalString($document, 'computation_mode', 'virtual'))
+                ?? throw new InvalidBusinessDefinition('A business field computation mode is invalid.'),
         );
     }
 
     /** @return array<string, mixed> */
     public function toArray(): array
     {
-        return [
+        $document = [
             'handle' => $this->handle,
             'label' => $this->label,
             'type' => $this->type,
@@ -245,6 +269,13 @@ final readonly class FieldDefinition
             'editability_condition' => $this->editabilityCondition?->toArray(),
             'formula' => $this->formula?->toArray(),
         ];
+        // Session-2 definitions implicitly described virtual calculations. Keep
+        // those immutable bytes unchanged unless stored computation is explicit.
+        if ($this->computationMode === ComputationMode::Stored) {
+            $document['computation_mode'] = $this->computationMode->value;
+        }
+
+        return $document;
     }
 
     /** @param array<string, mixed> $document */

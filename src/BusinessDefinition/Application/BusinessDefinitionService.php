@@ -18,6 +18,7 @@ use Kumwe\CMS\BusinessDefinition\Domain\DefinitionOwnerType;
 use Kumwe\CMS\BusinessDefinition\Domain\DefinitionStatus;
 use Kumwe\CMS\BusinessDefinition\Domain\EntityTypeDefinition;
 use Kumwe\CMS\BusinessDefinition\Domain\InvalidBusinessDefinition;
+use Kumwe\CMS\BusinessSchema\Application\PublishedDefinitionSchemaObserver;
 use Kumwe\CMS\Identity\Domain\Capability;
 use Kumwe\CMS\Infrastructure\Persistence\TransactionManager;
 use Psr\Clock\ClockInterface;
@@ -35,6 +36,7 @@ final readonly class BusinessDefinitionService
         private AuditRecorder $audit,
         private TransactionManager $transactions,
         private ClockInterface $clock,
+        private ?PublishedDefinitionSchemaObserver $schemaObserver = null,
     ) {
     }
 
@@ -302,12 +304,47 @@ final readonly class BusinessDefinitionService
                         'plan' => $plan->toArray(),
                     ],
                 );
+                $graph = $this->publishedGraph($context->site(), $record);
+                if ($graph !== null) {
+                    $this->schemaObserver?->observePublishedGraph(
+                        $context->site(),
+                        $graph,
+                        $context->actorId(),
+                        $now,
+                    );
+                }
                 return $record;
             });
         } catch (Throwable $failure) {
             $this->auditFailure($context, 'business_definition.publish.reject', $draft->definition->id, $failure);
             throw $failure;
         }
+    }
+
+    /** @return list<DefinitionVersionRecord>|null */
+    private function publishedGraph(SiteContext $site, DefinitionVersionRecord $root): ?array
+    {
+        $graph = [$root->definition->handle => $root];
+        $queue = [$root];
+        for ($index = 0; $index < count($queue); ++$index) {
+            foreach ($queue[$index]->definition->dependencyGraph()['entities'] as $target) {
+                if (isset($graph[$target])) {
+                    continue;
+                }
+                $related = $this->repository->published($site, $target);
+                if ($related === null) {
+                    return null;
+                }
+                $graph[$related->definition->handle] = $related;
+                $queue[] = $related;
+                if (count($queue) > 128) {
+                    throw new InvalidBusinessDefinition('A business definition graph exceeds 128 entities.');
+                }
+            }
+        }
+        ksort($graph, SORT_STRING);
+
+        return array_values($graph);
     }
 
     public function supersede(ExecutionContext $context, string $identifier, int $version): DefinitionVersionRecord
@@ -331,12 +368,12 @@ final readonly class BusinessDefinitionService
         $queue = [$definition];
         $site = SiteContext::fromString($definition->siteIdentifier);
         for ($index = 0; $index < count($queue); ++$index) {
-            foreach ($queue[$index]->relationships() as $relationship) {
-                if (isset($graph[$relationship->target])) {
+            foreach ($queue[$index]->dependencyGraph()['entities'] as $target) {
+                if (isset($graph[$target])) {
                     continue;
                 }
-                $related = $this->repository->draft($site, $relationship->target)->definition
-                    ?? $this->repository->published($site, $relationship->target)?->definition;
+                $related = $this->repository->draft($site, $target)->definition
+                    ?? $this->repository->published($site, $target)?->definition;
                 if ($related === null) {
                     continue;
                 }

@@ -6,12 +6,13 @@ namespace Kumwe\CMS\Infrastructure\Persistence;
 
 use Doctrine\DBAL\Connection;
 use InvalidArgumentException;
+use Kumwe\CMS\Shared\Domain\DatabaseTablePrefix;
 
 final readonly class TableNames
 {
     public function __construct(private Connection $connection, private string $prefix)
     {
-        if (preg_match('/^[a-z][a-z0-9_]{0,30}$/D', $prefix) !== 1) {
+        if (!DatabaseTablePrefix::isValid($prefix)) {
             throw new InvalidArgumentException('The database table prefix is invalid.');
         }
     }
@@ -23,7 +24,12 @@ final readonly class TableNames
             throw new InvalidArgumentException('The database table name is invalid.');
         }
 
-        return $this->prefix . $name;
+        $physicalName = $this->prefix . $name;
+        if (strlen($physicalName) > 63) {
+            throw new InvalidArgumentException('The prefixed database table name exceeds the portable 63-byte limit.');
+        }
+
+        return $physicalName;
     }
 
     /** @return non-empty-string */
