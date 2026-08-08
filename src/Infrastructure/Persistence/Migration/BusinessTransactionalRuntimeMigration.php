@@ -213,7 +213,7 @@ final readonly class BusinessTransactionalRuntimeMigration implements Repeatable
         $table->addColumn('state', Types::STRING, ['length' => 24]);
         $table->addColumn('attempt', Types::INTEGER, ['default' => 0]);
         $table->addColumn('execution_fence', Types::BIGINT, ['notnull' => false]);
-        $table->addColumn('cursor', Types::JSON, ['notnull' => false]);
+        $table->addColumn('chunk_cursor', Types::JSON, ['notnull' => false]);
         $table->addColumn('before_schema_checksum', Types::STRING, [
             'length' => 64, 'fixed' => true, 'notnull' => false,
         ]);

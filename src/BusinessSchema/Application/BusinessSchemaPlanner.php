@@ -238,9 +238,11 @@ final readonly class BusinessSchemaPlanner implements PublishedDefinitionSchemaO
             $prior = $installed->blueprint;
         }
         $operations = $this->operations($prior, $target, $definition, $dependencyBlueprints);
-        if ($prior !== null && $this->containsPinnedRowBreakingChange($operations)
+        if (
+            $prior !== null && $this->containsPinnedRowBreakingChange($operations)
             && !$this->hasRecordRepin($operations, $definition->definitionVersion)
-            && $this->physicalSchema->hasRowsPinnedBefore($prior, $definition->definitionVersion)) {
+            && $this->physicalSchema->hasRowsPinnedBefore($prior, $definition->definitionVersion)
+        ) {
             throw new InvalidBusinessSchema(
                 'Older definition-version rows remain pinned; drop/type replacement requires a bounded re-pin plan.',
             );
@@ -720,20 +722,24 @@ final readonly class BusinessSchemaPlanner implements PublishedDefinitionSchemaO
     private function containsPinnedRowBreakingChange(array $operations): bool
     {
         foreach ($operations as $operation) {
-            if (in_array(
-                $operation->kind,
-                [
+            if (
+                in_array(
+                    $operation->kind,
+                    [
                     SchemaOperationKind::DropTable,
                     SchemaOperationKind::DropColumn,
                     SchemaOperationKind::Transform,
                     SchemaOperationKind::RenameColumn,
-                ],
-                true,
-            )) {
+                    ],
+                    true,
+                )
+            ) {
                 return true;
             }
-            if ($operation->kind === SchemaOperationKind::AlterColumn
-                && !$this->additiveColumnRelaxation($operation)) {
+            if (
+                $operation->kind === SchemaOperationKind::AlterColumn
+                && !$this->additiveColumnRelaxation($operation)
+            ) {
                 return true;
             }
         }
@@ -782,10 +788,12 @@ final readonly class BusinessSchemaPlanner implements PublishedDefinitionSchemaO
         }
         $before = PhysicalColumnBlueprint::fromArray($operation->before);
         $after = PhysicalColumnBlueprint::fromArray($operation->after);
-        if ($before->logicalName !== $after->logicalName
+        if (
+            $before->logicalName !== $after->logicalName
             || $before->physicalName !== $after->physicalName
             || $before->doctrineType !== $after->doctrineType
-            || ($before->nullable && !$after->nullable)) {
+            || ($before->nullable && !$after->nullable)
+        ) {
             return false;
         }
         $oldOptions = $before->options;
@@ -907,8 +915,7 @@ final readonly class BusinessSchemaPlanner implements PublishedDefinitionSchemaO
     private function backfillValue(
         SchemaEvolutionHints $hints,
         string $logicalColumn,
-    ): bool|int|string|Expression
-    {
+    ): bool|int|string|Expression {
         if (!$hints->hasBackfill($logicalColumn)) {
             throw new InvalidBusinessSchema(sprintf(
                 'Non-null column %s requires canonical compatibility_metadata.backfills data.',

@@ -207,11 +207,13 @@ final readonly class SchemaPlan
 
     public function resume(int $fence, DateTimeImmutable $at): self
     {
-        if (!in_array(
-            $this->status,
-            [SchemaPlanStatus::Executing, SchemaPlanStatus::Failed, SchemaPlanStatus::RecoveryRequired],
-            true,
-        ) || $fence < 1) {
+        if (
+            !in_array(
+                $this->status,
+                [SchemaPlanStatus::Executing, SchemaPlanStatus::Failed, SchemaPlanStatus::RecoveryRequired],
+                true,
+            ) || $fence < 1
+        ) {
             throw new InvalidBusinessSchema('Only an interrupted schema plan can resume under a positive fence.');
         }
 

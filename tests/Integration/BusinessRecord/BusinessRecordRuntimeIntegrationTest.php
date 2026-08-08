@@ -10,6 +10,7 @@ use Doctrine\DBAL\DriverManager;
 use Doctrine\DBAL\Exception as DbalException;
 use Doctrine\DBAL\Platforms\AbstractMySQLPlatform;
 use Kumwe\CMS\BusinessDefinition\Application\FieldTypeRegistry;
+use Kumwe\CMS\BusinessDefinition\Application\PackageDefinitionSynchronizer;
 use Kumwe\CMS\BusinessDefinition\Domain\DefinitionOwner;
 use Kumwe\CMS\BusinessDefinition\Domain\FieldTypeDefinition;
 use Kumwe\CMS\BusinessRecord\Application\BusinessRecordMutationFence;
@@ -171,21 +172,36 @@ final class BusinessRecordRuntimeIntegrationTest extends TestCase
         $context = TestKernelFactory::administratorContext($container);
         $records = $container->get(BusinessRecordService::class);
         $fieldTypes = $container->get(FieldTypeRegistry::class);
+        $synchronizer = $container->get(PackageDefinitionSynchronizer::class);
+        $transactions = $container->get(TransactionManager::class);
         self::assertInstanceOf(BusinessRecordService::class, $records);
         self::assertInstanceOf(FieldTypeRegistry::class, $fieldTypes);
+        self::assertInstanceOf(PackageDefinitionSynchronizer::class, $synchronizer);
+        self::assertInstanceOf(TransactionManager::class, $transactions);
 
         $suffix = strtolower(substr(str_replace('-', '', Uuid::uuid7()->toString()), 0, 12));
-        $fieldType = 'tests.runtime.observed_at_' . $suffix;
-        $fieldTypes->register(
-            DefinitionOwner::extension('tests/runtime'),
-            new FieldTypeDefinition(
-                $fieldType,
-                'Observed instant',
-                'A contributed string value stored as a portable immutable UTC instant.',
-                'string',
-                'datetime',
-            ),
+        $extensionOwner = 'tests/runtime_' . $suffix;
+        $fieldType = str_replace('/', '.', $extensionOwner) . '.observed_at';
+        $fieldTypeDefinition = new FieldTypeDefinition(
+            $fieldType,
+            'Observed instant',
+            'A contributed string value stored as a portable immutable UTC instant.',
+            'string',
+            'datetime',
         );
+        $fieldTypes->register(
+            DefinitionOwner::extension($extensionOwner),
+            $fieldTypeDefinition,
+        );
+        $transactions->transactional(static fn () => $synchronizer->synchronize(
+            $extensionOwner,
+            '1.0.0',
+            $context->site(),
+            [$fieldTypeDefinition],
+            [],
+            true,
+            $context->actorId(),
+        ));
         $document = NeutralBusinessFixture::relationTargetDocument($suffix, Uuid::uuid7()->toString());
         $document['fields'][] = [
             'handle' => 'observed_at',

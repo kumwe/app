@@ -55,8 +55,7 @@ final readonly class DoctrineBusinessRecordMutationFence implements BusinessReco
         string $definitionIdentifier,
         string $lockClause,
         bool $historyOnly,
-    ): BusinessRecordMutationGeneration
-    {
+    ): BusinessRecordMutationGeneration {
         if (!$this->database->isTransactionActive()) {
             throw new BusinessRecordTemporarilyUnavailable();
         }
@@ -111,10 +110,12 @@ final readonly class DoctrineBusinessRecordMutationFence implements BusinessReco
                 SchemaInstallationStatus::Preserved,
             ]
             : [SchemaInstallationStatus::Active];
-        if ($this->string($row, 'site_identifier') !== $site->identifier()
+        if (
+            $this->string($row, 'site_identifier') !== $site->identifier()
             || $this->string($row, 'installation_owner') !== $owner
             || $status === null
-            || !in_array($status, $allowed, true)) {
+            || !in_array($status, $allowed, true)
+        ) {
             throw new BusinessRecordSchemaUnavailable();
         }
 

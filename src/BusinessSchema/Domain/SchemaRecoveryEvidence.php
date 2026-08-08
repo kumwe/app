@@ -88,8 +88,7 @@ final readonly class SchemaRecoveryEvidence
         string $applicationRelease,
         string $schemaChecksum,
         DateTimeImmutable $notBefore,
-    ): bool
-    {
+    ): bool {
         return $this->restoreTested
             && $this->siteIdentifier === $siteIdentifier
             && $this->databaseDriver === $driver

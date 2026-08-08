@@ -127,11 +127,13 @@ final readonly class BusinessDefinitionValidator
                         'Only an owned line collection can use automatic cascade deletion.',
                     );
                 }
-                if ($relationship->onDelete === DeleteBehavior::SetNull
+                if (
+                    $relationship->onDelete === DeleteBehavior::SetNull
                     && !in_array($relationship->kind, [
                         RelationshipKind::OneToOne,
                         RelationshipKind::ManyToOne,
-                    ], true)) {
+                    ], true)
+                ) {
                     throw new InvalidBusinessDefinition(
                         'Set-null deletion requires a singular relationship with explicit runtime revision handling.',
                     );
@@ -175,8 +177,10 @@ final readonly class BusinessDefinitionValidator
         RelationshipDefinition $relationship,
         RelationshipDefinition $inverse,
     ): bool {
-        if ($relationship->kind === RelationshipKind::OwnedLineCollection
-            || $inverse->kind === RelationshipKind::OwnedLineCollection) {
+        if (
+            $relationship->kind === RelationshipKind::OwnedLineCollection
+            || $inverse->kind === RelationshipKind::OwnedLineCollection
+        ) {
             return false;
         }
         $expected = match ($relationship->kind) {
@@ -241,8 +245,10 @@ final readonly class BusinessDefinitionValidator
                     throw new InvalidBusinessDefinition('An enum option exceeds the field storage length.');
                 }
             }
-            if ($field->default !== null
-                && (!is_string($field->default) || !in_array($field->default, $options, true))) {
+            if (
+                $field->default !== null
+                && (!is_string($field->default) || !in_array($field->default, $options, true))
+            ) {
                 throw new InvalidBusinessDefinition('An enum field default must be one of its declared options.');
             }
         }
@@ -347,13 +353,15 @@ final readonly class BusinessDefinitionValidator
         if ($field->type === 'core.secret') {
             return true;
         }
-        if (in_array($field->type, [
+        if (
+            in_array($field->type, [
             'core.decimal',
             'core.date',
             'core.local_time',
             'core.instant',
             'core.zoned_datetime',
-        ], true)) {
+            ], true)
+        ) {
             return false;
         }
 
@@ -381,14 +389,16 @@ final readonly class BusinessDefinitionValidator
         if ($field->type === 'core.computed') {
             return $field->formula?->type === 'string';
         }
-        if (in_array($field->type, [
+        if (
+            in_array($field->type, [
             'core.decimal',
             'core.date',
             'core.local_time',
             'core.instant',
             'core.zoned_datetime',
             'core.secret',
-        ], true)) {
+            ], true)
+        ) {
             return false;
         }
 
@@ -630,11 +640,13 @@ final readonly class BusinessDefinitionValidator
 
     private function instantDefault(mixed $value): bool
     {
-        if (!is_string($value) || preg_match(
-            '/^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}'
+        if (
+            !is_string($value) || preg_match(
+                '/^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}'
                 . '(?:\.[0-9]{1,6})?(?:Z|\+00:00)$/D',
-            $value,
-        ) !== 1) {
+                $value,
+            ) !== 1
+        ) {
             return false;
         }
         try {
@@ -677,8 +689,10 @@ final readonly class BusinessDefinitionValidator
 
     private function urlDefault(mixed $value, FieldDefinition $field): bool
     {
-        if (!$this->stringDefault($value, $field->length ?? 4096)
-            || filter_var($value, FILTER_VALIDATE_URL) === false) {
+        if (
+            !$this->stringDefault($value, $field->length ?? 4096)
+            || filter_var($value, FILTER_VALIDATE_URL) === false
+        ) {
             return false;
         }
         $scheme = parse_url($value, PHP_URL_SCHEME);
@@ -721,8 +735,10 @@ final readonly class BusinessDefinitionValidator
             throw new InvalidBusinessDefinition('Business field ' . $field . ' has an invalid ISO currency.');
         }
         $unit = $configuration['unit'] ?? null;
-        if ($unit !== null
-            && (!is_string($unit) || preg_match('/^[A-Za-z0-9][A-Za-z0-9._\/-]{0,31}$/D', $unit) !== 1)) {
+        if (
+            $unit !== null
+            && (!is_string($unit) || preg_match('/^[A-Za-z0-9][A-Za-z0-9._\/-]{0,31}$/D', $unit) !== 1)
+        ) {
             throw new InvalidBusinessDefinition('Business field ' . $field . ' has an invalid unit.');
         }
         $target = $configuration['target'] ?? null;

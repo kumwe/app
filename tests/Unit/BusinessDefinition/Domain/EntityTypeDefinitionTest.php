@@ -140,7 +140,11 @@ final class EntityTypeDefinitionTest extends TestCase
     public function testRuntimeRevisionEvidenceHandleIsReservedAtPublication(): void
     {
         $document = self::document();
-        $document['fields'][1]['handle'] = 'runtime_relation_evidence';
+        $document['fields'][] = [
+            'handle' => 'runtime_relation_evidence',
+            'label' => 'Runtime relation evidence',
+            'type' => 'core.text',
+        ];
 
         $this->expectException(InvalidBusinessDefinition::class);
         $this->expectExceptionMessage('reserved for immutable runtime revision evidence');
@@ -186,7 +190,8 @@ final class EntityTypeDefinitionTest extends TestCase
 
     public function testInvalidScalarAndTemporalDefaultsFailBeforeSchemaPlanning(): void
     {
-        foreach ([
+        foreach (
+            [
             ['core.integer', 'not-an-integer'],
             ['core.integer', 2_147_483_648],
             ['core.decimal', '1.0000001'],
@@ -194,7 +199,8 @@ final class EntityTypeDefinitionTest extends TestCase
             ['core.local_time', '25:00:00'],
             ['core.instant', '2026-08-08T11:14:15+02:00'],
             ['core.email', 'not-an-email'],
-        ] as $offset => [$type, $default]) {
+            ] as $offset => [$type, $default]
+        ) {
             $document = self::document();
             $field = [
                 'handle' => 'invalid_default_' . $offset,
@@ -220,13 +226,15 @@ final class EntityTypeDefinitionTest extends TestCase
 
     public function testVarcharBackedFieldsCannotExceedTheirPortablePhysicalLength(): void
     {
-        foreach ([
+        foreach (
+            [
             ['core.reference_identity', 192, []],
             ['core.text', 1001, []],
             ['core.email', 321, []],
             ['core.phone', 192, []],
             ['core.enum', 192, ['options' => ['one']]],
-        ] as $offset => [$type, $length, $configuration]) {
+            ] as $offset => [$type, $length, $configuration]
+        ) {
             $document = self::document();
             $document['fields'][] = [
                 'handle' => 'oversized_' . $offset,

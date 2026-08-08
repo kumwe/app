@@ -108,7 +108,7 @@
           {"handle":"severity","label":"Severity","type":"kumwe.announcements-example.severity","required":true,"nullable":false,"length":null,"configuration":{"options":["info","notice","warning","critical"]},"unique":false,"indexed":true,"filterable":true,"sortable":true,"order":0},
           {"handle":"published_at","label":"Published at","type":"core.instant","required":false,"nullable":true,"length":null,"unique":false,"indexed":true,"filterable":true,"sortable":true,"order":0}
         ],
-        "relationships": [{"handle":"category","label":"Category","kind":"many_to_one","target":"kumwe.announcements-example.category","inverse":"announcements","required":true,"on_delete":"restrict"}],
+        "relationships": [{"handle":"category","label":"Category","kind":"many_to_one","target":"kumwe.announcements-example.category","inverse":"announcements","on_delete":"restrict"}],
         "views": [
           {"handle":"list","label":"Announcement list","kind":"list","fields":["title","severity","published_at"],"filters":["severity"],"sorts":["published_at"]},
           {"handle":"detail","label":"Announcement detail","kind":"detail","fields":["title","message","severity","published_at"]},

@@ -199,10 +199,12 @@ final readonly class DoctrineBusinessRecordQueryCompiler
         array &$types,
     ): array {
         $where = [];
-        foreach ([
+        foreach (
+            [
             'site_identifier' => $scope->siteIdentifier,
             'organization_identifier' => $scope->organizationIdentifier,
-        ] as $logical => $value) {
+            ] as $logical => $value
+        ) {
             $column = $table->column($logical);
             if ($column === null) {
                 if ($value !== null) {
@@ -379,11 +381,13 @@ final readonly class DoctrineBusinessRecordQueryCompiler
             ComparisonOperator::GreaterThan => '>',
             ComparisonOperator::GreaterThanOrEqual => '>=',
         };
-        if (count($columns) > 1 && !in_array(
-            $filter->operator,
-            [ComparisonOperator::Equal, ComparisonOperator::NotEqual],
-            true,
-        )) {
+        if (
+            count($columns) > 1 && !in_array(
+                $filter->operator,
+                [ComparisonOperator::Equal, ComparisonOperator::NotEqual],
+                true,
+            )
+        ) {
             throw new InvalidBusinessRecordQuery('Ordered comparison is ambiguous for a composite field.');
         }
         $comparable = in_array($filter->operator, [ComparisonOperator::Equal, ComparisonOperator::NotEqual], true)

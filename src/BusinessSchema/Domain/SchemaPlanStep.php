@@ -111,8 +111,7 @@ final readonly class SchemaPlanStep
         string $planId,
         SchemaOperation $operation,
         ?DateTimeImmutable $updatedAt = null,
-    ): self
-    {
+    ): self {
         return new self(
             $planId,
             $operation->ordinal,

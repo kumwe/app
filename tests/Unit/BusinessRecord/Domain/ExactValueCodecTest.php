@@ -204,14 +204,16 @@ final class ExactValueCodecTest extends TestCase
     public function testTemporalCodecsRejectYearsOutsideThePortableDatabaseRange(): void
     {
         $codec = self::codec();
-        foreach ([
+        foreach (
+            [
             ['service_date', '0999-12-31'],
             ['recorded_at', '0999-12-31T23:59:59.999999Z'],
             ['scheduled_for', [
                 'instant' => '0999-12-31T23:59:59.999999Z',
                 'timezone' => 'Africa/Windhoek',
             ]],
-        ] as [$handle, $value]) {
+            ] as [$handle, $value]
+        ) {
             try {
                 $codec->normalize(
                     self::field($handle),

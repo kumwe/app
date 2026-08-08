@@ -29,10 +29,12 @@ final readonly class InstalledBusinessRecordDefinitionResolver implements Busine
                 continue;
             }
             $installation = $this->installations->find($entry->id);
-            if ($installation === null
+            if (
+                $installation === null
                 || $installation->status !== SchemaInstallationStatus::Active
                 || $installation->siteIdentifier !== $context->site()->identifier()
-                || $installation->ownerIdentifier !== $entry->owner->identifier) {
+                || $installation->ownerIdentifier !== $entry->owner->identifier
+            ) {
                 continue;
             }
             $version = $this->definitions->published(
@@ -40,8 +42,10 @@ final readonly class InstalledBusinessRecordDefinitionResolver implements Busine
                 $entry->id,
                 $installation->definitionVersion,
             );
-            if ($version === null || $version->status === DefinitionStatus::Rejected
-                || !hash_equals($version->definition->checksum(), $installation->definitionChecksum)) {
+            if (
+                $version === null || $version->status === DefinitionStatus::Rejected
+                || !hash_equals($version->definition->checksum(), $installation->definitionChecksum)
+            ) {
                 throw new BusinessRecordSchemaUnavailable(
                     'An active installed definition disagrees with its immutable catalog version.',
                 );
@@ -115,8 +119,7 @@ final readonly class InstalledBusinessRecordDefinitionResolver implements Busine
         ExecutionContext $context,
         string $identifier,
         bool $historyOnly = false,
-    ): array
-    {
+    ): array {
         $entry = $this->definitions->entry($context->site(), $identifier);
         if ($entry === null) {
             throw new BusinessRecordDefinitionUnavailable();

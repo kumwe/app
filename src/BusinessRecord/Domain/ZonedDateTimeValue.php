@@ -17,11 +17,13 @@ final readonly class ZonedDateTimeValue
 
     public static function fromStrings(string $instant, string $timezone): self
     {
-        if (preg_match(
-            '/^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}'
+        if (
+            preg_match(
+                '/^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}'
                 . '(?:\.[0-9]{1,6})?(?:Z|\+00:00)$/D',
-            $instant,
-        ) !== 1) {
+                $instant,
+            ) !== 1
+        ) {
             throw new InvalidArgumentException('A zoned date-time instant must use canonical UTC form.');
         }
         try {

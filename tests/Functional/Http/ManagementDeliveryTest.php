@@ -134,12 +134,22 @@ final class ManagementDeliveryTest extends TestCase
                     ->withHeader('Host', 'kumwe.test'),
             );
 
+            if ($method === 'GET') {
+                self::assertSame(
+                    303,
+                    $response->getStatusCode(),
+                    sprintf('%s %s is not session protected.', $method, $path),
+                );
+                self::assertSame('/administrator/login', $response->getHeaderLine('Location'));
+                continue;
+            }
+
             self::assertSame(
-                303,
+                401,
                 $response->getStatusCode(),
                 sprintf('%s %s is not session protected.', $method, $path),
             );
-            self::assertSame('/administrator/login', $response->getHeaderLine('Location'));
+            self::assertSame('application/problem+json', $response->getHeaderLine('Content-Type'));
         }
     }
 

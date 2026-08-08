@@ -32,11 +32,13 @@ final readonly class BusinessSchemaLifecycleManager implements BusinessSchemaLif
                 }
                 continue;
             }
-            if (!in_array(
-                $installation->status,
-                [SchemaInstallationStatus::Disabled, SchemaInstallationStatus::Preserved],
-                true,
-            )) {
+            if (
+                !in_array(
+                    $installation->status,
+                    [SchemaInstallationStatus::Disabled, SchemaInstallationStatus::Preserved],
+                    true,
+                )
+            ) {
                 continue;
             }
             $site = SiteContext::fromString($installation->siteIdentifier);
@@ -55,10 +57,12 @@ final readonly class BusinessSchemaLifecycleManager implements BusinessSchemaLif
                 );
             $target = $this->compiler->compile($record->definition, $site);
             $inspected = $this->physicalSchema->inspect($installation->blueprint);
-            if ($record->definition->owner->identifier !== $ownerIdentifier
+            if (
+                $record->definition->owner->identifier !== $ownerIdentifier
                 || !hash_equals($target->checksum(), $installation->schemaChecksum)
                 || $inspected === null
-                || !hash_equals($inspected->checksum(), $installation->schemaChecksum)) {
+                || !hash_equals($inspected->checksum(), $installation->schemaChecksum)
+            ) {
                 throw new BusinessSchemaConflict(
                     'An extension schema requires an approved synchronization plan before reactivation.',
                 );

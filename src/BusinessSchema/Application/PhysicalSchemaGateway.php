@@ -39,5 +39,4 @@ interface PhysicalSchemaGateway
         ?array $cursor,
         int $limit,
     ): SchemaChunkResult;
-
 }

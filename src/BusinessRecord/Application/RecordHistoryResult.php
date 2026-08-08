@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\CMS\BusinessRecord\Application;
 
 use InvalidArgumentException;
+
 final readonly class RecordHistoryResult
 {
     /** @var list<BusinessRecordRevisionView> */

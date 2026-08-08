@@ -401,8 +401,7 @@ final class BusinessSchemaExecutionStateGuardIntegrationTest extends TestCase
         string $owner,
         int $version = 1,
         bool $withNote = false,
-    ): array
-    {
+    ): array {
         $fields = [[
             'handle' => 'id',
             'label' => 'ID',

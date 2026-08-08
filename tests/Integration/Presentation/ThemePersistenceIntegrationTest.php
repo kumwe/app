@@ -27,6 +27,8 @@ use Kumwe\CMS\Identity\Infrastructure\Administration\DoctrineAdministratorIdenti
 use Kumwe\CMS\Infrastructure\Persistence\DoctrineTransactionManager;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\CoreSchemaMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\ApplicationAuthorizationMigration;
+use Kumwe\CMS\Infrastructure\Persistence\Migration\BusinessDefinitionCatalogMigration;
+use Kumwe\CMS\Infrastructure\Persistence\Migration\BusinessTransactionalRuntimeMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\IsolateThemeSurfacesMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\TokenAndTrustLifecycleMigration;
 use Kumwe\CMS\Infrastructure\Persistence\TableNames;
@@ -616,6 +618,8 @@ final class ThemePersistenceIntegrationTest extends TestCase
         (new ApplicationAuthorizationMigration($tables))->up($database);
         (new TokenAndTrustLifecycleMigration($tables, sys_get_temp_dir()))->up($database);
         (new IsolateThemeSurfacesMigration($tables))->up($database);
+        (new BusinessDefinitionCatalogMigration($tables))->up($database);
+        (new BusinessTransactionalRuntimeMigration($tables))->up($database);
 
         return [$database, $tables];
     }
