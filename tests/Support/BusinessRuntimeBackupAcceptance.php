@@ -104,9 +104,10 @@ final class BusinessRuntimeBackupAcceptance
         $actualChecksum = CanonicalDefinitionJson::checksum($actual);
         if (!hash_equals($expectedChecksum, $actualChecksum)) {
             throw new RuntimeException(sprintf(
-                'The restored business runtime differs from its source manifest (%s != %s).',
+                'The restored business runtime differs from its source manifest (%s != %s; first difference: %s).',
                 $expectedChecksum,
                 $actualChecksum,
+                self::firstDifference($expected, $actual) ?? 'unknown',
             ));
         }
 
@@ -175,6 +176,30 @@ final class BusinessRuntimeBackupAcceptance
             'success',
             ['definition_id' => NeutralBusinessFixture::DEFINITION_ID, 'fixture' => self::FORMAT],
         ));
+    }
+
+    private static function firstDifference(mixed $expected, mixed $actual, string $path = '$'): ?string
+    {
+        if (!is_array($expected) || !is_array($actual)) {
+            return $expected === $actual ? null : $path;
+        }
+        foreach ($expected as $key => $value) {
+            $child = $path . '[' . $key . ']';
+            if (!array_key_exists($key, $actual)) {
+                return $child;
+            }
+            $difference = self::firstDifference($value, $actual[$key], $child);
+            if ($difference !== null) {
+                return $difference;
+            }
+        }
+        foreach ($actual as $key => $_) {
+            if (!array_key_exists($key, $expected)) {
+                return $path . '[' . $key . ']';
+            }
+        }
+
+        return null;
     }
 
     /** @return array<string, mixed> */
