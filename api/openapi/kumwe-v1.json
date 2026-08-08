@@ -8,6 +8,297 @@
   "jsonSchemaDialect": "https://json-schema.org/draft/2020-12/schema",
   "servers": [{"url": "/"}],
   "paths": {
+    "/api/v1/business-definitions": {
+      "get": {
+        "operationId": "listBusinessDefinitions",
+        "summary": "List the business definition catalogue",
+        "security": [{"bearerAuth": [], "siteContext": []}],
+        "responses": {
+          "200": {"description": "Definition catalogue"},
+          "401": {"$ref": "#/components/responses/Unauthorized"},
+          "403": {"$ref": "#/components/responses/Forbidden"}
+        }
+      }
+    },
+    "/api/v1/business-definitions/{identifier}": {
+      "get": {
+        "operationId": "readBusinessDefinition",
+        "summary": "Read a published business definition version",
+        "security": [{"bearerAuth": [], "siteContext": []}],
+        "parameters": [
+          {"$ref": "#/components/parameters/BusinessDefinitionHandle"},
+          {
+            "name": "version",
+            "in": "query",
+            "description": "A specific published version; the latest when omitted.",
+            "schema": {"type": "integer", "minimum": 1}
+          }
+        ],
+        "responses": {
+          "200": {"description": "Published definition version"},
+          "403": {"$ref": "#/components/responses/Forbidden"},
+          "404": {"description": "No such definition or version"}
+        }
+      }
+    },
+    "/api/v1/business-definitions/{identifier}/draft": {
+      "get": {
+        "operationId": "readBusinessDefinitionDraft",
+        "summary": "Read the working draft",
+        "security": [{"bearerAuth": [], "siteContext": []}],
+        "parameters": [{"$ref": "#/components/parameters/BusinessDefinitionHandle"}],
+        "responses": {
+          "200": {"description": "Working draft"},
+          "404": {"description": "No such draft"}
+        }
+      },
+      "put": {
+        "operationId": "saveBusinessDefinitionDraft",
+        "summary": "Import or replace the working draft",
+        "security": [{"bearerAuth": [], "siteContext": []}],
+        "parameters": [
+          {"$ref": "#/components/parameters/BusinessDefinitionHandle"},
+          {"$ref": "#/components/parameters/IdempotencyKey"}
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {"application/json": {"schema": {"$ref": "#/components/schemas/BusinessDefinitionDraftInput"}}}
+        },
+        "responses": {
+          "200": {"description": "Draft stored"},
+          "412": {"description": "The If-Match draft revision no longer matches"},
+          "422": {"$ref": "#/components/responses/Unprocessable"}
+        }
+      }
+    },
+    "/api/v1/business-definitions/{identifier}/history": {
+      "get": {
+        "operationId": "listBusinessDefinitionHistory",
+        "summary": "List every published version",
+        "security": [{"bearerAuth": [], "siteContext": []}],
+        "parameters": [{"$ref": "#/components/parameters/BusinessDefinitionHandle"}],
+        "responses": {"200": {"description": "Version history"}}
+      }
+    },
+    "/api/v1/business-definitions/{identifier}/compatibility": {
+      "get": {
+        "operationId": "previewBusinessDefinitionCompatibility",
+        "summary": "Preview the compatibility plan the draft would publish",
+        "security": [{"bearerAuth": [], "siteContext": []}],
+        "parameters": [{"$ref": "#/components/parameters/BusinessDefinitionHandle"}],
+        "responses": {
+          "200": {"description": "Compatibility plan"},
+          "422": {"$ref": "#/components/responses/Unprocessable"}
+        }
+      }
+    },
+    "/api/v1/business-definitions/{identifier}/validate": {
+      "post": {
+        "operationId": "validateBusinessDefinitionDraft",
+        "summary": "Validate the working draft without publishing",
+        "security": [{"bearerAuth": [], "siteContext": []}],
+        "parameters": [
+          {"$ref": "#/components/parameters/BusinessDefinitionHandle"},
+          {"$ref": "#/components/parameters/IdempotencyKey"}
+        ],
+        "responses": {
+          "200": {"description": "Draft is valid"},
+          "422": {"$ref": "#/components/responses/Unprocessable"}
+        }
+      }
+    },
+    "/api/v1/business-definitions/{identifier}/publish": {
+      "post": {
+        "operationId": "publishBusinessDefinition",
+        "summary": "Publish the draft as a new immutable version",
+        "security": [{"bearerAuth": [], "siteContext": []}],
+        "parameters": [
+          {"$ref": "#/components/parameters/BusinessDefinitionHandle"},
+          {"$ref": "#/components/parameters/IdempotencyKey"}
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {"application/json": {"schema": {"$ref": "#/components/schemas/BusinessDefinitionPublishInput"}}}
+        },
+        "responses": {
+          "201": {"description": "Definition version published"},
+          "412": {"description": "The expected draft revision no longer matches"},
+          "422": {"$ref": "#/components/responses/Unprocessable"}
+        }
+      }
+    },
+    "/api/v1/business-definitions/{identifier}/supersede": {
+      "post": {
+        "operationId": "supersedeBusinessDefinitionVersion",
+        "summary": "Mark a published version superseded",
+        "security": [{"bearerAuth": [], "siteContext": []}],
+        "parameters": [
+          {"$ref": "#/components/parameters/BusinessDefinitionHandle"},
+          {"$ref": "#/components/parameters/IdempotencyKey"}
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {"application/json": {"schema": {"$ref": "#/components/schemas/BusinessDefinitionVersionInput"}}}
+        },
+        "responses": {
+          "200": {"description": "Version superseded"},
+          "422": {"$ref": "#/components/responses/Unprocessable"}
+        }
+      }
+    },
+    "/api/v1/business-definitions/{identifier}/deprecate": {
+      "post": {
+        "operationId": "deprecateBusinessDefinitionVersion",
+        "summary": "Mark a published version deprecated",
+        "security": [{"bearerAuth": [], "siteContext": []}],
+        "parameters": [
+          {"$ref": "#/components/parameters/BusinessDefinitionHandle"},
+          {"$ref": "#/components/parameters/IdempotencyKey"}
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {"application/json": {"schema": {"$ref": "#/components/schemas/BusinessDefinitionVersionInput"}}}
+        },
+        "responses": {
+          "200": {"description": "Version deprecated"},
+          "422": {"$ref": "#/components/responses/Unprocessable"}
+        }
+      }
+    },
+    "/api/v1/business-definitions/{identifier}/reject": {
+      "post": {
+        "operationId": "rejectBusinessDefinitionVersion",
+        "summary": "Mark a published version rejected",
+        "security": [{"bearerAuth": [], "siteContext": []}],
+        "parameters": [
+          {"$ref": "#/components/parameters/BusinessDefinitionHandle"},
+          {"$ref": "#/components/parameters/IdempotencyKey"}
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {"application/json": {"schema": {"$ref": "#/components/schemas/BusinessDefinitionVersionInput"}}}
+        },
+        "responses": {
+          "200": {"description": "Version rejected"},
+          "422": {"$ref": "#/components/responses/Unprocessable"}
+        }
+      }
+    },
+    "/api/v1/business-schema-definitions": {
+      "get": {
+        "operationId": "listSchemaEligibleDefinitions",
+        "summary": "List published definitions a schema plan can target",
+        "security": [{"bearerAuth": [], "siteContext": []}],
+        "responses": {
+          "200": {"description": "Plannable definitions"},
+          "403": {"$ref": "#/components/responses/Forbidden"}
+        }
+      }
+    },
+    "/api/v1/business-schema-plans": {
+      "get": {
+        "operationId": "listBusinessSchemaPlans",
+        "summary": "List schema plans and their status",
+        "security": [{"bearerAuth": [], "siteContext": []}],
+        "responses": {
+          "200": {"description": "Schema plans"},
+          "403": {"$ref": "#/components/responses/Forbidden"}
+        }
+      },
+      "post": {
+        "operationId": "createBusinessSchemaPlan",
+        "summary": "Create a deterministic schema plan for a published definition",
+        "security": [{"bearerAuth": [], "siteContext": []}],
+        "parameters": [{"$ref": "#/components/parameters/IdempotencyKey"}],
+        "requestBody": {
+          "required": true,
+          "content": {"application/json": {"schema": {"$ref": "#/components/schemas/BusinessSchemaPlanInput"}}}
+        },
+        "responses": {
+          "201": {"description": "Schema plan created"},
+          "422": {"$ref": "#/components/responses/Unprocessable"}
+        }
+      }
+    },
+    "/api/v1/business-schema-plans/purge": {
+      "post": {
+        "operationId": "createBusinessSchemaPurgePlan",
+        "summary": "Create a destructive purge plan",
+        "security": [{"bearerAuth": [], "siteContext": []}],
+        "parameters": [{"$ref": "#/components/parameters/IdempotencyKey"}],
+        "requestBody": {
+          "required": true,
+          "content": {"application/json": {"schema": {"$ref": "#/components/schemas/BusinessSchemaPurgeInput"}}}
+        },
+        "responses": {
+          "201": {"description": "Purge plan created"},
+          "403": {"$ref": "#/components/responses/Forbidden"},
+          "422": {"$ref": "#/components/responses/Unprocessable"}
+        }
+      }
+    },
+    "/api/v1/business-schema-plans/{planId}": {
+      "get": {
+        "operationId": "readBusinessSchemaPlan",
+        "summary": "Read a plan with its durable step journal",
+        "security": [{"bearerAuth": [], "siteContext": []}],
+        "parameters": [{"$ref": "#/components/parameters/BusinessSchemaPlanId"}],
+        "responses": {
+          "200": {"description": "Plan and step journal"},
+          "404": {"description": "No such plan"}
+        }
+      }
+    },
+    "/api/v1/business-schema-plans/{planId}/approve": {
+      "post": {
+        "operationId": "approveBusinessSchemaPlan",
+        "summary": "Approve the exact inspected plan checksum",
+        "security": [{"bearerAuth": [], "siteContext": []}],
+        "parameters": [
+          {"$ref": "#/components/parameters/BusinessSchemaPlanId"},
+          {"$ref": "#/components/parameters/IdempotencyKey"}
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {"application/json": {"schema": {"$ref": "#/components/schemas/BusinessSchemaApprovalInput"}}}
+        },
+        "responses": {
+          "200": {"description": "Plan approved"},
+          "409": {"description": "The plan changed after it was inspected"},
+          "422": {"$ref": "#/components/responses/Unprocessable"}
+        }
+      }
+    },
+    "/api/v1/business-schema-plans/{planId}/execute": {
+      "post": {
+        "operationId": "executeBusinessSchemaPlan",
+        "summary": "Execute an approved plan under the schema lock",
+        "security": [{"bearerAuth": [], "siteContext": []}],
+        "parameters": [
+          {"$ref": "#/components/parameters/BusinessSchemaPlanId"},
+          {"$ref": "#/components/parameters/IdempotencyKey"}
+        ],
+        "responses": {
+          "200": {"description": "Execution outcome"},
+          "409": {"description": "The plan is not approved or is no longer executable"}
+        }
+      }
+    },
+    "/api/v1/business-schema-plans/{planId}/recover": {
+      "post": {
+        "operationId": "recoverBusinessSchemaPlan",
+        "summary": "Resume or reconcile an interrupted plan",
+        "security": [{"bearerAuth": [], "siteContext": []}],
+        "parameters": [
+          {"$ref": "#/components/parameters/BusinessSchemaPlanId"},
+          {"$ref": "#/components/parameters/IdempotencyKey"}
+        ],
+        "responses": {
+          "200": {"description": "Recovery outcome"},
+          "409": {"description": "The plan is not in a recoverable state"}
+        }
+      }
+    },
     "/api/v1": {
       "get": {
         "operationId": "discoverApi",
@@ -431,6 +722,12 @@
       "ModelId": {
         "name": "id", "in": "path", "required": true, "description": "Definition UUID or stable handle", "schema": {"type": "string", "minLength": 1, "maxLength": 100}
       },
+      "BusinessDefinitionHandle": {
+        "name": "identifier", "in": "path", "required": true, "description": "Namespaced business entity handle", "schema": {"type": "string", "minLength": 1, "maxLength": 160}
+      },
+      "BusinessSchemaPlanId": {
+        "name": "planId", "in": "path", "required": true, "schema": {"type": "string", "format": "uuid"}
+      },
       "IdempotencyKey": {
         "name": "Idempotency-Key",
         "in": "header",
@@ -464,6 +761,35 @@
       "Unprocessable": {"description": "Validation failed or retry key was reused", "content": {"application/problem+json": {"schema": {"$ref": "#/components/schemas/ProblemDetails"}}}}
     },
     "schemas": {
+      "BusinessDefinitionDraftInput": {
+        "type": "object", "required": ["definition"], "additionalProperties": false,
+        "properties": {"definition": {"type": "object", "description": "Canonical business entity definition document"}}
+      },
+      "BusinessDefinitionPublishInput": {
+        "type": "object", "additionalProperties": false,
+        "properties": {"confirmed": {"type": "boolean", "default": false, "description": "Required when the compatibility plan changes behaviour or data"}}
+      },
+      "BusinessDefinitionVersionInput": {
+        "type": "object", "required": ["version"], "additionalProperties": false,
+        "properties": {"version": {"type": "integer", "minimum": 1}}
+      },
+      "BusinessSchemaPlanInput": {
+        "type": "object", "required": ["definition_id"], "additionalProperties": false,
+        "properties": {"definition_id": {"type": "string", "format": "uuid"}}
+      },
+      "BusinessSchemaPurgeInput": {
+        "type": "object", "required": ["definition_id", "current_password"], "additionalProperties": false,
+        "properties": {"definition_id": {"type": "string", "format": "uuid"}, "current_password": {"type": "string", "minLength": 1}}
+      },
+      "BusinessSchemaApprovalInput": {
+        "type": "object", "required": ["expected_checksum"], "additionalProperties": false,
+        "properties": {
+          "expected_checksum": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+          "confirmation": {"type": ["string", "null"], "description": "The plan checksum again, for high-impact work"},
+          "current_password": {"type": "string", "description": "Required whenever confirmation is supplied"},
+          "recovery_evidence_id": {"type": ["string", "null"], "format": "uuid"}
+        }
+      },
       "Content": {
         "type": "object",
         "required": ["id", "title", "slug", "data", "status", "version", "content_type_id", "workflow_id", "created_at", "updated_at"],

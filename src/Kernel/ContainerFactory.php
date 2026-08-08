@@ -75,6 +75,8 @@ use Kumwe\CMS\BusinessDefinition\Application\BusinessDefinitionValidator;
 use Kumwe\CMS\BusinessDefinition\Application\FieldTypeRegistry;
 use Kumwe\CMS\BusinessDefinition\Application\PackageDefinitionSynchronizer;
 use Kumwe\CMS\BusinessDefinition\Administrator\BusinessDefinitionFormMapper;
+use Kumwe\CMS\BusinessDefinition\Delivery\Api\BusinessDefinitionApiHandler;
+use Kumwe\CMS\BusinessDefinition\Delivery\Api\BusinessDefinitionApiPresenter;
 use Kumwe\CMS\BusinessDefinition\Delivery\Administrator\BusinessDefinitionsHandler;
 use Kumwe\CMS\BusinessDefinition\Infrastructure\Persistence\DoctrineBusinessDefinitionRepository;
 use Kumwe\CMS\BusinessDefinition\Infrastructure\Persistence\DoctrinePackageDefinitionSynchronizer;
@@ -116,6 +118,9 @@ use Kumwe\CMS\BusinessSchema\Application\BusinessSchemaService;
 use Kumwe\CMS\BusinessSchema\Application\DefinitionPhysicalSchemaCompiler;
 use Kumwe\CMS\BusinessSchema\Application\PhysicalSchemaGateway;
 use Kumwe\CMS\BusinessSchema\Application\PublishedDefinitionSchemaObserver;
+use Kumwe\CMS\BusinessSchema\Delivery\Api\BusinessSchemaApiHandler;
+use Kumwe\CMS\BusinessSchema\Delivery\Api\BusinessSchemaApiPresenter;
+use Kumwe\CMS\Delivery\Http\Api\Business\BusinessApiResponder;
 use Kumwe\CMS\BusinessSchema\Delivery\Administrator\ApproveBusinessSchemaPlanHandler;
 use Kumwe\CMS\BusinessSchema\Delivery\Administrator\BusinessSchemaPlansHandler;
 use Kumwe\CMS\BusinessSchema\Delivery\Administrator\CreateBusinessSchemaPlanHandler;
@@ -1592,6 +1597,36 @@ final class ContainerFactory
             self::service($container, ExtensionContributionRegistrySet::class)->fieldTypes(),
             self::service($container, AdministratorRenderer::class),
         ), true);
+        $container->share(
+            BusinessDefinitionApiPresenter::class,
+            static fn (): BusinessDefinitionApiPresenter => new BusinessDefinitionApiPresenter(),
+            true,
+        );
+        $container->share(
+            BusinessSchemaApiPresenter::class,
+            static fn (): BusinessSchemaApiPresenter => new BusinessSchemaApiPresenter(),
+            true,
+        );
+        $container->share(BusinessApiResponder::class, static fn (
+            Container $container,
+        ): BusinessApiResponder => new BusinessApiResponder(
+            self::service($container, ProblemDetailsResponseFactory::class),
+        ), true);
+        $container->share(BusinessDefinitionApiHandler::class, static fn (
+            Container $container,
+        ): BusinessDefinitionApiHandler => new BusinessDefinitionApiHandler(
+            self::service($container, BusinessDefinitionService::class),
+            self::service($container, BusinessDefinitionApiPresenter::class),
+            self::service($container, BusinessApiResponder::class),
+        ), true);
+        $container->share(BusinessSchemaApiHandler::class, static fn (
+            Container $container,
+        ): BusinessSchemaApiHandler => new BusinessSchemaApiHandler(
+            self::service($container, BusinessSchemaService::class),
+            self::service($container, BusinessSchemaApiPresenter::class),
+            self::service($container, BusinessApiResponder::class),
+            self::service($container, HighImpactCredentialGuard::class),
+        ), true);
         $container->share(BusinessSchemaPlansHandler::class, static fn (
             Container $container,
         ): BusinessSchemaPlansHandler => new BusinessSchemaPlansHandler(
@@ -2148,6 +2183,99 @@ final class ContainerFactory
                 ],
                 'api.v1.' . $model . '.update',
             ), 'content.update');
+        }
+
+        // Business definitions. Reading is content.read and every mutation is content.update,
+        // matching the administrator screens these routes are the machine equivalent of.
+        self::apiRoute($application->get(
+            '/api/v1/business-definitions',
+            BusinessDefinitionApiHandler::class,
+            'api.v1.business-definitions.list',
+        ), 'content.read');
+        $definitionReads = [
+            '' => 'read',
+            '/draft' => 'draft.read',
+            '/history' => 'history',
+            '/compatibility' => 'compatibility',
+        ];
+        foreach ($definitionReads as $suffix => $name) {
+            self::apiRoute($application->get(
+                '/api/v1/business-definitions/{identifier}' . $suffix,
+                BusinessDefinitionApiHandler::class,
+                'api.v1.business-definitions.' . $name,
+            ), 'content.read');
+        }
+        self::apiRoute($application->put(
+            '/api/v1/business-definitions/{identifier}/draft',
+            [
+                RequireIdempotencyKeyMiddleware::class,
+                PersistentIdempotencyMiddleware::class,
+                BusinessDefinitionApiHandler::class,
+            ],
+            'api.v1.business-definitions.draft.save',
+        ), 'content.update');
+        foreach (['validate', 'publish', 'supersede', 'deprecate', 'reject'] as $action) {
+            self::apiRoute($application->post(
+                '/api/v1/business-definitions/{identifier}/' . $action,
+                [
+                    RequireIdempotencyKeyMiddleware::class,
+                    PersistentIdempotencyMiddleware::class,
+                    BusinessDefinitionApiHandler::class,
+                ],
+                'api.v1.business-definitions.' . $action,
+            ), 'content.update');
+        }
+
+        // Schema plans. Each stage is independently grantable, so each route declares only
+        // the capability that stage needs; none of them inherits another's authority.
+        self::apiRoute($application->get(
+            '/api/v1/business-schema-definitions',
+            BusinessSchemaApiHandler::class,
+            'api.v1.business-schema.definitions',
+        ), 'business.schema.read');
+        self::apiRoute($application->get(
+            '/api/v1/business-schema-plans',
+            BusinessSchemaApiHandler::class,
+            'api.v1.business-schema-plans.list',
+        ), 'business.schema.read');
+        self::apiRoute($application->get(
+            '/api/v1/business-schema-plans/{planId}',
+            BusinessSchemaApiHandler::class,
+            'api.v1.business-schema-plans.read',
+        ), 'business.schema.read');
+        self::apiRoute($application->post(
+            '/api/v1/business-schema-plans',
+            [
+                RequireIdempotencyKeyMiddleware::class,
+                PersistentIdempotencyMiddleware::class,
+                BusinessSchemaApiHandler::class,
+            ],
+            'api.v1.business-schema-plans.create',
+        ), 'business.schema.plan');
+        self::apiRoute($application->post(
+            '/api/v1/business-schema-plans/purge',
+            [
+                RequireIdempotencyKeyMiddleware::class,
+                PersistentIdempotencyMiddleware::class,
+                BusinessSchemaApiHandler::class,
+            ],
+            'api.v1.business-schema-plans.purge',
+        ), 'business.schema.destructive');
+        $planStages = [
+            'approve' => 'business.schema.approve',
+            'execute' => 'business.schema.execute',
+            'recover' => 'business.schema.recover',
+        ];
+        foreach ($planStages as $action => $capability) {
+            self::apiRoute($application->post(
+                '/api/v1/business-schema-plans/{planId}/' . $action,
+                [
+                    RequireIdempotencyKeyMiddleware::class,
+                    PersistentIdempotencyMiddleware::class,
+                    BusinessSchemaApiHandler::class,
+                ],
+                'api.v1.business-schema-plans.' . $action,
+            ), $capability);
         }
 
         self::apiRoute($application->get(
