@@ -185,6 +185,8 @@ use Kumwe\CMS\Delivery\Console\Command\ListExtensionsCommand;
 use Kumwe\CMS\Delivery\Console\Command\ManageAutomationCommand;
 use Kumwe\CMS\Delivery\Console\Command\ManageAccessCommand;
 use Kumwe\CMS\Delivery\Console\Command\ManageContentCommand;
+use Kumwe\CMS\Delivery\Console\Command\ManageBusinessDefinitionsCommand;
+use Kumwe\CMS\Delivery\Console\Command\ManageBusinessSchemaCommand;
 use Kumwe\CMS\Delivery\Console\Command\ManageContentModelsCommand;
 use Kumwe\CMS\Delivery\Console\Command\ManageNavigationCommand;
 use Kumwe\CMS\Delivery\Console\Command\ManageSettingsCommand;
@@ -2733,6 +2735,18 @@ final class ContainerFactory
             self::service($container, ContentModelService::class),
             self::service($container, ConsoleAuthorizer::class),
         ), true);
+        $container->share(ManageBusinessDefinitionsCommand::class, static fn (
+            Container $container,
+        ): ManageBusinessDefinitionsCommand => new ManageBusinessDefinitionsCommand(
+            self::service($container, BusinessDefinitionService::class),
+            self::service($container, ConsoleAuthorizer::class),
+        ), true);
+        $container->share(ManageBusinessSchemaCommand::class, static fn (
+            Container $container,
+        ): ManageBusinessSchemaCommand => new ManageBusinessSchemaCommand(
+            self::service($container, BusinessSchemaService::class),
+            self::service($container, ConsoleAuthorizer::class),
+        ), true);
         $container->share(ManageNavigationCommand::class, static fn (
             Container $container,
         ): ManageNavigationCommand => new ManageNavigationCommand(
@@ -2784,6 +2798,8 @@ final class ContainerFactory
                 self::service($container, ManageAutomationCommand::class),
                 self::service($container, ManageContentCommand::class),
                 self::service($container, ManageContentModelsCommand::class),
+                self::service($container, ManageBusinessDefinitionsCommand::class),
+                self::service($container, ManageBusinessSchemaCommand::class),
                 self::service($container, ManageNavigationCommand::class),
                 self::service($container, ManageSettingsCommand::class),
                 self::service($container, ManageAccessCommand::class),

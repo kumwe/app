@@ -104,6 +104,54 @@ php bin/kumwe content-model create --kind=content-type \
 
 Use `get` with `--id`, or `update` with `--id`, `--version`, and the complete replacement definition. Pass `--allow-breaking=1` only after deliberately reviewing consumers; historical content remains pinned to its earlier versions.
 
+## Business definitions
+
+The `business-definition` command drives the same versioned catalogue as the administrator and the REST API. Reads (`list`, `get`, `draft`, `history`, `compatibility`) require `content.read`; everything else requires `content.update`.
+
+```bash
+php bin/kumwe business-definition list --site=corporate --token-file=/run/secrets/kumwe-modeller-token
+
+php bin/kumwe business-definition import --site=corporate --token-file=/run/secrets/kumwe-modeller-token \
+  --definition-file=/run/secrets/asset-definition.json
+
+php bin/kumwe business-definition compatibility --site=corporate \
+  --token-file=/run/secrets/kumwe-modeller-token --handle=site.corporate.asset
+
+php bin/kumwe business-definition publish --site=corporate --token-file=/run/secrets/kumwe-modeller-token \
+  --handle=site.corporate.asset --expected-revision=4 --confirmed=1
+```
+
+`import` reads the document from a protected file rather than the command line, so a definition never reaches the process table. Inspect `compatibility` before publishing: a plan that changes behaviour or data refuses to publish unless you pass `--confirmed=1`. Use `--version` with `get` to read a specific published version, and `supersede`, `deprecate` or `reject` with `--version` to retire one.
+
+## Business schema plans
+
+The `business-schema` command inspects and applies compiled schema plans. Each stage names its own capability, so an operator can be granted inspection without approval, or approval without execution.
+
+| Action | Capability |
+|---|---|
+| `definitions`, `plans`, `get` | `business.schema.read` |
+| `plan` | `business.schema.plan` |
+| `approve` | `business.schema.approve` |
+| `execute` | `business.schema.execute` |
+| `recover` | `business.schema.recover` |
+| `purge-plan` | `business.schema.destructive` |
+
+```bash
+php bin/kumwe business-schema plan --site=corporate --token-file=/run/secrets/kumwe-schema-token \
+  --definition=DEFINITION_ID
+
+php bin/kumwe business-schema get --site=corporate --token-file=/run/secrets/kumwe-schema-token \
+  --plan=PLAN_ID
+
+php bin/kumwe business-schema approve --site=corporate --token-file=/run/secrets/kumwe-approver-token \
+  --plan=PLAN_ID --expected-checksum=CHECKSUM
+
+php bin/kumwe business-schema execute --site=corporate --token-file=/run/secrets/kumwe-executor-token \
+  --plan=PLAN_ID
+```
+
+`get` returns the plan with its durable step journal and the canonical `checksum`. Approval binds to that exact checksum: if the plan changed after you inspected it, approval fails rather than applying something you did not read. High-impact and destructive plans additionally require `--confirmation` and recorded recovery evidence via `--evidence`; see [the transactional business runtime](business-runtime.md) for what that evidence must prove. After an interrupted execution, inspect the journal first, then use `recover`.
+
 ## Navigation
 
 ```bash
