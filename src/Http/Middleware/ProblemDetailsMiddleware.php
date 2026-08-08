@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Kumwe\CMS\Http\Middleware;
 
 use Kumwe\CMS\Application\Authorization\AuthorizationDenied;
+use Kumwe\CMS\Application\Security\HighImpactAuthenticationRequired;
+use Kumwe\CMS\Identity\Application\Administration\AuthenticationThrottled;
 use Laminas\Diactoros\Response\JsonResponse;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -31,6 +33,22 @@ final readonly class ProblemDetailsMiddleware implements MiddlewareInterface
                     'status' => 403,
                     'detail' => 'The authenticated identity is not authorized for this operation.',
                 ], 403, ['Content-Type' => 'application/problem+json', 'Cache-Control' => 'no-store']);
+            }
+            if ($exception instanceof HighImpactAuthenticationRequired) {
+                return new JsonResponse([
+                    'type' => 'urn:kumwe:problem:high-impact-authentication-required',
+                    'title' => 'Step-up authentication required',
+                    'status' => 403,
+                    'detail' => 'Current-password authentication is required for this high-impact operation.',
+                ], 403, ['Content-Type' => 'application/problem+json', 'Cache-Control' => 'no-store']);
+            }
+            if ($exception instanceof AuthenticationThrottled) {
+                return new JsonResponse([
+                    'type' => 'urn:kumwe:problem:authentication-throttled',
+                    'title' => 'Too Many Requests',
+                    'status' => 429,
+                    'detail' => 'Too many authentication attempts. Try again later.',
+                ], 429, ['Content-Type' => 'application/problem+json', 'Cache-Control' => 'no-store']);
             }
 
             $requestAttribute = $request->getAttribute(RequestIdMiddleware::ATTRIBUTE, 'unknown');

@@ -77,7 +77,7 @@
         "audit_enabled": true,
         "revisions_enabled": true,
         "fields": [
-          {"handle":"id","label":"ID","type":"core.uuid","required":true,"nullable":false,"length":null,"unique":true,"indexed":true,"filterable":false,"sortable":false,"order":0},
+          {"handle":"id","label":"ID","type":"core.uuid","required":true,"nullable":false,"length":null,"unique":true,"indexed":true,"immutable_after_create":true,"filterable":false,"sortable":false,"order":0},
           {"handle":"name","label":"Name","type":"core.text","required":true,"nullable":false,"length":120,"unique":true,"indexed":true,"filterable":true,"sortable":true,"order":0}
         ],
         "relationships": [{"handle":"announcements","label":"Announcements","kind":"one_to_many","target":"kumwe.announcements-example.announcement","inverse":"category","ordered":true,"on_delete":"restrict"}],
@@ -102,7 +102,7 @@
         "audit_enabled": true,
         "revisions_enabled": true,
         "fields": [
-          {"handle":"id","label":"ID","type":"core.uuid","required":true,"nullable":false,"length":null,"unique":true,"indexed":true,"filterable":false,"sortable":false,"order":0},
+          {"handle":"id","label":"ID","type":"core.uuid","required":true,"nullable":false,"length":null,"unique":true,"indexed":true,"immutable_after_create":true,"filterable":false,"sortable":false,"order":0},
           {"handle":"title","label":"Title","type":"core.text","required":true,"nullable":false,"length":200,"unique":false,"indexed":true,"filterable":true,"sortable":true,"order":0},
           {"handle":"message","label":"Message","type":"core.rich_text","required":true,"nullable":false,"length":50000,"unique":false,"indexed":false,"filterable":false,"sortable":false,"order":0},
           {"handle":"severity","label":"Severity","type":"kumwe.announcements-example.severity","required":true,"nullable":false,"length":null,"configuration":{"options":["info","notice","warning","critical"]},"unique":false,"indexed":true,"filterable":true,"sortable":true,"order":0},

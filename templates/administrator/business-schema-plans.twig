@@ -1,0 +1,276 @@
+{% extends "layout.twig" %}
+{% macro operation_state(label, state) %}
+  <div class="schema-operation-state">
+    <strong>{{ label }}</strong>
+    {% if not state %}
+      <span>Absent</span>
+    {% elseif state.doctrine_type is defined %}
+      <span><code>{{ state.doctrine_type }}</code> · {{ state.nullable ? 'nullable' : 'required' }}</span>
+      {% if state.options.length is defined %}<span>length {{ state.options.length }}</span>{% endif %}
+      {% if state.options.precision is defined %}<span>precision {{ state.options.precision }}, scale {{ state.options.scale }}</span>{% endif %}
+      {% if state.options.default is defined %}<span>default {{ state.options.default is iterable ? 'structured value' : state.options.default }}</span>{% endif %}
+    {% elseif state.kind is defined %}
+      <span>{{ state.kind|replace({'_':' '}) }} · {{ state.columns|length }} columns · {{ state.indexes|length }} indexes · {{ state.foreign_keys|length }} relations</span>
+    {% elseif state.local_columns is defined %}
+      <span><code data-visual-mask>{{ state.local_columns|join(', ') }}</code> → <code data-visual-mask>{{ state.foreign_table }} ({{ state.foreign_columns|join(', ') }})</code></span>
+      <span>delete {{ state.on_delete }}, update {{ state.on_update }}</span>
+    {% elseif state.columns is defined %}
+      <span><code data-visual-mask>{{ state.columns|join(', ') }}</code> · {{ state.unique ? 'unique' : 'non-unique' }}</span>
+    {% else %}
+      <span>Validated metadata recorded</span>
+    {% endif %}
+  </div>
+{% endmacro %}
+{% block title %}Schema plans · Kumwe{% endblock %}
+{% block context_title %}Schema plans{% endblock %}
+{% block context_subtitle %}Inspect and control generated relational storage{% endblock %}
+{% block content %}
+  <header class="page-heading">
+    <div>
+      <p class="eyebrow">Structure</p>
+      <h1>Business schema plans</h1>
+      <p>Compare canonical definitions with installed relational storage, then approve and execute an immutable, checksummed plan.</p>
+    </div>
+  </header>
+
+  {% if notice %}<div class="notice success" role="status"><span>{{ notice }}</span></div>{% endif %}
+  <div class="notice" role="status">
+    <span><strong>Physical changes are deliberate.</strong> Publishing a definition persists a plan only. Execution always remains a separate authorized operation.</span>
+  </div>
+
+  <div class="schema-plan-layout">
+    <aside class="stack" aria-label="Schema plan controls">
+      <section class="panel stack">
+        <div class="section-heading">
+          <div><p class="eyebrow">Plan catalog</p><h2>Persisted plans</h2></div>
+          <span class="count-badge">{{ plans|length }}</span>
+        </div>
+        <nav class="schema-plan-catalog" aria-label="Persisted schema plans">
+          {% for item in plans %}
+            <a class="definition-catalog-item{% if plan and plan.id == item.id %} active{% endif %}" href="/administrator/business-schema-plans?plan={{ item.id|url_encode }}">
+              <strong>Definition v{{ item.to_definition_version }}</strong>
+              <span><span class="status status-{{ item.status|replace({'_':'-'}) }}">{{ item.status|replace({'_':' '}) }}</span> · {{ item.risk|replace({'_':' '}) }}</span>
+              <small data-visual-mask>{{ item.id }}</small>
+            </a>
+          {% else %}
+            <p class="text-muted">No schema plans have been persisted.</p>
+          {% endfor %}
+        </nav>
+      </section>
+
+      {% if capabilities['business.schema.plan'] is defined %}
+        <section class="panel stack">
+          <div><p class="eyebrow">Published contract</p><h2>Create comparison</h2></div>
+          {% if definitions %}
+            <form action="/administrator/business-schema-plans/plan" method="post" class="stack compact-form">
+              <input type="hidden" name="_csrf" value="{{ csrf }}">
+              <label>Published definition
+                <select name="definition_id" required>
+                  {% for definition in definitions %}
+                    <option value="{{ definition.id }}">{{ definition.handle }} · v{{ definition.version }} · {{ definition.owner }}</option>
+                  {% endfor %}
+                </select>
+              </label>
+              <p class="field-help">The comparison is compiled only from immutable published metadata and the observed database schema.</p>
+              <button type="submit">Create checksummed plan</button>
+            </form>
+          {% else %}
+            <p class="text-muted">Publish a valid business definition before creating a schema plan.</p>
+          {% endif %}
+        </section>
+      {% endif %}
+    </aside>
+
+    <div class="stack">
+      {% if not plan %}
+        <section class="empty-state">
+          <div class="empty-state-content"><h2>No schema plan selected</h2><p>Published definitions create inspectable plans without changing physical storage.</p></div>
+        </section>
+      {% else %}
+        <section class="panel stack schema-plan-summary">
+          <div class="section-heading">
+            <div><p class="eyebrow">Immutable comparison</p><h2>Definition version {{ plan.to_definition_version }}</h2></div>
+            <div class="page-actions">
+              <span class="status status-{{ plan.status|replace({'_':'-'}) }}">{{ plan.status|replace({'_':' '}) }}</span>
+              <span class="schema-risk schema-risk-{{ plan.risk }}">{{ plan.risk|replace({'_':' '}) }}</span>
+            </div>
+          </div>
+          <dl class="definition-metadata schema-checksums">
+            <div><dt>Plan ID</dt><dd><code data-visual-mask>{{ plan.id }}</code></dd></div>
+            <div><dt>Definition</dt><dd><code data-visual-mask>{{ plan.definition_id }}</code> · {{ plan.from_definition_version ? 'v' ~ plan.from_definition_version : 'not installed' }} → v{{ plan.to_definition_version }}</dd></div>
+            <div><dt>Plan checksum</dt><dd><code data-visual-mask>{{ plan.plan_checksum }}</code></dd></div>
+            <div><dt>Definition checksum</dt><dd><code data-visual-mask>{{ plan.from_definition_checksum|default('none') }}</code> → <code data-visual-mask>{{ plan.to_definition_checksum }}</code></dd></div>
+            <div><dt>Physical checksum</dt><dd><code data-visual-mask>{{ plan.from_schema_checksum|default('none') }}</code> → <code data-visual-mask>{{ plan.target_schema_checksum }}</code></dd></div>
+            <div><dt>Updated</dt><dd data-visual-mask>{{ plan.updated_at }}</dd></div>
+          </dl>
+          {% if plan.approval %}
+            <div class="notice success"><span><strong>Approval is checksum-bound.</strong> Approved by <span data-visual-mask>{{ plan.approval.actor_identifier }}</span> at <span data-visual-mask>{{ plan.approval.approved_at }}</span>.</span></div>
+          {% endif %}
+          {% if plan.outcome %}
+            <div class="stack-compact">
+              <h3>Execution outcome</h3>
+              <dl class="definition-metadata">
+                {% for key, value in plan.outcome %}
+                  {% if value is not iterable %}<div><dt>{{ key|replace({'_':' '}) }}</dt><dd data-visual-mask>{{ value is same as(true) ? 'yes' : (value is same as(false) ? 'no' : value) }}</dd></div>{% endif %}
+                {% endfor %}
+              </dl>
+            </div>
+          {% endif %}
+        </section>
+
+        <section class="panel stack">
+          <div class="section-heading">
+            <div><p class="eyebrow">Comparison</p><h2>Generated operations</h2><p class="field-help">Before and after states are compiled from validated metadata. Operations cannot be edited on this screen.</p></div>
+            <span class="count-badge">{{ plan.operations|length }}</span>
+          </div>
+          <div class="table-wrap">
+            <table class="schema-operations-table">
+              <thead><tr><th>Step</th><th>Operation</th><th>Target</th><th>Comparison</th><th>Risk</th><th>Recovery</th></tr></thead>
+              <tbody>
+                {% for operation in plan.operations %}
+                  <tr>
+                    <td>{{ operation.ordinal }}</td>
+                    <td><strong>{{ operation.kind|replace({'_':' '}) }}</strong>{% if operation.requires_backfill %}<br><span class="tag">Backfill</span>{% endif %}</td>
+                    <td><code data-visual-mask>{{ operation.table }}</code><br><span data-visual-mask>{{ operation.subject }}</span></td>
+                    <td class="schema-operation-comparison">{{ _self.operation_state('Before', operation.before) }}{{ _self.operation_state('After', operation.after) }}</td>
+                    <td><span class="schema-risk schema-risk-{{ operation.risk }}">{{ operation.risk|replace({'_':' '}) }}</span></td>
+                    <td>{{ operation.recovery_implication|replace({'_':' '}) }}</td>
+                  </tr>
+                {% else %}
+                  <tr><td colspan="6">The installed schema already matches this definition version.</td></tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        {% if plan.status == 'pending_approval' %}
+          <section class="panel stack" aria-labelledby="schema-approval-heading">
+            <div><p class="eyebrow">Authorization gate</p><h2 id="schema-approval-heading">Approve exact plan</h2></div>
+            {% if plan.requires_high_impact %}
+              <div class="notice warning"><span><strong>High-impact change.</strong> Approval requires the full current checksum and current-password verification. Any plan change invalidates this approval.</span></div>
+            {% endif %}
+
+            {% if plan.requires_recovery_evidence %}
+              {% if evidence and evidence_qualifies %}
+                <div class="schema-evidence-summary">
+                  <strong>Tested recovery evidence ready</strong>
+                  <span><code data-visual-mask>{{ evidence.id }}</code> · {{ evidence.database_driver }} {{ evidence.database_server_version }} · release {{ evidence.application_release }}</span>
+                  <span>Clean-target restore tested {{ evidence.restore_tested ? 'yes' : 'no' }}</span>
+                  <span>Backup manifest <code data-visual-mask>{{ evidence.backup_manifest_checksum }}</code></span>
+                </div>
+              {% else %}
+                {% if evidence %}
+                  <div class="notice warning"><span>The selected recovery evidence is stale or does not match this plan, source schema, trusted database environment and application release.</span></div>
+                {% endif %}
+                {% if capabilities['business.schema.recover'] is defined %}
+                  <details class="advanced-definition" open>
+                    <summary>Record tested backup and restore evidence</summary>
+                    <form action="/administrator/business-schema-plans/recovery-evidence" method="post" class="stack schema-evidence-form">
+                      <input type="hidden" name="_csrf" value="{{ csrf }}">
+                      <input type="hidden" name="plan_id" value="{{ plan.id }}">
+                      <dl class="definition-metadata">
+                        <div><dt>Database</dt><dd>{{ schema_environment.database_driver }} {{ schema_environment.database_server_version }}</dd></div>
+                        <div><dt>Application release</dt><dd>{{ schema_environment.application_release }}</dd></div>
+                        <div><dt>Source checksum</dt><dd><code data-visual-mask>{{ plan.from_schema_checksum }}</code></dd></div>
+                      </dl>
+                      <div class="two-column">
+                        <label>Backup manifest checksum<input name="backup_manifest_checksum" minlength="64" maxlength="64" pattern="[a-f0-9]{64}" autocomplete="off" required></label>
+                        <label>Backup created at<input type="datetime-local" name="backup_created_at" required></label>
+                        <label>Restore verified at<input type="datetime-local" name="verified_at" required></label>
+                        <label>Recovery drill reference<input name="drill_reference" maxlength="500" required></label>
+                        <label>Restore target reference<input name="restore_target_reference" maxlength="191" autocomplete="off" required></label>
+                        <label>Backup client version<input name="client_version" maxlength="191" autocomplete="off" required></label>
+                        <label>Current password<input type="password" name="current_password" autocomplete="current-password" required></label>
+                      </div>
+                      <div class="check-grid">
+                        <label class="check"><input type="checkbox" name="clean_target_restore" value="1" required><span>The drill restored into an empty isolated target</span></label>
+                        <label class="check"><input type="checkbox" name="blueprint_checksum_verified" value="1" required><span>Installed blueprint checksums matched</span></label>
+                        <label class="check"><input type="checkbox" name="typed_command_verified" value="1" required><span>A typed business command passed after restore</span></label>
+                        <label class="check"><input type="checkbox" name="record_revision_audit_checksums_verified" value="1" required><span>Record, revision and audit checksums matched</span></label>
+                      </div>
+                      <button type="submit">Record recovery evidence</button>
+                    </form>
+                  </details>
+                {% else %}
+                  <div class="notice warning"><span>Tested recovery evidence must be recorded by a separately authorized operator before approval.</span></div>
+                {% endif %}
+              {% endif %}
+            {% endif %}
+
+            {% if capabilities['business.schema.approve'] is defined %}
+              <form action="/administrator/business-schema-plans/{{ plan.id|url_encode }}/approve" method="post" class="stack compact-form">
+                <input type="hidden" name="_csrf" value="{{ csrf }}">
+                <input type="hidden" name="expected_checksum" value="{{ plan.plan_checksum }}">
+                {% if evidence and evidence_qualifies %}<input type="hidden" name="recovery_evidence_id" value="{{ evidence.id }}">{% endif %}
+                {% if plan.requires_high_impact %}
+                  <label>Exact plan checksum
+                    <small>Type all 64 characters shown above.</small>
+                    <input name="confirmation" minlength="64" maxlength="64" pattern="[a-f0-9]{64}" autocomplete="off" required>
+                  </label>
+                  <label>Current password<input type="password" name="current_password" autocomplete="current-password" required></label>
+                {% endif %}
+                <button class="primary" type="submit"{% if plan.requires_recovery_evidence and not evidence_qualifies %} disabled aria-disabled="true"{% endif %}>Approve unchanged plan</button>
+              </form>
+            {% endif %}
+          </section>
+        {% endif %}
+
+        {% if plan.status == 'approved' and capabilities['business.schema.execute'] is defined %}
+          <section class="panel stack">
+            <div><p class="eyebrow">Execution gate</p><h2>Execute approved plan</h2><p>The executor re-verifies definition, physical-schema and plan checksums, then journals every step under a fencing lock.</p></div>
+            <form action="/administrator/business-schema-plans/{{ plan.id|url_encode }}/execute" method="post">
+              <input type="hidden" name="_csrf" value="{{ csrf }}">
+              <button class="primary" type="submit" data-confirm="Execute this exact approved physical-schema plan?">Execute approved plan</button>
+            </form>
+          </section>
+        {% endif %}
+
+        {% if plan.status in ['failed', 'recovery_required'] and capabilities['business.schema.recover'] is defined %}
+          <section class="panel stack">
+            <div><p class="eyebrow">Recovery</p><h2>Resume or reconcile execution</h2><p>The executor uses the persisted fence, journal and observed checksums to resume safely or record compensation.</p></div>
+            <form action="/administrator/business-schema-plans/{{ plan.id|url_encode }}/recover" method="post">
+              <input type="hidden" name="_csrf" value="{{ csrf }}">
+              <button type="submit" data-confirm="Recover this interrupted schema execution from its durable journal?">Start recovery</button>
+            </form>
+          </section>
+        {% endif %}
+
+        {% if steps or plan.status in ['executing', 'completed', 'failed', 'recovery_required', 'compensated'] %}
+          <section class="panel stack">
+            <div class="section-heading"><div><p class="eyebrow">Durable journal</p><h2>Execution status</h2></div><span class="count-badge">{{ steps|length }}</span></div>
+            <div class="table-wrap"><table><thead><tr><th>Step</th><th>Operation</th><th>State</th><th>Attempts</th><th>Schema checksums</th><th>Outcome</th></tr></thead><tbody>
+              {% for step in steps %}
+                <tr><td>{{ step.ordinal }}</td><td>{{ step.operation_kind|replace({'_':' '}) }}</td><td><span class="status status-{{ step.state|replace({'_':'-'}) }}">{{ step.state|replace({'_':' '}) }}</span></td><td>{{ step.attempt }}</td><td><code data-visual-mask>{{ step.before_schema_checksum|default('pending') }}</code><br>→ <code data-visual-mask>{{ step.after_schema_checksum|default('pending') }}</code></td><td>{{ step.error_code|default(step.completed_at ? 'completed' : 'pending') }}</td></tr>
+              {% else %}<tr><td colspan="6">Execution has not started.</td></tr>{% endfor %}
+            </tbody></table></div>
+          </section>
+        {% endif %}
+
+        {% if installation %}
+          <section class="panel stack">
+            <div class="section-heading"><div><p class="eyebrow">Installed metadata</p><h2>Current physical schema</h2></div><span class="status status-{{ installation.status }}">{{ installation.status }}</span></div>
+            <dl class="definition-metadata"><div><dt>Installed version</dt><dd>v{{ installation.definition_version }}</dd></div><div><dt>Schema checksum</dt><dd><code data-visual-mask>{{ installation.schema_checksum }}</code></dd></div><div><dt>Owner</dt><dd>{{ installation.owner_identifier }}</dd></div></dl>
+            <div class="table-wrap"><table><thead><tr><th>Logical table</th><th>Physical table</th><th>Kind</th><th>Columns</th><th>Indexes</th><th>Relations</th></tr></thead><tbody>
+              {% for table in installation.blueprint.tables %}<tr><td><code>{{ table.logical_name }}</code></td><td><code data-visual-mask>{{ table.physical_name }}</code></td><td>{{ table.kind|replace({'_':' '}) }}</td><td>{{ table.columns|length }}</td><td>{{ table.indexes|length }}</td><td>{{ table.foreign_keys|length }}</td></tr>{% endfor %}
+            </tbody></table></div>
+
+            {% if capabilities['business.schema.destructive'] is defined %}
+              <details class="advanced-definition schema-purge-control">
+                <summary>Prepare explicit data purge</summary>
+                <form action="/administrator/business-schema-plans/purge" method="post" class="stack">
+                  <input type="hidden" name="_csrf" value="{{ csrf }}">
+                  <input type="hidden" name="definition_id" value="{{ installation.definition_id }}">
+                  <div class="notice danger"><span><strong>Destructive lifecycle operation.</strong> A purge remains a separate checksummed plan and cannot be approved without tested recovery evidence.</span></div>
+                  <label>Exact installed definition ID<small>Type <code data-visual-mask>{{ installation.definition_id }}</code></small><input name="confirmation" autocomplete="off" required></label>
+                  <label>Current password<input type="password" name="current_password" autocomplete="current-password" required></label>
+                  <button class="danger" type="submit" data-confirm="Create a destructive purge plan for this preserved business schema?">Create purge plan</button>
+                </form>
+              </details>
+            {% endif %}
+          </section>
+        {% endif %}
+      {% endif %}
+    </div>
+  </div>
+{% endblock %}

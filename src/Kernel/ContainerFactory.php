@@ -32,6 +32,7 @@ use Kumwe\CMS\Application\Authorization\SiteContext;
 use Kumwe\CMS\Application\Authorization\StructuredLogAuthorizationDecisionRecorder;
 use Kumwe\CMS\Application\Authorization\SystemIdentity;
 use Kumwe\CMS\Application\Authorization\SystemPrincipal;
+use Kumwe\CMS\Application\Security\HighImpactCredentialGuard;
 use Kumwe\CMS\Application\Operations\ExpiredMigrationLockRecovery;
 use Kumwe\CMS\Application\Operations\MigrationLockRecoveryService;
 use Kumwe\CMS\Administrator\Content\ContentFormDataMapper;
@@ -70,11 +71,65 @@ use Kumwe\CMS\BusinessDefinition\Application\BusinessDefinitionCompatibilityAnal
 use Kumwe\CMS\BusinessDefinition\Application\BusinessDefinitionRepository;
 use Kumwe\CMS\BusinessDefinition\Application\BusinessDefinitionService;
 use Kumwe\CMS\BusinessDefinition\Application\BusinessDefinitionValidator;
+use Kumwe\CMS\BusinessDefinition\Application\FieldTypeRegistry;
 use Kumwe\CMS\BusinessDefinition\Application\PackageDefinitionSynchronizer;
 use Kumwe\CMS\BusinessDefinition\Administrator\BusinessDefinitionFormMapper;
 use Kumwe\CMS\BusinessDefinition\Delivery\Administrator\BusinessDefinitionsHandler;
 use Kumwe\CMS\BusinessDefinition\Infrastructure\Persistence\DoctrineBusinessDefinitionRepository;
 use Kumwe\CMS\BusinessDefinition\Infrastructure\Persistence\DoctrinePackageDefinitionSynchronizer;
+use Kumwe\CMS\BusinessRecord\Application\BusinessRecordDefinitionResolver;
+use Kumwe\CMS\BusinessRecord\Application\BusinessRecordIdempotencyPurger;
+use Kumwe\CMS\BusinessRecord\Application\BusinessRecordIdempotencyRepository;
+use Kumwe\CMS\BusinessRecord\Application\BusinessRecordMutationFence;
+use Kumwe\CMS\BusinessRecord\Application\BusinessRecordReadRepository;
+use Kumwe\CMS\BusinessRecord\Application\BusinessRecordRevisionRepository;
+use Kumwe\CMS\BusinessRecord\Application\BusinessRecordService;
+use Kumwe\CMS\BusinessRecord\Application\BusinessRecordWriteRepository;
+use Kumwe\CMS\BusinessRecord\Application\InstalledBusinessRecordDefinitionResolver;
+use Kumwe\CMS\BusinessRecord\Application\RecordCursorCodec;
+use Kumwe\CMS\BusinessRecord\Application\RecordFingerprint;
+use Kumwe\CMS\BusinessRecord\Application\RecordRuleValidator;
+use Kumwe\CMS\BusinessRecord\Application\RecordValueCodec;
+use Kumwe\CMS\BusinessRecord\Application\SecretCipher;
+use Kumwe\CMS\BusinessRecord\Infrastructure\Persistence\DoctrineBusinessRecordIdempotencyRepository;
+use Kumwe\CMS\BusinessRecord\Infrastructure\Persistence\DoctrineBusinessRecordMutationFence;
+use Kumwe\CMS\BusinessRecord\Infrastructure\Persistence\DoctrineBusinessRecordQueryCompiler;
+use Kumwe\CMS\BusinessRecord\Infrastructure\Persistence\DoctrineBusinessRecordReadRepository;
+use Kumwe\CMS\BusinessRecord\Infrastructure\Persistence\DoctrineBusinessRecordRevisionRepository;
+use Kumwe\CMS\BusinessRecord\Infrastructure\Persistence\DoctrineBusinessRecordWriteRepository;
+use Kumwe\CMS\BusinessRecord\Infrastructure\Persistence\DoctrineBusinessSchemaRecordRepinGateway;
+use Kumwe\CMS\BusinessRecord\Infrastructure\Security\SodiumSecretCipher;
+use Kumwe\CMS\BusinessSchema\Application\BusinessSchemaEnvironment;
+use Kumwe\CMS\BusinessSchema\Application\BusinessSchemaExecutionLock;
+use Kumwe\CMS\BusinessSchema\Application\BusinessSchemaExecutionStateGuard;
+use Kumwe\CMS\BusinessSchema\Application\BusinessSchemaExecutor;
+use Kumwe\CMS\BusinessSchema\Application\BusinessSchemaInstallationRepository;
+use Kumwe\CMS\BusinessSchema\Application\BusinessSchemaLifecycleManager;
+use Kumwe\CMS\BusinessSchema\Application\BusinessSchemaLifecycleObserver;
+use Kumwe\CMS\BusinessSchema\Application\BusinessSchemaPlanner;
+use Kumwe\CMS\BusinessSchema\Application\BusinessSchemaPlanRepository;
+use Kumwe\CMS\BusinessSchema\Application\BusinessSchemaRecordRepinGateway;
+use Kumwe\CMS\BusinessSchema\Application\BusinessSchemaRecoveryEvidenceRepository;
+use Kumwe\CMS\BusinessSchema\Application\BusinessSchemaService;
+use Kumwe\CMS\BusinessSchema\Application\DefinitionPhysicalSchemaCompiler;
+use Kumwe\CMS\BusinessSchema\Application\PhysicalSchemaGateway;
+use Kumwe\CMS\BusinessSchema\Application\PublishedDefinitionSchemaObserver;
+use Kumwe\CMS\BusinessSchema\Delivery\Administrator\ApproveBusinessSchemaPlanHandler;
+use Kumwe\CMS\BusinessSchema\Delivery\Administrator\BusinessSchemaPlansHandler;
+use Kumwe\CMS\BusinessSchema\Delivery\Administrator\CreateBusinessSchemaPlanHandler;
+use Kumwe\CMS\BusinessSchema\Delivery\Administrator\CreateBusinessSchemaPurgePlanHandler;
+use Kumwe\CMS\BusinessSchema\Delivery\Administrator\ExecuteBusinessSchemaPlanHandler;
+use Kumwe\CMS\BusinessSchema\Delivery\Administrator\RecordBusinessSchemaRecoveryEvidenceHandler;
+use Kumwe\CMS\BusinessSchema\Delivery\Administrator\RecoverBusinessSchemaPlanHandler;
+use Kumwe\CMS\BusinessSchema\Domain\PhysicalNameCompiler;
+use Kumwe\CMS\BusinessSchema\Infrastructure\Execution\ConfiguredBusinessSchemaEnvironment;
+use Kumwe\CMS\BusinessSchema\Infrastructure\Execution\DoctrineBusinessSchemaExecutionLock;
+use Kumwe\CMS\BusinessSchema\Infrastructure\Execution\DoctrineBusinessSchemaExecutionStateGuard;
+use Kumwe\CMS\BusinessSchema\Infrastructure\Persistence\DoctrineBusinessSchemaInstallationRepository;
+use Kumwe\CMS\BusinessSchema\Infrastructure\Persistence\DoctrineBusinessSchemaPlanRepository;
+use Kumwe\CMS\BusinessSchema\Infrastructure\Persistence\DoctrineBusinessSchemaRecoveryEvidenceRepository;
+use Kumwe\CMS\BusinessSchema\Infrastructure\Schema\CanonicalDefinitionPhysicalSchemaCompiler;
+use Kumwe\CMS\BusinessSchema\Infrastructure\Schema\DoctrinePhysicalSchemaGateway;
 use Kumwe\CMS\Content\Application\ContentRepository;
 use Kumwe\CMS\Content\Application\ContentModelRepository;
 use Kumwe\CMS\Content\Application\ContentModelService;
@@ -212,6 +267,7 @@ use Kumwe\CMS\Infrastructure\Persistence\Migration\ApplicationAuthorizationMigra
 use Kumwe\CMS\Infrastructure\Persistence\Migration\ApplicationAuthorizationMigrationRecovery;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\AuthorizationRecoveryIntegrationMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\BusinessDefinitionCatalogMigration;
+use Kumwe\CMS\Infrastructure\Persistence\Migration\BusinessTransactionalRuntimeMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\CoreSchemaMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\ContentModelRuntimeMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\DatabaseDrivenPresentationMigration;
@@ -228,6 +284,7 @@ use Kumwe\CMS\Infrastructure\Persistence\Migration\NonTransactionalMigrationReco
 use Kumwe\CMS\Infrastructure\Persistence\Migration\SiteAutomationContextMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\TokenAndTrustLifecycleMigration;
 use Kumwe\CMS\Infrastructure\Persistence\ReadinessProbe;
+use Kumwe\CMS\Infrastructure\Security\DoctrineHighImpactCredentialGuard;
 use Kumwe\CMS\Infrastructure\Persistence\TransactionManager;
 use Kumwe\CMS\Infrastructure\Persistence\TableNames;
 use Kumwe\CMS\Infrastructure\Redis\RedisConnectionFactory;
@@ -402,6 +459,14 @@ final class ContainerFactory
             self::service($container, RedisRuntime::class),
         ), true);
         $container->share(PasswordHasher::class, new NativePasswordHasher(), true);
+        $container->share(HighImpactCredentialGuard::class, static fn (
+            Container $container,
+        ): HighImpactCredentialGuard => new DoctrineHighImpactCredentialGuard(
+            self::service($container, Connection::class),
+            self::service($container, TableNames::class),
+            self::service($container, PasswordHasher::class),
+            self::service($container, AuthenticationRateLimiter::class),
+        ), true);
         $container->share(AccessTokenQuotaPolicy::class, new FixedAccessTokenQuotaPolicy(), true);
         $container->share(Workflow::class, new Workflow(), true);
         $container->share(AuthorizationGateway::class, static fn (Container $container): AuthorizationGateway =>
@@ -526,6 +591,47 @@ final class ContainerFactory
         ): BusinessDefinitionRepository => new DoctrineBusinessDefinitionRepository(
             self::service($container, Connection::class),
             self::service($container, TableNames::class),
+        ), true);
+        $container->share(BusinessSchemaPlanRepository::class, static fn (
+            Container $container,
+        ): BusinessSchemaPlanRepository => new DoctrineBusinessSchemaPlanRepository(
+            self::service($container, Connection::class),
+            self::service($container, TableNames::class),
+        ), true);
+        $container->share(BusinessSchemaInstallationRepository::class, static fn (
+            Container $container,
+        ): BusinessSchemaInstallationRepository => new DoctrineBusinessSchemaInstallationRepository(
+            self::service($container, Connection::class),
+            self::service($container, TableNames::class),
+        ), true);
+        $container->share(BusinessSchemaRecoveryEvidenceRepository::class, static fn (
+            Container $container,
+        ): BusinessSchemaRecoveryEvidenceRepository => new DoctrineBusinessSchemaRecoveryEvidenceRepository(
+            self::service($container, Connection::class),
+            self::service($container, TableNames::class),
+        ), true);
+        $container->share(PhysicalSchemaGateway::class, static fn (
+            Container $container,
+        ): PhysicalSchemaGateway => new DoctrinePhysicalSchemaGateway(
+            self::service($container, Connection::class),
+        ), true);
+        $container->share(BusinessSchemaExecutionLock::class, static fn (
+            Container $container,
+        ): BusinessSchemaExecutionLock => new DoctrineBusinessSchemaExecutionLock(
+            self::service($container, Connection::class),
+            self::service($container, TableNames::class),
+            self::service($container, ClockInterface::class),
+        ), true);
+        $container->share(BusinessSchemaExecutionStateGuard::class, static fn (
+            Container $container,
+        ): BusinessSchemaExecutionStateGuard => new DoctrineBusinessSchemaExecutionStateGuard(
+            self::service($container, Connection::class),
+            self::service($container, TableNames::class),
+        ), true);
+        $container->share(BusinessSchemaEnvironment::class, new ConfiguredBusinessSchemaEnvironment(
+            $databaseConfiguration->driver,
+            $databaseConfiguration->serverVersion,
+            $configuration->release,
         ), true);
         $container->share(
             BusinessDefinitionCompatibilityAnalyzer::class,
@@ -706,6 +812,7 @@ final class ContainerFactory
                     new DatabaseDrivenPresentationMigration(self::service($container, TableNames::class)),
                     new ExtensionContributionCatalogMigration(self::service($container, TableNames::class)),
                     new BusinessDefinitionCatalogMigration(self::service($container, TableNames::class)),
+                    new BusinessTransactionalRuntimeMigration(self::service($container, TableNames::class)),
                 ],
                 [
                     // Previously distributed builds used a DBAL-equivalent static-analysis rewrite, then
@@ -874,6 +981,16 @@ final class ContainerFactory
             $configuration->runtimeSigningKey,
             $configuration->runtimePreviousSigningKeys,
         );
+        $schemaObservers = new DeferredBusinessSchemaObserver(
+            static fn (): PublishedDefinitionSchemaObserver => self::service(
+                $container,
+                PublishedDefinitionSchemaObserver::class,
+            ),
+            static fn (): BusinessSchemaLifecycleObserver => self::service(
+                $container,
+                BusinessSchemaLifecycleObserver::class,
+            ),
+        );
         $container->share(ArchiveReader::class, new ZipArchiveReader(), true);
         $container->share(PackageSafetyPolicy::class, new PackageSafetyPolicy(), true);
         $container->share(ExtensionMigrationRunner::class, static fn (
@@ -893,6 +1010,8 @@ final class ContainerFactory
             self::service($container, ResourceSiteOwnershipWriter::class),
             self::service($container, AuditRecorder::class),
             self::service($container, ClockInterface::class),
+            $schemaObservers,
+            $schemaObservers,
         ), true);
         $container->share(ExtensionRuntimeMapCompiler::class, static fn (
             Container $container,
@@ -933,6 +1052,196 @@ final class ContainerFactory
             self::service($container, TrustStore::class),
         );
         $container->share(ExtensionContributionRegistrySet::class, $contributionRegistries, true);
+        $container->share(FieldTypeRegistry::class, $contributionRegistries->fieldTypes(), true);
+        $container->share(
+            PhysicalNameCompiler::class,
+            new PhysicalNameCompiler($configuration->database->tablePrefix),
+            true,
+        );
+        $container->share(DefinitionPhysicalSchemaCompiler::class, static fn (
+            Container $container,
+        ): DefinitionPhysicalSchemaCompiler => new CanonicalDefinitionPhysicalSchemaCompiler(
+            self::service($container, BusinessDefinitionRepository::class),
+            self::service($container, ExtensionContributionRegistrySet::class)->fieldTypes(),
+            self::service($container, PhysicalNameCompiler::class),
+        ), true);
+        $container->share(BusinessSchemaPlanner::class, static fn (
+            Container $container,
+        ): BusinessSchemaPlanner => new BusinessSchemaPlanner(
+            self::service($container, BusinessDefinitionRepository::class),
+            self::service($container, DefinitionPhysicalSchemaCompiler::class),
+            self::service($container, BusinessSchemaInstallationRepository::class),
+            self::service($container, BusinessSchemaPlanRepository::class),
+            self::service($container, PhysicalSchemaGateway::class),
+            self::service($container, AuthorizationGateway::class),
+            self::service($container, AuditRecorder::class),
+            self::service($container, TransactionManager::class),
+            self::service($container, ClockInterface::class),
+        ), true);
+        $container->alias(PublishedDefinitionSchemaObserver::class, BusinessSchemaPlanner::class);
+        $container->share(BusinessSchemaRecordRepinGateway::class, static fn (
+            Container $container,
+        ): BusinessSchemaRecordRepinGateway => new DoctrineBusinessSchemaRecordRepinGateway(
+            self::service($container, Connection::class),
+            self::service($container, RecordValueCodec::class),
+            self::service($container, RecordRuleValidator::class),
+        ), true);
+        $container->share(BusinessSchemaExecutor::class, static fn (
+            Container $container,
+        ): BusinessSchemaExecutor => new BusinessSchemaExecutor(
+            self::service($container, BusinessDefinitionRepository::class),
+            self::service($container, DefinitionPhysicalSchemaCompiler::class),
+            self::service($container, BusinessSchemaPlanRepository::class),
+            self::service($container, BusinessSchemaInstallationRepository::class),
+            self::service($container, BusinessSchemaRecoveryEvidenceRepository::class),
+            self::service($container, BusinessSchemaExecutionLock::class),
+            self::service($container, BusinessSchemaExecutionStateGuard::class),
+            self::service($container, PhysicalSchemaGateway::class),
+            self::service($container, BusinessSchemaRecordRepinGateway::class),
+            self::service($container, BusinessSchemaEnvironment::class),
+            self::service($container, AuthorizationGateway::class),
+            self::service($container, AuditRecorder::class),
+            self::service($container, TransactionManager::class),
+            self::service($container, ClockInterface::class),
+        ), true);
+        $container->share(BusinessSchemaLifecycleManager::class, static fn (
+            Container $container,
+        ): BusinessSchemaLifecycleManager => new BusinessSchemaLifecycleManager(
+            self::service($container, BusinessDefinitionRepository::class),
+            self::service($container, DefinitionPhysicalSchemaCompiler::class),
+            self::service($container, BusinessSchemaInstallationRepository::class),
+            self::service($container, BusinessSchemaPlanRepository::class),
+            self::service($container, PhysicalSchemaGateway::class),
+        ), true);
+        $container->alias(BusinessSchemaLifecycleObserver::class, BusinessSchemaLifecycleManager::class);
+        $container->share(BusinessSchemaService::class, static fn (
+            Container $container,
+        ): BusinessSchemaService => new BusinessSchemaService(
+            self::service($container, BusinessDefinitionRepository::class),
+            self::service($container, BusinessSchemaPlanner::class),
+            self::service($container, BusinessSchemaExecutor::class),
+            self::service($container, BusinessSchemaPlanRepository::class),
+            self::service($container, BusinessSchemaInstallationRepository::class),
+            self::service($container, BusinessSchemaRecoveryEvidenceRepository::class),
+            self::service($container, BusinessSchemaEnvironment::class),
+            self::service($container, AuthorizationGateway::class),
+            self::service($container, AuditRecorder::class),
+            self::service($container, TransactionManager::class),
+            self::service($container, ClockInterface::class),
+        ), true);
+        $recordEncryptionKey = hash_hmac(
+            'sha256',
+            'kumwe:business-record:encryption:v1',
+            $configuration->secret,
+            true,
+        );
+        $recordFingerprintKey = hash_hmac(
+            'sha256',
+            'kumwe:business-record:fingerprint:v1',
+            $configuration->secret,
+            true,
+        );
+        $recordCursorKey = hash_hmac(
+            'sha256',
+            'kumwe:business-record:cursor:v1',
+            $configuration->secret,
+            true,
+        );
+        $container->share(
+            SecretCipher::class,
+            new SodiumSecretCipher('application-secret-v1', $recordEncryptionKey),
+            true,
+        );
+        $container->share(RecordFingerprint::class, new RecordFingerprint($recordFingerprintKey), true);
+        $container->share(RecordCursorCodec::class, new RecordCursorCodec($recordCursorKey), true);
+        $container->share(RecordValueCodec::class, static fn (
+            Container $container,
+        ): RecordValueCodec => new RecordValueCodec(
+            self::service($container, SecretCipher::class),
+            self::service($container, FieldTypeRegistry::class),
+        ), true);
+        $container->share(RecordRuleValidator::class, static fn (
+            Container $container,
+        ): RecordRuleValidator => new RecordRuleValidator(
+            self::service($container, RecordValueCodec::class),
+        ), true);
+        $container->share(BusinessRecordDefinitionResolver::class, static fn (
+            Container $container,
+        ): BusinessRecordDefinitionResolver => new InstalledBusinessRecordDefinitionResolver(
+            self::service($container, BusinessDefinitionRepository::class),
+            self::service($container, BusinessSchemaInstallationRepository::class),
+        ), true);
+        $container->share(DoctrineBusinessRecordQueryCompiler::class, static fn (
+            Container $container,
+        ): DoctrineBusinessRecordQueryCompiler => new DoctrineBusinessRecordQueryCompiler(
+            self::service($container, Connection::class),
+            self::service($container, BusinessDefinitionRepository::class),
+            self::service($container, BusinessSchemaInstallationRepository::class),
+            self::service($container, RecordValueCodec::class),
+            self::service($container, RecordCursorCodec::class),
+            self::service($container, BusinessRecordMutationFence::class),
+        ), true);
+        $container->share(BusinessRecordWriteRepository::class, static fn (
+            Container $container,
+        ): BusinessRecordWriteRepository => new DoctrineBusinessRecordWriteRepository(
+            self::service($container, Connection::class),
+            self::service($container, RecordValueCodec::class),
+        ), true);
+        $container->share(BusinessRecordReadRepository::class, static fn (
+            Container $container,
+        ): BusinessRecordReadRepository => new DoctrineBusinessRecordReadRepository(
+            self::service($container, Connection::class),
+            self::service($container, RecordValueCodec::class),
+            self::service($container, RecordRuleValidator::class),
+            self::service($container, DoctrineBusinessRecordQueryCompiler::class),
+            self::service($container, RecordCursorCodec::class),
+            self::service($container, BusinessDefinitionRepository::class),
+            self::service($container, BusinessSchemaInstallationRepository::class),
+            self::service($container, BusinessRecordMutationFence::class),
+        ), true);
+        $container->share(BusinessRecordRevisionRepository::class, static fn (
+            Container $container,
+        ): BusinessRecordRevisionRepository => new DoctrineBusinessRecordRevisionRepository(
+            self::service($container, Connection::class),
+            self::service($container, TableNames::class),
+        ), true);
+        $container->share(BusinessRecordIdempotencyRepository::class, static fn (
+            Container $container,
+        ): BusinessRecordIdempotencyRepository => new DoctrineBusinessRecordIdempotencyRepository(
+            self::service($container, Connection::class),
+            self::service($container, TableNames::class),
+            self::service($container, RecordFingerprint::class),
+        ), true);
+        $container->share(BusinessRecordMutationFence::class, static fn (
+            Container $container,
+        ): BusinessRecordMutationFence => new DoctrineBusinessRecordMutationFence(
+            self::service($container, Connection::class),
+            self::service($container, TableNames::class),
+        ), true);
+        $container->share(BusinessRecordIdempotencyPurger::class, static fn (
+            Container $container,
+        ): BusinessRecordIdempotencyPurger => new BusinessRecordIdempotencyPurger(
+            self::service($container, BusinessRecordIdempotencyRepository::class),
+            self::service($container, TransactionManager::class),
+            self::service($container, ClockInterface::class),
+        ), true);
+        $container->share(BusinessRecordService::class, static fn (
+            Container $container,
+        ): BusinessRecordService => new BusinessRecordService(
+            self::service($container, BusinessRecordWriteRepository::class),
+            self::service($container, BusinessRecordReadRepository::class),
+            self::service($container, BusinessRecordRevisionRepository::class),
+            self::service($container, BusinessRecordIdempotencyRepository::class),
+            self::service($container, BusinessRecordMutationFence::class),
+            self::service($container, BusinessRecordDefinitionResolver::class),
+            self::service($container, RecordValueCodec::class),
+            self::service($container, RecordRuleValidator::class),
+            self::service($container, AuthorizationGateway::class),
+            self::service($container, TransactionManager::class),
+            self::service($container, AuditRecorder::class),
+            self::service($container, RecordFingerprint::class),
+            self::service($container, ClockInterface::class),
+        ), true);
         $container->share(
             BusinessDefinitionValidator::class,
             new BusinessDefinitionValidator($contributionRegistries->fieldTypes()),
@@ -949,6 +1258,7 @@ final class ContainerFactory
             self::service($container, AuditRecorder::class),
             self::service($container, TransactionManager::class),
             self::service($container, ClockInterface::class),
+            self::service($container, PublishedDefinitionSchemaObserver::class),
         ), true);
         $container->share(
             AdministratorNavigationRegistry::class,
@@ -1271,6 +1581,48 @@ final class ContainerFactory
             self::service($container, ExtensionContributionRegistrySet::class)->fieldTypes(),
             self::service($container, AdministratorRenderer::class),
         ), true);
+        $container->share(BusinessSchemaPlansHandler::class, static fn (
+            Container $container,
+        ): BusinessSchemaPlansHandler => new BusinessSchemaPlansHandler(
+            self::service($container, BusinessSchemaService::class),
+            self::service($container, BusinessSchemaEnvironment::class),
+            self::service($container, AdministratorRenderer::class),
+            self::service($container, ClockInterface::class),
+        ), true);
+        $container->share(CreateBusinessSchemaPlanHandler::class, static fn (
+            Container $container,
+        ): CreateBusinessSchemaPlanHandler => new CreateBusinessSchemaPlanHandler(
+            self::service($container, BusinessSchemaService::class),
+        ), true);
+        $container->share(CreateBusinessSchemaPurgePlanHandler::class, static fn (
+            Container $container,
+        ): CreateBusinessSchemaPurgePlanHandler => new CreateBusinessSchemaPurgePlanHandler(
+            self::service($container, BusinessSchemaService::class),
+            self::service($container, HighImpactCredentialGuard::class),
+        ), true);
+        $container->share(ApproveBusinessSchemaPlanHandler::class, static fn (
+            Container $container,
+        ): ApproveBusinessSchemaPlanHandler => new ApproveBusinessSchemaPlanHandler(
+            self::service($container, BusinessSchemaService::class),
+            self::service($container, HighImpactCredentialGuard::class),
+        ), true);
+        $container->share(ExecuteBusinessSchemaPlanHandler::class, static fn (
+            Container $container,
+        ): ExecuteBusinessSchemaPlanHandler => new ExecuteBusinessSchemaPlanHandler(
+            self::service($container, BusinessSchemaService::class),
+        ), true);
+        $container->share(RecoverBusinessSchemaPlanHandler::class, static fn (
+            Container $container,
+        ): RecoverBusinessSchemaPlanHandler => new RecoverBusinessSchemaPlanHandler(
+            self::service($container, BusinessSchemaService::class),
+        ), true);
+        $container->share(RecordBusinessSchemaRecoveryEvidenceHandler::class, static fn (
+            Container $container,
+        ): RecordBusinessSchemaRecoveryEvidenceHandler => new RecordBusinessSchemaRecoveryEvidenceHandler(
+            self::service($container, BusinessSchemaService::class),
+            self::service($container, BusinessSchemaEnvironment::class),
+            self::service($container, HighImpactCredentialGuard::class),
+        ), true);
         $container->share(AdministratorContentEditorHandler::class, static fn (
             Container $container,
         ): AdministratorContentEditorHandler => new AdministratorContentEditorHandler(
@@ -1562,6 +1914,41 @@ final class ContainerFactory
             [AdministratorCsrfMiddleware::class, BusinessDefinitionsHandler::class],
             'administrator.business-definitions.update',
         ), 'content.update');
+        self::administratorRoute($application->get(
+            '/administrator/business-schema-plans',
+            BusinessSchemaPlansHandler::class,
+            'administrator.business-schema-plans',
+        ), 'business.schema.read');
+        self::administratorRoute($application->post(
+            '/administrator/business-schema-plans/plan',
+            [AdministratorCsrfMiddleware::class, CreateBusinessSchemaPlanHandler::class],
+            'administrator.business-schema-plans.plan',
+        ), 'business.schema.plan');
+        self::administratorRoute($application->post(
+            '/administrator/business-schema-plans/{id}/approve',
+            [AdministratorCsrfMiddleware::class, ApproveBusinessSchemaPlanHandler::class],
+            'administrator.business-schema-plans.approve',
+        ), 'business.schema.approve');
+        self::administratorRoute($application->post(
+            '/administrator/business-schema-plans/{id}/execute',
+            [AdministratorCsrfMiddleware::class, ExecuteBusinessSchemaPlanHandler::class],
+            'administrator.business-schema-plans.execute',
+        ), 'business.schema.execute');
+        self::administratorRoute($application->post(
+            '/administrator/business-schema-plans/recovery-evidence',
+            [AdministratorCsrfMiddleware::class, RecordBusinessSchemaRecoveryEvidenceHandler::class],
+            'administrator.business-schema-plans.recovery-evidence',
+        ), 'business.schema.recover');
+        self::administratorRoute($application->post(
+            '/administrator/business-schema-plans/{id}/recover',
+            [AdministratorCsrfMiddleware::class, RecoverBusinessSchemaPlanHandler::class],
+            'administrator.business-schema-plans.recover',
+        ), 'business.schema.recover');
+        self::administratorRoute($application->post(
+            '/administrator/business-schema-plans/purge',
+            [AdministratorCsrfMiddleware::class, CreateBusinessSchemaPurgePlanHandler::class],
+            'administrator.business-schema-plans.purge',
+        ), 'business.schema.destructive');
         self::administratorRoute($application->post(
             '/administrator/logout',
             [AdministratorCsrfMiddleware::class, AdministratorLogoutHandler::class],
