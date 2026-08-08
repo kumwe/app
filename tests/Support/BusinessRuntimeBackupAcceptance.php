@@ -22,6 +22,7 @@ use Kumwe\CMS\Infrastructure\Persistence\TableNames;
 use Kumwe\CMS\Shared\Infrastructure\Configuration\Environment;
 use RuntimeException;
 use Throwable;
+
 final class BusinessRuntimeBackupAcceptance
 {
     private const FORMAT = 'kumwe-business-runtime-backup-acceptance-v1';

@@ -643,7 +643,12 @@ final readonly class DoctrinePhysicalSchemaGateway implements PhysicalSchemaGate
     ): bool {
         $temporalPrecisions = $this->temporalPrecisions($actual);
         if ($exact) {
-            $actualColumns = array_map('strtolower', array_keys($actual->getColumns()));
+            $actualColumns = array_map(
+                static fn (Column $column): string => strtolower(
+                    $column->getObjectName()->getIdentifier()->getValue(),
+                ),
+                $actual->getColumns(),
+            );
             $expectedColumns = array_map(
                 static fn (PhysicalColumnBlueprint $column): string => strtolower($column->physicalName),
                 $expected->columns(),
@@ -724,7 +729,12 @@ final readonly class DoctrinePhysicalSchemaGateway implements PhysicalSchemaGate
     /** Returns bounded structural evidence without exposing persisted values. */
     private function tableMismatchReason(Table $actual, PhysicalTableBlueprint $expected): string
     {
-        $actualColumns = array_map('strtolower', array_keys($actual->getColumns()));
+        $actualColumns = array_map(
+            static fn (Column $column): string => strtolower(
+                $column->getObjectName()->getIdentifier()->getValue(),
+            ),
+            $actual->getColumns(),
+        );
         $expectedColumns = array_map(
             static fn (PhysicalColumnBlueprint $column): string => strtolower($column->physicalName),
             $expected->columns(),

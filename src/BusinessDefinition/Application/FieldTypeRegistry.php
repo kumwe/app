@@ -9,7 +9,7 @@ use Kumwe\CMS\BusinessDefinition\Domain\DefinitionOwner;
 use Kumwe\CMS\BusinessDefinition\Domain\FieldTypeDefinition;
 use Kumwe\CMS\BusinessDefinition\Domain\InvalidBusinessDefinition;
 
-final class FieldTypeRegistry
+final class FieldTypeRegistry implements FieldTypeDefinitionResolver
 {
     /** @var array<string, array{owner: DefinitionOwner, definition: FieldTypeDefinition}> */
     private array $definitions = [];
