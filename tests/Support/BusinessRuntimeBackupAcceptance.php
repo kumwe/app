@@ -19,6 +19,7 @@ use Kumwe\CMS\BusinessRecord\Domain\MoneyValue;
 use Kumwe\CMS\BusinessRecord\Domain\QuantityValue;
 use Kumwe\CMS\BusinessRecord\Domain\ZonedDateTimeValue;
 use Kumwe\CMS\BusinessSchema\Application\BusinessSchemaService;
+use Kumwe\CMS\BusinessSchema\Application\PhysicalSchemaGateway;
 use Kumwe\CMS\BusinessSchema\Domain\PhysicalTableBlueprint;
 use Kumwe\CMS\BusinessSchema\Domain\PhysicalTableKind;
 use Kumwe\CMS\Infrastructure\Persistence\TableNames;
@@ -234,17 +235,24 @@ final class BusinessRuntimeBackupAcceptance
         $database = $container->get(Connection::class);
         $tables = $container->get(TableNames::class);
         $schemas = $container->get(BusinessSchemaService::class);
+        $physicalSchemas = $container->get(PhysicalSchemaGateway::class);
         $records = $container->get(BusinessRecordService::class);
         if (
             !$database instanceof Connection
             || !$tables instanceof TableNames
             || !$schemas instanceof BusinessSchemaService
+            || !$physicalSchemas instanceof PhysicalSchemaGateway
             || !$records instanceof BusinessRecordService
         ) {
             throw new RuntimeException('The business runtime backup acceptance services are unavailable.');
         }
 
-        [$installations, $generated] = self::installedState($database, $schemas, $context);
+        [$installations, $generated] = self::installedState(
+            $database,
+            $schemas,
+            $physicalSchemas,
+            $context,
+        );
         $control = self::controlState($database, $tables);
         self::assertCoverage($generated, $control);
 
@@ -269,28 +277,28 @@ final class BusinessRuntimeBackupAcceptance
     private static function installedState(
         Connection $database,
         BusinessSchemaService $schemas,
+        PhysicalSchemaGateway $physicalSchemas,
         ExecutionContext $context,
     ): array {
         $installations = [];
         $generated = [];
-        $manager = $database->createSchemaManager();
         $platform = $database->getDatabasePlatform();
         foreach (self::DEFINITION_IDS as $definitionId) {
             $installation = $schemas->installation($context, $definitionId);
             if ($installation === null || $installation->status->value !== 'active') {
                 throw new RuntimeException('A backup fixture schema installation is unavailable.');
             }
+            $inspected = $physicalSchemas->inspect($installation->blueprint);
+            if ($inspected === null || !hash_equals($installation->schemaChecksum, $inspected->checksum())) {
+                throw new RuntimeException('A backup fixture physical schema differs from its canonical blueprint.');
+            }
             $tableNames = [];
             foreach ($installation->blueprint->tables() as $table) {
-                $actual = $manager->introspectTableByUnquotedName($table->physicalName);
-                $declarations = $platform->getCreateTableSQL($actual);
-                sort($declarations, SORT_STRING);
                 $generated[$table->physicalName] = [
                     'definition_id' => $definitionId,
                     'logical_name' => $table->logicalName,
                     'kind' => $table->kind->value,
                     'blueprint_checksum' => CanonicalDefinitionJson::checksum($table->toArray()),
-                    'physical_schema_checksum' => hash('sha256', implode("\n", $declarations)),
                     ...self::tableDigest(
                         $database,
                         $platform->quoteIdentifier($table->physicalName),
@@ -304,6 +312,7 @@ final class BusinessRuntimeBackupAcceptance
                 'definition_checksum' => $installation->definitionChecksum,
                 'schema_checksum' => $installation->schemaChecksum,
                 'blueprint_checksum' => $installation->blueprint->checksum(),
+                'inspected_schema_checksum' => $inspected->checksum(),
                 'status' => $installation->status->value,
                 'tables' => $tableNames,
             ];
