@@ -121,6 +121,64 @@ final class ManagementDeliveryTest extends TestCase
         ['POST', '/api/v1/workflows'],
         ['GET', '/api/v1/workflows/018f22e2-7c8b-7ab0-8f3a-88e8026bb401'],
         ['PATCH', '/api/v1/workflows/018f22e2-7c8b-7ab0-8f3a-88e8026bb401'],
+        ['GET', '/api/v1/business-definitions'],
+        ['GET', '/api/v1/business-definitions/site.default.example'],
+        ['GET', '/api/v1/business-definitions/site.default.example/draft'],
+        ['PUT', '/api/v1/business-definitions/site.default.example/draft'],
+        ['GET', '/api/v1/business-definitions/site.default.example/history'],
+        ['GET', '/api/v1/business-definitions/site.default.example/compatibility'],
+        ['POST', '/api/v1/business-definitions/site.default.example/validate'],
+        ['POST', '/api/v1/business-definitions/site.default.example/publish'],
+        ['POST', '/api/v1/business-definitions/site.default.example/supersede'],
+        ['POST', '/api/v1/business-definitions/site.default.example/deprecate'],
+        ['POST', '/api/v1/business-definitions/site.default.example/reject'],
+        ['GET', '/api/v1/business-schema-definitions'],
+        ['GET', '/api/v1/business-schema-plans'],
+        ['POST', '/api/v1/business-schema-plans'],
+        ['POST', '/api/v1/business-schema-plans/purge'],
+        ['GET', '/api/v1/business-schema-plans/018f22e2-7c8b-7ab0-8f3a-88e8026bb501'],
+        ['POST', '/api/v1/business-schema-plans/018f22e2-7c8b-7ab0-8f3a-88e8026bb501/approve'],
+        ['POST', '/api/v1/business-schema-plans/018f22e2-7c8b-7ab0-8f3a-88e8026bb501/execute'],
+        ['POST', '/api/v1/business-schema-plans/018f22e2-7c8b-7ab0-8f3a-88e8026bb501/recover'],
+    ];
+
+    /**
+     * Each business route with the capability it must demand.
+     *
+     * @var list<array{0: string, 1: string, 2: string}>
+     */
+    private const BUSINESS_API_CAPABILITIES = [
+        ['GET', '/api/v1/business-definitions', 'content.read'],
+        ['GET', '/api/v1/business-definitions/site.default.example', 'content.read'],
+        ['GET', '/api/v1/business-definitions/site.default.example/draft', 'content.read'],
+        ['GET', '/api/v1/business-definitions/site.default.example/history', 'content.read'],
+        ['GET', '/api/v1/business-definitions/site.default.example/compatibility', 'content.read'],
+        ['PUT', '/api/v1/business-definitions/site.default.example/draft', 'content.update'],
+        ['POST', '/api/v1/business-definitions/site.default.example/validate', 'content.update'],
+        ['POST', '/api/v1/business-definitions/site.default.example/publish', 'content.update'],
+        ['POST', '/api/v1/business-definitions/site.default.example/supersede', 'content.update'],
+        ['POST', '/api/v1/business-definitions/site.default.example/deprecate', 'content.update'],
+        ['POST', '/api/v1/business-definitions/site.default.example/reject', 'content.update'],
+        ['GET', '/api/v1/business-schema-definitions', 'business.schema.read'],
+        ['GET', '/api/v1/business-schema-plans', 'business.schema.read'],
+        ['GET', '/api/v1/business-schema-plans/018f22e2-7c8b-7ab0-8f3a-88e8026bb501', 'business.schema.read'],
+        ['POST', '/api/v1/business-schema-plans', 'business.schema.plan'],
+        ['POST', '/api/v1/business-schema-plans/purge', 'business.schema.destructive'],
+        [
+            'POST',
+            '/api/v1/business-schema-plans/018f22e2-7c8b-7ab0-8f3a-88e8026bb501/approve',
+            'business.schema.approve',
+        ],
+        [
+            'POST',
+            '/api/v1/business-schema-plans/018f22e2-7c8b-7ab0-8f3a-88e8026bb501/execute',
+            'business.schema.execute',
+        ],
+        [
+            'POST',
+            '/api/v1/business-schema-plans/018f22e2-7c8b-7ab0-8f3a-88e8026bb501/recover',
+            'business.schema.recover',
+        ],
     ];
 
     public function testAdministratorManagementScreensAreRegisteredAndSessionProtected(): void
@@ -170,6 +228,44 @@ final class ManagementDeliveryTest extends TestCase
                 sprintf('%s %s is missing or bypasses bearer protection.', $method, $path),
             );
             self::assertStringContainsString('Bearer realm="kumwe-api"', $response->getHeaderLine('WWW-Authenticate'));
+        }
+    }
+
+    public function testBusinessApiStagesDeclareTheirOwnIndependentlyGrantableCapability(): void
+    {
+        $container = (new ContainerFactory())->create(Environment::fromGlobals());
+        // Resolving the application is what registers routes into the router.
+        self::assertInstanceOf(Application::class, $container->get(Application::class));
+        $router = $container->get(RouterInterface::class);
+        self::assertInstanceOf(RouterInterface::class, $router);
+        $factory = new ServerRequestFactory();
+
+        // Read the capability the router actually carries, not the source that registered it:
+        // approve, execute and recover are separately grantable and must not blur together.
+        foreach (self::BUSINESS_API_CAPABILITIES as [$method, $path, $capability]) {
+            $request = $factory->createServerRequest($method, 'https://kumwe.test' . $path)
+                ->withHeader('Host', 'kumwe.test');
+            $result = $router->match($request);
+            self::assertTrue($result->isSuccess(), sprintf('%s %s is not registered.', $method, $path));
+            $route = $result->getMatchedRoute();
+            self::assertNotFalse($route);
+            $options = $route->getOptions();
+
+            self::assertSame(
+                'bearer',
+                $options[BearerAuthenticationMiddleware::OPTION_AUTHENTICATION] ?? null,
+                sprintf('%s %s does not require bearer authentication.', $method, $path),
+            );
+            self::assertSame(
+                [$capability],
+                $options[BearerAuthenticationMiddleware::OPTION_REQUIRED_CAPABILITIES] ?? null,
+                sprintf('%s %s does not require exactly %s.', $method, $path, $capability),
+            );
+            self::assertSame(
+                'kumwe-http',
+                $options[BearerAuthenticationMiddleware::OPTION_TOKEN_AUDIENCE] ?? null,
+                sprintf('%s %s accepts a token from the wrong audience.', $method, $path),
+            );
         }
     }
 
