@@ -4,9 +4,12 @@ declare(strict_types=1);
 
 namespace Kumwe\CMS\Tests\Support;
 
+use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
 use Joomla\DI\Container;
 use Kumwe\CMS\Application\Authorization\ExecutionContext;
+use Kumwe\CMS\Audit\Application\AuditRecorder;
+use Kumwe\CMS\Audit\Domain\AuditEvent;
 use Kumwe\CMS\BusinessDefinition\Domain\CanonicalDefinitionJson;
 use Kumwe\CMS\BusinessRecord\Application\BusinessRecordService;
 use Kumwe\CMS\BusinessRecord\Application\Command\UpdateRecordCommand;
@@ -27,6 +30,8 @@ final class BusinessRuntimeBackupAcceptance
 {
     private const FORMAT = 'kumwe-business-runtime-backup-acceptance-v1';
     private const SECRET = 'neutral-fixture-secret';
+    private const AUDIT_EVENT_ID = '0191574f-f0b8-7bf3-a9aa-91c6b8244e28';
+    private const AUDIT_ACTION = 'business.record.backup_acceptance';
 
     /** @var list<string> */
     private const DEFINITION_IDS = [
@@ -34,16 +39,6 @@ final class BusinessRuntimeBackupAcceptance
         NeutralBusinessFixture::TARGET_DEFINITION_ID,
         NeutralBusinessFixture::LINE_DEFINITION_ID,
         NeutralBusinessFixture::OWNER_DEFINITION_ID,
-    ];
-
-    /** @var list<string> */
-    private const RECORD_IDS = [
-        NeutralBusinessFixture::RECORD_ID,
-        NeutralBusinessFixture::TARGET_RECORD_ID,
-        NeutralBusinessFixture::SECOND_TARGET_RECORD_ID,
-        NeutralBusinessFixture::OWNER_RECORD_ID,
-        NeutralBusinessFixture::LINE_RECORD_ID,
-        NeutralBusinessFixture::SECOND_LINE_RECORD_ID,
     ];
 
     /** @var list<string> */
@@ -90,6 +85,7 @@ final class BusinessRuntimeBackupAcceptance
         NeutralBusinessFixture::install($container, $context);
         NeutralBusinessFixture::createBackupRecord($container, $context);
         NeutralBusinessFixture::seedBackupGraph($container, $context);
+        self::ensureAuditEvidence($container, $context);
         $manifest = self::manifest($container, $context);
         $encoded = CanonicalDefinitionJson::encode($manifest);
         if (str_contains($encoded, self::SECRET)) {
@@ -143,6 +139,42 @@ final class BusinessRuntimeBackupAcceptance
                 throw new RuntimeException('The derived extension runtime cache could not be reset safely.');
             }
         }
+    }
+
+    private static function ensureAuditEvidence(Container $container, ExecutionContext $context): void
+    {
+        $database = $container->get(Connection::class);
+        $tables = $container->get(TableNames::class);
+        $audit = $container->get(AuditRecorder::class);
+        if (!$database instanceof Connection || !$tables instanceof TableNames || !$audit instanceof AuditRecorder) {
+            throw new RuntimeException('The backup audit evidence services are unavailable.');
+        }
+        $existing = $database->fetchAssociative(sprintf(
+            'SELECT action, subject_type, subject_id, outcome FROM %s WHERE id = ?',
+            $tables->quoted('audit_events'),
+        ), [self::AUDIT_EVENT_ID]);
+        if ($existing !== false) {
+            if (
+                ($existing['action'] ?? null) !== self::AUDIT_ACTION
+                || ($existing['subject_type'] ?? null) !== 'business_record'
+                || ($existing['subject_id'] ?? null) !== NeutralBusinessFixture::RECORD_ID
+                || ($existing['outcome'] ?? null) !== 'success'
+            ) {
+                throw new RuntimeException('The backup audit evidence conflicts with its stable fixture identity.');
+            }
+
+            return;
+        }
+        $audit->record(new AuditEvent(
+            self::AUDIT_EVENT_ID,
+            new DateTimeImmutable('2026-08-08T00:00:00+00:00'),
+            $context->actorId(),
+            self::AUDIT_ACTION,
+            'business_record',
+            NeutralBusinessFixture::RECORD_ID,
+            'success',
+            ['definition_id' => NeutralBusinessFixture::DEFINITION_ID, 'fixture' => self::FORMAT],
+        ));
     }
 
     /** @return array<string, mixed> */
@@ -261,7 +293,6 @@ final class BusinessRuntimeBackupAcceptance
     private static function controlState(Connection $database, TableNames $tables): array
     {
         $definitionClause = self::placeholders(self::DEFINITION_IDS);
-        $recordClause = self::placeholders(self::RECORD_IDS);
         $idempotencyClause = self::placeholders(self::IDEMPOTENCY_IDS);
         $plans = $tables->quoted('business_schema_plans');
         $control = [
@@ -318,8 +349,13 @@ final class BusinessRuntimeBackupAcceptance
             'business_audit_events' => self::tableDigest(
                 $database,
                 $tables->quoted('audit_events'),
-                'subject_type = ? AND subject_id IN (' . $recordClause . ')',
-                ['business_record', ...self::RECORD_IDS],
+                'id = ? AND subject_type = ? AND subject_id = ? AND action = ?',
+                [
+                    self::AUDIT_EVENT_ID,
+                    'business_record',
+                    NeutralBusinessFixture::RECORD_ID,
+                    self::AUDIT_ACTION,
+                ],
             ),
         ];
         ksort($control, SORT_STRING);
