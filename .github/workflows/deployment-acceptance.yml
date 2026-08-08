@@ -566,7 +566,7 @@ jobs:
           docker run --detach \
             --name "$restore_container" \
             --network kumwe_backend \
-            --publish "127.0.0.1::$DATABASE_PORT" \
+            --publish "127.0.0.1:$DATABASE_PORT:$DATABASE_PORT" \
             --health-cmd "$database_health" \
             --health-interval 2s \
             --health-timeout 5s \
@@ -588,7 +588,7 @@ jobs:
             sleep 2
           done
           [[ "$(docker inspect --format '{{.State.Health.Status}}' "$restore_container")" == healthy ]]
-          restore_port="$(docker port "$restore_container" "$DATABASE_PORT/tcp" | awk -F: 'NR == 1 {print $NF}')"
+          restore_port="$DATABASE_PORT"
           [[ "$restore_port" =~ ^[0-9]+$ ]]
           source_host="$(docker inspect \
             --format '{{(index .NetworkSettings.Networks "kumwe_backend").IPAddress}}' \
