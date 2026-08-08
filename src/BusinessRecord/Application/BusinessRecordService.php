@@ -911,8 +911,10 @@ final readonly class BusinessRecordService
                         $now,
                         $this->relationshipEvidence($relationship->handle, $target->recordId),
                     );
-                    if ($source->definitionId === $target->definitionId
-                        && hash_equals($source->recordKey, $target->recordKey)) {
+                    if (
+                        $source->definitionId === $target->definitionId
+                        && hash_equals($source->recordKey, $target->recordKey)
+                    ) {
                         $target = $write->source;
                     }
                 }

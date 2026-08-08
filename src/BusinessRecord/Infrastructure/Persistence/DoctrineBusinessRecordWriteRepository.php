@@ -339,11 +339,13 @@ final readonly class DoctrineBusinessRecordWriteRepository implements BusinessRe
         ?ResolvedBusinessDefinition $targetResolved = null,
     ): BusinessRecord {
         $this->assertTransaction();
-        if (!$relationship->ordered || in_array(
-            $relationship->kind,
-            [RelationshipKind::OneToOne, RelationshipKind::ManyToOne],
-            true,
-        )) {
+        if (
+            !$relationship->ordered || in_array(
+                $relationship->kind,
+                [RelationshipKind::OneToOne, RelationshipKind::ManyToOne],
+                true,
+            )
+        ) {
             throw new BusinessRelationshipRejected('Only an ordered collection relationship can be reordered.');
         }
         $association = $this->associationTableOrNull($resolved, $relationship);
@@ -440,10 +442,12 @@ final readonly class DoctrineBusinessRecordWriteRepository implements BusinessRe
     private function associationScopeValues(PhysicalTableBlueprint $table, BusinessRecord $source): array
     {
         $values = [];
-        foreach ([
+        foreach (
+            [
             'site_identifier' => $source->scope->siteIdentifier,
             'organization_identifier' => $source->scope->organizationIdentifier,
-        ] as $logical => $value) {
+            ] as $logical => $value
+        ) {
             $column = $table->column($logical);
             if ($column !== null) {
                 $values[$column->physicalName] = $value;

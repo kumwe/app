@@ -39,9 +39,11 @@ final readonly class DoctrineBusinessSchemaRecordRepinGateway implements Busines
         if ($operation->kind !== SchemaOperationKind::RepinRecords || $limit < 1 || $limit > 1_000) {
             throw new InvalidBusinessSchema('A schema record-repin chunk request is invalid.');
         }
-        if ($definition->id !== $target->definitionId
+        if (
+            $definition->id !== $target->definitionId
             || $definition->definitionVersion !== $target->definitionVersion
-            || !hash_equals($definition->checksum(), $target->definitionChecksum)) {
+            || !hash_equals($definition->checksum(), $target->definitionChecksum)
+        ) {
             throw new InvalidBusinessSchema('A record-repin definition differs from its target blueprint.');
         }
         $table = $target->table($operation->table)
@@ -84,10 +86,12 @@ final readonly class DoctrineBusinessSchemaRecordRepinGateway implements Busines
         foreach ($rows as $row) {
             $identityValue = $row[$identity->physicalName] ?? null;
             $optimisticVersion = $row[$recordVersion->physicalName] ?? null;
-            if ((!is_int($identityValue) && !is_string($identityValue))
+            if (
+                (!is_int($identityValue) && !is_string($identityValue))
                 || (!is_int($optimisticVersion)
                     && (!is_string($optimisticVersion)
-                        || preg_match('/^[1-9][0-9]*$/D', $optimisticVersion) !== 1))) {
+                        || preg_match('/^[1-9][0-9]*$/D', $optimisticVersion) !== 1))
+            ) {
                 throw new BusinessSchemaConflict('A record-repin row has invalid concurrency metadata.');
             }
             $recordKey = (string) $identityValue;
@@ -169,8 +173,10 @@ final readonly class DoctrineBusinessSchemaRecordRepinGateway implements Busines
         if ($state === null && $definition->workflow === null) {
             return;
         }
-        if (!is_string($state) || $definition->workflow === null
-            || !in_array($state, $definition->workflow->states, true)) {
+        if (
+            !is_string($state) || $definition->workflow === null
+            || !in_array($state, $definition->workflow->states, true)
+        ) {
             throw new InvalidBusinessSchema('A pinned record uses a workflow state absent from the target.');
         }
     }

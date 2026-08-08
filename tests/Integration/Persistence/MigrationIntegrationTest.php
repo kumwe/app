@@ -136,7 +136,7 @@ final class MigrationIntegrationTest extends TestCase
             $tables->quoted('users'),
         ), ['integration-administrator@example.test']);
         if ($legacyAdministrator !== false) {
-            self::assertSame('2', (string) $legacyAdministrator['security_epoch']);
+            self::assertSame('3', (string) $legacyAdministrator['security_epoch']);
             self::assertSame('2', (string) $database->fetchOne(sprintf(
                 'SELECT COUNT(*) FROM %s g INNER JOIN %s r ON r.id = g.role_id '
                 . "WHERE r.code = 'administrator' AND g.capability_code IN (?, ?)",

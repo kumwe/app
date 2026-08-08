@@ -109,10 +109,12 @@ final readonly class DoctrineBusinessRecordReadRepository implements BusinessRec
             ->setParameter('target', $targetRecordKey, $relationshipColumn->doctrineType)
             ->orderBy($this->quote($this->physical($table, 'record_id')), 'ASC')
             ->setMaxResults($limit);
-        foreach ([
+        foreach (
+            [
             'site_identifier' => $scope->siteIdentifier,
             'organization_identifier' => $scope->organizationIdentifier,
-        ] as $logical => $value) {
+            ] as $logical => $value
+        ) {
             $column = $table->column($logical);
             if ($column === null) {
                 if ($value !== null) {
@@ -689,10 +691,12 @@ final readonly class DoctrineBusinessRecordReadRepository implements BusinessRec
         array &$parameters,
         array &$types,
     ): void {
-        foreach ([
+        foreach (
+            [
             'site_identifier' => $scope->siteIdentifier,
             'organization_identifier' => $scope->organizationIdentifier,
-        ] as $logical => $value) {
+            ] as $logical => $value
+        ) {
             $column = $table->column($logical);
             if ($column === null) {
                 if ($value !== null) {
@@ -817,10 +821,12 @@ final readonly class DoctrineBusinessRecordReadRepository implements BusinessRec
         array &$parameters,
         array &$types,
     ): void {
-        foreach ([
+        foreach (
+            [
             'site_identifier' => $scope->siteIdentifier,
             'organization_identifier' => $scope->organizationIdentifier,
-        ] as $logical => $value) {
+            ] as $logical => $value
+        ) {
             $column = $table->column($logical);
             if ($column === null) {
                 if ($value !== null) {

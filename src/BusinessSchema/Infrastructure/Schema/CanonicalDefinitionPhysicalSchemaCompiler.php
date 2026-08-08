@@ -46,8 +46,10 @@ final readonly class CanonicalDefinitionPhysicalSchemaCompiler implements Defini
         $tables = [$record];
         foreach ($this->sortedRelationships($definition) as $relationship) {
             $target = $this->targetFor($definition, $site, $relationship->target);
-            if (!$this->materializes($definition, $target, $relationship)
-                || in_array($relationship->kind, [RelationshipKind::OneToOne, RelationshipKind::ManyToOne], true)) {
+            if (
+                !$this->materializes($definition, $target, $relationship)
+                || in_array($relationship->kind, [RelationshipKind::OneToOne, RelationshipKind::ManyToOne], true)
+            ) {
                 continue;
             }
             $tables[] = $relationship->kind === RelationshipKind::OwnedLineCollection
@@ -154,8 +156,10 @@ final readonly class CanonicalDefinitionPhysicalSchemaCompiler implements Defini
 
         foreach ($this->sortedRelationships($definition) as $relationship) {
             $target = $this->targetFor($definition, $site, $relationship->target);
-            if (!$this->materializes($definition, $target, $relationship)
-                || !in_array($relationship->kind, [RelationshipKind::OneToOne, RelationshipKind::ManyToOne], true)) {
+            if (
+                !$this->materializes($definition, $target, $relationship)
+                || !in_array($relationship->kind, [RelationshipKind::OneToOne, RelationshipKind::ManyToOne], true)
+            ) {
                 continue;
             }
             $targetIdentity = $this->identityColumnFor($target);
@@ -481,12 +485,15 @@ final readonly class CanonicalDefinitionPhysicalSchemaCompiler implements Defini
     private function fieldColumns(
         FieldDefinition $field,
         ?PhysicalColumnBlueprint $referenceIdentity = null,
-    ): array
-    {
+    ): array {
         $nullable = !$field->required || $field->nullable;
         $physicalDefaults = $this->physicalDefaults($field);
-        $column = fn (string $logical, string $type, array $options = [], ?bool $isNullable = null):
-            PhysicalColumnBlueprint => new PhysicalColumnBlueprint(
+        $column = fn (
+            string $logical,
+            string $type,
+            array $options = [],
+            ?bool $isNullable = null,
+        ): PhysicalColumnBlueprint => new PhysicalColumnBlueprint(
                 $logical,
                 $this->names->column($logical),
                 $type,
@@ -555,7 +562,8 @@ final readonly class CanonicalDefinitionPhysicalSchemaCompiler implements Defini
         if ($field->type === 'core.secret') {
             throw new InvalidBusinessSchema('An encrypted secret can never compile a plaintext database default.');
         }
-        if (!in_array($field->type, [
+        if (
+            !in_array($field->type, [
             'core.boolean',
             'core.date',
             'core.decimal',
@@ -569,7 +577,8 @@ final readonly class CanonicalDefinitionPhysicalSchemaCompiler implements Defini
             'core.quantity',
             'core.text',
             'core.zoned_datetime',
-        ], true)) {
+            ], true)
+        ) {
             // Defaults for references, JSON/value objects, TEXT, and custom storage are applied by the
             // record service. Emitting those values as DDL defaults is not portable across all three engines.
             return [];
@@ -587,9 +596,11 @@ final readonly class CanonicalDefinitionPhysicalSchemaCompiler implements Defini
 
             return [$field->handle => $field->default];
         }
-        if (!is_array($field->default) || array_is_list($field->default)
+        if (
+            !is_array($field->default) || array_is_list($field->default)
             || count($field->default) !== count($components)
-            || array_diff(array_keys($field->default), $components) !== []) {
+            || array_diff(array_keys($field->default), $components) !== []
+        ) {
             throw new InvalidBusinessSchema(
                 'A composite field default must contain its exact ordered component document.',
             );
@@ -726,8 +737,7 @@ final readonly class CanonicalDefinitionPhysicalSchemaCompiler implements Defini
         EntityTypeDefinition $source,
         SiteContext $site,
         string $handle,
-    ): EntityTypeDefinition
-    {
+    ): EntityTypeDefinition {
         $entry = $this->definitions->entry($site, $handle);
         if ($entry === null) {
             throw new InvalidBusinessSchema('A physical relationship target is unavailable: ' . $handle);
@@ -759,12 +769,16 @@ final readonly class CanonicalDefinitionPhysicalSchemaCompiler implements Defini
         if ($inverse === null) {
             throw new InvalidBusinessSchema('A compiled relationship inverse is unavailable.');
         }
-        if ($relationship->kind === RelationshipKind::ManyToOne
-            && $inverse->kind === RelationshipKind::OneToMany) {
+        if (
+            $relationship->kind === RelationshipKind::ManyToOne
+            && $inverse->kind === RelationshipKind::OneToMany
+        ) {
             return true;
         }
-        if ($relationship->kind === RelationshipKind::OneToMany
-            && $inverse->kind === RelationshipKind::ManyToOne) {
+        if (
+            $relationship->kind === RelationshipKind::OneToMany
+            && $inverse->kind === RelationshipKind::ManyToOne
+        ) {
             return false;
         }
 

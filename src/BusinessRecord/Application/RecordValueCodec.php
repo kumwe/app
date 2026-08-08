@@ -486,11 +486,13 @@ final readonly class RecordValueCodec
 
             return $value->setTimezone(new DateTimeZone('UTC'));
         }
-        if (!is_string($value) || preg_match(
-            '/^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}'
+        if (
+            !is_string($value) || preg_match(
+                '/^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}'
                 . '(?:\.[0-9]{1,6})?(?:Z|\+00:00)$/D',
-            $value,
-        ) !== 1) {
+                $value,
+            ) !== 1
+        ) {
             throw new InvalidArgumentException('An instant field requires an RFC 3339 UTC string.');
         }
         try {
@@ -839,8 +841,10 @@ final readonly class RecordValueCodec
 
     private function storedTime(mixed $value): DateTimeImmutable
     {
-        if (!is_string($value)
-            || preg_match('/^(\d{2}:\d{2}:\d{2})(?:\.([0-9]{1,6}))?$/D', $value, $matches) !== 1) {
+        if (
+            !is_string($value)
+            || preg_match('/^(\d{2}:\d{2}:\d{2})(?:\.([0-9]{1,6}))?$/D', $value, $matches) !== 1
+        ) {
             throw new InvalidArgumentException('A stored local-time field is invalid.');
         }
         $canonical = $matches[1] . '.' . str_pad($matches[2] ?? '', 6, '0');

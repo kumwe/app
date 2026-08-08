@@ -46,10 +46,12 @@ final readonly class DoctrinePhysicalSchemaGateway implements PhysicalSchemaGate
                 continue;
             }
             ++$present;
-            if (!$this->tableMatches($manager->introspectTableByUnquotedName($table->physicalName), $table)) {
+            $actual = $manager->introspectTableByUnquotedName($table->physicalName);
+            if (!$this->tableMatches($actual, $table)) {
                 throw new BusinessSchemaConflict(sprintf(
-                    'Physical schema drift was detected for compiled table %s.',
+                    'Physical schema drift was detected for compiled table %s: %s.',
                     $table->logicalName,
+                    $this->tableMismatchReason($actual, $table),
                 ));
             }
         }
@@ -146,10 +148,12 @@ final readonly class DoctrinePhysicalSchemaGateway implements PhysicalSchemaGate
                 'A newly created table changed shape and cannot be compensated automatically.',
             );
         }
-        if ($this->database->fetchOne(sprintf(
-            'SELECT 1 FROM %s LIMIT 1',
-            $this->database->quoteSingleIdentifier($planned->physicalName),
-        )) !== false) {
+        if (
+            $this->database->fetchOne(sprintf(
+                'SELECT 1 FROM %s LIMIT 1',
+                $this->database->quoteSingleIdentifier($planned->physicalName),
+            )) !== false
+        ) {
             throw new BusinessSchemaConflict('A newly created table contains data and cannot be compensated.');
         }
         $manager->dropTable($planned->physicalName);
@@ -225,8 +229,10 @@ final readonly class DoctrinePhysicalSchemaGateway implements PhysicalSchemaGate
         $expression = null;
         $dependencies = [];
         if ($hasExpression) {
-            if (!is_array($state['expression']) || array_is_list($state['expression'])
-                || !is_array($state['dependencies']) || array_is_list($state['dependencies'])) {
+            if (
+                !is_array($state['expression']) || array_is_list($state['expression'])
+                || !is_array($state['dependencies']) || array_is_list($state['dependencies'])
+            ) {
                 throw new InvalidBusinessSchema('A backfill Expression state is invalid.');
             }
             /** @var array<string, mixed> $expressionDocument */
@@ -634,8 +640,7 @@ final readonly class DoctrinePhysicalSchemaGateway implements PhysicalSchemaGate
         Table $actual,
         PhysicalTableBlueprint $expected,
         bool $exact = true,
-    ): bool
-    {
+    ): bool {
         $temporalPrecisions = $this->temporalPrecisions($actual);
         if ($exact) {
             $actualColumns = array_map('strtolower', array_keys($actual->getColumns()));
@@ -650,12 +655,14 @@ final readonly class DoctrinePhysicalSchemaGateway implements PhysicalSchemaGate
             }
         }
         foreach ($expected->columns() as $column) {
-            if (!$actual->hasColumn($column->physicalName)
+            if (
+                !$actual->hasColumn($column->physicalName)
                 || !$this->columnMatches(
                     $actual->getColumn($column->physicalName),
                     $column,
                     $temporalPrecisions,
-                )) {
+                )
+            ) {
                 return false;
             }
         }
@@ -714,14 +721,101 @@ final readonly class DoctrinePhysicalSchemaGateway implements PhysicalSchemaGate
         return true;
     }
 
+    /** Returns bounded structural evidence without exposing persisted values. */
+    private function tableMismatchReason(Table $actual, PhysicalTableBlueprint $expected): string
+    {
+        $actualColumns = array_map('strtolower', array_keys($actual->getColumns()));
+        $expectedColumns = array_map(
+            static fn (PhysicalColumnBlueprint $column): string => strtolower($column->physicalName),
+            $expected->columns(),
+        );
+        sort($actualColumns, SORT_STRING);
+        sort($expectedColumns, SORT_STRING);
+        if ($actualColumns !== $expectedColumns) {
+            return sprintf(
+                'column inventory differs (actual [%s], expected [%s])',
+                implode(', ', $actualColumns),
+                implode(', ', $expectedColumns),
+            );
+        }
+        $temporalPrecisions = $this->temporalPrecisions($actual);
+        foreach ($expected->columns() as $column) {
+            if (!$actual->hasColumn($column->physicalName)) {
+                return sprintf('compiled column %s is missing', $column->physicalName);
+            }
+            if (!$this->columnMatches($actual->getColumn($column->physicalName), $column, $temporalPrecisions)) {
+                return sprintf('compiled column %s differs', $column->physicalName);
+            }
+        }
+        $primary = $actual->getPrimaryKeyConstraint();
+        if ($primary === null || $this->unqualifiedNames($primary->getColumnNames()) !== $expected->primaryKey) {
+            return 'primary-key columns differ';
+        }
+        foreach ($expected->indexes() as $index) {
+            if (!$this->hasIndex($actual, $index)) {
+                return sprintf('compiled index %s differs', $index->physicalName);
+            }
+        }
+        foreach ($expected->foreignKeys() as $foreignKey) {
+            if (!$this->hasForeignKey($actual, $foreignKey)) {
+                return sprintf('compiled foreign key %s differs', $foreignKey->physicalName);
+            }
+        }
+        $expectedIndexes = array_map(
+            static fn (PhysicalIndexBlueprint $index): string => strtolower($index->physicalName),
+            $expected->indexes(),
+        );
+        sort($expectedIndexes, SORT_STRING);
+        $actualIndexes = [];
+        foreach ($actual->getIndexes() as $index) {
+            $name = strtolower($index->getObjectName()?->getIdentifier()->getValue() ?? '');
+            $columns = array_map(
+                static fn ($column): string => $column->getColumnName()->getIdentifier()->getValue(),
+                $index->getIndexedColumns(),
+            );
+            if ($columns !== $expected->primaryKey || ($name !== 'primary' && !str_ends_with($name, '_pkey'))) {
+                $actualIndexes[] = $name;
+            }
+        }
+        sort($actualIndexes, SORT_STRING);
+        if ($actualIndexes !== $expectedIndexes) {
+            return sprintf(
+                'index inventory differs (actual [%s], expected [%s])',
+                implode(', ', $actualIndexes),
+                implode(', ', $expectedIndexes),
+            );
+        }
+        $expectedKeys = array_map(
+            static fn (PhysicalForeignKeyBlueprint $key): string => strtolower($key->physicalName),
+            $expected->foreignKeys(),
+        );
+        $actualKeys = array_map(
+            fn (ForeignKeyConstraint $key): string => strtolower($this->constraintName($key)),
+            $actual->getForeignKeys(),
+        );
+        sort($expectedKeys, SORT_STRING);
+        sort($actualKeys, SORT_STRING);
+        if ($actualKeys !== $expectedKeys) {
+            return sprintf(
+                'foreign-key inventory differs (actual [%s], expected [%s])',
+                implode(', ', $actualKeys),
+                implode(', ', $expectedKeys),
+            );
+        }
+
+        return 'unclassified structural mismatch';
+    }
+
     /** @param array<string, int> $temporalPrecisions */
     private function columnMatches(
         Column $actual,
         PhysicalColumnBlueprint $expected,
         array $temporalPrecisions,
     ): bool {
-        if (!$this->physicalTypeMatches($actual, $expected)
-            || $actual->getNotnull() === $expected->nullable) {
+        if (
+            !$this->physicalTypeMatches($actual, $expected)
+            || $actual->getNotnull() === $expected->nullable
+        ) {
             return false;
         }
         if (
@@ -755,12 +849,14 @@ final readonly class DoctrinePhysicalSchemaGateway implements PhysicalSchemaGate
         ) {
             return false;
         }
-        if (array_key_exists('default', $expected->options)
+        if (
+            array_key_exists('default', $expected->options)
             && !$this->defaultMatches(
                 $actual->getDefault(),
                 $expected->options['default'],
                 $expected,
-            )) {
+            )
+        ) {
             return false;
         }
         if (!array_key_exists('default', $expected->options) && $actual->getDefault() !== null) {
@@ -924,10 +1020,12 @@ final readonly class DoctrinePhysicalSchemaGateway implements PhysicalSchemaGate
 
     private function guidDefault(mixed $value): string
     {
-        if (!is_string($value) || preg_match(
-            '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/Di',
-            $value,
-        ) !== 1) {
+        if (
+            !is_string($value) || preg_match(
+                '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/Di',
+                $value,
+            ) !== 1
+        ) {
             throw new InvalidBusinessSchema('A GUID physical default is invalid.');
         }
 
@@ -1004,11 +1102,13 @@ final readonly class DoctrinePhysicalSchemaGateway implements PhysicalSchemaGate
 
     private function timeDefault(mixed $value): string
     {
-        if (!is_string($value) || preg_match(
-            '/^([01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9](?:\.([0-9]{1,6}))?$/D',
-            $value,
-            $matches,
-        ) !== 1) {
+        if (
+            !is_string($value) || preg_match(
+                '/^([01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9](?:\.([0-9]{1,6}))?$/D',
+                $value,
+                $matches,
+            ) !== 1
+        ) {
             throw new InvalidBusinessSchema('A time physical default must use canonical local-time form.');
         }
         $base = substr($value, 0, 8);
@@ -1018,11 +1118,13 @@ final readonly class DoctrinePhysicalSchemaGateway implements PhysicalSchemaGate
 
     private function dateTimeDefault(mixed $value): string
     {
-        if (!is_string($value) || preg_match(
-            '/^[0-9]{4}-[0-9]{2}-[0-9]{2}[ T][0-9]{2}:[0-9]{2}:[0-9]{2}'
+        if (
+            !is_string($value) || preg_match(
+                '/^[0-9]{4}-[0-9]{2}-[0-9]{2}[ T][0-9]{2}:[0-9]{2}:[0-9]{2}'
                 . '(?:\.[0-9]{1,6})?(?:Z|\+00:00)?$/D',
-            $value,
-        ) !== 1) {
+                $value,
+            ) !== 1
+        ) {
             throw new InvalidBusinessSchema('A date-time physical default must be an exact UTC instant.');
         }
         try {
@@ -1068,8 +1170,10 @@ final readonly class DoctrinePhysicalSchemaGateway implements PhysicalSchemaGate
         foreach ($rows as $row) {
             $column = $row['column_name'] ?? null;
             $precision = $row['fractional_precision'] ?? null;
-            if (!is_string($column) || (!is_int($precision)
-                && (!is_string($precision) || preg_match('/^[0-9]+$/D', $precision) !== 1))) {
+            if (
+                !is_string($column) || (!is_int($precision)
+                && (!is_string($precision) || preg_match('/^[0-9]+$/D', $precision) !== 1))
+            ) {
                 continue;
             }
             $result[$column] = (int) $precision;

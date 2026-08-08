@@ -52,10 +52,14 @@ final class CanonicalDefinitionPhysicalSchemaCompilerTest extends TestCase
             '018f4f24-98d8-7ad4-8f3f-38c909178b6c',
             'site.default.contact',
         )), SiteContext::fromString('default'));
-        $leftNames = array_map(static fn ($index): string => strtolower($index->physicalName),
-            $left->table('record')?->indexes() ?? []);
-        $rightNames = array_map(static fn ($index): string => strtolower($index->physicalName),
-            $right->table('record')?->indexes() ?? []);
+        $leftNames = array_map(
+            static fn ($index): string => strtolower($index->physicalName),
+            $left->table('record')?->indexes() ?? []
+        );
+        $rightNames = array_map(
+            static fn ($index): string => strtolower($index->physicalName),
+            $right->table('record')?->indexes() ?? []
+        );
 
         self::assertSame([], array_intersect($leftNames, $rightNames));
         foreach ([...$leftNames, ...$rightNames] as $name) {
@@ -114,6 +118,7 @@ final class CanonicalDefinitionPhysicalSchemaCompilerTest extends TestCase
             'site.default.asset',
         );
         $document['fields'][1]['length'] = 1000;
+        $document['fields'][1]['indexed'] = false;
         $definition = EntityTypeDefinition::fromArray($document);
         (new BusinessDefinitionValidator(new FieldTypeRegistry()))->validateGraph([$definition]);
 

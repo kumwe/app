@@ -197,11 +197,13 @@ final class DoctrinePhysicalSchemaGatewayDefaultTest extends TestCase
     public function testMutableTemporalAliasesStillRequireExactMicrosecondPhysicalPrecision(): void
     {
         $gateway = $this->gateway(new PostgreSQLPlatform());
-        foreach ([
+        foreach (
+            [
             'time_immutable' => 'time',
             'datetime_immutable' => 'datetime',
             'datetimetz_immutable' => 'datetimetz',
-        ] as $expectedType => $actualType) {
+            ] as $expectedType => $actualType
+        ) {
             $expected = self::column('temporal_' . $actualType, $expectedType);
             $actual = self::actualColumn($expected->physicalName, $actualType);
 

@@ -71,11 +71,13 @@ final readonly class BusinessSchemaExecutor
     {
         $this->authorize($context, 'business.schema.recover');
         $plan = $this->requiredPlan($context, $planId);
-        if (!in_array(
-            $plan->status,
-            [SchemaPlanStatus::Executing, SchemaPlanStatus::Failed, SchemaPlanStatus::RecoveryRequired],
-            true,
-        )) {
+        if (
+            !in_array(
+                $plan->status,
+                [SchemaPlanStatus::Executing, SchemaPlanStatus::Failed, SchemaPlanStatus::RecoveryRequired],
+                true,
+            )
+        ) {
             throw new BusinessSchemaConflict('Only an interrupted schema plan can be recovered.');
         }
 
@@ -97,9 +99,11 @@ final readonly class BusinessSchemaExecutor
     /** Verify that an initial plan paused only after durable graph-bootstrap postconditions. */
     public function isGraphBootstrapPause(ExecutionContext $context, SchemaPlan $plan): bool
     {
-        if ($plan->siteIdentifier !== $context->site()->identifier()
+        if (
+            $plan->siteIdentifier !== $context->site()->identifier()
             || $plan->fromSchemaChecksum !== null
-            || $plan->status !== SchemaPlanStatus::RecoveryRequired) {
+            || $plan->status !== SchemaPlanStatus::RecoveryRequired
+        ) {
             return false;
         }
         try {
@@ -119,17 +123,21 @@ final readonly class BusinessSchemaExecutor
         foreach ($steps as $offset => $step) {
             $operation = $operations[$offset];
             if ($step->state === SchemaStepStatus::Completed) {
-                if (!in_array(
-                    $operation->kind,
-                    [SchemaOperationKind::CreateTable, SchemaOperationKind::AddForeignKey],
-                    true,
-                ) || !$this->physicalSchema->operationSatisfied($operation, $target)) {
+                if (
+                    !in_array(
+                        $operation->kind,
+                        [SchemaOperationKind::CreateTable, SchemaOperationKind::AddForeignKey],
+                        true,
+                    ) || !$this->physicalSchema->operationSatisfied($operation, $target)
+                ) {
                     return false;
                 }
                 continue;
             }
-            if ($step->state === SchemaStepStatus::Failed
-                && $operation->kind === SchemaOperationKind::AddForeignKey) {
+            if (
+                $step->state === SchemaStepStatus::Failed
+                && $operation->kind === SchemaOperationKind::AddForeignKey
+            ) {
                 $foreignKeyFailure = true;
                 continue;
             }
@@ -166,337 +174,358 @@ final readonly class BusinessSchemaExecutor
                     $recovery,
                     $operatorRecovery,
                 ): SchemaExecutionOutcome {
-                $plan = $this->requiredPlan($context, $initialPlan->id);
-                if ($recovery) {
-                    if (!in_array(
-                        $plan->status,
-                        [SchemaPlanStatus::Executing, SchemaPlanStatus::Failed, SchemaPlanStatus::RecoveryRequired],
-                        true,
-                    )) {
-                        throw new BusinessSchemaConflict('The schema plan is no longer recoverable.');
-                    }
-                    $priorFence = $plan->executionFence;
-                    $next = $plan->resume($fence, $this->clock->now());
-                    $this->journal(fn () => $this->plans->replace($next, $plan->revision, $priorFence));
-                    $plan = $next;
-                } else {
-                    if ($plan->status !== SchemaPlanStatus::Approved) {
-                        throw new BusinessSchemaConflict('The schema plan changed before lock acquisition.');
-                    }
-                    $next = $plan->begin($fence, $this->clock->now());
-                    $this->journal(fn () => $this->plans->replace($next, $plan->revision));
-                    $plan = $next;
-                }
-
-                try {
-                    if ($plan->fromSchemaChecksum !== null) {
-                        $source = $this->installations->find($plan->definitionId)
-                            ?? throw new BusinessSchemaConflict('The upgrade source installation disappeared.');
-                        $this->assertSourceInstallationBinding(
-                            $context,
-                            $plan,
-                            $source,
-                            $ownerIdentifier,
-                        );
-                        $this->prepareSourceInstallation(
-                            $context,
-                            $source,
-                            $ownerIdentifier,
-                            $purge,
-                        );
+                    $plan = $this->requiredPlan($context, $initialPlan->id);
+                    if ($recovery) {
+                        if (
+                            !in_array(
+                                $plan->status,
+                                [
+                                    SchemaPlanStatus::Executing,
+                                    SchemaPlanStatus::Failed,
+                                    SchemaPlanStatus::RecoveryRequired,
+                                ],
+                                true,
+                            )
+                        ) {
+                            throw new BusinessSchemaConflict('The schema plan is no longer recoverable.');
+                        }
+                        $priorFence = $plan->executionFence;
+                        $next = $plan->resume($fence, $this->clock->now());
+                        $this->journal(fn () => $this->plans->replace($next, $plan->revision, $priorFence));
+                        $plan = $next;
                     } else {
-                        $partial = $this->installations->find($plan->definitionId);
-                        if ($partial !== null) {
-                            if (!$recovery) {
-                                throw new BusinessSchemaConflict(
-                                    'An initial schema installation appeared after approval.',
+                        if ($plan->status !== SchemaPlanStatus::Approved) {
+                            throw new BusinessSchemaConflict('The schema plan changed before lock acquisition.');
+                        }
+                        $next = $plan->begin($fence, $this->clock->now());
+                        $this->journal(fn () => $this->plans->replace($next, $plan->revision));
+                        $plan = $next;
+                    }
+
+                    try {
+                        if ($plan->fromSchemaChecksum !== null) {
+                            $source = $this->installations->find($plan->definitionId)
+                            ?? throw new BusinessSchemaConflict('The upgrade source installation disappeared.');
+                            $this->assertSourceInstallationBinding(
+                                $context,
+                                $plan,
+                                $source,
+                                $ownerIdentifier,
+                            );
+                            $this->prepareSourceInstallation(
+                                $context,
+                                $source,
+                                $ownerIdentifier,
+                                $purge,
+                            );
+                        } else {
+                            $partial = $this->installations->find($plan->definitionId);
+                            if ($partial !== null) {
+                                if (!$recovery) {
+                                    throw new BusinessSchemaConflict(
+                                        'An initial schema installation appeared after approval.',
+                                    );
+                                }
+                                $this->assertInitialRecoveryInstallation(
+                                    $context,
+                                    $plan,
+                                    $partial,
+                                    $ownerIdentifier,
+                                    $target,
                                 );
                             }
-                            $this->assertInitialRecoveryInstallation(
+                            $this->prepareInitialInstallation(
                                 $context,
                                 $plan,
                                 $partial,
                                 $ownerIdentifier,
-                                $target,
                             );
                         }
-                        $this->prepareInitialInstallation(
-                            $context,
-                            $plan,
-                            $partial,
-                            $ownerIdentifier,
-                        );
+
+                        $steps = $this->validatedSteps($plan);
+                    } catch (Throwable $failure) {
+                        $this->recordInterruption($plan, $fence, $failure);
+                        throw $failure;
                     }
-
-                    $steps = $this->validatedSteps($plan);
-                } catch (Throwable $failure) {
-                    $this->recordInterruption($plan, $fence, $failure);
-                    throw $failure;
-                }
-                $completed = 0;
-                $skipped = 0;
-                $chain = $plan->fromSchemaChecksum ?? self::EMPTY_SCHEMA_CHECKSUM;
-                $running = null;
-                $installingRecorded = $this->installations->find($plan->definitionId) !== null;
-                try {
-                    foreach ($plan->operations() as $offset => $operation) {
-                        $step = $steps[$offset];
-                        if ($step->state === SchemaStepStatus::Completed) {
-                            $chain = $step->afterSchemaChecksum
+                    $completed = 0;
+                    $skipped = 0;
+                    $chain = $plan->fromSchemaChecksum ?? self::EMPTY_SCHEMA_CHECKSUM;
+                    $running = null;
+                    $installingRecorded = $this->installations->find($plan->definitionId) !== null;
+                    try {
+                        foreach ($plan->operations() as $offset => $operation) {
+                            $step = $steps[$offset];
+                            if ($step->state === SchemaStepStatus::Completed) {
+                                $chain = $step->afterSchemaChecksum
                                 ?? throw new BusinessSchemaConflict('A completed journal step has no checksum.');
-                            ++$skipped;
-                            continue;
-                        }
+                                ++$skipped;
+                                continue;
+                            }
 
-                        $expectedFence = $step->executionFence;
-                        $step = $step->state === SchemaStepStatus::Pending
+                            $expectedFence = $step->executionFence;
+                            $step = $step->state === SchemaStepStatus::Pending
                             ? $step->start($fence, $chain, $this->clock->now())
                             : $step->resume($fence, $this->clock->now());
-                        $this->journal(fn () => $this->plans->replaceStep($step, $expectedFence));
-                        $running = $step;
+                            $this->journal(fn () => $this->plans->replaceStep($step, $expectedFence));
+                            $running = $step;
 
-                        if ($operation->kind === SchemaOperationKind::AddForeignKey
-                            && $plan->fromSchemaChecksum === null
-                            && !$installingRecorded) {
-                            $partial = $this->withoutForeignKeys($target);
-                            $inspectedPartial = $this->physicalSchema->inspect($partial);
-                            if ($inspectedPartial === null
-                                || !hash_equals($inspectedPartial->checksum(), $partial->checksum())) {
-                                throw new BusinessSchemaConflict(
-                                    'Initial entity tables must exist exactly before graph foreign keys are deferred.',
+                            if (
+                                $operation->kind === SchemaOperationKind::AddForeignKey
+                                && $plan->fromSchemaChecksum === null
+                                && !$installingRecorded
+                            ) {
+                                $partial = $this->withoutForeignKeys($target);
+                                $inspectedPartial = $this->physicalSchema->inspect($partial);
+                                if (
+                                    $inspectedPartial === null
+                                    || !hash_equals($inspectedPartial->checksum(), $partial->checksum())
+                                ) {
+                                    throw new BusinessSchemaConflict(
+                                        'Initial entity tables must exist exactly before graph foreign keys '
+                                        . 'are deferred.',
+                                    );
+                                }
+                                $now = $this->clock->now();
+                                $installing = new SchemaInstallation(
+                                    $plan->definitionId,
+                                    $plan->siteIdentifier,
+                                    $ownerIdentifier,
+                                    $plan->toDefinitionVersion,
+                                    $plan->toDefinitionChecksum,
+                                    $partial->checksum(),
+                                    $partial,
+                                    SchemaInstallationStatus::Installing,
+                                    $now,
+                                    $now,
                                 );
+                                $this->journal(fn () => $this->installations->save($installing));
+                                $installingRecorded = true;
                             }
-                            $now = $this->clock->now();
-                            $installing = new SchemaInstallation(
-                                $plan->definitionId,
-                                $plan->siteIdentifier,
-                                $ownerIdentifier,
-                                $plan->toDefinitionVersion,
-                                $plan->toDefinitionChecksum,
-                                $partial->checksum(),
-                                $partial,
-                                SchemaInstallationStatus::Installing,
-                                $now,
-                                $now,
-                            );
-                            $this->journal(fn () => $this->installations->save($installing));
-                            $installingRecorded = true;
-                        }
 
-                        $isRewrite = in_array(
-                            $operation->kind,
-                            [
+                            $isRewrite = in_array(
+                                $operation->kind,
+                                [
                                 SchemaOperationKind::Backfill,
                                 SchemaOperationKind::Transform,
                                 SchemaOperationKind::RepinRecords,
-                            ],
-                            true,
-                        );
-                        if ($this->environment->databaseDriver() === 'pgsql') {
-                            if ($isRewrite) {
-                                [$step, $chain] = $this->rewritePostgres(
-                                    $step,
-                                    $operation,
-                                    $target,
-                                    $definition,
-                                    $fence,
-                                    $chain,
-                                );
-                            } else {
-                                [$step, $chain] = $this->ordinaryPostgres(
-                                    $step,
-                                    $operation,
-                                    $target,
-                                    $fence,
-                                    $chain,
-                                );
-                            }
-                        } else {
-                            $alreadySatisfied = $operation->kind !== SchemaOperationKind::Transform
-                                && $this->physicalSchema->operationSatisfied($operation, $target);
-                            $processed = 0;
-                            if (!$alreadySatisfied) {
-                                if (in_array($operation->kind, [
-                                    SchemaOperationKind::Backfill,
-                                    SchemaOperationKind::Transform,
-                                    SchemaOperationKind::RepinRecords,
-                                ], true)) {
-                                    [$step, $processed] = $this->rewrite(
+                                ],
+                                true,
+                            );
+                            if ($this->environment->databaseDriver() === 'pgsql') {
+                                if ($isRewrite) {
+                                    [$step, $chain] = $this->rewritePostgres(
                                         $step,
                                         $operation,
                                         $target,
                                         $definition,
                                         $fence,
+                                        $chain,
                                     );
                                 } else {
-                                    $this->physicalSchema->execute($operation, $target);
-                                    if (!$this->physicalSchema->operationSatisfied($operation, $target)) {
-                                        throw new BusinessSchemaConflict(
-                                            'A physical schema operation did not satisfy its approved postcondition.',
+                                    [$step, $chain] = $this->ordinaryPostgres(
+                                        $step,
+                                        $operation,
+                                        $target,
+                                        $fence,
+                                        $chain,
+                                    );
+                                }
+                            } else {
+                                $alreadySatisfied = $operation->kind !== SchemaOperationKind::Transform
+                                && $this->physicalSchema->operationSatisfied($operation, $target);
+                                $processed = 0;
+                                if (!$alreadySatisfied) {
+                                    if (
+                                        in_array($operation->kind, [
+                                        SchemaOperationKind::Backfill,
+                                        SchemaOperationKind::Transform,
+                                        SchemaOperationKind::RepinRecords,
+                                        ], true)
+                                    ) {
+                                        [$step, $processed] = $this->rewrite(
+                                            $step,
+                                            $operation,
+                                            $target,
+                                            $definition,
+                                            $fence,
                                         );
+                                    } else {
+                                        $this->physicalSchema->execute($operation, $target);
+                                        if (!$this->physicalSchema->operationSatisfied($operation, $target)) {
+                                            throw new BusinessSchemaConflict(
+                                                'A physical schema operation did not satisfy its approved '
+                                                . 'postcondition.',
+                                            );
+                                        }
                                     }
                                 }
-                            }
-                            $chain = $this->nextChain($chain, $operation, $fence, $alreadySatisfied);
-                            $step = $step->complete($chain, [
+                                $chain = $this->nextChain($chain, $operation, $fence, $alreadySatisfied);
+                                $step = $step->complete($chain, [
                                 'already_satisfied' => $alreadySatisfied,
                                 'processed_rows' => $processed,
                                 'fence' => $fence,
                                 'transactional_ddl' => false,
-                            ], $this->clock->now());
-                            $this->journal(fn () => $this->plans->replaceStep($step, $fence));
+                                ], $this->clock->now());
+                                $this->journal(fn () => $this->plans->replaceStep($step, $fence));
+                            }
+                            $running = null;
+                            ++$completed;
                         }
-                        $running = null;
-                        ++$completed;
-                    }
 
-                    $completedAt = $this->clock->now();
-                    $installation = null;
-                    if ($purge) {
-                        $schemaChecksum = BusinessSchemaPlanner::PURGED_SCHEMA_CHECKSUM;
-                    } else {
-                        $inspected = $this->physicalSchema->inspect($target);
-                        if ($inspected === null || !hash_equals($inspected->checksum(), $plan->targetSchemaChecksum)) {
-                            throw new BusinessSchemaConflict(
-                                'The final physical schema does not match the approved blueprint checksum.',
-                            );
-                        }
-                        $priorInstallation = $this->installations->find($plan->definitionId);
-                        $installation = new SchemaInstallation(
-                            $plan->definitionId,
-                            $plan->siteIdentifier,
-                            $ownerIdentifier,
-                            $plan->toDefinitionVersion,
-                            $plan->toDefinitionChecksum,
-                            $target->checksum(),
-                            $target,
-                            SchemaInstallationStatus::Active,
-                            $priorInstallation?->installedAt ?? $completedAt,
-                            $completedAt,
-                        );
-                        $schemaChecksum = $target->checksum();
-                    }
-                    $result = new SchemaExecutionOutcome(
-                        $plan->id,
-                        $fence,
-                        $completed,
-                        $skipped,
-                        $schemaChecksum,
-                        $completedAt,
-                        $recovery,
-                    );
-                    $finished = $plan->complete($result->toArray(), $completedAt);
-                    $this->journal(function () use (
-                        $purge,
-                        $plan,
-                        $installation,
-                        $finished,
-                        $fence,
-                        $context,
-                        $recovery,
-                        $operatorRecovery,
-                        $ownerIdentifier,
-                        $result,
-                    ): void {
-                        $ownerActive = $this->executionState->lockOwner(
-                            $context->site(),
-                            $plan->definitionId,
-                            $ownerIdentifier,
-                            false,
-                        );
-                        $status = $this->executionState->lockInstallationStatus($plan->definitionId);
+                        $completedAt = $this->clock->now();
+                        $installation = null;
                         if ($purge) {
-                            if (!in_array($status, [
-                                SchemaInstallationStatus::Active,
-                                SchemaInstallationStatus::Installing,
-                                SchemaInstallationStatus::Disabled,
-                                SchemaInstallationStatus::Preserved,
-                            ], true)) {
+                            $schemaChecksum = BusinessSchemaPlanner::PURGED_SCHEMA_CHECKSUM;
+                        } else {
+                            $inspected = $this->physicalSchema->inspect($target);
+                            if (
+                                $inspected === null
+                                || !hash_equals($inspected->checksum(), $plan->targetSchemaChecksum)
+                            ) {
                                 throw new BusinessSchemaConflict(
-                                    'The purge source installation changed during execution.',
+                                    'The final physical schema does not match the approved blueprint checksum.',
                                 );
                             }
-                            $this->installations->remove($plan->definitionId, $plan->siteIdentifier);
-                        } else {
-                            $allowedStatus = $plan->fromSchemaChecksum === null
+                            $priorInstallation = $this->installations->find($plan->definitionId);
+                            $installation = new SchemaInstallation(
+                                $plan->definitionId,
+                                $plan->siteIdentifier,
+                                $ownerIdentifier,
+                                $plan->toDefinitionVersion,
+                                $plan->toDefinitionChecksum,
+                                $target->checksum(),
+                                $target,
+                                SchemaInstallationStatus::Active,
+                                $priorInstallation?->installedAt ?? $completedAt,
+                                $completedAt,
+                            );
+                            $schemaChecksum = $target->checksum();
+                        }
+                        $result = new SchemaExecutionOutcome(
+                            $plan->id,
+                            $fence,
+                            $completed,
+                            $skipped,
+                            $schemaChecksum,
+                            $completedAt,
+                            $recovery,
+                        );
+                        $finished = $plan->complete($result->toArray(), $completedAt);
+                        $this->journal(function () use (
+                            $purge,
+                            $plan,
+                            $installation,
+                            $finished,
+                            $fence,
+                            $context,
+                            $recovery,
+                            $operatorRecovery,
+                            $ownerIdentifier,
+                            $result,
+                        ): void {
+                            $ownerActive = $this->executionState->lockOwner(
+                                $context->site(),
+                                $plan->definitionId,
+                                $ownerIdentifier,
+                                false,
+                            );
+                            $status = $this->executionState->lockInstallationStatus($plan->definitionId);
+                            if ($purge) {
+                                if (
+                                    !in_array($status, [
+                                    SchemaInstallationStatus::Active,
+                                    SchemaInstallationStatus::Installing,
+                                    SchemaInstallationStatus::Disabled,
+                                    SchemaInstallationStatus::Preserved,
+                                    ], true)
+                                ) {
+                                    throw new BusinessSchemaConflict(
+                                        'The purge source installation changed during execution.',
+                                    );
+                                }
+                                $this->installations->remove($plan->definitionId, $plan->siteIdentifier);
+                            } else {
+                                $allowedStatus = $plan->fromSchemaChecksum === null
                                 ? [null, SchemaInstallationStatus::Installing, SchemaInstallationStatus::Preserved]
                                 : [SchemaInstallationStatus::Installing, SchemaInstallationStatus::Preserved];
-                            if (!in_array($status, $allowedStatus, true)) {
-                                throw new BusinessSchemaConflict(
-                                    'The schema installation lifecycle changed during execution.',
+                                if (!in_array($status, $allowedStatus, true)) {
+                                    throw new BusinessSchemaConflict(
+                                        'The schema installation lifecycle changed during execution.',
+                                    );
+                                }
+                                $finalInstallation = $installation
+                                ?? throw new \LogicException('Schema finalization lost its installation state.');
+                                $this->installations->save(
+                                    $ownerActive
+                                        ? $finalInstallation
+                                        : $finalInstallation->preserve($result->completedAt),
                                 );
                             }
-                            $finalInstallation = $installation
-                                ?? throw new \LogicException('Schema finalization lost its installation state.');
-                            $this->installations->save(
-                                $ownerActive ? $finalInstallation : $finalInstallation->preserve($result->completedAt),
-                            );
-                        }
-                        $this->plans->replace($finished, $plan->revision, $fence);
-                        $this->audit->record(new AuditEvent(
-                            Uuid::uuid7()->toString(),
-                            $result->completedAt,
-                            $context->actorId(),
-                            $operatorRecovery ? 'business.schema.recover' : 'business.schema.execute',
-                            'business_schema_plan',
-                            $plan->id,
-                            'success',
-                            $result->toArray(),
-                        ));
-                    });
+                            $this->plans->replace($finished, $plan->revision, $fence);
+                            $this->audit->record(new AuditEvent(
+                                Uuid::uuid7()->toString(),
+                                $result->completedAt,
+                                $context->actorId(),
+                                $operatorRecovery ? 'business.schema.recover' : 'business.schema.execute',
+                                'business_schema_plan',
+                                $plan->id,
+                                'success',
+                                $result->toArray(),
+                            ));
+                        });
 
-                    return $result;
-                } catch (Throwable $failure) {
-                    $failedAt = $this->clock->now();
-                    if ($running instanceof SchemaPlanStep && $running->state === SchemaStepStatus::Running) {
-                        try {
-                            $failed = $running->fail('schema_execution_interrupted', [
+                        return $result;
+                    } catch (Throwable $failure) {
+                        $failedAt = $this->clock->now();
+                        if ($running instanceof SchemaPlanStep && $running->state === SchemaStepStatus::Running) {
+                            try {
+                                $failed = $running->fail('schema_execution_interrupted', [
                                 'failure_digest' => hash('sha256', get_class($failure)),
                                 'fence' => $fence,
-                            ], $failedAt);
-                            $this->journal(fn () => $this->plans->replaceStep($failed, $fence));
-                        } catch (Throwable) {
-                            // A stale fence must never be allowed to overwrite the current executor journal.
+                                ], $failedAt);
+                                $this->journal(fn () => $this->plans->replaceStep($failed, $fence));
+                            } catch (Throwable) {
+                                // A stale fence must never be allowed to overwrite the current executor journal.
+                            }
                         }
-                    }
-                    $interrupted = $this->recordInterruption($plan, $fence, $failure, $failedAt);
-                    if ($interrupted instanceof SchemaPlan && $this->canCompensateInitial($plan)) {
-                        try {
-                            $journal = $this->plans->steps($plan->id);
-                            $operations = $plan->operations();
-                            $created = [];
-                            foreach ($journal as $offset => $journalStep) {
-                                if ($journalStep->state === SchemaStepStatus::Completed) {
-                                    $created[] = $operations[$offset];
+                        $interrupted = $this->recordInterruption($plan, $fence, $failure, $failedAt);
+                        if ($interrupted instanceof SchemaPlan && $this->canCompensateInitial($plan)) {
+                            try {
+                                $journal = $this->plans->steps($plan->id);
+                                $operations = $plan->operations();
+                                $created = [];
+                                foreach ($journal as $offset => $journalStep) {
+                                    if ($journalStep->state === SchemaStepStatus::Completed) {
+                                        $created[] = $operations[$offset];
+                                    }
                                 }
-                            }
-                            foreach (array_reverse($created) as $createdOperation) {
-                                $this->physicalSchema->compensateCreateTable($createdOperation);
-                            }
-                            $installation = $this->installations->find($plan->definitionId);
-                            if ($installation?->status === SchemaInstallationStatus::Installing) {
-                                $this->journal(fn () => $this->installations->remove(
-                                    $plan->definitionId,
-                                    $plan->siteIdentifier,
-                                ));
-                            }
-                            $compensated = $interrupted->compensate([
+                                foreach (array_reverse($created) as $createdOperation) {
+                                    $this->physicalSchema->compensateCreateTable($createdOperation);
+                                }
+                                $installation = $this->installations->find($plan->definitionId);
+                                if ($installation?->status === SchemaInstallationStatus::Installing) {
+                                    $this->journal(fn () => $this->installations->remove(
+                                        $plan->definitionId,
+                                        $plan->siteIdentifier,
+                                    ));
+                                }
+                                $compensated = $interrupted->compensate([
                                 'reason' => 'initial_additive_failure',
                                 'removed_created_tables' => count($created),
                                 'fence' => $fence,
-                            ], $this->clock->now());
-                            $this->journal(fn () => $this->plans->replace(
-                                $compensated,
-                                $interrupted->revision,
-                                $fence,
-                            ));
-                        } catch (Throwable) {
-                            // Any uncertainty leaves the durable plan recovery-required and preserves all data.
+                                ], $this->clock->now());
+                                $this->journal(fn () => $this->plans->replace(
+                                    $compensated,
+                                    $interrupted->revision,
+                                    $fence,
+                                ));
+                            } catch (Throwable) {
+                                // Any uncertainty leaves the durable plan recovery-required and preserves all data.
+                            }
                         }
+                        throw $failure;
                     }
-                    throw $failure;
-                }
-            },
+                },
             );
         } catch (Throwable $failure) {
             $failedAt = $this->clock->now();
@@ -640,9 +669,11 @@ final readonly class BusinessSchemaExecutor
         if ($purge) {
             $entry = $this->definitions->entry($context->site(), $plan->definitionId)
                 ?? throw new BusinessSchemaNotFound($plan->definitionId);
-            if ($installed === null || $installed->siteIdentifier !== $context->site()->identifier()
+            if (
+                $installed === null || $installed->siteIdentifier !== $context->site()->identifier()
                 || $installed->ownerIdentifier !== $entry->owner->identifier
-                || !hash_equals($installed->schemaChecksum, $plan->fromSchemaChecksum ?? '')) {
+                || !hash_equals($installed->schemaChecksum, $plan->fromSchemaChecksum ?? '')
+            ) {
                 throw new BusinessSchemaConflict('The purge source installation changed after planning.');
             }
             if (!$recovery) {
@@ -672,9 +703,11 @@ final readonly class BusinessSchemaExecutor
                     throw new BusinessSchemaConflict('The source installation changed after schema planning.');
                 }
                 $this->assertInstalledPhysicalState($installed);
-                if ($this->containsPinnedRowBreakingChange($plan)
+                if (
+                    $this->containsPinnedRowBreakingChange($plan)
                     && !$this->hasRecordRepin($plan)
-                    && $this->physicalSchema->hasRowsPinnedBefore($installed->blueprint, $plan->toDefinitionVersion)) {
+                    && $this->physicalSchema->hasRowsPinnedBefore($installed->blueprint, $plan->toDefinitionVersion)
+                ) {
                     throw new BusinessSchemaConflict(
                         'Older pinned rows appeared after approval; destructive evolution is blocked.',
                     );
@@ -699,7 +732,8 @@ final readonly class BusinessSchemaExecutor
         SchemaInstallation $installation,
         string $ownerIdentifier,
     ): void {
-        if ($plan->fromDefinitionVersion === null || $plan->fromDefinitionChecksum === null
+        if (
+            $plan->fromDefinitionVersion === null || $plan->fromDefinitionChecksum === null
             || $plan->fromSchemaChecksum === null
             || $installation->definitionId !== $plan->definitionId
             || $installation->siteIdentifier !== $context->site()->identifier()
@@ -707,7 +741,8 @@ final readonly class BusinessSchemaExecutor
             || $installation->ownerIdentifier !== $ownerIdentifier
             || $installation->definitionVersion !== $plan->fromDefinitionVersion
             || !hash_equals($installation->definitionChecksum, $plan->fromDefinitionChecksum)
-            || !hash_equals($installation->schemaChecksum, $plan->fromSchemaChecksum)) {
+            || !hash_equals($installation->schemaChecksum, $plan->fromSchemaChecksum)
+        ) {
             throw new BusinessSchemaConflict(
                 'The source installation metadata no longer matches the approved schema plan.',
             );
@@ -722,7 +757,8 @@ final readonly class BusinessSchemaExecutor
         PhysicalSchemaBlueprint $target,
     ): void {
         $partial = $this->withoutForeignKeys($target);
-        if ($installation->definitionId !== $plan->definitionId
+        if (
+            $installation->definitionId !== $plan->definitionId
             || $installation->siteIdentifier !== $context->site()->identifier()
             || $installation->siteIdentifier !== $plan->siteIdentifier
             || $installation->ownerIdentifier !== $ownerIdentifier
@@ -733,7 +769,8 @@ final readonly class BusinessSchemaExecutor
                 SchemaInstallationStatus::Preserved,
             ], true)
             || !hash_equals($installation->schemaChecksum, $partial->checksum())
-            || !hash_equals($installation->blueprint->checksum(), $partial->checksum())) {
+            || !hash_equals($installation->blueprint->checksum(), $partial->checksum())
+        ) {
             throw new BusinessSchemaConflict(
                 'The partial initial installation metadata does not match the recoverable plan state.',
             );
@@ -773,14 +810,16 @@ final readonly class BusinessSchemaExecutor
         $evidence = $this->evidence->find($context->site(), $plan->recoveryEvidenceId)
             ?? throw new BusinessSchemaNotFound($plan->recoveryEvidenceId);
         $notBefore = $this->clock->now()->sub(new DateInterval(self::RECOVERY_MAX_AGE));
-        if (!$evidence->qualifies(
-            $context->site()->identifier(),
-            $this->environment->databaseDriver(),
-            $this->environment->databaseServerVersion(),
-            $this->environment->applicationRelease(),
-            $plan->fromSchemaChecksum,
-            $notBefore,
-        )) {
+        if (
+            !$evidence->qualifies(
+                $context->site()->identifier(),
+                $this->environment->databaseDriver(),
+                $this->environment->databaseServerVersion(),
+                $this->environment->applicationRelease(),
+                $plan->fromSchemaChecksum,
+                $notBefore,
+            )
+        ) {
             throw new BusinessSchemaConflict('Recovery evidence is stale or does not match this release and engine.');
         }
     }
@@ -795,10 +834,12 @@ final readonly class BusinessSchemaExecutor
         }
         foreach ($operations as $offset => $operation) {
             $step = $steps[$offset];
-            if ($step->ordinal !== $operation->ordinal
+            if (
+                $step->ordinal !== $operation->ordinal
                 || !hash_equals($step->operationChecksum, $operation->checksum())
                 || $step->operationKind !== $operation->kind
-                || $step->risk !== $operation->risk) {
+                || $step->risk !== $operation->risk
+            ) {
                 throw new BusinessSchemaConflict('The execution journal disagrees with the immutable plan.');
             }
         }
@@ -828,8 +869,10 @@ final readonly class BusinessSchemaExecutor
             $this->journal(fn () => $this->plans->replaceStep($step, $fence));
         } while (true);
 
-        if ($operation->kind !== SchemaOperationKind::Transform
-            && !$this->physicalSchema->operationSatisfied($operation, $target)) {
+        if (
+            $operation->kind !== SchemaOperationKind::Transform
+            && !$this->physicalSchema->operationSatisfied($operation, $target)
+        ) {
             throw new BusinessSchemaConflict('A schema rewrite completed without satisfying its postcondition.');
         }
 
@@ -880,8 +923,10 @@ final readonly class BusinessSchemaExecutor
         do {
             [$step, $chunkProcessed, $complete, $nextChain] = $this->journal(
                 function () use ($step, $operation, $target, $definition, $fence, $chain, $processed): array {
-                    if ($operation->kind !== SchemaOperationKind::Transform
-                        && $this->physicalSchema->operationSatisfied($operation, $target)) {
+                    if (
+                        $operation->kind !== SchemaOperationKind::Transform
+                        && $this->physicalSchema->operationSatisfied($operation, $target)
+                    ) {
                         $chunk = new SchemaChunkResult($step->cursor, 0, true);
                         $alreadySatisfied = $processed === 0;
                     } else {
@@ -899,8 +944,10 @@ final readonly class BusinessSchemaExecutor
 
                         return [$checkpoint, $chunk->processed, false, $chain];
                     }
-                    if ($operation->kind !== SchemaOperationKind::Transform
-                        && !$this->physicalSchema->operationSatisfied($operation, $target)) {
+                    if (
+                        $operation->kind !== SchemaOperationKind::Transform
+                        && !$this->physicalSchema->operationSatisfied($operation, $target)
+                    ) {
                         throw new BusinessSchemaConflict(
                             'A PostgreSQL schema rewrite failed its transactional postcondition.',
                         );
@@ -988,9 +1035,11 @@ final readonly class BusinessSchemaExecutor
                 continue;
             }
             $operation = $operations[$offset] ?? null;
-            if ($operation === null
+            if (
+                $operation === null
                 || $operation->kind !== SchemaOperationKind::CreateTable
-                || $operation->recoveryImplication !== 'compensate_safe_addition') {
+                || $operation->recoveryImplication !== 'compensate_safe_addition'
+            ) {
                 return false;
             }
             ++$created;
@@ -1002,20 +1051,24 @@ final readonly class BusinessSchemaExecutor
     private function containsPinnedRowBreakingChange(SchemaPlan $plan): bool
     {
         foreach ($plan->operations() as $operation) {
-            if (in_array(
-                $operation->kind,
-                [
+            if (
+                in_array(
+                    $operation->kind,
+                    [
                     SchemaOperationKind::DropTable,
                     SchemaOperationKind::DropColumn,
                     SchemaOperationKind::Transform,
                     SchemaOperationKind::RenameColumn,
-                ],
-                true,
-            )) {
+                    ],
+                    true,
+                )
+            ) {
                 return true;
             }
-            if ($operation->kind === SchemaOperationKind::AlterColumn
-                && !$this->additiveColumnRelaxation($operation)) {
+            if (
+                $operation->kind === SchemaOperationKind::AlterColumn
+                && !$this->additiveColumnRelaxation($operation)
+            ) {
                 return true;
             }
         }
@@ -1064,10 +1117,12 @@ final readonly class BusinessSchemaExecutor
         }
         $before = \Kumwe\CMS\BusinessSchema\Domain\PhysicalColumnBlueprint::fromArray($operation->before);
         $after = \Kumwe\CMS\BusinessSchema\Domain\PhysicalColumnBlueprint::fromArray($operation->after);
-        if ($before->logicalName !== $after->logicalName
+        if (
+            $before->logicalName !== $after->logicalName
             || $before->physicalName !== $after->physicalName
             || $before->doctrineType !== $after->doctrineType
-            || ($before->nullable && !$after->nullable)) {
+            || ($before->nullable && !$after->nullable)
+        ) {
             return false;
         }
         $old = $before->options;

@@ -107,7 +107,7 @@ final class BusinessDefinitions
             [[
                 'handle' => 'category', 'label' => 'Category', 'kind' => 'many_to_one',
                 'target' => 'kumwe.announcements-example.category', 'inverse' => 'announcements',
-                'required' => true, 'on_delete' => 'restrict',
+                'on_delete' => 'restrict',
             ]],
             [
                 [

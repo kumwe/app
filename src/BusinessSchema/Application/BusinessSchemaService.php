@@ -160,8 +160,10 @@ final readonly class BusinessSchemaService
             }
             $evidence = $this->evidence->find($context->site(), $evidenceId)
                 ?? throw new BusinessSchemaNotFound($evidenceId);
-            if ($plan->fromSchemaChecksum === null
-                || !hash_equals($evidence->sourceSchemaChecksum, $plan->fromSchemaChecksum)) {
+            if (
+                $plan->fromSchemaChecksum === null
+                || !hash_equals($evidence->sourceSchemaChecksum, $plan->fromSchemaChecksum)
+            ) {
                 throw new BusinessSchemaConflict('Recovery evidence is bound to another source schema.');
             }
             $this->assertTrustedEvidence($context, $evidence, false);
@@ -169,14 +171,16 @@ final readonly class BusinessSchemaService
             if ($plan->createdAt > $freshnessFloor) {
                 $freshnessFloor = $plan->createdAt;
             }
-            if (!$evidence->qualifies(
-                $context->site()->identifier(),
-                $this->environment->databaseDriver(),
-                $this->environment->databaseServerVersion(),
-                $this->environment->applicationRelease(),
-                $plan->fromSchemaChecksum,
-                $freshnessFloor,
-            )) {
+            if (
+                !$evidence->qualifies(
+                    $context->site()->identifier(),
+                    $this->environment->databaseDriver(),
+                    $this->environment->databaseServerVersion(),
+                    $this->environment->applicationRelease(),
+                    $plan->fromSchemaChecksum,
+                    $freshnessFloor,
+                )
+            ) {
                 throw new BusinessSchemaConflict(
                     'Recovery evidence must be a fresh clean-target drill created for this persisted plan.',
                 );
@@ -312,12 +316,14 @@ final readonly class BusinessSchemaService
         SchemaRecoveryEvidence $evidence,
         bool $requireCurrentVerifier,
     ): void {
-        if (!$evidence->restoreTested
+        if (
+            !$evidence->restoreTested
             || $evidence->siteIdentifier !== $context->site()->identifier()
             || ($requireCurrentVerifier && $evidence->verifiedBy !== $context->actorId())
             || $evidence->databaseDriver !== $this->environment->databaseDriver()
             || !hash_equals($evidence->databaseServerVersion, $this->environment->databaseServerVersion())
-            || !hash_equals($evidence->applicationRelease, $this->environment->applicationRelease())) {
+            || !hash_equals($evidence->applicationRelease, $this->environment->applicationRelease())
+        ) {
             throw new BusinessSchemaConflict('Recovery evidence does not match the authenticated environment.');
         }
         foreach (self::REQUIRED_DRILL_FLAGS as $flag) {
@@ -327,8 +333,10 @@ final readonly class BusinessSchemaService
         }
         foreach (['client_version', 'restore_target_reference'] as $key) {
             $value = $evidence->details[$key] ?? null;
-            if (!is_string($value) || trim($value) === '' || strlen($value) > 191
-                || preg_match('/[\x00-\x1F\x7F]/', $value) === 1) {
+            if (
+                !is_string($value) || trim($value) === '' || strlen($value) > 191
+                || preg_match('/[\x00-\x1F\x7F]/', $value) === 1
+            ) {
                 throw new BusinessSchemaConflict('Recovery evidence is missing bounded drill identity data.');
             }
         }
@@ -387,11 +395,13 @@ final readonly class BusinessSchemaService
         }
         unset($selected[$root->id]);
         foreach ($selected as $candidate) {
-            if (!in_array(
-                $candidate->status,
-                [SchemaPlanStatus::Approved, SchemaPlanStatus::RecoveryRequired, SchemaPlanStatus::Completed],
-                true,
-            )) {
+            if (
+                !in_array(
+                    $candidate->status,
+                    [SchemaPlanStatus::Approved, SchemaPlanStatus::RecoveryRequired, SchemaPlanStatus::Completed],
+                    true,
+                )
+            ) {
                 throw new BusinessSchemaConflict(
                     'Every connected initial schema plan must be independently approved before graph execution.',
                 );

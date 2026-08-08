@@ -31,14 +31,16 @@ final readonly class BusinessRecordMutationGeneration
                 SchemaInstallationStatus::Preserved,
             ]
             : [SchemaInstallationStatus::Active];
-        if ($installation->definitionId !== $this->definitionId
+        if (
+            $installation->definitionId !== $this->definitionId
             || $installation->siteIdentifier !== $this->siteIdentifier
             || $installation->ownerIdentifier !== $this->ownerIdentifier
             || $installation->definitionVersion !== $this->definitionVersion
             || !hash_equals($installation->definitionChecksum, $this->definitionChecksum)
             || !hash_equals($installation->schemaChecksum, $this->schemaChecksum)
             || $installation->status !== $this->status
-            || !in_array($this->status, $allowed, true)) {
+            || !in_array($this->status, $allowed, true)
+        ) {
             throw new BusinessRecordTemporarilyUnavailable();
         }
     }

@@ -92,13 +92,15 @@ final class BusinessRecordEvolutionIntegrationTest extends TestCase
             static fn (SchemaOperation $operation): SchemaOperationKind => $operation->kind,
             $operations,
         );
-        foreach ([
+        foreach (
+            [
             SchemaOperationKind::RenameColumn,
             SchemaOperationKind::Backfill,
             SchemaOperationKind::AlterColumn,
             SchemaOperationKind::AddIndex,
             SchemaOperationKind::RepinRecords,
-        ] as $requiredKind) {
+            ] as $requiredKind
+        ) {
             self::assertContains($requiredKind, $kinds);
         }
 
@@ -164,11 +166,13 @@ final class BusinessRecordEvolutionIntegrationTest extends TestCase
         $processedRows = [];
         foreach ($schemas->steps($context, $approved->id) as $step) {
             self::assertSame(SchemaStepStatus::Completed, $step->state);
-            if (in_array(
-                $step->operationKind,
-                [SchemaOperationKind::Backfill, SchemaOperationKind::RepinRecords],
-                true,
-            )) {
+            if (
+                in_array(
+                    $step->operationKind,
+                    [SchemaOperationKind::Backfill, SchemaOperationKind::RepinRecords],
+                    true,
+                )
+            ) {
                 $processedRows[$step->operationKind->value] = $step->outcome['processed_rows'] ?? null;
             }
         }

@@ -51,8 +51,7 @@ final readonly class BusinessRecordView
         array $projection = [],
         ?EntityTypeDefinition $definition = null,
         ?array $resolvedValues = null,
-    ): self
-    {
+    ): self {
         $values = $resolvedValues ?? $record->values();
         if ($definition !== null) {
             $visible = [];

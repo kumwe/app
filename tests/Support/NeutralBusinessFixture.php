@@ -787,11 +787,13 @@ final class NeutralBusinessFixture
         }
         if ($plan->status === SchemaPlanStatus::Approved) {
             $schemas->execute($context, $plan->id);
-        } elseif (in_array(
-            $plan->status,
-            [SchemaPlanStatus::Executing, SchemaPlanStatus::Failed, SchemaPlanStatus::RecoveryRequired],
-            true,
-        )) {
+        } elseif (
+            in_array(
+                $plan->status,
+                [SchemaPlanStatus::Executing, SchemaPlanStatus::Failed, SchemaPlanStatus::RecoveryRequired],
+                true,
+            )
+        ) {
             $schemas->recover($context, $plan->id);
         }
         $installation = $schemas->installation($context, $published->definition->id);

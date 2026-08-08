@@ -36,10 +36,12 @@ final readonly class DoctrineBusinessSchemaExecutionStateGuard implements Busine
         }
         $active = $row !== false
             && in_array($row['owner_active'] ?? null, [true, 1, '1', 't', 'true'], true);
-        if ($row === false
+        if (
+            $row === false
             || ($row['site_identifier'] ?? null) !== $site->identifier()
             || ($row['owner_identifier'] ?? null) !== $ownerIdentifier
-            || ($activeRequired && !$active)) {
+            || ($activeRequired && !$active)
+        ) {
             throw new BusinessSchemaConflict('The definition owner changed during schema execution.');
         }
 
