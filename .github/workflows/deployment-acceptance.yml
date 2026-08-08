@@ -565,7 +565,7 @@ jobs:
           fi
           docker run --detach \
             --name "$restore_container" \
-            --network kumwe_backend \
+            --network bridge \
             --publish "127.0.0.1:$DATABASE_PORT:$DATABASE_PORT" \
             --health-cmd "$database_health" \
             --health-interval 2s \
@@ -583,6 +583,7 @@ jobs:
             --env POSTGRES_USER=kumwe \
             --env "POSTGRES_PASSWORD=$database_password" \
             "$DATABASE_IMAGE" >/dev/null
+          docker network connect kumwe_backend "$restore_container"
           for attempt in $(seq 1 60); do
             [[ "$(docker inspect --format '{{.State.Health.Status}}' "$restore_container")" == healthy ]] && break
             sleep 2
