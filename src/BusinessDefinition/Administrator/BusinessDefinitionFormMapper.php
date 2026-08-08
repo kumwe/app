@@ -52,6 +52,9 @@ final readonly class BusinessDefinitionFormMapper
                 'immutable_after_create' => $identity || $this->checked($form, "field_{$index}_immutable"),
                 'server_only' => $computed || $this->checked($form, "field_{$index}_server_only"),
                 'computed' => $computed,
+                'computation_mode' => $computed && $this->checked($form, "field_{$index}_stored")
+                    ? 'stored'
+                    : 'virtual',
                 'read_only' => $computed || $this->checked($form, "field_{$index}_read_only"),
                 'create_visible' => !$computed && !$this->checked($form, "field_{$index}_hide_create"),
                 'update_visible' => !$computed && !$this->checked($form, "field_{$index}_hide_update"),

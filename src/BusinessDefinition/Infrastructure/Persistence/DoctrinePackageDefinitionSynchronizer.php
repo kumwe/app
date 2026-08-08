@@ -23,6 +23,8 @@ use Kumwe\CMS\BusinessDefinition\Domain\DefinitionStatus;
 use Kumwe\CMS\BusinessDefinition\Domain\EntityTypeDefinition;
 use Kumwe\CMS\BusinessDefinition\Domain\FieldTypeDefinition;
 use Kumwe\CMS\BusinessDefinition\Domain\InvalidBusinessDefinition;
+use Kumwe\CMS\BusinessSchema\Application\PublishedDefinitionSchemaObserver;
+use Kumwe\CMS\BusinessSchema\Application\BusinessSchemaLifecycleObserver;
 use Kumwe\CMS\Infrastructure\Persistence\TableNames;
 use LogicException;
 use Psr\Clock\ClockInterface;
@@ -38,6 +40,8 @@ final readonly class DoctrinePackageDefinitionSynchronizer implements PackageDef
         private ResourceSiteOwnershipWriter $ownership,
         private AuditRecorder $audit,
         private ClockInterface $clock,
+        private ?PublishedDefinitionSchemaObserver $schemaObserver = null,
+        private ?BusinessSchemaLifecycleObserver $schemaLifecycle = null,
     ) {
     }
 
@@ -89,7 +93,24 @@ final readonly class DoctrinePackageDefinitionSynchronizer implements PackageDef
         }
         $this->synchronizeFieldTypes($owner, $releaseVersion, $fieldTypes, $active);
         $this->synchronizeDefinitions($owner, $site, $definitions, $actorId);
-        $this->repository->setOwnerActive($extensionIdentifier, $active, $this->clock->now());
+        $publishedGraph = [];
+        foreach ($resultingGraph as $definition) {
+            $record = $this->repository->published($site, $definition->handle);
+            if ($record !== null) {
+                $publishedGraph[] = $record;
+            }
+        }
+        if (count($publishedGraph) === count($resultingGraph) && $publishedGraph !== []) {
+            $this->schemaObserver?->observePublishedGraph(
+                $site,
+                $publishedGraph,
+                $actorId,
+                $this->clock->now(),
+            );
+        }
+        $lifecycleAt = $this->clock->now();
+        $this->repository->setOwnerActive($extensionIdentifier, $active, $lifecycleAt);
+        $this->schemaLifecycle?->setOwnerActive($extensionIdentifier, $active, $lifecycleAt);
         $this->record($actorId, 'business_definition.package.synchronize', $extensionIdentifier, [
             'release_version' => $releaseVersion,
             'field_types' => count($fieldTypes),
@@ -101,7 +122,9 @@ final readonly class DoctrinePackageDefinitionSynchronizer implements PackageDef
     public function setActive(string $extensionIdentifier, bool $active, string $actorId): void
     {
         $this->assertTransaction();
-        $this->repository->setOwnerActive($extensionIdentifier, $active, $this->clock->now());
+        $lifecycleAt = $this->clock->now();
+        $this->repository->setOwnerActive($extensionIdentifier, $active, $lifecycleAt);
+        $this->schemaLifecycle?->setOwnerActive($extensionIdentifier, $active, $lifecycleAt);
         $this->record(
             $actorId,
             $active ? 'business_definition.package.activate' : 'business_definition.package.disable',

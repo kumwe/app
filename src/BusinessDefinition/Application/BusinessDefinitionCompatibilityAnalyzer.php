@@ -10,6 +10,7 @@ use Kumwe\CMS\BusinessDefinition\Domain\CompatibilityPlan;
 use Kumwe\CMS\BusinessDefinition\Domain\EntityTypeDefinition;
 use Kumwe\CMS\BusinessDefinition\Domain\FieldDefinition;
 use Kumwe\CMS\BusinessDefinition\Domain\RelationshipDefinition;
+use Kumwe\CMS\BusinessDefinition\Domain\RecordInvariantDefinition;
 use Kumwe\CMS\BusinessDefinition\Domain\ActionDefinition;
 use Kumwe\CMS\BusinessDefinition\Domain\ViewDefinition;
 
@@ -205,6 +206,7 @@ final class BusinessDefinitionCompatibilityAnalyzer
             }
             if (
                 $field->formula?->toArray() !== $candidate->formula?->toArray()
+                || $field->computationMode !== $candidate->computationMode
                 || $field->immutableAfterCreate !== $candidate->immutableAfterCreate
                 || $field->sensitivity !== $candidate->sensitivity
                 || $field->default !== $candidate->default
@@ -223,7 +225,7 @@ final class BusinessDefinitionCompatibilityAnalyzer
                 [
                 'handle', 'type', 'required', 'nullable', 'length', 'precision', 'scale', 'configuration',
                 'formula', 'immutable_after_create', 'sensitivity', 'default', 'validators', 'normalizers',
-                'unique', 'indexed',
+                'unique', 'indexed', 'computation_mode',
                 ] as $handled
             ) {
                 unset($oldPresentation[$handled], $newPresentation[$handled]);
@@ -340,6 +342,21 @@ final class BusinessDefinitionCompatibilityAnalyzer
                 '/workflow',
                 CompatibilityClassification::BehaviorChanging,
                 'Change the workflow binding.',
+            );
+        }
+        $oldInvariants = array_map(
+            static fn (RecordInvariantDefinition $invariant): array => $invariant->toArray(),
+            $before->recordInvariants(),
+        );
+        $newInvariants = array_map(
+            static fn (RecordInvariantDefinition $invariant): array => $invariant->toArray(),
+            $after->recordInvariants(),
+        );
+        if ($oldInvariants !== $newInvariants) {
+            $changes[] = new CompatibilityChange(
+                '/record_invariants',
+                CompatibilityClassification::BehaviorChanging,
+                'Change cross-field record invariants.',
             );
         }
     }

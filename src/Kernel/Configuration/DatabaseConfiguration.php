@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\CMS\Kernel\Configuration;
 
 use InvalidArgumentException;
+use Kumwe\CMS\Shared\Domain\DatabaseTablePrefix;
 
 final readonly class DatabaseConfiguration
 {
@@ -33,7 +34,7 @@ final readonly class DatabaseConfiguration
             throw new InvalidArgumentException('The database port is invalid.');
         }
 
-        if (preg_match('/^[a-z][a-z0-9_]{0,30}$/D', $tablePrefix) !== 1) {
+        if (!DatabaseTablePrefix::isValid($tablePrefix)) {
             throw new InvalidArgumentException('The database table prefix is invalid.');
         }
 
