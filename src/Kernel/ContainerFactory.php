@@ -12,6 +12,7 @@ use Kumwe\CMS\Application\Automation\AutomationManagementService;
 use Kumwe\CMS\Application\Automation\Job\DoctrineJobQueue;
 use Kumwe\CMS\Application\Automation\Job\DoctrineScheduler;
 use Kumwe\CMS\Application\Automation\Job\PurgeAdministratorSessionsHandler;
+use Kumwe\CMS\Application\Automation\Job\PurgeBusinessRecordIdempotencyHandler;
 use Kumwe\CMS\Application\Automation\Job\PurgeIdempotencyRecordsHandler;
 use Kumwe\CMS\Application\Automation\Job\RebuildExtensionMapHandler;
 use Kumwe\CMS\Application\Automation\Job\ScheduleRepository;
@@ -268,6 +269,7 @@ use Kumwe\CMS\Infrastructure\Persistence\Migration\ApplicationAuthorizationMigra
 use Kumwe\CMS\Infrastructure\Persistence\Migration\ApplicationAuthorizationMigrationRecovery;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\AuthorizationRecoveryIntegrationMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\BusinessDefinitionCatalogMigration;
+use Kumwe\CMS\Infrastructure\Persistence\Migration\BusinessRecordIdempotencyRetentionMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\BusinessTransactionalRuntimeMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\CoreSchemaMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\ContentModelRuntimeMigration;
@@ -814,6 +816,7 @@ final class ContainerFactory
                     new ExtensionContributionCatalogMigration(self::service($container, TableNames::class)),
                     new BusinessDefinitionCatalogMigration(self::service($container, TableNames::class)),
                     new BusinessTransactionalRuntimeMigration(self::service($container, TableNames::class)),
+                    new BusinessRecordIdempotencyRetentionMigration(self::service($container, TableNames::class)),
                 ],
                 [
                     // Previously distributed builds used a DBAL-equivalent static-analysis rewrite, then
@@ -2452,6 +2455,12 @@ final class ContainerFactory
             self::service($container, IdempotencyPurger::class),
             self::service($container, AuthorizationGateway::class),
         ), true);
+        $container->share(PurgeBusinessRecordIdempotencyHandler::class, static fn (
+            Container $container,
+        ): PurgeBusinessRecordIdempotencyHandler => new PurgeBusinessRecordIdempotencyHandler(
+            self::service($container, BusinessRecordIdempotencyPurger::class),
+            self::service($container, AuthorizationGateway::class),
+        ), true);
         $container->share(RebuildExtensionMapHandler::class, static fn (
             Container $container,
         ): RebuildExtensionMapHandler => new RebuildExtensionMapHandler(
@@ -2467,6 +2476,7 @@ final class ContainerFactory
             new JobHandlerRegistry([
                 self::service($container, PurgeAdministratorSessionsHandler::class),
                 self::service($container, PurgeIdempotencyRecordsHandler::class),
+                self::service($container, PurgeBusinessRecordIdempotencyHandler::class),
                 self::service($container, RebuildExtensionMapHandler::class),
                 self::service($container, TransitionContentHandler::class),
             ]), true);

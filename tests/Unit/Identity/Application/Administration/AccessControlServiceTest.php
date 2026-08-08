@@ -89,6 +89,87 @@ final class AccessControlServiceTest extends TestCase
         );
     }
 
+    public function testAppliesAPermittedLifecycleTransitionUnderTheUserLock(): void
+    {
+        $repository = $this->createMock(AccessControlRepository::class);
+        $repository->method('userStatus')->with(self::USER)->willReturn('active');
+        $repository->expects(self::once())->method('lockUser')->with(self::USER);
+        $repository->expects(self::once())->method('updateUser')->with(
+            self::USER,
+            'member@example.test',
+            'Member',
+            'suspended',
+            3,
+            self::equalTo(new DateTimeImmutable('2026-08-04T10:00:00+00:00')),
+        );
+
+        $this->service($repository)->updateUser(
+            $this->context(),
+            self::USER,
+            'member@example.test',
+            'Member',
+            UserStatus::Suspended,
+            3,
+        );
+    }
+
+    public function testRefusesToReactivateADisabledUser(): void
+    {
+        $repository = $this->createMock(AccessControlRepository::class);
+        $repository->method('userStatus')->with(self::USER)->willReturn('disabled');
+        $repository->expects(self::never())->method('updateUser');
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('A disabled user cannot become active.');
+
+        $this->service($repository)->updateUser(
+            $this->context(),
+            self::USER,
+            'member@example.test',
+            'Member',
+            UserStatus::Active,
+            3,
+        );
+    }
+
+    public function testRefusesToSuspendAUserThatIsNotActive(): void
+    {
+        $repository = $this->createMock(AccessControlRepository::class);
+        $repository->method('userStatus')->with(self::USER)->willReturn('pending');
+        $repository->expects(self::never())->method('updateUser');
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('A pending user cannot become suspended.');
+
+        $this->service($repository)->updateUser(
+            $this->context(),
+            self::USER,
+            'member@example.test',
+            'Member',
+            UserStatus::Suspended,
+            3,
+        );
+    }
+
+    public function testRefusesToUpdateAUserThatNoLongerExists(): void
+    {
+        $repository = $this->createMock(AccessControlRepository::class);
+        $repository->method('userStatus')->with(self::USER)->willReturn(null);
+        $repository->expects(self::never())->method('updateUser');
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('The user does not exist.');
+
+        $this->service($repository)->updateUser(
+            $this->context(),
+            self::USER,
+            'member@example.test',
+            'Member',
+            UserStatus::Active,
+            3,
+        );
+    }
+
     public function testCreatesScopedCapabilityGrantInsideAuditBoundary(): void
     {
         $repository = $this->createMock(AccessControlRepository::class);

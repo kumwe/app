@@ -389,7 +389,9 @@ final class AccessControlIntegrationTest extends TestCase
                 $database->insert($tables->raw('api_tokens'), [
                     'id' => $tokenId,
                     'subject_id' => $userId,
-                    'token_digest' => hash('sha256', 'race-secret'),
+                    // Derived from this run's token ID: the digest column is uniquely indexed, so a
+                    // constant here makes the test pass only against a database it has never seen.
+                    'token_digest' => hash('sha256', 'race-secret:' . $tokenId),
                     'name' => 'Race token',
                     'capabilities' => ['users.manage'],
                     'security_epoch' => (int) $epoch,

@@ -10,9 +10,10 @@ use Kumwe\CMS\Extension\Contribution\AdministratorNavigationDefinition;
 use Kumwe\CMS\Extension\Contribution\AdministratorWorkspaceRegistry;
 use Kumwe\CMS\Extension\Contribution\CapabilityDefinitionRegistry;
 use Kumwe\CMS\Extension\Contribution\ContributionOwner;
+use Kumwe\CMS\Extension\Contribution\ContributionSurface;
 use Kumwe\CMS\Extension\Contribution\ExtensionContributionRegistrySet;
 
-final class AdministratorNavigationRegistry
+final class AdministratorNavigationRegistry implements ContributionSurface
 {
     /** @var array<string, array{owner: ContributionOwner, definition: AdministratorNavigationDefinition}> */
     private array $items = [];

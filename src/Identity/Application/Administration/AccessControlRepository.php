@@ -20,6 +20,9 @@ interface AccessControlRepository
     /** @return list<array<string, mixed>> */
     public function tokens(string $siteIdentifier, int $limit = 100, int $offset = 0): array;
 
+    /** The stored lifecycle status, read under the caller's user lock, or null when no such user exists. */
+    public function userStatus(string $userId): ?string;
+
     public function insertUser(
         string $id,
         string $email,

@@ -76,11 +76,6 @@ final class ExtensionRecord
         $this->changeStatus(ExtensionStatus::Disabled);
     }
 
-    public function markFailed(): void
-    {
-        $this->changeStatus(ExtensionStatus::Failed);
-    }
-
     public function upgrade(ExtensionManifest $manifest): void
     {
         if (!$manifest->identifier()->equals($this->identifier) || $manifest->type() !== $this->type) {

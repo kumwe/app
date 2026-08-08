@@ -252,6 +252,7 @@ jobs:
             image: postgres:17-alpine
             port: 5432
             server-version: '17'
+            coverage: 'true'
             health: >-
               --health-cmd "pg_isready -U kumwe -d kumwe_test"
               --health-interval 5s --health-timeout 5s --health-retries 20
@@ -308,7 +309,7 @@ jobs:
         with:
           php-version: '8.5'
           extensions: apcu, ctype, fileinfo, filter, intl, json, mbstring, openssl, pcntl, pdo, pdo_mysql, pdo_pgsql, redis, sodium, zip
-          coverage: none
+          coverage: ${{ matrix.database.coverage == 'true' && 'pcov' || 'none' }}
           tools: composer:v2
 
       - name: Generate ephemeral application secret
@@ -325,7 +326,44 @@ jobs:
         run: php bin/kumwe database:migrate
 
       - name: Run complete test suite
+        if: matrix.database.coverage != 'true'
         run: composer test
+
+      - name: Run complete test suite with coverage
+        if: matrix.database.coverage == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          install -d build/coverage
+          vendor/bin/phpunit --colors=always \
+            --coverage-clover build/coverage/clover.xml \
+            --coverage-text=build/coverage/summary.txt
+          tail -n +1 build/coverage/summary.txt
+
+      - name: Publish the coverage baseline
+        if: matrix.database.coverage == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          {
+            echo '### Coverage baseline'
+            echo
+            echo 'Measured on the PostgreSQL leg over the complete suite. No threshold is enforced yet;'
+            echo 'this establishes the trend line that session 7 will gate on.'
+            echo
+            echo '```'
+            sed -n '1,20p' build/coverage/summary.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the coverage report
+        if: matrix.database.coverage == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: build/coverage
+          if-no-files-found: error
+          retention-days: 14
 
       - name: Verify schema status
         run: php bin/kumwe database:status

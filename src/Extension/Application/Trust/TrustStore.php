@@ -62,12 +62,6 @@ final readonly class TrustStore
         return $this->runtime->materialize();
     }
 
-    public function repairRuntimeMaterialization(): int
-    {
-        $this->runtime->discardLocal();
-        return $this->runtime->materialize();
-    }
-
     /**
      * @template T
      * @param callable(): T $operation
@@ -82,12 +76,6 @@ final readonly class TrustStore
     public function assertArtifactIntegrity(array $release): void
     {
         $this->artifacts->assertMatches($release);
-    }
-
-    /** Acquires the common trust-generation fence inside the caller's transaction. */
-    public function acquireLifecycleFence(): int
-    {
-        return $this->repository->lockGeneration();
     }
 
     /** @return list<string> */
@@ -290,15 +278,6 @@ final readonly class TrustStore
         }
     }
 
-    public function assertInstalledReleaseTrusted(string $extensionIdentifier, bool $serialize = false): void
-    {
-        $extension = ExtensionIdentifier::fromString($extensionIdentifier);
-        if ($serialize) {
-            $this->repository->lockGeneration();
-        }
-        $this->verifiedInstalledRelease($extension);
-    }
-
     /**
      * Enforces deployed-byte trust and equality with the already-decoded runtime publication entry.
      * @param array<string, mixed> $entry
@@ -412,14 +391,6 @@ final readonly class TrustStore
             !== $manifest->contributions()->toArray()
         ) {
             throw new RuntimePublicationMismatch('The compiled extension contributions are not authoritative.');
-        }
-    }
-
-    /** Validates the authoritative active inventory, including records absent from the compiled map. */
-    public function enforceActiveRuntimeTrust(): void
-    {
-        foreach ($this->activeRuntimeIdentifiers() as $identifier) {
-            $this->enforceRuntimeTrust($identifier);
         }
     }
 

@@ -150,6 +150,8 @@ final readonly class AccessControlService
             $expectedVersion,
             $at,
         ): void {
+            $this->repository->lockUser($id);
+            $this->assertLifecycleTransition($id, $status);
             $this->repository->updateUser(
                 $id,
                 $email,
@@ -370,6 +372,29 @@ final readonly class AccessControlService
         }
 
         return $name;
+    }
+
+    /**
+     * Applies the User aggregate's lifecycle rule to a status change made through this service.
+     *
+     * Administrator forms and the management API submit a target status rather than a named
+     * transition, so the invariant is asserted here against the locked stored status.
+     */
+    private function assertLifecycleTransition(string $id, UserStatus $target): void
+    {
+        $stored = $this->repository->userStatus($id);
+        if ($stored === null) {
+            throw new InvalidArgumentException('The user does not exist.');
+        }
+        $current = UserStatus::tryFrom($stored)
+            ?? throw new InvalidArgumentException('The stored user lifecycle status is invalid.');
+        if (!$current->canTransitionTo($target)) {
+            throw new InvalidArgumentException(sprintf(
+                'A %s user cannot become %s.',
+                $current->value,
+                $target->value,
+            ));
+        }
     }
 
     private function authorize(ExecutionContext $context, AuthorizationResource $resource): void

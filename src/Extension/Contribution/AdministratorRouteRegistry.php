@@ -12,7 +12,7 @@ use Kumwe\CMS\Extension\Application\Trust\TrustStore;
 use Kumwe\CMS\Extension\Runtime\TrustEnforcingRequestHandler;
 use Mezzio\Application;
 
-final class AdministratorRouteRegistry
+final class AdministratorRouteRegistry implements ContributionSurface
 {
     /**
      * @var array<string, array{
