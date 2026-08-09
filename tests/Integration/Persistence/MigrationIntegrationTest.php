@@ -50,6 +50,7 @@ use Kumwe\CMS\Tests\Support\TestKernelFactory;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Ramsey\Uuid\Uuid;
+use ReflectionMethod;
 use RuntimeException;
 use ZipArchive;
 
@@ -468,6 +469,60 @@ final class MigrationIntegrationTest extends TestCase
             'SELECT COUNT(*) FROM %s WHERE menu_id = ?',
             $tables->quoted('navigation_items'),
         ), ['00000000-0000-7000-8000-000000001101']));
+    }
+
+    public function testBusinessSecuritySiteForeignKeyUsesTheExistingMariaDbCollation(): void
+    {
+        $container = TestKernelFactory::create(Environment::fromGlobals());
+        $database = $container->get(Connection::class);
+        self::assertInstanceOf(Connection::class, $database);
+        if (!$database->getDatabasePlatform() instanceof AbstractMySQLPlatform) {
+            self::markTestSkipped('Textual foreign-key collation equality is specific to MySQL and MariaDB.');
+        }
+
+        $prefix = 'c' . substr(str_replace('-', '', Uuid::uuid7()->toString()), 0, 10) . '_';
+        $tables = new TableNames($database, $prefix);
+        $sites = $tables->quoted('sites');
+        $organizations = $tables->quoted('organizations');
+        $database->executeStatement(sprintf(
+            'CREATE TABLE %s (identifier VARCHAR(191) CHARACTER SET utf8mb4 '
+            . 'COLLATE utf8mb4_unicode_ci NOT NULL PRIMARY KEY) ENGINE = InnoDB',
+            $sites,
+        ));
+
+        try {
+            $manager = $database->createSchemaManager();
+            $migration = new BusinessSecurityPortalMigration($tables);
+            $siteIdentifier = $manager->introspectTableByUnquotedName(
+                $tables->raw('sites'),
+            )->getColumn('identifier');
+            /** @var array<string, mixed> $siteIdentifierOptions */
+            $siteIdentifierOptions = (new ReflectionMethod($migration, 'siteIdentifierOptions'))
+                ->invoke($migration, $siteIdentifier);
+            /** @var list<Table> $definitions */
+            $definitions = (new ReflectionMethod($migration, 'tables'))
+                ->invoke($migration, $siteIdentifierOptions);
+            $organizationDefinition = null;
+            foreach ($definitions as $definition) {
+                if ($definition->getObjectName()->getUnqualifiedName()->getValue() === $tables->raw('organizations')) {
+                    $organizationDefinition = $definition;
+                    break;
+                }
+            }
+            self::assertInstanceOf(Table::class, $organizationDefinition);
+
+            $manager->createTable($organizationDefinition);
+
+            $created = $manager->introspectTableByUnquotedName($tables->raw('organizations'));
+            self::assertSame(
+                $siteIdentifier->getCollation(),
+                $created->getColumn('site_identifier')->getCollation(),
+            );
+            self::assertNotEmpty($created->getForeignKeys());
+        } finally {
+            $database->executeStatement(sprintf('DROP TABLE IF EXISTS %s', $organizations));
+            $database->executeStatement(sprintf('DROP TABLE IF EXISTS %s', $sites));
+        }
     }
 
     public function testBusinessSecurityMigrationBackfillsExistingRecordOwnership(): void

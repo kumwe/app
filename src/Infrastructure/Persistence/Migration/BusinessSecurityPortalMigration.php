@@ -6,9 +6,11 @@ namespace Kumwe\CMS\Infrastructure\Persistence\Migration;
 
 use Doctrine\DBAL\ArrayParameterType;
 use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\Schema\Column;
 use Doctrine\DBAL\Schema\PrimaryKeyConstraint;
 use Doctrine\DBAL\Schema\Table;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
+use Doctrine\DBAL\Types\Type;
 use Doctrine\DBAL\Types\Types;
 use JsonException;
 use Kumwe\CMS\Application\Authorization\SiteContext;
@@ -85,7 +87,10 @@ final readonly class BusinessSecurityPortalMigration implements Migration
     {
         $this->extendSites($database);
         $manager = $database->createSchemaManager();
-        foreach ($this->tables() as $table) {
+        $siteIdentifier = $manager->introspectTableByUnquotedName(
+            $this->tables->raw('sites'),
+        )->getColumn('identifier');
+        foreach ($this->tables($this->siteIdentifierOptions($siteIdentifier)) as $table) {
             $name = $table->getObjectName()->getUnqualifiedName()->getValue();
             if (!$manager->tablesExist([$name])) {
                 $manager->createTable($table);
@@ -103,36 +108,47 @@ final readonly class BusinessSecurityPortalMigration implements Migration
     /**
      * Build tables in foreign-key dependency order.
      *
+     * @param   array<string, mixed>  $siteIdentifierOptions  Canonical site identifier column options.
+     *
      * @return  list<Table>  Portable Doctrine schema definitions.
      *
      * @since   2.0.0
      */
-    private function tables(): array
+    private function tables(array $siteIdentifierOptions): array
     {
         return [
-            $this->organizations(),
+            $this->organizations($siteIdentifierOptions),
             $this->workspaces(),
             $this->memberships(),
             $this->membershipWorkspaces(),
             $this->membershipRoles(),
             $this->extensionContributionResourcePolicies(),
             $this->resourcePolicies(),
-            $this->separationOfDutyRules(),
-            $this->approvalRequests(),
+            $this->separationOfDutyRules($siteIdentifierOptions),
+            $this->approvalRequests($siteIdentifierOptions),
             $this->approvalVotes(),
             $this->stepUpCredentials(),
             $this->stepUpRecoveryCodes(),
-            $this->stepUpProofs(),
-            $this->portalSessions(),
+            $this->stepUpProofs($siteIdentifierOptions),
+            $this->portalSessions($siteIdentifierOptions),
         ];
     }
 
-    /** @return Table Organizations remain distinct from sites. @since 2.0.0 */
-    private function organizations(): Table
+    /**
+     * Define organizations using the canonical site identifier's exact character semantics.
+     *
+     * @param   array<string, mixed>  $siteIdentifierOptions  Length, fixedness, charset and collation copied
+     *          from `sites.identifier` for the foreign-key column.
+     *
+     * @return  Table  Organizations remain distinct from sites.
+     *
+     * @since   2.0.0
+     */
+    private function organizations(array $siteIdentifierOptions): Table
     {
         $table = new Table($this->tables->raw('organizations'));
         $table->addColumn('id', Types::GUID);
-        $table->addColumn('site_identifier', Types::STRING, ['length' => 191]);
+        $table->addColumn('site_identifier', Types::STRING, $siteIdentifierOptions);
         $table->addColumn('identifier', Types::STRING, ['length' => 191]);
         $table->addColumn('name', Types::STRING, ['length' => 191]);
         $table->addColumn('status', Types::STRING, ['length' => 24]);
@@ -362,12 +378,20 @@ final readonly class BusinessSecurityPortalMigration implements Migration
         return $table;
     }
 
-    /** @return Table Generic incompatible-role/action and maker-checker rules. @since 2.0.0 */
-    private function separationOfDutyRules(): Table
+    /**
+     * Define generic incompatible-role/action and maker-checker rules.
+     *
+     * @param   array<string, mixed>  $siteIdentifierOptions  Canonical site identifier column options.
+     *
+     * @return  Table  Generic incompatible-role/action and maker-checker rules.
+     *
+     * @since   2.0.0
+     */
+    private function separationOfDutyRules(array $siteIdentifierOptions): Table
     {
         $table = new Table($this->tables->raw('separation_duty_rules'));
         $table->addColumn('id', Types::GUID);
-        $table->addColumn('site_identifier', Types::STRING, ['length' => 191]);
+        $table->addColumn('site_identifier', Types::STRING, $siteIdentifierOptions);
         $table->addColumn('organization_id', Types::GUID, ['notnull' => false]);
         $table->addColumn('scope_key', Types::STRING, ['length' => 64]);
         $table->addColumn('rule_code', Types::STRING, ['length' => 191]);
@@ -422,8 +446,16 @@ final readonly class BusinessSecurityPortalMigration implements Migration
         return $table;
     }
 
-    /** @return Table Immutable high-impact action requests and bindings. @since 2.0.0 */
-    private function approvalRequests(): Table
+    /**
+     * Define immutable high-impact action requests and bindings.
+     *
+     * @param   array<string, mixed>  $siteIdentifierOptions  Canonical site identifier column options.
+     *
+     * @return  Table  Immutable high-impact action requests and bindings.
+     *
+     * @since   2.0.0
+     */
+    private function approvalRequests(array $siteIdentifierOptions): Table
     {
         $table = new Table($this->tables->raw('approval_requests'));
         $table->addColumn('id', Types::GUID);
@@ -432,7 +464,7 @@ final readonly class BusinessSecurityPortalMigration implements Migration
         $table->addColumn('approval_action', Types::STRING, ['length' => 191]);
         $table->addColumn('approver_role_id', Types::GUID, ['notnull' => false]);
         $table->addColumn('distinct_actors', Types::BOOLEAN);
-        $table->addColumn('site_identifier', Types::STRING, ['length' => 191]);
+        $table->addColumn('site_identifier', Types::STRING, $siteIdentifierOptions);
         $table->addColumn('organization_id', Types::GUID, ['notnull' => false]);
         $table->addColumn('workspace_id', Types::GUID, ['notnull' => false]);
         $table->addColumn('requester_id', Types::STRING, ['length' => 191]);
@@ -570,15 +602,23 @@ final readonly class BusinessSecurityPortalMigration implements Migration
         return $table;
     }
 
-    /** @return Table Short-lived, session-bound, single-use step-up proofs. @since 2.0.0 */
-    private function stepUpProofs(): Table
+    /**
+     * Define short-lived, session-bound, single-use step-up proofs.
+     *
+     * @param   array<string, mixed>  $siteIdentifierOptions  Canonical site identifier column options.
+     *
+     * @return  Table  Short-lived, session-bound, single-use step-up proofs.
+     *
+     * @since   2.0.0
+     */
+    private function stepUpProofs(array $siteIdentifierOptions): Table
     {
         $table = new Table($this->tables->raw('step_up_proofs'));
         $table->addColumn('id', Types::GUID);
         $table->addColumn('nonce_digest', Types::STRING, ['length' => 64, 'fixed' => true]);
         $table->addColumn('user_id', Types::GUID);
         $table->addColumn('session_id', Types::GUID);
-        $table->addColumn('site_identifier', Types::STRING, ['length' => 191]);
+        $table->addColumn('site_identifier', Types::STRING, $siteIdentifierOptions);
         $table->addColumn('organization_identifier', Types::STRING, ['length' => 191, 'notnull' => false]);
         $table->addColumn('workspace_identifier', Types::STRING, ['length' => 191, 'notnull' => false]);
         $table->addColumn('purpose', Types::STRING, ['length' => 127]);
@@ -598,14 +638,22 @@ final readonly class BusinessSecurityPortalMigration implements Migration
         return $table;
     }
 
-    /** @return Table Cookie-digest portal sessions isolated from administrator sessions. @since 2.0.0 */
-    private function portalSessions(): Table
+    /**
+     * Define cookie-digest portal sessions isolated from administrator sessions.
+     *
+     * @param   array<string, mixed>  $siteIdentifierOptions  Canonical site identifier column options.
+     *
+     * @return  Table  Cookie-digest portal sessions isolated from administrator sessions.
+     *
+     * @since   2.0.0
+     */
+    private function portalSessions(array $siteIdentifierOptions): Table
     {
         $table = new Table($this->tables->raw('portal_sessions'));
         $table->addColumn('id', Types::GUID);
         $table->addColumn('token_digest', Types::STRING, ['length' => 64, 'fixed' => true]);
         $table->addColumn('user_id', Types::GUID);
-        $table->addColumn('site_identifier', Types::STRING, ['length' => 191]);
+        $table->addColumn('site_identifier', Types::STRING, $siteIdentifierOptions);
         $table->addColumn('organization_identifier', Types::STRING, ['length' => 191, 'notnull' => false]);
         $table->addColumn('workspace_identifier', Types::STRING, ['length' => 191, 'notnull' => false]);
         $table->addColumn('membership_id', Types::GUID, ['notnull' => false]);
@@ -1120,6 +1168,45 @@ final readonly class BusinessSecurityPortalMigration implements Migration
                 ));
             }
         }
+    }
+
+    /**
+     * Reproduce the canonical site identifier's physical character definition on new referencing columns.
+     *
+     * MariaDB requires both sides of a textual foreign key to have identical charset and collation. Doctrine's
+     * schema-diff and standalone-table creation paths can resolve different physical defaults, so relying on
+     * equal logical DBAL types is insufficient.
+     *
+     * @param   Column  $column  Introspected canonical `sites.identifier` column.
+     *
+     * @return  array{length: int, fixed: bool, platformOptions: array<string, string>}  Options for every
+     *          new site identifier column, including character metadata when the platform exposes it.
+     *
+     * @throws  RuntimeException  When the canonical site identifier is not the expected bounded string.
+     * @since   2.0.0
+     */
+    private function siteIdentifierOptions(Column $column): array
+    {
+        $length = $column->getLength();
+        if (Type::lookupName($column->getType()) !== Types::STRING || !is_int($length) || $length < 1) {
+            throw new RuntimeException('The canonical site identifier column is incompatible.');
+        }
+
+        $platformOptions = [];
+        $charset = $column->getCharset();
+        if ($charset !== null) {
+            $platformOptions['charset'] = $charset;
+        }
+        $collation = $column->getCollation();
+        if ($collation !== null) {
+            $platformOptions['collation'] = $collation;
+        }
+
+        return [
+            'length' => $length,
+            'fixed' => $column->getFixed(),
+            'platformOptions' => $platformOptions,
+        ];
     }
 
     /**
