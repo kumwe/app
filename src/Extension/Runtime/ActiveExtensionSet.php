@@ -314,8 +314,7 @@ final class ActiveExtensionSet
         Application $application,
         AdministratorRenderer $renderer,
         ?PortalRenderer $portalRenderer = null,
-    ): void
-    {
+    ): void {
         foreach ($this->extensions as $extension) {
             if ($extension['provider'] instanceof RuntimeExtension) {
                 $trust = $this->trust

@@ -2006,8 +2006,7 @@ final readonly class DoctrineBusinessRecordQueryCompiler
         string $handle,
         BusinessRecordAccessPlan $access,
         FieldAccessUsage $usage,
-    ): FieldDefinition
-    {
+    ): FieldDefinition {
         $field = $this->field($definition, $handle);
         if (
             !$field->filterable

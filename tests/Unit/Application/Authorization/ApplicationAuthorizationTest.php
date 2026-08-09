@@ -354,11 +354,13 @@ final class ApplicationAuthorizationTest extends TestCase
         );
         $gateway = AuthorizationContext::gateway(memberships: $memberships);
 
-        foreach ([
+        foreach (
+            [
             ['global', null],
             ['site', SiteContext::DEFAULT],
             ['business_record', self::PAGE_ONE],
-        ] as [$scopeType, $scopeIdentifier]) {
+            ] as [$scopeType, $scopeIdentifier]
+        ) {
             $context = AuthorizationContext::principalFromGrantRows([[
                 'capability' => 'business.record.read',
                 'scope_type' => $scopeType,

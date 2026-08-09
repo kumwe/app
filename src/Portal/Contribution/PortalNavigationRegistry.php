@@ -67,10 +67,12 @@ final class PortalNavigationRegistry implements ContributionSurface
         if (!$this->capabilities->isOwnedBy($definition->capability, $owner)) {
             throw new InvalidArgumentException('Portal navigation must reference an owned capability.');
         }
-        if (!$this->authorization->supports(
-            Capability::fromString($definition->capability),
-            AuthorizationResource::collection('portal_session'),
-        )) {
+        if (
+            !$this->authorization->supports(
+                Capability::fromString($definition->capability),
+                AuthorizationResource::collection('portal_session'),
+            )
+        ) {
             throw new InvalidArgumentException(
                 'Portal navigation must reference an enforceable whole-family portal-session policy.',
             );

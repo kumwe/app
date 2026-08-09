@@ -179,14 +179,16 @@ final readonly class TotpStepUpProvider implements StepUpProvider, Administrator
                 $digests,
                 $now,
             ): StepUpVerification {
-                if (!$this->credentials->activate(
-                    $credential->id,
-                    $intent->subjectId,
-                    $credential->version,
-                    $timeStep,
-                    $digests,
-                    $now,
-                )) {
+                if (
+                    !$this->credentials->activate(
+                        $credential->id,
+                        $intent->subjectId,
+                        $credential->version,
+                        $timeStep,
+                        $digests,
+                        $now,
+                    )
+                ) {
                     throw new StepUpRejected();
                 }
                 $rotated = $this->sessions->rotate($intent, $now);
@@ -239,12 +241,14 @@ final readonly class TotpStepUpProvider implements StepUpProvider, Administrator
                 $timeStep,
                 $now,
             ): StepUpVerification {
-                if (!$this->credentials->acceptTimeStep(
-                    $credential->id,
-                    $credential->version,
-                    $timeStep,
-                    $now,
-                )) {
+                if (
+                    !$this->credentials->acceptTimeStep(
+                        $credential->id,
+                        $credential->version,
+                        $timeStep,
+                        $now,
+                    )
+                ) {
                     throw new StepUpRejected();
                 }
                 $rotated = $this->sessions->rotate($intent, $now);
@@ -296,12 +300,14 @@ final readonly class TotpStepUpProvider implements StepUpProvider, Administrator
                 $digest,
                 $now,
             ): StepUpVerification {
-                if (!$this->credentials->consumeRecoveryCode(
-                    $credential->id,
-                    $credential->version,
-                    $digest,
-                    $now,
-                )) {
+                if (
+                    !$this->credentials->consumeRecoveryCode(
+                        $credential->id,
+                        $credential->version,
+                        $digest,
+                        $now,
+                    )
+                ) {
                     throw new StepUpRejected();
                 }
                 $rotated = $this->sessions->rotate($intent, $now);

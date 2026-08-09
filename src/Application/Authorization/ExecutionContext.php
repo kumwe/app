@@ -89,7 +89,8 @@ final readonly class ExecutionContext
         if (($authenticationStrength === AuthenticationStrength::MultiFactor) !== ($stepUpProof !== null)) {
             throw new InvalidArgumentException('Multi-factor authentication requires exactly one step-up proof.');
         }
-        if ($stepUpProof !== null && (
+        if (
+            $stepUpProof !== null && (
             $principal === null
             || $sessionId === null
             || $stepUpProof->actorId() !== $principal->subject()
@@ -98,7 +99,8 @@ final readonly class ExecutionContext
             || $stepUpProof->organization()?->identifier() !== $membership?->organization()->identifier()
             || $stepUpProof->workspace()?->identifier() !== $membership?->workspace()?->identifier()
             || $stepUpProof->securityEpoch() !== $principal->securityEpoch()
-        )) {
+            )
+        ) {
             throw new InvalidArgumentException('The step-up proof does not match the execution context.');
         }
         if ($systemIdentity !== null && $surface !== AuthenticatedSurface::Background) {

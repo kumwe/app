@@ -236,7 +236,12 @@ final class BusinessRecordPolicyCompilerIntegrationTest extends TestCase
             array $fieldRules,
             int $priority,
             string $operation = 'business.record.browse',
-        ) use ($database, $table, $definition, &$policyCodes): void {
+        ) use (
+            $database,
+            $table,
+            $definition,
+            &$policyCodes
+): void {
             $policyCode = 'test.business.record.' . Uuid::uuid7()->toString();
             $policyCodes[] = $policyCode;
             $database->insert($table, [

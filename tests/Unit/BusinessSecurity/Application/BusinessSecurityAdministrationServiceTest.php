@@ -444,8 +444,7 @@ final class BusinessSecurityAdministrationServiceTest extends TestCase
         DateTimeImmutable $now,
         array $capabilities = [],
         ?MembershipContext $membership = null,
-    ): ExecutionContext
-    {
+    ): ExecutionContext {
         $provenance = new \stdClass();
         $principal = AuthenticatedPrincipal::issueFromStrings(
             $provenance,

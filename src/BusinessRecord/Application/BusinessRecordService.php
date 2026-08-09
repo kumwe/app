@@ -1558,11 +1558,13 @@ final readonly class BusinessRecordService
                         'Non-owned cascade deletion requires an explicit bounded delete workflow.',
                     );
                 }
-                if (!in_array(
-                    $relationship->onDelete,
-                    [DeleteBehavior::Restrict, DeleteBehavior::SetNull],
-                    true,
-                )) {
+                if (
+                    !in_array(
+                        $relationship->onDelete,
+                        [DeleteBehavior::Restrict, DeleteBehavior::SetNull],
+                        true,
+                    )
+                ) {
                     continue;
                 }
                 $generation = $this->mutationFence->lock($context, $candidate->definition->handle);

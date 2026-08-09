@@ -161,18 +161,22 @@ final readonly class BusinessSecurityAdministrationService
                 static fn (array $vote): bool => isset($requestIds[$vote['request_id'] ?? '']),
             ));
         }
-        if (!$this->authorization->decide(
-            $context,
-            Capability::fromString('business.step_up.manage'),
-            AuthorizationResource::collection('step_up_credential'),
-        )->allowed) {
+        if (
+            !$this->authorization->decide(
+                $context,
+                Capability::fromString('business.step_up.manage'),
+                AuthorizationResource::collection('step_up_credential'),
+            )->allowed
+        ) {
             $overview['step_up_credentials'] = [];
         }
-        if (!$this->authorization->decide(
-            $context,
-            Capability::fromString('users.manage'),
-            AuthorizationResource::collection('api_token'),
-        )->allowed) {
+        if (
+            !$this->authorization->decide(
+                $context,
+                Capability::fromString('users.manage'),
+                AuthorizationResource::collection('api_token'),
+            )->allowed
+        ) {
             $overview['tokens'] = [];
         }
 
@@ -487,10 +491,12 @@ final readonly class BusinessSecurityAdministrationService
         $policyCode = $this->policyCode($policyCode);
         $operationCapability = Capability::fromString($operation);
         $operation = $operationCapability->value();
-        if (!$this->policies->supports(
-            $operationCapability,
-            AuthorizationResource::collection('business_record'),
-        )) {
+        if (
+            !$this->policies->supports(
+                $operationCapability,
+                AuthorizationResource::collection('business_record'),
+            )
+        ) {
             throw new InvalidArgumentException(
                 'A row policy must use a live capability bound to business records.',
             );
@@ -651,10 +657,12 @@ final readonly class BusinessSecurityAdministrationService
         $resourceType = $this->machineIdentifier($resourceType, 'resource type', 63);
         $requestAction = $this->operationToken($requestAction, 'request action', 127);
         $approvalAction = $this->operationToken($approvalAction, 'approval action', 191);
-        if (!$this->policies->supports(
-            Capability::fromString($approvalAction),
-            AuthorizationResource::collection('approval_request'),
-        )) {
+        if (
+            !$this->policies->supports(
+                Capability::fromString($approvalAction),
+                AuthorizationResource::collection('approval_request'),
+            )
+        ) {
             throw new InvalidArgumentException(
                 'The approval action must be a live capability bound to approval requests.',
             );
@@ -1163,12 +1171,14 @@ final readonly class BusinessSecurityAdministrationService
         ): void {
             $at = $this->clock->now();
             $membership = $context->membership();
-            if ($membership !== null && !$this->memberships->current(
-                $context->actorId(),
-                $context->site(),
-                $membership,
-                true,
-            )) {
+            if (
+                $membership !== null && !$this->memberships->current(
+                    $context->actorId(),
+                    $context->site(),
+                    $membership,
+                    true,
+                )
+            ) {
                 throw new BusinessSecurityScopeDenied();
             }
             $proof = $context->stepUpProof()

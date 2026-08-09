@@ -304,13 +304,15 @@ final readonly class DoctrineBusinessRecordReadRepository implements BusinessRec
             array_push($types, ...$policy->types);
         }
         $records = [];
-        foreach ($this->database->executeQuery(sprintf(
-            'SELECT r0.* FROM %s r0 WHERE %s ORDER BY r0.%s ASC LIMIT %d',
-            $this->quote($table->physicalName),
-            implode(' AND ', $where),
-            $this->quote($this->physical($table, 'record_id')),
-            $limit,
-        ), $parameters, $types)->fetchAllAssociative() as $row) {
+        foreach (
+            $this->database->executeQuery(sprintf(
+                'SELECT r0.* FROM %s r0 WHERE %s ORDER BY r0.%s ASC LIMIT %d',
+                $this->quote($table->physicalName),
+                implode(' AND ', $where),
+                $this->quote($this->physical($table, 'record_id')),
+                $limit,
+            ), $parameters, $types)->fetchAllAssociative() as $row
+        ) {
             $rowResolved = $this->pinnedForRow($resolved, $table, $row);
             $records[] = $this->map($rowResolved, $table, $row);
         }
@@ -723,10 +725,12 @@ final readonly class DoctrineBusinessRecordReadRepository implements BusinessRec
             $target = $this->targetByHandle($source, $targetHandle);
             $targetAccess = $access->related($fieldHandle)
                 ?? throw new BusinessRecordSchemaUnavailable('An entity-reference target is unavailable.');
-            if (!$targetAccess->fields->allows(
-                FieldAccessUsage::PublicReference,
-                $this->identityHandle($target->definition),
-            )) {
+            if (
+                !$targetAccess->fields->allows(
+                    FieldAccessUsage::PublicReference,
+                    $this->identityHandle($target->definition),
+                )
+            ) {
                 foreach ($records as $record) {
                     if (($record->values()[$fieldHandle] ?? null) !== null) {
                         $result[$record->recordKey][$fieldHandle] = ['redacted' => true];
@@ -839,10 +843,12 @@ final readonly class DoctrineBusinessRecordReadRepository implements BusinessRec
             $targetAccess = $access->related($handle)
                 ?? throw new BusinessRecordSchemaUnavailable('An included relationship is unavailable.');
             $target = $this->relationshipTarget($source, $relationship);
-            if (!$targetAccess->fields->allows(
-                FieldAccessUsage::PublicReference,
-                $this->identityHandle($target->definition),
-            )) {
+            if (
+                !$targetAccess->fields->allows(
+                    FieldAccessUsage::PublicReference,
+                    $this->identityHandle($target->definition),
+                )
+            ) {
                 continue;
             }
             [$rows, $targetTable, $ownedLine] = $this->includeRows(
@@ -1142,8 +1148,7 @@ final readonly class DoctrineBusinessRecordReadRepository implements BusinessRec
         array $values,
         BusinessRecordAccessPlan $access,
         FieldAccessUsage $usage,
-    ): array
-    {
+    ): array {
         $visible = [];
         foreach ($definition->fields() as $field) {
             if (

@@ -72,37 +72,70 @@ final readonly class StepUpProof
     }
 
     /** Return the bound actor identity. @return string Bound actor identity. @since 2.0.0 */
-    public function actorId(): string { return $this->actorId; }
+    public function actorId(): string
+    {
+        return $this->actorId;
+    }
 
     /** Return the rotated session identity. @return string Rotated session identity. @since 2.0.0 */
-    public function sessionId(): string { return $this->sessionId; }
+    public function sessionId(): string
+    {
+        return $this->sessionId;
+    }
 
     /** Return the bound site. @return SiteContext Bound site. @since 2.0.0 */
-    public function site(): SiteContext { return $this->site; }
+    public function site(): SiteContext
+    {
+        return $this->site;
+    }
 
     /** Return the bound organization. @return ?OrganizationContext Bound organization. @since 2.0.0 */
-    public function organization(): ?OrganizationContext { return $this->organization; }
+    public function organization(): ?OrganizationContext
+    {
+        return $this->organization;
+    }
 
     /** Return the verified method. @return string Verified provider method. @since 2.0.0 */
-    public function method(): string { return $this->method; }
+    public function method(): string
+    {
+        return $this->method;
+    }
 
     /** Return the verification instant. @return DateTimeImmutable Verification instant. @since 2.0.0 */
-    public function verifiedAt(): DateTimeImmutable { return $this->verifiedAt; }
+    public function verifiedAt(): DateTimeImmutable
+    {
+        return $this->verifiedAt;
+    }
 
     /** Return the freshness boundary. @return DateTimeImmutable Freshness boundary. @since 2.0.0 */
-    public function expiresAt(): DateTimeImmutable { return $this->expiresAt; }
+    public function expiresAt(): DateTimeImmutable
+    {
+        return $this->expiresAt;
+    }
 
     /** Return the replay nonce. @return string Replay-resistant proof nonce. @since 2.0.0 */
-    public function nonce(): string { return $this->nonce; }
+    public function nonce(): string
+    {
+        return $this->nonce;
+    }
 
     /** Return the bound workspace. @return ?WorkspaceContext Bound workspace. @since 2.0.0 */
-    public function workspace(): ?WorkspaceContext { return $this->workspace; }
+    public function workspace(): ?WorkspaceContext
+    {
+        return $this->workspace;
+    }
 
     /** Return the operation purpose. @return string Protected-operation purpose. @since 2.0.0 */
-    public function purpose(): string { return $this->purpose; }
+    public function purpose(): string
+    {
+        return $this->purpose;
+    }
 
     /** Return the actor epoch. @return int Authorization epoch at verification. @since 2.0.0 */
-    public function securityEpoch(): int { return $this->securityEpoch; }
+    public function securityEpoch(): int
+    {
+        return $this->securityEpoch;
+    }
 
     /**
      * Test every binding and freshness boundary for a high-impact decision.

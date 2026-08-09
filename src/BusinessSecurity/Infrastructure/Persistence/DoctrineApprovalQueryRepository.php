@@ -331,8 +331,10 @@ final readonly class DoctrineApprovalQueryRepository implements ApprovalQueryRep
         ) {
             return false;
         }
-        if ($this->boolean($row['distinct_actors'] ?? null)
-            && $this->string($row, 'requester_id') === $context->actorId()) {
+        if (
+            $this->boolean($row['distinct_actors'] ?? null)
+            && $this->string($row, 'requester_id') === $context->actorId()
+        ) {
             return false;
         }
         $roleId = $this->nullableString($row['approver_role_id'] ?? null);

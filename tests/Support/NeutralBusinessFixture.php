@@ -864,10 +864,12 @@ final class NeutralBusinessFixture
         $at = new DateTimeImmutable('2026-01-01T00:00:00+00:00');
         foreach (self::RECORD_OPERATIONS as $operation) {
             $policyCode = self::recordPolicyCode($definition->id, $operation);
-            if ($database->fetchOne(sprintf(
-                'SELECT policy_code FROM %s WHERE policy_code = ?',
-                $tables->quoted('resource_policies'),
-            ), [$policyCode]) !== false) {
+            if (
+                $database->fetchOne(sprintf(
+                    'SELECT policy_code FROM %s WHERE policy_code = ?',
+                    $tables->quoted('resource_policies'),
+                ), [$policyCode]) !== false
+            ) {
                 continue;
             }
             $database->insert($tables->raw('resource_policies'), [
