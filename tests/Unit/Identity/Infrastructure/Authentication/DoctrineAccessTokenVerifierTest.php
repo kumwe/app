@@ -6,6 +6,8 @@ namespace Kumwe\CMS\Tests\Unit\Identity\Infrastructure\Authentication;
 
 use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\Platforms\MySQL84Platform;
+use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use Kumwe\CMS\Identity\Application\Authentication\AuthenticatedPrincipal;
 use Kumwe\CMS\Identity\Application\Authentication\PrincipalGrant;
 use Kumwe\CMS\Identity\Domain\Capability;
@@ -32,6 +34,7 @@ final class DoctrineAccessTokenVerifierTest extends TestCase
     public function testRemovedPermissionIsAbsentImmediatelyDespiteTokenSnapshot(): void
     {
         $database = $this->createMock(Connection::class);
+        $database->method('getDatabasePlatform')->willReturn(new MySQL84Platform());
         $database->method('quoteSingleIdentifier')->willReturnCallback(static fn (string $name): string => $name);
         $database->expects(self::once())->method('fetchAssociative')->willReturn([
             'id' => '018f22e2-7c8b-7ab0-8f3a-88e8026bb399',
@@ -94,8 +97,13 @@ final class DoctrineAccessTokenVerifierTest extends TestCase
     public function testOrganizationTokenRebuildsAuthorityFromItsExactMembershipRoles(): void
     {
         $database = $this->createMock(Connection::class);
+        $database->method('getDatabasePlatform')->willReturn(new PostgreSQLPlatform());
         $database->method('quoteSingleIdentifier')->willReturnCallback(static fn (string $name): string => $name);
-        $database->expects(self::once())->method('fetchAssociative')->willReturn([
+        $database->expects(self::once())->method('fetchAssociative')->with(
+            self::stringContains('CAST(m.id AS VARCHAR) = t.membership_id'),
+            self::anything(),
+            self::anything(),
+        )->willReturn([
             'id' => '018f22e2-7c8b-7ab0-8f3a-88e8026bb399',
             'subject_id' => self::SUBJECT,
             'capabilities' => '["business.record.read"]',
@@ -151,9 +159,13 @@ final class DoctrineAccessTokenVerifierTest extends TestCase
     public function testBindsEveryLookupToAdapterAndSiteContext(): void
     {
         $database = $this->createMock(Connection::class);
+        $database->method('getDatabasePlatform')->willReturn(new MySQL84Platform());
         $database->method('quoteSingleIdentifier')->willReturnCallback(static fn (string $name): string => $name);
         $database->expects(self::exactly(2))->method('fetchAssociative')->with(
-            self::stringContains('INNER JOIN kumwe_sites s'),
+            self::logicalAnd(
+                self::stringContains('INNER JOIN kumwe_sites s'),
+                self::stringContains('m.id = t.membership_id'),
+            ),
             self::callback(static function (array $parameters): bool {
                 return $parameters === [hash('sha256', self::TOKEN), 'kumwe-cli', 'management', 'default', true]
                     || $parameters === [hash('sha256', self::TOKEN), 'kumwe-http', 'api', 'other-site', true];

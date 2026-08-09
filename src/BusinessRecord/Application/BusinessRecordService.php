@@ -894,7 +894,7 @@ final readonly class BusinessRecordService
                         $lineValues,
                         array_keys($lineValues),
                     );
-                    if (!$lineAccess->records->allows($lineValues)) {
+                    if (!$relatedAccess->records->allows($lineValues)) {
                         throw new BusinessRecordNotFound();
                     }
                 } else {

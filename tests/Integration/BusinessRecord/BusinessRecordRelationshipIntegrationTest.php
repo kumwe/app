@@ -191,6 +191,11 @@ final class BusinessRecordRelationshipIntegrationTest extends TestCase
                     'units' => ($offset + 1) . '.000',
                 ],
             ))->version;
+            self::assertSame(
+                8 + $offset,
+                $version,
+                'Owned-line creation must carry the already-resolved related access plan through row policy.',
+            );
         }
         $version = $records->reorder(new ReorderRecordLinesCommand(
             $context,

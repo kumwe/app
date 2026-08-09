@@ -759,10 +759,12 @@ final readonly class DoctrineBusinessSecurityAdministrationRepository implements
         if ($organizationId !== null) {
             $this->assertOrganization($organizationId, $siteIdentifier, true);
         }
-        foreach (array_filter(
-            [$requesterRoleId, $approverRoleId],
-            static fn (?string $roleId): bool => $roleId !== null,
-        ) as $roleId) {
+        foreach (
+            array_filter(
+                [$requesterRoleId, $approverRoleId],
+                static fn (?string $roleId): bool => $roleId !== null,
+            ) as $roleId
+        ) {
             $this->assertRole($roleId);
         }
         $this->database->insert($this->tables->raw('separation_duty_rules'), [
