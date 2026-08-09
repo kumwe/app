@@ -14,7 +14,8 @@ use Kumwe\CMS\Identity\Domain\GrantScope;
  * A decision is allowed only when four independent checks agree: the execution context was minted by this
  * installation's own authority, the policy registry declares the action legal on that resource type, the
  * site owning the resource is the site the caller is executing in, and the caller's authority covers the
- * request — a principal's scoped grants, or the fixed capability list its system identity is confined to.
+ * request — a principal's scoped grants, or the system identities explicitly named by the matching
+ * typed resource policy.
  * Every other outcome denies, and each decision names the policy and reason that settled it, so the audit
  * trail explains itself rather than merely recording a verdict. Recording happens before the decision is
  * acted on, and an allowed decision whose audit record cannot be written is escalated rather than
@@ -25,58 +26,14 @@ use Kumwe\CMS\Identity\Domain\GrantScope;
 final readonly class DenyByDefaultAuthorizationGateway implements AuthorizationGateway
 {
     /**
-     * Capabilities each system identity may exercise when no human principal is present.
-     *
-     * A system identity holds exactly what its entry lists and nothing more, so widening a background
-     * job's reach is a deliberate edit here rather than a configuration change. An identity absent from
-     * the map, or present with an empty list as `system:cli` is, can authorize nothing at all.
-     *
-     * @var    array<string, list<string>>
-     * @since  2.0.0
-     */
-    private const SYSTEM_CAPABILITIES = [
-        'system:bootstrap' => ['administrator.bootstrap'],
-        'system:cli' => [],
-        'system:extension-materializer' => ['extensions.manage'],
-        'system:installation-maintenance' => ['automation.manage'],
-        'system:migration' => ['system.migrate'],
-        'system:scheduler' => ['system.scheduler.dispatch'],
-        'system:worker' => [
-            'automation.manage',
-            'content.archive',
-            'content.publish',
-            'content.read',
-            'content.restore',
-            'content.review',
-            'content.submit',
-            'content.unpublish',
-            'content.update',
-            'system.worker.operate',
-        ],
-    ];
-
-    /**
-     * System identities permitted to act on resources the policy registry marks installation-global.
-     *
-     * Materializing extensions and running installation maintenance legitimately reach across every site;
-     * the remaining system identities are confined to the site their context names, so they are refused a
-     * global resource even when their capability list contains the action.
-     *
-     * @var    list<string>
-     * @since  2.0.0
-     */
-    private const INSTALLATION_GLOBAL_SYSTEM_IDENTITIES = [
-        'system:extension-materializer',
-        'system:installation-maintenance',
-    ];
-
-    /**
      * Wire the gateway to the authority, policy table, ownership registry and audit sink it decides with.
      *
      * @param  object                         $provenance  Authority object contexts must have been minted
      *         with; anything else is untrusted.
-     * @param  AuthorizationPolicyRegistry    $policies    Table of which actions are legal on which
-     *         resource types, and which need a global grant.
+     * @param  AuthorizationPolicyRegistry    $policies    Owner-aware typed capability and resource-policy
+     *         registry shared with the contribution runtime.
+     * @param  MembershipContextValidator     $memberships Live authority that revalidates contextual
+     *         organization and workspace scopes.
      * @param  ResourceSiteOwnership          $ownership   Resolver for the site owning a given resource.
      * @param  AuthorizationDecisionRecorder  $decisions   Sink every decision is written to before it is acted on.
      *
@@ -85,6 +42,7 @@ final readonly class DenyByDefaultAuthorizationGateway implements AuthorizationG
     public function __construct(
         private object $provenance,
         private AuthorizationPolicyRegistry $policies,
+        private MembershipContextValidator $memberships,
         private ResourceSiteOwnership $ownership,
         private AuthorizationDecisionRecorder $decisions,
     ) {
@@ -154,7 +112,9 @@ final readonly class DenyByDefaultAuthorizationGateway implements AuthorizationG
      * its own grants already cover. A grant over the requested scope satisfies that ceiling, and so does
      * one over the site the caller is executing in, since a site-wide holder may already act on every
      * resource the scope could name. A scope naming a concrete resource must additionally be owned by
-     * that same site. System identities never delegate: they carry no grants to draw a ceiling from.
+     * that same site. Organization and workspace grants enter the ceiling only after the context's exact
+     * membership snapshot is revalidated; a global or site grant remains sufficient independently.
+     * System identities never delegate: they carry no grants to draw a ceiling from.
      *
      * @param   ExecutionContext  $context  Caller identity, site and provenance the work runs under.
      * @param   Capability        $action   Capability the caller wants to grant onward.
@@ -181,6 +141,19 @@ final readonly class DenyByDefaultAuthorizationGateway implements AuthorizationG
 
         if (!$scope->isGlobal() && $scope->type() !== 'site') {
             $requested[] = GrantScope::named('site', $context->site()->identifier());
+        }
+        if (!$scope->isGlobal() && in_array($scope->type(), ['organization', 'workspace'], true)) {
+            $requested = [GrantScope::named('site', $context->site()->identifier())];
+            if ($context->hasProvenance($this->provenance) && $principal !== null) {
+                foreach ($this->currentMembershipScopes($context, $resource) as $membershipScope) {
+                    if (
+                        $membershipScope->type() === $scope->type()
+                        || ($scope->type() === 'workspace' && $membershipScope->type() === 'organization')
+                    ) {
+                        $requested[] = $membershipScope;
+                    }
+                }
+            }
         }
 
         try {
@@ -217,9 +190,8 @@ final readonly class DenyByDefaultAuthorizationGateway implements AuthorizationG
      * anything else is consulted, then an action that is not legal on this resource type at all, then
      * site ownership, and only last the caller's own authority. Where the registry marks a resource
      * installation-global, a human needs a grant that is itself global — a site-wide grant does not
-     * reach it — and a system identity must be one of the few permitted to cross sites. A `system.`
-     * capability is refused to any human principal, and each system identity is confined to the
-     * capabilities its `SYSTEM_CAPABILITIES` entry lists.
+     * reach it. A system-only capability is refused to any human principal, and each unattended
+     * identity is confined to the exact action/resource bindings that name it.
      *
      * @param   ExecutionContext       $context   Caller identity, site and provenance the work runs under.
      * @param   Capability             $action    Capability being exercised.
@@ -238,7 +210,8 @@ final readonly class DenyByDefaultAuthorizationGateway implements AuthorizationG
             return new AuthorizationDecision(false, 'core.provenance.v1', 'untrusted_execution_context');
         }
 
-        if (!$this->policies->supports($action, $resource)) {
+        $resourcePolicy = $this->policies->resourcePolicy($action, $resource);
+        if ($resourcePolicy === null) {
             return new AuthorizationDecision(false, 'core.registry.v1', 'unsupported_action_resource');
         }
 
@@ -247,34 +220,24 @@ final readonly class DenyByDefaultAuthorizationGateway implements AuthorizationG
         } catch (AuthorizationResourceOwnershipUnknown) {
             return new AuthorizationDecision(false, 'core.site-ownership.v1', 'resource_site_unknown');
         }
-        $globalGrantRequired = $this->policies->requiresGlobalGrant($action, $resource);
+        $globalGrantRequired = $resourcePolicy->installationGlobal;
         if (!$globalGrantRequired && $owner->identifier() !== $context->site()->identifier()) {
             return new AuthorizationDecision(false, 'core.site-ownership.v1', 'resource_site_mismatch');
         }
 
         $principal = $context->principal();
-        if ($principal !== null && str_starts_with($action->value(), 'system.')) {
+        if ($principal !== null && !$this->policies->allowsHumanGrant($action)) {
             return new AuthorizationDecision(false, 'core.system-identity.v1', 'system_identity_required');
         }
         $identity = $context->systemIdentity();
-        $systemIdentity = $identity === null ? '' : $identity->value;
         $allowed = $principal !== null
             ? $principal->allows(
                 $action,
                 $globalGrantRequired
                     ? [GrantScope::global()]
-                    : [
-                        GrantScope::named('site', $owner->identifier()),
-                        GrantScope::named($resource->type(), $resource->identifier()),
-                    ],
+                    : $this->effectiveScopes($context, $owner, $resource),
             )
-            : (!$globalGrantRequired
-                || in_array($systemIdentity, self::INSTALLATION_GLOBAL_SYSTEM_IDENTITIES, true))
-                && in_array(
-                    $action->value(),
-                    self::SYSTEM_CAPABILITIES[$systemIdentity] ?? [],
-                    true,
-                );
+            : $identity !== null && $resourcePolicy->allowsSystemIdentity($identity);
 
         return new AuthorizationDecision(
             $allowed,
@@ -283,6 +246,119 @@ final readonly class DenyByDefaultAuthorizationGateway implements AuthorizationG
                 ? ($globalGrantRequired ? 'matching_global_grant' : 'matching_effective_grant')
                 : ($globalGrantRequired ? 'global_grant_required' : 'no_matching_effective_grant'),
         );
+    }
+
+    /**
+     * Build the exact grant scopes a human principal may satisfy for one decision.
+     *
+     * Site and concrete-resource scopes always remain available. Organization and workspace scopes are
+     * added only after the context's full membership snapshot is revalidated against live state. A
+     * freshness-store failure therefore removes only those contextual scopes instead of turning a global,
+     * site, or exact-resource grant into an infrastructure failure. Direct organization and workspace
+     * targets must also equal the selected context, preventing a valid membership from being reused to
+     * name another tenant's target.
+     *
+     * @param   ExecutionContext       $context   Human decision context carrying the optional membership.
+     * @param   SiteContext            $owner     Authoritative site owning the requested resource.
+     * @param   AuthorizationResource  $resource  Exact resource the action is aimed at.
+     *
+     * @return  list<GrantScope>  Site and exact scopes, plus revalidated contextual scopes when available.
+     *
+     * @since   2.0.0
+     */
+    private function effectiveScopes(
+        ExecutionContext $context,
+        SiteContext $owner,
+        AuthorizationResource $resource,
+    ): array {
+        $scopes = [
+            GrantScope::named('site', $owner->identifier()),
+            GrantScope::named($resource->type(), $resource->identifier()),
+        ];
+        foreach ($this->currentMembershipScopes($context, $resource) as $membershipScope) {
+            $scopes[] = $membershipScope;
+        }
+
+        return $scopes;
+    }
+
+    /**
+     * Resolve contextual grant scopes only from an exact live membership snapshot.
+     *
+     * A validator failure is deliberately converted to an empty list. Membership is an optional
+     * expansion of authority, so unavailable live state must remove organization/workspace reach while
+     * leaving independently held global, site, and exact-resource grants available to the caller.
+     *
+     * @param   ExecutionContext       $context   Human decision or delegation context.
+     * @param   AuthorizationResource  $resource  Target used to reject a contradictory tenant identifier.
+     *
+     * @return  list<GrantScope>  Live organization and optional workspace scopes, or an empty list.
+     *
+     * @since   2.0.0
+     */
+    private function currentMembershipScopes(
+        ExecutionContext $context,
+        AuthorizationResource $resource,
+    ): array {
+        $membership = $context->membership();
+        if ($membership === null) {
+            return [];
+        }
+
+        try {
+            $current = $this->memberships->current(
+                $context->actorId(),
+                $context->site(),
+                $membership,
+                false,
+            );
+        } catch (\Throwable) {
+            // This is the boundary between durable membership state and optional contextual authority;
+            // any infrastructure failure must be indistinguishable from a stale membership.
+            return [];
+        }
+        if (!$current || !$this->membershipTargetMatches($membership, $resource)) {
+            return [];
+        }
+
+        $scopes = [GrantScope::named('organization', $membership->organization()->identifier())];
+        if ($membership->workspace() !== null) {
+            $scopes[] = GrantScope::named('workspace', $membership->workspace()->identifier());
+        }
+
+        return $scopes;
+    }
+
+    /**
+     * Refuse contextual scope expansion when a direct tenant target contradicts the live selection.
+     *
+     * Other resource types are bound to organization/workspace state by their owning application
+     * repository. The two tenant resources themselves are self-describing, so the gateway can and must
+     * compare them directly rather than allowing the context to authorize a differently named target.
+     * Collection identifiers remain valid because downstream queries still filter their returned rows.
+     *
+     * @param   MembershipContext      $membership  Revalidated tenant selection.
+     * @param   AuthorizationResource  $resource    Requested resource whose direct tenant name is checked.
+     *
+     * @return  bool  False only for a mismatched concrete organization or workspace target.
+     *
+     * @since   2.0.0
+     */
+    private function membershipTargetMatches(
+        MembershipContext $membership,
+        AuthorizationResource $resource,
+    ): bool {
+        if ($resource->identifier() === '*') {
+            return true;
+        }
+        if ($resource->type() === 'organization') {
+            return $resource->identifier() === $membership->organization()->identifier();
+        }
+        if ($resource->type() === 'workspace') {
+            return $resource->identifier() === $membership->workspace()?->identifier();
+        }
+
+        return true;
     }
 
     /**

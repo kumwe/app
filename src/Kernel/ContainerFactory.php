@@ -27,6 +27,7 @@ use Kumwe\CMS\Application\Automation\Worker;
 use Kumwe\CMS\Application\Authorization\AuthorizationGateway;
 use Kumwe\CMS\Application\Authorization\AuthorizationPolicyRegistry;
 use Kumwe\CMS\Application\Authorization\DenyByDefaultAuthorizationGateway;
+use Kumwe\CMS\Application\Authorization\MembershipContextValidator;
 use Kumwe\CMS\Application\Authorization\ResourceSiteOwnership;
 use Kumwe\CMS\Application\Authorization\ResourceSiteOwnershipWriter;
 use Kumwe\CMS\Application\Authorization\SiteContext;
@@ -46,6 +47,7 @@ use Kumwe\CMS\Administrator\Http\Handler\AdministratorContentEditorHandler;
 use Kumwe\CMS\Administrator\Http\Handler\AdministratorContentListHandler;
 use Kumwe\CMS\Administrator\Http\Handler\AdministratorContentModelsHandler;
 use Kumwe\CMS\Administrator\Http\Handler\AdministratorAccessControlHandler;
+use Kumwe\CMS\Administrator\Http\Handler\AdministratorBusinessSecurityHandler;
 use Kumwe\CMS\Administrator\Http\Handler\AdministratorAutomationHandler;
 use Kumwe\CMS\Administrator\Http\Handler\AdministratorCreateContentHandler;
 use Kumwe\CMS\Administrator\Http\Handler\AdministratorDashboardHandler;
@@ -103,6 +105,21 @@ use Kumwe\CMS\BusinessRecord\Infrastructure\Persistence\DoctrineBusinessRecordRe
 use Kumwe\CMS\BusinessRecord\Infrastructure\Persistence\DoctrineBusinessRecordWriteRepository;
 use Kumwe\CMS\BusinessRecord\Infrastructure\Persistence\DoctrineBusinessSchemaRecordRepinGateway;
 use Kumwe\CMS\BusinessRecord\Infrastructure\Security\SodiumSecretCipher;
+use Kumwe\CMS\BusinessSecurity\Application\Approval\ApprovalRepository;
+use Kumwe\CMS\BusinessSecurity\Application\Approval\ApprovalQueryRepository;
+use Kumwe\CMS\BusinessSecurity\Application\Approval\ApprovalQueryService;
+use Kumwe\CMS\BusinessSecurity\Application\Approval\ApprovalService;
+use Kumwe\CMS\BusinessSecurity\Application\Approval\StepUpProofConsumer;
+use Kumwe\CMS\BusinessSecurity\Application\Administration\BusinessSecurityAdministrationRepository;
+use Kumwe\CMS\BusinessSecurity\Application\Administration\BusinessSecurityAdministrationService;
+use Kumwe\CMS\BusinessSecurity\Application\BusinessRecordAccessController;
+use Kumwe\CMS\BusinessSecurity\Application\MembershipDirectory;
+use Kumwe\CMS\BusinessSecurity\Infrastructure\Persistence\DoctrineApprovalRepository;
+use Kumwe\CMS\BusinessSecurity\Infrastructure\Persistence\DoctrineApprovalQueryRepository;
+use Kumwe\CMS\BusinessSecurity\Infrastructure\Persistence\DoctrineBusinessRecordAccessController;
+use Kumwe\CMS\BusinessSecurity\Infrastructure\Persistence\DoctrineBusinessSecurityAdministrationRepository;
+use Kumwe\CMS\BusinessSecurity\Infrastructure\Persistence\DoctrineMembershipDirectory;
+use Kumwe\CMS\BusinessSecurity\Infrastructure\Persistence\DoctrineStepUpProofConsumer;
 use Kumwe\CMS\BusinessSchema\Application\BusinessSchemaEnvironment;
 use Kumwe\CMS\BusinessSchema\Application\BusinessSchemaExecutionLock;
 use Kumwe\CMS\BusinessSchema\Application\BusinessSchemaExecutionStateGuard;
@@ -165,6 +182,8 @@ use Kumwe\CMS\Extension\Infrastructure\Trust\SodiumTrustKeySignatureVerifier;
 use Kumwe\CMS\Extension\Runtime\ActiveExtensionSet;
 use Kumwe\CMS\Extension\Contribution\ExtensionContributionRegistrySet;
 use Kumwe\CMS\Extension\Contribution\AdministratorViewRegistry;
+use Kumwe\CMS\Portal\Contribution\PortalNavigationRegistry;
+use Kumwe\CMS\Portal\Contribution\PortalTemplateRegistry;
 use Kumwe\CMS\Extension\Runtime\ExtensionRuntimeLoader;
 use Kumwe\CMS\Extension\Runtime\ExtensionEventRegistrar;
 use Kumwe\CMS\Extension\Runtime\JoomlaExtensionEventRegistrar;
@@ -260,12 +279,30 @@ use Kumwe\CMS\Identity\Application\Administration\AccessControlService;
 use Kumwe\CMS\Identity\Application\Administration\AccessTokenQuotaPolicy;
 use Kumwe\CMS\Identity\Application\Administration\FixedAccessTokenQuotaPolicy;
 use Kumwe\CMS\Identity\Application\Security\PasswordHasher;
+use Kumwe\CMS\Identity\Application\StepUp\StepUpAttemptThrottle;
+use Kumwe\CMS\Identity\Application\StepUp\AdministratorStepUpProvider;
+use Kumwe\CMS\Identity\Application\StepUp\AuthorizationStepUpProofAdapter;
+use Kumwe\CMS\Identity\Application\StepUp\StepUpCredentialStore;
+use Kumwe\CMS\Identity\Application\StepUp\StepUpProofStore;
+use Kumwe\CMS\Identity\Application\StepUp\StepUpProvider;
+use Kumwe\CMS\Identity\Application\StepUp\StepUpRandomSource;
+use Kumwe\CMS\Identity\Application\StepUp\StepUpRecoveryCodeHasher;
+use Kumwe\CMS\Identity\Application\StepUp\StepUpSecretCipher;
+use Kumwe\CMS\Identity\Application\StepUp\TotpAlgorithm;
+use Kumwe\CMS\Identity\Application\StepUp\TotpStepUpProvider;
 use Kumwe\CMS\Identity\Infrastructure\Administration\DoctrineAccessControlRepository;
 use Kumwe\CMS\Identity\Infrastructure\Administration\DoctrineAdministratorIdentityGateway;
 use Kumwe\CMS\Identity\Infrastructure\Administration\DoctrineAdministratorSessionStore;
 use Kumwe\CMS\Identity\Infrastructure\Administration\RedisAuthenticationRateLimiter;
 use Kumwe\CMS\Identity\Infrastructure\Authentication\DoctrineAccessTokenVerifier;
 use Kumwe\CMS\Identity\Infrastructure\Security\NativePasswordHasher;
+use Kumwe\CMS\Identity\Infrastructure\StepUp\AuthenticationRateLimiterStepUpThrottle;
+use Kumwe\CMS\Identity\Infrastructure\StepUp\DoctrineStepUpCredentialStore;
+use Kumwe\CMS\Identity\Infrastructure\StepUp\DoctrineStepUpProofStore;
+use Kumwe\CMS\Identity\Infrastructure\StepUp\NativeStepUpRandomSource;
+use Kumwe\CMS\Identity\Infrastructure\StepUp\Rfc6238Totp;
+use Kumwe\CMS\Identity\Infrastructure\StepUp\SodiumStepUpRecoveryCodeHasher;
+use Kumwe\CMS\Identity\Infrastructure\StepUp\SodiumStepUpSecretCipher;
 use Kumwe\CMS\Infrastructure\Persistence\DoctrineConnectionFactory;
 use Kumwe\CMS\Infrastructure\Persistence\DoctrineTransactionManager;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\MigrationLock;
@@ -277,6 +314,7 @@ use Kumwe\CMS\Infrastructure\Persistence\Migration\ApplicationAuthorizationMigra
 use Kumwe\CMS\Infrastructure\Persistence\Migration\AuthorizationRecoveryIntegrationMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\BusinessDefinitionCatalogMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\BusinessRecordIdempotencyRetentionMigration;
+use Kumwe\CMS\Infrastructure\Persistence\Migration\BusinessSecurityPortalMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\BusinessTransactionalRuntimeMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\CoreSchemaMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\ContentModelRuntimeMigration;
@@ -336,6 +374,28 @@ use Kumwe\CMS\Presentation\Twig\AdministratorTwigEnvironment;
 use Kumwe\CMS\Presentation\Twig\IsolatedTwigEnvironmentFactory;
 use Kumwe\CMS\Presentation\Twig\RecoveryAdministratorTwigEnvironment;
 use Kumwe\CMS\Presentation\Twig\SiteTwigEnvironment;
+use Kumwe\CMS\Portal\Application\DefaultPortalExecutionContextFactory;
+use Kumwe\CMS\Portal\Application\MembershipPortalContextResolver;
+use Kumwe\CMS\Portal\Application\MembershipPortalSessionIdentityLoader;
+use Kumwe\CMS\Portal\Application\PortalAuthenticator;
+use Kumwe\CMS\Portal\Application\PortalContextResolver;
+use Kumwe\CMS\Portal\Application\PortalExecutionContextFactory;
+use Kumwe\CMS\Portal\Application\PortalPrincipalLoader;
+use Kumwe\CMS\Portal\Application\PortalSessionIdentityLoader;
+use Kumwe\CMS\Portal\Application\PortalSessionStore;
+use Kumwe\CMS\Portal\Application\SharedIdentityPortalAuthenticator;
+use Kumwe\CMS\Portal\Http\Handler\PortalHomeHandler;
+use Kumwe\CMS\Portal\Http\Handler\PortalApprovalHandler;
+use Kumwe\CMS\Portal\Http\Handler\PortalLoginHandler;
+use Kumwe\CMS\Portal\Http\Handler\PortalLogoutHandler;
+use Kumwe\CMS\Portal\Http\Handler\PortalSecurityHandler;
+use Kumwe\CMS\Portal\Http\Middleware\PortalAuthorizationMiddleware;
+use Kumwe\CMS\Portal\Http\Middleware\PortalCsrfMiddleware;
+use Kumwe\CMS\Portal\Http\Middleware\PortalSessionMiddleware;
+use Kumwe\CMS\Portal\Infrastructure\Identity\DoctrinePortalPrincipalLoader;
+use Kumwe\CMS\Portal\Infrastructure\Session\DoctrinePortalSessionStore;
+use Kumwe\CMS\Portal\Presentation\PortalRenderer;
+use Kumwe\CMS\Portal\Presentation\Twig\PortalTwigEnvironmentFactory;
 use Kumwe\CMS\Workflow\Domain\Workflow;
 use Laminas\Diactoros\ResponseFactory;
 use Laminas\Diactoros\ServerRequestFactory;
@@ -483,10 +543,10 @@ final class ContainerFactory
         ], true);
 
         $this->registerLogging($container, $configuration);
-        $this->registerPersistence($container, $configuration, $root, $kernelProof);
+        $this->registerPersistence($container, $configuration, $root, $kernelProof, $loadRuntime);
         $this->registerExtensions($container, $configuration, $root, $loadRuntime);
         $this->registerMcp($container, $root);
-        $this->registerHttp($container, $configuration, $root);
+        $this->registerHttp($container, $configuration, $root, $loadRuntime);
         if ($console) {
             $this->registerConsole($container, $kernelProof);
         }
@@ -534,6 +594,7 @@ final class ContainerFactory
      * @param   ApplicationConfiguration  $configuration  Boot configuration for credentials, limits and secrets.
      * @param   string                    $root           Absolute path of the repository root.
      * @param   \stdClass                 $kernelProof    Composition-root capability the gateway is bound to.
+     * @param   bool                      $portalEnabled  Whether to register ordinary-user portal services.
      *
      * @return  void
      *
@@ -544,6 +605,7 @@ final class ContainerFactory
         ApplicationConfiguration $configuration,
         string $root,
         object $kernelProof,
+        bool $portalEnabled,
     ): void {
         $provenance = $kernelProof;
         $databaseConfiguration = $configuration->database;
@@ -576,10 +638,13 @@ final class ContainerFactory
         ), true);
         $container->share(AccessTokenQuotaPolicy::class, new FixedAccessTokenQuotaPolicy(), true);
         $container->share(Workflow::class, new Workflow(), true);
+        $authorizationPolicies = new AuthorizationPolicyRegistry();
+        $container->share(AuthorizationPolicyRegistry::class, $authorizationPolicies, true);
         $container->share(AuthorizationGateway::class, static fn (Container $container): AuthorizationGateway =>
             new DenyByDefaultAuthorizationGateway(
                 $provenance,
-                new AuthorizationPolicyRegistry(),
+                self::service($container, AuthorizationPolicyRegistry::class),
+                self::service($container, MembershipContextValidator::class),
                 self::service($container, ResourceSiteOwnership::class),
                 new StructuredLogAuthorizationDecisionRecorder(self::service($container, LoggerInterface::class)),
             ), true);
@@ -594,6 +659,149 @@ final class ContainerFactory
             self::service($container, Connection::class),
             self::service($container, TableNames::class),
         ), true);
+        $container->share(MembershipDirectory::class, static fn (Container $container): MembershipDirectory =>
+            new DoctrineMembershipDirectory(
+                self::service($container, Connection::class),
+                self::service($container, TableNames::class),
+            ), true);
+        $container->alias(MembershipContextValidator::class, MembershipDirectory::class);
+        $container->share(AuthorizationStepUpProofAdapter::class, new AuthorizationStepUpProofAdapter(), true);
+        $container->share(StepUpSecretCipher::class, new SodiumStepUpSecretCipher(
+            hash_hkdf('sha256', $configuration->secret, 32, 'kumwe-step-up-encryption-v1'),
+        ), true);
+        $container->share(StepUpRecoveryCodeHasher::class, new SodiumStepUpRecoveryCodeHasher(
+            hash_hkdf('sha256', $configuration->secret, 32, 'kumwe-step-up-recovery-v1'),
+        ), true);
+        $container->share(StepUpRandomSource::class, new NativeStepUpRandomSource(), true);
+        $container->share(TotpAlgorithm::class, new Rfc6238Totp(), true);
+        $container->share(StepUpAttemptThrottle::class, static fn (
+            Container $container,
+        ): StepUpAttemptThrottle => new AuthenticationRateLimiterStepUpThrottle(
+            self::service($container, AuthenticationRateLimiter::class),
+            hash_hkdf('sha256', $configuration->secret, 32, 'kumwe-step-up-throttle-v1'),
+        ), true);
+        $container->share(StepUpCredentialStore::class, static fn (
+            Container $container,
+        ): StepUpCredentialStore => new DoctrineStepUpCredentialStore(
+            self::service($container, Connection::class),
+            self::service($container, TableNames::class),
+        ), true);
+        $container->share(StepUpProofStore::class, static fn (
+            Container $container,
+        ): StepUpProofStore => new DoctrineStepUpProofStore(
+            self::service($container, Connection::class),
+            self::service($container, TableNames::class),
+        ), true);
+        if ($portalEnabled) {
+            $container->share(PortalPrincipalLoader::class, static fn (
+                Container $container,
+            ): PortalPrincipalLoader => new DoctrinePortalPrincipalLoader(
+                self::service($container, Connection::class),
+                self::service($container, TableNames::class),
+                $provenance,
+            ), true);
+            $container->share(PortalAuthenticator::class, static fn (
+                Container $container,
+            ): PortalAuthenticator => new SharedIdentityPortalAuthenticator(
+                self::service($container, AdministratorIdentityGateway::class),
+                self::service($container, PortalPrincipalLoader::class),
+            ), true);
+            $container->share(PortalContextResolver::class, static fn (
+                Container $container,
+            ): PortalContextResolver => new MembershipPortalContextResolver(
+                self::service($container, MembershipDirectory::class),
+                SiteContext::fromString($configuration->publicSite),
+            ), true);
+            $container->share(PortalSessionIdentityLoader::class, static fn (
+                Container $container,
+            ): PortalSessionIdentityLoader => new MembershipPortalSessionIdentityLoader(
+                self::service($container, PortalPrincipalLoader::class),
+                self::service($container, MembershipDirectory::class),
+            ), true);
+            $container->share(DoctrinePortalSessionStore::class, static fn (
+                Container $container,
+            ): DoctrinePortalSessionStore => new DoctrinePortalSessionStore(
+                self::service($container, Connection::class),
+                self::service($container, TableNames::class),
+                self::service($container, PortalSessionIdentityLoader::class),
+                self::service($container, ClockInterface::class),
+                self::service($container, ResourceSiteOwnershipWriter::class),
+                self::service($container, TransactionManager::class),
+                hash_hkdf('sha256', $configuration->secret, 32, 'kumwe-portal-session-binding-v1'),
+                new \DateInterval('PT' . $configuration->administratorSessionSeconds . 'S'),
+            ), true);
+            $container->alias(PortalSessionStore::class, DoctrinePortalSessionStore::class);
+            $container->share(PortalExecutionContextFactory::class, new DefaultPortalExecutionContextFactory(), true);
+            $container->share(StepUpProvider::class, static fn (Container $container): StepUpProvider =>
+                new TotpStepUpProvider(
+                    self::service($container, StepUpCredentialStore::class),
+                    self::service($container, StepUpSecretCipher::class),
+                    self::service($container, StepUpRecoveryCodeHasher::class),
+                    self::service($container, StepUpRandomSource::class),
+                    self::service($container, TotpAlgorithm::class),
+                    self::service($container, StepUpAttemptThrottle::class),
+                    self::service($container, DoctrinePortalSessionStore::class),
+                    self::service($container, StepUpProofStore::class),
+                    self::service($container, TransactionManager::class),
+                    self::service($container, AuditRecorder::class),
+                    self::service($container, ClockInterface::class),
+                ), true);
+        }
+        $container->share(ApprovalRepository::class, static fn (Container $container): ApprovalRepository =>
+            new DoctrineApprovalRepository(
+                self::service($container, Connection::class),
+                self::service($container, TableNames::class),
+            ), true);
+        $container->share(ApprovalQueryRepository::class, static fn (
+            Container $container,
+        ): ApprovalQueryRepository => new DoctrineApprovalQueryRepository(
+            self::service($container, Connection::class),
+            self::service($container, TableNames::class),
+        ), true);
+        $container->share(ApprovalQueryService::class, static fn (
+            Container $container,
+        ): ApprovalQueryService => new ApprovalQueryService(
+            self::service($container, ApprovalQueryRepository::class),
+            self::service($container, AuthorizationGateway::class),
+            self::service($container, MembershipDirectory::class),
+            self::service($container, ClockInterface::class),
+        ), true);
+        $container->share(StepUpProofConsumer::class, static fn (
+            Container $container,
+        ): StepUpProofConsumer => new DoctrineStepUpProofConsumer(
+            self::service($container, Connection::class),
+            self::service($container, TableNames::class),
+        ), true);
+        $container->share(BusinessSecurityAdministrationRepository::class, static fn (
+            Container $container,
+        ): BusinessSecurityAdministrationRepository => new DoctrineBusinessSecurityAdministrationRepository(
+            self::service($container, Connection::class),
+            self::service($container, TableNames::class),
+            self::service($container, ResourceSiteOwnershipWriter::class),
+        ), true);
+        $container->share(BusinessSecurityAdministrationService::class, static fn (
+            Container $container,
+        ): BusinessSecurityAdministrationService => new BusinessSecurityAdministrationService(
+            self::service($container, BusinessSecurityAdministrationRepository::class),
+            self::service($container, AuthorizationGateway::class),
+            self::service($container, AuthorizationPolicyRegistry::class),
+            self::service($container, MembershipDirectory::class),
+            self::service($container, StepUpProofConsumer::class),
+            self::service($container, TransactionManager::class),
+            self::service($container, AuditRecorder::class),
+            self::service($container, ClockInterface::class),
+        ), true);
+        $container->share(ApprovalService::class, static fn (Container $container): ApprovalService =>
+            new ApprovalService(
+                self::service($container, ApprovalRepository::class),
+                self::service($container, StepUpProofConsumer::class),
+                self::service($container, MembershipDirectory::class),
+                self::service($container, TransactionManager::class),
+                self::service($container, AuthorizationGateway::class),
+                self::service($container, ResourceSiteOwnershipWriter::class),
+                self::service($container, AuditRecorder::class),
+                self::service($container, ClockInterface::class),
+            ), true);
         $container->share(MigrationRepository::class, static fn (Container $container): MigrationRepository =>
             new DoctrineMigrationRepository(
                 self::service($container, Connection::class),
@@ -665,14 +873,15 @@ final class ContainerFactory
             self::service($container, AccessTokenQuotaPolicy::class),
             $configuration->secret,
             self::service($container, AuthorizationGateway::class),
+            self::service($container, AuthorizationPolicyRegistry::class),
             self::service($container, TokenDelegationPreauthorizer::class),
             self::service($container, TokenRotationPreauthorizer::class),
             self::service($container, ResourceSiteOwnershipWriter::class),
             $provenance,
         ), true);
-        $container->share(AdministratorSessionStore::class, static fn (
+        $container->share(DoctrineAdministratorSessionStore::class, static fn (
             Container $container,
-        ): AdministratorSessionStore => new DoctrineAdministratorSessionStore(
+        ): DoctrineAdministratorSessionStore => new DoctrineAdministratorSessionStore(
             self::service($container, Connection::class),
             self::service($container, TableNames::class),
             self::service($container, ClockInterface::class),
@@ -682,6 +891,23 @@ final class ContainerFactory
             self::service($container, ResourceSiteOwnershipWriter::class),
             $provenance,
             $configuration->administratorSessionSeconds,
+            self::service($container, MembershipDirectory::class),
+        ), true);
+        $container->alias(AdministratorSessionStore::class, DoctrineAdministratorSessionStore::class);
+        $container->share(AdministratorStepUpProvider::class, static fn (
+            Container $container,
+        ): AdministratorStepUpProvider => new TotpStepUpProvider(
+            self::service($container, StepUpCredentialStore::class),
+            self::service($container, StepUpSecretCipher::class),
+            self::service($container, StepUpRecoveryCodeHasher::class),
+            self::service($container, StepUpRandomSource::class),
+            self::service($container, TotpAlgorithm::class),
+            self::service($container, StepUpAttemptThrottle::class),
+            self::service($container, DoctrineAdministratorSessionStore::class),
+            self::service($container, StepUpProofStore::class),
+            self::service($container, TransactionManager::class),
+            self::service($container, AuditRecorder::class),
+            self::service($container, ClockInterface::class),
         ), true);
         $container->share(AuditRecorder::class, static fn (Container $container): AuditRecorder =>
             new DoctrineAuditRecorder(
@@ -921,6 +1147,7 @@ final class ContainerFactory
                     new BusinessDefinitionCatalogMigration(self::service($container, TableNames::class)),
                     new BusinessTransactionalRuntimeMigration(self::service($container, TableNames::class)),
                     new BusinessRecordIdempotencyRetentionMigration(self::service($container, TableNames::class)),
+                    new BusinessSecurityPortalMigration(self::service($container, TableNames::class)),
                 ],
                 [
                     // Previously distributed builds used a DBAL-equivalent static-analysis rewrite, then
@@ -968,6 +1195,7 @@ final class ContainerFactory
      * @param   Container                 $container      Container being composed.
      * @param   ApplicationConfiguration  $configuration  Boot configuration for base URL, site and caching.
      * @param   string                    $root           Absolute path of the repository root.
+     * @param   bool                      $portalEnabled  Whether to register the ordinary-user portal runtime.
      *
      * @return  void
      *
@@ -977,6 +1205,7 @@ final class ContainerFactory
         Container $container,
         ApplicationConfiguration $configuration,
         string $root,
+        bool $portalEnabled,
     ): void {
         $container->share(
             ViteAssetManifest::class,
@@ -1037,6 +1266,23 @@ final class ContainerFactory
                 self::service($container, ViteAssetManifest::class),
                 self::service($container, AdministratorViewRegistry::class),
             ), true);
+        if ($portalEnabled) {
+            $container->share(
+                PortalTwigEnvironmentFactory::class,
+                new PortalTwigEnvironmentFactory($configuration->isProduction()),
+                true,
+            );
+            $container->share(PortalRenderer::class, static fn (Container $container): PortalRenderer =>
+                new PortalRenderer(
+                    self::service($container, PortalTwigEnvironmentFactory::class)->create(
+                        $root . '/templates',
+                        self::service($container, ActiveExtensionSet::class)->portalTemplatePaths(),
+                        $root . '/storage/cache/twig/portal',
+                    ),
+                    self::service($container, PortalNavigationRegistry::class),
+                    self::service($container, PortalTemplateRegistry::class),
+                ), true);
+        }
         $container->share(RouterInterface::class, static fn (): RouterInterface =>
             new FastRouteRouter(null, null, [
                 'cache_enabled' => $configuration->isProduction(),
@@ -1076,16 +1322,16 @@ final class ContainerFactory
             );
         }, true);
 
-        $this->registerMiddleware($container, $configuration);
-        $this->registerHandlers($container, $configuration, $root);
-        $container->share(Application::class, function (Container $container): Application {
+        $this->registerMiddleware($container, $configuration, $portalEnabled);
+        $this->registerHandlers($container, $configuration, $root, $portalEnabled);
+        $container->share(Application::class, function (Container $container) use ($portalEnabled): Application {
             $application = new Application(
                 self::service($container, MiddlewareFactoryInterface::class),
                 self::service($container, MiddlewarePipeInterface::class),
                 self::service($container, RouteCollectorInterface::class),
                 self::service($container, RequestHandlerRunnerInterface::class),
             );
-            $this->configureApplication($application, $container);
+            $this->configureApplication($application, $container, $portalEnabled);
 
             return $application;
         }, true);
@@ -1194,6 +1440,7 @@ final class ContainerFactory
         ), true);
         $contributionRegistries = new ExtensionContributionRegistrySet(
             self::service($container, TrustStore::class),
+            authorizationPolicies: self::service($container, AuthorizationPolicyRegistry::class),
         );
         $container->share(ExtensionContributionRegistrySet::class, $contributionRegistries, true);
         $container->share(FieldTypeRegistry::class, $contributionRegistries->fieldTypes(), true);
@@ -1355,6 +1602,7 @@ final class ContainerFactory
         ): BusinessRecordRevisionRepository => new DoctrineBusinessRecordRevisionRepository(
             self::service($container, Connection::class),
             self::service($container, TableNames::class),
+            self::service($container, DoctrineBusinessRecordQueryCompiler::class),
         ), true);
         $container->share(BusinessRecordIdempotencyRepository::class, static fn (
             Container $container,
@@ -1376,6 +1624,15 @@ final class ContainerFactory
             self::service($container, TransactionManager::class),
             self::service($container, ClockInterface::class),
         ), true);
+        $container->share(BusinessRecordAccessController::class, static fn (
+            Container $container,
+        ): BusinessRecordAccessController => new DoctrineBusinessRecordAccessController(
+            self::service($container, Connection::class),
+            self::service($container, TableNames::class),
+            self::service($container, BusinessRecordDefinitionResolver::class),
+            self::service($container, MembershipDirectory::class),
+            self::service($container, ClockInterface::class),
+        ), true);
         $container->share(BusinessRecordService::class, static fn (
             Container $container,
         ): BusinessRecordService => new BusinessRecordService(
@@ -1387,6 +1644,9 @@ final class ContainerFactory
             self::service($container, BusinessRecordDefinitionResolver::class),
             self::service($container, RecordValueCodec::class),
             self::service($container, RecordRuleValidator::class),
+            self::service($container, BusinessRecordAccessController::class),
+            self::service($container, ApprovalService::class),
+            self::service($container, ResourceSiteOwnershipWriter::class),
             self::service($container, AuthorizationGateway::class),
             self::service($container, TransactionManager::class),
             self::service($container, AuditRecorder::class),
@@ -1417,6 +1677,8 @@ final class ContainerFactory
             true,
         );
         $container->share(AdministratorViewRegistry::class, $contributionRegistries->views(), true);
+        $container->share(PortalNavigationRegistry::class, $contributionRegistries->portalNavigation(), true);
+        $container->share(PortalTemplateRegistry::class, $contributionRegistries->portalTemplates(), true);
         $container->share(ThemeActivationGuard::class, static fn (
             Container $container,
         ): ThemeActivationGuard => new DoctrineThemeActivationGuard(
@@ -1504,12 +1766,17 @@ final class ContainerFactory
      *
      * @param   Container                 $container      Container being composed.
      * @param   ApplicationConfiguration  $configuration  Boot configuration for hosts, proxies and body limits.
+     * @param   bool                      $portalEnabled  Whether to register portal boundary middleware.
      *
      * @return  void
      *
      * @since   2.0.0
      */
-    private function registerMiddleware(Container $container, ApplicationConfiguration $configuration): void
+    private function registerMiddleware(
+        Container $container,
+        ApplicationConfiguration $configuration,
+        bool $portalEnabled,
+    ): void
     {
         $container->share(RequestIdMiddleware::class, new RequestIdMiddleware(), true);
         $container->share(ProblemDetailsMiddleware::class, static function (
@@ -1589,6 +1856,21 @@ final class ContainerFactory
             true,
         );
         $container->share(AdministratorCsrfMiddleware::class, new AdministratorCsrfMiddleware(), true);
+        if ($portalEnabled) {
+            $container->share(PortalSessionMiddleware::class, static fn (
+                Container $container,
+            ): PortalSessionMiddleware => new PortalSessionMiddleware(
+                self::service($container, PortalSessionStore::class),
+                self::service($container, PortalExecutionContextFactory::class),
+                self::service($container, AuthorizationGateway::class),
+            ), true);
+            $container->share(PortalAuthorizationMiddleware::class, static fn (
+                Container $container,
+            ): PortalAuthorizationMiddleware => new PortalAuthorizationMiddleware(
+                self::service($container, AuthorizationGateway::class),
+            ), true);
+            $container->share(PortalCsrfMiddleware::class, new PortalCsrfMiddleware(), true);
+        }
         $container->share(BearerAuthenticationMiddleware::class, static function (
             Container $container,
         ): BearerAuthenticationMiddleware {
@@ -1631,6 +1913,7 @@ final class ContainerFactory
      * @param   Container                 $container      Container being composed.
      * @param   ApplicationConfiguration  $configuration  Boot configuration for base URL, site and limits.
      * @param   string                    $root           Absolute path of the repository root.
+     * @param   bool                      $portalEnabled  Whether to register ordinary-user portal handlers.
      *
      * @return  void
      *
@@ -1640,6 +1923,7 @@ final class ContainerFactory
         Container $container,
         ApplicationConfiguration $configuration,
         string $root,
+        bool $portalEnabled,
     ): void {
         $container->share(HomePageHandler::class, static fn (Container $container): HomePageHandler =>
             new HomePageHandler(
@@ -1738,6 +2022,49 @@ final class ContainerFactory
             self::service($container, AdministratorSessionStore::class),
             $secureCookie,
         ), true);
+        if ($portalEnabled) {
+            $container->share(PortalLoginHandler::class, static fn (
+                Container $container,
+            ): PortalLoginHandler => new PortalLoginHandler(
+                self::service($container, PortalAuthenticator::class),
+                self::service($container, PortalContextResolver::class),
+                self::service($container, PortalSessionStore::class),
+                self::service($container, PortalRenderer::class),
+                $secureCookie,
+                $configuration->administratorSessionSeconds,
+            ), true);
+            $container->share(PortalLogoutHandler::class, static fn (
+                Container $container,
+            ): PortalLogoutHandler => new PortalLogoutHandler(
+                self::service($container, PortalSessionStore::class),
+                $secureCookie,
+            ), true);
+            $container->share(PortalHomeHandler::class, static fn (
+                Container $container,
+            ): PortalHomeHandler => new PortalHomeHandler(
+                self::service($container, PortalRenderer::class),
+            ), true);
+            $container->share(PortalSecurityHandler::class, static fn (
+                Container $container,
+            ): PortalSecurityHandler => new PortalSecurityHandler(
+                self::service($container, StepUpProvider::class),
+                self::service($container, PortalRenderer::class),
+                $secureCookie,
+                $configuration->administratorSessionSeconds,
+            ), true);
+            $container->share(PortalApprovalHandler::class, static fn (
+                Container $container,
+            ): PortalApprovalHandler => new PortalApprovalHandler(
+                self::service($container, ApprovalQueryService::class),
+                self::service($container, ApprovalService::class),
+                self::service($container, StepUpProvider::class),
+                self::service($container, AuthorizationStepUpProofAdapter::class),
+                self::service($container, TransactionManager::class),
+                self::service($container, PortalRenderer::class),
+                $secureCookie,
+                $configuration->administratorSessionSeconds,
+            ), true);
+        }
         $container->share(AdministratorDashboardHandler::class, static fn (
             Container $container,
         ): AdministratorDashboardHandler => new AdministratorDashboardHandler(
@@ -1925,6 +2252,27 @@ final class ContainerFactory
             self::service($container, AccessControlService::class),
             self::service($container, AdministratorIdentityGateway::class),
             self::service($container, AdministratorRenderer::class),
+            self::service($container, AdministratorSessionStore::class),
+            self::service($container, MembershipDirectory::class),
+            self::service($container, AdministratorStepUpProvider::class),
+            self::service($container, AuthorizationStepUpProofAdapter::class),
+            self::service($container, StepUpProofConsumer::class),
+            self::service($container, TransactionManager::class),
+            self::service($container, ClockInterface::class),
+            $secureCookie,
+            $configuration->administratorSessionSeconds,
+        ), true);
+        $container->share(AdministratorBusinessSecurityHandler::class, static fn (
+            Container $container,
+        ): AdministratorBusinessSecurityHandler => new AdministratorBusinessSecurityHandler(
+            self::service($container, BusinessSecurityAdministrationService::class),
+            self::service($container, ApprovalService::class),
+            self::service($container, AdministratorRenderer::class),
+            self::service($container, AdministratorStepUpProvider::class),
+            self::service($container, AuthorizationStepUpProofAdapter::class),
+            self::service($container, TransactionManager::class),
+            $secureCookie,
+            $configuration->administratorSessionSeconds,
         ), true);
         $container->share(AdministratorAutomationHandler::class, static fn (
             Container $container,
@@ -2029,12 +2377,17 @@ final class ContainerFactory
      *
      * @param   Application  $application  Mezzio application to pipe middleware into and route.
      * @param   Container    $container    Container the application resolves handlers from.
+     * @param   bool         $portalEnabled Whether to pipe and declare the ordinary-user portal boundary.
      *
      * @return  void
      *
      * @since   2.0.0
      */
-    private function configureApplication(Application $application, Container $container): void
+    private function configureApplication(
+        Application $application,
+        Container $container,
+        bool $portalEnabled,
+    ): void
     {
         $application->pipe(RequestIdMiddleware::class);
         $application->pipe(ProblemDetailsMiddleware::class);
@@ -2048,6 +2401,10 @@ final class ContainerFactory
         $application->pipe(MethodNotAllowedMiddleware::class);
         $application->pipe(AdministratorSessionMiddleware::class);
         $application->pipe(AdministratorAuthorizationMiddleware::class);
+        if ($portalEnabled) {
+            $application->pipe(PortalSessionMiddleware::class);
+            $application->pipe(PortalAuthorizationMiddleware::class);
+        }
         $application->pipe(BearerAuthenticationMiddleware::class);
         $application->pipe(DispatchMiddleware::class);
         $application->pipe(NotFoundHandler::class);
@@ -2062,6 +2419,52 @@ final class ContainerFactory
             ['GET', 'POST'],
             'administrator.login',
         );
+        if ($portalEnabled) {
+            $application->route('/portal/login', PortalLoginHandler::class, ['GET', 'POST'], 'portal.login');
+            self::portalRoute($application->get('/portal', PortalHomeHandler::class, 'portal.index'), 'portal.access');
+            self::portalRoute($application->post(
+                '/portal/logout',
+                [PortalCsrfMiddleware::class, PortalLogoutHandler::class],
+                'portal.logout',
+            ), 'portal.access');
+            self::portalRoute(
+                $application->get('/portal/security', PortalSecurityHandler::class, 'portal.security'),
+                'portal.access',
+            );
+            foreach (
+                [
+                    ['/portal/security/totp/enroll', 'portal.security.totp.enroll'],
+                    ['/portal/security/totp/confirm', 'portal.security.totp.confirm'],
+                    ['/portal/security/challenge', 'portal.security.challenge'],
+                    ['/portal/security/recovery', 'portal.security.recovery'],
+                ] as [$path, $name]
+            ) {
+                self::portalRoute($application->post(
+                    $path,
+                    [PortalCsrfMiddleware::class, PortalSecurityHandler::class],
+                    $name,
+                ), 'portal.access');
+            }
+            self::portalRoute(
+                $application->get('/portal/approvals', PortalApprovalHandler::class, 'portal.approvals'),
+                'portal.access',
+            );
+            self::portalRoute(
+                $application->get(
+                    '/portal/approvals/{id}',
+                    PortalApprovalHandler::class,
+                    'portal.approvals.detail',
+                ),
+                'portal.access',
+            );
+            foreach (['approve', 'reject', 'revoke'] as $decision) {
+                self::portalRoute($application->post(
+                    '/portal/approvals/{id}/' . $decision,
+                    [PortalCsrfMiddleware::class, PortalApprovalHandler::class],
+                    'portal.approvals.' . $decision,
+                ), 'portal.access');
+            }
+        }
         self::administratorRoute(
             $application->get('/administrator', AdministratorDashboardHandler::class, 'administrator.index'),
             'content.read',
@@ -2226,6 +2629,16 @@ final class ContainerFactory
             [AdministratorCsrfMiddleware::class, AdministratorAccessControlHandler::class],
             'administrator.access-control.update',
         ), 'users.manage');
+        self::administratorRoute($application->get(
+            '/administrator/business-security',
+            AdministratorBusinessSecurityHandler::class,
+            'administrator.business-security',
+        ), 'business.security.manage');
+        self::administratorRoute($application->post(
+            '/administrator/business-security',
+            [AdministratorCsrfMiddleware::class, AdministratorBusinessSecurityHandler::class],
+            'administrator.business-security.update',
+        ), 'business.security.manage');
         self::administratorRoute($application->get(
             '/administrator/automation',
             AdministratorAutomationHandler::class,
@@ -2722,6 +3135,7 @@ final class ContainerFactory
         self::service($container, ActiveExtensionSet::class)->registerRoutes(
             $application,
             self::service($container, AdministratorRenderer::class),
+            $portalEnabled ? self::service($container, PortalRenderer::class) : null,
         );
         $application->get('/{path:.+}', PublishedContentHandler::class, 'site.content.path');
     }
@@ -3076,6 +3490,23 @@ final class ContainerFactory
     {
         $route->setOptions([
             AdministratorAuthorizationMiddleware::OPTION_REQUIRED_CAPABILITIES => $capabilities,
+        ]);
+    }
+
+    /**
+     * Attach conjunctive portal capability requirements to one route.
+     *
+     * @param   Route   $route         Matched route receiving the authorization option.
+     * @param   string  $capabilities  Capability names the portal actor must hold through the gateway.
+     *
+     * @return  void
+     *
+     * @since  2.0.0
+     */
+    private static function portalRoute(Route $route, string ...$capabilities): void
+    {
+        $route->setOptions([
+            PortalAuthorizationMiddleware::OPTION_REQUIRED_CAPABILITIES => $capabilities,
         ]);
     }
 

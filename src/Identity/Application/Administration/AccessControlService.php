@@ -485,7 +485,9 @@ final readonly class AccessControlService
      * Remove a capability grant, authorized against both the grant and the role behind it.
      *
      * The role is read from the stored grant rather than taken from the caller, so naming a grant is not
-     * a way to edit a role the actor does not manage.
+     * a way to edit a role the actor does not manage. The role is locked before deletion so a concurrent
+     * direct or membership assignment cannot appear between the repository's member snapshot and its
+     * security-epoch invalidation.
      *
      * @param   ExecutionContext  $context  Actor, site and request identifiers the revocation runs under.
      * @param   string            $grantId  UUID of the grant to remove.
@@ -505,7 +507,8 @@ final readonly class AccessControlService
             ?? throw new InvalidArgumentException('The capability grant does not exist.');
         $this->authorize($context, AuthorizationResource::item('role', $grant['role_id']));
         $actorId = $context->actorId();
-        $this->transactions->transactional(function () use ($actorId, $grantId): void {
+        $this->transactions->transactional(function () use ($actorId, $grantId, $grant): void {
+            $this->repository->lockRole($grant['role_id']);
             $this->repository->revokeGrant($grantId);
             $this->ownership->remove(
                 AuthorizationResource::item('grant', $grantId),

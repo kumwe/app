@@ -8,6 +8,8 @@ use DateTimeImmutable;
 use Kumwe\CMS\BusinessDefinition\Domain\EntityTypeDefinition;
 use Kumwe\CMS\BusinessDefinition\Domain\Sensitivity;
 use Kumwe\CMS\BusinessRecord\Domain\BusinessRecord;
+use Kumwe\CMS\BusinessSecurity\Application\FieldAccessUsage;
+use Kumwe\CMS\BusinessSecurity\Application\FieldDisclosurePlan;
 
 /**
  * Disclosure-safe projection of one stored business record, as the read side hands it to a caller.
@@ -127,6 +129,9 @@ final readonly class BusinessRecordView
      *          visibility and per-field sensitivity; null applies no narrowing at all.
      * @param   array<string, mixed>|null  $resolvedValues  Values whose entity references already carry the
      *          target's public identity; null redacts every reference field instead.
+     * @param   ?FieldDisclosurePlan       $disclosure      Explicit field allow-list; null preserves the
+     *          legacy definition-only projection.
+     * @param   FieldAccessUsage           $usage           Exact read surface whose disclosure set applies.
      *
      * @return  self  View over the narrowed values, with no includes attached yet.
      *
@@ -137,6 +142,8 @@ final readonly class BusinessRecordView
         array $projection = [],
         ?EntityTypeDefinition $definition = null,
         ?array $resolvedValues = null,
+        ?FieldDisclosurePlan $disclosure = null,
+        FieldAccessUsage $usage = FieldAccessUsage::Detail,
     ): self {
         $values = $resolvedValues ?? $record->values();
         if ($definition !== null) {
@@ -150,6 +157,9 @@ final readonly class BusinessRecordView
         }
         if ($projection !== []) {
             $values = array_intersect_key($values, array_fill_keys($projection, true));
+        }
+        if ($disclosure !== null) {
+            $values = array_intersect_key($values, array_fill_keys($disclosure->fields($usage), true));
         }
         foreach ($definition?->fields() ?? [] as $field) {
             if (

@@ -24,6 +24,8 @@ use Kumwe\CMS\Extension\Application\Migration\ExtensionMigrationRunner;
 use Kumwe\CMS\Extension\Application\Package\ArchiveReader;
 use Kumwe\CMS\Extension\Application\Package\PackageSafetyPolicy;
 use Kumwe\CMS\Extension\Application\Trust\TrustStore;
+use Kumwe\CMS\Extension\Contribution\ContributionDefinitionChecksum;
+use Kumwe\CMS\Extension\Contribution\ContributionOwner;
 use Kumwe\CMS\Extension\Domain\ExtensionIdentifier;
 use Kumwe\CMS\Extension\Domain\ExtensionManifest;
 use Kumwe\CMS\Extension\Domain\ExtensionType;
@@ -926,13 +928,20 @@ final readonly class DoctrineExtensionManager
         ): void {
             $this->assertFence($lease);
             $installed = $this->findInstalled($identifier);
-            $capabilities = array_values(array_filter($this->database->fetchFirstColumn(sprintf(
-                'SELECT capability_code FROM %s WHERE extension_id = ? ORDER BY capability_code',
-                $this->tables->quoted('extension_contribution_capabilities'),
-            ), [$installed['id']]), 'is_string'));
+            $capabilityCatalog = $this->tables->raw('extension_contribution_capabilities');
+            $capabilities = $this->database->createSchemaManager()->tablesExist([$capabilityCatalog])
+                ? array_values(array_filter($this->database->fetchFirstColumn(sprintf(
+                    'SELECT capability_code FROM %s WHERE extension_id = ? ORDER BY capability_code',
+                    $this->tables->quoted('extension_contribution_capabilities'),
+                ), [$installed['id']]), 'is_string'))
+                : [];
             $this->assertThemeCapabilities($installed, $context);
             $this->clearThemeActivations($installed, $actorId, $context->site());
             $this->businessDefinitions?->setActive($identifier, false, $actorId);
+            $resourcePolicies = $this->tables->raw('extension_contribution_resource_policies');
+            if ($this->database->createSchemaManager()->tablesExist([$resourcePolicies])) {
+                $this->database->delete($resourcePolicies, ['extension_id' => $installed['id']]);
+            }
             $affected = $this->database->delete($this->tables->raw('extensions'), ['identifier' => $identifier]);
             if ((string) $affected !== '1') {
                 throw new InvalidArgumentException('The requested extension is not installed.');
@@ -1248,10 +1257,10 @@ final readonly class DoctrineExtensionManager
      *
      * Contributed codes are exclusive. A code another extension owns, or one that already exists as a
      * core capability, is refused rather than taken over, so an extension cannot quietly widen its own
-     * authority by claiming a name. Codes this extension still declares have their descriptions
-     * refreshed in both the capability catalogue and the contribution table, and codes it has stopped
-     * declaring are deleted — which is what keeps an upgrade from leaving behind grants for capabilities
-     * the package no longer defines.
+     * authority by claiming a name. Metadata is refreshed in the canonical capability catalogue and
+     * the package's base action/resource declarations are reconciled before withdrawn capabilities are
+     * removed. That ordering lets the policy foreign keys enforce lifecycle integrity without leaving
+     * grants or declarations for capabilities the package no longer defines.
      *
      * @param   ExtensionManifest  $manifest     Manifest whose contributed capability definitions are
      *          authoritative for this extension.
@@ -1266,57 +1275,193 @@ final readonly class DoctrineExtensionManager
      */
     private function synchronizeContributionCapabilities(ExtensionManifest $manifest, string $extensionId): void
     {
+        $contributionOwner = ContributionOwner::extension($manifest->identifier()->value());
         $definitions = [];
         foreach ($manifest->contributions()->capabilities() as $definition) {
-            $definitions[$definition->id] = $definition->description;
+            $definitions[$definition->id] = $definition;
         }
         ksort($definitions, SORT_STRING);
+        $catalogName = $this->tables->raw('extension_contribution_capabilities');
+        if (!$this->database->createSchemaManager()->tablesExist([$catalogName])) {
+            if ($definitions === [] && $manifest->contributions()->resourcePolicies() === []) {
+                return;
+            }
+            throw new RuntimeException(
+                'Extension authorization contributions require the current database migration.',
+            );
+        }
 
         $existing = array_values(array_filter($this->database->fetchFirstColumn(sprintf(
             'SELECT capability_code FROM %s WHERE extension_id = ? ORDER BY capability_code',
             $this->tables->quoted('extension_contribution_capabilities'),
         ), [$extensionId]), 'is_string'));
-        foreach ($definitions as $code => $description) {
-            $owner = $this->database->fetchOne(sprintf(
+        foreach ($definitions as $code => $definition) {
+            $recordedOwner = $this->database->fetchOne(sprintf(
                 'SELECT extension_id FROM %s WHERE capability_code = ?',
                 $this->tables->quoted('extension_contribution_capabilities'),
             ), [$code]);
-            if ($owner !== false && $owner !== $extensionId) {
+            if ($recordedOwner !== false && $recordedOwner !== $extensionId) {
                 throw new InvalidArgumentException(sprintf(
                     'Capability %s is already owned by another extension.',
                     $code,
                 ));
             }
-            $capabilityExists = $this->database->fetchOne(sprintf(
-                'SELECT code FROM %s WHERE code = ?',
+            $catalog = $this->database->fetchAssociative(sprintf(
+                'SELECT code, owner_kind, owner_identifier FROM %s WHERE code = ?',
                 $this->tables->quoted('capabilities'),
             ), [$code]);
-            if ($capabilityExists !== false && $owner === false) {
+            if ($catalog !== false && $recordedOwner === false) {
                 throw new InvalidArgumentException(sprintf('Capability %s collides with a core capability.', $code));
             }
-            if ($capabilityExists === false) {
+            if (
+                $catalog !== false
+                && (($catalog['owner_kind'] ?? null) !== 'extension'
+                    || ($catalog['owner_identifier'] ?? null) !== $manifest->identifier()->value())
+            ) {
+                throw new InvalidArgumentException(sprintf(
+                    'Capability %s has inconsistent persisted ownership.',
+                    $code,
+                ));
+            }
+            $values = [
+                'description' => $definition->description,
+                'owner_kind' => 'extension',
+                'owner_identifier' => $manifest->identifier()->value(),
+                'allowed_scopes' => json_encode($definition->allowedScopes, JSON_THROW_ON_ERROR),
+                'delegable' => $definition->delegatable,
+                'high_impact' => $definition->highImpact,
+                'definition_version' => $definition->version,
+                'definition_checksum' => ContributionDefinitionChecksum::calculate($contributionOwner, $definition),
+                'lifecycle_state' => $definition->lifecycle->value,
+            ];
+            if ($catalog === false) {
                 $this->database->insert($this->tables->raw('capabilities'), [
                     'code' => $code,
-                    'description' => $description,
+                    ...$values,
+                ], [
+                    'delegable' => Types::BOOLEAN,
+                    'high_impact' => Types::BOOLEAN,
                 ]);
+            } else {
+                $this->database->update(
+                    $this->tables->raw('capabilities'),
+                    $values,
+                    ['code' => $code],
+                    [
+                        'delegable' => Types::BOOLEAN,
+                        'high_impact' => Types::BOOLEAN,
+                    ],
+                );
             }
-            if ($owner === false) {
+            if ($recordedOwner === false) {
                 $this->database->insert($this->tables->raw('extension_contribution_capabilities'), [
                     'extension_id' => $extensionId,
                     'capability_code' => $code,
-                    'description' => $description,
+                    'description' => $definition->description,
                 ]);
             } else {
                 $this->database->update($this->tables->raw('extension_contribution_capabilities'), [
-                    'description' => $description,
+                    'description' => $definition->description,
                 ], ['capability_code' => $code]);
-                $this->database->update($this->tables->raw('capabilities'), [
-                    'description' => $description,
-                ], ['code' => $code]);
             }
         }
+        $this->synchronizeContributionResourcePolicies($manifest, $extensionId);
         foreach (array_diff($existing, array_keys($definitions)) as $removed) {
             $this->deleteContributionCapability($removed);
+        }
+    }
+
+    /**
+     * Reconcile one release's signed base action/resource declarations before capability retirement.
+     *
+     * Policy codes are globally exclusive in this declaration catalog. Updates retain the original
+     * creation timestamp, replace the full typed document and security metadata, and remove declarations
+     * omitted by the new release. Conditional business-record AST policies live in another table and
+     * are intentionally outside extension contribution synchronization.
+     *
+     * @param   ExtensionManifest  $manifest     Manifest whose policy declarations are authoritative.
+     * @param   string             $extensionId  Registry UUID that owns the declarations.
+     *
+     * @return  void
+     *
+     * @throws  InvalidArgumentException  When another extension already owns a declared policy code.
+     *
+     * @since   2.0.0
+     */
+    private function synchronizeContributionResourcePolicies(
+        ExtensionManifest $manifest,
+        string $extensionId,
+    ): void {
+        $owner = ContributionOwner::extension($manifest->identifier()->value());
+        $definitions = [];
+        foreach ($manifest->contributions()->resourcePolicies() as $definition) {
+            $definitions[$definition->id] = $definition;
+        }
+        ksort($definitions, SORT_STRING);
+        $catalogName = $this->tables->raw('extension_contribution_resource_policies');
+        if (!$this->database->createSchemaManager()->tablesExist([$catalogName])) {
+            if ($definitions === []) {
+                return;
+            }
+            throw new RuntimeException(
+                'Extension resource-policy contributions require the current database migration.',
+            );
+        }
+        $existing = array_values(array_filter($this->database->fetchFirstColumn(sprintf(
+            'SELECT policy_code FROM %s WHERE extension_id = ? ORDER BY policy_code',
+            $this->tables->quoted('extension_contribution_resource_policies'),
+        ), [$extensionId]), 'is_string'));
+        $now = $this->clock->now();
+
+        foreach ($definitions as $code => $definition) {
+            $recordedOwner = $this->database->fetchOne(sprintf(
+                'SELECT extension_id FROM %s WHERE policy_code = ?',
+                $this->tables->quoted('extension_contribution_resource_policies'),
+            ), [$code]);
+            if ($recordedOwner !== false && $recordedOwner !== $extensionId) {
+                throw new InvalidArgumentException(sprintf(
+                    'Resource policy %s is already owned by another extension.',
+                    $code,
+                ));
+            }
+            $values = [
+                'capability_code' => $definition->capability,
+                'definition' => $definition->toArray(),
+                'installation_global' => $definition->installationGlobal,
+                'lifecycle_state' => $definition->lifecycle->value,
+                'definition_version' => $definition->version,
+                'definition_checksum' => ContributionDefinitionChecksum::calculate($owner, $definition),
+                'updated_at' => $now,
+            ];
+            if ($recordedOwner === false) {
+                $this->database->insert($this->tables->raw('extension_contribution_resource_policies'), [
+                    'extension_id' => $extensionId,
+                    'policy_code' => $code,
+                    ...$values,
+                    'created_at' => $now,
+                ], [
+                    'definition' => Types::JSON,
+                    'installation_global' => Types::BOOLEAN,
+                    'created_at' => Types::DATETIME_IMMUTABLE,
+                    'updated_at' => Types::DATETIME_IMMUTABLE,
+                ]);
+                continue;
+            }
+            $this->database->update(
+                $this->tables->raw('extension_contribution_resource_policies'),
+                $values,
+                ['policy_code' => $code],
+                [
+                    'definition' => Types::JSON,
+                    'installation_global' => Types::BOOLEAN,
+                    'updated_at' => Types::DATETIME_IMMUTABLE,
+                ],
+            );
+        }
+        foreach (array_diff($existing, array_keys($definitions)) as $removed) {
+            $this->database->delete($this->tables->raw('extension_contribution_resource_policies'), [
+                'policy_code' => $removed,
+            ]);
         }
     }
 
@@ -1354,7 +1499,9 @@ final readonly class DoctrineExtensionManager
      * What a package declares lives in its manifest and whether it is switched on lives in the registry,
      * so an operator screen needs both to explain why a declared route or field type is not reachable.
      * The flag is stamped on every contributed capability, on every administrator workspace, navigation
-     * entry, route and view, on every business field type and definition, and on the set as a whole.
+     * entry, route and view, on every resource policy, on every business field type and definition,
+     * and on the set as a whole. Capability and policy lifecycle participates in their individual flag,
+     * so disabled and retired declarations are never reported as live merely because their owner is.
      *
      * @param   ExtensionManifest  $manifest  Manifest whose declared contribution set is described.
      * @param   bool               $active    Whether the extension's registry status is currently `active`.
@@ -1368,9 +1515,15 @@ final readonly class DoctrineExtensionManager
     {
         $contributions = $manifest->contributions()->toArray();
         foreach ($contributions['capabilities'] as &$capability) {
-            $capability['active'] = $active;
+            $capability['active'] = $active
+                && in_array($capability['lifecycle'] ?? null, ['active', 'deprecated'], true);
         }
         unset($capability);
+        foreach ($contributions['resource_policies'] as &$policy) {
+            $policy['active'] = $active
+                && in_array($policy['lifecycle'] ?? null, ['active', 'deprecated'], true);
+        }
+        unset($policy);
         foreach (['workspaces', 'navigation', 'routes', 'views'] as $kind) {
             foreach ($contributions['administrator'][$kind] as &$item) {
                 $item['active'] = $active;

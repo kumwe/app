@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Kumwe\CMS\Identity\Application\Administration;
 
 use DateTimeImmutable;
+use Kumwe\CMS\Application\Authorization\MembershipContext;
+use Kumwe\CMS\Application\Authorization\SiteContext;
 use Kumwe\CMS\Identity\Application\Authentication\AuthenticatedPrincipal;
 
 /**
@@ -35,13 +37,15 @@ final readonly class AdministratorSession
     /**
      * Capture who a session signs in as and how long it stays valid.
      *
-     * @param  string                  $id         UUID of the stored session row, which is also the
+     * @param  string                  $id          UUID of the stored session row, which is also the
      *         resource identifier administrator access is authorized against.
-     * @param  AuthenticatedPrincipal  $principal  Actor the session speaks for, carrying the grants and
+     * @param  AuthenticatedPrincipal  $principal   Actor the session speaks for, carrying the grants and
      *         security epoch read when the session was resolved.
-     * @param  string                  $csrfToken  Value every state-changing administrator form must echo
+     * @param  string                  $csrfToken   Value every state-changing administrator form must echo
      *         back for `AdministratorCsrfMiddleware` to accept the submission.
-     * @param  DateTimeImmutable       $expiresAt  Instant past which the store stops resolving the cookie.
+     * @param  DateTimeImmutable       $expiresAt   Instant past which the store stops resolving the cookie.
+     * @param  ?SiteContext            $site        Exact stored site, when supplied by the current schema.
+     * @param  ?MembershipContext      $membership  Versioned organization/workspace selection.
      *
      * @since  2.0.0
      */
@@ -50,6 +54,8 @@ final readonly class AdministratorSession
         public AuthenticatedPrincipal $principal,
         public string $csrfToken,
         public DateTimeImmutable $expiresAt,
+        public ?SiteContext $site = null,
+        public ?MembershipContext $membership = null,
     ) {
     }
 }

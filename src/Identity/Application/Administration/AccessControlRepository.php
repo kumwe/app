@@ -294,7 +294,9 @@ interface AccessControlRepository
      * @param   bool    $lock     Whether to hold the row for the rest of the caller's transaction.
      *
      * @return  array{subject_id: string, email: string, capabilities: list<string>, site_identifier: string,
-     *          audience: string, purpose: string}|null  Null when the token is absent or no longer usable.
+     *          audience: string, purpose: string, organization_identifier: ?string, workspace_identifier: ?string,
+     *          membership_id: ?string, membership_version: ?int, policy_generation: ?int, family_id: string,
+     *          delegation_depth: int, expires_at: DateTimeImmutable}|null  Null when absent or unusable.
      *
      * @since   2.0.0
      */
@@ -413,6 +415,34 @@ interface AccessControlRepository
      * @since   2.0.0
      */
     public function userGrants(string $userId): array;
+
+    /**
+     * Resolve a subject's live authority in one exact organization and optional workspace.
+     *
+     * Token issuance uses the target subject's membership rather than copying the administrator actor's
+     * membership snapshot. A workspace answers only when explicitly assigned to that membership, and the
+     * returned grants come from the canonical membership-role assignments.
+     *
+     * @param   string   $userId                  Token subject UUID.
+     * @param   string   $siteIdentifier          Server-resolved site.
+     * @param   string   $organizationIdentifier  Exact server-resolved organization.
+     * @param   ?string  $workspaceIdentifier     Exact workspace, or null for organization-wide authority.
+     * @param   bool     $lock                    Whether the membership row is held for a following write.
+     *
+     * @return  array{membership_id: string, membership_version: int, policy_generation: int,
+     *          organization_identifier: string, workspace_identifier: ?string,
+     *          grants: list<array{capability: string, scope_type: string, scope_identifier: ?string}>}|null
+     *          Live target authority, or null when the subject has no exact current membership.
+     *
+     * @since   2.0.0
+     */
+    public function organizationMembershipAuthority(
+        string $userId,
+        string $siteIdentifier,
+        string $organizationIdentifier,
+        ?string $workspaceIdentifier,
+        bool $lock = false,
+    ): ?array;
 
     /**
      * Read one capability grant by its identifier.

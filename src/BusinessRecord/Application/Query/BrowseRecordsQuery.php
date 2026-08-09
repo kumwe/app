@@ -31,6 +31,7 @@ final readonly class BrowseRecordsQuery
      *          projection describing the page wanted.
      * @param   ?string                   $organizationIdentifier  Organization to scope the listing to;
      *          required for an organization-scoped definition and null for any other.
+     * @param   BusinessRecordQueryPurpose $purpose                Security purpose of the collection output.
      *
      * @throws  \InvalidArgumentException  When the definition identifier is neither a UUID nor a dotted
      *          handle, or the organization identifier is not a bounded printable identifier.
@@ -42,6 +43,7 @@ final readonly class BrowseRecordsQuery
         public string $definitionIdentifier,
         public RecordQuerySpecification $specification,
         public ?string $organizationIdentifier = null,
+        public BusinessRecordQueryPurpose $purpose = BusinessRecordQueryPurpose::Browse,
     ) {
         RecordRequestGuard::definition($definitionIdentifier);
         RecordRequestGuard::organization($organizationIdentifier);

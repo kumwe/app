@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light dark">
+    <title>{% block title %}Kumwe Portal{% endblock %}</title>
+    <link rel="stylesheet" href="/assets/portal.css">
+</head>
+<body>
+<a class="skip-link" href="#portal-main">Skip to main content</a>
+<header class="portal-header">
+    <a class="portal-brand" href="/portal" aria-label="Kumwe Portal home">Kumwe <span>Portal</span></a>
+    {% if portal_session %}
+        <div class="portal-context" aria-label="Active portal context">
+            <span>{{ portal_site }}</span>
+            {% if portal_organization %}<span>{{ portal_organization }}</span>{% endif %}
+            {% if portal_workspace %}<span>{{ portal_workspace }}</span>{% endif %}
+        </div>
+        <form method="post" action="/portal/logout">
+            <input type="hidden" name="_csrf" value="{{ portal_session.csrfToken }}">
+            <button type="submit">Sign out</button>
+        </form>
+    {% endif %}
+</header>
+<div class="portal-shell">
+    {% if portal_session %}
+        <nav class="portal-navigation" aria-label="Portal navigation">
+            {% for workspace in portal_workspaces %}
+                <section aria-labelledby="{{ workspace.dom_id }}">
+                    <h2 id="{{ workspace.dom_id }}">{{ workspace.label }}</h2>
+                    <ul>
+                        {% for item in portal_navigation|filter(item => item.workspace == workspace.id) %}
+                            <li>
+                                <a href="{{ item.href }}"{% if item.id == active_navigation %} aria-current="page"{% endif %}>
+                                    <span>{{ item.label }}</span>
+                                    <small>{{ item.description }}</small>
+                                </a>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </section>
+            {% endfor %}
+        </nav>
+    {% endif %}
+    <main id="portal-main" tabindex="-1">
+        {% block content %}{% endblock %}
+    </main>
+</div>
+</body>
+</html>

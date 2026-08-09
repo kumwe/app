@@ -6,14 +6,27 @@ namespace Kumwe\CMS\Administrator\Http\Handler;
 
 use DateTimeImmutable;
 use InvalidArgumentException;
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
 use Kumwe\CMS\Administrator\Http\AdministratorRequest;
+use Kumwe\CMS\Administrator\Http\Middleware\AdministratorSessionMiddleware;
 use Kumwe\CMS\Administrator\Presentation\AdministratorRenderer;
+use Kumwe\CMS\Application\Authorization\AuthenticationStrength;
+use Kumwe\CMS\Application\Authorization\ExecutionContext;
+use Kumwe\CMS\BusinessSecurity\Application\Approval\StepUpProofConsumer;
+use Kumwe\CMS\BusinessSecurity\Application\MembershipDirectory;
+use Kumwe\CMS\Http\Middleware\TrustedProxyMiddleware;
 use Kumwe\CMS\Identity\Application\Administration\AccessControlService;
 use Kumwe\CMS\Identity\Application\Administration\AdministratorIdentityGateway;
+use Kumwe\CMS\Identity\Application\Administration\AdministratorSessionStore;
+use Kumwe\CMS\Identity\Application\StepUp\AdministratorStepUpProvider;
+use Kumwe\CMS\Identity\Application\StepUp\AuthorizationStepUpProofAdapter;
+use Kumwe\CMS\Identity\Domain\StepUp\StepUpEnrollmentCompletion;
+use Kumwe\CMS\Identity\Domain\StepUp\StepUpIntent;
+use Kumwe\CMS\Identity\Domain\StepUp\StepUpVerification;
 use Kumwe\CMS\Identity\Domain\UserStatus;
+use Kumwe\CMS\Infrastructure\Persistence\TransactionManager;
 use Laminas\Diactoros\Response\HtmlResponse;
 use Laminas\Diactoros\Response\RedirectResponse;
+use Psr\Clock\ClockInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\RequestHandlerInterface;
@@ -34,9 +47,18 @@ final readonly class AdministratorAccessControlHandler implements RequestHandler
     /**
      * Wire the screen to the services that read and change administrator identities.
      *
-     * @param  AccessControlService          $access      Reads and mutates users, roles, grants and tokens.
-     * @param  AdministratorIdentityGateway  $identities  Issues and rotates tokens, the two secret-bearing acts.
-     * @param  AdministratorRenderer         $renderer    Renders the `access-control` template.
+     * @param  AccessControlService             $access          Reads and mutates users, roles, grants and tokens.
+     * @param  AdministratorIdentityGateway     $identities      Issues and rotates tokens, the secret-bearing acts.
+     * @param  AdministratorRenderer            $renderer        Renders the `access-control` template.
+     * @param  AdministratorSessionStore        $sessions        Rotates authenticated organization selections.
+     * @param  MembershipDirectory              $memberships     Lists only selections the actor currently holds.
+     * @param  AdministratorStepUpProvider      $stepUp          Production administrator second-factor provider.
+     * @param  AuthorizationStepUpProofAdapter  $proofs          Adapts provider verification to authorization proof.
+     * @param  StepUpProofConsumer              $proofConsumer   Atomically spends every adapted proof once.
+     * @param  TransactionManager               $transactions    Joins proof use, session rotation and mutation.
+     * @param  ClockInterface                   $clock           Trusted proof-consumption instant.
+     * @param  bool                             $secureCookie    Whether the rotated cookie carries `Secure`.
+     * @param  int                              $sessionLifetime Cookie maximum age in seconds.
      *
      * @since  2.0.0
      */
@@ -44,6 +66,15 @@ final readonly class AdministratorAccessControlHandler implements RequestHandler
         private AccessControlService $access,
         private AdministratorIdentityGateway $identities,
         private AdministratorRenderer $renderer,
+        private AdministratorSessionStore $sessions,
+        private MembershipDirectory $memberships,
+        private AdministratorStepUpProvider $stepUp,
+        private AuthorizationStepUpProofAdapter $proofs,
+        private StepUpProofConsumer $proofConsumer,
+        private TransactionManager $transactions,
+        private ClockInterface $clock,
+        private bool $secureCookie = true,
+        private int $sessionLifetime = 28_800,
     ) {
     }
 
@@ -69,17 +100,117 @@ final readonly class AdministratorAccessControlHandler implements RequestHandler
         $session = AdministratorRequest::session($request);
         $context = AdministratorRequest::context($request);
         $createdToken = null;
+        $enrollment = null;
+        $recoveryCodes = [];
+        $replacementToken = null;
+        $csrf = $session->csrfToken;
         if (strtoupper($request->getMethod()) === 'POST') {
             $form = AdministratorRequest::form($request);
-            $createdToken = $this->mutate($context, $form);
+            if (($form['action'] ?? null) === 'context.select') {
+                $workspace = trim($form['workspace'] ?? '');
+                $created = $this->sessions->selectMembership(
+                    $context,
+                    AdministratorRequest::required($form, 'organization'),
+                    $workspace === '' ? null : $workspace,
+                    $request->getHeaderLine('User-Agent'),
+                );
+
+                return new RedirectResponse('/administrator/access?saved=1', 303, [
+                    'Cache-Control' => 'no-store',
+                    'Set-Cookie' => $this->cookie($created->token),
+                ]);
+            }
+            $action = AdministratorRequest::required($form, 'action');
+            if ($action === 'step_up.begin') {
+                $enrollment = $this->stepUp->beginEnrollment(
+                    $context->actorId(),
+                    'Kumwe',
+                    $context->actorId(),
+                );
+            } elseif ($action === 'step_up.confirm') {
+                $purpose = 'identity.step_up.enrollment';
+                $completion = $this->transactions->transactional(function () use (
+                    $context,
+                    $purpose,
+                    $form,
+                    $request,
+                ): StepUpEnrollmentCompletion {
+                    $completion = $this->stepUp->confirmEnrollment(
+                        $this->stepUpIntent($context, $purpose),
+                        AdministratorRequest::required($form, 'enrollment_id'),
+                        AdministratorRequest::required($form, 'step_up_code'),
+                        $this->source($request),
+                    );
+                    $steppedContext = $this->multiFactorContext($context, $completion->verification);
+                    $this->proofConsumer->consume(
+                        $steppedContext->stepUpProof()
+                            ?? throw new InvalidArgumentException('Administrator enrollment proof is unavailable.'),
+                        $steppedContext,
+                        $purpose,
+                        $this->clock->now(),
+                    );
+
+                    return $completion;
+                });
+                $replacementToken = $completion->verification->rotatedSession->cookieToken;
+                $csrf = $completion->verification->rotatedSession->csrfToken;
+                $recoveryCodes = $completion->recoveryCodes;
+            } else {
+                $purpose = $this->stepUpPurpose($action);
+                /**
+                 * @var array{
+                 *     verification: StepUpVerification,
+                 *     created_token: ?array{token: string, token_id: string}
+                 * } $result
+                 */
+                $result = $this->transactions->transactional(function () use (
+                    $context,
+                    $purpose,
+                    $form,
+                    $request,
+                ): array {
+                    $verification = ($form['step_up_method'] ?? 'totp') === 'recovery'
+                        ? $this->stepUp->recover(
+                            $this->stepUpIntent($context, $purpose),
+                            AdministratorRequest::required($form, 'recovery_code'),
+                            $this->source($request),
+                        )
+                        : $this->stepUp->challenge(
+                            $this->stepUpIntent($context, $purpose),
+                            AdministratorRequest::required($form, 'step_up_code'),
+                            $this->source($request),
+                        );
+                    $steppedContext = $this->multiFactorContext($context, $verification);
+                    $this->proofConsumer->consume(
+                        $steppedContext->stepUpProof()
+                            ?? throw new InvalidArgumentException('Administrator step-up proof is unavailable.'),
+                        $steppedContext,
+                        $purpose,
+                        $this->clock->now(),
+                    );
+
+                    return [
+                        'verification' => $verification,
+                        'created_token' => $this->mutate($steppedContext, $form),
+                    ];
+                });
+                $verification = $result['verification'];
+                $replacementToken = $verification->rotatedSession->cookieToken;
+                $csrf = $verification->rotatedSession->csrfToken;
+                $createdToken = $result['created_token'];
+            }
             if ($createdToken === null) {
-                return new RedirectResponse('/administrator/access?saved=1', 303);
+                if ($enrollment === null && $recoveryCodes === []) {
+                    return new RedirectResponse('/administrator/access?saved=1', 303, array_filter([
+                        'Set-Cookie' => $replacementToken === null ? null : $this->cookie($replacementToken),
+                    ]));
+                }
             }
         }
 
         $context = AdministratorRequest::context($request);
         return new HtmlResponse($this->renderer->render('access-control', [
-            'csrf' => $session->csrfToken,
+            'csrf' => $csrf,
             'capabilities' => AdministratorRequest::capabilityMap($request),
             'users' => $this->access->users($context),
             'roles' => $this->access->roles($context),
@@ -87,7 +218,18 @@ final readonly class AdministratorAccessControlHandler implements RequestHandler
             'available_capabilities' => $this->access->capabilities($context),
             'created_token' => $createdToken,
             'saved' => ($request->getQueryParams()['saved'] ?? null) === '1',
-        ]), 200, ['Cache-Control' => 'no-store']);
+            'organization_selections' => $this->memberships->selections(
+                $context->actorId(),
+                $context->site(),
+            ),
+            'active_organization' => $context->organization()?->identifier(),
+            'active_workspace' => $context->workspace()?->identifier(),
+            'step_up_enrollment' => $enrollment,
+            'step_up_recovery_codes' => $recoveryCodes,
+        ]), 200, array_filter([
+            'Cache-Control' => 'no-store',
+            'Set-Cookie' => $replacementToken === null ? null : $this->cookie($replacementToken),
+        ]));
     }
 
     /**
@@ -241,5 +383,121 @@ final readonly class AdministratorAccessControlHandler implements RequestHandler
             $form['audience'] ?? 'kumwe-http',
             $form['purpose'] ?? 'api',
         );
+    }
+
+    /**
+     * Build the isolated replacement administrator cookie after a scope rotation.
+     *
+     * @param   string  $token  One-time opaque session token.
+     *
+     * @return  string  Strict administrator-only cookie header.
+     *
+     * @since   2.0.0
+     */
+    private function cookie(string $token): string
+    {
+        return sprintf(
+            '%s=%s; Path=/administrator; Max-Age=%d; HttpOnly; SameSite=Strict%s',
+            AdministratorSessionMiddleware::COOKIE_NAME,
+            $token,
+            $this->sessionLifetime,
+            $this->secureCookie ? '; Secure' : '',
+        );
+    }
+
+    /**
+     * Build an exact second-factor intent only from the authenticated administrator context.
+     *
+     * @param   ExecutionContext  $context  Authenticated administrator and current session scope.
+     * @param   string            $purpose  Exact access-control mutation purpose.
+     *
+     * @return  StepUpIntent  Actor, old session, scope, purpose, and current security epoch.
+     *
+     * @since   2.0.0
+     */
+    private function stepUpIntent(ExecutionContext $context, string $purpose): StepUpIntent
+    {
+        $principal = $context->principal()
+            ?? throw new InvalidArgumentException('Administrator step-up requires a human actor.');
+
+        return new StepUpIntent(
+            $principal->subject(),
+            $context->sessionId()
+                ?? throw new InvalidArgumentException('Administrator step-up requires a live session.'),
+            $context->site()->identifier(),
+            $context->organization()?->identifier(),
+            $context->workspace()?->identifier(),
+            $purpose,
+            $principal->securityEpoch(),
+        );
+    }
+
+    /**
+     * Move a successful provider verification onto its exact rotated administrator session.
+     *
+     * @param ExecutionContext $context Pre-challenge administrator context.
+     * @param   \Kumwe\CMS\Identity\Domain\StepUp\StepUpVerification  $verification  Successful challenge.
+     *
+     * @return  ExecutionContext  Multi-factor context carrying the newly adapted proof.
+     *
+     * @since   2.0.0
+     */
+    private function multiFactorContext(
+        ExecutionContext $context,
+        \Kumwe\CMS\Identity\Domain\StepUp\StepUpVerification $verification,
+    ): ExecutionContext {
+        return $context->principal()?->context(
+            $context->site(),
+            AuthenticationStrength::MultiFactor,
+            $context->requestId(),
+            $context->correlationId(),
+            $context->surface(),
+            $context->membership(),
+            $verification->rotatedSession->sessionId,
+            $this->proofs->adapt($verification),
+        ) ?? throw new InvalidArgumentException('Administrator step-up requires a human actor.');
+    }
+
+    /**
+     * Resolve the closed proof purpose for one supported access-control mutation.
+     *
+     * @param   string  $action  Mutation action received from the administrator form.
+     *
+     * @return  string  Exact purpose to which the proof must be bound.
+     *
+     * @since   2.0.0
+     */
+    private function stepUpPurpose(string $action): string
+    {
+        return match ($action) {
+            'user.create',
+            'user.update',
+            'role.create',
+            'role.assign',
+            'role.revoke',
+            'grant.create',
+            'grant.revoke',
+            'token.create',
+            'token.revoke',
+            'token.rotate',
+            'token.emergency_revoke' => 'identity.access_control.' . str_replace('_', '.', $action),
+            default => throw new InvalidArgumentException('The access-control step-up purpose is invalid.'),
+        };
+    }
+
+    /**
+     * Resolve the trusted-proxy-normalized source of an administrator attempt.
+     *
+     * @param   ServerRequestInterface  $request  Request carrying trusted proxy middleware attributes.
+     *
+     * @return  string  Client address or the non-sensitive fallback marker.
+     *
+     * @since   2.0.0
+     */
+    private function source(ServerRequestInterface $request): string
+    {
+        $source = $request->getAttribute(TrustedProxyMiddleware::ATTRIBUTE_CLIENT_ADDRESS, 'unknown');
+
+        return is_string($source) ? $source : 'unknown';
     }
 }

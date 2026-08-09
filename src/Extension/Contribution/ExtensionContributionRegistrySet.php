@@ -5,10 +5,15 @@ declare(strict_types=1);
 namespace Kumwe\CMS\Extension\Contribution;
 
 use Kumwe\CMS\Administrator\Navigation\AdministratorNavigationRegistry;
+use Kumwe\CMS\Application\Authorization\AuthorizationPolicyRegistry;
 use Kumwe\CMS\BusinessDefinition\Application\BusinessDefinitionContributionRegistry;
 use Kumwe\CMS\BusinessDefinition\Application\BusinessDefinitionValidator;
 use Kumwe\CMS\BusinessDefinition\Application\FieldTypeRegistry;
 use Kumwe\CMS\Extension\Application\Trust\TrustStore;
+use Kumwe\CMS\Portal\Contribution\PortalNavigationRegistry;
+use Kumwe\CMS\Portal\Contribution\PortalRouteRegistry;
+use Kumwe\CMS\Portal\Contribution\PortalTemplateRegistry;
+use Kumwe\CMS\Portal\Contribution\PortalWorkspaceRegistry;
 
 /**
  * The one place every contribution registry in a process is created, wired together, and reached.
@@ -26,12 +31,28 @@ use Kumwe\CMS\Extension\Application\Trust\TrustStore;
 final readonly class ExtensionContributionRegistrySet
 {
     /**
+     * Canonical operational authorization registry populated by capability and policy contributions.
+     *
+     * @var    AuthorizationPolicyRegistry
+     * @since  2.0.0
+     */
+    private AuthorizationPolicyRegistry $authorizationPolicies;
+
+    /**
      * The site-wide permission vocabulary every guarded surface names a code from.
      *
      * @var    CapabilityDefinitionRegistry
      * @since  2.0.0
      */
     private CapabilityDefinitionRegistry $capabilities;
+
+    /**
+     * Owner-bound capability-to-resource policies enforced by the authorization gateway.
+     *
+     * @var    ResourcePolicyDefinitionRegistry
+     * @since  2.0.0
+     */
+    private ResourcePolicyDefinitionRegistry $resourcePolicies;
 
     /**
      * The top-level groupings administrator navigation items are filed under.
@@ -64,6 +85,38 @@ final readonly class ExtensionContributionRegistrySet
      * @since  2.0.0
      */
     private AdministratorRouteRegistry $routes;
+
+    /**
+     * Top-level ordinary-user portal workspaces.
+     *
+     * @var    PortalWorkspaceRegistry
+     * @since  2.0.0
+     */
+    private PortalWorkspaceRegistry $portalWorkspaces;
+
+    /**
+     * Capability-filtered ordinary-user portal navigation.
+     *
+     * @var    PortalNavigationRegistry
+     * @since  2.0.0
+     */
+    private PortalNavigationRegistry $portalNavigation;
+
+    /**
+     * Namespaced templates available to contributed portal routes.
+     *
+     * @var    PortalTemplateRegistry
+     * @since  2.0.0
+     */
+    private PortalTemplateRegistry $portalTemplates;
+
+    /**
+     * Guarded ordinary-user portal extension routes.
+     *
+     * @var    PortalRouteRegistry
+     * @since  2.0.0
+     */
+    private PortalRouteRegistry $portalRoutes;
 
     /**
      * The field types business definitions may build fields from, seeded by core rather than by itself.
@@ -101,15 +154,22 @@ final readonly class ExtensionContributionRegistrySet
      * broken the normal render. Suppressing core leaves a wholly empty set, which is what a test
      * isolating one extension's contributions wants.
      *
-     * @param  ?TrustStore  $trust     Source of live trust used to hide navigation whose owner is no longer
-     *         trusted and active; null skips that filtering entirely.
-     * @param  bool         $withCore  Whether to register the shipped core contributions while building.
+     * @param  ?TrustStore                   $trust                  Source of live trust used to hide
+     *         navigation whose owner is no longer trusted and active; null skips that filtering entirely.
+     * @param  bool                          $withCore               Whether to register shipped core contributions.
+     * @param  ?AuthorizationPolicyRegistry  $authorizationPolicies  Shared operational registry; a private
+     *         empty registry is created for isolated sets.
      *
      * @since  2.0.0
      */
-    public function __construct(?TrustStore $trust = null, bool $withCore = true)
-    {
-        $this->capabilities = new CapabilityDefinitionRegistry();
+    public function __construct(
+        ?TrustStore $trust = null,
+        bool $withCore = true,
+        ?AuthorizationPolicyRegistry $authorizationPolicies = null,
+    ) {
+        $this->authorizationPolicies = $authorizationPolicies ?? new AuthorizationPolicyRegistry();
+        $this->capabilities = new CapabilityDefinitionRegistry($this->authorizationPolicies);
+        $this->resourcePolicies = new ResourcePolicyDefinitionRegistry($this->authorizationPolicies);
         $this->workspaces = new AdministratorWorkspaceRegistry();
         $this->navigation = new AdministratorNavigationRegistry(
             $this->workspaces,
@@ -118,16 +178,34 @@ final readonly class ExtensionContributionRegistrySet
         );
         $this->views = new AdministratorViewRegistry();
         $this->routes = new AdministratorRouteRegistry($this->capabilities, $this->views);
+        $this->portalWorkspaces = new PortalWorkspaceRegistry();
+        $this->portalNavigation = new PortalNavigationRegistry(
+            $this->portalWorkspaces,
+            $this->capabilities,
+            $this->authorizationPolicies,
+            $trust,
+        );
+        $this->portalTemplates = new PortalTemplateRegistry();
+        $this->portalRoutes = new PortalRouteRegistry(
+            $this->capabilities,
+            $this->portalTemplates,
+            $this->authorizationPolicies,
+        );
         $this->fieldTypes = new FieldTypeRegistry(false);
         $this->businessDefinitions = new BusinessDefinitionContributionRegistry(
             new BusinessDefinitionValidator($this->fieldTypes),
         );
         $this->surfaces = [
             'capabilities' => $this->capabilities,
+            'resource_policies' => $this->resourcePolicies,
             'administrator.workspaces' => $this->workspaces,
             'administrator.navigation' => $this->navigation,
             'administrator.routes' => $this->routes,
             'administrator.views' => $this->views,
+            'portal.workspaces' => $this->portalWorkspaces,
+            'portal.navigation' => $this->portalNavigation,
+            'portal.templates' => $this->portalTemplates,
+            'portal.routes' => $this->portalRoutes,
             'business.field_types' => BusinessContributionSurface::forFieldTypes($this->fieldTypes),
             'business.definitions' => BusinessContributionSurface::forDefinitions($this->businessDefinitions),
         ];
@@ -186,6 +264,33 @@ final readonly class ExtensionContributionRegistrySet
     }
 
     /**
+     * Reach the contribution surface for owner-bound resource policies.
+     *
+     * @return  ResourcePolicyDefinitionRegistry  Registry mirrored into the operational authorization catalog.
+     *
+     * @since   2.0.0
+     */
+    public function resourcePolicies(): ResourcePolicyDefinitionRegistry
+    {
+        return $this->resourcePolicies;
+    }
+
+    /**
+     * Reach the canonical authorization registry populated through this contribution set.
+     *
+     * The composition root injects this same object into `DenyByDefaultAuthorizationGateway`, so
+     * lifecycle removal immediately makes the owner's grants unenforceable without a parallel map.
+     *
+     * @return  AuthorizationPolicyRegistry  Live typed capability and resource-policy registry.
+     *
+     * @since   2.0.0
+     */
+    public function authorizationPolicies(): AuthorizationPolicyRegistry
+    {
+        return $this->authorizationPolicies;
+    }
+
+    /**
      * Reach the workspace registry, which navigation resolves each item's grouping and ordering from.
      *
      * @return  AdministratorWorkspaceRegistry  The live registry shared with the navigation registry.
@@ -232,6 +337,54 @@ final readonly class ExtensionContributionRegistrySet
     public function routes(): AdministratorRouteRegistry
     {
         return $this->routes;
+    }
+
+    /**
+     * Reach the portal workspace registry used by navigation grouping.
+     *
+     * @return  PortalWorkspaceRegistry  Live owner-aware portal workspaces.
+     *
+     * @since  2.0.0
+     */
+    public function portalWorkspaces(): PortalWorkspaceRegistry
+    {
+        return $this->portalWorkspaces;
+    }
+
+    /**
+     * Reach the navigation registry rendered by the ordinary-user portal shell.
+     *
+     * @return  PortalNavigationRegistry  Live capability- and trust-filtered navigation.
+     *
+     * @since  2.0.0
+     */
+    public function portalNavigation(): PortalNavigationRegistry
+    {
+        return $this->portalNavigation;
+    }
+
+    /**
+     * Reach the template registry used by contributed portal route handlers.
+     *
+     * @return  PortalTemplateRegistry  Live owner-aware portal templates.
+     *
+     * @since  2.0.0
+     */
+    public function portalTemplates(): PortalTemplateRegistry
+    {
+        return $this->portalTemplates;
+    }
+
+    /**
+     * Reach the route registry mounted after the contribution phase completes.
+     *
+     * @return  PortalRouteRegistry  Live guarded contributed portal routes.
+     *
+     * @since  2.0.0
+     */
+    public function portalRoutes(): PortalRouteRegistry
+    {
+        return $this->portalRoutes;
     }
 
     /**

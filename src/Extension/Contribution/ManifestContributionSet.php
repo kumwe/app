@@ -5,10 +5,16 @@ declare(strict_types=1);
 namespace Kumwe\CMS\Extension\Contribution;
 
 use InvalidArgumentException;
+use Kumwe\CMS\Application\Authorization\AuthorizationDefinitionLifecycle;
+use Kumwe\CMS\Application\Authorization\ResourcePolicyTarget;
 use Kumwe\CMS\BusinessDefinition\Domain\DefinitionOwner;
 use Kumwe\CMS\BusinessDefinition\Domain\EntityTypeDefinition;
 use Kumwe\CMS\BusinessDefinition\Domain\FieldTypeDefinition;
 use Kumwe\CMS\Extension\Domain\ExtensionIdentifier;
+use Kumwe\CMS\Portal\Contribution\PortalNavigationDefinition;
+use Kumwe\CMS\Portal\Contribution\PortalRouteDefinition;
+use Kumwe\CMS\Portal\Contribution\PortalTemplateDefinition;
+use Kumwe\CMS\Portal\Contribution\PortalWorkspaceDefinition;
 
 /**
  * The contributions one package declares, parsed, ordered, and checked for internal consistency.
@@ -47,6 +53,14 @@ final readonly class ManifestContributionSet
     private array $capabilities;
 
     /**
+     * Declared capability-to-resource bindings, keyed and sorted by policy identifier.
+     *
+     * @var    array<string, ResourcePolicyDefinition>
+     * @since  2.0.0
+     */
+    private array $resourcePolicies;
+
+    /**
      * Declared administrator workspaces, keyed and sorted by workspace identifier.
      *
      * @var    array<string, AdministratorWorkspaceDefinition>
@@ -79,6 +93,38 @@ final readonly class ManifestContributionSet
     private array $views;
 
     /**
+     * Declared portal workspaces keyed and sorted by workspace identifier.
+     *
+     * @var    array<string, PortalWorkspaceDefinition>
+     * @since  2.0.0
+     */
+    private array $portalWorkspaces;
+
+    /**
+     * Declared portal navigation entries keyed and sorted by item identifier.
+     *
+     * @var    array<string, PortalNavigationDefinition>
+     * @since  2.0.0
+     */
+    private array $portalNavigation;
+
+    /**
+     * Declared portal routes keyed and sorted by route name.
+     *
+     * @var    array<string, PortalRouteDefinition>
+     * @since  2.0.0
+     */
+    private array $portalRoutes;
+
+    /**
+     * Declared portal templates keyed and sorted by template name.
+     *
+     * @var    array<string, PortalTemplateDefinition>
+     * @since  2.0.0
+     */
+    private array $portalTemplates;
+
+    /**
      * Declared field types, keyed and sorted by field-type identifier.
      *
      * @var    array<string, FieldTypeDefinition>
@@ -109,6 +155,11 @@ final readonly class ManifestContributionSet
      * @param   iterable<AdministratorViewDefinition>        $views                Templates its routes render.
      * @param   iterable<FieldTypeDefinition>                $fieldTypes           Field types it publishes.
      * @param   iterable<EntityTypeDefinition>               $businessDefinitions  Entity types it publishes.
+     * @param   iterable<ResourcePolicyDefinition>           $resourcePolicies     Capability/resource bindings.
+     * @param   iterable<PortalWorkspaceDefinition>          $portalWorkspaces      Portal groupings it adds.
+     * @param   iterable<PortalNavigationDefinition>         $portalNavigation      Portal menu entries it adds.
+     * @param   iterable<PortalRouteDefinition>              $portalRoutes          Guarded portal routes it serves.
+     * @param   iterable<PortalTemplateDefinition>           $portalTemplates       Portal templates its routes render.
      *
      * @throws  InvalidArgumentException  When an identifier is outside the owner's namespace or declared twice,
      *          when navigation or a route references something this set does not declare, or when a business
@@ -125,12 +176,22 @@ final readonly class ManifestContributionSet
         iterable $views = [],
         iterable $fieldTypes = [],
         iterable $businessDefinitions = [],
+        iterable $resourcePolicies = [],
+        iterable $portalWorkspaces = [],
+        iterable $portalNavigation = [],
+        iterable $portalRoutes = [],
+        iterable $portalTemplates = [],
     ) {
         $this->capabilities = $this->index($capabilities, 'capability');
+        $this->resourcePolicies = $this->index($resourcePolicies, 'resource policy');
         $this->workspaces = $this->index($workspaces, 'workspace');
         $this->navigation = $this->index($navigation, 'navigation');
         $this->routes = $this->index($routes, 'route');
         $this->views = $this->index($views, 'view');
+        $this->portalWorkspaces = $this->index($portalWorkspaces, 'portal workspace');
+        $this->portalNavigation = $this->index($portalNavigation, 'portal navigation');
+        $this->portalRoutes = $this->index($portalRoutes, 'portal route');
+        $this->portalTemplates = $this->index($portalTemplates, 'portal template');
         $this->fieldTypes = $this->businessIndex($fieldTypes, 'field type');
         $this->businessDefinitions = $this->businessIndex($businessDefinitions, 'business definition');
 
@@ -142,12 +203,33 @@ final readonly class ManifestContributionSet
                 throw new InvalidArgumentException('Contributed navigation must reference a declared capability.');
             }
         }
+        foreach ($this->resourcePolicies as $policy) {
+            if (!isset($this->capabilities[$policy->capability])) {
+                throw new InvalidArgumentException('A resource policy must reference a declared capability.');
+            }
+        }
         foreach ($this->routes as $route) {
             if (!isset($this->capabilities[$route->capability])) {
                 throw new InvalidArgumentException('Contributed administrator routes require a declared capability.');
             }
             if (!isset($this->views[$route->view])) {
                 throw new InvalidArgumentException('Contributed administrator routes must reference a declared view.');
+            }
+        }
+        foreach ($this->portalNavigation as $item) {
+            if (!isset($this->portalWorkspaces[$item->workspace])) {
+                throw new InvalidArgumentException('Portal navigation must reference an owned portal workspace.');
+            }
+            if (!isset($this->capabilities[$item->capability])) {
+                throw new InvalidArgumentException('Portal navigation must reference a declared capability.');
+            }
+        }
+        foreach ($this->portalRoutes as $route) {
+            if (!isset($this->capabilities[$route->capability])) {
+                throw new InvalidArgumentException('Contributed portal routes require a declared capability.');
+            }
+            if (!isset($this->portalTemplates[$route->template])) {
+                throw new InvalidArgumentException('Contributed portal routes must reference a declared template.');
             }
         }
         $businessOwner = $owner->identifier() === ContributionOwner::CORE
@@ -185,7 +267,11 @@ final readonly class ManifestContributionSet
     public static function fromManifest(ExtensionIdentifier $extension, array $data): self
     {
         $data = self::object($data, 'contributions');
-        self::knownKeys($data, ['version', 'capabilities', 'administrator', 'business'], 'contributions');
+        self::knownKeys(
+            $data,
+            ['version', 'capabilities', 'resource_policies', 'administrator', 'portal', 'business'],
+            'contributions',
+        );
         if (($data['version'] ?? null) !== self::SPI_VERSION) {
             throw new InvalidArgumentException('The extension contribution SPI version must be 1.');
         }
@@ -194,17 +280,79 @@ final readonly class ManifestContributionSet
         self::knownKeys($administrator, ['workspaces', 'navigation', 'routes', 'views'], 'administrator contributions');
         $business = self::object($data['business'] ?? [], 'contributions.business');
         self::knownKeys($business, ['field_types', 'definitions'], 'business contributions');
+        $portal = self::object($data['portal'] ?? [], 'contributions.portal');
+        self::knownKeys($portal, ['workspaces', 'navigation', 'routes', 'templates'], 'portal contributions');
 
         $capabilities = array_map(static function (array $item) use ($owner): CapabilityDefinition {
-            self::knownKeys($item, ['id', 'label', 'description'], 'capability contribution');
+            self::knownKeys(
+                $item,
+                [
+                    'id',
+                    'label',
+                    'description',
+                    'allowed_scopes',
+                    'delegatable',
+                    'high_impact',
+                    'lifecycle',
+                    'version',
+                ],
+                'capability contribution',
+            );
             $definition = new CapabilityDefinition(
                 self::string($item, 'id'),
                 self::string($item, 'label'),
                 self::string($item, 'description'),
+                self::strings($item, 'allowed_scopes', ['global', 'site']),
+                self::boolean($item, 'delegatable', true),
+                self::boolean($item, 'high_impact', false),
+                self::lifecycle($item),
+                self::positiveInteger($item, 'version', 1),
             );
             $owner->assertOwns($definition->id, 'capability');
             return $definition;
         }, self::objects($data['capabilities'] ?? [], 'contributions.capabilities'));
+
+        $resourcePolicies = array_map(static function (array $item) use ($owner): ResourcePolicyDefinition {
+            self::knownKeys(
+                $item,
+                [
+                    'id',
+                    'capability',
+                    'resources',
+                    'installation_global',
+                    'system_identities',
+                    'lifecycle',
+                    'version',
+                ],
+                'resource-policy contribution',
+            );
+            if (self::strings($item, 'system_identities', []) !== []) {
+                throw new InvalidArgumentException(
+                    'Extension resource policies cannot grant authority to system identities.',
+                );
+            }
+            $resources = array_map(static function (array $resource): ResourcePolicyTarget {
+                self::knownKeys($resource, ['type', 'identifiers'], 'resource-policy target');
+
+                return new ResourcePolicyTarget(
+                    self::string($resource, 'type'),
+                    self::strings($resource, 'identifiers', []),
+                );
+            }, self::objects($item['resources'] ?? null, 'resource policy resources'));
+            $definition = new ResourcePolicyDefinition(
+                self::string($item, 'id'),
+                self::string($item, 'capability'),
+                $resources,
+                self::boolean($item, 'installation_global', false),
+                [],
+                self::lifecycle($item),
+                self::positiveInteger($item, 'version', 1),
+            );
+            $owner->assertOwns($definition->id, 'resource policy');
+            $owner->assertOwns($definition->capability, 'capability');
+
+            return $definition;
+        }, self::objects($data['resource_policies'] ?? [], 'contributions.resource_policies'));
 
         $workspaces = array_map(static function (array $item) use ($owner): AdministratorWorkspaceDefinition {
             self::knownKeys($item, ['id', 'label', 'description', 'priority'], 'workspace contribution');
@@ -267,6 +415,67 @@ final readonly class ManifestContributionSet
             return $definition;
         }, self::objects($administrator['views'] ?? [], 'contributions.administrator.views'));
 
+        $portalWorkspaces = array_map(static function (array $item) use ($owner): PortalWorkspaceDefinition {
+            self::knownKeys($item, ['id', 'label', 'description', 'priority'], 'portal workspace contribution');
+            $definition = new PortalWorkspaceDefinition(
+                self::string($item, 'id'),
+                self::string($item, 'label'),
+                self::string($item, 'description'),
+                self::integer($item, 'priority'),
+            );
+            $owner->assertOwns($definition->id, 'portal workspace');
+            return $definition;
+        }, self::objects($portal['workspaces'] ?? [], 'contributions.portal.workspaces'));
+
+        $portalNavigation = array_map(static function (array $item) use ($owner): PortalNavigationDefinition {
+            self::knownKeys(
+                $item,
+                ['id', 'workspace', 'label', 'description', 'path', 'icon', 'capability', 'priority', 'keywords'],
+                'portal navigation contribution',
+            );
+            $definition = new PortalNavigationDefinition(
+                self::string($item, 'id'),
+                self::string($item, 'workspace'),
+                self::string($item, 'label'),
+                self::string($item, 'description'),
+                self::string($item, 'path'),
+                self::string($item, 'icon'),
+                self::string($item, 'capability'),
+                self::integer($item, 'priority'),
+                self::optionalString($item, 'keywords'),
+            );
+            $owner->assertOwns($definition->id, 'portal navigation');
+            $owner->assertOwns($definition->workspace, 'portal workspace');
+            $owner->assertOwns($definition->capability, 'capability');
+            return $definition;
+        }, self::objects($portal['navigation'] ?? [], 'contributions.portal.navigation'));
+
+        $portalRoutes = array_map(static function (array $item) use ($owner): PortalRouteDefinition {
+            self::knownKeys($item, ['name', 'path', 'methods', 'capability', 'template'], 'portal route contribution');
+            $methods = $item['methods'] ?? null;
+            $definition = new PortalRouteDefinition(
+                self::string($item, 'name'),
+                self::string($item, 'path'),
+                is_array($methods) ? $methods : throw new InvalidArgumentException('Route methods must be a list.'),
+                self::string($item, 'capability'),
+                self::string($item, 'template'),
+            );
+            $owner->assertOwns($definition->name, 'portal route');
+            $owner->assertOwns($definition->capability, 'capability');
+            $owner->assertOwns($definition->template, 'portal template');
+            return $definition;
+        }, self::objects($portal['routes'] ?? [], 'contributions.portal.routes'));
+
+        $portalTemplates = array_map(static function (array $item) use ($owner): PortalTemplateDefinition {
+            self::knownKeys($item, ['name', 'template'], 'portal template contribution');
+            $definition = new PortalTemplateDefinition(
+                self::string($item, 'name'),
+                self::string($item, 'template'),
+            );
+            $owner->assertOwns($definition->name, 'portal template');
+            return $definition;
+        }, self::objects($portal['templates'] ?? [], 'contributions.portal.templates'));
+
         $businessOwner = DefinitionOwner::extension($extension->value());
         $fieldTypes = array_map(static function (array $item) use ($businessOwner): FieldTypeDefinition {
             $definition = FieldTypeDefinition::fromArray($item);
@@ -292,6 +501,11 @@ final readonly class ManifestContributionSet
             $views,
             $fieldTypes,
             $businessDefinitions,
+            $resourcePolicies,
+            $portalWorkspaces,
+            $portalNavigation,
+            $portalRoutes,
+            $portalTemplates,
         );
     }
 
@@ -325,6 +539,18 @@ final readonly class ManifestContributionSet
     public function capabilities(): array
     {
         return array_values($this->capabilities);
+    }
+
+    /**
+     * The owner-bound resource policies this package declared.
+     *
+     * @return  list<ResourcePolicyDefinition>  In policy-identifier order; empty when none were declared.
+     *
+     * @since   2.0.0
+     */
+    public function resourcePolicies(): array
+    {
+        return array_values($this->resourcePolicies);
     }
 
     /**
@@ -377,6 +603,54 @@ final readonly class ManifestContributionSet
     }
 
     /**
+     * List the portal workspaces this package declared.
+     *
+     * @return  list<PortalWorkspaceDefinition>  Workspace declarations in identifier order.
+     *
+     * @since  2.0.0
+     */
+    public function portalWorkspaces(): array
+    {
+        return array_values($this->portalWorkspaces);
+    }
+
+    /**
+     * List the portal navigation entries this package declared.
+     *
+     * @return  list<PortalNavigationDefinition>  Navigation declarations in identifier order.
+     *
+     * @since  2.0.0
+     */
+    public function portalNavigation(): array
+    {
+        return array_values($this->portalNavigation);
+    }
+
+    /**
+     * List the portal routes this package declared.
+     *
+     * @return  list<PortalRouteDefinition>  Route declarations in route-name order.
+     *
+     * @since  2.0.0
+     */
+    public function portalRoutes(): array
+    {
+        return array_values($this->portalRoutes);
+    }
+
+    /**
+     * List the portal templates this package declared.
+     *
+     * @return  list<PortalTemplateDefinition>  Template declarations in name order.
+     *
+     * @since  2.0.0
+     */
+    public function portalTemplates(): array
+    {
+        return array_values($this->portalTemplates);
+    }
+
+    /**
      * The field types this package declared.
      *
      * Installation reads this to synchronize the persisted field-type catalog, so it is consulted even
@@ -417,6 +691,7 @@ final readonly class ManifestContributionSet
      * @return  array{
      *              version: int,
      *              capabilities: list<array<string, mixed>>,
+     *              resource_policies: list<array<string, mixed>>,
      *              administrator: array{
      *                  workspaces: list<array<string, mixed>>,
      *                  navigation: list<array<string, mixed>>,
@@ -439,6 +714,10 @@ final readonly class ManifestContributionSet
                 static fn (CapabilityDefinition $item): array => $item->toArray(),
                 $this->capabilities(),
             ),
+            'resource_policies' => array_map(
+                static fn (ResourcePolicyDefinition $item): array => $item->toArray(),
+                $this->resourcePolicies(),
+            ),
             'administrator' => [
                 'workspaces' => array_map(
                     static fn (AdministratorWorkspaceDefinition $item): array => $item->toArray(),
@@ -455,6 +734,24 @@ final readonly class ManifestContributionSet
                 'views' => array_map(
                     static fn (AdministratorViewDefinition $item): array => $item->toArray(),
                     $this->views(),
+                ),
+            ],
+            'portal' => [
+                'workspaces' => array_map(
+                    static fn (PortalWorkspaceDefinition $item): array => $item->toArray(),
+                    $this->portalWorkspaces(),
+                ),
+                'navigation' => array_map(
+                    static fn (PortalNavigationDefinition $item): array => $item->toArray(),
+                    $this->portalNavigation(),
+                ),
+                'routes' => array_map(
+                    static fn (PortalRouteDefinition $item): array => $item->toArray(),
+                    $this->portalRoutes(),
+                ),
+                'templates' => array_map(
+                    static fn (PortalTemplateDefinition $item): array => $item->toArray(),
+                    $this->portalTemplates(),
                 ),
             ],
             'business' => [
@@ -663,6 +960,110 @@ final readonly class ManifestContributionSet
             throw new InvalidArgumentException(sprintf('Contribution field %s must be a string.', $field));
         }
         return trim($value);
+    }
+
+    /**
+     * Read an optional bounded list of non-empty strings from a decoded manifest object.
+     *
+     * @param   array<string, mixed>  $values   Object that may hold the list.
+     * @param   string                $field    Key to read and name in a failure.
+     * @param   list<string>          $default  Value returned when the key is absent.
+     *
+     * @return  list<string>  Trimmed strings in declaration order.
+     *
+     * @throws  InvalidArgumentException  When the value is not a list of at most 128 non-empty strings.
+     *
+     * @since   2.0.0
+     */
+    private static function strings(array $values, string $field, array $default): array
+    {
+        $value = $values[$field] ?? $default;
+        if (!is_array($value) || !array_is_list($value) || count($value) > 128) {
+            throw new InvalidArgumentException(sprintf('Contribution field %s must be a bounded string list.', $field));
+        }
+        $result = [];
+        foreach ($value as $item) {
+            if (!is_string($item) || trim($item) === '') {
+                throw new InvalidArgumentException(sprintf(
+                    'Every contribution field %s entry must be a non-empty string.',
+                    $field,
+                ));
+            }
+            $result[] = trim($item);
+        }
+
+        return $result;
+    }
+
+    /**
+     * Read an optional strict boolean from a decoded manifest object.
+     *
+     * @param   array<string, mixed>  $values   Object that may hold the value.
+     * @param   string                $field    Key to read and name in a failure.
+     * @param   bool                  $default  Value returned when the key is absent.
+     *
+     * @return  bool  Decoded boolean without scalar coercion.
+     *
+     * @throws  InvalidArgumentException  When a present value is not a boolean.
+     *
+     * @since   2.0.0
+     */
+    private static function boolean(array $values, string $field, bool $default): bool
+    {
+        $value = $values[$field] ?? $default;
+        if (!is_bool($value)) {
+            throw new InvalidArgumentException(sprintf('Contribution field %s must be a boolean.', $field));
+        }
+
+        return $value;
+    }
+
+    /**
+     * Read a capability or policy lifecycle, defaulting an omitted value to active.
+     *
+     * @param   array<string, mixed>  $values  Declaration object that may carry `lifecycle`.
+     *
+     * @return  AuthorizationDefinitionLifecycle  Validated lifecycle enum case.
+     *
+     * @throws  InvalidArgumentException  When the value is not a recognized lifecycle string.
+     *
+     * @since   2.0.0
+     */
+    private static function lifecycle(array $values): AuthorizationDefinitionLifecycle
+    {
+        $value = $values['lifecycle'] ?? AuthorizationDefinitionLifecycle::Active->value;
+        if (!is_string($value)) {
+            throw new InvalidArgumentException('Contribution field lifecycle must be a string.');
+        }
+        $lifecycle = AuthorizationDefinitionLifecycle::tryFrom($value);
+        if ($lifecycle === null) {
+            throw new InvalidArgumentException('Contribution field lifecycle is not recognized.');
+        }
+
+        return $lifecycle;
+    }
+
+    /**
+     * Read an optional positive integer from a decoded manifest object.
+     *
+     * @param   array<string, mixed>  $values   Object that may hold the value.
+     * @param   string                $field    Key to read and name in a failure.
+     * @param   int                   $default  Positive value returned when the key is absent.
+     *
+     * @return  int  Strict positive integer without numeric-string coercion.
+     *
+     * @throws  InvalidArgumentException  When a present value is not a positive integer.
+     *
+     * @since   2.0.0
+     */
+    private static function positiveInteger(array $values, string $field, int $default): int
+    {
+        $value = $values[$field] ?? $default;
+        if (!is_int($value) || $value < 1) {
+            throw new InvalidArgumentException(sprintf('Contribution field %s must be a positive integer.', $field));
+        }
+
+        return $value;
     }
 
     /**

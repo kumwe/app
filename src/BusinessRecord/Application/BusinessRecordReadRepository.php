@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace Kumwe\CMS\BusinessRecord\Application;
 
-use Kumwe\CMS\BusinessDefinition\Domain\EntityTypeDefinition;
 use Kumwe\CMS\BusinessDefinition\Domain\RelationshipDefinition;
 use Kumwe\CMS\BusinessRecord\Domain\BusinessRecord;
 use Kumwe\CMS\BusinessRecord\Domain\RecordScope;
 use Kumwe\CMS\BusinessRecord\Query\RecordQuerySpecification;
+use Kumwe\CMS\BusinessSecurity\Application\BusinessRecordAccessPlan;
 
 /**
  * Port for every read of the physical tables one business definition has installed.
@@ -37,6 +37,7 @@ interface BusinessRecordReadRepository
      *          paired with its installation.
      * @param   RecordScope                 $scope            Site and organization the sources must
      *          belong to.
+     * @param   BusinessRecordAccessPlan    $access           Row policy applied before referrers are returned.
      * @param   RelationshipDefinition      $relationship     Relationship on the source definition that
      *          may hold the reference.
      * @param   string                      $targetRecordKey  Internal UUID key of the referenced record.
@@ -54,6 +55,36 @@ interface BusinessRecordReadRepository
     public function referencing(
         ResolvedBusinessDefinition $resolved,
         RecordScope $scope,
+        BusinessRecordAccessPlan $access,
+        RelationshipDefinition $relationship,
+        string $targetRecordKey,
+        int $limit,
+    ): array;
+
+    /**
+     * List inbound rows solely for referential-integrity work inside an authorized hard-delete transaction.
+     *
+     * Unlike `referencing()`, this deliberately does not apply the actor's row-disclosure policy: a hidden
+     * source still owns a database foreign key that must either enforce restrict or be cleared under its
+     * declared set-null behavior. The service must never return these records or derive an externally
+     * visible count from them; their only valid use is the private bounded delete-integrity workflow.
+     *
+     * @param   ResolvedBusinessDefinition  $resolved         Active source definition whose table is scanned.
+     * @param   RecordScope                 $scope            Exact target scope the sources must share.
+     * @param   RelationshipDefinition      $relationship     Direct relationship column being checked.
+     * @param   string                      $targetRecordKey  Internal target key held by that column.
+     * @param   int                         $limit            Bounded maximum including an overflow sentinel.
+     *
+     * @return  list<BusinessRecord>  Internal referrers ordered by storage key, never for disclosure.
+     *
+     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordSchemaUnavailable  When the
+     *          bound, table, relationship column, scope, pinned version, or stored row is invalid.
+     *
+     * @since   2.0.0
+     */
+    public function referencingForDeleteIntegrity(
+        ResolvedBusinessDefinition $resolved,
+        RecordScope $scope,
         RelationshipDefinition $relationship,
         string $targetRecordKey,
         int $limit,
@@ -68,6 +99,7 @@ interface BusinessRecordReadRepository
      *
      * @param   ResolvedBusinessDefinition  $resolved        Definition whose identity column is matched.
      * @param   RecordScope                 $scope           Site and organization the row must belong to.
+     * @param   BusinessRecordAccessPlan    $access          Row policy that must match before identity is returned.
      * @param   string                      $recordId        Caller-facing identity, already normalized.
      * @param   bool                        $includeDeleted  True to also match a soft-deleted row.
      *
@@ -82,6 +114,7 @@ interface BusinessRecordReadRepository
     public function identity(
         ResolvedBusinessDefinition $resolved,
         RecordScope $scope,
+        BusinessRecordAccessPlan $access,
         string $recordId,
         bool $includeDeleted = false,
     ): ?StoredRecordIdentity;
@@ -96,6 +129,7 @@ interface BusinessRecordReadRepository
      *
      * @param   ResolvedBusinessDefinition  $resolved         Pinned definition to decode the row with.
      * @param   RecordScope                 $scope            Site and organization the row must belong to.
+     * @param   BusinessRecordAccessPlan    $access           Row policy that must match before decoding.
      * @param   string                      $recordId         Caller-facing identity, already normalized.
      * @param   bool                        $includeArchived  True to also load an archived row.
      * @param   bool                        $includeDeleted   True to also load a soft-deleted row.
@@ -111,6 +145,7 @@ interface BusinessRecordReadRepository
     public function get(
         ResolvedBusinessDefinition $resolved,
         RecordScope $scope,
+        BusinessRecordAccessPlan $access,
         string $recordId,
         bool $includeArchived = false,
         bool $includeDeleted = false,
@@ -126,6 +161,7 @@ interface BusinessRecordReadRepository
      * @param   ResolvedBusinessDefinition  $resolved    Definition the record was decoded with.
      * @param   RecordScope                 $scope       Scope the referenced targets are resolved in.
      * @param   BusinessRecord              $record      Record to project.
+     * @param   BusinessRecordAccessPlan    $access      Explicit field and related-target disclosure decision.
      * @param   list<string>                $projection  Field handles to keep, or empty for every
      *          readable field.
      *
@@ -140,6 +176,7 @@ interface BusinessRecordReadRepository
         ResolvedBusinessDefinition $resolved,
         RecordScope $scope,
         BusinessRecord $record,
+        BusinessRecordAccessPlan $access,
         array $projection = [],
     ): BusinessRecordView;
 
@@ -155,6 +192,7 @@ interface BusinessRecordReadRepository
      * @param   RecordScope                 $scope          Site and organization the page is confined to.
      * @param   RecordQuerySpecification    $specification  Filter, search, sort, page bound, cursor and
      *          projection to compile.
+     * @param   BusinessRecordAccessPlan    $access          Row, field and relationship query decision.
      *
      * @return  RecordBrowseResult  Views for this page, the cursor to continue from when more rows
      *          matched, and any requested aggregates.
@@ -172,6 +210,7 @@ interface BusinessRecordReadRepository
         ResolvedBusinessDefinition $resolved,
         RecordScope $scope,
         RecordQuerySpecification $specification,
+        BusinessRecordAccessPlan $access,
     ): RecordBrowseResult;
 
     /**
@@ -185,7 +224,8 @@ interface BusinessRecordReadRepository
      *          the line table.
      * @param   BusinessRecord              $ownerRecord     Owner record the line must belong to.
      * @param   RelationshipDefinition      $relationship    Owned-line relationship naming that table.
-     * @param   EntityTypeDefinition        $lineDefinition  Definition describing the line's shape.
+     * @param   ResolvedBusinessDefinition  $lineResolved    Pinned line definition and its installed schema.
+     * @param   BusinessRecordAccessPlan    $access          Target-line row and field decision.
      * @param   string                      $lineId          Caller-facing identity of the line.
      *
      * @return  StoredRecordIdentity|null  Internal key and optimistic-lock version of the line, with the
@@ -201,7 +241,8 @@ interface BusinessRecordReadRepository
         ResolvedBusinessDefinition $owner,
         BusinessRecord $ownerRecord,
         RelationshipDefinition $relationship,
-        EntityTypeDefinition $lineDefinition,
+        ResolvedBusinessDefinition $lineResolved,
+        BusinessRecordAccessPlan $access,
         string $lineId,
     ): ?StoredRecordIdentity;
 }

@@ -1,0 +1,29 @@
+{% extends 'portal/layout.twig' %}
+
+{% block title %}Workspace · Kumwe Portal{% endblock %}
+
+{% block content %}
+<section aria-labelledby="portal-home-title">
+    <p class="eyebrow">Your workspace</p>
+    <h1 id="portal-home-title">Welcome to Kumwe Portal</h1>
+    <p>Only records and actions allowed by your current membership and policy are available here.</p>
+</section>
+
+<section class="portal-cards" aria-labelledby="portal-areas-title">
+    <h2 id="portal-areas-title">Available areas</h2>
+    {% if portal_navigation is empty %}
+        <p>No portal areas are currently available for this membership.</p>
+    {% else %}
+        <ul>
+            {% for item in portal_navigation %}
+                <li>
+                    <a href="{{ item.href }}">
+                        <strong>{{ item.label }}</strong>
+                        <span>{{ item.description }}</span>
+                    </a>
+                </li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+</section>
+{% endblock %}

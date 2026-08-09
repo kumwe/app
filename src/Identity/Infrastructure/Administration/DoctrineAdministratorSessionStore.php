@@ -8,16 +8,24 @@ use DateInterval;
 use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
+use Doctrine\DBAL\Platforms\SQLitePlatform;
 use Doctrine\DBAL\Types\Types;
 use InvalidArgumentException;
 use Kumwe\CMS\Application\Authorization\AuthorizationGateway;
 use Kumwe\CMS\Application\Authorization\AuthorizationResource;
 use Kumwe\CMS\Application\Authorization\ExecutionContext;
+use Kumwe\CMS\Application\Authorization\MembershipContext;
 use Kumwe\CMS\Application\Authorization\ResourceSiteOwnershipWriter;
+use Kumwe\CMS\Application\Authorization\SiteContext;
+use Kumwe\CMS\BusinessSecurity\Application\MembershipDirectory;
 use Kumwe\CMS\Identity\Application\Administration\AdministratorSession;
 use Kumwe\CMS\Identity\Application\Administration\AdministratorSessionStore;
 use Kumwe\CMS\Identity\Application\Administration\CreatedAdministratorSession;
 use Kumwe\CMS\Identity\Application\Authentication\AuthenticatedPrincipal;
+use Kumwe\CMS\Identity\Application\StepUp\StepUpRejected;
+use Kumwe\CMS\Identity\Application\StepUp\StepUpSessionRotator;
+use Kumwe\CMS\Identity\Domain\StepUp\RotatedStepUpSession;
+use Kumwe\CMS\Identity\Domain\StepUp\StepUpIntent;
 use Kumwe\CMS\Identity\Domain\Capability;
 use Kumwe\CMS\Infrastructure\Persistence\TableNames;
 use Kumwe\CMS\Infrastructure\Persistence\TransactionManager;
@@ -39,7 +47,7 @@ use RuntimeException;
  *
  * @since  2.0.0
  */
-final readonly class DoctrineAdministratorSessionStore implements AdministratorSessionStore
+final readonly class DoctrineAdministratorSessionStore implements AdministratorSessionStore, StepUpSessionRotator
 {
     /**
      * Wire the store to its connection and authorization collaborators, and fix the session lifetime.
@@ -62,6 +70,8 @@ final readonly class DoctrineAdministratorSessionStore implements AdministratorS
      *          resolved here is stamped with; anything else is untrusted.
      * @param   int                          $lifetimeSeconds    How long a newly opened session stays
      *          valid; eight hours unless configured, and never outside five minutes to seven days.
+     * @param   ?MembershipDirectory         $memberships        Resolves trusted organization selections;
+     *          optional solely for schema-upgrade compatibility in isolated tests.
      *
      * @throws  InvalidArgumentException  When the configured lifetime is below 300 or above 604800 seconds.
      *
@@ -77,6 +87,7 @@ final readonly class DoctrineAdministratorSessionStore implements AdministratorS
         private ResourceSiteOwnershipWriter $ownership,
         private object $provenance,
         private int $lifetimeSeconds = 28_800,
+        private ?MembershipDirectory $memberships = null,
     ) {
         if ($lifetimeSeconds < 300 || $lifetimeSeconds > 604_800) {
             throw new InvalidArgumentException('Administrator sessions must last between five minutes and seven days.');
@@ -139,6 +150,14 @@ final readonly class DoctrineAdministratorSessionStore implements AdministratorS
                 'created_at' => $now,
                 'last_seen_at' => $now,
                 'expires_at' => $expiresAt,
+                'site_identifier' => $context->site()->identifier(),
+                'organization_identifier' => $context->organization()?->identifier(),
+                'workspace_identifier' => $context->workspace()?->identifier(),
+                'membership_id' => $context->membership()?->membershipId(),
+                'membership_version' => $context->membership()?->membershipVersion(),
+                'policy_generation' => $context->membership()?->policyGeneration(),
+                'rotation' => 1,
+                'step_up_at' => null,
             ], [
                 'created_at' => Types::DATETIME_IMMUTABLE,
                 'last_seen_at' => Types::DATETIME_IMMUTABLE,
@@ -152,7 +171,7 @@ final readonly class DoctrineAdministratorSessionStore implements AdministratorS
 
         return new CreatedAdministratorSession(
             $token,
-            new AdministratorSession($id, $principal, $csrf, $expiresAt),
+            new AdministratorSession($id, $principal, $csrf, $expiresAt, $context->site(), $context->membership()),
         );
     }
 
@@ -188,7 +207,9 @@ final readonly class DoctrineAdministratorSessionStore implements AdministratorS
 
         $now = $this->clock->now();
         $row = $this->database->fetchAssociative(sprintf(
-            'SELECT s.id, s.user_id, s.csrf_token, s.expires_at, s.user_agent_digest, u.security_epoch '
+            'SELECT s.id, s.user_id, s.csrf_token, s.expires_at, s.user_agent_digest, u.security_epoch, '
+            . 's.site_identifier, s.organization_identifier, s.workspace_identifier, s.membership_id, '
+            . 's.membership_version, s.policy_generation '
             . 'FROM %s s INNER JOIN %s u ON u.id = s.user_id '
             . "WHERE s.token_digest = ? AND s.expires_at > ? AND u.status = 'active'",
             $this->tables->quoted('administrator_sessions'),
@@ -220,18 +241,282 @@ final readonly class DoctrineAdministratorSessionStore implements AdministratorS
             ['last_seen_at' => Types::DATETIME_IMMUTABLE],
         );
 
+        try {
+            $site = SiteContext::fromString(is_string($row['site_identifier'] ?? null)
+                ? $row['site_identifier']
+                : SiteContext::DEFAULT);
+            $organization = $row['organization_identifier'] ?? null;
+            $workspace = $row['workspace_identifier'] ?? null;
+            $storedMembershipId = $row['membership_id'] ?? null;
+            $storedMembershipVersion = $row['membership_version'] ?? null;
+            $storedPolicyGeneration = $row['policy_generation'] ?? null;
+            if (
+                ($organization !== null && !is_string($organization))
+                || ($workspace !== null && !is_string($workspace))
+            ) {
+                return null;
+            }
+            if ($organization === null && (
+                $workspace !== null
+                || $storedMembershipId !== null
+                || $storedMembershipVersion !== null
+                || $storedPolicyGeneration !== null
+            )) {
+                return null;
+            }
+            $membership = $organization === null || $this->memberships === null
+                ? null
+                : $this->memberships->resolve($row['user_id'], $site, $organization, $workspace);
+            if ($organization !== null && (
+                $membership === null
+                || $membership->membershipId() !== $storedMembershipId
+                || $membership->membershipVersion() !== $this->positiveInteger($storedMembershipVersion)
+                || $membership->policyGeneration() !== $this->positiveInteger($storedPolicyGeneration)
+            )) {
+                return null;
+            }
+        } catch (InvalidArgumentException) {
+            return null;
+        }
+
         return new AdministratorSession(
             $row['id'],
             AuthenticatedPrincipal::issueFromGrantRows(
                 $this->provenance,
                 $row['user_id'],
-                $this->grantsFor($row['user_id']),
+                $this->grantsFor($row['user_id'], $site, $membership),
                 'administrator-session:' . $row['id'],
                 $this->positiveInteger($row['security_epoch'] ?? null),
             ),
             $row['csrf_token'],
             $expiresAt,
+            $site,
+            $membership,
         );
+    }
+
+    /**
+     * Rotate an administrator session onto one exact live membership scope.
+     *
+     * @param   ExecutionContext  $context                 Current authenticated administrator session.
+     * @param   string            $organizationIdentifier  Exact organization to select.
+     * @param   ?string           $workspaceIdentifier     Optional exact workspace to select.
+     * @param   string            $userAgent               Current user-agent value bound to the replacement session.
+     *
+     * @return  CreatedAdministratorSession  Opaque replacement token and selected membership session.
+     *
+     * @since   2.0.0
+     */
+    public function selectMembership(
+        ExecutionContext $context,
+        string $organizationIdentifier,
+        ?string $workspaceIdentifier,
+        string $userAgent,
+    ): CreatedAdministratorSession {
+        $sessionId = $context->sessionId()
+            ?? throw new InvalidArgumentException('An administrator membership selection requires a live session.');
+        $principal = $context->principal()
+            ?? throw new InvalidArgumentException('An administrator membership selection requires a human actor.');
+        $directory = $this->memberships
+            ?? throw new InvalidArgumentException('Organization membership resolution is unavailable.');
+        $this->authorization->assertAllowed(
+            $context,
+            Capability::fromString('administrator.access'),
+            AuthorizationResource::item('administrator_session', $sessionId),
+        );
+        $membership = $directory->resolve(
+            $context->actorId(),
+            $context->site(),
+            $organizationIdentifier,
+            $workspaceIdentifier,
+            true,
+        ) ?? throw new InvalidArgumentException('The requested organization selection is not available.');
+        $replacementId = Uuid::uuid7()->toString();
+        $token = $this->base64Url(random_bytes(48));
+        $csrf = $this->base64Url(random_bytes(32));
+        $now = $this->clock->now();
+        $expiresAt = $now->add(new DateInterval(sprintf('PT%dS', $this->lifetimeSeconds)));
+
+        $this->transactions->transactional(function () use (
+            $context,
+            $sessionId,
+            $replacementId,
+            $principal,
+            $token,
+            $csrf,
+            $userAgent,
+            $membership,
+            $now,
+            $expiresAt,
+        ): void {
+            if (!$this->memberships?->current($context->actorId(), $context->site(), $membership, true)) {
+                throw new InvalidArgumentException('The requested organization selection is no longer current.');
+            }
+            $affected = $this->database->delete(
+                $this->tables->raw('administrator_sessions'),
+                ['id' => $sessionId, 'user_id' => $context->actorId()],
+                ['id' => Types::GUID, 'user_id' => Types::GUID],
+            );
+            if ($affected !== 1) {
+                throw new InvalidArgumentException('The administrator session changed during rotation.');
+            }
+            $this->ownership->remove(
+                AuthorizationResource::item('administrator_session', $sessionId),
+                $context->site(),
+            );
+            $this->database->insert($this->tables->raw('administrator_sessions'), [
+                'id' => $replacementId,
+                'user_id' => $principal->subject(),
+                'token_digest' => hash('sha256', $token),
+                'csrf_token' => $csrf,
+                'ip_digest' => null,
+                'user_agent_digest' => $this->fingerprint($userAgent),
+                'created_at' => $now,
+                'last_seen_at' => $now,
+                'expires_at' => $expiresAt,
+                'site_identifier' => $context->site()->identifier(),
+                'organization_identifier' => $membership->organization()->identifier(),
+                'workspace_identifier' => $membership->workspace()?->identifier(),
+                'membership_id' => $membership->membershipId(),
+                'membership_version' => $membership->membershipVersion(),
+                'policy_generation' => $membership->policyGeneration(),
+                'rotation' => 1,
+                'step_up_at' => null,
+            ], [
+                'created_at' => Types::DATETIME_IMMUTABLE,
+                'last_seen_at' => Types::DATETIME_IMMUTABLE,
+                'expires_at' => Types::DATETIME_IMMUTABLE,
+            ]);
+            $this->ownership->record(
+                AuthorizationResource::item('administrator_session', $replacementId),
+                $context->site(),
+            );
+        });
+
+        return new CreatedAdministratorSession(
+            $token,
+            new AdministratorSession(
+                $replacementId,
+                $principal,
+                $csrf,
+                $expiresAt,
+                $context->site(),
+                $membership,
+            ),
+        );
+    }
+
+    /**
+     * Rotate the exact live administrator session after a successful second-factor challenge.
+     *
+     * The old row is locked and every server-resolved coordinate from the intent is compared before a
+     * replacement cookie, CSRF token, and ownership row are installed atomically. The stored browser
+     * binding is copied rather than accepting a header from the challenge form.
+     *
+     * @param   StepUpIntent       $intent      Exact old session and authority context being elevated.
+     * @param   DateTimeImmutable  $verifiedAt  Trusted successful verification instant.
+     *
+     * @return  RotatedStepUpSession  Replacement session id, one-time cookie, CSRF, and expiry.
+     *
+     * @throws  StepUpRejected  When the session, user, scope, epoch, membership, or expiry changed.
+     *
+     * @since   2.0.0
+     */
+    public function rotate(StepUpIntent $intent, DateTimeImmutable $verifiedAt): RotatedStepUpSession
+    {
+        return $this->transactions->transactional(function () use ($intent, $verifiedAt): RotatedStepUpSession {
+            $row = $this->database->fetchAssociative(sprintf(
+                'SELECT s.*, u.security_epoch FROM %s s INNER JOIN %s u ON u.id = s.user_id '
+                . "WHERE s.id = ? AND s.user_id = ? AND u.status = 'active'%s",
+                $this->tables->quoted('administrator_sessions'),
+                $this->tables->quoted('users'),
+                $this->lockClause(),
+            ), [$intent->sessionId, $intent->subjectId]);
+            if (!is_array($row)) {
+                throw new StepUpRejected();
+            }
+            $expiresAt = $row['expires_at'] instanceof DateTimeImmutable
+                ? $row['expires_at']
+                : (is_string($row['expires_at'] ?? null) ? new DateTimeImmutable($row['expires_at']) : null);
+            $organization = is_string($row['organization_identifier'] ?? null)
+                ? $row['organization_identifier']
+                : null;
+            $workspace = is_string($row['workspace_identifier'] ?? null) ? $row['workspace_identifier'] : null;
+            if (
+                !$expiresAt instanceof DateTimeImmutable
+                || $expiresAt <= $verifiedAt
+                || ($row['site_identifier'] ?? null) !== $intent->siteIdentifier
+                || $organization !== $intent->organizationIdentifier
+                || $workspace !== $intent->workspaceIdentifier
+                || $this->positiveInteger($row['security_epoch'] ?? null) !== $intent->securityEpoch
+            ) {
+                throw new StepUpRejected();
+            }
+            if ($organization !== null) {
+                $membership = $this->memberships?->resolve(
+                    $intent->subjectId,
+                    SiteContext::fromString($intent->siteIdentifier),
+                    $organization,
+                    $workspace,
+                    true,
+                );
+                if (
+                    $membership === null
+                    || $membership->membershipId() !== ($row['membership_id'] ?? null)
+                    || $membership->membershipVersion()
+                        !== $this->positiveInteger($row['membership_version'] ?? null)
+                    || $membership->policyGeneration()
+                        !== $this->positiveInteger($row['policy_generation'] ?? null)
+                ) {
+                    throw new StepUpRejected();
+                }
+            }
+
+            $replacementId = Uuid::uuid7()->toString();
+            $token = $this->base64Url(random_bytes(48));
+            $csrf = $this->base64Url(random_bytes(32));
+            $this->database->insert($this->tables->raw('administrator_sessions'), [
+                'id' => $replacementId,
+                'user_id' => $intent->subjectId,
+                'token_digest' => hash('sha256', $token),
+                'csrf_token' => $csrf,
+                'ip_digest' => $row['ip_digest'] ?? null,
+                'user_agent_digest' => $row['user_agent_digest'],
+                'created_at' => $verifiedAt,
+                'last_seen_at' => $verifiedAt,
+                'expires_at' => $expiresAt,
+                'site_identifier' => $intent->siteIdentifier,
+                'organization_identifier' => $organization,
+                'workspace_identifier' => $workspace,
+                'membership_id' => $row['membership_id'] ?? null,
+                'membership_version' => $row['membership_version'] ?? null,
+                'policy_generation' => $row['policy_generation'] ?? null,
+                'rotation' => $this->positiveInteger($row['rotation'] ?? 1) + 1,
+                'step_up_at' => $verifiedAt,
+            ], [
+                'created_at' => Types::DATETIME_IMMUTABLE,
+                'last_seen_at' => Types::DATETIME_IMMUTABLE,
+                'expires_at' => Types::DATETIME_IMMUTABLE,
+                'step_up_at' => Types::DATETIME_IMMUTABLE,
+            ]);
+            if ($this->database->delete(
+                $this->tables->raw('administrator_sessions'),
+                ['id' => $intent->sessionId, 'user_id' => $intent->subjectId],
+            ) !== 1) {
+                throw new StepUpRejected();
+            }
+            $site = SiteContext::fromString($intent->siteIdentifier);
+            $this->ownership->remove(
+                AuthorizationResource::item('administrator_session', $intent->sessionId),
+                $site,
+            );
+            $this->ownership->record(
+                AuthorizationResource::item('administrator_session', $replacementId),
+                $site,
+            );
+
+            return new RotatedStepUpSession($replacementId, $token, $csrf, $expiresAt);
+        });
     }
 
     /**
@@ -347,10 +632,11 @@ final readonly class DoctrineAdministratorSessionStore implements AdministratorS
                 : 's.id';
             $sessionIds = $this->database->fetchFirstColumn(sprintf(
                 'SELECT s.id FROM %s s INNER JOIN %s o ON o.resource_type = ? AND o.resource_id = %s '
-                . 'AND o.site_identifier = ? WHERE s.expires_at <= ? ORDER BY s.id FOR UPDATE',
+                . 'AND o.site_identifier = ? WHERE s.expires_at <= ? ORDER BY s.id%s',
                 $this->tables->quoted('administrator_sessions'),
                 $this->tables->quoted('resource_site_ownership'),
                 $sessionOwnershipId,
+                $this->lockClause(),
             ), ['administrator_session', $context->site()->identifier(), $now], [
                 Types::STRING,
                 Types::STRING,
@@ -379,13 +665,27 @@ final readonly class DoctrineAdministratorSessionStore implements AdministratorS
     }
 
     /**
+     * Return the row-lock suffix supported by the active database platform.
+     *
+     * @return  string  Empty for SQLite and `FOR UPDATE` elsewhere.
+     *
+     * @since   2.0.0
+     */
+    private function lockClause(): string
+    {
+        return $this->database->getDatabasePlatform() instanceof SQLitePlatform ? '' : ' FOR UPDATE';
+    }
+
+    /**
      * Read every role grant the user holds, keeping the reach each one was recorded at.
      *
      * This is what `AuthenticatedPrincipal::issueFromGrantRows()` consumes on each resolution, so a
      * capability granted over a single resource stays confined to it instead of being promoted to a
      * global grant when the session is rebuilt.
      *
-     * @param   string  $userId  UUID of the user whose role grants are read.
+     * @param   string              $userId      UUID of the user whose role grants are read.
+     * @param   SiteContext         $site        Exact administrator session site.
+     * @param   ?MembershipContext  $membership  Live selected membership, or null for global-only context.
      *
      * @return  list<array{capability: string, scope_type: string, scope_identifier: ?string}>
      *          One row per distinct grant, ordered by capability, scope type and scope identifier; empty
@@ -395,8 +695,52 @@ final readonly class DoctrineAdministratorSessionStore implements AdministratorS
      *
      * @since   2.0.0
      */
-    private function grantsFor(string $userId): array
+    private function grantsFor(
+        string $userId,
+        SiteContext $site,
+        ?MembershipContext $membership,
+    ): array
     {
+        if ($membership !== null) {
+            $workspace = $membership->workspace()?->identifier();
+
+            /** @var list<array{capability: string, scope_type: string, scope_identifier: ?string}> */
+            return $this->database->fetchAllAssociative(sprintf(
+                'SELECT g.capability_code AS capability, g.scope_type, g.scope_identifier '
+                . 'FROM %s ur INNER JOIN %s g ON g.role_id = ur.role_id WHERE ur.user_id = ? '
+                . 'UNION SELECT g.capability_code AS capability, g.scope_type, g.scope_identifier '
+                . 'FROM %s mr INNER JOIN %s g ON g.role_id = mr.role_id '
+                . 'INNER JOIN %s m ON m.id = mr.membership_id '
+                . 'INNER JOIN %s o ON o.id = m.organization_id '
+                . 'WHERE mr.membership_id = ? AND m.user_id = ? AND m.version = ? '
+                . "AND m.status = 'active' AND m.valid_from <= CURRENT_TIMESTAMP "
+                . 'AND (m.valid_until IS NULL OR m.valid_until > CURRENT_TIMESTAMP) '
+                . "AND o.site_identifier = ? AND o.identifier = ? AND o.status = 'active' "
+                . 'AND o.policy_generation = ? AND (? IS NULL OR EXISTS (SELECT 1 FROM %s mw '
+                . 'INNER JOIN %s w ON w.id = mw.workspace_id WHERE mw.membership_id = m.id '
+                . "AND w.organization_id = o.id AND w.identifier = ? AND w.status = 'active')) "
+                . 'ORDER BY capability, scope_type, scope_identifier',
+                $this->tables->quoted('user_roles'),
+                $this->tables->quoted('role_capability_grants'),
+                $this->tables->quoted('membership_roles'),
+                $this->tables->quoted('role_capability_grants'),
+                $this->tables->quoted('organization_memberships'),
+                $this->tables->quoted('organizations'),
+                $this->tables->quoted('membership_workspaces'),
+                $this->tables->quoted('workspaces'),
+            ), [
+                $userId,
+                $membership->membershipId(),
+                $userId,
+                $membership->membershipVersion(),
+                $site->identifier(),
+                $membership->organization()->identifier(),
+                $membership->policyGeneration(),
+                $workspace,
+                $workspace,
+            ]);
+        }
+
         /** @var list<array{capability: string, scope_type: string, scope_identifier: ?string}> */
         return $this->database->fetchAllAssociative(sprintf(
             'SELECT DISTINCT g.capability_code AS capability, g.scope_type, g.scope_identifier '

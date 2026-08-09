@@ -6,6 +6,11 @@ namespace Kumwe\CMS\Extension\Contribution;
 
 use Kumwe\CMS\BusinessDefinition\Domain\EntityTypeDefinition;
 use Kumwe\CMS\BusinessDefinition\Domain\FieldTypeDefinition;
+use Kumwe\CMS\Portal\Contribution\PortalNavigationDefinition;
+use Kumwe\CMS\Portal\Contribution\PortalRouteDefinition;
+use Kumwe\CMS\Portal\Contribution\PortalRouteHandlerFactory;
+use Kumwe\CMS\Portal\Contribution\PortalTemplateDefinition;
+use Kumwe\CMS\Portal\Contribution\PortalWorkspaceDefinition;
 
 /**
  * The sink a contribution provider registers each of its declared surfaces through.
@@ -15,8 +20,9 @@ use Kumwe\CMS\BusinessDefinition\Domain\FieldTypeDefinition;
  * implementation is bound to one owner for one contribution phase, rejects an identifier outside that
  * owner's namespace, rejects the same identifier twice, and stops accepting once the phase closes.
  *
- * Order within a phase matters: a navigation item names a workspace and a capability, a route names a
- * capability and a view, and each of those must already have been registered by this same owner.
+ * Order within a phase matters: resource policies name capabilities, navigation items name workspaces
+ * and capabilities, and routes name capabilities and views. Every referenced contribution must already
+ * have been registered by this same owner.
  *
  * @since  2.0.0
  */
@@ -35,6 +41,20 @@ interface ExtensionContributionRegistrar
      * @since   2.0.0
      */
     public function capability(CapabilityDefinition $definition): void;
+
+    /**
+     * Bind one owned capability to the bounded resource selectors it may authorize.
+     *
+     * The capability must already have been registered by this owner. Extensions cannot attach a
+     * policy to someone else's capability or grant authority to a core system identity.
+     *
+     * @param   ResourcePolicyDefinition  $definition  Owner-namespaced typed action/resource binding.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function resourcePolicy(ResourcePolicyDefinition $definition): void;
 
     /**
      * Add a top-level grouping that administrator navigation items can be filed under.
@@ -91,6 +111,51 @@ interface ExtensionContributionRegistrar
         AdministratorRouteDefinition $definition,
         AdministratorRouteHandlerFactory $factory,
     ): void;
+
+    /**
+     * Add a top-level workspace to the ordinary-user portal shell.
+     *
+     * @param   PortalWorkspaceDefinition  $definition  Owner-bound workspace declaration.
+     *
+     * @return  void
+     *
+     * @since  2.0.0
+     */
+    public function portalWorkspace(PortalWorkspaceDefinition $definition): void;
+
+    /**
+     * Add one capability-filtered item to portal navigation.
+     *
+     * @param   PortalNavigationDefinition  $definition  Owner-bound navigation declaration.
+     *
+     * @return  void
+     *
+     * @since  2.0.0
+     */
+    public function portalNavigation(PortalNavigationDefinition $definition): void;
+
+    /**
+     * Add a namespaced template that a contributed portal route may render.
+     *
+     * @param   PortalTemplateDefinition  $definition  Owner-bound portal template declaration.
+     *
+     * @return  void
+     *
+     * @since  2.0.0
+     */
+    public function portalTemplate(PortalTemplateDefinition $definition): void;
+
+    /**
+     * Add one guarded portal route and the factory that builds its handler.
+     *
+     * @param   PortalRouteDefinition      $definition  Route and authorization declaration.
+     * @param   PortalRouteHandlerFactory  $factory     Handler factory invoked at route-mount time.
+     *
+     * @return  void
+     *
+     * @since  2.0.0
+     */
+    public function portalRoute(PortalRouteDefinition $definition, PortalRouteHandlerFactory $factory): void;
 
     /**
      * Add a field type that business definitions may build fields from.

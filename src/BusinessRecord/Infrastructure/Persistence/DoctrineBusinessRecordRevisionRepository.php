@@ -13,8 +13,11 @@ use JsonException;
 use InvalidArgumentException;
 use Kumwe\CMS\BusinessRecord\Application\BusinessRecordRevisionRepository;
 use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordSchemaUnavailable;
+use Kumwe\CMS\BusinessRecord\Application\ResolvedBusinessDefinition;
 use Kumwe\CMS\BusinessRecord\Domain\BusinessRecordRevision;
+use Kumwe\CMS\BusinessRecord\Domain\RecordScope;
 use Kumwe\CMS\BusinessRecord\Domain\RecordValueGuard;
+use Kumwe\CMS\BusinessSecurity\Application\BusinessRecordAccessPlan;
 use Kumwe\CMS\Infrastructure\Persistence\TableNames;
 use LogicException;
 
@@ -40,12 +43,17 @@ final readonly class DoctrineBusinessRecordRevisionRepository implements Busines
      *
      * @param  Connection  $database  DBAL connection whose open transaction every append joins, and that
      *         every history window is read from.
-     * @param  TableNames  $tables    Resolver for the prefixed `business_record_revisions` table name.
+     * @param  TableNames                            $tables   Resolver for the prefixed revision table name.
+     * @param  DoctrineBusinessRecordQueryCompiler  $queries  Compiler that applies immutable row policy
+     *         directly to canonical revision snapshots.
      *
      * @since  2.0.0
      */
-    public function __construct(private Connection $database, private TableNames $tables)
-    {
+    public function __construct(
+        private Connection $database,
+        private TableNames $tables,
+        private DoctrineBusinessRecordQueryCompiler $queries,
+    ) {
     }
 
     /**
@@ -160,15 +168,19 @@ final readonly class DoctrineBusinessRecordRevisionRepository implements Busines
      * statement. The digest is a scope, not proof of a single subject: a caller that needs one record
      * checks that the returned entries all carry the same record key.
      *
-     * @param   string   $definitionId            UUID of the entity type whose log is read.
-     * @param   string   $siteIdentifier          Site the record belonged to.
-     * @param   ?string  $organizationIdentifier  Organization branch within that site, or null to match the
-     *          entries written site-wide.
-     * @param   string   $recordIdentityDigest    Keyed 64-character digest of the record's business
+     * The row policy is compiled over the immutable JSON snapshot and joined to the digest and scope
+     * predicates before ordering and limiting. A denied revision is consequently never mapped and never
+     * used to initiate another lookup.
+     *
+     * @param   ResolvedBusinessDefinition  $resolved              Installed definition whose row policy
+     *          and field types are applied to the revision snapshot.
+     * @param   RecordScope                 $scope                 Exact site and organization scope.
+     * @param   BusinessRecordAccessPlan    $access                Immutable default-deny row decision.
+     * @param   string                      $recordIdentityDigest  Keyed 64-character digest of the record's business
      *          identity, which the log stores in place of that identity.
-     * @param   int      $limit                   Most rows to return; 1 to 201.
-     * @param   ?int     $beforeVersion           Exclusive upper bound on `record_version`, taken from the
-     *          oldest entry of the previous page; null starts at the newest entry.
+     * @param   int                         $limit                 Most rows to return; 1 to 201.
+     * @param   ?int                        $beforeVersion         Exclusive upper `record_version` bound from
+     *          the oldest entry of the previous page; null starts at the newest entry.
      *
      * @return  list<BusinessRecordRevision>  Entries ordered by record version and then revision number,
      *          both descending; empty when no history matches the digest in this scope.
@@ -181,9 +193,9 @@ final readonly class DoctrineBusinessRecordRevisionRepository implements Busines
      * @since   2.0.0
      */
     public function historyByIdentityDigest(
-        string $definitionId,
-        string $siteIdentifier,
-        ?string $organizationIdentifier,
+        ResolvedBusinessDefinition $resolved,
+        RecordScope $scope,
+        BusinessRecordAccessPlan $access,
         string $recordIdentityDigest,
         int $limit,
         ?int $beforeVersion = null,
@@ -191,23 +203,36 @@ final readonly class DoctrineBusinessRecordRevisionRepository implements Busines
         if ($limit < 1 || $limit > 201 || preg_match('/^[a-f0-9]{64}$/D', $recordIdentityDigest) !== 1) {
             throw new InvalidArgumentException('A revision identity window is invalid.');
         }
-        $where = ['definition_id = ?', 'site_identifier = ?', 'record_identity_digest = ?'];
-        $parameters = [$definitionId, $siteIdentifier, $recordIdentityDigest];
+        $policy = $this->queries->compileRevisionAccessPredicate($resolved, $access);
+        $where = [
+            'rv0.definition_id = ?',
+            'rv0.site_identifier = ?',
+            'rv0.record_identity_digest = ?',
+            $policy->sql,
+        ];
+        $parameters = [
+            $resolved->definition->id,
+            $scope->siteIdentifier,
+            $recordIdentityDigest,
+            ...$policy->parameters,
+        ];
         $types = [Types::GUID, Types::STRING, Types::STRING];
-        if ($organizationIdentifier === null) {
-            $where[] = 'organization_identifier IS NULL';
+        array_push($types, ...$policy->types);
+        if ($scope->organizationIdentifier === null) {
+            $where[] = 'rv0.organization_identifier IS NULL';
         } else {
-            $where[] = 'organization_identifier = ?';
-            $parameters[] = $organizationIdentifier;
+            $where[] = 'rv0.organization_identifier = ?';
+            $parameters[] = $scope->organizationIdentifier;
             $types[] = Types::STRING;
         }
         if ($beforeVersion !== null) {
-            $where[] = 'record_version < ?';
+            $where[] = 'rv0.record_version < ?';
             $parameters[] = $beforeVersion;
             $types[] = Types::INTEGER;
         }
         $rows = $this->database->fetchAllAssociative(sprintf(
-            'SELECT * FROM %s WHERE %s ORDER BY record_version DESC, revision_number DESC LIMIT %d',
+            'SELECT rv0.* FROM %s rv0 WHERE %s '
+            . 'ORDER BY rv0.record_version DESC, rv0.revision_number DESC LIMIT %d',
             $this->tables->quoted('business_record_revisions'),
             implode(' AND ', $where),
             $limit,

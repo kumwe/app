@@ -8,6 +8,7 @@ use Closure;
 use InvalidArgumentException;
 use JsonException;
 use Kumwe\CMS\Application\Authorization\AuthenticationStrength;
+use Kumwe\CMS\Application\Authorization\AuthenticatedSurface;
 use Kumwe\CMS\Application\Authorization\AuthorizationGateway;
 use Kumwe\CMS\Application\Authorization\AuthorizationResource;
 use Kumwe\CMS\Application\Authorization\ExecutionContext;
@@ -22,6 +23,7 @@ use Kumwe\CMS\Identity\Application\Administration\AdministratorIdentityGateway;
 use Kumwe\CMS\Identity\Application\Administration\TokenRotationPreauthorizer;
 use Kumwe\CMS\Identity\Application\Authentication\AuthenticatedPrincipal;
 use Kumwe\CMS\Identity\Application\Authentication\AccessTokenVerifier;
+use Kumwe\CMS\Identity\Application\Authentication\ScopedAccessTokenVerifier;
 use Kumwe\CMS\Identity\Application\Authorization\InsufficientCapability;
 use Kumwe\CMS\Identity\Domain\Capability;
 use Kumwe\CMS\Navigation\Application\MenuRecord;
@@ -174,13 +176,23 @@ final readonly class KumweMcpHandlers
         $site = SiteContext::fromString($siteIdentifier);
         $siteIdentifier = $site->identifier();
         $refresh = static function () use ($tokens, $token, $site, $siteIdentifier): ExecutionContext {
-            $principal = $tokens->verify($token, 'kumwe-mcp', 'mcp', $siteIdentifier)
+            $verified = $tokens instanceof ScopedAccessTokenVerifier
+                ? $tokens->verifyScoped($token, 'kumwe-mcp', 'mcp', $siteIdentifier)
+                : null;
+            $principal = $verified?->principal
+                ?? ($verified === null && !($tokens instanceof ScopedAccessTokenVerifier)
+                    ? $tokens->verify($token, 'kumwe-mcp', 'mcp', $siteIdentifier)
+                    : null)
                 ?? throw new InsufficientCapability('authenticated');
 
-            return $principal->context(
+            return $verified?->context(
+                'mcp-stdio-' . bin2hex(random_bytes(16)),
+                AuthenticatedSurface::Mcp,
+            ) ?? $principal->context(
                 $site,
                 AuthenticationStrength::BearerToken,
                 'mcp-stdio-' . bin2hex(random_bytes(16)),
+                surface: AuthenticatedSurface::Mcp,
             );
         };
 

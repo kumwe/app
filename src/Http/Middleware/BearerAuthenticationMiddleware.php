@@ -6,10 +6,12 @@ namespace Kumwe\CMS\Http\Middleware;
 
 use InvalidArgumentException;
 use Kumwe\CMS\Application\Authorization\AuthenticationStrength;
+use Kumwe\CMS\Application\Authorization\AuthenticatedSurface;
 use Kumwe\CMS\Application\Authorization\ExecutionContext;
 use Kumwe\CMS\Application\Authorization\SiteContext;
 use Kumwe\CMS\Identity\Application\Authentication\AccessTokenVerifier;
 use Kumwe\CMS\Identity\Application\Authentication\AuthenticatedPrincipal;
+use Kumwe\CMS\Identity\Application\Authentication\ScopedAccessTokenVerifier;
 use Kumwe\CMS\Identity\Domain\Capability;
 use Laminas\Diactoros\Response\JsonResponse;
 use LogicException;
@@ -153,7 +155,13 @@ final readonly class BearerAuthenticationMiddleware implements MiddlewareInterfa
 
         $audience = $this->option($options, self::OPTION_TOKEN_AUDIENCE, 'kumwe-http');
         $purpose = $this->option($options, self::OPTION_TOKEN_PURPOSE, 'api');
-        $principal = $this->verifier->verify($token, $audience, $purpose, $siteIdentifier);
+        $verified = $this->verifier instanceof ScopedAccessTokenVerifier
+            ? $this->verifier->verifyScoped($token, $audience, $purpose, $siteIdentifier)
+            : null;
+        $principal = $verified?->principal
+            ?? ($verified === null && !($this->verifier instanceof ScopedAccessTokenVerifier)
+                ? $this->verifier->verify($token, $audience, $purpose, $siteIdentifier)
+                : null);
 
         if ($principal === null) {
             return $this->unauthorized('invalid_token');
@@ -170,11 +178,16 @@ final readonly class BearerAuthenticationMiddleware implements MiddlewareInterfa
         return $handler->handle(
             $request
                 ->withAttribute(AuthenticatedPrincipal::REQUEST_ATTRIBUTE, $principal)
-                ->withAttribute(ExecutionContext::REQUEST_ATTRIBUTE, $principal->context(
-                    SiteContext::fromString($siteIdentifier),
-                    AuthenticationStrength::BearerToken,
-                    $this->requestId($request),
-                )),
+                ->withAttribute(
+                    ExecutionContext::REQUEST_ATTRIBUTE,
+                    $verified?->context($this->requestId($request), AuthenticatedSurface::Api)
+                        ?? $principal->context(
+                            SiteContext::fromString($siteIdentifier),
+                            AuthenticationStrength::BearerToken,
+                            $this->requestId($request),
+                            surface: AuthenticatedSurface::Api,
+                        ),
+                ),
         );
     }
 

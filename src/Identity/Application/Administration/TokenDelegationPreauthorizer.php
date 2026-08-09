@@ -56,6 +56,7 @@ final readonly class TokenDelegationPreauthorizer
      *          normalised before it is looked up.
      * @param   array<mixed>      $capabilities  Capability codes exactly as the caller supplied them,
      *          validated here rather than trusted.
+     * @param   bool              $lock          Whether target membership authority is locked for issuance.
      *
      * @return  TokenDelegation  The resolved subject with the deduplicated capabilities it may be issued.
      *
@@ -71,6 +72,7 @@ final readonly class TokenDelegationPreauthorizer
         ExecutionContext $context,
         string $email,
         array $capabilities,
+        bool $lock = false,
     ): TokenDelegation {
         if (!array_is_list($capabilities) || $capabilities === []) {
             throw new InvalidArgumentException('At least one token capability is required.');
@@ -102,6 +104,21 @@ final readonly class TokenDelegationPreauthorizer
         }
 
         $targetGrants = $this->repository->userGrants($subjectId);
+        $authority = null;
+        $organization = $context->organization()?->identifier();
+        $workspace = $context->workspace()?->identifier();
+        if ($organization !== null) {
+            $authority = $this->repository->organizationMembershipAuthority(
+                $subjectId,
+                $context->site()->identifier(),
+                $organization,
+                $workspace,
+                $lock,
+            ) ?? throw new InvalidArgumentException(
+                'The token subject has no live membership in the exact organization and workspace.',
+            );
+            array_push($targetGrants, ...$authority['grants']);
+        }
         foreach (array_keys($requested) as $capability) {
             $matching = array_values(array_filter(
                 $targetGrants,
@@ -126,6 +143,14 @@ final readonly class TokenDelegationPreauthorizer
 
         /** @var non-empty-list<string> $authorizedCapabilities */
         $authorizedCapabilities = array_keys($requested);
-        return new TokenDelegation($subjectId, $authorizedCapabilities);
+        return new TokenDelegation(
+            $subjectId,
+            $authorizedCapabilities,
+            $organization,
+            $workspace,
+            $authority['membership_id'] ?? null,
+            $authority['membership_version'] ?? null,
+            $authority['policy_generation'] ?? null,
+        );
     }
 }

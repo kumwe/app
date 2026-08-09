@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace Kumwe\CMS\Extension\Contribution;
 
 use InvalidArgumentException;
+use Kumwe\CMS\Application\Authorization\AuthorizationPolicyRegistry;
+use Kumwe\CMS\Application\Authorization\CapabilityDefinition as AuthorizationCapabilityDefinition;
+use Kumwe\CMS\Identity\Domain\Capability;
 
 /**
  * The capability identifiers the running process recognises, each held by exactly one owner.
@@ -20,12 +23,33 @@ use InvalidArgumentException;
 final class CapabilityDefinitionRegistry implements ContributionSurface
 {
     /**
+     * Canonical operational registry mirrored by this contribution surface.
+     *
+     * @var    AuthorizationPolicyRegistry
+     * @since  2.0.0
+     */
+    private readonly AuthorizationPolicyRegistry $authorization;
+
+    /**
      * Registered capabilities with the owner identifier that claimed each one, keyed by capability id.
      *
      * @var    array<string, array{owner: string, definition: CapabilityDefinition}>
      * @since  2.0.0
      */
     private array $definitions = [];
+
+    /**
+     * Build the contribution surface over the canonical operational authorization registry.
+     *
+     * @param  ?AuthorizationPolicyRegistry  $authorization  Shared live registry; a private empty one is
+     *         created only for isolated uses of this contribution surface.
+     *
+     * @since  2.0.0
+     */
+    public function __construct(?AuthorizationPolicyRegistry $authorization = null)
+    {
+        $this->authorization = $authorization ?? new AuthorizationPolicyRegistry();
+    }
 
     /**
      * Claim one capability identifier for one owner.
@@ -49,6 +73,15 @@ final class CapabilityDefinitionRegistry implements ContributionSurface
                 $this->definitions[$definition->id]['owner'],
             ));
         }
+        $this->policies()->registerCapability(new AuthorizationCapabilityDefinition(
+            Capability::fromString($definition->id),
+            $owner->identifier(),
+            $definition->allowedScopes,
+            $definition->delegatable,
+            $definition->highImpact,
+            $definition->lifecycle,
+            $definition->version,
+        ));
         $this->definitions[$definition->id] = [
             'owner' => $owner->identifier(),
             'definition' => $definition,
@@ -101,11 +134,24 @@ final class CapabilityDefinitionRegistry implements ContributionSurface
      */
     public function remove(ContributionOwner $owner): void
     {
+        $this->policies()->removeOwner($owner->identifier());
         foreach ($this->definitions as $identifier => $entry) {
             if ($entry['owner'] === $owner->identifier()) {
                 unset($this->definitions[$identifier]);
             }
         }
+    }
+
+    /**
+     * Reach the operational registry receiving every accepted capability definition.
+     *
+     * @return  AuthorizationPolicyRegistry  Shared registry read by the authorization gateway.
+     *
+     * @since   2.0.0
+     */
+    public function authorizationPolicies(): AuthorizationPolicyRegistry
+    {
+        return $this->policies();
     }
 
     /**
@@ -127,5 +173,20 @@ final class CapabilityDefinitionRegistry implements ContributionSurface
             }
         }
         return $result;
+    }
+
+    /**
+     * Resolve the injected operational registry or the private one built for an isolated surface.
+     *
+     * Direct construction is retained for compatibility with small registry tests. The full registry
+     * set always injects one shared instance, which is the production path.
+     *
+     * @return  AuthorizationPolicyRegistry  Registry this surface mirrors accepted definitions into.
+     *
+     * @since   2.0.0
+     */
+    private function policies(): AuthorizationPolicyRegistry
+    {
+        return $this->authorization;
     }
 }

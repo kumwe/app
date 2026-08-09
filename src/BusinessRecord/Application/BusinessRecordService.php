@@ -10,6 +10,7 @@ use InvalidArgumentException;
 use Kumwe\CMS\Application\Authorization\AuthorizationGateway;
 use Kumwe\CMS\Application\Authorization\AuthorizationResource;
 use Kumwe\CMS\Application\Authorization\ExecutionContext;
+use Kumwe\CMS\Application\Authorization\ResourceSiteOwnershipWriter;
 use Kumwe\CMS\Application\Automation\IdempotencyKey;
 use Kumwe\CMS\Audit\Application\AuditRecorder;
 use Kumwe\CMS\Audit\Domain\AuditEvent;
@@ -19,6 +20,7 @@ use Kumwe\CMS\BusinessDefinition\Domain\DeleteBehavior;
 use Kumwe\CMS\BusinessDefinition\Domain\EntityTypeDefinition;
 use Kumwe\CMS\BusinessDefinition\Domain\FieldDefinition;
 use Kumwe\CMS\BusinessDefinition\Domain\IdentityStrategy;
+use Kumwe\CMS\BusinessDefinition\Domain\ScopeMode;
 use Kumwe\CMS\BusinessDefinition\Domain\RelationshipDefinition;
 use Kumwe\CMS\BusinessDefinition\Domain\RelationshipKind;
 use Kumwe\CMS\BusinessDefinition\Domain\Sensitivity;
@@ -42,6 +44,7 @@ use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordValidationFaile
 use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordVersionConflict;
 use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRelationshipRejected;
 use Kumwe\CMS\BusinessRecord\Application\Query\BrowseRecordsQuery;
+use Kumwe\CMS\BusinessRecord\Application\Query\BusinessRecordQueryPurpose;
 use Kumwe\CMS\BusinessRecord\Application\Query\ReadRecordQuery;
 use Kumwe\CMS\BusinessRecord\Application\Query\RecordHistoryQuery;
 use Kumwe\CMS\BusinessRecord\Domain\BusinessRecord;
@@ -51,6 +54,12 @@ use Kumwe\CMS\BusinessRecord\Domain\BusinessRecordRevision;
 use Kumwe\CMS\BusinessRecord\Domain\ExactDecimal;
 use Kumwe\CMS\BusinessRecord\Domain\RecordScope;
 use Kumwe\CMS\BusinessRecord\Domain\RecordValueGuard;
+use Kumwe\CMS\BusinessSecurity\Application\BusinessRecordAccessController;
+use Kumwe\CMS\BusinessSecurity\Application\BusinessRecordAccessPlan;
+use Kumwe\CMS\BusinessSecurity\Application\FieldAccessUsage;
+use Kumwe\CMS\BusinessSecurity\Application\Approval\ApprovalBinding;
+use Kumwe\CMS\BusinessSecurity\Application\Approval\ApprovalDenied;
+use Kumwe\CMS\BusinessSecurity\Application\Approval\ApprovalService;
 use Kumwe\CMS\Identity\Domain\Capability;
 use Kumwe\CMS\Infrastructure\Persistence\TransactionManager;
 use Psr\Clock\ClockInterface;
@@ -109,6 +118,11 @@ final readonly class BusinessRecordService
      *         caller-supplied record identity.
      * @param  RecordRuleValidator                  $rules          Field-rule validator that turns
      *         submitted values into a stored value set.
+     * @param  BusinessRecordAccessController       $recordAccess   Canonical row, field, action, and relation
+     *         policy planner applied before every repository call.
+     * @param  ApprovalService                      $approvals      Generic maker-checker and step-up workflow.
+     * @param  ResourceSiteOwnershipWriter          $ownership      Records approval-resource ownership with
+     *         create and removes it only with a physical delete.
      * @param  AuthorizationGateway                 $authorization  Gateway asked for the operation, action
      *         and transition capabilities.
      * @param  TransactionManager                   $transactions   Owner of the single transaction each
@@ -131,6 +145,9 @@ final readonly class BusinessRecordService
         private BusinessRecordDefinitionResolver $definitions,
         private RecordValueCodec $values,
         private RecordRuleValidator $rules,
+        private BusinessRecordAccessController $recordAccess,
+        private ApprovalService $approvals,
+        private ResourceSiteOwnershipWriter $ownership,
         private AuthorizationGateway $authorization,
         private TransactionManager $transactions,
         private AuditRecorder $audit,
@@ -186,6 +203,13 @@ final readonly class BusinessRecordService
                 $resolved = $this->definitions->forCreate($command->context, $command->definitionIdentifier);
                 $generation->assertMatches($resolved);
                 $scope = $this->scope($resolved, $command->context, $command->organizationIdentifier);
+                $access = $this->recordAccess->plan(
+                    $command->context,
+                    'business.record.create',
+                    $resolved,
+                    $scope,
+                );
+                $this->assertFieldInput($access, FieldAccessUsage::Create, array_keys($command->values));
                 try {
                     $recordId = $this->values->identity(
                         $resolved->definition,
@@ -232,7 +256,16 @@ final readonly class BusinessRecordService
                     $command->context->actorId(),
                     $now,
                 );
+                if (!$access->records->allows($record->values())) {
+                    throw new BusinessRecordValidationFailed([
+                        new ValidationViolation('record', 'access', 'The submitted record is unavailable.'),
+                    ]);
+                }
                 $this->writes->insert($resolved, $record);
+                $this->ownership->record(
+                    AuthorizationResource::item('business_record', $this->recordResourceIdentifier($record)),
+                    $command->context->site(),
+                );
                 $changed = array_keys($record->values());
                 $this->recordMutation($command->context, $resolved, $record, 'create', $changed, $now);
 
@@ -282,17 +315,18 @@ final readonly class BusinessRecordService
                 $query->context->site(),
                 $query->definitionIdentifier,
             );
-            [$resolved, , $record] = $this->load(
+            [$resolved, , $record, $access] = $this->load(
                 $query->context,
                 $query->definitionIdentifier,
                 $query->recordId,
                 $query->organizationIdentifier,
+                'business.record.read',
                 $query->includeArchived,
                 $query->includeDeleted,
                 $generation,
             );
 
-            return $this->reads->view($resolved, $record->scope, $record, $query->projection);
+            return $this->reads->view($resolved, $record->scope, $record, $access, $query->projection);
         });
     }
 
@@ -327,9 +361,17 @@ final readonly class BusinessRecordService
      */
     public function browse(BrowseRecordsQuery $query): RecordBrowseResult
     {
-        $this->authorize($query->context, 'business.record.browse');
+        $purpose = $query->purpose;
+        if (
+            $purpose === BusinessRecordQueryPurpose::Browse
+            && $query->specification->projection->aggregates !== []
+        ) {
+            $purpose = BusinessRecordQueryPurpose::Report;
+        }
+        $operation = 'business.record.' . $purpose->value;
+        $this->authorize($query->context, $operation);
 
-        return $this->transactions->transactional(function () use ($query): RecordBrowseResult {
+        return $this->transactions->transactional(function () use ($query, $operation): RecordBrowseResult {
             $generation = $this->mutationFence->shared(
                 $query->context->site(),
                 $query->definitionIdentifier,
@@ -337,8 +379,14 @@ final readonly class BusinessRecordService
             $resolved = $this->definitions->forCreate($query->context, $query->definitionIdentifier);
             $generation->assertMatches($resolved);
             $scope = $this->scope($resolved, $query->context, $query->organizationIdentifier);
+            $access = $this->recordAccess->plan(
+                $query->context,
+                $operation,
+                $resolved,
+                $scope,
+            );
 
-            return $this->reads->browse($resolved, $scope, $query->specification);
+            return $this->reads->browse($resolved, $scope, $query->specification, $access);
         });
     }
 
@@ -386,14 +434,16 @@ final readonly class BusinessRecordService
                 DateTimeImmutable $now,
                 BusinessRecordMutationGeneration $generation,
             ) use ($command): RecordMutationResult {
-                [$resolved, $scope, $record] = $this->load(
+                [$resolved, $scope, $record, $access] = $this->load(
                     $command->context,
                     $command->definitionIdentifier,
                     $command->recordId,
                     $command->organizationIdentifier,
+                    'business.record.update',
                     generation: $generation,
                 );
                 $this->expected($record, $command->expectedVersion);
+                $this->assertFieldInput($access, FieldAccessUsage::Update, array_keys($command->values));
                 $values = $this->rules->update(
                     $resolved->definition,
                     $record->values(),
@@ -589,14 +639,18 @@ final readonly class BusinessRecordService
                 DateTimeImmutable $now,
                 BusinessRecordMutationGeneration $generation,
             ) use ($command): RecordMutationResult {
-                [$resolved, , $record] = $this->load(
+                [$resolved, , $record, $access] = $this->load(
                     $command->context,
                     $command->definitionIdentifier,
                     $command->recordId,
                     $command->organizationIdentifier,
+                    'business.record.action',
                     generation: $generation,
                 );
                 $this->expected($record, $command->expectedVersion);
+                if (!$access->allowsAction($command->action)) {
+                    throw new BusinessRecordNotFound();
+                }
                 $action = $this->actionDefinition($resolved->definition, $command->action);
                 $this->authorization->assertAllowed(
                     $command->context,
@@ -626,9 +680,22 @@ final readonly class BusinessRecordService
                 }
                 $this->authorization->assertAllowed(
                     $command->context,
+                    Capability::fromString('business.record.transition'),
+                    AuthorizationResource::collection('business_record'),
+                );
+                $this->authorization->assertAllowed(
+                    $command->context,
                     Capability::fromString($transition['capability']),
                     AuthorizationResource::collection('business_record'),
                 );
+                if ($action->highImpact) {
+                    $approvalRequestId = $command->approvalRequestId ?? throw new ApprovalDenied();
+                    $this->approvals->consume(
+                        $command->context,
+                        $approvalRequestId,
+                        $this->actionApprovalBinding($command, $record, $action),
+                    );
+                }
                 $updated = $record->transitioned($transition['to'], $command->context->actorId(), $now);
                 $this->writes->update($resolved, $updated, $command->expectedVersion);
                 $this->recordMutation(
@@ -643,6 +710,86 @@ final readonly class BusinessRecordService
                 return $this->result($updated, 'action');
             },
         );
+    }
+
+    /**
+     * Request generic maker-checker approval for one exact high-impact record action.
+     *
+     * The same policy-filtered load, version, action capability, condition, and workflow transition
+     * checks used by execution run before the request is stored. The returned request is therefore
+     * bound to a record and payload that the actor could genuinely attempt, without mutating it.
+     *
+     * @param   ExecuteRecordActionCommand  $command  Exact action attempt without an approval request id.
+     *
+     * @return  ?string  New approval UUID, or null when no active rule requires approval.
+     *
+     * @throws  BusinessRecordActionRejected  When the action is not high-impact or is not currently executable.
+     *
+     * @since   2.0.0
+     */
+    public function requestActionApproval(ExecuteRecordActionCommand $command): ?string
+    {
+        $this->authorize($command->context, 'business.record.action');
+        if ($command->input !== [] || $command->approvalRequestId !== null) {
+            throw new BusinessRecordActionRejected('An approval request requires an unconsumed action attempt.');
+        }
+
+        return $this->transactions->transactional(function () use ($command): ?string {
+            [$resolved, , $record, $access] = $this->load(
+                $command->context,
+                $command->definitionIdentifier,
+                $command->recordId,
+                $command->organizationIdentifier,
+                'business.record.action',
+            );
+            $this->expected($record, $command->expectedVersion);
+            if (!$access->allowsAction($command->action)) {
+                throw new BusinessRecordNotFound();
+            }
+            $action = $this->actionDefinition($resolved->definition, $command->action);
+            if (!$action->highImpact) {
+                throw new BusinessRecordActionRejected('The action does not require maker-checker approval.');
+            }
+            $this->authorization->assertAllowed(
+                $command->context,
+                Capability::fromString($action->capability),
+                AuthorizationResource::collection('business_record'),
+            );
+            if (
+                $action->condition !== null
+                && $action->condition->evaluate($this->expressionValues($record)) !== true
+            ) {
+                throw new BusinessRecordActionRejected('The action precondition rejected this record.');
+            }
+            if ($action->transition === null || $resolved->definition->workflow === null) {
+                throw new BusinessRecordActionRejected('The action has no executable workflow transition.');
+            }
+            $transition = null;
+            foreach ($resolved->definition->workflow->transitions as $candidate) {
+                if ($candidate['handle'] === $action->transition && $candidate['from'] === $record->workflowState) {
+                    $transition = $candidate;
+                    break;
+                }
+            }
+            if ($transition === null) {
+                throw new BusinessRecordActionRejected('The workflow transition is invalid from the current state.');
+            }
+            $this->authorization->assertAllowed(
+                $command->context,
+                Capability::fromString('business.record.transition'),
+                AuthorizationResource::collection('business_record'),
+            );
+            $this->authorization->assertAllowed(
+                $command->context,
+                Capability::fromString($transition['capability']),
+                AuthorizationResource::collection('business_record'),
+            );
+
+            return $this->approvals->request(
+                $command->context,
+                $this->actionApprovalBinding($command, $record, $action),
+            );
+        });
     }
 
     /**
@@ -696,21 +843,31 @@ final readonly class BusinessRecordService
                 DateTimeImmutable $now,
                 BusinessRecordMutationGeneration $generation,
             ) use ($command): RecordMutationResult {
-                [$resolved, $scope, $source] = $this->load(
+                [$resolved, $scope, $source, $access] = $this->load(
                     $command->context,
                     $command->definitionIdentifier,
                     $command->recordId,
                     $command->organizationIdentifier,
+                    'business.record.relate',
                     generation: $generation,
                 );
                 $this->expected($source, $command->expectedVersion);
                 $relationship = $this->relationship($resolved->definition, $command->relationship);
+                $relatedAccess = $access->related($relationship->handle)
+                    ?? throw new BusinessRecordNotFound();
                 $targetKey = '';
                 $targetResolved = null;
                 $target = null;
                 $lineDefinition = null;
                 $lineValues = [];
                 if ($relationship->kind === RelationshipKind::OwnedLineCollection) {
+                    $lineAccess = $access->related($relationship->handle)
+                        ?? throw new BusinessRecordNotFound();
+                    $this->assertFieldInput(
+                        $lineAccess,
+                        FieldAccessUsage::Create,
+                        array_keys($command->targetValues),
+                    );
                     $lineResolved = $this->lineDefinition($command->context, $resolved, $relationship);
                     $lineDefinition = $lineResolved->definition;
                     try {
@@ -739,6 +896,9 @@ final readonly class BusinessRecordService
                         $lineValues,
                         array_keys($lineValues),
                     );
+                    if (!$lineAccess->records->allows($lineValues)) {
+                        throw new BusinessRecordNotFound();
+                    }
                 } else {
                     if ($command->targetValues !== []) {
                         throw new BusinessRelationshipRejected('Only owned lines accept embedded target values.');
@@ -752,8 +912,15 @@ final readonly class BusinessRecordService
                         $relationship->target,
                         $command->targetRecordId,
                         $command->organizationIdentifier,
+                        'business.record.relate',
                         generation: $targetGeneration,
                     );
+                    if (
+                        !hash_equals($targetResolved->definition->id, $relatedAccess->resourceIdentifier)
+                        || !$relatedAccess->records->allows($target->values())
+                    ) {
+                        throw new BusinessRecordNotFound();
+                    }
                     $this->sameScope($source, $target);
                     $targetKey = $target->recordKey;
                 }
@@ -855,15 +1022,18 @@ final readonly class BusinessRecordService
                 DateTimeImmutable $now,
                 BusinessRecordMutationGeneration $generation,
             ) use ($command): RecordMutationResult {
-                [$resolved, , $source] = $this->load(
+                [$resolved, , $source, $access] = $this->load(
                     $command->context,
                     $command->definitionIdentifier,
                     $command->recordId,
                     $command->organizationIdentifier,
+                    'business.record.relate',
                     generation: $generation,
                 );
                 $this->expected($source, $command->expectedVersion);
                 $relationship = $this->relationship($resolved->definition, $command->relationship);
+                $relatedAccess = $access->related($relationship->handle)
+                    ?? throw new BusinessRecordNotFound();
                 $targetResolved = null;
                 $target = null;
                 if ($relationship->kind === RelationshipKind::OwnedLineCollection) {
@@ -872,7 +1042,9 @@ final readonly class BusinessRecordService
                         $resolved,
                         $source,
                         $relationship,
-                        $line->definition,
+                        $line,
+                        $access->related($relationship->handle)
+                            ?? throw new BusinessRecordNotFound(),
                         $command->targetRecordId,
                     ) ?? throw new BusinessRecordNotFound();
                     $targetKey = $identity->recordKey;
@@ -886,10 +1058,17 @@ final readonly class BusinessRecordService
                         $relationship->target,
                         $command->targetRecordId,
                         $command->organizationIdentifier,
+                        'business.record.relate',
                         true,
                         true,
                         $targetGeneration,
                     );
+                    if (
+                        !hash_equals($targetResolved->definition->id, $relatedAccess->resourceIdentifier)
+                        || !$relatedAccess->records->allows($target->values())
+                    ) {
+                        throw new BusinessRecordNotFound();
+                    }
                     $targetKey = $target->recordKey;
                 }
                 $write = $this->writes->unrelate(
@@ -979,15 +1158,18 @@ final readonly class BusinessRecordService
                 DateTimeImmutable $now,
                 BusinessRecordMutationGeneration $generation,
             ) use ($command): RecordMutationResult {
-                [$resolved, , $source] = $this->load(
+                [$resolved, , $source, $access] = $this->load(
                     $command->context,
                     $command->definitionIdentifier,
                     $command->recordId,
                     $command->organizationIdentifier,
+                    'business.record.relate',
                     generation: $generation,
                 );
                 $this->expected($source, $command->expectedVersion);
                 $relationship = $this->relationship($resolved->definition, $command->relationship);
+                $relatedAccess = $access->related($relationship->handle)
+                    ?? throw new BusinessRecordNotFound();
                 $keys = [];
                 $targetResolved = null;
                 if ($relationship->kind === RelationshipKind::OwnedLineCollection) {
@@ -997,7 +1179,9 @@ final readonly class BusinessRecordService
                             $resolved,
                             $source,
                             $relationship,
-                            $line->definition,
+                            $line,
+                            $access->related($relationship->handle)
+                                ?? throw new BusinessRecordNotFound(),
                             $recordId,
                         ) ?? throw new BusinessRecordNotFound();
                         $keys[] = $identity->recordKey;
@@ -1015,12 +1199,19 @@ final readonly class BusinessRecordService
                             $relationship->target,
                             $recordId,
                             $command->organizationIdentifier,
+                            'business.record.relate',
                             true,
                             true,
                             $targetGeneration,
                         );
                         if ($loadedTarget->definition->id !== $targetResolved->definition->id) {
                             throw new BusinessRecordReferenceConflict();
+                        }
+                        if (
+                            !hash_equals($loadedTarget->definition->id, $relatedAccess->resourceIdentifier)
+                            || !$relatedAccess->records->allows($target->values())
+                        ) {
+                            throw new BusinessRecordNotFound();
                         }
                         $this->sameScope($source, $target);
                         $keys[] = $target->recordKey;
@@ -1116,14 +1307,26 @@ final readonly class BusinessRecordService
             } catch (InvalidArgumentException) {
                 throw new BusinessRecordNotFound();
             }
-            $identity = $this->reads->identity($installed, $scope, $recordId, true);
+            $installedAccess = $this->recordAccess->plan(
+                $query->context,
+                'business.record.history',
+                $installed,
+                $scope,
+            );
+            $identity = $this->reads->identity($installed, $scope, $installedAccess, $recordId, true);
             if ($identity !== null) {
                 $pinned = $this->definitions->forHistory(
                     $query->context,
                     $query->definitionIdentifier,
                     $identity->definitionVersion,
                 );
-                $record = $this->reads->get($pinned, $scope, $recordId, true, true)
+                $access = $this->recordAccess->plan(
+                    $query->context,
+                    'business.record.history',
+                    $pinned,
+                    $scope,
+                );
+                $record = $this->reads->get($pinned, $scope, $access, $recordId, true, true)
                     ?? throw new BusinessRecordNotFound();
                 if (!hash_equals($identity->recordKey, $record->recordKey)) {
                     throw new BusinessRecordReferenceConflict();
@@ -1136,9 +1339,9 @@ final readonly class BusinessRecordService
                 );
             } else {
                 $revisions = $this->revisions->historyByIdentityDigest(
-                    $installed->definition->id,
-                    $query->context->site()->identifier(),
-                    $scope->organizationIdentifier,
+                    $installed,
+                    $scope,
+                    $installedAccess,
                     $this->fingerprints->digest($recordId),
                     $query->limit + 1,
                     $query->beforeVersion,
@@ -1153,6 +1356,21 @@ final readonly class BusinessRecordService
                 if (count($recordKeys) !== 1) {
                     throw new BusinessRecordReferenceConflict();
                 }
+                $latest = $revisions[0];
+                $pinned = $this->definitions->forHistory(
+                    $query->context,
+                    $query->definitionIdentifier,
+                    $latest->definitionVersion,
+                );
+                $access = $this->recordAccess->plan(
+                    $query->context,
+                    'business.record.history',
+                    $pinned,
+                    $scope,
+                );
+                if (!$access->records->allows($latest->snapshot())) {
+                    throw new BusinessRecordNotFound();
+                }
             }
             $hasMore = count($revisions) > $query->limit;
             if ($hasMore) {
@@ -1166,7 +1384,20 @@ final readonly class BusinessRecordService
                     $query->definitionIdentifier,
                     $revision->definitionVersion,
                 );
-                $views[] = BusinessRecordRevisionView::fromRevision($revision, $pinned->definition);
+                $revisionAccess = $this->recordAccess->plan(
+                    $query->context,
+                    'business.record.history',
+                    $pinned,
+                    $scope,
+                );
+                if (!$revisionAccess->records->allows($revision->snapshot())) {
+                    throw new BusinessRecordNotFound();
+                }
+                $views[] = BusinessRecordRevisionView::fromRevision(
+                    $revision,
+                    $pinned->definition,
+                    $revisionAccess->fields,
+                );
             }
 
             return new RecordHistoryResult($views, $hasMore);
@@ -1238,6 +1469,7 @@ final readonly class BusinessRecordService
                     $definitionIdentifier,
                     $recordId,
                     $organizationIdentifier,
+                    'business.record.' . $operation,
                     $operation !== 'archive',
                     $operation === 'restore',
                     $generation,
@@ -1256,6 +1488,10 @@ final readonly class BusinessRecordService
                     $record = $this->clearInboundSetNull($context, $resolved, $record, $now);
                     $updated = $record->softDeleted($context->actorId(), $now);
                     $this->writes->hardDelete($resolved, $record, $record->version);
+                    $this->ownership->remove(
+                        AuthorizationResource::item('business_record', $this->recordResourceIdentifier($record)),
+                        $context->site(),
+                    );
                 }
                 $this->recordMutation($context, $resolved, $updated, $operation, [], $now);
 
@@ -1274,9 +1510,10 @@ final readonly class BusinessRecordService
      * that every source is re-versioned and audited in its own right. What the declared delete behaviour
      * decides is which of three things happens: a cascading relationship is refused outright — whether or
      * not any row currently uses it — because non-owned cascade deletion needs a bounded workflow this
-     * path does not provide, a restricting one is left for the database to refuse at the delete itself,
-     * and only a set-null one is cleared here. The sweep is deliberately bounded, so a record too widely
-     * referenced fails the delete rather than growing one request's transaction without limit.
+     * path does not provide, a restricting one is detected through a one-row internal integrity probe, and
+     * only a set-null one is cleared here. That probe deliberately bypasses actor row disclosure: hidden
+     * referrers are never returned to the caller, but neither can they turn a later foreign-key failure into
+     * an existence side channel. The sweep is bounded, so a record too widely referenced fails the delete.
      *
      * @param   ExecutionContext            $context         Actor and site the sweep runs as.
      * @param   ResolvedBusinessDefinition  $targetResolved  Pinned definition of the record being deleted.
@@ -1321,19 +1558,31 @@ final readonly class BusinessRecordService
                         'Non-owned cascade deletion requires an explicit bounded delete workflow.',
                     );
                 }
-                if ($relationship->onDelete !== DeleteBehavior::SetNull) {
+                if (!in_array(
+                    $relationship->onDelete,
+                    [DeleteBehavior::Restrict, DeleteBehavior::SetNull],
+                    true,
+                )) {
                     continue;
                 }
                 $generation = $this->mutationFence->lock($context, $candidate->definition->handle);
                 $sourceInstalled = $this->definitions->forCreate($context, $candidate->definition->handle);
                 $generation->assertMatches($sourceInstalled);
-                $sources = $this->reads->referencing(
+                $sources = $this->reads->referencingForDeleteIntegrity(
                     $sourceInstalled,
                     $target->scope,
                     $relationship,
                     $target->recordKey,
-                    self::INBOUND_DELETE_LIMIT + 1,
+                    $relationship->onDelete === DeleteBehavior::Restrict
+                        ? 1
+                        : self::INBOUND_DELETE_LIMIT + 1,
                 );
+                if ($relationship->onDelete === DeleteBehavior::Restrict) {
+                    if ($sources !== []) {
+                        throw new BusinessRecordReferenceConflict($relationship->handle);
+                    }
+                    continue;
+                }
                 if (count($sources) > self::INBOUND_DELETE_LIMIT) {
                     throw new BusinessRelationshipRejected(
                         'Inbound set-null deletion exceeds the bounded synchronous relationship limit.',
@@ -1426,10 +1675,10 @@ final readonly class BusinessRecordService
         callable $effect,
     ): RecordMutationResult {
         $requestFingerprint = $this->fingerprints->digest($request);
-        $authorizationFingerprint = $context->authorizationFingerprint();
+        $authenticatedOrganization = $context->organization()?->identifier();
         $scopeDigest = $this->fingerprints->digest([
             'site' => $context->site()->identifier(),
-            'organization' => $organizationIdentifier,
+            'organization' => $authenticatedOrganization,
             'actor' => $context->actorId(),
             'operation' => $operation,
             'key' => $key->value(),
@@ -1445,9 +1694,22 @@ final readonly class BusinessRecordService
                     $effect,
                     $scopeDigest,
                     $requestFingerprint,
-                    $authorizationFingerprint,
+                    $authenticatedOrganization,
                 ): RecordMutationResult {
                     $generation = $this->mutationFence->lock($context, $definitionIdentifier);
+                    $resolved = $this->definitions->forCreate($context, $definitionIdentifier);
+                    $generation->assertMatches($resolved);
+                    $scope = $this->scope($resolved, $context, $organizationIdentifier);
+                    $policyOperation = in_array(
+                        $operation,
+                        ['business.record.unrelate', 'business.record.reorder'],
+                        true,
+                    ) ? 'business.record.relate' : $operation;
+                    $access = $this->recordAccess->plan($context, $policyOperation, $resolved, $scope);
+                    $authorizationFingerprint = $this->fingerprints->digest([
+                        'context' => $context->authorizationFingerprint(),
+                        'record_access' => $access->digest(),
+                    ]);
                     $now = $this->clock->now();
                     $existing = $this->idempotency->find($scopeDigest);
                     if ($existing !== null) {
@@ -1462,7 +1724,7 @@ final readonly class BusinessRecordService
                         Uuid::uuid7()->toString(),
                         $scopeDigest,
                         $context->site()->identifier(),
-                        $organizationIdentifier,
+                        $authenticatedOrganization,
                         $context->actorId(),
                         $operation,
                         $key->value(),
@@ -1564,6 +1826,8 @@ final readonly class BusinessRecordService
      *          resolve, before normalization.
      * @param   ?string                            $organizationIdentifier  Organization the row must
      *          belong to, or null for a definition that carries no organization scope.
+     * @param   string                             $operation               Operation whose row and field
+     *          policy must admit the record.
      * @param   bool                               $includeArchived         True to also reach an archived
      *          row.
      * @param   bool                               $includeDeleted          True to also reach a
@@ -1571,8 +1835,8 @@ final readonly class BusinessRecordService
      * @param   ?BusinessRecordMutationGeneration  $generation              Generation the caller's fence
      *          observed, asserted against the resolved definition; null when the caller holds no fence.
      *
-     * @return  array{ResolvedBusinessDefinition, RecordScope, BusinessRecord}  The definition pinned to the
-     *          version the row was written under, the scope it was read in, and the decoded record.
+     * @return  array{ResolvedBusinessDefinition, RecordScope, BusinessRecord, BusinessRecordAccessPlan}
+     *          The pinned definition, exact scope, decoded record and operation-specific access decision.
      *
      * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordDefinitionUnavailable  When no
      *          definition on this site matches the identifier, or the pinned version is not published.
@@ -1595,6 +1859,7 @@ final readonly class BusinessRecordService
         string $definitionIdentifier,
         string $recordId,
         ?string $organizationIdentifier,
+        string $operation,
         bool $includeArchived = false,
         bool $includeDeleted = false,
         ?BusinessRecordMutationGeneration $generation = null,
@@ -1602,6 +1867,7 @@ final readonly class BusinessRecordService
         $installed = $this->definitions->forCreate($context, $definitionIdentifier);
         $generation?->assertMatches($installed);
         $scope = $this->scope($installed, $context, $organizationIdentifier);
+        $installedAccess = $this->recordAccess->plan($context, $operation, $installed, $scope);
         try {
             $normalizedId = $this->values->identity(
                 $installed->definition,
@@ -1611,16 +1877,18 @@ final readonly class BusinessRecordService
         } catch (InvalidArgumentException) {
             throw new BusinessRecordNotFound();
         }
-        $identity = $this->reads->identity($installed, $scope, $normalizedId, $includeDeleted)
+        $identity = $this->reads->identity($installed, $scope, $installedAccess, $normalizedId, $includeDeleted)
             ?? throw new BusinessRecordNotFound();
         $resolved = $this->definitions->pinned($context, $definitionIdentifier, $identity->definitionVersion);
         $pinnedScope = $this->scope($resolved, $context, $organizationIdentifier);
         if ($pinnedScope->toArray() !== $scope->toArray()) {
             throw new BusinessRecordReferenceConflict();
         }
+        $access = $this->recordAccess->plan($context, $operation, $resolved, $pinnedScope);
         $record = $this->reads->get(
             $resolved,
             $pinnedScope,
+            $access,
             $normalizedId,
             $includeArchived,
             $includeDeleted,
@@ -1628,8 +1896,11 @@ final readonly class BusinessRecordService
         if (!hash_equals($record->recordKey, $identity->recordKey)) {
             throw new BusinessRecordReferenceConflict();
         }
+        if (!$access->records->allows($record->values())) {
+            throw new BusinessRecordNotFound();
+        }
 
-        return [$resolved, $pinnedScope, $record];
+        return [$resolved, $pinnedScope, $record, $access];
     }
 
     /**
@@ -1658,10 +1929,27 @@ final readonly class BusinessRecordService
         ?string $organizationIdentifier,
     ): RecordScope {
         try {
+            $organizationScoped = in_array(
+                $resolved->definition->scope,
+                [ScopeMode::Organization, ScopeMode::SiteOrganization],
+                true,
+            );
+            $authenticatedOrganization = $context->organization()?->identifier();
+            if (
+                ($organizationScoped && $authenticatedOrganization === null)
+                || ($organizationScoped
+                    && $organizationIdentifier !== null
+                    && $organizationIdentifier !== $authenticatedOrganization)
+                || (!$organizationScoped && $organizationIdentifier !== null)
+            ) {
+                throw new InvalidArgumentException(
+                    'The request does not match its authenticated organization context.',
+                );
+            }
             return RecordScope::forDefinition(
                 $resolved->definition->scope,
                 $context->site(),
-                $organizationIdentifier,
+                $organizationScoped ? $authenticatedOrganization : null,
             );
         } catch (InvalidArgumentException $exception) {
             throw new BusinessRecordValidationFailed([
@@ -1732,12 +2020,18 @@ final readonly class BusinessRecordService
                 $target = $this->definitions->forCreate($context, $targetHandle);
                 $targetGeneration->assertMatches($target);
                 $targetScope = $this->scope($target, $context, $scope->organizationIdentifier);
+                $targetAccess = $this->recordAccess->plan(
+                    $context,
+                    'business.record.read',
+                    $target,
+                    $targetScope,
+                );
                 $targetId = $this->values->identity(
                     $target->definition,
                     [$this->identityField($target->definition)->handle => $value],
                     null,
                 );
-                $identity = $this->reads->identity($target, $targetScope, $targetId);
+                $identity = $this->reads->identity($target, $targetScope, $targetAccess, $targetId);
                 if ($identity === null) {
                     throw new BusinessRecordNotFound();
                 }
@@ -1758,19 +2052,41 @@ final readonly class BusinessRecordService
     }
 
     /**
-     * Refuse the mutation unless the record still sits at the version the caller read.
+     * Reject a submitted field set without revealing which handle was absent or forbidden.
      *
-     * This is the optimistic-concurrency check made in application code, before any write is attempted;
-     * the write repository re-checks the same version inside its own statement, so a request that loses
-     * the race between these two points is still rejected rather than applied.
+     * @param   BusinessRecordAccessPlan  $access  Authoritative field-use decision for the operation.
+     * @param   FieldAccessUsage          $usage   Create or update use being attempted.
+     * @param   list<string>              $fields  Caller-submitted handles.
+     *
+     * @return  void
+     *
+     * @throws  BusinessRecordValidationFailed  With one generic violation when any handle is unavailable.
+     *
+     * @since   2.0.0
+     */
+    private function assertFieldInput(
+        BusinessRecordAccessPlan $access,
+        FieldAccessUsage $usage,
+        array $fields,
+    ): void {
+        foreach ($fields as $field) {
+            if (!$access->fields->allows($usage, $field)) {
+                throw new BusinessRecordValidationFailed([
+                    new ValidationViolation('record', 'field_access', 'One or more submitted fields are unavailable.'),
+                ]);
+            }
+        }
+    }
+
+    /**
+     * Refuse the mutation unless the record still sits at the version the caller read.
      *
      * @param   BusinessRecord  $record           Record as it was just loaded.
      * @param   int             $expectedVersion  Version the caller submitted the mutation against.
      *
      * @return  void
      *
-     * @throws  BusinessRecordVersionConflict  Carrying both versions, when the stored record has moved
-     *          past the one the caller expected.
+     * @throws  BusinessRecordVersionConflict  When the stored record moved past the expected version.
      *
      * @since   2.0.0
      */
@@ -2119,6 +2435,58 @@ final readonly class BusinessRecordService
     {
         return $definition->runtimeRelationship($handle)
             ?? throw new BusinessRelationshipRejected('The relationship is not declared by the pinned definition.');
+    }
+
+    /**
+     * Rebuild the non-transferable binding shared by approval request and action execution.
+     *
+     * @param   ExecuteRecordActionCommand  $command  Validated action attempt.
+     * @param   BusinessRecord              $record   Policy-visible current record version.
+     * @param   ActionDefinition            $action   Immutable definition-declared action.
+     *
+     * @return  ApprovalBinding  Exact actor, scope, action, record, version, and payload binding.
+     *
+     * @since   2.0.0
+     */
+    private function actionApprovalBinding(
+        ExecuteRecordActionCommand $command,
+        BusinessRecord $record,
+        ActionDefinition $action,
+    ): ApprovalBinding {
+        return ApprovalBinding::fromContext(
+            $command->context,
+            'business.record.action:' . $action->handle,
+            'business_record',
+            $this->recordResourceIdentifier($record),
+            $record->version,
+            $this->fingerprints->digest([
+                'definition_id' => $record->definitionId,
+                'definition_version' => $record->definitionVersion,
+                'record_key' => $record->recordKey,
+                'record_id' => $record->recordId,
+                'record_version' => $record->version,
+                'action' => $action->handle,
+                'input' => $command->input,
+            ]),
+        );
+    }
+
+    /**
+     * Build the collision-safe authorization identity shared by ownership and record approvals.
+     *
+     * Record keys are unique only within a definition's physical table, so a bare UUID cannot identify
+     * one resource across the site-wide ownership registry. Pairing the immutable definition UUID with
+     * the storage key keeps two definitions free to carry the same caller-selected UUID record key.
+     *
+     * @param   BusinessRecord  $record  Record whose authorization resource is addressed.
+     *
+     * @return  string  `<definition UUID>:<record key UUID>`.
+     *
+     * @since   2.0.0
+     */
+    private function recordResourceIdentifier(BusinessRecord $record): string
+    {
+        return $record->definitionId . ':' . $record->recordKey;
     }
 
     /**

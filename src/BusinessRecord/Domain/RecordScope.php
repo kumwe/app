@@ -15,7 +15,7 @@ use Kumwe\CMS\BusinessDefinition\Domain\ScopeMode;
  * concrete stored row, and it is what the query compiler binds into the `site_identifier` and
  * `organization_identifier` predicates of every record statement and what the record itself carries.
  * The constructor is private, so an instance has come either through `forDefinition()` on the request
- * path, where the site is taken from the execution context rather than from caller input, or through
+ * path, where site and organization are taken from the execution context rather than caller input, or through
  * `reconstitute()` on the read path. Both refuse any combination of identifiers the mode does not
  * describe, so a record can never be written, read, or compared outside the scope its definition
  * declares.
@@ -45,15 +45,15 @@ final readonly class RecordScope
     /**
      * Derive the scope a request runs under from the definition's mode and the caller's site.
      *
-     * The site half is read off the execution context, so a request cannot name a site it is not
-     * already running in; only the organization is caller-supplied, and it is trimmed and matched
-     * against a narrow identifier pattern before it is accepted. The mode decides which dimensions are
+     * Both values must be supplied from the execution context by the application service, so a request
+     * cannot establish either scope. The organization is trimmed and matched against a narrow identifier
+     * pattern before it is accepted. The mode decides which dimensions are
      * mandatory: an organization is required exactly when the mode carries one, and rejected otherwise,
      * rather than being ignored.
      *
      * @param   ScopeMode    $mode                    Scope dimensions declared by the business definition.
      * @param   SiteContext  $site                    Site the operation is executing against.
-     * @param   ?string      $organizationIdentifier  Organization the caller asked to work in, or null.
+     * @param   ?string      $organizationIdentifier  Authenticated organization, or null.
      *
      * @return  self  Scope carrying the context's site for site-bearing modes and null elsewhere.
      *
