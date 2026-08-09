@@ -25,16 +25,65 @@ use Normalizer;
 use Ramsey\Uuid\Uuid;
 use Throwable;
 
+/**
+ * Two-way translation between business-record field values and the portable columns that store them.
+ *
+ * Every value crossing the record boundary passes through here: `normalize()` settles what a submitted
+ * value must become for its declared field type, `encodeColumns()` spreads normalized values across the
+ * physical columns a `PhysicalTableBlueprint` installed, and `decodeColumns()` rebuilds field values from
+ * a fetched row. The guarantees are representational rather than policy: a PHP float is refused outright
+ * so decimal, money, and quantity fields keep every digit they promised, lengths and formats are bounded
+ * before a value reaches a driver, and a secret is sealed through `SecretCipher` on the way in and handed
+ * back still sealed on the way out, so neither plaintext nor key ever reaches persistence. Required,
+ * immutable, and read-only rules belong to `RecordRuleValidator`; identity resolution and the keyset
+ * cursor conversions live here because both are the same field-type-to-column question.
+ *
+ * @since  2.0.0
+ */
 final readonly class RecordValueCodec
 {
+    /**
+     * Field types this codec resolves contributed, non-`core.*` type identifiers against.
+     *
+     * @var    FieldTypeRegistry
+     * @since  2.0.0
+     */
     private FieldTypeRegistry $fieldTypes;
 
+    /**
+     * Wire the codec to the cipher guarding secret fields and the registry of known field types.
+     *
+     * @param  SecretCipher        $secrets     Cipher sealing every `core.secret` value before storage.
+     * @param  ?FieldTypeRegistry  $fieldTypes  Registry resolving contributed field types; null builds one
+     *         seeded with the core built-ins.
+     *
+     * @since  2.0.0
+     */
     public function __construct(private SecretCipher $secrets, ?FieldTypeRegistry $fieldTypes = null)
     {
         $this->fieldTypes = $fieldTypes ?? new FieldTypeRegistry();
     }
 
-    /** @param array<string, mixed> $input */
+    /**
+     * Settle the caller-facing identity of a record from its declared identity field.
+     *
+     * A UUID definition lowercases whatever it is given and mints a UUIDv7 when neither the request nor
+     * the submitted values name one, so a create needs no identity at all. A reference-identity
+     * definition has no such fallback: the identity is authored, runs through the field's normalizers,
+     * and must fit the field's length. Where a requested record id and an identity-field value both
+     * arrive they must agree, which is what stops a URL and a payload from naming different records.
+     *
+     * @param   EntityTypeDefinition  $definition         Definition whose strategy decides the rules.
+     * @param   array<string, mixed>  $input              Submitted field values keyed by handle.
+     * @param   ?string               $requestedRecordId  Identity named by the request, or null.
+     *
+     * @return  string  Lowercased UUID, or the normalized reference identity; never empty.
+     *
+     * @throws  InvalidArgumentException  When the identity is not a string, is an invalid UUID, is absent
+     *          or over length for a reference identity, or disagrees with the requested record id.
+     *
+     * @since   2.0.0
+     */
     public function identity(
         EntityTypeDefinition $definition,
         array $input,
@@ -75,6 +124,30 @@ final readonly class RecordValueCodec
         return $identity;
     }
 
+    /**
+     * Convert one submitted value into the representation its field type stores.
+     *
+     * Null passes straight through, and a PHP float is refused before anything else so that no exact
+     * field can quietly lose digits. The field's declared normalizers run first, then the value is
+     * admitted against its type. `core.ordered_lines` is refused outright, because owned lines are
+     * written by the relationship and reorder commands rather than as a field value.
+     *
+     * @param   FieldDefinition  $field           Field contract the value is admitted against.
+     * @param   mixed            $value           Submitted value, or null.
+     * @param   string           $siteIdentifier  Site owning the record; only used to bind a secret.
+     * @param   string           $definitionId    Definition UUID; only used to bind a secret.
+     * @param   string           $recordId        Record identity; only used to bind a secret.
+     *
+     * @return  mixed  Null, a scalar, or the domain value object the type stores, such as `ExactDecimal`,
+     *          `MoneyValue`, `ZonedDateTimeValue`, `DateTimeImmutable`, or a sealed `EncryptedEnvelope`.
+     *
+     * @throws  InvalidArgumentException  When the value is a float, breaks the field's type, length,
+     *          format, or option rules, or the field names a normalizer this codec does not implement.
+     * @throws  \Kumwe\CMS\BusinessDefinition\Domain\InvalidBusinessDefinition  When a contributed field
+     *          type is not registered in this process.
+     *
+     * @since   2.0.0
+     */
     public function normalize(
         FieldDefinition $field,
         mixed $value,
@@ -119,8 +192,22 @@ final readonly class RecordValueCodec
     }
 
     /**
-     * @param array<string, mixed> $values
-     * @return array<string, mixed> Physical column names to DBAL values.
+     * Spread a record's normalized values across the physical columns that hold them.
+     *
+     * A field is skipped when the submitted values do not mention it, when it is the UUID identity whose
+     * value already lives in the table's record key, when it is a virtual computation with no column of
+     * its own, or when the installed table carries no column for it. Composite types fan out: money,
+     * quantity, zoned date-time, and secret fields each write several columns from one value.
+     *
+     * @param   EntityTypeDefinition    $definition  Definition naming the fields, in declared order.
+     * @param   PhysicalTableBlueprint  $table       Installed table the logical names resolve against.
+     * @param   array<string, mixed>    $values
+     *
+     * @return  array<string, mixed>  Physical column names to DBAL values.
+     *
+     * @throws  InvalidArgumentException  When a value is not the domain type its field normalizes to.
+     *
+     * @since   2.0.0
      */
     public function encodeColumns(
         EntityTypeDefinition $definition,
@@ -154,8 +241,28 @@ final readonly class RecordValueCodec
     }
 
     /**
-     * @param array<string, mixed> $row
-     * @return array<string, mixed>
+     * Rebuild a record's field values from one fetched row.
+     *
+     * The inverse of `encodeColumns()`. A UUID definition takes its identity from the record key rather
+     * than from a column, ordered-line and virtual computed fields are skipped, and a field whose every
+     * physical column came back NULL decodes to null. Secret fields are returned as sealed
+     * `EncryptedEnvelope` values — nothing is decrypted here — so the site and record coordinates are
+     * carried for symmetry with the encode path rather than consumed on this side.
+     *
+     * @param   EntityTypeDefinition    $definition      Definition naming the fields to rebuild.
+     * @param   PhysicalTableBlueprint  $table           Installed table the row was fetched from.
+     * @param   array<string, mixed>    $row
+     * @param   string                  $siteIdentifier  Site owning the record.
+     * @param   string                  $recordKey       Storage key of the row, and a UUID identity.
+     *
+     * @return  array<string, mixed>  Field values keyed by handle; a handle is absent when the row
+     *          selected none of its columns.
+     *
+     * @throws  InvalidArgumentException  When a stored value contradicts the physical type declared for
+     *          its column, or a component of a composite field is missing from the row.
+     * @throws  \DateMalformedStringException  When a stored date-time column holds an unparsable string.
+     *
+     * @since   2.0.0
      */
     public function decodeColumns(
         EntityTypeDefinition $definition,
@@ -203,6 +310,26 @@ final readonly class RecordValueCodec
         return $values;
     }
 
+    /**
+     * Convert a stored column value into the portable form a keyset cursor carries.
+     *
+     * A cursor is handed to the client and comes back later, so every sort value has to survive a JSON
+     * round trip: temporal columns become canonical strings, bigints and decimals keep their exact
+     * spelling instead of becoming floats, and a binary or structured column is refused rather than
+     * truncated, which is what keeps such fields out of sortable positions.
+     *
+     * @param   PhysicalColumnBlueprint  $column  Column read from; its Doctrine type picks the rule.
+     * @param   mixed                    $value   Raw driver value from the last row of the page.
+     *
+     * @return  mixed  Null when the column was NULL, otherwise a bool, int, or string safe to embed in
+     *          a cursor payload.
+     *
+     * @throws  InvalidArgumentException  When the stored value contradicts the column's declared type,
+     *          or that column type cannot appear in a cursor at all.
+     * @throws  \DateMalformedStringException  When a stored date-time column holds an unparsable string.
+     *
+     * @since   2.0.0
+     */
     public function cursorValue(PhysicalColumnBlueprint $column, mixed $value): mixed
     {
         $decoded = $this->decodePhysical($column, $value);
@@ -228,6 +355,23 @@ final readonly class RecordValueCodec
         };
     }
 
+    /**
+     * Convert a value read back out of a cursor into the form its column is bound with.
+     *
+     * The inverse of `cursorValue()`. A cursor is signed but still arrives from outside, so each value is
+     * re-admitted through the same rules a submitted value faces before it becomes a query parameter.
+     *
+     * @param   PhysicalColumnBlueprint  $column  Column the value will be compared against.
+     * @param   mixed                    $value   Sort value decoded from the cursor, or null.
+     *
+     * @return  mixed  Null when the cursor carried null, otherwise the bool, int, string, or
+     *          `DateTimeImmutable` that DBAL binds for that column.
+     *
+     * @throws  InvalidArgumentException  When the value does not fit the column's declared type, or that
+     *          column type cannot appear in a cursor at all.
+     *
+     * @since   2.0.0
+     */
     public function cursorStorageValue(PhysicalColumnBlueprint $column, mixed $value): mixed
     {
         if ($value === null) {
@@ -252,7 +396,23 @@ final readonly class RecordValueCodec
         };
     }
 
-    /** @param array<string, mixed> $values */
+    /**
+     * Report the identity a caller sees for a record that has just been decoded.
+     *
+     * A UUID definition stores its identity as the record key itself, so the decoded values are not
+     * consulted at all. A reference-identity definition keeps it in a field of its own, and a row that
+     * decoded no usable value there is treated as corrupt rather than as a record without an identity.
+     *
+     * @param   EntityTypeDefinition  $definition  Definition whose strategy decides the source.
+     * @param   string                $recordKey   Storage key of the row.
+     * @param   array<string, mixed>  $values
+     *
+     * @return  string  Identity to hand back to callers; never empty.
+     *
+     * @throws  InvalidArgumentException  When a reference-identity record decoded no usable identity.
+     *
+     * @since   2.0.0
+     */
     public function publicIdentity(
         EntityTypeDefinition $definition,
         string $recordKey,
@@ -270,6 +430,21 @@ final readonly class RecordValueCodec
         return $value;
     }
 
+    /**
+     * Run a field's normalizers over a string and keep the result a string.
+     *
+     * The normalizer pipeline is typed to accept any value, so its result is narrowed again here before
+     * an identity is built out of it.
+     *
+     * @param   string           $value  Text to normalize.
+     * @param   FieldDefinition  $field  Field whose declared normalizers are applied.
+     *
+     * @return  string  The normalized text.
+     *
+     * @throws  InvalidArgumentException  When a normalizer is unknown, or leaves a non-string behind.
+     *
+     * @since   2.0.0
+     */
     private function normalizeString(string $value, FieldDefinition $field): string
     {
         $normalized = $this->applyNormalizers($value, $field);
@@ -278,6 +453,23 @@ final readonly class RecordValueCodec
             : throw new InvalidArgumentException('String normalization produced a non-string value.');
     }
 
+    /**
+     * Run a field's declared normalizers over a submitted value, in declaration order.
+     *
+     * `decimal_scale` is an assertion rather than a transformation: it only insists the value arrived as
+     * an exact type, so a float can never be rounded into a decimal field. Every other normalizer is
+     * textual and demands a string, which is why a mistyped value fails here rather than later.
+     *
+     * @param   mixed            $value  Submitted value, before any type admission.
+     * @param   FieldDefinition  $field  Field carrying the normalizer list.
+     *
+     * @return  mixed  The value after every normalizer has run, unchanged when the field declares none.
+     *
+     * @throws  InvalidArgumentException  When `decimal_scale` meets an inexact value, a text normalizer
+     *          meets a non-string, phone normalization fails, or a normalizer is not implemented here.
+     *
+     * @since   2.0.0
+     */
     private function applyNormalizers(mixed $value, FieldDefinition $field): mixed
     {
         foreach ($field->normalizers as $normalizer) {
@@ -308,6 +500,20 @@ final readonly class RecordValueCodec
         return $value;
     }
 
+    /**
+     * Fold a string into Unicode normalization form C.
+     *
+     * Composed form is what makes two visually identical strings compare, hash, and index as one value,
+     * so an identity or unique field agrees with the database rather than with the keystrokes typed.
+     *
+     * @param   string  $value  Text in any Unicode form.
+     *
+     * @return  string  The composed form of the input.
+     *
+     * @throws  InvalidArgumentException  When the intl normalizer cannot process the value.
+     *
+     * @since   2.0.0
+     */
     private function unicodeNfc(string $value): string
     {
         $normalized = Normalizer::normalize($value, Normalizer::FORM_C);
@@ -318,6 +524,17 @@ final readonly class RecordValueCodec
         return $normalized;
     }
 
+    /**
+     * Admit a canonical UUID and fold it to lowercase.
+     *
+     * @param   mixed  $value  Submitted reference value.
+     *
+     * @return  string  The UUID in lowercase, the spelling every stored key uses.
+     *
+     * @throws  InvalidArgumentException  When the value is not a string, or is not a valid UUID.
+     *
+     * @since   2.0.0
+     */
     private function uuid(mixed $value): string
     {
         if (!is_string($value) || !Uuid::isValid($value)) {
@@ -327,6 +544,21 @@ final readonly class RecordValueCodec
         return strtolower($value);
     }
 
+    /**
+     * Admit a string no longer than the character budget its field declares.
+     *
+     * Length is counted in UTF-8 characters rather than bytes, so the limit means the same thing to an
+     * author whatever alphabet they write in.
+     *
+     * @param   mixed  $value  Submitted value.
+     * @param   int    $limit  Largest number of UTF-8 characters accepted.
+     *
+     * @return  string  The value unchanged.
+     *
+     * @throws  InvalidArgumentException  When the value is not a string, or exceeds the limit.
+     *
+     * @since   2.0.0
+     */
     private function boundedString(mixed $value, int $limit): string
     {
         if (!is_string($value) || mb_strlen($value, 'UTF-8') > $limit) {
@@ -336,6 +568,23 @@ final readonly class RecordValueCodec
         return $value;
     }
 
+    /**
+     * Admit the identity one record uses to point at another.
+     *
+     * The value is bounded to 191 characters however much the field declares, which is the widest
+     * identity a reference may carry, and control characters are refused so a stored pointer cannot
+     * smuggle terminators into a log line or a URL.
+     *
+     * @param   mixed            $value  Submitted reference identity.
+     * @param   FieldDefinition  $field  Field declaring the length budget.
+     *
+     * @return  string  The bounded identity, unchanged.
+     *
+     * @throws  InvalidArgumentException  When the value is not a bounded string, is empty, or carries
+     *          control characters.
+     *
+     * @since   2.0.0
+     */
     private function referenceIdentity(mixed $value, FieldDefinition $field): string
     {
         $value = $this->boundedString($value, min($field->length ?? 191, 191));
@@ -346,6 +595,18 @@ final readonly class RecordValueCodec
         return $value;
     }
 
+    /**
+     * Admit an integer every supported engine can hold in a 32-bit column.
+     *
+     * @param   mixed  $value  Submitted value.
+     *
+     * @return  int  The value unchanged.
+     *
+     * @throws  InvalidArgumentException  When the value is not an integer, or falls outside the portable
+     *          signed 32-bit range.
+     *
+     * @since   2.0.0
+     */
     private function integer(mixed $value): int
     {
         if (!is_int($value) || $value < -2_147_483_648 || $value > 2_147_483_647) {
@@ -355,6 +616,25 @@ final readonly class RecordValueCodec
         return $value;
     }
 
+    /**
+     * Admit an exact base-10 value at the precision and scale its field declares.
+     *
+     * An `ExactDecimal` carrying a different precision or scale is refused rather than re-scaled, because
+     * rescaling is the one operation that could drop a digit the field promised to keep. Integers and
+     * string literals are canonicalised through the `ExactDecimal` factories; floats never arrive here,
+     * having been refused by `normalize()`.
+     *
+     * @param   mixed            $value  An `ExactDecimal`, an integer, or a decimal literal.
+     * @param   FieldDefinition  $field  Field declaring the precision and scale.
+     *
+     * @return  ExactDecimal  The canonical value, padded to the field scale.
+     *
+     * @throws  InvalidArgumentException  When an exact value carries a different precision or scale, the
+     *          value is neither string nor integer, the field declares no precision or scale, or the
+     *          literal does not fit the declared budget.
+     *
+     * @since   2.0.0
+     */
     private function decimal(mixed $value, FieldDefinition $field): ExactDecimal
     {
         if ($value instanceof ExactDecimal) {
@@ -373,6 +653,23 @@ final readonly class RecordValueCodec
         return ExactDecimal::fromString($value, $this->precision($field), $this->scale($field));
     }
 
+    /**
+     * Admit a money value as an amount and currency pair.
+     *
+     * A `MoneyValue` is taken as already settled. An object form must carry exactly `amount` and
+     * `currency`, so a payload that forgets the currency or smuggles an extra key is refused instead of
+     * half stored; its code is uppercased, and where the field pins a currency the two must match.
+     *
+     * @param   mixed            $value  A `MoneyValue`, or an object with `amount` and `currency`.
+     * @param   FieldDefinition  $field  Field declaring precision, scale, and any pinned currency.
+     *
+     * @return  MoneyValue  The pair, with its amount canonicalised to the field scale.
+     *
+     * @throws  InvalidArgumentException  When the properties are missing, extra, or mistyped, the amount
+     *          is not exact, or the currency is not an ISO 4217 code or is not the one the field pins.
+     *
+     * @since   2.0.0
+     */
     private function money(mixed $value, FieldDefinition $field): MoneyValue
     {
         if ($value instanceof MoneyValue) {
@@ -398,6 +695,23 @@ final readonly class RecordValueCodec
         return $money;
     }
 
+    /**
+     * Admit a quantity as an amount and unit pair.
+     *
+     * A `QuantityValue` is taken as already settled. An object form must carry exactly `amount` and
+     * `unit`, so a bare number can never be stored as though its unit were obvious, and where the field
+     * pins a unit the two must match exactly, case included, because unit symbols are case bearing.
+     *
+     * @param   mixed            $value  A `QuantityValue`, or an object with `amount` and `unit`.
+     * @param   FieldDefinition  $field  Field declaring precision, scale, and any pinned unit.
+     *
+     * @return  QuantityValue  The pair, with its amount canonicalised to the field scale.
+     *
+     * @throws  InvalidArgumentException  When the properties are missing, extra, or mistyped, the amount
+     *          is not exact, or the unit is not a portable identifier or is not the one the field pins.
+     *
+     * @since   2.0.0
+     */
     private function quantity(mixed $value, FieldDefinition $field): QuantityValue
     {
         if ($value instanceof QuantityValue) {
@@ -422,6 +736,17 @@ final readonly class RecordValueCodec
         return $quantity;
     }
 
+    /**
+     * Admit a boolean without coercing the strings and integers a caller might offer instead.
+     *
+     * @param   mixed  $value  Submitted value.
+     *
+     * @return  bool  The value unchanged.
+     *
+     * @throws  InvalidArgumentException  When the value is not a PHP boolean.
+     *
+     * @since   2.0.0
+     */
     private function boolean(mixed $value): bool
     {
         if (!is_bool($value)) {
@@ -431,6 +756,21 @@ final readonly class RecordValueCodec
         return $value;
     }
 
+    /**
+     * Admit a value the field's declared option list contains.
+     *
+     * Membership is compared strictly, so a digit string never matches an integer option.
+     *
+     * @param   mixed            $value  Submitted option value.
+     * @param   FieldDefinition  $field  Field whose `options` configuration lists what is allowed.
+     *
+     * @return  string  The chosen option, unchanged.
+     *
+     * @throws  InvalidArgumentException  When the value is not a bounded string, or is outside the
+     *          declared options.
+     *
+     * @since   2.0.0
+     */
     private function enumeration(mixed $value, FieldDefinition $field): string
     {
         $value = $this->boundedString($value, $field->length ?? 191);
@@ -442,6 +782,23 @@ final readonly class RecordValueCodec
         return $value;
     }
 
+    /**
+     * Admit a calendar date carrying no time of day.
+     *
+     * A `DateTimeImmutable` is accepted only when it sits exactly at midnight, and a string must be
+     * canonical `YYYY-MM-DD` — a shape such as `2026-2-3` is refused rather than repaired, so what is
+     * stored is always what was written. The year is held to 1000-9999, the range every supported engine
+     * stores identically.
+     *
+     * @param   mixed  $value  Submitted date.
+     *
+     * @return  DateTimeImmutable  The day at midnight; a parsed string is built in UTC.
+     *
+     * @throws  InvalidArgumentException  When the value is neither a midnight instant nor a canonical
+     *          date string, or its year is outside the portable range.
+     *
+     * @since   2.0.0
+     */
     private function date(mixed $value): DateTimeImmutable
     {
         if ($value instanceof DateTimeImmutable && $value->format('H:i:s.u') === '00:00:00.000000') {
@@ -461,6 +818,22 @@ final readonly class RecordValueCodec
         return $date;
     }
 
+    /**
+     * Admit a local time of day, carrying no date and no zone.
+     *
+     * A `DateTimeImmutable` is taken as given. A string must be canonical `HH:MM:SS`, optionally with
+     * microseconds, and is re-rendered and compared against what arrived, so a shape such as `9:05:00`
+     * is refused rather than repaired.
+     *
+     * @param   mixed  $value  Submitted time.
+     *
+     * @return  DateTimeImmutable  Instant carrying the time of day; only its time part is stored.
+     *
+     * @throws  InvalidArgumentException  When the value is neither an instant nor a canonical time
+     *          string.
+     *
+     * @since   2.0.0
+     */
     private function time(mixed $value): DateTimeImmutable
     {
         if ($value instanceof DateTimeImmutable) {
@@ -478,6 +851,22 @@ final readonly class RecordValueCodec
         return $time;
     }
 
+    /**
+     * Admit a point in time and express it in UTC.
+     *
+     * A string must be RFC 3339 with a `Z` or `+00:00` offset, checked before parsing so a local-looking
+     * timestamp is never reinterpreted against the server's zone. Parser warnings count as failures,
+     * because they are how an impossible date such as a 31st of February arrives looking successful.
+     *
+     * @param   mixed  $value  Submitted instant.
+     *
+     * @return  DateTimeImmutable  The same moment, carried in UTC.
+     *
+     * @throws  InvalidArgumentException  When the value is neither an instant nor an RFC 3339 UTC
+     *          string, the parse raised warnings, or the year is outside the portable range.
+     *
+     * @since   2.0.0
+     */
     private function instant(mixed $value): DateTimeImmutable
     {
         if ($value instanceof DateTimeImmutable) {
@@ -512,6 +901,15 @@ final readonly class RecordValueCodec
         return $instant->setTimezone(new DateTimeZone('UTC'));
     }
 
+    /**
+     * Report whether a year fits the range every supported engine stores identically.
+     *
+     * @param   DateTimeImmutable  $value  Instant whose year is examined.
+     *
+     * @return  bool  True when the year is between 1000 and 9999 inclusive.
+     *
+     * @since   2.0.0
+     */
     private function portableYear(DateTimeImmutable $value): bool
     {
         $year = (int) $value->format('Y');
@@ -519,6 +917,22 @@ final readonly class RecordValueCodec
         return $year >= 1000 && $year <= 9999;
     }
 
+    /**
+     * Admit an instant paired with the IANA zone it was authored in.
+     *
+     * A `ZonedDateTimeValue` is taken as already settled; an object form must carry exactly `instant`
+     * and `timezone`. Keeping the zone name rather than a fixed offset is what lets the value still be
+     * rendered as its author meant after that zone changes its rules.
+     *
+     * @param   mixed  $value  A `ZonedDateTimeValue`, or an object with `instant` and `timezone`.
+     *
+     * @return  ZonedDateTimeValue  The pair, with its instant normalised to UTC.
+     *
+     * @throws  InvalidArgumentException  When the properties are missing, extra, or not strings, or the
+     *          instant or zone name is invalid.
+     *
+     * @since   2.0.0
+     */
     private function zonedDateTime(mixed $value): ZonedDateTimeValue
     {
         if ($value instanceof ZonedDateTimeValue) {
@@ -538,6 +952,19 @@ final readonly class RecordValueCodec
         return ZonedDateTimeValue::fromStrings($value['instant'], $value['timezone']);
     }
 
+    /**
+     * Admit an address the platform's email validator accepts.
+     *
+     * @param   mixed            $value  Submitted address.
+     * @param   FieldDefinition  $field  Field declaring the length budget; 320 characters by default.
+     *
+     * @return  string  The address unchanged; case folding is the field's normalizer job.
+     *
+     * @throws  InvalidArgumentException  When the value is not a bounded string, or is not a valid
+     *          address.
+     *
+     * @since   2.0.0
+     */
     private function email(mixed $value, FieldDefinition $field): string
     {
         $value = $this->boundedString($value, $field->length ?? 320);
@@ -548,6 +975,22 @@ final readonly class RecordValueCodec
         return $value;
     }
 
+    /**
+     * Admit an absolute HTTP or HTTPS URL.
+     *
+     * The scheme is checked separately from the validator, so a well-formed `javascript:` or `data:` URL
+     * is refused here rather than stored and later rendered into a page.
+     *
+     * @param   mixed            $value  Submitted URL.
+     * @param   FieldDefinition  $field  Field declaring the length budget; 4096 characters by default.
+     *
+     * @return  string  The URL unchanged.
+     *
+     * @throws  InvalidArgumentException  When the value is not a bounded string, is not a valid URL, or
+     *          carries a scheme other than HTTP or HTTPS.
+     *
+     * @since   2.0.0
+     */
     private function url(mixed $value, FieldDefinition $field): string
     {
         $value = $this->boundedString($value, $field->length ?? 4096);
@@ -562,6 +1005,22 @@ final readonly class RecordValueCodec
         return $value;
     }
 
+    /**
+     * Admit a telephone number in the portable shape the normalizers leave behind.
+     *
+     * The pattern deliberately accepts an optional leading `+`, digits, spaces, and the `x`, `#`, and `*`
+     * an extension needs, rather than trying to be a dialling-plan validator.
+     *
+     * @param   mixed            $value  Submitted number.
+     * @param   FieldDefinition  $field  Field declaring the length budget; 64 characters by default.
+     *
+     * @return  string  The number unchanged.
+     *
+     * @throws  InvalidArgumentException  When the value is not a bounded string, or does not match the
+     *          portable shape.
+     *
+     * @since   2.0.0
+     */
     private function phone(mixed $value, FieldDefinition $field): string
     {
         $value = $this->boundedString($value, $field->length ?? 64);
@@ -572,6 +1031,23 @@ final readonly class RecordValueCodec
         return $value;
     }
 
+    /**
+     * Admit a structured value and hold its canonical JSON to a byte budget.
+     *
+     * `RecordValueGuard` decides what may appear at all — floats and unsupported objects are refused —
+     * and its canonical spelling is what gets measured and returned, so the budget covers the bytes that
+     * actually reach the column rather than the shape that was submitted.
+     *
+     * @param   mixed            $value  Submitted structure.
+     * @param   FieldDefinition  $field  Field whose `max_bytes` configuration sets the budget.
+     *
+     * @return  mixed  The canonical spelling of the value, ready to be stored as JSON.
+     *
+     * @throws  InvalidArgumentException  When the value is not admissible, cannot be encoded, the
+     *          configured budget is not a usable byte count, or the canonical JSON exceeds it.
+     *
+     * @since   2.0.0
+     */
     private function boundedJson(mixed $value, FieldDefinition $field): mixed
     {
         RecordValueGuard::assertValue($value);
@@ -589,6 +1065,26 @@ final readonly class RecordValueCodec
         return $canonical;
     }
 
+    /**
+     * Seal a secret value into the envelope stored in its place.
+     *
+     * An already sealed envelope passes through untouched, which is what lets an unchanged secret survive
+     * a decode, validate, and re-encode round trip without being encrypted again. Otherwise the value is
+     * sealed under a binding built from the site, definition, record, and field, so an envelope copied
+     * into another cell no longer authenticates.
+     *
+     * @param   mixed   $value           Plaintext secret, or an already sealed `EncryptedEnvelope`.
+     * @param   string  $siteIdentifier  Site owning the record.
+     * @param   string  $definitionId    UUID of the business definition.
+     * @param   string  $recordId        Caller-facing identity of the record.
+     * @param   string  $field           Handle of the secret field within that record.
+     *
+     * @return  EncryptedEnvelope  The sealed value; the plaintext is never returned or stored.
+     *
+     * @throws  InvalidArgumentException  When the value is neither a string nor an envelope.
+     *
+     * @since   2.0.0
+     */
     private function secret(
         mixed $value,
         string $siteIdentifier,
@@ -609,6 +1105,25 @@ final readonly class RecordValueCodec
         );
     }
 
+    /**
+     * Admit a value for a contributed field type using the storage family it registered.
+     *
+     * Contributed types get no admission code of their own; they borrow the core rule matching the
+     * physical family they declared, which is what stops an extension inventing a storage shape the
+     * schema compiler cannot install.
+     *
+     * @param   mixed            $value  Submitted value.
+     * @param   FieldDefinition  $field  Field naming the contributed type.
+     *
+     * @return  mixed  The value in the representation its storage family stores.
+     *
+     * @throws  InvalidArgumentException  When the value breaks the borrowed rule, or the type declares a
+     *          storage family this codec has no conversion for.
+     * @throws  \Kumwe\CMS\BusinessDefinition\Domain\InvalidBusinessDefinition  When the field type is
+     *          not registered in this process.
+     *
+     * @since   2.0.0
+     */
     private function custom(mixed $value, FieldDefinition $field): mixed
     {
         $type = $this->fieldTypes->get($field->type);
@@ -629,6 +1144,23 @@ final readonly class RecordValueCodec
         };
     }
 
+    /**
+     * Check a contributed JSON value against its declared value family, then bound it.
+     *
+     * The family is what the type promised callers it exchanges, so an object arriving where a collection
+     * was declared is refused before the value is canonicalised and measured.
+     *
+     * @param   mixed            $value      Submitted structure.
+     * @param   FieldDefinition  $field      Field whose `max_bytes` configuration sets the budget.
+     * @param   string           $valueType  Declared value family the contributed type exchanges.
+     *
+     * @return  mixed  The canonical spelling of the value, ready to be stored as JSON.
+     *
+     * @throws  InvalidArgumentException  When the value does not match the declared family, or fails the
+     *          bounded-JSON rules.
+     *
+     * @since   2.0.0
+     */
     private function customJson(mixed $value, FieldDefinition $field, string $valueType): mixed
     {
         $valid = match ($valueType) {
@@ -648,7 +1180,20 @@ final readonly class RecordValueCodec
         return $this->boundedJson($value, $field);
     }
 
-    /** @return list<PhysicalColumnBlueprint> */
+    /**
+     * Collect the physical columns one field occupies.
+     *
+     * A simple field owns the column named after its handle; a composite one owns the `handle.part`
+     * columns, which is why the match is a prefix rather than an equality.
+     *
+     * @param   PhysicalTableBlueprint  $table  Installed table to search.
+     * @param   FieldDefinition         $field  Field whose handle names the columns.
+     *
+     * @return  list<PhysicalColumnBlueprint>  Matching columns in table order; empty when the field has
+     *          no installed storage.
+     *
+     * @since   2.0.0
+     */
     private function columns(PhysicalTableBlueprint $table, FieldDefinition $field): array
     {
         $prefix = $field->handle . '.';
@@ -660,7 +1205,21 @@ final readonly class RecordValueCodec
         ));
     }
 
-    /** @return array<string, mixed> */
+    /**
+     * Split one normalized value into the logical column names that store it.
+     *
+     * A null value still yields every one of the field's logical names, mapped to null, so clearing a
+     * composite field writes NULL to all of its columns instead of leaving half a value behind.
+     *
+     * @param   FieldDefinition  $field  Field being written.
+     * @param   mixed            $value  Normalized value, or null.
+     *
+     * @return  array<string, mixed>  Logical column names to the values a driver binds.
+     *
+     * @throws  InvalidArgumentException  When the value is not the domain type its field normalizes to.
+     *
+     * @since   2.0.0
+     */
     private function storageValues(FieldDefinition $field, mixed $value): array
     {
         if ($value === null) {
@@ -695,7 +1254,16 @@ final readonly class RecordValueCodec
         };
     }
 
-    /** @return list<string> */
+    /**
+     * Name the parts a field's value is spread across.
+     *
+     * @param   FieldDefinition  $field  Field being written.
+     *
+     * @return  list<string>  Suffixes to append to the handle; a single empty string for a field that
+     *          occupies one column.
+     *
+     * @since   2.0.0
+     */
     private function suffixes(FieldDefinition $field): array
     {
         return match ($field->type) {
@@ -707,7 +1275,28 @@ final readonly class RecordValueCodec
         };
     }
 
-    /** @param array<string, mixed> $storage */
+    /**
+     * Rebuild one field value from the logical columns that stored it.
+     *
+     * Every component a composite field declared has to be present: a partly selected row is a
+     * programming error rather than a value with holes, so it is refused instead of quietly rebuilt.
+     * Secrets come back sealed, so the site, definition, and record arguments are carried for symmetry
+     * with the encode path rather than used here.
+     *
+     * @param   FieldDefinition       $field           Field being rebuilt.
+     * @param   array<string, mixed>  $storage
+     * @param   string                $siteIdentifier  Site owning the record.
+     * @param   string                $definitionId    UUID of the business definition.
+     * @param   string                $recordId        Caller-facing identity of the record.
+     *
+     * @return  mixed  The field value in the representation callers exchange.
+     *
+     * @throws  InvalidArgumentException  When a component is missing, or a stored component does not
+     *          rebuild into the value object its field declares.
+     * @throws  \DateMalformedStringException  When a stored zoned instant is an unparsable string.
+     *
+     * @since   2.0.0
+     */
     private function fromStorage(
         FieldDefinition $field,
         array $storage,
@@ -759,6 +1348,22 @@ final readonly class RecordValueCodec
         };
     }
 
+    /**
+     * Admit a formula result against the type the formula declares.
+     *
+     * The result is checked as strictly as an authored value, because a stored computation reaches a real
+     * column and a virtual one still reaches the caller.
+     *
+     * @param   mixed            $value  Value the formula evaluated to.
+     * @param   FieldDefinition  $field  Field whose formula names the result type.
+     *
+     * @return  mixed  The result in the representation its declared type stores.
+     *
+     * @throws  InvalidArgumentException  When the result breaks its declared type, or the formula names a
+     *          result type with no portable storage.
+     *
+     * @since   2.0.0
+     */
     private function computed(mixed $value, FieldDefinition $field): mixed
     {
         return match ($field->formula?->type) {
@@ -773,11 +1378,36 @@ final readonly class RecordValueCodec
         };
     }
 
+    /**
+     * Spell a stored computation's result the way its column takes it.
+     *
+     * @param   mixed            $value  Normalized formula result.
+     * @param   FieldDefinition  $field  Field whose formula names the result type.
+     *
+     * @return  mixed  The canonical literal for a decimal formula, otherwise the value as it stands.
+     *
+     * @throws  InvalidArgumentException  When a decimal formula's result is not an `ExactDecimal`.
+     *
+     * @since   2.0.0
+     */
     private function computedStorage(mixed $value, FieldDefinition $field): mixed
     {
         return $field->formula?->type === 'decimal' ? $this->exact($value)->value() : $value;
     }
 
+    /**
+     * Rebuild a stored computation's result from its column.
+     *
+     * @param   FieldDefinition  $field  Field whose formula names the result type.
+     * @param   mixed            $value  Decoded column value.
+     *
+     * @return  mixed  An `ExactDecimal` for a decimal formula, otherwise the value as it was stored.
+     *
+     * @throws  InvalidArgumentException  When a decimal result is not stored as a string, or does not fit
+     *          the field's precision and scale.
+     *
+     * @since   2.0.0
+     */
     private function computedFromStorage(FieldDefinition $field, mixed $value): mixed
     {
         if ($field->formula?->type !== 'decimal') {
@@ -791,6 +1421,18 @@ final readonly class RecordValueCodec
         );
     }
 
+    /**
+     * Render a stored instant as the canonical UTC string a value object is rebuilt from.
+     *
+     * @param   mixed  $value  Decoded column value: an instant, or the string a driver returned.
+     *
+     * @return  string  RFC 3339 UTC with microseconds, the spelling `ZonedDateTimeValue` parses.
+     *
+     * @throws  InvalidArgumentException  When the value is neither an instant nor a string.
+     * @throws  \DateMalformedStringException  When the string cannot be parsed as a date and time.
+     *
+     * @since   2.0.0
+     */
     private function dateTimeString(mixed $value): string
     {
         if ($value instanceof DateTimeImmutable) {
@@ -802,6 +1444,24 @@ final readonly class RecordValueCodec
         throw new InvalidArgumentException('A stored date-time value is invalid.');
     }
 
+    /**
+     * Turn one raw driver value into the PHP type its column's Doctrine type promises.
+     *
+     * Drivers disagree about what they hand back: a stream for a large object, a string for an integer or
+     * a bigint, `0` or `'0'` for a boolean. This is the single place those differences are settled, so
+     * every later step reads the same shapes whichever engine the site runs on.
+     *
+     * @param   PhysicalColumnBlueprint  $column  Column the value was read from.
+     * @param   mixed                    $value   Raw driver value, or null.
+     *
+     * @return  mixed  Null when the column was NULL, otherwise the value in the type its column declares.
+     *
+     * @throws  InvalidArgumentException  When a stream cannot be read, or the value contradicts the
+     *          column's declared type.
+     * @throws  \DateMalformedStringException  When a date-time column holds an unparsable string.
+     *
+     * @since   2.0.0
+     */
     private function decodePhysical(PhysicalColumnBlueprint $column, mixed $value): mixed
     {
         if ($value === null) {
@@ -833,6 +1493,18 @@ final readonly class RecordValueCodec
         };
     }
 
+    /**
+     * Read an integer a driver returned as a decimal string.
+     *
+     * @param   mixed  $value  Raw driver value.
+     *
+     * @return  int  The parsed integer.
+     *
+     * @throws  InvalidArgumentException  When the value is not a canonical decimal string, or does not
+     *          fit a PHP integer.
+     *
+     * @since   2.0.0
+     */
     private function storedInteger(mixed $value): int
     {
         if (!is_string($value) || preg_match('/^-?(?:0|[1-9][0-9]*)$/D', $value) !== 1) {
@@ -846,6 +1518,17 @@ final readonly class RecordValueCodec
         return $integer;
     }
 
+    /**
+     * Insist a decoded column value really is a string before it is parsed further.
+     *
+     * @param   mixed  $value  Decoded column value.
+     *
+     * @return  string  The value unchanged.
+     *
+     * @throws  InvalidArgumentException  When the stored value is not a string.
+     *
+     * @since   2.0.0
+     */
     private function storedString(mixed $value): string
     {
         if (!is_string($value)) {
@@ -855,6 +1538,18 @@ final readonly class RecordValueCodec
         return $value;
     }
 
+    /**
+     * Read a time-of-day column, padding the fraction out to the six digits the canonical form carries.
+     *
+     * @param   mixed  $value  Raw driver value.
+     *
+     * @return  DateTimeImmutable  Instant carrying the stored time of day.
+     *
+     * @throws  InvalidArgumentException  When the value is not an `HH:MM:SS` string, with or without a
+     *          fractional part.
+     *
+     * @since   2.0.0
+     */
     private function storedTime(mixed $value): DateTimeImmutable
     {
         if (
@@ -868,6 +1563,21 @@ final readonly class RecordValueCodec
         return $this->time($canonical);
     }
 
+    /**
+     * Read a boolean column across the spellings the supported drivers return.
+     *
+     * A native boolean, the integers `0` and `1`, and their string forms are all accepted, because that
+     * is the whole set the portable schema can produce; anything else is a corrupt column rather than a
+     * value worth guessing at.
+     *
+     * @param   mixed  $value  Raw driver value.
+     *
+     * @return  bool  The stored flag.
+     *
+     * @throws  InvalidArgumentException  When the value is none of the accepted spellings.
+     *
+     * @since   2.0.0
+     */
     private function storedBoolean(mixed $value): bool
     {
         if (is_bool($value)) {
@@ -882,6 +1592,21 @@ final readonly class RecordValueCodec
         throw new InvalidArgumentException('A stored boolean field is invalid.');
     }
 
+    /**
+     * Carry a bigint through a cursor without narrowing it to a PHP integer.
+     *
+     * A 64-bit column can hold values a driver hands back as a string, so a string stays a string rather
+     * than being cast.
+     *
+     * @param   mixed  $value  Driver value, or a value decoded from a cursor.
+     *
+     * @return  int|string  The integer, or its canonical decimal string.
+     *
+     * @throws  InvalidArgumentException  When the value is neither an integer nor a canonical decimal
+     *          string.
+     *
+     * @since   2.0.0
+     */
     private function cursorBigint(mixed $value): int|string
     {
         if (is_int($value)) {
@@ -894,6 +1619,18 @@ final readonly class RecordValueCodec
         return $value;
     }
 
+    /**
+     * Carry a decimal through a cursor as a literal rather than a float.
+     *
+     * @param   mixed  $value  Driver value, or a value decoded from a cursor.
+     *
+     * @return  string  Canonical decimal literal, with no exponent and nothing padded onto it.
+     *
+     * @throws  InvalidArgumentException  When the value is neither an integer nor a canonical decimal
+     *          literal.
+     *
+     * @since   2.0.0
+     */
     private function cursorDecimal(mixed $value): string
     {
         if (is_int($value)) {
@@ -906,6 +1643,17 @@ final readonly class RecordValueCodec
         return $value;
     }
 
+    /**
+     * Insist a temporal cursor column decoded to an instant before it is formatted.
+     *
+     * @param   mixed  $value  Value `decodePhysical()` produced for a temporal column.
+     *
+     * @return  DateTimeImmutable  The instant unchanged.
+     *
+     * @throws  InvalidArgumentException  When the decoded value is not an instant.
+     *
+     * @since   2.0.0
+     */
     private function cursorDateTime(mixed $value): DateTimeImmutable
     {
         if (!$value instanceof DateTimeImmutable) {
@@ -915,6 +1663,22 @@ final readonly class RecordValueCodec
         return $value;
     }
 
+    /**
+     * Read a JSON column, whether the driver decoded it or handed back the text.
+     *
+     * Large integers are kept as strings so a 64-bit value inside a document does not come out as a
+     * float, and the result goes through `RecordValueGuard` because a stored document is untrusted input
+     * once anything else can write to the database.
+     *
+     * @param   mixed  $value  Raw driver value: a decoded structure, or JSON text.
+     *
+     * @return  mixed  The decoded value, admitted by the record value rules.
+     *
+     * @throws  InvalidArgumentException  When the text is not valid JSON, or the decoded value is not
+     *          admissible as a record value.
+     *
+     * @since   2.0.0
+     */
     private function storedJson(mixed $value): mixed
     {
         if (!is_string($value)) {
@@ -931,6 +1695,17 @@ final readonly class RecordValueCodec
         return $decoded;
     }
 
+    /**
+     * Insist a decimal field really normalized to an `ExactDecimal` before it is stored.
+     *
+     * @param   mixed  $value  Normalized field value.
+     *
+     * @return  ExactDecimal  The value unchanged.
+     *
+     * @throws  InvalidArgumentException  When the value did not come through decimal normalization.
+     *
+     * @since   2.0.0
+     */
     private function exact(mixed $value): ExactDecimal
     {
         return $value instanceof ExactDecimal
@@ -938,6 +1713,17 @@ final readonly class RecordValueCodec
             : throw new InvalidArgumentException('A normalized decimal field is invalid.');
     }
 
+    /**
+     * Insist a money field really normalized to a `MoneyValue` before it is stored.
+     *
+     * @param   mixed  $value  Normalized field value.
+     *
+     * @return  MoneyValue  The value unchanged.
+     *
+     * @throws  InvalidArgumentException  When the value did not come through money normalization.
+     *
+     * @since   2.0.0
+     */
     private function moneyValue(mixed $value): MoneyValue
     {
         return $value instanceof MoneyValue
@@ -945,6 +1731,17 @@ final readonly class RecordValueCodec
             : throw new InvalidArgumentException('A normalized money field is invalid.');
     }
 
+    /**
+     * Insist a quantity field really normalized to a `QuantityValue` before it is stored.
+     *
+     * @param   mixed  $value  Normalized field value.
+     *
+     * @return  QuantityValue  The value unchanged.
+     *
+     * @throws  InvalidArgumentException  When the value did not come through quantity normalization.
+     *
+     * @since   2.0.0
+     */
     private function quantityValue(mixed $value): QuantityValue
     {
         return $value instanceof QuantityValue
@@ -952,6 +1749,18 @@ final readonly class RecordValueCodec
             : throw new InvalidArgumentException('A normalized quantity field is invalid.');
     }
 
+    /**
+     * Insist a zoned date-time field really normalized to a `ZonedDateTimeValue` before it is stored.
+     *
+     * @param   mixed  $value  Normalized field value.
+     *
+     * @return  ZonedDateTimeValue  The value unchanged.
+     *
+     * @throws  InvalidArgumentException  When the value did not come through zoned date-time
+     *          normalization.
+     *
+     * @since   2.0.0
+     */
     private function zonedValue(mixed $value): ZonedDateTimeValue
     {
         return $value instanceof ZonedDateTimeValue
@@ -959,6 +1768,20 @@ final readonly class RecordValueCodec
             : throw new InvalidArgumentException('A normalized zoned date-time field is invalid.');
     }
 
+    /**
+     * Insist a secret field really normalized to a sealed envelope before it is stored.
+     *
+     * This is the last point at which a plaintext secret could reach a column, so an unsealed value is
+     * refused rather than written.
+     *
+     * @param   mixed  $value  Normalized field value.
+     *
+     * @return  EncryptedEnvelope  The value unchanged.
+     *
+     * @throws  InvalidArgumentException  When the value was not sealed by secret normalization.
+     *
+     * @since   2.0.0
+     */
     private function envelope(mixed $value): EncryptedEnvelope
     {
         return $value instanceof EncryptedEnvelope
@@ -966,17 +1789,54 @@ final readonly class RecordValueCodec
             : throw new InvalidArgumentException('A normalized secret field is invalid.');
     }
 
+    /**
+     * Read the digit budget an exact field has to declare.
+     *
+     * @param   FieldDefinition  $field  Field carrying the numeric declaration.
+     *
+     * @return  int  Total number of digits the field stores.
+     *
+     * @throws  InvalidArgumentException  When the field declares no precision.
+     *
+     * @since   2.0.0
+     */
     private function precision(FieldDefinition $field): int
     {
         return $field->precision
             ?? throw new InvalidArgumentException('An exact field has no configured precision.');
     }
 
+    /**
+     * Read the fractional digit count an exact field has to declare.
+     *
+     * @param   FieldDefinition  $field  Field carrying the numeric declaration.
+     *
+     * @return  int  Number of digits kept after the decimal point.
+     *
+     * @throws  InvalidArgumentException  When the field declares no scale.
+     *
+     * @since   2.0.0
+     */
     private function scale(FieldDefinition $field): int
     {
         return $field->scale ?? throw new InvalidArgumentException('An exact field has no configured scale.');
     }
 
+    /**
+     * Find the field a definition's identity strategy nominates.
+     *
+     * The strategy names a field type rather than a handle — `core.uuid` or `core.reference_identity` —
+     * and a well-formed definition carries exactly one field of that type, so reaching the failure here
+     * means the definition was assembled without that invariant.
+     *
+     * @param   EntityTypeDefinition  $definition  Definition to search.
+     *
+     * @return  FieldDefinition  The field carrying the record's identity.
+     *
+     * @throws  InvalidArgumentException  When the definition declares no field of the required type.
+     *
+     * @since   2.0.0
+     */
     private function identityField(EntityTypeDefinition $definition): FieldDefinition
     {
         $type = $definition->identityStrategy === IdentityStrategy::Uuid

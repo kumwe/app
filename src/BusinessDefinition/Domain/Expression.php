@@ -4,14 +4,57 @@ declare(strict_types=1);
 
 namespace Kumwe\CMS\BusinessDefinition\Domain;
 
+/**
+ * Validated expression tree behind every business-definition condition and computed-field formula.
+ *
+ * A definition document carries its conditions and formulas as nested JSON objects, and `fromArray()` is
+ * the only way to turn one into this type: it checks the operator vocabulary, the arity, the declared
+ * result type, and the type agreement between an operator and its arguments, while bounding nesting
+ * depth, node count, and canonical byte size. Holding an instance therefore means the tree has already
+ * been proven well formed and bounded, which is what lets `RecordInvariantDefinition`, `FieldDefinition`,
+ * `ActionDefinition`, and the persisted schema backfill and transform states use it without re-checking
+ * anything. `ExpressionEvaluator` computes the value, `dependencies()` names the field handles a caller
+ * must supply first, and `toArray()` returns the same document shape so a tree survives a definition
+ * checksum or a stored migration state and comes back identical.
+ *
+ * @since  2.0.0
+ */
 final readonly class Expression
 {
+    /**
+     * Deepest nesting `parse()` descends into before it refuses the tree.
+     *
+     * @var    int
+     * @since  2.0.0
+     */
     private const MAX_DEPTH = 12;
 
+    /**
+     * Largest number of nodes one condition or formula may be built from.
+     *
+     * @var    int
+     * @since  2.0.0
+     */
     private const MAX_OPERATIONS = 128;
 
+    /**
+     * Largest canonical encoding, in bytes, one condition or formula may occupy.
+     *
+     * @var    int
+     * @since  2.0.0
+     */
     private const MAX_BYTES = 32_768;
 
+    /**
+     * Supported operators, each mapped to the inclusive minimum and maximum argument count it accepts.
+     *
+     * Membership of this map is the operator vocabulary: an operator absent from it is rejected at parse
+     * time. The `literal` and `field` leaves are listed at zero arity because they carry a value or a
+     * field handle instead of arguments.
+     *
+     * @var    array<string, array{int, int}>
+     * @since  2.0.0
+     */
     private const OPERATORS = [
         'literal' => [0, 0],
         'field' => [0, 0],
@@ -36,10 +79,32 @@ final readonly class Expression
         'contains' => [2, 2],
     ];
 
-    /** @var list<Expression> */
+    /**
+     * Operand nodes this expression applies its operator to, empty for a `literal` or `field` leaf.
+     *
+     * Assigned in the constructor rather than promoted like the other values, and read through
+     * `arguments()`.
+     *
+     * @var    list<Expression>
+     * @since  2.0.0
+     */
     private array $arguments;
 
-    /** @param list<Expression> $arguments */
+    /**
+     * Assemble a node whose shape and types `parse()` has already accepted.
+     *
+     * Private on purpose: `fromArray()` is the only producer of a tree, and nothing here re-validates
+     * what it is handed.
+     *
+     * @param  string            $operator   Operator name from the supported vocabulary, such as `and`.
+     * @param  string            $type       Result type this node declares, such as `boolean`.
+     * @param  list<Expression>  $arguments  Operand nodes in evaluation order; empty for a leaf.
+     * @param  mixed             $literal    Constant a `literal` node carries; null for other operators.
+     * @param  ?string           $field      Field handle a `field` node reads; null for other operators.
+     * @param  ?int              $scale      Decimal places a decimal `divide` rounds to; null otherwise.
+     *
+     * @since  2.0.0
+     */
     private function __construct(
         public string $operator,
         public string $type,
@@ -51,7 +116,22 @@ final readonly class Expression
         $this->arguments = $arguments;
     }
 
-    /** @param array<string, mixed> $document */
+    /**
+     * Parse a canonical condition or formula document into a validated expression tree.
+     *
+     * The document is measured against the byte budget before it is walked, and the node budget is
+     * re-checked once the walk finishes, so an oversized definition is refused rather than parsed.
+     *
+     * @param   array<string, mixed>  $document  Root expression object as it appears in the definition.
+     *
+     * @return  self  Root node of the parsed tree.
+     *
+     * @throws  InvalidBusinessDefinition  When the document holds a value the canonical encoder refuses,
+     *          such as a float, when its encoding passes 32768 bytes, when the tree passes 128 nodes or
+     *          12 levels, or when any node has an unsupported operator, type, shape, or arity.
+     *
+     * @since   2.0.0
+     */
     public static function fromArray(array $document): self
     {
         if (strlen(CanonicalDefinitionJson::encode($document)) > self::MAX_BYTES) {
@@ -66,13 +146,30 @@ final readonly class Expression
         return $expression;
     }
 
-    /** @return list<Expression> */
+    /**
+     * Return the operand nodes this expression applies its operator to.
+     *
+     * @return  list<Expression>  Child nodes in evaluation order; empty for a `literal` or `field` leaf.
+     *
+     * @since   2.0.0
+     */
     public function arguments(): array
     {
         return $this->arguments;
     }
 
-    /** @return list<string> */
+    /**
+     * Name the field handles the whole tree reads, so a caller can gather the values before evaluating.
+     *
+     * Callers depend on the deduplicated, sorted form: the schema gateway compares this list key for key
+     * against the dependency column map it assembled for a backfill, and the record validator uses it to
+     * decide when a computed field has everything it needs to be evaluated.
+     *
+     * @return  list<string>  Field handles in ascending string order, each appearing once; empty when
+     *          the tree reads no field at all.
+     *
+     * @since   2.0.0
+     */
     public function dependencies(): array
     {
         $dependencies = [];
@@ -83,13 +180,36 @@ final readonly class Expression
         return $dependencies;
     }
 
-    /** @param array<string, scalar|null> $fields */
+    /**
+     * Compute this expression against one record's field values.
+     *
+     * @param   array<string, scalar|null>  $fields  Values for the handles `dependencies()` names, keyed
+     *          by field handle.
+     *
+     * @return  mixed  Result of the root operator in this node's declared type; a decimal result is a
+     *          canonical base-10 string, never a float.
+     *
+     * @throws  InvalidBusinessDefinition  When a dependency is absent, a supplied value contradicts its
+     *          declared type, or the arithmetic overflows or divides by zero.
+     *
+     * @since   2.0.0
+     */
     public function evaluate(array $fields): mixed
     {
         return ExpressionEvaluator::evaluate($this, $fields);
     }
 
-    /** @return array<string, mixed> */
+    /**
+     * Render the tree back into the canonical document a definition stores and checksums.
+     *
+     * The output is accepted by `fromArray()` unchanged, which is what lets a schema plan carry an
+     * expression inside its persisted state and rebuild the same tree in a later request.
+     *
+     * @return  array<string, mixed>  Node keyed by `op` and `type`, plus `value` for a literal, `field`
+     *          for a field reference, or nested `args` for an operator, and `scale` where one is set.
+     *
+     * @since   2.0.0
+     */
     public function toArray(): array
     {
         $document = ['op' => $this->operator, 'type' => $this->type];
@@ -108,7 +228,24 @@ final readonly class Expression
     }
 
     /**
-     * @param array<string, mixed> $document
+     * Validate one node and everything beneath it, then build the immutable expression for it.
+     *
+     * Depth is counted down the descent and the node total is carried by reference across it, so a tree
+     * is refused the moment it crosses a limit rather than after the whole document has been walked.
+     * Each operator family is then held to its own shape: a literal carries exactly `value`, a field
+     * reference exactly `field`, and everything else exactly `args` with an optional `scale`.
+     *
+     * @param   array<string, mixed>  $document    Node object to validate at this level of the descent.
+     * @param   int                   $depth       Nesting level of this node; the root is passed as 1.
+     * @param   int                   $operations  Running node count, incremented here for this node.
+     *
+     * @return  self  This node, with its arguments already parsed and type-checked.
+     *
+     * @throws  InvalidBusinessDefinition  When the node nests past 12 levels, pushes the tree past 128
+     *          nodes, carries an unknown property, or breaks an operator, type, shape, arity, or scale
+     *          rule — including a decimal division that omits its output scale.
+     *
+     * @since   2.0.0
      */
     private static function parse(array $document, int $depth, int &$operations): self
     {
@@ -194,6 +331,23 @@ final readonly class Expression
         return new self($operator, $type, $parsed, null, null, $scale);
     }
 
+    /**
+     * Refuse a literal whose decoded value does not match the type its node declares.
+     *
+     * A `decimal` literal is held to the canonical base-10 spelling rather than to a PHP number, and the
+     * textual types are capped at 4096 bytes so a definition cannot smuggle a large payload in as a
+     * constant.
+     *
+     * @param   string  $type   Type the literal node declares, such as `integer` or `decimal`.
+     * @param   mixed   $value  Decoded literal to hold against that type.
+     *
+     * @return  void
+     *
+     * @throws  InvalidBusinessDefinition  When the value is of the wrong kind, is not a canonical decimal
+     *          string, or exceeds 4096 bytes of text.
+     *
+     * @since   2.0.0
+     */
     private static function assertLiteral(string $type, mixed $value): void
     {
         $valid = match ($type) {
@@ -210,7 +364,26 @@ final readonly class Expression
         }
     }
 
-    /** @param list<Expression> $arguments */
+    /**
+     * Enforce the type algebra an operator imposes on its own result and on its arguments.
+     *
+     * Every rule lands here at parse time so evaluation can trust the tree: comparison and logic
+     * operators must declare `boolean`, logic arguments must themselves be boolean, arithmetic must
+     * declare `integer` or `decimal` and take arguments of that same type, ordered comparison is limited
+     * to types that have a natural order, and `if` and `coalesce` branches must be assignable to the
+     * declared result.
+     *
+     * @param   string            $operator   Operator whose rules are being applied.
+     * @param   string            $type       Result type the node declares.
+     * @param   list<Expression>  $arguments  Already parsed argument nodes, in declaration order.
+     *
+     * @return  void
+     *
+     * @throws  InvalidBusinessDefinition  When the declared result type or any argument type is
+     *          incompatible with the operator.
+     *
+     * @since   2.0.0
+     */
     private static function assertOperatorType(string $operator, string $type, array $arguments): void
     {
         if (
@@ -285,7 +458,22 @@ final readonly class Expression
         }
     }
 
-    /** @param list<Expression> $arguments */
+    /**
+     * Require every argument of an operator to declare the same type as the first one.
+     *
+     * This is what makes the identity comparisons in the evaluator safe: `eq`, `ne`, and `in` compare
+     * with `===`, which would otherwise silently report a mismatched pair as unequal instead of refusing
+     * the expression.
+     *
+     * @param   string            $operator   Operator named in the failure message.
+     * @param   list<Expression>  $arguments  Argument nodes; the first one sets the expected type.
+     *
+     * @return  void
+     *
+     * @throws  InvalidBusinessDefinition  When any argument declares a different type.
+     *
+     * @since   2.0.0
+     */
     private static function assertSameArgumentTypes(string $operator, array $arguments): void
     {
         $expected = $arguments[0]->type;
@@ -300,8 +488,23 @@ final readonly class Expression
     }
 
     /**
-     * @param list<Expression> $arguments
-     * @param list<string> $argumentTypes
+     * Pin an operator to one result type and restrict its arguments to a fixed set of types.
+     *
+     * Used for the operators whose signature is fixed rather than inferred from their operands, namely
+     * `contains` and `concat`.
+     *
+     * @param   string            $operator       Operator named in the failure message.
+     * @param   string            $type           Result type the node declares.
+     * @param   string            $resultType     The only result type this operator is allowed to declare.
+     * @param   list<Expression>  $arguments      Argument nodes to hold against the allowed types.
+     * @param   list<string>      $argumentTypes  Types an argument of this operator may declare.
+     *
+     * @return  void
+     *
+     * @throws  InvalidBusinessDefinition  When the declared result type differs from the required one, or
+     *          an argument declares a type outside the allowed set.
+     *
+     * @since   2.0.0
      */
     private static function assertResultAndArgumentTypes(
         string $operator,
@@ -326,6 +529,19 @@ final readonly class Expression
         }
     }
 
+    /**
+     * Decide whether a branch may stand in for the result type of `if` or `coalesce`.
+     *
+     * A `null` branch is always accepted, which is what gives `coalesce` something to fall through, and
+     * an `any` result accepts every branch.
+     *
+     * @param   string  $resultType    Result type the node declares.
+     * @param   string  $argumentType  Type of the branch being offered for that result.
+     *
+     * @return  bool  True when the branch may produce the node's result.
+     *
+     * @since   2.0.0
+     */
     private static function resultCompatible(string $resultType, string $argumentType): bool
     {
         return $resultType === 'any'
@@ -333,7 +549,18 @@ final readonly class Expression
             || $argumentType === 'null';
     }
 
-    /** @param list<string> $dependencies */
+    /**
+     * Append this node's field handle, then those of its subtree, to the accumulator.
+     *
+     * Walks in argument order and repeats a handle each time it is read; `dependencies()` owns the
+     * deduplication and the ordering.
+     *
+     * @param   list<string>  $dependencies  Accumulator appended to in place.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     private function collectDependencies(array &$dependencies): void
     {
         if ($this->field !== null) {

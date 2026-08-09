@@ -4,17 +4,57 @@ declare(strict_types=1);
 
 namespace Kumwe\CMS\BusinessDefinition\Domain;
 
+/**
+ * The state machine a business entity's records move through, declared as part of its definition.
+ *
+ * A binding is optional: an entity that declares one gains a `workflow_state` control column, records
+ * start life in `$initialState`, and `BusinessRecordService` moves them only by running an action whose
+ * transition both matches the record's current state and whose capability the actor holds. Because
+ * transition handles are unique across the binding, one handle describes exactly one edge — the same
+ * logical move from two different states needs two handles. This constructor is the only validation
+ * point, so a binding that exists already has a bounded, closed graph: every edge names declared states,
+ * no edge is a self-loop, and the initial state is one of the declared states. What it deliberately does
+ * not check is reachability, which is a modelling choice rather than an integrity one.
+ *
+ * @since  2.0.0
+ */
 final readonly class WorkflowBinding
 {
-    /** @var list<string> */
+    /**
+     * Every state a record of this entity may occupy, deduplicated and in declaration order.
+     *
+     * @var    list<string>
+     * @since  2.0.0
+     */
     public array $states;
 
-    /** @var list<array{handle: string, from: string, to: string, capability: string}> */
+    /**
+     * The permitted edges, each naming its handle, endpoints, and the capability that may run it.
+     *
+     * @var    list<array{handle: string, from: string, to: string, capability: string}>
+     * @since  2.0.0
+     */
     public array $transitions;
 
     /**
-     * @param list<string> $states
-     * @param list<array{handle: string, from: string, to: string, capability: string}> $transitions
+     * Declare a workflow, validating its states, its initial state, and every transition against them.
+     *
+     * Repeated states are collapsed rather than rejected, so the stored set is the distinct one; repeated
+     * transition handles are a hard error, since a handle has to identify a single edge.
+     *
+     * @param   string                                                                     $initialState  State
+     *          a newly created record starts in; it must appear in `$states`.
+     * @param   list<string>                                                               $states        Every
+     *          state a record may occupy, at most 64 once deduplicated.
+     * @param   list<array{handle: string, from: string, to: string, capability: string}>  $transitions   Edges
+     *          of the machine, at most 128, each with a unique handle and a dotted guarding capability.
+     *
+     * @throws  InvalidBusinessDefinition  When the state set is empty or exceeds 64 entries, the initial state
+     *          is not among them, a state handle is malformed, more than 128 transitions are given, or a
+     *          transition has a malformed handle or capability, names an undeclared endpoint, loops a state
+     *          onto itself, or repeats a handle already used.
+     *
+     * @since   2.0.0
      */
     public function __construct(public string $initialState, array $states, array $transitions)
     {
@@ -55,7 +95,24 @@ final readonly class WorkflowBinding
         $this->transitions = $transitions;
     }
 
-    /** @param array<string, mixed> $document */
+    /**
+     * Rebuild a binding from its canonical document, rejecting any property the contract does not name.
+     *
+     * Each transition is rebuilt key by key into a strict four-property object before the constructor sees
+     * it, so a document may not smuggle an extra property through, and may not supply a transition as a
+     * JSON array. This method settles shape only; the constructor settles the graph.
+     *
+     * @param   array<string, mixed>  $document  Decoded workflow document keyed by canonical name.
+     *
+     * @return  self  The validated binding, having passed the same invariants as direct construction.
+     *
+     * @throws  InvalidBusinessDefinition  When the document carries an unknown property, the initial state is
+     *          not a string, the state or transition collection is not a JSON array, a state is not a string,
+     *          a transition is a list or declares a property outside the four named ones, a transition
+     *          property is absent or not a string, or the constructor rejects the resulting graph.
+     *
+     * @since   2.0.0
+     */
     public static function fromArray(array $document): self
     {
         if (array_diff(array_keys($document), ['initial_state', 'states', 'transitions']) !== []) {
@@ -100,7 +157,17 @@ final readonly class WorkflowBinding
         return new self($initial, $mappedStates, $mappedTransitions);
     }
 
-    /** @return array<string, mixed> */
+    /**
+     * Export the binding as the document that becomes part of a published definition's canonical bytes.
+     *
+     * The compatibility analyzer compares two versions on exactly this document, so any difference in the
+     * states or the transitions — including their order — registers as a workflow change.
+     *
+     * @return  array<string, mixed>  The initial state, the deduplicated state list, and the transitions,
+     *          under the canonical keys `initial_state`, `states` and `transitions`.
+     *
+     * @since   2.0.0
+     */
     public function toArray(): array
     {
         return [

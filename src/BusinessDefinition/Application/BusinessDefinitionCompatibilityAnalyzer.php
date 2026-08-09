@@ -14,8 +14,40 @@ use Kumwe\CMS\BusinessDefinition\Domain\RecordInvariantDefinition;
 use Kumwe\CMS\BusinessDefinition\Domain\ActionDefinition;
 use Kumwe\CMS\BusinessDefinition\Domain\ViewDefinition;
 
+/**
+ * Prices what publishing a draft definition would do to the version already in service.
+ *
+ * Publishing a business definition is irreversible for the data behind it, so nothing is written before
+ * every difference between the published head and the draft has been named and classified. This is the
+ * only producer of `CompatibilityPlan`: it walks identity, fields, relationships, views, actions, the
+ * workflow binding and the record invariants, emits one classified `CompatibilityChange` per difference,
+ * and leaves the plan to put them in order. The draft is advanced to its next version before anything is
+ * compared, so the status and version fields that publication itself moves never register as differences.
+ * `BusinessDefinitionService` reads the resulting plan to decide whether publication needs an explicit
+ * confirmation, and stores it beside the version it published.
+ *
+ * @since  2.0.0
+ */
 final class BusinessDefinitionCompatibilityAnalyzer
 {
+    /**
+     * Compare the published head against the draft that would replace it and classify every difference.
+     *
+     * A null `$before` is the first publication of the handle: there is nothing to compare against, so the
+     * plan carries the single additive change that records the creation itself.
+     *
+     * @param   ?EntityTypeDefinition  $before  Published version currently in service, or null when this
+     *          handle has never been published.
+     * @param   EntityTypeDefinition   $draft   Draft being assessed; it is advanced to the next version
+     *          before comparison, so it must still carry draft status.
+     *
+     * @return  CompatibilityPlan  Both version numbers, both canonical checksums, and the classified changes.
+     *
+     * @throws  \Kumwe\CMS\BusinessDefinition\Domain\InvalidBusinessDefinition  When the draft is not in draft
+     *          status and therefore cannot be advanced to the next published version.
+     *
+     * @since   2.0.0
+     */
     public function analyze(?EntityTypeDefinition $before, EntityTypeDefinition $draft): CompatibilityPlan
     {
         $next = ($before->definitionVersion ?? 0) + 1;
@@ -43,7 +75,23 @@ final class BusinessDefinitionCompatibilityAnalyzer
         );
     }
 
-    /** @param list<CompatibilityChange> $changes */
+    /**
+     * Record the identity, lifecycle and exposure differences between the two versions.
+     *
+     * Storage mode, identity strategy and scope are the three that cannot move without abandoning the rows
+     * already stored, so any change to them is destructive. Turning soft deletion off is destructive too,
+     * since the restore metadata goes with it, while turning it on only adds. Everything else here —
+     * labels, audit policy, revision policy, compatibility metadata and the three delivery surfaces —
+     * leaves stored records untouched and is classified as behaviour changing.
+     *
+     * @param   EntityTypeDefinition       $before   Published version currently in service.
+     * @param   EntityTypeDefinition       $after    Draft as it would be published.
+     * @param   list<CompatibilityChange>  $changes  Accumulator the discovered changes are appended to.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     private function compareIdentity(
         EntityTypeDefinition $before,
         EntityTypeDefinition $after,
@@ -103,7 +151,25 @@ final class BusinessDefinitionCompatibilityAnalyzer
         }
     }
 
-    /** @param list<CompatibilityChange> $changes */
+    /**
+     * Match fields by handle and record what adding, removing or reshaping each one costs.
+     *
+     * Removing a field is destructive. Converting its type, forbidding nulls it used to allow, tightening
+     * its persisted constraints, adding or dropping its index, and withdrawing accepted options each oblige
+     * the stored column to be migrated. Making a field required is only a compatible tightening when a
+     * default fills the rows already there, and a migration when nothing does; adding a field runs that
+     * same test and is otherwise additive, as is every relaxation. What is left — type configuration,
+     * computed, immutability and sensitivity behaviour, and the delivery and presentation metadata compared
+     * as the residue of the exported document — changes behaviour without touching what is stored.
+     *
+     * @param   EntityTypeDefinition       $before   Published version currently in service.
+     * @param   EntityTypeDefinition       $after    Draft as it would be published.
+     * @param   list<CompatibilityChange>  $changes  Accumulator the discovered changes are appended to.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     private function compareFields(
         EntityTypeDefinition $before,
         EntityTypeDefinition $after,
@@ -249,7 +315,21 @@ final class BusinessDefinitionCompatibilityAnalyzer
         }
     }
 
-    /** @return list<string> */
+    /**
+     * Read one configuration key as the list of strings it declares.
+     *
+     * Used to spot options a field has stopped accepting, which is the configuration change that can strand
+     * values already stored. A key that is absent, does not hold a list, or holds no strings reads as an
+     * empty list rather than raising, so a shape the field type does not use never blocks the comparison.
+     *
+     * @param   FieldDefinition  $field  Field whose type-specific configuration is being read.
+     * @param   string           $key    Configuration key to read, such as `options`.
+     *
+     * @return  list<string>  The string entries under the key, in declaration order; empty when the key
+     *          declares none.
+     *
+     * @since   2.0.0
+     */
     private static function stringConfiguration(FieldDefinition $field, string $key): array
     {
         $value = $field->configuration[$key] ?? [];
@@ -259,7 +339,22 @@ final class BusinessDefinitionCompatibilityAnalyzer
         return array_values(array_filter($value, 'is_string'));
     }
 
-    /** @param list<CompatibilityChange> $changes */
+    /**
+     * Match relationships by handle and record additions, removals and reshapes.
+     *
+     * A relationship is compared by its whole exported document rather than field by field, because
+     * cardinality, ownership and delete behaviour are only meaningful together: any difference at all means
+     * the stored links have to be migrated. Removal is destructive, and a new relationship is additive
+     * unless it is required, which obliges every existing record to acquire one.
+     *
+     * @param   EntityTypeDefinition       $before   Published version currently in service.
+     * @param   EntityTypeDefinition       $after    Draft as it would be published.
+     * @param   list<CompatibilityChange>  $changes  Accumulator the discovered changes are appended to.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     private function compareRelationships(
         EntityTypeDefinition $before,
         EntityTypeDefinition $after,
@@ -299,7 +394,23 @@ final class BusinessDefinitionCompatibilityAnalyzer
         }
     }
 
-    /** @param list<CompatibilityChange> $changes */
+    /**
+     * Record differences in the named views and actions, the workflow binding and the record invariants.
+     *
+     * None of these reshape a stored record, so nothing found here is ever destructive or
+     * migration-requiring: adding a view or an action is additive, while removing or editing one, rebinding
+     * the workflow, or changing the cross-field invariants is behaviour changing. Views and actions are
+     * matched by handle and compared by their exported documents; the workflow and the invariants are
+     * compared whole.
+     *
+     * @param   EntityTypeDefinition       $before   Published version currently in service.
+     * @param   EntityTypeDefinition       $after    Draft as it would be published.
+     * @param   list<CompatibilityChange>  $changes  Accumulator the discovered changes are appended to.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     private function compareNamedDocuments(
         EntityTypeDefinition $before,
         EntityTypeDefinition $after,
@@ -362,10 +473,17 @@ final class BusinessDefinitionCompatibilityAnalyzer
     }
 
     /**
+     * Key one version's parts by their handles, so the two versions can be matched entry by entry.
+     *
      * @template T of object
-     * @param list<T> $values
-     * @param callable(T): string $key
-     * @return array<string, T>
+     *
+     * @param   list<T>              $values  Fields or relationships declared by one version.
+     * @param   callable(T): string  $key     Reads the handle a part is matched on.
+     *
+     * @return  array<string, T>  The parts keyed by handle; a repeated handle would keep only the last
+     *          entry, which a definition already rejects when it is constructed.
+     *
+     * @since   2.0.0
      */
     private static function index(array $values, callable $key): array
     {
@@ -377,8 +495,14 @@ final class BusinessDefinitionCompatibilityAnalyzer
     }
 
     /**
-     * @param list<ActionDefinition|ViewDefinition> $values
-     * @return array<string, array<string, mixed>>
+     * Export named documents keyed by handle, so the two versions can be compared by value.
+     *
+     * @param   list<ActionDefinition|ViewDefinition>  $values  Views or actions declared by one version.
+     *
+     * @return  array<string, array<string, mixed>>  Each handle mapped to its exported document, which is
+     *          what equality is then tested on.
+     *
+     * @since   2.0.0
      */
     private static function documents(array $values): array
     {

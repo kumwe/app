@@ -4,9 +4,32 @@ declare(strict_types=1);
 
 namespace Kumwe\CMS\BusinessDefinition\Domain;
 
+/**
+ * The field-type catalogue every site can build definitions from without installing an extension.
+ *
+ * `FieldTypeRegistry` seeds itself from this list under `DefinitionOwner::core()`, which is what makes
+ * these the identifiers a definition may name out of the box; anything else has to be contributed by a
+ * package under its own namespace. Each entry fixes three things a field cannot renegotiate later: the
+ * value family definitions work with, the physical storage family the schema compiler emits for it, and
+ * the configuration keys a field of that type is allowed to set. The identifiers are the stable half of
+ * the contract: published versions reference a type by name, so renaming one would strand every version
+ * that already names it, and the catalogue grows by addition.
+ *
+ * @since  2.0.0
+ */
 final class BuiltInFieldTypes
 {
-    /** @return list<FieldTypeDefinition> */
+    /**
+     * Build the complete core catalogue, grouped by family in declaration order.
+     *
+     * A fresh list is constructed on every call, so this is a source of truth rather than a lookup:
+     * `FieldTypeRegistry` consumes it once at construction, re-keys it by identifier, and answers
+     * every later question about which types are active.
+     *
+     * @return  list<FieldTypeDefinition>  Every core type, each identifier carrying the `core.` prefix.
+     *
+     * @since   2.0.0
+     */
     public static function all(): array
     {
         return [
@@ -115,7 +138,20 @@ final class BuiltInFieldTypes
         ];
     }
 
-    /** @param list<string> $configurationKeys */
+    /**
+     * Construct one core type, applying the `core.` namespace prefix the registry checks ownership against.
+     *
+     * @param   string        $id                 Unprefixed identifier, such as `money` or `rich_text`.
+     * @param   string        $label              Human-readable name shown when choosing a field type.
+     * @param   string        $description        One-line explanation of what values the type holds.
+     * @param   string        $valueType          Value family definitions work with, such as string or object.
+     * @param   string        $storageType        Physical storage family the schema compiler emits for it.
+     * @param   list<string>  $configurationKeys  Configuration keys a field of this type may set.
+     *
+     * @return  FieldTypeDefinition  The namespaced type, validated by its own constructor.
+     *
+     * @since   2.0.0
+     */
     private static function type(
         string $id,
         string $label,
@@ -134,6 +170,11 @@ final class BuiltInFieldTypes
         );
     }
 
+    /**
+     * Block instantiation; the catalogue is reachable through static members only.
+     *
+     * @since  2.0.0
+     */
     private function __construct()
     {
     }

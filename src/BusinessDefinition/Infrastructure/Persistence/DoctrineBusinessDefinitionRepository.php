@@ -30,12 +30,61 @@ use LogicException;
 use Ramsey\Uuid\Uuid;
 use RuntimeException;
 
+/**
+ * Catalog, draft and published-version store over the prefixed `business_definition*` tables.
+ *
+ * This is the `BusinessDefinitionRepository` the container wires in production, and it spreads one handle
+ * across four tables: `business_definitions` carries the catalog head, `business_definition_drafts` at most
+ * one row of work in progress, `business_definition_versions` the published bytes beside the compatibility
+ * plan that produced them, and `business_definition_dependencies` the flattened rows through which schema
+ * planning finds what a published version reads. Every read is scoped to a site and takes the definition's
+ * UUID or its handle in the same argument, branching the SQL identity clause on `Uuid::isValid()`, so a
+ * caller never has to resolve one spelling into the other first.
+ *
+ * Writes are optimistic rather than locked, and each one refuses to start unless the caller already opened a
+ * transaction, so a refusal midway leaves the catalog, the drafts and the history as they were. `saveDraft()`
+ * and `publish()` put the revision they were composed against into the WHERE clause and turn an affected-row
+ * count other than one into `BusinessDefinitionRevisionConflict`, re-reading the head so the conflict reports
+ * the revision the catalog actually holds; a first save that loses the race to create the handle surfaces as
+ * a unique-constraint violation and is translated into the same conflict. Identity and ownership are checked
+ * against the stored head on every save, so a handle cannot be moved to another definition or another owner.
+ *
+ * Nothing coming out of storage is trusted. Every column is read through a typed accessor that raises
+ * `RuntimeException` rather than coercing, JSON columns have to decode to the object or list shape their
+ * reader expects, enum-backed columns have to name a case, and the value objects rebuilt from a row re-verify
+ * their own checksums — so a hand-edited or corrupted row is refused at the read that touched it instead of
+ * reaching the schema compiler as though it were canonical.
+ *
+ * @since  2.0.0
+ */
 final readonly class DoctrineBusinessDefinitionRepository implements BusinessDefinitionRepository
 {
+    /**
+     * Bind the store to the connection its statements run on and the resolver that names its tables.
+     *
+     * @param  Connection  $database  DBAL connection carrying the transaction every writer here requires.
+     * @param  TableNames  $tables    Resolver applying the configured prefix to every table this store reads
+     *         or writes, from `business_definitions` through to `business_field_types`.
+     *
+     * @since  2.0.0
+     */
     public function __construct(private Connection $database, private TableNames $tables)
     {
     }
 
+    /**
+     * List every catalog head the site holds, whoever owns it.
+     *
+     * @param   SiteContext  $site  Site whose `business_definitions` rows are read.
+     *
+     * @return  list<DefinitionCatalogEntry>  One head per handle, ordered by handle; empty when the site has
+     *          no definitions at all.
+     *
+     * @throws  RuntimeException  When a stored head is missing a column, holds a wrongly typed value, or its
+     *          owner type or publication state names no case.
+     *
+     * @since   2.0.0
+     */
     public function catalog(SiteContext $site): array
     {
         $rows = $this->database->fetchAllAssociative(sprintf(
@@ -46,6 +95,21 @@ final readonly class DoctrineBusinessDefinitionRepository implements BusinessDef
         return array_map($this->mapEntry(...), $rows);
     }
 
+    /**
+     * Resolve one catalog head, touching neither the draft table nor the version table.
+     *
+     * @param   SiteContext  $site        Site the definition must belong to.
+     * @param   string       $identifier  The definition's UUID or its handle; a canonical UUID is matched
+     *          against either column, anything else against the handle alone.
+     *
+     * @return  ?DefinitionCatalogEntry  Where the handle stands, or null when this site holds no such
+     *          definition.
+     *
+     * @throws  RuntimeException  When the stored head is missing a column, holds a wrongly typed value, or
+     *          its owner type or publication state names no case.
+     *
+     * @since   2.0.0
+     */
     public function entry(SiteContext $site, string $identifier): ?DefinitionCatalogEntry
     {
         $row = $this->entryRow($site, $identifier);
@@ -53,6 +117,27 @@ final readonly class DoctrineBusinessDefinitionRepository implements BusinessDef
         return $row === null ? null : $this->mapEntry($row);
     }
 
+    /**
+     * Load the handle's work in progress by joining its draft row to the catalog head.
+     *
+     * The join is what confines the lookup to one site, since the draft table carries only a definition id.
+     * A null answer does not distinguish "no such definition" from "published with nothing in progress",
+     * because publication deletes the draft row.
+     *
+     * @param   SiteContext  $site        Site the definition must belong to.
+     * @param   string       $identifier  The definition's UUID or its handle; a canonical UUID is matched
+     *          against either column, anything else against the handle alone.
+     *
+     * @return  ?DefinitionDraft  The stored draft with the revision a further write must quote, or null when
+     *          the site holds no such definition or its draft was consumed by a publication.
+     *
+     * @throws  RuntimeException  When the draft row is missing a column, holds a wrongly typed value, or its
+     *          canonical payload does not decode to a JSON object.
+     * @throws  InvalidBusinessDefinition  When the stored payload is not a valid definition, or the stored
+     *          checksum disagrees with the bytes it sits beside.
+     *
+     * @since   2.0.0
+     */
     public function draft(SiteContext $site, string $identifier): ?DefinitionDraft
     {
         $identity = Uuid::isValid($identifier) ? '(h.id = ? OR h.handle = ?)' : 'h.handle = ?';
@@ -79,6 +164,27 @@ final readonly class DoctrineBusinessDefinitionRepository implements BusinessDef
         );
     }
 
+    /**
+     * Load one published version, defaulting to whichever version the catalog head currently serves.
+     *
+     * With no version named the statement compares against `h.published_version`, so a handle that has never
+     * been published matches nothing and answers null rather than falling back to its newest version.
+     *
+     * @param   SiteContext  $site        Site the definition must belong to.
+     * @param   string       $identifier  The definition's UUID or its handle; a canonical UUID is matched
+     *          against either column, anything else against the handle alone.
+     * @param   ?int         $version     Version to load, or null for the one the head publishes.
+     *
+     * @return  ?DefinitionVersionRecord  The version paired with the plan that produced it, or null when the
+     *          site holds no such definition, never published that version, or has published nothing yet.
+     *
+     * @throws  RuntimeException  When the version row is missing a column, holds a wrongly typed value, or a
+     *          stored status, classification or plan document is malformed.
+     * @throws  InvalidBusinessDefinition  When the stored payload is not a valid definition, or bytes, plan
+     *          and status do not describe one consistent publication.
+     *
+     * @since   2.0.0
+     */
     public function published(SiteContext $site, string $identifier, ?int $version = null): ?DefinitionVersionRecord
     {
         $identity = Uuid::isValid($identifier) ? '(h.id = ? OR h.handle = ?)' : 'h.handle = ?';
@@ -101,6 +207,23 @@ final readonly class DoctrineBusinessDefinitionRepository implements BusinessDef
         return $row === false ? null : $this->mapVersion($row);
     }
 
+    /**
+     * List every version of one definition that was ever published, newest first.
+     *
+     * @param   SiteContext  $site        Site the definition must belong to.
+     * @param   string       $identifier  The definition's UUID or its handle; a canonical UUID is matched
+     *          against either column, anything else against the handle alone.
+     *
+     * @return  list<DefinitionVersionRecord>  Ordered by version descending; empty when the site holds no
+     *          such definition or it has never been published.
+     *
+     * @throws  RuntimeException  When a version row is missing a column, holds a wrongly typed value, or a
+     *          stored status, classification or plan document is malformed.
+     * @throws  InvalidBusinessDefinition  When a stored payload is not a valid definition, or bytes, plan and
+     *          status do not describe one consistent publication.
+     *
+     * @since   2.0.0
+     */
     public function history(SiteContext $site, string $identifier): array
     {
         $identity = Uuid::isValid($identifier) ? '(h.id = ? OR h.handle = ?)' : 'h.handle = ?';
@@ -117,6 +240,34 @@ final readonly class DoctrineBusinessDefinitionRepository implements BusinessDef
         return array_map($this->mapVersion(...), $rows);
     }
 
+    /**
+     * Write the draft for a handle, creating its catalog head when this is the first save.
+     *
+     * The head is located by the definition's own site and handle, so the expected revision is the caller's
+     * proof it composed the change against what is stored: with no head yet only null or zero is accepted and
+     * the head is created at revision one; with a head present the value has to equal the stored draft
+     * revision exactly, which means null is refused once the handle exists. The bump runs as an UPDATE
+     * filtered on that revision and the draft row is then upserted — updated in place, inserted only when the
+     * update matched nothing — so the head revision and the draft row always advance together.
+     *
+     * @param   EntityTypeDefinition  $definition        Draft to store, carrying its own id, site, handle and
+     *          owner.
+     * @param   string                $actorId           Actor recorded as having last saved the draft.
+     * @param   DateTimeImmutable     $now               Instant recorded on the head and the draft row.
+     * @param   ?int                  $expectedRevision  Draft revision the change was composed against, or
+     *          null when the caller expects to be creating the definition.
+     *
+     * @return  DefinitionDraft  The stored draft at its new revision, which the next write must quote.
+     *
+     * @throws  LogicException  When the caller has no transaction open.
+     * @throws  BusinessDefinitionRevisionConflict  When the stored head is not at the expected revision, or
+     *          another writer created or advanced the same handle first.
+     * @throws  InvalidBusinessDefinition  When the stored head names a different definition id or owner for
+     *          this handle, or the definition cannot be canonically encoded to a checksum.
+     * @throws  RuntimeException  When the stored head is missing a column or holds a wrongly typed value.
+     *
+     * @since   2.0.0
+     */
     public function saveDraft(
         EntityTypeDefinition $definition,
         string $actorId,
@@ -207,6 +358,35 @@ final readonly class DoctrineBusinessDefinitionRepository implements BusinessDef
         return new DefinitionDraft($definition, $revision, $definition->checksum(), $actorId, $now);
     }
 
+    /**
+     * Promote the stored draft to a published version and retire the version it replaces.
+     *
+     * The plan is checked against the bytes before anything is written: its target checksum has to match the
+     * definition's own and its target version has to be the definition's version, so a plan analysed against
+     * different bytes can never be stored beside them. The head then moves to `draft_revision = 0` under a
+     * revision-guarded UPDATE, any still-published predecessor is marked superseded without its bytes being
+     * touched, the new version row is inserted with its plan, its dependency rows are rewritten, and the draft
+     * row is deleted — leaving the handle published with no work in progress.
+     *
+     * @param   EntityTypeDefinition  $definition             Definition already advanced to the version the
+     *          plan targets, whose checksum the plan names.
+     * @param   CompatibilityPlan     $plan                   Plan analysed for exactly these bytes; stored
+     *          verbatim beside the version.
+     * @param   string                $actorId                Actor recorded as the publisher.
+     * @param   DateTimeImmutable     $now                    Instant recorded as the publication time.
+     * @param   int                   $expectedDraftRevision  Draft revision being published, as the caller
+     *          last read it.
+     *
+     * @return  DefinitionVersionRecord  The stored version, published and paired with its plan.
+     *
+     * @throws  LogicException  When the caller has no transaction open.
+     * @throws  InvalidBusinessDefinition  When the definition's checksum or version does not match the plan,
+     *          the definition cannot be canonically encoded, or it does not itself carry published status.
+     * @throws  BusinessDefinitionRevisionConflict  When the head is no longer at the expected draft revision,
+     *          so another writer changed it after the plan was analysed.
+     *
+     * @since   2.0.0
+     */
     public function publish(
         EntityTypeDefinition $definition,
         CompatibilityPlan $plan,
@@ -273,6 +453,31 @@ final readonly class DoctrineBusinessDefinitionRepository implements BusinessDef
         return new DefinitionVersionRecord($definition, $plan, DefinitionStatus::Published, $actorId, $now);
     }
 
+    /**
+     * Move one published version to a later lifecycle state, leaving its bytes untouched.
+     *
+     * Only a retirement is accepted here — superseded, deprecated or rejected — because publishing is what
+     * moves a version into service and this path never rewrites canonical payloads. The catalog head follows
+     * the version only when the version being moved is the one the head serves.
+     *
+     * @param   SiteContext        $site        Site the definition must belong to.
+     * @param   string             $identifier  The definition's UUID or its handle.
+     * @param   int                $version     Published version whose lifecycle state is changing.
+     * @param   DefinitionStatus   $status      State to move it to; only `Superseded`, `Deprecated` and
+     *          `Rejected` are accepted.
+     * @param   DateTimeImmutable  $now         Instant recorded against the catalog head, when it follows.
+     *
+     * @return  DefinitionVersionRecord  The version re-read from storage in its new state.
+     *
+     * @throws  LogicException  When the caller has no transaction open.
+     * @throws  InvalidBusinessDefinition  When the target state is not a retirement, the site holds no such
+     *          definition, the update matched no version row, or the version re-read afterwards is not a
+     *          consistent publication.
+     * @throws  RuntimeException  When the changed version cannot be read back, or a stored row is missing a
+     *          column or holds a wrongly typed value.
+     *
+     * @since   2.0.0
+     */
     public function changeStatus(
         SiteContext $site,
         string $identifier,
@@ -309,6 +514,26 @@ final readonly class DoctrineBusinessDefinitionRepository implements BusinessDef
             ?? throw new RuntimeException('The changed business definition could not be reloaded.');
     }
 
+    /**
+     * Flip the availability of everything one extension owns, without republishing any of it.
+     *
+     * Two tables move together because a definition cannot be read without the field types its owner
+     * contributed: the extension's catalog heads and its rows in `business_field_types`. Versions keep their
+     * bytes, their numbering and their history, so this is a switch rather than a publication. The update is
+     * keyed on owner alone and therefore crosses every site, matching the fact that an extension is installed
+     * once per installation.
+     *
+     * @param   string             $ownerIdentifier  Owning extension, as `vendor/name`.
+     * @param   bool               $active           Whether its definitions and field types become available
+     *          again.
+     * @param   DateTimeImmutable  $now              Instant recorded against every affected row.
+     *
+     * @return  void
+     *
+     * @throws  LogicException  When the caller has no transaction open.
+     *
+     * @since   2.0.0
+     */
     public function setOwnerActive(string $ownerIdentifier, bool $active, DateTimeImmutable $now): void
     {
         $this->assertTransaction('Business-definition owner lifecycle synchronization');
@@ -328,7 +553,19 @@ final readonly class DoctrineBusinessDefinitionRepository implements BusinessDef
         ]);
     }
 
-    /** @param array<string, mixed> $row */
+    /**
+     * Rebuild a catalog head from one `business_definitions` row.
+     *
+     * @param   array<string, mixed>  $row  Head row as fetched, keyed by unqualified column name.
+     *
+     * @return  DefinitionCatalogEntry  Where the handle stands, with owner and publication state resolved
+     *          back to their enum cases.
+     *
+     * @throws  RuntimeException  When a column is absent or wrongly typed, or the stored owner type or
+     *          publication state names no case.
+     *
+     * @since   2.0.0
+     */
     private function mapEntry(array $row): DefinitionCatalogEntry
     {
         $ownerType = DefinitionOwnerType::tryFrom($this->string($row, 'owner_type'))
@@ -349,7 +586,26 @@ final readonly class DoctrineBusinessDefinitionRepository implements BusinessDef
         );
     }
 
-    /** @param array<string, mixed> $row */
+    /**
+     * Rebuild a published version and the compatibility plan stored beside it from one version row.
+     *
+     * The plan is reassembled from its own stored document rather than recomputed, so a historical version
+     * keeps the account of what publishing it cost even after the definitions it was compared against have
+     * moved on. Each change document has to be a JSON object naming a real classification; a list or a
+     * scalar in that position is treated as corruption rather than skipped.
+     *
+     * @param   array<string, mixed>  $row  Version row as fetched, keyed by unqualified column name.
+     *
+     * @return  DefinitionVersionRecord  The published bytes paired with the plan that produced them.
+     *
+     * @throws  RuntimeException  When a column is absent or wrongly typed, a JSON column does not hold the
+     *          object or list it should, or a stored classification or version status names no case.
+     * @throws  InvalidBusinessDefinition  When the stored payload is not a valid definition, a change's
+     *          pointer or message is invalid, the plan's bounds or checksums are invalid, or bytes, plan and
+     *          status do not describe one consistent publication.
+     *
+     * @since   2.0.0
+     */
     private function mapVersion(array $row): DefinitionVersionRecord
     {
         $definition = EntityTypeDefinition::fromArray($this->jsonObject($row, 'canonical_payload'));
@@ -386,6 +642,20 @@ final readonly class DoctrineBusinessDefinitionRepository implements BusinessDef
         );
     }
 
+    /**
+     * Rewrite the dependency rows for one published version from the definition's own dependency graph.
+     *
+     * The rows exist so schema planning can ask what a version reads without decoding its payload. They are
+     * deleted and re-inserted for this exact `(definition_id, version)` pair rather than merged, which keeps
+     * a republication of the same version from leaving stale edges behind. Field dependencies are flattened
+     * one row per edge, spelled `source>target`.
+     *
+     * @param   EntityTypeDefinition  $definition  Version whose dependency rows are being replaced.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     private function replaceDependencies(EntityTypeDefinition $definition): void
     {
         $this->database->delete($this->tables->raw('business_definition_dependencies'), [
@@ -405,6 +675,20 @@ final readonly class DoctrineBusinessDefinitionRepository implements BusinessDef
         }
     }
 
+    /**
+     * Insert one dependency edge for a published version, attributed to the definition's owner.
+     *
+     * @param   EntityTypeDefinition  $definition  Version the edge belongs to, supplying id, version number
+     *          and owner.
+     * @param   string                $kind        Edge category stored in `dependency_kind`: `field`,
+     *          `entity` or `field_type`.
+     * @param   string                $handle      What the edge points at: a dependent entity or field-type
+     *          handle, or `source>target` for a field-level edge.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     private function insertDependency(EntityTypeDefinition $definition, string $kind, string $handle): void
     {
         $this->database->insert($this->tables->raw('business_definition_dependencies'), [
@@ -416,7 +700,21 @@ final readonly class DoctrineBusinessDefinitionRepository implements BusinessDef
         ], ['version' => Types::INTEGER]);
     }
 
-    /** @return array<string, mixed>|null */
+    /**
+     * Fetch the raw catalog head row for a site-scoped UUID or handle.
+     *
+     * The operations that need the head itself — `entry()`, `saveDraft()` and `changeStatus()` — all come
+     * through here, so the identity branch is written once: a canonical UUID is matched against `id` or
+     * `handle`, anything else against `handle` alone.
+     *
+     * @param   SiteContext  $site        Site the row must belong to.
+     * @param   string       $identifier  The definition's UUID or its handle.
+     *
+     * @return  array<string, mixed>|null  The head row exactly as the driver returned it, or null when
+     *          nothing matched.
+     *
+     * @since   2.0.0
+     */
     private function entryRow(SiteContext $site, string $identifier): ?array
     {
         $identity = Uuid::isValid($identifier) ? '(id = ? OR handle = ?)' : 'handle = ?';
@@ -431,7 +729,24 @@ final readonly class DoctrineBusinessDefinitionRepository implements BusinessDef
         return $row === false ? null : $row;
     }
 
-    /** @param array<string, mixed> $row */
+    /**
+     * Refuse a save that would re-point an existing handle at another definition or another owner.
+     *
+     * A handle is looked up by site and name, so without this check a second definition claiming the same
+     * handle would silently take over the stored head. Identity and ownership are therefore settled when the
+     * entry is first created and no later save can move them.
+     *
+     * @param   EntityTypeDefinition  $definition  Definition being saved.
+     * @param   array<string, mixed>  $row         Stored head row currently holding that site and handle.
+     *
+     * @return  void
+     *
+     * @throws  InvalidBusinessDefinition  When the stored id, owner type or owner identifier differs from the
+     *          definition being saved.
+     * @throws  RuntimeException  When one of those columns is absent or is not a non-empty string.
+     *
+     * @since   2.0.0
+     */
     private function assertSameOwner(EntityTypeDefinition $definition, array $row): void
     {
         if (
@@ -443,6 +758,19 @@ final readonly class DoctrineBusinessDefinitionRepository implements BusinessDef
         }
     }
 
+    /**
+     * Re-read a head's draft revision so a refused write can report what the catalog now holds.
+     *
+     * This runs on the failure path only, after a revision-guarded UPDATE matched no row, and it deliberately
+     * degrades instead of throwing: reporting a conflict must not itself fail.
+     *
+     * @param   string  $id  Definition UUID of the head to re-read.
+     *
+     * @return  int  The stored draft revision, or zero when the row is gone or the driver returned something
+     *          that is not a number.
+     *
+     * @since   2.0.0
+     */
     private function headDraftRevision(string $id): int
     {
         $value = $this->database->fetchOne(sprintf(
@@ -453,6 +781,20 @@ final readonly class DoctrineBusinessDefinitionRepository implements BusinessDef
         return is_numeric($value) ? (int) $value : 0;
     }
 
+    /**
+     * Refuse to start a multi-statement write outside a transaction the caller already opened.
+     *
+     * Each write here touches several tables, so a partial failure has to roll back as one unit. The store
+     * never opens the transaction itself, because the caller usually spans this write and an audit entry.
+     *
+     * @param   string  $operation  Name of the operation, used to open the failure message.
+     *
+     * @return  void
+     *
+     * @throws  LogicException  When no transaction is active on the connection.
+     *
+     * @since   2.0.0
+     */
     private function assertTransaction(string $operation): void
     {
         if (!$this->database->isTransactionActive()) {
@@ -460,7 +802,18 @@ final readonly class DoctrineBusinessDefinitionRepository implements BusinessDef
         }
     }
 
-    /** @param array<string, mixed> $row */
+    /**
+     * Read a column that must hold a non-empty string.
+     *
+     * @param   array<string, mixed>  $row  Row as fetched, keyed by unqualified column name.
+     * @param   string                $key  Column to read.
+     *
+     * @return  string  The stored value, never the empty string.
+     *
+     * @throws  RuntimeException  When the column is absent, not a string, or empty.
+     *
+     * @since   2.0.0
+     */
     private function string(array $row, string $key): string
     {
         $value = $row[$key] ?? null;
@@ -470,7 +823,21 @@ final readonly class DoctrineBusinessDefinitionRepository implements BusinessDef
         return $value;
     }
 
-    /** @param array<string, mixed> $row */
+    /**
+     * Read a column that may be absent but must otherwise hold a string.
+     *
+     * Unlike `string()` this accepts the empty string, because a nullable text column carries the absent
+     * case in null rather than in emptiness.
+     *
+     * @param   array<string, mixed>  $row  Row as fetched, keyed by unqualified column name.
+     * @param   string                $key  Column to read.
+     *
+     * @return  ?string  The stored value, or null when the column is absent or SQL NULL.
+     *
+     * @throws  RuntimeException  When the column holds something that is neither null nor a string.
+     *
+     * @since   2.0.0
+     */
     private function nullableString(array $row, string $key): ?string
     {
         $value = $row[$key] ?? null;
@@ -480,7 +847,22 @@ final readonly class DoctrineBusinessDefinitionRepository implements BusinessDef
         return $value;
     }
 
-    /** @param array<string, mixed> $row */
+    /**
+     * Read a column that must hold a whole number.
+     *
+     * Digit strings are accepted because several drivers hydrate integer columns as text, but nothing else
+     * is coerced: a float, a boolean or a partly numeric string is corruption, not a value to round.
+     *
+     * @param   array<string, mixed>  $row  Row as fetched, keyed by unqualified column name.
+     * @param   string                $key  Column to read.
+     *
+     * @return  int  The stored number, converted from the driver's text form when needed.
+     *
+     * @throws  RuntimeException  When the column is absent, or holds neither an integer nor an optionally
+     *          signed run of digits.
+     *
+     * @since   2.0.0
+     */
     private function integer(array $row, string $key): int
     {
         $value = $row[$key] ?? null;
@@ -490,13 +872,38 @@ final readonly class DoctrineBusinessDefinitionRepository implements BusinessDef
         return (int) $value;
     }
 
-    /** @param array<string, mixed> $row */
+    /**
+     * Read a nullable whole-number column, such as a head's published version.
+     *
+     * @param   array<string, mixed>  $row  Row as fetched, keyed by unqualified column name.
+     * @param   string                $key  Column to read.
+     *
+     * @return  ?int  The stored number, or null when the column is absent or SQL NULL.
+     *
+     * @throws  RuntimeException  When a present value is neither an integer nor a run of digits.
+     *
+     * @since   2.0.0
+     */
     private function integerOrNull(array $row, string $key): ?int
     {
         return ($row[$key] ?? null) === null ? null : $this->integer($row, $key);
     }
 
-    /** @param array<string, mixed> $row */
+    /**
+     * Read a flag column across drivers that spell booleans differently.
+     *
+     * A native boolean is taken as is, and the integer or string forms of zero and one are accepted because
+     * that is how the supported platforms hydrate a boolean column. Nothing else is treated as truthy.
+     *
+     * @param   array<string, mixed>  $row  Row as fetched, keyed by unqualified column name.
+     * @param   string                $key  Column to read.
+     *
+     * @return  bool  The stored flag.
+     *
+     * @throws  RuntimeException  When the column is absent or holds anything other than a boolean, 0 or 1.
+     *
+     * @since   2.0.0
+     */
     private function boolean(array $row, string $key): bool
     {
         $value = $row[$key] ?? null;
@@ -510,8 +917,21 @@ final readonly class DoctrineBusinessDefinitionRepository implements BusinessDef
     }
 
     /**
-     * @param array<string, mixed> $row
-     * @return array<string, mixed>
+     * Read a JSON column that must hold an object, decoding it when the driver returned raw text.
+     *
+     * Drivers differ over whether a JSON column arrives decoded, so both forms are accepted. A JSON list is
+     * refused rather than accepted as an array, because the callers key into what comes back; the empty
+     * array is the one ambiguous value allowed through, since `[]` encodes both an empty object and an empty
+     * list. Decoding is bounded at 64 levels and a decode failure is converted here rather than propagated.
+     *
+     * @param   array<string, mixed>  $row  Row as fetched, keyed by unqualified column name.
+     * @param   string                $key  JSON column to read.
+     *
+     * @return  array<string, mixed>  The decoded document, keyed by its own property names.
+     *
+     * @throws  RuntimeException  When the stored text is not valid JSON, or the value is not an object.
+     *
+     * @since   2.0.0
      */
     private function jsonObject(array $row, string $key): array
     {
@@ -531,8 +951,19 @@ final readonly class DoctrineBusinessDefinitionRepository implements BusinessDef
     }
 
     /**
-     * @param array<string, mixed> $row
-     * @return list<mixed>
+     * Read a member of an already-decoded JSON document that must hold a list.
+     *
+     * Unlike `jsonObject()` this never decodes: it reads inside a document that has already been decoded,
+     * such as the `changes` member of a stored compatibility plan.
+     *
+     * @param   array<string, mixed>  $row  Decoded document to read the member from.
+     * @param   string                $key  Member expected to hold a list.
+     *
+     * @return  list<mixed>  The stored list, with its elements still unvalidated.
+     *
+     * @throws  RuntimeException  When the member is absent, is not an array, or is keyed rather than a list.
+     *
+     * @since   2.0.0
      */
     private function arrayList(array $row, string $key): array
     {
@@ -543,6 +974,22 @@ final readonly class DoctrineBusinessDefinitionRepository implements BusinessDef
         return $value;
     }
 
+    /**
+     * Normalise whatever the driver returned for a timestamp column into an immutable date.
+     *
+     * Some platforms hydrate a date object and others hand back the raw string, so both are accepted rather
+     * than pinning the mapper to one driver. A bare string is read as UTC, which is the zone every
+     * definition timestamp is written in.
+     *
+     * @param   mixed  $value  Raw timestamp column value from a catalog, draft or version row.
+     *
+     * @return  DateTimeImmutable  The instant, converted when the driver returned another date type.
+     *
+     * @throws  RuntimeException  When the value is neither a date object nor a string.
+     * @throws  \DateMalformedStringException  When the string cannot be read as a date.
+     *
+     * @since   2.0.0
+     */
     private function date(mixed $value): DateTimeImmutable
     {
         if ($value instanceof DateTimeImmutable) {

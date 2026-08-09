@@ -48,9 +48,46 @@ use Kumwe\CMS\BusinessSchema\Domain\SchemaEvolutionHints;
 use Kumwe\CMS\BusinessSchema\Domain\SchemaInstallationStatus;
 use Ramsey\Uuid\Uuid;
 
-/** Compiles only metadata-validated identifiers and always binds caller-supplied values. */
+/**
+ * Compiles one business-record browse into the SQL, bindings and read metadata the repository runs.
+ *
+ * Business records live in tables the schema installer generated for a definition, so no part of a
+ * query can be settled until the pinned definition and the installed blueprint are read together.
+ * That resolution is this class's whole job: a field handle becomes physical columns, the request
+ * scope and the archive and soft-delete state become predicates, keyset paging becomes an explicit
+ * `ORDER BY` and a seek predicate, a relationship hop becomes a correlated `EXISTS`, and requested
+ * aggregates become a second statement over the same predicates. Compiling only metadata-validated
+ * identifiers and always binding caller-supplied values is the guarantee that makes that safe: nothing
+ * reaches a statement as text unless the installed blueprint named it, and every literal travels in
+ * the parameter list beside the type it is bound with. The definition's own permissions are enforced
+ * here too — a field must be declared filterable, sortable, searchable or reportable for the clause
+ * that names it, and a restricted or secret field is refused outright rather than queried on.
+ * Everything the definition or the installed schema cannot answer is refused as
+ * `InvalidBusinessRecordQuery`, which is why `DoctrineBusinessRecordReadRepository` can execute the
+ * `CompiledRecordQuery` it gets back without inspecting it.
+ *
+ * @since  2.0.0
+ */
 final readonly class DoctrineBusinessRecordQueryCompiler
 {
+    /**
+     * Wire the compiler to the metadata, codecs and connection it resolves a query against.
+     *
+     * @param  Connection                            $database       Connection whose platform quotes every
+     *         identifier, and which resolves an entity-reference literal to the record key it is stored as.
+     * @param  BusinessDefinitionRepository          $definitions    Source of the published definition a
+     *         relationship hop or entity reference points at.
+     * @param  BusinessSchemaInstallationRepository  $installations  Source of the installed schema behind
+     *         such a target, which decides the columns its part of the statement may name.
+     * @param  RecordValueCodec                      $values         Normalizes and encodes caller literals
+     *         and cursor values into the storage form each physical column is bound with.
+     * @param  RecordCursorCodec                     $cursors        Verifies and decodes the signed page
+     *         cursor a caller presents.
+     * @param  BusinessRecordMutationFence           $fence          Holds a relation target's installation
+     *         still for the rest of the transaction, so a hop cannot read a table an installer is moving.
+     *
+     * @since  2.0.0
+     */
     public function __construct(
         private Connection $database,
         private BusinessDefinitionRepository $definitions,
@@ -61,6 +98,32 @@ final readonly class DoctrineBusinessRecordQueryCompiler
     ) {
     }
 
+    /**
+     * Compile one page of a browse into an executable statement, its bindings and its read metadata.
+     *
+     * This is the only entry point, and it exists to make refusal uniform: the value codecs reject a
+     * literal with `InvalidArgumentException` while the resolvers refuse a handle with
+     * `InvalidBusinessRecordQuery`, and a caller should not have to tell the two apart, so everything
+     * leaves here under the second name.
+     *
+     * @param   ResolvedBusinessDefinition  $resolved       Definition version being browsed together with
+     *          the schema installed for it, which between them decide every identifier the statement may
+     *          name.
+     * @param   RecordScope                 $scope          Site and organization the browse is confined to,
+     *          bound into the statement rather than written into it.
+     * @param   RecordQuerySpecification    $specification  Filter, search, ordering, cursor, page size and
+     *          projection of the page being read.
+     *
+     * @return  CompiledRecordQuery  Page statement and optional aggregate statement with their bindings,
+     *          the field handles the projection resolved to, the columns the next cursor is read from, and
+     *          the digest that cursor must carry.
+     *
+     * @throws  InvalidBusinessRecordQuery  When the specification names a field, relationship or operator
+     *          the definition or the installed schema does not offer, presents a cursor minted for a
+     *          different query, or carries a literal the queried field cannot hold.
+     *
+     * @since   2.0.0
+     */
     public function compile(
         ResolvedBusinessDefinition $resolved,
         RecordScope $scope,
@@ -75,6 +138,34 @@ final readonly class DoctrineBusinessRecordQueryCompiler
         }
     }
 
+    /**
+     * Build the page statement, its optional aggregate companion and the metadata the reader needs.
+     *
+     * Assembly order is load-bearing. Scope, lifecycle, filter and search predicates are collected first
+     * and copied aside for the aggregate statement, so a total is measured over every record the query
+     * matches; only then is the cursor's seek predicate appended to the page statement, which is what
+     * keeps the page bound out of that total. The `SELECT` covers the projection plus the columns the
+     * next cursor is read from, and the `LIMIT` asks for one row more than the page size so the
+     * repository can see that a further page exists without counting.
+     *
+     * @param   ResolvedBusinessDefinition  $resolved       Definition version and installed schema the
+     *          statement is built against.
+     * @param   RecordScope                 $scope          Site and organization every predicate is
+     *          confined to.
+     * @param   RecordQuerySpecification    $specification  The page being read, already inside the bounds
+     *          its own constructor enforces.
+     *
+     * @return  CompiledRecordQuery  The compiled page, ready to execute.
+     *
+     * @throws  InvalidBusinessRecordQuery  When a handle resolves to nothing, a field is not permitted in
+     *          the clause that names it, a search field is not stored in a single textual column, or the
+     *          presented cursor was minted for a different query.
+     * @throws  InvalidArgumentException  When a cursor value cannot be restored to the storage form of the
+     *          ordering column it belongs to. `compile()` is the only caller and converts it, so no
+     *          caller outside this class sees it.
+     *
+     * @since   2.0.0
+     */
     private function doCompile(
         ResolvedBusinessDefinition $resolved,
         RecordScope $scope,
@@ -189,9 +280,28 @@ final readonly class DoctrineBusinessRecordQueryCompiler
     }
 
     /**
-     * @param list<mixed> $parameters
-     * @param list<string> $types
-     * @return list<string>
+     * Compile the equality predicates that confine a statement to one site and organization.
+     *
+     * The installed table decides which scope dimensions exist, and the two sides have to agree exactly:
+     * a scope value with no column to bind against, or a scope column the request leaves empty, means the
+     * definition's scope mode and the tables on disk have drifted apart, so the query is refused rather
+     * than run across a boundary it cannot express. Bindings are appended to the caller's lists, which is
+     * how one placeholder order is kept across the whole statement.
+     *
+     * @param   PhysicalTableBlueprint  $table       Installed table whose scope columns are consulted: a
+     *          record table, a junction table or an owned-line table.
+     * @param   string                  $alias       Alias the predicates qualify those columns with.
+     * @param   RecordScope             $scope       Resolved site and organization to confine to.
+     * @param   list<mixed>             $parameters  Bound values so far; the scope values are appended.
+     * @param   list<string>            $types       Doctrine type names so far, appended in step with $parameters.
+     *
+     * @return  list<string>  One `alias.column = ?` predicate per scope dimension the table declares;
+     *          empty when it declares none.
+     *
+     * @throws  InvalidBusinessRecordQuery  When the request carries a scope dimension the table has no
+     *          column for, or the table declares one the request leaves null.
+     *
+     * @since   2.0.0
      */
     private function scopePredicates(
         PhysicalTableBlueprint $table,
@@ -225,7 +335,25 @@ final readonly class DoctrineBusinessRecordQueryCompiler
         return $where;
     }
 
-    /** @param list<string> $where */
+    /**
+     * Append the archive and soft-delete exclusions, and guarantee the predicate list is not empty.
+     *
+     * Both exclusions are conditional on the installed table actually carrying the column, since a
+     * definition may declare neither lifecycle. When nothing at all has been collected — no scope
+     * dimension and no lifecycle column — a `1 = 1` is appended, so the caller can always emit a `WHERE`
+     * and join what follows with `AND`.
+     *
+     * @param   PhysicalTableBlueprint    $table          Installed record table being queried.
+     * @param   string                    $alias          Alias the predicates qualify columns with.
+     * @param   RecordQuerySpecification  $specification  Page request, which decides whether archived and
+     *          soft-deleted records are admitted.
+     * @param   list<string>              $where          Predicates collected so far, scope predicates
+     *          included; appended to in place.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     private function lifecyclePredicates(
         PhysicalTableBlueprint $table,
         string $alias,
@@ -244,8 +372,35 @@ final readonly class DoctrineBusinessRecordQueryCompiler
     }
 
     /**
-     * @param list<mixed> $parameters
-     * @param list<string> $types
+     * Compile one node of a filter tree into a predicate, descending into everything below it.
+     *
+     * The node kinds are dispatched here and the shared counter is charged one operation for each,
+     * capping a whole tree — relation hops and the filters nested inside them included — at sixty-four
+     * compiled operations. That repeats a bound `RecordQuerySpecification` already enforces, because a
+     * hop compiles the target definition's filter through this same method and so can multiply the work
+     * one specification asked for. Negation is spelled through `notTrue()` rather than SQL `NOT`, so a
+     * record whose column holds no value falls on the negative side instead of out of the result.
+     *
+     * @param   ResolvedBusinessDefinition  $resolved    Definition and installed schema the handles in
+     *          this node resolve against; inside a relation hop that is the target's, not the browsed
+     *          definition's.
+     * @param   PhysicalTableBlueprint      $table       Installed table the node's columns live in.
+     * @param   string                      $alias       Alias those columns are qualified with.
+     * @param   RecordScope                 $scope       Scope entity references are resolved within and
+     *          related rows are confined to.
+     * @param   RecordFilter                $filter      Node to compile.
+     * @param   list<mixed>                 $parameters  Bound values so far; this node's are appended.
+     * @param   list<string>                $types       Doctrine type names so far, appended in step with $parameters.
+     * @param   int                         $counter     Running count of compiled operations, shared by
+     *          the whole tree and also used to number the aliases a relation hop introduces.
+     *
+     * @return  string  A predicate covering this node and everything below it, ready to join with `AND`.
+     *
+     * @throws  InvalidBusinessRecordQuery  When the tree exceeds sixty-four operations, a handle names no
+     *          field or one the definition does not allow a filter to use, the field's storage cannot
+     *          answer the operator portably, or the node is of a kind this compiler does not implement.
+     *
+     * @since   2.0.0
      */
     private function filter(
         ResolvedBusinessDefinition $resolved,
@@ -363,8 +518,31 @@ final readonly class DoctrineBusinessRecordQueryCompiler
     }
 
     /**
-     * @param list<mixed> $parameters
-     * @param list<string> $types
+     * Compile a single field-against-value comparison across every column that field occupies.
+     *
+     * A composite field is compared column by column: equality joins the parts with `AND` and inequality
+     * with `OR`, which is why an ordering comparison is admitted over one column only. Inequality is
+     * emitted as the negation of the equality test through `notTrue()`, so a record holding no value
+     * counts as different rather than dropping out of the result.
+     *
+     * @param   ResolvedBusinessDefinition  $resolved    Definition and installed schema the field handle
+     *          resolves against.
+     * @param   PhysicalTableBlueprint      $table       Installed table the field's columns live in.
+     * @param   string                      $alias       Alias those columns are qualified with.
+     * @param   RecordScope                 $scope       Scope an entity-reference value is resolved
+     *          within.
+     * @param   ComparisonFilter            $filter      Field, operator and literal to compare.
+     * @param   list<mixed>                 $parameters  Bound values so far; the encoded literal is
+     *          appended once per column.
+     * @param   list<string>                $types       Doctrine type names so far, appended in step with $parameters.
+     *
+     * @return  string  A parenthesized predicate over every column the field occupies.
+     *
+     * @throws  InvalidBusinessRecordQuery  When the field is not one a filter may name, an ordering
+     *          comparison is asked of a composite field, or a column's type carries no portable meaning
+     *          under the operator.
+     *
+     * @since   2.0.0
      */
     private function comparison(
         ResolvedBusinessDefinition $resolved,
@@ -417,6 +595,16 @@ final readonly class DoctrineBusinessRecordQueryCompiler
         return '(' . implode($join, $parts) . ')';
     }
 
+    /**
+     * Report whether a column's storage type answers equality the same way on every supported engine.
+     *
+     * @param   PhysicalColumnBlueprint  $column  Installed column whose Doctrine type is examined.
+     *
+     * @return  bool  True for the scalar types listed here; false for binary, blob and JSON storage,
+     *          whose equality is engine-defined.
+     *
+     * @since   2.0.0
+     */
     private function equalityComparable(PhysicalColumnBlueprint $column): bool
     {
         return in_array($column->doctrineType, [
@@ -425,7 +613,16 @@ final readonly class DoctrineBusinessRecordQueryCompiler
         ], true);
     }
 
-    /** @param list<PhysicalColumnBlueprint> $columns */
+    /**
+     * Report whether every column of a composite field can be compared for equality.
+     *
+     * @param   list<PhysicalColumnBlueprint>  $columns  Columns backing one definition field.
+     *
+     * @return  bool  True only when the list is non-empty and each column qualifies, so a field with no
+     *          installed storage is never treated as comparable.
+     *
+     * @since   2.0.0
+     */
     private function allEqualityComparable(array $columns): bool
     {
         if ($columns === []) {
@@ -440,6 +637,19 @@ final readonly class DoctrineBusinessRecordQueryCompiler
         return true;
     }
 
+    /**
+     * Report whether a column's storage type orders the same way on every supported engine.
+     *
+     * Narrower than equality comparison: `boolean` and `guid` are absent, because neither carries an
+     * ordering a caller could rely on, and both a range filter and a keyset page depend on the ordering
+     * being reproducible.
+     *
+     * @param   PhysicalColumnBlueprint  $column  Installed column whose Doctrine type is examined.
+     *
+     * @return  bool  True when `<` and `>` over the column mean the same thing on every engine.
+     *
+     * @since   2.0.0
+     */
     private function orderedComparable(PhysicalColumnBlueprint $column): bool
     {
         return in_array($column->doctrineType, [
@@ -449,8 +659,36 @@ final readonly class DoctrineBusinessRecordQueryCompiler
     }
 
     /**
-     * @param list<mixed> $parameters
-     * @param list<string> $types
+     * Compile a relationship hop into a correlated `EXISTS` over the related table.
+     *
+     * Which storage the installed schema actually provides decides the correlation: an owned-line table
+     * keyed by its owner, a target column on the source row, a junction table, or — when the source side
+     * carries no storage at all — the canonical inverse declared on the target, whose own column or
+     * junction is used instead. Related rows are then narrowed the way the outer query is: soft-deleted
+     * rows are excluded, and the scope is bound except under owned lines, which are already reached
+     * through their owner. `None` and `All` are expressed as the negation of an existence test rather
+     * than with SQL `NOT`, so a related row whose predicate is unknown counts against `All`.
+     *
+     * @param   ResolvedBusinessDefinition  $source       Definition and installed schema the hop starts
+     *          from.
+     * @param   PhysicalTableBlueprint      $sourceTable  Installed table of the records being filtered.
+     * @param   string                      $sourceAlias  Alias the subquery correlates back to.
+     * @param   RecordScope                 $scope        Scope the junction and the related rows are
+     *          confined to.
+     * @param   RelationFilter              $filter       Relationship to traverse, the quantifier to
+     *          apply, and the filter the related records are measured against.
+     * @param   list<mixed>                 $parameters   Bound values so far; the hop's are appended.
+     * @param   list<string>                $types        Doctrine type names so far, appended in step with $parameters.
+     * @param   int                         $counter      Running operation count, also incremented here to
+     *          number the target and junction aliases this hop introduces.
+     *
+     * @return  string  An `EXISTS` predicate, or its negation, correlated to the outer row.
+     *
+     * @throws  InvalidBusinessRecordQuery  When the handle names no relationship, the target definition or
+     *          its schema is unavailable, the installed schema offers no storage for the association in
+     *          either direction, or the nested filter is itself refused.
+     *
+     * @since   2.0.0
      */
     private function relation(
         ResolvedBusinessDefinition $source,
@@ -584,12 +822,49 @@ final readonly class DoctrineBusinessRecordQueryCompiler
         return $exists($targetPredicate);
     }
 
+    /**
+     * Wrap a predicate so it holds exactly when that predicate does not, unknown outcomes included.
+     *
+     * SQL `NOT` leaves an unknown comparison unknown and the row is dropped, which is the wrong answer
+     * for a negative filter over a column holding no value. The `CASE` emitted here maps both false and
+     * unknown to a match, and every negation the compiler produces — inequality, a negated set, and the
+     * `None` and `All` relation quantifiers — is spelled through it.
+     *
+     * @param   string  $predicate  Predicate to invert; it is parenthesized as part of the wrapping.
+     *
+     * @return  string  A comparison usable wherever a predicate is, true when $predicate is not true.
+     *
+     * @since   2.0.0
+     */
     private function notTrue(string $predicate): string
     {
         return 'CASE WHEN (' . $predicate . ') THEN 0 ELSE 1 END = 1';
     }
 
-    /** @return array{list<string>, list<array{field: ?string, physical: string}>} */
+    /**
+     * Compile the requested ordering into `ORDER BY` terms and the columns a cursor is read from.
+     *
+     * Null placement is emitted as an explicit rank expression ahead of the column itself, so the order
+     * does not depend on where an engine puts empty values, and the record identity is always appended
+     * last, which makes the ordering total and therefore safe to page on. A specification that declares
+     * no sort orders by last update, newest first, and its cursor is read from that column.
+     *
+     * @param   ResolvedBusinessDefinition  $resolved       Definition and installed schema the sort
+     *          handles resolve against.
+     * @param   PhysicalTableBlueprint      $table          Installed record table being ordered.
+     * @param   string                      $alias          Alias the ordering qualifies columns with.
+     * @param   RecordQuerySpecification    $specification  Page request carrying the ordering keys.
+     *
+     * @return  array{list<string>, list<array{field: ?string, physical: string}>}  The `ORDER BY` terms in
+     *          order, and the columns the next cursor is built from, whose `field` is null for the default
+     *          last-updated ordering.
+     *
+     * @throws  InvalidBusinessRecordQuery  When a sort names no field, names one the definition does not
+     *          allow to be sorted or shown, spans more than one column, or reads a column whose type has
+     *          no portable keyset ordering.
+     *
+     * @since   2.0.0
+     */
     private function sorts(
         ResolvedBusinessDefinition $resolved,
         PhysicalTableBlueprint $table,
@@ -632,9 +907,37 @@ final readonly class DoctrineBusinessRecordQueryCompiler
     }
 
     /**
-     * @param list<mixed> $cursorValues
-     * @param list<mixed> $parameters
-     * @param list<string> $types
+     * Compile the keyset seek that resumes a browse immediately after the row a cursor names.
+     *
+     * The result is a disjunction: one branch per ordering key, requiring the keys before it to be equal
+     * and that key to lie beyond the cursor's value, plus a final branch matching every key exactly and a
+     * greater record identity. Keys holding no value are compared with `IS NULL`, and a nulls-last key
+     * that held none contributes no branch of its own, so no row is repeated or skipped where the valued
+     * rows meet the empty ones. Bindings are appended as the branches are emitted, which is why the
+     * caller takes its aggregate snapshot before calling this.
+     *
+     * @param   ResolvedBusinessDefinition  $resolved       Definition and installed schema the sort
+     *          handles resolve against.
+     * @param   PhysicalTableBlueprint      $table          Installed record table being paged.
+     * @param   string                      $alias          Alias the seek qualifies columns with.
+     * @param   RecordQuerySpecification    $specification  Page request whose ordering the seek has to
+     *          reproduce.
+     * @param   list<mixed>                 $cursorValues   Ordering values of the last row of the
+     *          previous page, one per declared sort, or a single `updated_at` timestamp when the query
+     *          declares none.
+     * @param   string                      $recordKey      Identity of that row, which breaks ties between
+     *          rows whose ordering values are equal.
+     * @param   list<mixed>                 $parameters     Bound values so far; the seek's are appended.
+     * @param   list<string>                $types          Doctrine type names so far, appended in step.
+     *
+     * @return  string  A parenthesized disjunction admitting only rows after the cursor position.
+     *
+     * @throws  InvalidBusinessRecordQuery  When the cursor carries a different number of ordering values
+     *          than the query declares, or its default timestamp is not a string.
+     * @throws  InvalidArgumentException  When a cursor value cannot be restored to the storage form of its
+     *          column, which `compile()` reports as a refused query.
+     *
+     * @since   2.0.0
      */
     private function cursorPredicate(
         ResolvedBusinessDefinition $resolved,
@@ -726,8 +1029,26 @@ final readonly class DoctrineBusinessRecordQueryCompiler
     }
 
     /**
-     * @param list<mixed> $parameters
-     * @param list<string> $types
+     * Compile the comparison that steps one ordering key past the value the cursor recorded.
+     *
+     * A key that held no value bounds nothing when empty values rank last — nothing is ordered after the
+     * last of them — so no comparison is produced and the caller drops that branch; when they rank first,
+     * every row holding a value still lies ahead. A key that did hold a value keeps the empty rows
+     * reachable when they rank last, which is what stops the page from ending at the first of them.
+     *
+     * @param   string         $column      Alias-qualified, quoted column this ordering key reads.
+     * @param   mixed          $value       Value the cursor recorded for the key, already in the column's
+     *          storage form, or null when that row held none.
+     * @param   SortDirection  $direction   Direction the key is ordered in, which decides whether the seek
+     *          looks for greater or for smaller values.
+     * @param   bool           $nullsLast   Where empty values rank in this key's ordering.
+     * @param   list<mixed>    $parameters  Bound values so far; the seek value is appended when one is bound.
+     * @param   list<string>   $types       Doctrine type names so far, appended in step with $parameters.
+     * @param   string         $type        Doctrine type the seek value is bound with.
+     *
+     * @return  ?string  The comparison, or null when an empty nulls-last key leaves nothing after it.
+     *
+     * @since   2.0.0
      */
     private function seek(
         string $column,
@@ -748,7 +1069,29 @@ final readonly class DoctrineBusinessRecordQueryCompiler
         return $nullsLast ? '(' . $column . ' IS NULL OR ' . $comparison . ')' : $comparison;
     }
 
-    /** @return list<string> */
+    /**
+     * Settle which field handles the page returns, expanding defaults and formula dependencies.
+     *
+     * An empty projection stands for every field the definition marks readable. A formula field then
+     * pulls the fields it reads in behind it, and because the loop re-measures the list as it grows, a
+     * dependency of a dependency is picked up as well: the value is computed after the row is read, so
+     * its inputs have to be on the row. Requested includes are resolved only to prove the relationship
+     * exists — related records are fetched separately, not by this statement.
+     *
+     * @param   EntityTypeDefinition      $definition     Definition the handles resolve against.
+     * @param   PhysicalTableBlueprint    $table          Installed record table of that definition; the
+     *          projection is settled from the definition alone, so it is not consulted here.
+     * @param   RecordQuerySpecification  $specification  Page request carrying the requested fields and
+     *          includes.
+     *
+     * @return  list<string>  Field handles to read, each named once and in request order, with a formula's
+     *          dependencies appended after it.
+     *
+     * @throws  InvalidBusinessRecordQuery  When a requested handle names no field, names one the
+     *          definition does not expose to readers, or an include names no relationship.
+     *
+     * @since   2.0.0
+     */
     private function projection(
         EntityTypeDefinition $definition,
         PhysicalTableBlueprint $table,
@@ -784,8 +1127,24 @@ final readonly class DoctrineBusinessRecordQueryCompiler
     }
 
     /**
-     * @param list<string> $projection
-     * @return list<string>
+     * Resolve projected handles to the physical columns the `SELECT` names, control columns included.
+     *
+     * The identity, version, scope, workflow and audit columns are selected whether or not the caller
+     * asked for them, because the reader needs them to pin a row to the definition version it was written
+     * under and to describe its lifecycle; one the installed table does not carry is simply left out.
+     * Ordered-line fields and virtual computed fields are skipped, since neither keeps anything on this
+     * table to read.
+     *
+     * @param   EntityTypeDefinition    $definition  Definition the projected handles resolve against.
+     * @param   PhysicalTableBlueprint  $table       Installed record table whose columns are selected.
+     * @param   list<string>            $projection  Field handles the projection settled on.
+     *
+     * @return  list<string>  Physical column names, control columns first and each named once.
+     *
+     * @throws  InvalidBusinessRecordQuery  When a projected handle names no field, or names one the
+     *          installed table has no column for.
+     *
+     * @since   2.0.0
      */
     private function selectedPhysicalColumns(
         EntityTypeDefinition $definition,
@@ -821,8 +1180,29 @@ final readonly class DoctrineBusinessRecordQueryCompiler
     }
 
     /**
-     * @param list<RecordAggregate> $aggregates
-     * @param list<string> $where
+     * Compile the requested aggregates into a second statement over the same predicates.
+     *
+     * The statement reuses the page's predicates without its ordering, page bound or cursor seek, so a
+     * total describes every record the query matches rather than the page in hand. Each function is held
+     * to storage it can answer exactly: a sum or average only over exact numeric columns, so no float
+     * ever enters a total, and a minimum or maximum only over a column that orders portably.
+     *
+     * @param   ResolvedBusinessDefinition  $resolved    Definition and installed schema the aggregate
+     *          fields resolve against.
+     * @param   PhysicalTableBlueprint      $table       Installed record table being summarized.
+     * @param   string                      $alias       Alias the aggregate expressions qualify columns
+     *          with, matching the one the reused predicates were compiled under.
+     * @param   list<RecordAggregate>       $aggregates  Summaries the projection asked for.
+     * @param   list<string>                $where       Predicates compiled for the page, taken before the
+     *          cursor seek was appended to them.
+     *
+     * @return  ?string  The aggregate statement, or null when the projection requested no aggregate.
+     *
+     * @throws  InvalidBusinessRecordQuery  When an aggregate field is not reportable or not visible to
+     *          queries, spans more than one column, or has a storage type the requested function cannot
+     *          answer exactly.
+     *
+     * @since   2.0.0
      */
     private function aggregateSql(
         ResolvedBusinessDefinition $resolved,
@@ -884,6 +1264,19 @@ final readonly class DoctrineBusinessRecordQueryCompiler
         );
     }
 
+    /**
+     * Resolve a handle to a field the definition permits a filter to name.
+     *
+     * @param   EntityTypeDefinition  $definition  Definition the handle resolves against.
+     * @param   string                $handle      Field handle taken from a filter node.
+     *
+     * @return  FieldDefinition  The declared field, proved filterable and visible to queries.
+     *
+     * @throws  InvalidBusinessRecordQuery  When no field carries the handle, the field is not declared
+     *          filterable, or its sensitivity keeps it out of queries altogether.
+     *
+     * @since   2.0.0
+     */
     private function filterable(EntityTypeDefinition $definition, string $handle): FieldDefinition
     {
         $field = $this->field($definition, $handle);
@@ -894,13 +1287,52 @@ final readonly class DoctrineBusinessRecordQueryCompiler
         return $field;
     }
 
+    /**
+     * Report whether a field may take part in a query at all.
+     *
+     * Restricted and secret fields come back redacted on the read path, so letting one be filtered,
+     * searched, sorted or aggregated would let a caller recover the hidden value from which records the
+     * query returns.
+     *
+     * @param   FieldDefinition  $field  Declared field being considered.
+     *
+     * @return  bool  True when the field is readable and classified below `Restricted`.
+     *
+     * @since   2.0.0
+     */
     private function queryVisible(FieldDefinition $field): bool
     {
         return $field->readVisible
             && !in_array($field->sensitivity, [Sensitivity::Restricted, Sensitivity::Secret], true);
     }
 
-    /** @return array<string, mixed> */
+    /**
+     * Encode a caller's literal into the physical column values a predicate binds it as.
+     *
+     * Three cases are distinguished. A generated identity field is bound against the table's own record
+     * key rather than a column of its own. An entity reference is stored as the target's record key, so a
+     * public identity is looked up first — unless no scope is available, which is how a cursor value is
+     * restored, and the literal must then already be a record key. Everything else is normalized and
+     * encoded by the value codec, which is what refuses a literal the field cannot hold.
+     *
+     * @param   ResolvedBusinessDefinition  $resolved  Definition and installed schema the field belongs
+     *          to.
+     * @param   PhysicalTableBlueprint      $table     Installed table whose column names are returned.
+     * @param   FieldDefinition             $field     Field the literal is being compared against.
+     * @param   mixed                       $value     Literal exactly as the filter or cursor carried it.
+     * @param   ?RecordScope                $scope     Scope an entity reference is resolved within; null
+     *          while a cursor value is being restored, which then requires a record key.
+     *
+     * @return  array<string, mixed>  Bound values keyed by physical column name; a composite field yields
+     *          one entry per column it occupies.
+     *
+     * @throws  InvalidBusinessRecordQuery  When an identity or reference literal is not a string, a
+     *          reference cursor key is not a UUID, or the field has no installed physical storage.
+     * @throws  InvalidArgumentException  When the value codec refuses the literal for this field, which
+     *          `compile()` reports as a refused query.
+     *
+     * @since   2.0.0
+     */
     private function queryColumns(
         ResolvedBusinessDefinition $resolved,
         PhysicalTableBlueprint $table,
@@ -946,6 +1378,33 @@ final readonly class DoctrineBusinessRecordQueryCompiler
         return $encoded;
     }
 
+    /**
+     * Look up the record key that an entity reference's public identity points at.
+     *
+     * A reference is stored as the target's record key, while a caller filters with the identity the
+     * target publishes; under a natural-key identity strategy those are different strings, so the
+     * translation has to go through the target's own table. The lookup is confined to the request scope
+     * and ignores soft-deleted rows, and an identity matching nothing yields the nil UUID rather than no
+     * predicate at all, so the filter matches no record instead of every record.
+     *
+     * @param   EntityTypeDefinition  $source          Definition holding the reference field, whose site
+     *          the target is resolved on.
+     * @param   FieldDefinition       $field           The `core.entity_reference` field being filtered,
+     *          whose configuration names the target definition.
+     * @param   ?RecordScope          $scope           Scope the lookup is confined to; a public identity
+     *          cannot be resolved without one.
+     * @param   string                $publicIdentity  Identity of the target record as the caller wrote
+     *          it.
+     *
+     * @return  string  Record key of the referenced row, or the nil UUID when nothing matches.
+     *
+     * @throws  InvalidBusinessRecordQuery  When no scope is available, the field declares no string
+     *          target, or the target definition or its installed schema is unavailable.
+     * @throws  InvalidArgumentException  When the identity is not one the target's identity field accepts,
+     *          which `compile()` reports as a refused query.
+     *
+     * @since   2.0.0
+     */
     private function referenceRecordKey(
         EntityTypeDefinition $source,
         FieldDefinition $field,
@@ -987,7 +1446,25 @@ final readonly class DoctrineBusinessRecordQueryCompiler
         return is_string($recordKey) ? $recordKey : '00000000-0000-0000-0000-000000000000';
     }
 
-    /** @return list<PhysicalColumnBlueprint> */
+    /**
+     * List the installed columns one definition field occupies.
+     *
+     * The identity field is the exception: under a generated-key strategy it lives in the table's own key
+     * column — `record_id` on a record table, `line_id` on an owned-line table — rather than under its
+     * handle. Every other field owns the column named after its handle together with any column prefixed
+     * by it, which is how the parts of a composite field such as a money or quantity value are collected.
+     *
+     * @param   EntityTypeDefinition    $definition  Definition the field is declared on.
+     * @param   PhysicalTableBlueprint  $table       Installed table the columns are looked up in.
+     * @param   FieldDefinition         $field       Field whose storage is wanted.
+     *
+     * @return  list<PhysicalColumnBlueprint>  The columns backing the field, never empty.
+     *
+     * @throws  InvalidBusinessRecordQuery  When the installed table carries no column for the field, which
+     *          is what a definition newer than the schema on disk looks like from here.
+     *
+     * @since   2.0.0
+     */
     private function fieldColumns(
         EntityTypeDefinition $definition,
         PhysicalTableBlueprint $table,
@@ -1013,6 +1490,19 @@ final readonly class DoctrineBusinessRecordQueryCompiler
         return $columns;
     }
 
+    /**
+     * Resolve a handle to the field the definition declares under it.
+     *
+     * @param   EntityTypeDefinition  $definition  Definition version the query is pinned to, which is what
+     *          decides whether a handle exists at all.
+     * @param   string                $handle      Field handle as the query wrote it.
+     *
+     * @return  FieldDefinition  The declared field.
+     *
+     * @throws  InvalidBusinessRecordQuery  When the definition declares no field with that handle.
+     *
+     * @since   2.0.0
+     */
     private function field(EntityTypeDefinition $definition, string $handle): FieldDefinition
     {
         foreach ($definition->fields() as $field) {
@@ -1023,6 +1513,22 @@ final readonly class DoctrineBusinessRecordQueryCompiler
         throw new InvalidBusinessRecordQuery('A business-record query references an unknown field.');
     }
 
+    /**
+     * Find the field carrying the definition's identity under its declared strategy.
+     *
+     * Which field type counts depends on the strategy: `core.uuid` when keys are generated, and
+     * `core.reference_identity` when the caller supplies a natural key. The answer decides both which
+     * column an identity filter binds against and whether a public identity has to be translated into a
+     * record key at all.
+     *
+     * @param   EntityTypeDefinition  $definition  Definition whose identity field is wanted.
+     *
+     * @return  FieldDefinition  The first field of the type the strategy requires.
+     *
+     * @throws  InvalidBusinessRecordQuery  When the definition declares no field of that type.
+     *
+     * @since   2.0.0
+     */
     private function identityField(EntityTypeDefinition $definition): FieldDefinition
     {
         $type = $definition->identityStrategy === IdentityStrategy::Uuid
@@ -1036,12 +1542,52 @@ final readonly class DoctrineBusinessRecordQueryCompiler
         throw new InvalidBusinessRecordQuery('The definition identity field is unavailable.');
     }
 
+    /**
+     * Resolve a relationship handle, ordered-line fields included.
+     *
+     * The lookup goes through the definition's runtime resolution, so a legacy `core.ordered_lines` field
+     * answers as the owned-line association it stands for and a hop can traverse either kind through one
+     * path.
+     *
+     * @param   EntityTypeDefinition  $definition  Definition the relationship is declared on.
+     * @param   string                $handle      Relationship handle as the query wrote it.
+     *
+     * @return  RelationshipDefinition  The declared association, or the one synthesized for an
+     *          ordered-line field.
+     *
+     * @throws  InvalidBusinessRecordQuery  When neither a declared relationship nor an ordered-line field
+     *          carries the handle.
+     *
+     * @since   2.0.0
+     */
     private function relationship(EntityTypeDefinition $definition, string $handle): RelationshipDefinition
     {
         return $definition->runtimeRelationship($handle)
             ?? throw new InvalidBusinessRecordQuery('A query references an unknown relationship.');
     }
 
+    /**
+     * Find the relationship on the target definition that mirrors the one being traversed.
+     *
+     * Reached only when the source side carries no storage of its own, which is the normal shape of a
+     * one-to-many: the association is materialized on its many-to-one partner, so the join has to be read
+     * from the target's declaration. The candidate must name the source as its own target as well, so a
+     * relationship that merely shares the inverse handle is not accepted.
+     *
+     * @param   EntityTypeDefinition    $source        Definition being queried, which the inverse must
+     *          name as its target.
+     * @param   EntityTypeDefinition    $target        Definition the traversal leads to, whose declared
+     *          relationships are searched.
+     * @param   RelationshipDefinition  $relationship  Association being traversed, which names the inverse
+     *          handle to look for.
+     *
+     * @return  RelationshipDefinition  The target's reciprocal association, whose storage the join reads.
+     *
+     * @throws  InvalidBusinessRecordQuery  When the association declares no inverse, or the target
+     *          declares none under that handle pointing back at the source.
+     *
+     * @since   2.0.0
+     */
     private function inverseRelationship(
         EntityTypeDefinition $source,
         EntityTypeDefinition $target,
@@ -1058,6 +1604,21 @@ final readonly class DoctrineBusinessRecordQueryCompiler
         throw new InvalidBusinessRecordQuery('The canonical inverse relationship definition is unavailable.');
     }
 
+    /**
+     * Resolve the definition and installed schema a relationship points at.
+     *
+     * @param   EntityTypeDefinition    $source        Definition doing the traversal, which supplies the
+     *          site and the version the target is pinned to.
+     * @param   RelationshipDefinition  $relationship  Association whose declared target is resolved.
+     *
+     * @return  ResolvedBusinessDefinition  The target definition version paired with its installation,
+     *          fenced by `targetHandle()`, whose refusals propagate unchanged.
+     *
+     * @throws  InvalidBusinessRecordQuery  When the target is unpublished, has no active installation on
+     *          this site, or is pinned to a version the installed schema does not carry.
+     *
+     * @since   2.0.0
+     */
     private function target(
         EntityTypeDefinition $source,
         RelationshipDefinition $relationship,
@@ -1065,6 +1626,36 @@ final readonly class DoctrineBusinessRecordQueryCompiler
         return $this->targetHandle($source, $relationship->target);
     }
 
+    /**
+     * Resolve a definition handle on the source's site into a fenced, version-pinned definition.
+     *
+     * A hop reads a second set of tables, so the target has to be pinned exactly as the browsed
+     * definition is. A shared fence holds the target's installation still for the rest of the
+     * transaction, the source's evolution hints decide which version the target's rows are read under,
+     * and the generation observed under the fence is re-checked against what was resolved outside it.
+     * Anything short of that — a disabled owner, an installation that is not active or belongs to another
+     * site, a repin ahead of the installed version, a version never published — refuses the query rather
+     * than reading a table under a shape it does not have.
+     *
+     * @param   EntityTypeDefinition  $source        Definition doing the traversal; supplies the site and
+     *          the repin hints the target version is taken from.
+     * @param   string                $targetHandle  Handle of the definition to resolve.
+     *
+     * @return  ResolvedBusinessDefinition  The pinned target definition paired with its installation.
+     *
+     * @throws  InvalidBusinessRecordQuery  When the target is unknown or its owner disabled, its
+     *          installation is missing, inactive or on another site, the repin is newer than the installed
+     *          schema, or that version was never published.
+     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordDefinitionUnavailable  When
+     *          the fence finds no definition of that handle on the site.
+     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordSchemaUnavailable  When the
+     *          fence finds no installation it admits for the definition.
+     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordTemporarilyUnavailable  When
+     *          no transaction is open to hold the fence, the fence cannot be taken, or the installation
+     *          moved between being fenced and being resolved.
+     *
+     * @since   2.0.0
+     */
     private function targetHandle(
         EntityTypeDefinition $source,
         string $targetHandle,
@@ -1098,34 +1689,120 @@ final readonly class DoctrineBusinessRecordQueryCompiler
         return $resolved;
     }
 
+    /**
+     * Take the installed record table of a resolved definition.
+     *
+     * @param   ResolvedBusinessDefinition  $resolved  Definition paired with the schema installed for it.
+     *
+     * @return  PhysicalTableBlueprint  Blueprint of the table this definition's records are stored in.
+     *
+     * @throws  InvalidBusinessRecordQuery  When the installation describes no `record` table, which is
+     *          what a half-applied installation looks like from here.
+     *
+     * @since   2.0.0
+     */
     private function recordTable(ResolvedBusinessDefinition $resolved): PhysicalTableBlueprint
     {
         return $resolved->installation->blueprint->table('record')
             ?? throw new InvalidBusinessRecordQuery('The installed record table is unavailable.');
     }
 
+    /**
+     * Take the physical name of an installed column, refusing a query the schema cannot answer.
+     *
+     * @param   PhysicalTableBlueprint  $table    Installed table to look the column up in.
+     * @param   string                  $logical  Logical column name, such as `record_id`, `updated_at`
+     *          or a field handle.
+     *
+     * @return  string  The name the installer actually created the column under, before quoting.
+     *
+     * @throws  InvalidBusinessRecordQuery  When the table declares no column under that logical name.
+     *
+     * @since   2.0.0
+     */
     private function physical(PhysicalTableBlueprint $table, string $logical): string
     {
         return $table->column($logical)->physicalName
             ?? throw new InvalidBusinessRecordQuery('An installed query column is unavailable.');
     }
 
+    /**
+     * Take the Doctrine type of an installed column, so a value is bound the way the column stores it.
+     *
+     * @param   PhysicalTableBlueprint  $table    Installed table to look the column up in.
+     * @param   string                  $logical  Logical column name whose storage type is wanted.
+     *
+     * @return  string  Doctrine type name to bind a value for this column with.
+     *
+     * @throws  InvalidBusinessRecordQuery  When the table declares no column under that logical name.
+     *
+     * @since   2.0.0
+     */
     private function type(PhysicalTableBlueprint $table, string $logical): string
     {
         return $table->column($logical)->doctrineType
             ?? throw new InvalidBusinessRecordQuery('An installed query column type is unavailable.');
     }
 
+    /**
+     * Delimit one identifier the way the connected database platform expects.
+     *
+     * Every identifier that reaches a compiled statement passes through here. What is quoted is always a
+     * physical name taken from the installed blueprint rather than caller text, so this guards the
+     * grammar against ordinary names that collide with reserved words; it is not what keeps caller input
+     * out of the statement.
+     *
+     * @param   string  $identifier  Physical table or column name from the installed blueprint.
+     *
+     * @return  string  The identifier delimited for the platform in use.
+     *
+     * @since   2.0.0
+     */
     private function quote(string $identifier): string
     {
         return $this->database->getDatabasePlatform()->quoteSingleIdentifier($identifier);
     }
 
+    /**
+     * Neutralize `LIKE` metacharacters in caller text so a search matches them literally.
+     *
+     * `!` is the escape character the compiled `LIKE` predicates declare, and it is substituted first so
+     * a caller cannot smuggle an escape through the replacement. Without this, a `%` in a search term
+     * would turn an anchored lookup into a sweep of the whole column.
+     *
+     * @param   string  $value  Search text as the caller supplied it, already lowercased for matching.
+     *
+     * @return  string  The same text with `!`, `%` and `_` escaped for an `ESCAPE '!'` predicate.
+     *
+     * @since   2.0.0
+     */
     private function escapeLike(string $value): string
     {
         return str_replace(['!', '%', '_'], ['!!', '!%', '!_'], $value);
     }
 
+    /**
+     * Fingerprint the query a page cursor is allowed to be used with.
+     *
+     * The digest covers the definition's identity, version and checksum, the installed schema checksum,
+     * the request scope, and the specification with its cursor left out. Every page of one browse
+     * therefore hashes the same, while changing a filter, an ordering, the scope, or the shape the
+     * records are stored under invalidates the tokens already handed out. `doCompile()` compares this
+     * against the digest carried inside a presented cursor and refuses the cursor when the two differ.
+     *
+     * @param   ResolvedBusinessDefinition  $resolved       Definition version and installation the page is
+     *          read under.
+     * @param   RecordScope                 $scope          Site and organization the page is confined to.
+     * @param   RecordQuerySpecification    $specification  Page request, canonicalized without its cursor.
+     *
+     * @return  string  Lowercase 64-character SHA-256 over the canonical form of all of it.
+     *
+     * @throws  \Kumwe\CMS\BusinessDefinition\Domain\InvalidBusinessDefinition  When something the query
+     *          carries cannot be canonically encoded, a string that is not valid UTF-8 being the case the
+     *          query's own bounds still admit.
+     *
+     * @since   2.0.0
+     */
     private function cursorDigest(
         ResolvedBusinessDefinition $resolved,
         RecordScope $scope,

@@ -11,10 +11,49 @@ use Kumwe\CMS\BusinessDefinition\Domain\DefinitionStatus;
 use Kumwe\CMS\BusinessDefinition\Domain\EntityTypeDefinition;
 use Ramsey\Uuid\Uuid;
 
-/** Maps bounded graphical administrator controls into the strict definition document. */
+/**
+ * Turns the administrator definition editor's flat form post into a strict `EntityTypeDefinition` draft.
+ *
+ * The editor offers only bounded controls — text boxes, checkboxes, selects and indexed row sets — and this
+ * mapper is what makes that boundary meaningful: formulas and conditions are assembled here from picked field
+ * names, operators and typed literals, so nothing an operator types ever reaches a stored definition as an
+ * expression. Anything the graphical controls cannot draw — an extension field type's configuration, extra
+ * validators, a hand-authored expression — travels in hidden `*_preserved` JSON inputs and is merged back, so
+ * editing a definition through the screen never silently drops the parts it cannot render.
+ *
+ * Only shape is checked here: required inputs, integer syntax and well-formed preserved JSON. Every
+ * cross-field rule belongs to `EntityTypeDefinition::fromArray()`, which the assembled document is put through
+ * before it is returned, so a form that maps cleanly can still be refused as a definition.
+ *
+ * @since  2.0.0
+ */
 final readonly class BusinessDefinitionFormMapper
 {
-    /** @param array<string, string> $form */
+    /**
+     * Assemble a posted editor form into a draft definition owned by the current site.
+     *
+     * Field rows are read from a bounded index range and a row whose handle is blank is skipped rather than
+     * ending the scan, so the editor may post a sparse set after a row is deleted. A field whose type matches
+     * the chosen identity strategy is treated as the identity field and is forced unique, indexed and
+     * immutable after create whatever its own checkboxes say; a computed field is likewise forced server-only
+     * and read-only and hidden from the create and update forms.
+     *
+     * The result is always a draft at version zero with relational storage — publication, versioning and
+     * authorization belong to `BusinessDefinitionService`. Auditing and revisions are on unless the operator
+     * switches them off, and exposure beyond the administrator is off unless switched on.
+     *
+     * @param   array<string, string>  $form  Flattened administrator form, keyed by input name.
+     * @param   SiteContext            $site  Site that owns the definition and namespaces its handles.
+     *
+     * @return  EntityTypeDefinition  The draft; a blank `id` input mints a new UUIDv7 rather than updating.
+     *
+     * @throws  InvalidArgumentException  When a required input is blank, a number is not an integer, a
+     *          preserved JSON input is unusable, or no field row was filled in at all.
+     * @throws  \Kumwe\CMS\BusinessDefinition\Domain\InvalidBusinessDefinition  When the assembled document
+     *          breaks a construction rule, such as an exact numeric field left without a precision.
+     *
+     * @since   2.0.0
+     */
     public function definition(array $form, SiteContext $site): EntityTypeDefinition
     {
         $fields = [];
@@ -108,8 +147,19 @@ final readonly class BusinessDefinitionFormMapper
     }
 
     /**
-     * @param array<string, string> $form
-     * @return list<array<string, mixed>>
+     * Collect the relationship rows the editor posted into definition documents.
+     *
+     * Up to 128 indexed rows are scanned and a row with a blank handle is skipped, so deleting a row in the
+     * screen may leave a gap in the numbering without hiding the rows after it.
+     *
+     * @param   array<string, string>  $form  Flattened administrator form, keyed by input name.
+     *
+     * @return  list<array<string, mixed>>  One document per filled row, in index order; a blank inverse handle
+     *          becomes null, meaning the relationship is not navigable from the target.
+     *
+     * @throws  InvalidArgumentException  When a filled row leaves its label, kind or target blank.
+     *
+     * @since   2.0.0
      */
     private function relationships(array $form): array
     {
@@ -135,8 +185,19 @@ final readonly class BusinessDefinitionFormMapper
     }
 
     /**
-     * @param array<string, string> $form
-     * @return list<array<string, mixed>>
+     * Collect the view rows the editor posted into definition documents.
+     *
+     * Up to 64 indexed rows are scanned and a row with a blank handle is skipped. Each view is exposed to the
+     * administrator unless its hide box is ticked, while portal and public exposure are opt-in.
+     *
+     * @param   array<string, string>  $form  Flattened administrator form, keyed by input name.
+     *
+     * @return  list<array<string, mixed>>  One document per filled row, in index order; its field, filter and
+     *          sort entries are split out of the comma or newline separated text the operator typed.
+     *
+     * @throws  InvalidArgumentException  When a filled row leaves its label or kind blank.
+     *
+     * @since   2.0.0
      */
     private function views(array $form): array
     {
@@ -161,8 +222,21 @@ final readonly class BusinessDefinitionFormMapper
     }
 
     /**
-     * @param array<string, string> $form
-     * @return list<array<string, mixed>>
+     * Collect the action rows the editor posted into definition documents.
+     *
+     * Up to 64 indexed rows are scanned and a row with a blank handle is skipped. An action authored through
+     * this screen is always administrator-facing and never public; only portal exposure is left to the
+     * operator, so a screen-authored action can never be reached anonymously.
+     *
+     * @param   array<string, string>  $form  Flattened administrator form, keyed by input name.
+     *
+     * @return  list<array<string, mixed>>  One document per filled row, in index order; a blank transition
+     *          becomes null, meaning the action moves the record through no workflow state.
+     *
+     * @throws  InvalidArgumentException  When a filled row leaves its label or capability blank, or its
+     *          condition inputs cannot be read.
+     *
+     * @since   2.0.0
      */
     private function actions(array $form): array
     {
@@ -189,8 +263,20 @@ final readonly class BusinessDefinitionFormMapper
     }
 
     /**
-     * @param array<string, string> $form
-     * @return array<string, mixed>|null
+     * Assemble the workflow document, or nothing at all when the editor left workflow switched off.
+     *
+     * The enable box is read first, so a form still carrying transition rows from a workflow the operator has
+     * just turned off contributes none of them.
+     *
+     * @param   array<string, string>  $form  Flattened administrator form, keyed by input name.
+     *
+     * @return  array<string, mixed>|null  The initial state, the declared states and up to 128 transitions, or
+     *          null when `workflow_enabled` is unticked and the definition carries no workflow.
+     *
+     * @throws  InvalidArgumentException  When workflow is enabled but the initial state is blank, or a filled
+     *          transition row leaves its from, to or capability blank.
+     *
+     * @since   2.0.0
      */
     private function workflow(array $form): ?array
     {
@@ -217,8 +303,24 @@ final readonly class BusinessDefinitionFormMapper
     }
 
     /**
-     * @param array<string, string> $form
-     * @return array<string, mixed>
+     * Build the expression document a computed field is evaluated from, out of its picked operands.
+     *
+     * Both operands are field handles chosen from selects, so the result is a closed tree of `field` and
+     * operator nodes and never text the operator composed. Leaving the left operand unpicked falls back to the
+     * expression preserved from the last save, which is the only way a formula richer than the two-operand
+     * form survives a round trip through the screen. Dividing decimals additionally carries the result scale,
+     * because the quotient's scale cannot be inferred from its operands.
+     *
+     * @param   array<string, string>  $form   Flattened administrator form, keyed by input name.
+     * @param   int                    $index  Zero-based row number of the field being mapped.
+     *
+     * @return  array<string, mixed>  A bare `field` node when no operator was picked, otherwise the operator
+     *          node over both operands.
+     *
+     * @throws  InvalidArgumentException  When no operand was picked and no preserved expression remains, when
+     *          the right-hand field is blank, or when the division scale is not an integer.
+     *
+     * @since   2.0.0
      */
     private function formula(array $form, int $index): array
     {
@@ -249,8 +351,22 @@ final readonly class BusinessDefinitionFormMapper
     }
 
     /**
-     * @param array<string, string> $form
-     * @return array<string, mixed>|null
+     * Build the boolean document a visibility, editability or action gate is expressed as.
+     *
+     * The comparison is assembled from a picked field, a picked operator and a literal coerced to the picked
+     * type, so a gate can never smuggle an expression in as text. An `is_null` test carries the field operand
+     * alone; every other operator carries the literal as a second operand.
+     *
+     * @param   array<string, string>  $form    Flattened administrator form, keyed by input name.
+     * @param   string                 $prefix  Input-name prefix the condition's own controls share.
+     *
+     * @return  array<string, mixed>|null  The boolean node, or null when neither a field nor a preserved
+     *          expression was posted, which the definition reads as an unconditional gate.
+     *
+     * @throws  InvalidArgumentException  When the preserved expression cannot be read, or the literal does not
+     *          match the type picked beside it.
+     *
+     * @since   2.0.0
      */
     private function condition(array $form, string $prefix): ?array
     {
@@ -272,8 +388,21 @@ final readonly class BusinessDefinitionFormMapper
     }
 
     /**
-     * @param array<string, string> $form
-     * @return array<string, mixed>|null
+     * Read back an expression the graphical controls cannot draw, carried across saves in a hidden input.
+     *
+     * The screen renders the stored expression into `<prefix>_preserved` whenever it cannot offer controls for
+     * it, so re-saving an untouched definition reproduces it rather than flattening it. Only the outer shape
+     * is checked here; whether the nodes form a valid expression is decided during construction.
+     *
+     * @param   array<string, string>  $form    Flattened administrator form, keyed by input name.
+     * @param   string                 $prefix  Input-name prefix; the value is read from `<prefix>_preserved`.
+     *
+     * @return  array<string, mixed>|null  The decoded expression object, or null when nothing was preserved.
+     *
+     * @throws  InvalidArgumentException  When the hidden input is not valid JSON within its depth limit, or
+     *          does not decode to an object carrying at least one member.
+     *
+     * @since   2.0.0
      */
     private function preservedExpression(array $form, string $prefix): ?array
     {
@@ -293,6 +422,21 @@ final readonly class BusinessDefinitionFormMapper
         return $expression;
     }
 
+    /**
+     * Coerce a condition's literal from the text posted for it into the type picked beside it.
+     *
+     * @param   string  $value  Trimmed text posted as the comparison value.
+     * @param   string  $type   Literal type picked beside it: `null`, `boolean`, `integer`, or anything else
+     *          for a plain string.
+     *
+     * @return  string|int|bool|null  The typed literal; null only when the `null` type was picked, never as a
+     *          signal that the value was missing.
+     *
+     * @throws  InvalidArgumentException  When a boolean is spelled as anything but true, 1, false or 0, or an
+     *          integer is not an optionally signed run of decimal digits.
+     *
+     * @since   2.0.0
+     */
     private function literal(string $value, string $type): string|int|bool|null
     {
         return match ($type) {
@@ -308,8 +452,22 @@ final readonly class BusinessDefinitionFormMapper
     }
 
     /**
-     * @param array<string, string> $form
-     * @return list<array<string, mixed>>
+     * Collect the validators for one field, preferring the rule picked in the editor.
+     *
+     * The screen offers a single rule per field, so picking one replaces the stored set outright. Picking none
+     * restores the list preserved from the last save unchanged, which is how a field validated by rules the
+     * screen cannot draw survives being edited for some unrelated reason.
+     *
+     * @param   array<string, string>  $form   Flattened administrator form, keyed by input name.
+     * @param   int                    $index  Zero-based row number of the field being mapped.
+     *
+     * @return  list<array<string, mixed>>  Exactly one rule when the editor picked one, otherwise the
+     *          preserved list, otherwise empty for a field with no validators.
+     *
+     * @throws  InvalidArgumentException  When the preserved input is not valid JSON, does not decode to a
+     *          list, or holds an entry that is not an object.
+     *
+     * @since   2.0.0
      */
     private function validators(array $form, int $index): array
     {
@@ -344,8 +502,23 @@ final readonly class BusinessDefinitionFormMapper
     }
 
     /**
-     * @param array<string, string> $form
-     * @return array<string, scalar|list<scalar|null>|null>
+     * Lay the field configuration the editor controls over whatever was preserved from the last save.
+     *
+     * The five keys the screen owns — options, currency, unit, target and maximum bytes — are stripped from
+     * the preserved document first and only then re-added from the form, so emptying a control clears its key
+     * instead of leaving the previous value showing through. Keys belonging to an extension field type are
+     * never touched, which is what lets a custom type keep its settings across an edit.
+     *
+     * @param   array<string, string>  $form   Flattened administrator form, keyed by input name.
+     * @param   int                    $index  Zero-based row number of the field being mapped.
+     *
+     * @return  array<string, scalar|list<scalar|null>|null>  Configuration keyed by option name; empty when
+     *          neither the form nor the preserved document supplied one.
+     *
+     * @throws  InvalidArgumentException  When the preserved input is not valid JSON within its depth limit, or
+     *          decodes to a non-empty list.
+     *
+     * @since   2.0.0
      */
     private function configuration(array $form, int $index): array
     {
@@ -379,7 +552,23 @@ final readonly class BusinessDefinitionFormMapper
         return $configuration;
     }
 
-    /** @param array<string, string> $form */
+    /**
+     * Coerce a field's posted default into the shape that field's type stores.
+     *
+     * Only the two types whose defaults are not text are parsed; every other type keeps the operator's string,
+     * leaving the definition's own field rules to accept or refuse it.
+     *
+     * @param   array<string, string>  $form   Flattened administrator form, keyed by input name.
+     * @param   int                    $index  Zero-based row number of the field being mapped.
+     * @param   string                 $type   Field type handle deciding how the posted text is read.
+     *
+     * @return  mixed  The typed default, or null when the control was left blank, meaning no default at all.
+     *
+     * @throws  InvalidArgumentException  When an integer default is not an optionally signed run of decimal
+     *          digits, or a boolean default is spelled as anything but true, 1, false or 0.
+     *
+     * @since   2.0.0
+     */
     private function defaultValue(array $form, int $index, string $type): mixed
     {
         $value = $this->value($form, "field_{$index}_default");
@@ -398,9 +587,19 @@ final readonly class BusinessDefinitionFormMapper
     }
 
     /**
-     * @param array<string, string> $form
-     * @param list<string> $default
-     * @return list<string>
+     * Split one free-text control into the clean list of handles a definition can hold.
+     *
+     * Entries may be separated by commas or newlines in any mix; each is trimmed, blanks are discarded and
+     * repeats are dropped, so loose typing in a textarea still yields a well-formed list.
+     *
+     * @param   array<string, string>  $form     Flattened administrator form, keyed by input name.
+     * @param   string                 $key      Input name of the control to read.
+     * @param   list<string>           $default  Returned whole when the control is blank.
+     *
+     * @return  list<string>  Trimmed, de-duplicated entries in the order they were typed, renumbered from
+     *          zero; empty when the control held only separators.
+     *
+     * @since   2.0.0
      */
     private function list(array $form, string $key, array $default = []): array
     {
@@ -418,7 +617,19 @@ final readonly class BusinessDefinitionFormMapper
         )));
     }
 
-    /** @param array<string, string> $form */
+    /**
+     * Read an input the definition cannot be assembled without.
+     *
+     * @param   array<string, string>  $form  Flattened administrator form, keyed by input name.
+     * @param   string                 $key   Input name to read.
+     *
+     * @return  string  The trimmed value, never the empty string.
+     *
+     * @throws  InvalidArgumentException  When the input is absent or trims to nothing; the message names the
+     *          input in words so the operator can find the control on the screen.
+     *
+     * @since   2.0.0
+     */
     private function required(array $form, string $key): string
     {
         $value = $this->value($form, $key);
@@ -428,32 +639,101 @@ final readonly class BusinessDefinitionFormMapper
         return $value;
     }
 
-    /** @param array<string, string> $form */
+    /**
+     * Read an optional input, trimmed.
+     *
+     * The default stands in only for an input that was never posted. A control that posts an empty string — an
+     * untouched text box, a select on its blank option — yields the empty string, which every caller reads as
+     * "this is absent" rather than falling back.
+     *
+     * @param   array<string, string>  $form     Flattened administrator form, keyed by input name.
+     * @param   string                 $key      Input name to read.
+     * @param   string                 $default  Value used when the key is missing from the form entirely.
+     *
+     * @return  string  The trimmed value, the trimmed default, or the empty string.
+     *
+     * @since   2.0.0
+     */
     private function value(array $form, string $key, string $default = ''): string
     {
         return trim($form[$key] ?? $default);
     }
 
-    /** @param array<string, string> $form */
+    /**
+     * Decide whether a checkbox was ticked.
+     *
+     * The raw value is compared rather than the trimmed one, so only the literal `1` the editor's checkboxes
+     * post counts; an absent key is false, which is exactly what an unticked HTML checkbox sends.
+     *
+     * @param   array<string, string>  $form  Flattened administrator form, keyed by input name.
+     * @param   string                 $key   Input name of the checkbox.
+     *
+     * @return  bool  True only when the input holds exactly `1`.
+     *
+     * @since   2.0.0
+     */
     private function checked(array $form, string $key): bool
     {
         return ($form[$key] ?? '') === '1';
     }
 
-    /** @param array<string, string> $form */
+    /**
+     * Read an optional whole-number input, falling back to a value the caller supplies.
+     *
+     * @param   array<string, string>  $form     Flattened administrator form, keyed by input name.
+     * @param   string                 $key      Input name to read.
+     * @param   int                    $default  Value used when the control is left blank.
+     *
+     * @return  int  The parsed number, or the default.
+     *
+     * @throws  InvalidArgumentException  When the control holds text that is not an integer.
+     *
+     * @since   2.0.0
+     */
     private function integer(array $form, string $key, int $default): int
     {
         $value = $this->value($form, $key);
         return $value === '' ? $default : $this->validatedInteger($value, $key);
     }
 
-    /** @param array<string, string> $form */
+    /**
+     * Read an optional whole-number input that is genuinely absent when blank.
+     *
+     * Used for the field properties where "unset" and zero are different answers — length, precision, scale
+     * and the maximum byte size — so leaving the control blank leaves the property unconstrained rather than
+     * constraining it to nothing.
+     *
+     * @param   array<string, string>  $form  Flattened administrator form, keyed by input name.
+     * @param   string                 $key   Input name to read.
+     *
+     * @return  ?int  The parsed number, or null when the control is blank.
+     *
+     * @throws  InvalidArgumentException  When the control holds text that is not an integer.
+     *
+     * @since   2.0.0
+     */
     private function integerOrNull(array $form, string $key): ?int
     {
         $value = $this->value($form, $key);
         return $value === '' ? null : $this->validatedInteger($value, $key);
     }
 
+    /**
+     * Parse a whole number, refusing anything a numeric definition property could not hold.
+     *
+     * Only an optional minus sign followed by decimal digits is accepted, so the spellings PHP's own cast
+     * would silently swallow — a leading plus, an exponent, trailing rubbish — are refused instead.
+     *
+     * @param   string  $value  Trimmed text to parse.
+     * @param   string  $key    Name quoted back in the failure message — an input name for a control the
+     *          operator can point at, or a phrase such as `field default` where there is none.
+     *
+     * @return  int  The parsed value.
+     *
+     * @throws  InvalidArgumentException  When the text is not an optionally signed run of decimal digits.
+     *
+     * @since   2.0.0
+     */
     private function validatedInteger(string $value, string $key): int
     {
         if (preg_match('/^-?[0-9]+$/D', $value) !== 1) {

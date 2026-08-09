@@ -9,29 +9,82 @@ use Kumwe\CMS\BusinessDefinition\Domain\EntityTypeDefinition;
 use Kumwe\CMS\BusinessDefinition\Domain\Expression;
 use Kumwe\CMS\BusinessDefinition\Domain\InvalidBusinessDefinition;
 
+/**
+ * The declared, bounded instructions that let a plan rewrite data instead of refusing to.
+ *
+ * A rename, a type change, or a tightened constraint cannot be applied over rows pinned to an older
+ * definition version unless the new version says how those rows should be carried across. This value
+ * object is the only reading of that intent: it lifts the four evolution families out of a definition's
+ * compatibility metadata, normalizes them, and proves them bounded and unambiguous — no rename cycles, no
+ * two renames landing on one column, no unbounded expression — so the planner can consult them freely.
+ *
+ * A typo is treated as a defect rather than as absence: a metadata key that reads like an evolution key
+ * but is not one of the four is rejected, so a misspelled hint cannot silently degrade into "no hint".
+ *
+ * @since  2.0.0
+ */
 final readonly class SchemaEvolutionHints
 {
+    /**
+     * The four evolution families read from compatibility metadata, in document order.
+     *
+     * @var    list<string>
+     * @since  2.0.0
+     */
     private const KEYS = ['column_renames', 'backfills', 'transforms', 'repins'];
 
+    /**
+     * Most entries one family may declare, so a definition cannot make planning unbounded.
+     *
+     * @var    int
+     * @since  2.0.0
+     */
     private const MAXIMUM_HINTS_PER_KIND = 256;
 
-    /** @var array<string, array<string, string>> */
+    /**
+     * Column renames grouped by logical table, each inner map running old name to new name.
+     *
+     * @var    array<string, array<string, string>>
+     * @since  2.0.0
+     */
     private array $renamesByTable;
 
-    /** @var array<string, bool|int|string|Expression> */
+    /**
+     * Value to write into each named logical column for rows that predate it.
+     *
+     * @var    array<string, bool|int|string|Expression>
+     * @since  2.0.0
+     */
     private array $backfills;
 
-    /** @var array<string, Expression> */
+    /**
+     * Bounded expression that converts each named logical column's existing values.
+     *
+     * @var    array<string, Expression>
+     * @since  2.0.0
+     */
     private array $transforms;
 
-    /** @var array<string, int> */
+    /**
+     * Definition version each named definition handle's records must be re-pinned to.
+     *
+     * @var    array<string, int>
+     * @since  2.0.0
+     */
     private array $repins;
 
     /**
-     * @param array<string, array<string, string>> $renamesByTable
-     * @param array<string, bool|int|string|Expression> $backfills
-     * @param array<string, Expression> $transforms
-     * @param array<string, int> $repins
+     * Store already-parsed, already-sorted hint maps.
+     *
+     * Private because the maps carry invariants the parsers establish; build instances through
+     * `fromDefinition()` or `fromArray()`.
+     *
+     * @param  array<string, array<string, string>>       $renamesByTable  Renames keyed by table, then old column.
+     * @param  array<string, bool|int|string|Expression>  $backfills       Backfill values keyed by logical column.
+     * @param  array<string, Expression>                  $transforms      Conversions keyed by logical column.
+     * @param  array<string, int>                         $repins          Target versions keyed by definition handle.
+     *
+     * @since  2.0.0
      */
     private function __construct(
         array $renamesByTable,
@@ -45,6 +98,21 @@ final readonly class SchemaEvolutionHints
         $this->repins = $repins;
     }
 
+    /**
+     * Read the evolution hints a published definition declares in its compatibility metadata.
+     *
+     * Metadata unrelated to schema evolution is ignored, but a key that merely looks like one of the four
+     * families is refused, because tolerating it would silently skip the rewrite it was meant to authorize.
+     *
+     * @param   EntityTypeDefinition  $definition  Definition version whose metadata carries the intent.
+     *
+     * @return  self  The parsed hints; every family is empty when the definition declares none.
+     *
+     * @throws  InvalidBusinessSchema  When a metadata key is not a string, an evolution-looking key is not
+     *          one of the four families, or a declared family is malformed.
+     *
+     * @since   2.0.0
+     */
     public static function fromDefinition(EntityTypeDefinition $definition): self
     {
         $metadata = $definition->compatibilityMetadata();
@@ -66,7 +134,21 @@ final readonly class SchemaEvolutionHints
         return self::fromArray($document);
     }
 
-    /** @param array<string, mixed> $document */
+    /**
+     * Parse hints from a document holding only the four evolution families.
+     *
+     * @param   array<string, mixed>  $document  Evolution families as declared; each one may be absent.
+     *
+     * @return  self  The parsed hints, with every family key sorted for a stable checksum.
+     *
+     * @throws  InvalidBusinessSchema  When the document holds a key outside the four families, a family is
+     *          not an object, a family exceeds 256 entries, a name breaks its
+     *          grammar, a rename is ambiguous, chained, or cyclic, a backfill is not
+     *          a bounded scalar or expression, a transform is not a bounded
+     *          expression, or a repin version is not positive.
+     *
+     * @since   2.0.0
+     */
     public static function fromArray(array $document): self
     {
         SchemaDocument::assertOnly($document, self::KEYS, 'Schema-evolution hints');
@@ -78,7 +160,18 @@ final readonly class SchemaEvolutionHints
         return new self($renames, $backfills, $transforms, $repins);
     }
 
-    /** @return array<string, string> Old logical column to new logical column. */
+    /**
+     * Look up the column renames declared for one logical table.
+     *
+     * @param   string  $logicalTable  Logical table name; unqualified renames belong to `record`.
+     *
+     * @return  array<string, string>  Old logical column to new logical column; empty when the table has
+     *          no declared renames.
+     *
+     * @throws  InvalidBusinessSchema  When the table name is not a metadata identifier.
+     *
+     * @since   2.0.0
+     */
     public function renameForTable(string $logicalTable): array
     {
         SchemaDocument::assertIdentifier($logicalTable, 'The schema-evolution table');
@@ -86,6 +179,17 @@ final readonly class SchemaEvolutionHints
         return $this->renamesByTable[$logicalTable] ?? [];
     }
 
+    /**
+     * Report whether a backfill is declared for a logical column.
+     *
+     * @param   string  $logicalColumn  Logical column handle to test.
+     *
+     * @return  bool  True when the definition declares a value to write into pre-existing rows.
+     *
+     * @throws  InvalidBusinessSchema  When the column name is not a metadata identifier.
+     *
+     * @since   2.0.0
+     */
     public function hasBackfill(string $logicalColumn): bool
     {
         SchemaDocument::assertIdentifier($logicalColumn, 'The schema backfill column');
@@ -93,6 +197,18 @@ final readonly class SchemaEvolutionHints
         return array_key_exists($logicalColumn, $this->backfills);
     }
 
+    /**
+     * Read the value a backfill writes into rows that predate a column.
+     *
+     * @param   string  $logicalColumn  Logical column handle to read.
+     *
+     * @return  bool|int|string|Expression|null  The declared literal or expression; null means no backfill
+     *          is declared, since a declared one is never null.
+     *
+     * @throws  InvalidBusinessSchema  When the column name is not a metadata identifier.
+     *
+     * @since   2.0.0
+     */
     public function backfill(string $logicalColumn): bool|int|string|Expression|null
     {
         SchemaDocument::assertIdentifier($logicalColumn, 'The schema backfill column');
@@ -100,6 +216,18 @@ final readonly class SchemaEvolutionHints
         return $this->backfills[$logicalColumn] ?? null;
     }
 
+    /**
+     * Read the expression that converts a logical column's existing values.
+     *
+     * @param   string  $logicalColumn  Logical column handle to read.
+     *
+     * @return  Expression|null  The declared conversion, or null when the column keeps its values as they
+     *          are.
+     *
+     * @throws  InvalidBusinessSchema  When the column name is not a metadata identifier.
+     *
+     * @since   2.0.0
+     */
     public function transform(string $logicalColumn): ?Expression
     {
         SchemaDocument::assertIdentifier($logicalColumn, 'The schema transform column');
@@ -107,24 +235,56 @@ final readonly class SchemaEvolutionHints
         return $this->transforms[$logicalColumn] ?? null;
     }
 
-    /** @return array<string, Expression> */
+    /**
+     * List every declared column conversion, which is how the planner finds rewritten columns.
+     *
+     * @return  array<string, Expression>  Conversions keyed by logical column, sorted by key.
+     *
+     * @since   2.0.0
+     */
     public function transforms(): array
     {
         return $this->transforms;
     }
 
-    /** @return array<string, array<string, string>> */
+    /**
+     * List every declared rename, grouped by the table it applies to.
+     *
+     * @return  array<string, array<string, string>>  Old to new logical column names, keyed by table.
+     *
+     * @since   2.0.0
+     */
     public function renames(): array
     {
         return $this->renamesByTable;
     }
 
-    /** @return array<string, bool|int|string|Expression> */
+    /**
+     * List every declared backfill.
+     *
+     * @return  array<string, bool|int|string|Expression>  Values keyed by logical column, sorted by key.
+     *
+     * @since   2.0.0
+     */
     public function backfills(): array
     {
         return $this->backfills;
     }
 
+    /**
+     * Read the definition version a handle's stored records must be re-pinned to.
+     *
+     * A declared repin is what authorizes a plan to rewrite historical rows at all, so a null here means
+     * older rows stay on their pinned version and the destructive follow-up work stays blocked.
+     *
+     * @param   string  $definitionHandle  Namespaced definition handle, such as `vendor.thing`.
+     *
+     * @return  int|null  The target version, or null when this handle is not re-pinned.
+     *
+     * @throws  InvalidBusinessSchema  When the handle is over 191 bytes or is not namespaced.
+     *
+     * @since   2.0.0
+     */
     public function repin(string $definitionHandle): ?int
     {
         self::assertDefinitionHandle($definitionHandle);
@@ -132,13 +292,29 @@ final readonly class SchemaEvolutionHints
         return $this->repins[$definitionHandle] ?? null;
     }
 
-    /** @return array<string, int> */
+    /**
+     * List every declared repin.
+     *
+     * @return  array<string, int>  Target versions keyed by definition handle, sorted by key.
+     *
+     * @since   2.0.0
+     */
     public function repins(): array
     {
         return $this->repins;
     }
 
-    /** @return array<string, mixed> */
+    /**
+     * Export the hints in their canonical document shape.
+     *
+     * Renames are flattened back to `table/old` keys, so the round trip through `fromArray()` yields the
+     * same object regardless of whether the source spelled a rename with or without its table.
+     *
+     * @return  array<string, mixed>  All four families, always present, each sorted by key; expressions are
+     *          rendered as their own array form.
+     *
+     * @since   2.0.0
+     */
     public function toArray(): array
     {
         $renames = [];
@@ -164,14 +340,29 @@ final readonly class SchemaEvolutionHints
         ];
     }
 
+    /**
+     * Compute a stable identity for the declared intent, so a plan can be bound to it.
+     *
+     * @return  string  Lowercase SHA-256 over the canonical JSON encoding of `toArray()`.
+     *
+     * @since   2.0.0
+     */
     public function checksum(): string
     {
         return CanonicalDefinitionJson::checksum($this->toArray());
     }
 
     /**
-     * @param array<string, mixed> $document
-     * @return array<string, mixed>
+     * Read one evolution family as a string-keyed object, treating absence as empty.
+     *
+     * @param   array<string, mixed>  $document  Whole hints document.
+     * @param   string                $key       Family name to read.
+     *
+     * @return  array<string, mixed>  The family's entries, or an empty array when it is not declared.
+     *
+     * @throws  InvalidBusinessSchema  When the family is present but is not a string-keyed object.
+     *
+     * @since   2.0.0
      */
     private static function metadataObject(array $document, string $key): array
     {
@@ -193,8 +384,19 @@ final readonly class SchemaEvolutionHints
     }
 
     /**
-     * @param array<string, mixed> $document
-     * @return array<string, array<string, string>>
+     * Group flat `table/old` rename keys by table and prove each table's renames are applicable.
+     *
+     * @param   array<string, mixed>  $document  Declared renames, keyed by column or by `table/column`.
+     *
+     * @return  array<string, array<string, string>>  Old to new logical column names, keyed by table, with
+     *          both levels sorted by key.
+     *
+     * @throws  InvalidBusinessSchema  When there are over 256 renames, a target is not a string or not a
+     *          metadata identifier, a source is neither `column` nor `table/column`,
+     *          the same source is renamed twice, or the table's renames are
+     *          ambiguous, chained, or cyclic.
+     *
+     * @since   2.0.0
      */
     private static function parseRenames(array $document): array
     {
@@ -222,8 +424,21 @@ final readonly class SchemaEvolutionHints
     }
 
     /**
-     * @param array<string, mixed> $document
-     * @return array<string, bool|int|string|Expression>
+     * Parse declared backfills into exact scalars and bounded expressions.
+     *
+     * A nested `{"expression": ...}` object is read as an `Expression`; anything else must be a bool, an
+     * int, or a string within 32768 bytes. Floats are refused because a backfill has to be exactly
+     * reproducible on replay.
+     *
+     * @param   array<string, mixed>  $document  Declared backfills keyed by logical column.
+     *
+     * @return  array<string, bool|int|string|Expression>  Backfill values keyed by column, sorted by key.
+     *
+     * @throws  InvalidBusinessSchema  When there are over 256 backfills, a column name breaks its grammar,
+     *          an expression wrapper is malformed or holds an invalid expression,
+     *          or a literal is null, a float, or an oversized string.
+     *
+     * @since   2.0.0
      */
     private static function parseBackfills(array $document): array
     {
@@ -268,8 +483,19 @@ final readonly class SchemaEvolutionHints
     }
 
     /**
-     * @param array<string, mixed> $document
-     * @return array<string, Expression>
+     * Parse declared column conversions into bounded expressions.
+     *
+     * An invalid expression is re-raised as a schema failure so callers of this namespace need to handle
+     * only one exception type.
+     *
+     * @param   array<string, mixed>  $document  Declared transforms keyed by logical column.
+     *
+     * @return  array<string, Expression>  Conversions keyed by column, sorted by key.
+     *
+     * @throws  InvalidBusinessSchema  When there are over 256 transforms, a column name breaks its
+     *          grammar, or an entry is not a valid bounded expression object.
+     *
+     * @since   2.0.0
      */
     private static function parseTransforms(array $document): array
     {
@@ -297,8 +523,16 @@ final readonly class SchemaEvolutionHints
     }
 
     /**
-     * @param array<string, mixed> $document
-     * @return array<string, int>
+     * Parse the definition versions that records must be moved onto.
+     *
+     * @param   array<string, mixed>  $document  Declared repins keyed by definition handle.
+     *
+     * @return  array<string, int>  Target versions keyed by handle, sorted by key.
+     *
+     * @throws  InvalidBusinessSchema  When there are over 256 repins, a handle is over 191 bytes or is not
+     *          namespaced, or a version is not a positive integer.
+     *
+     * @since   2.0.0
      */
     private static function parseRepins(array $document): array
     {
@@ -316,7 +550,20 @@ final readonly class SchemaEvolutionHints
         return $result;
     }
 
-    /** @return array{string, string} */
+    /**
+     * Split a rename key into the table and column it names.
+     *
+     * An unqualified key belongs to the `record` table, which is the shape most definitions write.
+     *
+     * @param   string  $path  Rename source, spelled `column` or `table/column`.
+     *
+     * @return  array{string, string}  The logical table and the logical column being renamed.
+     *
+     * @throws  InvalidBusinessSchema  When the key has more than one separator, or either part is not a
+     *          metadata identifier.
+     *
+     * @since   2.0.0
+     */
     private static function renameSource(string $path): array
     {
         $parts = explode('/', $path);
@@ -334,7 +581,23 @@ final readonly class SchemaEvolutionHints
         return [$table, $column];
     }
 
-    /** @param array<string, string> $renames */
+    /**
+     * Prove one table's renames can be applied in a single pass.
+     *
+     * Two renames may not target the same column, a rename may not feed another rename, and the graph may
+     * not close on itself — each of those would make the result depend on the order the plan happened to
+     * apply the steps in.
+     *
+     * @param   string                 $table    Logical table the renames belong to, named in the failure message.
+     * @param   array<string, string>  $renames  Old to new logical column names for that table.
+     *
+     * @return  void
+     *
+     * @throws  InvalidBusinessSchema  When two renames share a target, the graph contains a cycle, or one
+     *          rename's target is itself renamed.
+     *
+     * @since   2.0.0
+     */
     private static function assertRenameGraph(string $table, array $renames): void
     {
         $targets = [];
@@ -364,7 +627,18 @@ final readonly class SchemaEvolutionHints
         }
     }
 
-    /** @param array<string, mixed> $document */
+    /**
+     * Cap how many entries one evolution family may declare.
+     *
+     * @param   array<string, mixed>  $document  Entries of a single family.
+     * @param   string                $subject   Plural family name used in the failure message.
+     *
+     * @return  void
+     *
+     * @throws  InvalidBusinessSchema  When the family declares more than 256 entries.
+     *
+     * @since   2.0.0
+     */
     private static function assertBounded(array $document, string $subject): void
     {
         if (count($document) > self::MAXIMUM_HINTS_PER_KIND) {
@@ -372,6 +646,16 @@ final readonly class SchemaEvolutionHints
         }
     }
 
+    /**
+     * Decide whether an unrecognised metadata key is close enough to an evolution family to be a typo.
+     *
+     * @param   string  $key  Compatibility metadata key that is not one of the four families.
+     *
+     * @return  bool  True when the key opens with a schema, evolution, rename, backfill, transform, or
+     *          repin word, and should therefore be refused rather than ignored.
+     *
+     * @since   2.0.0
+     */
     private static function looksLikeEvolutionKey(string $key): bool
     {
         return preg_match(
@@ -381,6 +665,17 @@ final readonly class SchemaEvolutionHints
         ) === 1;
     }
 
+    /**
+     * Require a namespaced definition handle, which is what makes a repin target unambiguous.
+     *
+     * @param   string  $handle  Candidate handle, which must carry at least one `.`, `_`, or `-` group.
+     *
+     * @return  void
+     *
+     * @throws  InvalidBusinessSchema  When the handle is over 191 bytes or is not namespaced.
+     *
+     * @since   2.0.0
+     */
     private static function assertDefinitionHandle(string $handle): void
     {
         if (

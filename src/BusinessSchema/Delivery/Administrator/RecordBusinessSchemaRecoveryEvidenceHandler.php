@@ -15,8 +15,34 @@ use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 use Ramsey\Uuid\Uuid;
 
+/**
+ * Records a completed restore drill as the evidence a data-destroying schema plan must cite to be approved.
+ *
+ * A plan whose risk demands recovery evidence cannot be approved on an operator's word that a backup exists;
+ * it has to name a drill that was actually performed against the schema this plan would replace. That is what
+ * this screen files. The claim is deliberately narrow: the evidence is bound to the plan's source schema
+ * checksum and stamped with the live database driver, server version and application release read from the
+ * environment rather than from the form, so a drill run against a different installation, engine or release
+ * cannot later be cited here. Every one of the four clean-target proofs must be confirmed, and the operator
+ * re-proves their password, because filing false evidence is what would let a destructive approval through.
+ *
+ * The route is mounted on `POST /administrator/business-schema-plans/recovery-evidence` behind the CSRF
+ * middleware and demands `business.schema.recover`. Whether the filed evidence then satisfies a particular
+ * plan — freshness, verifier, environment match — is decided again at approval time, not here.
+ *
+ * @since  2.0.0
+ */
 final readonly class RecordBusinessSchemaRecoveryEvidenceHandler implements RequestHandlerInterface
 {
+    /**
+     * Wire the drill form to the service that stores evidence and to the facts it is stamped with.
+     *
+     * @param  BusinessSchemaService      $schemas      Loads the plan, then authorizes and persists the evidence.
+     * @param  BusinessSchemaEnvironment  $environment  Supplies the driver, server version and release to stamp.
+     * @param  HighImpactCredentialGuard  $credentials  Re-proves the operator's password before filing.
+     *
+     * @since  2.0.0
+     */
     public function __construct(
         private BusinessSchemaService $schemas,
         private BusinessSchemaEnvironment $environment,
@@ -24,6 +50,36 @@ final readonly class RecordBusinessSchemaRecoveryEvidenceHandler implements Requ
     ) {
     }
 
+    /**
+     * File one drill as recovery evidence for the schema the named plan would replace.
+     *
+     * The plan is read only to obtain the source schema checksum the evidence binds to, so a plan that
+     * installs a definition for the first time — which has no schema to restore — is refused outright. The
+     * proofs, the verifier and the tested flag are written from what this handler established rather than
+     * copied from the form, leaving the operator to supply only the drill's own identifying facts.
+     *
+     * @param   ServerRequestInterface  $request  Administrator POST carrying `plan_id`, the four proof
+     *          checkboxes, `backup_manifest_checksum`, `backup_created_at`, `verified_at`, `drill_reference`,
+     *          `client_version`, `restore_target_reference` and `current_password`.
+     *
+     * @return  ResponseInterface  A 303 redirect to the plans screen with an `evidence-recorded` notice and
+     *          the new evidence identifier, which is what an approval cites.
+     *
+     * @throws  InvalidArgumentException  When a required field is missing or blank, a timestamp cannot be
+     *          read, a clean-target proof was not confirmed, or the plan has no installed source schema.
+     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not read schema
+     *          plans or may not record recovery evidence.
+     * @throws  \Kumwe\CMS\BusinessSchema\Application\BusinessSchemaNotFound  When no plan with that identifier
+     *          belongs to this site.
+     * @throws  \Kumwe\CMS\Application\Security\HighImpactAuthenticationRequired  When the password step-up
+     *          fails.
+     * @throws  \Kumwe\CMS\BusinessSchema\Domain\InvalidBusinessSchema  When a submitted checksum, reference or
+     *          timestamp breaks the evidence document's own rules.
+     * @throws  \Kumwe\CMS\BusinessSchema\Application\BusinessSchemaConflict  When the drill does not match the
+     *          authenticated site, environment and verifier, or is dated in the future.
+     *
+     * @since   2.0.0
+     */
     public function handle(ServerRequestInterface $request): ResponseInterface
     {
         $form = AdministratorRequest::form($request);

@@ -16,16 +16,61 @@ use Kumwe\CMS\BusinessRecord\Domain\RecordValueGuard;
 use Kumwe\CMS\BusinessRecord\Domain\ZonedDateTimeValue;
 use Ramsey\Uuid\Uuid;
 
+/**
+ * Turns a caller's submitted values into the normalized set a business record is allowed to store.
+ *
+ * This is where a published definition's write policy is enforced: identity is server-assigned, computed
+ * and server-only fields refuse caller values, immutable fields refuse to move after creation,
+ * editability conditions gate an update, the required and nullable rules and each field's declared
+ * validator list judge single values, and record invariants judge the set. `RecordValueCodec` owns the
+ * per-value type conversion this delegates to, so the rules here stay about policy rather than
+ * representation. Every breach is collected instead of aborting the pass, and the whole list is raised
+ * once as `BusinessRecordValidationFailed`, which is what lets a caller correct a form in one round trip.
+ *
+ * `BusinessRecordService` calls `create()` and `update()` on the write path, the read repository calls
+ * `materialize()` to put virtual computations back onto a decoded row, and the schema repin gateway calls
+ * `repin()` to prove a stored row still satisfies a newly published definition before its pin moves.
+ *
+ * @since  2.0.0
+ */
 final readonly class RecordRuleValidator
 {
+    /**
+     * Wire the validator to the codec that converts individual field values.
+     *
+     * @param  RecordValueCodec  $codec  Codec applied to every value the rules accept, and the source of
+     *         the type failures reported as `invalid_type` violations.
+     *
+     * @since  2.0.0
+     */
     public function __construct(private RecordValueCodec $codec)
     {
     }
 
     /**
-     * @param array<string, mixed> $input
-     * @return array<string, mixed>
-     * @throws BusinessRecordValidationFailed
+     * Validate a submitted value set for a new record and return the values ready to encode.
+     *
+     * Identity is never taken from the input: the definition's identity field is set to `$recordId`
+     * whatever the caller sent. An omitted field falls back to its declared default, and an omitted
+     * optional field with no default is stored as null. Supplying a computed, server-only, or read-only
+     * field is reported rather than quietly ignored, so a caller learns its payload was not honoured.
+     *
+     * @param   EntityTypeDefinition  $definition      Published definition whose field rules apply.
+     * @param   array<string, mixed>  $input           Caller-supplied values keyed by field handle; an
+     *          unrecognised handle is reported rather than dropped.
+     * @param   string                $siteIdentifier  Site the record belongs to, bound into encrypted
+     *          secret values as associated data.
+     * @param   string                $recordKey       Internal row key, bound into that same associated
+     *          data; equal to the record ID only under the UUID identity strategy.
+     * @param   string                $recordId        Public identity written into the identity field.
+     *
+     * @return  array<string, mixed>  Normalized values by field handle, computed fields and identity
+     *          included, ready for `RecordValueCodec::encodeColumns()`.
+     *
+     * @throws  BusinessRecordValidationFailed  When any field rule or record invariant was breached; it
+     *          carries every breach the pass found, not only the first.
+     *
+     * @since   2.0.0
      */
     public function create(
         EntityTypeDefinition $definition,
@@ -91,10 +136,32 @@ final readonly class RecordRuleValidator
     }
 
     /**
-     * @param array<string, mixed> $current
-     * @param array<string, mixed> $patch
-     * @return array<string, mixed>
-     * @throws BusinessRecordValidationFailed
+     * Validate a patch against the record's current values and return the merged, revalidated set.
+     *
+     * Only the handles present in `$patch` count as the caller's doing; every other value is carried over
+     * from `$current` and still re-judged, because a formula or a cross-field invariant may depend on
+     * what moved. An identity or immutable-after-create field may appear in the patch, but only when it
+     * repeats the value already stored. A field guarded by an editability condition is rejected unless
+     * that condition reads true over the record as it stands *before* the patch is applied.
+     *
+     * @param   EntityTypeDefinition  $definition      Published definition whose field rules apply.
+     * @param   array<string, mixed>  $current         Values the stored record holds, already normalized.
+     * @param   array<string, mixed>  $patch           Values the caller wants changed, keyed by field
+     *          handle; an unrecognised handle is reported rather than dropped.
+     * @param   string                $siteIdentifier  Site the record belongs to, bound into encrypted
+     *          secret values as associated data.
+     * @param   string                $recordKey       Internal row key, bound into that same associated
+     *          data.
+     * @param   string                $recordId        Public identity of the record; accepted for
+     *          symmetry with `create()`, as immutability is judged against `$current` instead.
+     *
+     * @return  array<string, mixed>  The whole value set after the patch, with every formula field
+     *          re-evaluated, ready to become the record's new state.
+     *
+     * @throws  BusinessRecordValidationFailed  When any field rule or record invariant was breached; it
+     *          carries every breach the pass found.
+     *
+     * @since   2.0.0
      */
     public function update(
         EntityTypeDefinition $definition,
@@ -173,8 +240,24 @@ final readonly class RecordRuleValidator
     /**
      * Reconstitutes virtual formulas after a typed row is decoded.
      *
-     * @param array<string, mixed> $storedValues
-     * @return array<string, mixed>
+     * A virtual computation owns no column, so a decoded row arrives without it; this re-evaluates every
+     * formula the definition declares and writes each result into the returned set. Unlike the write
+     * paths, a formula whose dependencies are absent from the row is skipped silently instead of being
+     * reported, so a projection that selected only some columns still materializes what it can.
+     *
+     * @param   EntityTypeDefinition  $definition      Definition the row was decoded against.
+     * @param   array<string, mixed>  $storedValues    Decoded field values keyed by handle.
+     * @param   string                $siteIdentifier  Site the record belongs to, bound into secret
+     *          associated data when a formula result is normalized.
+     * @param   string                $recordKey       Internal row key, bound into that same data.
+     *
+     * @return  array<string, mixed>  The decoded values with every evaluable formula field written in,
+     *          stored computations recomputed rather than trusted.
+     *
+     * @throws  BusinessRecordValidationFailed  When a formula could not be evaluated or produced a
+     *          result the codec rejects for its field.
+     *
+     * @since   2.0.0
      */
     public function materialize(
         EntityTypeDefinition $definition,
@@ -193,8 +276,28 @@ final readonly class RecordRuleValidator
      * Validates a decoded stored row against a newly published definition before schema repinning.
      * Stored computations are recomputed and all normalizers, validators, and invariants run again.
      *
-     * @param array<string, mixed> $storedValues
-     * @return array<string, mixed>
+     * The row is rebuilt rather than patched: every non-formula field is re-normalized through the target
+     * definition, so a row the new definition would not accept is caught before its version pin moves.
+     * Ordered-line fields are skipped because their contents live in the relationship tables. The identity
+     * field is set from `$recordId` whatever the target's normalizers would make of it, and a normalizer
+     * that would have moved it is itself reported as an `identity_normalization` breach.
+     *
+     * @param   EntityTypeDefinition  $definition      Target definition the row is being repinned to.
+     * @param   array<string, mixed>  $storedValues    Decoded values of the stored row, keyed by handle;
+     *          a handle the target declares but the row lacks is treated as null.
+     * @param   string                $siteIdentifier  Site the record belongs to, bound into secret
+     *          associated data.
+     * @param   string                $recordKey       Internal row key, bound into that same data.
+     * @param   string                $recordId        Public identity the row keeps; the identity field
+     *          is set to it rather than to whatever normalization produced.
+     *
+     * @return  array<string, mixed>  Values rebuilt under the target definition, ready to re-encode
+     *          against the new schema.
+     *
+     * @throws  BusinessRecordValidationFailed  When the stored row breaches a field rule or a record
+     *          invariant of the target definition.
+     *
+     * @since   2.0.0
      */
     public function repin(
         EntityTypeDefinition $definition,
@@ -250,7 +353,16 @@ final readonly class RecordRuleValidator
         return $values;
     }
 
-    /** @return array<string, FieldDefinition> */
+    /**
+     * Index the definition's fields by handle so a submitted key can be resolved in one lookup.
+     *
+     * @param   EntityTypeDefinition  $definition  Definition whose declared fields are indexed.
+     *
+     * @return  array<string, FieldDefinition>  Every declared field under its handle, in declaration
+     *          order; a handle absent from the map is a field the definition does not declare.
+     *
+     * @since   2.0.0
+     */
     private function fields(EntityTypeDefinition $definition): array
     {
         $fields = [];
@@ -262,8 +374,24 @@ final readonly class RecordRuleValidator
     }
 
     /**
-     * @param array<string, mixed> $values
-     * @param list<ValidationViolation> $violations
+     * Run one raw value through the codec, recording either the normalized result or a type breach.
+     *
+     * A null is stored as null without reaching the codec, which leaves it to the required and nullable
+     * rules in `validate()` to decide whether that null is acceptable for the field.
+     *
+     * @param   FieldDefinition            $field           Field whose type and normalizers apply.
+     * @param   mixed                      $raw             Value as submitted, defaulted, or read from
+     *          storage.
+     * @param   string                     $siteIdentifier  Site bound into secret associated data.
+     * @param   string                     $definitionId    Definition ID bound into that same data.
+     * @param   string                     $recordKey       Row key bound into that same data.
+     * @param   array<string, mixed>       $values          Accumulating value set, written by handle.
+     * @param   list<ValidationViolation>  $violations      Accumulating breach list, appended to with an
+     *          `invalid_type` entry when the codec rejects the value.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
      */
     private function normalizeField(
         FieldDefinition $field,
@@ -292,10 +420,27 @@ final readonly class RecordRuleValidator
     }
 
     /**
-     * Re-evaluating every formula is deterministic and also invalidates every stored computation dependency.
+     * Evaluate every formula the definition declares and write each result into the value set.
      *
-     * @param array<string, mixed> $values
-     * @param list<ValidationViolation> $violations
+     * Re-evaluating every formula is deterministic and also invalidates every stored computation dependency.
+     * Formulas resolve over repeated passes, so one may read another's result; a pass that resolves
+     * nothing ends the loop. A formula whose evaluation or normalization fails is reported as
+     * `formula_failed` and dropped, while one whose dependencies never arrive is reported as
+     * `formula_dependency` only when `$requireAll` is set.
+     *
+     * @param   EntityTypeDefinition       $definition      Definition supplying the formula fields.
+     * @param   string                     $siteIdentifier  Site bound into secret associated data when a
+     *          result is normalized.
+     * @param   string                     $recordKey       Row key bound into that same data.
+     * @param   array<string, mixed>       $values          Value set read for dependencies and written
+     *          with each computed result.
+     * @param   list<ValidationViolation>  $violations      Accumulating breach list.
+     * @param   bool                       $requireAll      Whether a formula left unresolved is a breach;
+     *          false on the read path, where a partial projection need not carry every dependency.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
      */
     private function compute(
         EntityTypeDefinition $definition,
@@ -351,8 +496,20 @@ final readonly class RecordRuleValidator
     }
 
     /**
-     * @param array<string, mixed> $values
-     * @param list<ValidationViolation> $violations
+     * Judge every field of the assembled value set, then the invariants that span several of them.
+     *
+     * A missing value is reported once — `required` when the field demands one, `not_nullable` when the
+     * column will not hold null — and that field's own validator list is then skipped, since there is
+     * nothing to judge. A present value runs every validator it declares, so one field can contribute
+     * several breaches to the same pass.
+     *
+     * @param   EntityTypeDefinition       $definition  Definition supplying the rules to apply.
+     * @param   array<string, mixed>       $values      Normalized value set to judge, keyed by handle.
+     * @param   list<ValidationViolation>  $violations  Accumulating breach list.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
      */
     private function validate(EntityTypeDefinition $definition, array $values, array &$violations): void
     {
@@ -384,8 +541,20 @@ final readonly class RecordRuleValidator
     }
 
     /**
-     * @param array<string, mixed> $values
-     * @param list<ValidationViolation> $violations
+     * Evaluate the definition's cross-field invariants over the assembled value set.
+     *
+     * A rule that reads false is reported against its own handle, carrying the definition's operator
+     * wording and the code `invariant.<handle>` so a client can tell which rule failed. A rule that
+     * cannot be evaluated at all — a dependency the record does not carry, a value contradicting the
+     * declared type — becomes an `invariant_invalid` breach instead of escaping as a fault.
+     *
+     * @param   EntityTypeDefinition       $definition  Definition supplying the invariants.
+     * @param   array<string, mixed>       $values      Normalized value set the conditions read.
+     * @param   list<ValidationViolation>  $violations  Accumulating breach list.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
      */
     private function validateInvariants(
         EntityTypeDefinition $definition,
@@ -414,8 +583,23 @@ final readonly class RecordRuleValidator
     }
 
     /**
-     * @param array<string, mixed> $validator
-     * @param array<string, mixed> $values
+     * Apply one declared validator rule to one normalized field value.
+     *
+     * The rule vocabulary is closed. An unnamed rule, an unregistered rule name, or an argument outside
+     * the bounds its rule accepts is reported as `validator_invalid` rather than skipped, so a definition
+     * declaring a check this build cannot run never passes for lack of enforcement.
+     *
+     * @param   FieldDefinition       $field      Field the rule is declared on, named in the breach.
+     * @param   mixed                 $value      Normalized value to judge; never null, because
+     *          `validate()` settles absence before reaching here.
+     * @param   array<string, mixed>  $validator  One rule document: `rule` names the check and `value`
+     *          carries its argument.
+     * @param   array<string, mixed>  $values     The record's whole value set; no rule in the current
+     *          vocabulary reads it, since each judges a single value.
+     *
+     * @return  ?ValidationViolation  The breach, or null when the value satisfies the rule.
+     *
+     * @since   2.0.0
      */
     private function validator(
         FieldDefinition $field,
@@ -457,7 +641,24 @@ final readonly class RecordRuleValidator
         return $this->violation($field, $rule, 'The field failed its ' . $rule . ' validation rule.');
     }
 
-    /** @param array<string, mixed> $validator */
+    /**
+     * Match a value against a declared regular expression under bounded backtracking.
+     *
+     * The declared expression is wrapped in `~…~uD` with PCRE match and depth limits, and any `~` inside
+     * it is escaped, so a definition cannot smuggle in its own delimiters or modifiers. An expression
+     * that fails to compile, or that exhausts the limits, is a validator failure rather than a non-match,
+     * which keeps an untrusted definition from turning a catastrophic pattern into a silent pass.
+     *
+     * @param   string                $value      Normalized string to test.
+     * @param   array<string, mixed>  $validator  Rule document whose `value` holds the expression.
+     *
+     * @return  bool  Whether the subject matched the declared expression.
+     *
+     * @throws  InvalidArgumentException  When the expression is absent, empty, longer than 512 bytes, or
+     *          failed to run within the configured limits.
+     *
+     * @since   2.0.0
+     */
     private function pattern(string $value, array $validator): bool
     {
         $expression = $validator['value'] ?? null;
@@ -473,6 +674,26 @@ final readonly class RecordRuleValidator
         return $result === 1;
     }
 
+    /**
+     * Order a normalized value against a validator bound so `min` and `max` can be judged.
+     *
+     * An exact decimal is compared through the codec: the declared bound is normalized against the same
+     * field first, which is what keeps a bound of `'0.00'` meaningful for a DECIMAL column instead of
+     * being compared as text. An integer value accepts only a bound spelled as a canonical integer
+     * string, so a bound declared as a JSON number is refused; two strings compare byte-wise. Every
+     * other pairing is refused rather than coerced into one.
+     *
+     * @param   mixed            $left   Normalized field value being judged.
+     * @param   mixed            $right  Bound as the validator declared it.
+     * @param   FieldDefinition  $field  Field supplying the type the bound is normalized against.
+     *
+     * @return  int  Negative, zero or positive as $left sorts before, with, or after $right.
+     *
+     * @throws  InvalidArgumentException  When the bound cannot be normalized to the field's type, or the
+     *          two values have no comparable representation.
+     *
+     * @since   2.0.0
+     */
     private function compare(mixed $left, mixed $right, FieldDefinition $field): int
     {
         if ($left instanceof ExactDecimal) {
@@ -494,7 +715,21 @@ final readonly class RecordRuleValidator
         throw new InvalidArgumentException('A range validator value is incompatible with its field.');
     }
 
-    /** @param array<string, mixed> $validator */
+    /**
+     * Read a bounded integer argument out of a validator rule document.
+     *
+     * @param   array<string, mixed>  $validator  Rule document the argument is read from.
+     * @param   string                $key        Argument name, `value` for every current rule.
+     * @param   int                   $minimum    Smallest argument the calling rule can act on.
+     * @param   int                   $maximum    Largest argument the calling rule can act on.
+     *
+     * @return  int  The declared argument, once proven an integer inside the bound.
+     *
+     * @throws  InvalidArgumentException  When the argument is absent, not an integer, or outside the
+     *          bound the calling rule allows.
+     *
+     * @since   2.0.0
+     */
     private function validatorInt(array $validator, string $key, int $minimum, int $maximum): int
     {
         $value = $validator[$key] ?? null;
@@ -505,7 +740,22 @@ final readonly class RecordRuleValidator
         return $value;
     }
 
-    /** @param array<string, mixed> $validator */
+    /**
+     * Read the comparison bound of a `min` or `max` rule out of its document.
+     *
+     * A float is refused along with every non-scalar, because a business record never holds one and a
+     * bound spelled as a float could not be compared exactly against a stored decimal.
+     *
+     * @param   array<string, mixed>  $validator  Rule document the bound is read from.
+     * @param   string                $key        Argument name, `value` for every current rule.
+     *
+     * @return  bool|int|string|null  The declared bound; null both when the key is absent and when the
+     *          definition declared null, which `compare()` then refuses as incomparable.
+     *
+     * @throws  InvalidArgumentException  When the bound is a float, or any other non-scalar value.
+     *
+     * @since   2.0.0
+     */
     private function validatorScalar(array $validator, string $key): bool|int|string|null
     {
         $value = $validator[$key] ?? null;
@@ -517,8 +767,18 @@ final readonly class RecordRuleValidator
     }
 
     /**
-     * @param array<string, mixed> $validator
-     * @return list<bool|int|string|null>
+     * Read the bounded option set a `one_of` rule admits.
+     *
+     * @param   array<string, mixed>  $validator  Rule document the option set is read from.
+     * @param   string                $key        Argument name, `value` for every current rule.
+     *
+     * @return  list<bool|int|string|null>  The declared options in document order, each already proven
+     *          scalar or null so it can be matched against a canonicalized field value.
+     *
+     * @throws  InvalidArgumentException  When the options are absent, not a list, empty, longer than 256
+     *          entries, or hold a float or any other non-scalar entry.
+     *
+     * @since   2.0.0
      */
     private function validatorList(array $validator, string $key): array
     {
@@ -538,8 +798,19 @@ final readonly class RecordRuleValidator
     }
 
     /**
-     * @param array<string, mixed> $values
-     * @return array<string, bool|float|int|string|null>
+     * Flatten a record's values into the scalar map an expression can be evaluated against.
+     *
+     * Each domain value becomes the spelling a formula reads — an exact decimal its canonical literal, a
+     * date-time an ISO-8601 string with offset, a zoned date-time its UTC instant — while a composite
+     * such as money or a quantity, and anything else with no scalar spelling, collapses to null, so a
+     * formula naming one sees a missing value rather than an object it cannot compute over.
+     *
+     * @param   array<string, mixed>  $values  Normalized record values keyed by field handle.
+     *
+     * @return  array<string, bool|float|int|string|null>  The same handles carrying scalar-only values,
+     *          in the shape `Expression::evaluate()` and `RecordInvariantDefinition::isSatisfied()` read.
+     *
+     * @since   2.0.0
      */
     private function formulaValues(array $values): array
     {
@@ -558,11 +829,34 @@ final readonly class RecordRuleValidator
         return $result;
     }
 
+    /**
+     * Build a violation addressed to a field, taking the handle from the field itself.
+     *
+     * @param   FieldDefinition  $field    Field the breach is reported against.
+     * @param   string           $code     Stable token naming the rule that failed.
+     * @param   string           $message  Operator-facing sentence explaining the failure.
+     *
+     * @return  ValidationViolation  The breach, ready to append to the pass's list.
+     *
+     * @since   2.0.0
+     */
     private function violation(FieldDefinition $field, string $code, string $message): ValidationViolation
     {
         return new ValidationViolation($field->handle, $code, $message);
     }
 
+    /**
+     * Decide whether a value is an absolute HTTP or HTTPS URL.
+     *
+     * The scheme is checked separately from `FILTER_VALIDATE_URL`, which also accepts `mailto:`, `ftp:`
+     * and other schemes a `url` rule is not meant to let through.
+     *
+     * @param   string  $value  Normalized string to test.
+     *
+     * @return  bool  True only for a syntactically valid URL whose scheme is http or https.
+     *
+     * @since   2.0.0
+     */
     private function validHttpUrl(string $value): bool
     {
         $parts = parse_url($value);
@@ -571,7 +865,18 @@ final readonly class RecordRuleValidator
             && in_array(strtolower((string) ($parts['scheme'] ?? '')), ['http', 'https'], true);
     }
 
-    /** @param list<ValidationViolation> $violations */
+    /**
+     * Close a validation pass, raising the collected breaches when the pass found any.
+     *
+     * @param   list<ValidationViolation>  $violations  Every breach the pass collected, in the order it
+     *          discovered them.
+     *
+     * @return  void
+     *
+     * @throws  BusinessRecordValidationFailed  When the list is not empty.
+     *
+     * @since   2.0.0
+     */
     private function throwIfInvalid(array $violations): void
     {
         if ($violations !== []) {

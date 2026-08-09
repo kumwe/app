@@ -30,13 +30,55 @@ use Kumwe\CMS\BusinessSchema\Domain\SchemaOperation;
 use Kumwe\CMS\BusinessSchema\Domain\SchemaOperationKind;
 use Throwable;
 
-/** Executes only identifier-safe, canonical operations through Doctrine's schema model. */
+/**
+ * Doctrine DBAL binding of the physical schema gateway, for MySQL, MariaDB, and PostgreSQL.
+ *
+ * Nothing here composes DDL by hand. A shape change is applied by editing a clone of the introspected
+ * `Schema` and executing whatever Doctrine's comparator derives from the difference, and the row
+ * rewrites bind every value as a parameter with the surrounding identifiers passed through
+ * `quoteSingleIdentifier()`. Verification then does the part Doctrine's introspection alone cannot:
+ * fractional-second precision is read from `information_schema`, defaults are normalised into one exact
+ * physical form before they are compared, and the few type names an engine reports back differently from
+ * the way they were declared are accepted only where both spellings store identically. That is what
+ * keeps a blueprint approved on one engine from being reported as drift on another. Any other platform
+ * is refused rather than guessed at.
+ *
+ * @since  2.0.0
+ */
 final readonly class DoctrinePhysicalSchemaGateway implements PhysicalSchemaGateway
 {
+    /**
+     * Bind the gateway to the connection every step is executed and verified through.
+     *
+     * @param  Connection  $database  Site database whose platform decides which introspection and
+     *         type-matching rules apply.
+     *
+     * @since  2.0.0
+     */
     public function __construct(private Connection $database)
     {
     }
 
+    /**
+     * Confirm the expected blueprint is what the database actually holds.
+     *
+     * Each expected table that exists is introspected and compared exactly — column, index, and
+     * foreign-key inventories in both directions, the primary key, and every column's type, options, and
+     * default — so an object present in the database but absent from the blueprint is drift too. Tables
+     * that do not exist are counted rather than compared, which is what makes "nothing installed"
+     * distinguishable from "half installed".
+     *
+     * @param   PhysicalSchemaBlueprint  $expected  Blueprint the caller believes is installed.
+     *
+     * @return  ?PhysicalSchemaBlueprint  The same blueprint when every table is present and matches, null
+     *          when not one of them exists.
+     *
+     * @throws  BusinessSchemaConflict  When a present table disagrees with the blueprint, the message
+     *          naming the structural difference found, or when only some of the tables exist.
+     * @throws  InvalidBusinessSchema  When the connected platform has no temporal-precision introspector.
+     *
+     * @since   2.0.0
+     */
     public function inspect(PhysicalSchemaBlueprint $expected): ?PhysicalSchemaBlueprint
     {
         $manager = $this->database->createSchemaManager();
@@ -65,6 +107,26 @@ final readonly class DoctrinePhysicalSchemaGateway implements PhysicalSchemaGate
         return $expected;
     }
 
+    /**
+     * Report whether the live database already looks the way one plan step intends to leave it.
+     *
+     * A create-table step is answered tolerantly: the table must carry everything the plan declared, but
+     * objects it did not declare are ignored, so an engine's own additions do not force a redundant
+     * retry. Table drops and renames are answered by the presence or absence of the name alone, and every
+     * remaining kind by introspecting the one object it names — with a transform always reported
+     * unsatisfied, because no shape of a table proves its values were recomputed.
+     *
+     * @param   SchemaOperation          $operation  Step whose intended end state is being checked.
+     * @param   PhysicalSchemaBlueprint  $target     Blueprint the plan is moving the schema towards.
+     *
+     * @return  bool  True when the postcondition already holds, so the executor may skip the step.
+     *
+     * @throws  InvalidBusinessSchema  When the step names a table that is in neither the target blueprint
+     *          nor its own prior state, when a state the check needs is missing or malformed, or when the
+     *          connected platform has no temporal-precision introspector.
+     *
+     * @since   2.0.0
+     */
     public function operationSatisfied(
         SchemaOperation $operation,
         PhysicalSchemaBlueprint $target,
@@ -100,6 +162,27 @@ final readonly class DoctrinePhysicalSchemaGateway implements PhysicalSchemaGate
         };
     }
 
+    /**
+     * Apply one approved shape-changing step to the live database.
+     *
+     * A step whose postcondition already holds returns without touching the database, which is what makes
+     * re-running an interrupted plan safe. Creates and drops go straight to the schema manager; every
+     * other kind is realised by editing a clone of the introspected schema and executing the statements
+     * Doctrine's comparator derives, so the DDL dialect stays the platform's concern.
+     *
+     * @param   SchemaOperation          $operation  Approved step to realise as driver statements.
+     * @param   PhysicalSchemaBlueprint  $target     Blueprint supplying the shape names resolve against.
+     *
+     * @return  void
+     *
+     * @throws  InvalidBusinessSchema  When the step rewrites rows, which belongs to the chunked methods,
+     *          when its kind cannot be expressed as an alteration, or when a state it needs is missing or
+     *          names an object the target blueprint does not declare.
+     * @throws  BusinessSchemaConflict  When the table the step alters is no longer present by the time the
+     *          alteration is built.
+     *
+     * @since   2.0.0
+     */
     public function execute(SchemaOperation $operation, PhysicalSchemaBlueprint $target): void
     {
         if ($this->operationSatisfied($operation, $target)) {
@@ -132,6 +215,24 @@ final readonly class DoctrinePhysicalSchemaGateway implements PhysicalSchemaGate
         }
     }
 
+    /**
+     * Drop a table an earlier create-table step added, but only after proving it is untouched.
+     *
+     * The table must still match exactly the shape the step declared and must hold no row; either check
+     * failing stops the compensation instead of destroying data, leaving the plan for an operator. An
+     * already absent table is reported as nothing to do, so compensation is safe to repeat.
+     *
+     * @param   SchemaOperation  $operation  Completed create-table step being undone.
+     *
+     * @return  bool  True when the table was found and dropped, false when it was already absent.
+     *
+     * @throws  InvalidBusinessSchema  When the step is not a create-table step, its target state is
+     *          missing, or the connected platform has no temporal-precision introspector.
+     * @throws  BusinessSchemaConflict  When the table no longer matches the shape the step created, or
+     *          holds at least one row.
+     *
+     * @since   2.0.0
+     */
     public function compensateCreateTable(SchemaOperation $operation): bool
     {
         if ($operation->kind !== SchemaOperationKind::CreateTable) {
@@ -161,6 +262,23 @@ final readonly class DoctrinePhysicalSchemaGateway implements PhysicalSchemaGate
         return true;
     }
 
+    /**
+     * Report whether any stored record is still pinned to a definition version below the given one.
+     *
+     * Answered with one bounded existence query against the installed record table, so asking costs the
+     * same whether a single row or a million rows are stale.
+     *
+     * @param   PhysicalSchemaBlueprint  $installed          Blueprint of the schema as currently installed.
+     * @param   int                      $definitionVersion  Version rows must have reached to count as current.
+     *
+     * @return  bool  True when at least one record row predates that version.
+     *
+     * @throws  InvalidBusinessSchema  When the boundary version is below one, or the installed blueprint
+     *          has no record table or no definition-version column on it.
+     * @throws  BusinessSchemaConflict  When the installed record table is not present in the database.
+     *
+     * @since   2.0.0
+     */
     public function hasRowsPinnedBefore(
         PhysicalSchemaBlueprint $installed,
         int $definitionVersion,
@@ -184,6 +302,36 @@ final readonly class DoctrinePhysicalSchemaGateway implements PhysicalSchemaGate
         ), [$definitionVersion], [\Doctrine\DBAL\Types\Types::INTEGER]) !== false;
     }
 
+    /**
+     * Fill one bounded batch of rows whose new column is still unset.
+     *
+     * Rows are read in identity order from the cursor and only where the target column is still null, and
+     * each update repeats that null test, so a repeated batch overwrites neither a value an earlier pass
+     * computed nor one a concurrent writer supplied. The value is the literal the step carries or the
+     * result of its bounded expression, evaluated per row from dependency columns read in the same
+     * select; a result that is null or cannot be stored exactly stops the batch rather than being
+     * coerced.
+     *
+     * @param   SchemaOperation                      $operation  Approved backfill step and its source value.
+     * @param   PhysicalSchemaBlueprint              $target     Blueprint the column belongs to.
+     * @param   array<string, bool|int|string>|null  $cursor     Where the previous batch stopped, or null to start.
+     * @param   int                                  $limit      Rows this batch may read, from one to 1000.
+     *
+     * @return  SchemaChunkResult  Rows filled and the position to resume from; complete once the batch
+     *          reads fewer rows than the limit.
+     *
+     * @throws  InvalidBusinessSchema  When the step is not a backfill or the limit is out of bounds, the
+     *          target table is missing or not singly keyed, the state carries no canonical column with
+     *          exactly one literal or expression source and a complete dependency map, the column is
+     *          absent from the approved target, the cursor is malformed, or a computed value is null or
+     *          cannot be stored exactly.
+     * @throws  BusinessSchemaConflict  When a visited row carries an identity that is neither an integer
+     *          nor a string, so it cannot be bound as a parameter.
+     * @throws  \Kumwe\CMS\BusinessDefinition\Domain\InvalidBusinessDefinition  When the stored expression
+     *          cannot be rebuilt, or evaluating it against a row's values fails.
+     *
+     * @since   2.0.0
+     */
     public function backfillChunk(
         SchemaOperation $operation,
         PhysicalSchemaBlueprint $target,
@@ -309,6 +457,35 @@ final readonly class DoctrinePhysicalSchemaGateway implements PhysicalSchemaGate
         );
     }
 
+    /**
+     * Recompute one bounded batch of rows into the shadow column a type change writes through.
+     *
+     * Every row in identity order is rewritten rather than only the unset ones, because the new value is
+     * derived from the row and nothing about the table's shape proves it was already produced; a failed
+     * batch therefore resumes from its last checkpoint and repeats work instead of skipping it. The
+     * expression's dependency columns are read in the same select and coerced to the types the expression
+     * declares, so a driver that reports integers as strings does not change the result.
+     *
+     * @param   SchemaOperation                      $operation  Approved transform step and its expression.
+     * @param   PhysicalSchemaBlueprint              $target     Blueprint both columns belong to.
+     * @param   array<string, bool|int|string>|null  $cursor     Where the previous batch stopped, or null to start.
+     * @param   int                                  $limit      Rows this batch may read, from one to 1000.
+     *
+     * @return  SchemaChunkResult  Rows recomputed and the position to resume from; complete once the
+     *          batch reads fewer rows than the limit.
+     *
+     * @throws  InvalidBusinessSchema  When the step is not a transform or the limit is out of bounds, the
+     *          target table is missing, a canonical state is malformed, the state does not name exactly
+     *          one identity column that belongs to the target primary key, a dependency the expression
+     *          reads is unavailable or contradicts its declared type, the cursor is malformed, or a
+     *          computed value cannot be stored exactly.
+     * @throws  BusinessSchemaConflict  When a visited row carries an identity that is neither an integer
+     *          nor a string, so it cannot be bound as a parameter.
+     * @throws  \Kumwe\CMS\BusinessDefinition\Domain\InvalidBusinessDefinition  When the stored expression
+     *          cannot be rebuilt, or evaluating it against a row's values fails.
+     *
+     * @since   2.0.0
+     */
     public function transformChunk(
         SchemaOperation $operation,
         PhysicalSchemaBlueprint $target,
@@ -427,6 +604,26 @@ final readonly class DoctrinePhysicalSchemaGateway implements PhysicalSchemaGate
         );
     }
 
+    /**
+     * Express one operation as edits to the in-memory schema clone the comparator will diff.
+     *
+     * Nothing here reaches the database: the clone is edited so Doctrine can derive the alteration
+     * statements for the platform in use. A validate-constraint step is accepted and edits nothing,
+     * because the portable path defers no constraint that would need validating.
+     *
+     * @param   Schema                   $schema     Clone of the introspected schema, edited in place.
+     * @param   SchemaOperation          $operation  Step to express as edits to that clone.
+     * @param   ?PhysicalTableBlueprint  $target     Target shape of the affected table, or null.
+     *
+     * @return  void
+     *
+     * @throws  BusinessSchemaConflict  When the table the step names is absent from the introspected
+     *          schema.
+     * @throws  InvalidBusinessSchema  When a state the step needs is missing or malformed, it names an
+     *          object the target table does not declare, or its kind has no alteration form.
+     *
+     * @since   2.0.0
+     */
     private function mutate(
         Schema $schema,
         SchemaOperation $operation,
@@ -518,6 +715,19 @@ final readonly class DoctrinePhysicalSchemaGateway implements PhysicalSchemaGate
         }
     }
 
+    /**
+     * Build the Doctrine table a create-table step installs.
+     *
+     * @param   PhysicalTableBlueprint  $blueprint  Compiled shape of the table to create.
+     *
+     * @return  Table  Table carrying every column, the primary key, the indexes, and the foreign keys the
+     *          blueprint declares.
+     *
+     * @throws  InvalidBusinessSchema  When the blueprint holds an empty identifier, or a column default
+     *          its Doctrine type cannot carry exactly.
+     *
+     * @since   2.0.0
+     */
     private function doctrineTable(PhysicalTableBlueprint $blueprint): Table
     {
         $table = new Table($blueprint->physicalName);
@@ -539,12 +749,40 @@ final readonly class DoctrinePhysicalSchemaGateway implements PhysicalSchemaGate
         return $table;
     }
 
+    /**
+     * Add one blueprint column to a Doctrine table.
+     *
+     * @param   Table                    $table   Table being built or altered.
+     * @param   PhysicalColumnBlueprint  $column  Column to add, with its portable options.
+     *
+     * @return  void
+     *
+     * @throws  InvalidBusinessSchema  When the column's default cannot be expressed exactly in its
+     *          Doctrine type.
+     *
+     * @since   2.0.0
+     */
     private function addColumn(Table $table, PhysicalColumnBlueprint $column): void
     {
         $table->addColumn($column->physicalName, $column->doctrineType, $this->columnOptions($column));
     }
 
-    /** @return array<string, mixed> */
+    /**
+     * Translate a blueprint column's portable options into the array Doctrine's table API expects.
+     *
+     * Nullability is handed over as Doctrine's `notnull` rather than the blueprint's own property, and a
+     * declared default is first normalised into the single exact physical form the drift check compares
+     * against, so the value written at install time and the value read back later are the same string.
+     *
+     * @param   PhysicalColumnBlueprint  $column  Column whose options are being translated.
+     *
+     * @return  array<string, mixed>  Doctrine column options, always carrying `notnull`.
+     *
+     * @throws  InvalidBusinessSchema  When the declared default cannot be expressed exactly in the
+     *          column's Doctrine type.
+     *
+     * @since   2.0.0
+     */
     private function columnOptions(PhysicalColumnBlueprint $column): array
     {
         $allowed = [
@@ -559,6 +797,18 @@ final readonly class DoctrinePhysicalSchemaGateway implements PhysicalSchemaGate
         return ['notnull' => !$column->nullable, ...$options];
     }
 
+    /**
+     * Add one blueprint index to a Doctrine table, as a unique constraint or a plain index.
+     *
+     * @param   Table                   $table  Table being built or altered.
+     * @param   PhysicalIndexBlueprint  $index  Index to add, with its columns in key order.
+     *
+     * @return  void
+     *
+     * @throws  InvalidBusinessSchema  When the index declares no columns, or an empty column identifier.
+     *
+     * @since   2.0.0
+     */
     private function addIndex(Table $table, PhysicalIndexBlueprint $index): void
     {
         if ($index->unique) {
@@ -568,6 +818,18 @@ final readonly class DoctrinePhysicalSchemaGateway implements PhysicalSchemaGate
         $table->addIndex($this->nonEmptyNames($index->columns), $index->physicalName, [], $index->options);
     }
 
+    /**
+     * Add one blueprint foreign key to a Doctrine table, with both of its referential actions.
+     *
+     * @param   Table                        $table       Table being built or altered.
+     * @param   PhysicalForeignKeyBlueprint  $foreignKey  Constraint to add, with both column lists.
+     *
+     * @return  void
+     *
+     * @throws  InvalidBusinessSchema  When either column list is empty or holds an empty identifier.
+     *
+     * @since   2.0.0
+     */
     private function addForeignKey(Table $table, PhysicalForeignKeyBlueprint $foreignKey): void
     {
         $table->addForeignKeyConstraint(
@@ -579,6 +841,25 @@ final readonly class DoctrinePhysicalSchemaGateway implements PhysicalSchemaGate
         );
     }
 
+    /**
+     * Decide whether one already-introspected table proves a step below table level was applied.
+     *
+     * Add and alter kinds need the object to be present and to agree with the target blueprint down to
+     * its options; drop kinds need it to be gone. A transform always answers false, because its effect
+     * lives in row values rather than in the table's shape, and a validate-constraint step always answers
+     * true, because the portable path emits no statement for it.
+     *
+     * @param   Table                    $actual     Live table as Doctrine introspected it.
+     * @param   ?PhysicalTableBlueprint  $target     Target shape of that table, or null.
+     * @param   SchemaOperation          $operation  Step whose postcondition is being checked.
+     *
+     * @return  bool  True when the step's effect is already visible in the live table.
+     *
+     * @throws  InvalidBusinessSchema  When a state the check needs is missing or malformed, or the
+     *          connected platform has no temporal-precision introspector.
+     *
+     * @since   2.0.0
+     */
     private function objectSatisfied(
         Table $actual,
         ?PhysicalTableBlueprint $target,
@@ -643,6 +924,25 @@ final readonly class DoctrinePhysicalSchemaGateway implements PhysicalSchemaGate
         };
     }
 
+    /**
+     * Compare a live table against the blueprint it was compiled from.
+     *
+     * Exact mode compares the column, index, and foreign-key inventories in both directions, so an object
+     * the database has and the blueprint does not is a mismatch; that is the mode drift detection and
+     * compensation need. Tolerant mode only requires the declared objects to be there, which is what lets
+     * a create-table step count as satisfied. An index an engine materialises for the primary key is
+     * filtered out of that inventory rather than counted as an extra.
+     *
+     * @param   Table                   $actual    Live table as Doctrine introspected it.
+     * @param   PhysicalTableBlueprint  $expected  Compiled shape the table should have.
+     * @param   bool                    $exact     Whether undeclared objects count as a mismatch.
+     *
+     * @return  bool  True when the table satisfies the blueprint at the requested strictness.
+     *
+     * @throws  InvalidBusinessSchema  When the connected platform has no temporal-precision introspector.
+     *
+     * @since   2.0.0
+     */
     private function tableMatches(
         Table $actual,
         PhysicalTableBlueprint $expected,
@@ -733,7 +1033,22 @@ final readonly class DoctrinePhysicalSchemaGateway implements PhysicalSchemaGate
         return true;
     }
 
-    /** Returns bounded structural evidence without exposing persisted values. */
+    /**
+     * Name the structural difference that made a live table fail its blueprint.
+     *
+     * Repeats the exact comparison and reports only identifiers and inventories, so the conflict message
+     * an operator reads carries enough evidence to act on without exposing a single stored value.
+     *
+     * @param   Table                   $actual    Live table that failed the comparison.
+     * @param   PhysicalTableBlueprint  $expected  Compiled shape it was measured against.
+     *
+     * @return  string  Short phrase naming the first difference found, or an unclassified-mismatch phrase
+     *          when no individual check reproduces the failure.
+     *
+     * @throws  InvalidBusinessSchema  When the connected platform has no temporal-precision introspector.
+     *
+     * @since   2.0.0
+     */
     private function tableMismatchReason(Table $actual, PhysicalTableBlueprint $expected): string
     {
         $actualColumns = array_map(
@@ -823,7 +1138,22 @@ final readonly class DoctrinePhysicalSchemaGateway implements PhysicalSchemaGate
         return 'unclassified structural mismatch';
     }
 
-    /** @param array<string, int> $temporalPrecisions */
+    /**
+     * Decide whether one live column carries exactly the shape its blueprint declares.
+     *
+     * Past type and nullability this pins the details a portable schema depends on: a column carrying a
+     * time of day must have been created with microsecond precision, a declared default must normalise
+     * to the same physical form as the introspected one, and a column the blueprint gives no default must
+     * have none. Options the engine cannot report back are skipped rather than guessed at.
+     *
+     * @param   Column                   $actual              Live column as Doctrine introspected it.
+     * @param   PhysicalColumnBlueprint  $expected            Compiled shape the column should have.
+     * @param   array<string, int>       $temporalPrecisions  Fractional-second digits, by physical column name.
+     *
+     * @return  bool  True when every declared aspect of the column agrees with the blueprint.
+     *
+     * @since   2.0.0
+     */
     private function columnMatches(
         Column $actual,
         PhysicalColumnBlueprint $expected,
@@ -888,6 +1218,22 @@ final readonly class DoctrinePhysicalSchemaGateway implements PhysicalSchemaGate
         return true;
     }
 
+    /**
+     * Decide whether a live column's type is the declared one, or an alias that stores identically.
+     *
+     * Introspection does not round-trip every type name — an engine reports the storage it actually used,
+     * so `datetime_immutable` comes back as `datetime` and a GUID comes back as a string. The alias table
+     * is therefore restricted to MySQL and PostgreSQL and to pairs that behave the same, and two cases
+     * are refused up front: a PostgreSQL `json` column created as `jsonb`, and a MySQL GUID not stored as
+     * a fixed 36 characters. Both would otherwise pass as equal while behaving differently.
+     *
+     * @param   Column                   $actual    Live column as Doctrine introspected it.
+     * @param   PhysicalColumnBlueprint  $expected  Compiled column declaring the intended type.
+     *
+     * @return  bool  True when the introspected type is the declared one or an accepted equivalent.
+     *
+     * @since   2.0.0
+     */
     private function physicalTypeMatches(Column $actual, PhysicalColumnBlueprint $expected): bool
     {
         $platform = $this->database->getDatabasePlatform();
@@ -929,6 +1275,20 @@ final readonly class DoctrinePhysicalSchemaGateway implements PhysicalSchemaGate
         };
     }
 
+    /**
+     * Report whether the platform cannot read an option back, so comparing it would be meaningless.
+     *
+     * PostgreSQL stores a `binary` column as `bytea`, which carries neither a length nor a fixed-width
+     * flag, so those two options are dropped from the drift check instead of being reported as
+     * differences on every inspection.
+     *
+     * @param   PhysicalColumnBlueprint  $column  Column the option was declared on.
+     * @param   string                   $option  Doctrine option name, such as `length` or `fixed`.
+     *
+     * @return  bool  True when the option cannot be introspected on this platform and type.
+     *
+     * @since   2.0.0
+     */
     private function physicalOptionIsNotIntrospectable(
         PhysicalColumnBlueprint $column,
         string $option,
@@ -938,6 +1298,23 @@ final readonly class DoctrinePhysicalSchemaGateway implements PhysicalSchemaGate
             && in_array($option, ['length', 'fixed'], true);
     }
 
+    /**
+     * Decide whether the default an engine reports is the one the blueprint declares.
+     *
+     * Engines spell defaults their own way, so both sides are normalised into one exact physical form and
+     * compared as strings; a side that cannot be normalised counts as a difference rather than raising,
+     * because an unreadable default is drift, not a broken plan. A boolean column whose blueprint default
+     * really is a boolean takes a separate path instead, because introspection reports those as `1`, `t`,
+     * `'true'`, and several other forms depending on the driver.
+     *
+     * @param   mixed                    $actual    Default as introspected, or null when there is none.
+     * @param   mixed                    $expected  Default the blueprint declares, or null.
+     * @param   PhysicalColumnBlueprint  $column    Column supplying the exact type both are read in.
+     *
+     * @return  bool  True when both sides mean the same stored default.
+     *
+     * @since   2.0.0
+     */
     private function defaultMatches(
         mixed $actual,
         mixed $expected,
@@ -977,6 +1354,23 @@ final readonly class DoctrinePhysicalSchemaGateway implements PhysicalSchemaGate
         return false;
     }
 
+    /**
+     * Normalise a value into the one exact physical form its column type stores.
+     *
+     * This is the single place that decides what "the same value" means for a column: decimals gain their
+     * declared scale, temporal values gain microseconds, GUIDs are lower-cased, and anything the type
+     * cannot carry exactly is refused instead of rounded. Types with no canonical form pass through.
+     *
+     * @param   PhysicalColumnBlueprint  $column  Column whose Doctrine type selects the normalisation.
+     * @param   mixed                    $value   Declared default or computed rewrite value.
+     *
+     * @return  mixed  The canonical representation for the column's type, or the value unchanged when its
+     *          type declares no canonical form.
+     *
+     * @throws  InvalidBusinessSchema  When the value cannot be expressed exactly in the column's type.
+     *
+     * @since   2.0.0
+     */
     private function physicalDefault(PhysicalColumnBlueprint $column, mixed $value): mixed
     {
         return match ($column->doctrineType) {
@@ -992,6 +1386,23 @@ final readonly class DoctrinePhysicalSchemaGateway implements PhysicalSchemaGate
         };
     }
 
+    /**
+     * Convert a rewrite value into the PHP value Doctrine's parameter binding expects for the column.
+     *
+     * Backfill and transform values arrive as canonical strings, but the immutable date and time types
+     * bind a `DateTimeImmutable`, so a temporal value is parsed back in UTC after normalisation. Nulls
+     * and values already of that class pass straight through; everything else is bound normalised.
+     *
+     * @param   PhysicalColumnBlueprint  $column  Column the value is about to be written to.
+     * @param   mixed                    $value   Literal or computed value produced for one row.
+     *
+     * @return  mixed  A value the column's Doctrine type can bind, temporal types as `DateTimeImmutable`.
+     *
+     * @throws  InvalidBusinessSchema  When the value is not exact for the column's type, or a temporal
+     *          value does not parse back from its canonical form.
+     *
+     * @since   2.0.0
+     */
     private function boundPhysicalValue(PhysicalColumnBlueprint $column, mixed $value): mixed
     {
         if ($value === null || $value instanceof DateTimeImmutable) {
@@ -1018,6 +1429,20 @@ final readonly class DoctrinePhysicalSchemaGateway implements PhysicalSchemaGate
         return $parsed;
     }
 
+    /**
+     * Accept a boolean value only when it already is a boolean.
+     *
+     * Nothing is coerced on the way in: a blueprint that reached this point with `1` or `'true'` was
+     * built wrong, and accepting it would hide the mistake behind a column that installs cleanly.
+     *
+     * @param   mixed  $value  Declared default or rewrite value for a boolean column.
+     *
+     * @return  bool  The same value.
+     *
+     * @throws  InvalidBusinessSchema  When the value is anything other than a boolean.
+     *
+     * @since   2.0.0
+     */
     private function booleanDefault(mixed $value): bool
     {
         if (!is_bool($value)) {
@@ -1027,6 +1452,22 @@ final readonly class DoctrinePhysicalSchemaGateway implements PhysicalSchemaGate
         return $value;
     }
 
+    /**
+     * Accept a string value and prove it fits the column's declared length.
+     *
+     * The length is measured in characters rather than bytes, matching how the engines count a declared
+     * `VARCHAR` width, so a multi-byte default is not rejected for a limit it does not actually breach.
+     *
+     * @param   PhysicalColumnBlueprint  $column  Column supplying the declared length, where it has one.
+     * @param   mixed                    $value   Declared default or rewrite value for a string column.
+     *
+     * @return  string  The same string, unchanged.
+     *
+     * @throws  InvalidBusinessSchema  When the value is not a string, or is longer than the declared
+     *          length.
+     *
+     * @since   2.0.0
+     */
     private function stringDefault(PhysicalColumnBlueprint $column, mixed $value): string
     {
         if (!is_string($value)) {
@@ -1040,6 +1481,17 @@ final readonly class DoctrinePhysicalSchemaGateway implements PhysicalSchemaGate
         return $value;
     }
 
+    /**
+     * Accept a GUID value and reduce it to the lowercase form comparisons are made in.
+     *
+     * @param   mixed  $value  Declared default or rewrite value for a GUID column.
+     *
+     * @return  string  The same GUID in lowercase 8-4-4-4-12 form.
+     *
+     * @throws  InvalidBusinessSchema  When the value is not a hyphenated 36-character hexadecimal GUID.
+     *
+     * @since   2.0.0
+     */
     private function guidDefault(mixed $value): string
     {
         if (
@@ -1054,6 +1506,23 @@ final readonly class DoctrinePhysicalSchemaGateway implements PhysicalSchemaGate
         return strtolower($value);
     }
 
+    /**
+     * Accept an integer value and prove it fits the portable range of its declared width.
+     *
+     * A digit string is accepted alongside a real integer, because that is how introspection reports the
+     * value back. The bounds applied are the portable ones rather than the current engine's, so a value
+     * that only one platform would accept is refused here instead of failing at install time elsewhere.
+     *
+     * @param   PhysicalColumnBlueprint  $column  Column supplying the integer width to bound against.
+     * @param   mixed                    $value   Declared default or rewrite value for an integer column.
+     *
+     * @return  int  The value as an integer inside the column's portable range.
+     *
+     * @throws  InvalidBusinessSchema  When the value is not an exact integer representation, or falls
+     *          outside the 64-bit, integer, or small-integer range that applies.
+     *
+     * @since   2.0.0
+     */
     private function integerDefault(PhysicalColumnBlueprint $column, mixed $value): int
     {
         if (!is_int($value) && (!is_string($value) || preg_match('/^-?(?:0|[1-9][0-9]*)$/D', $value) !== 1)) {
@@ -1076,6 +1545,23 @@ final readonly class DoctrinePhysicalSchemaGateway implements PhysicalSchemaGate
         return $integer;
     }
 
+    /**
+     * Accept a decimal value and render it at the column's declared precision and scale.
+     *
+     * The fraction is padded to the full scale so that `1.25` and `1.2500` compare equal on a
+     * `DECIMAL(12,4)` column, the integer part is measured against the digits the precision leaves for
+     * it, and a value that normalises to zero loses its sign so no negative zero reaches the database.
+     *
+     * @param   PhysicalColumnBlueprint  $column  Column supplying the declared precision and scale.
+     * @param   mixed                    $value   Declared default or rewrite value for a decimal column.
+     *
+     * @return  string  Base-10 literal padded to the declared scale, with no point at scale zero.
+     *
+     * @throws  InvalidBusinessSchema  When the value is not an exact decimal literal, the column declares
+     *          no precision and scale, or the value exceeds either of them.
+     *
+     * @since   2.0.0
+     */
     private function decimalDefault(PhysicalColumnBlueprint $column, mixed $value): string
     {
         if (!is_int($value) && !is_string($value)) {
@@ -1105,6 +1591,21 @@ final readonly class DoctrinePhysicalSchemaGateway implements PhysicalSchemaGate
         return ($negative ? '-' : '') . $integer . ($scale === 0 ? '' : '.' . $fraction);
     }
 
+    /**
+     * Accept a date value in canonical `YYYY-MM-DD` form and prove it is a real calendar date.
+     *
+     * Re-formatting the parsed date and comparing it back is what rejects a value such as `2026-02-30`,
+     * which the parser would otherwise roll forward into March. Years below 1000 are refused so the
+     * four-digit form never has to be padded.
+     *
+     * @param   mixed  $value  Declared default or rewrite value for a date column.
+     *
+     * @return  string  The same canonical date string, unchanged.
+     *
+     * @throws  InvalidBusinessSchema  When the value is not in canonical form, or is not a real date.
+     *
+     * @since   2.0.0
+     */
     private function dateDefault(mixed $value): string
     {
         if (!is_string($value) || preg_match('/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/D', $value) !== 1) {
@@ -1122,6 +1623,21 @@ final readonly class DoctrinePhysicalSchemaGateway implements PhysicalSchemaGate
         return $value;
     }
 
+    /**
+     * Accept a local time value and pad it out to full microsecond precision.
+     *
+     * The padding is what lets a declared `13:14:15` compare equal to the `13:14:15.000000` an engine
+     * reports back from a column the gateway insists was created with microsecond precision.
+     *
+     * @param   mixed  $value  Declared default or rewrite value for a time column.
+     *
+     * @return  string  The time as `HH:MM:SS.uuuuuu`.
+     *
+     * @throws  InvalidBusinessSchema  When the value is not a canonical local time, with or without a
+     *          fractional part.
+     *
+     * @since   2.0.0
+     */
     private function timeDefault(mixed $value): string
     {
         if (
@@ -1138,6 +1654,22 @@ final readonly class DoctrinePhysicalSchemaGateway implements PhysicalSchemaGate
         return $base . '.' . str_pad($matches[2] ?? '', 6, '0');
     }
 
+    /**
+     * Accept an instant and render it as a UTC timestamp carrying microseconds.
+     *
+     * Only UTC is accepted — bare, `Z`, or `+00:00` — because the stored form keeps no zone, so any other
+     * offset would silently shift the value. Parser warnings count as failures, and years below 1000 are
+     * refused so the four-digit form never has to be padded.
+     *
+     * @param   mixed  $value  Declared default or rewrite value for a date-time column.
+     *
+     * @return  string  The instant as `Y-m-d H:i:s.u` in UTC.
+     *
+     * @throws  InvalidBusinessSchema  When the value is not a canonical UTC instant, or does not parse
+     *          cleanly into one.
+     *
+     * @since   2.0.0
+     */
     private function dateTimeDefault(mixed $value): string
     {
         if (
@@ -1166,7 +1698,23 @@ final readonly class DoctrinePhysicalSchemaGateway implements PhysicalSchemaGate
         return $parsed->setTimezone(new DateTimeZone('UTC'))->format('Y-m-d H:i:s.u');
     }
 
-    /** @return array<string, int> */
+    /**
+     * Read every column's fractional-second precision straight from `information_schema`.
+     *
+     * Doctrine's introspection does not report this, yet a temporal column created without microseconds
+     * silently truncates what is written to it, so the drift check measures it here rather than assuming
+     * it. Only MySQL, MariaDB, and PostgreSQL have a query; any other platform is refused, which is what
+     * confines this gateway to the engines whose behaviour it has actually been reconciled against.
+     *
+     * @param   Table  $table  Live table whose columns are being measured.
+     *
+     * @return  array<string, int>  Fractional-second digits by physical column name; a column the engine
+     *          reports no precision for, such as a non-temporal one, is absent.
+     *
+     * @throws  InvalidBusinessSchema  When the connected platform is neither MySQL-like nor PostgreSQL.
+     *
+     * @since   2.0.0
+     */
     private function temporalPrecisions(Table $table): array
     {
         $platform = $this->database->getDatabasePlatform();
@@ -1204,6 +1752,19 @@ final readonly class DoctrinePhysicalSchemaGateway implements PhysicalSchemaGate
         return $result;
     }
 
+    /**
+     * Decide whether a live table carries the index its blueprint declares, under the same name.
+     *
+     * Uniqueness and the ordered column list must both agree, so an index covering the same columns in
+     * another order is not accepted as a match: the two serve different queries.
+     *
+     * @param   Table                   $actual    Live table as Doctrine introspected it.
+     * @param   PhysicalIndexBlueprint  $expected  Index the blueprint declares.
+     *
+     * @return  bool  True when an index of that name exists with the declared uniqueness and columns.
+     *
+     * @since   2.0.0
+     */
     private function hasIndex(Table $actual, PhysicalIndexBlueprint $expected): bool
     {
         foreach ($actual->getIndexes() as $index) {
@@ -1222,6 +1783,19 @@ final readonly class DoctrinePhysicalSchemaGateway implements PhysicalSchemaGate
         return false;
     }
 
+    /**
+     * Decide whether a live table carries the foreign key its blueprint declares, under the same name.
+     *
+     * Both column lists, the referenced table, and the delete and update actions must all agree, because
+     * a constraint pointing at the right table with the wrong action enforces a different rule.
+     *
+     * @param   Table                        $actual    Live table as Doctrine introspected it.
+     * @param   PhysicalForeignKeyBlueprint  $expected  Constraint the blueprint declares.
+     *
+     * @return  bool  True when a constraint of that name agrees in every compared aspect.
+     *
+     * @since   2.0.0
+     */
     private function hasForeignKey(Table $actual, PhysicalForeignKeyBlueprint $expected): bool
     {
         foreach ($actual->getForeignKeys() as $foreignKey) {
@@ -1240,6 +1814,19 @@ final readonly class DoctrinePhysicalSchemaGateway implements PhysicalSchemaGate
         return false;
     }
 
+    /**
+     * Report whether a live table still carries a constraint under one installed name.
+     *
+     * Verifying a drop only needs the name to be gone, and the constraint's former shape is no longer
+     * available to compare against anyway, so this deliberately checks nothing else.
+     *
+     * @param   Table   $actual        Live table as Doctrine introspected it.
+     * @param   string  $physicalName  Installed constraint name to look for.
+     *
+     * @return  bool  True when a constraint of that name is still present.
+     *
+     * @since   2.0.0
+     */
     private function foreignKeyNamed(Table $actual, string $physicalName): bool
     {
         foreach ($actual->getForeignKeys() as $foreignKey) {
@@ -1251,6 +1838,16 @@ final readonly class DoctrinePhysicalSchemaGateway implements PhysicalSchemaGate
         return false;
     }
 
+    /**
+     * Read the installed name of a foreign-key constraint.
+     *
+     * @param   ForeignKeyConstraint  $constraint  Constraint as Doctrine introspected it.
+     *
+     * @return  string  The identifier, or an empty string when the engine reported none, which never
+     *          matches a compiled blueprint name.
+     *
+     * @since   2.0.0
+     */
     private function constraintName(ForeignKeyConstraint $constraint): string
     {
         $name = $constraint->getObjectName();
@@ -1262,8 +1859,14 @@ final readonly class DoctrinePhysicalSchemaGateway implements PhysicalSchemaGate
     }
 
     /**
-     * @param list<\Doctrine\DBAL\Schema\Name\UnqualifiedName> $names
-     * @return list<string>
+     * Reduce Doctrine's introspected name objects to the plain strings a blueprint compares against.
+     *
+     * @param   list<\Doctrine\DBAL\Schema\Name\UnqualifiedName>  $names  Column names, in the order the
+     *          key or constraint declares them.
+     *
+     * @return  list<string>  The identifiers in that same order, ready to compare with a blueprint list.
+     *
+     * @since   2.0.0
      */
     private function unqualifiedNames(array $names): array
     {
@@ -1274,18 +1877,53 @@ final readonly class DoctrinePhysicalSchemaGateway implements PhysicalSchemaGate
         );
     }
 
+    /**
+     * Resolve the column a step's subject names in the target table, or refuse the step.
+     *
+     * @param   ?PhysicalTableBlueprint  $table    Target shape of the affected table, or null.
+     * @param   string                   $logical  Logical column handle taken from the step's subject.
+     *
+     * @return  PhysicalColumnBlueprint  The column the target blueprint declares under that handle.
+     *
+     * @throws  InvalidBusinessSchema  When there is no target table, or it declares no such column.
+     *
+     * @since   2.0.0
+     */
     private function targetColumn(?PhysicalTableBlueprint $table, string $logical): PhysicalColumnBlueprint
     {
         return $table?->column($logical)
             ?? throw new InvalidBusinessSchema('A schema operation references an unknown target column.');
     }
 
+    /**
+     * Resolve the index a step's subject names in the target table, or refuse the step.
+     *
+     * @param   ?PhysicalTableBlueprint  $table    Target shape of the affected table, or null.
+     * @param   string                   $logical  Logical index handle taken from the step's subject.
+     *
+     * @return  PhysicalIndexBlueprint  The index the target blueprint declares under that handle.
+     *
+     * @throws  InvalidBusinessSchema  When there is no target table, or it declares no such index.
+     *
+     * @since   2.0.0
+     */
     private function targetIndex(?PhysicalTableBlueprint $table, string $logical): PhysicalIndexBlueprint
     {
         return $this->findIndex($table, $logical)
             ?? throw new InvalidBusinessSchema('A schema operation references an unknown target index.');
     }
 
+    /**
+     * Look an index up in the target table by the logical handle a step names it with.
+     *
+     * @param   ?PhysicalTableBlueprint  $table    Target shape of the affected table, or null.
+     * @param   string                   $logical  Logical index handle taken from the step's subject.
+     *
+     * @return  ?PhysicalIndexBlueprint  The matching index, or null when there is no target table or it
+     *          declares no index under that handle.
+     *
+     * @since   2.0.0
+     */
     private function findIndex(?PhysicalTableBlueprint $table, string $logical): ?PhysicalIndexBlueprint
     {
         foreach ($table?->indexes() ?? [] as $index) {
@@ -1297,6 +1935,19 @@ final readonly class DoctrinePhysicalSchemaGateway implements PhysicalSchemaGate
         return null;
     }
 
+    /**
+     * Resolve the foreign key a step's subject names in the target table, or refuse the step.
+     *
+     * @param   ?PhysicalTableBlueprint  $table    Target shape of the affected table, or null.
+     * @param   string                   $logical  Logical constraint handle from the step's subject.
+     *
+     * @return  PhysicalForeignKeyBlueprint  The constraint the target blueprint declares under that
+     *          handle.
+     *
+     * @throws  InvalidBusinessSchema  When there is no target table, or it declares no such constraint.
+     *
+     * @since   2.0.0
+     */
     private function targetForeignKey(
         ?PhysicalTableBlueprint $table,
         string $logical,
@@ -1305,6 +1956,17 @@ final readonly class DoctrinePhysicalSchemaGateway implements PhysicalSchemaGate
             ?? throw new InvalidBusinessSchema('A schema operation references an unknown target foreign key.');
     }
 
+    /**
+     * Look a foreign key up in the target table by the logical handle a step names it with.
+     *
+     * @param   ?PhysicalTableBlueprint  $table    Target shape of the affected table, or null.
+     * @param   string                   $logical  Logical constraint handle from the step's subject.
+     *
+     * @return  ?PhysicalForeignKeyBlueprint  The matching constraint, or null when there is no target
+     *          table or it declares none under that handle.
+     *
+     * @since   2.0.0
+     */
     private function findForeignKey(
         ?PhysicalTableBlueprint $table,
         string $logical,
@@ -1318,6 +1980,21 @@ final readonly class DoctrinePhysicalSchemaGateway implements PhysicalSchemaGate
         return null;
     }
 
+    /**
+     * Recover the installed table name from a step's prior state.
+     *
+     * Drop and rename steps act on a table the target blueprint no longer declares under that name, so
+     * the state captured before the plan ran is the only record of it. The stored name is re-checked
+     * against the compiled identifier grammar on the way out, because it is the one identifier in a step
+     * that comes from persisted state rather than from a validated blueprint.
+     *
+     * @param   SchemaOperation  $operation  Step whose prior state may carry the installed name.
+     *
+     * @return  ?string  The installed table name, or null when the step has no prior state or the stored
+     *          name is not a valid compiled identifier.
+     *
+     * @since   2.0.0
+     */
     private function beforeTableName(SchemaOperation $operation): ?string
     {
         if ($operation->before === null) {
@@ -1332,7 +2009,20 @@ final readonly class DoctrinePhysicalSchemaGateway implements PhysicalSchemaGate
         return $name;
     }
 
-    /** @return non-empty-string */
+    /**
+     * Prove a compiled identifier is non-empty before handing it to an API that requires one.
+     *
+     * Blueprint validation already rules an empty name out; this keeps that guarantee visible to static
+     * analysis at the call site instead of leaving it assumed.
+     *
+     * @param   string  $identifier  Compiled physical name taken from a blueprint.
+     *
+     * @return  non-empty-string  The same identifier.
+     *
+     * @throws  InvalidBusinessSchema  When the identifier is an empty string.
+     *
+     * @since   2.0.0
+     */
     private function nonEmpty(string $identifier): string
     {
         if ($identifier === '') {
@@ -1343,8 +2033,15 @@ final readonly class DoctrinePhysicalSchemaGateway implements PhysicalSchemaGate
     }
 
     /**
-     * @param list<string> $identifiers
-     * @return non-empty-list<non-empty-string>
+     * Prove a compiled identifier list is non-empty and holds no empty name.
+     *
+     * @param   list<string>  $identifiers  Compiled physical names, such as an index or key column list.
+     *
+     * @return  non-empty-list<non-empty-string>  The same names, in the same order.
+     *
+     * @throws  InvalidBusinessSchema  When the list is empty, or any entry is an empty string.
+     *
+     * @since   2.0.0
      */
     private function nonEmptyNames(array $identifiers): array
     {
@@ -1356,8 +2053,17 @@ final readonly class DoctrinePhysicalSchemaGateway implements PhysicalSchemaGate
     }
 
     /**
-     * @param array<string, mixed>|null $state
-     * @return array<string, mixed>
+     * Require the prior or target state a step needs before anything reads into it.
+     *
+     * @param   array<string, mixed>|null  $state    Prior or target state taken from the step.
+     * @param   string                     $subject  What the state describes, named in the failure
+     *          message so an operator can tell which half of the step is missing.
+     *
+     * @return  array<string, mixed>  The same state, proven present.
+     *
+     * @throws  InvalidBusinessSchema  When the step carries no state for that subject.
+     *
+     * @since   2.0.0
      */
     private function state(?array $state, string $subject): array
     {
@@ -1369,8 +2075,19 @@ final readonly class DoctrinePhysicalSchemaGateway implements PhysicalSchemaGate
     }
 
     /**
-     * @param array<string, mixed> $state
-     * @return non-empty-string
+     * Read the installed table name a rename step's target state declares.
+     *
+     * Re-checked against the compiled identifier grammar because it arrives from persisted state and goes
+     * on to name a table in the rename Doctrine generates.
+     *
+     * @param   array<string, mixed>  $state  Target state of a rename-table step.
+     *
+     * @return  non-empty-string  The validated installed table name.
+     *
+     * @throws  InvalidBusinessSchema  When the state carries no `physical_name`, or the stored value
+     *          breaks the compiled identifier grammar.
+     *
+     * @since   2.0.0
      */
     private function physicalName(array $state): string
     {
@@ -1382,6 +2099,23 @@ final readonly class DoctrinePhysicalSchemaGateway implements PhysicalSchemaGate
         return $name;
     }
 
+    /**
+     * Decide whether a backfill left no row with its target column still unset.
+     *
+     * Answered with a bounded existence query rather than a count, so the check costs the same however
+     * much is left. A column that is not there yet answers false rather than raising, because the step
+     * that adds it may simply not have run.
+     *
+     * @param   Table            $actual     Live table as Doctrine introspected it.
+     * @param   SchemaOperation  $operation  Backfill step whose target column is being checked.
+     *
+     * @return  bool  True when no row of the table still holds null in that column.
+     *
+     * @throws  InvalidBusinessSchema  When the step's target state carries no canonical column, or the
+     *          column cannot be rebuilt from it.
+     *
+     * @since   2.0.0
+     */
     private function backfillSatisfied(Table $actual, SchemaOperation $operation): bool
     {
         $state = $this->state($operation->after, 'backfill');
@@ -1403,6 +2137,23 @@ final readonly class DoctrinePhysicalSchemaGateway implements PhysicalSchemaGate
         )) === false;
     }
 
+    /**
+     * Decide whether a record-repin step advanced every row to its new definition version.
+     *
+     * Answered with a bounded existence query for one row still pinned below the target version, the same
+     * shape of test the planner uses before it allows a narrowing change to run at all.
+     *
+     * @param   Table                   $actual     Live table as Doctrine introspected it.
+     * @param   PhysicalTableBlueprint  $target     Target shape supplying the definition-version column.
+     * @param   SchemaOperation         $operation  Repin step declaring the version rows must reach.
+     *
+     * @return  bool  True when no row is pinned below the step's target version.
+     *
+     * @throws  InvalidBusinessSchema  When the step declares no target version of at least two, or the
+     *          table has no definition-version column to test.
+     *
+     * @since   2.0.0
+     */
     private function repinSatisfied(
         Table $actual,
         PhysicalTableBlueprint $target,
@@ -1426,6 +2177,22 @@ final readonly class DoctrinePhysicalSchemaGateway implements PhysicalSchemaGate
         ), [$toVersion], [$version->doctrineType]) === false;
     }
 
+    /**
+     * Resolve a blueprint column from its installed name.
+     *
+     * A chunked rewrite needs the identity column's Doctrine type to bind its keyset cursor, and a
+     * primary key names installed columns rather than logical handles, so the lookup goes this way round.
+     * A miss is refused rather than returned as null, because the caller has no rewrite to fall back on.
+     *
+     * @param   PhysicalTableBlueprint  $table         Target shape the column must belong to.
+     * @param   string                  $physicalName  Installed column name, as the primary key spells it.
+     *
+     * @return  PhysicalColumnBlueprint  The column declared under that installed name.
+     *
+     * @throws  InvalidBusinessSchema  When the table declares no column with that installed name.
+     *
+     * @since   2.0.0
+     */
     private function physicalColumn(
         PhysicalTableBlueprint $table,
         string $physicalName,
@@ -1438,6 +2205,25 @@ final readonly class DoctrinePhysicalSchemaGateway implements PhysicalSchemaGate
         throw new InvalidBusinessSchema('A physical primary-key column is missing from its blueprint.');
     }
 
+    /**
+     * Coerce one column value a row supplied into the exact type the expression declares for that field.
+     *
+     * Drivers report the same column differently — an integer as a digit string, a boolean as `t` or `1`
+     * — while the evaluator refuses a value that contradicts its declared type, so the reconciliation has
+     * to happen here rather than inside the expression. A field the tree declares no type for is passed
+     * through, but never as a float or an object, because a rewrite must stay exact.
+     *
+     * @param   Expression  $expression  Tree the field belongs to, supplying its declared type.
+     * @param   string      $field       Field handle the value was read for.
+     * @param   mixed       $value       Raw column value exactly as the driver returned it.
+     *
+     * @return  bool|int|string|null  The value in its declared type, or null when the column was null.
+     *
+     * @throws  InvalidBusinessSchema  When an untyped value is not an exact scalar, a typed value
+     *          contradicts its declared type, or the declared type is one no rewrite supports.
+     *
+     * @since   2.0.0
+     */
     private function expressionValue(Expression $expression, string $field, mixed $value): bool|int|string|null
     {
         $type = $this->expressionFieldType($expression, $field);
@@ -1466,6 +2252,19 @@ final readonly class DoctrinePhysicalSchemaGateway implements PhysicalSchemaGate
         };
     }
 
+    /**
+     * Find the result type an expression tree declares for one field reference.
+     *
+     * The tree is walked depth first and the first leaf reading that handle decides the type, so a value
+     * is coerced the way the expression that will consume it expects.
+     *
+     * @param   Expression  $expression  Tree, or subtree, to search.
+     * @param   string      $field       Field handle to find a declared type for.
+     *
+     * @return  ?string  The declared type, or null when the tree reads no such field.
+     *
+     * @since   2.0.0
+     */
     private function expressionFieldType(Expression $expression, string $field): ?string
     {
         if ($expression->field === $field) {

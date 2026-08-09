@@ -7,19 +7,90 @@ namespace Kumwe\CMS\BusinessSchema\Domain;
 use DateTimeImmutable;
 use Kumwe\CMS\BusinessDefinition\Domain\CanonicalDefinitionJson;
 
+/**
+ * One approvable, executable migration of a business definition's physical schema on one site.
+ *
+ * A plan is the unit the whole schema pipeline is built around: the planner compiles the difference between
+ * two definition versions into an ordered set of `SchemaOperation` steps, an administrator approves that
+ * exact content, and only then may an executor run DDL. Everything needed to make those three stages safe
+ * across processes lives here — the definition versions and checksums the plan moves between, the physical
+ * schema checksum it expects to find and the one it must arrive at, the approval evidence, the recovery
+ * evidence a locking or destructive plan requires, the monotonic execution fence, and the recorded outcome.
+ *
+ * The plan is immutable and content addressed. `checksum()` covers the operations and the bindings but not
+ * the lifecycle state, so re-planning invalidates an existing approval while a status change does not; the
+ * constructor refuses an approval whose checksum is not this plan's. Every transition returns a new instance
+ * with an incremented revision, and the constructor re-proves the whole state machine, so a plan loaded from
+ * the database cannot carry an evidence combination the transitions would never have produced.
+ *
+ * @since  2.0.0
+ */
 final readonly class SchemaPlan
 {
-    /** @var list<SchemaOperation> */
+    /**
+     * Steps in the order the executor must apply them, with contiguous ordinals starting at one.
+     *
+     * @var    list<SchemaOperation>
+     * @since  2.0.0
+     */
     private array $operations;
 
-    /** @var array<string, mixed>|null */
+    /**
+     * Execution result recorded when the plan reached a terminal status, or null while it has not.
+     *
+     * A failing plan gets the caller's outcome plus the `error_code` entry `fail()` and
+     * `recoveryRequired()` add, which is how an operator learns why execution stopped.
+     *
+     * @var    array<string, mixed>|null
+     * @since  2.0.0
+     */
     public ?array $outcome;
 
+    /**
+     * Instant of the most recent transition, equal to the creation time for a plan that has had none.
+     *
+     * @var    DateTimeImmutable
+     * @since  2.0.0
+     */
     public DateTimeImmutable $updatedAt;
 
     /**
-     * @param list<SchemaOperation> $operations
-     * @param array<string, mixed>|null $outcome
+     * Assemble a plan and prove its bindings, ordering, risk, and lifecycle evidence all agree.
+     *
+     * @param   string                     $id                      UUID identifying this plan.
+     * @param   string                     $definitionId            UUID of the definition being changed.
+     * @param   string                     $siteIdentifier          Site whose installed tables it acts on.
+     * @param   int|null                   $fromDefinitionVersion   Version upgraded from, null on first install.
+     * @param   int                        $toDefinitionVersion     Version installed; above the prior one.
+     * @param   string|null                $fromDefinitionChecksum  SHA-256 of the prior definition version.
+     * @param   string                     $toDefinitionChecksum    SHA-256 of the definition being installed.
+     * @param   string|null                $fromSchemaChecksum      Physical schema the plan expects to find.
+     * @param   string                     $targetSchemaChecksum    Physical schema it must arrive at.
+     * @param   list<SchemaOperation>      $operations              Steps in any order; sorted by ordinal here.
+     * @param   SchemaRisk                 $risk                    Impact class; the highest a step declares.
+     * @param   SchemaPlanStatus           $status                  Lifecycle position the evidence must fit.
+     * @param   int                        $revision                Optimistic-locking revision, from one.
+     * @param   string                     $createdBy               Identity of the actor who planned it.
+     * @param   DateTimeImmutable          $createdAt               Instant the plan was compiled.
+     * @param   SchemaPlanApproval|null    $approval                Approval bound to this plan's checksum.
+     * @param   string|null                $recoveryEvidenceId      UUID of the backing restore drill.
+     * @param   int|null                   $executionFence          Fence held by the executor running it.
+     * @param   array<string, mixed>|null  $outcome                 Result; only a terminal status has one.
+     * @param   DateTimeImmutable|null     $updatedAt               Transition time; defaults to $createdAt.
+     *
+     * @throws  InvalidBusinessSchema  When an identifier or checksum is malformed, the version bounds are not
+     *          ascending, the prior version and checksum are not both present or both
+     *          absent, more than 10000 operations are supplied, their ordinals are not
+     *          contiguous from one, the risk is not the highest one declared, the
+     *          revision is below one, the fence is below one, the outcome is not a
+     *          string-keyed object, the status carries evidence it may not or omits
+     *          evidence it must, the approval is bound to a different canonical plan,
+     *          or the update time precedes the creation time.
+     * @throws  \Kumwe\CMS\BusinessDefinition\Domain\InvalidBusinessDefinition  When the outcome holds a value
+     *          that cannot be canonically encoded, such as a float or an object, or an approved plan carries
+     *          more than 512 operations, which the canonical encoder refuses to fingerprint.
+     *
+     * @since   2.0.0
      */
     public function __construct(
         public string $id,
@@ -103,7 +174,24 @@ final readonly class SchemaPlan
         }
     }
 
-    /** @param array<string, mixed> $document */
+    /**
+     * Rebuild a plan from its persisted document and confirm it was not tampered with.
+     *
+     * When the stored document carries a `plan_checksum`, it is compared against the checksum recomputed
+     * from the decoded content, so an edited plan row is refused rather than approved or executed.
+     *
+     * @param   array<string, mixed>  $document  Stored plan object, as written by `toArray()`.
+     *
+     * @return  self  The revalidated plan, with both timestamps normalized to UTC.
+     *
+     * @throws  InvalidBusinessSchema  When the document carries an unknown property, a field is missing or
+     *          misshapen, the stored risk or status is not a known one, any plan
+     *          invariant fails, or the stored checksum does not match the content.
+     * @throws  \Kumwe\CMS\BusinessDefinition\Domain\InvalidBusinessDefinition  When the stored outcome holds
+     *          a value that cannot be canonically encoded, or the document holds more than 512 operations.
+     *
+     * @since   2.0.0
+     */
     public static function fromArray(array $document): self
     {
         SchemaDocument::assertOnly(
@@ -151,12 +239,44 @@ final readonly class SchemaPlan
         return $plan;
     }
 
-    /** @return list<SchemaOperation> */
+    /**
+     * List the steps the executor walks.
+     *
+     * @return  list<SchemaOperation>  The operations in ordinal order, so a step's position in this list is
+     *          one less than its ordinal.
+     *
+     * @since   2.0.0
+     */
     public function operations(): array
     {
         return $this->operations;
     }
 
+    /**
+     * Bind approval evidence to this exact plan so an executor may run it.
+     *
+     * The caller passes back the checksum it showed the approver, and approval is refused unless it still
+     * matches; that is what stops a plan re-compiled between inspection and approval from inheriting
+     * someone's consent. Risk decides what else the approver had to supply: every class but an online-safe
+     * addition needs a step-up confirmation, and a locking or destructive one needs a restore drill.
+     *
+     * @param   string             $actorIdentifier     Bounded identity of the approving administrator.
+     * @param   DateTimeImmutable  $approvedAt          Instant of approval, also recorded as the update time.
+     * @param   string             $expectedChecksum    Plan checksum the approver was shown.
+     * @param   string|null        $confirmationDigest  Step-up confirmation, required above online-safe additive.
+     * @param   string|null        $recoveryEvidenceId  Restore-drill UUID, required for locking and destructive
+     *          plans.
+     *
+     * @return  self  An approved copy at the next revision, carrying the new approval evidence.
+     *
+     * @throws  InvalidBusinessSchema  When the plan is not pending approval, the checksum no longer matches,
+     *          a required confirmation digest or recovery evidence is absent, or the
+     *          approval evidence itself is malformed.
+     * @throws  \Kumwe\CMS\BusinessDefinition\Domain\InvalidBusinessDefinition  When the plan holds more than
+     *          512 operations, which the canonical encoder refuses to fingerprint.
+     *
+     * @since   2.0.0
+     */
     public function approve(
         string $actorIdentifier,
         DateTimeImmutable $approvedAt,
@@ -188,6 +308,24 @@ final readonly class SchemaPlan
         );
     }
 
+    /**
+     * Take an approved plan into execution under the fence of the lock the executor holds.
+     *
+     * The fence is recorded on the plan so writes can be gated on it: the plan repository matches the stored
+     * fence when replacing a row, so an executor whose lock was taken over fails its write rather than
+     * overwriting the newer owner's work.
+     *
+     * @param   int                $fence  Monotonic fence issued with the definition lock; must be positive.
+     * @param   DateTimeImmutable  $at     Instant to record as the update time.
+     *
+     * @return  self  An executing copy at the next revision, holding the fence and no outcome.
+     *
+     * @throws  InvalidBusinessSchema  When the plan is not approved, or the fence is below one.
+     * @throws  \Kumwe\CMS\BusinessDefinition\Domain\InvalidBusinessDefinition  When the plan holds more than
+     *          512 operations, which the canonical encoder refuses to fingerprint.
+     *
+     * @since   2.0.0
+     */
     public function begin(int $fence, DateTimeImmutable $at): self
     {
         if ($this->status !== SchemaPlanStatus::Approved || $fence < 1) {
@@ -205,6 +343,25 @@ final readonly class SchemaPlan
         );
     }
 
+    /**
+     * Put an interrupted plan back into execution under a freshly issued fence.
+     *
+     * This is the recovery counterpart to `begin()`: it accepts a plan that is still marked executing after
+     * a crash, as well as one that stopped on a failure or was held for operator inspection, and clears the
+     * recorded outcome so the resumed run records its own. The new fence supersedes the abandoned one.
+     *
+     * @param   int                $fence  Monotonic fence issued with the definition lock; must be positive.
+     * @param   DateTimeImmutable  $at     Instant to record as the update time.
+     *
+     * @return  self  An executing copy at the next revision, holding the new fence and no outcome.
+     *
+     * @throws  InvalidBusinessSchema  When the plan is not executing, failed, or awaiting recovery, or the
+     *          fence is below one.
+     * @throws  \Kumwe\CMS\BusinessDefinition\Domain\InvalidBusinessDefinition  When the plan holds more than
+     *          512 operations, which the canonical encoder refuses to fingerprint.
+     *
+     * @since   2.0.0
+     */
     public function resume(int $fence, DateTimeImmutable $at): self
     {
         if (
@@ -228,7 +385,23 @@ final readonly class SchemaPlan
         );
     }
 
-    /** @param array<string, mixed> $outcome */
+    /**
+     * Settle an executing plan as completed and store the executor's report of the run.
+     *
+     * The plan does not check that the live schema actually reached `targetSchemaChecksum`; the executor
+     * proves that by introspection before it calls this, and this only guards the status it transitions from.
+     *
+     * @param   array<string, mixed>  $outcome  Execution report to store, as the executor summarised the run.
+     * @param   DateTimeImmutable     $at       Instant to record as the update time.
+     *
+     * @return  self  A completed copy at the next revision, keeping the fence the run held.
+     *
+     * @throws  InvalidBusinessSchema  When the plan is not currently executing.
+     * @throws  \Kumwe\CMS\BusinessDefinition\Domain\InvalidBusinessDefinition  When the outcome holds a value
+     *          that cannot be canonically encoded, such as a float or an object.
+     *
+     * @since   2.0.0
+     */
     public function complete(array $outcome, DateTimeImmutable $at): self
     {
         $this->assertExecuting();
@@ -244,7 +417,27 @@ final readonly class SchemaPlan
         );
     }
 
-    /** @param array<string, mixed> $outcome */
+    /**
+     * Record that execution stopped on a known error while the physical state is still understood.
+     *
+     * This and `recoveryRequired()` both stop an executing plan on a code and both leave it resumable; the
+     * difference is the signal. Failed says the journal still explains where the database stands, so a
+     * retry needs no inspection first. The code is merged into the stored outcome under `error_code`,
+     * overriding any entry of that name the caller supplied.
+     *
+     * @param   string                $errorCode  Lowercase dotted code naming the failure, at most 64 bytes.
+     * @param   array<string, mixed>  $outcome    Execution report to store alongside the code.
+     * @param   DateTimeImmutable     $at         Instant to record as the update time.
+     *
+     * @return  self  A failed copy at the next revision, keeping the fence the run held.
+     *
+     * @throws  InvalidBusinessSchema  When the plan is not currently executing, or the error code is outside
+     *          its grammar.
+     * @throws  \Kumwe\CMS\BusinessDefinition\Domain\InvalidBusinessDefinition  When the outcome holds a value
+     *          that cannot be canonically encoded, such as a float or an object.
+     *
+     * @since   2.0.0
+     */
     public function fail(string $errorCode, array $outcome, DateTimeImmutable $at): self
     {
         $this->assertExecuting();
@@ -261,7 +454,26 @@ final readonly class SchemaPlan
         );
     }
 
-    /** @param array<string, mixed> $outcome */
+    /**
+     * Park the plan where the journal may no longer describe the live schema, pending operator judgement.
+     *
+     * This is what `BusinessSchemaExecutor` records whenever a run is interrupted, because a step that threw
+     * mid-statement may have left the database on either side of it. Mechanically it is `fail()` under a
+     * different status, including the code merged into the outcome under `error_code`.
+     *
+     * @param   string                $errorCode  Lowercase dotted code naming the failure, at most 64 bytes.
+     * @param   array<string, mixed>  $outcome    Everything known about where execution stopped.
+     * @param   DateTimeImmutable     $at         Instant to record as the update time.
+     *
+     * @return  self  A recovery-required copy at the next revision, keeping the fence the run held.
+     *
+     * @throws  InvalidBusinessSchema  When the plan is not currently executing, or the error code is outside
+     *          its grammar.
+     * @throws  \Kumwe\CMS\BusinessDefinition\Domain\InvalidBusinessDefinition  When the outcome holds a value
+     *          that cannot be canonically encoded, such as a float or an object.
+     *
+     * @since   2.0.0
+     */
     public function recoveryRequired(string $errorCode, array $outcome, DateTimeImmutable $at): self
     {
         $this->assertExecuting();
@@ -278,7 +490,24 @@ final readonly class SchemaPlan
         );
     }
 
-    /** @param array<string, mixed> $outcome */
+    /**
+     * Close out an interrupted plan once its partial effects have been resolved.
+     *
+     * This is the terminal status an interrupted plan reaches once its partial effects have been undone or
+     * reconciled. It settles the plan without claiming the migration succeeded, which is what separates a
+     * resolved failure from one still waiting on someone.
+     *
+     * @param   array<string, mixed>  $outcome  Report of what the compensation actually did.
+     * @param   DateTimeImmutable     $at       Instant to record as the update time.
+     *
+     * @return  self  A compensated copy at the next revision, keeping the fence the interrupted run held.
+     *
+     * @throws  InvalidBusinessSchema  When the plan is neither failed nor awaiting recovery.
+     * @throws  \Kumwe\CMS\BusinessDefinition\Domain\InvalidBusinessDefinition  When the outcome holds a value
+     *          that cannot be canonically encoded, such as a float or an object.
+     *
+     * @since   2.0.0
+     */
     public function compensate(array $outcome, DateTimeImmutable $at): self
     {
         if (!in_array($this->status, [SchemaPlanStatus::Failed, SchemaPlanStatus::RecoveryRequired], true)) {
@@ -296,7 +525,18 @@ final readonly class SchemaPlan
         );
     }
 
-    /** @return array<string, mixed> */
+    /**
+     * Export the content that defines what this plan would do, without any of its lifecycle state.
+     *
+     * Identity, status, revision, and every piece of execution evidence are left out on purpose: this is
+     * the array `checksum()` fingerprints, so moving the plan through its lifecycle never disturbs the
+     * value an approval was bound to, while any change to the operations or the bindings does.
+     *
+     * @return  array<string, mixed>  The definition and schema bindings, the operations as documents in
+     *          ordinal order, and the plan's risk.
+     *
+     * @since   2.0.0
+     */
     public function canonicalPlan(): array
     {
         return [
@@ -316,12 +556,35 @@ final readonly class SchemaPlan
         ];
     }
 
+    /**
+     * Compute the content address an approval binds to and a reloaded plan is re-verified against.
+     *
+     * @return  string  Lowercase SHA-256 over the canonical JSON encoding of `canonicalPlan()`.
+     *
+     * @throws  \Kumwe\CMS\BusinessDefinition\Domain\InvalidBusinessDefinition  When the plan holds more than
+     *          512 operations, which the canonical encoder refuses to fingerprint.
+     *
+     * @since   2.0.0
+     */
     public function checksum(): string
     {
         return CanonicalDefinitionJson::checksum($this->canonicalPlan());
     }
 
-    /** @return array<string, mixed> */
+    /**
+     * Export the whole plan in the shape persisted in the plan table and served to the API.
+     *
+     * The `plan_checksum` entry is recomputed on every export rather than carried as state, which is what
+     * lets `fromArray()` catch a stored document that was edited underneath the application.
+     *
+     * @return  array<string, mixed>  The canonical plan plus identity, status, revision, creator, timestamps,
+     *          execution evidence, and the recomputed `plan_checksum`.
+     *
+     * @throws  \Kumwe\CMS\BusinessDefinition\Domain\InvalidBusinessDefinition  When the plan holds more than
+     *          512 operations, which the canonical encoder refuses to fingerprint.
+     *
+     * @since   2.0.0
+     */
     public function toArray(): array
     {
         return [
@@ -340,7 +603,22 @@ final readonly class SchemaPlan
         ];
     }
 
-    /** @param list<SchemaOperation> $operations */
+    /**
+     * Fingerprint a candidate operation list against this plan's bindings.
+     *
+     * The constructor needs the checksum before it may assign `$this->operations`, so `checksum()` is not
+     * available to it yet. The array assembled here must stay identical in shape and key order to the one
+     * `canonicalPlan()` builds, or an approval granted through one would never match the other.
+     *
+     * @param   list<SchemaOperation>  $operations  Steps to fingerprint, already sorted into ordinal order.
+     *
+     * @return  string  Lowercase SHA-256 over the canonical encoding of those steps and this plan's bindings.
+     *
+     * @throws  \Kumwe\CMS\BusinessDefinition\Domain\InvalidBusinessDefinition  When more than 512 operations
+     *          are supplied, which the canonical encoder refuses to fingerprint.
+     *
+     * @since   2.0.0
+     */
     private function checksumFor(array $operations): string
     {
         return CanonicalDefinitionJson::checksum([
@@ -360,7 +638,29 @@ final readonly class SchemaPlan
         ]);
     }
 
-    /** @param array<string, mixed>|null $outcome */
+    /**
+     * Copy the plan with new lifecycle state, leaving what it would do untouched.
+     *
+     * Every public transition ends here, so each one is re-validated by the constructor rather than trusting
+     * its own guard, and none of them can quietly alter the operations an approval was granted against.
+     *
+     * @param   SchemaPlanStatus           $status              Status the copy carries.
+     * @param   int                        $revision            Persistence revision for the copy.
+     * @param   SchemaPlanApproval|null    $approval            Approval evidence to carry forward, if any.
+     * @param   string|null                $recoveryEvidenceId  Restore-drill UUID to carry forward, if any.
+     * @param   int|null                   $executionFence      Fence the copy holds, or null before execution.
+     * @param   array<string, mixed>|null  $outcome             Execution result for the copy, or null to clear it.
+     * @param   DateTimeImmutable          $updatedAt           Instant to record as the update time.
+     *
+     * @return  self  The copied plan.
+     *
+     * @throws  InvalidBusinessSchema  When the requested combination breaks a plan invariant, such as an
+     *          evidence set the status does not permit or an update time before creation.
+     * @throws  \Kumwe\CMS\BusinessDefinition\Domain\InvalidBusinessDefinition  When the outcome cannot be
+     *          canonically encoded, or an approved plan holds more than 512 operations.
+     *
+     * @since   2.0.0
+     */
     private function withState(
         SchemaPlanStatus $status,
         int $revision,
@@ -394,7 +694,27 @@ final readonly class SchemaPlan
         );
     }
 
-    /** @param array<string, mixed>|null $outcome */
+    /**
+     * Reject an evidence combination that the plan's lifecycle could never legitimately produce.
+     *
+     * Each status admits exactly one shape: pending carries no evidence at all, cancelled never holds a
+     * fence, approved holds evidence but no execution state, executing holds a fence and no outcome, and
+     * every terminal executed status holds both. Anything past pending or cancelled needs its approval, and
+     * a locking or destructive plan additionally needs its recovery evidence. Running this from the
+     * constructor is what makes the rule apply to plans loaded from storage as well as to transitions.
+     *
+     * @param   SchemaPlanStatus           $status              Status being asserted.
+     * @param   SchemaPlanApproval|null    $approval            Approval evidence offered with it.
+     * @param   string|null                $recoveryEvidenceId  Restore-drill UUID offered with it.
+     * @param   int|null                   $executionFence      Execution fence offered with it.
+     * @param   array<string, mixed>|null  $outcome             Execution result offered with it.
+     *
+     * @return  void
+     *
+     * @throws  InvalidBusinessSchema  When the evidence does not match what the status requires or forbids.
+     *
+     * @since   2.0.0
+     */
     private function assertState(
         SchemaPlanStatus $status,
         ?SchemaPlanApproval $approval,
@@ -443,6 +763,15 @@ final readonly class SchemaPlan
         }
     }
 
+    /**
+     * Require the plan to be mid-execution before an execution outcome may be recorded against it.
+     *
+     * @return  void
+     *
+     * @throws  InvalidBusinessSchema  When the plan is in any status other than executing.
+     *
+     * @since   2.0.0
+     */
     private function assertExecuting(): void
     {
         if ($this->status !== SchemaPlanStatus::Executing) {
@@ -450,6 +779,20 @@ final readonly class SchemaPlan
         }
     }
 
+    /**
+     * Require a failure code narrow enough to be stored, indexed, and matched on by an operator.
+     *
+     * The grammar is a lowercase leading letter followed by up to 63 more of letter, digit, dot, underscore,
+     * or hyphen, which keeps a driver message or a raw exception string out of the persisted outcome.
+     *
+     * @param   string  $errorCode  Candidate code.
+     *
+     * @return  void
+     *
+     * @throws  InvalidBusinessSchema  When the code breaks that grammar or exceeds 64 bytes.
+     *
+     * @since   2.0.0
+     */
     private static function assertErrorCode(string $errorCode): void
     {
         if (preg_match('/^[a-z][a-z0-9._-]{0,63}$/D', $errorCode) !== 1) {

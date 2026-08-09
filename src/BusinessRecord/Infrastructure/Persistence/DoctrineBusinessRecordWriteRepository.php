@@ -30,12 +30,59 @@ use Kumwe\CMS\BusinessSchema\Domain\PhysicalColumnBlueprint;
 use Kumwe\CMS\BusinessSchema\Domain\PhysicalTableBlueprint;
 use LogicException;
 
+/**
+ * Doctrine adapter that writes business-record rows into the physical tables an installation describes.
+ *
+ * No table or column name is compiled into this class: every statement is built from the
+ * `PhysicalTableBlueprint` the caller's `ResolvedBusinessDefinition` carries, so a record is always
+ * addressed through the shape the installer actually applied. Three rules then hold across every entry
+ * point. The caller must already have a transaction open, because the compare-and-set writes below are
+ * only meaningful under the fence `BusinessRecordService` holds for the definition. Every write except
+ * `insert()` matches on the row's version column, and a statement that touched no row is followed by a
+ * re-read that says whether the record is gone or has simply moved on. And every DBAL failure is
+ * translated into the BusinessRecord exception vocabulary, so a unique index, a foreign key, or a
+ * deadlock reaches the caller as a domain exception rather than as a driver one.
+ *
+ * @since  2.0.0
+ */
 final readonly class DoctrineBusinessRecordWriteRepository implements BusinessRecordWriteRepository
 {
+    /**
+     * Wire the adapter to the connection it writes through and the codec that shapes field values.
+     *
+     * @param  Connection        $database  DBAL connection whose already-open transaction every write joins.
+     * @param  RecordValueCodec  $codec     Encoder that spreads record field values across physical columns.
+     *
+     * @since  2.0.0
+     */
     public function __construct(private Connection $database, private RecordValueCodec $codec)
     {
     }
 
+    /**
+     * Insert a new record as one row carrying its control columns and its encoded field columns.
+     *
+     * Only the control columns the installed table actually declares are written, so a definition that
+     * keeps no scope, workflow, or soft-delete columns simply inserts without them.
+     *
+     * @param   ResolvedBusinessDefinition  $resolved  Definition pinned to the installation whose record
+     *          table receives the row.
+     * @param   BusinessRecord              $record    Record to store; its version is written as it stands
+     *          and its field values are encoded into columns by the codec.
+     *
+     * @return  void
+     *
+     * @throws  LogicException  When the caller has no transaction open.
+     * @throws  BusinessRecordSchemaUnavailable  When the installation describes no record table, or the
+     *          table lacks a column the row needs.
+     * @throws  BusinessRecordUniqueConflict  When the row collides with a unique index, such as an identity
+     *          already in use in this scope.
+     * @throws  BusinessRecordReferenceConflict  When a stored reference names a row that does not exist.
+     * @throws  BusinessRecordTemporarilyUnavailable  When the driver refuses the insert for any other
+     *          reason, such as a deadlock.
+     *
+     * @since   2.0.0
+     */
     public function insert(ResolvedBusinessDefinition $resolved, BusinessRecord $record): void
     {
         $this->assertTransaction();
@@ -58,6 +105,35 @@ final readonly class DoctrineBusinessRecordWriteRepository implements BusinessRe
         }
     }
 
+    /**
+     * Rewrite the record's row, but only while the stored version still equals $expectedVersion.
+     *
+     * The version, the audit stamps, whichever lifecycle columns the table declares, and the encoded field
+     * values all move in one UPDATE, so the whole new version lands or none of it does. Nothing here
+     * distinguishes an edit from an archive, a restore, a workflow move, or a soft delete: the record
+     * arrives already transitioned, and the columns follow from what it carries.
+     *
+     * @param   ResolvedBusinessDefinition  $resolved         Definition pinned to the installation holding
+     *          the row.
+     * @param   BusinessRecord              $record           Record at its new version, as the domain
+     *          produced it.
+     * @param   int                         $expectedVersion  Version the caller read; the UPDATE matches on
+     *          it and writes nothing once the row has moved past it.
+     *
+     * @return  void
+     *
+     * @throws  LogicException  When the caller has no transaction open.
+     * @throws  BusinessRecordNotFound  When no row with this record's storage key exists any more.
+     * @throws  BusinessRecordVersionConflict  When the stored version differs from $expectedVersion.
+     * @throws  BusinessRecordSchemaUnavailable  When the installation describes no record table, or a
+     *          column the write names is not in its blueprint.
+     * @throws  BusinessRecordUniqueConflict  When the new values collide with a unique index.
+     * @throws  BusinessRecordReferenceConflict  When a stored reference names a row that does not exist.
+     * @throws  BusinessRecordTemporarilyUnavailable  When the driver refuses the update for any other
+     *          reason, such as a deadlock.
+     *
+     * @since   2.0.0
+     */
     public function update(
         ResolvedBusinessDefinition $resolved,
         BusinessRecord $record,
@@ -75,6 +151,32 @@ final readonly class DoctrineBusinessRecordWriteRepository implements BusinessRe
         $this->casUpdate($table, $record->recordKey, $expectedVersion, $values);
     }
 
+    /**
+     * Delete the record's row outright, but only while the stored version still equals $expectedVersion.
+     *
+     * A delete that matched no row is diagnosed rather than ignored: the version is re-read, so a row that
+     * is already gone is reported differently from one another writer has moved on.
+     *
+     * @param   ResolvedBusinessDefinition  $resolved         Definition pinned to the installation holding
+     *          the row.
+     * @param   BusinessRecord              $record           Record whose row is erased; only its storage
+     *          key is read.
+     * @param   int                         $expectedVersion  Version the caller read; the DELETE matches on
+     *          it and removes nothing once the row has moved past it.
+     *
+     * @return  void
+     *
+     * @throws  LogicException  When the caller has no transaction open.
+     * @throws  BusinessRecordNotFound  When no row with this record's storage key exists any more.
+     * @throws  BusinessRecordVersionConflict  When the stored version differs from $expectedVersion.
+     * @throws  BusinessRecordSchemaUnavailable  When the installation describes no record table, or its key
+     *          or version column is not in the blueprint.
+     * @throws  BusinessRecordReferenceConflict  When another row still references this one.
+     * @throws  BusinessRecordTemporarilyUnavailable  When the driver refuses the delete for any other
+     *          reason, such as a deadlock.
+     *
+     * @since   2.0.0
+     */
     public function hardDelete(
         ResolvedBusinessDefinition $resolved,
         BusinessRecord $record,
@@ -100,6 +202,63 @@ final readonly class DoctrineBusinessRecordWriteRepository implements BusinessRe
         }
     }
 
+    /**
+     * Store one link from the source record to a target and re-version the source row.
+     *
+     * Where the link lands is decided by the installed blueprint rather than by the caller. A singular
+     * relationship whose target column sits on the source table is written as part of the source's own
+     * compare-and-set. An owned-line collection inserts the line itself, built from $ownedLineValues under
+     * $ownedLineDefinition. An ordinary collection inserts a junction row. When the source installation
+     * describes no storage at all, the canonical storage belongs to the inverse side, so the target's own
+     * column or junction is written instead — which is what $targetResolved and $target are for — and the
+     * source is then re-versioned by a statement of its own. A junction or line row is stamped at version
+     * one and inherits the source's scope; ordered collections and owned lines take $position, or one past
+     * the highest stored position when it is null, while an unordered collection stores no position.
+     *
+     * @param   ResolvedBusinessDefinition   $resolved             Definition pinned to the installation
+     *          holding the source row.
+     * @param   BusinessRecord               $source               Record the relationship is declared on.
+     * @param   RelationshipDefinition       $relationship         Relationship being populated.
+     * @param   string                       $targetRecordKey      Storage key of the target row, or of the
+     *          owned line this call creates.
+     * @param   ?int                         $position             Slot in an ordered or owned-line
+     *          collection, or null to append after the highest stored position.
+     * @param   string                       $actorId              Actor credited with every row this write
+     *          re-versions.
+     * @param   DateTimeImmutable            $at                   Instant stamped on every row this write
+     *          touches.
+     * @param   int                          $expectedVersion      Version of the source the caller read.
+     * @param   ?ResolvedBusinessDefinition  $targetResolved       Pinned definition of the target, required
+     *          once the inverse side owns the storage.
+     * @param   ?BusinessRecord              $target               Target record itself, required on that
+     *          same path and matched against $targetRecordKey.
+     * @param   ?EntityTypeDefinition        $ownedLineDefinition  Pinned definition of the line type, whose
+     *          fields the line values are encoded against.
+     * @param   array<string, mixed>         $ownedLineValues      Values of the line to create, keyed by
+     *          field handle; accepted only for an owned-line collection.
+     *
+     * @return  RelationshipWriteResult  The re-versioned source, carrying the target and the inverse handle
+     *          as well when the link was written onto the target's own row.
+     *
+     * @throws  LogicException  When the caller has no transaction open.
+     * @throws  BusinessRelationshipRejected  When a position or line values are given for a relationship
+     *          that stores neither, or an owned line arrives without its pinned line definition.
+     * @throws  BusinessRecordNotFound  When the source row, or a target row this write re-versions, no
+     *          longer exists.
+     * @throws  BusinessRecordVersionConflict  When a row this write re-versions no longer carries the
+     *          version the caller read for it.
+     * @throws  BusinessRecordSchemaUnavailable  When neither side of the installation describes storage for
+     *          the relationship, a column the write names is not in its blueprint, or the target cannot be
+     *          matched to its pinned definition.
+     * @throws  BusinessRecordUniqueConflict  When the link already exists, or a created line collides with
+     *          a unique index.
+     * @throws  BusinessRecordReferenceConflict  When either end of the link names a row that does not
+     *          exist.
+     * @throws  BusinessRecordTemporarilyUnavailable  When the driver refuses the write for any other
+     *          reason, such as a deadlock.
+     *
+     * @since   2.0.0
+     */
     public function relate(
         ResolvedBusinessDefinition $resolved,
         BusinessRecord $source,
@@ -223,6 +382,50 @@ final readonly class DoctrineBusinessRecordWriteRepository implements BusinessRe
         return new RelationshipWriteResult($updated);
     }
 
+    /**
+     * Remove one link between the source record and a target, and re-version the source row.
+     *
+     * The link is cleared wherever it is actually stored: a singular target column is nulled under a
+     * compare-and-set that also matches the key currently in it, a junction or owned-line row is deleted,
+     * and where the canonical storage belongs to the inverse side it is the target's column or junction
+     * that changes. Detaching an owned line deletes the line itself, because the line lives in that table.
+     * A relationship marked required — on whichever side owns the storage — is refused rather than emptied,
+     * so a mandatory link is never left dangling.
+     *
+     * @param   ResolvedBusinessDefinition   $resolved         Definition pinned to the installation holding
+     *          the source row.
+     * @param   BusinessRecord               $source           Record the relationship is declared on.
+     * @param   RelationshipDefinition       $relationship     Relationship being emptied.
+     * @param   string                       $targetRecordKey  Storage key of the linked row to detach.
+     * @param   string                       $actorId          Actor credited with every row this write
+     *          re-versions.
+     * @param   DateTimeImmutable            $at               Instant stamped on every row this write
+     *          touches.
+     * @param   int                          $expectedVersion  Version of the source the caller read.
+     * @param   ?ResolvedBusinessDefinition  $targetResolved   Pinned definition of the target, required once
+     *          the inverse side owns the storage.
+     * @param   ?BusinessRecord              $target           Target record itself, required on that same
+     *          path and matched against $targetRecordKey.
+     *
+     * @return  RelationshipWriteResult  The re-versioned source; it names the inverse handle whenever the
+     *          link was stored on the target's side, and carries the target record too when that storage
+     *          was a column on the target's own row.
+     *
+     * @throws  LogicException  When the caller has no transaction open.
+     * @throws  BusinessRelationshipRejected  When the relationship or its canonical inverse is required, or
+     *          no such link is stored.
+     * @throws  BusinessRecordNotFound  When the source row, or a target row this write re-versions, no
+     *          longer exists.
+     * @throws  BusinessRecordVersionConflict  When a row this write re-versions no longer carries the
+     *          version the caller read for it.
+     * @throws  BusinessRecordSchemaUnavailable  When neither side of the installation describes storage for
+     *          the relationship, a column the write names is not in its blueprint, or the target cannot be
+     *          matched to its pinned definition.
+     * @throws  BusinessRecordTemporarilyUnavailable  When the driver refuses the write for a transient
+     *          reason such as a deadlock.
+     *
+     * @since   2.0.0
+     */
     public function unrelate(
         ResolvedBusinessDefinition $resolved,
         BusinessRecord $source,
@@ -328,6 +531,45 @@ final readonly class DoctrineBusinessRecordWriteRepository implements BusinessRe
         return new RelationshipWriteResult($updated, $targetUpdated, $targetRelationship);
     }
 
+    /**
+     * Renumber an ordered collection into the given order and re-version the source row.
+     *
+     * The keys must be exactly the links currently stored, so a stale or partial list is refused before
+     * anything is written rather than quietly reordering a subset. The rewrite then runs in two passes:
+     * every position for this source is first flipped to a negative value, and each row is afterwards set
+     * to its new position, which keeps a unique index over source and position satisfied throughout. Only a
+     * collection whose storage the source side owns can be renumbered here; when the canonical junction
+     * belongs to the inverse definition, the reorder has to be asked of that side.
+     *
+     * @param   ResolvedBusinessDefinition   $resolved           Definition pinned to the installation
+     *          holding the source row.
+     * @param   BusinessRecord               $source             Record whose collection is renumbered.
+     * @param   RelationshipDefinition       $relationship       Ordered collection to renumber.
+     * @param   list<string>                 $orderedRecordKeys  Storage keys of every current link, in the
+     *          order to store them; each key's offset becomes its stored position.
+     * @param   string                       $actorId            Actor credited with the source's new version
+     *          and with every renumbered link row.
+     * @param   DateTimeImmutable            $at                 Instant stamped on every row this write
+     *          touches.
+     * @param   int                          $expectedVersion    Version of the source the caller read.
+     * @param   ?ResolvedBusinessDefinition  $targetResolved     Pinned definition of the linked type; unused
+     *          here, because renumbering only touches source-side storage.
+     *
+     * @return  BusinessRecord  The source at its new version, with the collection numbered from zero.
+     *
+     * @throws  LogicException  When the caller has no transaction open.
+     * @throws  BusinessRelationshipRejected  When the relationship is not an ordered collection, its storage
+     *          belongs to the inverse side, the keys are not a permutation of the stored links, or a link
+     *          changed while the order was being written.
+     * @throws  BusinessRecordNotFound  When the source row no longer exists.
+     * @throws  BusinessRecordVersionConflict  When the stored source version differs from $expectedVersion.
+     * @throws  BusinessRecordSchemaUnavailable  When the installation does not describe the collection's
+     *          storage, or a stored link identity is not a readable key.
+     * @throws  BusinessRecordTemporarilyUnavailable  When the driver refuses the write for a transient
+     *          reason such as a deadlock.
+     *
+     * @since   2.0.0
+     */
     public function reorder(
         ResolvedBusinessDefinition $resolved,
         BusinessRecord $source,
@@ -421,7 +663,20 @@ final readonly class DoctrineBusinessRecordWriteRepository implements BusinessRe
         return $updated;
     }
 
-    /** @return array<string, mixed> */
+    /**
+     * Collect the control columns this installed table happens to declare, ready to insert or update.
+     *
+     * Scope, workflow, archive, and soft-delete columns exist only where the definition asked for them, so
+     * each is looked up in the blueprint and skipped when the table carries no column for it.
+     *
+     * @param   PhysicalTableBlueprint  $table   Installed record table whose columns decide what is written.
+     * @param   BusinessRecord          $record  Record the control values are read from.
+     *
+     * @return  array<string, mixed>  Values keyed by physical column name; empty when the table declares
+     *          none of these columns.
+     *
+     * @since   2.0.0
+     */
     private function optionalControlValues(PhysicalTableBlueprint $table, BusinessRecord $record): array
     {
         $logical = [
@@ -444,7 +699,23 @@ final readonly class DoctrineBusinessRecordWriteRepository implements BusinessRe
         return $values;
     }
 
-    /** @return array<string, string|null> */
+    /**
+     * Copy the source record's scope onto the junction or owned-line row about to be written.
+     *
+     * A link is only as scoped as its own row, so a record that belongs to a site or an organization may
+     * not be linked through a table with nowhere to record that; the mismatch is reported instead of being
+     * dropped silently. A null scope value against a missing column is simply nothing to write.
+     *
+     * @param   PhysicalTableBlueprint  $table   Installed association or line table receiving the row.
+     * @param   BusinessRecord          $source  Record whose scope the link inherits.
+     *
+     * @return  array<string, string|null>  Scope values keyed by physical column name.
+     *
+     * @throws  BusinessRecordSchemaUnavailable  When the source carries a scope value the association table
+     *          has no column for.
+     *
+     * @since   2.0.0
+     */
     private function associationScopeValues(PhysicalTableBlueprint $table, BusinessRecord $source): array
     {
         $values = [];
@@ -465,7 +736,32 @@ final readonly class DoctrineBusinessRecordWriteRepository implements BusinessRe
         return $values;
     }
 
-    /** @param array<string, mixed> $values */
+    /**
+     * Apply one compare-and-set UPDATE to a record row, keyed by storage key and expected version.
+     *
+     * This is the shared compare-and-set behind `update()` and behind every relationship write that
+     * re-versions a row: the statement changes one row or none, and a miss is turned into the exception
+     * that says which of the two reasons it was.
+     *
+     * @param   PhysicalTableBlueprint  $table            Installed record table holding the row.
+     * @param   string                  $recordKey        Storage key of the row to update.
+     * @param   int                     $expectedVersion  Version the row must still carry for the write to
+     *          land.
+     * @param   array<string, mixed>    $values           Column values keyed by physical name; their DBAL
+     *          binding types come from the blueprint.
+     *
+     * @return  void
+     *
+     * @throws  BusinessRecordNotFound  When no row carries that storage key.
+     * @throws  BusinessRecordVersionConflict  When the row exists but is at a different version.
+     * @throws  BusinessRecordSchemaUnavailable  When a column named here is not in the table's blueprint.
+     * @throws  BusinessRecordUniqueConflict  When the new values collide with a unique index.
+     * @throws  BusinessRecordReferenceConflict  When a written reference names a row that does not exist.
+     * @throws  BusinessRecordTemporarilyUnavailable  When the driver refuses the update for any other
+     *          reason, such as a deadlock.
+     *
+     * @since   2.0.0
+     */
     private function casUpdate(
         PhysicalTableBlueprint $table,
         string $recordKey,
@@ -504,7 +800,35 @@ final readonly class DoctrineBusinessRecordWriteRepository implements BusinessRe
         }
     }
 
-    /** @param array<string, mixed> $values */
+    /**
+     * Null a singular relationship column under a compare-and-set that also matches the stored target.
+     *
+     * The extra guard is what makes "unlink this target" mean it, since a column already pointing somewhere
+     * else is left alone. When nothing matched, the row's version is re-read to separate a record that
+     * vanished or moved on from a link that was simply not the one asked for.
+     *
+     * @param   PhysicalTableBlueprint  $table               Installed record table holding the row.
+     * @param   string                  $recordKey           Storage key of the row to clear.
+     * @param   int                     $expectedVersion     Version the row must still carry for the write
+     *          to land.
+     * @param   string                  $relationshipColumn  Physical relationship column set to NULL.
+     * @param   string                  $expectedTargetKey   Key that column must currently hold.
+     * @param   array<string, mixed>    $values              Other column values keyed by physical name,
+     *          being the new version and audit stamps.
+     *
+     * @return  void
+     *
+     * @throws  BusinessRelationshipRejected  When the row is at the expected version but its column does not
+     *          hold $expectedTargetKey.
+     * @throws  BusinessRecordNotFound  When no row carries that storage key.
+     * @throws  BusinessRecordVersionConflict  When the row exists but is at a different version.
+     * @throws  BusinessRecordSchemaUnavailable  When a column named here is not in the table's blueprint, or
+     *          the version read back is not a readable integer.
+     * @throws  BusinessRecordTemporarilyUnavailable  When the driver refuses the update, such as on a
+     *          deadlock.
+     *
+     * @since   2.0.0
+     */
     private function casClearRelationship(
         PhysicalTableBlueprint $table,
         string $recordKey,
@@ -556,6 +880,31 @@ final readonly class DoctrineBusinessRecordWriteRepository implements BusinessRe
         throw new BusinessRelationshipRejected('The requested singular relationship does not exist.');
     }
 
+    /**
+     * Re-version a record row whose relationship a write changed somewhere else.
+     *
+     * Writing a link into a junction, into a line table, or onto the other side's row leaves the record
+     * itself untouched, so its new version, actor, and timestamp are carried over by a compare-and-set of
+     * their own — which is also what makes a concurrent edit of that record lose the race.
+     *
+     * @param   PhysicalTableBlueprint  $table            Installed record table holding the row.
+     * @param   string                  $recordKey        Storage key of the row to re-version.
+     * @param   int                     $expectedVersion  Version the row must still carry for the write to
+     *          land.
+     * @param   BusinessRecord          $updated          Successor record supplying the new version and
+     *          audit stamps.
+     *
+     * @return  void
+     *
+     * @throws  BusinessRecordNotFound  When no row carries that storage key.
+     * @throws  BusinessRecordVersionConflict  When the row exists but is at a different version.
+     * @throws  BusinessRecordSchemaUnavailable  When the version or audit columns are not in the table's
+     *          blueprint.
+     * @throws  BusinessRecordTemporarilyUnavailable  When the driver refuses the update, such as on a
+     *          deadlock.
+     *
+     * @since   2.0.0
+     */
     private function bump(
         PhysicalTableBlueprint $table,
         string $recordKey,
@@ -569,6 +918,27 @@ final readonly class DoctrineBusinessRecordWriteRepository implements BusinessRe
         ]);
     }
 
+    /**
+     * Decide which position a new link takes in an ordered or owned-line collection.
+     *
+     * A requested slot is taken at face value, duplicates included, since contiguous numbering is only
+     * restored by `reorder()`. Without one, the link is appended one past the highest position stored for
+     * this owner, and an owner with no links yet starts at zero.
+     *
+     * @param   PhysicalTableBlueprint  $table          Installed association or line table to measure.
+     * @param   string                  $sourceLogical  Logical name of the owning column, `owner_id` for an
+     *          owned line and `source_id` otherwise.
+     * @param   string                  $sourceId       Storage key of the owner whose collection is
+     *          measured.
+     * @param   ?int                    $requested      Position the caller asked for, or null to append.
+     *
+     * @return  int  The position to store on the new row.
+     *
+     * @throws  BusinessRecordSchemaUnavailable  When the position or owning column is not in the table's
+     *          blueprint, or the stored maximum is not a readable integer.
+     *
+     * @since   2.0.0
+     */
     private function position(
         PhysicalTableBlueprint $table,
         string $sourceLogical,
@@ -588,6 +958,23 @@ final readonly class DoctrineBusinessRecordWriteRepository implements BusinessRe
         return $value === false || $value === null ? 0 : $this->storedInteger($value) + 1;
     }
 
+    /**
+     * Report why a compare-and-set matched no row, by re-reading that row's version.
+     *
+     * @param   PhysicalTableBlueprint  $table            Installed record table to re-read.
+     * @param   string                  $recordKey        Storage key the failed write named.
+     * @param   int                     $expectedVersion  Version the failed write expected to find.
+     *
+     * @return  never
+     *
+     * @throws  BusinessRecordNotFound  When the row is gone.
+     * @throws  BusinessRecordVersionConflict  When the row is still there at another version, carrying both
+     *          the expected and the stored value for the caller to report.
+     * @throws  BusinessRecordSchemaUnavailable  When the key or version column is not in the table's
+     *          blueprint, or the stored version is not a readable integer.
+     *
+     * @since   2.0.0
+     */
     private function conflict(PhysicalTableBlueprint $table, string $recordKey, int $expectedVersion): never
     {
         $actual = $this->database->fetchOne(sprintf(
@@ -602,12 +989,39 @@ final readonly class DoctrineBusinessRecordWriteRepository implements BusinessRe
         throw new BusinessRecordVersionConflict($expectedVersion, $this->storedInteger($actual));
     }
 
+    /**
+     * Resolve the installed record table of a pinned definition.
+     *
+     * @param   ResolvedBusinessDefinition  $resolved  Definition pinned to the installation to read.
+     *
+     * @return  PhysicalTableBlueprint  Blueprint of the `record` table every column name in this class is
+     *          resolved against.
+     *
+     * @throws  BusinessRecordSchemaUnavailable  When the installed schema describes no record table.
+     *
+     * @since   2.0.0
+     */
     private function recordTable(ResolvedBusinessDefinition $resolved): PhysicalTableBlueprint
     {
         return $resolved->installation->blueprint->table('record')
             ?? throw new BusinessRecordSchemaUnavailable('The installed schema has no record table.');
     }
 
+    /**
+     * Look up the table this installation keeps the relationship's links in, if it keeps one at all.
+     *
+     * Null is not a failure here: it means this side stores nothing of its own for the relationship, which
+     * is the case both for a singular link held as a column on the record table and for a relationship
+     * whose canonical storage belongs to the inverse definition.
+     *
+     * @param   ResolvedBusinessDefinition  $resolved      Definition pinned to the installation to search.
+     * @param   RelationshipDefinition      $relationship  Relationship whose storage is wanted.
+     *
+     * @return  ?PhysicalTableBlueprint  The line table for an owned-line collection, the junction table for
+     *          any other relationship that has one, or null when this side stores neither.
+     *
+     * @since   2.0.0
+     */
     private function associationTableOrNull(
         ResolvedBusinessDefinition $resolved,
         RelationshipDefinition $relationship,
@@ -620,7 +1034,29 @@ final readonly class DoctrineBusinessRecordWriteRepository implements BusinessRe
     }
 
     /**
-     * @return array{ResolvedBusinessDefinition, BusinessRecord, RelationshipDefinition}
+     * Prove that the target side really owns this relationship's storage, and hand back the three parts.
+     *
+     * Reached only once the source installation turns out to describe no storage of its own, so everything
+     * the caller passed optionally becomes mandatory and is re-checked here: the target must be pinned to
+     * its own definition, must be the record $targetRecordKey names, and must declare the reciprocal
+     * relationship pointing back at the source definition.
+     *
+     * @param   ResolvedBusinessDefinition   $sourceResolved   Pinned definition the relationship is declared
+     *          on.
+     * @param   RelationshipDefinition       $relationship     Relationship whose inverse is being located.
+     * @param   ?ResolvedBusinessDefinition  $targetResolved   Pinned definition of the target, as the caller
+     *          supplied it.
+     * @param   ?BusinessRecord              $target           Target record, as the caller supplied it.
+     * @param   string                       $targetRecordKey  Storage key the target record must match.
+     *
+     * @return  array{ResolvedBusinessDefinition, BusinessRecord, RelationshipDefinition}  The proven target
+     *          definition and record, and the inverse relationship that owns the storage.
+     *
+     * @throws  BusinessRecordSchemaUnavailable  When the target or its pinned definition is absent or does
+     *          not match, the relationship names no inverse, or the target declares no reciprocal
+     *          relationship back to the source.
+     *
+     * @since   2.0.0
      */
     private function inverseStorage(
         ResolvedBusinessDefinition $sourceResolved,
@@ -653,12 +1089,37 @@ final readonly class DoctrineBusinessRecordWriteRepository implements BusinessRe
         return [$targetResolved, $target, $inverse];
     }
 
+    /**
+     * Resolve a logical column handle to the physical column name the installer gave it.
+     *
+     * @param   PhysicalTableBlueprint  $table    Installed table to resolve against.
+     * @param   string                  $logical  Logical column name, such as `record_id`, `version`, or
+     *          `relation:<handle>.target_id`.
+     *
+     * @return  string  Physical column name, ready to be quoted into a statement.
+     *
+     * @throws  BusinessRecordSchemaUnavailable  When the installed table declares no such column.
+     *
+     * @since   2.0.0
+     */
     private function physical(PhysicalTableBlueprint $table, string $logical): string
     {
         return $table->column($logical)->physicalName
             ?? throw new BusinessRecordSchemaUnavailable('An installed business-record column is unavailable.');
     }
 
+    /**
+     * Resolve a logical column handle to the Doctrine type its parameters must be bound as.
+     *
+     * @param   PhysicalTableBlueprint  $table    Installed table to resolve against.
+     * @param   string                  $logical  Logical column name whose binding type is wanted.
+     *
+     * @return  string  Doctrine type name, from the portable set a blueprint may declare.
+     *
+     * @throws  BusinessRecordSchemaUnavailable  When the installed table declares no such column.
+     *
+     * @since   2.0.0
+     */
     private function type(PhysicalTableBlueprint $table, string $logical): string
     {
         return $table->column($logical)->doctrineType
@@ -666,8 +1127,19 @@ final readonly class DoctrineBusinessRecordWriteRepository implements BusinessRe
     }
 
     /**
-     * @param array<string, mixed> $values
-     * @return array<string, string>
+     * Pair every column in a value set with the Doctrine type DBAL must bind it as.
+     *
+     * Binding types are read from the blueprint rather than inferred from the PHP value, so a null, a
+     * date-time object, or a JSON payload is bound the way the installed column expects it.
+     *
+     * @param   PhysicalTableBlueprint  $table   Installed table the column names belong to.
+     * @param   array<string, mixed>    $values  Values keyed by physical column name; only the keys are read.
+     *
+     * @return  array<string, string>  Doctrine type names keyed by the same physical column names.
+     *
+     * @throws  BusinessRecordSchemaUnavailable  When a named column is not in the table's blueprint.
+     *
+     * @since   2.0.0
      */
     private function types(PhysicalTableBlueprint $table, array $values): array
     {
@@ -680,6 +1152,18 @@ final readonly class DoctrineBusinessRecordWriteRepository implements BusinessRe
         return $types;
     }
 
+    /**
+     * Find a column of the blueprint by the physical name it was installed under.
+     *
+     * @param   PhysicalTableBlueprint  $table     Installed table to search.
+     * @param   string                  $physical  Physical column name to look for.
+     *
+     * @return  PhysicalColumnBlueprint  The matching column, with its Doctrine type and options.
+     *
+     * @throws  BusinessRecordSchemaUnavailable  When no column of the table carries that physical name.
+     *
+     * @since   2.0.0
+     */
     private function columnByPhysical(PhysicalTableBlueprint $table, string $physical): PhysicalColumnBlueprint
     {
         foreach ($table->columns() as $column) {
@@ -690,11 +1174,38 @@ final readonly class DoctrineBusinessRecordWriteRepository implements BusinessRe
         throw new BusinessRecordSchemaUnavailable('A physical business-record column is not in its blueprint.');
     }
 
+    /**
+     * Quote one identifier in the connected platform's own syntax.
+     *
+     * Every table and column name this class interpolates into a statement passes through here, so a name
+     * that came from an installed blueprint is never read as SQL.
+     *
+     * @param   string  $identifier  Physical table or column name to quote.
+     *
+     * @return  string  The identifier, quoted for the platform in use.
+     *
+     * @since   2.0.0
+     */
     private function quote(string $identifier): string
     {
         return $this->database->getDatabasePlatform()->quoteSingleIdentifier($identifier);
     }
 
+    /**
+     * Read a value the driver returned for an integer column, whichever representation it chose.
+     *
+     * Drivers are free to hand an integer column back as a decimal string, so both are accepted and
+     * anything else is treated as storage that no longer matches its blueprint.
+     *
+     * @param   mixed  $value  Value as fetched from the database.
+     *
+     * @return  int  The value as an integer.
+     *
+     * @throws  BusinessRecordSchemaUnavailable  When the value is neither an integer nor an optionally
+     *          signed string of decimal digits.
+     *
+     * @since   2.0.0
+     */
     private function storedInteger(mixed $value): int
     {
         if (!is_int($value) && (!is_string($value) || preg_match('/^-?[0-9]+$/D', $value) !== 1)) {
@@ -704,6 +1215,19 @@ final readonly class DoctrineBusinessRecordWriteRepository implements BusinessRe
         return (int) $value;
     }
 
+    /**
+     * Refuse to write outside the caller's transaction.
+     *
+     * Every public entry point starts here. The compare-and-set writes in this class, the fence the service
+     * holds over the definition, and the revision rows written beside these ones only add up to one atomic
+     * change while a transaction is open, so an absent one is a programming error, not a runtime condition.
+     *
+     * @return  void
+     *
+     * @throws  LogicException  When the connection has no active transaction.
+     *
+     * @since   2.0.0
+     */
     private function assertTransaction(): void
     {
         if (!$this->database->isTransactionActive()) {
@@ -711,6 +1235,26 @@ final readonly class DoctrineBusinessRecordWriteRepository implements BusinessRe
         }
     }
 
+    /**
+     * Translate a DBAL failure into the BusinessRecord vocabulary, so no driver exception leaves the class.
+     *
+     * A unique violation and a foreign-key violation each carry the relationship handle where one is known,
+     * which is how the caller learns which link collided rather than only that something did. Every other
+     * failure — a deadlock, a lock timeout, a lost connection, or an error this adapter cannot classify —
+     * is reported as temporarily unavailable, keeping the driver exception as its previous.
+     *
+     * @param   DbalException  $exception     Driver failure caught around a statement.
+     * @param   ?string        $relationship  Handle of the relationship being written, or null for a plain
+     *          record write.
+     *
+     * @return  never
+     *
+     * @throws  BusinessRecordUniqueConflict  When the failure is a unique constraint violation.
+     * @throws  BusinessRecordReferenceConflict  When the failure is a foreign key constraint violation.
+     * @throws  BusinessRecordTemporarilyUnavailable  For every other driver failure, retryable or not.
+     *
+     * @since   2.0.0
+     */
     private function map(DbalException $exception, ?string $relationship = null): never
     {
         if ($exception instanceof UniqueConstraintViolationException) {

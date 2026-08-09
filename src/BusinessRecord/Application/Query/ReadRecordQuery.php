@@ -8,12 +8,51 @@ use InvalidArgumentException;
 use Kumwe\CMS\Application\Authorization\ExecutionContext;
 use Kumwe\CMS\BusinessRecord\Application\RecordRequestGuard;
 
+/**
+ * Request to read a single record by its public identity, carrying the caller's context and projection.
+ *
+ * `BusinessRecordService::read()` accepts this instead of loose arguments so every identifier and every
+ * projection handle is checked at construction, before authorization, fencing or schema resolution runs.
+ * The two lifecycle switches are what make this more than a tuple: a plain read sees only live records,
+ * and an archived or soft-deleted one is reachable only when the caller opts in explicitly, so no
+ * routine read leaks a record its owner considers gone.
+ *
+ * @since  2.0.0
+ */
 final readonly class ReadRecordQuery
 {
-    /** @var list<string> */
+    /**
+     * Field handles the returned view is narrowed to, de-duplicated and re-indexed.
+     *
+     * Empty means no narrowing: the view then carries every field the definition marks readable.
+     *
+     * @var    list<string>
+     * @since  2.0.0
+     */
     public array $projection;
 
-    /** @param list<string> $projection */
+    /**
+     * Assemble a read request and validate its identifiers and projection handles.
+     *
+     * @param   ExecutionContext  $context                 Actor and site the read runs as.
+     * @param   string            $definitionIdentifier    Definition UUID or handle naming the record
+     *          type to read.
+     * @param   string            $recordId                Public identity of the record wanted, in the
+     *          form the definition's identity field uses.
+     * @param   ?string           $organizationIdentifier  Organization to scope the read to; required for
+     *          an organization-scoped definition and null for any other.
+     * @param   list<string>      $projection              Field handles to return; an empty list asks for
+     *          every readable field.
+     * @param   bool              $includeArchived         True to allow reading a record that has been
+     *          archived.
+     * @param   bool              $includeDeleted          True to allow reading a record that has been
+     *          soft-deleted.
+     *
+     * @throws  InvalidArgumentException  When an identifier or projection handle is malformed, or the
+     *          projection names more than 64 fields.
+     *
+     * @since   2.0.0
+     */
     public function __construct(
         public ExecutionContext $context,
         public string $definitionIdentifier,

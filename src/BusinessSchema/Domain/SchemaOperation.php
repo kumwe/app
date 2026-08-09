@@ -6,8 +6,25 @@ namespace Kumwe\CMS\BusinessSchema\Domain;
 
 use Kumwe\CMS\BusinessDefinition\Domain\CanonicalDefinitionJson;
 
+/**
+ * One approvable, journaled step of a schema plan, described semantically rather than as SQL.
+ *
+ * An operation says what should change, what the affected object looked like before, and what it must look
+ * like afterwards; the physical gateway turns that into statements for the driver in use and uses the same
+ * two states to decide whether the step is already satisfied. It also carries the two facts recovery needs
+ * before anything runs: how risky the step is, and what an operator must do if execution stops on it.
+ * Operations are content addressed, so a persisted step cannot be edited without invalidating its plan.
+ *
+ * @since  2.0.0
+ */
 final readonly class SchemaOperation
 {
+    /**
+     * What an interrupted execution demands of the operator, from cheapest to most severe.
+     *
+     * @var    list<string>
+     * @since  2.0.0
+     */
     private const RECOVERY_IMPLICATIONS = [
         'none',
         'compensate_safe_addition',
@@ -16,15 +33,44 @@ final readonly class SchemaOperation
         'manual_reconciliation',
     ];
 
-    /** @var array<string, mixed>|null */
+    /**
+     * State of the affected object before the step, or null when the step only adds.
+     *
+     * @var    array<string, mixed>|null
+     * @since  2.0.0
+     */
     public ?array $before;
 
-    /** @var array<string, mixed>|null */
+    /**
+     * State the affected object must reach, or null when the step only removes.
+     *
+     * @var    array<string, mixed>|null
+     * @since  2.0.0
+     */
     public ?array $after;
 
     /**
-     * @param array<string, mixed>|null $before
-     * @param array<string, mixed>|null $after
+     * Describe one step and prove it is coherent before it can be planned.
+     *
+     * @param   int                        $ordinal              Position in the plan, from one, gapless.
+     * @param   SchemaOperationKind        $kind                 Semantic change the gateway must realise.
+     * @param   SchemaRisk                 $risk                 Impact class this step contributes to the plan.
+     * @param   string                     $table                Logical table the step acts on.
+     * @param   string                     $subject              Logical object within that table, or a path.
+     * @param array<string, mixed>|null $before Prior state of the subject, for verification and recovery.
+     * @param array<string, mixed>|null $after Target state of the subject, for execution and verification.
+     * @param   bool                       $requiresBackfill     Whether the step rewrites rows rather than shape.
+     * @param   string                     $recoveryImplication  One of the declared recovery implications.
+     *
+     * @throws  InvalidBusinessSchema  When the ordinal is outside one to 100000, the table is not a
+     *          metadata identifier, the subject is over 512 bytes or is neither a
+     *          metadata identifier nor a slash path, the recovery implication is
+     *          not a declared one, a row-rewriting step claims to be online-safe
+     *          additive, or either state is not a string-keyed object.
+     * @throws  \Kumwe\CMS\BusinessDefinition\Domain\InvalidBusinessDefinition  When either state holds a
+     *          value that cannot be canonically encoded, such as a float or an object.
+     *
+     * @since   2.0.0
      */
     public function __construct(
         public int $ordinal,
@@ -63,7 +109,24 @@ final readonly class SchemaOperation
         $this->after = $after;
     }
 
-    /** @param array<string, mixed> $document */
+    /**
+     * Rebuild an operation from its persisted document and confirm it was not tampered with.
+     *
+     * When the stored document carries a `checksum`, it is compared against the checksum recomputed from
+     * the decoded content, so an edited journal row is refused rather than replayed.
+     *
+     * @param   array<string, mixed>  $document  Stored operation object, as written by `persistedArray()`.
+     *
+     * @return  self  The revalidated operation.
+     *
+     * @throws  InvalidBusinessSchema  When the document carries an unknown property, a field is missing or
+     *          misshapen, the stored kind or risk is not a known one, an operation
+     *          invariant fails, or the stored checksum does not match the content.
+     * @throws  \Kumwe\CMS\BusinessDefinition\Domain\InvalidBusinessDefinition  When a stored state holds a
+     *          value that cannot be canonically encoded.
+     *
+     * @since   2.0.0
+     */
     public static function fromArray(array $document): self
     {
         SchemaDocument::assertOnly(
@@ -97,7 +160,15 @@ final readonly class SchemaOperation
         return $operation;
     }
 
-    /** @return array<string, mixed> */
+    /**
+     * Export the content that defines this operation's identity.
+     *
+     * The checksum is deliberately excluded, which is what lets it be computed over this array.
+     *
+     * @return  array<string, mixed>  Ordinal, kind, risk, target, both states, and the recovery facts.
+     *
+     * @since   2.0.0
+     */
     public function toArray(): array
     {
         return [
@@ -113,12 +184,25 @@ final readonly class SchemaOperation
         ];
     }
 
-    /** @return array<string, mixed> */
+    /**
+     * Export the operation in the shape written to the step journal.
+     *
+     * @return  array<string, mixed>  The canonical content plus a `checksum` entry `fromArray()` verifies.
+     *
+     * @since   2.0.0
+     */
     public function persistedArray(): array
     {
         return [...$this->toArray(), 'checksum' => $this->checksum()];
     }
 
+    /**
+     * Compute the content address of this operation.
+     *
+     * @return  string  Lowercase SHA-256 over the canonical JSON encoding of `toArray()`.
+     *
+     * @since   2.0.0
+     */
     public function checksum(): string
     {
         return CanonicalDefinitionJson::checksum($this->toArray());

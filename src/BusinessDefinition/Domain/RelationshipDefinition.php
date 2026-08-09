@@ -4,8 +4,42 @@ declare(strict_types=1);
 
 namespace Kumwe\CMS\BusinessDefinition\Domain;
 
+/**
+ * One declared association between business entities, validated the moment it is constructed.
+ *
+ * Relationships are the part of an entity contract that reaches another entity's table: the schema
+ * compiler turns a singular kind into a target column on the owning record table and a collection kind
+ * into a junction or owned-line table, and the delete behaviour becomes the foreign key's action when
+ * the target row is removed. Construction settles only what this one relationship can answer for
+ * itself — that a required association cannot be nulled away by a delete, that an owned line collection
+ * cascades from its owner, and that ordering is reserved for collections. Whether the target exists, is
+ * in the same site and scope, and names a reciprocal inverse is `BusinessDefinitionValidator`'s job,
+ * because those answers need the rest of the graph.
+ *
+ * @since  2.0.0
+ */
 final readonly class RelationshipDefinition
 {
+    /**
+     * Capture an association and reject a combination the runtime could not honour.
+     *
+     * @param   string            $handle    Stable snake_case name of this side of the association.
+     * @param   string            $label     Operator-facing name for the association.
+     * @param   RelationshipKind  $kind      Cardinality, and with it the storage the compiler emits.
+     * @param   string            $target    Namespaced handle of the entity on the other side.
+     * @param   ?string           $inverse   Handle of the reciprocal relationship on the target, or null
+     *          when this side is declared alone.
+     * @param   bool              $required  Whether a record must always name a target.
+     * @param   bool              $unique    Whether a target may be claimed by one source only.
+     * @param   bool              $ordered   Whether collection members carry a caller-visible position.
+     * @param   DeleteBehavior    $onDelete  What deleting the target does to the association.
+     *
+     * @throws  InvalidBusinessDefinition  When an identifier is malformed, a required association would be
+     *          set to null on delete, an owned line collection does not cascade, or a singular
+     *          relationship claims ordering.
+     *
+     * @since   2.0.0
+     */
     public function __construct(
         public string $handle,
         public string $label,
@@ -46,7 +80,21 @@ final readonly class RelationshipDefinition
         }
     }
 
-    /** @param array<string, mixed> $document */
+    /**
+     * Rebuild a relationship from the canonical document `toArray()` writes.
+     *
+     * Unknown keys are refused rather than ignored, and an unrecognised kind or delete behaviour is
+     * rejected here, so an import cannot land a relationship this release would misread.
+     *
+     * @param   array<string, mixed>  $document  Canonical relationship document, keyed as it is stored.
+     *
+     * @return  self  The relationship, with every construction rule already applied.
+     *
+     * @throws  InvalidBusinessDefinition  When a key is unknown, a member has the wrong type, or the
+     *          resulting relationship breaks a construction rule.
+     *
+     * @since   2.0.0
+     */
     public static function fromArray(array $document): self
     {
         if (
@@ -74,7 +122,14 @@ final readonly class RelationshipDefinition
         );
     }
 
-    /** @return array<string, mixed> */
+    /**
+     * Export the relationship as the document the definition checksum is taken over.
+     *
+     * @return  array<string, mixed>  Every declared property under its snake_case key, with the kind and
+     *          delete behaviour written as their backing strings.
+     *
+     * @since   2.0.0
+     */
     public function toArray(): array
     {
         return [
@@ -90,7 +145,18 @@ final readonly class RelationshipDefinition
         ];
     }
 
-    /** @param array<string, mixed> $document */
+    /**
+     * Read a mandatory string property, trimmed.
+     *
+     * @param   array<string, mixed>  $document  Document the property is read from.
+     * @param   string                $key       Property name, which is also named in the failure.
+     *
+     * @return  string  The value with surrounding whitespace removed.
+     *
+     * @throws  InvalidBusinessDefinition  When the property is absent, not a string, or blank.
+     *
+     * @since   2.0.0
+     */
     private static function string(array $document, string $key): string
     {
         $value = $document[$key] ?? null;
@@ -100,7 +166,19 @@ final readonly class RelationshipDefinition
         return trim($value);
     }
 
-    /** @param array<string, mixed> $document */
+    /**
+     * Read a string property that falls back to a supplied default when absent.
+     *
+     * @param   array<string, mixed>  $document  Document the property is read from.
+     * @param   string                $key       Property name, which is also named in the failure.
+     * @param   string                $default   Value substituted when the document omits the key.
+     *
+     * @return  string  The value with surrounding whitespace removed.
+     *
+     * @throws  InvalidBusinessDefinition  When the property is present but not a string.
+     *
+     * @since   2.0.0
+     */
     private static function optionalString(array $document, string $key, string $default): string
     {
         $value = $document[$key] ?? $default;
@@ -110,7 +188,18 @@ final readonly class RelationshipDefinition
         return trim($value);
     }
 
-    /** @param array<string, mixed> $document */
+    /**
+     * Read an optional string property where absence and emptiness both mean "not declared".
+     *
+     * @param   array<string, mixed>  $document  Document the property is read from.
+     * @param   string                $key       Property name, which is also named in the failure.
+     *
+     * @return  ?string  The trimmed value, or null when the document omits the key.
+     *
+     * @throws  InvalidBusinessDefinition  When the property is present but not a non-blank string.
+     *
+     * @since   2.0.0
+     */
     private static function nullableString(array $document, string $key): ?string
     {
         $value = $document[$key] ?? null;
@@ -120,7 +209,18 @@ final readonly class RelationshipDefinition
         return is_string($value) ? trim($value) : null;
     }
 
-    /** @param array<string, mixed> $document */
+    /**
+     * Read a flag that defaults to false when the document omits it.
+     *
+     * @param   array<string, mixed>  $document  Document the property is read from.
+     * @param   string                $key       Property name, which is also named in the failure.
+     *
+     * @return  bool  The declared flag, or false when the key is absent.
+     *
+     * @throws  InvalidBusinessDefinition  When the property is present but not a boolean.
+     *
+     * @since   2.0.0
+     */
     private static function boolean(array $document, string $key): bool
     {
         $value = $document[$key] ?? false;

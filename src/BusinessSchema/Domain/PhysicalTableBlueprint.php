@@ -6,29 +6,84 @@ namespace Kumwe\CMS\BusinessSchema\Domain;
 
 use Kumwe\CMS\BusinessDefinition\Domain\CanonicalDefinitionJson;
 
+/**
+ * Canonical description of one physical table, closed over its own columns, keys, indexes, and options.
+ *
+ * A table blueprint is the smallest unit a plan operation can name, and it is self-consistent by
+ * construction: every primary-key, index, and foreign-key column is proven to exist in the same table, and
+ * a set-null referential action is proven to land on nullable columns. Because the planner diffs blueprints
+ * and the executor verifies live tables against them, collections are sorted and duplicate logical or
+ * case-insensitive physical names are refused, so equal tables always serialize identically.
+ *
+ * @since  2.0.0
+ */
 final readonly class PhysicalTableBlueprint
 {
-    /** @var list<PhysicalColumnBlueprint> */
+    /**
+     * Columns of the table, ordered by logical then physical name so the serialization is stable.
+     *
+     * @var    list<PhysicalColumnBlueprint>
+     * @since  2.0.0
+     */
     private array $columns;
 
-    /** @var list<string> Physical primary-key column names. */
+    /**
+     * Physical column names forming the primary key, in key order.
+     *
+     * @var    list<string>
+     * @since  2.0.0
+     */
     public array $primaryKey;
 
-    /** @var list<PhysicalIndexBlueprint> */
+    /**
+     * Indexes and unique constraints, ordered by logical then physical name.
+     *
+     * @var    list<PhysicalIndexBlueprint>
+     * @since  2.0.0
+     */
     private array $indexes;
 
-    /** @var list<PhysicalForeignKeyBlueprint> */
+    /**
+     * Referential constraints leaving this table, ordered by logical then physical name.
+     *
+     * @var    list<PhysicalForeignKeyBlueprint>
+     * @since  2.0.0
+     */
     private array $foreignKeys;
 
-    /** @var array<string, mixed> */
+    /**
+     * Portable table metadata carried alongside the structure, key sorted for a stable checksum.
+     *
+     * The compiler stores the provenance a later plan needs — owning definition handle, identity field and
+     * strategy, scope mode, soft-delete flag, relationship kind — not engine tuning options.
+     *
+     * @var    array<string, mixed>
+     * @since  2.0.0
+     */
     public array $options;
 
     /**
-     * @param list<PhysicalColumnBlueprint> $columns
-     * @param list<string> $primaryKey Physical column names.
-     * @param list<PhysicalIndexBlueprint> $indexes
-     * @param list<PhysicalForeignKeyBlueprint> $foreignKeys
-     * @param array<string, mixed> $options
+     * Assemble a table and prove it is internally consistent.
+     *
+     * @param string $logicalName Handle a plan operation names this table by, such as `record`.
+     * @param string $physicalName Installed table name, without the configured prefix applied.
+     * @param PhysicalTableKind $kind Whether the table holds records, links, or owned lines.
+     * @param   list<PhysicalColumnBlueprint>      $columns       Columns in any order; at least one, at most 512.
+     * @param list<string> $primaryKey Physical column names in key order; at most 16, all present in $columns.
+     * @param   list<PhysicalIndexBlueprint>       $indexes       Indexes whose columns must all belong to this table.
+     * @param   list<PhysicalForeignKeyBlueprint>  $foreignKeys   Constraints whose local columns must belong here.
+     * @param array<string, mixed> $options Portable table metadata; sorted by key before it is stored.
+     *
+     * @throws  InvalidBusinessSchema  When a name breaks its grammar, the column collection is empty or over
+     *          the bound, two columns, indexes, or foreign keys collide, the primary
+     *          key is empty, oversized, repeated, or references a column outside the
+     *          table, an index or foreign key references a column outside the table,
+     *          a set-null action lands on a non-nullable column, or the options are
+     *          not a string-keyed object.
+     * @throws  \Kumwe\CMS\BusinessDefinition\Domain\InvalidBusinessDefinition  When the options hold a value
+     *          that cannot be canonically encoded, such as a float or an object.
+     *
+     * @since   2.0.0
      */
     public function __construct(
         public string $logicalName,
@@ -115,7 +170,21 @@ final readonly class PhysicalTableBlueprint
         $this->options = $options;
     }
 
-    /** @param array<string, mixed> $document */
+    /**
+     * Rebuild a table from its persisted document, revalidating every invariant.
+     *
+     * @param   array<string, mixed>  $document  Stored table object, as written by `toArray()`.
+     *
+     * @return  self  The revalidated table, with its collections back in canonical order.
+     *
+     * @throws  InvalidBusinessSchema  When the document carries an unknown property, a field is missing or
+     *          misshapen, the stored kind is not a known one, or any table invariant
+     *          fails.
+     * @throws  \Kumwe\CMS\BusinessDefinition\Domain\InvalidBusinessDefinition  When the stored options hold
+     *          a value that cannot be canonically encoded.
+     *
+     * @since   2.0.0
+     */
     public static function fromArray(array $document): self
     {
         SchemaDocument::assertOnly(
@@ -144,12 +213,27 @@ final readonly class PhysicalTableBlueprint
         );
     }
 
-    /** @return list<PhysicalColumnBlueprint> */
+    /**
+     * List every column of the table.
+     *
+     * @return  list<PhysicalColumnBlueprint>  The columns in canonical order, never empty.
+     *
+     * @since   2.0.0
+     */
     public function columns(): array
     {
         return $this->columns;
     }
 
+    /**
+     * Resolve the column a definition field handle maps to.
+     *
+     * @param   string  $logicalName  Logical column handle, as a plan operation's subject names it.
+     *
+     * @return  PhysicalColumnBlueprint|null  The matching column, or null when this table declares none.
+     *
+     * @since   2.0.0
+     */
     public function column(string $logicalName): ?PhysicalColumnBlueprint
     {
         foreach ($this->columns as $column) {
@@ -161,6 +245,15 @@ final readonly class PhysicalTableBlueprint
         return null;
     }
 
+    /**
+     * Resolve a column from the installed name a key or constraint refers to.
+     *
+     * @param   string  $physicalName  Installed column name.
+     *
+     * @return  PhysicalColumnBlueprint|null  The matching column, or null when this table declares none.
+     *
+     * @since   2.0.0
+     */
     public function physicalColumn(string $physicalName): ?PhysicalColumnBlueprint
     {
         foreach ($this->columns as $column) {
@@ -172,19 +265,39 @@ final readonly class PhysicalTableBlueprint
         return null;
     }
 
-    /** @return list<PhysicalIndexBlueprint> */
+    /**
+     * List the indexes and unique constraints this table declares.
+     *
+     * @return  list<PhysicalIndexBlueprint>  The indexes in canonical order; empty when the table has none
+     *          beyond its primary key.
+     *
+     * @since   2.0.0
+     */
     public function indexes(): array
     {
         return $this->indexes;
     }
 
-    /** @return list<PhysicalForeignKeyBlueprint> */
+    /**
+     * List the referential constraints leaving this table.
+     *
+     * @return  list<PhysicalForeignKeyBlueprint>  The constraints in canonical order; empty when the table
+     *          references nothing.
+     *
+     * @since   2.0.0
+     */
     public function foreignKeys(): array
     {
         return $this->foreignKeys;
     }
 
-    /** @return array<string, mixed> */
+    /**
+     * Export the table in the shape that is persisted inside a schema blueprint.
+     *
+     * @return  array<string, mixed>  Names, kind, and the four collections, each already in canonical order.
+     *
+     * @since   2.0.0
+     */
     public function toArray(): array
     {
         return [
@@ -209,10 +322,22 @@ final readonly class PhysicalTableBlueprint
     }
 
     /**
+     * Reject a collection whose entries collide on either of their two names.
+     *
+     * Logical names must be distinct so a plan operation resolves to exactly one member, and physical names
+     * must be distinct case insensitively because engines differ on identifier folding.
+     *
      * @template T of object
-     * @param list<T> $values
-     * @param callable(T): array{string, string} $names
-     * @return list<T>
+     *
+     * @param   list<T>                             $values
+     * @param   callable(T): array{string, string}  $names
+     * @param string $subject Member word used in the failure message, such as `column` or `index`.
+     *
+     * @return  list<T>  The same entries, re-indexed from zero.
+     *
+     * @throws  InvalidBusinessSchema  When two entries share a logical or case-insensitive physical name.
+     *
+     * @since   2.0.0
      */
     private static function unique(array $values, callable $names, string $subject): array
     {
