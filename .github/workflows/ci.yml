@@ -223,6 +223,13 @@ jobs:
           vendor/bin/phpunit --testsuite unit --colors=always
           vendor/bin/phpunit --testsuite architecture --colors=always
 
+      # Runs last so that a documentation gap never masks a static-analysis or test failure.
+      - name: Verify documentation blocks
+        run: |
+          php tools/format-docblocks.php src
+          git diff --exit-code -- src
+          php tools/verify-docblocks.php src
+
   database:
     name: PHP 8.5 / ${{ matrix.database.name }}
     runs-on: ubuntu-24.04
