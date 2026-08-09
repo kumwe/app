@@ -31,10 +31,10 @@ final class PortalNavigationRegistry implements ContributionSurface
     /**
      * Bind navigation to sibling ownership registries and optional live trust enforcement.
      *
-     * @param  PortalWorkspaceRegistry       $workspaces    Owned workspace authority.
-     * @param  CapabilityDefinitionRegistry  $capabilities  Owned capability authority.
-     * @param  AuthorizationPolicyRegistry   $authorization Canonical action-to-resource policy authority.
-     * @param  ?TrustStore                   $trust         Live extension trust store; null for core-only tests.
+     * @param  PortalWorkspaceRegistry       $workspaces     Owned workspace authority.
+     * @param  CapabilityDefinitionRegistry  $capabilities   Owned capability authority.
+     * @param  AuthorizationPolicyRegistry   $authorization  Canonical action-to-resource policy authority.
+     * @param  ?TrustStore                   $trust          Live extension trust store; null for core-only tests.
      *
      * @since  2.0.0
      */
@@ -49,8 +49,8 @@ final class PortalNavigationRegistry implements ContributionSurface
     /**
      * Register an item only when its id, workspace, and capability share one owner.
      *
-     * @param   ContributionOwner          $owner       Claiming contributor.
-     * @param   PortalNavigationDefinition $definition Validated item.
+     * @param   ContributionOwner           $owner       Claiming contributor.
+     * @param   PortalNavigationDefinition  $definition  Validated item.
      *
      * @return  void
      *

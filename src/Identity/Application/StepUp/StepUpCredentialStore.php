@@ -56,12 +56,12 @@ interface StepUpCredentialStore
     /**
      * Confirm a pending enrollment and install its recovery-code digests atomically.
      *
-     * @param   string             $credentialId       Enrollment UUID.
-     * @param   string             $subjectId          Authenticated actor UUID.
-     * @param   int                $expectedVersion    Version read before verification.
-     * @param   int                $acceptedTimeStep   TOTP counter proven during confirmation.
-     * @param   list<string>       $recoveryDigests    Unique keyed code digests.
-     * @param   DateTimeImmutable  $confirmedAt        Confirmation instant, also checked against expiry.
+     * @param   string             $credentialId      Enrollment UUID.
+     * @param   string             $subjectId         Authenticated actor UUID.
+     * @param   int                $expectedVersion   Version read before verification.
+     * @param   int                $acceptedTimeStep  TOTP counter proven during confirmation.
+     * @param   list<string>       $recoveryDigests   Unique keyed code digests.
+     * @param   DateTimeImmutable  $confirmedAt       Confirmation instant, also checked against expiry.
      *
      * @return  bool  True only when one pending row changed and all code rows were installed.
      *

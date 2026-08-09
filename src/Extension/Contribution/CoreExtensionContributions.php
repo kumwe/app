@@ -486,11 +486,11 @@ final class CoreExtensionContributions
     /**
      * Construct one typed core resource policy with the shared active/version-one defaults.
      *
-     * @param   string                          $id                  Core policy identifier.
-     * @param   string                          $capability          Core capability this policy binds.
-     * @param   list<ResourcePolicyTarget>      $targets             Bounded resource selectors.
-     * @param   bool                            $installationGlobal  Whether a global human grant is required.
-     * @param   list<SystemIdentity>            $systems             Unattended identities permitted to use it.
+     * @param   string                      $id                  Core policy identifier.
+     * @param   string                      $capability          Core capability this policy binds.
+     * @param   list<ResourcePolicyTarget>  $targets             Bounded resource selectors.
+     * @param   bool                        $installationGlobal  Whether a global human grant is required.
+     * @param   list<SystemIdentity>        $systems             Unattended identities permitted to use it.
      *
      * @return  ResourcePolicyDefinition  Typed contribution ready for the core registrar.
      *

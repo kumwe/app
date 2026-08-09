@@ -42,7 +42,7 @@ final class ResourcePolicyDefinitionRegistry implements ContributionSurface
     /**
      * Register one resource policy for the owner that contributed its capability.
      *
-     * @param   ContributionOwner        $owner       Contributor claiming the policy identifier.
+     * @param   ContributionOwner         $owner       Contributor claiming the policy identifier.
      * @param   ResourcePolicyDefinition  $definition  Typed declaration to reconcile and activate.
      *
      * @return  void

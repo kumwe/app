@@ -21,7 +21,7 @@ final readonly class RecordPolicyComparison implements RecordPolicyPredicate
      * @param   string                          $field      Stable business-field handle to inspect.
      * @param   RecordPolicyComparisonOperator  $operator   Portable comparison to perform.
      * @param   RecordPolicyValueType           $valueType  Exact type of both field and literal.
-     * @param   string|int|bool                  $value      Bounded literal; decimal values are canonical strings.
+     * @param   string|int|bool                 $value      Bounded literal; decimal values are canonical strings.
      *
      * @throws  InvalidArgumentException  When the handle or literal contradicts the policy type contract.
      *
@@ -70,7 +70,7 @@ final readonly class RecordPolicyComparison implements RecordPolicyPredicate
      *
      * @return  array<string, mixed>  Canonical comparison predicate document.
      *
-     * @since  2.0.0
+     * @since   2.0.0
      */
     public function toArray(): array
     {
@@ -88,7 +88,7 @@ final readonly class RecordPolicyComparison implements RecordPolicyPredicate
      *
      * @return  int  Always one.
      *
-     * @since  2.0.0
+     * @since   2.0.0
      */
     public function operationCount(): int
     {
@@ -100,7 +100,7 @@ final readonly class RecordPolicyComparison implements RecordPolicyPredicate
      *
      * @return  int  Always one.
      *
-     * @since  2.0.0
+     * @since   2.0.0
      */
     public function depth(): int
     {
@@ -112,7 +112,7 @@ final readonly class RecordPolicyComparison implements RecordPolicyPredicate
      *
      * @return  bool  True when the literal can be compared without coercion.
      *
-     * @since  2.0.0
+     * @since   2.0.0
      */
     private function literalMatchesType(): bool
     {

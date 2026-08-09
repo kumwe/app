@@ -268,8 +268,8 @@ final readonly class DoctrineApprovalRepository implements ApprovalRepository
      * @param   string             $decision            Closed approve or reject value.
      * @param   ?string            $reason              Optional bounded operator note.
      * @param   string             $contextFingerprint  Actor authority fingerprint.
-     * @param   ?string            $stepUpProofId        Consumed proof UUID.
-     * @param   DateTimeImmutable  $at                   Decision instant.
+     * @param   ?string            $stepUpProofId       Consumed proof UUID.
+     * @param   DateTimeImmutable  $at                  Decision instant.
      *
      * @return  void
      *
@@ -322,11 +322,11 @@ final readonly class DoctrineApprovalRepository implements ApprovalRepository
     /**
      * Apply one optimistic request lifecycle transition and its terminal timestamp.
      *
-     * @param   string             $requestId       Request UUID.
-     * @param   ApprovalStatus     $from            Required current state.
-     * @param   ApprovalStatus     $to              Target state.
-     * @param   int                $expectedVersion Required optimistic version.
-     * @param   DateTimeImmutable  $at              Transition instant.
+     * @param   string             $requestId        Request UUID.
+     * @param   ApprovalStatus     $from             Required current state.
+     * @param   ApprovalStatus     $to               Target state.
+     * @param   int                $expectedVersion  Required optimistic version.
+     * @param   DateTimeImmutable  $at               Transition instant.
      *
      * @return  void
      *
@@ -369,9 +369,9 @@ final readonly class DoctrineApprovalRepository implements ApprovalRepository
     /**
      * Check an optional rule role against live global or organization membership assignments.
      *
-     * @param   string            $ruleId     Rule UUID.
-     * @param   string            $column     Trusted rule role column.
-     * @param   ExecutionContext  $context    Actor and active membership.
+     * @param   string            $ruleId   Rule UUID.
+     * @param   string            $column   Trusted rule role column.
+     * @param   ExecutionContext  $context  Actor and active membership.
      *
      * @return  bool  True when no role is required or the actor holds it in the exact scope.
      *
@@ -400,8 +400,8 @@ final readonly class DoctrineApprovalRepository implements ApprovalRepository
     /**
      * Check whether the actor currently holds one exact frozen role.
      *
-     * @param   ?string           $roleId  Optional frozen role UUID.
-     * @param   ExecutionContext  $context Actor and exact membership scope.
+     * @param   ?string           $roleId   Optional frozen role UUID.
+     * @param   ExecutionContext  $context  Actor and exact membership scope.
      *
      * @return  bool  Whether no role is required or the actor holds it globally or in this membership.
      *

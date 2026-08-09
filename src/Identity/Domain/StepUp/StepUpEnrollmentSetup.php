@@ -17,14 +17,14 @@ final readonly class StepUpEnrollmentSetup
     /**
      * Carry the secret exactly once from provider to the enrollment screen.
      *
-     * @param  string             $enrollmentId  Pending credential UUID.
-     * @param  string             $secret        RFC 4648 Base32 authenticator secret.
-     * @param  string             $provisioningUri `otpauth://` URI for a QR encoder.
-     * @param  DateTimeImmutable  $expiresAt     Exclusive confirmation deadline.
+     * @param   string             $enrollmentId     Pending credential UUID.
+     * @param   string             $secret           RFC 4648 Base32 authenticator secret.
+     * @param   string             $provisioningUri  `otpauth://` URI for a QR encoder.
+     * @param   DateTimeImmutable  $expiresAt        Exclusive confirmation deadline.
      *
-     * @throws InvalidArgumentException  When the identifier, secret, or provisioning URI is invalid.
+     * @throws  InvalidArgumentException  When the identifier, secret, or provisioning URI is invalid.
      *
-     * @since  2.0.0
+     * @since   2.0.0
      */
     public function __construct(
         public string $enrollmentId,

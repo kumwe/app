@@ -56,14 +56,14 @@ final readonly class CapabilityDefinition implements ContributionDefinition
     /**
      * Normalise and bounds-check one contributed capability.
      *
-     * @param   string                            $id           Capability identifier; normalized by `Capability`.
-     * @param   string                            $label        Display name of 1 to 100 characters, stored trimmed.
-     * @param   string                            $description  Operator-facing explanation of 1 to 500 characters.
+     * @param   string                            $id             Capability identifier; normalized by `Capability`.
+     * @param   string                            $label          Display name of 1 to 100 characters, stored trimmed.
+     * @param   string                            $description    Operator-facing explanation of 1 to 500 characters.
      * @param   iterable<string>                  $allowedScopes  Grant-scope types; empty makes it system-only.
-     * @param   bool                              $delegatable  Whether a human may grant it onward.
-     * @param   bool                              $highImpact   Whether high-impact controls apply above grants.
-     * @param   AuthorizationDefinitionLifecycle  $lifecycle    Current runtime lifecycle state.
-     * @param   int                               $version      Positive definition version owned by the contributor.
+     * @param   bool                              $delegatable    Whether a human may grant it onward.
+     * @param   bool                              $highImpact     Whether high-impact controls apply above grants.
+     * @param   AuthorizationDefinitionLifecycle  $lifecycle      Current runtime lifecycle state.
+     * @param   int                               $version        Positive definition version owned by the contributor.
      *
      * @throws  InvalidArgumentException  When the identifier is malformed or a text falls outside its range.
      *

@@ -190,7 +190,7 @@ final class ActiveExtensionSet
      *
      * @return  void
      *
-     * @since  2.0.0
+     * @since   2.0.0
      */
     public function addPortalTemplatePath(string $identifier, string $path): void
     {
@@ -297,10 +297,10 @@ final class ActiveExtensionSet
      * route keeps answering only while its extension stays enabled and trusted — the router is composed
      * once and never rebuilt when an extension is disabled.
      *
-     * @param   Application            $application  Mezzio application the routes are declared on.
-     * @param   AdministratorRenderer  $renderer     Renderer handed to each contributed administrator
+     * @param   Application            $application     Mezzio application the routes are declared on.
+     * @param   AdministratorRenderer  $renderer        Renderer handed to each contributed administrator
      *          route handler when it is built.
-     * @param   ?PortalRenderer         $portalRenderer Renderer handed to contributed portal handlers, or null
+     * @param   ?PortalRenderer        $portalRenderer  Renderer handed to contributed portal handlers, or null
      *          when composing the recovery-only application.
      *
      * @return  void
@@ -401,7 +401,7 @@ final class ActiveExtensionSet
      *
      * @return  array<string, string>  Absolute paths keyed by extension Twig namespace.
      *
-     * @since  2.0.0
+     * @since   2.0.0
      */
     public function portalTemplatePaths(): array
     {

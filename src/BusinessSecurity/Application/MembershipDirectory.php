@@ -21,10 +21,10 @@ interface MembershipDirectory extends MembershipContextValidator
      * Inputs identify a requested stored selection; they never confer authority. The implementation
      * returns a context only when the subject currently belongs to the organization and workspace.
      *
-     * @param   string       $subjectId              Canonical user identity.
-     * @param   SiteContext  $site                   Exact authenticated site.
-     * @param   string       $organizationIdentifier Organization selected by a trusted session or token.
-     * @param   ?string      $workspaceIdentifier    Optional workspace selected by that credential.
+     * @param   string       $subjectId               Canonical user identity.
+     * @param   SiteContext  $site                    Exact authenticated site.
+     * @param   string       $organizationIdentifier  Organization selected by a trusted session or token.
+     * @param   ?string      $workspaceIdentifier     Optional workspace selected by that credential.
      * @param   bool         $lock                    Whether to lock the membership for a mutation.
      *
      * @return  ?MembershipContext  Live versioned membership, or null without revealing which check failed.
@@ -42,10 +42,10 @@ interface MembershipDirectory extends MembershipContextValidator
     /**
      * Recheck that a context's membership and policy generations are still current.
      *
-     * @param   string             $subjectId  Actor expected to hold the membership.
-     * @param   SiteContext        $site       Exact active site.
-     * @param   MembershipContext  $membership Snapshot to compare against live storage.
-     * @param   bool               $lock       Whether to lock it for a following mutation.
+     * @param   string             $subjectId   Actor expected to hold the membership.
+     * @param   SiteContext        $site        Exact active site.
+     * @param   MembershipContext  $membership  Snapshot to compare against live storage.
+     * @param   bool               $lock        Whether to lock it for a following mutation.
      *
      * @return  bool  True only when status, time bounds, workspace assignment and both versions match.
      *

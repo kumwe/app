@@ -19,9 +19,9 @@ interface StepUpProvider
     /**
      * Start a short-lived enrollment and disclose its secret once.
      *
-     * @param   string  $subjectId    Authenticated actor UUID.
-     * @param   string  $issuer       Product or installation label shown by authenticators.
-     * @param   string  $accountLabel Account label shown by authenticators.
+     * @param   string  $subjectId     Authenticated actor UUID.
+     * @param   string  $issuer        Product or installation label shown by authenticators.
+     * @param   string  $accountLabel  Account label shown by authenticators.
      *
      * @return  StepUpEnrollmentSetup  Pending enrollment material.
      *
@@ -70,9 +70,9 @@ interface StepUpProvider
     /**
      * Spend a recovery code, atomically reject reuse, and rotate the session.
      *
-     * @param   StepUpIntent  $intent       Server-resolved session and operation context.
-     * @param   string        $recoveryCode One-time code as displayed during enrollment.
-     * @param   string        $source       Trusted-proxy-resolved attempt source.
+     * @param   StepUpIntent  $intent        Server-resolved session and operation context.
+     * @param   string        $recoveryCode  One-time code as displayed during enrollment.
+     * @param   string        $source        Trusted-proxy-resolved attempt source.
      *
      * @return  StepUpVerification  Context-bound recovery proof paired with the replacement session.
      *

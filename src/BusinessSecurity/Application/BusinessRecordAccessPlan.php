@@ -57,14 +57,14 @@ final readonly class BusinessRecordAccessPlan
     private string $digest;
 
     /**
-     * @param   string                    $resourceIdentifier       Business-definition UUID this plan protects.
-     * @param   string                    $operation                Dotted operation identifier being authorized.
-     * @param   RecordPolicySet           $records                  Bounded row policy with default-deny semantics.
-     * @param   FieldDisclosurePlan       $fields                   Explicit per-use field permissions.
-     * @param   string                    $authorizationFingerprint Digest of actor, organization, membership
+     * @param   string               $resourceIdentifier        Business-definition UUID this plan protects.
+     * @param   string               $operation                 Dotted operation identifier being authorized.
+     * @param   RecordPolicySet      $records                   Bounded row policy with default-deny semantics.
+     * @param   FieldDisclosurePlan  $fields                    Explicit per-use field permissions.
+     * @param   string               $authorizationFingerprint  Digest of actor, organization, membership
      *          and policy epoch.
-     * @param   array<string, self>       $related                  Target plans keyed by relation or reference handle.
-     * @param   list<string>              $actions                  Action handles explicitly permitted on
+     * @param   array<string, self>  $related                   Target plans keyed by relation or reference handle.
+     * @param   list<string>         $actions                   Action handles explicitly permitted on
      *          matching rows.
      *
      * @throws  InvalidArgumentException  When identifiers, fingerprints, relations, actions, or graph
@@ -131,7 +131,7 @@ final readonly class BusinessRecordAccessPlan
      *
      * @return  self|null  Explicit target plan, or null when traversal is denied.
      *
-     * @since  2.0.0
+     * @since   2.0.0
      */
     public function related(string $handle): ?self
     {
@@ -145,7 +145,7 @@ final readonly class BusinessRecordAccessPlan
      *
      * @return  bool  True only for a listed action.
      *
-     * @since  2.0.0
+     * @since   2.0.0
      */
     public function allowsAction(string $action): bool
     {
@@ -157,7 +157,7 @@ final readonly class BusinessRecordAccessPlan
      *
      * @return  string  Lowercase SHA-256 digest.
      *
-     * @since  2.0.0
+     * @since   2.0.0
      */
     public function digest(): string
     {
@@ -169,7 +169,7 @@ final readonly class BusinessRecordAccessPlan
      *
      * @return  array<string, mixed>  Deterministic authorization decision.
      *
-     * @since  2.0.0
+     * @since   2.0.0
      */
     public function toArray(): array
     {
@@ -189,7 +189,7 @@ final readonly class BusinessRecordAccessPlan
      *
      * @return  int  Zero for a leaf; otherwise the longest edge count.
      *
-     * @since  2.0.0
+     * @since   2.0.0
      */
     private function relationDepth(): int
     {

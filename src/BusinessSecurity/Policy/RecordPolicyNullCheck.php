@@ -35,7 +35,7 @@ final readonly class RecordPolicyNullCheck implements RecordPolicyPredicate
      *
      * @return  array<string, mixed>  Canonical null-check predicate document.
      *
-     * @since  2.0.0
+     * @since   2.0.0
      */
     public function toArray(): array
     {
@@ -47,7 +47,7 @@ final readonly class RecordPolicyNullCheck implements RecordPolicyPredicate
      *
      * @return  int  Always one.
      *
-     * @since  2.0.0
+     * @since   2.0.0
      */
     public function operationCount(): int
     {
@@ -59,7 +59,7 @@ final readonly class RecordPolicyNullCheck implements RecordPolicyPredicate
      *
      * @return  int  Always one.
      *
-     * @since  2.0.0
+     * @since   2.0.0
      */
     public function depth(): int
     {

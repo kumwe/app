@@ -2374,9 +2374,9 @@ final class ContainerFactory
      * declared core first, then the routes contributed by active extensions, then the catch-all
      * published-content route, so an extension can add a path but never shadow a core one.
      *
-     * @param   Application  $application  Mezzio application to pipe middleware into and route.
-     * @param   Container    $container    Container the application resolves handlers from.
-     * @param   bool         $portalEnabled Whether to pipe and declare the ordinary-user portal boundary.
+     * @param   Application  $application    Mezzio application to pipe middleware into and route.
+     * @param   Container    $container      Container the application resolves handlers from.
+     * @param   bool         $portalEnabled  Whether to pipe and declare the ordinary-user portal boundary.
      *
      * @return  void
      *
@@ -3499,7 +3499,7 @@ final class ContainerFactory
      *
      * @return  void
      *
-     * @since  2.0.0
+     * @since   2.0.0
      */
     private static function portalRoute(Route $route, string ...$capabilities): void
     {

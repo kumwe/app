@@ -142,12 +142,12 @@ final readonly class DoctrineStepUpCredentialStore implements StepUpCredentialSt
     /**
      * Activate one unexpired pending row and insert all recovery digests atomically.
      *
-     * @param   string             $credentialId       Enrollment UUID.
-     * @param   string             $subjectId          Authenticated actor UUID.
-     * @param   int                $expectedVersion    Version fence.
-     * @param   int                $acceptedTimeStep   Confirmation TOTP counter.
-     * @param   list<string>       $recoveryDigests    Unique keyed digests.
-     * @param   DateTimeImmutable  $confirmedAt        Confirmation and expiry-check instant.
+     * @param   string             $credentialId      Enrollment UUID.
+     * @param   string             $subjectId         Authenticated actor UUID.
+     * @param   int                $expectedVersion   Version fence.
+     * @param   int                $acceptedTimeStep  Confirmation TOTP counter.
+     * @param   list<string>       $recoveryDigests   Unique keyed digests.
+     * @param   DateTimeImmutable  $confirmedAt       Confirmation and expiry-check instant.
      *
      * @return  bool  True only when the row changed and every digest was stored.
      *

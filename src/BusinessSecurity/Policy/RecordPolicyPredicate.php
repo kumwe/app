@@ -20,7 +20,7 @@ interface RecordPolicyPredicate
      *
      * @return  array<string, mixed>  Canonical predicate document.
      *
-     * @since  2.0.0
+     * @since   2.0.0
      */
     public function toArray(): array;
 
@@ -29,7 +29,7 @@ interface RecordPolicyPredicate
      *
      * @return  int  Positive operation count.
      *
-     * @since  2.0.0
+     * @since   2.0.0
      */
     public function operationCount(): int;
 
@@ -38,7 +38,7 @@ interface RecordPolicyPredicate
      *
      * @return  int  Positive tree depth.
      *
-     * @since  2.0.0
+     * @since   2.0.0
      */
     public function depth(): int;
 }

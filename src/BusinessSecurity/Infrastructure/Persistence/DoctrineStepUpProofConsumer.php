@@ -37,10 +37,10 @@ final readonly class DoctrineStepUpProofConsumer implements StepUpProofConsumer
     /**
      * Atomically consume one live proof after revalidating every persisted binding and user epoch.
      *
-     * @param   StepUpProof       $proof    Proof attached to the current context.
-     * @param   ExecutionContext  $context  Actor, rotated session and exact scope.
-     * @param   string            $purpose  Exact protected operation purpose.
-     * @param   DateTimeImmutable $at       Trusted current time.
+     * @param   StepUpProof        $proof    Proof attached to the current context.
+     * @param   ExecutionContext   $context  Actor, rotated session and exact scope.
+     * @param   string             $purpose  Exact protected operation purpose.
+     * @param   DateTimeImmutable  $at       Trusted current time.
      *
      * @return  string  Persisted proof UUID for audit and vote binding.
      *

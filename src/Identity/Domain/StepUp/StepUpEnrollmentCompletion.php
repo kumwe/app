@@ -16,12 +16,12 @@ final readonly class StepUpEnrollmentCompletion
     /**
      * Carry the fresh proof and one-time recovery-code display.
      *
-     * @param  StepUpVerification  $verification   Context-bound enrollment confirmation proof.
-     * @param  list<string>        $recoveryCodes  High-entropy codes shown exactly once.
+     * @param   StepUpVerification  $verification   Context-bound enrollment confirmation proof.
+     * @param   list<string>        $recoveryCodes  High-entropy codes shown exactly once.
      *
-     * @throws InvalidArgumentException  When the result is not a TOTP confirmation or codes are malformed.
+     * @throws  InvalidArgumentException  When the result is not a TOTP confirmation or codes are malformed.
      *
-     * @since  2.0.0
+     * @since   2.0.0
      */
     public function __construct(
         public StepUpVerification $verification,

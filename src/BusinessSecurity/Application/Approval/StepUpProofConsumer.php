@@ -18,10 +18,10 @@ interface StepUpProofConsumer
     /**
      * Consume an exact proof once, failing closed for stale, revoked, mismatched or replayed proof.
      *
-     * @param   StepUpProof      $proof    Proof attached to the current context.
-     * @param   ExecutionContext $context  Actor, rotated session and exact scope.
-     * @param   string           $purpose  Exact protected operation purpose.
-     * @param   DateTimeImmutable $at      Trusted current time.
+     * @param   StepUpProof        $proof    Proof attached to the current context.
+     * @param   ExecutionContext   $context  Actor, rotated session and exact scope.
+     * @param   string             $purpose  Exact protected operation purpose.
+     * @param   DateTimeImmutable  $at       Trusted current time.
      *
      * @return  string  Persisted proof UUID for audit and approval-vote binding.
      *

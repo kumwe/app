@@ -17,13 +17,13 @@ final readonly class ApprovalRule
     /**
      * Validate and freeze one active approval rule.
      *
-     * @param   string  $id              Rule UUID.
-     * @param   string  $code            Stable operator-facing rule code.
-     * @param   string  $approvalAction  Registered capability every checker must hold.
-     * @param   int     $quorum          Required distinct approvals.
-     * @param   bool    $distinctActors  Whether requester and approvers must differ.
-     * @param   int     $version         Exact active rule version frozen into each request.
-     * @param   ?string $approverRoleId  Exact approver role frozen into each request.
+     * @param   string   $id              Rule UUID.
+     * @param   string   $code            Stable operator-facing rule code.
+     * @param   string   $approvalAction  Registered capability every checker must hold.
+     * @param   int      $quorum          Required distinct approvals.
+     * @param   bool     $distinctActors  Whether requester and approvers must differ.
+     * @param   int      $version         Exact active rule version frozen into each request.
+     * @param   ?string  $approverRoleId  Exact approver role frozen into each request.
      *
      * @throws  InvalidArgumentException  When identity, code or quorum is invalid.
      *

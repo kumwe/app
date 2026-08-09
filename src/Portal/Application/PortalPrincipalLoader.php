@@ -16,9 +16,9 @@ interface PortalPrincipalLoader
     /**
      * Rebuild an active user's principal and authorization epoch from current role grants.
      *
-     * @param   string             $subjectId    User UUID.
-     * @param   string             $credentialId Bounded provenance label for the principal.
-     * @param   ?MembershipContext $membership   Exact live membership whose role grants may be added.
+     * @param   string              $subjectId     User UUID.
+     * @param   string              $credentialId  Bounded provenance label for the principal.
+     * @param   ?MembershipContext  $membership    Exact live membership whose role grants may be added.
      *
      * @return  ?PortalPasswordIdentity  Live principal and epoch, or null for inactive or unknown users.
      *

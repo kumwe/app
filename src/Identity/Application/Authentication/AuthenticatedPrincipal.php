@@ -427,11 +427,11 @@ final readonly class AuthenticatedPrincipal
      *          of this single unit of work.
      * @param   ?string                                                      $correlationId           Trace
      *          identifier shared by related work; defaults to `$requestId`.
-     * @param   ?\Kumwe\CMS\Application\Authorization\AuthenticatedSurface $surface Authenticated delivery boundary.
-     * @param   ?\Kumwe\CMS\Application\Authorization\MembershipContext    $membership Exact live membership scope.
-     * @param   ?string                                                      $sessionId Rotated browser-session
+     * @param ?\Kumwe\CMS\Application\Authorization\AuthenticatedSurface $surface Authenticated delivery boundary.
+     * @param ?\Kumwe\CMS\Application\Authorization\MembershipContext $membership Exact live membership scope.
+     * @param ?string $sessionId Rotated browser-session
      *          identity.
-     * @param   ?\Kumwe\CMS\Application\Authorization\StepUpProof          $stepUpProof Fresh multi-factor proof.
+     * @param ?\Kumwe\CMS\Application\Authorization\StepUpProof $stepUpProof Fresh multi-factor proof.
      *
      * @return  \Kumwe\CMS\Application\Authorization\ExecutionContext  A human context bound to this
      *          principal's authority.

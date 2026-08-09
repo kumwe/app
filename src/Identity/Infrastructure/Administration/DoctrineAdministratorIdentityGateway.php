@@ -67,35 +67,35 @@ final readonly class DoctrineAdministratorIdentityGateway implements Administrat
     /**
      * Wire the gateway to the connection, throttle, authorization and audit collaborators it works through.
      *
-     * @param  Connection                    $database           DBAL connection every identity table is
+     * @param  Connection                    $database               DBAL connection every identity table is
      *         read and written through.
-     * @param  TableNames                    $tables             Resolver applying the configured prefix to
+     * @param  TableNames                    $tables                 Resolver applying the configured prefix to
      *         those tables.
-     * @param  PasswordHasher                $passwords          Hasher that produces the stored password
+     * @param  PasswordHasher                $passwords              Hasher that produces the stored password
      *         hash and performs the sign-in comparison.
-     * @param  TransactionManager            $transactions       Scope each provisioning, issuance and
+     * @param  TransactionManager            $transactions           Scope each provisioning, issuance and
      *         rotation write runs inside.
-     * @param  ClockInterface                $clock              Source of the timestamps stamped on rows,
+     * @param  ClockInterface                $clock                  Source of the timestamps stamped on rows,
      *         audit events and token expiries.
-     * @param  AuthenticationRateLimiter     $rateLimiter        Throttle counting sign-in attempts per
+     * @param  AuthenticationRateLimiter     $rateLimiter            Throttle counting sign-in attempts per
      *         account and origin.
-     * @param  AuditRecorder                 $audit              Sink the provisioning, issuance and
+     * @param  AuditRecorder                 $audit                  Sink the provisioning, issuance and
      *         rotation events are recorded to.
-     * @param  AccessTokenQuotaPolicy        $quota              Ceiling on live tokens per subject, site,
+     * @param  AccessTokenQuotaPolicy        $quota                  Ceiling on live tokens per subject, site,
      *         audience and purpose.
-     * @param  string                        $applicationSecret  Installation secret keying the HMACs that
+     * @param  string                        $applicationSecret      Installation secret keying the HMACs that
      *         stand in for the address and the origin at the throttle.
-     * @param  AuthorizationGateway          $authorization      Judge of the bootstrap authority the
+     * @param  AuthorizationGateway          $authorization          Judge of the bootstrap authority the
      *         administrator provisioning path demands.
      * @param  AuthorizationPolicyRegistry   $authorizationPolicies  Live typed catalog from which the
      *         administrator role derives enforceable human core capabilities.
-     * @param  TokenDelegationPreauthorizer  $tokenDelegation    Delegation check every issuance clears,
+     * @param  TokenDelegationPreauthorizer  $tokenDelegation        Delegation check every issuance clears,
      *         once before the transaction and once inside it.
-     * @param  TokenRotationPreauthorizer    $tokenRotation      Rotation check resolving the superseded
+     * @param  TokenRotationPreauthorizer    $tokenRotation          Rotation check resolving the superseded
      *         token's subject, scope and capabilities.
-     * @param  ResourceSiteOwnershipWriter   $ownership          Writer recording which site owns each
+     * @param  ResourceSiteOwnershipWriter   $ownership              Writer recording which site owns each
      *         user, role, grant and token created here.
-     * @param  object                        $provenance         Composition-root authority every principal
+     * @param  object                        $provenance             Composition-root authority every principal
      *         minted here is stamped with; anything else is untrusted.
      *
      * @since  2.0.0

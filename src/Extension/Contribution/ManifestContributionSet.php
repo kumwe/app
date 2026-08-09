@@ -156,10 +156,10 @@ final readonly class ManifestContributionSet
      * @param   iterable<FieldTypeDefinition>                $fieldTypes           Field types it publishes.
      * @param   iterable<EntityTypeDefinition>               $businessDefinitions  Entity types it publishes.
      * @param   iterable<ResourcePolicyDefinition>           $resourcePolicies     Capability/resource bindings.
-     * @param   iterable<PortalWorkspaceDefinition>          $portalWorkspaces      Portal groupings it adds.
-     * @param   iterable<PortalNavigationDefinition>         $portalNavigation      Portal menu entries it adds.
-     * @param   iterable<PortalRouteDefinition>              $portalRoutes          Guarded portal routes it serves.
-     * @param   iterable<PortalTemplateDefinition>           $portalTemplates       Portal templates its routes render.
+     * @param   iterable<PortalWorkspaceDefinition>          $portalWorkspaces     Portal groupings it adds.
+     * @param   iterable<PortalNavigationDefinition>         $portalNavigation     Portal menu entries it adds.
+     * @param   iterable<PortalRouteDefinition>              $portalRoutes         Guarded portal routes it serves.
+     * @param   iterable<PortalTemplateDefinition>           $portalTemplates      Portal templates its routes render.
      *
      * @throws  InvalidArgumentException  When an identifier is outside the owner's namespace or declared twice,
      *          when navigation or a route references something this set does not declare, or when a business
@@ -607,7 +607,7 @@ final readonly class ManifestContributionSet
      *
      * @return  list<PortalWorkspaceDefinition>  Workspace declarations in identifier order.
      *
-     * @since  2.0.0
+     * @since   2.0.0
      */
     public function portalWorkspaces(): array
     {
@@ -619,7 +619,7 @@ final readonly class ManifestContributionSet
      *
      * @return  list<PortalNavigationDefinition>  Navigation declarations in identifier order.
      *
-     * @since  2.0.0
+     * @since   2.0.0
      */
     public function portalNavigation(): array
     {
@@ -631,7 +631,7 @@ final readonly class ManifestContributionSet
      *
      * @return  list<PortalRouteDefinition>  Route declarations in route-name order.
      *
-     * @since  2.0.0
+     * @since   2.0.0
      */
     public function portalRoutes(): array
     {
@@ -643,7 +643,7 @@ final readonly class ManifestContributionSet
      *
      * @return  list<PortalTemplateDefinition>  Template declarations in name order.
      *
-     * @since  2.0.0
+     * @since   2.0.0
      */
     public function portalTemplates(): array
     {

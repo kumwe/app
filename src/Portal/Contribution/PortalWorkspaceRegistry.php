@@ -26,8 +26,8 @@ final class PortalWorkspaceRegistry implements ContributionSurface
     /**
      * Register one uniquely owned workspace.
      *
-     * @param   ContributionOwner         $owner       Claiming contributor.
-     * @param   PortalWorkspaceDefinition $definition Validated declaration.
+     * @param   ContributionOwner          $owner       Claiming contributor.
+     * @param   PortalWorkspaceDefinition  $definition  Validated declaration.
      *
      * @return  void
      *

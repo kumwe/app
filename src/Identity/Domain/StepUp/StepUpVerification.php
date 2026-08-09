@@ -21,17 +21,17 @@ final readonly class StepUpVerification
     /**
      * Capture a successful verification after session rotation.
      *
-     * @param  StepUpIntent          $intent          Server-issued context that was challenged.
-     * @param  string                $credentialId    TOTP credential UUID used by the challenge.
-     * @param  StepUpMethod          $method          TOTP or recovery-code path.
-     * @param  DateTimeImmutable     $issuedAt        Verification instant.
-     * @param  DateTimeImmutable     $expiresAt       Exclusive freshness deadline.
-     * @param  string                $nonce           Unpredictable proof nonce.
-     * @param  RotatedStepUpSession  $rotatedSession  Replacement session the proof is bound to.
+     * @param   StepUpIntent          $intent          Server-issued context that was challenged.
+     * @param   string                $credentialId    TOTP credential UUID used by the challenge.
+     * @param   StepUpMethod          $method          TOTP or recovery-code path.
+     * @param   DateTimeImmutable     $issuedAt        Verification instant.
+     * @param   DateTimeImmutable     $expiresAt       Exclusive freshness deadline.
+     * @param   string                $nonce           Unpredictable proof nonce.
+     * @param   RotatedStepUpSession  $rotatedSession  Replacement session the proof is bound to.
      *
-     * @throws InvalidArgumentException  When the credential, freshness interval, nonce, or session expiry is invalid.
+     * @throws  InvalidArgumentException  When the credential, freshness interval, nonce, or session expiry is invalid.
      *
-     * @since  2.0.0
+     * @since   2.0.0
      */
     public function __construct(
         public StepUpIntent $intent,

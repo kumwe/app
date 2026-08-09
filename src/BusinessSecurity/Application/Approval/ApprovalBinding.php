@@ -17,16 +17,16 @@ final readonly class ApprovalBinding
     /**
      * Validate every value that makes an approval non-transferable.
      *
-     * @param   string  $requesterId        Actor that alone may consume the approval.
-     * @param   string  $action             Exact high-impact action.
-     * @param   string  $resourceType       Exact resource type.
-     * @param   string  $resourceId         Exact resource identity.
-     * @param   int     $resourceVersion    Exact optimistic resource version.
-     * @param   string  $siteIdentifier     Exact site.
-     * @param   ?string $organization       Exact organization, when scoped.
-     * @param   ?string $workspace          Exact workspace, when scoped.
-     * @param   string  $contextFingerprint Requester's current authority fingerprint.
-     * @param   string  $payloadDigest      SHA-256 of the canonical requested mutation.
+     * @param   string   $requesterId         Actor that alone may consume the approval.
+     * @param   string   $action              Exact high-impact action.
+     * @param   string   $resourceType        Exact resource type.
+     * @param   string   $resourceId          Exact resource identity.
+     * @param   int      $resourceVersion     Exact optimistic resource version.
+     * @param   string   $siteIdentifier      Exact site.
+     * @param   ?string  $organization        Exact organization, when scoped.
+     * @param   ?string  $workspace           Exact workspace, when scoped.
+     * @param   string   $contextFingerprint  Requester's current authority fingerprint.
+     * @param   string   $payloadDigest       SHA-256 of the canonical requested mutation.
      *
      * @throws  InvalidArgumentException  When any binding is malformed.
      *
