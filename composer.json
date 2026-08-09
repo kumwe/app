@@ -84,6 +84,8 @@
     "analyse": "phpstan analyse --no-progress --memory-limit=1G",
     "security:audit": "composer audit --locked --abandoned=fail",
     "cs": "phpcs -q",
+    "docs:api": "php tools/verify-docblocks.php src",
+    "docs:format": "php tools/format-docblocks.php src",
     "cs:fix": "phpcbf",
     "architecture:policy": "bash tools/verify-policy.sh",
     "test": "phpunit --colors=always",
@@ -91,6 +93,7 @@
     "test:unit": "phpunit --testsuite unit --colors=always",
     "qa": [
       "@architecture:policy",
+      "@docs:api",
       "@cs",
       "@analyse",
       "@test"
