@@ -26,9 +26,40 @@ use Kumwe\CMS\BusinessSchema\Domain\PhysicalTableBlueprint;
 use Kumwe\CMS\BusinessSchema\Domain\PhysicalTableKind;
 use Kumwe\CMS\BusinessSchema\Domain\SchemaEvolutionHints;
 
-/** Compiles immutable definition metadata into a portable, canonical physical blueprint. */
+/**
+ * Compiles immutable definition metadata into a portable, canonical physical blueprint.
+ *
+ * This is the only implementation of the compiler port, and it is what makes a schema plan bindable: one
+ * published definition compiled twice in the same site yields the same tables, columns, indexes and keys,
+ * so the planner, the approving operator and the executor can compare checksums instead of structures.
+ * Determinism is bought deliberately. Fields and relationships are walked in handle order, every emitted
+ * collection is sorted before a blueprint sees it, and physical identifiers come from
+ * `PhysicalNameCompiler` rather than from anything positional.
+ *
+ * What it emits stays inside the portable Doctrine subset the supported engines agree on: one record
+ * table per definition, a junction or line table for each collection relationship this side has to
+ * materialize, a line table for each `core.ordered_lines` field, tenancy columns leading every generated
+ * index so a unique field is unique within its scope, and a covering index behind every foreign key so
+ * introspection reads alike everywhere. Relationship and reference targets are resolved through the
+ * definition catalog at the version the source's evolution hints pin, never at whatever happens to be
+ * published at the moment of compilation.
+ *
+ * @since  2.0.0
+ */
 final readonly class CanonicalDefinitionPhysicalSchemaCompiler implements DefinitionPhysicalSchemaCompiler
 {
+    /**
+     * Wire the compiler to the catalog, field-type resolver and name compiler it reads through.
+     *
+     * @param  BusinessDefinitionRepository  $definitions  Catalog every relationship and reference target
+     *         is resolved through, within the site being compiled.
+     * @param  FieldTypeDefinitionResolver   $fieldTypes   Resolver consulted for the storage kind of a
+     *         field type this compiler has no native mapping for.
+     * @param  PhysicalNameCompiler          $names        Compiler turning logical handles into the
+     *         prefixed, length-bounded identifiers that are installed.
+     *
+     * @since  2.0.0
+     */
     public function __construct(
         private BusinessDefinitionRepository $definitions,
         private FieldTypeDefinitionResolver $fieldTypes,
@@ -36,6 +67,32 @@ final readonly class CanonicalDefinitionPhysicalSchemaCompiler implements Defini
     ) {
     }
 
+    /**
+     * Compile every physical table one published definition version installs.
+     *
+     * The definition's own record table is always emitted. A collection relationship this side has to
+     * materialize adds a junction or line table, an ordered-line field adds a line table, and a singular
+     * relationship adds nothing here because it lives as a column on the record table instead. Tables are
+     * ordered by logical name before they are handed over, so the checksum an operator approved does not
+     * move because a later edit rearranged the definition's declarations.
+     *
+     * @param   EntityTypeDefinition  $definition  Published definition version to compile; a draft is
+     *          refused, as is one belonging to another site.
+     * @param   SiteContext           $site        Site owning the definition, and the site every
+     *          relationship and reference target is resolved in.
+     *
+     * @return  PhysicalSchemaBlueprint  The tables, carrying the definition's version and checksum so a
+     *          later stage can prove it is looking at the same bytes.
+     *
+     * @throws  InvalidBusinessSchema  When the definition belongs to another site or has no published
+     *          version, an ordered-line field declares no string target, a target definition is
+     *          unavailable or not published at the pinned version, or a compiled table breaks a
+     *          physical-schema rule.
+     * @throws  \Kumwe\CMS\BusinessDefinition\Domain\InvalidBusinessDefinition  When a field names a type
+     *          the resolver cannot produce, or the definition's own canonical document cannot be encoded.
+     *
+     * @since   2.0.0
+     */
     public function compile(EntityTypeDefinition $definition, SiteContext $site): PhysicalSchemaBlueprint
     {
         if ($definition->siteIdentifier !== $site->identifier() || $definition->definitionVersion < 1) {
@@ -84,6 +141,36 @@ final readonly class CanonicalDefinitionPhysicalSchemaCompiler implements Defini
         );
     }
 
+    /**
+     * Compile the table the definition's own records live in.
+     *
+     * Everything a record needs sits here: the runtime control columns, one or more columns for each
+     * stored field, and a target column for each singular relationship this side materializes. A UUID
+     * identity field, an ordered-line field and a virtually computed field each get no column, and a field
+     * handle that would collide with a control column is refused rather than left to overwrite runtime
+     * state. A unique or indexed field gets an index led by the tenancy columns, so uniqueness holds
+     * within a site or an organization rather than across the installation, and an entity reference gets a
+     * column typed from its target's identity plus a foreign key onto it.
+     *
+     * A singular relationship becomes a target column that is nullable unless the relationship is
+     * required, with its own scoped index, and its foreign key is pinned to `RESTRICT` whatever delete
+     * behaviour was declared: `BusinessRecordService` performs the clearing itself so the source record
+     * still receives an optimistic-version bump, a revision and audit evidence.
+     *
+     * @param   EntityTypeDefinition  $definition  Definition whose fields, relationships, scope, workflow
+     *          binding and soft-delete flag decide the table's shape.
+     * @param   SiteContext           $site        Site in which reference and relationship targets are
+     *          resolved.
+     *
+     * @return  PhysicalTableBlueprint  The `record` table, with its columns, indexes and keys sorted.
+     *
+     * @throws  InvalidBusinessSchema  When the definition carries no single valid identity field, a field
+     *          handle collides with a control column, an entity-reference or relationship target is
+     *          missing or unpublished, an indexed field has storage no engine can index whole, or the
+     *          assembled table breaks a physical-schema rule.
+     *
+     * @since   2.0.0
+     */
     private function recordTable(EntityTypeDefinition $definition, SiteContext $site): PhysicalTableBlueprint
     {
         $physicalTable = $this->names->entityTable($definition->id, $definition->handle);
@@ -226,7 +313,22 @@ final readonly class CanonicalDefinitionPhysicalSchemaCompiler implements Defini
         );
     }
 
-    /** @return list<PhysicalColumnBlueprint> */
+    /**
+     * Build the runtime-managed columns every record table carries.
+     *
+     * Identity, definition version, optimistic version and the created and updated audit stamps are
+     * unconditional. The tenancy columns follow the declared scope mode, `workflow_state` appears only
+     * when the definition binds a workflow, and the delete stamps only when soft delete is enabled, so a
+     * definition never installs a column its runtime would leave permanently empty.
+     *
+     * @param   EntityTypeDefinition  $definition  Definition whose scope, workflow binding and soft-delete
+     *          flag decide which optional columns are present.
+     *
+     * @return  list<PhysicalColumnBlueprint>  The control columns, unsorted; the caller orders them once
+     *          the field columns have been added.
+     *
+     * @since   2.0.0
+     */
     private function recordControlColumns(EntityTypeDefinition $definition): array
     {
         $columns = [
@@ -257,6 +359,29 @@ final readonly class CanonicalDefinitionPhysicalSchemaCompiler implements Defini
         return $columns;
     }
 
+    /**
+     * Compile the link table that carries a relationship neither record table can hold in a column.
+     *
+     * Rows are the pairs themselves: the source and target record identities form the primary key, and the
+     * source's tenancy columns come along so a link is scoped exactly as the record that owns it. The
+     * target index is unique when only one source may claim a target, an ordered relationship gains a
+     * second unique index over source and position, and deleting a source cascades its links away while
+     * the target side installs the delete behaviour the relationship declared.
+     *
+     * @param   EntityTypeDefinition    $source        Definition declaring the relationship, which also
+     *          supplies the table's tenancy columns.
+     * @param   EntityTypeDefinition    $target        Definition on the other side, whose record table the
+     *          target column points at.
+     * @param   RelationshipDefinition  $relationship  Relationship being materialized; its kind,
+     *          uniqueness, ordering and delete behaviour shape the table.
+     *
+     * @return  PhysicalTableBlueprint  The junction table, named `relation:` followed by the handle.
+     *
+     * @throws  InvalidBusinessSchema  When a generated identifier is not portable, or the assembled table
+     *          breaks a physical-schema rule.
+     *
+     * @since   2.0.0
+     */
     private function junctionTable(
         EntityTypeDefinition $source,
         EntityTypeDefinition $target,
@@ -344,6 +469,32 @@ final readonly class CanonicalDefinitionPhysicalSchemaCompiler implements Defini
         );
     }
 
+    /**
+     * Compile the child table that holds one owner's ordered lines.
+     *
+     * A line is not an independent record. It is keyed by a `line_id` of its own, carries the owner's
+     * identity and tenancy columns, cascades away with the owner, and is kept in a single dense order by a
+     * unique index over owner and position. The line definition's fields become columns of this table
+     * rather than of a table of their own, under the same rules the record table applies but measured
+     * against this table's control columns; an entity reference declared on a line is resolved in the line
+     * definition's own site and given its own foreign key.
+     *
+     * @param   EntityTypeDefinition  $owner           Definition the lines hang from, supplying the owner
+     *          identity column and the tenancy columns.
+     * @param   EntityTypeDefinition  $lineDefinition  Definition describing one line, whose fields become
+     *          this table's columns.
+     * @param   string                $handle          Relationship or ordered-line field handle the
+     *          collection is known by, which the table name is compiled from.
+     *
+     * @return  PhysicalTableBlueprint  The line table, named `line:` followed by that handle.
+     *
+     * @throws  InvalidBusinessSchema  When the line definition carries no single valid identity field, a
+     *          line field handle collides with a control column, a referenced target is missing or
+     *          unpublished, an indexed line field has storage no engine can index whole, or the assembled
+     *          table breaks a physical-schema rule.
+     *
+     * @since   2.0.0
+     */
     private function lineTable(
         EntityTypeDefinition $owner,
         EntityTypeDefinition $lineDefinition,
@@ -478,7 +629,29 @@ final readonly class CanonicalDefinitionPhysicalSchemaCompiler implements Defini
         );
     }
 
-    /** @return list<PhysicalColumnBlueprint> */
+    /**
+     * Map one field onto the columns that store its value.
+     *
+     * Most types compile to a single column, but a composite value spreads over one column per component
+     * (amount and currency, amount and unit, instant and timezone, and the four an encrypted secret
+     * needs), which is why the answer is a list. Nullability is decided once for the whole field, and a
+     * default that survived validation is folded into the options of the column it belongs to.
+     *
+     * @param   FieldDefinition           $field              Field to map; its type selects the shape and
+     *          its length, precision and scale bound it.
+     * @param   ?PhysicalColumnBlueprint  $referenceIdentity  Identity column of the referenced entity,
+     *          supplied only for `core.entity_reference` so the local column copies its exact storage.
+     *
+     * @return  list<PhysicalColumnBlueprint>  One column for a scalar field, several for a composite
+     *          value, in the order the compiler appends them.
+     *
+     * @throws  InvalidBusinessSchema  When an entity reference arrives without its target identity, an
+     *          exact numeric declares no precision and scale, a stored formula has no portable result
+     *          type, a custom type has no portable storage mapping, or a declared default is not exactly
+     *          expressible.
+     *
+     * @since   2.0.0
+     */
     private function fieldColumns(
         FieldDefinition $field,
         ?PhysicalColumnBlueprint $referenceIdentity = null,
@@ -556,7 +729,27 @@ final readonly class CanonicalDefinitionPhysicalSchemaCompiler implements Defini
         };
     }
 
-    /** @return array<string, bool|int|string> Physical logical column to validated exact default. */
+    /**
+     * Resolve the database defaults a field's declared default compiles to.
+     *
+     * Only types whose values a DDL default reproduces exactly get one at all: a reference, a JSON or
+     * value-object payload, TEXT storage and custom storage are left to the record service, because those
+     * defaults are not portable across all three engines. A composite default has to supply its exact
+     * component document, and every component is measured against its own grammar, so a currency, a unit,
+     * an instant or a timezone cannot reach DDL malformed. An encrypted secret is refused outright rather
+     * than given a plaintext default.
+     *
+     * @param   FieldDefinition  $field  Field whose declared default is being compiled.
+     *
+     * @return  array<string, bool|int|string>  Physical logical column to validated exact default; empty
+     *          when the field declares no default, or its type carries none into DDL.
+     *
+     * @throws  InvalidBusinessSchema  When a secret declares a default, a scalar default is not an exact
+     *          bool, int or string, a composite default is not its exact component document, or a
+     *          component fails its own grammar.
+     *
+     * @since   2.0.0
+     */
     private function physicalDefaults(FieldDefinition $field): array
     {
         if ($field->default === null) {
@@ -635,7 +828,26 @@ final readonly class CanonicalDefinitionPhysicalSchemaCompiler implements Defini
         return $result;
     }
 
-    /** @param callable(string, string, array<string, mixed>, ?bool): PhysicalColumnBlueprint $column */
+    /**
+     * Map a field type this compiler has no native rule for onto a portable column.
+     *
+     * The storage kind the type was registered with is read from the field-type resolver and translated
+     * into the Doctrine subset, so an extension-contributed type either installs the same column on every
+     * supported engine or is refused. String storage additionally carries the bounded length the field
+     * asks for.
+     *
+     * @param FieldDefinition $field Field whose declared type is being resolved.
+     * @param   callable(string, string, array<string, mixed>, ?bool): PhysicalColumnBlueprint  $column
+     *          Column factory from `fieldColumns()`, which applies the field's nullability and default.
+     *
+     * @return  PhysicalColumnBlueprint  The single column the resolved storage kind maps to.
+     *
+     * @throws  InvalidBusinessSchema  When the registered storage kind has no portable Doctrine mapping.
+     * @throws  \Kumwe\CMS\BusinessDefinition\Domain\InvalidBusinessDefinition  When the field type cannot
+     *          be resolved at all.
+     *
+     * @since   2.0.0
+     */
     private function customColumn(FieldDefinition $field, callable $column): PhysicalColumnBlueprint
     {
         $storage = $this->fieldTypes->get($field->type)->storageType;
@@ -656,7 +868,25 @@ final readonly class CanonicalDefinitionPhysicalSchemaCompiler implements Defini
         return $column($field->handle, $type, $options, null);
     }
 
-    /** @param callable(string, string, array<string, mixed>, ?bool): PhysicalColumnBlueprint $column */
+    /**
+     * Map a stored computed field onto the column its formula result type requires.
+     *
+     * Only a stored computation reaches here; a virtual one is skipped before any column is built. That is
+     * why the formula must declare a result type, and why the type has to be one the portable Doctrine
+     * subset can carry. A decimal result additionally takes the field's own precision and scale, so the
+     * value rounds the same way on every engine.
+     *
+     * @param FieldDefinition $field Computed field whose formula result decides the storage.
+     * @param   callable(string, string, array<string, mixed>, ?bool): PhysicalColumnBlueprint  $column
+     *          Column factory from `fieldColumns()`, which applies the field's nullability and default.
+     *
+     * @return  PhysicalColumnBlueprint  The single column the formula's result type maps to.
+     *
+     * @throws  InvalidBusinessSchema  When the formula declares no result type, the result type has no
+     *          portable mapping, or a decimal result is missing its precision and scale.
+     *
+     * @since   2.0.0
+     */
     private function computedColumn(FieldDefinition $field, callable $column): PhysicalColumnBlueprint
     {
         $resultType = $field->formula->type
@@ -675,6 +905,20 @@ final readonly class CanonicalDefinitionPhysicalSchemaCompiler implements Defini
         return $column($field->handle, $type, $options, null);
     }
 
+    /**
+     * Decide the character length a string-backed column is created with.
+     *
+     * Each type carries both the length used when the field declares none and a ceiling it cannot exceed,
+     * so a declared length can never widen a column past what a portable index or an engine row limit
+     * tolerates.
+     *
+     * @param   FieldDefinition  $field  Field whose declared length is being clamped.
+     *
+     * @return  int  At most 320 for an email address, 191 for a phone number or an enumeration, and 1000
+     *          for every other string-backed type.
+     *
+     * @since   2.0.0
+     */
     private function stringLength(FieldDefinition $field): int
     {
         return match ($field->type) {
@@ -685,7 +929,17 @@ final readonly class CanonicalDefinitionPhysicalSchemaCompiler implements Defini
         };
     }
 
-    /** @return array{precision: int, scale: int} */
+    /**
+     * Read the exact-numeric options a decimal column has to be created with.
+     *
+     * @param   FieldDefinition  $field  Field expected to declare both precision and scale.
+     *
+     * @return  array{precision: int, scale: int}
+     *
+     * @throws  InvalidBusinessSchema  When the field leaves either precision or scale undeclared.
+     *
+     * @since   2.0.0
+     */
     private function decimalOptions(FieldDefinition $field): array
     {
         if ($field->precision === null || $field->scale === null) {
@@ -695,7 +949,25 @@ final readonly class CanonicalDefinitionPhysicalSchemaCompiler implements Defini
         return ['precision' => $field->precision, 'scale' => $field->scale];
     }
 
-    /** @param array<string, mixed> $options */
+    /**
+     * Build one runtime-managed column, named after the control handle itself.
+     *
+     * Control columns are not author-declared, so the logical name doubles as the handle the physical name
+     * is compiled from, and the same handle resolves to the same installed column name in every table it
+     * appears in.
+     *
+     * @param   string                $logical   Control-column handle, such as `record_id` or `position`.
+     * @param   string                $type      Doctrine type, from the portable subset.
+     * @param   array<string, mixed>  $options   Portable Doctrine options, such as a length or a default.
+     * @param   bool                  $nullable  Whether the installed column accepts NULL.
+     *
+     * @return  PhysicalColumnBlueprint  The column, with its physical name already compiled.
+     *
+     * @throws  InvalidBusinessSchema  When the handle is not a metadata identifier, or the type and
+     *          options are not a portable combination.
+     *
+     * @since   2.0.0
+     */
     private function control(
         string $logical,
         string $type,
@@ -705,11 +977,47 @@ final readonly class CanonicalDefinitionPhysicalSchemaCompiler implements Defini
         return new PhysicalColumnBlueprint($logical, $this->names->column($logical), $type, $options, $nullable);
     }
 
+    /**
+     * Build a control column that copies another column's exact storage.
+     *
+     * A key column and the column it points at have to agree on type and options for a foreign key to
+     * install at all, so the endpoint columns of a junction or line table are cloned from the identity
+     * column of the table they reference instead of being declared a second time.
+     *
+     * @param   string                   $logical    Handle the copy is installed under, such as
+     *          `source_id` or `owner_id`.
+     * @param   PhysicalColumnBlueprint  $prototype  Column whose Doctrine type and options are copied.
+     *
+     * @return  PhysicalColumnBlueprint  A non-nullable column carrying the prototype's storage under the
+     *          new handle.
+     *
+     * @throws  InvalidBusinessSchema  When the handle is not a metadata identifier, or the copied type and
+     *          options are not a portable combination.
+     *
+     * @since   2.0.0
+     */
     private function typedControl(string $logical, PhysicalColumnBlueprint $prototype): PhysicalColumnBlueprint
     {
         return $this->control($logical, $prototype->doctrineType, $prototype->options);
     }
 
+    /**
+     * Resolve the one field that carries the definition's declared identity.
+     *
+     * The identity strategy names the type that field must have, and a physical schema is only built on an
+     * identity that cannot repeat or move, so a match that is optional, nullable, non-unique or mutable
+     * after creation is refused here rather than installed and relied upon later.
+     *
+     * @param   EntityTypeDefinition  $definition  Definition whose identity strategy selects the field.
+     *
+     * @return  FieldDefinition  The single `core.uuid` or `core.reference_identity` field the strategy
+     *          demands.
+     *
+     * @throws  InvalidBusinessSchema  When no field or more than one matches the strategy's type, or the
+     *          single match is not required, non-null, unique and immutable after create.
+     *
+     * @since   2.0.0
+     */
     private function identityField(EntityTypeDefinition $definition): FieldDefinition
     {
         $type = $definition->identityStrategy === IdentityStrategy::Uuid ? 'core.uuid' : 'core.reference_identity';
@@ -732,6 +1040,20 @@ final readonly class CanonicalDefinitionPhysicalSchemaCompiler implements Defini
         return $matches[0];
     }
 
+    /**
+     * Describe the column a foreign key into a definition's record table has to point at.
+     *
+     * Every compiled record table is keyed by the surrogate `record_id` GUID whatever identity strategy
+     * its definition declares, so the answer does not vary with the definition supplied; taking one keeps
+     * the call sites reading as a property of the table being referenced rather than as a constant.
+     *
+     * @param   EntityTypeDefinition  $definition  Definition whose record table is being referenced.
+     *
+     * @return  PhysicalColumnBlueprint  A `record_id` GUID column, matching the primary key every compiled
+     *          record table installs.
+     *
+     * @since   2.0.0
+     */
     private function identityColumnFor(EntityTypeDefinition $definition): PhysicalColumnBlueprint
     {
         return $this->control(
@@ -740,6 +1062,27 @@ final readonly class CanonicalDefinitionPhysicalSchemaCompiler implements Defini
         );
     }
 
+    /**
+     * Resolve the published definition version a reference or relationship target compiles against.
+     *
+     * The catalog entry is consulted first, so an unreachable handle fails by name rather than as a
+     * missing version. The version itself comes from the re-pin the source definition declares in its
+     * evolution hints, falling back to whichever version the catalog head publishes. That pinning is what
+     * keeps a compiled blueprint stable while the target definition goes on being republished.
+     *
+     * @param   EntityTypeDefinition  $source  Definition being compiled, whose evolution hints decide
+     *          which version of the target is pinned.
+     * @param   SiteContext           $site    Site both definitions belong to.
+     * @param   string                $handle  Namespaced handle of the target definition.
+     *
+     * @return  EntityTypeDefinition  The target at its pinned version, or at the version the catalog head
+     *          serves when the source pins none.
+     *
+     * @throws  InvalidBusinessSchema  When the site holds no definition under the handle, that version was
+     *          never published, or the source declares a malformed schema-evolution hint.
+     *
+     * @since   2.0.0
+     */
     private function targetFor(
         EntityTypeDefinition $source,
         SiteContext $site,
@@ -758,6 +1101,27 @@ final readonly class CanonicalDefinitionPhysicalSchemaCompiler implements Defini
         return $record->definition;
     }
 
+    /**
+     * Decide whether this side of a relationship is the one that emits physical storage.
+     *
+     * A relationship declared without an inverse, and an owned line collection, always materializes. Where
+     * two sides name each other only one may carry the storage, or the pair would install twice: the
+     * many-to-one side wins over its one-to-many partner, and any other pairing is settled by comparing
+     * each side's `entity#relationship` handles, so both definitions reach the same verdict independently.
+     *
+     * @param   EntityTypeDefinition    $source        Definition being compiled.
+     * @param   EntityTypeDefinition    $target        Definition on the other side, searched for the
+     *          reciprocal relationship.
+     * @param   RelationshipDefinition  $relationship  The side being considered.
+     *
+     * @return  bool  True when this side must emit the column or table; false when the inverse side
+     *          already carries it.
+     *
+     * @throws  InvalidBusinessSchema  When the target declares no relationship matching the named inverse
+     *          back to the source.
+     *
+     * @since   2.0.0
+     */
     private function materializes(
         EntityTypeDefinition $source,
         EntityTypeDefinition $target,
@@ -795,7 +1159,20 @@ final readonly class CanonicalDefinitionPhysicalSchemaCompiler implements Defini
         ) < 0;
     }
 
-    /** @return list<PhysicalColumnBlueprint> */
+    /**
+     * Build the tenancy columns a generated table copies from the definition it hangs from.
+     *
+     * A junction or line table is scoped exactly as the records it belongs to, so it installs the same
+     * scope columns and leads its indexes with them.
+     *
+     * @param   EntityTypeDefinition  $definition  Definition whose scope mode decides which identifiers
+     *          the generated table carries.
+     *
+     * @return  list<PhysicalColumnBlueprint>  The site and organization columns the mode names, in that
+     *          order; empty under installation scope.
+     *
+     * @since   2.0.0
+     */
     private function scopeControlColumns(EntityTypeDefinition $definition): array
     {
         $columns = [];
@@ -810,8 +1187,22 @@ final readonly class CanonicalDefinitionPhysicalSchemaCompiler implements Defini
     }
 
     /**
-     * @param list<PhysicalColumnBlueprint> $columns
-     * @return list<string>
+     * List the installed names of the tenancy columns an index or key has to lead with.
+     *
+     * Leading with the scope columns is what makes a unique field unique within its site or organization
+     * rather than across the whole installation, and lets the same index serve a scoped lookup.
+     *
+     * @param   list<PhysicalColumnBlueprint>  $columns     Columns assembled for the table so far, which
+     *          must already hold every scope column the mode names.
+     * @param   EntityTypeDefinition           $definition  Definition whose scope mode decides which
+     *          columns come back.
+     *
+     * @return  list<string>  Physical names, site before organization; empty under installation scope.
+     *
+     * @throws  InvalidBusinessSchema  When the assembled columns are missing a scope column the mode
+     *          requires.
+     *
+     * @since   2.0.0
      */
     private function scopePhysicalColumns(array $columns, EntityTypeDefinition $definition): array
     {
@@ -831,7 +1222,18 @@ final readonly class CanonicalDefinitionPhysicalSchemaCompiler implements Defini
         return $physical;
     }
 
-    /** @return list<FieldDefinition> */
+    /**
+     * List the definition's fields in handle order.
+     *
+     * Compilation walks fields in this order rather than in declaration order, so rearranging a
+     * definition's fields cannot move the blueprint a plan was approved against.
+     *
+     * @param   EntityTypeDefinition  $definition  Definition whose fields are being ordered.
+     *
+     * @return  list<FieldDefinition>  Every declared field, sorted by handle.
+     *
+     * @since   2.0.0
+     */
     private function sortedFields(EntityTypeDefinition $definition): array
     {
         $fields = $definition->fields();
@@ -841,7 +1243,19 @@ final readonly class CanonicalDefinitionPhysicalSchemaCompiler implements Defini
         return $fields;
     }
 
-    /** @return list<RelationshipDefinition> */
+    /**
+     * List the definition's declared relationships in handle order.
+     *
+     * Both passes over the relationships — the one emitting tables and the one emitting record columns —
+     * read this order, so the tables and the columns of a definition are stable across compilations.
+     *
+     * @param   EntityTypeDefinition  $definition  Definition whose relationships are being ordered.
+     *
+     * @return  list<RelationshipDefinition>  Every declared relationship, sorted by handle; ordered-line
+     *          fields are not folded in.
+     *
+     * @since   2.0.0
+     */
     private function sortedRelationships(EntityTypeDefinition $definition): array
     {
         $relationships = $definition->relationships();
@@ -851,21 +1265,52 @@ final readonly class CanonicalDefinitionPhysicalSchemaCompiler implements Defini
         return $relationships;
     }
 
-    /** @param list<PhysicalColumnBlueprint> $columns */
+    /**
+     * Put a table's collected columns into logical-name order, in place.
+     *
+     * This is the order the table blueprint stores them in, so sorting before the compiler resolves its
+     * key and index columns keeps the two views of the collection identical.
+     *
+     * @param   list<PhysicalColumnBlueprint>  $columns  Columns collected so far, reordered by reference.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     private function sortColumns(array &$columns): void
     {
         usort($columns, static fn (PhysicalColumnBlueprint $left, PhysicalColumnBlueprint $right): int =>
             strcmp($left->logicalName, $right->logicalName));
     }
 
-    /** @param list<PhysicalIndexBlueprint> $indexes */
+    /**
+     * Put a table's collected indexes into logical-name order, in place.
+     *
+     * Fields, relationships and foreign-key support each contribute indexes at different points, so the
+     * collection is ordered once at the end rather than left in the order it happened to be filled.
+     *
+     * @param   list<PhysicalIndexBlueprint>  $indexes  Indexes collected so far, reordered by reference.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     private function sortIndexes(array &$indexes): void
     {
         usort($indexes, static fn (PhysicalIndexBlueprint $left, PhysicalIndexBlueprint $right): int =>
             strcmp($left->logicalName, $right->logicalName));
     }
 
-    /** @param list<PhysicalForeignKeyBlueprint> $keys */
+    /**
+     * Put a table's collected foreign keys into logical-name order, in place.
+     *
+     * @param   list<PhysicalForeignKeyBlueprint>  $keys  Constraints collected so far, reordered by
+     *          reference.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     private function sortForeignKeys(array &$keys): void
     {
         usort($keys, static fn (PhysicalForeignKeyBlueprint $left, PhysicalForeignKeyBlueprint $right): int =>
@@ -873,11 +1318,27 @@ final readonly class CanonicalDefinitionPhysicalSchemaCompiler implements Defini
     }
 
     /**
+     * Append a covering index for every foreign key no existing index already leads with.
+     *
      * MySQL and MariaDB otherwise synthesize engine-named indexes for FK columns.
      * Persisting the portable support indexes keeps all three engines' introspection exact.
      *
-     * @param list<PhysicalIndexBlueprint> $indexes
-     * @param list<PhysicalForeignKeyBlueprint> $foreignKeys
+     * An index whose leading columns are exactly the constraint's local columns already serves it, so a
+     * wider scoped index counts as support and nothing is installed twice.
+     *
+     * @param   string                             $physicalTable  Installed table name the generated index
+     *          names are compiled under.
+     * @param   list<PhysicalIndexBlueprint>       $indexes        Indexes assembled so far; support indexes are
+     *          appended here by reference.
+     * @param   list<PhysicalForeignKeyBlueprint>  $foreignKeys    Constraints that each need a covering
+     *          index.
+     *
+     * @return  void
+     *
+     * @throws  InvalidBusinessSchema  When a generated support index name, or the column list it covers,
+     *          is not portable.
+     *
+     * @since   2.0.0
      */
     private function ensureForeignKeyIndexes(
         string $physicalTable,
@@ -905,15 +1366,39 @@ final readonly class CanonicalDefinitionPhysicalSchemaCompiler implements Defini
     }
 
     /**
-     * @param list<string> $columns
-     * @param list<string> $prefix
+     * Report whether an index opens with exactly the columns a foreign key needs.
+     *
+     * An engine may serve a constraint from any index whose leading columns match its local columns, so a
+     * wider index counts as support and no further one has to be installed.
+     *
+     * @param   list<string>  $columns  Physical columns of a candidate index, in index order.
+     * @param   list<string>  $prefix   Physical local columns of the constraint, in constraint order.
+     *
+     * @return  bool  True when the candidate's leading columns are exactly the constraint's columns.
+     *
+     * @since   2.0.0
      */
     private function leftPrefix(array $columns, array $prefix): bool
     {
         return array_slice($columns, 0, count($prefix)) === $prefix;
     }
 
-    /** @param list<PhysicalColumnBlueprint> $columns */
+    /**
+     * Find an assembled column by its logical name.
+     *
+     * Every call site asks for a column this compiler has just built, so an absent one is a compiler
+     * defect rather than a miss, and it is raised as an invalid schema instead of answered with null.
+     *
+     * @param   list<PhysicalColumnBlueprint>  $columns  Columns assembled for the table so far.
+     * @param   string                         $logical  Logical name to resolve, such as `record_id` or a
+     *          scope column.
+     *
+     * @return  PhysicalColumnBlueprint  The matching column.
+     *
+     * @throws  InvalidBusinessSchema  When no assembled column carries that logical name.
+     *
+     * @since   2.0.0
+     */
     private function column(array $columns, string $logical): PhysicalColumnBlueprint
     {
         foreach ($columns as $column) {
@@ -924,7 +1409,23 @@ final readonly class CanonicalDefinitionPhysicalSchemaCompiler implements Defini
         throw new InvalidBusinessSchema('A compiled control column is missing: ' . $logical);
     }
 
-    /** @param list<PhysicalColumnBlueprint> $columns */
+    /**
+     * Refuse an index on a field whose storage no supported engine can index whole.
+     *
+     * A text, blob or JSON column, and any column whose declared length is over 191, is past what a
+     * portable full-value index covers, so the field is rejected while it is being compiled rather than
+     * installed with an index the supported engines would not agree on.
+     *
+     * @param   FieldDefinition                $field    Field asking to be unique or indexed; named in the
+     *          failure message.
+     * @param   list<PhysicalColumnBlueprint>  $columns  Columns that field compiled to.
+     *
+     * @return  void
+     *
+     * @throws  InvalidBusinessSchema  When any of those columns cannot carry a portable full-value index.
+     *
+     * @since   2.0.0
+     */
     private function assertIndexable(FieldDefinition $field, array $columns): void
     {
         foreach ($columns as $column) {
@@ -938,6 +1439,16 @@ final readonly class CanonicalDefinitionPhysicalSchemaCompiler implements Defini
         }
     }
 
+    /**
+     * Translate a declared delete behaviour into the referential action a foreign key installs.
+     *
+     * @param   DeleteBehavior  $behavior  Behaviour the relationship declares for its target side.
+     *
+     * @return  string  `RESTRICT`, `CASCADE` or `SET NULL`, spelled the way every supported engine
+     *          accepts it.
+     *
+     * @since   2.0.0
+     */
     private function deleteAction(DeleteBehavior $behavior): string
     {
         return match ($behavior) {
@@ -947,7 +1458,21 @@ final readonly class CanonicalDefinitionPhysicalSchemaCompiler implements Defini
         };
     }
 
-    /** @param list<string> $reserved */
+    /**
+     * Refuse a business field whose handle is already taken by a runtime control column.
+     *
+     * Control columns and field columns are compiled through the same name compiler, so a field claiming a
+     * control handle would resolve to the very column the runtime keeps its own state in.
+     *
+     * @param   FieldDefinition  $field     Field being compiled; its handle is named in the failure.
+     * @param   list<string>     $reserved  Control-column handles the table being compiled already uses.
+     *
+     * @return  void
+     *
+     * @throws  InvalidBusinessSchema  When the field handle matches one of those reserved handles.
+     *
+     * @since   2.0.0
+     */
     private function assertFieldHandleAvailable(FieldDefinition $field, array $reserved): void
     {
         if (in_array($field->handle, $reserved, true)) {

@@ -9,17 +9,69 @@ use InvalidArgumentException;
 use JsonException;
 use Ramsey\Uuid\Uuid;
 
+/**
+ * One immutable entry in a business record's history, carrying the state the record was left in.
+ *
+ * `BusinessRecordService` appends a revision for every mutation of a definition that has revisions
+ * enabled, and `DoctrineBusinessRecordRevisionRepository` re-derives `checksum()` when it reads a row
+ * back and refuses one whose stored digest disagrees. That round trip is what forces the
+ * canonicalisation done in the constructor: the snapshot is key-sorted and the changed-field list is
+ * de-duplicated and sorted, so a revision hashes the same however the caller happened to order it,
+ * and the record's own identity is kept as a digest so history stays queryable without storing the
+ * business identity again in the clear.
+ *
+ * @since  2.0.0
+ */
 final readonly class BusinessRecordRevision
 {
-    /** @var array<string, mixed> */
+    /**
+     * Field values as at this revision, keyed by field handle and sorted by handle.
+     *
+     * @var    array<string, mixed>
+     * @since  2.0.0
+     */
     private array $snapshot;
 
-    /** @var list<string> */
+    /**
+     * Handles the mutation touched, de-duplicated and sorted.
+     *
+     * @var    list<string>
+     * @since  2.0.0
+     */
     private array $changedFields;
 
     /**
-     * @param array<string, mixed> $snapshot
-     * @param list<string> $changedFields
+     * Assemble a revision, validating every part of it and canonicalising what the checksum covers.
+     *
+     * @param   string                $revisionId              UUID of this history entry.
+     * @param   string                $definitionId            UUID of the entity type the record belongs to.
+     * @param   int                   $definitionVersion       Definition version the record was written
+     *          against; at least 1.
+     * @param   string                $siteIdentifier          Site the record lives in.
+     * @param   string|null           $organizationIdentifier  Organization branch within that site, or
+     *          null when the record is site-wide.
+     * @param   string                $recordKey               UUID of the record — its internal key, not
+     *          its business identity.
+     * @param   string                $recordIdentityDigest    Digest of the record's business identity,
+     *          which is how history is found without storing that identity in the clear.
+     * @param   int                   $recordVersion           Optimistic version of the record this entry
+     *          captures; at least 1.
+     * @param   int                   $revisionNumber          Position of this entry in the record's
+     *          history; at least 1.
+     * @param   string                $operation               Lowercase name of the mutation, such as
+     *          `create`, `update` or `relate.<relationship>`.
+     * @param   array<string, mixed>  $snapshot                Field values as at this revision, keyed by
+     *          handle; each value must be one the record layer can carry.
+     * @param   list<string>          $changedFields           Handles the mutation touched; order and
+     *          duplicates are irrelevant, since the list is normalised here.
+     * @param   string                $actorId                 Identity credited with the mutation.
+     * @param   DateTimeImmutable     $occurredAt              Instant the mutation was applied.
+     *
+     * @throws  InvalidArgumentException  When an identifier is not a canonical UUID, the identity
+     *          digest is not a 64-character hex digest, a version, operation, site or organization is
+     *          malformed, or the snapshot holds an invalid handle or an unsupported value.
+     *
+     * @since   2.0.0
      */
     public function __construct(
         public string $revisionId,
@@ -79,18 +131,46 @@ final readonly class BusinessRecordRevision
         $this->changedFields = $changedFields;
     }
 
-    /** @return array<string, mixed> */
+    /**
+     * Return the field values the record held at this revision.
+     *
+     * @return  array<string, mixed>  Values keyed by field handle, sorted by handle; the same ordering
+     *          the checksum was taken over.
+     *
+     * @since   2.0.0
+     */
     public function snapshot(): array
     {
         return $this->snapshot;
     }
 
-    /** @return list<string> */
+    /**
+     * Return the handles this mutation changed.
+     *
+     * @return  list<string>  Sorted, de-duplicated handles; empty when no field value moved, as an
+     *          archive, restore or delete records.
+     *
+     * @since   2.0.0
+     */
     public function changedFields(): array
     {
         return $this->changedFields;
     }
 
+    /**
+     * Derive the digest that proves this revision is the one that was written.
+     *
+     * The digest covers every part of the revision, including the snapshot and changed-field list in
+     * their canonical order, so it is stable across processes and is what the repository compares a
+     * stored row against before handing the revision on.
+     *
+     * @return  string  Lowercase 64-character SHA-256 digest of the revision's canonical JSON form.
+     *
+     * @throws  InvalidArgumentException  When the snapshot cannot be encoded as JSON and so cannot be
+     *          checksummed.
+     *
+     * @since   2.0.0
+     */
     public function checksum(): string
     {
         try {

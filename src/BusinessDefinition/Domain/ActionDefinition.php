@@ -4,8 +4,41 @@ declare(strict_types=1);
 
 namespace Kumwe\CMS\BusinessDefinition\Domain;
 
+/**
+ * One named operation a business entity offers on its records, together with the capability guarding it.
+ *
+ * Actions are declared inside an entity definition and travel into the immutable published payload, so
+ * the runtime resolves them from the version a record is pinned to rather than from live configuration.
+ * `BusinessRecordService` looks the action up by handle, demands `$capability`, evaluates `$condition`
+ * against the record's current values, and then performs `$transition` on the entity's workflow — an
+ * action naming no transition has nothing the runtime can execute. The surface flags decide only where
+ * an action may be offered; they never grant permission on their own. This constructor is the single
+ * validation point, so an action that exists is an action whose identity and guard are already sound.
+ *
+ * @since  2.0.0
+ */
 final readonly class ActionDefinition
 {
+    /**
+     * Declare an action, validating its identity, guard, surfaces, and precondition.
+     *
+     * @param   string       $handle         Lowercase snake-case name the action is invoked by.
+     * @param   string       $label          Operator-facing name shown wherever the action is offered.
+     * @param   string       $capability     Dotted capability an actor must hold to run the action.
+     * @param   bool         $bulk           Whether the action may be offered against a selection of records.
+     * @param   bool         $administrator  Whether the administrator surface may offer the action.
+     * @param   bool         $portal         Whether the portal surface may offer the action.
+     * @param   bool         $public         Always rejected when true; actions are never anonymous.
+     * @param   bool         $highImpact     Marks the action consequential enough to warrant confirmation.
+     * @param   ?Expression  $condition      Boolean precondition on the record; null leaves it unconditional.
+     * @param   ?string      $transition     Workflow transition handle the action performs, or null for none.
+     *
+     * @throws  InvalidBusinessDefinition  When the handle or label is malformed, the capability is not a dotted
+     *          identifier, public execution is requested, neither the administrator nor the portal surface is
+     *          declared, the transition handle is malformed, or the condition does not produce boolean.
+     *
+     * @since   2.0.0
+     */
     public function __construct(
         public string $handle,
         public string $label,
@@ -38,7 +71,21 @@ final readonly class ActionDefinition
         }
     }
 
-    /** @param array<string, mixed> $document */
+    /**
+     * Rebuild an action from its canonical document, rejecting any property the contract does not name.
+     *
+     * The unknown-property check runs before anything is read, so a document written against a newer or
+     * hand-edited schema fails at the import boundary rather than being silently truncated on the way in.
+     *
+     * @param   array<string, mixed>  $document  Decoded action document keyed by canonical snake-case name.
+     *
+     * @return  self  The validated action, having passed the same invariants as direct construction.
+     *
+     * @throws  InvalidBusinessDefinition  When the document carries an unknown property, a condition that is
+     *          not a non-empty JSON object, a property of the wrong type, or values the constructor rejects.
+     *
+     * @since   2.0.0
+     */
     public static function fromArray(array $document): self
     {
         if (
@@ -69,7 +116,17 @@ final readonly class ActionDefinition
         );
     }
 
-    /** @return array<string, mixed> */
+    /**
+     * Export the action as the document that becomes part of a published definition's canonical bytes.
+     *
+     * Every declared property is emitted, including the defaults, so the document round-trips through
+     * `fromArray()` unchanged. Key order is irrelevant: `CanonicalDefinitionJson` sorts before hashing.
+     *
+     * @return  array<string, mixed>  Declared properties under their snake-case canonical keys, with the
+     *          condition rendered as a nested document or null.
+     *
+     * @since   2.0.0
+     */
     public function toArray(): array
     {
         return [
@@ -86,7 +143,18 @@ final readonly class ActionDefinition
         ];
     }
 
-    /** @param array<string, mixed> $document */
+    /**
+     * Read a mandatory text property, trimmed of surrounding whitespace.
+     *
+     * @param   array<string, mixed>  $document  Decoded action document being read.
+     * @param   string                $key       Canonical property name to read.
+     *
+     * @return  string  The trimmed value, never empty.
+     *
+     * @throws  InvalidBusinessDefinition  When the property is absent, is not a string, or is blank once trimmed.
+     *
+     * @since   2.0.0
+     */
     private static function string(array $document, string $key): string
     {
         $value = $document[$key] ?? null;
@@ -96,7 +164,22 @@ final readonly class ActionDefinition
         return trim($value);
     }
 
-    /** @param array<string, mixed> $document */
+    /**
+     * Read a flag, falling back to the declared default when the property is absent or null.
+     *
+     * A present value is never coerced: `1`, `"true"` and `"1"` are all rejected, so a document cannot
+     * flip a surface or impact flag through a loosely typed encoding.
+     *
+     * @param   array<string, mixed>  $document  Decoded action document being read.
+     * @param   string                $key       Canonical property name to read.
+     * @param   bool                  $default   Value to use when the property is absent or null.
+     *
+     * @return  bool  The declared flag, or the default.
+     *
+     * @throws  InvalidBusinessDefinition  When the property is present with a value that is not a boolean.
+     *
+     * @since   2.0.0
+     */
     private static function boolean(array $document, string $key, bool $default = false): bool
     {
         $value = $document[$key] ?? $default;
@@ -106,7 +189,19 @@ final readonly class ActionDefinition
         return $value;
     }
 
-    /** @param array<string, mixed> $document */
+    /**
+     * Read an optional text property, distinguishing "not declared" from "declared blank".
+     *
+     * @param   array<string, mixed>  $document  Decoded action document being read.
+     * @param   string                $key       Canonical property name to read.
+     *
+     * @return  ?string  The trimmed value, or null when the property is absent or explicitly null.
+     *
+     * @throws  InvalidBusinessDefinition  When the property is present but is not a string, or is blank once
+     *          trimmed; a blank string is a malformed declaration rather than an omission.
+     *
+     * @since   2.0.0
+     */
     private static function nullableString(array $document, string $key): ?string
     {
         $value = $document[$key] ?? null;

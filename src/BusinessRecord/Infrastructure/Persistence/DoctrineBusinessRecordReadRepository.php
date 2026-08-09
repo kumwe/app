@@ -37,8 +37,52 @@ use Kumwe\CMS\BusinessSchema\Domain\PhysicalTableBlueprint;
 use Kumwe\CMS\BusinessSchema\Domain\SchemaEvolutionHints;
 use Kumwe\CMS\BusinessSchema\Domain\SchemaInstallationStatus;
 
+/**
+ * Reads business records straight off the physical tables an installation generated, over DBAL.
+ *
+ * This is the `BusinessRecordReadRepository` the runtime wires. Every statement it runs is assembled
+ * from the `PhysicalTableBlueprint` carried by the resolved definition it is handed, so an identifier
+ * only reaches SQL because the installed blueprint named it, and every caller-supplied value travels in
+ * the bound parameter list beside its column's Doctrine type. The requested scope arrives as an
+ * argument and becomes a predicate on each statement rather than a filter applied afterwards, which is
+ * what keeps one tenant's rows out of another's page. A scan decodes each row against the definition
+ * version that row is pinned to rather than the installed one — `pinnedForRow()` re-resolves a
+ * published definition whenever a row disagrees — so one page may legitimately span several shapes,
+ * while a single-record read instead refuses a row the caller has not already pinned correctly.
+ * Relationship includes and entity-reference identities are resolved once per page rather than per row,
+ * and reaching a relationship target takes a shared `BusinessRecordMutationFence` so an installer
+ * cannot move that target's schema mid-read. Compiling a browse belongs to
+ * `DoctrineBusinessRecordQueryCompiler` and writing to `DoctrineBusinessRecordWriteRepository`.
+ * Anything the installed schema cannot answer is refused as `BusinessRecordSchemaUnavailable`; unlike
+ * `DoctrineBusinessRecordMutationFence` this adapter does not translate driver failures, so a DBAL
+ * exception reaches the caller as raised.
+ *
+ * @since  2.0.0
+ */
 final readonly class DoctrineBusinessRecordReadRepository implements BusinessRecordReadRepository
 {
+    /**
+     * Wire the reader to the connection, codecs and metadata sources one decoded row needs.
+     *
+     * @param  Connection                            $database       DBAL connection every read runs on,
+     *         and whose platform quotes each identifier taken from an installed blueprint.
+     * @param  RecordValueCodec                      $values         Rebuilds field values from a fetched
+     *         row, and converts a sort column into the value a keyset cursor carries.
+     * @param  RecordRuleValidator                   $rules          Recomputes virtual formula fields
+     *         over a decoded row, so a virtual value is never taken from storage.
+     * @param  DoctrineBusinessRecordQueryCompiler   $queries        Turns a browse specification into the
+     *         statement, bindings and cursor metadata this class executes unexamined.
+     * @param  RecordCursorCodec                     $cursors        Signs the page position handed back
+     *         as the next cursor.
+     * @param  BusinessDefinitionRepository          $definitions    Source of the published definition a
+     *         row's pinned version, or a relationship target, resolves to.
+     * @param  BusinessSchemaInstallationRepository  $installations  Source of the installed schema behind
+     *         a relationship target, which decides the columns its part of a read may name.
+     * @param  BusinessRecordMutationFence           $fence          Holds a relationship target's
+     *         installation still for the rest of the transaction before that target is read.
+     *
+     * @since  2.0.0
+     */
     public function __construct(
         private Connection $database,
         private RecordValueCodec $values,
@@ -51,6 +95,33 @@ final readonly class DoctrineBusinessRecordReadRepository implements BusinessRec
     ) {
     }
 
+    /**
+     * Resolve a caller-facing record id to the stored row's identity, reading no value columns.
+     *
+     * Only the key, identity, pinned-version and optimistic-version columns are selected, so a caller
+     * learns which definition version to re-resolve before it pays for a decode. An archived row is
+     * still matched here; a soft-deleted one only when $includeDeleted admits it.
+     *
+     * @param   ResolvedBusinessDefinition  $resolved        Definition whose installed record table is
+     *          searched, and whose identity strategy decides which column the id is matched against.
+     * @param   RecordScope                 $scope           Site and organization the row must belong to,
+     *          bound into the statement rather than checked afterwards.
+     * @param   string                      $recordId        Caller-facing identity, already normalized.
+     * @param   bool                        $includeDeleted  True to also match a soft-deleted row.
+     *
+     * @return  ?StoredRecordIdentity  Internal key, pinned definition version and optimistic-lock
+     *          version, or null when this scope holds no matching row.
+     *
+     * @throws  BusinessRecordSchemaUnavailable  When the installation has no record table, declares no
+     *          column this lookup names, disagrees with the requested scope, or hands back a key or
+     *          version column that is not the type it declared.
+     * @throws  InvalidArgumentException  When the stored key is not a canonical UUID, the stored identity
+     *          is empty or malformed, or either stored version is below one.
+     * @throws  \Doctrine\DBAL\Exception  When the driver rejects the lookup, or the platform to quote
+     *          identifiers for cannot be resolved.
+     *
+     * @since   2.0.0
+     */
     public function identity(
         ResolvedBusinessDefinition $resolved,
         RecordScope $scope,
@@ -89,6 +160,41 @@ final readonly class DoctrineBusinessRecordReadRepository implements BusinessRec
         );
     }
 
+    /**
+     * List the records that point at one target record through a relationship column of their own.
+     *
+     * Only a relationship materialized as a column on the source table is scanned. A relationship held
+     * in a junction table, or owned solely by its inverse, reports no referrers rather than failing, so
+     * a caller proving that nothing references a record has to ask in every direction it cares about.
+     * No lifecycle predicate is applied, so archived and soft-deleted referrers are reported as well.
+     *
+     * @param   ResolvedBusinessDefinition  $resolved         Source definition whose installed record
+     *          table is scanned for the relationship's target column.
+     * @param   RecordScope                 $scope            Site and organization the referring rows
+     *          must belong to.
+     * @param   RelationshipDefinition      $relationship     Relationship on the source definition whose
+     *          stored target column is matched.
+     * @param   string                      $targetRecordKey  Internal storage key of the referenced row.
+     * @param   int                         $limit            Most rows to return, from 1 to 501; a caller
+     *          detecting an overflow asks for one more than it needs.
+     *
+     * @return  list<BusinessRecord>  Referring records in storage-key order; empty when nothing
+     *          references the target, or when this relationship is not stored as a column here.
+     *
+     * @throws  BusinessRecordSchemaUnavailable  When the bound falls outside 1 to 501, the installation
+     *          has no record table, the requested scope disagrees with the installed scope columns, a
+     *          row's pinned definition version is unavailable, or a stored column is not its declared
+     *          type.
+     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordValidationFailed  When a
+     *          decoded row's virtual formula fields cannot be recomputed.
+     * @throws  InvalidArgumentException  When a stored value contradicts the physical type declared for
+     *          its column, or a decoded row breaks a `BusinessRecord` invariant.
+     * @throws  \DateMalformedStringException  When a stored timestamp column holds an unparsable string.
+     * @throws  \Doctrine\DBAL\Exception  When the driver rejects the scan, or the platform to quote
+     *          identifiers for cannot be resolved.
+     *
+     * @since   2.0.0
+     */
     public function referencing(
         ResolvedBusinessDefinition $resolved,
         RecordScope $scope,
@@ -139,6 +245,38 @@ final readonly class DoctrineBusinessRecordReadRepository implements BusinessRec
         return $records;
     }
 
+    /**
+     * Load one whole row and decode it against the definition version handed in.
+     *
+     * The row is decoded with $resolved rather than with whatever the installation currently publishes,
+     * and a row whose stored version disagrees is refused instead of being reinterpreted — so callers
+     * pass the pinned definition that `identity()` pointed them at. Archived and soft-deleted rows stay
+     * invisible unless explicitly admitted, which is the whole difference between a normal read and a
+     * history or restore read.
+     *
+     * @param   ResolvedBusinessDefinition  $resolved         Pinned definition the row is decoded with,
+     *          and whose identity strategy decides which column the id is matched against.
+     * @param   RecordScope                 $scope            Site and organization the row must belong to.
+     * @param   string                      $recordId         Caller-facing identity, already normalized.
+     * @param   bool                        $includeArchived  True to also load an archived row.
+     * @param   bool                        $includeDeleted   True to also load a soft-deleted row.
+     *
+     * @return  ?BusinessRecord  The decoded record, or null when this scope holds no matching row.
+     *
+     * @throws  BusinessRecordSchemaUnavailable  When the row was written under a different definition
+     *          version, the installation has no record table or lacks a column this read names, the
+     *          requested scope disagrees with the installed scope columns, or a stored column is not its
+     *          declared type.
+     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordValidationFailed  When the
+     *          decoded row's virtual formula fields cannot be recomputed.
+     * @throws  InvalidArgumentException  When a stored value contradicts the physical type declared for
+     *          its column, or the decoded row breaks a `BusinessRecord` invariant.
+     * @throws  \DateMalformedStringException  When a stored timestamp column holds an unparsable string.
+     * @throws  \Doctrine\DBAL\Exception  When the driver rejects the read, or the platform to quote
+     *          identifiers for cannot be resolved.
+     *
+     * @since   2.0.0
+     */
     public function get(
         ResolvedBusinessDefinition $resolved,
         RecordScope $scope,
@@ -169,6 +307,39 @@ final readonly class DoctrineBusinessRecordReadRepository implements BusinessRec
         return $row === false ? null : $this->map($resolved, $table, $row);
     }
 
+    /**
+     * Project one loaded record into the disclosure-safe view a caller may be shown.
+     *
+     * The record itself is already in hand, so the only query this runs is the one that exchanges each
+     * stored entity reference for the target's caller-facing identity — an internal record key never
+     * leaves the read side. Fields the definition hides from readers are dropped and restricted or
+     * secret fields are redacted by `BusinessRecordView` itself.
+     *
+     * @param   ResolvedBusinessDefinition  $resolved    Definition the record was decoded with, whose
+     *          reference fields name the targets to resolve.
+     * @param   RecordScope                 $scope       Scope the referenced rows must also belong to; a
+     *          reference pointing outside it counts as broken.
+     * @param   BusinessRecord              $record      Record to project.
+     * @param   list<string>                $projection  Field handles to keep, or empty for every
+     *          read-visible field.
+     *
+     * @return  BusinessRecordView  The projected record, with no relationship includes attached.
+     *
+     * @throws  BusinessRecordSchemaUnavailable  When a reference field declares no string target, a
+     *          stored reference is not a UUID or has no target row in this scope, or the target's
+     *          definition or installed schema is unusable.
+     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordDefinitionUnavailable  When
+     *          a referenced target definition no longer exists on this site.
+     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordTemporarilyUnavailable  When
+     *          the shared fence over a target's installation cannot be taken, or that installation moved
+     *          since it was resolved.
+     * @throws  InvalidArgumentException  When a target's published definition and its installation
+     *          disagree.
+     * @throws  \Doctrine\DBAL\Exception  When the driver rejects the reference lookup, or the platform to
+     *          quote identifiers for cannot be resolved.
+     *
+     * @since   2.0.0
+     */
     public function view(
         ResolvedBusinessDefinition $resolved,
         RecordScope $scope,
@@ -185,6 +356,48 @@ final readonly class DoctrineBusinessRecordReadRepository implements BusinessRec
         );
     }
 
+    /**
+     * Run a compiled query and return one bounded page of projected records.
+     *
+     * The compiled statement selects one row more than the page size; that extra row is dropped here and
+     * is the only evidence a further page exists, which is when a signed cursor is minted from the last
+     * row actually returned. Each row is decoded under the definition version it was written with, so a
+     * page may span several shapes, and both the relationship includes and the reference identities are
+     * resolved once for the whole page rather than per row. Aggregates run as a second statement over
+     * the same predicates without the page bound, and one that came back as a float is refused rather
+     * than rounded, so a total is always exact.
+     *
+     * @param   ResolvedBusinessDefinition  $resolved       Definition whose installed table is queried,
+     *          supplying the blueprint and the shape for rows already pinned to its version.
+     * @param   RecordScope                 $scope          Site and organization the page is confined to.
+     * @param   RecordQuerySpecification    $specification  Filter, search, sort, page bound, cursor and
+     *          projection to compile.
+     *
+     * @return  RecordBrowseResult  Views for this page, a cursor to continue from only when further rows
+     *          matched, and any requested aggregates keyed by their alias.
+     *
+     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\InvalidBusinessRecordQuery  When the
+     *          specification cannot be compiled, a cursor was raised against a different query, or a
+     *          field may not be filtered, sorted, searched or reported on.
+     * @throws  BusinessRecordSchemaUnavailable  When the query names something the installed schema does
+     *          not carry, a cursor sort column is absent or holds a value its physical type contradicts,
+     *          a row's pinned definition is unavailable, or an aggregate produced an inexact value.
+     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordDefinitionUnavailable  When
+     *          a definition the query or a reference reaches for no longer exists on this site.
+     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordTemporarilyUnavailable  When
+     *          the shared fence over a relation or reference target's installation cannot be taken, or
+     *          that installation moved since it was resolved.
+     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordValidationFailed  When a
+     *          decoded row's virtual formula fields cannot be recomputed.
+     * @throws  InvalidArgumentException  When a decoded row breaks a `BusinessRecord` invariant, or the
+     *          page carries more rows or aggregates than a result may hold.
+     * @throws  \JsonException  When a sort value read off the last row cannot be encoded into the cursor.
+     * @throws  \DateMalformedStringException  When a stored timestamp column holds an unparsable string.
+     * @throws  \Doctrine\DBAL\Exception  When the driver rejects the page or aggregate statement, or the
+     *          platform to quote identifiers for cannot be resolved.
+     *
+     * @since   2.0.0
+     */
     public function browse(
         ResolvedBusinessDefinition $resolved,
         RecordScope $scope,
@@ -279,9 +492,42 @@ final readonly class DoctrineBusinessRecordReadRepository implements BusinessRec
     }
 
     /**
-     * @param list<BusinessRecord> $records
-     * @param list<EntityTypeDefinition>|null $pinnedDefinitions
-     * @return array<string, array<string, mixed>>
+     * Exchange every stored entity reference across a set of records for the target's public identity.
+     *
+     * A view must never carry an internal record key, so each reference field is swapped for the
+     * caller-facing identity of the row it points at. References are gathered per target definition and
+     * resolved in one statement for the whole set, which is what keeps a page of records to a fixed
+     * number of round trips. Passing $pinnedDefinitions splits a mixed page by the version each row was
+     * decoded under and recurses once per group, because a reference field may not exist, or may point
+     * elsewhere, in another version. A reference whose target is missing from this scope is refused
+     * rather than left as a key.
+     *
+     * @param   ResolvedBusinessDefinition       $source             Definition whose reference fields
+     *          name the targets, used for every record when no pinned definitions are supplied.
+     * @param   RecordScope                      $scope              Scope the referenced rows must also
+     *          belong to.
+     * @param   list<BusinessRecord>             $records            Records whose reference fields are
+     *          resolved.
+     * @param   list<EntityTypeDefinition>|null  $pinnedDefinitions  Definition the record at the same
+     *          offset was decoded with, or null when every record shares $source.
+     *
+     * @return  array<string, array<string, mixed>>  Each record's values keyed by its storage key, with
+     *          reference fields carrying the target's public identity instead of its key.
+     *
+     * @throws  BusinessRecordSchemaUnavailable  When a browsed row has no pinned definition, a reference
+     *          field declares no string target, a stored reference is not a UUID or has no target row in
+     *          this scope, or a target's definition or installed schema is unusable.
+     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordDefinitionUnavailable  When
+     *          a referenced target definition no longer exists on this site.
+     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordTemporarilyUnavailable  When
+     *          the shared fence over a target's installation cannot be taken, or that installation moved
+     *          since it was resolved.
+     * @throws  InvalidArgumentException  When a row's pinned definition does not fit the installation it
+     *          is paired with, or a target's published definition and installation disagree.
+     * @throws  \Doctrine\DBAL\Exception  When the driver rejects a target lookup, or the platform to
+     *          quote identifiers for cannot be resolved.
+     *
+     * @since   2.0.0
      */
     private function publicReferenceValues(
         ResolvedBusinessDefinition $source,
@@ -388,9 +634,47 @@ final readonly class DoctrineBusinessRecordReadRepository implements BusinessRec
     }
 
     /**
-     * @param list<BusinessRecord> $sources
-     * @param list<string> $handles
-     * @return array<string, array<string, list<BusinessRecordRelationView>>>
+     * Resolve the requested relationship includes for a whole page of source records at once.
+     *
+     * One statement per handle covers every source on the page, which is what stops an include from
+     * costing a query per row. Owned lines are projected directly from the line table, decoded and
+     * redacted here; every other relationship is decoded as a record and flattened into the same
+     * relation view, so a caller cannot tell the two apart. Included rows carry no includes of their
+     * own, which bounds how far one browse can walk the relationship graph. Every source key is
+     * pre-seeded, so a source with no related rows is present with an empty list rather than absent.
+     *
+     * @param   ResolvedBusinessDefinition  $source           Definition the source records were decoded
+     *          with, whose relationships the handles are resolved against.
+     * @param   RecordScope                 $scope            Site and organization the related rows must
+     *          belong to.
+     * @param   list<BusinessRecord>        $sources          Records of the page the includes hang from.
+     * @param   list<string>                $handles          Relationship handles the projection asked to
+     *          include.
+     * @param   bool                        $includeArchived  True to also include archived related
+     *          records; owned lines are unaffected.
+     * @param   bool                        $includeDeleted   True to also include soft-deleted related
+     *          records; owned lines are unaffected.
+     *
+     * @return  array<string, array<string, list<BusinessRecordRelationView>>>  Relation views per source
+     *          storage key, keyed by handle, in source then position then key order.
+     *
+     * @throws  BusinessRecordSchemaUnavailable  When a handle names no relationship, a related row falls
+     *          outside the source page, a target's definition or installed schema is unusable, an
+     *          include has no canonical inverse to traverse, or a stored column is not its declared type.
+     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordDefinitionUnavailable  When
+     *          a relationship target definition no longer exists on this site.
+     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordTemporarilyUnavailable  When
+     *          the shared fence over a target's installation cannot be taken, or that installation moved
+     *          since it was resolved.
+     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordValidationFailed  When an
+     *          included row's virtual formula fields cannot be recomputed.
+     * @throws  InvalidArgumentException  When an included row breaks a `BusinessRecord` invariant, or a
+     *          stored value contradicts the physical type declared for its column.
+     * @throws  \DateMalformedStringException  When a stored timestamp column holds an unparsable string.
+     * @throws  \Doctrine\DBAL\Exception  When the driver rejects an include statement, or the platform to
+     *          quote identifiers for cannot be resolved.
+     *
+     * @since   2.0.0
      */
     private function includes(
         ResolvedBusinessDefinition $source,
@@ -469,8 +753,43 @@ final readonly class DoctrineBusinessRecordReadRepository implements BusinessRec
     }
 
     /**
-     * @param list<string> $sourceKeys
-     * @return array{list<array<string, mixed>>, PhysicalTableBlueprint, bool}
+     * Fetch the raw rows behind one relationship handle for every source on the page.
+     *
+     * How the rows are reached depends on where the relationship is actually stored, and the storage
+     * shapes are tried in a fixed order: an owned-line collection reads the owner's own line table; a
+     * relationship materialized as a column on the source table joins back through it; a junction table
+     * on the source installation joins through that; otherwise the canonical inverse on the target is
+     * traversed, through either its own column or its junction. Every shape projects the same two
+     * synthetic columns, `__source_key` and `__position`, so the caller can group and order rows without
+     * knowing which shape produced them; `__position` is NULL for a relationship that carries no order.
+     * Archive and soft-delete filtering applies to related records only — an owned line lives and dies
+     * with its owner, so its rows are always returned.
+     *
+     * @param   ResolvedBusinessDefinition  $source           Definition the page's records belong to,
+     *          whose installation supplies the source, line and junction tables.
+     * @param   ResolvedBusinessDefinition  $target           Definition on the far side, whose
+     *          installation supplies the related record table; unused for an owned-line collection.
+     * @param   RecordScope                 $scope            Site and organization the related rows and
+     *          any junction rows must belong to.
+     * @param   RelationshipDefinition      $relationship     Relationship being traversed, whose kind
+     *          selects the storage shape.
+     * @param   list<string>                $sourceKeys       Storage keys of the page's source records.
+     * @param   bool                        $includeArchived  True to also return archived related
+     *          records.
+     * @param   bool                        $includeDeleted   True to also return soft-deleted related
+     *          records.
+     *
+     * @return  array{list<array<string, mixed>>, PhysicalTableBlueprint, bool}  Raw rows in source then
+     *          position then key order, the blueprint they must be decoded against, and whether they are
+     *          owned lines rather than records.
+     *
+     * @throws  BusinessRecordSchemaUnavailable  When the owned-line table is absent, no storage shape
+     *          reaches the relationship, the relationship declares no canonical inverse to traverse, or
+     *          the requested scope disagrees with the installed scope columns.
+     * @throws  \Doctrine\DBAL\Exception  When the driver rejects the statement, or the platform to quote
+     *          identifiers for cannot be resolved.
+     *
+     * @since   2.0.0
      */
     private function includeRows(
         ResolvedBusinessDefinition $source,
@@ -614,8 +933,21 @@ final readonly class DoctrineBusinessRecordReadRepository implements BusinessRec
     }
 
     /**
-     * @param array<string, mixed> $values
-     * @return array<string, mixed>
+     * Narrow a decoded owned line to the values a reader may see.
+     *
+     * Owned lines never pass through `BusinessRecordView`, so they are filtered here instead, under the
+     * same rule: a field the definition hides from readers is dropped entirely, while a restricted,
+     * secret or entity-reference field stays present carrying a redaction marker. References are
+     * redacted rather than resolved because the stored value is an internal record key.
+     *
+     * @param   EntityTypeDefinition  $definition  Line definition supplying read visibility and per-field
+     *          sensitivity.
+     * @param   array<string, mixed>  $values      Decoded line values keyed by field handle.
+     *
+     * @return  array<string, mixed>  Reader-visible values keyed by handle, redacted fields carrying
+     *          `['redacted' => true]`; a handle the row decoded nothing for stays absent.
+     *
+     * @since   2.0.0
      */
     private function visibleValues(EntityTypeDefinition $definition, array $values): array
     {
@@ -633,6 +965,24 @@ final readonly class DoctrineBusinessRecordReadRepository implements BusinessRec
         return $visible;
     }
 
+    /**
+     * Resolve an include handle to the relationship the definition declares under it.
+     *
+     * Goes through the definition's runtime view, so a legacy ordered-line field answers as the
+     * owned-line relationship it stands for and an include can name either spelling.
+     *
+     * @param   EntityTypeDefinition  $definition  Definition the include was requested against.
+     * @param   string                $handle      Relationship handle, or ordered-line field handle,
+     *          named by the projection.
+     *
+     * @return  RelationshipDefinition  The declared or synthesized relationship.
+     *
+     * @throws  BusinessRecordSchemaUnavailable  When the definition declares nothing under that handle.
+     * @throws  \Kumwe\CMS\BusinessDefinition\Domain\InvalidBusinessDefinition  When a matching
+     *          ordered-line field names no usable target entity.
+     *
+     * @since   2.0.0
+     */
     private function relationship(
         EntityTypeDefinition $definition,
         string $handle,
@@ -643,6 +993,28 @@ final readonly class DoctrineBusinessRecordReadRepository implements BusinessRec
             );
     }
 
+    /**
+     * Find the relationship on the target side that owns the storage for a non-canonical association.
+     *
+     * Only one side of an association materializes a column or junction table. When the side being
+     * browsed is the other one, the include has to be read backwards through the declared inverse, and
+     * this is where that inverse is proved to exist: it must be named by the source relationship, be
+     * declared on the target, and point back at the source, or the include is refused rather than
+     * silently answered as empty.
+     *
+     * @param   EntityTypeDefinition    $source        Definition the include was requested on.
+     * @param   EntityTypeDefinition    $target        Definition on the far side, whose declarations are
+     *          searched.
+     * @param   RelationshipDefinition  $relationship  Non-canonical relationship whose `inverse` names
+     *          the declaration to find.
+     *
+     * @return  RelationshipDefinition  The target-side relationship whose storage the include reads.
+     *
+     * @throws  BusinessRecordSchemaUnavailable  When the relationship names no inverse, or the target
+     *          declares nothing under that name that points back at the source.
+     *
+     * @since   2.0.0
+     */
     private function inverseRelationship(
         EntityTypeDefinition $source,
         EntityTypeDefinition $target,
@@ -658,6 +1030,29 @@ final readonly class DoctrineBusinessRecordReadRepository implements BusinessRec
         throw new BusinessRecordSchemaUnavailable('An included canonical inverse relationship is unavailable.');
     }
 
+    /**
+     * Resolve the definition and installed schema on the far side of one relationship.
+     *
+     * @param   ResolvedBusinessDefinition  $source        Definition the relationship is declared on,
+     *          supplying the site and the version to pin the target at.
+     * @param   RelationshipDefinition      $relationship  Relationship whose declared target is resolved.
+     *
+     * @return  ResolvedBusinessDefinition  The target definition paired with its installed schema, fenced
+     *          for the rest of the caller's transaction.
+     *
+     * @throws  BusinessRecordSchemaUnavailable  When the target is absent or disabled, its schema is not
+     *          active on this site, or the version it is pinned to is newer than the installed one.
+     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordDefinitionUnavailable  When
+     *          the target definition no longer exists on this site.
+     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordTemporarilyUnavailable  When
+     *          the shared fence cannot be taken, or the installation moved since it was resolved.
+     * @throws  \Kumwe\CMS\BusinessSchema\Domain\InvalidBusinessSchema  When the source definition's
+     *          evolution metadata cannot be read for a pinned target version.
+     * @throws  InvalidArgumentException  When the site identifier stored on the definition is malformed,
+     *          or the resolved definition and installation disagree.
+     *
+     * @since   2.0.0
+     */
     private function relationshipTarget(
         ResolvedBusinessDefinition $source,
         RelationshipDefinition $relationship,
@@ -665,6 +1060,39 @@ final readonly class DoctrineBusinessRecordReadRepository implements BusinessRec
         return $this->targetByHandle($source, $relationship->target);
     }
 
+    /**
+     * Fence and resolve another definition on the same site, at the version this source pins it to.
+     *
+     * Reaching sideways into a second definition is the one place a read touches a schema it was not
+     * handed, so the target is fenced first: a shared lock on the target's installation is taken and
+     * held for the rest of the caller's transaction, and the pair resolved afterwards is proved against
+     * the generation observed under that lock. The version read is whatever the source's evolution
+     * hints repin the handle to, defaulting to the installed one, and a pin ahead of what is installed
+     * is refused rather than decoded against a shape that does not exist yet.
+     *
+     * @param   ResolvedBusinessDefinition  $source        Definition doing the reaching, supplying the
+     *          site and the evolution hints that decide the pinned version.
+     * @param   string                      $targetHandle  Handle of the definition to resolve, as a
+     *          relationship or entity-reference field names it.
+     *
+     * @return  ResolvedBusinessDefinition  The target definition at its pinned version, paired with the
+     *          installed schema the fence is holding.
+     *
+     * @throws  BusinessRecordSchemaUnavailable  When no such definition exists on the site, its owner is
+     *          inactive, its installation is missing, not active, or registered to another site, the
+     *          pinned version runs ahead of the installed one, or that version was never published.
+     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordDefinitionUnavailable  When
+     *          the fence finds no definition under the handle on this site.
+     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordTemporarilyUnavailable  When
+     *          no transaction is open to hold the shared lock, the platform offers none, the lock cannot
+     *          be taken, or the resolved pair differs from the fenced generation.
+     * @throws  \Kumwe\CMS\BusinessSchema\Domain\InvalidBusinessSchema  When the source definition's
+     *          evolution metadata is malformed, or the handle is not a namespaced definition handle.
+     * @throws  InvalidArgumentException  When the site identifier stored on the definition is malformed,
+     *          or the published definition and the installation disagree.
+     *
+     * @since   2.0.0
+     */
     private function targetByHandle(
         ResolvedBusinessDefinition $source,
         string $targetHandle,
@@ -699,9 +1127,34 @@ final readonly class DoctrineBusinessRecordReadRepository implements BusinessRec
     }
 
     /**
-     * @param list<string> $where
-     * @param list<mixed> $parameters
-     * @param list<string|ArrayParameterType> $types
+     * Append the tenant-scope predicates for one aliased table of a joined include statement.
+     *
+     * The alias-qualified counterpart of `scope()`, used where a statement names more than one table.
+     * Scope is never optional: a dimension the caller carries but the table does not declare, and a
+     * dimension the table declares but the caller left null, are both refused, so an include cannot
+     * quietly widen past the page it hangs from. The three lists grow together and stay aligned by
+     * position, which is what the caller binds them on.
+     *
+     * @param   PhysicalTableBlueprint           $table       Installed table whose scope columns are
+     *          matched.
+     * @param   string                           $alias       Alias that table carries in the statement.
+     * @param   RecordScope                      $scope       Site and organization the rows must belong
+     *          to.
+     * @param   list<string>                     $where       Predicate list the new comparisons are
+     *          appended to.
+     * @param   list<mixed>                      $parameters  Bound value list the scope identifiers are
+     *          appended to.
+     * @param   list<string|ArrayParameterType>  $types       Bound type list the columns' Doctrine types
+     *          are appended to.
+     *
+     * @return  void
+     *
+     * @throws  BusinessRecordSchemaUnavailable  When the caller carries a scope dimension the table does
+     *          not declare, or the table declares one the caller left null.
+     * @throws  \Doctrine\DBAL\Exception  When the platform to quote the column name for cannot be
+     *          resolved.
+     *
+     * @since   2.0.0
      */
     private function qualifiedScope(
         PhysicalTableBlueprint $table,
@@ -733,6 +1186,21 @@ final readonly class DoctrineBusinessRecordReadRepository implements BusinessRec
         }
     }
 
+    /**
+     * Read an optional ordinal out of an include row's synthetic position column.
+     *
+     * Drivers report an integer column as either an int or a decimal string depending on the platform,
+     * so both are accepted; anything else is a corrupt row rather than a missing position.
+     *
+     * @param   mixed  $value  Raw `__position` column of an include row, or null.
+     *
+     * @return  ?int  The ordinal, or null when the relationship carries no order.
+     *
+     * @throws  BusinessRecordSchemaUnavailable  When a non-null value is neither an integer nor a string
+     *          of digits, optionally signed.
+     *
+     * @since   2.0.0
+     */
     private function nullableInteger(mixed $value): ?int
     {
         if ($value === null) {
@@ -748,6 +1216,35 @@ final readonly class DoctrineBusinessRecordReadRepository implements BusinessRec
         return (int) $value;
     }
 
+    /**
+     * Resolve a line's caller-facing id inside one owner record's owned-line collection.
+     *
+     * An owned line has no identity outside its owner, so the lookup is keyed on the owner's storage key
+     * rather than on a record scope — the owner was already resolved in scope — and a line belonging to
+     * another owner is simply not found. The pinned version reported back is the line definition's own,
+     * taken from the argument rather than read off the row.
+     *
+     * @param   ResolvedBusinessDefinition  $owner           Owner definition whose installation carries
+     *          the line table for this relationship.
+     * @param   BusinessRecord              $ownerRecord     Owner record the line must belong to.
+     * @param   RelationshipDefinition      $relationship    Owned-line relationship naming that table.
+     * @param   EntityTypeDefinition        $lineDefinition  Definition of the line, whose identity
+     *          strategy decides which column the id is matched against.
+     * @param   string                      $lineId          Caller-facing identity of the line.
+     *
+     * @return  ?StoredRecordIdentity  Internal key and optimistic-lock version of the line, carrying the
+     *          line definition's version; null when this owner holds no such line.
+     *
+     * @throws  BusinessRecordSchemaUnavailable  When the installation carries no line table for the
+     *          relationship, the table lacks a column this lookup names, the line definition declares no
+     *          identity field, or a stored key or version column is not its declared type.
+     * @throws  InvalidArgumentException  When the stored line key is not a canonical UUID, the stored
+     *          identity is empty or malformed, or either version is below one.
+     * @throws  \Doctrine\DBAL\Exception  When the driver rejects the lookup, or the platform to quote
+     *          identifiers for cannot be resolved.
+     *
+     * @since   2.0.0
+     */
     public function ownedLineIdentity(
         ResolvedBusinessDefinition $owner,
         BusinessRecord $ownerRecord,
@@ -784,7 +1281,35 @@ final readonly class DoctrineBusinessRecordReadRepository implements BusinessRec
         );
     }
 
-    /** @param array<string, mixed> $row */
+    /**
+     * Turn one fetched row into the domain record, under the definition version it was written with.
+     *
+     * This is the single decode path every read shares. The row's own `definition_version` column must
+     * equal the version of $resolved, so a caller that failed to re-pin gets a refusal instead of a
+     * record decoded against the wrong shape. Values are rebuilt through the codec, virtual formula
+     * fields are recomputed rather than trusted from storage, and the caller-facing identity is derived
+     * last, from the values the identity strategy actually keeps it in.
+     *
+     * @param   ResolvedBusinessDefinition  $resolved  Pinned definition the row must have been written
+     *          under, and whose fields the columns are decoded into.
+     * @param   PhysicalTableBlueprint      $table     Installed table the row was fetched from.
+     * @param   array<string, mixed>        $row       Raw column values as the driver returned them.
+     *
+     * @return  BusinessRecord  The decoded record, with its scope reconstituted from the stored columns.
+     *
+     * @throws  BusinessRecordSchemaUnavailable  When the row was written under a different definition
+     *          version, the table lacks a column the decode names, or a stored control column is not its
+     *          declared type.
+     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordValidationFailed  When the
+     *          decoded row's virtual formula fields cannot be recomputed.
+     * @throws  InvalidArgumentException  When a stored value contradicts the physical type declared for
+     *          its column, the stored scope columns disagree with the definition's scope mode, a
+     *          reference-identity row decoded no identity, or the row breaks a `BusinessRecord`
+     *          invariant.
+     * @throws  \DateMalformedStringException  When a stored timestamp column holds an unparsable string.
+     *
+     * @since   2.0.0
+     */
     private function map(
         ResolvedBusinessDefinition $resolved,
         PhysicalTableBlueprint $table,
@@ -834,9 +1359,29 @@ final readonly class DoctrineBusinessRecordReadRepository implements BusinessRec
     }
 
     /**
-     * @param list<string> $where
-     * @param list<mixed> $parameters
-     * @param list<string> $types
+     * Append the tenant-scope predicates for a statement that names one unaliased table.
+     *
+     * Scope is bound, never interpolated, and it is never optional: a dimension the caller carries but
+     * the installed table does not declare, and a dimension the table declares but the caller left null,
+     * are both refused rather than dropped, so a read cannot escape its tenant by omission. The three
+     * lists grow together and stay aligned by position, which is what the caller binds them on.
+     *
+     * @param   PhysicalTableBlueprint  $table       Installed table whose scope columns are matched.
+     * @param   RecordScope             $scope       Site and organization the rows must belong to.
+     * @param   list<string>            $where       Predicate list the new comparisons are appended to.
+     * @param   list<mixed>             $parameters  Bound value list the scope identifiers are appended
+     *          to.
+     * @param   list<string>            $types       Bound type list the columns' Doctrine types are
+     *          appended to.
+     *
+     * @return  void
+     *
+     * @throws  BusinessRecordSchemaUnavailable  When the request carries a scope dimension the installed
+     *          table does not declare, or the table declares one the request left null.
+     * @throws  \Doctrine\DBAL\Exception  When the platform to quote the column name for cannot be
+     *          resolved.
+     *
+     * @since   2.0.0
      */
     private function scope(
         PhysicalTableBlueprint $table,
@@ -867,7 +1412,23 @@ final readonly class DoctrineBusinessRecordReadRepository implements BusinessRec
         }
     }
 
-    /** @param array<string, mixed> $row */
+    /**
+     * Read a control column that the installed table may not declare at all.
+     *
+     * Lifecycle and scope columns exist only when the definition asked for them, so an absent column and
+     * a NULL value are deliberately both reported as null: the caller wants "no value", not "no column".
+     *
+     * @param   array<string, mixed>    $row      Raw column values as the driver returned them.
+     * @param   PhysicalTableBlueprint  $table    Installed table the row was fetched from.
+     * @param   string                  $logical  Logical column handle, such as `archived_by`.
+     *
+     * @return  ?string  The stored text, or null when the table declares no such column or it is NULL.
+     *
+     * @throws  BusinessRecordSchemaUnavailable  When the column is present but holds something other
+     *          than a string.
+     *
+     * @since   2.0.0
+     */
     private function optionalString(
         array $row,
         PhysicalTableBlueprint $table,
@@ -885,7 +1446,24 @@ final readonly class DoctrineBusinessRecordReadRepository implements BusinessRec
         return $value;
     }
 
-    /** @param array<string, mixed> $row */
+    /**
+     * Read a lifecycle timestamp that the installed table may not declare at all.
+     *
+     * The archive and soft-delete columns exist only when the definition asked for them, so an absent
+     * column and a NULL value both mean the record never reached that state.
+     *
+     * @param   array<string, mixed>    $row      Raw column values as the driver returned them.
+     * @param   PhysicalTableBlueprint  $table    Installed table the row was fetched from.
+     * @param   string                  $logical  Logical column handle, such as `deleted_at`.
+     *
+     * @return  ?DateTimeImmutable  The instant the column records, or null when the table declares no
+     *          such column or it is NULL.
+     *
+     * @throws  BusinessRecordSchemaUnavailable  When the column holds neither a date-time nor a string.
+     * @throws  \DateMalformedStringException  When the stored string cannot be parsed as an instant.
+     *
+     * @since   2.0.0
+     */
     private function optionalDate(
         array $row,
         PhysicalTableBlueprint $table,
@@ -899,7 +1477,22 @@ final readonly class DoctrineBusinessRecordReadRepository implements BusinessRec
         return $this->date($row[$column->physicalName]);
     }
 
-    /** @param array<string, mixed> $row */
+    /**
+     * Read a column the decode cannot proceed without, and prove it came back as text.
+     *
+     * Used for the key, identity and actor columns, where a missing column and a NULL are equally fatal,
+     * so both are reported as a corrupt row rather than as an absent value.
+     *
+     * @param   array<string, mixed>  $row       Raw column values as the driver returned them.
+     * @param   string                $physical  Installed column name to read.
+     *
+     * @return  string  The stored text.
+     *
+     * @throws  BusinessRecordSchemaUnavailable  When the column is absent, NULL, or holds something
+     *          other than a string.
+     *
+     * @since   2.0.0
+     */
     private function string(array $row, string $physical): string
     {
         $value = $row[$physical] ?? null;
@@ -910,7 +1503,22 @@ final readonly class DoctrineBusinessRecordReadRepository implements BusinessRec
         return $value;
     }
 
-    /** @param array<string, mixed> $row */
+    /**
+     * Read a version-style column and prove it came back as a whole number.
+     *
+     * Drivers report an integer column as either an int or a decimal string depending on the platform,
+     * so both are accepted; a string that is anything but a plain run of digits is a corrupt row.
+     *
+     * @param   array<string, mixed>  $row       Raw column values as the driver returned them.
+     * @param   string                $physical  Installed column name to read.
+     *
+     * @return  int  The stored number.
+     *
+     * @throws  BusinessRecordSchemaUnavailable  When the column is absent, NULL, or holds neither an
+     *          integer nor a string of digits.
+     *
+     * @since   2.0.0
+     */
     private function integer(array $row, string $physical): int
     {
         $value = $row[$physical] ?? null;
@@ -924,6 +1532,23 @@ final readonly class DoctrineBusinessRecordReadRepository implements BusinessRec
         return (int) $value;
     }
 
+    /**
+     * Normalize whatever a driver returned for a timestamp column into an immutable instant.
+     *
+     * Platforms differ over whether a date-time column arrives already converted or as a string, so both
+     * are accepted. A stored string carrying no offset is read as UTC, since that is how the write side
+     * stores one; a value that already states an offset keeps it, so the point in time is preserved
+     * rather than reinterpreted.
+     *
+     * @param   mixed  $value  Raw timestamp column as the driver returned it.
+     *
+     * @return  DateTimeImmutable  The instant the column records.
+     *
+     * @throws  BusinessRecordSchemaUnavailable  When the value is neither a date-time nor a string.
+     * @throws  \DateMalformedStringException  When the string cannot be parsed as an instant.
+     *
+     * @since   2.0.0
+     */
     private function date(mixed $value): DateTimeImmutable
     {
         if ($value instanceof DateTimeImmutable) {
@@ -938,13 +1563,48 @@ final readonly class DoctrineBusinessRecordReadRepository implements BusinessRec
         throw new BusinessRecordSchemaUnavailable('A stored business-record timestamp is invalid.');
     }
 
+    /**
+     * Take the installed record table out of a resolved definition's blueprint.
+     *
+     * Every read of a record table starts here, so a definition whose installation carries no `record`
+     * table is refused up front rather than producing a statement against a table that does not exist.
+     *
+     * @param   ResolvedBusinessDefinition  $resolved  Definition paired with the schema installed for it.
+     *
+     * @return  PhysicalTableBlueprint  Blueprint of the table the definition's records live in.
+     *
+     * @throws  BusinessRecordSchemaUnavailable  When the installed blueprint declares no record table.
+     *
+     * @since   2.0.0
+     */
     private function recordTable(ResolvedBusinessDefinition $resolved): PhysicalTableBlueprint
     {
         return $resolved->installation->blueprint->table('record')
             ?? throw new BusinessRecordSchemaUnavailable('The installed schema has no record table.');
     }
 
-    /** @param array<string, mixed> $row */
+    /**
+     * Re-resolve the published definition one fetched row was actually written under.
+     *
+     * A table holds rows from every version that has ever been written to it, so a scan cannot assume
+     * the caller's definition describes them all. The caller's own pair is returned unchanged in the
+     * common case, and only a row that disagrees costs a lookup; the result is paired with the same
+     * installation, since an older version of the same definition still lives in the same tables.
+     *
+     * @param   ResolvedBusinessDefinition  $resolved  Definition the read was started with, reused when
+     *          the row agrees with it and supplying the installation either way.
+     * @param   PhysicalTableBlueprint      $table     Installed table the row was fetched from.
+     * @param   array<string, mixed>        $row       Raw column values as the driver returned them.
+     *
+     * @return  ResolvedBusinessDefinition  The pair the row must be decoded with.
+     *
+     * @throws  BusinessRecordSchemaUnavailable  When the row's version column is unusable, or that
+     *          version was never published for this definition.
+     * @throws  InvalidArgumentException  When the site identifier stored on the definition is malformed,
+     *          or the older definition version disagrees with the installation.
+     *
+     * @since   2.0.0
+     */
     private function pinnedForRow(
         ResolvedBusinessDefinition $resolved,
         PhysicalTableBlueprint $table,
@@ -966,18 +1626,69 @@ final readonly class DoctrineBusinessRecordReadRepository implements BusinessRec
         return new ResolvedBusinessDefinition($published->definition, $resolved->installation);
     }
 
+    /**
+     * Translate a logical column handle into the name it was installed under.
+     *
+     * Column names are interpolated into these statements rather than bound, so every one is looked up
+     * in the installed blueprint first: a handle the blueprint does not declare produces a refusal
+     * rather than text.
+     *
+     * @param   PhysicalTableBlueprint  $table    Installed table to resolve against.
+     * @param   string                  $logical  Logical column handle, such as `record_id`.
+     *
+     * @return  string  The installed column name, still unquoted.
+     *
+     * @throws  BusinessRecordSchemaUnavailable  When the table declares no column under that handle.
+     *
+     * @since   2.0.0
+     */
     private function physical(PhysicalTableBlueprint $table, string $logical): string
     {
         return $table->column($logical)->physicalName
             ?? throw new BusinessRecordSchemaUnavailable('An installed business-record column is unavailable.');
     }
 
+    /**
+     * Report the Doctrine type a logical column's value must be bound with.
+     *
+     * Values are bound by type rather than interpolated, so the type comes from the same installed
+     * blueprint the column name does and never from a guess about the value.
+     *
+     * @param   PhysicalTableBlueprint  $table    Installed table to resolve against.
+     * @param   string                  $logical  Logical column handle, such as `owner_id`.
+     *
+     * @return  string  Doctrine type name to bind a parameter for that column with.
+     *
+     * @throws  BusinessRecordSchemaUnavailable  When the table declares no column under that handle.
+     *
+     * @since   2.0.0
+     */
     private function type(PhysicalTableBlueprint $table, string $logical): string
     {
         return $table->column($logical)->doctrineType
             ?? throw new BusinessRecordSchemaUnavailable('An installed business-record column type is unavailable.');
     }
 
+    /**
+     * Decide which installed column a caller-facing record id is matched against.
+     *
+     * A UUID definition is looked up on the storage key itself, because the key and the public identity
+     * are the same value. A reference-identity definition keeps its identity in a field of its own, and
+     * which field that is was recorded in the table's own options when the schema was compiled — so the
+     * answer comes from the installed metadata rather than from the current definition.
+     *
+     * @param   ResolvedBusinessDefinition  $resolved  Definition whose identity strategy decides the
+     *          source of the answer.
+     * @param   PhysicalTableBlueprint      $table     Installed table whose options record the identity
+     *          field.
+     *
+     * @return  string  Installed name of the column to match a record id against.
+     *
+     * @throws  BusinessRecordSchemaUnavailable  When the table metadata records no string
+     *          `identity_field`, or declares no column under it.
+     *
+     * @since   2.0.0
+     */
     private function identityPhysical(
         ResolvedBusinessDefinition $resolved,
         PhysicalTableBlueprint $table,
@@ -993,6 +1704,23 @@ final readonly class DoctrineBusinessRecordReadRepository implements BusinessRec
         return $this->physical($table, $handle);
     }
 
+    /**
+     * Find the field handle a definition carries its identity in.
+     *
+     * The counterpart of `identityPhysical()` for the cases where no table metadata is available — an
+     * owned line, or a relationship target being read for its public id — so the handle is recovered
+     * from the definition's own fields, by the field type its identity strategy implies.
+     *
+     * @param   EntityTypeDefinition  $definition  Definition whose identity strategy names the field
+     *          type to look for.
+     *
+     * @return  string  Handle of the `core.uuid` or `core.reference_identity` field.
+     *
+     * @throws  BusinessRecordSchemaUnavailable  When the definition declares no field of the type its
+     *          identity strategy requires.
+     *
+     * @since   2.0.0
+     */
     private function identityHandle(EntityTypeDefinition $definition): string
     {
         $type = $definition->identityStrategy === IdentityStrategy::Uuid
@@ -1006,6 +1734,22 @@ final readonly class DoctrineBusinessRecordReadRepository implements BusinessRec
         throw new BusinessRecordSchemaUnavailable('A line definition identity field is unavailable.');
     }
 
+    /**
+     * Report the Doctrine type of a column already known by its installed name.
+     *
+     * The identity column is chosen by physical name rather than by logical handle, so its binding type
+     * has to be recovered the same way instead of through `type()`.
+     *
+     * @param   PhysicalTableBlueprint  $table     Installed table to search.
+     * @param   string                  $physical  Installed column name to bind a value for.
+     *
+     * @return  string  Doctrine type name to bind a parameter for that column with.
+     *
+     * @throws  BusinessRecordSchemaUnavailable  When the table declares no column under that installed
+     *          name.
+     *
+     * @since   2.0.0
+     */
     private function physicalType(PhysicalTableBlueprint $table, string $physical): string
     {
         foreach ($table->columns() as $column) {
@@ -1016,6 +1760,21 @@ final readonly class DoctrineBusinessRecordReadRepository implements BusinessRec
         throw new BusinessRecordSchemaUnavailable('A physical identity column is absent from its blueprint.');
     }
 
+    /**
+     * Quote one installed identifier for the connected platform.
+     *
+     * Table and column names reach these statements from the installed blueprint rather than from a
+     * request, and quoting them keeps a generated name that collides with a reserved word usable on
+     * every supported engine.
+     *
+     * @param   string  $identifier  Single installed table or column name, never a dotted path.
+     *
+     * @return  string  The identifier quoted the way the connected driver expects.
+     *
+     * @throws  \Doctrine\DBAL\Exception  When the platform to quote for cannot be resolved.
+     *
+     * @since   2.0.0
+     */
     private function quote(string $identifier): string
     {
         return $this->database->getDatabasePlatform()->quoteSingleIdentifier($identifier);

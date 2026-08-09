@@ -4,9 +4,38 @@ declare(strict_types=1);
 
 namespace Kumwe\CMS\BusinessDefinition\Domain;
 
+/**
+ * One field type a business field may declare, pairing the value family with its storage family.
+ *
+ * Field types are the vocabulary `FieldDefinition::$type` draws from: `BuiltInFieldTypes` supplies the
+ * `core.*` set and a schema-2 package contributes its own under its extension namespace. Construction
+ * fixes the two halves that have to agree — the logical family a caller sees and the physical family the
+ * schema compiler emits a column for — and refuses a pairing no conversion could serve, so an
+ * unstorable type is rejected when it is declared rather than when a table is built. The configuration
+ * keys are the closed set a field of this type may set; `BusinessDefinitionValidator` rejects any key
+ * outside it. A published identifier is pinned to the bytes it shipped with, so an extension may revise
+ * its types only by declaring new identifiers.
+ *
+ * @since  2.0.0
+ */
 final readonly class FieldTypeDefinition
 {
-    /** @param list<string> $configurationKeys */
+    /**
+     * Declare a field type and reject a value and storage pairing no conversion could serve.
+     *
+     * @param   string        $id                 Namespaced identifier fields declare, such as `core.text`.
+     * @param   string        $label              Operator-facing name shown when choosing a type.
+     * @param   string        $description        Short explanation shown beside the label.
+     * @param   string        $valueType          Logical family callers exchange, such as `string`.
+     * @param   string        $storageType        Physical family a column is emitted in, such as `json`.
+     * @param   list<string>  $configurationKeys  The only configuration keys a field of this type may set.
+     *
+     * @throws  InvalidBusinessDefinition  When the identifier is not namespaced, the metadata is empty or
+     *          oversized, either family is unsupported, the two families cannot be converted into one
+     *          another, or the configuration keys are duplicated, unbounded, or malformed.
+     *
+     * @since   2.0.0
+     */
     public function __construct(
         public string $id,
         public string $label,
@@ -59,7 +88,22 @@ final readonly class FieldTypeDefinition
         }
     }
 
-    /** @param array<string, mixed> $document */
+    /**
+     * Rebuild a field type from the canonical document `toArray()` writes.
+     *
+     * This is the boundary a package declaration and a stored field-type row both come through, so an
+     * unknown key is refused rather than dropped: the document's bytes are the contract an existing
+     * identifier is pinned to.
+     *
+     * @param   array<string, mixed>  $document  Canonical field-type document, keyed as it is stored.
+     *
+     * @return  self  The field type, with every construction rule already applied.
+     *
+     * @throws  InvalidBusinessDefinition  When a key is unknown, the configuration keys are not a list of
+     *          strings, or the resulting type breaks a construction rule.
+     *
+     * @since   2.0.0
+     */
     public static function fromArray(array $document): self
     {
         self::knownKeys($document, ['id', 'label', 'description', 'value_type', 'storage_type', 'configuration_keys']);
@@ -85,7 +129,14 @@ final readonly class FieldTypeDefinition
         );
     }
 
-    /** @return array<string, mixed> */
+    /**
+     * Export the field type as the document its published bytes are compared against.
+     *
+     * @return  array<string, mixed>  Identifier, labels, both families, and the configuration keys under
+     *          their snake_case keys.
+     *
+     * @since   2.0.0
+     */
     public function toArray(): array
     {
         return [
@@ -98,7 +149,18 @@ final readonly class FieldTypeDefinition
         ];
     }
 
-    /** @param array<string, mixed> $document */
+    /**
+     * Read a mandatory string property, trimmed.
+     *
+     * @param   array<string, mixed>  $document  Document the property is read from.
+     * @param   string                $key       Property name, which is also named in the failure.
+     *
+     * @return  string  The value with surrounding whitespace removed.
+     *
+     * @throws  InvalidBusinessDefinition  When the property is absent, not a string, or blank.
+     *
+     * @since   2.0.0
+     */
     private static function string(array $document, string $key): string
     {
         $value = $document[$key] ?? null;
@@ -110,8 +172,16 @@ final readonly class FieldTypeDefinition
     }
 
     /**
-     * @param array<string, mixed> $document
-     * @param list<string> $allowed
+     * Refuse a document carrying any property outside the declared set.
+     *
+     * @param   array<string, mixed>  $document  Document whose keys are being checked.
+     * @param   list<string>          $allowed   Every property name this release understands.
+     *
+     * @return  void
+     *
+     * @throws  InvalidBusinessDefinition  When the document carries a key outside the allowed set.
+     *
+     * @since   2.0.0
      */
     private static function knownKeys(array $document, array $allowed): void
     {

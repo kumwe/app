@@ -4,25 +4,112 @@ declare(strict_types=1);
 
 namespace Kumwe\CMS\BusinessDefinition\Domain;
 
+/**
+ * One field of a business entity's contract, validated the moment it is constructed.
+ *
+ * A field is the unit the rest of the business stack agrees on: the schema compiler turns it into a
+ * column with its indexes, `RecordValueCodec` normalizes values through it, `RecordRuleValidator`
+ * enforces its required, immutable, and read-only rules on every write, and the compatibility analyzer
+ * diffs two of them to classify what a new version does to stored data. Construction refuses a field
+ * that contradicts itself — required and nullable at once, computed without a formula, an encrypted
+ * secret that claims to be searchable — and canonicalizes what the published checksum is taken over, so
+ * that two fields declaring the same thing serialize to the same bytes. Rules needing the wider graph,
+ * such as whether the declared type is registered or a referenced entity is reachable, belong to
+ * `BusinessDefinitionValidator` instead.
+ *
+ * @since  2.0.0
+ */
 final readonly class FieldDefinition
 {
-    /** @var list<string> */
+    /**
+     * Normalizer identifiers applied to a submitted value, in declared order, before validation.
+     *
+     * @var    list<string>
+     * @since  2.0.0
+     */
     public array $normalizers;
 
-    /** @var list<array<string, mixed>> */
+    /**
+     * Validation rules run after normalization, each a `rule` document with the rule's own arguments.
+     *
+     * @var    list<array<string, mixed>>
+     * @since  2.0.0
+     */
     public array $validators;
 
-    /** @var list<string> */
+    /**
+     * Surfaces the field is rendered on: `list`, `detail`, `form`, `history`, or `relation`.
+     *
+     * Stored deduplicated and sorted, so declaring the same surfaces in another order yields one
+     * canonical document.
+     *
+     * @var    list<string>
+     * @since  2.0.0
+     */
     public array $placements;
 
-    /** @var array<string, scalar|list<scalar|null>|null> */
+    /**
+     * Type-specific settings, keyed by name and sorted so the canonical document is deterministic.
+     *
+     * Which keys are meaningful belongs to the declared field type; `BusinessDefinitionValidator`
+     * rejects any key that type does not register.
+     *
+     * @var    array<string, scalar|list<scalar|null>|null>
+     * @since  2.0.0
+     */
     public array $configuration;
 
     /**
-     * @param list<string> $normalizers
-     * @param list<array<string, mixed>> $validators
-     * @param list<string> $placements
-     * @param array<string, scalar|list<scalar|null>|null> $configuration
+     * Capture a field declaration and reject one the runtime could not honour.
+     *
+     * These rules are settled once, at construction, so every consumer downstream may treat a field it
+     * is handed as internally consistent and already canonicalized.
+     *
+     * @param   string                                        $handle                Stable snake_case field identifier.
+     * @param   string                                        $label                 Operator-facing name for the field.
+     * @param   string                                        $type                  Namespaced field-type identifier.
+     * @param   string                                        $description           Editor-facing note on its purpose.
+     * @param   bool                                          $required              Whether a value must be supplied.
+     * @param   bool                                          $nullable              Whether null is an accepted value.
+     * @param   mixed                                         $default               Value used when none is supplied.
+     * @param   ?int                                          $length                Bounded character length, or null.
+     * @param   ?int                                          $precision             Total digits of an exact numeric.
+     * @param   ?int                                          $scale                 Fractional digits of the numeric.
+     * @param   array<string, scalar|list<scalar|null>|null>  $configuration         Type-specific settings by key.
+     * @param   list<string>                                  $normalizers           Normalizer identifiers, in order.
+     * @param   list<array<string, mixed>>                    $validators            Validation rules to apply.
+     * @param   bool                                          $unique                Whether values must be unique.
+     * @param   bool                                          $indexed               Whether storage carries an index.
+     * @param   bool                                          $immutableAfterCreate  Whether updates may not change it.
+     * @param   bool                                          $serverOnly            Whether no caller may supply it.
+     * @param   bool                                          $computed              Whether the server derives it.
+     * @param   bool                                          $readOnly              Whether callers may not write it.
+     * @param   bool                                          $createVisible         Whether create surfaces expose it.
+     * @param   bool                                          $updateVisible         Whether update surfaces expose it.
+     * @param   bool                                          $readVisible           Whether reads may return the value.
+     * @param   bool                                          $searchable            Whether search may target it.
+     * @param   bool                                          $filterable            Whether queries may filter on it.
+     * @param   bool                                          $sortable              Whether queries may sort on it.
+     * @param   bool                                          $reportable            Whether aggregates may cover it.
+     * @param   bool                                          $exportable            Whether exports may include it.
+     * @param   Sensitivity                                   $sensitivity           Handling class for redaction.
+     * @param   bool                                          $localized             Whether the value is translated.
+     * @param   string                                        $helpText              Short hint rendered by the form.
+     * @param   string                                        $formGroup             Form section the field sits in.
+     * @param   int                                           $order                 Sort weight within that group.
+     * @param   list<string>                                  $placements            Surfaces the field renders on.
+     * @param   ?Expression                                   $visibilityCondition   Condition gating display.
+     * @param   ?Expression                                   $editabilityCondition  Condition gating edits.
+     * @param   ?Expression                                   $formula               Expression deriving the value.
+     * @param   ComputationMode                               $computationMode       Whether the result is stored.
+     *
+     * @throws  InvalidBusinessDefinition  When an identifier, label, or numeric bound is malformed, a
+     *          combination of flags contradicts itself, the default or the configuration is not
+     *          canonically serializable, a computed field is missing the formula and the server-only and
+     *          read-only rules it needs, the normalizer or validator lists are over length or repeat an
+     *          entry, or the placements are empty or name a surface that does not exist.
+     *
+     * @since   2.0.0
      */
     public function __construct(
         public string $handle,
@@ -170,7 +257,23 @@ final readonly class FieldDefinition
         $this->placements = $placements;
     }
 
-    /** @param array<string, mixed> $document */
+    /**
+     * Rebuild a field from the canonical document `toArray()` writes.
+     *
+     * The keys are the snake_case ones a published definition stores, and an unknown key is refused
+     * rather than ignored, so a definition exported by a later release is never imported with part of
+     * its meaning quietly dropped.
+     *
+     * @param   array<string, mixed>  $document  Canonical field document, keyed as it is stored.
+     *
+     * @return  self  The field, with every construction rule already applied.
+     *
+     * @throws  InvalidBusinessDefinition  When a key is unknown, a member has the wrong type, the
+     *          sensitivity or computation mode is unrecognised, or the resulting field breaks a
+     *          construction rule.
+     *
+     * @since   2.0.0
+     */
     public static function fromArray(array $document): self
     {
         $allowed = [
@@ -228,7 +331,17 @@ final readonly class FieldDefinition
         );
     }
 
-    /** @return array<string, mixed> */
+    /**
+     * Export the field as the canonical document the definition checksum is taken over.
+     *
+     * `computation_mode` is written only for a stored computation, because a definition published
+     * before that key existed described a virtual one implicitly and must keep its original bytes.
+     *
+     * @return  array<string, mixed>  Every declared property under its snake_case key, with enums and
+     *          expressions flattened to their own document form.
+     *
+     * @since   2.0.0
+     */
     public function toArray(): array
     {
         $document = [
@@ -278,7 +391,18 @@ final readonly class FieldDefinition
         return $document;
     }
 
-    /** @param array<string, mixed> $document */
+    /**
+     * Read a mandatory string property, trimmed.
+     *
+     * @param   array<string, mixed>  $document  Document the property is read from.
+     * @param   string                $key       Property name, which is also named in the failure.
+     *
+     * @return  string  The value with surrounding whitespace removed.
+     *
+     * @throws  InvalidBusinessDefinition  When the property is absent, not a string, or blank.
+     *
+     * @since   2.0.0
+     */
     private static function string(array $document, string $key): string
     {
         $value = $document[$key] ?? null;
@@ -288,7 +412,19 @@ final readonly class FieldDefinition
         return trim($value);
     }
 
-    /** @param array<string, mixed> $document */
+    /**
+     * Read a string property that falls back to a default when the document omits it.
+     *
+     * @param   array<string, mixed>  $document  Document the property is read from.
+     * @param   string                $key       Property name, which is also named in the failure.
+     * @param   string                $default   Value substituted when the key is absent.
+     *
+     * @return  string  The value with surrounding whitespace removed.
+     *
+     * @throws  InvalidBusinessDefinition  When the property is present but not a string.
+     *
+     * @since   2.0.0
+     */
     private static function optionalString(array $document, string $key, string $default = ''): string
     {
         $value = $document[$key] ?? $default;
@@ -298,7 +434,19 @@ final readonly class FieldDefinition
         return trim($value);
     }
 
-    /** @param array<string, mixed> $document */
+    /**
+     * Read a flag, falling back to the declared default when the document omits it.
+     *
+     * @param   array<string, mixed>  $document  Document the property is read from.
+     * @param   string                $key       Property name, which is also named in the failure.
+     * @param   bool                  $default   Value substituted when the key is absent.
+     *
+     * @return  bool  The declared flag, or the default.
+     *
+     * @throws  InvalidBusinessDefinition  When the property is present but not a boolean.
+     *
+     * @since   2.0.0
+     */
     private static function boolean(array $document, string $key, bool $default = false): bool
     {
         $value = $document[$key] ?? $default;
@@ -308,7 +456,18 @@ final readonly class FieldDefinition
         return $value;
     }
 
-    /** @param array<string, mixed> $document */
+    /**
+     * Read an integer property, treating an absent one as zero.
+     *
+     * @param   array<string, mixed>  $document  Document the property is read from.
+     * @param   string                $key       Property name, which is also named in the failure.
+     *
+     * @return  int  The declared value, or zero when the key is absent.
+     *
+     * @throws  InvalidBusinessDefinition  When the property is present but not an integer.
+     *
+     * @since   2.0.0
+     */
     private static function integer(array $document, string $key): int
     {
         $value = $document[$key] ?? 0;
@@ -318,7 +477,18 @@ final readonly class FieldDefinition
         return $value;
     }
 
-    /** @param array<string, mixed> $document */
+    /**
+     * Read an integer property that may legitimately be undeclared.
+     *
+     * @param   array<string, mixed>  $document  Document the property is read from.
+     * @param   string                $key       Property name, which is also named in the failure.
+     *
+     * @return  ?int  The declared bound, or null when the field leaves it open.
+     *
+     * @throws  InvalidBusinessDefinition  When the property is present but neither an integer nor null.
+     *
+     * @since   2.0.0
+     */
     private static function optionalInteger(array $document, string $key): ?int
     {
         $value = $document[$key] ?? null;
@@ -329,8 +499,19 @@ final readonly class FieldDefinition
     }
 
     /**
-     * @param array<string, mixed> $document
-     * @return array<string, scalar|list<scalar|null>|null>
+     * Read the type-specific configuration object.
+     *
+     * Only the container's shape is settled here — a JSON list is refused because configuration is
+     * keyed — while the constructor is what checks each key and value.
+     *
+     * @param   array<string, mixed>  $document  Document the configuration is read from.
+     *
+     * @return  array<string, scalar|list<scalar|null>|null>  The declared settings, empty when the field
+     *          configures nothing.
+     *
+     * @throws  InvalidBusinessDefinition  When the configuration is present but not an object.
+     *
+     * @since   2.0.0
      */
     private static function configuration(array $document): array
     {
@@ -343,9 +524,17 @@ final readonly class FieldDefinition
     }
 
     /**
-     * @param array<string, mixed> $document
-     * @param list<string> $default
-     * @return list<string>
+     * Read a list of strings, such as the normalizer or placement names.
+     *
+     * @param   array<string, mixed>  $document  Document the property is read from.
+     * @param   string                $key       Property name, which is also named in the failure.
+     * @param   list<string>          $default   List substituted when the key is absent.
+     *
+     * @return  list<string>  The declared entries in document order, unvalidated beyond their type.
+     *
+     * @throws  InvalidBusinessDefinition  When the property is not a list, or holds a non-string entry.
+     *
+     * @since   2.0.0
      */
     private static function stringList(array $document, string $key, array $default = []): array
     {
@@ -364,8 +553,17 @@ final readonly class FieldDefinition
     }
 
     /**
-     * @param array<string, mixed> $document
-     * @return list<array<string, mixed>>
+     * Read a list of objects, which is the shape the validator rules arrive in.
+     *
+     * @param   array<string, mixed>  $document  Document the property is read from.
+     * @param   string                $key       Property name, which is also named in the failure.
+     *
+     * @return  list<array<string, mixed>>  The declared entries in document order, empty when absent.
+     *
+     * @throws  InvalidBusinessDefinition  When the property is not a list, or holds an entry that is not
+     *          a keyed object.
+     *
+     * @since   2.0.0
      */
     private static function objectList(array $document, string $key): array
     {
@@ -384,7 +582,19 @@ final readonly class FieldDefinition
         return $result;
     }
 
-    /** @param array<string, mixed> $document */
+    /**
+     * Parse an optional condition or formula into its typed expression tree.
+     *
+     * @param   array<string, mixed>  $document  Document the expression is read from.
+     * @param   string                $key       Property name, which is also named in the failure.
+     *
+     * @return  ?Expression  The parsed expression, or null when the field declares none.
+     *
+     * @throws  InvalidBusinessDefinition  When the property is not an object, or the expression exceeds
+     *          the parser's size, depth, arity, or type limits.
+     *
+     * @since   2.0.0
+     */
     private static function expression(array $document, string $key): ?Expression
     {
         $value = $document[$key] ?? null;
@@ -399,8 +609,18 @@ final readonly class FieldDefinition
     }
 
     /**
-     * @param list<string> $values
-     * @return list<string>
+     * Check a bounded list of identifiers for duplicates, length, and shape.
+     *
+     * @param   list<string>  $values   Declared identifiers, in the order they are applied.
+     * @param   string        $kind     Word naming the list in the failure message, such as `normalizer`.
+     * @param   int           $maximum  Largest number of entries this list may carry.
+     *
+     * @return  list<string>  The values unchanged, order preserved, once every one of them is valid.
+     *
+     * @throws  InvalidBusinessDefinition  When the list is over length, repeats an entry, or holds one
+     *          that is not a bounded lowercase identifier.
+     *
+     * @since   2.0.0
      */
     private static function identifiers(array $values, string $kind, int $maximum): array
     {

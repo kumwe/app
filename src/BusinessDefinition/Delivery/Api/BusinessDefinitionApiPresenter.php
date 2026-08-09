@@ -14,10 +14,20 @@ use Kumwe\CMS\BusinessDefinition\Domain\CompatibilityPlan;
  *
  * Every delivery surface reads definitions through the same application service, so this
  * presenter only shapes already-authorized results; it makes no decisions of its own.
+ *
+ * @since  2.0.0
  */
 final readonly class BusinessDefinitionApiPresenter
 {
-    /** @return array<string, mixed> */
+    /**
+     * Render one catalog row as a collection item.
+     *
+     * @param   DefinitionCatalogEntry  $entry  Row read from the application catalog.
+     *
+     * @return  array<string, mixed>  Identity, ownership and revision counters; no definition body.
+     *
+     * @since   2.0.0
+     */
     public function catalogEntry(DefinitionCatalogEntry $entry): array
     {
         return [
@@ -32,7 +42,15 @@ final readonly class BusinessDefinitionApiPresenter
         ];
     }
 
-    /** @return array<string, mixed> */
+    /**
+     * Render a draft with the revision metadata a caller needs to write it back safely.
+     *
+     * @param   DefinitionDraft  $draft  Draft read from the application service.
+     *
+     * @return  array<string, mixed>  The whole definition under `definition`, beside revision and checksum.
+     *
+     * @since   2.0.0
+     */
     public function draft(DefinitionDraft $draft): array
     {
         return [
@@ -44,7 +62,15 @@ final readonly class BusinessDefinitionApiPresenter
         ];
     }
 
-    /** @return array<string, mixed> */
+    /**
+     * Render one published version together with the compatibility plan that produced it.
+     *
+     * @param   DefinitionVersionRecord  $record  Version read from the application service.
+     *
+     * @return  array<string, mixed>  The whole definition, its lifecycle status and its plan.
+     *
+     * @since   2.0.0
+     */
     public function version(DefinitionVersionRecord $record): array
     {
         return [
@@ -58,7 +84,18 @@ final readonly class BusinessDefinitionApiPresenter
         ];
     }
 
-    /** @return array<string, mixed> */
+    /**
+     * Render a compatibility plan on its own, as the preview endpoint answers it.
+     *
+     * The plan already knows its own document shape, so this delegates rather than restating it, and the
+     * version documents above reuse it so a preview and a publication describe a plan identically.
+     *
+     * @param   CompatibilityPlan  $plan  Plan analysed between the published head and the draft.
+     *
+     * @return  array<string, mixed>  Version bounds, checksums, risk flags and the ordered change list.
+     *
+     * @since   2.0.0
+     */
     public function compatibility(CompatibilityPlan $plan): array
     {
         return $plan->toArray();

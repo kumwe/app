@@ -13,14 +13,60 @@ use Kumwe\CMS\BusinessSchema\Application\BusinessSchemaInstallationRepository;
 use Kumwe\CMS\BusinessSchema\Domain\SchemaInstallation;
 use Kumwe\CMS\BusinessSchema\Domain\SchemaInstallationStatus;
 
+/**
+ * Resolver that reconciles the published definition catalog against the installed schema rows.
+ *
+ * This is the implementation every record operation runs against on a live site. It reads shapes from
+ * `BusinessDefinitionRepository` and installed state from `BusinessSchemaInstallationRepository`, and
+ * returns a pair only when the installation belongs to the caller's site, is owned by the same owner as
+ * the catalog entry, and names a published version that is not rejected. Where the two stores should
+ * describe the same shape it compares checksums with `hash_equals`, so a tampered or half-applied
+ * installation row fails loudly instead of quietly shaping reads and writes wrongly.
+ *
+ * Nothing is cached: each call re-reads both stores, so the answer is only as current as the moment it
+ * was asked for. Callers that need it to hold across several statements take a
+ * `BusinessRecordMutationFence` generation and assert the resolved pair against it.
+ *
+ * @since  2.0.0
+ */
 final readonly class InstalledBusinessRecordDefinitionResolver implements BusinessRecordDefinitionResolver
 {
+    /**
+     * Wire the resolver to the two stores it reconciles.
+     *
+     * @param  BusinessDefinitionRepository          $definitions    Catalog of definitions and their
+     *         immutable published versions.
+     * @param  BusinessSchemaInstallationRepository  $installations  Rows recording which definition
+     *         version each site physically has installed.
+     *
+     * @since  2.0.0
+     */
     public function __construct(
         private BusinessDefinitionRepository $definitions,
         private BusinessSchemaInstallationRepository $installations,
     ) {
     }
 
+    /**
+     * Resolve every definition on the caller's site whose schema installation is active.
+     *
+     * A catalog entry whose owner is disabled is skipped, as is one whose installation is missing, not
+     * active, or recorded against another site or owner: at this entry point a mismatch is a filter
+     * rather than a failure, because the catalog legitimately holds more than this site can use. Once an
+     * installation has passed those filters, a version that is missing, rejected, or whose checksum does
+     * not match is fatal — it means the tables and the published shape have diverged. The result is
+     * ordered by definition handle so repeated scans agree with each other.
+     *
+     * @param   ExecutionContext  $context  Actor and site whose definition catalog is scanned.
+     *
+     * @return  list<ResolvedBusinessDefinition>  One pair per usable active installation, ordered by
+     *          handle; empty when the site has none.
+     *
+     * @throws  BusinessRecordSchemaUnavailable  When an active installation names a catalog version that
+     *          is missing or rejected, or whose checksum differs from the one the installation records.
+     *
+     * @since   2.0.0
+     */
     public function activeInstalled(ExecutionContext $context): array
     {
         $resolved = [];
@@ -61,6 +107,26 @@ final readonly class InstalledBusinessRecordDefinitionResolver implements Busine
         return $resolved;
     }
 
+    /**
+     * Resolve the definition version a live read or write must be performed against.
+     *
+     * This is the strictest entry point: the owner must be active, the installation must be active, and
+     * the version resolved is the one that installation records. Its checksum is compared against the
+     * installation before the pair is returned, so no caller can shape rows with a definition the tables
+     * do not match.
+     *
+     * @param   ExecutionContext  $context     Actor and site the operation runs as.
+     * @param   string            $identifier  Definition UUID or handle naming the record type.
+     *
+     * @return  ResolvedBusinessDefinition  The installed version paired with its installation row.
+     *
+     * @throws  BusinessRecordDefinitionUnavailable  When no catalog entry matches the identifier, its
+     *          owner is disabled, or the installed version is unpublished or rejected.
+     * @throws  BusinessRecordSchemaUnavailable  When no active installation exists for the caller's site
+     *          and owner, or its checksum disagrees with the published version.
+     *
+     * @since   2.0.0
+     */
     public function forCreate(ExecutionContext $context, string $identifier): ResolvedBusinessDefinition
     {
         [$definitionId, $installation] = $this->installation($context, $identifier);
@@ -79,6 +145,27 @@ final readonly class InstalledBusinessRecordDefinitionResolver implements Busine
         return new ResolvedBusinessDefinition($version->definition, $installation);
     }
 
+    /**
+     * Resolve an older published version of a still-live definition, as pinned by a stored row.
+     *
+     * Rows record the version they were written under, so reading one back needs that shape rather than
+     * the newest installed one. The owner and installation must still be active and the requested
+     * version may not run ahead of the installed one; no checksum comparison applies, because an older
+     * version is expected to differ from the installed shape.
+     *
+     * @param   ExecutionContext  $context            Actor and site the operation runs as.
+     * @param   string            $identifier         Definition UUID or handle naming the record type.
+     * @param   int               $definitionVersion  Published version the stored row was written under.
+     *
+     * @return  ResolvedBusinessDefinition  The pinned version paired with the live installation row.
+     *
+     * @throws  BusinessRecordDefinitionUnavailable  When no catalog entry matches the identifier, its
+     *          owner is disabled, or that version is not published.
+     * @throws  BusinessRecordSchemaUnavailable  When no active installation exists for the caller's site
+     *          and owner, or the requested version is newer than the installed one.
+     *
+     * @since   2.0.0
+     */
     public function pinned(
         ExecutionContext $context,
         string $identifier,
@@ -96,6 +183,29 @@ final readonly class InstalledBusinessRecordDefinitionResolver implements Busine
         return new ResolvedBusinessDefinition($version->definition, $installation);
     }
 
+    /**
+     * Resolve preserved metadata for a history read, tolerating a record type that is out of service.
+     *
+     * Unlike the live entry points this also accepts an installing, disabled or preserved installation
+     * and ignores whether the definition's owner is still active, so revisions stay readable after the
+     * record type stops accepting traffic. Omitting the version resolves the installed one. Treat the
+     * result as descriptive only: the installation it names may not be serving requests at all.
+     *
+     * @param   ExecutionContext  $context            Actor and site the history read runs as.
+     * @param   string            $identifier         Definition UUID or handle naming the record type.
+     * @param   ?int              $definitionVersion  Version the revision was written under, or null to
+     *          fall back to the installed version.
+     *
+     * @return  ResolvedBusinessDefinition  The requested version paired with its installation row,
+     *          whatever lifecycle status that installation currently carries.
+     *
+     * @throws  BusinessRecordDefinitionUnavailable  When no catalog entry matches the identifier, or the
+     *          requested version is not published.
+     * @throws  BusinessRecordSchemaUnavailable  When no retained installation exists for the caller's
+     *          site and owner, or the requested version is newer than the installed one.
+     *
+     * @since   2.0.0
+     */
     public function forHistory(
         ExecutionContext $context,
         string $identifier,
@@ -114,7 +224,30 @@ final readonly class InstalledBusinessRecordDefinitionResolver implements Busine
         return new ResolvedBusinessDefinition($version->definition, $installation);
     }
 
-    /** @return array{string, SchemaInstallation} */
+    /**
+     * Look up one definition's catalog entry and installation row, enforcing the site and owner match.
+     *
+     * This is where the three single-definition entry points differ: a live lookup demands an active
+     * owner and an active installation, while a history lookup tolerates a disabled owner and also
+     * accepts an installing, disabled or preserved installation. Both reject an installation recorded
+     * against another site or another owner, so a definition handle cannot be used to reach across a
+     * tenancy boundary.
+     *
+     * @param   ExecutionContext  $context      Actor and site the lookup runs as.
+     * @param   string            $identifier   Definition UUID or handle naming the record type.
+     * @param   bool              $historyOnly  True to accept a retained installation and a disabled
+     *          owner, as a read of preserved history requires.
+     *
+     * @return  array{string, SchemaInstallation}  The catalog entry's definition ID and the installation
+     *          row that passed the checks.
+     *
+     * @throws  BusinessRecordDefinitionUnavailable  When no catalog entry matches the identifier, or its
+     *          owner is disabled on a live lookup.
+     * @throws  BusinessRecordSchemaUnavailable  When no installation exists, its status is not one this
+     *          lookup accepts, or it belongs to another site or owner.
+     *
+     * @since   2.0.0
+     */
     private function installation(
         ExecutionContext $context,
         string $identifier,

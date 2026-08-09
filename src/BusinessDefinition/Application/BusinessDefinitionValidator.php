@@ -18,13 +18,61 @@ use Kumwe\CMS\BusinessDefinition\Domain\Sensitivity;
 use Ramsey\Uuid\Uuid;
 use Throwable;
 
+/**
+ * Checks the business-definition rules no single declaration can answer for itself.
+ *
+ * `FieldDefinition` and `RelationshipDefinition` settle what one declaration can decide alone, and
+ * `EntityTypeDefinition` settles what is internal to one entity. What is left needs the whole set at once:
+ * whether a declared field type is registered and the configuration keys behind it belong to that type,
+ * whether a referenced entity exists, sits in the same site and scope, and names a reciprocal inverse, and
+ * whether ownership edges stay acyclic so cascade deletion terminates. The same pass applies the limits that
+ * keep a definition portable across the supported database engines — declared lengths, sortable columns
+ * bounded for keyset pagination, and defaults the emitted column could actually hold.
+ *
+ * Callers hand over a self-contained set: `BusinessDefinitionContributionRegistry` passes everything core and
+ * the enabled extensions contributed at bootstrap, and `BusinessDefinitionService` closes a draft over its
+ * dependency graph before saving or publishing it. A reference leaving that set is a failure, not a deferral,
+ * so nothing reaches the schema compiler with a dangling target.
+ *
+ * @since  2.0.0
+ */
 final readonly class BusinessDefinitionValidator
 {
+    /**
+     * Bind the validator to the resolver that supplies field-type structure.
+     *
+     * @param  FieldTypeDefinitionResolver  $fieldTypes  Answers what a declared field-type identifier means,
+     *         including for a type whose owning extension is no longer running.
+     *
+     * @since  2.0.0
+     */
     public function __construct(private FieldTypeDefinitionResolver $fieldTypes)
     {
     }
 
-    /** @param list<EntityTypeDefinition> $definitions */
+    /**
+     * Check a set of entity definitions as one graph, raising on the first rule it breaks.
+     *
+     * The set has to be self-contained and bounded: an empty graph and one above 128 entities are both
+     * refused, a handle may appear only once, and every entity a field or relationship targets has to be
+     * present here. Beyond resolving references this is where the runtime's own restrictions are applied —
+     * `runtime_relation_evidence` is reserved as a field handle, a required relationship is refused because
+     * creating both sides atomically is not supported, cascade deletion is reserved for owned line
+     * collections, and set-null for singular associations. Nothing is collected into a report; the first
+     * failure raises.
+     *
+     * @param   list<EntityTypeDefinition>  $definitions  The complete set to check, in any order.
+     *
+     * @return  void
+     *
+     * @throws  InvalidBusinessDefinition  When the set is empty or above 128 entities, a handle is
+     *          duplicated, a field type or a targeted entity cannot be resolved, a field carries
+     *          configuration its type does not register, a reference crosses site or scope, a declared
+     *          inverse is missing, ambiguous or not reciprocal, a delete behaviour does not suit its
+     *          cardinality, or owned collections form a cycle.
+     *
+     * @since   2.0.0
+     */
     public function validateGraph(array $definitions): void
     {
         if ($definitions === [] || count($definitions) > 128) {
@@ -143,6 +191,24 @@ final readonly class BusinessDefinitionValidator
         $this->assertAcyclicOwnership($ownershipEdges);
     }
 
+    /**
+     * Require the field carrying an entity's identity to work as a stable, unique, non-null key.
+     *
+     * Which field that is follows the declared strategy: `core.uuid` for a generated identity, and
+     * `core.reference_identity` for an operator-visible reference. `EntityTypeDefinition` already requires
+     * exactly one field of that type, so what this adds is that the field can serve as a key at all — records
+     * are addressed by it, and a value that could be absent, repeated or edited afterwards would break every
+     * reference already pointing at it.
+     *
+     * @param   EntityTypeDefinition  $definition  Entity whose identity field is being checked.
+     *
+     * @return  void
+     *
+     * @throws  InvalidBusinessDefinition  When no field matches the declared strategy, or the one that does
+     *          is optional, nullable, non-unique, or may be changed after creation.
+     *
+     * @since   2.0.0
+     */
     private function validateIdentity(EntityTypeDefinition $definition): void
     {
         $type = $definition->identityStrategy === IdentityStrategy::Uuid
@@ -163,6 +229,24 @@ final readonly class BusinessDefinitionValidator
         }
     }
 
+    /**
+     * Refuse a reference that would cross a site or a scope boundary.
+     *
+     * Both ends of a reference have to be partitioned the same way. A definition belonging to one site must
+     * never point at another site's data, and two entities declaring different scope modes are divided along
+     * different lines, so a join between them would surface rows from a partition the other side does not
+     * use. Applied to relationships and to reference-shaped fields alike.
+     *
+     * @param   EntityTypeDefinition  $source  Entity declaring the field or relationship.
+     * @param   EntityTypeDefinition  $target  Entity it points at, already resolved from the graph.
+     *
+     * @return  void
+     *
+     * @throws  InvalidBusinessDefinition  When the two entities belong to different sites, or declare
+     *          different scope modes.
+     *
+     * @since   2.0.0
+     */
     private function assertCompatibleScope(EntityTypeDefinition $source, EntityTypeDefinition $target): void
     {
         if ($source->siteIdentifier !== $target->siteIdentifier) {
@@ -173,6 +257,21 @@ final readonly class BusinessDefinitionValidator
         }
     }
 
+    /**
+     * Decide whether two relationship declarations are cardinality-compatible as each other's inverse.
+     *
+     * Each kind admits exactly one partner: one-to-one pairs with one-to-one, many-to-one with one-to-many
+     * and the reverse, and many-to-many with many-to-many, where the two sides must additionally agree on
+     * whether members are ordered. An owned line collection never pairs, on either side, because its lines
+     * belong to their owner rather than standing as an entity that declares a relationship back.
+     *
+     * @param   RelationshipDefinition  $relationship  Side being checked, as its own entity declared it.
+     * @param   RelationshipDefinition  $inverse       Relationship the target entity declares back at it.
+     *
+     * @return  bool  True when the pair could describe one association read from both ends.
+     *
+     * @since   2.0.0
+     */
     private function inverseKindsMatch(
         RelationshipDefinition $relationship,
         RelationshipDefinition $inverse,
@@ -198,6 +297,30 @@ final readonly class BusinessDefinitionValidator
                 || $relationship->ordered === $inverse->ordered);
     }
 
+    /**
+     * Apply every per-field rule that needs the field type resolved or the storage engine in mind.
+     *
+     * Portable length and sortability are settled first, then the combinations `FieldDefinition` could not
+     * judge without knowing the type: a secret declaring a reusable plaintext default, an optional non-null
+     * field with nothing to fall back on, an ordered-line field claiming scalar storage rules, a virtual
+     * computation claiming physical index or uniqueness capabilities, and an enum whose options are not
+     * distinct, do not fit the storage length, or whose default is not among them. The declared default is
+     * checked next, and finally the normalizer and validator lists, each entry of which has to name a rule
+     * this runtime implements, carry exactly that rule's arguments, and suit the value family the field
+     * actually produces at runtime.
+     *
+     * @param   FieldDefinition  $field  Field to check, whose type the caller has already resolved.
+     *
+     * @return  void
+     *
+     * @throws  InvalidBusinessDefinition  When any of those rules fails, including a length or a sortable
+     *          field the supported engines could not carry portably, a default the declared type cannot
+     *          hold, an unknown or incompatible normalizer or validator, a validator whose arguments are the
+     *          wrong shape or out of bounds, or a pattern using the backtracking constructs this runtime
+     *          refuses.
+     *
+     * @since   2.0.0
+     */
     private function validateFieldRules(FieldDefinition $field): void
     {
         $this->validatePortableLength($field);
@@ -347,6 +470,22 @@ final readonly class BusinessDefinitionValidator
         }
     }
 
+    /**
+     * Decide whether a text normalizer would have a string to work on for this field.
+     *
+     * A computed field is judged by its formula's result type. An encrypted secret counts here — unlike in
+     * `runtimeString()`, which refuses it — because `RecordValueCodec` runs the normalizers over the
+     * submitted value before that value is encrypted. The exact-numeric and temporal core types are refused
+     * outright even though several of them travel as strings, so trimming or case folding can never be
+     * attached to a date or a decimal. Everything else follows the value family the field type registered,
+     * where a reference counts as text.
+     *
+     * @param   FieldDefinition  $field  Field whose declared normalizers are being checked.
+     *
+     * @return  bool  True when the field's submitted value is text a normalizer may rewrite.
+     *
+     * @since   2.0.0
+     */
     private function normalizerStringInput(FieldDefinition $field): bool
     {
         if ($field->type === 'core.computed') {
@@ -370,6 +509,22 @@ final readonly class BusinessDefinitionValidator
         return in_array($this->fieldTypes->get($field->type)->valueType, ['string', 'reference'], true);
     }
 
+    /**
+     * Decide whether one validator rule can be applied to this field's runtime value.
+     *
+     * Rules are matched against the value family the field produces rather than against its declared type, so
+     * a computed field is judged by its formula and a contributed type by the family it registered. The
+     * string rules need text — which excludes encrypted secrets, dates, times and exact numerics — `min` and
+     * `max` need a number of either kind, and `one_of` additionally accepts a boolean.
+     *
+     * @param   FieldDefinition  $field  Field the rule was declared on.
+     * @param   string           $rule   Validator rule name, already known to be one this runtime supports.
+     *
+     * @return  bool  True when the rule and the field's value family fit; false for a rule outside the
+     *          supported set.
+     *
+     * @since   2.0.0
+     */
     private function validatorCompatible(FieldDefinition $field, string $rule): bool
     {
         $string = $this->runtimeString($field);
@@ -386,6 +541,21 @@ final readonly class BusinessDefinitionValidator
         };
     }
 
+    /**
+     * Decide whether the field's values reach a validator as text.
+     *
+     * A computed field is judged by its formula's result type. The exact-numeric and temporal core types are
+     * refused even though several of them travel as strings, so a pattern or a length rule cannot be attached
+     * to what is really a serialization of a date or a number, and `core.secret` is refused because what the
+     * validator would see is an encrypted envelope rather than the value. Everything else follows the value
+     * family the field type registered, where a reference counts as text.
+     *
+     * @param   FieldDefinition  $field  Field whose value family is being classified.
+     *
+     * @return  bool  True when a string-oriented rule may target the field.
+     *
+     * @since   2.0.0
+     */
     private function runtimeString(FieldDefinition $field): bool
     {
         if ($field->type === 'core.computed') {
@@ -407,6 +577,15 @@ final readonly class BusinessDefinitionValidator
         return in_array($this->fieldTypes->get($field->type)->valueType, ['string', 'reference'], true);
     }
 
+    /**
+     * Decide whether the field's values are whole numbers at runtime.
+     *
+     * @param   FieldDefinition  $field  Field whose value family is being classified.
+     *
+     * @return  bool  True for a computed field with an integer formula, or a type registered as integer.
+     *
+     * @since   2.0.0
+     */
     private function runtimeInteger(FieldDefinition $field): bool
     {
         return $field->type === 'core.computed'
@@ -414,6 +593,15 @@ final readonly class BusinessDefinitionValidator
             : $this->fieldTypes->get($field->type)->valueType === 'integer';
     }
 
+    /**
+     * Decide whether the field's values are booleans at runtime.
+     *
+     * @param   FieldDefinition  $field  Field whose value family is being classified.
+     *
+     * @return  bool  True for a computed field with a boolean formula, or a type registered as boolean.
+     *
+     * @since   2.0.0
+     */
     private function runtimeBoolean(FieldDefinition $field): bool
     {
         return $field->type === 'core.computed'
@@ -421,12 +609,42 @@ final readonly class BusinessDefinitionValidator
             : $this->fieldTypes->get($field->type)->valueType === 'boolean';
     }
 
+    /**
+     * Decide whether the field's values are bare exact decimals at runtime.
+     *
+     * Only `core.decimal` and a computed field with a decimal formula qualify. Money and quantity do not,
+     * even though each carries an amount, because their value is a composite of which the amount is one
+     * member — a numeric rule declared against the whole field would have nothing single to measure.
+     *
+     * @param   FieldDefinition  $field  Field whose value family is being classified.
+     *
+     * @return  bool  True when the whole value is one exact decimal.
+     *
+     * @since   2.0.0
+     */
     private function runtimeDecimal(FieldDefinition $field): bool
     {
         return $field->type === 'core.decimal'
             || ($field->type === 'core.computed' && $field->formula?->type === 'decimal');
     }
 
+    /**
+     * Keep a declared length inside what the emitted column can portably hold for that field type.
+     *
+     * A field that declares no length is left alone, and so is a type with no ceiling worth enforcing — an
+     * integer or a JSON document, say. The rest are capped where the type's physical storage is: 191
+     * characters for identifiers, entity references, enum values and phone numbers, 320 for an email address,
+     * and 1000 for free text, which is also where a string-valued computation and a contributed type stored
+     * as a string land.
+     *
+     * @param   FieldDefinition  $field  Field whose declared length is being checked.
+     *
+     * @return  void
+     *
+     * @throws  InvalidBusinessDefinition  When the declared length is above the ceiling for its type.
+     *
+     * @since   2.0.0
+     */
     private function validatePortableLength(FieldDefinition $field): void
     {
         if ($field->length === null) {
@@ -451,6 +669,24 @@ final readonly class BusinessDefinitionValidator
         }
     }
 
+    /**
+     * Refuse a sortable field that could not serve as a keyset cursor across the supported engines.
+     *
+     * A field nobody may sort on passes untouched. For the rest, the sort key ends up encoded into a
+     * stateless cursor and compared by the database, so it has to be a bounded scalar the caller is allowed
+     * to see: a hidden or redacted value cannot be a cursor component, a fixed list of core types is refused
+     * outright, and a string key is capped at 512 characters so the encoded cursor stays bounded. A
+     * contributed type is refused on the same grounds when it registered `json` or `text` storage.
+     *
+     * @param   FieldDefinition  $field  Field to check; one that is not sortable passes untouched.
+     *
+     * @return  void
+     *
+     * @throws  InvalidBusinessDefinition  When a sortable field is not read-visible, is restricted or secret,
+     *          uses storage without portable ordering, or declares a string key longer than 512 characters.
+     *
+     * @since   2.0.0
+     */
     private function validatePortableSort(FieldDefinition $field): void
     {
         if (!$field->sortable) {
@@ -499,6 +735,25 @@ final readonly class BusinessDefinitionValidator
         }
     }
 
+    /**
+     * Check that a declared default is a value the field's own type could actually hold.
+     *
+     * A field with no default passes immediately. Otherwise the check is per type and as strict as the column
+     * the schema compiler will emit: exact numerics are measured against the declared precision and scale,
+     * temporal values have to be the canonical UTC literals, composites have to carry exactly their own
+     * members and agree with any currency or unit the field configured, and JSON has to fit the field's byte
+     * budget. Computed, secret and ordered-line fields may not declare a default at all. A contributed type
+     * falls through to the storage family it registered.
+     *
+     * @param   FieldDefinition  $field  Field whose declared default is being checked.
+     *
+     * @return  void
+     *
+     * @throws  InvalidBusinessDefinition  When the default is not a value of the declared type, or the type
+     *          admits no default.
+     *
+     * @since   2.0.0
+     */
     private function validateDefault(FieldDefinition $field): void
     {
         $value = $field->default;
@@ -538,6 +793,21 @@ final readonly class BusinessDefinitionValidator
         }
     }
 
+    /**
+     * Decide whether a default is an exact decimal that fits the field's declared precision and scale.
+     *
+     * The literal is read as base-10 text — an integer is accepted and stringified — because an exact numeric
+     * is never carried as a float anywhere in a definition. Digits are then counted on each side of the
+     * point: the fraction may not exceed the scale, and the integer part may not exceed what the precision
+     * leaves once the scale is taken, with a lone leading zero counting as no integer digits at all.
+     *
+     * @param   mixed            $value  Declared default, or one member of a composite default.
+     * @param   FieldDefinition  $field  Field supplying the precision and scale to measure against.
+     *
+     * @return  bool  True when the literal is exact and fits; false when the field declares neither bound.
+     *
+     * @since   2.0.0
+     */
     private function exactDefault(mixed $value, FieldDefinition $field): bool
     {
         if ((!is_int($value) && !is_string($value)) || $field->precision === null || $field->scale === null) {
@@ -553,6 +823,21 @@ final readonly class BusinessDefinitionValidator
         return $fractionDigits <= $field->scale && $integerDigits <= $field->precision - $field->scale;
     }
 
+    /**
+     * Check a default for a contributed field type against the storage family that type registered.
+     *
+     * Core types are recognised by identifier; a type an extension shipped declares only how it is stored, so
+     * that is what the default is measured against, reusing the same literal forms core uses for UUIDs,
+     * dates, times and instants. A string default is additionally capped at 1000 characters however long the
+     * field declared itself, which is the same portable ceiling `validatePortableLength()` applies.
+     *
+     * @param   mixed            $value  Declared default, as the definition carries it.
+     * @param   FieldDefinition  $field  Field whose contributed type supplies the storage family.
+     *
+     * @return  bool  True when the default is a value that storage family can hold.
+     *
+     * @since   2.0.0
+     */
     private function customDefault(mixed $value, FieldDefinition $field): bool
     {
         $fieldType = $this->fieldTypes->get($field->type);
@@ -571,6 +856,22 @@ final readonly class BusinessDefinitionValidator
         };
     }
 
+    /**
+     * Check a default for a contributed type stored as JSON against the value family it declares.
+     *
+     * Storage alone does not say enough here, because a JSON column may back a scalar, an object or a
+     * collection. The default's PHP shape therefore has to match the family the type registered — a keyed
+     * array for an object, a list for a collection — before its encoded bytes are measured against the
+     * field's budget.
+     *
+     * @param   mixed            $value      Declared default, as the definition carries it.
+     * @param   FieldDefinition  $field      Field supplying the `max_bytes` budget.
+     * @param   string           $valueType  Value family the contributed type registered.
+     *
+     * @return  bool  True when the shape matches the family and the encoding fits the budget.
+     *
+     * @since   2.0.0
+     */
     private function customJsonDefault(mixed $value, FieldDefinition $field, string $valueType): bool
     {
         $shape = match ($valueType) {
@@ -585,6 +886,20 @@ final readonly class BusinessDefinitionValidator
         return $shape && $this->jsonDefault($value, $field);
     }
 
+    /**
+     * Check a money default: an amount fitting the field's precision and scale, beside its currency.
+     *
+     * The object has to carry exactly `amount` and `currency` and nothing else, and when the field configures
+     * a currency the default has to name that same one — compared with `hash_equals()` — so a definition
+     * cannot ship a default denominated in a currency the field will never accept.
+     *
+     * @param   mixed            $value  Declared default, as the definition carries it.
+     * @param   FieldDefinition  $field  Field supplying the precision, scale and any configured currency.
+     *
+     * @return  bool  True when both members are present and valid, and a configured currency matches.
+     *
+     * @since   2.0.0
+     */
     private function moneyDefault(mixed $value, FieldDefinition $field): bool
     {
         if (!is_array($value) || array_is_list($value) || !$this->compositeDefault($value, ['amount', 'currency'])) {
@@ -600,6 +915,20 @@ final readonly class BusinessDefinitionValidator
             && (!is_string($configured) || hash_equals($configured, $currency));
     }
 
+    /**
+     * Check a quantity default: an amount fitting the field's precision and scale, beside its unit.
+     *
+     * The object has to carry exactly `amount` and `unit` and nothing else. The unit is a bounded token
+     * rather than a member of a fixed list, since units are domain vocabulary, and when the field configures
+     * one the default has to name that same unit.
+     *
+     * @param   mixed            $value  Declared default, as the definition carries it.
+     * @param   FieldDefinition  $field  Field supplying the precision, scale and any configured unit.
+     *
+     * @return  bool  True when both members are present and valid, and a configured unit matches.
+     *
+     * @since   2.0.0
+     */
     private function quantityDefault(mixed $value, FieldDefinition $field): bool
     {
         if (!is_array($value) || array_is_list($value) || !$this->compositeDefault($value, ['amount', 'unit'])) {
@@ -615,7 +944,19 @@ final readonly class BusinessDefinitionValidator
             && (!is_string($configured) || hash_equals($configured, $unit));
     }
 
-    /** @param list<string> $keys */
+    /**
+     * Decide whether a value is a keyed object carrying exactly the expected members.
+     *
+     * Neither a missing member nor an extra one is tolerated, so a composite default cannot be half-declared
+     * and silently completed later by whichever consumer reads it first.
+     *
+     * @param   mixed         $value  Declared default, as the definition carries it.
+     * @param   list<string>  $keys   Member names the composite must carry, no more and no fewer.
+     *
+     * @return  bool  True when the value is a keyed array whose key set is exactly `$keys`.
+     *
+     * @since   2.0.0
+     */
     private function compositeDefault(mixed $value, array $keys): bool
     {
         return is_array($value) && !array_is_list($value)
@@ -624,6 +965,19 @@ final readonly class BusinessDefinitionValidator
             && array_diff($keys, array_keys($value)) === [];
     }
 
+    /**
+     * Decide whether a default is a calendar date that exists, written as `YYYY-MM-DD`.
+     *
+     * The literal is re-formatted after being parsed in UTC and compared with what was supplied, so a
+     * well-shaped but impossible date such as the thirty-first of February is rejected rather than rolled
+     * forward into March. Years below 1000 are refused so the four-digit form stays unambiguous.
+     *
+     * @param   mixed  $value  Declared default, as the definition carries it.
+     *
+     * @return  bool  True when the literal names a real date.
+     *
+     * @since   2.0.0
+     */
     private function dateDefault(mixed $value): bool
     {
         if (!is_string($value) || preg_match('/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/D', $value) !== 1) {
@@ -636,12 +990,38 @@ final readonly class BusinessDefinitionValidator
             && (int) substr($value, 0, 4) >= 1000;
     }
 
+    /**
+     * Decide whether a default is a wall-clock time written as `HH:MM:SS`, optionally with microseconds.
+     *
+     * The time carries no date and no zone, so it names a reading of the clock rather than an instant; a
+     * fractional part, when present, has to be exactly six digits.
+     *
+     * @param   mixed  $value  Declared default, as the definition carries it.
+     *
+     * @return  bool  True when the literal is a valid 24-hour time of day.
+     *
+     * @since   2.0.0
+     */
     private function timeDefault(mixed $value): bool
     {
         return is_string($value)
             && preg_match('/^(?:[01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9](?:\.[0-9]{6})?$/D', $value) === 1;
     }
 
+    /**
+     * Decide whether a default is an instant expressed in UTC.
+     *
+     * Only a `Z` or `+00:00` designator is accepted and the parsed value has to report a zero offset, so a
+     * default can never mean a different moment depending on where it is read. A parse failure is caught and
+     * answered as false rather than propagated, warnings left behind by a lenient parse count as failures,
+     * and years below 1000 are refused as they are for dates.
+     *
+     * @param   mixed  $value  Declared default, or the instant member of a zoned composite.
+     *
+     * @return  bool  True when the literal is a UTC instant this runtime reproduces exactly.
+     *
+     * @since   2.0.0
+     */
     private function instantDefault(mixed $value): bool
     {
         if (
@@ -665,6 +1045,19 @@ final readonly class BusinessDefinitionValidator
             && (int) substr($value, 0, 4) >= 1000;
     }
 
+    /**
+     * Decide whether a default pairs a UTC instant with the zone it is to be read in.
+     *
+     * The object carries exactly `instant` and `timezone`: the moment itself is stored in UTC, and the zone
+     * travels beside it as an IANA identifier this installation's timezone database recognises rather than as
+     * a fixed offset.
+     *
+     * @param   mixed  $value  Declared default, as the definition carries it.
+     *
+     * @return  bool  True when both members are present and each is valid on its own.
+     *
+     * @since   2.0.0
+     */
     private function zonedDefault(mixed $value): bool
     {
         if (!is_array($value) || array_is_list($value) || !$this->compositeDefault($value, ['instant', 'timezone'])) {
@@ -676,6 +1069,20 @@ final readonly class BusinessDefinitionValidator
             && in_array($value['timezone'], DateTimeZone::listIdentifiers(), true);
     }
 
+    /**
+     * Decide whether a default can stand as a reference key.
+     *
+     * The value is capped at 191 characters however long the field declared itself, may not be empty, and may
+     * not contain C0 or DEL control characters. It is the same test for a reference identity and for an
+     * entity reference, since both name a record by its operator-visible key.
+     *
+     * @param   mixed            $value  Declared default, as the definition carries it.
+     * @param   FieldDefinition  $field  Field supplying its declared length, when it has one.
+     *
+     * @return  bool  True when the value is a bounded, printable reference key.
+     *
+     * @since   2.0.0
+     */
     private function referenceDefault(mixed $value, FieldDefinition $field): bool
     {
         return is_string($value)
@@ -684,11 +1091,38 @@ final readonly class BusinessDefinitionValidator
             && preg_match('/[\x00-\x1F\x7F]/', $value) !== 1;
     }
 
+    /**
+     * Decide whether a default is a string inside a character budget.
+     *
+     * Length is counted in UTF-8 characters rather than bytes, which is the unit a field's declared length is
+     * expressed in, so a default written in a non-Latin script is measured the same way as an ASCII one.
+     *
+     * @param   mixed  $value    Declared default, as the definition carries it.
+     * @param   int    $maximum  Largest number of characters the calling check allows.
+     *
+     * @return  bool  True when the value is a string no longer than the budget.
+     *
+     * @since   2.0.0
+     */
     private function stringDefault(mixed $value, int $maximum): bool
     {
         return is_string($value) && mb_strlen($value, 'UTF-8') <= $maximum;
     }
 
+    /**
+     * Decide whether a default is an address the runtime's own email filter accepts.
+     *
+     * The same filter that will validate submitted values is used here, so a default cannot be a value the
+     * field would refuse on a write. The length budget falls back to 320 characters when the field declares
+     * none.
+     *
+     * @param   mixed            $value  Declared default, as the definition carries it.
+     * @param   FieldDefinition  $field  Field supplying its declared length, when it has one.
+     *
+     * @return  bool  True when the value is a bounded, well-formed address.
+     *
+     * @since   2.0.0
+     */
     private function emailDefault(mixed $value, FieldDefinition $field): bool
     {
         return is_string($value)
@@ -696,6 +1130,20 @@ final readonly class BusinessDefinitionValidator
             && filter_var($value, FILTER_VALIDATE_EMAIL) !== false;
     }
 
+    /**
+     * Decide whether a default is a web URL this runtime will hand back to a browser.
+     *
+     * Passing the URL filter is not enough on its own: the scheme is read back and has to be `http` or
+     * `https`, so a default cannot ship a `javascript:`, `data:` or `file:` URL into whatever renders the
+     * field. The length budget falls back to 4096 characters when the field declares none.
+     *
+     * @param   mixed            $value  Declared default, as the definition carries it.
+     * @param   FieldDefinition  $field  Field supplying its declared length, when it has one.
+     *
+     * @return  bool  True when the value is a bounded HTTP or HTTPS URL.
+     *
+     * @since   2.0.0
+     */
     private function urlDefault(mixed $value, FieldDefinition $field): bool
     {
         if (
@@ -710,6 +1158,21 @@ final readonly class BusinessDefinitionValidator
         return is_string($scheme) && in_array(strtolower($scheme), ['http', 'https'], true);
     }
 
+    /**
+     * Decide whether a default is a dialable phone number.
+     *
+     * The form is deliberately loose — an optional leading `+`, then digits with spaces, extension markers
+     * and tone characters — because numbering plans differ by country and this is a definition-time bound,
+     * not a national format check. The length budget falls back to 64 characters when the field declares
+     * none.
+     *
+     * @param   mixed            $value  Declared default, as the definition carries it.
+     * @param   FieldDefinition  $field  Field supplying its declared length, when it has one.
+     *
+     * @return  bool  True when the value is a bounded number built from dialable characters.
+     *
+     * @since   2.0.0
+     */
     private function phoneDefault(mixed $value, FieldDefinition $field): bool
     {
         return is_string($value)
@@ -717,6 +1180,20 @@ final readonly class BusinessDefinitionValidator
             && preg_match('/^\+?[0-9][0-9 x#*]{2,62}$/D', $value) === 1;
     }
 
+    /**
+     * Decide whether a JSON default fits the byte budget the field configured.
+     *
+     * The value is measured after canonical encoding rather than as it was written, so key order and
+     * whitespace cannot change whether a default fits. The budget defaults to 65,536 bytes, and a
+     * `max_bytes` that is not an integer fails the default rather than being ignored.
+     *
+     * @param   mixed            $value  Declared default, as the definition carries it.
+     * @param   FieldDefinition  $field  Field supplying the `max_bytes` budget.
+     *
+     * @return  bool  True when the canonical encoding is within the budget.
+     *
+     * @since   2.0.0
+     */
     private function jsonDefault(mixed $value, FieldDefinition $field): bool
     {
         $maximum = $field->configuration['max_bytes'] ?? 65_536;
@@ -727,7 +1204,27 @@ final readonly class BusinessDefinitionValidator
         return strlen(\Kumwe\CMS\BusinessDefinition\Domain\CanonicalDefinitionJson::encode($value)) <= $maximum;
     }
 
-    /** @param array<string, scalar|list<scalar|null>|null> $configuration */
+    /**
+     * Check the values behind the configuration keys the core field types share.
+     *
+     * Whether a key may appear at all was already settled against the field type's registration; this is the
+     * value side, and it runs over whatever keys are present rather than switching on the field's type. Only
+     * the shape of `target` is judged here — that it reads as a namespaced entity handle — because resolving
+     * it to a definition needs the rest of the graph, which `validateGraph()` does in a later pass.
+     *
+     * @param   string                                        $field          Field handle, used to name the
+     *          offending field in the failure message.
+     * @param   array<string, scalar|list<scalar|null>|null>  $configuration  Declared settings, already
+     *          restricted to the keys the field's type registers.
+     *
+     * @return  void
+     *
+     * @throws  InvalidBusinessDefinition  When `options` is not a bounded list of non-empty strings, the
+     *          currency is not a three-letter uppercase code, the unit is not a bounded token, the target
+     *          does not read as a namespaced handle, or the JSON byte bound falls outside 2 to 1,000,000.
+     *
+     * @since   2.0.0
+     */
     private function validateFieldConfiguration(string $field, array $configuration): void
     {
         $options = $configuration['options'] ?? null;
@@ -765,7 +1262,25 @@ final readonly class BusinessDefinitionValidator
         }
     }
 
-    /** @param array<string, list<string>> $edges */
+    /**
+     * Refuse an ownership graph in which an entity can transitively own itself.
+     *
+     * Owned lines are deleted with their owner, so a cycle would leave the cascade the schema compiler emits
+     * for it with no base case. Both spellings of ownership contribute edges — a `core.ordered_lines` field
+     * and a relationship declared as an owned line collection — so the two cannot be alternated to hide a
+     * loop from either check alone. The walk is depth-first, and a handle re-entered while it is still on the
+     * stack is the cycle.
+     *
+     * @param   array<string, list<string>>  $edges  Owned targets for each owning handle; a handle that owns
+     *          nothing is simply absent.
+     *
+     * @return  void
+     *
+     * @throws  InvalidBusinessDefinition  When following owned collections returns to a handle already being
+     *          walked.
+     *
+     * @since   2.0.0
+     */
     private function assertAcyclicOwnership(array $edges): void
     {
         $visiting = [];

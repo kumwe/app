@@ -6,17 +6,54 @@ namespace Kumwe\CMS\BusinessSchema\Domain;
 
 use Kumwe\CMS\BusinessDefinition\Domain\CanonicalDefinitionJson;
 
+/**
+ * Canonical description of one index or unique constraint on a physical table.
+ *
+ * The schema compiler emits one of these for every field, relationship, or foreign key that needs a lookup
+ * path, and the Doctrine gateway both installs and verifies live indexes against it. That round trip only
+ * works if the description is engine neutral, so an index is bounded to sixteen distinct physical columns
+ * and carries no engine-specific options at all: a non-empty option map is refused rather than stored and
+ * quietly dropped on an engine that cannot honour it. Whether those columns actually exist is not this
+ * type's business — the owning `PhysicalTableBlueprint` proves that once it holds the column collection.
+ *
+ * @since  2.0.0
+ */
 final readonly class PhysicalIndexBlueprint
 {
-    /** @var list<string> */
+    /**
+     * Physical column names the index covers, in the order that decides which lookups it can serve.
+     *
+     * @var    list<string>
+     * @since  2.0.0
+     */
     public array $columns;
 
-    /** @var array<string, mixed> */
+    /**
+     * Portable index options handed to Doctrine when the index is created; always empty by construction.
+     *
+     * The slot exists so the persisted document keeps a stable shape and the gateway has something to pass
+     * through, not so engine tuning can be smuggled into a blueprint.
+     *
+     * @var    array<string, mixed>
+     * @since  2.0.0
+     */
     public array $options;
 
     /**
-     * @param list<string> $columns Physical column names in index order.
-     * @param array<string, mixed> $options Portable Doctrine index options.
+     * Assemble an index and prove its column list is bounded, distinct, and portable.
+     *
+     * @param   string                $logicalName   Handle a plan operation names this index by.
+     * @param   string                $physicalName  Installed index name, as the physical name compiler produced it.
+     * @param   list<string>          $columns       Physical column names in index order.
+     * @param   bool                  $unique        Whether the index also forbids duplicate values over $columns.
+     * @param   array<string, mixed>  $options       Portable Doctrine index options.
+     *
+     * @throws  InvalidBusinessSchema  When either name breaks its grammar, the column list is empty, longer
+     *          than 16, or repeats a column, a column is not a portable physical
+     *          identifier, or the options are a list, use a non-string key, or are
+     *          non-empty at all.
+     *
+     * @since   2.0.0
      */
     public function __construct(
         public string $logicalName,
@@ -43,7 +80,18 @@ final readonly class PhysicalIndexBlueprint
         $this->options = $options;
     }
 
-    /** @param array<string, mixed> $document */
+    /**
+     * Rebuild an index from its persisted document, revalidating every rule the constructor applies.
+     *
+     * @param   array<string, mixed>  $document  Stored index object, as written by `toArray()`.
+     *
+     * @return  self  The revalidated index.
+     *
+     * @throws  InvalidBusinessSchema  When the document carries an unknown property, a field is missing or
+     *          misshapen, or any index rule fails.
+     *
+     * @since   2.0.0
+     */
     public static function fromArray(array $document): self
     {
         SchemaDocument::assertOnly(
@@ -61,7 +109,14 @@ final readonly class PhysicalIndexBlueprint
         );
     }
 
-    /** @return array<string, mixed> */
+    /**
+     * Export the index in the shape that is persisted inside a table blueprint.
+     *
+     * @return  array<string, mixed>  Keyed `logical_name`, `physical_name`, `columns`, `unique`, and
+     *          `options`, with the columns in index order.
+     *
+     * @since   2.0.0
+     */
     public function toArray(): array
     {
         return [
