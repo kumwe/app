@@ -66,7 +66,14 @@ final class AdministratorProvisioningIntegrationTest extends TestCase
         self::assertNotNull($firstPrincipal);
         self::assertNotNull($secondPrincipal);
         self::assertTrue($firstPrincipal->hasCapability(Capability::fromString('administrator.access')));
+        self::assertTrue($firstPrincipal->hasCapability(Capability::fromString('business.record.export')));
+        self::assertTrue($firstPrincipal->hasCapability(Capability::fromString('business.record.report')));
+        self::assertTrue($firstPrincipal->hasCapability(Capability::fromString('business.record.transition')));
+        self::assertTrue($firstPrincipal->hasCapability(Capability::fromString('business.approval.approve')));
+        self::assertTrue($firstPrincipal->hasCapability(Capability::fromString('portal.access')));
         self::assertTrue($firstPrincipal->hasCapability(Capability::fromString('users.manage')));
+        self::assertFalse($firstPrincipal->hasCapability(Capability::fromString('administrator.bootstrap')));
+        self::assertFalse($firstPrincipal->hasCapability(Capability::fromString('system.migrate')));
         self::assertTrue($secondPrincipal->hasCapability(Capability::fromString('administrator.access')));
         self::assertTrue($secondPrincipal->hasCapability(Capability::fromString('users.manage')));
 

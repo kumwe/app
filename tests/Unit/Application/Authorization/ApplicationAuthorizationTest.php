@@ -11,10 +11,10 @@ use Kumwe\CMS\Application\Authorization\AuthorizationAuditUnavailable;
 use Kumwe\CMS\Application\Authorization\AuthorizationDecision;
 use Kumwe\CMS\Application\Authorization\AuthorizationDecisionRecorder;
 use Kumwe\CMS\Application\Authorization\AuthorizationDenied;
-use Kumwe\CMS\Application\Authorization\AuthorizationPolicyRegistry;
 use Kumwe\CMS\Application\Authorization\AuthorizationResource;
 use Kumwe\CMS\Application\Authorization\DenyByDefaultAuthorizationGateway;
 use Kumwe\CMS\Application\Authorization\ExecutionContext;
+use Kumwe\CMS\Application\Authorization\MembershipContextValidator;
 use Kumwe\CMS\Application\Authorization\ResourceSiteOwnership;
 use Kumwe\CMS\Application\Authorization\ResourceSiteOwnershipWriter;
 use Kumwe\CMS\Application\Authorization\SiteContext;
@@ -27,9 +27,10 @@ use Kumwe\CMS\Content\Domain\ContentEntry;
 use Kumwe\CMS\Delivery\Http\Api\Content\ContentApiResponder;
 use Kumwe\CMS\Delivery\Http\Api\Content\ContentCollectionHandler;
 use Kumwe\CMS\Delivery\Http\Api\ProblemDetailsResponseFactory;
+use Kumwe\CMS\Extension\Contribution\ExtensionContributionRegistrySet;
+use Kumwe\CMS\Identity\Application\Authentication\AuthenticatedPrincipal;
 use Kumwe\CMS\Identity\Domain\Capability;
 use Kumwe\CMS\Identity\Domain\GrantScope;
-use Kumwe\CMS\Identity\Application\Authentication\AuthenticatedPrincipal;
 use Kumwe\CMS\Infrastructure\Persistence\TransactionManager;
 use Kumwe\CMS\Tests\Support\AuthorizationContext;
 use Kumwe\CMS\Workflow\Domain\Workflow;
@@ -171,7 +172,8 @@ final class ApplicationAuthorizationTest extends TestCase
     {
         $gateway = new DenyByDefaultAuthorizationGateway(
             AuthorizationContext::provenance(),
-            new AuthorizationPolicyRegistry(),
+            (new ExtensionContributionRegistrySet())->authorizationPolicies(),
+            $this->createStub(MembershipContextValidator::class),
             new class implements ResourceSiteOwnership {
                 public function siteFor(AuthorizationResource $resource): SiteContext
                 {
@@ -198,6 +200,181 @@ final class ApplicationAuthorizationTest extends TestCase
             self::fail('A resource owned by another site must never be readable.');
         } catch (AuthorizationDenied $denied) {
             self::assertSame('resource_site_mismatch', $denied->reason);
+        }
+    }
+
+    /**
+     * Allows organization and workspace grants only after exact live membership revalidation.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testCurrentMembershipAddsOrganizationAndWorkspaceScopes(): void
+    {
+        $membership = AuthorizationContext::membership('acme', 'finance', 4, 7);
+        $memberships = $this->createMock(MembershipContextValidator::class);
+        $memberships->expects(self::exactly(2))->method('current')->with(
+            self::SUBJECT,
+            self::callback(static fn (SiteContext $site): bool => $site->identifier() === 'default'),
+            self::identicalTo($membership),
+            false,
+        )->willReturn(true);
+        $gateway = AuthorizationContext::gateway(memberships: $memberships);
+
+        foreach ([['organization', 'acme'], ['workspace', 'finance']] as [$scopeType, $scopeIdentifier]) {
+            $context = AuthorizationContext::principalFromGrantRows([[
+                'capability' => 'business.record.read',
+                'scope_type' => $scopeType,
+                'scope_identifier' => $scopeIdentifier,
+            ]], self::SUBJECT)->context(
+                SiteContext::default(),
+                AuthenticationStrength::BearerToken,
+                'membership-scope-' . $scopeType,
+                membership: $membership,
+            );
+
+            self::assertTrue($gateway->decide(
+                $context,
+                Capability::fromString('business.record.read'),
+                AuthorizationResource::item('business_record', self::PAGE_ONE),
+            )->allowed);
+        }
+    }
+
+    /**
+     * Refuses organization authority when the credential's membership snapshot is stale.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testStaleMembershipCannotAddOrganizationScope(): void
+    {
+        $membership = AuthorizationContext::membership('acme', null, 4, 7);
+        $memberships = $this->createMock(MembershipContextValidator::class);
+        $memberships->expects(self::exactly(3))->method('current')->with(
+            self::SUBJECT,
+            self::callback(static fn (SiteContext $site): bool => $site->identifier() === 'default'),
+            self::identicalTo($membership),
+            false,
+        )->willReturn(false);
+        $context = AuthorizationContext::principalFromGrantRows([[
+            'capability' => 'portal.access',
+            'scope_type' => 'organization',
+            'scope_identifier' => 'acme',
+        ]], self::SUBJECT)->context(
+            SiteContext::default(),
+            AuthenticationStrength::BearerToken,
+            'stale-membership-scope',
+            membership: $membership,
+        );
+        $gateway = AuthorizationContext::gateway(memberships: $memberships);
+
+        $decision = $gateway->decide(
+            $context,
+            Capability::fromString('portal.access'),
+            AuthorizationResource::item('portal_session', self::PAGE_ONE),
+        );
+
+        self::assertFalse($decision->allowed);
+        self::assertSame('no_matching_effective_grant', $decision->reason);
+        try {
+            $gateway->assertCanDelegate(
+                $context,
+                Capability::fromString('portal.access'),
+                GrantScope::named('organization', 'acme'),
+            );
+            self::fail('A stale organization membership must not satisfy the delegation ceiling.');
+        } catch (AuthorizationDenied $denied) {
+            self::assertSame('delegation_exceeds_effective_authority', $denied->reason);
+        }
+        $siteContext = AuthorizationContext::principalFromGrantRows([[
+            'capability' => 'portal.access',
+            'scope_type' => 'site',
+            'scope_identifier' => SiteContext::DEFAULT,
+        ]], self::SUBJECT)->context(
+            SiteContext::default(),
+            AuthenticationStrength::BearerToken,
+            'stale-membership-site-delegation',
+            membership: $membership,
+        );
+        $gateway->assertCanDelegate(
+            $siteContext,
+            Capability::fromString('portal.access'),
+            GrantScope::named('organization', 'acme'),
+        );
+    }
+
+    /**
+     * Prevents a valid organization selection from authorizing a differently named tenant target.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testMembershipScopeCannotAuthorizeForgedOrganizationTarget(): void
+    {
+        $membership = AuthorizationContext::membership('acme', null, 4, 7);
+        $memberships = $this->createStub(MembershipContextValidator::class);
+        $memberships->method('current')->willReturn(true);
+        $context = AuthorizationContext::principalFromGrantRows([[
+            'capability' => 'portal.access',
+            'scope_type' => 'organization',
+            'scope_identifier' => 'acme',
+        ]], self::SUBJECT)->context(
+            SiteContext::default(),
+            AuthenticationStrength::BearerToken,
+            'forged-organization-target',
+            membership: $membership,
+        );
+
+        $decision = AuthorizationContext::gateway(memberships: $memberships)->decide(
+            $context,
+            Capability::fromString('portal.access'),
+            AuthorizationResource::item('organization', 'other-organization'),
+        );
+
+        self::assertFalse($decision->allowed);
+    }
+
+    /**
+     * Keeps global, site, and exact-resource authority usable when membership freshness is unavailable.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testUnverifiableMembershipDoesNotSuppressBaseScopes(): void
+    {
+        $membership = AuthorizationContext::membership('acme', 'finance', 4, 7);
+        $memberships = $this->createMock(MembershipContextValidator::class);
+        $memberships->expects(self::exactly(3))->method('current')->willThrowException(
+            new \RuntimeException('membership store unavailable'),
+        );
+        $gateway = AuthorizationContext::gateway(memberships: $memberships);
+
+        foreach ([
+            ['global', null],
+            ['site', SiteContext::DEFAULT],
+            ['business_record', self::PAGE_ONE],
+        ] as [$scopeType, $scopeIdentifier]) {
+            $context = AuthorizationContext::principalFromGrantRows([[
+                'capability' => 'business.record.read',
+                'scope_type' => $scopeType,
+                'scope_identifier' => $scopeIdentifier,
+            ]], self::SUBJECT)->context(
+                SiteContext::default(),
+                AuthenticationStrength::BearerToken,
+                'unverifiable-membership-' . $scopeType,
+                membership: $membership,
+            );
+
+            self::assertTrue($gateway->decide(
+                $context,
+                Capability::fromString('business.record.read'),
+                AuthorizationResource::item('business_record', self::PAGE_ONE),
+            )->allowed);
         }
     }
 

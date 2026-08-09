@@ -8,8 +8,13 @@ use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
 use Kumwe\CMS\Application\Authorization\AuthorizationGateway;
 use Kumwe\CMS\Application\Authorization\AuthorizationResource;
+use Kumwe\CMS\Application\Authorization\MembershipContext;
+use Kumwe\CMS\Application\Authorization\OrganizationContext;
 use Kumwe\CMS\Application\Authorization\ResourceSiteOwnershipWriter;
 use Kumwe\CMS\Application\Authorization\SiteContext;
+use Kumwe\CMS\Application\Authorization\WorkspaceContext;
+use Kumwe\CMS\BusinessSecurity\Application\MembershipDirectory;
+use Kumwe\CMS\Identity\Domain\Capability;
 use Kumwe\CMS\Identity\Infrastructure\Administration\DoctrineAdministratorSessionStore;
 use Kumwe\CMS\Infrastructure\Persistence\TableNames;
 use Kumwe\CMS\Infrastructure\Persistence\TransactionManager;
@@ -23,6 +28,8 @@ final class DoctrineAdministratorSessionStoreTest extends TestCase
 {
     private const SESSION_ONE = '018f22e2-7c8b-7ab0-8f3a-88e8026bb410';
     private const SESSION_TWO = '018f22e2-7c8b-7ab0-8f3a-88e8026bb411';
+    private const MEMBERSHIP = '018f22e2-7c8b-7ab0-8f3a-88e8026bb412';
+    private const USER = '018f22e2-7c8b-7ab0-8f3a-88e8026bb413';
 
     public function testDeleteRemovesExactSessionOwnershipInTheSameTransaction(): void
     {
@@ -88,10 +95,65 @@ final class DoctrineAdministratorSessionStoreTest extends TestCase
         self::assertSame([self::SESSION_ONE, self::SESSION_TWO], $removed);
     }
 
+    public function testSelectedMembershipRolesJoinTheRebuiltAdministratorPrincipal(): void
+    {
+        $database = $this->database();
+        $userAgent = 'test-browser';
+        $database->expects(self::once())->method('fetchAssociative')->willReturn([
+            'id' => self::SESSION_ONE,
+            'user_id' => self::USER,
+            'csrf_token' => str_repeat('c', 43),
+            'expires_at' => new DateTimeImmutable('2026-08-05T11:00:00+00:00'),
+            'user_agent_digest' => hash_hmac('sha256', $userAgent, str_repeat('s', 64)),
+            'security_epoch' => 3,
+            'site_identifier' => SiteContext::DEFAULT,
+            'organization_identifier' => 'acme',
+            'workspace_identifier' => 'finance',
+            'membership_id' => self::MEMBERSHIP,
+            'membership_version' => 5,
+            'policy_generation' => 8,
+        ]);
+        $database->expects(self::once())->method('update')->willReturn(1);
+        $database->expects(self::once())->method('fetchAllAssociative')->with(
+            self::stringContains('kumwe_membership_roles'),
+            [self::USER, self::MEMBERSHIP, self::USER, 5, SiteContext::DEFAULT, 'acme', 8, 'finance', 'finance'],
+        )->willReturn([[
+            'capability' => 'business.record.read',
+            'scope_type' => 'organization',
+            'scope_identifier' => 'acme',
+        ]]);
+        $membership = new MembershipContext(
+            self::MEMBERSHIP,
+            OrganizationContext::fromString('acme'),
+            WorkspaceContext::fromString('finance'),
+            5,
+            8,
+        );
+        $memberships = $this->createMock(MembershipDirectory::class);
+        $memberships->expects(self::once())->method('resolve')->with(
+            self::USER,
+            self::callback(static fn (SiteContext $site): bool => $site->identifier() === SiteContext::DEFAULT),
+            'acme',
+            'finance',
+        )->willReturn($membership);
+
+        $session = $this->store(
+            $database,
+            $this->createStub(TransactionManager::class),
+            $this->createStub(ResourceSiteOwnershipWriter::class),
+            $memberships,
+        )->find(str_repeat('A', 48), $userAgent);
+
+        self::assertNotNull($session);
+        self::assertSame(self::MEMBERSHIP, $session->membership?->membershipId());
+        self::assertTrue($session->principal->hasCapability(Capability::fromString('business.record.read')));
+    }
+
     private function store(
         Connection $database,
         TransactionManager $transactions,
         ResourceSiteOwnershipWriter $ownership,
+        ?MembershipDirectory $memberships = null,
     ): DoctrineAdministratorSessionStore {
         $clock = $this->createStub(ClockInterface::class);
         $clock->method('now')->willReturn(new DateTimeImmutable('2026-08-05T10:00:00+00:00'));
@@ -105,6 +167,8 @@ final class DoctrineAdministratorSessionStoreTest extends TestCase
             $transactions,
             $ownership,
             AuthorizationContext::provenance(),
+            28_800,
+            $memberships,
         );
     }
 

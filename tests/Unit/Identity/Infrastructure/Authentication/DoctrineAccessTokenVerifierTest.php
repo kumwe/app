@@ -27,6 +27,7 @@ final class DoctrineAccessTokenVerifierTest extends TestCase
 {
     private const string TOKEN = 'abcdefghijklmnopqrstuvwxyz0123456789ABCD';
     private const string SUBJECT = '018f22e2-7c8b-7ab0-8f3a-88e8026bb301';
+    private const string MEMBERSHIP = '018f22e2-7c8b-7ab0-8f3a-88e8026bb302';
 
     public function testRemovedPermissionIsAbsentImmediatelyDespiteTokenSnapshot(): void
     {
@@ -88,6 +89,50 @@ final class DoctrineAccessTokenVerifierTest extends TestCase
             AuthorizationContext::provenance(),
         ))
             ->verify('short'));
+    }
+
+    public function testOrganizationTokenRebuildsAuthorityFromItsExactMembershipRoles(): void
+    {
+        $database = $this->createMock(Connection::class);
+        $database->method('quoteSingleIdentifier')->willReturnCallback(static fn (string $name): string => $name);
+        $database->expects(self::once())->method('fetchAssociative')->willReturn([
+            'id' => '018f22e2-7c8b-7ab0-8f3a-88e8026bb399',
+            'subject_id' => self::SUBJECT,
+            'capabilities' => '["business.record.read"]',
+            'last_used_at' => null,
+            'security_epoch' => 1,
+            'site_identifier' => 'default',
+            'organization_identifier' => 'acme',
+            'workspace_identifier' => 'finance',
+            'membership_id' => self::MEMBERSHIP,
+            'membership_version' => 4,
+            'policy_generation' => 7,
+            'family_id' => '018f22e2-7c8b-7ab0-8f3a-88e8026bb398',
+        ]);
+        $database->expects(self::once())->method('fetchAllAssociative')->with(
+            self::stringContains('kumwe_membership_roles'),
+            [self::SUBJECT, 'business.record.read', self::MEMBERSHIP, 'business.record.read'],
+        )->willReturn([[
+            'capability' => 'business.record.read',
+            'scope_type' => 'organization',
+            'scope_identifier' => 'acme',
+        ]]);
+        $database->expects(self::once())->method('executeStatement');
+
+        $verified = (new DoctrineAccessTokenVerifier(
+            $database,
+            new TableNames($database, 'kumwe_'),
+            $this->clock(),
+            AuthorizationContext::provenance(),
+        ))->verifyScoped(self::TOKEN);
+
+        self::assertNotNull($verified);
+        self::assertSame(self::MEMBERSHIP, $verified->membership?->membershipId());
+        self::assertTrue($verified->principal->hasCapability(Capability::fromString('business.record.read')));
+        self::assertTrue($verified->principal->allows(
+            Capability::fromString('business.record.read'),
+            [GrantScope::named('organization', 'acme')],
+        ));
     }
 
     public function testRejectsUnknownAudiencePurposeBeforeDatabaseLookup(): void

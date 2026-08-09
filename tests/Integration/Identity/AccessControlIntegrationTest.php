@@ -13,6 +13,7 @@ use Kumwe\CMS\Identity\Application\Administration\AccessControlService;
 use Kumwe\CMS\Identity\Application\Administration\AdministratorIdentityGateway;
 use Kumwe\CMS\Identity\Application\Authentication\AccessTokenVerifier;
 use Kumwe\CMS\Identity\Domain\Capability;
+use Kumwe\CMS\Identity\Domain\UserStatus;
 use Kumwe\CMS\Identity\Infrastructure\Administration\DoctrineAccessControlRepository;
 use Kumwe\CMS\Infrastructure\Persistence\TableNames;
 use Kumwe\CMS\Shared\Infrastructure\Configuration\Environment;
@@ -79,6 +80,132 @@ final class AccessControlIntegrationTest extends TestCase
         $access->revokeGrant($context, $contentGrant);
 
         self::assertNull($tokens->verify($issued['token']));
+    }
+
+    /**
+     * Proves grant changes invalidate every distinct direct or membership role attachment.
+     *
+     * Inactive memberships remain in the affected set so reactivation cannot revive an old credential,
+     * while a user attached through both paths advances only once and an unrelated user is untouched.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testRoleGrantAndRevocationInvalidateDistinctMembershipRoleUsers(): void
+    {
+        $container = TestKernelFactory::create(Environment::fromGlobals());
+        $access = $container->get(AccessControlService::class);
+        $database = $container->get(Connection::class);
+        $tables = $container->get(TableNames::class);
+        self::assertInstanceOf(AccessControlService::class, $access);
+        self::assertInstanceOf(Connection::class, $database);
+        self::assertInstanceOf(TableNames::class, $tables);
+        $context = TestKernelFactory::administratorContext($container);
+        $marker = Uuid::uuid7()->toString();
+        $roleId = $access->createRole($context, 'membership-epoch-' . $marker, 'Membership epoch test');
+        $directAndMembershipUser = $access->createUser(
+            $context,
+            sprintf('membership-epoch-both-%s@example.test', $marker),
+            'Direct and membership role user',
+            'correct horse battery staple',
+        );
+        $membershipOnlyUser = $access->createUser(
+            $context,
+            sprintf('membership-epoch-only-%s@example.test', $marker),
+            'Membership-only role user',
+            'correct horse battery staple',
+        );
+        $inactiveMembershipUser = $access->createUser(
+            $context,
+            sprintf('membership-epoch-inactive-%s@example.test', $marker),
+            'Inactive membership role user',
+            'correct horse battery staple',
+            UserStatus::Suspended,
+        );
+        $unrelatedUser = $access->createUser(
+            $context,
+            sprintf('membership-epoch-unrelated-%s@example.test', $marker),
+            'Unrelated role user',
+            'correct horse battery staple',
+        );
+        $access->assignRole($context, $directAndMembershipUser, $roleId);
+
+        $organizationId = Uuid::uuid7()->toString();
+        $now = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
+        $database->insert($tables->raw('organizations'), [
+            'id' => $organizationId,
+            'site_identifier' => 'default',
+            'identifier' => 'membership-epoch-' . $marker,
+            'name' => 'Membership epoch organization',
+            'status' => 'active',
+            'policy_generation' => 1,
+            'version' => 1,
+            'created_at' => $now,
+            'updated_at' => $now,
+        ], [
+            'created_at' => Types::DATETIME_IMMUTABLE,
+            'updated_at' => Types::DATETIME_IMMUTABLE,
+        ]);
+        foreach ([
+            [$directAndMembershipUser, 'active'],
+            [$membershipOnlyUser, 'active'],
+            [$inactiveMembershipUser, 'suspended'],
+        ] as [$userId, $status]) {
+            $membershipId = Uuid::uuid7()->toString();
+            $database->insert($tables->raw('organization_memberships'), [
+                'id' => $membershipId,
+                'organization_id' => $organizationId,
+                'user_id' => $userId,
+                'status' => $status,
+                'version' => 1,
+                'valid_from' => $now->modify('-1 day'),
+                'valid_until' => null,
+                'created_by' => $context->actorId(),
+                'created_at' => $now,
+                'updated_at' => $now,
+            ], [
+                'valid_from' => Types::DATETIME_IMMUTABLE,
+                'valid_until' => Types::DATETIME_IMMUTABLE,
+                'created_at' => Types::DATETIME_IMMUTABLE,
+                'updated_at' => Types::DATETIME_IMMUTABLE,
+            ]);
+            $database->insert($tables->raw('membership_roles'), [
+                'membership_id' => $membershipId,
+                'role_id' => $roleId,
+                'assigned_by' => $context->actorId(),
+                'assigned_at' => $now,
+            ], ['assigned_at' => Types::DATETIME_IMMUTABLE]);
+        }
+        $epoch = static function (string $userId) use ($database, $tables): int {
+            $stored = $database->fetchOne(sprintf(
+                'SELECT security_epoch FROM %s WHERE id = ?',
+                $tables->quoted('users'),
+            ), [$userId]);
+            self::assertTrue(is_int($stored) || is_string($stored));
+
+            return (int) $stored;
+        };
+        $before = [
+            $directAndMembershipUser => $epoch($directAndMembershipUser),
+            $membershipOnlyUser => $epoch($membershipOnlyUser),
+            $inactiveMembershipUser => $epoch($inactiveMembershipUser),
+            $unrelatedUser => $epoch($unrelatedUser),
+        ];
+
+        $grantId = $access->grant($context, $roleId, 'content.read');
+
+        self::assertSame($before[$directAndMembershipUser] + 1, $epoch($directAndMembershipUser));
+        self::assertSame($before[$membershipOnlyUser] + 1, $epoch($membershipOnlyUser));
+        self::assertSame($before[$inactiveMembershipUser] + 1, $epoch($inactiveMembershipUser));
+        self::assertSame($before[$unrelatedUser], $epoch($unrelatedUser));
+
+        $access->revokeGrant($context, $grantId);
+
+        self::assertSame($before[$directAndMembershipUser] + 2, $epoch($directAndMembershipUser));
+        self::assertSame($before[$membershipOnlyUser] + 2, $epoch($membershipOnlyUser));
+        self::assertSame($before[$inactiveMembershipUser] + 2, $epoch($inactiveMembershipUser));
+        self::assertSame($before[$unrelatedUser], $epoch($unrelatedUser));
     }
 
     public function testSiteScopedRevocationCannotReadOrRevokeAnotherSiteToken(): void

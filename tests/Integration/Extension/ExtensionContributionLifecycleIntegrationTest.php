@@ -91,6 +91,41 @@ final class ExtensionContributionLifecycleIntegrationTest extends TestCase
             self::assertSame(2, $diagnostic['manifest_schema']);
             self::assertFalse($diagnostic['contributions']['active']);
             self::assertFalse($diagnostic['contributions']['capabilities'][0]['active']);
+            self::assertFalse($diagnostic['contributions']['resource_policies'][0]['active']);
+            self::assertSame(
+                ['global', 'site'],
+                $diagnostic['contributions']['capabilities'][0]['allowed_scopes'],
+            );
+            self::assertSame('active', $diagnostic['contributions']['capabilities'][0]['lifecycle']);
+            self::assertSame(1, $diagnostic['contributions']['capabilities'][0]['version']);
+            $capabilityRow = $database->fetchAssociative(sprintf(
+                'SELECT owner_kind, owner_identifier, allowed_scopes, delegable, high_impact, '
+                . 'lifecycle_state, definition_version, definition_checksum FROM %s WHERE code = ?',
+                $tables->quoted('capabilities'),
+            ), [$capability]);
+            self::assertIsArray($capabilityRow);
+            self::assertSame('extension', $capabilityRow['owner_kind']);
+            self::assertSame($identifier, $capabilityRow['owner_identifier']);
+            self::assertSame(['global', 'site'], json_decode(
+                (string) $capabilityRow['allowed_scopes'],
+                true,
+                flags: JSON_THROW_ON_ERROR,
+            ));
+            self::assertTrue((bool) $capabilityRow['delegable']);
+            self::assertFalse((bool) $capabilityRow['high_impact']);
+            self::assertSame('active', $capabilityRow['lifecycle_state']);
+            self::assertSame('1', (string) $capabilityRow['definition_version']);
+            self::assertMatchesRegularExpression('/^[a-f0-9]{64}$/D', (string) $capabilityRow['definition_checksum']);
+            self::assertSame('1', (string) $database->fetchOne(sprintf(
+                'SELECT COUNT(*) FROM %s WHERE extension_id = ? AND policy_code = ? '
+                . 'AND capability_code = ? AND lifecycle_state = ?',
+                $tables->quoted('extension_contribution_resource_policies'),
+            ), [
+                $this->extensionId($database, $tables, $identifier),
+                $namespace . '.administrator',
+                $capability,
+                'active',
+            ]));
             self::assertFalse($diagnostic['contributions']['business']['field_types'][0]['active']);
             self::assertSame(2, count($diagnostic['contributions']['business']['definitions']));
             self::assertSame(2, $this->definitionCount($database, $tables, $identifier));
@@ -110,6 +145,10 @@ final class ExtensionContributionLifecycleIntegrationTest extends TestCase
             self::assertInstanceOf(ActiveExtensionSet::class, $active);
             self::assertInstanceOf(ExtensionContributionRegistrySet::class, $registries);
             self::assertSame($capability, $active->contributionInventory($identifier)['capabilities'][0]['id']);
+            self::assertSame(
+                $namespace . '.administrator',
+                $active->contributionInventory($identifier)['resource_policies'][0]['id'],
+            );
             self::assertSame([], $registries->navigation()->visible([]));
             $visible = $registries->navigation()->visible([$capability => true]);
             self::assertSame($namespace . '.navigation', $visible[0]['id']);
@@ -146,6 +185,14 @@ final class ExtensionContributionLifecycleIntegrationTest extends TestCase
 
             $manager->uninstall($identifier, $context);
             $installed = false;
+            self::assertSame('0', (string) $database->fetchOne(sprintf(
+                'SELECT COUNT(*) FROM %s WHERE policy_code = ?',
+                $tables->quoted('extension_contribution_resource_policies'),
+            ), [$namespace . '.administrator']));
+            self::assertFalse($database->fetchOne(sprintf(
+                'SELECT code FROM %s WHERE code = ?',
+                $tables->quoted('capabilities'),
+            ), [$capability]));
             self::assertTrue($database->createSchemaManager()->tablesExist([$dataTable]));
             self::assertSame(2, $this->definitionCount($database, $tables, $identifier));
             self::assertSame(2, $this->versionCount($database, $tables, $identifier));
@@ -198,6 +245,19 @@ final class ExtensionContributionLifecycleIntegrationTest extends TestCase
             $tables->quoted('business_schema_plans'),
             $tables->quoted('business_definitions'),
         ), [$owner]);
+    }
+
+    private function extensionId(Connection $database, TableNames $tables, string $identifier): string
+    {
+        $id = $database->fetchOne(sprintf(
+            'SELECT id FROM %s WHERE identifier = ?',
+            $tables->quoted('extensions'),
+        ), [$identifier]);
+        if (!is_string($id) || $id === '') {
+            throw new RuntimeException('The installed contribution extension identifier is unavailable.');
+        }
+
+        return $id;
     }
 
     /** @return array<string, mixed> */

@@ -77,6 +77,33 @@ final class ExtensionContributionBoundaryTest extends TestCase
         self::assertStringNotContainsString('extensionNamespace', $recovery);
     }
 
+    public function testGatewayContainsNoClosedActionResourceOrSystemCapabilityCatalog(): void
+    {
+        $gateway = $this->contents('src/Application/Authorization/DenyByDefaultAuthorizationGateway.php');
+        $registry = $this->contents('src/Application/Authorization/AuthorizationPolicyRegistry.php');
+        $core = $this->contents('src/Extension/Contribution/CoreExtensionContributions.php');
+
+        self::assertStringNotContainsString('SYSTEM_CAPABILITIES', $gateway);
+        self::assertStringNotContainsString('INSTALLATION_GLOBAL_SYSTEM_IDENTITIES', $gateway);
+        self::assertStringNotContainsString('ACTION_RESOURCES', $registry);
+        self::assertStringContainsString('$registrar->capability(', $core);
+        self::assertStringContainsString('$registrar->resourcePolicy(', $core);
+    }
+
+    public function testAdministratorProvisioningDerivesCapabilitiesFromTheLiveTypedCatalog(): void
+    {
+        $gateway = $this->contents(
+            'src/Identity/Infrastructure/Administration/DoctrineAdministratorIdentityGateway.php',
+        );
+
+        self::assertStringNotContainsString('ADMINISTRATOR_CAPABILITIES', $gateway);
+        self::assertStringContainsString(
+            "capabilityDefinitions()->ownedBy('core')",
+            $gateway,
+        );
+        self::assertStringContainsString('$definition->allowsHumanGrant()', $gateway);
+    }
+
     /** @return list<string> */
     private function phpFiles(string $directory): array
     {

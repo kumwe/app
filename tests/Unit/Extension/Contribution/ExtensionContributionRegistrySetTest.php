@@ -7,6 +7,15 @@ namespace Kumwe\CMS\Tests\Unit\Extension\Contribution;
 use InvalidArgumentException;
 use Kumwe\CMS\Administrator\Navigation\AdministratorNavigationRegistry;
 use Kumwe\CMS\Administrator\Presentation\AdministratorRenderer;
+use Kumwe\CMS\Application\Authorization\AuthorizationDefinitionLifecycle;
+use Kumwe\CMS\Application\Authorization\AuthorizationPolicyRegistry;
+use Kumwe\CMS\Application\Authorization\AuthorizationResource;
+use Kumwe\CMS\Application\Authorization\CapabilityDefinition as AuthorizationCapabilityDefinition;
+use Kumwe\CMS\Application\Authorization\CapabilityDefinitionRegistry as AuthorizationCapabilityDefinitionRegistry;
+use Kumwe\CMS\Application\Authorization\ResourcePolicyDefinition as AuthorizationResourcePolicyDefinition;
+use Kumwe\CMS\Application\Authorization\ResourcePolicyRegistry;
+use Kumwe\CMS\Application\Authorization\ResourcePolicyTarget;
+use Kumwe\CMS\Application\Authorization\SystemIdentity;
 use Kumwe\CMS\Extension\Contribution\AdministratorNavigationDefinition;
 use Kumwe\CMS\Extension\Contribution\AdministratorRouteDefinition;
 use Kumwe\CMS\Extension\Contribution\AdministratorRouteHandlerFactory;
@@ -17,12 +26,19 @@ use Kumwe\CMS\Extension\Contribution\AdministratorWorkspaceDefinition;
 use Kumwe\CMS\Extension\Contribution\AdministratorWorkspaceRegistry;
 use Kumwe\CMS\Extension\Contribution\CapabilityDefinition;
 use Kumwe\CMS\Extension\Contribution\CapabilityDefinitionRegistry;
+use Kumwe\CMS\Extension\Contribution\ContributionDefinitionChecksum;
 use Kumwe\CMS\Extension\Contribution\ContributionOwner;
 use Kumwe\CMS\Extension\Contribution\CoreExtensionContributions;
 use Kumwe\CMS\Extension\Contribution\ExtensionContributionRegistrySet;
 use Kumwe\CMS\Extension\Contribution\ManifestContributionSet;
 use Kumwe\CMS\Extension\Contribution\OwnedExtensionContributionRegistrar;
+use Kumwe\CMS\Extension\Contribution\ResourcePolicyDefinition;
+use Kumwe\CMS\Extension\Contribution\ResourcePolicyDefinitionRegistry;
+use Kumwe\CMS\Extension\Domain\ExtensionIdentifier;
+use Kumwe\CMS\Extension\Runtime\RuntimeCanonicalJson;
+use Kumwe\CMS\Identity\Domain\Capability;
 use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -38,13 +54,252 @@ use Psr\Http\Server\RequestHandlerInterface;
 #[CoversClass(AdministratorWorkspaceRegistry::class)]
 #[CoversClass(CapabilityDefinition::class)]
 #[CoversClass(CapabilityDefinitionRegistry::class)]
+#[CoversClass(ContributionDefinitionChecksum::class)]
 #[CoversClass(ContributionOwner::class)]
 #[CoversClass(CoreExtensionContributions::class)]
 #[CoversClass(ExtensionContributionRegistrySet::class)]
 #[CoversClass(ManifestContributionSet::class)]
 #[CoversClass(OwnedExtensionContributionRegistrar::class)]
+#[CoversClass(ResourcePolicyDefinition::class)]
+#[CoversClass(ResourcePolicyDefinitionRegistry::class)]
+#[UsesClass(AuthorizationCapabilityDefinition::class)]
+#[UsesClass(AuthorizationCapabilityDefinitionRegistry::class)]
+#[UsesClass(AuthorizationDefinitionLifecycle::class)]
+#[UsesClass(AuthorizationPolicyRegistry::class)]
+#[UsesClass(AuthorizationResourcePolicyDefinition::class)]
+#[UsesClass(ResourcePolicyRegistry::class)]
+#[UsesClass(ResourcePolicyTarget::class)]
+#[UsesClass(RuntimeCanonicalJson::class)]
 final class ExtensionContributionRegistrySetTest extends TestCase
 {
+    public function testContributionChecksumsBindCanonicalDefinitionMetadataToItsOwner(): void
+    {
+        $owner = ContributionOwner::extension('acme/editor');
+        $definition = new CapabilityDefinition(
+            'acme.editor.manage',
+            'Manage editor',
+            'Manage records owned by the editor package.',
+            ['site', 'global'],
+            false,
+            true,
+            AuthorizationDefinitionLifecycle::Deprecated,
+            3,
+        );
+
+        $checksum = ContributionDefinitionChecksum::calculate($owner, $definition);
+
+        self::assertMatchesRegularExpression('/^[a-f0-9]{64}$/D', $checksum);
+        self::assertSame($checksum, ContributionDefinitionChecksum::calculate($owner, $definition));
+        $this->expectException(InvalidArgumentException::class);
+        ContributionDefinitionChecksum::calculate(ContributionOwner::extension('acme/other'), $definition);
+    }
+
+    public function testCorePublishesCompleteTypedCapabilityAndSystemPolicyMetadata(): void
+    {
+        $policies = (new ExtensionContributionRegistrySet())->authorizationPolicies();
+        $delete = $policies->capability(Capability::fromString('content.delete'));
+
+        self::assertNotNull($delete);
+        self::assertSame('core', $delete->owner);
+        self::assertTrue($delete->highImpact);
+        self::assertContains('content', $delete->allowedScopes);
+        self::assertTrue($policies->supports(
+            Capability::fromString('content.read'),
+            AuthorizationResource::item('business_definition', 'page'),
+        ));
+        self::assertTrue($policies->allowsSystemIdentity(
+            Capability::fromString('content.read'),
+            AuthorizationResource::item('content', 'page'),
+            SystemIdentity::Worker,
+        ));
+        self::assertFalse($policies->allowsSystemIdentity(
+            Capability::fromString('content.read'),
+            AuthorizationResource::item('content', 'page'),
+            SystemIdentity::Scheduler,
+        ));
+        self::assertFalse($policies->supports(
+            Capability::fromString('themes.site.manage'),
+            AuthorizationResource::item('theme', 'administrator'),
+        ));
+        self::assertFalse($policies->allowsHumanGrant(Capability::fromString('administrator.bootstrap')));
+        foreach (
+            [
+                'business.approval.approve' => 'approval_request',
+                'business.approval.manage' => 'approval_request',
+                'business.approval.request' => 'business_record',
+                'business.security.manage' => 'resource_policy',
+                'business.step_up.manage' => 'step_up_credential',
+                'portal.access' => 'portal_session',
+            ] as $capability => $resource
+        ) {
+            $definition = $policies->capability(Capability::fromString($capability));
+            self::assertNotNull($definition);
+            self::assertTrue($definition->delegatable);
+            self::assertContains('global', $definition->allowedScopes);
+            self::assertTrue($policies->supports(
+                Capability::fromString($capability),
+                AuthorizationResource::item($resource, 'fixture'),
+            ));
+        }
+        self::assertTrue(
+            $policies->capability(Capability::fromString('business.approval.approve'))?->highImpact,
+        );
+        self::assertFalse($policies->capability(Capability::fromString('portal.access'))?->highImpact);
+    }
+
+    public function testExtensionPoliciesShareOwnershipLifecycleAndRemovalWithCapabilities(): void
+    {
+        $owner = ContributionOwner::extension('acme/editor');
+        $capability = new CapabilityDefinition(
+            'acme.editor.manage',
+            'Manage editor',
+            'Manage records owned by the editor package.',
+            ['global', 'site', 'acme_editor_record'],
+            true,
+            true,
+        );
+        $policy = new ResourcePolicyDefinition(
+            'acme.editor.records',
+            'acme.editor.manage',
+            [new ResourcePolicyTarget('acme_editor_record')],
+        );
+        $declared = new ManifestContributionSet(
+            owner: $owner,
+            capabilities: [$capability],
+            resourcePolicies: [$policy],
+        );
+        $registries = new ExtensionContributionRegistrySet(withCore: false);
+        $registrar = $registries->registrar($owner, $declared);
+        $registrar->capability($capability);
+        $registrar->resourcePolicy($policy);
+        $registrar->complete();
+
+        $action = Capability::fromString('acme.editor.manage');
+        $resource = AuthorizationResource::item('acme_editor_record', 'record-1');
+        self::assertTrue($registries->authorizationPolicies()->supports($action, $resource));
+        self::assertSame('acme/editor', $registries->authorizationPolicies()->capability($action)?->owner);
+        self::assertSame('acme.editor.records', $registries->inventory($owner)['resource_policies'][0]['id']);
+
+        $registries->remove($owner);
+
+        self::assertFalse($registries->authorizationPolicies()->supports($action, $resource));
+        self::assertNull($registries->authorizationPolicies()->capability($action));
+    }
+
+    public function testDisabledCapabilityRemainsInventoriedButCannotAuthorize(): void
+    {
+        $owner = ContributionOwner::extension('acme/editor');
+        $capability = new CapabilityDefinition(
+            'acme.editor.manage',
+            'Manage editor',
+            'Manage records owned by the editor package.',
+            lifecycle: AuthorizationDefinitionLifecycle::Disabled,
+            version: 4,
+        );
+        $policy = new ResourcePolicyDefinition(
+            'acme.editor.records',
+            'acme.editor.manage',
+            [new ResourcePolicyTarget('acme_editor_record')],
+        );
+        $registries = new ExtensionContributionRegistrySet(withCore: false);
+        $registrar = $registries->registrar(
+            $owner,
+            new ManifestContributionSet(
+                owner: $owner,
+                capabilities: [$capability],
+                resourcePolicies: [$policy],
+            ),
+        );
+        $registrar->capability($capability);
+        $registrar->resourcePolicy($policy);
+        $registrar->complete();
+
+        self::assertSame('disabled', $registries->inventory($owner)['capabilities'][0]['lifecycle']);
+        self::assertFalse($registries->authorizationPolicies()->supports(
+            Capability::fromString('acme.editor.manage'),
+            AuthorizationResource::item('acme_editor_record', 'record-1'),
+        ));
+    }
+
+    public function testExtensionCannotAttachPolicyToForeignCapabilityOrAuthorizeSystemIdentity(): void
+    {
+        $owner = ContributionOwner::extension('acme/editor');
+        $registries = new ExtensionContributionRegistrySet(withCore: false);
+        $registrar = $registries->registrar($owner, new ManifestContributionSet($owner), false);
+        $registrar->capability(new CapabilityDefinition(
+            'acme.editor.manage',
+            'Manage editor',
+            'Manage records owned by the editor package.',
+        ));
+
+        try {
+            $registrar->resourcePolicy(new ResourcePolicyDefinition(
+                'acme.editor.foreign',
+                'content.read',
+                [new ResourcePolicyTarget('content')],
+            ));
+            self::fail('An extension cannot bind policy to a foreign capability.');
+        } catch (InvalidArgumentException $exception) {
+            self::assertStringContainsString('capability owned by acme/editor', $exception->getMessage());
+        }
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('cannot grant authority to system identities');
+        $registrar->resourcePolicy(new ResourcePolicyDefinition(
+            'acme.editor.system',
+            'acme.editor.manage',
+            [new ResourcePolicyTarget('acme_editor_record')],
+            systemIdentities: [SystemIdentity::Worker],
+        ));
+    }
+
+    public function testManifestRoundTripsCapabilityAndResourcePolicySecurityMetadata(): void
+    {
+        $declared = ManifestContributionSet::fromManifest(
+            ExtensionIdentifier::fromString('acme/editor'),
+            [
+                'version' => 1,
+                'capabilities' => [[
+                    'id' => 'acme.editor.manage',
+                    'label' => 'Manage editor',
+                    'description' => 'Manage records owned by the editor package.',
+                    'allowed_scopes' => ['site', 'acme_editor_record'],
+                    'delegatable' => false,
+                    'high_impact' => true,
+                    'lifecycle' => 'deprecated',
+                    'version' => 3,
+                ]],
+                'resource_policies' => [[
+                    'id' => 'acme.editor.records',
+                    'capability' => 'acme.editor.manage',
+                    'resources' => [['type' => 'acme_editor_record', 'identifiers' => []]],
+                    'installation_global' => false,
+                    'system_identities' => [],
+                    'lifecycle' => 'active',
+                    'version' => 2,
+                ]],
+            ],
+        );
+        $roundTrip = $declared->toArray();
+
+        self::assertSame(
+            ['acme_editor_record', 'site'],
+            $roundTrip['capabilities'][0]['allowed_scopes'],
+        );
+        self::assertFalse($roundTrip['capabilities'][0]['delegatable']);
+        self::assertTrue($roundTrip['capabilities'][0]['high_impact']);
+        self::assertSame('deprecated', $roundTrip['capabilities'][0]['lifecycle']);
+        self::assertSame(3, $roundTrip['capabilities'][0]['version']);
+        self::assertSame('acme.editor.records', $roundTrip['resource_policies'][0]['id']);
+        self::assertSame(2, $roundTrip['resource_policies'][0]['version']);
+
+        $reparsed = ManifestContributionSet::fromManifest(
+            ExtensionIdentifier::fromString('acme/editor'),
+            $roundTrip,
+        );
+        self::assertSame($roundTrip, $reparsed->toArray());
+    }
+
     public function testCoreNavigationUsesTheSameTypedPermissionAwareRegistry(): void
     {
         $navigation = (new ExtensionContributionRegistrySet())->navigation();
