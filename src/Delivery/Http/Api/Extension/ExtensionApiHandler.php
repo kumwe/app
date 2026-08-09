@@ -20,14 +20,52 @@ use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 use stdClass;
 
+/**
+ * Serves the extension REST resource: what is installed, and the lifecycle moves an operator can make.
+ *
+ * The route path and method choose the operation — activate, disable, uninstall — rather than a body
+ * field, so an unrecognised combination is refused instead of guessed at. What this class really owns
+ * is the translation of lifecycle refusals into RFC 9457 documents an operator can act on, each under
+ * its own `urn:kumwe:problem:` type: a throttled step-up answers 429 with a fixed `Retry-After`, a
+ * demanded step-up and a denied capability answer 403 under separate types, and a malformed body
+ * answers 422. Serialising the mutation against concurrent lifecycle work is not this handler's job;
+ * `TrustLifecycleMiddleware` holds that lock around the whole pipeline.
+ *
+ * @since  2.0.0
+ */
 final readonly class ExtensionApiHandler implements RequestHandlerInterface
 {
+    /**
+     * Wire the route to the lifecycle service and the factory that renders its refusals.
+     *
+     * @param  ExtensionManager               $extensions  Lifecycle service performing the registry work.
+     * @param  ProblemDetailsResponseFactory  $problems    Builds the `application/problem+json` bodies sent back.
+     *
+     * @since  2.0.0
+     */
     public function __construct(
         private ExtensionManager $extensions,
         private ProblemDetailsResponseFactory $problems,
     ) {
     }
 
+    /**
+     * List the installed extensions, or apply the activation, disable or uninstall the route names.
+     *
+     * A `GET` answers the installed set and reads no body. Every other verb resolves `vendor/name` from
+     * the route attributes, validates the mutation body, and delegates. An uninstall answers an empty
+     * 204 because there is no longer a resource to represent; activate and disable answer whatever
+     * record the manager reports. Failures outside the four translated here — a release that fails its
+     * trust check, an unreachable registry — propagate to the pipeline's problem-details boundary.
+     *
+     * @param   ServerRequestInterface  $request  Request whose `vendor` and `name` route attributes address
+     *          the extension and whose path suffix and method select the operation.
+     *
+     * @return  ResponseInterface  The manager's JSON result, an empty 204 after an uninstall, or a problem
+     *          document saying why the operation was refused.
+     *
+     * @since   2.0.0
+     */
     public function handle(ServerRequestInterface $request): ResponseInterface
     {
         try {
@@ -95,7 +133,26 @@ final readonly class ExtensionApiHandler implements RequestHandlerInterface
         }
     }
 
-    /** @return array{?ThemeSurface, ?string} */
+    /**
+     * Validate the body of a lifecycle mutation and take the surface and step-up credential out of it.
+     *
+     * An empty body is read as `{}`, so a mutation needing neither value can be sent without one.
+     * Unknown members are refused rather than ignored, which is what stops a `surface` sent to
+     * `disable` — where it would do nothing — from looking as though it took effect. The surface may
+     * arrive as a `surface` query parameter instead, and the credential is length bounded here so an
+     * oversized value never reaches the password verifier.
+     *
+     * @param   ServerRequestInterface  $request        Request carrying the mutation body and query string.
+     * @param   bool                    $allowsSurface  Whether the operation takes a surface; activation alone does.
+     *
+     * @return  array{?ThemeSurface, ?string}  The requested surface and the step-up password, each null
+     *          when the caller supplied none.
+     *
+     * @throws  InvalidArgumentException  When the body is not valid JSON, is not an object, carries an
+     *          unsupported member, or names an unusable surface or credential.
+     *
+     * @since   2.0.0
+     */
     private function mutationInput(ServerRequestInterface $request, bool $allowsSurface): array
     {
         $encoded = trim((string) $request->getBody());
@@ -130,6 +187,20 @@ final readonly class ExtensionApiHandler implements RequestHandlerInterface
         return [ThemeSurface::optional($surface), $credential];
     }
 
+    /**
+     * Assemble the identifier the extension manager keys extensions by from the route attributes.
+     *
+     * The two segments are joined as they arrive; whether an extension of that name is installed is the
+     * manager's question, not this one's.
+     *
+     * @param   ServerRequestInterface  $request  Request whose `vendor` and `name` attributes the router set.
+     *
+     * @return  string  The `vendor/name` identifier the lifecycle calls are made against.
+     *
+     * @throws  InvalidArgumentException  When either route attribute is absent or is not a string.
+     *
+     * @since   2.0.0
+     */
     private function identifier(ServerRequestInterface $request): string
     {
         $vendor = $request->getAttribute('vendor');

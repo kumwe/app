@@ -10,8 +10,39 @@ use RecursiveIteratorIterator;
 use RuntimeException;
 use SplFileInfo;
 
+/**
+ * Reduces a deployed tree of extension bytes to the single digest a runtime publication pins.
+ *
+ * `ExtensionRuntimeMapCompiler` records one digest per extension for its deployed tree and another for
+ * its published assets, then recomputes both before it will trust a publication. That is what extends
+ * the signature over the compiled map to the files actually on disk: because the digest is taken over a
+ * sorted map of relative path to file digest, a file that is added, removed or renamed moves it just as
+ * surely as an edited byte does. Symbolic links and anything that is not a plain file or directory
+ * abort the walk instead of being skipped, so nothing hostile can be digested away by being unreadable.
+ *
+ * @since  2.0.0
+ */
 final readonly class RuntimeArtifactDigester
 {
+    /**
+     * Digest every regular file beneath a directory into one checksum covering the whole tree.
+     *
+     * @param   string  $root                    Absolute path of the tree to digest; must be a real
+     *          directory rather than a link to one.
+     * @param   bool    $excludeRetainedPackage  Whether to skip the `.kumwe-package.zip` archive an
+     *          install retains at the top of a deployment, so the digest covers only the files the
+     *          runtime loads rather than the archive they came from.
+     *
+     * @return  string  Lowercase SHA-256 hex digest of the JSON-encoded, path-sorted map of relative
+     *          path to file digest; an empty tree digests to the digest of `[]`.
+     *
+     * @throws  RuntimeException  When the root is missing, is a symbolic link or cannot be resolved,
+     *          when an entry under it is a symbolic link or is neither a regular file nor a directory,
+     *          or when a file cannot be hashed.
+     * @throws  \JsonException  When a deployed path is not valid UTF-8 and the entry map cannot be encoded.
+     *
+     * @since   2.0.0
+     */
     public function digest(string $root, bool $excludeRetainedPackage = false): string
     {
         if (!is_dir($root) || is_link($root)) {
@@ -51,6 +82,32 @@ final readonly class RuntimeArtifactDigester
         return hash('sha256', json_encode($files, JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR));
     }
 
+    /**
+     * Digest a `vendor/name/version` tree inside a storage root, proving it does not escape that root.
+     *
+     * The relative path is treated as untrusted even though it reaches this class from a signed
+     * publication: it must be a plain three-segment path, every segment that exists is tested for being
+     * a symbolic link, and the resolved directory must still sit under the storage root. `$optional`
+     * exists for the public asset root, where an extension that publishes no assets legitimately has no
+     * directory at all; the digest of an empty tree is returned in that case, so such an extension
+     * digests to the same value at publication time and at every later verification.
+     *
+     * @param   string  $base                    Absolute storage root the relative path resolves beneath.
+     * @param   string  $relative                `vendor/name/version` path of the tree to digest.
+     * @param   bool    $optional                Whether an absent storage root or tree yields the
+     *          empty-tree digest instead of a failure.
+     * @param   bool    $excludeRetainedPackage  Whether to skip the retained `.kumwe-package.zip`
+     *          archive, as the deployed extension tree does.
+     *
+     * @return  string  Lowercase SHA-256 hex digest of the tree, or of `[]` when an optional tree is absent.
+     *
+     * @throws  RuntimeException  When the relative path is not a safe three-segment path, the storage
+     *          root is missing or unsafe, a path segment is a symbolic link, a required tree is absent,
+     *          or the tree resolves outside the storage root.
+     * @throws  \JsonException  When a deployed path is not valid UTF-8 and the entry map cannot be encoded.
+     *
+     * @since   2.0.0
+     */
     public function digestRelative(
         string $base,
         string $relative,

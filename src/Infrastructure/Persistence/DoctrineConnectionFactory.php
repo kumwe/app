@@ -10,12 +10,47 @@ use Kumwe\CMS\Infrastructure\Persistence\Type\DoctrineTemporalTypes;
 use Kumwe\CMS\Kernel\Configuration\DatabaseConfiguration;
 use Pdo\Mysql;
 
+/**
+ * Opens the shared DBAL connection every Kumwe repository, migration and lease works through.
+ *
+ * `ContainerFactory` shares a single connection built here, so this is the only place the session can be
+ * settled: the microsecond-preserving temporal types are installed before the connection exists, and the
+ * session time zone is pinned to UTC so a server configured for a local zone cannot shift the instants
+ * Kumwe stores. Engine differences are confined to this class — `mysql` and `mariadb` both bind to
+ * `pdo_mysql` and differ from `pgsql` only in driver, character set and the shape of the TLS parameters.
+ *
+ * @since  2.0.0
+ */
 final readonly class DoctrineConnectionFactory
 {
+    /**
+     * Bind the factory to the settings it opens the connection from.
+     *
+     * @param  DatabaseConfiguration  $configuration  Validated driver, host, credentials, SSL mode and
+     *         server version for this deployment's database.
+     *
+     * @since  2.0.0
+     */
     public function __construct(private DatabaseConfiguration $configuration)
     {
     }
 
+    /**
+     * Build a connection with precise temporal types, a UTC session and the configured transport policy.
+     *
+     * The connection comes back already open rather than lazy, because the time-zone statement is issued
+     * here: an unreachable server or rejected credentials therefore fail while the container is being
+     * built instead of inside whichever query happened to run first. On PostgreSQL the configured SSL
+     * mode is passed through as `sslmode`; on MySQL and MariaDB every mode but `disable` sets the
+     * driver's server-certificate check, which is asked for only under `verify-ca` and `verify-full`.
+     *
+     * @return  Connection  An open connection whose session time zone is UTC.
+     *
+     * @throws  \Doctrine\DBAL\Exception  When the parameters do not resolve to a usable driver, the
+     *          server cannot be reached, or it rejects the time-zone statement.
+     *
+     * @since   2.0.0
+     */
     public function create(): Connection
     {
         DoctrineTemporalTypes::register();

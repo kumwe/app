@@ -13,8 +13,42 @@ use Kumwe\CMS\Application\Authorization\ExecutionContext;
 use Kumwe\CMS\Identity\Domain\Capability;
 use Kumwe\CMS\Infrastructure\Persistence\TransactionManager;
 
+/**
+ * Applies the schema migrations this binary ships and records each one in the ledger.
+ *
+ * This is the only writer of the migration ledger. Both entry points authorize `system.migrate` before
+ * they read anything, and `migrate()` holds `MigrationLock` for the whole pass, so replicas booting
+ * together cannot apply the same DDL or race each other into the ledger. Compatibility is asserted
+ * before the first migration runs, which is what stops an older binary from migrating a database a
+ * newer one has already advanced. How each migration is wrapped depends on the platform: PostgreSQL
+ * commits the migration and its ledger row together, MySQL cannot because DDL commits implicitly and
+ * instead journals the attempt through `NonTransactionalMigrationRecovery`, and any other platform
+ * runs the pair unwrapped.
+ *
+ * @since  2.0.0
+ */
 final readonly class MigrationRunner
 {
+    /**
+     * Wire the runner to the database it migrates and the guards a pass runs behind.
+     *
+     * @param  Connection                         $database                  Database being migrated; its
+     *         platform selects how each migration is wrapped.
+     * @param  MigrationRepository                $repository                Ledger read to find pending work
+     *         and appended to per applied migration.
+     * @param  MigrationLock                      $lock                      Cluster-wide exclusion held for
+     *         the whole of a `migrate()` pass.
+     * @param  TransactionManager                 $transactions              Commits a migration and its
+     *         ledger row as one unit on PostgreSQL.
+     * @param  MigrationPlan                      $plan                      Ordered migrations this binary
+     *         ships, and the ledger-compatibility gate.
+     * @param  AuthorizationGateway               $authorization             Decides whether the caller may
+     *         exercise `system.migrate`.
+     * @param  NonTransactionalMigrationRecovery  $nonTransactionalRecovery  Journals and resumes attempts
+     *         where DDL commits implicitly.
+     *
+     * @since  2.0.0
+     */
     public function __construct(
         private Connection $database,
         private MigrationRepository $repository,
@@ -26,6 +60,27 @@ final readonly class MigrationRunner
     ) {
     }
 
+    /**
+     * Apply every migration the ledger does not already record, in plan order.
+     *
+     * The caller is authorized first, then the whole pass runs under the migration lock: the ledger
+     * table is created when absent, the recovery journal is rejected if it holds an attempt this binary
+     * does not ship, and the ledger is proven an exact prefix of the plan before any DDL runs. On MySQL
+     * a migration already in the ledger is still reconciled, so a stale attempt left by a crash between
+     * the ledger write and the journal cleanup is retired instead of replayed.
+     *
+     * @param   ExecutionContext  $context  Actor, site and provenance the run is authorized and audited
+     *          under.
+     *
+     * @return  MigrationResult  The IDs this pass recorded; empty when the ledger was already current.
+     *
+     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not exercise
+     *          `system.migrate` over the database schema.
+     * @throws  \RuntimeException  When the lock is held elsewhere, the ledger does not match the plan, a
+     *          recorded checksum has drifted, or an interrupted migration has no proven way to resume.
+     *
+     * @since   2.0.0
+     */
     public function migrate(ExecutionContext $context): MigrationResult
     {
         $this->authorize($context);
@@ -77,7 +132,25 @@ final readonly class MigrationRunner
     }
 
     /**
-     * @return list<Migration>
+     * List the migrations this database has still to run, without applying any of them.
+     *
+     * `MigrationStatusCommand` reports from this, so it performs the same authorization, journal and
+     * ledger-compatibility checks as a real run and fails on a drifted schema before anyone reaches the
+     * command that would write. No lock is taken, but the ledger table is created when it is missing —
+     * the one side effect of an otherwise read-only call.
+     *
+     * @param   ExecutionContext  $context  Actor, site and provenance the check is authorized and audited
+     *          under.
+     *
+     * @return  list<Migration>  The tail of the plan the ledger does not cover, in apply order; empty
+     *          when the schema is current.
+     *
+     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not exercise
+     *          `system.migrate` over the database schema.
+     * @throws  \RuntimeException  When the recovery journal holds an unknown attempt, the ledger is not an
+     *          exact prefix of the plan, or a recorded checksum has drifted.
+     *
+     * @since   2.0.0
      */
     public function pending(ExecutionContext $context): array
     {
@@ -88,6 +161,18 @@ final readonly class MigrationRunner
         return $this->plan->pending($this->repository->applied());
     }
 
+    /**
+     * Require `system.migrate` over the schema collection before a call reads or writes anything.
+     *
+     * @param   ExecutionContext  $context  Actor, site and provenance the capability is evaluated for.
+     *
+     * @return  void
+     *
+     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When policy refuses the actor
+     *          this capability.
+     *
+     * @since   2.0.0
+     */
     private function authorize(ExecutionContext $context): void
     {
         $this->authorization->assertAllowed(

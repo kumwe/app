@@ -7,14 +7,53 @@ namespace Kumwe\CMS\Extension\Contribution;
 use InvalidArgumentException;
 use Kumwe\CMS\Identity\Domain\Capability;
 
+/**
+ * Validated declaration of one administrator HTTP route a contributor publishes.
+ *
+ * Construction is the validation boundary for a route contribution: a declaration that survives it
+ * has a well-formed dotted name and view reference, a path that cannot traverse, one to eight
+ * supported verbs with duplicates collapsed, and a normalized capability. That leaves
+ * `AdministratorRouteRegistry` with only ownership and collision decisions to make, and lets the
+ * contribution registrar compare a provider's route against its manifest by comparing two arrays.
+ *
+ * @since  2.0.0
+ */
 final readonly class AdministratorRouteDefinition implements ContributionDefinition
 {
-    /** @var non-empty-list<string> */
+    /**
+     * Verbs the route answers, de-duplicated and sorted into byte order.
+     *
+     * @var    non-empty-list<string>
+     * @since  2.0.0
+     */
     public array $methods;
 
+    /**
+     * Capability a request must carry to reach the route, lowercased by `Capability`.
+     *
+     * @var    string
+     * @since  2.0.0
+     */
     public string $capability;
 
-    /** @param array<mixed> $methods */
+    /**
+     * Validate and normalize one administrator route declaration.
+     *
+     * A route may not mix safe and mutating verbs. The registry decides once per route whether to
+     * place the administrator CSRF guard in front of it, so a route answering both GET and POST
+     * would drag that guard onto the safe verb as well.
+     *
+     * @param   string        $name        Dotted route identifier; ownership is checked when it is registered.
+     * @param   string        $path        Route path; for an extension it is appended to its own mount prefix.
+     * @param   array<mixed>  $methods     Declared verbs; must be a list of 1 to 8 of DELETE, GET, PATCH, POST, PUT.
+     * @param   string        $capability  Capability the route requires, normalized through `Capability`.
+     * @param   string        $view        Dotted identifier of the contributed view the route's handler renders.
+     *
+     * @throws  InvalidArgumentException  When an identifier, the path, the verb list, or the capability is
+     *          rejected, or when safe and mutating verbs appear together.
+     *
+     * @since   2.0.0
+     */
     public function __construct(
         public string $name,
         public string $path,
@@ -50,12 +89,28 @@ final readonly class AdministratorRouteDefinition implements ContributionDefinit
         $this->capability = Capability::fromString($capability)->value();
     }
 
+    /**
+     * Report the identifier the contribution registries key this route by.
+     *
+     * @return  string  The dotted route name exactly as declared.
+     *
+     * @since   2.0.0
+     */
     public function identifier(): string
     {
         return $this->name;
     }
 
-    /** @return array{name: string, path: string, methods: non-empty-list<string>, capability: string, view: string} */
+    /**
+     * Export the declaration in the shape the manifest declaration is compared against.
+     *
+     * Both sides of that comparison are built from this method, and the verbs are normalized
+     * first, so the check is insensitive to the order and repetition a declaration was written in.
+     *
+     * @return  array{name: string, path: string, methods: non-empty-list<string>, capability: string, view: string}
+     *
+     * @since   2.0.0
+     */
     public function toArray(): array
     {
         return [

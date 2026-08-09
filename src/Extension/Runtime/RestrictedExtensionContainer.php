@@ -13,27 +13,83 @@ use RuntimeException;
  *
  * This is an API compatibility boundary, not a security sandbox. Untrusted
  * integrations must execute out of process through an authenticated adapter.
+ *
+ * `ExtensionRuntimeLoader` builds one of these per active extension and hands it to the provider's
+ * `register()` call, so an extension reaches only the host services the loader chose to pass in — the
+ * application container is never visible to it. Anything the extension shares itself has to sit under
+ * its own `extension.<vendor>.<name>.` prefix, which keeps two extensions from colliding on an
+ * identifier and keeps either of them from replacing a host service by re-registering its name.
+ *
+ * @since  2.0.0
  */
 final class RestrictedExtensionContainer implements ExtensionContainer
 {
-    /** @var array<string, object> */
+    /**
+     * Host services the loader allowlisted for this extension, keyed by service identifier.
+     *
+     * @var    array<string, object>
+     * @since  2.0.0
+     */
     private array $services;
 
-    /** @var array<string, callable(ExtensionContainer): object> */
+    /**
+     * Factories the extension registered for its own namespaced services, keyed by identifier.
+     *
+     * @var    array<string, callable(ExtensionContainer): object>
+     * @since  2.0.0
+     */
     private array $factories = [];
 
-    /** @var array<string, object> */
+    /**
+     * Services already built from a factory, memoised so each shared identifier is constructed once.
+     *
+     * @var    array<string, object>
+     * @since  2.0.0
+     */
     private array $instances = [];
 
+    /**
+     * Canonical identifier of the extension this container serves.
+     *
+     * @var    string
+     * @since  2.0.0
+     */
     private readonly string $extension;
 
-    /** @param array<string, object> $allowedServices */
+    /**
+     * Build the container for one extension from the host services it is allowed to see.
+     *
+     * @param   string                 $extension        Owning extension identifier, normalised to
+     *          lowercase `vendor/name`.
+     * @param   array<string, object>  $allowedServices  Host services this extension may resolve, keyed
+     *          by the identifier it resolves them under.
+     *
+     * @throws  InvalidArgumentException  When the identifier is not lowercase `vendor/name`.
+     *
+     * @since   2.0.0
+     */
     public function __construct(string $extension, array $allowedServices)
     {
         $this->extension = ExtensionIdentifier::fromString($extension)->value();
         $this->services = $allowedServices;
     }
 
+    /**
+     * Resolve a service this extension is allowed to see.
+     *
+     * A memoised instance is preferred, then an allowlisted host service, then the extension's own
+     * factory — so registering a factory can never shadow a host service, and a factory that has
+     * already run is not run again.
+     *
+     * @param   string  $id  Identifier of an allowlisted host service or of one this extension shared.
+     *
+     * @return  object  The resolved service.
+     *
+     * @throws  RuntimeException  When the identifier is neither allowlisted nor registered here, which
+     *          is how an extension reaching for a service it was not granted fails.
+     *
+     * @since   2.0.0
+     */
     public function get(string $id): object
     {
         if (isset($this->instances[$id])) {
@@ -49,6 +105,21 @@ final class RestrictedExtensionContainer implements ExtensionContainer
         return $this->instances[$id] = ($this->factories[$id])($this);
     }
 
+    /**
+     * Register a lazily built service of this extension's own under its namespaced identifier.
+     *
+     * @param   string                                $id       Service identifier; must start with
+     *          `extension.<vendor>.<name>.` and be unused.
+     * @param   callable(ExtensionContainer): object  $factory  Built on first resolution and then memoised;
+     *          receives this container.
+     *
+     * @return  void
+     *
+     * @throws  InvalidArgumentException  When the identifier leaves the extension's namespace, or an
+     *          allowlisted host service or earlier factory already holds it.
+     *
+     * @since   2.0.0
+     */
     public function share(string $id, callable $factory): void
     {
         $prefix = 'extension.' . str_replace('/', '.', $this->extension) . '.';

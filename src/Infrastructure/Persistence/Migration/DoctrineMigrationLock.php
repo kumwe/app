@@ -18,16 +18,80 @@ use Kumwe\CMS\Infrastructure\Persistence\TableNames;
 use RuntimeException;
 use Throwable;
 
-/** Holds a database-session advisory lock across implicit DDL and the final ledger write. */
+/**
+ * Holds a database-session advisory lock across implicit DDL and the final ledger write.
+ *
+ * Exclusion itself is a session advisory lock — `GET_LOCK` on the MySQL family,
+ * `pg_try_advisory_lock` on PostgreSQL — taken without waiting, so a replica that loses the race
+ * fails fast instead of blocking on startup. Because the server drops such a lock when the session
+ * ends, it survives the implicit commits MySQL performs during DDL and needs no expiry to recover
+ * from a crashed migrator, which is what an expiring row lock could never offer.
+ *
+ * A row in `migration_locks` is still claimed for the length of the run, because a pre-advisory
+ * binary knows only that table and would otherwise migrate straight through a lock it cannot see.
+ * That row is marked with `V2_OWNER_PREFIX` so a copy left behind by a crashed 2.x process can be
+ * cleared automatically by the next run, while an unmarked row is treated as a live legacy owner and
+ * refuses the run; `recoverExpiredLegacyOwner()` is the only way to remove one of those.
+ *
+ * @since  2.0.0
+ */
 final readonly class DoctrineMigrationLock implements MigrationLock, ExpiredMigrationLockRecovery
 {
+    /**
+     * Row key the compatibility lock is claimed under, unchanged from the pre-advisory scheme.
+     *
+     * @var    string
+     * @since  2.0.0
+     */
     private const LEGACY_NAME = 'core-migrations';
+    /**
+     * Marker distinguishing an owner token this implementation wrote from a genuine legacy one.
+     *
+     * Twelve characters, leaving 52 for the random suffix so a token still fills the fixed
+     * 64-character column exactly. A prefixed row may be discarded once the advisory lock is held,
+     * because holding it proves the process that wrote the row is gone. It also cannot be mistaken
+     * for a legacy token, which is 64 hexadecimal digits and so never contains the prefix.
+     *
+     * @var    string
+     * @since  2.0.0
+     */
     private const V2_OWNER_PREFIX = 'advisory-v2:';
 
+    /**
+     * Bind the lock to the session that will hold it and the schema it guards.
+     *
+     * @param  Connection  $database  Connection whose session takes the advisory lock and writes the
+     *         compatibility row; the lock lives and dies with that session.
+     * @param  TableNames  $tables    Resolver for the physical `migration_locks` name and for the
+     *         `schema_migrations` name the advisory lock is scoped to.
+     *
+     * @since  2.0.0
+     */
     public function __construct(private Connection $database, private TableNames $tables)
     {
     }
 
+    /**
+     * Run a migration pass while this session alone holds the advisory lock and the legacy row.
+     *
+     * The advisory lock is taken first, then the compatibility table is created when absent and a
+     * marked row claimed inside it, so a binary watching only that table stays out too. On the
+     * failure path the row is removed on a best-effort basis and the operation's own exception is
+     * re-thrown unchanged; a row that outlives a crash never expires by itself and is instead cleared
+     * by the next run that manages to take the advisory lock.
+     *
+     * @template T
+     *
+     * @param   callable(): T  $operation  Migration work to run under exclusion.
+     *
+     * @return  T  Whatever the operation returned, handed back untouched.
+     *
+     * @throws  RuntimeException  When the platform cannot supply an advisory lock, another process
+     *          already holds it, an unmarked legacy owner row is present, or either lock could not be
+     *          released afterwards.
+     *
+     * @since   2.0.0
+     */
     public function synchronized(callable $operation): mixed
     {
         return $this->withAdvisoryLock(function () use ($operation): mixed {
@@ -53,6 +117,25 @@ final readonly class DoctrineMigrationLock implements MigrationLock, ExpiredMigr
         });
     }
 
+    /**
+     * Compare-and-delete one expired pre-advisory owner row so migrations can proceed again.
+     *
+     * This is the break-glass path behind `database:recover-lock`; it is never reached while running
+     * migrations. The advisory lock is held across the check and the delete together, and the row
+     * must still carry the exact token the operator read and an expiry already in the past, so a live
+     * owner can never be unlocked from underneath the process holding it. Rows this implementation
+     * wrote are out of reach here: their token carries `V2_OWNER_PREFIX` and fails the hex check.
+     *
+     * @param   string  $expectedOwnerToken  Owner token read from the stuck row, 64 lowercase hex
+     *          digits, matched exactly before the row is removed.
+     *
+     * @return  void
+     *
+     * @throws  RuntimeException  When the token is malformed, the row has changed hands or is gone,
+     *          its stored expiry is unreadable or still in the future, or it changed during delete.
+     *
+     * @since   2.0.0
+     */
     public function recoverExpiredLegacyOwner(string $expectedOwnerToken): void
     {
         if (preg_match('/^[a-f0-9]{64}$/D', $expectedOwnerToken) !== 1) {
@@ -97,9 +180,23 @@ final readonly class DoctrineMigrationLock implements MigrationLock, ExpiredMigr
     }
 
     /**
+     * Hold this deployment's advisory lock for the duration of one callback.
+     *
+     * Both the migration pass and the legacy-row recovery go through here, which is what stops a
+     * recovery from deleting the row while a migration is relying on it. The failure path releases
+     * without demanding confirmation, so a session that has already died cannot replace the
+     * operation's exception with a complaint about the unlock.
+     *
      * @template T
-     * @param callable(): T $operation
-     * @return T
+     *
+     * @param   callable(): T  $operation  Work to run while the lock is held.
+     *
+     * @return  T  Whatever the operation returned.
+     *
+     * @throws  RuntimeException  When the platform cannot supply an advisory lock, it is already held
+     *          elsewhere, or the server did not confirm the release.
+     *
+     * @since   2.0.0
      */
     private function withAdvisoryLock(callable $operation): mixed
     {
@@ -123,7 +220,22 @@ final readonly class DoctrineMigrationLock implements MigrationLock, ExpiredMigr
         return $result;
     }
 
-    /** @return array{0: AbstractPlatform, 1: string} */
+    /**
+     * Work out the platform handle and the advisory-lock name this deployment must use.
+     *
+     * The name is derived from the connected database and the physical ledger table, so deployments
+     * sharing a server — or one site installed twice under different table prefixes — migrate
+     * independently while every replica of a single deployment serialises. The digest is truncated,
+     * which keeps the whole name inside the 64 characters MySQL allows a lock to be named.
+     *
+     * @return  array{0: AbstractPlatform, 1: string}  The platform in use, and the lock name to pass
+     *          to the acquire and release calls.
+     *
+     * @throws  RuntimeException  When the platform is neither MySQL-family nor PostgreSQL, or the
+     *          server will not name its current database.
+     *
+     * @since   2.0.0
+     */
     private function advisoryIdentity(): array
     {
         $platform = $this->database->getDatabasePlatform();
@@ -144,6 +256,22 @@ final readonly class DoctrineMigrationLock implements MigrationLock, ExpiredMigr
         ), 0, 40)];
     }
 
+    /**
+     * Take the session advisory lock for this deployment, without waiting for it.
+     *
+     * The answer a driver gives differs by platform — MySQL replies with 1, PostgreSQL's boolean
+     * reaches PHP as `t`, `true`, or a real bool — so the accepted set is deliberately wider than one
+     * value, and anything outside it is read as a refusal.
+     *
+     * @param   AbstractPlatform  $platform  Platform deciding which lock function is issued.
+     * @param   string            $lockName  Lock name derived by `advisoryIdentity()`.
+     *
+     * @return  void
+     *
+     * @throws  RuntimeException  When the server declines because another session already holds it.
+     *
+     * @since   2.0.0
+     */
     private function acquireAdvisory(AbstractPlatform $platform, string $lockName): void
     {
         $acquired = $platform instanceof AbstractMySQLPlatform
@@ -157,6 +285,23 @@ final readonly class DoctrineMigrationLock implements MigrationLock, ExpiredMigr
         }
     }
 
+    /**
+     * Hand the session advisory lock back to the server.
+     *
+     * The failure path releases with `$required` false: an operation that has already thrown must not
+     * have its exception replaced by a complaint about the unlock. A `NULL` answer, which a server
+     * gives for a lock it does not consider held, counts as a refusal like any other value.
+     *
+     * @param   AbstractPlatform  $platform  Platform deciding which unlock function is issued.
+     * @param   string            $lockName  Lock name derived by `advisoryIdentity()`.
+     * @param   bool              $required  Whether a refused release should be raised as a failure.
+     *
+     * @return  void
+     *
+     * @throws  RuntimeException  When $required is true and the server did not confirm the release.
+     *
+     * @since   2.0.0
+     */
     private function releaseAdvisory(AbstractPlatform $platform, string $lockName, bool $required): void
     {
         $released = $platform instanceof AbstractMySQLPlatform
@@ -170,6 +315,25 @@ final readonly class DoctrineMigrationLock implements MigrationLock, ExpiredMigr
         }
     }
 
+    /**
+     * Claim the legacy `core-migrations` row so a pre-advisory binary also sees the run as locked.
+     *
+     * Only reached with the advisory lock held, which is what makes removing a row marked with
+     * `V2_OWNER_PREFIX` safe: whoever wrote it cannot still be running. An unmarked row belongs to a
+     * binary that predates the advisory scheme, so it is left untouched and the run refused instead.
+     * The claimed row is given an expiry far in the future, because expiry is how older binaries
+     * decide a lock is abandoned and this one is released explicitly rather than left to lapse.
+     *
+     * @param   string  $ownerToken  Token identifying this holder, already carrying the prefix that
+     *          marks it as written by the advisory-lock scheme.
+     *
+     * @return  void
+     *
+     * @throws  RuntimeException  When an unmarked legacy owner is present, or another process
+     *          inserted the row between the read and the insert.
+     *
+     * @since   2.0.0
+     */
     private function acquireCompatibilityRow(string $ownerToken): void
     {
         $table = $this->tables->raw('migration_locks');
@@ -207,6 +371,21 @@ final readonly class DoctrineMigrationLock implements MigrationLock, ExpiredMigr
         }
     }
 
+    /**
+     * Delete the legacy row this run claimed, matched on both the lock name and the owner token.
+     *
+     * Matching on the token means a row some other holder has since claimed is never removed, and the
+     * unsuccessful-path call passes `$required` false so a missing row cannot mask the real failure.
+     *
+     * @param   string  $ownerToken  Token the row must still carry for it to be removed.
+     * @param   bool    $required    Whether a row that is already gone should be raised as a failure.
+     *
+     * @return  void
+     *
+     * @throws  RuntimeException  When $required is true and no matching row was there to delete.
+     *
+     * @since   2.0.0
+     */
     private function releaseCompatibilityRow(string $ownerToken, bool $required): void
     {
         $deleted = $this->database->delete($this->tables->raw('migration_locks'), [
@@ -219,8 +398,17 @@ final readonly class DoctrineMigrationLock implements MigrationLock, ExpiredMigr
     }
 
     /**
-     * Dual-lock bridge for older builds that only understand this row.
-     * A marked stale v2 row is removed only while the matching advisory namespace is held.
+     * Create the `migration_locks` table when the database does not already have one.
+     *
+     * The compatibility row is the dual-lock bridge to older builds, which understand nothing else,
+     * so the table has to exist before that row can be claimed on their behalf — including on a
+     * database that has only ever been migrated by a build carrying the advisory lock. The shape is
+     * the one those builds expect: the lock name as primary key, a fixed 64-character owner token,
+     * and the acquired and expiry timestamps they compare against.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
      */
     private function ensureCompatibilityTable(): void
     {

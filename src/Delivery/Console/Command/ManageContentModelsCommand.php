@@ -11,22 +11,74 @@ use Kumwe\CMS\Delivery\Console\Output;
 use Kumwe\CMS\Workflow\Domain\WorkflowDefinition;
 use Throwable;
 
+/**
+ * Console entry point for authoring a site's content types and workflows as `kumwe content-model`.
+ *
+ * One command covers both halves of the content model because they are published the same way and
+ * `--kind` is all that separates them: `content-type` reaches the schema definitions, `workflow`
+ * reaches the state machines they pin. Definitions are versioned rather than mutated, so `update`
+ * publishes a new version against the `--version` the operator read and `ContentModelService` refuses
+ * a change that would strand stored entries unless `--allow-breaking=1` says otherwise. Reads need
+ * only `content.read`; every other action needs `content.update`.
+ *
+ * @since  2.0.0
+ */
 final readonly class ManageContentModelsCommand implements Command
 {
+    /**
+     * Wire the command to the content-model use cases and to the console's token authorization route.
+     *
+     * @param  ContentModelService  $models         Service every action delegates its read or publication to.
+     * @param  ConsoleAuthorizer    $authorization  Resolves `--site` and `--token-file` into an authorized context.
+     *
+     * @since  2.0.0
+     */
     public function __construct(private ContentModelService $models, private ConsoleAuthorizer $authorization)
     {
     }
 
+    /**
+     * Name the operator types to reach the content-model actions.
+     *
+     * @return  string  Always `content-model`.
+     *
+     * @since   2.0.0
+     */
     public function name(): string
     {
         return 'content-model';
     }
 
+    /**
+     * Describe the command for the console's command listing.
+     *
+     * @return  string  One-line summary naming the actions and the two kinds of definition.
+     *
+     * @since   2.0.0
+     */
     public function description(): string
     {
         return 'List, read, create, or publish versioned content types and workflows.';
     }
 
+    /**
+     * Run one content-model action against the kind `--kind` selects and print the definition as JSON.
+     *
+     * The first argument is the action and defaults to `list`; everything after it is a `--name=value`
+     * option. `--kind` is required for every action, including `list`, because it chooses which half of
+     * the model the action addresses. The capability is picked from the action before the token is
+     * verified, so `list` and `get` are reachable with a read-only token while `create` and `update`
+     * are not. Failures are reduced to a message and exit status 1, so a rejected schema or a version
+     * conflict reads as an explanation rather than a stack trace.
+     *
+     * @param   list<string>  $arguments  Action name first, then `--name=value` options: `--site`,
+     *          `--token-file` and `--kind` always, plus whatever the chosen action requires.
+     * @param   Output        $output     Sink for the JSON definition, or for the failure message.
+     *
+     * @return  int  0 when the action completed, 1 when any step failed.
+     *
+     * @since   2.0.0
+     */
     public function execute(array $arguments, Output $output): int
     {
         try {

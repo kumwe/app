@@ -24,13 +24,38 @@ use Throwable;
  * The same exception must produce the same outcome on every delivery surface, so the mapping
  * lives here rather than in individual handlers. Unrecognised throwables are rethrown so a
  * genuine fault surfaces as a 500 instead of being flattened into a client error.
+ *
+ * @since  2.0.0
  */
 final readonly class BusinessApiResponder
 {
+    /**
+     * Wire the responder to the factory that renders its problem documents.
+     *
+     * @param  ProblemDetailsResponseFactory  $problems  Builds the `application/problem+json` bodies sent back.
+     *
+     * @since  2.0.0
+     */
     public function __construct(private ProblemDetailsResponseFactory $problems)
     {
     }
 
+    /**
+     * Translate a business definition or schema failure into the response the API sends back.
+     *
+     * Authorization refusals become 403, a missing definition or schema 404, a definition revision
+     * clash 412, a schema clash 409, and every validation failure 422. Only the authorization-denied
+     * arm substitutes its own wording; the rest publish the exception message as the problem detail,
+     * which is why those exceptions carry operator-safe messages. An exception matching no arm is
+     * rethrown unchanged rather than mapped.
+     *
+     * @param   Throwable  $exception  Failure raised while a business definition or schema call ran.
+     * @param   string     $instance   Request URI recorded as the problem document's `instance` member.
+     *
+     * @return  ResponseInterface  An `application/problem+json` response carrying the mapped status.
+     *
+     * @since   2.0.0
+     */
     public function problem(Throwable $exception, string $instance): ResponseInterface
     {
         return match (true) {

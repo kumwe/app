@@ -15,8 +15,35 @@ use Kumwe\CMS\Extension\Runtime\ExtensionRuntimeMapCompiler;
 use Kumwe\CMS\Extension\Runtime\RuntimeMaterializationState;
 use Throwable;
 
+/**
+ * Console command that runs the durable job worker as a supervised loop or a single pass.
+ *
+ * Claiming, fencing, executing and settling a job all belong to `Worker`; what lives here is the
+ * process around it. That means option validation, the poll interval, the signal handlers that turn a
+ * stop request into a drain after the job in flight has settled rather than a killed job, and the
+ * `--max-jobs`/`--max-runtime` budgets that let a supervisor recycle the process on its own schedule.
+ * When the container supplies the extension runtime, the loop also re-checks before every claim that
+ * the generation this process started on is still current, so a worker cannot keep executing revoked
+ * extension code for the rest of its lifetime. Nothing escapes as an exception: a failure is reported
+ * on stderr and becomes exit status `1`, and a worker that reached the loop always retires its
+ * heartbeat on the way out.
+ *
+ * @since  2.0.0
+ */
 final readonly class QueueWorkCommand implements Command
 {
+    /**
+     * Wire the worker, its authority, and the optional runtime-generation guard.
+     *
+     * @param  Worker                        $worker         Executes at most one claimed job per iteration.
+     * @param  SystemPrincipal               $system         Mints the worker context claims authorize with.
+     * @param  ?ExtensionRuntimeMapCompiler  $runtime        Rejects a superseded generation before each claim;
+     *         the check runs only when both this and `$loadedRuntime` are given.
+     * @param  ?RuntimeMaterializationState  $loadedRuntime  Generation this process loaded, and the source of
+     *         its worker identity; null falls back to a random one.
+     *
+     * @since  2.0.0
+     */
     public function __construct(
         private Worker $worker,
         private SystemPrincipal $system,
@@ -25,17 +52,48 @@ final readonly class QueueWorkCommand implements Command
     ) {
     }
 
+    /**
+     * Name this command is invoked under on the console.
+     *
+     * @return  string  Always `queue:work`.
+     *
+     * @since   2.0.0
+     */
     public function name(): string
     {
         return 'queue:work';
     }
 
+    /**
+     * Summary line `bin/kumwe list` prints beside the command name.
+     *
+     * @return  string  One-sentence statement of what the command runs.
+     *
+     * @since   2.0.0
+     */
     public function description(): string
     {
         return 'Run the durable, crash-recovering job worker.';
     }
 
-    /** @param list<string> $arguments */
+    /**
+     * Consume one queue until the process is asked to drain, or for a single pass with `--once`.
+     *
+     * Accepts `--queue=NAME`, `--once`, `--sleep-ms=N` (50-60000), `--lease-seconds=N` (5-3600),
+     * `--max-jobs=N` and `--max-runtime=N`. A `SIGTERM`, `SIGINT`, `SIGHUP` or `SIGQUIT`, an exhausted
+     * job budget, or an exhausted runtime budget each end the loop after the current job has settled;
+     * the sleep is skipped whenever a job was handled, so a busy queue drains without pausing. The
+     * heartbeat is retired from a `finally` block, but only once a worker identity and context exist,
+     * so an option rejected during validation leaves nothing to clean up. A cleanup failure is
+     * reported without changing the status the loop already decided on.
+     *
+     * @param   list<string>  $arguments  Raw `--name=value` options plus the valueless `--once` flag.
+     * @param   Output        $output     Sink for the startup and drain lines, and for failures on stderr.
+     *
+     * @return  int  `0` after a clean drain, `1` when an option was rejected or the loop failed.
+     *
+     * @since   2.0.0
+     */
     public function execute(array $arguments, Output $output): int
     {
         $workerId = null;
@@ -129,7 +187,25 @@ final readonly class QueueWorkCommand implements Command
         }
     }
 
-    /** @param array<string, string|true> $options */
+    /**
+     * Read one bounded integer option, falling back to its default when the flag was not supplied.
+     *
+     * Only a run of decimal digits is accepted, so a value such as `30s` or `1_000` is refused rather
+     * than quietly truncated by the cast that follows.
+     *
+     * @param   array<string, string|true>  $options  Parsed options, keyed by name without the `--`.
+     * @param   string                      $name     Option to read, spelled as it appears after `--`.
+     * @param   int                         $default  Value used when the option is absent.
+     * @param   int                         $minimum  Lowest accepted value, inclusive.
+     * @param   int                         $maximum  Highest accepted value, inclusive.
+     *
+     * @return  int  The supplied value, or the default when the option was not given.
+     *
+     * @throws  InvalidArgumentException  When the value is not a run of digits, or falls outside the
+     *          accepted range.
+     *
+     * @since   2.0.0
+     */
     private function integerOption(
         array $options,
         string $name,
@@ -158,8 +234,20 @@ final readonly class QueueWorkCommand implements Command
     }
 
     /**
-     * @param list<string> $arguments
-     * @return array<string, string|true>
+     * Parse the argument vector into the option map the rest of the command reads.
+     *
+     * `--once` is the only valueless flag and is recorded as `true`; every other argument must be
+     * spelled `--name=value`, so a mistyped option stops the worker instead of being dropped and
+     * leaving it running with a default nobody asked for.
+     *
+     * @param   list<string>  $arguments  Argument vector as handed over by the console application.
+     *
+     * @return  array<string, string|true>  Values keyed by option name without the leading `--`, with
+     *          `--once` mapped to `true`.
+     *
+     * @throws  InvalidArgumentException  When an argument is neither `--once` nor `--name=value`.
+     *
+     * @since   2.0.0
      */
     private function options(array $arguments): array
     {
