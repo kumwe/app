@@ -7,15 +7,19 @@ namespace Kumwe\CMS\Tests\Support;
 use Kumwe\CMS\Application\Authorization\AuthenticationStrength;
 use Kumwe\CMS\Application\Authorization\AuthorizationDecision;
 use Kumwe\CMS\Application\Authorization\AuthorizationDecisionRecorder;
-use Kumwe\CMS\Application\Authorization\AuthorizationPolicyRegistry;
 use Kumwe\CMS\Application\Authorization\AuthorizationResource;
 use Kumwe\CMS\Application\Authorization\DenyByDefaultAuthorizationGateway;
 use Kumwe\CMS\Application\Authorization\ExecutionContext;
+use Kumwe\CMS\Application\Authorization\MembershipContext;
+use Kumwe\CMS\Application\Authorization\MembershipContextValidator;
+use Kumwe\CMS\Application\Authorization\OrganizationContext;
 use Kumwe\CMS\Application\Authorization\ResourceSiteOwnership;
 use Kumwe\CMS\Application\Authorization\ResourceSiteOwnershipWriter;
 use Kumwe\CMS\Application\Authorization\SiteContext;
 use Kumwe\CMS\Application\Authorization\SystemIdentity;
 use Kumwe\CMS\Application\Authorization\SystemPrincipal;
+use Kumwe\CMS\Application\Authorization\WorkspaceContext;
+use Kumwe\CMS\Extension\Contribution\ExtensionContributionRegistrySet;
 use Kumwe\CMS\Identity\Application\Authentication\AuthenticatedPrincipal;
 use Kumwe\CMS\Identity\Domain\Capability;
 
@@ -25,16 +29,29 @@ final class AuthorizationContext
 
     private static ?object $provenance = null;
 
-    /** @param list<string> $capabilities */
+    /**
+     * Issue a human test context with optional server-shaped membership state.
+     *
+     * @param   list<string>        $capabilities  Global capability names carried by the principal.
+     * @param   string              $subject       Canonical test actor UUID.
+     * @param   string              $site          Site identifier the context executes in.
+     * @param   ?MembershipContext  $membership    Optional organization/workspace credential snapshot.
+     *
+     * @return  ExecutionContext  Provenance-bound test context.
+     *
+     * @since   2.0.0
+     */
     public static function human(
         array $capabilities,
         string $subject = self::SUBJECT,
         string $site = SiteContext::DEFAULT,
+        ?MembershipContext $membership = null,
     ): ExecutionContext {
         return self::principal($capabilities, $subject)->context(
             SiteContext::fromString($site),
             AuthenticationStrength::BearerToken,
             'test-request-0001',
+            membership: $membership,
         );
     }
 
@@ -64,13 +81,76 @@ final class AuthorizationContext
         return self::$provenance ??= new \stdClass();
     }
 
+    /**
+     * Construct a versioned membership snapshot for authorization boundary tests.
+     *
+     * @param   string   $organization       Selected organization identifier.
+     * @param   ?string  $workspace          Selected workspace identifier, or null for organization-wide work.
+     * @param   int      $membershipVersion  Stored membership version represented by the credential.
+     * @param   int      $policyGeneration   Stored organization policy generation represented by the credential.
+     * @param   string   $membershipId       Stable membership row UUID.
+     *
+     * @return  MembershipContext  Validated immutable membership snapshot.
+     *
+     * @since   2.0.0
+     */
+    public static function membership(
+        string $organization = 'acme',
+        ?string $workspace = null,
+        int $membershipVersion = 1,
+        int $policyGeneration = 1,
+        string $membershipId = '018f22e2-7c8b-7ab0-8f3a-88e8026bb302',
+    ): MembershipContext {
+        return new MembershipContext(
+            $membershipId,
+            OrganizationContext::fromString($organization),
+            $workspace === null ? null : WorkspaceContext::fromString($workspace),
+            $membershipVersion,
+            $policyGeneration,
+        );
+    }
+
+    /**
+     * Build the canonical gateway around optional test doubles for external decision authorities.
+     *
+     * @param   ?AuthorizationDecisionRecorder  $recorder     Optional decision recorder; defaults to a no-op sink.
+     * @param   ?ResourceSiteOwnership          $ownership    Optional site authority; defaults to the test site.
+     * @param   ?MembershipContextValidator     $memberships  Optional live membership validator; defaults to deny.
+     *
+     * @return  DenyByDefaultAuthorizationGateway  Configured canonical authorization gateway.
+     *
+     * @since   2.0.0
+     */
     public static function gateway(
         ?AuthorizationDecisionRecorder $recorder = null,
         ?ResourceSiteOwnership $ownership = null,
+        ?MembershipContextValidator $memberships = null,
     ): DenyByDefaultAuthorizationGateway {
         return new DenyByDefaultAuthorizationGateway(
             self::provenance(),
-            new AuthorizationPolicyRegistry(),
+            (new ExtensionContributionRegistrySet())->authorizationPolicies(),
+            $memberships ?? new class implements MembershipContextValidator {
+                /**
+                 * Fail closed when a test did not explicitly supply live membership state.
+                 *
+                 * @param   string             $subjectId   Actor expected to hold the membership.
+                 * @param   SiteContext        $site        Exact site the decision executes in.
+                 * @param   MembershipContext  $membership  Credential snapshot being checked.
+                 * @param   bool               $lock        Whether a caller requested a mutation lock.
+                 *
+                 * @return  bool  Always false.
+                 *
+                 * @since   2.0.0
+                 */
+                public function current(
+                    string $subjectId,
+                    SiteContext $site,
+                    MembershipContext $membership,
+                    bool $lock = false,
+                ): bool {
+                    return false;
+                }
+            },
             $ownership ?? self::ownership(),
             $recorder ?? new class implements AuthorizationDecisionRecorder {
                 public function record(

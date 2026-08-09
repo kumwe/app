@@ -3,16 +3,20 @@
 declare(strict_types=1);
 
 use DateTimeImmutable;
+use Doctrine\DBAL\Connection;
 use Kumwe\CMS\Application\Authorization\AuthenticationStrength;
 use Kumwe\CMS\Application\Authorization\AuthorizationResource;
 use Kumwe\CMS\Application\Authorization\ResourceSiteOwnershipWriter;
 use Kumwe\CMS\Application\Authorization\SiteContext;
+use Kumwe\CMS\BusinessSecurity\Infrastructure\Persistence\DoctrineBusinessSecurityAdministrationRepository;
 use Kumwe\CMS\Extension\Application\ExtensionManager;
 use Kumwe\CMS\Extension\Application\Trust\TrustStore;
 use Kumwe\CMS\Extension\Domain\PackageChecksum;
 use Kumwe\CMS\Identity\Application\Administration\AccessControlRepository;
 use Kumwe\CMS\Identity\Application\Administration\AccessControlService;
 use Kumwe\CMS\Identity\Application\Administration\AdministratorIdentityGateway;
+use Kumwe\CMS\Infrastructure\Persistence\TableNames;
+use Kumwe\CMS\Infrastructure\Persistence\TransactionManager;
 use Ramsey\Uuid\Uuid;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
@@ -26,11 +30,21 @@ $adminEmail = getenv('KUMWE_BROWSER_ADMIN_EMAIL');
 $adminPassword = getenv('KUMWE_BROWSER_ADMIN_PASSWORD');
 $limitedEmail = getenv('KUMWE_BROWSER_LIMITED_EMAIL');
 $limitedPassword = getenv('KUMWE_BROWSER_LIMITED_PASSWORD');
+$portalEmail = getenv('KUMWE_BROWSER_PORTAL_EMAIL');
+$portalPassword = getenv('KUMWE_BROWSER_PORTAL_PASSWORD');
+$portalEmail = is_string($portalEmail) && $portalEmail !== ''
+    ? $portalEmail
+    : 'browser-portal@kumwe.test';
+$portalPassword = is_string($portalPassword) && $portalPassword !== ''
+    ? $portalPassword
+    : 'browser portal password';
 if (
     !is_string($adminEmail) || $adminEmail === ''
     || !is_string($adminPassword) || $adminPassword === ''
     || !is_string($limitedEmail) || $limitedEmail === ''
     || !is_string($limitedPassword) || $limitedPassword === ''
+    || $portalEmail === ''
+    || $portalPassword === ''
 ) {
     throw new RuntimeException('Browser contribution fixture credentials are unavailable.');
 }
@@ -41,6 +55,9 @@ $trust = $container->get(TrustStore::class);
 $access = $container->get(AccessControlService::class);
 $repository = $container->get(AccessControlRepository::class);
 $ownership = $container->get(ResourceSiteOwnershipWriter::class);
+$database = $container->get(Connection::class);
+$tables = $container->get(TableNames::class);
+$transactions = $container->get(TransactionManager::class);
 if (
     !$identities instanceof AdministratorIdentityGateway
     || !$manager instanceof ExtensionManager
@@ -48,6 +65,9 @@ if (
     || !$access instanceof AccessControlService
     || !$repository instanceof AccessControlRepository
     || !$ownership instanceof ResourceSiteOwnershipWriter
+    || !$database instanceof Connection
+    || !$tables instanceof TableNames
+    || !$transactions instanceof TransactionManager
 ) {
     throw new RuntimeException('Browser contribution fixture services are unavailable.');
 }
@@ -146,6 +166,57 @@ try {
     $access->grant($context, $limitedRole, 'administrator.access');
     $access->grant($context, $limitedRole, 'content.read');
     $access->assignRole($context, $limitedUser, $limitedRole);
+
+    $portalUser = $access->createUser(
+        $context,
+        $portalEmail,
+        'Browser Portal Member',
+        $portalPassword,
+    );
+    $portalRole = $access->createRole($context, 'browser-portal', 'Browser Portal Member');
+    $access->grant($context, $portalRole, 'portal.access', 'site', 'default');
+    $security = new DoctrineBusinessSecurityAdministrationRepository($database, $tables, $ownership);
+    $organizationId = Uuid::uuid7()->toString();
+    $workspaceId = Uuid::uuid7()->toString();
+    $membershipId = Uuid::uuid7()->toString();
+    $at = new DateTimeImmutable();
+    $transactions->transactional(function () use (
+        $security,
+        $organizationId,
+        $workspaceId,
+        $membershipId,
+        $portalUser,
+        $portalRole,
+        $context,
+        $at,
+    ): void {
+        $security->insertOrganization($organizationId, 'default', 'acme', 'Acme Browser Organization', $at);
+        $security->insertWorkspace($workspaceId, $organizationId, 'default', 'north', 'North Workspace', $at);
+        $security->insertMembership(
+            $membershipId,
+            $organizationId,
+            'default',
+            $portalUser,
+            $at->modify('-1 minute'),
+            $at->modify('+1 day'),
+            $context->actorId(),
+            $at,
+        );
+        $security->assignMembershipWorkspace(
+            $membershipId,
+            $workspaceId,
+            'default',
+            $context->actorId(),
+            $at,
+        );
+        $security->assignMembershipRole(
+            $membershipId,
+            $portalRole,
+            'default',
+            $context->actorId(),
+            $at,
+        );
+    });
 } finally {
     if (is_file($archive)) {
         unlink($archive);

@@ -360,6 +360,7 @@ final class AccessControlServiceTest extends TestCase
             'scope_type' => 'global',
             'scope_identifier' => null,
         ]);
+        $repository->expects(self::once())->method('lockRole')->with(self::ROLE);
         $repository->expects(self::once())->method('revokeGrant')->with($grantId);
         $ownership = $this->createMock(ResourceSiteOwnershipWriter::class);
         $ownership->expects(self::once())->method('remove')->with(

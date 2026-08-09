@@ -214,6 +214,52 @@ test.describe('authenticated administrator', () => {
     });
   });
 
+  test('business security is structured, isolated and accessible', async ({ page }, testInfo) => {
+    await page.goto('/administrator/business-security');
+    await expect(page.getByRole('heading', { level: 1, name: 'Business Security' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Row and field policies' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Separation-of-duty rules' })).toBeVisible();
+    await expect(page.locator('textarea')).toHaveCount(0);
+    await expect(page.locator('input[name="policy_json"], input[name="canonical_ast"]')).toHaveCount(0);
+    for (const usage of [
+      'create',
+      'update',
+      'detail',
+      'list',
+      'filter',
+      'search',
+      'sort',
+      'aggregate',
+      'report',
+      'export',
+      'audit',
+      'mcp',
+      'relation',
+      'include',
+      'public_reference',
+    ]) {
+      await expect(page.locator(`select[name="fields_${usage}[]"]`)).toBeVisible();
+    }
+    await expect(page.getByRole('group', { name: 'Confirm with step-up verification' }).first()).toBeVisible();
+    const missingCsrf = await page.context().request.post('/administrator/business-security', {
+      form: { action: 'organization.create', identifier: 'forged', name: 'Forged' },
+    });
+    expect(missingCsrf.status()).toBe(403);
+    expect(await missingCsrf.text()).toContain('security token is invalid');
+    await expectStylesLoaded(page);
+    await expectAccessible(page);
+    const horizontalOverflow = await page.evaluate(() =>
+      document.documentElement.scrollWidth - window.innerWidth
+    );
+    expect(horizontalOverflow).toBe(0);
+    await page.screenshot({
+      path: testInfo.outputPath('business-security.png'),
+      fullPage: true,
+      animations: 'disabled',
+      caret: 'hide',
+    });
+  });
+
   test('published content links through a typed menu to its canonical path', async ({ page }) => {
     const suffix = `${Date.now()}-${Math.floor(Math.random() * 10000)}`;
     const title = `Browser About ${suffix}`;

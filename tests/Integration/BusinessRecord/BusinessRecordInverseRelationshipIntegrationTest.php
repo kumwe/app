@@ -109,6 +109,8 @@ final class BusinessRecordInverseRelationshipIntegrationTest extends TestCase
             }
             self::assertSame(SchemaPlanStatus::Completed, $schemas->plan($context, $plan->id)->status);
         }
+        NeutralBusinessFixture::grantRecordAccess($container, $context, $left);
+        NeutralBusinessFixture::grantRecordAccess($container, $context, $right);
 
         $leftId = Uuid::uuid7()->toString();
         $rightId = Uuid::uuid7()->toString();

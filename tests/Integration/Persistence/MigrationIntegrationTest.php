@@ -15,6 +15,8 @@ use Doctrine\DBAL\Types\Types;
 use Kumwe\CMS\Delivery\Console\Command\MigrateCommand;
 use Kumwe\CMS\Delivery\Console\Output;
 use Kumwe\CMS\Application\Authorization\SiteContext;
+use Kumwe\CMS\BusinessRecord\Application\BusinessRecordService;
+use Kumwe\CMS\BusinessRecord\Application\Command\CreateRecordCommand;
 use Kumwe\CMS\Content\Infrastructure\Persistence\DoctrineContentModelRepository;
 use Kumwe\CMS\Extension\Runtime\ExtensionRuntimeMapCompiler;
 use Kumwe\CMS\Extension\Runtime\RuntimeArtifactDigester;
@@ -28,6 +30,7 @@ use Kumwe\CMS\Infrastructure\Persistence\Migration\DatabaseDrivenPresentationMig
 use Kumwe\CMS\Infrastructure\Persistence\Migration\DynamicSiteContentMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\ExtensionContributionCatalogMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\BusinessDefinitionCatalogMigration;
+use Kumwe\CMS\Infrastructure\Persistence\Migration\BusinessSecurityPortalMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\DoctrineMigrationLock;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\DoctrineMigrationRepository;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\IdempotencyLeaseNullabilityMigration;
@@ -42,6 +45,8 @@ use Kumwe\CMS\Infrastructure\Persistence\TableNames;
 use Kumwe\CMS\Infrastructure\Time\SystemClock;
 use Kumwe\CMS\Kernel\ContainerFactory;
 use Kumwe\CMS\Shared\Infrastructure\Configuration\Environment;
+use Kumwe\CMS\Tests\Support\NeutralBusinessFixture;
+use Kumwe\CMS\Tests\Support\TestKernelFactory;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Ramsey\Uuid\Uuid;
@@ -57,6 +62,7 @@ use ZipArchive;
 #[CoversClass(DatabaseDrivenPresentationMigration::class)]
 #[CoversClass(ExtensionContributionCatalogMigration::class)]
 #[CoversClass(BusinessDefinitionCatalogMigration::class)]
+#[CoversClass(BusinessSecurityPortalMigration::class)]
 #[CoversClass(JobRecoveryMigration::class)]
 #[CoversClass(ApplicationAuthorizationMigration::class)]
 #[CoversClass(IdempotencyLeaseNullabilityMigration::class)]
@@ -111,6 +117,7 @@ final class MigrationIntegrationTest extends TestCase
             $tables->raw('resource_site_ownership'),
         ]));
         self::assertTrue($schema->introspectTable($tables->raw('sites'))->hasColumn('enabled'));
+        self::assertTrue($schema->introspectTable($tables->raw('sites'))->hasColumn('policy_generation'));
         self::assertSame('default', $database->fetchOne(sprintf(
             'SELECT site_identifier FROM %s WHERE resource_type = ? AND resource_id = ?',
             $tables->quoted('resource_site_ownership'),
@@ -136,7 +143,7 @@ final class MigrationIntegrationTest extends TestCase
             $tables->quoted('users'),
         ), ['integration-administrator@example.test']);
         if ($legacyAdministrator !== false) {
-            self::assertSame('3', (string) $legacyAdministrator['security_epoch']);
+            self::assertSame('4', (string) $legacyAdministrator['security_epoch']);
             self::assertSame('2', (string) $database->fetchOne(sprintf(
                 'SELECT COUNT(*) FROM %s g INNER JOIN %s r ON r.id = g.role_id '
                 . "WHERE r.code = 'administrator' AND g.capability_code IN (?, ?)",
@@ -251,7 +258,144 @@ final class MigrationIntegrationTest extends TestCase
         ), [ExtensionContributionCatalogMigration::ID]));
         self::assertTrue($schema->tablesExist([
             $tables->raw('extension_contribution_capabilities'),
+            $tables->raw('extension_contribution_resource_policies'),
         ]));
+        self::assertSame(BusinessSecurityPortalMigration::ID, $database->fetchOne(sprintf(
+            'SELECT version FROM %s WHERE version = ?',
+            $tables->quoted('schema_migrations'),
+        ), [BusinessSecurityPortalMigration::ID]));
+        $capabilityCatalog = $schema->introspectTable($tables->raw('capabilities'));
+        foreach (
+            [
+            'owner_kind',
+            'owner_identifier',
+            'allowed_scopes',
+            'delegable',
+            'high_impact',
+            'definition_version',
+            'definition_checksum',
+            'lifecycle_state',
+            ] as $column
+        ) {
+            self::assertTrue($capabilityCatalog->hasColumn($column));
+        }
+        self::assertSame(
+            ['business.record.export', 'business.record.report', 'business.record.transition'],
+            $database->fetchFirstColumn(sprintf(
+                'SELECT code FROM %s WHERE code IN (?, ?, ?) ORDER BY code',
+                $tables->quoted('capabilities'),
+            ), ['business.record.transition', 'business.record.export', 'business.record.report']),
+        );
+        $transition = $database->fetchAssociative(sprintf(
+            'SELECT owner_kind, owner_identifier, allowed_scopes, delegable, high_impact, '
+            . 'definition_version, definition_checksum, lifecycle_state FROM %s WHERE code = ?',
+            $tables->quoted('capabilities'),
+        ), ['business.record.transition']);
+        self::assertIsArray($transition);
+        self::assertSame('core', $transition['owner_kind']);
+        self::assertSame('core', $transition['owner_identifier']);
+        self::assertContains('business_record', json_decode(
+            (string) $transition['allowed_scopes'],
+            true,
+            flags: JSON_THROW_ON_ERROR,
+        ));
+        self::assertSame('active', $transition['lifecycle_state']);
+        self::assertSame('1', (string) $transition['definition_version']);
+        self::assertMatchesRegularExpression('/^[a-f0-9]{64}$/D', (string) $transition['definition_checksum']);
+        self::assertTrue($schema->tablesExist([
+            $tables->raw('organizations'),
+            $tables->raw('workspaces'),
+            $tables->raw('organization_memberships'),
+            $tables->raw('membership_workspaces'),
+            $tables->raw('membership_roles'),
+            $tables->raw('resource_policies'),
+            $tables->raw('separation_duty_rules'),
+            $tables->raw('approval_requests'),
+            $tables->raw('approval_votes'),
+            $tables->raw('step_up_credentials'),
+            $tables->raw('step_up_recovery_codes'),
+            $tables->raw('step_up_proofs'),
+            $tables->raw('portal_sessions'),
+        ]));
+        $resourcePolicies = $schema->introspectTable($tables->raw('resource_policies'));
+        self::assertTrue(array_any(
+            $resourcePolicies->getForeignKeys(),
+            static fn (\Doctrine\DBAL\Schema\ForeignKeyConstraint $foreignKey): bool =>
+                $foreignKey->getReferencedTableName()->toString() === $tables->raw('business_definitions'),
+        ));
+        $separationRules = $schema->introspectTable($tables->raw('separation_duty_rules'));
+        foreach (
+            [
+                'site_identifier',
+                'organization_id',
+                'scope_key',
+                'request_action',
+                'approval_action',
+                'requester_role_id',
+                'approver_role_id',
+                'distinct_actors',
+                'version',
+            ] as $column
+        ) {
+            self::assertTrue($separationRules->hasColumn($column));
+        }
+        $approvalRequests = $schema->introspectTable($tables->raw('approval_requests'));
+        foreach (
+            [
+                'rule_version',
+                'approval_action',
+                'approver_role_id',
+                'distinct_actors',
+                'site_identifier',
+                'organization_id',
+                'workspace_id',
+                'resource_version',
+                'context_fingerprint',
+                'payload_digest',
+                'expires_at',
+                'consumed_at',
+                'version',
+            ] as $column
+        ) {
+            self::assertTrue($approvalRequests->hasColumn($column));
+        }
+        $stepUpProofs = $schema->introspectTable($tables->raw('step_up_proofs'));
+        foreach (
+            [
+                'nonce_digest',
+                'user_id',
+                'session_id',
+                'site_identifier',
+                'organization_identifier',
+                'workspace_identifier',
+                'purpose',
+                'security_epoch',
+                'expires_at',
+                'consumed_at',
+                'revoked_at',
+            ] as $column
+        ) {
+            self::assertTrue($stepUpProofs->hasColumn($column));
+        }
+        $portalSessions = $schema->introspectTable($tables->raw('portal_sessions'));
+        foreach (
+            [
+                'token_digest',
+                'csrf_token',
+                'site_identifier',
+                'organization_identifier',
+                'workspace_identifier',
+                'membership_id',
+                'membership_version',
+                'policy_generation',
+                'security_epoch',
+                'user_agent_digest',
+                'step_up_at',
+                'expires_at',
+            ] as $column
+        ) {
+            self::assertTrue($portalSessions->hasColumn($column));
+        }
         self::assertSame(BusinessDefinitionCatalogMigration::ID, $database->fetchOne(sprintf(
             'SELECT version FROM %s WHERE version = ?',
             $tables->quoted('schema_migrations'),
@@ -324,6 +468,48 @@ final class MigrationIntegrationTest extends TestCase
             'SELECT COUNT(*) FROM %s WHERE menu_id = ?',
             $tables->quoted('navigation_items'),
         ), ['00000000-0000-7000-8000-000000001101']));
+    }
+
+    public function testBusinessSecurityMigrationBackfillsExistingRecordOwnership(): void
+    {
+        $container = TestKernelFactory::create(Environment::fromGlobals());
+        $context = TestKernelFactory::administratorContext($container);
+        $database = $container->get(Connection::class);
+        $tables = $container->get(TableNames::class);
+        $records = $container->get(BusinessRecordService::class);
+        self::assertInstanceOf(Connection::class, $database);
+        self::assertInstanceOf(TableNames::class, $tables);
+        self::assertInstanceOf(BusinessRecordService::class, $records);
+        $id = Uuid::uuid7()->toString();
+        $marker = substr(str_replace('-', '', $id), 0, 10);
+        $definition = NeutralBusinessFixture::install(
+            $container,
+            $context,
+            NeutralBusinessFixture::document('migration' . $marker, $id),
+        );
+        $created = $records->create(new CreateRecordCommand(
+            $context,
+            $definition->handle,
+            NeutralBusinessFixture::recordValues('Migration ownership backfill'),
+            NeutralBusinessFixture::idempotencyKey('migration-' . $marker),
+            recordId: Uuid::uuid7()->toString(),
+        ));
+        $resourceId = $definition->id . ':' . $created->recordKey;
+        $database->delete($tables->raw('resource_site_ownership'), [
+            'resource_type' => 'business_record',
+            'resource_id' => $resourceId,
+        ]);
+        self::assertFalse($database->fetchOne(sprintf(
+            'SELECT site_identifier FROM %s WHERE resource_type = ? AND resource_id = ?',
+            $tables->quoted('resource_site_ownership'),
+        ), ['business_record', $resourceId]));
+
+        (new BusinessSecurityPortalMigration($tables))->up($database);
+
+        self::assertSame(SiteContext::DEFAULT, $database->fetchOne(sprintf(
+            'SELECT site_identifier FROM %s WHERE resource_type = ? AND resource_id = ?',
+            $tables->quoted('resource_site_ownership'),
+        ), ['business_record', $resourceId]));
     }
 
     public function testMigrationLockSurvivesDdlAndRejectsASecondDatabaseSession(): void

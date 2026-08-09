@@ -16,6 +16,7 @@ use Kumwe\CMS\Extension\Runtime\RuntimeArtifactDigester;
 use Kumwe\CMS\Extension\Runtime\RuntimeIdentity;
 use Kumwe\CMS\Extension\Runtime\RuntimeMaterializationState;
 use Kumwe\CMS\Extension\Runtime\RuntimePublicationKeyRing;
+use Kumwe\CMS\Extension\Contribution\ExtensionContributionRegistrySet;
 use Kumwe\CMS\Extension\Infrastructure\Trust\FilesystemExtensionArtifactVerifier;
 use Kumwe\CMS\Identity\Application\Administration\AuthenticationRateLimiter;
 use Kumwe\CMS\Identity\Application\Administration\AccessTokenQuotaPolicy;
@@ -28,6 +29,7 @@ use Kumwe\CMS\Infrastructure\Persistence\DoctrineTransactionManager;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\CoreSchemaMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\ApplicationAuthorizationMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\BusinessDefinitionCatalogMigration;
+use Kumwe\CMS\Infrastructure\Persistence\Migration\BusinessSecurityPortalMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\BusinessTransactionalRuntimeMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\IsolateThemeSurfacesMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\TokenAndTrustLifecycleMigration;
@@ -620,6 +622,7 @@ final class ThemePersistenceIntegrationTest extends TestCase
         (new IsolateThemeSurfacesMigration($tables))->up($database);
         (new BusinessDefinitionCatalogMigration($tables))->up($database);
         (new BusinessTransactionalRuntimeMigration($tables))->up($database);
+        (new BusinessSecurityPortalMigration($tables))->up($database);
 
         return [$database, $tables];
     }
@@ -639,6 +642,7 @@ final class ThemePersistenceIntegrationTest extends TestCase
             $this->createStub(AccessTokenQuotaPolicy::class),
             str_repeat('s', 32),
             AuthorizationContext::gateway(),
+            (new ExtensionContributionRegistrySet())->authorizationPolicies(),
             (new \ReflectionClass(TokenDelegationPreauthorizer::class))->newInstanceWithoutConstructor(),
             (new \ReflectionClass(TokenRotationPreauthorizer::class))->newInstanceWithoutConstructor(),
             AuthorizationContext::ownershipWriter(),

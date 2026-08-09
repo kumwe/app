@@ -39,6 +39,7 @@ final class BusinessRecordLargeDatasetIntegrationTest extends TestCase
 
         $suffix = strtolower(substr(str_replace('-', '', Uuid::uuid7()->toString()), -12));
         $document = NeutralBusinessFixture::relationTargetDocument($suffix, Uuid::uuid7()->toString());
+        $document['fields'][1]['reportable'] = true;
         $document['fields'][] = [
             'handle' => 'bucket',
             'label' => 'Bucket',
@@ -48,6 +49,7 @@ final class BusinessRecordLargeDatasetIntegrationTest extends TestCase
             'length' => 32,
             'filterable' => true,
             'sortable' => true,
+            'reportable' => true,
         ];
         $definition = NeutralBusinessFixture::install($container, $context, $document);
 

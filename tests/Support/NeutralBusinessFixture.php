@@ -4,11 +4,17 @@ declare(strict_types=1);
 
 namespace Kumwe\CMS\Tests\Support;
 
+use DateTimeImmutable;
+use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\Types\Types;
 use Joomla\DI\Container;
 use Kumwe\CMS\Application\Authorization\ExecutionContext;
 use Kumwe\CMS\Application\Automation\IdempotencyKey;
 use Kumwe\CMS\BusinessDefinition\Application\BusinessDefinitionService;
+use Kumwe\CMS\BusinessDefinition\Domain\CanonicalDefinitionJson;
 use Kumwe\CMS\BusinessDefinition\Domain\EntityTypeDefinition;
+use Kumwe\CMS\BusinessDefinition\Domain\FieldDefinition;
+use Kumwe\CMS\BusinessDefinition\Domain\IdentityStrategy;
 use Kumwe\CMS\BusinessRecord\Application\BusinessRecordService;
 use Kumwe\CMS\BusinessRecord\Application\Command\CreateRecordCommand;
 use Kumwe\CMS\BusinessRecord\Application\Command\RelateRecordsCommand;
@@ -17,6 +23,9 @@ use Kumwe\CMS\BusinessRecord\Application\RecordMutationResult;
 use Kumwe\CMS\BusinessSchema\Application\BusinessSchemaService;
 use Kumwe\CMS\BusinessSchema\Domain\SchemaInstallationStatus;
 use Kumwe\CMS\BusinessSchema\Domain\SchemaPlanStatus;
+use Kumwe\CMS\BusinessSecurity\Application\FieldAccessUsage;
+use Kumwe\CMS\Infrastructure\Persistence\TableNames;
+use Ramsey\Uuid\Uuid;
 use RuntimeException;
 
 /**
@@ -28,6 +37,22 @@ use RuntimeException;
  */
 final class NeutralBusinessFixture
 {
+    /** @var list<string> Explicit operations the legacy-neutral fixture admits. @since 2.0.0 */
+    private const RECORD_OPERATIONS = [
+        'business.record.action',
+        'business.record.archive',
+        'business.record.browse',
+        'business.record.create',
+        'business.record.delete',
+        'business.record.export',
+        'business.record.history',
+        'business.record.read',
+        'business.record.relate',
+        'business.record.report',
+        'business.record.restore',
+        'business.record.update',
+    ];
+
     public const DEFINITION_ID = '0191574f-f0b8-7bf3-a9aa-91c6b8244e10';
 
     public const HANDLE = 'site.default.neutral_business_record';
@@ -778,6 +803,8 @@ final class NeutralBusinessFixture
 
         $installation = $schemas->installation($context, $published->definition->id);
         if ($installation?->status === SchemaInstallationStatus::Active) {
+            self::grantRecordAccess($container, $context, $published->definition);
+
             return $published->definition;
         }
         $plan = $schemas->createPlan($context, $published->definition->id);
@@ -800,8 +827,215 @@ final class NeutralBusinessFixture
         if ($installation?->status !== SchemaInstallationStatus::Active) {
             throw new RuntimeException('The neutral business fixture schema did not become active.');
         }
+        self::grantRecordAccess($container, $context, $published->definition);
 
         return $published->definition;
+    }
+
+    /**
+     * Install explicit typed allow policies for a legacy-neutral integration definition.
+     *
+     * Production record access has no implicit allow path. This fixture preserves the pre-security
+     * integration contract by creating auditable per-definition rows through the same physical catalog
+     * the runtime consumes. Tests that exercise default deny remove these rows before installing their
+     * narrower policies.
+     *
+     * @param   Container             $container   Real integration container supplying persistence.
+     * @param   ExecutionContext      $context     Trusted test actor recorded as policy author.
+     * @param   EntityTypeDefinition  $definition Published definition whose legacy access is made explicit.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public static function grantRecordAccess(
+        Container $container,
+        ExecutionContext $context,
+        EntityTypeDefinition $definition,
+    ): void {
+        $database = $container->get(Connection::class);
+        $tables = $container->get(TableNames::class);
+        if (!$database instanceof Connection || !$tables instanceof TableNames) {
+            throw new RuntimeException('The business-record policy fixture persistence is unavailable.');
+        }
+        $predicate = ['type' => 'constant', 'value' => true];
+        $fields = self::recordFieldRules($definition);
+        $checksum = CanonicalDefinitionJson::checksum(['ast' => $predicate, 'fields' => $fields]);
+        $at = new DateTimeImmutable('2026-01-01T00:00:00+00:00');
+        foreach (self::RECORD_OPERATIONS as $operation) {
+            $policyCode = self::recordPolicyCode($definition->id, $operation);
+            if ($database->fetchOne(sprintf(
+                'SELECT policy_code FROM %s WHERE policy_code = ?',
+                $tables->quoted('resource_policies'),
+            ), [$policyCode]) !== false) {
+                continue;
+            }
+            $database->insert($tables->raw('resource_policies'), [
+                'id' => Uuid::uuid7()->toString(),
+                'policy_code' => $policyCode,
+                'owner_kind' => 'core',
+                'owner_identifier' => 'core',
+                'capability_code' => $operation,
+                'resource_type' => 'business_record',
+                'action' => $operation,
+                'effect' => 'allow',
+                'scope_type' => 'site',
+                'organization_id' => null,
+                'entity_definition_id' => $definition->id,
+                'canonical_ast' => $predicate,
+                'field_rules' => $fields,
+                'ast_checksum' => $checksum,
+                'policy_version' => 1,
+                'priority' => -1000,
+                'status' => 'active',
+                'created_by' => $context->actorId(),
+                'created_at' => $at,
+                'updated_at' => $at,
+            ], [
+                'canonical_ast' => Types::JSON,
+                'field_rules' => Types::JSON,
+                'created_at' => Types::DATETIME_IMMUTABLE,
+                'updated_at' => Types::DATETIME_IMMUTABLE,
+            ]);
+        }
+    }
+
+    /**
+     * Remove only this fixture's explicit rows so a test can exercise deny-by-default policy.
+     *
+     * @param   Container  $container     Real integration container supplying persistence.
+     * @param   string     $definitionId  Definition whose fixture-owned policy rows are removed.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public static function removeRecordAccess(Container $container, string $definitionId): void
+    {
+        $database = $container->get(Connection::class);
+        $tables = $container->get(TableNames::class);
+        if (!$database instanceof Connection || !$tables instanceof TableNames) {
+            throw new RuntimeException('The business-record policy fixture persistence is unavailable.');
+        }
+        foreach (self::RECORD_OPERATIONS as $operation) {
+            $database->delete($tables->raw('resource_policies'), [
+                'policy_code' => self::recordPolicyCode($definitionId, $operation),
+            ]);
+        }
+    }
+
+    /**
+     * Derive explicit legacy field and action grants from the published fixture definition.
+     *
+     * @param   EntityTypeDefinition  $definition  Definition whose immutable field flags are honored.
+     *
+     * @return  array<string,list<string>>  Every field usage plus the explicit action list.
+     *
+     * @since   2.0.0
+     */
+    private static function recordFieldRules(EntityTypeDefinition $definition): array
+    {
+        $allowed = [];
+        foreach (FieldAccessUsage::cases() as $usage) {
+            $allowed[$usage->value] = [];
+        }
+        foreach ($definition->fields() as $field) {
+            $readable = $field->readVisible;
+            $queryable = $readable
+                && !in_array($field->sensitivity->value, ['restricted', 'secret'], true);
+            self::addRecordField(
+                $allowed,
+                FieldAccessUsage::Create,
+                $field,
+                $field->createVisible && !$field->serverOnly && !$field->computed && $field->formula === null,
+            );
+            self::addRecordField(
+                $allowed,
+                FieldAccessUsage::Update,
+                $field,
+                $field->updateVisible && !$field->serverOnly && !$field->readOnly
+                    && !$field->computed && $field->formula === null,
+            );
+            self::addRecordField($allowed, FieldAccessUsage::Detail, $field, $readable);
+            self::addRecordField(
+                $allowed,
+                FieldAccessUsage::List,
+                $field,
+                $readable,
+            );
+            self::addRecordField($allowed, FieldAccessUsage::Mcp, $field, $readable);
+            self::addRecordField($allowed, FieldAccessUsage::Include, $field, $readable);
+            self::addRecordField($allowed, FieldAccessUsage::Filter, $field, $queryable && $field->filterable);
+            self::addRecordField($allowed, FieldAccessUsage::Relation, $field, $queryable && $field->filterable);
+            self::addRecordField($allowed, FieldAccessUsage::Search, $field, $queryable && $field->searchable);
+            self::addRecordField($allowed, FieldAccessUsage::Sort, $field, $queryable && $field->sortable);
+            self::addRecordField($allowed, FieldAccessUsage::Aggregate, $field, $queryable && $field->reportable);
+            self::addRecordField($allowed, FieldAccessUsage::Report, $field, $queryable && $field->reportable);
+            self::addRecordField($allowed, FieldAccessUsage::Export, $field, $queryable && $field->exportable);
+            self::addRecordField(
+                $allowed,
+                FieldAccessUsage::PublicReference,
+                $field,
+                $queryable && $field->type === (
+                    $definition->identityStrategy === IdentityStrategy::Uuid
+                        ? 'core.uuid'
+                        : 'core.reference_identity'
+                ),
+            );
+            self::addRecordField(
+                $allowed,
+                FieldAccessUsage::Audit,
+                $field,
+                $readable,
+            );
+        }
+        $allowed['actions'] = array_map(
+            static fn ($action): string => $action->handle,
+            $definition->actions(),
+        );
+
+        return $allowed;
+    }
+
+    /**
+     * Add one field to one explicit fixture usage when its immutable flags admit it.
+     *
+     * @param   array<string,list<string>>  $allowed    Field rules being assembled.
+     * @param   FieldAccessUsage           $usage      Exact field usage receiving the handle.
+     * @param   FieldDefinition            $field      Published field under consideration.
+     * @param   bool                       $condition  Whether the definition permits this usage.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    private static function addRecordField(
+        array &$allowed,
+        FieldAccessUsage $usage,
+        FieldDefinition $field,
+        bool $condition,
+    ): void {
+        if ($condition) {
+            $allowed[$usage->value][] = $field->handle;
+        }
+    }
+
+    /**
+     * Derive a deterministic fixture-owned policy code for one definition and operation.
+     *
+     * @param   string  $definitionId  Published definition UUID.
+     * @param   string  $operation     Closed business-record operation.
+     *
+     * @return  string  Stable unique code below the persisted identifier bound.
+     *
+     * @since   2.0.0
+     */
+    private static function recordPolicyCode(string $definitionId, string $operation): string
+    {
+        return 'test.fixture.record.'
+            . str_replace('-', '', $definitionId)
+            . '.'
+            . substr($operation, strlen('business.record.'));
     }
 
     /** Create or replay the stable backup row through the real transactional boundary. */
