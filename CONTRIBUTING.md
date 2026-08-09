@@ -1,5 +1,10 @@
 # Contributing to Kumwe
 
+Read [the Kumwe coding standard](docs/coding-standard.md) before your first change. It is the normative
+source for documentation blocks, type declarations, naming, structure, and error handling, and it
+applies to human and automated contributors alike. [`AGENTS.md`](AGENTS.md) is the short entry point for
+agent contributors.
+
 ## Development principles
 
 - Preserve the dependency direction defined in the 2.0 architecture.
@@ -11,6 +16,9 @@
 - Put product policy in domain/application code and driver behavior in adapters.
 - Add unit tests for every behavior-bearing Kumwe class and integration tests for
   infrastructure boundaries.
+- Document every class, method, property, class constant, and enum case with a
+  documentation block that ends in `@since`, as
+  [the coding standard](docs/coding-standard.md) describes.
 
 ## Commit structure
 
@@ -21,8 +29,16 @@ documentation.
 ## Required local checks
 
 The canonical commands are declared as Composer scripts. Before submitting a
-change, run `composer qa`. Database integration tests require the PostgreSQL
-service described by the development Compose file.
+change, run `composer qa`. It runs the architecture policy, the documentation-block
+check, PHP_CodeSniffer, PHPStan, and PHPUnit. Database integration tests require the
+PostgreSQL service described by the development Compose file.
+
+The two documentation tools are dependency free and run without `composer install`:
+
+```bash
+php tools/verify-docblocks.php src   # report members missing documentation
+php tools/format-docblocks.php src   # apply the house alignment rules
+```
 
 ## Security-sensitive changes
 

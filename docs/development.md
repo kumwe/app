@@ -20,6 +20,7 @@ Individual checks:
 
 ```bash
 composer architecture:policy
+composer docs:api
 composer cs
 composer analyse
 composer test:unit
@@ -33,6 +34,15 @@ Frontend dependencies are locked in `package-lock.json`. Production serves the c
 The dedicated development-Compose acceptance workflow repeats the documented fresh installation on port 9900. It verifies the Compose-injected base URL, the host-port mapping, HTTP readiness, administrator and public CSS/JavaScript delivery, the database-seeded example homepage and menu, and readiness again after the 30-second runtime-marker lifetime. Changes to development startup, ports, routing, assets, or runtime materialization must keep this executable regression green.
 
 Run integration tests once for each database group in [Getting started](getting-started.md#choose-another-database). A change that passes only the default database is not portable.
+
+## Code and documentation standard
+
+[The coding standard](coding-standard.md) is normative for every change. Every class, method, property,
+class constant, and enum case carries a documentation block ending in `@since`, so the runtime source
+reads as its own reference alongside the prose in this folder. `composer docs:api` fails the build when
+a documentable member is missing a block, a description, a `@since`, a `@param`, or a `@return`, and
+`composer docs:format` applies the alignment rules mechanically. Both tools are dependency free, so
+they run before `composer install` and inside minimal images.
 
 ## Test ownership
 
