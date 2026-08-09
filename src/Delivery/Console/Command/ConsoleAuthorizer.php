@@ -78,10 +78,10 @@ final readonly class ConsoleAuthorizer
 
         return $verified?->context('cli-' . bin2hex(random_bytes(16)), AuthenticatedSurface::Cli)
             ?? $principal->context(
-            $site,
-            AuthenticationStrength::BearerToken,
-            'cli-' . bin2hex(random_bytes(16)),
-            surface: AuthenticatedSurface::Cli,
-        );
+                $site,
+                AuthenticationStrength::BearerToken,
+                'cli-' . bin2hex(random_bytes(16)),
+                surface: AuthenticatedSurface::Cli,
+            );
     }
 }

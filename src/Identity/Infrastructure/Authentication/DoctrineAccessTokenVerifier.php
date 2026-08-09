@@ -377,8 +377,7 @@ final readonly class DoctrineAccessTokenVerifier implements ScopedAccessTokenVer
         string $subjectId,
         array $tokenCapabilities,
         ?string $membershipId,
-    ): array
-    {
+    ): array {
         if ($tokenCapabilities === []) {
             return [];
         }

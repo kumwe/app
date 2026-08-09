@@ -147,11 +147,13 @@ final class AccessControlIntegrationTest extends TestCase
             'created_at' => Types::DATETIME_IMMUTABLE,
             'updated_at' => Types::DATETIME_IMMUTABLE,
         ]);
-        foreach ([
+        foreach (
+            [
             [$directAndMembershipUser, 'active'],
             [$membershipOnlyUser, 'active'],
             [$inactiveMembershipUser, 'suspended'],
-        ] as [$userId, $status]) {
+            ] as [$userId, $status]
+        ) {
             $membershipId = Uuid::uuid7()->toString();
             $database->insert($tables->raw('organization_memberships'), [
                 'id' => $membershipId,

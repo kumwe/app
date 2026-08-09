@@ -133,10 +133,12 @@ final readonly class DoctrineApprovalRepository implements ApprovalRepository
         if ($request->distinctActors && $request->binding->requesterId() === $context->actorId()) {
             return false;
         }
-        if ($this->database->fetchOne(sprintf(
-            'SELECT 1 FROM %s WHERE request_id = ? AND approver_id = ?',
-            $this->tables->quoted('approval_votes'),
-        ), [$request->id, $context->actorId()]) !== false) {
+        if (
+            $this->database->fetchOne(sprintf(
+                'SELECT 1 FROM %s WHERE request_id = ? AND approver_id = ?',
+                $this->tables->quoted('approval_votes'),
+            ), [$request->id, $context->actorId()]) !== false
+        ) {
             return false;
         }
 
@@ -410,10 +412,12 @@ final readonly class DoctrineApprovalRepository implements ApprovalRepository
         if ($roleId === null) {
             return true;
         }
-        if ($this->database->fetchOne(sprintf(
-            'SELECT 1 FROM %s WHERE user_id = ? AND role_id = ?',
-            $this->tables->quoted('user_roles'),
-        ), [$context->actorId(), $roleId]) !== false) {
+        if (
+            $this->database->fetchOne(sprintf(
+                'SELECT 1 FROM %s WHERE user_id = ? AND role_id = ?',
+                $this->tables->quoted('user_roles'),
+            ), [$context->actorId(), $roleId]) !== false
+        ) {
             return true;
         }
         $membership = $context->membership();

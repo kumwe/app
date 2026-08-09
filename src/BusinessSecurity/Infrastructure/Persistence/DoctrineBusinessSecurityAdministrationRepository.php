@@ -874,19 +874,23 @@ final readonly class DoctrineBusinessSecurityAdministrationRepository implements
         foreach ($memberships as &$membership) {
             $id = $this->string($membership, 'id');
             $membership['roles'] = [];
-            foreach ($this->database->fetchFirstColumn(sprintf(
-                'SELECT role_id FROM %s WHERE membership_id = ? ORDER BY role_id',
-                $this->tables->quoted('membership_roles'),
-            ), [$id]) as $roleId) {
+            foreach (
+                $this->database->fetchFirstColumn(sprintf(
+                    'SELECT role_id FROM %s WHERE membership_id = ? ORDER BY role_id',
+                    $this->tables->quoted('membership_roles'),
+                ), [$id]) as $roleId
+            ) {
                 if (is_string($roleId) && isset($rolesById[$roleId])) {
                     $membership['roles'][] = $rolesById[$roleId];
                 }
             }
             $membership['workspaces'] = [];
-            foreach ($this->database->fetchFirstColumn(sprintf(
-                'SELECT workspace_id FROM %s WHERE membership_id = ? ORDER BY workspace_id',
-                $this->tables->quoted('membership_workspaces'),
-            ), [$id]) as $workspaceId) {
+            foreach (
+                $this->database->fetchFirstColumn(sprintf(
+                    'SELECT workspace_id FROM %s WHERE membership_id = ? ORDER BY workspace_id',
+                    $this->tables->quoted('membership_workspaces'),
+                ), [$id]) as $workspaceId
+            ) {
                 if (is_string($workspaceId) && isset($workspacesById[$workspaceId])) {
                     $membership['workspaces'][] = $workspacesById[$workspaceId];
                 }
@@ -1093,12 +1097,14 @@ final readonly class DoctrineBusinessSecurityAdministrationRepository implements
                     } elseif ($rotation && array_diff($parent['capabilities'], $row['capabilities']) !== []) {
                         $reasons[] = 'rotation_capability_mismatch';
                     }
-                    foreach ([
+                    foreach (
+                        [
                         'site_identifier',
                         'organization_identifier',
                         'workspace_identifier',
                         'membership_id',
-                    ] as $scope) {
+                        ] as $scope
+                    ) {
                         if (($row[$scope] ?? null) !== ($parent[$scope] ?? null)) {
                             $reasons[] = $scope . '_mismatch';
                         }
@@ -1403,10 +1409,12 @@ final readonly class DoctrineBusinessSecurityAdministrationRepository implements
      */
     private function assertUser(string $id): void
     {
-        if ($this->database->fetchOne(sprintf(
-            'SELECT id FROM %s WHERE id = ?',
-            $this->tables->quoted('users'),
-        ), [$id]) === false) {
+        if (
+            $this->database->fetchOne(sprintf(
+                'SELECT id FROM %s WHERE id = ?',
+                $this->tables->quoted('users'),
+            ), [$id]) === false
+        ) {
             throw new InvalidArgumentException('The membership user is unavailable.');
         }
     }
@@ -1422,10 +1430,12 @@ final readonly class DoctrineBusinessSecurityAdministrationRepository implements
      */
     private function assertRole(string $id): void
     {
-        if ($this->database->fetchOne(sprintf(
-            'SELECT id FROM %s WHERE id = ?',
-            $this->tables->quoted('roles'),
-        ), [$id]) === false) {
+        if (
+            $this->database->fetchOne(sprintf(
+                'SELECT id FROM %s WHERE id = ?',
+                $this->tables->quoted('roles'),
+            ), [$id]) === false
+        ) {
             throw new InvalidArgumentException('The membership role is unavailable.');
         }
     }

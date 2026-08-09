@@ -416,8 +416,7 @@ final readonly class DoctrineBusinessRecordAccessController implements BusinessR
         ExecutionContext $context,
         ResolvedBusinessDefinition $resolved,
         string $operation,
-    ): RecordPolicyPredicate
-    {
+    ): RecordPolicyPredicate {
         $type = $document['type'] ?? null;
         if ($type === 'constant' && is_bool($document['value'] ?? null) && count($document) === 2) {
             return new RecordPolicyConstant($document['value']);
@@ -916,12 +915,14 @@ final readonly class DoctrineBusinessRecordAccessController implements BusinessR
             'business.record.report',
             'business.record.export',
         ], true);
-        if (!$this->memberships->current(
-            $context->actorId(),
-            $context->site(),
-            $membership,
-            !$readOnly,
-        )) {
+        if (
+            !$this->memberships->current(
+                $context->actorId(),
+                $context->site(),
+                $membership,
+                !$readOnly,
+            )
+        ) {
             throw new RuntimeException('The business-record authorization context is stale.');
         }
     }

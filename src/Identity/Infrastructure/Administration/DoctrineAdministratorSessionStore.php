@@ -256,23 +256,27 @@ final readonly class DoctrineAdministratorSessionStore implements AdministratorS
             ) {
                 return null;
             }
-            if ($organization === null && (
+            if (
+                $organization === null && (
                 $workspace !== null
                 || $storedMembershipId !== null
                 || $storedMembershipVersion !== null
                 || $storedPolicyGeneration !== null
-            )) {
+                )
+            ) {
                 return null;
             }
             $membership = $organization === null || $this->memberships === null
                 ? null
                 : $this->memberships->resolve($row['user_id'], $site, $organization, $workspace);
-            if ($organization !== null && (
+            if (
+                $organization !== null && (
                 $membership === null
                 || $membership->membershipId() !== $storedMembershipId
                 || $membership->membershipVersion() !== $this->positiveInteger($storedMembershipVersion)
                 || $membership->policyGeneration() !== $this->positiveInteger($storedPolicyGeneration)
-            )) {
+                )
+            ) {
                 return null;
             }
         } catch (InvalidArgumentException) {
@@ -499,10 +503,12 @@ final readonly class DoctrineAdministratorSessionStore implements AdministratorS
                 'expires_at' => Types::DATETIME_IMMUTABLE,
                 'step_up_at' => Types::DATETIME_IMMUTABLE,
             ]);
-            if ($this->database->delete(
-                $this->tables->raw('administrator_sessions'),
-                ['id' => $intent->sessionId, 'user_id' => $intent->subjectId],
-            ) !== 1) {
+            if (
+                $this->database->delete(
+                    $this->tables->raw('administrator_sessions'),
+                    ['id' => $intent->sessionId, 'user_id' => $intent->subjectId],
+                ) !== 1
+            ) {
                 throw new StepUpRejected();
             }
             $site = SiteContext::fromString($intent->siteIdentifier);
@@ -699,8 +705,7 @@ final readonly class DoctrineAdministratorSessionStore implements AdministratorS
         string $userId,
         SiteContext $site,
         ?MembershipContext $membership,
-    ): array
-    {
+    ): array {
         if ($membership !== null) {
             $workspace = $membership->workspace()?->identifier();
 

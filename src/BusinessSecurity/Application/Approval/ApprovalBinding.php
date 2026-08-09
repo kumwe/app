@@ -107,34 +107,64 @@ final readonly class ApprovalBinding
     }
 
     /** Return the requesting actor. @return string Requesting actor. @since 2.0.0 */
-    public function requesterId(): string { return $this->requesterId; }
+    public function requesterId(): string
+    {
+        return $this->requesterId;
+    }
 
     /** Return the protected action. @return string Exact action. @since 2.0.0 */
-    public function action(): string { return $this->action; }
+    public function action(): string
+    {
+        return $this->action;
+    }
 
     /** Return the protected resource type. @return string Exact resource type. @since 2.0.0 */
-    public function resourceType(): string { return $this->resourceType; }
+    public function resourceType(): string
+    {
+        return $this->resourceType;
+    }
 
     /** Return the protected resource identity. @return string Exact resource identity. @since 2.0.0 */
-    public function resourceId(): string { return $this->resourceId; }
+    public function resourceId(): string
+    {
+        return $this->resourceId;
+    }
 
     /** Return the frozen resource version. @return int Exact resource version. @since 2.0.0 */
-    public function resourceVersion(): int { return $this->resourceVersion; }
+    public function resourceVersion(): int
+    {
+        return $this->resourceVersion;
+    }
 
     /** Return the bound site. @return string Exact site. @since 2.0.0 */
-    public function siteIdentifier(): string { return $this->siteIdentifier; }
+    public function siteIdentifier(): string
+    {
+        return $this->siteIdentifier;
+    }
 
     /** Return the optional bound organization. @return ?string Exact organization. @since 2.0.0 */
-    public function organization(): ?string { return $this->organization; }
+    public function organization(): ?string
+    {
+        return $this->organization;
+    }
 
     /** Return the optional bound workspace. @return ?string Exact workspace. @since 2.0.0 */
-    public function workspace(): ?string { return $this->workspace; }
+    public function workspace(): ?string
+    {
+        return $this->workspace;
+    }
 
     /** Return the frozen authority fingerprint. @return string Authority fingerprint. @since 2.0.0 */
-    public function contextFingerprint(): string { return $this->contextFingerprint; }
+    public function contextFingerprint(): string
+    {
+        return $this->contextFingerprint;
+    }
 
     /** Return the canonical mutation digest. @return string Canonical mutation digest. @since 2.0.0 */
-    public function payloadDigest(): string { return $this->payloadDigest; }
+    public function payloadDigest(): string
+    {
+        return $this->payloadDigest;
+    }
 
     /**
      * Stable digest used to compare a request with a later consumption attempt.

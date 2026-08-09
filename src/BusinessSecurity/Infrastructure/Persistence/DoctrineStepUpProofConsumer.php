@@ -51,8 +51,7 @@ final readonly class DoctrineStepUpProofConsumer implements StepUpProofConsumer
         ExecutionContext $context,
         string $purpose,
         DateTimeImmutable $at,
-    ): string
-    {
+    ): string {
         $sessionId = $context->sessionId();
         $principal = $context->principal();
         if (

@@ -1776,8 +1776,7 @@ final class ContainerFactory
         Container $container,
         ApplicationConfiguration $configuration,
         bool $portalEnabled,
-    ): void
-    {
+    ): void {
         $container->share(RequestIdMiddleware::class, new RequestIdMiddleware(), true);
         $container->share(ProblemDetailsMiddleware::class, static function (
             Container $container,
@@ -2387,8 +2386,7 @@ final class ContainerFactory
         Application $application,
         Container $container,
         bool $portalEnabled,
-    ): void
-    {
+    ): void {
         $application->pipe(RequestIdMiddleware::class);
         $application->pipe(ProblemDetailsMiddleware::class);
         $application->pipe(TrustedProxyMiddleware::class);

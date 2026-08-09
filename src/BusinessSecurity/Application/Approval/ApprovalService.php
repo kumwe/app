@@ -412,12 +412,14 @@ final readonly class ApprovalService
     private function assertCurrentMembership(ExecutionContext $context, bool $lock): void
     {
         $membership = $context->membership();
-        if ($membership !== null && !$this->memberships->current(
-            $context->actorId(),
-            $context->site(),
-            $membership,
-            $lock,
-        )) {
+        if (
+            $membership !== null && !$this->memberships->current(
+                $context->actorId(),
+                $context->site(),
+                $membership,
+                $lock,
+            )
+        ) {
             throw new ApprovalDenied();
         }
     }

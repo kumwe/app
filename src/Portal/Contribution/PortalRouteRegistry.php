@@ -85,10 +85,12 @@ final class PortalRouteRegistry implements ContributionSurface
         if (!$this->templates->isOwnedBy($definition->template, $owner)) {
             throw new InvalidArgumentException('A portal route template must be owned by its contributor.');
         }
-        if (!$this->authorization->supports(
-            Capability::fromString($definition->capability),
-            AuthorizationResource::collection('portal_session'),
-        )) {
+        if (
+            !$this->authorization->supports(
+                Capability::fromString($definition->capability),
+                AuthorizationResource::collection('portal_session'),
+            )
+        ) {
             throw new InvalidArgumentException(
                 'A portal route capability must declare an enforceable whole-family portal-session policy.',
             );
