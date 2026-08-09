@@ -195,7 +195,9 @@ final readonly class AuthorizationPolicyRegistry
      */
     public function requiresGlobalGrant(Capability $action, AuthorizationResource $resource): bool
     {
-        return $this->resourcePolicy($action, $resource)?->installationGlobal ?? false;
+        $policy = $this->resourcePolicy($action, $resource);
+
+        return $policy !== null && $policy->installationGlobal;
     }
 
     /**
@@ -270,7 +272,9 @@ final readonly class AuthorizationPolicyRegistry
         AuthorizationResource $resource,
         SystemIdentity $identity,
     ): bool {
-        return $this->resourcePolicy($action, $resource)?->allowsSystemIdentity($identity) ?? false;
+        $policy = $this->resourcePolicy($action, $resource);
+
+        return $policy !== null && $policy->allowsSystemIdentity($identity);
     }
 
     /**

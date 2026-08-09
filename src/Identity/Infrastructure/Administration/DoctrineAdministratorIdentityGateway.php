@@ -527,6 +527,29 @@ final readonly class DoctrineAdministratorIdentityGateway implements Administrat
     }
 
     /**
+     * Normalize an optional positive version or policy generation read from a token row.
+     *
+     * @param   mixed  $value  Nullable native integer or decimal string returned by the driver.
+     *
+     * @return  ?int  Null when absent, otherwise the positive normalized generation.
+     *
+     * @throws  RuntimeException  When a non-null value is not a positive integer.
+     *
+     * @since   2.0.0
+     */
+    private function nullableTokenGeneration(mixed $value): ?int
+    {
+        if ($value === null) {
+            return null;
+        }
+        if (!is_int($value) && (!is_string($value) || preg_match('/^[1-9][0-9]*$/D', $value) !== 1)) {
+            throw new RuntimeException('A stored token authority generation is invalid.');
+        }
+
+        return (int) $value;
+    }
+
+    /**
      * Mint a bearer token for a subject and return the plaintext secret, which exists only here.
      *
      * Nothing but the token's SHA-256 reaches `api_tokens`, so a caller that loses this return value has
@@ -655,21 +678,27 @@ final readonly class DoctrineAdministratorIdentityGateway implements Administrat
                 throw new RuntimeException('The token subject authority changed during issuance.');
             }
             $quotaSql = 'SELECT COUNT(*) FROM %s WHERE subject_id = ? AND site_identifier = ? '
-                . 'AND audience = ? AND purpose = ? AND security_epoch = ? '
-                . 'AND ((organization_identifier = ?) OR (organization_identifier IS NULL AND ? IS NULL)) '
-                . 'AND ((workspace_identifier = ?) OR (workspace_identifier IS NULL AND ? IS NULL)) '
-                . 'AND revoked_at IS NULL AND expires_at > CURRENT_TIMESTAMP';
+                . 'AND audience = ? AND purpose = ? AND security_epoch = ? ';
             $quotaParameters = [
                 $userId,
                 $siteIdentifier,
                 $audience,
                 $purpose,
                 (int) $epoch,
-                $organizationIdentifier,
-                $organizationIdentifier,
-                $workspaceIdentifier,
-                $workspaceIdentifier,
             ];
+            if ($organizationIdentifier === null) {
+                $quotaSql .= 'AND organization_identifier IS NULL ';
+            } else {
+                $quotaSql .= 'AND organization_identifier = ? ';
+                $quotaParameters[] = $organizationIdentifier;
+            }
+            if ($workspaceIdentifier === null) {
+                $quotaSql .= 'AND workspace_identifier IS NULL ';
+            } else {
+                $quotaSql .= 'AND workspace_identifier = ? ';
+                $quotaParameters[] = $workspaceIdentifier;
+            }
+            $quotaSql .= 'AND revoked_at IS NULL AND expires_at > CURRENT_TIMESTAMP';
             if ($rotatedFrom !== null) {
                 $quotaSql .= ' AND id <> ?';
                 $quotaParameters[] = $rotatedFrom;
@@ -704,15 +733,23 @@ final readonly class DoctrineAdministratorIdentityGateway implements Administrat
                         ? ''
                         : ' FOR UPDATE',
                 ), [$rotatedFrom]);
+                if ($parent === false) {
+                    throw new InvalidArgumentException('A replacement token must inherit its exact parent scope.');
+                }
+                $parentMembershipVersion = $this->nullableTokenGeneration(
+                    $parent['membership_version'] ?? null,
+                );
+                $parentPolicyGeneration = $this->nullableTokenGeneration(
+                    $parent['policy_generation'] ?? null,
+                );
                 if (
-                    $parent === false
-                    || !is_string($parent['family_id'] ?? null)
-                    || $parent['site_identifier'] !== $siteIdentifier
+                    !is_string($parent['family_id'] ?? null)
+                    || ($parent['site_identifier'] ?? null) !== $siteIdentifier
                     || ($parent['organization_identifier'] ?? null) !== $organizationIdentifier
                     || ($parent['workspace_identifier'] ?? null) !== $workspaceIdentifier
                     || ($parent['membership_id'] ?? null) !== $membershipId
-                    || (int) ($parent['membership_version'] ?? 0) !== ($membershipVersion ?? 0)
-                    || (int) ($parent['policy_generation'] ?? 0) !== ($policyGeneration ?? 0)
+                    || $parentMembershipVersion !== $membershipVersion
+                    || $parentPolicyGeneration !== $policyGeneration
                 ) {
                     throw new InvalidArgumentException('A replacement token must inherit its exact parent scope.');
                 }

@@ -57,7 +57,7 @@ final class DoctrineBusinessRecordAccessControllerTest extends TestCase
         );
         $controller = new DoctrineBusinessRecordAccessController(
             $database,
-            new TableNames($database, ''),
+            new TableNames($database, 'kumwe_'),
             $this->createStub(BusinessRecordDefinitionResolver::class),
             $this->createStub(MembershipDirectory::class),
             $this->createStub(ClockInterface::class),
@@ -104,7 +104,7 @@ final class DoctrineBusinessRecordAccessControllerTest extends TestCase
         )->willReturn(false);
         $controller = new DoctrineBusinessRecordAccessController(
             $database,
-            new TableNames($database, ''),
+            new TableNames($database, 'kumwe_'),
             $resolver,
             $memberships,
             $clock,

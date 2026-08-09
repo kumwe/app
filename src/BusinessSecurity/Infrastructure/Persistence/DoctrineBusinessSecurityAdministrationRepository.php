@@ -759,7 +759,10 @@ final readonly class DoctrineBusinessSecurityAdministrationRepository implements
         if ($organizationId !== null) {
             $this->assertOrganization($organizationId, $siteIdentifier, true);
         }
-        foreach (array_filter([$requesterRoleId, $approverRoleId]) as $roleId) {
+        foreach (array_filter(
+            [$requesterRoleId, $approverRoleId],
+            static fn (?string $roleId): bool => $roleId !== null,
+        ) as $roleId) {
             $this->assertRole($roleId);
         }
         $this->database->insert($this->tables->raw('separation_duty_rules'), [
@@ -1078,12 +1081,17 @@ final readonly class DoctrineBusinessSecurityAdministrationRepository implements
         unset($row);
         foreach ($rows as &$row) {
             $reasons = [];
+            $capabilities = $this->stringList($row['capabilities'] ?? null, 'token capabilities');
             $parentId = $row['parent_token_id'] ?? null;
             if ($parentId !== null) {
                 $parent = is_string($parentId) ? ($byId[$parentId] ?? null) : null;
                 if (!is_array($parent)) {
                     $reasons[] = 'parent_unavailable_in_site';
                 } else {
+                    $parentCapabilities = $this->stringList(
+                        $parent['capabilities'] ?? null,
+                        'parent token capabilities',
+                    );
                     if (($row['family_id'] ?? null) !== ($parent['family_id'] ?? null)) {
                         $reasons[] = 'family_mismatch';
                     }
@@ -1092,9 +1100,9 @@ final readonly class DoctrineBusinessSecurityAdministrationRepository implements
                     if ($this->integer($row['delegation_depth'] ?? null) !== $expectedDepth) {
                         $reasons[] = 'depth_mismatch';
                     }
-                    if (array_diff($row['capabilities'], $parent['capabilities']) !== []) {
+                    if (array_diff($capabilities, $parentCapabilities) !== []) {
                         $reasons[] = 'capability_broadening';
-                    } elseif ($rotation && array_diff($parent['capabilities'], $row['capabilities']) !== []) {
+                    } elseif ($rotation && array_diff($parentCapabilities, $capabilities) !== []) {
                         $reasons[] = 'rotation_capability_mismatch';
                     }
                     foreach (
@@ -1110,7 +1118,10 @@ final readonly class DoctrineBusinessSecurityAdministrationRepository implements
                         }
                     }
                     foreach (['membership_version', 'policy_generation'] as $generation) {
-                        if ((int) ($row[$generation] ?? 0) !== (int) ($parent[$generation] ?? 0)) {
+                        if (
+                            $this->nullableInteger($row[$generation] ?? null)
+                            !== $this->nullableInteger($parent[$generation] ?? null)
+                        ) {
                             $reasons[] = $generation . '_mismatch';
                         }
                     }
@@ -1127,7 +1138,7 @@ final readonly class DoctrineBusinessSecurityAdministrationRepository implements
                     ? 'workspace:' . $row['workspace_identifier']
                     : null,
                 is_string($row['membership_id'] ?? null) ? 'membership:' . $row['membership_id'] : null,
-            ]));
+            ], static fn (?string $scope): bool => $scope !== null));
         }
         unset($row);
 
@@ -1245,8 +1256,12 @@ final readonly class DoctrineBusinessSecurityAdministrationRepository implements
      */
     private function definitionFields(array $document): array
     {
+        $fields = $document['fields'] ?? [];
+        if (!is_array($fields) || !array_is_list($fields)) {
+            throw new RuntimeException('Stored business-definition fields must be a list.');
+        }
         $result = [];
-        foreach (($document['fields'] ?? []) as $field) {
+        foreach ($fields as $field) {
             if (!is_array($field) || !is_string($field['handle'] ?? null) || !is_string($field['type'] ?? null)) {
                 throw new RuntimeException('A stored business-definition field is invalid.');
             }
@@ -1271,8 +1286,12 @@ final readonly class DoctrineBusinessSecurityAdministrationRepository implements
      */
     private function definitionActionRows(array $document): array
     {
+        $actions = $document['actions'] ?? [];
+        if (!is_array($actions) || !array_is_list($actions)) {
+            throw new RuntimeException('Stored business-definition actions must be a list.');
+        }
         $result = [];
-        foreach (($document['actions'] ?? []) as $action) {
+        foreach ($actions as $action) {
             if (!is_array($action) || !is_string($action['handle'] ?? null)) {
                 throw new RuntimeException('A stored business-definition action is invalid.');
             }
@@ -1595,7 +1614,13 @@ final readonly class DoctrineBusinessSecurityAdministrationRepository implements
         if (!is_array($value) || ($value !== [] && array_is_list($value))) {
             throw new RuntimeException('Stored Business Security JSON must be an object.');
         }
+        foreach (array_keys($value) as $key) {
+            if (!is_string($key)) {
+                throw new RuntimeException('Stored Business Security JSON object keys must be strings.');
+            }
+        }
 
+        /** @var array<string, mixed> $value */
         return $value;
     }
 
@@ -1627,7 +1652,8 @@ final readonly class DoctrineBusinessSecurityAdministrationRepository implements
             }
         }
 
-        return array_values($value);
+        /** @var list<string> $value */
+        return $value;
     }
 
     /**
@@ -1687,6 +1713,20 @@ final readonly class DoctrineBusinessSecurityAdministrationRepository implements
         }
 
         throw new RuntimeException('A stored Business Security integer is invalid.');
+    }
+
+    /**
+     * Normalize an optional non-negative integer returned by a portable database driver.
+     *
+     * @param   mixed  $value  Nullable integer or decimal digit string from the driver.
+     *
+     * @return  ?int  Null when absent, otherwise the normalized non-negative integer.
+     *
+     * @since   2.0.0
+     */
+    private function nullableInteger(mixed $value): ?int
+    {
+        return $value === null ? null : $this->integer($value);
     }
 
     /**

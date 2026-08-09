@@ -90,7 +90,7 @@ final class TokenDelegationPreauthorizerTest extends TestCase
             $provenance,
             $principal,
             SiteContext::default(),
-            AuthenticationStrength::Session,
+            AuthenticationStrength::Password,
             'token-delegation-test',
             surface: AuthenticatedSurface::Administrator,
             membership: $membership,

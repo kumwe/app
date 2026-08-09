@@ -861,10 +861,8 @@ final readonly class BusinessRecordService
                 $lineDefinition = null;
                 $lineValues = [];
                 if ($relationship->kind === RelationshipKind::OwnedLineCollection) {
-                    $lineAccess = $access->related($relationship->handle)
-                        ?? throw new BusinessRecordNotFound();
                     $this->assertFieldInput(
-                        $lineAccess,
+                        $relatedAccess,
                         FieldAccessUsage::Create,
                         array_keys($command->targetValues),
                     );
@@ -1043,8 +1041,7 @@ final readonly class BusinessRecordService
                         $source,
                         $relationship,
                         $line,
-                        $access->related($relationship->handle)
-                            ?? throw new BusinessRecordNotFound(),
+                        $relatedAccess,
                         $command->targetRecordId,
                     ) ?? throw new BusinessRecordNotFound();
                     $targetKey = $identity->recordKey;
@@ -1180,8 +1177,7 @@ final readonly class BusinessRecordService
                             $source,
                             $relationship,
                             $line,
-                            $access->related($relationship->handle)
-                                ?? throw new BusinessRecordNotFound(),
+                            $relatedAccess,
                             $recordId,
                         ) ?? throw new BusinessRecordNotFound();
                         $keys[] = $identity->recordKey;

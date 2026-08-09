@@ -158,14 +158,23 @@ final readonly class BearerAuthenticationMiddleware implements MiddlewareInterfa
         $verified = $this->verifier instanceof ScopedAccessTokenVerifier
             ? $this->verifier->verifyScoped($token, $audience, $purpose, $siteIdentifier)
             : null;
-        $principal = $verified?->principal
-            ?? ($verified === null && !($this->verifier instanceof ScopedAccessTokenVerifier)
+        $principal = $verified !== null
+            ? $verified->principal
+            : (!($this->verifier instanceof ScopedAccessTokenVerifier)
                 ? $this->verifier->verify($token, $audience, $purpose, $siteIdentifier)
                 : null);
 
         if ($principal === null) {
             return $this->unauthorized('invalid_token');
         }
+        $context = $verified !== null
+            ? $verified->context($this->requestId($request), AuthenticatedSurface::Api)
+            : $principal->context(
+                SiteContext::fromString($siteIdentifier),
+                AuthenticationStrength::BearerToken,
+                $this->requestId($request),
+                surface: AuthenticatedSurface::Api,
+            );
 
         $required = $this->requiredCapabilities($options);
 
@@ -180,13 +189,7 @@ final readonly class BearerAuthenticationMiddleware implements MiddlewareInterfa
                 ->withAttribute(AuthenticatedPrincipal::REQUEST_ATTRIBUTE, $principal)
                 ->withAttribute(
                     ExecutionContext::REQUEST_ATTRIBUTE,
-                    $verified?->context($this->requestId($request), AuthenticatedSurface::Api)
-                        ?? $principal->context(
-                            SiteContext::fromString($siteIdentifier),
-                            AuthenticationStrength::BearerToken,
-                            $this->requestId($request),
-                            surface: AuthenticatedSurface::Api,
-                        ),
+                    $context,
                 ),
         );
     }

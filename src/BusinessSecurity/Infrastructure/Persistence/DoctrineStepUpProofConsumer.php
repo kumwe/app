@@ -85,23 +85,44 @@ final readonly class DoctrineStepUpProofConsumer implements StepUpProofConsumer
             $context->actorId(),
             $sessionId,
             $context->site()->identifier(),
-            $organization,
-            $organization,
-            $workspace,
-            $workspace,
+        ];
+        $types = [Types::STRING, Types::STRING, Types::GUID, Types::STRING];
+        $scopePredicate = '';
+        if ($organization === null) {
+            $scopePredicate .= 'AND p.organization_identifier IS NULL ';
+        } else {
+            $scopePredicate .= 'AND p.organization_identifier = ? ';
+            $parameters[] = $organization;
+            $types[] = Types::STRING;
+        }
+        if ($workspace === null) {
+            $scopePredicate .= 'AND p.workspace_identifier IS NULL ';
+        } else {
+            $scopePredicate .= 'AND p.workspace_identifier = ? ';
+            $parameters[] = $workspace;
+            $types[] = Types::STRING;
+        }
+        array_push(
+            $parameters,
             $purpose,
             $principal->securityEpoch(),
             $proof->method(),
             $at,
             $at,
-        ];
+        );
+        array_push(
+            $types,
+            Types::STRING,
+            Types::BIGINT,
+            Types::STRING,
+            Types::DATETIME_IMMUTABLE,
+            Types::DATETIME_IMMUTABLE,
+        );
         $row = $this->database->fetchAssociative(sprintf(
             'SELECT p.id FROM %s p INNER JOIN %s u ON u.id = p.user_id '
             . 'INNER JOIN %s s ON s.id = p.session_id AND s.user_id = p.user_id '
             . 'WHERE p.nonce_digest = ? AND p.user_id = ? AND p.session_id = ? '
-            . 'AND p.site_identifier = ? '
-            . 'AND ((p.organization_identifier = ?) OR (p.organization_identifier IS NULL AND ? IS NULL)) '
-            . 'AND ((p.workspace_identifier = ?) OR (p.workspace_identifier IS NULL AND ? IS NULL)) '
+            . 'AND p.site_identifier = ? %s'
             . "AND p.purpose = ? AND p.security_epoch = ? AND u.security_epoch = p.security_epoch "
             . "AND u.status = 'active' AND p.method = ? AND p.expires_at > ? AND s.expires_at > ? "
             . 'AND s.site_identifier = p.site_identifier '
@@ -113,23 +134,10 @@ final readonly class DoctrineStepUpProofConsumer implements StepUpProofConsumer
             $this->tables->quoted('step_up_proofs'),
             $this->tables->quoted('users'),
             $this->tables->quoted($sessionTable),
+            $scopePredicate,
             $sessionEpoch,
             $this->lockClause(),
-        ), $parameters, [
-            Types::STRING,
-            Types::STRING,
-            Types::GUID,
-            Types::STRING,
-            Types::STRING,
-            Types::STRING,
-            Types::STRING,
-            Types::STRING,
-            Types::STRING,
-            Types::BIGINT,
-            Types::STRING,
-            Types::DATETIME_IMMUTABLE,
-            Types::DATETIME_IMMUTABLE,
-        ]);
+        ), $parameters, $types);
         $id = $row['id'] ?? null;
         if (!is_string($id)) {
             throw new ApprovalDenied();

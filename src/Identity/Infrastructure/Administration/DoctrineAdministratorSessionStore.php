@@ -708,9 +708,18 @@ final readonly class DoctrineAdministratorSessionStore implements AdministratorS
     ): array {
         if ($membership !== null) {
             $workspace = $membership->workspace()?->identifier();
+            $parameters = [
+                $userId,
+                $membership->membershipId(),
+                $userId,
+                $membership->membershipVersion(),
+                $site->identifier(),
+                $membership->organization()->identifier(),
+                $membership->policyGeneration(),
+            ];
 
             /** @var list<array{capability: string, scope_type: string, scope_identifier: ?string}> */
-            return $this->database->fetchAllAssociative(sprintf(
+            $sql = sprintf(
                 'SELECT g.capability_code AS capability, g.scope_type, g.scope_identifier '
                 . 'FROM %s ur INNER JOIN %s g ON g.role_id = ur.role_id WHERE ur.user_id = ? '
                 . 'UNION SELECT g.capability_code AS capability, g.scope_type, g.scope_identifier '
@@ -721,29 +730,27 @@ final readonly class DoctrineAdministratorSessionStore implements AdministratorS
                 . "AND m.status = 'active' AND m.valid_from <= CURRENT_TIMESTAMP "
                 . 'AND (m.valid_until IS NULL OR m.valid_until > CURRENT_TIMESTAMP) '
                 . "AND o.site_identifier = ? AND o.identifier = ? AND o.status = 'active' "
-                . 'AND o.policy_generation = ? AND (? IS NULL OR EXISTS (SELECT 1 FROM %s mw '
-                . 'INNER JOIN %s w ON w.id = mw.workspace_id WHERE mw.membership_id = m.id '
-                . "AND w.organization_id = o.id AND w.identifier = ? AND w.status = 'active')) "
-                . 'ORDER BY capability, scope_type, scope_identifier',
+                . 'AND o.policy_generation = ? ',
                 $this->tables->quoted('user_roles'),
                 $this->tables->quoted('role_capability_grants'),
                 $this->tables->quoted('membership_roles'),
                 $this->tables->quoted('role_capability_grants'),
                 $this->tables->quoted('organization_memberships'),
                 $this->tables->quoted('organizations'),
-                $this->tables->quoted('membership_workspaces'),
-                $this->tables->quoted('workspaces'),
-            ), [
-                $userId,
-                $membership->membershipId(),
-                $userId,
-                $membership->membershipVersion(),
-                $site->identifier(),
-                $membership->organization()->identifier(),
-                $membership->policyGeneration(),
-                $workspace,
-                $workspace,
-            ]);
+            );
+            if ($workspace !== null) {
+                $sql .= sprintf(
+                    'AND EXISTS (SELECT 1 FROM %s mw INNER JOIN %s w ON w.id = mw.workspace_id '
+                    . 'WHERE mw.membership_id = m.id AND w.organization_id = o.id '
+                    . "AND w.identifier = ? AND w.status = 'active') ",
+                    $this->tables->quoted('membership_workspaces'),
+                    $this->tables->quoted('workspaces'),
+                );
+                $parameters[] = $workspace;
+            }
+            $sql .= 'ORDER BY capability, scope_type, scope_identifier';
+
+            return $this->database->fetchAllAssociative($sql, $parameters);
         }
 
         /** @var list<array{capability: string, scope_type: string, scope_identifier: ?string}> */

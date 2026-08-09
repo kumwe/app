@@ -106,10 +106,12 @@ final readonly class BusinessSecurityAdministrationService
                 $capabilities[$code] = $definition;
             }
         }
-        foreach ($overview['memberships'] ?? [] as &$membership) {
+        $memberships = $overview['memberships'] ?? [];
+        foreach ($memberships as &$membership) {
             $membership['effective_access'] = $this->explainMembership($membership, $capabilities);
         }
         unset($membership);
+        $overview['memberships'] = $memberships;
 
         $approvalResource = AuthorizationResource::collection('approval_request');
         $overview['approval_capabilities'] = array_values(array_filter(
@@ -155,10 +157,20 @@ final readonly class BusinessSecurityAdministrationService
                 $overview['approvals'] ?? [],
                 static fn (array $request): bool => ($request['requester_id'] ?? null) === $context->actorId(),
             )) : [];
-            $requestIds = array_fill_keys(array_column($overview['approvals'], 'id'), true);
+            $requestIds = [];
+            foreach ($overview['approvals'] as $request) {
+                $requestId = $request['id'] ?? null;
+                if (is_string($requestId)) {
+                    $requestIds[$requestId] = true;
+                }
+            }
             $overview['approval_votes'] = array_values(array_filter(
                 $overview['approval_votes'] ?? [],
-                static fn (array $vote): bool => isset($requestIds[$vote['request_id'] ?? '']),
+                static function (array $vote) use ($requestIds): bool {
+                    $requestId = $vote['request_id'] ?? null;
+
+                    return is_string($requestId) && isset($requestIds[$requestId]);
+                },
             ));
         }
         if (
@@ -1073,7 +1085,7 @@ final readonly class BusinessSecurityAdministrationService
         if (
             $authority['organization_id'] !== $organizationId
             || ($context->workspace() !== null
-                && $authority['identifier'] !== $context->workspace()?->identifier())
+                && $authority['identifier'] !== $context->workspace()->identifier())
         ) {
             throw new BusinessSecurityScopeDenied();
         }
@@ -1134,8 +1146,6 @@ final readonly class BusinessSecurityAdministrationService
 
     /**
      * Run one authorized, step-up-bound mutation and audit it before commit.
-     *
-     * @template T of string|void
      *
      * @param   ExecutionContext                   $context      Authenticated administrator and exact site scope.
      * @param string $action Closed mutation action used for proof and audit binding.
@@ -1241,7 +1251,7 @@ final readonly class BusinessSecurityAdministrationService
         string $capability,
         ?string $organizationId,
     ): bool {
-        if (!$context->principal()?->hasCapability(Capability::fromString($capability))) {
+        if ($context->principal()?->hasCapability(Capability::fromString($capability)) !== true) {
             return false;
         }
         if ($organizationId === null) {
@@ -1255,7 +1265,7 @@ final readonly class BusinessSecurityAdministrationService
         return $this->repository->organizationIdentifier(
             $organizationId,
             $context->site()->identifier(),
-        ) === $context->organization()?->identifier();
+        ) === $context->organization()->identifier();
     }
 
     /**
@@ -1536,12 +1546,20 @@ final readonly class BusinessSecurityAdministrationService
     private function explainMembership(array $membership, array $capabilities): array
     {
         $effective = [];
-        $active = ($membership['status'] ?? null) === 'active' && !($membership['expired'] ?? false);
-        foreach (($membership['roles'] ?? []) as $role) {
+        $active = ($membership['status'] ?? null) === 'active' && ($membership['expired'] ?? false) !== true;
+        $roles = $membership['roles'] ?? [];
+        if (!is_array($roles)) {
+            return [];
+        }
+        foreach ($roles as $role) {
             if (!is_array($role)) {
                 continue;
             }
-            foreach (($role['grants'] ?? []) as $grant) {
+            $grants = $role['grants'] ?? [];
+            if (!is_array($grants)) {
+                continue;
+            }
+            foreach ($grants as $grant) {
                 if (!is_array($grant) || !is_string($grant['capability'] ?? null)) {
                     continue;
                 }

@@ -1032,7 +1032,15 @@ final readonly class BusinessSecurityPortalMigration implements Migration
             throw new RuntimeException('A business schema installation blueprint must be an object.');
         }
 
-        return PhysicalSchemaBlueprint::fromArray($value);
+        $document = [];
+        foreach ($value as $key => $entry) {
+            if (!is_string($key)) {
+                throw new RuntimeException('A business schema installation blueprint must use string keys.');
+            }
+            $document[$key] = $entry;
+        }
+
+        return PhysicalSchemaBlueprint::fromArray($document);
     }
 
     /**
@@ -1146,10 +1154,16 @@ final readonly class BusinessSecurityPortalMigration implements Migration
      *
      * @return  void
      *
+     * @throws  RuntimeException  When the migration declares no primary-key column or an empty column name.
+     *
      * @since   2.0.0
      */
     private function primary(Table $table, string ...$names): void
     {
+        if ($names === [] || array_any($names, static fn (string $name): bool => $name === '')) {
+            throw new RuntimeException('A migration primary key requires non-empty column names.');
+        }
+        /** @var non-empty-list<non-empty-string> $names */
         $table->addPrimaryKeyConstraint(
             PrimaryKeyConstraint::editor()->setUnquotedColumnNames(...$names)->create(),
         );

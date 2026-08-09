@@ -113,6 +113,75 @@ final class DoctrineAccessControlRepositoryTest extends TestCase
     }
 
     /**
+     * Proves organization-wide membership lookup emits no untyped nullable workspace parameter.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testOrganizationMembershipWithoutWorkspaceUsesNoNullSentinel(): void
+    {
+        $database = $this->database();
+        $database->expects(self::once())->method('fetchAssociative')->with(
+            self::callback(static fn (string $sql): bool => !str_contains($sql, '? IS NULL')
+                && !str_contains($sql, 'kumwe_membership_workspaces')),
+            ['user-id', 'default', 'acme'],
+        )->willReturn(false);
+
+        self::assertNull($this->repository($database)->organizationMembershipAuthority(
+            'user-id',
+            'default',
+            'acme',
+            null,
+        ));
+    }
+
+    /**
+     * Proves a selected workspace is represented by one typed equality parameter.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testOrganizationMembershipWorkspaceUsesOneBoundParameter(): void
+    {
+        $database = $this->database();
+        $database->expects(self::once())->method('fetchAssociative')->with(
+            self::callback(static fn (string $sql): bool => str_contains(
+                $sql,
+                'kumwe_membership_workspaces',
+            ) && str_contains($sql, 'w.identifier = ?')
+                && !str_contains($sql, '? IS NULL')),
+            ['user-id', 'default', 'acme', 'finance'],
+        )->willReturn([
+            'id' => 'membership-id',
+            'version' => 3,
+            'policy_generation' => 5,
+        ]);
+        $database->expects(self::once())->method('fetchAllAssociative')->with(
+            self::stringContains('kumwe_membership_roles'),
+            ['membership-id'],
+        )->willReturn([]);
+
+        self::assertSame(
+            [
+                'membership_id' => 'membership-id',
+                'membership_version' => 3,
+                'policy_generation' => 5,
+                'organization_identifier' => 'acme',
+                'workspace_identifier' => 'finance',
+                'grants' => [],
+            ],
+            $this->repository($database)->organizationMembershipAuthority(
+                'user-id',
+                'default',
+                'acme',
+                'finance',
+            ),
+        );
+    }
+
+    /**
      * Build the adapter with the supplied DBAL test double.
      *
      * @param   Connection  $database  Test double recording the adapter's SQL interactions.

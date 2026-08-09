@@ -8,6 +8,7 @@ use DateTimeImmutable;
 use InvalidArgumentException;
 use Kumwe\CMS\Application\Authorization\AuthenticatedSurface;
 use Kumwe\CMS\Application\Authorization\AuthenticationStrength;
+use Kumwe\CMS\Application\Authorization\AuthorizationDecision;
 use Kumwe\CMS\Application\Authorization\AuthorizationGateway;
 use Kumwe\CMS\Application\Authorization\AuthorizationPolicyRegistry;
 use Kumwe\CMS\Application\Authorization\ExecutionContext;
@@ -45,6 +46,47 @@ final class BusinessSecurityAdministrationServiceTest extends TestCase
     private const ROLE = '0191574f-f0b8-7bf3-a9aa-91c6b8244e13';
     private const DEFINITION = '0191574f-f0b8-7bf3-a9aa-91c6b8244e14';
     private const ORGANIZATION = '0191574f-f0b8-7bf3-a9aa-91c6b8244e17';
+
+    public function testOverviewAttachesEffectiveAccessToTheReturnedMembershipProjection(): void
+    {
+        $repository = $this->createStub(BusinessSecurityAdministrationRepository::class);
+        $repository->method('overview')->willReturn([
+            'capabilities' => [[
+                'code' => 'business.record.read',
+                'owner_identifier' => 'core',
+                'lifecycle_state' => 'active',
+                'delegable' => true,
+                'high_impact' => false,
+            ]],
+            'memberships' => [[
+                'status' => 'active',
+                'expired' => false,
+                'roles' => [[
+                    'code' => 'clerk',
+                    'grants' => [[
+                        'capability' => 'business.record.read',
+                        'scope_type' => 'site',
+                        'scope_identifier' => SiteContext::DEFAULT,
+                    ]],
+                ]],
+            ]],
+        ]);
+        $authorization = $this->createStub(AuthorizationGateway::class);
+        $authorization->method('decide')->willReturn(new AuthorizationDecision(
+            true,
+            'test.business-security-overview.v1',
+            'test_allow',
+        ));
+
+        $overview = $this->service(
+            $repository,
+            $authorization,
+            $this->createStub(StepUpProofConsumer::class),
+        )->overview($this->bearerContext());
+
+        self::assertSame('business.record.read', $overview['memberships'][0]['effective_access'][0]['capability']);
+        self::assertTrue($overview['memberships'][0]['effective_access'][0]['effective']);
+    }
 
     public function testActorCannotChangeOwnMembershipEvenWithManagementCapability(): void
     {

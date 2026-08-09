@@ -587,7 +587,9 @@ final readonly class DoctrineAccessControlRepository implements AccessControlRep
      * @param   bool    $lock     Whether to append `FOR UPDATE` and hold the rows for the transaction.
      *
      * @return  array{subject_id: string, email: string, capabilities: list<string>, site_identifier: string,
-     *          audience: string, purpose: string, expires_at: DateTimeImmutable}|null  Null when absent or unusable.
+     *          audience: string, purpose: string, organization_identifier: ?string, workspace_identifier: ?string,
+     *          membership_id: ?string, membership_version: ?int, policy_generation: ?int, family_id: string,
+     *          delegation_depth: int, expires_at: DateTimeImmutable}|null  Null when absent or unusable.
      *
      * @throws  JsonException  When the stored capability inventory is not decodable JSON; unlike
      *          `tokens()`, this path lets the decoder error propagate.
@@ -883,31 +885,33 @@ final readonly class DoctrineAccessControlRepository implements AccessControlRep
         ?string $workspaceIdentifier,
         bool $lock = false,
     ): ?array {
-        $parameters = [
-            $userId,
-            $siteIdentifier,
-            $organizationIdentifier,
-            $workspaceIdentifier,
-            $workspaceIdentifier,
-        ];
-        $row = $this->database->fetchAssociative(sprintf(
+        $parameters = [$userId, $siteIdentifier, $organizationIdentifier];
+        $sql = sprintf(
             'SELECT m.id, m.version, o.policy_generation FROM %s m '
             . 'INNER JOIN %s o ON o.id = m.organization_id '
             . "WHERE m.user_id = ? AND m.status = 'active' AND m.valid_from <= CURRENT_TIMESTAMP "
             . 'AND (m.valid_until IS NULL OR m.valid_until > CURRENT_TIMESTAMP) '
-            . "AND o.site_identifier = ? AND o.identifier = ? AND o.status = 'active' "
-            . 'AND (? IS NULL OR EXISTS (SELECT 1 FROM %s mw INNER JOIN %s w ON w.id = mw.workspace_id '
-            . 'WHERE mw.membership_id = m.id AND w.organization_id = o.id AND w.identifier = ? '
-            . "AND w.status = 'active'))%s",
+            . "AND o.site_identifier = ? AND o.identifier = ? AND o.status = 'active' ",
             $this->tables->quoted('organization_memberships'),
             $this->tables->quoted('organizations'),
-            $this->tables->quoted('membership_workspaces'),
-            $this->tables->quoted('workspaces'),
+        );
+        if ($workspaceIdentifier !== null) {
+            $sql .= sprintf(
+                'AND EXISTS (SELECT 1 FROM %s mw INNER JOIN %s w ON w.id = mw.workspace_id '
+                . 'WHERE mw.membership_id = m.id AND w.organization_id = o.id AND w.identifier = ? '
+                . "AND w.status = 'active') ",
+                $this->tables->quoted('membership_workspaces'),
+                $this->tables->quoted('workspaces'),
+            );
+            $parameters[] = $workspaceIdentifier;
+        }
+        if (
             $lock
-                && !($this->database->getDatabasePlatform() instanceof \Doctrine\DBAL\Platforms\SQLitePlatform)
-                ? ' FOR UPDATE'
-                : '',
-        ), $parameters);
+            && !($this->database->getDatabasePlatform() instanceof \Doctrine\DBAL\Platforms\SQLitePlatform)
+        ) {
+            $sql .= 'FOR UPDATE';
+        }
+        $row = $this->database->fetchAssociative($sql, $parameters);
         if ($row === false) {
             return null;
         }

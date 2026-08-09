@@ -47,9 +47,9 @@ final class PortalRouteRegistry implements ContributionSurface
     /**
      * Bind routes to their capability and template ownership registries.
      *
-     * @param  CapabilityDefinitionRegistry  $capabilities  Owned capability authority.
-     * @param  PortalTemplateRegistry        $templates     Owned portal template authority.
-     * @param  AuthorizationPolicyRegistry   $authorization Canonical action-to-resource policy authority.
+     * @param  CapabilityDefinitionRegistry  $capabilities   Owned capability authority.
+     * @param  PortalTemplateRegistry        $templates      Owned portal template authority.
+     * @param  AuthorizationPolicyRegistry   $authorization  Canonical action-to-resource policy authority.
      *
      * @since  2.0.0
      */
@@ -64,8 +64,8 @@ final class PortalRouteRegistry implements ContributionSurface
      * Register a route whose name, capability, and template all share one owner.
      *
      * @param   ContributionOwner          $owner       Claiming contributor.
-     * @param   PortalRouteDefinition      $definition Validated route declaration.
-     * @param   PortalRouteHandlerFactory  $factory    Handler factory.
+     * @param   PortalRouteDefinition      $definition  Validated route declaration.
+     * @param   PortalRouteHandlerFactory  $factory     Handler factory.
      *
      * @return  void
      *
@@ -205,35 +205,39 @@ final class PortalRouteRegistry implements ContributionSurface
     /**
      * Compose a globally unique router name.
      *
-     * @param   ContributionOwner     $owner       Route owner.
-     * @param   PortalRouteDefinition $definition Route declaration.
+     * @param   ContributionOwner      $owner       Route owner.
+     * @param   PortalRouteDefinition  $definition  Route declaration.
      *
-     * @return  string  Core or extension-prefixed name.
+     * @return  non-empty-string  Core or extension-prefixed name.
      *
      * @since   2.0.0
      */
     private static function routeName(ContributionOwner $owner, PortalRouteDefinition $definition): string
     {
-        return $owner->identifier() === ContributionOwner::CORE
+        $name = $owner->identifier() === ContributionOwner::CORE
             ? 'portal.' . $definition->name
             : 'portal.extension.' . $definition->name;
+        /** @var non-empty-string $name */
+        return $name;
     }
 
     /**
      * Confine extension routes below their own `/portal/extensions/vendor/name` prefix.
      *
-     * @param   ContributionOwner     $owner       Route owner.
-     * @param   PortalRouteDefinition $definition Route declaration.
+     * @param   ContributionOwner      $owner       Route owner.
+     * @param   PortalRouteDefinition  $definition  Route declaration.
      *
-     * @return  string  Absolute mounted path.
+     * @return  non-empty-string  Absolute mounted path.
      *
      * @since   2.0.0
      */
     private static function routePath(ContributionOwner $owner, PortalRouteDefinition $definition): string
     {
-        return $owner->identifier() === ContributionOwner::CORE
+        $path = $owner->identifier() === ContributionOwner::CORE
             ? $definition->path
             : '/portal/extensions/' . $owner->identifier()
                 . ($definition->path === '/' ? '' : $definition->path);
+        /** @var non-empty-string $path */
+        return $path;
     }
 }
