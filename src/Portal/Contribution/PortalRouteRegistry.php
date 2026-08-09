@@ -217,7 +217,7 @@ final class PortalRouteRegistry implements ContributionSurface
         $name = $owner->identifier() === ContributionOwner::CORE
             ? 'portal.' . $definition->name
             : 'portal.extension.' . $definition->name;
-        /** @var non-empty-string $name */
+        /** @var non-falsy-string $name */
         return $name;
     }
 

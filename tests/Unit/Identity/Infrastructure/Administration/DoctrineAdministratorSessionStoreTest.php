@@ -6,6 +6,7 @@ namespace Kumwe\CMS\Tests\Unit\Identity\Infrastructure\Administration;
 
 use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
+use InvalidArgumentException;
 use Kumwe\CMS\Application\Authorization\AuthorizationGateway;
 use Kumwe\CMS\Application\Authorization\AuthorizationResource;
 use Kumwe\CMS\Application\Authorization\MembershipContext;
@@ -149,6 +150,36 @@ final class DoctrineAdministratorSessionStoreTest extends TestCase
         self::assertNotNull($session);
         self::assertSame(self::MEMBERSHIP, $session->membership?->membershipId());
         self::assertTrue($session->principal->hasCapability(Capability::fromString('business.record.read')));
+    }
+
+    public function testMalformedGrantRowCannotRebuildAdministratorPrincipal(): void
+    {
+        $database = $this->database();
+        $userAgent = 'test-browser';
+        $database->expects(self::once())->method('fetchAssociative')->willReturn([
+            'id' => self::SESSION_ONE,
+            'user_id' => self::USER,
+            'csrf_token' => str_repeat('c', 43),
+            'expires_at' => new DateTimeImmutable('2026-08-05T11:00:00+00:00'),
+            'user_agent_digest' => hash_hmac('sha256', $userAgent, str_repeat('s', 64)),
+            'security_epoch' => 3,
+            'site_identifier' => SiteContext::DEFAULT,
+        ]);
+        $database->expects(self::once())->method('update')->willReturn(1);
+        $database->expects(self::once())->method('fetchAllAssociative')->willReturn([[
+            'capability' => ['business.record.read'],
+            'scope_type' => 'organization',
+            'scope_identifier' => 'acme',
+        ]]);
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('A stored administrator principal grant is invalid.');
+
+        $this->store(
+            $database,
+            $this->createStub(TransactionManager::class),
+            $this->createStub(ResourceSiteOwnershipWriter::class),
+        )->find(str_repeat('A', 48), $userAgent);
     }
 
     private function store(

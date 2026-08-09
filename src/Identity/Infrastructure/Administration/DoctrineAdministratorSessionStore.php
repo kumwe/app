@@ -697,6 +697,7 @@ final readonly class DoctrineAdministratorSessionStore implements AdministratorS
      *          One row per distinct grant, ordered by capability, scope type and scope identifier; empty
      *          when the user's roles grant nothing.
      *
+     * @throws  InvalidArgumentException  When a stored grant row is not the expected scalar shape.
      * @throws  \Doctrine\DBAL\Exception  When the driver rejects the read.
      *
      * @since   2.0.0
@@ -718,7 +719,6 @@ final readonly class DoctrineAdministratorSessionStore implements AdministratorS
                 $membership->policyGeneration(),
             ];
 
-            /** @var list<array{capability: string, scope_type: string, scope_identifier: ?string}> */
             $sql = sprintf(
                 'SELECT g.capability_code AS capability, g.scope_type, g.scope_identifier '
                 . 'FROM %s ur INNER JOIN %s g ON g.role_id = ur.role_id WHERE ur.user_id = ? '
@@ -749,18 +749,36 @@ final readonly class DoctrineAdministratorSessionStore implements AdministratorS
                 $parameters[] = $workspace;
             }
             $sql .= 'ORDER BY capability, scope_type, scope_identifier';
-
-            return $this->database->fetchAllAssociative($sql, $parameters);
+        } else {
+            $parameters = [$userId];
+            $sql = sprintf(
+                'SELECT DISTINCT g.capability_code AS capability, g.scope_type, g.scope_identifier '
+                . 'FROM %s ur INNER JOIN %s g ON g.role_id = ur.role_id WHERE ur.user_id = ? '
+                . 'ORDER BY g.capability_code, g.scope_type, g.scope_identifier',
+                $this->tables->quoted('user_roles'),
+                $this->tables->quoted('role_capability_grants'),
+            );
         }
 
-        /** @var list<array{capability: string, scope_type: string, scope_identifier: ?string}> */
-        return $this->database->fetchAllAssociative(sprintf(
-            'SELECT DISTINCT g.capability_code AS capability, g.scope_type, g.scope_identifier '
-            . 'FROM %s ur INNER JOIN %s g ON g.role_id = ur.role_id WHERE ur.user_id = ? '
-            . 'ORDER BY g.capability_code, g.scope_type, g.scope_identifier',
-            $this->tables->quoted('user_roles'),
-            $this->tables->quoted('role_capability_grants'),
-        ), [$userId]);
+        $grants = [];
+        foreach ($this->database->fetchAllAssociative($sql, $parameters) as $row) {
+            $capability = $row['capability'] ?? null;
+            $scopeType = $row['scope_type'] ?? null;
+            $scopeIdentifier = $row['scope_identifier'] ?? null;
+            if (!is_string($capability) || !is_string($scopeType)) {
+                throw new InvalidArgumentException('A stored administrator principal grant is invalid.');
+            }
+            if ($scopeIdentifier !== null && !is_string($scopeIdentifier)) {
+                throw new InvalidArgumentException('A stored administrator principal grant scope is invalid.');
+            }
+            $grants[] = [
+                'capability' => $capability,
+                'scope_type' => $scopeType,
+                'scope_identifier' => $scopeIdentifier,
+            ];
+        }
+
+        return $grants;
     }
 
     /**
