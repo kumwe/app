@@ -6,11 +6,28 @@ namespace Kumwe\CMS\Administrator\Content;
 
 use Kumwe\CMS\Content\Domain\ContentTypeDefinition;
 
+/**
+ * Turns a content type's JSON schema into the field descriptors the administrator editor renders.
+ *
+ * The editor template knows nothing about JSON Schema: it walks a list of ready-made descriptors and
+ * emits one input each. This presenter does that translation — picking a widget per property, giving
+ * every leaf a path-encoded input name, and formatting stored values for display — so adding a field
+ * to a content type is enough to make it editable. It is the write half of `ContentFormDataMapper`,
+ * which reads those names back; changing a name here without changing it there breaks the round trip.
+ *
+ * @since  2.0.0
+ */
 final readonly class ContentFormPresenter
 {
     /**
-     * @param array<string, mixed> $values
-     * @return list<array<string, mixed>>
+     * Build the editor field list for one content type, pre-filled with an entry's stored values.
+     *
+     * @param   ContentTypeDefinition  $definition  Content type whose schema decides the fields shown.
+     * @param   array<string, mixed>   $values      Stored entry data; empty falls back to the defaults.
+     *
+     * @return  list<array<string, mixed>>  Descriptors in schema order, groups carrying their children.
+     *
+     * @since   2.0.0
      */
     public function fields(ContentTypeDefinition $definition, array $values = []): array
     {
@@ -18,10 +35,19 @@ final readonly class ContentFormPresenter
     }
 
     /**
-     * @param array<string, mixed> $schema
-     * @param array<string, mixed> $values
-     * @param list<string> $path
-     * @return list<array<string, mixed>>
+     * Describe one object level of the schema, recursing into nested objects as grouped children.
+     *
+     * Every descriptor carries a `kind` of either `group` or `field`; a group holds its children in
+     * place of an input. Input names and element ids are built from the property path, which is what
+     * lets `ContentFormDataMapper` restore the nesting without the template knowing about it.
+     *
+     * @param   array<string, mixed>  $schema  Object schema level, holding `properties` and `required`.
+     * @param   array<string, mixed>  $values  Stored values for this level, keyed by property name.
+     * @param   list<string>          $path    Property names walked so far; empty at the root.
+     *
+     * @return  list<array<string, mixed>>  Descriptors in the order the schema lists its properties.
+     *
+     * @since   2.0.0
      */
     private function objectFields(array $schema, array $values, array $path): array
     {
@@ -88,7 +114,16 @@ final readonly class ContentFormPresenter
         return $fields;
     }
 
-    /** @param array<string, mixed> $schema */
+    /**
+     * Resolve the caption shown above a field's input.
+     *
+     * @param   string                $key     Property name, the source of the fallback caption.
+     * @param   array<string, mixed>  $schema  Property schema, whose `title` wins when it is non-blank.
+     *
+     * @return  string  The schema title, or the property name title-cased with underscores as spaces.
+     *
+     * @since   2.0.0
+     */
     private function label(string $key, array $schema): string
     {
         $title = $schema['title'] ?? null;
@@ -97,7 +132,15 @@ final readonly class ContentFormPresenter
             : ucwords(str_replace('_', ' ', $key));
     }
 
-    /** @param array<string, mixed> $schema */
+    /**
+     * Resolve the hint text rendered under a field's input.
+     *
+     * @param   array<string, mixed>  $schema  Property schema, whose `description` supplies the hint.
+     *
+     * @return  string  The trimmed description, or an empty string when the schema carries none.
+     *
+     * @since   2.0.0
+     */
     private function description(array $schema): string
     {
         $description = $schema['description'] ?? null;
@@ -105,7 +148,20 @@ final readonly class ContentFormPresenter
     }
 
     /**
-     * @param array<string, mixed> $schema
+     * Choose the widget one property is rendered with.
+     *
+     * An enumeration always becomes a select; otherwise the JSON type decides, then the string
+     * `format`, and finally two conventions the schema cannot express — a property named `body` gets
+     * the rich text editor, and `description` or any long string gets a textarea instead of an input.
+     *
+     * @param   string                $key         Property name, consulted for the two name conventions.
+     * @param   string                $type        JSON Schema type of the property, `string` by default.
+     * @param   array<string, mixed>  $schema      Property schema, read for `format` and `maxLength`.
+     * @param   bool                  $hasOptions  Whether an enumeration produced selectable options.
+     *
+     * @return  string  Widget name the editor template branches on, such as `select` or `rich-text`.
+     *
+     * @since   2.0.0
      */
     private function inputType(string $key, string $type, array $schema, bool $hasOptions): string
     {
@@ -145,6 +201,16 @@ final readonly class ContentFormPresenter
         return $key === 'description' || (is_int($maximum) && $maximum > 240) ? 'textarea' : 'text';
     }
 
+    /**
+     * Format a stored value for the `value` attribute of its input.
+     *
+     * @param   string  $type   JSON Schema type of the property, which selects the formatting rule.
+     * @param   mixed   $value  Stored value, or null when the entry holds nothing for this property.
+     *
+     * @return  string  Lists join on line breaks, date-times truncate to minutes, booleans render empty.
+     *
+     * @since   2.0.0
+     */
     private function displayValue(string $type, mixed $value): string
     {
         if ($type === 'array' && is_array($value) && array_is_list($value)) {

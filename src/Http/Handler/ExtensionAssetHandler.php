@@ -15,8 +15,40 @@ use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Message\StreamFactoryInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 
+/**
+ * Streams a built file from an installed extension's asset directory, and only while it stays trusted.
+ *
+ * Extension build output is not published by the web server directly, because serving it is a policy
+ * decision rather than a file lookup. Every single request re-asks the registry whether the owning
+ * extension is still active, whether the installed release is still verified, and whether the signing
+ * key behind that verification is enabled, unrevoked, and inside its validity window. Disabling an
+ * extension or revoking its key therefore takes its assets offline on the next request, with no cache to
+ * purge — which is also why the responses it does serve are marked private and `no-store`.
+ *
+ * The handler is equally the boundary that keeps the asset root sealed. A path must match the
+ * `vendor/name/version/file` shape, must not contain `..`, must resolve inside the root, and must not
+ * traverse a symbolic link at any segment, so neither a crafted URL nor a link planted in the build
+ * output can read a file elsewhere on the host. Every refusal — bad shape, untrusted extension, missing
+ * file — is the same bare 404, so probing teaches a caller nothing about what is installed.
+ *
+ * @since  2.0.0
+ */
 final readonly class ExtensionAssetHandler implements RequestHandlerInterface
 {
+    /**
+     * Bind the route to the trust records it re-checks and the directory it may serve from.
+     *
+     * @param  Connection              $database   Connection the extension, release, and trust-key
+     *         tables are read through.
+     * @param  TableNames              $tables     Resolver for the deployment's prefixed table names.
+     * @param  ClockInterface          $clock      Clock the signing key's validity window is judged
+     *         against, so time is injected rather than read from the host.
+     * @param  StreamFactoryInterface  $streams    Factory used to open the file as a response body.
+     * @param  string                  $assetRoot  Absolute directory holding published extension build
+     *         output; nothing outside it is ever served.
+     *
+     * @since  2.0.0
+     */
     public function __construct(
         private Connection $database,
         private TableNames $tables,
@@ -26,6 +58,24 @@ final readonly class ExtensionAssetHandler implements RequestHandlerInterface
     ) {
     }
 
+    /**
+     * Serves one extension asset, after re-checking the extension's trust and sealing the file path.
+     *
+     * The order matters: the path shape is validated, then trust is confirmed from the first three
+     * segments, and only then is the file resolved on disk. A caller that fails the trust check never
+     * reaches a filesystem call, so the route cannot be used to probe for files.
+     *
+     * @param   ServerRequestInterface  $request  Request whose `path` route attribute carries the
+     *          `vendor/name/version/file` asset path.
+     *
+     * @return  ResponseInterface  A 200 stream with the mapped media type, `nosniff`, and a private
+     *          no-store cache policy, or an identical bare 404 for every rejection.
+     *
+     * @throws  \Doctrine\DBAL\Exception  When the driver cannot execute the trust lookup.
+     * @throws  \RuntimeException  When the resolved file passes every check but cannot be opened.
+     *
+     * @since   2.0.0
+     */
     public function handle(ServerRequestInterface $request): ResponseInterface
     {
         $path = $request->getAttribute('path');

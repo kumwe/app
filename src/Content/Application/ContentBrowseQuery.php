@@ -6,11 +6,50 @@ namespace Kumwe\CMS\Content\Application;
 
 use InvalidArgumentException;
 
+/**
+ * Validated filter, sort and paging state for one administrator content-browser request.
+ *
+ * Every field arrives from the query string, and two of them — scope and sort — end up choosing SQL
+ * predicates and `ORDER BY` clauses. Validating the whole set here, at construction, is what lets
+ * `ContentSearchRepository` implementations map them without re-checking and without ever
+ * interpolating operator input into the SQL grammar. The object is also the source of truth for
+ * pagination links, since `toQueryParameters()` reproduces exactly the request that built it.
+ *
+ * @since  2.0.0
+ */
 final readonly class ContentBrowseQuery
 {
+    /**
+     * Trash scopes a browse may ask for, each mapping to a `deleted_at` predicate.
+     *
+     * @var    list<string>
+     * @since  2.0.0
+     */
     private const SCOPES = ['active', 'trashed', 'all'];
+
+    /**
+     * Sort keys a browse may ask for, each mapping to a fixed, tie-broken `ORDER BY` clause.
+     *
+     * @var    list<string>
+     * @since  2.0.0
+     */
     private const SORTS = ['updated_desc', 'updated_asc', 'title_asc', 'title_desc'];
 
+    /**
+     * Validate one browse request, rejecting anything a repository could not safely act on.
+     *
+     * @param   string  $search       Free text matched against title and slug; blank disables the filter.
+     * @param   string  $status       Workflow state key to restrict to; blank means every state.
+     * @param   string  $contentType  UUID of the content type to restrict to; blank means every type.
+     * @param   string  $scope        One of `active`, `trashed` or `all`, selecting the trash predicate.
+     * @param   string  $sort         One of the `SORTS` keys, selecting the ordering.
+     * @param   int     $page         One-based page number, capped so the offset cannot overflow.
+     * @param   int     $perPage      Page size; only 10, 25 and 50 are offered by the browser.
+     *
+     * @throws  InvalidArgumentException  When any value is out of range, malformed, or off the vocabulary.
+     *
+     * @since   2.0.0
+     */
     public function __construct(
         public string $search = '',
         public string $status = '',
@@ -49,6 +88,20 @@ final readonly class ContentBrowseQuery
         }
     }
 
+    /**
+     * Return the same query aimed at a different page, keeping every filter and the sort intact.
+     *
+     * This is how the previous and next links are built, so the page number is validated again on the
+     * way through rather than trusted from arithmetic done by the caller.
+     *
+     * @param   int  $page  One-based page number to move to.
+     *
+     * @return  self  A new query; the receiver is left untouched.
+     *
+     * @throws  InvalidArgumentException  When the page number falls outside the accepted range.
+     *
+     * @since   2.0.0
+     */
     public function withPage(int $page): self
     {
         return new self(
@@ -62,7 +115,17 @@ final readonly class ContentBrowseQuery
         );
     }
 
-    /** @return array<string, int|string> */
+    /**
+     * Render the query back into the public query-string parameters that would reproduce it.
+     *
+     * Defaults are omitted so that the browser's own links stay short and a page-one, unfiltered
+     * listing keeps a bare URL. Keys are the short public names — `q`, `type`, `per_page` — not the
+     * property names.
+     *
+     * @return  array<string, int|string>  Only the values that differ from their defaults.
+     *
+     * @since   2.0.0
+     */
     public function toQueryParameters(): array
     {
         $parameters = [];

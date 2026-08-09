@@ -32,11 +32,46 @@ use Psr\Clock\ClockInterface;
 use Ramsey\Uuid\Uuid;
 use RuntimeException;
 
+/**
+ * Doctrine implementation of the four identity operations whose output is itself a credential.
+ *
+ * Everything is read from and written to the prefixed `users`, `password_credentials`, `roles`,
+ * `user_roles`, `role_capability_grants` and `api_tokens` tables over one DBAL connection. Only
+ * derivations of the secrets are stored: a password as a `PasswordHasher` hash, an API token as its
+ * SHA-256, and the throttle is handed HMACs of the address and the request origin rather than either
+ * value. Each write runs inside `TransactionManager::transactional()` together with its ownership rows
+ * and its audit event, so a rejected write leaves neither an unowned resource nor an unrecorded change.
+ * The two paths that can escalate authority guard against a mid-request change: bootstrap locks the
+ * default site row before it provisions, and issuance repeats the delegation check with the subject's
+ * user row locked, so a grant revoked between the checks cannot be captured in a token.
+ *
+ * @since  2.0.0
+ */
 final readonly class DoctrineAdministratorIdentityGateway implements AdministratorIdentityGateway
 {
+    /**
+     * Lifetime a token is given when the caller names no expiry, as a `DateTimeImmutable::modify()` step.
+     *
+     * @var    string
+     * @since  2.0.0
+     */
     private const DEFAULT_TOKEN_LIFETIME = '+30 days';
+    /**
+     * Furthest expiry an issuance may ask for, measured from the moment the token is minted.
+     *
+     * @var    string
+     * @since  2.0.0
+     */
     private const MAXIMUM_TOKEN_LIFETIME = '+90 days';
-    /** @var list<string> */
+    /**
+     * Every capability the shared `administrator` role is granted globally when it is provisioned.
+     *
+     * The set is checked against the `capabilities` catalogue before any account is written, and re-run
+     * on each bootstrap, so a role created by an earlier release picks up capabilities added since.
+     *
+     * @var    list<string>
+     * @since  2.0.0
+     */
     private const ADMINISTRATOR_CAPABILITIES = [
         'administrator.access', 'automation.manage', 'content.archive', 'content.create', 'content.delete',
         'business.record.action', 'business.record.archive', 'business.record.browse', 'business.record.create',
@@ -49,6 +84,40 @@ final readonly class DoctrineAdministratorIdentityGateway implements Administrat
         'themes.administrator.manage', 'themes.site.manage', 'users.manage',
     ];
 
+    /**
+     * Wire the gateway to the connection, throttle, authorization and audit collaborators it works through.
+     *
+     * @param  Connection                    $database           DBAL connection every identity table is
+     *         read and written through.
+     * @param  TableNames                    $tables             Resolver applying the configured prefix to
+     *         those tables.
+     * @param  PasswordHasher                $passwords          Hasher that produces the stored password
+     *         hash and performs the sign-in comparison.
+     * @param  TransactionManager            $transactions       Scope each provisioning, issuance and
+     *         rotation write runs inside.
+     * @param  ClockInterface                $clock              Source of the timestamps stamped on rows,
+     *         audit events and token expiries.
+     * @param  AuthenticationRateLimiter     $rateLimiter        Throttle counting sign-in attempts per
+     *         account and origin.
+     * @param  AuditRecorder                 $audit              Sink the provisioning, issuance and
+     *         rotation events are recorded to.
+     * @param  AccessTokenQuotaPolicy        $quota              Ceiling on live tokens per subject, site,
+     *         audience and purpose.
+     * @param  string                        $applicationSecret  Installation secret keying the HMACs that
+     *         stand in for the address and the origin at the throttle.
+     * @param  AuthorizationGateway          $authorization      Judge of the bootstrap authority the
+     *         administrator provisioning path demands.
+     * @param  TokenDelegationPreauthorizer  $tokenDelegation    Delegation check every issuance clears,
+     *         once before the transaction and once inside it.
+     * @param  TokenRotationPreauthorizer    $tokenRotation      Rotation check resolving the superseded
+     *         token's subject, scope and capabilities.
+     * @param  ResourceSiteOwnershipWriter   $ownership          Writer recording which site owns each
+     *         user, role, grant and token created here.
+     * @param  object                        $provenance         Composition-root authority every principal
+     *         minted here is stamped with; anything else is untrusted.
+     *
+     * @since  2.0.0
+     */
     public function __construct(
         private Connection $database,
         private TableNames $tables,
@@ -67,6 +136,33 @@ final readonly class DoctrineAdministratorIdentityGateway implements Administrat
     ) {
     }
 
+    /**
+     * Verify an address and password against the credential table and describe who they belong to.
+     *
+     * The throttle is asked before the stored hash is read and told the outcome once it is compared, so
+     * a run of wrong passwords is stopped before another hash comparison is paid for. An unknown
+     * address, a non-active account and a wrong password are indistinguishable in the answer: each is
+     * reported to the throttle as a failed attempt and returns null, so nothing here tells a caller
+     * whether the account exists. A principal that is returned carries the grants at the reach they were
+     * recorded with, and the security epoch stored on the user row.
+     *
+     * @param   string  $email     Address the sign-in was attempted with, in any casing; normalised
+     *          before it is looked up and only its keyed digest reaches the throttle.
+     * @param   string  $password  Plaintext password as submitted, compared against the stored hash.
+     * @param   string  $source    Origin the attempt came from; an empty or blank value is counted as
+     *          `unknown`, and only its keyed digest reaches the throttle.
+     *
+     * @return  ?AuthenticatedPrincipal  The actor with its scoped grants and security epoch, or null when
+     *          the credential names no active account.
+     *
+     * @throws  \Kumwe\CMS\Identity\Application\Administration\AuthenticationThrottled  When this account
+     *          and origin pair has already spent its attempt budget.
+     * @throws  InvalidArgumentException  When the address is not syntactically valid, or the stored
+     *          security epoch or grant rows do not assemble into a principal.
+     * @throws  \Doctrine\DBAL\Exception  When the driver rejects the credential or grant lookup.
+     *
+     * @since   2.0.0
+     */
     public function authenticate(string $email, string $password, string $source): ?AuthenticatedPrincipal
     {
         $normalized = EmailAddress::fromString($email)->value();
@@ -98,6 +194,36 @@ final readonly class DoctrineAdministratorIdentityGateway implements Administrat
         );
     }
 
+    /**
+     * Provision an administrator on the host bootstrap authority, holding the full administrator role.
+     *
+     * Despite the name this is not limited to the first account: every call after the first reuses the
+     * canonical `administrator` role rather than creating another. The whole provisioning runs in one
+     * transaction that opens by locking the default site row, so two concurrent bootstraps serialise
+     * instead of both inserting, and it refuses before the first write when the capability catalogue is
+     * missing anything the role must grant — which turns an un-migrated database into a clear message
+     * rather than a half-granted account. Each created user, role and grant gets a default-site
+     * ownership row, and the whole operation is audited as `administrator.create`.
+     *
+     * @param   ExecutionContext  $context      Bootstrap authority; must carry `administrator.bootstrap`
+     *          rather than an ordinary administrator's grants.
+     * @param   string            $email        Address the new administrator signs in with; refused when
+     *          a user already holds it.
+     * @param   string            $displayName  Human-readable name, trimmed, of 1 to 191 characters.
+     * @param   string            $password     Plaintext password, stored only as a hash.
+     *
+     * @return  string  UUID of the created user, already assigned the administrator role.
+     *
+     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the context does not carry
+     *          the bootstrap capability.
+     * @throws  InvalidArgumentException  When the display name is empty or over 191 characters, the
+     *          address is malformed or already taken, or the password cannot be hashed.
+     * @throws  RuntimeException  When the default site row is absent, the capability catalogue is missing
+     *          an administrator capability, or the stored administrator role identifier is unusable.
+     * @throws  \Doctrine\DBAL\Exception  When the driver rejects one of the reads or inserts.
+     *
+     * @since   2.0.0
+     */
     public function createInitialAdministrator(
         ExecutionContext $context,
         string $email,
@@ -175,6 +301,21 @@ final readonly class DoctrineAdministratorIdentityGateway implements Administrat
         });
     }
 
+    /**
+     * Serialise concurrent bootstraps by taking the default site row for update.
+     *
+     * SQLite has no row-level `FOR UPDATE`, so there the statement degrades to a plain existence check
+     * and leans on the transaction's own write locking instead. Either way the row doubles as proof that
+     * the schema migrations have been run at all, which is the more common reason this refuses.
+     *
+     * @return  void
+     *
+     * @throws  RuntimeException  When the default site row is missing, so there is nothing to lock and
+     *          nothing for the administrator to belong to.
+     * @throws  \Doctrine\DBAL\Exception  When the driver rejects the locking read.
+     *
+     * @since   2.0.0
+     */
     private function lockAdministratorProvisioning(): void
     {
         $lock = $this->database->getDatabasePlatform() instanceof SQLitePlatform
@@ -193,6 +334,20 @@ final readonly class DoctrineAdministratorIdentityGateway implements Administrat
         }
     }
 
+    /**
+     * Refuse to provision unless every administrator capability exists in the catalogue.
+     *
+     * Run before the first insert, so a `capabilities` table left behind by an older release produces a
+     * refusal naming exactly what is missing, rather than an administrator silently holding a partial
+     * set of the grants the role is supposed to carry.
+     *
+     * @return  void
+     *
+     * @throws  RuntimeException  When one or more capabilities are absent; the message lists them.
+     * @throws  \Doctrine\DBAL\Exception  When the driver rejects the catalogue read.
+     *
+     * @since   2.0.0
+     */
     private function assertAdministratorCapabilitiesAvailable(): void
     {
         $placeholders = implode(', ', array_fill(0, count(self::ADMINISTRATOR_CAPABILITIES), '?'));
@@ -214,6 +369,22 @@ final readonly class DoctrineAdministratorIdentityGateway implements Administrat
         }
     }
 
+    /**
+     * Refuse the provisioning when the normalised address already belongs to a user.
+     *
+     * It runs inside the transaction that holds the site lock, so a competing bootstrap cannot slip
+     * between this check and the insert that follows it. The message names the address, which is safe
+     * here because the caller already holds the host bootstrap authority.
+     *
+     * @param   EmailAddress  $address  Already normalised address the new administrator would sign in with.
+     *
+     * @return  void
+     *
+     * @throws  InvalidArgumentException  When a user row already carries that normalised address.
+     * @throws  \Doctrine\DBAL\Exception  When the driver rejects the lookup.
+     *
+     * @since   2.0.0
+     */
     private function assertEmailAvailable(EmailAddress $address): void
     {
         $existing = $this->database->fetchOne(sprintf(
@@ -229,6 +400,22 @@ final readonly class DoctrineAdministratorIdentityGateway implements Administrat
         }
     }
 
+    /**
+     * Return the canonical `administrator` role identifier, creating the role on first use.
+     *
+     * Every bootstrap after the first reuses the existing row, which is what keeps all administrators on
+     * one role instead of accumulating a role per account. A role this call creates is given a
+     * default-site ownership row alongside it.
+     *
+     * @param   DateTimeImmutable  $now  Timestamp stamped on the role when this call is the one to create it.
+     *
+     * @return  string  UUID of the role, whether it was found or just created.
+     *
+     * @throws  RuntimeException  When the stored role identifier is not a usable non-empty string.
+     * @throws  \Doctrine\DBAL\Exception  When the driver rejects the lookup or the insert.
+     *
+     * @since   2.0.0
+     */
     private function administratorRoleId(DateTimeImmutable $now): string
     {
         $existing = $this->database->fetchOne(sprintf(
@@ -256,6 +443,23 @@ final readonly class DoctrineAdministratorIdentityGateway implements Administrat
         return $roleId;
     }
 
+    /**
+     * Give the administrator role every capability in the set, skipping the ones it already holds.
+     *
+     * Each missing capability becomes one global grant with its own default-site ownership row, so a
+     * role provisioned by an earlier release picks up capabilities added since without duplicating the
+     * grants that are already recorded.
+     *
+     * @param   string             $roleId  UUID of the administrator role receiving the grants.
+     * @param   string             $userId  UUID recorded as the granting actor on each new grant.
+     * @param   DateTimeImmutable  $now     Timestamp stamped on each grant this call creates.
+     *
+     * @return  void
+     *
+     * @throws  \Doctrine\DBAL\Exception  When the driver rejects one of the lookups or inserts.
+     *
+     * @since   2.0.0
+     */
     private function ensureAdministratorGrants(string $roleId, string $userId, DateTimeImmutable $now): void
     {
         foreach (self::ADMINISTRATOR_CAPABILITIES as $capability) {
@@ -285,6 +489,23 @@ final readonly class DoctrineAdministratorIdentityGateway implements Administrat
         }
     }
 
+    /**
+     * Read a stored security epoch that reaches PHP as either a native integer or a decimal string.
+     *
+     * Drivers disagree on whether an integer column comes back typed, so both spellings are accepted: an
+     * `int` is taken as it stands, a string only when it is a positive decimal without a leading zero.
+     * Anything else is a corrupt row rather than a value to coerce, because the epoch is what a
+     * revocation raises to invalidate every credential already issued to the user.
+     *
+     * @param   mixed  $value  Raw `security_epoch` column value exactly as the driver returned it.
+     *
+     * @return  int  The epoch, cast from the string form when that is what the driver produced.
+     *
+     * @throws  InvalidArgumentException  When the value is neither an integer nor a string of digits
+     *          beginning with 1 through 9.
+     *
+     * @since   2.0.0
+     */
     private function positiveInteger(mixed $value): int
     {
         if (!is_int($value) && (!is_string($value) || preg_match('/^[1-9][0-9]*$/D', $value) !== 1)) {
@@ -294,6 +515,42 @@ final readonly class DoctrineAdministratorIdentityGateway implements Administrat
         return (int) $value;
     }
 
+    /**
+     * Mint a bearer token for a subject and return the plaintext secret, which exists only here.
+     *
+     * Nothing but the token's SHA-256 reaches `api_tokens`, so a caller that loses this return value has
+     * to issue another token. The delegation check runs twice — once before the transaction and once
+     * inside it with the subject's user row locked — and the capability set is then re-tested against the
+     * subject's own grants for the site, so authority revoked mid-request cannot be captured. The row is
+     * stamped with the epoch read under that lock, which is what a later revocation invalidates it by,
+     * and the live-token count handed to the quota policy excludes the token a rotation is replacing.
+     *
+     * @param   ExecutionContext    $context       Actor and site the token is issued under and confined to.
+     * @param   string              $email         Address of the subject the token will act as.
+     * @param   string              $name          Operator-facing label, trimmed, of 1 to 191 characters.
+     * @param   list<string>        $capabilities  Capabilities the token may exercise; each must already
+     *          be granted to the subject and be delegable by the actor.
+     * @param   ?DateTimeImmutable  $expiresAt     Expiry to set, or null for 30 days out; it must be in
+     *          the future and no more than 90 days away.
+     * @param   string              $audience      Consumer the token is accepted by, such as `kumwe-http`.
+     * @param   string              $purpose       Why the token exists, such as `api`; it partitions the
+     *          per-subject quota alongside the audience.
+     * @param   ?string             $rotatedFrom   UUID of the token being replaced, excluded from the
+     *          quota count, or null for a fresh issue.
+     *
+     * @return  array{token: string, token_id: string}  The plaintext secret under `token`, seen only
+     *          here, and the stored row's UUID under `token_id`.
+     *
+     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not act for
+     *          the subject, or may not delegate one of the capabilities.
+     * @throws  InvalidArgumentException  When the name, expiry, `rotatedFrom` identifier or capability set
+     *          is unusable, the subject does not hold a requested capability, or the quota is full.
+     * @throws  RuntimeException  When the subject's epoch or the live-token count cannot be read, or the
+     *          delegation resolved to a different subject once the row was locked.
+     * @throws  \Doctrine\DBAL\Exception  When the driver rejects one of the reads or the insert.
+     *
+     * @since   2.0.0
+     */
     public function issueAccessToken(
         ExecutionContext $context,
         string $email,
@@ -440,6 +697,35 @@ final readonly class DoctrineAdministratorIdentityGateway implements Administrat
         return ['token' => $token, 'token_id' => $tokenId];
     }
 
+    /**
+     * Replace a live token with a fresh secret carrying exactly the authority the old one had.
+     *
+     * Subject, capabilities, audience and purpose are read off the superseded token rather than taken
+     * from the caller, so a rotation can never widen what the credential may do. The rotation check runs
+     * once before the transaction to fail early and again inside it with the row locked; the replacement
+     * is issued and the old token revoked as `rotated` in that same transaction, so a caller that loses
+     * the response has lost both and must issue afresh. The swap is audited as `token.rotate`.
+     *
+     * @param   ExecutionContext    $context    Actor and site the rotation runs under; the token must
+     *          belong to that site.
+     * @param   string              $tokenId    UUID of the live token being replaced.
+     * @param   string              $name       Operator-facing label for the replacement.
+     * @param   ?DateTimeImmutable  $expiresAt  Expiry for the replacement, or null for the default
+     *          lifetime; the superseded token's remaining life is not carried over.
+     *
+     * @return  array{token: string, token_id: string}  The replacement's plaintext secret under `token`
+     *          and its new UUID under `token_id`.
+     *
+     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not manage
+     *          the token, or may no longer delegate the capabilities it carries.
+     * @throws  InvalidArgumentException  When the token is absent, already dead, outside the site, the
+     *          replacement's name or expiry is unusable, or the subject's quota refuses the replacement.
+     * @throws  RuntimeException  When the superseded token was revoked by someone else between the check
+     *          and the update, or the issuance it wraps could not lock the subject or read its quota.
+     * @throws  \Doctrine\DBAL\Exception  When the driver rejects one of the reads, the insert or the update.
+     *
+     * @since   2.0.0
+     */
     public function rotateAccessToken(
         ExecutionContext $context,
         string $tokenId,
@@ -489,7 +775,23 @@ final readonly class DoctrineAdministratorIdentityGateway implements Administrat
         });
     }
 
-    /** @return list<string> */
+    /**
+     * List the distinct capability codes the user holds globally or for one named site.
+     *
+     * Issuance uses this inside its write transaction as a second, scope-flattened check that every
+     * requested capability is one the subject really has. Scope is deliberately collapsed here because a
+     * token is already confined to a single site; the scoped truth belongs to `grantsFor()`.
+     *
+     * @param   string  $userId          UUID of the user whose role grants are read.
+     * @param   string  $siteIdentifier  Site whose site-scoped grants count alongside the global ones.
+     *
+     * @return  list<string>  Capability codes, deduplicated and ordered by code; empty when the user's
+     *          roles grant nothing within that scope.
+     *
+     * @throws  \Doctrine\DBAL\Exception  When the driver rejects the read.
+     *
+     * @since   2.0.0
+     */
     private function capabilitiesFor(string $userId, string $siteIdentifier = 'default'): array
     {
         $values = $this->database->fetchFirstColumn(sprintf(
@@ -504,7 +806,23 @@ final readonly class DoctrineAdministratorIdentityGateway implements Administrat
         return array_values(array_filter($values, 'is_string'));
     }
 
-    /** @return list<array{capability: string, scope_type: string, scope_identifier: ?string}> */
+    /**
+     * Read every role grant the user holds, keeping the reach each one was recorded at.
+     *
+     * This is what `AuthenticatedPrincipal::issueFromGrantRows()` consumes after a successful sign-in, so
+     * a capability granted over a single resource stays confined to it instead of being promoted to a
+     * global grant on the way into the principal.
+     *
+     * @param   string  $userId  UUID of the user whose role grants are read.
+     *
+     * @return  list<array{capability: string, scope_type: string, scope_identifier: ?string}>
+     *          One row per distinct grant, ordered by capability, scope type and scope identifier; empty
+     *          when the user's roles grant nothing.
+     *
+     * @throws  \Doctrine\DBAL\Exception  When the driver rejects the read.
+     *
+     * @since   2.0.0
+     */
     private function grantsFor(string $userId): array
     {
         /** @var list<array{capability: string, scope_type: string, scope_identifier: ?string}> */
@@ -517,6 +835,19 @@ final readonly class DoctrineAdministratorIdentityGateway implements Administrat
         ), [$userId]);
     }
 
+    /**
+     * Render random bytes as unpadded base64url, the alphabet the token verifier accepts back.
+     *
+     * `+` and `/` are swapped for `-` and `_` and the `=` padding is dropped, so the secret survives an
+     * `Authorization` header, a URL and a configuration file unescaped, and still matches the character
+     * class `DoctrineAccessTokenVerifier` screens a presented token against.
+     *
+     * @param   string  $bytes  Raw random bytes to encode.
+     *
+     * @return  string  URL-safe, unpadded base64 text.
+     *
+     * @since   2.0.0
+     */
     private function base64Url(string $bytes): string
     {
         return rtrim(strtr(base64_encode($bytes), '+/', '-_'), '=');

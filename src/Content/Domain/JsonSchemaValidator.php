@@ -6,17 +6,49 @@ namespace Kumwe\CMS\Content\Domain;
 
 use InvalidArgumentException;
 
-/** Deterministic, side-effect-free JSON Schema subset used by persisted content contracts. */
+/**
+ * Deterministic, side-effect-free JSON Schema subset used by persisted content contracts.
+ *
+ * Content types are authored by operators, so a schema is untrusted input twice over: once as a
+ * document that has to be safe to store, and once as a program that has to be safe to run on every
+ * save. Restricting the language to a fixed keyword list is what buys that — no remote `$ref` to
+ * fetch, no recursion into keywords with surprising semantics, no engine-dependent behaviour — and
+ * `assertSupported()` enforces the restriction before a definition is ever persisted, so evaluating a
+ * stored schema is always cheap and always terminates. Both entry points report every problem they
+ * find rather than the first, because the caller is usually rendering a form. The validator holds no
+ * state and touches nothing outside its arguments, so a single instance is safely shared.
+ *
+ * @since  2.0.0
+ */
 final class JsonSchemaValidator
 {
-    /** @var list<string> */
+    /**
+     * Every schema keyword the subset understands; anything else is reported as unsupported.
+     *
+     * @var    list<string>
+     * @since  2.0.0
+     */
     private const KEYWORDS = [
         'type', 'title', 'description', 'default', 'properties', 'required', 'additionalProperties',
         'items', 'enum', 'const', 'minLength', 'maxLength', 'minimum', 'maximum', 'minItems', 'maxItems',
         'pattern', 'format', 'anyOf', 'oneOf', 'allOf', 'x-kumwe-field',
     ];
 
-    /** @param array<string, mixed> $schema */
+    /**
+     * Refuse a schema that reaches outside the enforceable subset.
+     *
+     * Run this before a content type is stored: a schema that survives it can be evaluated later
+     * without further checks. Unsupported keywords, unknown types and formats, and bounds that
+     * contradict each other are all collected into one message rather than reported one save at a time.
+     *
+     * @param   array<string, mixed>  $schema  Candidate content type schema, as the operator authored it.
+     *
+     * @return  void
+     *
+     * @throws  InvalidArgumentException  When the schema uses anything the validator cannot enforce.
+     *
+     * @since   2.0.0
+     */
     public function assertSupported(array $schema): void
     {
         $violations = [];
@@ -27,7 +59,24 @@ final class JsonSchemaValidator
         }
     }
 
-    /** @param array<string, mixed> $schema */
+    /**
+     * Check a value against a schema, after re-confirming that the schema itself is enforceable.
+     *
+     * The schema is re-checked on every call rather than trusted from storage, so a definition that
+     * was edited around the domain cannot smuggle an unsupported keyword into evaluation. Value
+     * violations are gathered in full and raised together, letting an editor see every failing field
+     * from a single save.
+     *
+     * @param   array<string, mixed>  $schema  Schema the value must satisfy.
+     * @param   mixed                 $value   Decoded content to check, normally an entry's data map.
+     *
+     * @return  void
+     *
+     * @throws  InvalidArgumentException  When the schema itself falls outside the supported subset.
+     * @throws  InvalidContentData  When the value breaks the schema; carries every violation found.
+     *
+     * @since   2.0.0
+     */
     public function assertValid(array $schema, mixed $value): void
     {
         $this->assertSupported($schema);
@@ -40,8 +89,19 @@ final class JsonSchemaValidator
     }
 
     /**
-     * @param array<string, mixed> $schema
-     * @param list<string> $violations
+     * Inspect one schema node and append a message for every keyword it uses wrongly.
+     *
+     * Recurses through `properties`, `items` and the combinators, so one call covers the whole
+     * document. It never returns early after the first problem, except when the node is not an object
+     * at all and nothing further can be said about it.
+     *
+     * @param   array<string, mixed>  $schema      Schema node being inspected.
+     * @param   string                $path        JSON path of this node, used to prefix the messages it produces.
+     * @param   list<string>          $violations  Accumulator owned by the caller; appended to in place.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
      */
     private function validateSchema(array $schema, string $path, array &$violations): void
     {
@@ -191,8 +251,21 @@ final class JsonSchemaValidator
     }
 
     /**
-     * @param array<string, mixed> $schema
-     * @param list<string> $violations
+     * Check one value against one schema node, appending a message per failing constraint.
+     *
+     * A type mismatch stops the node, since the remaining constraints would only restate it; every
+     * other failure is recorded and checking continues into list items and object properties.
+     * Combinator branches are evaluated against a throwaway accumulator, so a failing branch
+     * contributes only the combinator's own message and not each of its internal complaints.
+     *
+     * @param   array<string, mixed>  $schema      Schema node the value must satisfy.
+     * @param   mixed                 $value       Value found at this path.
+     * @param   string                $path        JSON path of the value, used to prefix the messages it produces.
+     * @param   list<string>          $violations  Accumulator owned by the caller; appended to in place.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
      */
     private function validateValue(array $schema, mixed $value, string $path, array &$violations): void
     {
@@ -300,6 +373,19 @@ final class JsonSchemaValidator
         }
     }
 
+    /**
+     * Decide whether a PHP value counts as the named JSON Schema type.
+     *
+     * An empty array satisfies both `object` and `array`, because PHP cannot distinguish an empty map
+     * from an empty list; `number` excludes infinities and NAN, which have no JSON form.
+     *
+     * @param   string  $type   Supported type name taken from the schema's `type` keyword.
+     * @param   mixed   $value  Value being classified.
+     *
+     * @return  bool  True when the value is of that type, false for any name outside the subset.
+     *
+     * @since   2.0.0
+     */
     private function matchesType(string $type, mixed $value): bool
     {
         return match ($type) {
@@ -314,6 +400,19 @@ final class JsonSchemaValidator
         };
     }
 
+    /**
+     * Decide whether a string satisfies one of the supported `format` values.
+     *
+     * Dates are held to their exact spelling — `date-time` to RFC 3339 and `date` to `Y-m-d` — rather
+     * than accepting whatever the date parser can salvage, so a stored value round-trips unchanged.
+     *
+     * @param   string  $format  Format name taken from the schema's `format` keyword.
+     * @param   string  $value   String being checked.
+     *
+     * @return  bool  True when the string satisfies the format, false for any unrecognised name.
+     *
+     * @since   2.0.0
+     */
     private function matchesFormat(string $format, string $value): bool
     {
         return match ($format) {
@@ -330,6 +429,20 @@ final class JsonSchemaValidator
         };
     }
 
+    /**
+     * Decide whether a string is a URI reference that is safe to store and later emit as a link.
+     *
+     * Accepts an absolute URL, a bare fragment, or a rooted path. Protocol-relative forms, control
+     * characters, backslashes, doubled slashes and any `.` or `..` segment — including percent-encoded
+     * ones, which is why the path is decoded first — are rejected, so a stored reference cannot be
+     * resolved into a host or a location the author did not write.
+     *
+     * @param   string  $value  Candidate reference.
+     *
+     * @return  bool  True for an absolute URL, a fragment, or a safe rooted path.
+     *
+     * @since   2.0.0
+     */
     private function isUriReference(string $value): bool
     {
         if (filter_var($value, FILTER_VALIDATE_URL) !== false) {

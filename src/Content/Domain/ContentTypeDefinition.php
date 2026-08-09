@@ -8,12 +8,47 @@ use DateTimeImmutable;
 use InvalidArgumentException;
 use Kumwe\CMS\Application\Authorization\SiteContext;
 
+/**
+ * One published version of a site's content type: its handle, its schema, and the workflow it pins.
+ *
+ * Content types are versioned rather than edited, so entries validated against version two keep
+ * validating against version two long after version three is published; a definition instance is
+ * therefore a specific version, not a mutable type. `ContentModelService` is the only writer, and it
+ * pins the workflow's version too, so republishing a workflow cannot silently change how existing
+ * types behave. The constructor enforces every invariant a stored row must satisfy, which means a
+ * definition read back from the database is either well formed or refuses to exist.
+ *
+ * @since  2.0.0
+ */
 final readonly class ContentTypeDefinition
 {
-    /** @var array<string, mixed> */
+    /**
+     * JSON Schema document entry data of this type is validated against, always an object schema.
+     *
+     * @var    array<string, mixed>
+     * @since  2.0.0
+     */
     private array $schema;
 
-    /** @param array<string, mixed> $schema */
+    /**
+     * Assemble one version of a content type, rejecting anything the store must not round-trip.
+     *
+     * @param   string                $id               UUID identifying the content type across all of its versions.
+     * @param   SiteContext           $site             Site whose content model this definition belongs to.
+     * @param   string                $handle           Lowercase name operators and API callers address the type by.
+     * @param   string                $name             Human-readable label shown in administrator screens.
+     * @param   string                $workflowId       UUID of the workflow entries of this type follow.
+     * @param   int                   $workflowVersion  Version of that workflow this definition pins itself to.
+     * @param   array<string, mixed>  $schema           JSON object schema entry data must satisfy.
+     * @param   int                   $version          Version of this definition, incremented on each publication.
+     * @param   DateTimeImmutable     $createdAt        When version one of the content type was created.
+     * @param   DateTimeImmutable     $publishedAt      When this particular version was published.
+     *
+     * @throws  InvalidArgumentException  When an ID is not a UUID, the handle or name is malformed, a
+     *          version is below one, or the schema does not describe a JSON object.
+     *
+     * @since   2.0.0
+     */
     public function __construct(
         public string $id,
         public SiteContext $site,
@@ -43,13 +78,29 @@ final readonly class ContentTypeDefinition
         $this->schema = $schema;
     }
 
-    /** @return array<string, mixed> */
+    /**
+     * Return the raw schema document, for handing to the validator or the compatibility checker.
+     *
+     * @return  array<string, mixed>  The stored JSON Schema object, unmodified.
+     *
+     * @since   2.0.0
+     */
     public function schema(): array
     {
         return $this->schema;
     }
 
-    /** @return list<FieldDefinition> */
+    /**
+     * Project the schema's top-level properties into field descriptions callers can iterate.
+     *
+     * Only string-keyed object fragments become fields, so a hand-edited schema yields fewer fields
+     * rather than an error; nested objects are not flattened, and the order follows the schema.
+     *
+     * @return  list<FieldDefinition>  One entry per usable top-level property, empty when the schema
+     *          declares none.
+     *
+     * @since   2.0.0
+     */
     public function fields(): array
     {
         $properties = $this->schema['properties'] ?? [];
@@ -70,7 +121,16 @@ final readonly class ContentTypeDefinition
         return $fields;
     }
 
-    /** @return array<string, mixed> */
+    /**
+     * Flatten the definition into the payload the content model API and console command render.
+     *
+     * Both the raw `schema` and its `fields` projection are included, so a client can either enforce
+     * the contract itself or build a form without a second request. Timestamps are ISO-8601.
+     *
+     * @return  array<string, mixed>  Snake-cased definition payload keyed for transport.
+     *
+     * @since   2.0.0
+     */
     public function toArray(): array
     {
         return [
@@ -88,6 +148,17 @@ final readonly class ContentTypeDefinition
         ];
     }
 
+    /**
+     * Refuse an identifier that is not a canonical UUID.
+     *
+     * @param   string  $value  Candidate definition or workflow identifier.
+     *
+     * @return  void
+     *
+     * @throws  InvalidArgumentException  When the identifier is not a canonical UUID.
+     *
+     * @since   2.0.0
+     */
     private static function uuid(string $value): void
     {
         if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iD', $value) !== 1) {

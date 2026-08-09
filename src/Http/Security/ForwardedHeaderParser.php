@@ -9,13 +9,44 @@ use Psr\Http\Message\ServerRequestInterface;
 
 /**
  * Parses proxy metadata only after the immediate network peer has been trusted.
+ *
+ * `Forwarded` and the `X-Forwarded-*` family are ordinary request headers that any client can invent,
+ * so they are evidence only when the hop that delivered them is one the operator trusts.
+ * `TrustedProxyMiddleware` establishes that about the connecting peer and then hands the request here.
+ * This parser walks the recorded chain from the application back towards the client, stops at the
+ * first hop outside the trust boundary, and reports that hop as the client. Anything ambiguous,
+ * malformed, or self-contradictory yields null as a unit, so the caller falls back to the raw
+ * connection instead of acting on half-trusted metadata.
+ *
+ * @since  2.0.0
  */
 final readonly class ForwardedHeaderParser
 {
+    /**
+     * Bind the parser to the trust boundary it consults for every hop it walks.
+     *
+     * @param  TrustedProxyMatcher  $trustedProxies  Boundary deciding which recorded hops are proxies.
+     *
+     * @since  2.0.0
+     */
     public function __construct(private TrustedProxyMatcher $trustedProxies)
     {
     }
 
+    /**
+     * Recover the original client request from whichever forwarding headers are present.
+     *
+     * The standard `Forwarded` header wins outright when present and the `X-Forwarded-*` family is
+     * read only in its absence, so one chain can never be described twice in disagreeing ways.
+     * Parsing is all-or-nothing: a single malformed element discards the whole set.
+     *
+     * @param   ServerRequestInterface  $request  Request whose forwarding headers are to be read.
+     * @param   string                  $peer     Address of the connecting hop, already trusted.
+     *
+     * @return  ?ForwardedRequest  The recovered client view, or null when nothing usable was sent.
+     *
+     * @since   2.0.0
+     */
     public function parse(ServerRequestInterface $request, string $peer): ?ForwardedRequest
     {
         try {
@@ -37,6 +68,22 @@ final readonly class ForwardedHeaderParser
         return null;
     }
 
+    /**
+     * Read the RFC 7239 `Forwarded` header into a client view.
+     *
+     * Every element must identify its own incoming peer and may not repeat a parameter name, so a
+     * chain that cannot be read unambiguously is refused rather than guessed at. `proto` and `host`
+     * are taken from the element belonging to the selected hop, never from a nearer one.
+     *
+     * @param   string  $header  Raw `Forwarded` header value, elements separated by commas.
+     * @param   string  $peer    Address of the connecting hop, already trusted.
+     *
+     * @return  ForwardedRequest  The client view built from the selected element.
+     *
+     * @throws  InvalidArgumentException  When the header is malformed, ambiguous, or incomplete.
+     *
+     * @since   2.0.0
+     */
     private function standardized(string $header, string $peer): ForwardedRequest
     {
         $elements = [];
@@ -82,6 +129,24 @@ final readonly class ForwardedHeaderParser
         );
     }
 
+    /**
+     * Read the `X-Forwarded-*` family into a client view.
+     *
+     * These headers describe the chain in parallel lists rather than per element, so a companion
+     * header must carry either one value for the whole chain or exactly one value per address; any
+     * other length cannot be attributed to a hop and is refused. A port from `X-Forwarded-Port` must
+     * also agree with a port embedded in `X-Forwarded-Host`.
+     *
+     * @param   ServerRequestInterface  $request  Request supplying the companion forwarding headers.
+     * @param   string                  $for      Raw `X-Forwarded-For` value, addresses comma separated.
+     * @param   string                  $peer     Address of the connecting hop, already trusted.
+     *
+     * @return  ForwardedRequest  The client view built from the selected position in the chain.
+     *
+     * @throws  InvalidArgumentException  When a value is malformed or the header lists disagree.
+     *
+     * @since   2.0.0
+     */
     private function legacy(ServerRequestInterface $request, string $for, string $peer): ForwardedRequest
     {
         $addresses = array_map(
@@ -112,7 +177,16 @@ final readonly class ForwardedHeaderParser
     /**
      * Select the first untrusted address when walking from the application back towards the client.
      *
-     * @param non-empty-list<string> $addresses
+     * The walk starts at the connecting peer and steps inward one recorded hop at a time, stopping as
+     * soon as it reaches an address outside the trust boundary. A chain whose hops are all trusted
+     * therefore resolves to its outermost entry, the address closest to the real client.
+     *
+     * @param   non-empty-list<string>  $addresses  Recorded hops in chain order, client-most first.
+     * @param   string                  $peer       Address of the connecting hop, already trusted.
+     *
+     * @return  int  Index into `$addresses` of the hop to be treated as the client.
+     *
+     * @since   2.0.0
      */
     private function clientIndex(array $addresses, string $peer): int
     {
@@ -131,6 +205,22 @@ final readonly class ForwardedHeaderParser
         return $selected;
     }
 
+    /**
+     * Pick the companion header value that belongs to the selected hop.
+     *
+     * A single value is read as describing the whole chain; otherwise the list must line up one to
+     * one with the recorded addresses, because a partial list cannot be attributed to a hop safely.
+     *
+     * @param   string  $header        Raw companion header value, or an empty string when absent.
+     * @param   int     $selected      Index of the hop chosen as the client.
+     * @param   int     $addressCount  Number of addresses recorded in the forwarding chain.
+     *
+     * @return  ?string  The value covering the selected hop, or null when the header was absent.
+     *
+     * @throws  InvalidArgumentException  When the list length matches neither one nor the chain length.
+     *
+     * @since   2.0.0
+     */
     private function legacyValue(string $header, int $selected, int $addressCount): ?string
     {
         if ($header === '') {
@@ -151,7 +241,18 @@ final readonly class ForwardedHeaderParser
     }
 
     /**
-     * @return array{host: string, port: ?int}
+     * Split a forwarded host value into the host name and port the request URI will carry.
+     *
+     * A value carrying a path, backslash, or userinfo is refused outright rather than trimmed, so a
+     * smuggled authority cannot reach the URI the application later builds its links from.
+     *
+     * @param   string  $value  Forwarded host, optionally bracketed for IPv6 and port-suffixed.
+     *
+     * @return  array{host: string, port: ?int}  Lowercase host under `host`; `port` is null when none.
+     *
+     * @throws  InvalidArgumentException  When the value is not a bare host, IP literal, or `host:port`.
+     *
+     * @since   2.0.0
      */
     private function authority(string $value): array
     {
@@ -205,6 +306,21 @@ final readonly class ForwardedHeaderParser
         return ['host' => strtolower($host), 'port' => $port];
     }
 
+    /**
+     * Reduce one recorded hop to the bare IP address that identifies it.
+     *
+     * RFC 7239 obfuscated identifiers and the literal `unknown` are refused rather than skipped: a hop
+     * that will not name itself cannot be weighed against the trust boundary, and silently dropping it
+     * would let a client shorten the chain at will.
+     *
+     * @param   string  $value  Recorded hop, optionally bracketed for IPv6 and port-suffixed.
+     *
+     * @return  string  The hop's IP address in presentation form, without brackets or port.
+     *
+     * @throws  InvalidArgumentException  When the hop is obfuscated, unknown, or not an IP address.
+     *
+     * @since   2.0.0
+     */
     private function address(string $value): string
     {
         $value = trim($value);
@@ -245,6 +361,17 @@ final readonly class ForwardedHeaderParser
         return $address;
     }
 
+    /**
+     * Normalise a forwarded protocol to the scheme the request URI will carry.
+     *
+     * @param   string  $value  Forwarded protocol token, in any letter case.
+     *
+     * @return  string  Either `http` or `https`, lowercase.
+     *
+     * @throws  InvalidArgumentException  When the token names anything other than HTTP or HTTPS.
+     *
+     * @since   2.0.0
+     */
     private function scheme(string $value): string
     {
         $scheme = strtolower(trim($value));
@@ -256,6 +383,17 @@ final readonly class ForwardedHeaderParser
         return $scheme;
     }
 
+    /**
+     * Convert a forwarded port to an integer, refusing anything outside the valid range.
+     *
+     * @param   string  $value  Forwarded port text.
+     *
+     * @return  int  Port number between 1 and 65535.
+     *
+     * @throws  InvalidArgumentException  When the text is not decimal or lies outside the range.
+     *
+     * @since   2.0.0
+     */
     private function port(string $value): int
     {
         $value = trim($value);
@@ -276,7 +414,17 @@ final readonly class ForwardedHeaderParser
     /**
      * Split a header without treating delimiters inside quoted strings as separators.
      *
-     * @return non-empty-list<string>
+     * Control characters are rejected here rather than downstream, so a smuggled byte cannot survive
+     * into a value the request URI or `Host` header is later rebuilt from.
+     *
+     * @param   string  $value      Raw header value to split.
+     * @param   string  $delimiter  Single character separating parts outside quoted strings.
+     *
+     * @return  non-empty-list<string>  The trimmed parts, quoting preserved, in header order.
+     *
+     * @throws  InvalidArgumentException  When a part is empty, a quote never closes, or a control byte appears.
+     *
+     * @since   2.0.0
      */
     private function split(string $value, string $delimiter): array
     {
@@ -328,6 +476,17 @@ final readonly class ForwardedHeaderParser
         return $parts;
     }
 
+    /**
+     * Decode one `Forwarded` parameter value, whether it arrived as a token or a quoted string.
+     *
+     * @param   string  $value  Raw text following the parameter's equals sign.
+     *
+     * @return  string  The decoded value, with quoting and backslash escapes removed.
+     *
+     * @throws  InvalidArgumentException  When the value is empty, not a valid token, or badly quoted.
+     *
+     * @since   2.0.0
+     */
     private function value(string $value): string
     {
         $value = trim($value);
@@ -357,6 +516,17 @@ final readonly class ForwardedHeaderParser
         return $decoded;
     }
 
+    /**
+     * Trim one part of a header list and refuse it when nothing is left.
+     *
+     * @param   string  $value  One part produced by splitting a header list.
+     *
+     * @return  string  The trimmed part, guaranteed to be non-empty.
+     *
+     * @throws  InvalidArgumentException  When the part is empty or holds only whitespace.
+     *
+     * @since   2.0.0
+     */
     private function nonEmpty(string $value): string
     {
         $value = trim($value);

@@ -8,16 +8,57 @@ use DateTimeImmutable;
 use InvalidArgumentException;
 use Kumwe\CMS\Application\Authorization\SiteContext;
 
+/**
+ * One published version of a site's editorial workflow: its states, its edges, and what each edge costs.
+ *
+ * This is the persisted counterpart to the built-in lifecycle, and the thing that lets a site define
+ * its own states without inventing an authorization model alongside them. The constructor is the only
+ * validation point, so every later reader — `Workflow`, the content service, the administration
+ * screens — can trust that there is exactly one non-public initial state, that state keys and edges
+ * are unique, that every edge references declared states, and that crossing the public boundary costs
+ * a publishing capability. Instances are immutable and versioned: changing a published workflow means
+ * building and publishing a new version, never mutating this one.
+ *
+ * @since  2.0.0
+ */
 final readonly class WorkflowDefinition
 {
-    /** @var list<WorkflowStateDefinition> */
+    /**
+     * States this version declares, in the order they were supplied.
+     *
+     * @var    list<WorkflowStateDefinition>
+     * @since  2.0.0
+     */
     private array $states;
-    /** @var list<WorkflowTransitionDefinition> */
+    /**
+     * Edges this version declares, in the order they were supplied.
+     *
+     * @var    list<WorkflowTransitionDefinition>
+     * @since  2.0.0
+     */
     private array $transitions;
 
     /**
-     * @param list<WorkflowStateDefinition> $states
-     * @param list<WorkflowTransitionDefinition> $transitions
+     * Build a workflow version, enforcing every rule the rest of the system then takes for granted.
+     *
+     * Two of the checks are authorization rules rather than shape rules: an edge that enters a public
+     * state from a non-public one must cost `content.publish`, and one that leaves a public state for
+     * a non-public one must cost `content.unpublish` or `content.archive`. Without them a site could
+     * define a workflow that published content behind a capability its editors already hold.
+     *
+     * @param   string                              $id           Canonical UUID identifying this workflow.
+     * @param   SiteContext                         $site         Site whose content this workflow governs.
+     * @param   string                              $handle       Lowercase identifier the workflow is addressed by.
+     * @param   string                              $name         Human-readable label, 1 to 255 characters.
+     * @param   list<WorkflowStateDefinition>       $states       Declared states; exactly one must be initial.
+     * @param   list<WorkflowTransitionDefinition>  $transitions  Declared edges between those states.
+     * @param   int                                 $version      Publication version, counting from one.
+     * @param   DateTimeImmutable                   $createdAt    Instant this version was drafted.
+     * @param   DateTimeImmutable                   $publishedAt  Instant this version became the one in force.
+     *
+     * @throws  InvalidArgumentException  When a field, the state set, or an edge breaks a workflow rule.
+     *
+     * @since   2.0.0
      */
     public function __construct(
         public string $id,
@@ -89,18 +130,39 @@ final readonly class WorkflowDefinition
         $this->transitions = $transitions;
     }
 
-    /** @return list<WorkflowStateDefinition> */
+    /**
+     * Returns the states this workflow version declares.
+     *
+     * @return  list<WorkflowStateDefinition>  Declaration order, with exactly one state flagged initial.
+     *
+     * @since   2.0.0
+     */
     public function states(): array
     {
         return $this->states;
     }
 
-    /** @return list<WorkflowTransitionDefinition> */
+    /**
+     * Returns the edges this workflow version declares.
+     *
+     * @return  list<WorkflowTransitionDefinition>  Declaration order; each edge carries the capability it costs.
+     *
+     * @since   2.0.0
+     */
     public function transitions(): array
     {
         return $this->transitions;
     }
 
+    /**
+     * Returns the state key newly created content starts on under this workflow.
+     *
+     * @return  string  Key of the single state flagged initial, which construction guarantees is not public.
+     *
+     * @throws  \LogicException  When no state is flagged initial, which the constructor rules out.
+     *
+     * @since   2.0.0
+     */
     public function initialState(): string
     {
         foreach ($this->states as $state) {
@@ -111,6 +173,22 @@ final readonly class WorkflowDefinition
         throw new \LogicException('The validated workflow has no initial state.');
     }
 
+    /**
+     * Looks up the declared edge between two states, and with it the capability that edge costs.
+     *
+     * This is how the content service prices a status change on a custom workflow: it resolves the
+     * edge here and authorizes the actor against `requiredCapability`, so an undeclared edge is
+     * refused before any authorization decision is reached.
+     *
+     * @param   string  $from  Key of the state the content is leaving.
+     * @param   string  $to    Key of the state the transition targets.
+     *
+     * @return  WorkflowTransitionDefinition  The matching edge, including the capability it requires.
+     *
+     * @throws  InvalidWorkflowTransition  When this version declares no edge between the two states.
+     *
+     * @since   2.0.0
+     */
     public function transition(string $from, string $to): WorkflowTransitionDefinition
     {
         foreach ($this->transitions as $transition) {
@@ -121,6 +199,18 @@ final readonly class WorkflowDefinition
         throw new InvalidWorkflowTransition($from, $to);
     }
 
+    /**
+     * Reports whether content resting on a state is visible to anonymous visitors.
+     *
+     * An unrecognised key answers false, so content on a state that this version no longer declares
+     * fails closed and stays unpublished.
+     *
+     * @param   string  $stateKey  Key of the state to inspect.
+     *
+     * @return  bool  True only when the state is declared public by this version.
+     *
+     * @since   2.0.0
+     */
     public function isPublic(string $stateKey): bool
     {
         foreach ($this->states as $state) {
@@ -131,7 +221,13 @@ final readonly class WorkflowDefinition
         return false;
     }
 
-    /** @return array<string, mixed> */
+    /**
+     * Exports the version as the plain structure the API, console output and persistence layer read.
+     *
+     * @return  array<string, mixed>  States and transitions nested as arrays; timestamps in ATOM form.
+     *
+     * @since   2.0.0
+     */
     public function toArray(): array
     {
         return [

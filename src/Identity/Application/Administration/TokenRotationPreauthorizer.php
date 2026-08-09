@@ -10,9 +10,33 @@ use Kumwe\CMS\Application\Authorization\AuthorizationResource;
 use Kumwe\CMS\Application\Authorization\ExecutionContext;
 use Kumwe\CMS\Identity\Domain\Capability;
 
-/** Reusable exact preauthorization for secret-once HTTP, MCP, and the application mutation. */
+/**
+ * The single rotation check every path that replaces an API token must clear before the swap is written.
+ *
+ * The REST route, the MCP `token.rotate` tool, and
+ * `DoctrineAdministratorIdentityGateway::rotateAccessToken()` all authorize through this one object, so
+ * the three delivery surfaces cannot drift. Rotation is treated as a fresh issuance rather than a copy:
+ * beyond the actor's own `users.manage` over the token, the superseded token's subject and capabilities
+ * are put back through `TokenDelegationPreauthorizer`, so authority the actor or the subject has since
+ * lost cannot be carried forward. The gateway repeats the call with the row locked inside its write
+ * transaction, so the token it is about to supersede cannot change between the check and the swap.
+ *
+ * @since  2.0.0
+ */
 final readonly class TokenRotationPreauthorizer
 {
+    /**
+     * Wire the reader of the stored token to the two checks a rotation has to pass.
+     *
+     * @param  AccessControlRepository       $repository     Reads the live token being replaced,
+     *         optionally under a row lock.
+     * @param  AuthorizationGateway          $authorization  Judges whether the actor may manage this
+     *         particular token.
+     * @param  TokenDelegationPreauthorizer  $delegation     Re-runs the full issuance check against the
+     *         token's own subject and capabilities.
+     *
+     * @since  2.0.0
+     */
     public function __construct(
         private AccessControlRepository $repository,
         private AuthorizationGateway $authorization,
@@ -20,6 +44,28 @@ final readonly class TokenRotationPreauthorizer
     ) {
     }
 
+    /**
+     * Clear an actor to replace a token and return the scope the replacement must inherit.
+     *
+     * A token is refused when it is not live, when it belongs to a site other than the calling context's —
+     * rotation never migrates a token between sites — or when re-resolving the stored email lands on a
+     * different user than the row's own subject. Callers that write inside a transaction should call once
+     * beforehand to fail early, then again with `$lock` set so the row is held for the swap.
+     *
+     * @param   ExecutionContext  $context  Actor, site and provenance the rotation runs under.
+     * @param   string            $tokenId  UUID of the live token to be superseded.
+     * @param   bool              $lock     Whether to read the token row for update, as the write
+     *          transaction does.
+     *
+     * @return  TokenRotation  Subject, scope and capabilities the replacement token must be minted with.
+     *
+     * @throws  InvalidArgumentException  When the token is not live, belongs to another site, or resolves
+     *          to a different subject than the one stored on it.
+     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not manage the
+     *          token, or may no longer delegate the capabilities it carries.
+     *
+     * @since   2.0.0
+     */
     public function authorize(ExecutionContext $context, string $tokenId, bool $lock = false): TokenRotation
     {
         $this->authorization->assertAllowed(

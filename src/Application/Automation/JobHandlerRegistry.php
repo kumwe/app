@@ -6,12 +6,35 @@ namespace Kumwe\CMS\Application\Automation;
 
 use InvalidArgumentException;
 
+/**
+ * Type-indexed lookup of every job handler wired into the container.
+ *
+ * The worker resolves a claimed job's handler here, and the automation management service reads the
+ * registered types to decide what an operator may schedule. Indexing happens once at construction, so
+ * two handlers claiming the same type are rejected while the container is being built rather than at
+ * the moment such a job is first executed.
+ *
+ * @since  2.0.0
+ */
 final class JobHandlerRegistry
 {
-    /** @var array<string, JobHandler> */
+    /**
+     * Registered handlers, keyed by the job type each one claims.
+     *
+     * @var    array<string, JobHandler>
+     * @since  2.0.0
+     */
     private array $handlers = [];
 
-    /** @param iterable<JobHandler> $handlers */
+    /**
+     * Index the wired handlers by the type each claims.
+     *
+     * @param   iterable<JobHandler>  $handlers  Handlers to register, in container wiring order.
+     *
+     * @throws  InvalidArgumentException  When two handlers claim the same job type.
+     *
+     * @since   2.0.0
+     */
     public function __construct(iterable $handlers)
     {
         foreach ($handlers as $handler) {
@@ -25,12 +48,27 @@ final class JobHandlerRegistry
         }
     }
 
+    /**
+     * Look up the handler registered for a job type.
+     *
+     * @param   string  $type  Job type read from the claimed queue row.
+     *
+     * @return  ?JobHandler  Null when nothing claims the type, which the worker fails permanently.
+     *
+     * @since   2.0.0
+     */
     public function find(string $type): ?JobHandler
     {
         return $this->handlers[$type] ?? null;
     }
 
-    /** @return list<string> */
+    /**
+     * List every registered job type in a stable order.
+     *
+     * @return  list<string>  Type names sorted as strings, so callers can present them predictably.
+     *
+     * @since   2.0.0
+     */
     public function types(): array
     {
         $types = array_keys($this->handlers);

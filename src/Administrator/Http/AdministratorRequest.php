@@ -12,9 +12,33 @@ use Kumwe\CMS\Content\Domain\PublicationWindow;
 use Kumwe\CMS\Identity\Application\Administration\AdministratorSession;
 use Psr\Http\Message\ServerRequestInterface;
 
+/**
+ * Shared reader that turns one administrator HTTP request into the validated values its handlers need.
+ *
+ * Every administrator screen posts a flat HTML form, and every one of them needs the same things
+ * back: the session, the execution context, a required field, a version number. Concentrating that
+ * parsing here is what keeps the handlers free of `is_string()` ladders and gives every screen the
+ * same rejection for the same malformed input. Nothing here authorises anything — it only reads what
+ * the authentication and authorization middleware already attached to the request, and fails loudly
+ * when a route was mounted without them.
+ *
+ * @since  2.0.0
+ */
 final class AdministratorRequest
 {
-    /** @return array<array-key, mixed> */
+    /**
+     * Read the request body as an array, decoding a urlencoded body the server did not parse.
+     *
+     * PSR-7 only guarantees a parsed body for the shapes the server understood, so a form arriving
+     * with an unusual content type reaches the handler unparsed. Falling back to `parse_str` keeps
+     * every administrator route reading its form the same way.
+     *
+     * @param   ServerRequestInterface  $request  Request whose body carries the submitted form.
+     *
+     * @return  array<array-key, mixed>  The parsed body, or the urlencoded body decoded in its place.
+     *
+     * @since   2.0.0
+     */
     public static function parsedBody(ServerRequestInterface $request): array
     {
         $parsed = $request->getParsedBody();
@@ -27,7 +51,19 @@ final class AdministratorRequest
         return $form;
     }
 
-    /** @return array<string, string> */
+    /**
+     * Flatten the parsed body into the string map every reader below expects.
+     *
+     * Keys and values that are not strings are dropped, and a list of strings — the shape a
+     * multi-select or a repeated checkbox posts — is joined with commas so one reader can take both
+     * forms. A field whose list holds anything other than strings is dropped rather than half kept.
+     *
+     * @param   ServerRequestInterface  $request  Request whose body carries the submitted form.
+     *
+     * @return  array<string, string>  Only the fields that survived flattening; an absent key was dropped.
+     *
+     * @since   2.0.0
+     */
     public static function form(ServerRequestInterface $request): array
     {
         $parsed = self::parsedBody($request);
@@ -50,7 +86,18 @@ final class AdministratorRequest
         return $form;
     }
 
-    /** @param array<string, string> $form */
+    /**
+     * Read a field the handler cannot proceed without, trimming the whitespace around it.
+     *
+     * @param   array<string, string>  $form   Flattened form as returned by `form()`.
+     * @param   string                 $field  Name of the mandatory field.
+     *
+     * @return  string  The trimmed value, guaranteed non-empty.
+     *
+     * @throws  InvalidArgumentException  When the field is absent or trims to the empty string.
+     *
+     * @since   2.0.0
+     */
     public static function required(array $form, string $field): string
     {
         $value = trim($form[$field] ?? '');
@@ -62,7 +109,21 @@ final class AdministratorRequest
         return $value;
     }
 
-    /** @param array<string, string> $form */
+    /**
+     * Read a field that must spell a positive decimal integer, such as an optimistic-locking version.
+     *
+     * The value is pattern-matched rather than cast, so `01`, `1.5` and `1abc` are refused instead of
+     * quietly becoming a number that would then be compared against a stored version.
+     *
+     * @param   array<string, string>  $form   Flattened form as returned by `form()`.
+     * @param   string                 $field  Name of the field holding the number.
+     *
+     * @return  int  The value as an integer, always one or greater.
+     *
+     * @throws  InvalidArgumentException  When the field is absent or is not a positive decimal integer.
+     *
+     * @since   2.0.0
+     */
     public static function positiveInteger(array $form, string $field): int
     {
         $value = $form[$field] ?? '';
@@ -75,8 +136,18 @@ final class AdministratorRequest
     }
 
     /**
-     * @param array<string, string> $form
-     * @return array<string, mixed>
+     * Decode the `data` field of a content form into the entry body its content type validates.
+     *
+     * A blank field is an empty body rather than a failure, which is how a newly created entry with
+     * nothing filled in still saves. A JSON array is refused because entry data is always keyed.
+     *
+     * @param   array<string, string>  $form  Flattened form as returned by `form()`.
+     *
+     * @return  array<string, mixed>  The decoded object, or an empty array when the field was blank.
+     *
+     * @throws  InvalidArgumentException  When the field is not valid JSON or does not decode to an object.
+     *
+     * @since   2.0.0
      */
     public static function contentData(array $form): array
     {
@@ -100,7 +171,21 @@ final class AdministratorRequest
         return $data;
     }
 
-    /** @param array<string, string> $form */
+    /**
+     * Build the publication window from the optional schedule fields of a content form.
+     *
+     * Either end may be left blank, which is how an entry publishes immediately, stays published
+     * indefinitely, or both.
+     *
+     * @param   array<string, string>  $form  Flattened form carrying `publish_at` and `unpublish_at`.
+     *
+     * @return  PublicationWindow  Bounded by whichever of the two fields the operator filled in.
+     *
+     * @throws  \DateMalformedStringException  When either field is not a readable date and time.
+     * @throws  InvalidArgumentException  When the window would close before it opens.
+     *
+     * @since   2.0.0
+     */
     public static function publicationWindow(array $form): PublicationWindow
     {
         $startsAt = trim($form['publish_at'] ?? '');
@@ -112,6 +197,17 @@ final class AdministratorRequest
         );
     }
 
+    /**
+     * Read the content identifier the router captured from the route path.
+     *
+     * @param   ServerRequestInterface  $request  Request the routing middleware has already matched.
+     *
+     * @return  string  The `{id}` segment, guaranteed non-empty.
+     *
+     * @throws  InvalidArgumentException  When the handler was reached through a route with no `{id}` segment.
+     *
+     * @since   2.0.0
+     */
     public static function routeId(ServerRequestInterface $request): string
     {
         $id = $request->getAttribute('id');
@@ -123,6 +219,17 @@ final class AdministratorRequest
         return $id;
     }
 
+    /**
+     * Read the administrator session the authentication middleware attached to the request.
+     *
+     * @param   ServerRequestInterface  $request  Request that has already passed administrator authentication.
+     *
+     * @return  AdministratorSession  The signed-in session, carrying its principal and CSRF token.
+     *
+     * @throws  InvalidArgumentException  When no session is attached, meaning the route skipped authentication.
+     *
+     * @since   2.0.0
+     */
     public static function session(ServerRequestInterface $request): AdministratorSession
     {
         $session = $request->getAttribute(AdministratorSession::REQUEST_ATTRIBUTE);
@@ -134,6 +241,17 @@ final class AdministratorRequest
         return $session;
     }
 
+    /**
+     * Read the execution context the authorization middleware attached to the request.
+     *
+     * @param   ServerRequestInterface  $request  Request that has already passed administrator authorization.
+     *
+     * @return  ExecutionContext  Actor, site and correlation identifiers every application service demands.
+     *
+     * @throws  InvalidArgumentException  When no context is attached, meaning the route skipped authorization.
+     *
+     * @since   2.0.0
+     */
     public static function context(ServerRequestInterface $request): ExecutionContext
     {
         $context = $request->getAttribute(ExecutionContext::REQUEST_ATTRIBUTE);
@@ -144,7 +262,20 @@ final class AdministratorRequest
         return $context;
     }
 
-    /** @return array<string, true> */
+    /**
+     * Project the signed-in principal's capabilities into the lookup the administrator templates use.
+     *
+     * Templates hide controls the actor cannot use, and a keyed map lets a template ask for
+     * `capabilities['content.delete']` directly instead of scanning a list on every render.
+     *
+     * @param   ServerRequestInterface  $request  Request carrying the administrator session.
+     *
+     * @return  array<string, true>  Capability code to `true`; a missing key means the actor lacks it.
+     *
+     * @throws  InvalidArgumentException  When no administrator session is attached to the request.
+     *
+     * @since   2.0.0
+     */
     public static function capabilityMap(ServerRequestInterface $request): array
     {
         $map = [];

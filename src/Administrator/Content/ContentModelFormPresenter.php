@@ -4,11 +4,28 @@ declare(strict_types=1);
 
 namespace Kumwe\CMS\Administrator\Content;
 
+/**
+ * Rebuilds the administrator model builder rows from a content type schema that is already published.
+ *
+ * Opening an existing content type has to show the rows that produced its schema, including the
+ * editor-facing type name — and JSON Schema does not record that name, so it has to be inferred back
+ * from the type, format and extension keywords `ContentModelFormMapper` wrote. This presenter does
+ * that inference, which is what lets a type be edited in the builder instead of collapsing to plain
+ * strings on every save. The two classes must therefore agree on the same builder type vocabulary.
+ *
+ * @since  2.0.0
+ */
 final readonly class ContentModelFormPresenter
 {
     /**
-     * @param array<string, mixed> $schema
-     * @return list<array<string, mixed>>
+     * Describe a published content type schema as builder rows.
+     *
+     * @param   array<string, mixed>  $schema  Published object schema, with `properties` and `required`.
+     *
+     * @return  list<array<string, mixed>>  One row per property in schema order, with form-ready bounds
+     *          and options; empty when the schema exposes no usable properties.
+     *
+     * @since   2.0.0
      */
     public function fields(array $schema): array
     {
@@ -42,7 +59,15 @@ final readonly class ContentModelFormPresenter
         return $fields;
     }
 
-    /** @param array<string, mixed> $field */
+    /**
+     * Infer the builder type name a stored property schema was produced from.
+     *
+     * @param   array<string, mixed>  $field  Property schema whose type, format and items decide the row.
+     *
+     * @return  string  Builder type name, falling back to `string` for anything not recognised.
+     *
+     * @since   2.0.0
+     */
     private function type(array $field): string
     {
         $type = $field['type'] ?? 'string';

@@ -19,8 +19,28 @@ use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 
+/**
+ * Serves the administrator navigation screen: every menu with its items, and every write posted back.
+ *
+ * A single path carries the whole menu editor, so the handler is a dispatcher over an `action` field
+ * rather than a set of endpoints. Reordering is the reason it exists in this shape:
+ * the screen submits the menu's complete item order as one list, and this handler turns that list
+ * into the individual writes the navigation service accepts, refusing a list that does not account
+ * for every item so a stale screen cannot drop one another editor just added.
+ *
+ * @since  2.0.0
+ */
 final readonly class AdministratorNavigationHandler implements RequestHandlerInterface
 {
+    /**
+     * Wire the menu editor to the navigation service and to the pages it can link to.
+     *
+     * @param  NavigationService      $navigation  Reads menus and items, and performs every mutation.
+     * @param  AdministratorRenderer  $renderer    Renders the `navigation` template.
+     * @param  ?ContentService        $content     Supplies the pages offered as link targets; null offers none.
+     *
+     * @since  2.0.0
+     */
     public function __construct(
         private NavigationService $navigation,
         private AdministratorRenderer $renderer,
@@ -28,6 +48,27 @@ final readonly class AdministratorNavigationHandler implements RequestHandlerInt
     ) {
     }
 
+    /**
+     * Render the navigation screen, or apply one posted mutation and redirect back to it.
+     *
+     * A write answers 303 to `/administrator/navigation?saved=1` rather than rendering, so the
+     * browser re-reads the screen and a refresh cannot repost the form. The rendered response is
+     * marked `no-store` because it embeds the session's CSRF token, and every menu's items are loaded
+     * up front and keyed by menu id, so the template renders each tree without a second lookup.
+     *
+     * @param   ServerRequestInterface  $request  Administrator request; the method decides render or mutate.
+     *
+     * @return  ResponseInterface  The rendered screen for a read, or a 303 redirect back to it after a write.
+     *
+     * @throws  InvalidArgumentException  When a required field is missing, the action is unknown, or a submitted
+     *          value is refused.
+     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not manage the menu.
+     * @throws  \Kumwe\CMS\Navigation\Application\NavigationNotFound  When the named menu or item does not exist.
+     * @throws  \Kumwe\CMS\Navigation\Application\NavigationVersionConflict  When another editor moved it on first.
+     * @throws  \Kumwe\CMS\Content\Application\ContentNotFound  When a chosen page target no longer exists.
+     *
+     * @since   2.0.0
+     */
     public function handle(ServerRequestInterface $request): ResponseInterface
     {
         $session = AdministratorRequest::session($request);
@@ -65,7 +106,28 @@ final readonly class AdministratorNavigationHandler implements RequestHandlerInt
         ]), 200, ['Cache-Control' => 'no-store']);
     }
 
-    /** @param array<string, string> $form */
+    /**
+     * Apply the single navigation write the posted form names in its `action` field.
+     *
+     * `item.reorder` is handled before the match because it is the only action that rewrites several
+     * items from one submission; every other action maps to exactly one navigation service call. An
+     * unrecognised action is refused rather than silently ignored, so a stale or hand-edited form
+     * reports a failure instead of appearing to have saved.
+     *
+     * @param   ExecutionContext       $context  Actor and site the write runs as.
+     * @param   array<string, string>  $form     Flattened form carrying `action` and the fields it needs.
+     *
+     * @return  void
+     *
+     * @throws  InvalidArgumentException  When the action is unknown, a required field is missing, or a submitted
+     *          value is refused.
+     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not manage the menu.
+     * @throws  \Kumwe\CMS\Navigation\Application\NavigationNotFound  When the named menu or item does not exist.
+     * @throws  \Kumwe\CMS\Navigation\Application\NavigationVersionConflict  When another editor moved it on first.
+     * @throws  \Kumwe\CMS\Content\Application\ContentNotFound  When a chosen page target no longer exists.
+     *
+     * @since   2.0.0
+     */
     private function mutate(ExecutionContext $context, array $form): void
     {
         $action = AdministratorRequest::required($form, 'action');
@@ -128,6 +190,30 @@ final readonly class AdministratorNavigationHandler implements RequestHandlerInt
         };
     }
 
+    /**
+     * Rewrite the sort positions of a menu's items from the order the screen submitted.
+     *
+     * The submitted list is checked against the menu as it is stored right now and must name every
+     * item exactly once, so a drag on a screen opened before another editor added an item is refused
+     * instead of quietly discarding that item. Items already sitting at their target position are
+     * skipped, so only the rows that really moved consume a version.
+     *
+     * @param   ExecutionContext  $context  Actor and site the reorder runs as.
+     * @param   string            $menuId   UUID of the menu whose items are being reordered.
+     * @param   string            $order    Comma-separated item identifiers, first to last; blank segments are
+     *          ignored.
+     *
+     * @return  void
+     *
+     * @throws  InvalidArgumentException  When the list repeats an item, does not cover the menu, or names an item
+     *          that is not in it.
+     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not manage the menu.
+     * @throws  \Kumwe\CMS\Navigation\Application\NavigationNotFound  When no menu carries that identifier.
+     * @throws  \Kumwe\CMS\Navigation\Application\NavigationVersionConflict  When an item changes between the read
+     *          and its write.
+     *
+     * @since   2.0.0
+     */
     private function reorder(ExecutionContext $context, string $menuId, string $order): void
     {
         $identifiers = array_values(array_filter(
@@ -165,7 +251,20 @@ final readonly class AdministratorNavigationHandler implements RequestHandlerInt
         }
     }
 
-    /** @param array<string, string> $form */
+    /**
+     * Read an optional field, reporting a blank one as null rather than as an empty string.
+     *
+     * The menu form always posts its optional controls, so "no parent" and "no link target" arrive as
+     * empty strings; the navigation service distinguishes null from an empty string, and this is the
+     * translation between the two.
+     *
+     * @param   array<string, string>  $form   Flattened form as posted by the navigation screen.
+     * @param   string                 $field  Name of the optional field.
+     *
+     * @return  ?string  The trimmed value, or null when the field was absent or blank.
+     *
+     * @since   2.0.0
+     */
     private function nullable(array $form, string $field): ?string
     {
         $value = trim($form[$field] ?? '');
@@ -173,7 +272,22 @@ final readonly class AdministratorNavigationHandler implements RequestHandlerInt
         return $value === '' ? null : $value;
     }
 
-    /** @param array<string, string> $form */
+    /**
+     * Read a field that must spell a non-negative decimal integer, such as a sort position.
+     *
+     * The value is pattern-matched rather than cast, so `-1` and `2x` are refused instead of quietly
+     * becoming a position. An absent field falls back to the first position, while a field that is
+     * present but empty is a malformed submission and is refused.
+     *
+     * @param   array<string, string>  $form   Flattened form as posted by the navigation screen.
+     * @param   string                 $field  Name of the field holding the number.
+     *
+     * @return  int  The value as an integer, zero or greater.
+     *
+     * @throws  InvalidArgumentException  When the field holds anything other than decimal digits.
+     *
+     * @since   2.0.0
+     */
     private function nonNegativeInteger(array $form, string $field): int
     {
         $value = $form[$field] ?? '0';

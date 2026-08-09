@@ -6,12 +6,42 @@ namespace Kumwe\CMS\Administrator\Automation;
 
 use InvalidArgumentException;
 
+/**
+ * Catalogue of the payload forms the administrator automation screen offers, one per job type.
+ *
+ * A job payload is opaque JSON, so without a declared form an operator has to hand-write it. This
+ * registry maps a job type to the fields it accepts, which lets the screen render real inputs and
+ * turn the submitted values back into a payload that has already been range- and pattern-checked.
+ * `core()` builds the set the shipped job types need, and `register()` adds more before the instance
+ * is shared. A job type with no registered form still resolves — to a derived label and no fields —
+ * so the raw JSON escape hatch keeps working for anything the builder does not describe.
+ *
+ * @since  2.0.0
+ */
 final class AutomationJobFormRegistry
 {
-    /** @var array<string, array{label: string, fields: list<AutomationJobField>}> */
+    /**
+     * Registered forms keyed by job type, each holding its screen label and its declared fields.
+     *
+     * @var    array<string, array{label: string, fields: list<AutomationJobField>}>
+     * @since  2.0.0
+     */
     private array $forms = [];
 
-    /** @param iterable<AutomationJobField> $fields */
+    /**
+     * Register the payload form one job type presents.
+     *
+     * @param   string                        $jobType  Job type identifier the schedule form submits.
+     * @param   string                        $label    Caption for the job type in the type selector.
+     * @param   iterable<AutomationJobField>  $fields   Fields the payload accepts, in render order.
+     *
+     * @return  void
+     *
+     * @throws  InvalidArgumentException  When the job type is already registered or malformed, the
+     *          label is blank, or two fields claim the same key.
+     *
+     * @since   2.0.0
+     */
     public function register(string $jobType, string $label, iterable $fields = []): void
     {
         if (
@@ -32,8 +62,17 @@ final class AutomationJobFormRegistry
     }
 
     /**
-     * @param list<string> $jobTypes
-     * @return list<array{type: string, label: string, fields: list<array<string, mixed>>}>
+     * Describe each requested job type in the shape the automation template renders.
+     *
+     * A job type with no registered form is still described, with a label derived from its identifier
+     * and an empty field list, so an unrecognised type never disappears from the selector.
+     *
+     * @param   list<string>  $jobTypes  Job types the operator may schedule, in selector order.
+     *
+     * @return  list<array{type: string, label: string, fields: list<array<string, mixed>>}>  One entry
+     *          per requested type, in the order given.
+     *
+     * @since   2.0.0
      */
     public function definitions(array $jobTypes): array
     {
@@ -54,8 +93,21 @@ final class AutomationJobFormRegistry
     }
 
     /**
-     * @param array<string, string> $form
-     * @return array<string, mixed>
+     * Turn a submitted schedule form into the payload the job will be queued with.
+     *
+     * Only the registered fields are read, so anything else in the form is ignored. An empty input
+     * falls back to the field's default; a field with neither a value nor a default is dropped unless
+     * it is required. A job type with no registered form therefore yields an empty payload.
+     *
+     * @param   string                 $jobType  Job type whose registered fields drive the mapping.
+     * @param   array<string, string>  $form     Submitted form values, keyed by HTML input name.
+     *
+     * @return  array<string, mixed>  Payload keyed by field key, values already coerced and checked.
+     *
+     * @throws  InvalidArgumentException  When a required field is empty, or a value fails its whole
+     *          number, range, option, or pattern check.
+     *
+     * @since   2.0.0
      */
     public function payload(string $jobType, array $form): array
     {
@@ -108,6 +160,17 @@ final class AutomationJobFormRegistry
         return $payload;
     }
 
+    /**
+     * Build the registry describing the job types Kumwe ships with.
+     *
+     * This is the factory the container shares and the handlers fall back to, so the shipped
+     * content-transition, purge, and runtime-rebuild jobs always have a form even when nothing has
+     * registered one.
+     *
+     * @return  self  A registry pre-populated with the core job forms.
+     *
+     * @since   2.0.0
+     */
     public static function core(): self
     {
         $registry = new self();
@@ -159,6 +222,15 @@ final class AutomationJobFormRegistry
         return $registry;
     }
 
+    /**
+     * Derive a readable caption for a job type that has no registered form.
+     *
+     * @param   string  $jobType  Dotted job type identifier, such as `system.sessions.purge`.
+     *
+     * @return  string  The identifier with separators replaced by spaces and the first letter raised.
+     *
+     * @since   2.0.0
+     */
     private function label(string $jobType): string
     {
         return ucfirst(str_replace(['.', '_', '-'], ' ', $jobType));

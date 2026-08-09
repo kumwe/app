@@ -6,10 +6,37 @@ namespace Kumwe\CMS\Administrator\Automation;
 
 use InvalidArgumentException;
 
+/**
+ * One operator-facing input on the payload form an automation job type presents.
+ *
+ * An automation schedule carries a free-form JSON payload, which is unusable in an administrator
+ * screen unless something states what a given job type expects. A field declares that expectation —
+ * the payload key it writes, its caption, its widget, and the bounds a submitted value must satisfy —
+ * so `AutomationJobFormRegistry` can both render the input and validate what comes back from it. The
+ * constructor rejects a malformed declaration at registration time rather than at request time.
+ *
+ * @since  2.0.0
+ */
 final readonly class AutomationJobField
 {
     /**
-     * @param list<string> $options
+     * Declare one payload field, refusing a declaration the form could not render or validate.
+     *
+     * @param   string           $key       Payload key this field writes, lowercase with underscores.
+     * @param   string           $label     Caption shown beside the input, and the name used in errors.
+     * @param   string           $type      Widget kind: `text`, `integer`, or `select`.
+     * @param   bool             $required  Whether the operator must supply a value before saving.
+     * @param   string|int|null  $default   Value substituted for an empty input; null omits the key.
+     * @param   int|null         $minimum   Smallest accepted `integer` value, or null for no floor.
+     * @param   int|null         $maximum   Largest accepted `integer` value, or null for no ceiling.
+     * @param   string|null      $pattern   PCRE a text value must match, or null to accept any text.
+     * @param   list<string>     $options   Accepted values for a `select`; empty leaves the value free.
+     * @param   string           $help      Hint rendered under the input to explain what to enter.
+     *
+     * @throws  InvalidArgumentException  When the key or label is malformed, or the type is not one of
+     *          the three supported widget kinds.
+     *
+     * @since   2.0.0
      */
     public function __construct(
         public string $key,
@@ -31,7 +58,16 @@ final readonly class AutomationJobField
         }
     }
 
-    /** @return array<string, bool|int|string|list<string>|null> */
+    /**
+     * Export the declaration as the flat array the automation form template iterates over.
+     *
+     * The `name` entry is the HTML input name, prefixed so that payload inputs can be told apart from
+     * the rest of the schedule form when the submission comes back.
+     *
+     * @return  array<string, bool|int|string|list<string>|null>  The declaration plus the input `name`.
+     *
+     * @since   2.0.0
+     */
     public function toArray(): array
     {
         return [

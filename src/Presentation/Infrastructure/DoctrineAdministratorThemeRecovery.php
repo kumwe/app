@@ -16,9 +16,41 @@ use Psr\Clock\ClockInterface;
 use Ramsey\Uuid\Uuid;
 use RuntimeException;
 
-/** Host-only break-glass service. It is wired only to the confirmed recovery CLI command. */
+/**
+ * Host-only break-glass service. It is wired only to the confirmed recovery CLI command.
+ *
+ * When a third-party administrator theme is broken, the back office that would let an operator switch it
+ * off is exactly what will not render. This service clears the administrator theme activation back to
+ * the built-in core theme over the database directly, in one transaction: it drops the activation row's
+ * extension reference, disables the displaced template when no other surface still uses it, records the
+ * audit event, and stages the recovered runtime map. Every step re-checks the caller's fence against the
+ * registry fence row, so a lease that has been superseded by a concurrent registry operation aborts the
+ * whole recovery rather than publishing a map built on stale state.
+ *
+ * @since  2.0.0
+ */
 final readonly class DoctrineAdministratorThemeRecovery
 {
+    /**
+     * Bind the recovery to the database, the audit trail, and the runtime map it republishes.
+     *
+     * @param  Connection                   $database            DBAL connection the activation and
+     *         extension rows are rewritten on.
+     * @param  TableNames                   $tables              Resolver applying the configured prefix
+     *         to each table named here.
+     * @param  TransactionManager           $transactions        Manager owning the single transaction the
+     *         whole recovery runs in.
+     * @param  AuditRecorder                $audit               Recorder the recovery event is written
+     *         through, inside that transaction.
+     * @param  ClockInterface               $clock               Source of the timestamp stamped on every
+     *         row the recovery touches.
+     * @param  ExtensionRuntimeMapCompiler  $runtime             Compiler that stages the recovered
+     *         runtime map for publication.
+     * @param  object                       $recoveryCapability  Break-glass token; only a caller holding
+     *         this exact instance may recover.
+     *
+     * @since  2.0.0
+     */
     public function __construct(
         private Connection $database,
         private TableNames $tables,
@@ -30,6 +62,28 @@ final readonly class DoctrineAdministratorThemeRecovery
     ) {
     }
 
+    /**
+     * Clears the administrator theme activation and stages the built-in theme as the runtime map.
+     *
+     * The lease is renewed before the transaction, on entry to it, and again after the map is staged, so
+     * a long-running recovery does not lose its cross-process lock mid-flight. Recovery is refused
+     * outright unless the caller presents the capability instance this service was constructed with,
+     * which keeps the entry point to the confirmed console command.
+     *
+     * @param   object                  $capability  Break-glass token; compared by identity against the
+     *          instance held at construction.
+     * @param   ExtensionRegistryLease  $lease       Held registry lease whose fence must still match the
+     *          stored registry fence.
+     *
+     * @return  void
+     *
+     * @throws  RuntimeException  When the capability does not match, the lease has lost its fence, the
+     *          administrator activation row is missing or not updated exactly once, the active
+     *          assignment count is unreadable, no theme was active, or the displaced theme is no longer
+     *          installed.
+     *
+     * @since   2.0.0
+     */
     public function recover(object $capability, ExtensionRegistryLease $lease): void
     {
         if ($capability !== $this->recoveryCapability) {
