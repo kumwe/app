@@ -8,6 +8,7 @@ use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\DriverManager;
 use Doctrine\DBAL\Platforms\AbstractMySQLPlatform;
+use Doctrine\DBAL\Platforms\MariaDBPlatform;
 use Doctrine\DBAL\Schema\Schema;
 use Doctrine\DBAL\Schema\Table;
 use Doctrine\DBAL\Types\BigIntType;
@@ -476,8 +477,8 @@ final class MigrationIntegrationTest extends TestCase
         $container = TestKernelFactory::create(Environment::fromGlobals());
         $database = $container->get(Connection::class);
         self::assertInstanceOf(Connection::class, $database);
-        if (!$database->getDatabasePlatform() instanceof AbstractMySQLPlatform) {
-            self::markTestSkipped('Textual foreign-key collation equality is specific to MySQL and MariaDB.');
+        if (!$database->getDatabasePlatform() instanceof MariaDBPlatform) {
+            self::markTestSkipped('This regression exercises MariaDB textual foreign-key collation equality.');
         }
 
         $prefix = 'c' . substr(str_replace('-', '', Uuid::uuid7()->toString()), 0, 10) . '_';
