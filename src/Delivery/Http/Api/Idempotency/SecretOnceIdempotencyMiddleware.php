@@ -23,11 +23,48 @@ use Ramsey\Uuid\Uuid;
 use RuntimeException;
 use Throwable;
 
-/** Atomically persists token mutations while retaining only replay-safe metadata. */
+/**
+ * Makes a token mutation idempotent while guaranteeing its secret is handed out exactly once.
+ *
+ * `POST /api/v1/tokens` and `POST /api/v1/tokens/{tokenId}/rotate` are the only routes whose success
+ * body carries a live credential, so they cannot use `PersistentIdempotencyMiddleware`: that middleware
+ * stores the response verbatim, which would leave the plaintext token sitting in the idempotency table
+ * for anyone who can repeat the key or read the row. This middleware reserves the key the same way, but
+ * strips `token` from the body before storing it and marks the stored copy `secret_returned: false`, so
+ * a replay proves the operation already happened without reissuing the secret. A caller that loses the
+ * original response has lost the credential and must mint another. The lease is short — two minutes,
+ * against the persistent middleware's fifteen — because a token mutation is a single quick write and a
+ * long lease would strand the key after a crash. Anything other than a 2xx or a 5xx is stored as-is,
+ * since a refusal carries no secret to strip; a 5xx is rolled back and its reservation deleted, leaving
+ * the key free to retry.
+ *
+ * @since  2.0.0
+ */
 final readonly class SecretOnceIdempotencyMiddleware implements MiddlewareInterface
 {
+    /**
+     * How long a reservation stays owned by the request that took it, as a `DateTimeImmutable` modifier.
+     *
+     * @var    string
+     * @since  2.0.0
+     */
     private const LEASE = '+2 minutes';
 
+    /**
+     * Wire the middleware to the store, the clock and the policy check a reservation depends on.
+     *
+     * @param  Connection                     $database          Connection the idempotency table is read and
+     *         written on.
+     * @param  TableNames                     $tables            Resolves the physical `idempotency` table name.
+     * @param  ClockInterface                 $clock             Supplies the instants leases and expiry use.
+     * @param  ProblemDetailsResponseFactory  $problems          Renders the refusals a reused key answers with.
+     * @param  HttpMutationPreauthorizer      $preauthorization  Applies the route's exact policy before any
+     *         record is observed or reserved.
+     * @param  TransactionManager             $transactions      Commits the minted token and its stored
+     *         replay together, or neither.
+     *
+     * @since  2.0.0
+     */
     public function __construct(
         private Connection $database,
         private TableNames $tables,
@@ -38,6 +75,38 @@ final readonly class SecretOnceIdempotencyMiddleware implements MiddlewareInterf
     ) {
     }
 
+    /**
+     * Reserve the idempotency key, run the token operation, and store a replay that carries no secret.
+     *
+     * The order is deliberate. Authorization runs first, before any stored record is read, so a caller
+     * cannot learn from a replay that an operation it may not perform has already happened. The
+     * reservation is then taken outside the transaction, so a concurrent request with the same key is
+     * refused rather than made to wait; if `acquire()` hands back a response — a replay, or a refusal —
+     * the handler is never called at all. Only then does the transaction open, re-prove that this request
+     * still owns the lease under a row lock, call the handler, and write the stripped result, so the
+     * minted credential and the record saying the key is spent commit together or not at all. Both
+     * failure paths delete the reservation, leaving the key free for another attempt: a 5xx returns the
+     * handler's own response, anything else re-throws after the cleanup.
+     *
+     * @param   ServerRequestInterface   $request  Request carrying the validated `Idempotency-Key`, the
+     *          authenticated principal and the execution context, all attached upstream.
+     * @param   RequestHandlerInterface  $handler  Rest of the pipeline, which mints or rotates the token.
+     *
+     * @return  ResponseInterface  The handler's response on a first run; on a repeat, either the stored
+     *          result with `Idempotency-Replayed: true` and no secret, or a problem
+     *          document reporting a reused key, a changed authorization context, or
+     *          an operation still in flight.
+     *
+     * @throws  RuntimeException  When the request reaches this middleware without an authenticated
+     *          principal, a validated key or a matching execution context; when the lease is lost
+     *          between acquiring it and completing; or when a stored result fails its integrity check.
+     * @throws  \InvalidArgumentException  When the route has no exact authorization policy, or the body
+     *          the policy check reads is not a usable JSON object.
+     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not perform
+     *          the mutation, checked before any record is observed.
+     *
+     * @since   2.0.0
+     */
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
         $key = $request->getAttribute(RequireIdempotencyKeyMiddleware::ATTRIBUTE);
@@ -131,6 +200,36 @@ final readonly class SecretOnceIdempotencyMiddleware implements MiddlewareInterf
         }
     }
 
+    /**
+     * Claim the key for this request, or answer the repeat that has already claimed it.
+     *
+     * The claim is an insert, so the unique index on subject, operation and key is what arbitrates
+     * between two simultaneous first attempts rather than a read-then-write that could interleave. Only
+     * the loser takes the slower path: it compares the stored request digest and authorization
+     * fingerprint against this request, refusing a key reused for different content with 422 and one
+     * presented under different credentials with 409, then replays a completed result. A record that
+     * failed, expired, or whose lease has run out is taken over by a conditional update, which either
+     * succeeds outright or leaves the caller with the 409 that says another attempt is still running.
+     *
+     * @param   ExecutionContext        $context    Actor and site; its authorization fingerprint is stored
+     *          so a later attempt under different credentials cannot replay this one.
+     * @param   AuthenticatedPrincipal  $principal  Caller the record is keyed against, by subject.
+     * @param   string                  $operation  Method and path pair the key is scoped to.
+     * @param   string                  $key        The client's `Idempotency-Key`, already validated.
+     * @param   string                  $digest     Digest of this request, compared against the stored one.
+     * @param   string                  $owner      Random token proving this request holds the lease.
+     * @param   ServerRequestInterface  $request    Request whose URI is quoted in any problem document.
+     *
+     * @return  ?ResponseInterface  Null when the caller now owns the reservation and must run the handler;
+     *          otherwise the response to return instead of running it.
+     *
+     * @throws  RuntimeException  When the record vanishes between the failed insert and the read, or a
+     *          stored result proves unusable while being replayed.
+     * @throws  JsonException  When a stored header map cannot be decoded, or a stripped body cannot be
+     *          re-encoded, while a completed result is being replayed.
+     *
+     * @since   2.0.0
+     */
     private function acquire(
         ExecutionContext $context,
         AuthenticatedPrincipal $principal,
@@ -239,6 +338,28 @@ final readonly class SecretOnceIdempotencyMiddleware implements MiddlewareInterf
         }
     }
 
+    /**
+     * Re-prove, under a row lock, that this request still owns the reservation before the handler runs.
+     *
+     * `acquire()` claims the lease outside the transaction, so between the claim and here another
+     * request may have taken the record over once the lease expired. `SELECT … FOR UPDATE` holds the row
+     * for the rest of the transaction, so the ownership just verified stays true until the completion
+     * write commits. The authorization fingerprint is compared again as well, so a lease claimed under
+     * one set of credentials cannot be spent under another.
+     *
+     * @param   ExecutionContext  $context    Actor whose authorization fingerprint must still match the row.
+     * @param   string            $subject    Principal the record is keyed against.
+     * @param   string            $operation  Method and path pair the key is scoped to.
+     * @param   string            $key        The client's `Idempotency-Key`.
+     * @param   string            $owner      Token this request stored when it claimed the lease.
+     *
+     * @return  void
+     *
+     * @throws  RuntimeException  When the record is gone, is no longer `in_progress`, is owned by another
+     *          request, was claimed under a different authorization context, or its lease has expired.
+     *
+     * @since   2.0.0
+     */
     private function assertLeaseOwner(
         ExecutionContext $context,
         string $subject,
@@ -265,7 +386,28 @@ final readonly class SecretOnceIdempotencyMiddleware implements MiddlewareInterf
         }
     }
 
-    /** @return array{string, array<string, string>} */
+    /**
+     * Reduce a successful token response to the body and headers it is safe to keep for replay.
+     *
+     * This is where the secret is removed: a 2xx body must be a JSON object carrying `token`, and what
+     * is stored is that object without it, flagged `secret_returned: false`. The shape is enforced
+     * rather than assumed, because a handler that answered 2xx without a token would otherwise have a
+     * response stored that a replay could not distinguish from a stripped one. A non-2xx body is kept
+     * verbatim, since a refusal carries nothing to strip. Only the three headers a replay must reproduce
+     * are retained; everything else is regenerated when the stored response is rebuilt.
+     *
+     * @param   ResponseInterface  $response  Response the token handler produced, still holding its secret.
+     *
+     * @return  array{string, array<string, string>}  The body to store first, then the headers to store
+     *          with it, keyed by header name.
+     *
+     * @throws  RuntimeException  When a 2xx body is not valid JSON, is not a JSON object, or carries no
+     *          string `token` to strip.
+     * @throws  JsonException  When the stripped object cannot be re-encoded, as with a body holding
+     *          malformed UTF-8.
+     *
+     * @since   2.0.0
+     */
     private function replaySafeResponse(ResponseInterface $response): array
     {
         $body = (string) $response->getBody();
@@ -292,7 +434,29 @@ final readonly class SecretOnceIdempotencyMiddleware implements MiddlewareInterf
         return [$body, $headers];
     }
 
-    /** @param array<string, mixed> $row */
+    /**
+     * Rebuild the stored result for a repeat of a key that has already completed.
+     *
+     * The body's digest is verified before anything is sent, so a row altered in the database is refused
+     * rather than replayed. A stored body still holding `token` is stripped here and written back, which
+     * is the second line of defence behind `replaySafeResponse()`: a record stored before that stripping
+     * applied is made safe on its first replay instead of handing the secret out again. The rebuilt
+     * response is marked `Idempotency-Replayed: true`, so a client can tell a replay from a fresh run.
+     *
+     * @param   array<string, mixed>  $row        Stored record, as `record()` read it.
+     * @param   string                $subject    Principal the record is keyed against, for the rewrite.
+     * @param   string                $operation  Method and path pair the key is scoped to.
+     * @param   string                $key        The client's `Idempotency-Key`.
+     *
+     * @return  ResponseInterface  The stored status, headers and secret-free body, plus the replay marker.
+     *
+     * @throws  RuntimeException  When the stored body is missing or fails its digest check, the stored
+     *          headers are not a JSON object of strings, or the stored status is not a number.
+     * @throws  JsonException  When the stored headers cannot be decoded, or the stripped body cannot be
+     *          re-encoded.
+     *
+     * @since   2.0.0
+     */
     private function replay(array $row, string $subject, string $operation, string $key): ResponseInterface
     {
         $body = $row['result_body'] ?? null;
@@ -330,7 +494,24 @@ final readonly class SecretOnceIdempotencyMiddleware implements MiddlewareInterf
         return $response;
     }
 
-    /** @return array<string, mixed> */
+    /**
+     * Read the record a losing insert collided with.
+     *
+     * Reached only after the unique index refused the claim, so the row is expected to exist; its
+     * absence means a purge or a competing delete landed in between, which is a fault rather than a
+     * client mistake. The projection is limited to the columns the comparison and the replay need, so
+     * the owner token is not read here — ownership is settled under a lock in `assertLeaseOwner()`.
+     *
+     * @param   string  $subject    Principal the record is keyed against.
+     * @param   string  $operation  Method and path pair the key is scoped to.
+     * @param   string  $key        The client's `Idempotency-Key`.
+     *
+     * @return  array<string, mixed>  The stored row, keyed by column name, exactly as the driver typed it.
+     *
+     * @throws  RuntimeException  When no record carries that subject, operation and key.
+     *
+     * @since   2.0.0
+     */
     private function record(string $subject, string $operation, string $key): array
     {
         $row = $this->database->fetchAssociative(sprintf(
@@ -346,6 +527,23 @@ final readonly class SecretOnceIdempotencyMiddleware implements MiddlewareInterf
         return $row;
     }
 
+    /**
+     * Give up a reservation this request still holds, after the operation failed.
+     *
+     * The row is deleted rather than marked failed, so the key is completely free for another attempt —
+     * a token mutation that did not commit leaves nothing worth replaying. The owner token and the
+     * `in_progress` state are both in the predicate, so a record another request has since taken over,
+     * or one that already completed, is left untouched.
+     *
+     * @param   string  $subject    Principal the record is keyed against.
+     * @param   string  $operation  Method and path pair the key is scoped to.
+     * @param   string  $key        The client's `Idempotency-Key`.
+     * @param   string  $owner      Token this request stored when it claimed the lease.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     private function release(string $subject, string $operation, string $key, string $owner): void
     {
         $this->database->executeStatement(sprintf(
@@ -355,6 +553,20 @@ final readonly class SecretOnceIdempotencyMiddleware implements MiddlewareInterf
         ), [$subject, $operation, $key, $owner]);
     }
 
+    /**
+     * Fingerprint the parts of a request that must not change between attempts at one key.
+     *
+     * Method, path, query, content type, precondition and body are hashed together, so a client that
+     * reuses a key for different content is caught rather than served the earlier result. Headers
+     * outside that list are excluded on purpose: a retry through a different proxy, or with a new trace
+     * header, is the same request and must still match.
+     *
+     * @param   ServerRequestInterface  $request  Request to fingerprint; its body is read in full.
+     *
+     * @return  string  Hex SHA-256 digest, compared with `hash_equals()` against the stored one.
+     *
+     * @since   2.0.0
+     */
     private function requestDigest(ServerRequestInterface $request): string
     {
         return hash('sha256', implode("\n", [
@@ -367,6 +579,21 @@ final readonly class SecretOnceIdempotencyMiddleware implements MiddlewareInterf
         ]));
     }
 
+    /**
+     * Read a stored HTTP status back as an integer, whatever spelling the driver returned it in.
+     *
+     * Drivers disagree on whether an integer column arrives as an int or a decimal string, so both are
+     * accepted. Anything else is corrupt storage rather than a client mistake, and is refused instead of
+     * being cast into a status that would be replayed as though it were the stored one.
+     *
+     * @param   mixed  $value  Value of the `result_status` column as the driver returned it.
+     *
+     * @return  int  The stored status code.
+     *
+     * @throws  RuntimeException  When the value is neither an integer nor a string of decimal digits.
+     *
+     * @since   2.0.0
+     */
     private function integer(mixed $value): int
     {
         if (!is_int($value) && (!is_string($value) || preg_match('/^[0-9]+$/D', $value) !== 1)) {

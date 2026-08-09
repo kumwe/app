@@ -18,9 +18,41 @@ use Kumwe\CMS\Identity\Domain\Capability;
 use Kumwe\CMS\Identity\Domain\GrantScope;
 use Psr\Http\Message\ServerRequestInterface;
 
-/** Performs exact application-policy checks before an idempotency record can be observed or reserved. */
+/**
+ * Performs exact application-policy checks before an idempotency record can be observed or reserved.
+ *
+ * A stored idempotency record is itself authorization-sensitive: replaying one tells the caller that the
+ * operation already succeeded, and reserving a key spends it. Both idempotency middlewares therefore
+ * call this before they touch the ledger, so nobody learns about — or interferes with — a mutation they
+ * may not perform. What lives here is the policy the route-level capability guard cannot express: method
+ * and path are matched to the exact capability and the exact resource the mutation targets, down to the
+ * content entry, the menu item, the role and the grant, with token issuance and rotation delegated to
+ * the preauthorizers that own those rules. The closing line is the point of the class — an unrecognised
+ * route is refused, so mounting an idempotent endpoint without writing its policy here fails loudly
+ * rather than running unguarded.
+ *
+ * @since  2.0.0
+ */
 final readonly class HttpMutationPreauthorizer
 {
+    /**
+     * Wire the checker to the gateway and to the services that resolve a route's real target.
+     *
+     * @param  AuthorizationGateway          $authorization    Gateway every capability and delegation check
+     *         is put to.
+     * @param  ContentService                $content          Resolves which capability a requested workflow
+     *         transition actually demands.
+     * @param  AccessControlRepository       $access           Reads the grants a role carries and the role a
+     *         grant belongs to.
+     * @param  TokenDelegationPreauthorizer  $tokenDelegation  Owns the policy for minting a token on another
+     *         subject's behalf.
+     * @param  TokenRotationPreauthorizer    $tokenRotation    Owns the policy for replacing a live token.
+     * @param  ?ContentModelRepository       $models           Resolves a content type or workflow handle to
+     *         its stored id; when null, or when nothing matches, the path segment is authorized as the
+     *         resource identifier instead.
+     *
+     * @since  2.0.0
+     */
     public function __construct(
         private AuthorizationGateway $authorization,
         private ContentService $content,
@@ -31,6 +63,36 @@ final readonly class HttpMutationPreauthorizer
     ) {
     }
 
+    /**
+     * Apply the exact authorization policy this request's method and path call for.
+     *
+     * Matching is by whole path shape rather than by prefix, and the fall-through at the end throws, so a
+     * route this class does not recognise is never allowed by default. Several branches assert more than
+     * once, because reaching a resource is not authority over what it confers: assigning a role also
+     * proves the actor may delegate every grant that role carries, and deleting a grant also proves the
+     * actor may manage the role behind it. Branches whose policy depends on the payload decode the body
+     * here, which means a malformed body is refused before any ledger row is read or written.
+     *
+     * @param   ServerRequestInterface  $request  Mutation being authorized; its method, path and — on the
+     *          transition, role-grant and token-issuance routes — its JSON body select and feed the policy.
+     * @param   ExecutionContext        $context  Actor, site and provenance every check is evaluated for.
+     *
+     * @return  void
+     *
+     * @throws  InvalidArgumentException  When the route carries no policy, the method and path are not a
+     *          supported content mutation, a path segment is not a usable resource identifier, the body is
+     *          not a JSON object, a required body field is missing or blank, or a named grant is gone.
+     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not perform the
+     *          mutation, or may not delegate a capability the request would hand on.
+     * @throws  \Kumwe\CMS\Content\Application\ContentNotFound  When a transition names an entry the context
+     *          cannot reach.
+     * @throws  \Kumwe\CMS\Content\Application\ContentModelNotFound  When the entry's pinned workflow version
+     *          is no longer published.
+     * @throws  \Kumwe\CMS\Workflow\Domain\InvalidWorkflowTransition  When the workflow declares no edge to
+     *          the requested status.
+     *
+     * @since   2.0.0
+     */
     public function authorize(ServerRequestInterface $request, ExecutionContext $context): void
     {
         $method = strtoupper($request->getMethod());
@@ -236,6 +298,33 @@ final readonly class HttpMutationPreauthorizer
         throw new InvalidArgumentException('The idempotent endpoint has no exact authorization policy.');
     }
 
+    /**
+     * Resolve the capability a content transition demands, having first proved the entry is readable.
+     *
+     * The read check comes first because resolving the capability loads the entry and its workflow, and an
+     * actor who may not read the entry must not learn from the answer whether it exists or where it can
+     * go. Being told the capability is not being granted it — the caller still asserts it afterwards.
+     *
+     * @param   ServerRequestInterface  $request  Transition request whose JSON body carries the target
+     *          `status`.
+     * @param   ExecutionContext        $context  Actor, site and provenance the transition would run under.
+     * @param   string                  $id       Identifier of the content entry the transition applies to.
+     *
+     * @return  string  Capability code the actor must hold to make this exact move.
+     *
+     * @throws  InvalidArgumentException  When the body is not a JSON object or carries no non-empty
+     *          `status`.
+     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not read the
+     *          entry.
+     * @throws  \Kumwe\CMS\Content\Application\ContentNotFound  When no entry matches within reach of the
+     *          context.
+     * @throws  \Kumwe\CMS\Content\Application\ContentModelNotFound  When the entry's pinned workflow version
+     *          is no longer published.
+     * @throws  \Kumwe\CMS\Workflow\Domain\InvalidWorkflowTransition  When the workflow declares no edge to
+     *          the requested status.
+     *
+     * @since   2.0.0
+     */
     private function transitionAction(
         ServerRequestInterface $request,
         ExecutionContext $context,
@@ -248,12 +337,41 @@ final readonly class HttpMutationPreauthorizer
         return $this->content->transitionCapability($context, $id, $status)->value();
     }
 
+    /**
+     * Put one capability-and-resource pair to the gateway, throwing unless it is allowed.
+     *
+     * @param   ExecutionContext       $context   Actor, site and provenance the check is evaluated for.
+     * @param   string                 $action    Capability code the route demands, such as `content.update`.
+     * @param   AuthorizationResource  $resource  Exact collection or item the capability is demanded over.
+     *
+     * @return  void
+     *
+     * @throws  InvalidArgumentException  When the action is not a well-formed capability code.
+     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When policy refuses the actor that
+     *          action on that resource.
+     *
+     * @since   2.0.0
+     */
     private function assert(ExecutionContext $context, string $action, AuthorizationResource $resource): void
     {
         $this->authorization->assertAllowed($context, Capability::fromString($action), $resource);
     }
 
-    /** @return array<string, mixed> */
+    /**
+     * Decode the mutation body as the JSON object a policy branch reads its fields from.
+     *
+     * A JSON array is refused as firmly as malformed JSON, because every branch that reaches for the body
+     * expects named fields.
+     *
+     * @param   ServerRequestInterface  $request  Mutation whose payload the policy decision depends on.
+     *
+     * @return  array<string, mixed>  The decoded object's members, keyed by field name.
+     *
+     * @throws  InvalidArgumentException  When the body is not valid JSON within 32 levels of nesting, or
+     *          decodes to something other than a JSON object.
+     *
+     * @since   2.0.0
+     */
     private function jsonObject(ServerRequestInterface $request): array
     {
         try {
@@ -269,7 +387,19 @@ final readonly class HttpMutationPreauthorizer
         return $input;
     }
 
-    /** @param array<string, mixed> $input */
+    /**
+     * Read a body field that a policy branch requires as a non-empty string.
+     *
+     * @param   array<string, mixed>  $input  Decoded mutation body.
+     * @param   string                $field  Field to read, named back to the caller in the refusal.
+     *
+     * @return  string  The field's value with surrounding whitespace removed.
+     *
+     * @throws  InvalidArgumentException  When the field is absent, is not a string, or is blank once
+     *          trimmed.
+     *
+     * @since   2.0.0
+     */
     private function requiredString(array $input, string $field): string
     {
         $value = $input[$field] ?? null;

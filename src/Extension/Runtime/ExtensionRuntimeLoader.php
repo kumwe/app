@@ -13,8 +13,36 @@ use Kumwe\CMS\Extension\Contribution\ManifestContributionSet;
 use Kumwe\CMS\Presentation\ThemeSurface;
 use RuntimeException;
 
+/**
+ * Turns the signed runtime publication into the live extension set for this process.
+ *
+ * Loading means executing code that arrived in an installed package, so this is written as a gate rather
+ * than as a reader. The publication's signature and digests are re-checked before anything in it is
+ * believed; every entry is then validated field by field, its root resolved to a real directory inside
+ * extension storage with no symbolic link on the way, its autoload prefixes bound to directories under
+ * that root, and its provider instantiated against a container holding only the host services the caller
+ * passed in. Anything that does not hold up raises instead of being skipped, because a half-loaded
+ * runtime is worse than a boot that falls back to the recovery surfaces. Once every entry is in, the
+ * loader drives the `contribute()` and `boot()` phases and hands back the finished set.
+ *
+ * @since  2.0.0
+ */
 final readonly class ExtensionRuntimeLoader
 {
+    /**
+     * Bind the loader to the publication it will execute and the storage it may execute from.
+     *
+     * @param  VerifiedRuntimePublication  $publication    Compiled runtime map, re-verified on every load
+     *         rather than trusted from whoever read it.
+     * @param  string                      $extensionRoot  Absolute path of extension storage; no extension
+     *         root may resolve outside it.
+     * @param  RuntimePublicationKeyRing   $keys           Key ring the publication's own signature is
+     *         checked against, including keys it was rotated from.
+     * @param  TrustStore                  $trust          Trust boundary handed to the active set, its
+     *         routes, and each extension's event listeners.
+     *
+     * @since  2.0.0
+     */
     public function __construct(
         private VerifiedRuntimePublication $publication,
         private string $extensionRoot,
@@ -23,7 +51,35 @@ final readonly class ExtensionRuntimeLoader
     ) {
     }
 
-    /** @param array<string, object> $allowedServices */
+    /**
+     * Execute the publication and return the extensions that are now live.
+     *
+     * Every entry registers its services before the next one is read, while the two cross-extension
+     * phases run only once the whole map is in, so one extension's contribution may point at another
+     * extension's and a booting extension sees registries nobody will add to any more. A provider reaches
+     * nothing but the services named in `$allowedServices`, and the event registrar among them is wrapped
+     * before it is handed over, so its listeners stop firing if the extension later loses trust. Template
+     * entries additionally claim their surface or their sites, and any entry may add view directories.
+     *
+     * @param   array<string, object>             $allowedServices  Host services every provider may
+     *          resolve, keyed by the identifier it resolves them under.
+     * @param   ExtensionContributionRegistrySet  $contributions    Registries, already carrying the core
+     *          contributions, that extension contributions are added to.
+     *
+     * @return  ActiveExtensionSet  The loaded extensions, contributed and booted, ready to declare routes.
+     *
+     * @throws  RuntimeException  When the publication fails verification, an entry is malformed or names
+     *          a provider that cannot be loaded, or a path in it is missing, symbolic, or escapes storage.
+     * @throws  InvalidArgumentException  When a compiled extension root is not a `vendor/name/version`
+     *          path, an identifier in the map is not a valid extension identifier, or a provider's
+     *          registrations do not match the contributions its manifest declared.
+     * @throws  \LogicException  When two entries claim the same theme surface or site, or an entry's
+     *          manifest schema and provider contract disagree.
+     * @throws  \Kumwe\CMS\BusinessDefinition\Domain\InvalidBusinessDefinition  When the business
+     *          definitions the loaded extensions contribute do not validate as one graph.
+     *
+     * @since   2.0.0
+     */
     public function load(
         array $allowedServices,
         ExtensionContributionRegistrySet $contributions,
@@ -163,6 +219,24 @@ final readonly class ExtensionRuntimeLoader
         return $active;
     }
 
+    /**
+     * Offer an extension's view directory for one surface to the active set, when it ships one.
+     *
+     * A missing directory is normal and is passed over silently; a symbolic link in its place is not,
+     * because it would let a package published inside extension storage render templates from anywhere
+     * on the filesystem.
+     *
+     * @param   ActiveExtensionSet  $active      Set collecting the runtime surfaces of this load.
+     * @param   ThemeSurface        $surface     Surface whose view directory is being looked for.
+     * @param   string              $identifier  Extension the views would be namespaced under.
+     * @param   string              $root        Resolved root of that extension on disk.
+     *
+     * @return  void
+     *
+     * @throws  RuntimeException  When the view path is a symbolic link rather than a real directory.
+     *
+     * @since   2.0.0
+     */
     private function addExtensionViews(
         ActiveExtensionSet $active,
         ThemeSurface $surface,
@@ -178,6 +252,26 @@ final readonly class ExtensionRuntimeLoader
         }
     }
 
+    /**
+     * Resolve a map-supplied extension root to a real directory inside extension storage.
+     *
+     * The map is signed, but it is still generated from package metadata, so the path is treated as
+     * untrusted input: it has to be a plain `vendor/name/version` triple, it has to resolve inside the
+     * configured storage root, and no segment of it may be a symbolic link. The segment walk is the part
+     * containment alone does not cover — `realpath()` resolves links before the containment test, so a
+     * link pointing at another directory inside storage would otherwise pass as a legitimate root.
+     *
+     * @param   string  $relativeRoot  Extension root as written in the compiled map, relative to storage.
+     *
+     * @return  string  Canonical absolute path of the extension root, with no symbolic link on the way.
+     *
+     * @throws  InvalidArgumentException  When the value is not a `vendor/name/version` path or contains a
+     *          parent-directory segment.
+     * @throws  RuntimeException  When the directory is missing, resolves outside extension storage, or a
+     *          segment of the path is a symbolic link.
+     *
+     * @since   2.0.0
+     */
     private function safeRoot(string $relativeRoot): string
     {
         if (
@@ -210,7 +304,26 @@ final readonly class ExtensionRuntimeLoader
         return $resolvedRoot;
     }
 
-    /** @param array<mixed> $autoload */
+    /**
+     * Register one class autoloader per declared prefix, rooted inside the extension's own directory.
+     *
+     * A prefix's directory is proven before its autoloader is registered, so a malformed declaration
+     * fails the load rather than a later class resolution. The registered closure re-checks the file it
+     * is about to require every time it runs — a path that turned into a symbolic link or resolved
+     * outside the base directory after boot raises `RuntimeException` at that point, from whichever
+     * request first touched the class.
+     *
+     * @param   string        $root      Resolved root of the extension the prefixes belong to.
+     * @param   array<mixed>  $autoload  Compiled autoload declarations, mapping a class-name prefix to a
+     *          source directory relative to the extension root.
+     *
+     * @return  void
+     *
+     * @throws  RuntimeException  When an entry is not a string-to-string pair, or its directory is
+     *          missing, is reached through a symbolic link, or escapes the extension root.
+     *
+     * @since   2.0.0
+     */
     private function registerAutoload(string $root, array $autoload): void
     {
         foreach ($autoload as $prefix => $relativePath) {

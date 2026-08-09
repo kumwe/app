@@ -37,8 +37,59 @@ use Kumwe\CMS\Site\Application\SiteSettings;
 use Kumwe\CMS\Identity\Domain\UserStatus;
 use Psr\Clock\ClockInterface;
 
+/**
+ * The whole MCP surface: one guarded method for every tool, resource and prompt the catalogue advertises.
+ *
+ * `KumweMcpServerFactory` binds each catalogue entry to a method here by name, so this class is where a
+ * tool call from an MCP client becomes a call into the same application services the REST API and the
+ * administrator use — never into a repository directly. Three things hold for every entry. The caller's
+ * capability is checked before any work starts; a write is additionally pre-authorized against the one
+ * resource it names, so the decision is recorded before anything happens; and the write then runs inside
+ * `McpMutationGuard`, so a tool call that a flaky transport retries cannot apply twice. Failures raised by
+ * the services below — not found, version conflict, validation — travel outward unchanged, which is what
+ * keeps an agent's refusal identical to the equivalent REST call's.
+ *
+ * Instances are immutable and start out unbound, refusing everything. `forContext()` binds one request's
+ * actor for the HTTP transport; `forCredential()` binds a retained token for the long-lived stdio
+ * transport and re-proves it on every access. A bound copy never carries both.
+ *
+ * @since  2.0.0
+ */
 final readonly class KumweMcpHandlers
 {
+    /**
+     * Wire the application services, the catalogue, and the two guards every tool runs behind.
+     *
+     * The container builds one unbound instance: neither identity argument is supplied, so every tool refuses
+     * until `forContext()` or `forCredential()` hands back a bound copy.
+     *
+     * @param  McpCapabilityCatalog          $catalog           Tools, resources and prompts this release exposes,
+     *         as published by `discover()` and the capability resource.
+     * @param  ContentService                $content           Content entries behind the `kumwe_content_*` tools.
+     * @param  NavigationService             $navigation        Menus and menu items behind the `kumwe_menu_*` tools.
+     * @param  AccessControlService          $access            Users, roles, capabilities and token metadata.
+     * @param  SiteSettings                  $settings          The site settings document, read and replaced whole.
+     * @param  ExtensionManager              $extensions        Extension activation, disabling and removal.
+     * @param  TrustStore                    $trust             Extension signing keys, and the installation-wide
+     *         lifecycle lock the trust and extension writes are taken under.
+     * @param  AdministratorIdentityGateway  $identity          Mints the replacement secret a rotation returns.
+     * @param  AutomationManagementService   $automation        Schedules and jobs behind the automation tools.
+     * @param  BusinessDefinitionService     $definitions       Business entity definition drafts and versions.
+     * @param  BusinessSchemaService         $schema            Schema plans and their approval and execution.
+     * @param  McpMutationGuard              $mutations         Idempotency fence every write is run through.
+     * @param  ClockInterface                $clock             Supplies the first-run instant a new schedule is
+     *         anchored to.
+     * @param  AuthorizationGateway          $authorization     Judges each write against the resource it names,
+     *         before the fence is entered.
+     * @param  TokenRotationPreauthorizer    $tokenRotation     The rotation-specific check `rotateToken()` clears
+     *         in place of the ordinary pre-authorization.
+     * @param  ?ExecutionContext             $executionContext  Actor bound by `forContext()`; null while the
+     *         instance is unbound.
+     * @param  ?Closure                      $contextRefresh    Callback bound by `forCredential()` that
+     *         re-verifies the retained token and mints a fresh context; null when no credential is retained.
+     *
+     * @since  2.0.0
+     */
     public function __construct(
         private McpCapabilityCatalog $catalog,
         private ContentService $content,
@@ -60,6 +111,19 @@ final readonly class KumweMcpHandlers
     ) {
     }
 
+    /**
+     * Bind these handlers to one request's already-authenticated actor.
+     *
+     * The HTTP transport calls this per request, so every tool the session reaches runs as that request's
+     * principal and is audited under it. Any retained stdio credential is dropped from the copy: a context
+     * handed in here is the whole identity.
+     *
+     * @param   ExecutionContext  $context  Actor, site and provenance the copy's tools run under.
+     *
+     * @return  self  A copy carrying the same collaborators, bound to this context.
+     *
+     * @since   2.0.0
+     */
     public function forContext(ExecutionContext $context): self
     {
         return new self(
@@ -82,7 +146,26 @@ final readonly class KumweMcpHandlers
         );
     }
 
-    /** Bind a retained stdio credential that is reverified before every protected handler access. */
+    /**
+     * Bind a retained stdio credential that is reverified before every protected handler access.
+     *
+     * The stdio server outlives any single request, so the token is not resolved once at start-up: the closure
+     * stored here re-runs `AccessTokenVerifier::verify()` on every context lookup, which is what makes a
+     * revoked, expired or re-scoped token stop the very next tool call rather than the next process. Each
+     * refresh mints a fresh random request identifier, so calls made in one long session stay apart in the
+     * audit trail.
+     *
+     * @param   AccessTokenVerifier  $tokens          Verifier the retained token is presented to again.
+     * @param   string               $token           Bearer credential the stdio session was opened with.
+     * @param   string               $siteIdentifier  Site the token is presented against; normalised here, so
+     *          verification and every tool agree on one spelling.
+     *
+     * @return  self  A copy that resolves its actor from the credential on every protected access.
+     *
+     * @throws  InvalidArgumentException  When the site identifier is not a usable site name.
+     *
+     * @since   2.0.0
+     */
     public function forCredential(
         AccessTokenVerifier $tokens,
         string $token,
@@ -121,13 +204,37 @@ final readonly class KumweMcpHandlers
         );
     }
 
-    /** @return array<string, string|list<string>> */
+    /**
+     * Publish the names of everything this release exposes over MCP.
+     *
+     * The only tool that checks no capability of its own, so a client can learn the shape of the surface it
+     * may then be refused parts of. Names only: no schemas, and nothing about the caller.
+     *
+     * @return  array<string, string|list<string>>  The `product` and `mode` strings, plus tool names under
+     *          `tools`, resource URIs under `resources` and prompt names under `prompts`.
+     *
+     * @since   2.0.0
+     */
     public function discover(): array
     {
         return $this->catalog->publicSummary();
     }
 
-    /** @return array{items: list<array<string, mixed>>} */
+    /**
+     * List the content entries of the caller's site that the caller may read.
+     *
+     * The service's default page size applies, so at most one hundred readable entries come back; this is a
+     * survey tool, not an export. A short result means the store ran out, never that permission trimmed it.
+     *
+     * @param   bool  $includeDeleted  Whether trashed entries join the result.
+     *
+     * @return  array{items: list<array<string, mixed>>}  Serialised records under `items`, most recently
+     *          updated first.
+     *
+     * @throws  InsufficientCapability  When no principal is bound, or it does not hold `content.read`.
+     *
+     * @since   2.0.0
+     */
     public function listContent(bool $includeDeleted = false): array
     {
         $this->require('content.read');
@@ -139,8 +246,31 @@ final readonly class KumweMcpHandlers
     }
 
     /**
-     * @param array<string, mixed> $data
-     * @return array<string, mixed>
+     * Create a draft page and return the record as stored.
+     *
+     * `$body` is a convenience for the ordinary single-field page: it is used only while `$data` is empty, and
+     * any non-empty `$data` is stored instead of it rather than merged with it.
+     *
+     * @param   string                $operationId  Idempotency key this write is fenced on.
+     * @param   string                $title        Human-readable title of the new entry.
+     * @param   string                $slug         URL segment the entry becomes reachable at in its site.
+     * @param   string                $body         Page body, used only while `$data` is empty.
+     * @param   ?string               $contentType  Content type to create under, or null for the core page type.
+     * @param   array<string, mixed>  $data         Field values for that type; when empty, `$body` is stored
+     *          under a `body` key instead.
+     *
+     * @return  array<string, mixed>  The stored record, carrying the identifier and version a later update
+     *          has to quote back.
+     *
+     * @throws  InsufficientCapability  When no principal is bound, or it does not hold `content.create`.
+     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When policy refuses `content.create` on the
+     *          content collection.
+     * @throws  InvalidArgumentException  When the operation identifier is malformed, or was already used for this
+     *          operation with different arguments.
+     * @throws  \RuntimeException  When another attempt still holds the lease on this identifier, or the lease is lost
+     *          before the write completes.
+     *
+     * @since   2.0.0
      */
     public function createContent(
         string $operationId,
@@ -165,8 +295,33 @@ final readonly class KumweMcpHandlers
     }
 
     /**
-     * @param array<string, mixed> $data
-     * @return array<string, mixed>
+     * Replace a page's title, slug and fields at an expected version.
+     *
+     * The version is the concurrency check: a client that read an entry, thought about it, and wrote it back
+     * is refused if someone else wrote in between, instead of silently discarding that edit. As with creation,
+     * `$body` applies only while `$data` is empty.
+     *
+     * @param   string                $operationId  Idempotency key this write is fenced on.
+     * @param   string                $id           UUID of the entry to rewrite.
+     * @param   int                   $version      Version the caller last read; the stored entry must still
+     *          be at it.
+     * @param   string                $title        Replacement title.
+     * @param   string                $slug         Replacement URL segment.
+     * @param   string                $body         Page body, used only while `$data` is empty.
+     * @param   array<string, mixed>  $data         Replacement field values; when empty, `$body` is stored
+     *          under a `body` key instead.
+     *
+     * @return  array<string, mixed>  The stored record with its version incremented.
+     *
+     * @throws  InsufficientCapability  When no principal is bound, or it does not hold `content.update`.
+     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When policy refuses `content.update` on this
+     *          entry.
+     * @throws  InvalidArgumentException  When the operation identifier is malformed, or was already used for this
+     *          operation with different arguments.
+     * @throws  \RuntimeException  When another attempt still holds the lease on this identifier, or the lease is lost
+     *          before the write completes.
+     *
+     * @since   2.0.0
      */
     public function updateContent(
         string $operationId,
@@ -192,7 +347,32 @@ final readonly class KumweMcpHandlers
         )->toArray());
     }
 
-    /** @return array<string, mixed> */
+    /**
+     * Move a content entry to another workflow state, under the capability that particular move demands.
+     *
+     * Unlike every other write here, the capability is not fixed: it is resolved from the entry's own workflow
+     * first, so publishing asks for a publish capability while an installation-defined state asks for whatever
+     * its edge declares. Resolving it reads the entry under `content.read` first, so an entry this caller
+     * cannot see, or a move the workflow does not declare, is refused before the transition is ever
+     * authorized.
+     *
+     * @param   string  $operationId  Idempotency key this write is fenced on.
+     * @param   string  $id           UUID of the entry to move.
+     * @param   int     $version      Version the caller last read; the stored entry must still be at it.
+     * @param   string  $status       State key to move to, spelled as the workflow in force spells it.
+     *
+     * @return  array<string, mixed>  The stored record in its new state, with its version incremented.
+     *
+     * @throws  InsufficientCapability  When no principal is bound to these handlers.
+     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When policy refuses the resolved transition
+     *          capability on this entry.
+     * @throws  InvalidArgumentException  When the operation identifier is malformed, or was already used for this
+     *          operation with different arguments.
+     * @throws  \RuntimeException  When another attempt still holds the lease on this identifier, or the lease is lost
+     *          before the write completes.
+     *
+     * @since   2.0.0
+     */
     public function transitionContent(string $operationId, string $id, int $version, string $status): array
     {
         $target = $status;
@@ -212,7 +392,28 @@ final readonly class KumweMcpHandlers
         )->toArray());
     }
 
-    /** @return array<string, mixed> */
+    /**
+     * Move a content entry to the trash at an expected version.
+     *
+     * Reversible: the row and its version line survive, `restoreContent()` brings the entry back, and until
+     * then it is absent from listings that do not ask for deleted entries.
+     *
+     * @param   string  $operationId  Idempotency key this write is fenced on.
+     * @param   string  $id           UUID of the entry to trash.
+     * @param   int     $version      Version the caller last read; the stored entry must still be at it.
+     *
+     * @return  array<string, mixed>  The stored record in its trashed state.
+     *
+     * @throws  InsufficientCapability  When no principal is bound, or it does not hold `content.delete`.
+     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When policy refuses `content.delete` on this
+     *          entry.
+     * @throws  InvalidArgumentException  When the operation identifier is malformed, or was already used for this
+     *          operation with different arguments.
+     * @throws  \RuntimeException  When another attempt still holds the lease on this identifier, or the lease is lost
+     *          before the write completes.
+     *
+     * @since   2.0.0
+     */
     public function trashContent(string $operationId, string $id, int $version): array
     {
         $this->require('content.delete');
@@ -226,7 +427,25 @@ final readonly class KumweMcpHandlers
         );
     }
 
-    /** @return array<string, mixed> */
+    /**
+     * Bring a trashed content entry back into the live listing at an expected version.
+     *
+     * @param   string  $operationId  Idempotency key this write is fenced on.
+     * @param   string  $id           UUID of the trashed entry to restore.
+     * @param   int     $version      Version the caller last read; the stored entry must still be at it.
+     *
+     * @return  array<string, mixed>  The stored record in the state it is restored to.
+     *
+     * @throws  InsufficientCapability  When no principal is bound, or it does not hold `content.restore`.
+     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When policy refuses `content.restore` on this
+     *          entry.
+     * @throws  InvalidArgumentException  When the operation identifier is malformed, or was already used for this
+     *          operation with different arguments.
+     * @throws  \RuntimeException  When another attempt still holds the lease on this identifier, or the lease is lost
+     *          before the write completes.
+     *
+     * @since   2.0.0
+     */
     public function restoreContent(string $operationId, string $id, int $version): array
     {
         $this->require('content.restore');
@@ -240,7 +459,15 @@ final readonly class KumweMcpHandlers
         );
     }
 
-    /** @return array{items: list<array<string, mixed>>} */
+    /**
+     * List the navigation menus of the caller's site.
+     *
+     * @return  array{items: list<array<string, mixed>>}  Serialised menus under `items`.
+     *
+     * @throws  InsufficientCapability  When no principal is bound, or it does not hold `navigation.manage`.
+     *
+     * @since   2.0.0
+     */
     public function listMenus(): array
     {
         $this->require('navigation.manage');
@@ -251,7 +478,25 @@ final readonly class KumweMcpHandlers
         )];
     }
 
-    /** @return array<string, mixed> */
+    /**
+     * Create an empty navigation menu.
+     *
+     * @param   string  $operationId  Idempotency key this write is fenced on.
+     * @param   string  $handle       Stable machine handle that templates and settings refer to the menu by.
+     * @param   string  $title        Operator-facing label for the menu.
+     *
+     * @return  array<string, mixed>  The stored menu, carrying the identifier its items are created against.
+     *
+     * @throws  InsufficientCapability  When no principal is bound, or it does not hold `navigation.manage`.
+     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When policy refuses `navigation.manage` on the
+     *          menu collection.
+     * @throws  InvalidArgumentException  When the operation identifier is malformed, or was already used for this
+     *          operation with different arguments.
+     * @throws  \RuntimeException  When another attempt still holds the lease on this identifier, or the lease is lost
+     *          before the write completes.
+     *
+     * @since   2.0.0
+     */
     public function createMenu(string $operationId, string $handle, string $title): array
     {
         $this->require('navigation.manage');
@@ -266,7 +511,20 @@ final readonly class KumweMcpHandlers
         )->toArray());
     }
 
-    /** @return array{items: list<array<string, mixed>>} */
+    /**
+     * List the items of one menu.
+     *
+     * Every item carries its materialised path and its parent, so a client can rebuild the tree from this one
+     * call rather than walking parents.
+     *
+     * @param   string  $menuId  UUID of the menu whose items are wanted.
+     *
+     * @return  array{items: list<array<string, mixed>>}  Serialised items under `items`.
+     *
+     * @throws  InsufficientCapability  When no principal is bound, or it does not hold `navigation.manage`.
+     *
+     * @since   2.0.0
+     */
     public function listMenuItems(string $menuId): array
     {
         $this->require('navigation.manage');
@@ -276,7 +534,20 @@ final readonly class KumweMcpHandlers
         )];
     }
 
-    /** @return array<string, mixed> */
+    /**
+     * Read one menu item, including the target it resolves to.
+     *
+     * Worth calling before an update: `updateMenuItem()` merges against the stored item, so this is how a
+     * client learns what it is about to keep.
+     *
+     * @param   string  $id  UUID of the item to read.
+     *
+     * @return  array<string, mixed>  The stored item, carrying its path, parent, version and typed target.
+     *
+     * @throws  InsufficientCapability  When no principal is bound, or it does not hold `navigation.manage`.
+     *
+     * @since   2.0.0
+     */
     public function getMenuItem(string $id): array
     {
         $this->require('navigation.manage');
@@ -284,7 +555,35 @@ final readonly class KumweMcpHandlers
         return $this->navigation->item($this->context(), $id)->toArray();
     }
 
-    /** @return array<string, mixed> */
+    /**
+     * Create a menu item under a menu, optionally beneath an existing item.
+     *
+     * The optional fields are declared as plain strings in the tool schema, so an empty string is how a
+     * client says "none" here: an empty parent puts the item at the menu root, and an empty target field
+     * leaves that part of the target unset.
+     *
+     * @param   string  $operationId  Idempotency key this write is fenced on.
+     * @param   string  $menuId       UUID of the menu the item belongs to; items never move between menus.
+     * @param   string  $title        Label the navigation renders for this item.
+     * @param   string  $slug         URL segment this item contributes to its path.
+     * @param   int     $position     Sort order among siblings; lower values render first.
+     * @param   string  $parentId     UUID of the parent item, or empty for a root-level item.
+     * @param   string  $targetType   What the item points at — `content`, `anchor` or `url` — or empty.
+     * @param   string  $contentId    Content the item resolves to for a content or anchor target, or empty.
+     * @param   string  $targetUrl    Anchor fragment or external link, or empty.
+     *
+     * @return  array<string, mixed>  The stored item, with the path resolved from its parent and slug.
+     *
+     * @throws  InsufficientCapability  When no principal is bound, or it does not hold `navigation.manage`.
+     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When policy refuses `navigation.manage` on
+     *          this menu.
+     * @throws  InvalidArgumentException  When the operation identifier is malformed, or was already used for this
+     *          operation with different arguments.
+     * @throws  \RuntimeException  When another attempt still holds the lease on this identifier, or the lease is lost
+     *          before the write completes.
+     *
+     * @since   2.0.0
+     */
     public function createMenuItem(
         string $operationId,
         string $menuId,
@@ -327,7 +626,42 @@ final readonly class KumweMcpHandlers
         );
     }
 
-    /** @return array<string, mixed> */
+    /**
+     * Update a menu item's label, placement and target at an expected version.
+     *
+     * The optional arguments are merged against the stored item rather than applied blindly, which is what
+     * lets a client rename an item without restating its whole target: null falls back to the stored value
+     * and an empty string clears it. The target triple moves as a unit — supplying any one of `$targetType`,
+     * `$contentId` or `$targetUrl` rewrites all three from that merge, and supplying none leaves the stored
+     * target alone. A move also rewrites every descendant's path and bumps their versions, so a client
+     * holding a child copy has to re-read it.
+     *
+     * @param   string   $operationId  Idempotency key this write is fenced on.
+     * @param   string   $id           UUID of the item to update.
+     * @param   int      $version      Version the caller last read; the stored item must still be at it.
+     * @param   string   $title        Replacement label.
+     * @param   string   $slug         Replacement URL segment.
+     * @param   ?int     $position     Replacement sort order, or null to keep the stored one.
+     * @param   ?string  $parentId     New parent, empty to move the item to the root, or null to keep the
+     *          stored parent.
+     * @param   ?string  $targetType   `content`, `anchor` or `url`; null falls back to the stored type.
+     * @param   ?string  $contentId    Replacement content target, empty to clear it, null to fall back to
+     *          the stored one.
+     * @param   ?string  $targetUrl    Replacement fragment or link, empty to clear it, null to fall back to
+     *          the stored one.
+     *
+     * @return  array<string, mixed>  The stored item, with its version incremented and its path re-resolved.
+     *
+     * @throws  InsufficientCapability  When no principal is bound, or it does not hold `navigation.manage`.
+     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When policy refuses `navigation.manage` on
+     *          this item.
+     * @throws  InvalidArgumentException  When the operation identifier is malformed, or was already used for this
+     *          operation with different arguments.
+     * @throws  \RuntimeException  When another attempt still holds the lease on this identifier, or the lease is lost
+     *          before the write completes.
+     *
+     * @since   2.0.0
+     */
     public function updateMenuItem(
         string $operationId,
         string $id,
@@ -380,7 +714,25 @@ final readonly class KumweMcpHandlers
         );
     }
 
-    /** @return array{deleted: bool} */
+    /**
+     * Delete one menu item at an expected version.
+     *
+     * @param   string  $operationId  Idempotency key this write is fenced on.
+     * @param   string  $id           UUID of the item to delete.
+     * @param   int     $version      Version the caller last read; the stored item must still be at it.
+     *
+     * @return  array{deleted: bool}  Always `deleted: true`; a refusal arrives as an exception, never as false.
+     *
+     * @throws  InsufficientCapability  When no principal is bound, or it does not hold `navigation.manage`.
+     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When policy refuses `navigation.manage` on
+     *          this item.
+     * @throws  InvalidArgumentException  When the operation identifier is malformed, or was already used for this
+     *          operation with different arguments.
+     * @throws  \RuntimeException  When another attempt still holds the lease on this identifier, or the lease is lost
+     *          before the write completes.
+     *
+     * @since   2.0.0
+     */
     public function deleteMenuItem(string $operationId, string $id, int $version): array
     {
         $this->require('navigation.manage');
@@ -399,7 +751,15 @@ final readonly class KumweMcpHandlers
         );
     }
 
-    /** @return array<string, mixed> */
+    /**
+     * Read the site settings document as an administrator.
+     *
+     * @return  array<string, mixed>  Every public setting key, with defaults filled in for keys never stored.
+     *
+     * @throws  InsufficientCapability  When no principal is bound, or it does not hold `settings.manage`.
+     *
+     * @since   2.0.0
+     */
     public function getSettings(): array
     {
         $this->require('settings.manage');
@@ -408,8 +768,32 @@ final readonly class KumweMcpHandlers
     }
 
     /**
-     * @param array<string, mixed> $presentation
-     * @return array<string, mixed>
+     * Replace the site settings document with the supplied values.
+     *
+     * This is a whole-document write rather than a patch: the tool schema demands every managed key, and the
+     * result is validated as a unit because the keys constrain one another — the nominated homepage and
+     * primary menu have to exist in this site. A rejected value therefore leaves the previous document intact.
+     *
+     * @param   string                $operationId            Idempotency key this write is fenced on.
+     * @param   string                $siteName               Display name shown in page chrome and titles.
+     * @param   string                $homepageContentId      UUID of the entry served as the homepage.
+     * @param   string                $defaultLocale          Locale the site falls back to.
+     * @param   string                $timezone               Timezone site-facing dates are rendered in.
+     * @param   bool                  $searchIndexingEnabled  Whether the site may be indexed by search engines.
+     * @param   array<string, mixed>  $presentation           Theme document: logo, footer, menus, button and
+     *          header styling, and the colour schemes the site may render with.
+     *
+     * @return  array<string, mixed>  The settings document as it stands after the write.
+     *
+     * @throws  InsufficientCapability  When no principal is bound, or it does not hold `settings.manage`.
+     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When policy refuses `settings.manage` on this
+     *          site.
+     * @throws  InvalidArgumentException  When the operation identifier is malformed, or was already used for this
+     *          operation with different arguments.
+     * @throws  \RuntimeException  When another attempt still holds the lease on this identifier, or the lease is lost
+     *          before the write completes.
+     *
+     * @since   2.0.0
      */
     public function updateSettings(
         string $operationId,
@@ -448,7 +832,18 @@ final readonly class KumweMcpHandlers
         );
     }
 
-    /** @return array{items: list<array<string, mixed>>} */
+    /**
+     * List the users this credential may manage.
+     *
+     * Rows are filtered one by one rather than the whole call being refused, so an administrator scoped to
+     * part of the installation sees a shorter list instead of an error.
+     *
+     * @return  array{items: list<array<string, mixed>>}  Visible users under `items`, each with its roles.
+     *
+     * @throws  InsufficientCapability  When no principal is bound, or it does not hold `users.manage`.
+     *
+     * @since   2.0.0
+     */
     public function listUsers(): array
     {
         $this->require('users.manage');
@@ -457,10 +852,19 @@ final readonly class KumweMcpHandlers
     }
 
     /**
-     * @return array{
-     *   items: list<array<string, mixed>>,
-     *   capabilities: list<array{code: string, description: string}>
-     * }
+     * List the manageable roles together with the capability vocabulary a grant may name.
+     *
+     * The two travel in one response because a client cannot compose a role without knowing which capability
+     * codes exist, and this surface offers no second call for them.
+     *
+     * @return  array{
+     *            items: list<array<string, mixed>>,
+     *            capabilities: list<array{code: string, description: string}>
+     *          }
+     *
+     * @throws  InsufficientCapability  When no principal is bound, or it does not hold `users.manage`.
+     *
+     * @since   2.0.0
      */
     public function listRoles(): array
     {
@@ -469,7 +873,34 @@ final readonly class KumweMcpHandlers
         return ['items' => $this->access->roles($context), 'capabilities' => $this->access->capabilities($context)];
     }
 
-    /** @return array{updated: bool} */
+    /**
+     * Update a user's address, display name and account status at an expected version.
+     *
+     * Two guards stand in front of the write: an actor may not move its own account to a status that cannot
+     * sign in, and the requested status has to be a legal move from the one currently stored. The user's
+     * security epoch advances as the edit lands, so every token issued before it stops verifying — editing an
+     * account is also a credential revocation.
+     *
+     * @param   string  $operationId  Idempotency key this write is fenced on.
+     * @param   string  $id           UUID of the user to update.
+     * @param   int     $version      Version the caller last read; the stored user must still be at it.
+     * @param   string  $email        Replacement address for the account.
+     * @param   string  $displayName  Replacement human-readable name.
+     * @param   string  $status       Account state to store: `pending`, `active`, `suspended` or `disabled`.
+     *
+     * @return  array{updated: bool}  Always `updated: true`; a refusal arrives as an exception.
+     *
+     * @throws  InsufficientCapability  When no principal is bound, or it does not hold `users.manage`.
+     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When policy refuses `users.manage` on this
+     *          user.
+     * @throws  \ValueError  When the status is not one of the stored account states.
+     * @throws  InvalidArgumentException  When the operation identifier is malformed, or was already used for this
+     *          operation with different arguments.
+     * @throws  \RuntimeException  When another attempt still holds the lease on this identifier, or the lease is lost
+     *          before the write completes.
+     *
+     * @since   2.0.0
+     */
     public function updateUser(
         string $operationId,
         string $id,
@@ -499,7 +930,27 @@ final readonly class KumweMcpHandlers
         );
     }
 
-    /** @return array{id: string} */
+    /**
+     * Create a permission role, initially conferring nothing.
+     *
+     * Capabilities are attached separately, so a role created here is inert until it is granted something.
+     *
+     * @param   string  $operationId  Idempotency key this write is fenced on.
+     * @param   string  $code         Stable machine code assignments refer to the role by.
+     * @param   string  $name         Operator-facing label for the role.
+     *
+     * @return  array{id: string}  UUID of the stored role, under `id`.
+     *
+     * @throws  InsufficientCapability  When no principal is bound, or it does not hold `users.manage`.
+     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When policy refuses `users.manage` on the role
+     *          collection.
+     * @throws  InvalidArgumentException  When the operation identifier is malformed, or was already used for this
+     *          operation with different arguments.
+     * @throws  \RuntimeException  When another attempt still holds the lease on this identifier, or the lease is lost
+     *          before the write completes.
+     *
+     * @since   2.0.0
+     */
     public function createRole(string $operationId, string $code, string $name): array
     {
         $this->require('users.manage');
@@ -513,7 +964,18 @@ final readonly class KumweMcpHandlers
         );
     }
 
-    /** @return array{items: list<array<string, mixed>>} */
+    /**
+     * List the API token metadata issued for the caller's site.
+     *
+     * Metadata only. A token's plaintext exists solely in the response that minted it, so nothing here can be
+     * replayed as a credential.
+     *
+     * @return  array{items: list<array<string, mixed>>}  Token rows under `items`, newest first.
+     *
+     * @throws  InsufficientCapability  When no principal is bound, or it does not hold `users.manage`.
+     *
+     * @since   2.0.0
+     */
     public function listTokens(): array
     {
         $this->require('users.manage');
@@ -521,7 +983,24 @@ final readonly class KumweMcpHandlers
         return ['items' => $this->access->tokens($this->context('tokens-list'))];
     }
 
-    /** @return array{revoked: bool} */
+    /**
+     * Revoke one API or MCP token immediately.
+     *
+     * @param   string  $operationId  Idempotency key this write is fenced on.
+     * @param   string  $tokenId      UUID of the token to kill.
+     *
+     * @return  array{revoked: bool}  Always `revoked: true`; a refusal arrives as an exception.
+     *
+     * @throws  InsufficientCapability  When no principal is bound, or it does not hold `users.manage`.
+     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When policy refuses `users.manage` on this
+     *          token.
+     * @throws  InvalidArgumentException  When the operation identifier is malformed, or was already used for this
+     *          operation with different arguments.
+     * @throws  \RuntimeException  When another attempt still holds the lease on this identifier, or the lease is lost
+     *          before the write completes.
+     *
+     * @since   2.0.0
+     */
     public function revokeToken(string $operationId, string $tokenId): array
     {
         $this->require('users.manage');
@@ -540,7 +1019,35 @@ final readonly class KumweMcpHandlers
         );
     }
 
-    /** @return array<string, mixed> */
+    /**
+     * Replace a token and hand back the replacement secret exactly once.
+     *
+     * Rotation is authorized as a fresh issuance rather than as a copy: `TokenRotationPreauthorizer` puts the
+     * superseded token's subject and capabilities back through the delegation check, so authority the actor or
+     * the subject has since lost cannot be carried into the replacement. The write takes the guard's
+     * secret-once path, which means a replay of this operation identifier returns the stored result with the
+     * `token` key stripped — the new secret reaches only the call that actually performed the rotation.
+     *
+     * @param   string  $operationId  Idempotency key this write is fenced on.
+     * @param   string  $tokenId      UUID of the live token being replaced.
+     * @param   string  $name         Operator-facing label for the replacement.
+     * @param   string  $expiresAt    Expiry as a date string, or empty for the default lifetime.
+     *
+     * @return  array<string, mixed>  On the first run, the replacement's plaintext secret under `token` and
+     *          its identifier under `token_id`; on a replay, the same record without the secret.
+     *
+     * @throws  InsufficientCapability  When no principal is bound, or it does not hold `users.manage`.
+     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When policy refuses `users.manage` on this
+     *          token, or the replacement would carry authority the actor may not delegate.
+     * @throws  InvalidArgumentException  When the token is not live, belongs to another site, its subject
+     *          changed during authorization, or the operation identifier is malformed or reused with
+     *          different arguments.
+     * @throws  \DateMalformedStringException  When the expiry is not a readable date string.
+     * @throws  \RuntimeException  When another attempt still holds the lease on this identifier, or the
+     *          lease is lost before the write completes.
+     *
+     * @since   2.0.0
+     */
     public function rotateToken(
         string $operationId,
         string $tokenId,
@@ -563,7 +1070,30 @@ final readonly class KumweMcpHandlers
         );
     }
 
-    /** @return array{revoked: int} */
+    /**
+     * Invalidate every token one user holds, in every site, by advancing their security epoch.
+     *
+     * The break-glass action for a compromised account: it reaches credentials this site never issued and
+     * cannot be undone, so the user has to be issued fresh ones afterwards. Reach for
+     * `revokeSubjectSiteTokens()` when only this site is affected.
+     *
+     * @param   string  $operationId  Idempotency key this write is fenced on.
+     * @param   string  $userId       UUID of the user whose credentials are being burned.
+     * @param   string  $reason       Operator-facing justification recorded with the revocation.
+     *
+     * @return  array{revoked: int}  How many live tokens were revoked, under `revoked`; zero when the
+     *          subject held none.
+     *
+     * @throws  InsufficientCapability  When no principal is bound, or it does not hold `users.manage`.
+     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When policy refuses `users.manage` on this
+     *          user.
+     * @throws  InvalidArgumentException  When the operation identifier is malformed, or was already used for this
+     *          operation with different arguments.
+     * @throws  \RuntimeException  When another attempt still holds the lease on this identifier, or the lease is lost
+     *          before the write completes.
+     *
+     * @since   2.0.0
+     */
     public function emergencyRevokeSubjectTokens(
         string $operationId,
         string $userId,
@@ -584,7 +1114,29 @@ final readonly class KumweMcpHandlers
         );
     }
 
-    /** @return array{revoked: int} */
+    /**
+     * Revoke every token one user holds in the caller's site, leaving their other sites alone.
+     *
+     * The site-scoped counterpart to `emergencyRevokeSubjectTokens()`, and the right tool for an off-boarding
+     * from one site. Authorization is asked against the site rather than the user, because the site is the
+     * boundary actually being cleared.
+     *
+     * @param   string  $operationId  Idempotency key this write is fenced on.
+     * @param   string  $userId       UUID of the user whose tokens for this site are withdrawn.
+     * @param   string  $reason       Operator-facing justification recorded with the revocation.
+     *
+     * @return  array{revoked: int}  How many of this site's tokens were revoked, under `revoked`.
+     *
+     * @throws  InsufficientCapability  When no principal is bound, or it does not hold `users.manage`.
+     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When policy refuses `users.manage` on this
+     *          site.
+     * @throws  InvalidArgumentException  When the operation identifier is malformed, or was already used for this
+     *          operation with different arguments.
+     * @throws  \RuntimeException  When another attempt still holds the lease on this identifier, or the lease is lost
+     *          before the write completes.
+     *
+     * @since   2.0.0
+     */
     public function revokeSubjectSiteTokens(string $operationId, string $userId, string $reason): array
     {
         $this->require('users.manage');
@@ -606,14 +1158,52 @@ final readonly class KumweMcpHandlers
         );
     }
 
-    /** @return array{items: list<array<string, mixed>>} */
+    /**
+     * List the extension signing keys and what still depends on each.
+     *
+     * Every row carries the active releases signed by that key, which is the number an operator needs before
+     * finalizing a rotation: a key with dependents cannot be retired yet.
+     *
+     * @return  array{items: list<array<string, mixed>>}  Key rows under `items`, each with its
+     *          `affected_extensions` list.
+     *
+     * @throws  InsufficientCapability  When no principal is bound, or it does not hold `extensions.manage`.
+     *
+     * @since   2.0.0
+     */
     public function listTrustKeys(): array
     {
         $this->require('extensions.manage');
         return ['items' => $this->trust->keys($this->context('trust-keys-list'))];
     }
 
-    /** @return array{updated: bool} */
+    /**
+     * Register a constrained, expiring Ed25519 key that may sign extension packages.
+     *
+     * Trust is never open-ended here: a key is admitted only for one vendor namespace, one extension name
+     * pattern and one expiry. The write is taken under the installation-wide extension lifecycle lock, so it
+     * cannot interleave with an install or activation that is verifying against the key set.
+     *
+     * @param   string  $operationId       Idempotency key this write is fenced on.
+     * @param   string  $keyId             Identifier package signatures name this key by.
+     * @param   string  $publicKeyBase64   Base64-encoded Ed25519 public key.
+     * @param   string  $vendorNamespace   Vendor whose packages this key is allowed to sign.
+     * @param   string  $extensionPattern  Extension name pattern the key is confined to.
+     * @param   string  $expiresAt         Expiry as a date string; a key is never admitted without one.
+     *
+     * @return  array{updated: bool}  Always `updated: true`; a refusal arrives as an exception.
+     *
+     * @throws  InsufficientCapability  When no principal is bound, or it does not hold `extensions.manage`.
+     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When policy refuses `extensions.manage` on the
+     *          trust key collection.
+     * @throws  InvalidArgumentException  When the identifier, key, namespace, pattern or expiry fails
+     *          validation, or the operation identifier is malformed or reused with different arguments.
+     * @throws  \DateMalformedStringException  When the expiry is not a readable date string.
+     * @throws  \RuntimeException  When another attempt still holds the lease on this identifier, or the
+     *          lease is lost before the write completes.
+     *
+     * @since   2.0.0
+     */
     public function addTrustKey(
         string $operationId,
         string $keyId,
@@ -654,7 +1244,38 @@ final readonly class KumweMcpHandlers
         );
     }
 
-    /** @return array{updated: bool} */
+    /**
+     * Add a replacement signing key while the key it supersedes stays valid.
+     *
+     * Rotation is deliberately two-step. This half only introduces the new key: the old one keeps verifying,
+     * so releases already installed under it continue to load. Finalizing is a separate call to
+     * `revokeTrustKey()` without `$emergency`, and it is refused until nothing installed still names the old
+     * key. The replacement has to preserve the superseded key's vendor namespace and extension pattern, so a
+     * rotation cannot quietly widen what the key is allowed to sign. Like every trust write, this runs under
+     * the extension lifecycle lock.
+     *
+     * @param   string  $operationId       Idempotency key this write is fenced on.
+     * @param   string  $oldKeyId          Identifier of the key being superseded; it must still be active.
+     * @param   string  $newKeyId          Identifier the replacement key is registered under.
+     * @param   string  $publicKeyBase64   Base64-encoded Ed25519 public key of the replacement.
+     * @param   string  $vendorNamespace   Vendor whose packages the replacement may sign.
+     * @param   string  $extensionPattern  Extension name pattern the replacement is confined to.
+     * @param   string  $expiresAt         Expiry of the replacement, as a date string.
+     *
+     * @return  array{updated: bool}  Always `updated: true`; a refusal arrives as an exception.
+     *
+     * @throws  InsufficientCapability  When no principal is bound, or it does not hold `extensions.manage`.
+     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When policy refuses `extensions.manage` on the
+     *          superseded key.
+     * @throws  InvalidArgumentException  When an argument fails validation, no active key carries the old
+     *          identifier, the replacement changes the namespace constraints, or the operation identifier is
+     *          malformed or reused with different arguments.
+     * @throws  \DateMalformedStringException  When the expiry is not a readable date string.
+     * @throws  \RuntimeException  When another attempt still holds the lease on this identifier, or the
+     *          lease is lost before the write completes.
+     *
+     * @since   2.0.0
+     */
     public function rotateTrustKey(
         string $operationId,
         string $oldKeyId,
@@ -706,7 +1327,35 @@ final readonly class KumweMcpHandlers
         );
     }
 
-    /** @return array<string, mixed> */
+    /**
+     * Finalize a rotation, or quarantine everything a compromised key ever signed.
+     *
+     * One tool with two very different outcomes, chosen by `$emergency`. Left false, this is the ordinary end
+     * of a rotation and is refused while any active release still depends on the key. Set true, the key is
+     * treated as compromised: every release it signed is quarantined at once, which takes those extensions out
+     * of service until they are re-signed. Both paths run under the extension lifecycle lock.
+     *
+     * @param   string  $operationId  Idempotency key this write is fenced on.
+     * @param   string  $keyId        Identifier of the key being retired or disowned.
+     * @param   string  $reason       Operator-facing justification recorded with the change.
+     * @param   bool    $emergency    True to quarantine the key's releases immediately, false to finalize a
+     *          completed rotation.
+     *
+     * @return  array<string, mixed>  For an emergency, the quarantined extension identifiers under
+     *          `quarantined`, empty when the key signed nothing still installed; for a finalization,
+     *          `updated: true`.
+     *
+     * @throws  InsufficientCapability  When no principal is bound, or it does not hold `extensions.manage`.
+     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When policy refuses `extensions.manage` on
+     *          this key.
+     * @throws  InvalidArgumentException  When the identifier or reason is rejected, no active key carries the
+     *          identifier, releases still depend on it, or the operation identifier is malformed or reused
+     *          with different arguments.
+     * @throws  \RuntimeException  When another attempt still holds the lease on this identifier, or the
+     *          lease is lost before the write completes.
+     *
+     * @since   2.0.0
+     */
     public function revokeTrustKey(
         string $operationId,
         string $keyId,
@@ -735,7 +1384,16 @@ final readonly class KumweMcpHandlers
         );
     }
 
-    /** @return array{items: list<array<string, mixed>>} */
+    /**
+     * List the installed extensions this credential may manage.
+     *
+     * @return  array{items: list<array<string, mixed>>}  Registry rows under `items`, each carrying the
+     *          extension's identifier, type and lifecycle status.
+     *
+     * @throws  InsufficientCapability  When no principal is bound, or it does not hold `extensions.manage`.
+     *
+     * @since   2.0.0
+     */
     public function listExtensions(): array
     {
         $this->require('extensions.manage');
@@ -743,7 +1401,33 @@ final readonly class KumweMcpHandlers
         return ['items' => $this->extensions->installed($this->context())];
     }
 
-    /** @return array<string, mixed> */
+    /**
+     * Activate an installed extension so the next compiled runtime map carries it.
+     *
+     * A template is activated onto one presentation surface at a time and so needs `$surface`; every other
+     * extension type leaves it unset. Taking over the administrator surface is the case that demands step-up
+     * authentication, because a broken administrator theme locks operators out: that change is refused unless
+     * the operator's current password comes with it. The whole activation is taken under the
+     * installation-wide extension lifecycle lock.
+     *
+     * @param   string   $operationId      Idempotency key this write is fenced on.
+     * @param   string   $identifier       `vendor/name` identifier of the installed extension.
+     * @param   ?string  $surface          `site` or `administrator` for a template; null or empty otherwise.
+     * @param   ?string  $currentPassword  The actor's current password, re-supplied when the change demands
+     *          step-up authentication; null when none is being offered.
+     *
+     * @return  array<string, mixed>  The registry row for the extension after the status change.
+     *
+     * @throws  InsufficientCapability  When no principal is bound, or it does not hold `extensions.manage`.
+     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When policy refuses `extensions.manage` on
+     *          this extension.
+     * @throws  InvalidArgumentException  When the surface is neither `site` nor `administrator`, or the
+     *          operation identifier is malformed or reused with different arguments.
+     * @throws  \RuntimeException  When another attempt still holds the lease on this identifier, or the
+     *          lease is lost before the write completes.
+     *
+     * @since   2.0.0
+     */
     public function activateExtension(
         string $operationId,
         string $identifier,
@@ -778,7 +1462,31 @@ final readonly class KumweMcpHandlers
         );
     }
 
-    /** @return array<string, mixed> */
+    /**
+     * Disable an installed extension so it stops contributing to the compiled runtime map.
+     *
+     * The reversible half of removal: the files stay on disk and the registry keeps the release, so
+     * `activateExtension()` can put it back. An extension currently serving the administrator theme still
+     * demands step-up authentication, since disabling it changes what the administration UI renders with. The
+     * change is taken under the extension lifecycle lock.
+     *
+     * @param   string   $operationId      Idempotency key this write is fenced on.
+     * @param   string   $identifier       `vendor/name` identifier of the installed extension.
+     * @param   ?string  $currentPassword  The actor's current password, re-supplied when the change demands
+     *          step-up authentication; null when none is being offered.
+     *
+     * @return  array<string, mixed>  The registry row for the extension after the status change.
+     *
+     * @throws  InsufficientCapability  When no principal is bound, or it does not hold `extensions.manage`.
+     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When policy refuses `extensions.manage` on
+     *          this extension.
+     * @throws  InvalidArgumentException  When the operation identifier is malformed, or was already used for this
+     *          operation with different arguments.
+     * @throws  \RuntimeException  When another attempt still holds the lease on this identifier, or the lease is lost
+     *          before the write completes.
+     *
+     * @since   2.0.0
+     */
     public function disableExtension(
         string $operationId,
         string $identifier,
@@ -800,7 +1508,30 @@ final readonly class KumweMcpHandlers
         );
     }
 
-    /** @return array{uninstalled: bool} */
+    /**
+     * Remove an extension from the registry and retire the files it was serving from.
+     *
+     * The one lifecycle change the registry cannot undo: the extension row and the capabilities its package
+     * contributed go with it. The runtime directory is retired rather than deleted outright, so processes
+     * still running an older compiled generation keep reading what they have until they drain.
+     *
+     * @param   string   $operationId      Idempotency key this write is fenced on.
+     * @param   string   $identifier       `vendor/name` identifier of the extension to remove.
+     * @param   ?string  $currentPassword  The actor's current password, re-supplied when the removal demands
+     *          step-up authentication; null when none is being offered.
+     *
+     * @return  array{uninstalled: bool}  Always `uninstalled: true`; a refusal arrives as an exception.
+     *
+     * @throws  InsufficientCapability  When no principal is bound, or it does not hold `extensions.manage`.
+     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When policy refuses `extensions.manage` on
+     *          this extension.
+     * @throws  InvalidArgumentException  When the operation identifier is malformed, or was already used for this
+     *          operation with different arguments.
+     * @throws  \RuntimeException  When another attempt still holds the lease on this identifier, or the lease is lost
+     *          before the write completes.
+     *
+     * @since   2.0.0
+     */
     public function uninstallExtension(
         string $operationId,
         string $identifier,
@@ -825,7 +1556,16 @@ final readonly class KumweMcpHandlers
         );
     }
 
-    /** @return array{items: list<array<string, mixed>>} */
+    /**
+     * List the recurring automation schedules of the caller's site.
+     *
+     * @return  array{items: list<array<string, mixed>>}  Schedule rows under `items`; empty when none is
+     *          manageable by this credential.
+     *
+     * @throws  InsufficientCapability  When no principal is bound, or it does not hold `automation.manage`.
+     *
+     * @since   2.0.0
+     */
     public function listSchedules(): array
     {
         $this->require('automation.manage');
@@ -833,14 +1573,52 @@ final readonly class KumweMcpHandlers
         return ['items' => $this->automation->schedules($this->context())];
     }
 
-    /** @return array{items: list<array<string, mixed>>} */
+    /**
+     * List the queued automation jobs this credential is allowed to see, most recent first.
+     *
+     * @param   int  $limit  Visible jobs to return; between 1 and 500.
+     *
+     * @return  array{items: list<array<string, mixed>>}  Job rows under `items`, most recent first; empty
+     *          when none is visible.
+     *
+     * @throws  InsufficientCapability  When no principal is bound, or it does not hold `automation.manage`.
+     * @throws  InvalidArgumentException  When the limit falls outside 1 to 500.
+     *
+     * @since   2.0.0
+     */
     public function listJobs(int $limit = 100): array
     {
         $this->require('automation.manage');
         return ['items' => $this->automation->jobs($this->context(), $limit)];
     }
 
-    /** @return array{id: string} */
+    /**
+     * Create a recurring automation schedule.
+     *
+     * The first run is anchored to this object's clock, so a schedule created now becomes due from now rather
+     * than from some implicit epoch. Occurrences are enqueued with an empty payload: a handler that needs
+     * arguments has to be configured somewhere other than this surface.
+     *
+     * @param   string  $operationId  Idempotency key this write is fenced on.
+     * @param   string  $name         Operator-facing label the schedule is listed under.
+     * @param   string  $cron         Five-field cron expression deciding when the schedule is due.
+     * @param   string  $jobType      Registered handler type each occurrence enqueues.
+     * @param   string  $timezone     Timezone the cron expression is evaluated in.
+     * @param   string  $queue        Queue name the enqueued jobs are placed on.
+     *
+     * @return  array{id: string}  UUID of the stored schedule, under `id`.
+     *
+     * @throws  InsufficientCapability  When no principal is bound, or it does not hold `automation.manage`.
+     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When policy refuses `automation.manage` on the
+     *          schedule collection.
+     * @throws  InvalidArgumentException  When no handler is registered for the job type, the cron expression
+     *          or timezone is rejected, or the operation identifier is malformed or reused with different
+     *          arguments.
+     * @throws  \RuntimeException  When another attempt still holds the lease on this identifier, or the
+     *          lease is lost before the write completes.
+     *
+     * @since   2.0.0
+     */
     public function createSchedule(
         string $operationId,
         string $name,
@@ -867,7 +1645,29 @@ final readonly class KumweMcpHandlers
         )]);
     }
 
-    /** @return array{updated: bool} */
+    /**
+     * Resume or suspend a schedule at an expected version.
+     *
+     * Suspension stops dispatch without losing the schedule, so an agent can quiet a misbehaving job and hand
+     * the decision to an operator instead of deleting the definition.
+     *
+     * @param   string  $operationId  Idempotency key this write is fenced on.
+     * @param   string  $id           UUID of the schedule to toggle.
+     * @param   int     $version      Version the caller last read; the stored schedule must still be at it.
+     * @param   bool    $enabled      True to resume dispatching, false to suspend it.
+     *
+     * @return  array{updated: bool}  Always `updated: true`; a refusal arrives as an exception.
+     *
+     * @throws  InsufficientCapability  When no principal is bound, or it does not hold `automation.manage`.
+     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When policy refuses `automation.manage` on
+     *          this schedule.
+     * @throws  InvalidArgumentException  When the operation identifier is malformed, or was already used for this
+     *          operation with different arguments.
+     * @throws  \RuntimeException  When another attempt still holds the lease on this identifier, or the lease is lost
+     *          before the write completes.
+     *
+     * @since   2.0.0
+     */
     public function setScheduleEnabled(
         string $operationId,
         string $id,
@@ -888,7 +1688,25 @@ final readonly class KumweMcpHandlers
         );
     }
 
-    /** @return array{deleted: bool} */
+    /**
+     * Delete a recurring schedule at an expected version.
+     *
+     * @param   string  $operationId  Idempotency key this write is fenced on.
+     * @param   string  $id           UUID of the schedule to remove.
+     * @param   int     $version      Version the caller last read; the stored schedule must still be at it.
+     *
+     * @return  array{deleted: bool}  Always `deleted: true`; a refusal arrives as an exception.
+     *
+     * @throws  InsufficientCapability  When no principal is bound, or it does not hold `automation.manage`.
+     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When policy refuses `automation.manage` on
+     *          this schedule.
+     * @throws  InvalidArgumentException  When the operation identifier is malformed, or was already used for this
+     *          operation with different arguments.
+     * @throws  \RuntimeException  When another attempt still holds the lease on this identifier, or the lease is lost
+     *          before the write completes.
+     *
+     * @since   2.0.0
+     */
     public function deleteSchedule(string $operationId, string $id, int $version): array
     {
         $this->require('automation.manage');
@@ -905,19 +1723,74 @@ final readonly class KumweMcpHandlers
         );
     }
 
-    /** @return array{updated: bool} */
+    /**
+     * Requeue a dead job for another attempt.
+     *
+     * @param   string  $operationId  Idempotency key this write is fenced on.
+     * @param   string  $id           UUID of the dead job to requeue.
+     *
+     * @return  array{updated: bool}  Always `updated: true`; a refusal arrives as an exception.
+     *
+     * @throws  InsufficientCapability  When no principal is bound, or it does not hold `automation.manage`.
+     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When policy refuses `automation.manage` on
+     *          this job.
+     * @throws  InvalidArgumentException  When no dead job carries that identifier, or the operation identifier
+     *          is malformed or reused with different arguments.
+     * @throws  \RuntimeException  When another attempt still holds the lease on this identifier, or the
+     *          lease is lost before the write completes.
+     *
+     * @since   2.0.0
+     */
     public function retryJob(string $operationId, string $id): array
     {
         return $this->jobAction($operationId, $id, true);
     }
 
-    /** @return array{updated: bool} */
+    /**
+     * Withdraw a pending job so it is never dispatched.
+     *
+     * @param   string  $operationId  Idempotency key this write is fenced on.
+     * @param   string  $id           UUID of the pending job to withdraw.
+     *
+     * @return  array{updated: bool}  Always `updated: true`; a refusal arrives as an exception.
+     *
+     * @throws  InsufficientCapability  When no principal is bound, or it does not hold `automation.manage`.
+     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When policy refuses `automation.manage` on
+     *          this job.
+     * @throws  InvalidArgumentException  When no pending job carries that identifier, or the operation
+     *          identifier is malformed or reused with different arguments.
+     * @throws  \RuntimeException  When another attempt still holds the lease on this identifier, or the
+     *          lease is lost before the write completes.
+     *
+     * @since   2.0.0
+     */
     public function cancelJob(string $operationId, string $id): array
     {
         return $this->jobAction($operationId, $id, false);
     }
 
-    /** @return array{updated: bool} */
+    /**
+     * Run the shared retry-or-cancel path for one job.
+     *
+     * Retrying and cancelling differ only in the audited operation name and the service call they make, so
+     * they share one authorized and fenced body rather than two that could drift apart.
+     *
+     * @param   string  $operationId  Idempotency key this write is fenced on.
+     * @param   string  $id           UUID of the job being acted on.
+     * @param   bool    $retry        True to requeue a dead job, false to cancel a pending one.
+     *
+     * @return  array{updated: bool}  Always `updated: true`; a refusal arrives as an exception.
+     *
+     * @throws  InsufficientCapability  When no principal is bound, or it does not hold `automation.manage`.
+     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When policy refuses `automation.manage` on
+     *          this job.
+     * @throws  InvalidArgumentException  When no job in the required state carries that identifier, or the
+     *          operation identifier is malformed or reused with different arguments.
+     * @throws  \RuntimeException  When another attempt still holds the lease on this identifier, or the
+     *          lease is lost before the write completes.
+     *
+     * @since   2.0.0
+     */
     private function jobAction(string $operationId, string $id, bool $retry): array
     {
         $this->require('automation.manage');
@@ -938,7 +1811,19 @@ final readonly class KumweMcpHandlers
         );
     }
 
-    /** @throws JsonException */
+    /**
+     * Render the capability summary as the body of the `kumwe://capabilities` resource.
+     *
+     * The same document `discover()` returns, encoded for a client that reads the surface as a resource
+     * rather than calling a tool. This handler checks no capability of its own, so the session's own
+     * authentication is the only gate in front of it.
+     *
+     * @return  string  Pretty-printed JSON with unescaped slashes.
+     *
+     * @throws  JsonException  When the catalogue summary cannot be encoded.
+     *
+     * @since   2.0.0
+     */
     public function capabilityResource(): string
     {
         return json_encode(
@@ -947,7 +1832,20 @@ final readonly class KumweMcpHandlers
         );
     }
 
-    /** @return list<array{role: string, content: string}> */
+    /**
+     * Build the `kumwe_site_review` prompt for one review focus.
+     *
+     * The prompt only frames the request; it grants nothing, so the reviewing client is still held to whatever
+     * capabilities its own credential carries when it starts reading.
+     *
+     * @param   string  $focus  Angle to review from: `content`, `seo`, `structure` or `extensions`.
+     *
+     * @return  list<array{role: string, content: string}>  A single user message naming the requested focus.
+     *
+     * @throws  InvalidArgumentException  When the focus is not one of the four supported values.
+     *
+     * @since   2.0.0
+     */
     public function siteReviewPrompt(string $focus = 'content'): array
     {
         if (!in_array($focus, ['content', 'seo', 'structure', 'extensions'], true)) {
@@ -968,7 +1866,20 @@ final readonly class KumweMcpHandlers
      * current password, which an agent surface must not be able to satisfy.
      */
 
-    /** @return array{items: list<array<string, mixed>>} */
+    /**
+     * List where every business entity definition in this site stands.
+     *
+     * The catalogue heads are flattened into plain rows here, so one call answers the question an agent
+     * actually has. A non-zero `draft_revision` means unpublished work is waiting and is the token the next
+     * write has to quote; a null `published_version` means the handle has never served anything.
+     *
+     * @return  array{items: list<array<string, mixed>>}  One row per handle under `items`, carrying its
+     *          identifier, handle, site, owner and owner liveness, draft revision, published version and status.
+     *
+     * @throws  InsufficientCapability  When no principal is bound, or it does not hold `content.read`.
+     *
+     * @since   2.0.0
+     */
     public function listBusinessDefinitions(): array
     {
         $this->require('content.read');
@@ -989,7 +1900,19 @@ final readonly class KumweMcpHandlers
         return ['items' => $items];
     }
 
-    /** @return array<string, mixed> */
+    /**
+     * Read one published version of a business entity definition.
+     *
+     * @param   string  $handle   The definition's handle, or its UUID.
+     * @param   ?int    $version  Published version to load, or null for the one the catalogue head serves.
+     *
+     * @return  array<string, mixed>  The definition document with its version, status, checksum, publisher,
+     *          publication instant and the compatibility plan that produced it.
+     *
+     * @throws  InsufficientCapability  When no principal is bound, or it does not hold `content.read`.
+     *
+     * @since   2.0.0
+     */
     public function getBusinessDefinition(string $handle, ?int $version = null): array
     {
         $this->require('content.read');
@@ -997,7 +1920,21 @@ final readonly class KumweMcpHandlers
         return $this->definitionVersion($this->definitions->published($this->context(), $handle, $version));
     }
 
-    /** @return array<string, mixed> */
+    /**
+     * Read the working draft of a business entity definition.
+     *
+     * The draft is where unpublished edits live, and its revision is the number `publishBusinessDefinition()`
+     * has to be given, so this is the call that precedes a publication.
+     *
+     * @param   string  $handle  The definition's handle, or its UUID.
+     *
+     * @return  array<string, mixed>  The draft's revision, checksum, last editor and edit instant, plus the
+     *          definition document itself under `definition`.
+     *
+     * @throws  InsufficientCapability  When no principal is bound, or it does not hold `content.read`.
+     *
+     * @since   2.0.0
+     */
     public function getBusinessDefinitionDraft(string $handle): array
     {
         $this->require('content.read');
@@ -1012,7 +1949,18 @@ final readonly class KumweMcpHandlers
         ];
     }
 
-    /** @return array{items: list<array<string, mixed>>} */
+    /**
+     * List every version of one definition that was ever published.
+     *
+     * @param   string  $handle  The definition's handle, or its UUID.
+     *
+     * @return  array{items: list<array<string, mixed>>}  Versions under `items`, newest first; empty when the
+     *          definition exists but has never been published.
+     *
+     * @throws  InsufficientCapability  When no principal is bound, or it does not hold `content.read`.
+     *
+     * @since   2.0.0
+     */
     public function listBusinessDefinitionHistory(string $handle): array
     {
         $this->require('content.read');
@@ -1023,7 +1971,20 @@ final readonly class KumweMcpHandlers
         )];
     }
 
-    /** @return array<string, mixed> */
+    /**
+     * Price what publishing the current draft would do, without recording that the question was asked.
+     *
+     * Read-only and unaudited, so an agent may ask it freely before deciding whether publication is safe. The
+     * plan it returns is what `publishBusinessDefinition()` would demand confirmation for.
+     *
+     * @param   string  $handle  The definition's handle, or its UUID.
+     *
+     * @return  array<string, mixed>  Every classified difference between the published head and the draft.
+     *
+     * @throws  InsufficientCapability  When no principal is bound, or it does not hold `content.read`.
+     *
+     * @since   2.0.0
+     */
     public function previewBusinessDefinitionCompatibility(string $handle): array
     {
         $this->require('content.read');
@@ -1031,7 +1992,32 @@ final readonly class KumweMcpHandlers
         return $this->definitions->previewDraft($this->context(), $handle)->toArray();
     }
 
-    /** @return array<string, mixed> */
+    /**
+     * Publish the working draft as a new immutable definition version.
+     *
+     * The revision is the concurrency check: publication is refused if the draft moved after the caller read
+     * it, so an agent cannot publish edits it never saw. A plan carrying breaking changes is refused as well
+     * unless `$confirmed` is set, which is the point at which a client must have shown the compatibility
+     * preview to whoever is accountable for it.
+     *
+     * @param   string  $operationId       Idempotency key this write is fenced on.
+     * @param   string  $handle            The definition's handle, or its UUID.
+     * @param   int     $expectedRevision  Draft revision being published, as the caller last read it.
+     * @param   bool    $confirmed         Whether the caller accepts a plan that carries breaking changes.
+     *
+     * @return  array<string, mixed>  The stored version with its checksum, publisher, publication instant and
+     *          compatibility plan.
+     *
+     * @throws  InsufficientCapability  When no principal is bound, or it does not hold `content.update`.
+     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When policy refuses `content.update` on the
+     *          business definition collection.
+     * @throws  InvalidArgumentException  When the operation identifier is malformed, or was already used for this
+     *          operation with different arguments.
+     * @throws  \RuntimeException  When another attempt still holds the lease on this identifier, or the lease is lost
+     *          before the write completes.
+     *
+     * @since   2.0.0
+     */
     public function publishBusinessDefinition(
         string $operationId,
         string $handle,
@@ -1055,7 +2041,16 @@ final readonly class KumweMcpHandlers
         );
     }
 
-    /** @return array{items: list<array<string, mixed>>} */
+    /**
+     * List the published definitions a schema plan can be compiled for.
+     *
+     * @return  array{items: list<array<string, mixed>>}  Plannable definitions under `items`, each with its
+     *          identifier, handle, version and owner.
+     *
+     * @throws  InsufficientCapability  When no principal is bound, or it does not hold `business.schema.read`.
+     *
+     * @since   2.0.0
+     */
     public function listSchemaDefinitions(): array
     {
         $this->require('business.schema.read');
@@ -1063,7 +2058,17 @@ final readonly class KumweMcpHandlers
         return ['items' => $this->schema->definitions($this->context())];
     }
 
-    /** @return array{items: list<array<string, mixed>>} */
+    /**
+     * List this site's schema plans, each with the checksum an approval has to quote.
+     *
+     * @return  array{items: list<array<string, mixed>>}  Plans under `items`, most recently created first.
+     *
+     * @throws  InsufficientCapability  When no principal is bound, or it does not hold `business.schema.read`.
+     * @throws  \Kumwe\CMS\BusinessDefinition\Domain\InvalidBusinessDefinition  When a plan holds more than 512
+     *          operations, which the canonical encoder refuses to fingerprint.
+     *
+     * @since   2.0.0
+     */
     public function listSchemaPlans(): array
     {
         $this->require('business.schema.read');
@@ -1071,7 +2076,23 @@ final readonly class KumweMcpHandlers
         return ['items' => array_map($this->schemaPlan(...), $this->schema->plans($this->context()))];
     }
 
-    /** @return array<string, mixed> */
+    /**
+     * Read one schema plan together with its durable step journal.
+     *
+     * The journal is what makes an interrupted execution recoverable: it records which operations actually
+     * landed, so read it before deciding whether `recoverSchemaPlan()` is the right next call.
+     *
+     * @param   string  $planId  UUID of the plan to read.
+     *
+     * @return  array<string, mixed>  The plan and its checksum, plus one `steps` entry per operation in
+     *          ordinal order.
+     *
+     * @throws  InsufficientCapability  When no principal is bound, or it does not hold `business.schema.read`.
+     * @throws  \Kumwe\CMS\BusinessDefinition\Domain\InvalidBusinessDefinition  When the plan holds more than 512
+     *          operations, which the canonical encoder refuses to fingerprint.
+     *
+     * @since   2.0.0
+     */
     public function getSchemaPlan(string $planId): array
     {
         $this->require('business.schema.read');
@@ -1086,7 +2107,27 @@ final readonly class KumweMcpHandlers
         ];
     }
 
-    /** @return array<string, mixed> */
+    /**
+     * Compile a deterministic schema plan for a published definition.
+     *
+     * Runs no DDL. It records what would be done and returns the checksum an approver has to quote back, which
+     * is what separates inspecting a change from authorising it.
+     *
+     * @param   string  $operationId   Idempotency key this write is fenced on.
+     * @param   string  $definitionId  UUID of the published definition to plan against.
+     *
+     * @return  array<string, mixed>  The proposed plan, carrying the checksum an approval must match.
+     *
+     * @throws  InsufficientCapability  When no principal is bound, or it does not hold `business.schema.plan`.
+     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When policy refuses `business.schema.plan` on
+     *          the schema collection.
+     * @throws  InvalidArgumentException  When the operation identifier is malformed, or was already used for this
+     *          operation with different arguments.
+     * @throws  \RuntimeException  When another attempt still holds the lease on this identifier, or the lease is lost
+     *          before the write completes.
+     *
+     * @since   2.0.0
+     */
     public function createSchemaPlan(string $operationId, string $definitionId): array
     {
         $this->require('business.schema.plan');
@@ -1101,7 +2142,33 @@ final readonly class KumweMcpHandlers
         );
     }
 
-    /** @return array<string, mixed> */
+    /**
+     * Approve the exact plan that was inspected, identified by its checksum.
+     *
+     * The service's confirmation argument is deliberately never passed from here. Anything riskier than an
+     * online-safe-additive plan has to quote its checksum a second time as a confirmation digested against
+     * the approver's own authorization fingerprint, and this surface supplies none — so a high-impact plan
+     * fails closed at this call rather than becoming approvable by anything holding a token. The expected
+     * checksum is the other half: an approval is refused outright if the plan moved after it was read.
+     *
+     * @param   string   $operationId         Idempotency key this write is fenced on.
+     * @param   string   $planId              UUID of the plan being approved.
+     * @param   string   $expectedChecksum    Checksum of the plan as inspected; a mismatch refuses the approval.
+     * @param   ?string  $recoveryEvidenceId  Recovery drill a rebuilding or destructive plan is approved on
+     *          the strength of; null when the plan needs none, and naming one a plan does not need is refused.
+     *
+     * @return  array<string, mixed>  The plan in its approved state, at the revision the approval wrote.
+     *
+     * @throws  InsufficientCapability  When no principal is bound, or it does not hold `business.schema.approve`.
+     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When policy refuses `business.schema.approve`,
+     *          or `business.schema.destructive` for a destructive plan, on this plan.
+     * @throws  InvalidArgumentException  When the operation identifier is malformed, or was already used for this
+     *          operation with different arguments.
+     * @throws  \RuntimeException  When another attempt still holds the lease on this identifier, or the lease is lost
+     *          before the write completes.
+     *
+     * @since   2.0.0
+     */
     public function approveSchemaPlan(
         string $operationId,
         string $planId,
@@ -1132,7 +2199,31 @@ final readonly class KumweMcpHandlers
         );
     }
 
-    /** @return array<string, mixed> */
+    /**
+     * Apply an approved schema plan to the physical tables.
+     *
+     * This is the call that changes physical tables. Ordinary failures propagate untouched; the one case the
+     * service handles itself is a first-time set of definitions that reference each other, where the initial
+     * plan pauses on a peer's table that does not exist yet and the connected peers are executed or resumed
+     * before the requested plan is. What lands is journalled step by step, which is what leaves an interrupted
+     * run recoverable through `recoverSchemaPlan()` rather than merely broken.
+     *
+     * @param   string  $operationId  Idempotency key this write is fenced on.
+     * @param   string  $planId       UUID of the approved plan to execute.
+     *
+     * @return  array<string, mixed>  The outcome: the fence taken, the completed and skipped step counts, and
+     *          the resulting schema checksum.
+     *
+     * @throws  InsufficientCapability  When no principal is bound, or it does not hold `business.schema.execute`.
+     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When policy refuses `business.schema.execute`,
+     *          or `business.schema.destructive` for a destructive plan, on this plan.
+     * @throws  InvalidArgumentException  When the operation identifier is malformed, or was already used for this
+     *          operation with different arguments.
+     * @throws  \RuntimeException  When another attempt still holds the lease on this identifier, or the lease is lost
+     *          before the write completes.
+     *
+     * @since   2.0.0
+     */
     public function executeSchemaPlan(string $operationId, string $planId): array
     {
         $this->require('business.schema.execute');
@@ -1151,7 +2242,28 @@ final readonly class KumweMcpHandlers
         );
     }
 
-    /** @return array<string, mixed> */
+    /**
+     * Resume or reconcile a schema plan whose execution was interrupted.
+     *
+     * Recovery reads the journal rather than starting over: operations already recorded as landed are skipped,
+     * so re-running is safe. A plan that was never interrupted is refused, which stops this being used as a
+     * second execute.
+     *
+     * @param   string  $operationId  Idempotency key this write is fenced on.
+     * @param   string  $planId       UUID of the executing, failed or recovery-required plan.
+     *
+     * @return  array<string, mixed>  The same outcome shape as a first run, marked as resumed.
+     *
+     * @throws  InsufficientCapability  When no principal is bound, or it does not hold `business.schema.recover`.
+     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When policy refuses `business.schema.recover`
+     *          on this plan.
+     * @throws  InvalidArgumentException  When the operation identifier is malformed, or was already used for this
+     *          operation with different arguments.
+     * @throws  \RuntimeException  When another attempt still holds the lease on this identifier, or the lease is lost
+     *          before the write completes.
+     *
+     * @since   2.0.0
+     */
     public function recoverSchemaPlan(string $operationId, string $planId): array
     {
         $this->require('business.schema.recover');
@@ -1170,7 +2282,22 @@ final readonly class KumweMcpHandlers
         );
     }
 
-    /** @return array<string, mixed> */
+    /**
+     * Flatten a published definition version into the map the definition tools return.
+     *
+     * One projection shared by the read, history and publish tools, so a client sees the same keys whichever
+     * of them produced the version.
+     *
+     * @param   DefinitionVersionRecord  $record  Stored version with its compatibility plan and publisher.
+     *
+     * @return  array<string, mixed>  Version number, status, checksum, publisher, publication instant,
+     *          compatibility plan and the definition document itself.
+     *
+     * @throws  \Kumwe\CMS\BusinessDefinition\Domain\InvalidBusinessDefinition  When the definition cannot be
+     *          canonically encoded, so no checksum can be computed for it.
+     *
+     * @since   2.0.0
+     */
     private function definitionVersion(DefinitionVersionRecord $record): array
     {
         return [
@@ -1184,12 +2311,43 @@ final readonly class KumweMcpHandlers
         ];
     }
 
-    /** @return array<string, mixed> */
+    /**
+     * Serialise a plan together with the checksum an approval has to quote back.
+     *
+     * The checksum is not a stored column: it is recomputed from the canonical form on every read, which is
+     * what lets a client prove that what it approves is byte-for-byte what it inspected.
+     *
+     * @param   SchemaPlan  $plan  Plan to serialise.
+     *
+     * @return  array<string, mixed>  The plan's own fields plus its `checksum`.
+     *
+     * @throws  \Kumwe\CMS\BusinessDefinition\Domain\InvalidBusinessDefinition  When the plan holds more than 512
+     *          operations, which the canonical encoder refuses to fingerprint.
+     *
+     * @since   2.0.0
+     */
     private function schemaPlan(SchemaPlan $plan): array
     {
         return [...$plan->toArray(), 'checksum' => $plan->checksum()];
     }
 
+    /**
+     * Fail unless the bound credential resolves to a principal holding a capability.
+     *
+     * The first line of every protected tool, and deliberately earlier and cheaper than the gateway: it asks
+     * whether the caller holds the capability at all, before any resource has been named or any work started.
+     * It is a floor, not a substitute for `preauthorize()` — holding a capability is not permission to
+     * exercise it on a particular record.
+     *
+     * @param   string  $capability  Capability code the tool needs, such as `content.read`.
+     *
+     * @return  AuthenticatedPrincipal  The resolved actor, once it is known to hold the capability.
+     *
+     * @throws  InsufficientCapability  When no principal is bound, or the principal lacks the capability.
+     * @throws  InvalidArgumentException  When the code is not a valid capability identifier.
+     *
+     * @since   2.0.0
+     */
     private function require(string $capability): AuthenticatedPrincipal
     {
         $principal = $this->principal();
@@ -1201,12 +2359,40 @@ final readonly class KumweMcpHandlers
         return $principal;
     }
 
+    /**
+     * Resolve the human actor the bound identity currently authenticates.
+     *
+     * @return  AuthenticatedPrincipal  The actor these handlers are acting as.
+     *
+     * @throws  InsufficientCapability  When no context is bound, or the bound context carries no human
+     *          principal — a system context authorizes nothing on this surface.
+     *
+     * @since   2.0.0
+     */
     private function principal(): AuthenticatedPrincipal
     {
         return $this->context()->principal()
             ?? throw new InsufficientCapability('authenticated');
     }
 
+    /**
+     * Resolve the execution context this call runs under, re-proving a retained credential first.
+     *
+     * A retained credential takes precedence over a bound context and is re-read on every call rather than
+     * cached, which is what makes a revoked stdio token stop the very next tool call. Passing an operation
+     * identifier returns a child context carrying it as the request identifier, so the authorization decision,
+     * the idempotency claim and the audit record of one tool call all tie together.
+     *
+     * @param   ?string  $operationId  Operation identifier to derive a child context from, or null for the
+     *          bound context itself.
+     *
+     * @return  ExecutionContext  The context to authorize and audit this call under.
+     *
+     * @throws  InsufficientCapability  When nothing is bound, or the retained credential no longer verifies.
+     * @throws  InvalidArgumentException  When the operation identifier cannot serve as a request identifier.
+     *
+     * @since   2.0.0
+     */
     private function context(?string $operationId = null): ExecutionContext
     {
         $context = $this->contextRefresh !== null
@@ -1221,6 +2407,28 @@ final readonly class KumweMcpHandlers
             : $context->child('mcp-' . $operationId, $operationId);
     }
 
+    /**
+     * Require the gateway's approval for a write before the mutation fence is entered.
+     *
+     * Where `require()` only proves the caller holds a capability, this asks whether it may exercise that
+     * capability on this particular resource, and the decision is recorded before it is acted on. It runs
+     * ahead of `McpMutationGuard`, so a refused call claims no idempotency key and leaves nothing to clean up.
+     *
+     * @param   string                 $operationId  Operation identifier the child context is derived from, so
+     *          the decision is recorded against the same request as the write.
+     * @param   string                 $action       Capability code being exercised.
+     * @param   AuthorizationResource  $resource     Collection or item the action is aimed at.
+     *
+     * @return  void
+     *
+     * @throws  InsufficientCapability  When no principal is bound to these handlers.
+     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When policy refuses this actor the action on
+     *          this resource.
+     * @throws  InvalidArgumentException  When the code is not a valid capability identifier, or the operation
+     *          identifier cannot serve as a request identifier.
+     *
+     * @since   2.0.0
+     */
     private function preauthorize(string $operationId, string $action, AuthorizationResource $resource): void
     {
         $this->authorization->assertAllowed(
@@ -1231,12 +2439,24 @@ final readonly class KumweMcpHandlers
     }
 
     /**
+     * Run a trust-key write under the extension lifecycle lock and the idempotency fence.
+     *
      * The advisory lifecycle lock intentionally surrounds the complete mutation guard. This keeps the lock held
      * through the guard's outer transaction commit or rollback while nested TrustStore calls re-enter it safely.
+     *
      * @template TResult of array<string, mixed>
-     * @param array<string, mixed> $input
-     * @param callable(): TResult $mutation
-     * @return TResult
+     *
+     * @param   ExecutionContext      $context      Actor the write is authorized and audited as.
+     * @param   string                $operation    Operation name recorded for the write, under an `mcp.` prefix.
+     * @param   string                $operationId  Idempotency key this write is fenced on.
+     * @param   array<string, mixed>  $input        Arguments recorded with the claim and hashed, so reusing the
+     *          identifier with different arguments is refused rather than replayed.
+     * @param   callable(): TResult   $mutation     The trust-store write to perform, invoked at most once per
+     *          identifier and from inside the fenced transaction.
+     *
+     * @return  TResult  Whatever the write returned on its first run, or the stored copy on a repeat.
+     *
+     * @since   2.0.0
      */
     private function runTrustMutation(
         ExecutionContext $context,
@@ -1251,10 +2471,26 @@ final readonly class KumweMcpHandlers
     }
 
     /**
+     * Run an extension lifecycle write under the same lock and fence as a trust mutation.
+     *
+     * Extension lifecycle changes and trust-key changes share one installation-wide lock, so at most one of
+     * them is in flight across the installation and an activation cannot run while the key set it is verified
+     * against is moving. As in `runTrustMutation()`, the lock encloses the whole guard, so it is still held
+     * when the guard's transaction commits or rolls back.
+     *
      * @template TResult of array<string, mixed>
-     * @param array<string, mixed> $input
-     * @param callable(): TResult $mutation
-     * @return TResult
+     *
+     * @param   ExecutionContext      $context      Actor the write is authorized and audited as.
+     * @param   string                $operation    Operation name recorded for the write, under an `mcp.` prefix.
+     * @param   string                $operationId  Idempotency key this write is fenced on.
+     * @param   array<string, mixed>  $input        Arguments recorded with the claim and hashed, so reusing the
+     *          identifier with different arguments is refused rather than replayed.
+     * @param   callable(): TResult   $mutation     The lifecycle write to perform, invoked at most once per
+     *          identifier and from inside the fenced transaction.
+     *
+     * @return  TResult  Whatever the write returned on its first run, or the stored copy on a repeat.
+     *
+     * @since   2.0.0
      */
     private function runExtensionMutation(
         ExecutionContext $context,

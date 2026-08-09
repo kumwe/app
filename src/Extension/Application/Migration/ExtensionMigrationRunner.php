@@ -13,8 +13,32 @@ use Kumwe\CMS\Infrastructure\Persistence\TableNames;
 use Psr\Clock\ClockInterface;
 use RuntimeException;
 
+/**
+ * Applies an extension's declared migrations exactly once per site, and ledgers what it ran.
+ *
+ * Extension code is third-party code that ships schema changes, so this runner is the choke point that
+ * decides what of it may execute. It loads the migration classes itself through a PSR-4 autoloader
+ * pinned to the deployed directory — refusing symlinked or escaping roots — then records every applied
+ * migration in the `extension_migrations` table alongside a SHA-256 over the migration's class name, its
+ * ID and the bytes of its source file. On the next run that digest is re-derived and compared, so a
+ * later release cannot quietly reuse an applied ID with different executable bytes; drift aborts the
+ * install rather than skipping the step. Rows written before digests were recorded are back-filled from
+ * the release already installed on disk, and only after that release's tree digest still matches.
+ *
+ * @since  2.0.0
+ */
 final readonly class ExtensionMigrationRunner
 {
+    /**
+     * Wire the runner to the site it migrates.
+     *
+     * @param  Connection      $database  Connection the migrations and the ledger writes execute on.
+     * @param  TableNames      $tables    Core name compiler, used for the ledger and registry tables and as
+     *         the base the per-extension namespace is prefixed onto.
+     * @param  ClockInterface  $clock     Supplies the `applied_at` timestamp stamped on each ledger row.
+     *
+     * @since  2.0.0
+     */
     public function __construct(
         private Connection $database,
         private TableNames $tables,
@@ -22,7 +46,31 @@ final readonly class ExtensionMigrationRunner
     ) {
     }
 
-    /** @return list<ExtensionMigration> migrations applied by this invocation */
+    /**
+     * Run every migration the manifest declares that this site has not already applied.
+     *
+     * Migrations run in manifest order, and the runner opens no transaction of its own: each ledger row
+     * is written immediately after the migration it records, because DDL commits implicitly on MySQL and
+     * MariaDB and cannot be enclosed. A migration already recorded is skipped, but not silently — its
+     * digest is re-derived and compared first, and a mismatch aborts the run instead.
+     *
+     * @param   ExtensionManifest  $manifest       Manifest whose `migrations` list is applied; its identifier
+     *          keys the ledger rows and its version is recorded on each of them.
+     * @param   string             $extensionRoot  Absolute path of the deployed package directory the
+     *          manifest's PSR-4 autoload paths are resolved against.
+     *
+     * @return  list<ExtensionMigration>  Migrations applied by this invocation, in manifest order; empty when
+     *          the ledger already recorded every declared migration.
+     *
+     * @throws  InvalidArgumentException  When a declared class does not implement ExtensionMigration, or its
+     *          ID is not a timestamped identifier.
+     * @throws  RuntimeException  When an autoload root is unsafe or a declared class cannot be loaded, when a
+     *          migration's source cannot be checksummed, or when the ledger disagrees with it.
+     * @throws  \JsonException  When back-filling a legacy ledger row and the installed release's stored
+     *          manifest is not valid JSON.
+     *
+     * @since   2.0.0
+     */
     public function apply(ExtensionManifest $manifest, string $extensionRoot): array
     {
         $this->registerAutoload($manifest, $extensionRoot);
@@ -62,7 +110,22 @@ final readonly class ExtensionMigrationRunner
         return $applied;
     }
 
-    /** @param list<ExtensionMigration> $migrations */
+    /**
+     * Undo migrations applied by an installation attempt that will not complete.
+     *
+     * Each migration's `down()` runs and its ledger row is deleted, in the order the list is given — so a
+     * caller unwinding an install passes the applied list reversed. Only migrations this attempt applied
+     * belong here; a migration left out of the list keeps its ledger row and its schema.
+     *
+     * @param   ExtensionManifest         $manifest    Extension whose ledger rows are removed; only its
+     *          identifier is read.
+     * @param   list<ExtensionMigration>  $migrations  Migrations to compensate, in the order `down()` should
+     *          run.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     public function compensate(ExtensionManifest $manifest, array $migrations): void
     {
         foreach ($migrations as $migration) {
@@ -74,6 +137,31 @@ final readonly class ExtensionMigrationRunner
         }
     }
 
+    /**
+     * Decide whether this migration has already run here, and prove the ledger still agrees with it.
+     *
+     * A row whose digest column is null predates digest recording; rather than trusting it, the runner
+     * reconstructs the digest from the release currently installed on disk and writes it back, so the
+     * comparison from then on is against a value anchored to real bytes.
+     *
+     * @param   ExtensionManifest  $manifest        Extension whose ledger is consulted.
+     * @param   string             $migrationClass  Fully qualified migration class, used to locate the
+     *          matching source inside the installed release when a legacy row must be back-filled.
+     * @param   string             $incomingRoot    Deployed directory of the package being applied; its
+     *          third-level parent is the extension deployment base legacy lookups resolve against.
+     * @param   string             $migrationId     Identifier the ledger row is keyed by.
+     * @param   string             $checksum        Digest derived from the incoming migration's source, which
+     *          the stored digest must equal.
+     *
+     * @return  bool  True when the migration is already recorded and its digest matches, so `up()` must be
+     *          skipped; false when this site has never applied it.
+     *
+     * @throws  RuntimeException  When a back-filled legacy digest cannot be persisted, when the stored digest
+     *          does not match the incoming one, or when the installed release cannot anchor a legacy digest.
+     * @throws  \JsonException  When the installed release's stored manifest is not valid JSON.
+     *
+     * @since   2.0.0
+     */
     private function wasApplied(
         ExtensionManifest $manifest,
         string $migrationClass,
@@ -117,6 +205,34 @@ final readonly class ExtensionMigrationRunner
         return true;
     }
 
+    /**
+     * Reconstruct the digest a ledger row would have carried, from the release already installed on disk.
+     *
+     * The reconstruction is only trustworthy if the bytes it reads are the bytes that ran, so every step
+     * is checked before the file is hashed: the registry must name a well-formed runtime path and tree
+     * digest, the deployed tree must still hash to that digest, the release's own manifest must declare
+     * this migration class, and the source resolved through the longest matching PSR-4 prefix must be a
+     * regular file inside the release root reached without traversing a symbolic link. Any of those
+     * failing aborts rather than yielding a weaker digest.
+     *
+     * @param   ExtensionManifest  $incoming        Manifest of the package being applied; only its identifier
+     *          is used, to find the installed release.
+     * @param   string             $migrationClass  Class the legacy row was written for; the installed
+     *          release's manifest must declare it.
+     * @param   string             $incomingRoot    Deployed directory of the incoming package; its
+     *          third-level parent is the base the installed release's runtime path is resolved against.
+     * @param   string             $migrationId     Identifier mixed into the digest, matching the ledger row.
+     *
+     * @return  string  Hex SHA-256 over class name, migration ID and installed source bytes, built the same
+     *          way `checksum()` builds it so the two are comparable.
+     *
+     * @throws  RuntimeException  When no installed release is recorded, when its runtime path or tree digest
+     *          is malformed, when the deployed tree has changed, when its manifest is unusable or omits the
+     *          class, or when the migration source is unresolvable, outside the release, or unreadable.
+     * @throws  \JsonException  When the stored manifest document is not valid JSON.
+     *
+     * @since   2.0.0
+     */
     private function legacyChecksum(
         ExtensionManifest $incoming,
         string $migrationClass,
@@ -211,6 +327,23 @@ final readonly class ExtensionMigrationRunner
         return hash('sha256', $migrationClass . ':' . $migrationId . ':' . $digest);
     }
 
+    /**
+     * Digest the executable identity of a migration: which class, under which ID, from which bytes.
+     *
+     * Binding all three means a package cannot swap the body of an applied migration, nor move it to a
+     * new class, without the ledger comparison noticing. The source file is located by reflection and is
+     * rejected if it is a symbolic link, so the digest describes a file inside the deployment.
+     *
+     * @param   ExtensionMigration  $migration  Instance whose declaring file is hashed.
+     * @param   string              $id         Identifier the migration declares, mixed into the digest.
+     *
+     * @return  string  Hex SHA-256 over the class name, the ID and the source file's contents.
+     *
+     * @throws  RuntimeException  When the declaring file is unknown, is not a regular file, is a symbolic
+     *          link, or cannot be read.
+     *
+     * @since   2.0.0
+     */
     private function checksum(ExtensionMigration $migration, string $id): string
     {
         $reflection = new \ReflectionClass($migration);
@@ -223,11 +356,43 @@ final readonly class ExtensionMigrationRunner
         return hash('sha256', $migration::class . ':' . $id . ':' . $digest);
     }
 
+    /**
+     * Build the table-name compiler a migration is handed, scoped to the manifest's extension.
+     *
+     * @param   ExtensionManifest  $manifest  Manifest whose identifier becomes the table namespace.
+     *
+     * @return  ExtensionTableNames  Compiler that prefixes every name with the site prefix and this
+     *          extension's namespace, so a migration cannot reach a core or foreign table.
+     *
+     * @since   2.0.0
+     */
     private function extensionTables(ExtensionManifest $manifest): ExtensionTableNames
     {
         return new ExtensionTableNames($this->database, $this->tables, $manifest->identifier());
     }
 
+    /**
+     * Make the extension's migration classes loadable, without widening what the process will load.
+     *
+     * Each declared PSR-4 prefix gets its own autoloader confined to one resolved directory beneath the
+     * deployment: the root itself, and later every path segment of a requested class file, is refused if
+     * it is a symbolic link or resolves outside that directory, so a package cannot use its own autoload
+     * map to pull in code from elsewhere on the host. Every declared migration class is then loaded
+     * eagerly, so a missing class fails here rather than half way through the schema changes.
+     *
+     * @param   ExtensionManifest  $manifest  Supplies the PSR-4 prefixes to register and the migration
+     *          classes that must resolve through them.
+     * @param   string             $root      Deployed package directory the relative autoload paths are
+     *          resolved against and confined to.
+     *
+     * @return  void
+     *
+     * @throws  RuntimeException  When an autoload root is a symbolic link, is not a directory, or escapes the
+     *          deployment; when a resolved class file is a link, is outside the root, or is not a regular
+     *          file; or when a declared migration class cannot be loaded at all.
+     *
+     * @since   2.0.0
+     */
     private function registerAutoload(ExtensionManifest $manifest, string $root): void
     {
         foreach ($manifest->autoload() as $prefix => $relativePath) {

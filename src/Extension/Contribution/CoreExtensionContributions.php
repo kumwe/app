@@ -6,9 +6,25 @@ namespace Kumwe\CMS\Extension\Contribution;
 
 use Kumwe\CMS\BusinessDefinition\Domain\BuiltInFieldTypes;
 
+/**
+ * Everything the CMS contributes to the contribution registries on its own behalf.
+ *
+ * `ExtensionContributionRegistrySet` applies this once while it is being built, through the same
+ * registrar extensions use, so core has no privileged path into the registries. Order matters inside
+ * it: capabilities and workspaces are registered before the navigation items that reference them,
+ * because an item may only name a capability and workspace its own owner has already claimed.
+ * Everything here is declared as data, so the shipped core surface is readable in one file.
+ *
+ * @since  2.0.0
+ */
 final class CoreExtensionContributions
 {
-    /** @var array<string, string> */
+    /**
+     * The core capability vocabulary, mapping each capability identifier to its operator-facing wording.
+     *
+     * @var    array<string, string>
+     * @since  2.0.0
+     */
     private const CAPABILITIES = [
         'automation.manage' => 'Manage schedules and background work.',
         'business.record.action' => 'Execute declared business-record actions and workflow transitions.',
@@ -35,6 +51,19 @@ final class CoreExtensionContributions
         'users.manage' => 'Manage users, roles, permissions, and tokens.',
     ];
 
+    /**
+     * Register the whole core contribution set through the given registrar.
+     *
+     * Capability labels are derived from the identifier — dots become spaces and the words are
+     * title-cased — so the capability map only has to carry descriptions. Core is registered through
+     * a non-strict registrar, so unlike an extension it is not matched against a manifest declaration.
+     *
+     * @param   ExtensionContributionRegistrar  $registrar  Registrar bound to the core contribution owner.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     public static function register(ExtensionContributionRegistrar $registrar): void
     {
         foreach (BuiltInFieldTypes::all() as $fieldType) {
@@ -66,7 +95,13 @@ final class CoreExtensionContributions
         }
     }
 
-    /** @return list<AdministratorNavigationDefinition> */
+    /**
+     * Build the core administrator menu, each item bound to a core workspace and core capability.
+     *
+     * @return  list<AdministratorNavigationDefinition>  Declaration order; display order comes from priority.
+     *
+     * @since   2.0.0
+     */
     private static function navigation(): array
     {
         return [
@@ -205,6 +240,11 @@ final class CoreExtensionContributions
         ];
     }
 
+    /**
+     * Prevent instantiation; the core contribution set is static declaration only.
+     *
+     * @since  2.0.0
+     */
     private function __construct()
     {
     }

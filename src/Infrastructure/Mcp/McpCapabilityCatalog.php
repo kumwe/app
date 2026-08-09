@@ -4,14 +4,43 @@ declare(strict_types=1);
 
 namespace Kumwe\CMS\Infrastructure\Mcp;
 
+/**
+ * Single declaration of the MCP surface a Kumwe release publishes.
+ *
+ * Every tool, resource and prompt an MCP client can reach is described here once: its name, the
+ * `KumweMcpHandlers` method that serves it, the capability that handler requires, the annotation hints
+ * a client uses to decide how cautiously to call it, and closed JSON Schemas for input and output.
+ * `KumweMcpServerFactory` registers a server straight from this list, and the discovery tool and the
+ * `kumwe://capabilities` resource publish a name-only summary of it, so widening or narrowing the
+ * surface is one edit here rather than parallel edits in the factory and the handlers. The catalogue is
+ * pure data with no dependencies and no state, which is why the container shares one instance of it.
+ *
+ * Two properties hold across the whole list. Every entry that is not read-only declares an
+ * `operationId` and is annotated idempotent, so `McpMutationGuard` can fence a first attempt and replay
+ * a retry instead of applying it twice. And work that would need the caller's current password re-proved
+ * is kept off the surface rather than offered and refused: no tool composes a destructive schema purge
+ * plan, and the schema approval tool declines high-impact plans, since an agent cannot supply that
+ * step-up and a tool that always fails closed is worse than an absent one.
+ *
+ * @since  2.0.0
+ */
 final class McpCapabilityCatalog
 {
     /**
-     * @return list<array{
-     *   name: string, title: string, description: string, handler: string,
-     *   capability: string|null, readOnly: bool, destructive: bool, idempotent: bool,
-     *   inputSchema: array<string, mixed>, outputSchema: array<string, mixed>
-     * }>
+     * List every tool this release publishes, in the order the server registers them.
+     *
+     * Each entry names the handler method that serves it and the capability that handler enforces.
+     * A null capability means no single capability decides the call: `kumwe_discover` is open to any
+     * authenticated caller, and `kumwe_content_transition` authorizes the specific transition it is
+     * asked to perform. Mutating entries always carry an `operationId` property so a retry deduplicates.
+     *
+     * @return  list<array{
+     *            name: string, title: string, description: string, handler: string,
+     *            capability: string|null, readOnly: bool, destructive: bool, idempotent: bool,
+     *            inputSchema: array<string, mixed>, outputSchema: array<string, mixed>
+     *          }>
+     *
+     * @since   2.0.0
      */
     public function tools(): array
     {
@@ -804,7 +833,17 @@ final class McpCapabilityCatalog
         ];
     }
 
-    /** @return list<array<string, string>> */
+    /**
+     * List the readable resources this release publishes.
+     *
+     * The one entry serves `kumwe://capabilities` as JSON from `capabilityResource`, which hands a
+     * client the same summary the discovery tool returns without spending a tool call to get it.
+     *
+     * @return  list<array<string, string>>  One entry per resource, carrying its `uri`, `name`, `title`,
+     *          `description`, `mimeType` and the handler method that serves it.
+     *
+     * @since   2.0.0
+     */
     public function resources(): array
     {
         return [[
@@ -815,7 +854,17 @@ final class McpCapabilityCatalog
         ]];
     }
 
-    /** @return list<array<string, string>> */
+    /**
+     * List the prompt templates this release publishes.
+     *
+     * The one entry exposes `kumwe_site_review`, served by `siteReviewPrompt`, which turns a review
+     * focus into a single user message asking for explicit proposed changes.
+     *
+     * @return  list<array<string, string>>  One entry per prompt, carrying its `name`, `title`,
+     *          `description` and the handler method that builds the messages.
+     *
+     * @since   2.0.0
+     */
     public function prompts(): array
     {
         return [[
@@ -824,7 +873,19 @@ final class McpCapabilityCatalog
         ]];
     }
 
-    /** @return array<string, string|list<string>> */
+    /**
+     * Summarise the surface as names only, for the discovery tool and the capability resource.
+     *
+     * Both of those reach this without a capability check, so the summary deliberately carries no
+     * schemas, handler methods or capability requirements — only the identifiers a client needs in
+     * order to ask for anything more.
+     *
+     * @return  array<string, string|list<string>>  Keyed `product`, `mode`, `tools`, `resources` and
+     *          `prompts`; the last three list tool names, resource URIs and prompt names in catalogue
+     *          order.
+     *
+     * @since   2.0.0
+     */
     public function publicSummary(): array
     {
         return [
@@ -837,14 +898,33 @@ final class McpCapabilityCatalog
     }
 
     /**
-     * @param array<string, mixed> $properties
-     * @param array<string, mixed> $output
-     * @param list<string> $required
-     * @return array{
-     *   name: string, title: string, description: string, handler: string,
-     *   capability: string|null, readOnly: bool, destructive: bool, idempotent: bool,
-     *   inputSchema: array<string, mixed>, outputSchema: array<string, mixed>
-     * }
+     * Assemble one catalogue entry from its identity, its annotation hints and its schema fragments.
+     *
+     * The input schema is always a closed object — `additionalProperties` is false — so an argument no
+     * property names is rejected by the server before a handler is reached.
+     *
+     * @param   string                $name         Tool name a client calls, stable for the release.
+     * @param   string                $title        Short label, reused as the annotation title.
+     * @param   string                $description  One line telling a client what the tool is for.
+     * @param   string                $handler      Method on `KumweMcpHandlers` this tool is bound to.
+     * @param   ?string               $capability   Capability the handler requires, or null when
+     *          authentication alone admits the call or the handler authorizes each action itself.
+     * @param   bool                  $readOnly     True when the tool only reads; false marks a mutation.
+     * @param   bool                  $destructive  True when a successful call removes or overwrites state
+     *          the caller cannot simply rebuild, which clients may use to prompt for confirmation.
+     * @param   bool                  $idempotent   True when repeating the call with the same arguments
+     *          leaves the same end state.
+     * @param   array<string, mixed>  $properties   JSON Schema property map of the tool's input object.
+     * @param   array<string, mixed>  $output       JSON Schema published as the tool's output schema.
+     * @param   list<string>          $required     Input property names a client must supply.
+     *
+     * @return  array{
+     *            name: string, title: string, description: string, handler: string,
+     *            capability: string|null, readOnly: bool, destructive: bool, idempotent: bool,
+     *            inputSchema: array<string, mixed>, outputSchema: array<string, mixed>
+     *          }
+     *
+     * @since   2.0.0
      */
     private function tool(
         string $name,
@@ -871,13 +951,34 @@ final class McpCapabilityCatalog
         ];
     }
 
-    /** @return array<string, int|string> */
+    /**
+     * Return the length-bounded schema fragment most mutating tools publish for their `operationId`.
+     *
+     * Declaring the window once keeps it identical wherever it is reused, so a client is told the same
+     * bounds `McpMutationGuard` enforces before it claims a lease under the identifier. The business
+     * definition and schema tools declare `operationId` as a plain string instead and leave the length
+     * entirely to the guard.
+     *
+     * @return  array<string, int|string>  A string schema constrained to 16 to 128 characters.
+     *
+     * @since   2.0.0
+     */
     private function operationId(): array
     {
         return ['type' => 'string', 'minLength' => 16, 'maxLength' => 128];
     }
 
-    /** @return array<string, array<string, mixed>> */
+    /**
+     * Return the input properties the trust-key add and rotate tools share.
+     *
+     * Both key names are offered: `kumwe_trust_key_add` requires `keyId`, while `kumwe_trust_key_rotate`
+     * spreads this map, adds `oldKeyId` and requires `newKeyId`. Which of the two a call must send is
+     * therefore decided by each tool's required list, not by this fragment.
+     *
+     * @return  array<string, array<string, mixed>>  One schema fragment per shared property name.
+     *
+     * @since   2.0.0
+     */
     private function trustKeyProperties(): array
     {
         return [
@@ -891,7 +992,18 @@ final class McpCapabilityCatalog
         ];
     }
 
-    /** @return array<string, bool|int|string|list<string>> */
+    /**
+     * Return the schema fragment for the optional step-up password on the extension tools.
+     *
+     * The property is nullable, so a client with no password to offer may omit it and leave the
+     * extension manager to decide whether the operation needs step-up at all. It is marked `writeOnly`
+     * to say the value only ever travels inbound: it is never part of a result and is not to be cached
+     * with one.
+     *
+     * @return  array<string, bool|int|string|list<string>>  A nullable, write-only string schema.
+     *
+     * @since   2.0.0
+     */
     private function currentPassword(): array
     {
         return [
@@ -902,7 +1014,17 @@ final class McpCapabilityCatalog
         ];
     }
 
-    /** @return array<string, mixed> */
+    /**
+     * Build the closed schema for the presentation object `kumwe_settings_update` accepts.
+     *
+     * Every property of the theme, of each colour scheme and of a scheme's ten colour roles is required,
+     * and each colour must be a six-digit hex value, so a settings update replaces the presentation
+     * whole instead of leaving a scheme partly defined. One to twelve schemes may be supplied.
+     *
+     * @return  array<string, mixed>  Object schema published as the `presentation` input property.
+     *
+     * @since   2.0.0
+     */
     private function presentation(): array
     {
         $colors = [];

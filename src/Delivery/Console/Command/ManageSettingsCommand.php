@@ -9,22 +9,75 @@ use Kumwe\CMS\Delivery\Console\Output;
 use Kumwe\CMS\Site\Application\SiteSettings;
 use Throwable;
 
+/**
+ * Console entry point for reading and rewriting the site settings document as `kumwe settings`.
+ *
+ * Only the browser-managed half of a site's configuration lives here — the name, the mounted homepage,
+ * locale, timezone, search indexing and the presentation block; database, cache and secret settings
+ * belong to the deployment environment. Because `SiteSettings::updateAll()` replaces what it is given,
+ * this command reads the current presentation object first and layers only the options the operator
+ * actually passed over it, so editing the logo cannot silently reset the colour schemes or the footer.
+ * Both actions end by printing the stored document, which is how the operator confirms the merge.
+ *
+ * @since  2.0.0
+ */
 final readonly class ManageSettingsCommand implements Command
 {
+    /**
+     * Wire the command to the settings port and to the console's token authorization route.
+     *
+     * @param  SiteSettings       $settings       Port both actions read the document from and write it back to.
+     * @param  ConsoleAuthorizer  $authorization  Resolves `--site` and `--token-file` into an authorized context.
+     *
+     * @since  2.0.0
+     */
     public function __construct(private SiteSettings $settings, private ConsoleAuthorizer $authorization)
     {
     }
 
+    /**
+     * Name the operator types to read or change site settings.
+     *
+     * @return  string  Always `settings`.
+     *
+     * @since   2.0.0
+     */
     public function name(): string
     {
         return 'settings';
     }
 
+    /**
+     * Describe the command for the console's command listing.
+     *
+     * @return  string  One-line summary of the two actions the command accepts.
+     *
+     * @since   2.0.0
+     */
     public function description(): string
     {
         return 'Read or update site configuration.';
     }
 
+    /**
+     * Print the managed settings document, having first applied an `update` when one was asked for.
+     *
+     * The first argument is the action and defaults to `get`; only `get` and `update` are accepted.
+     * `update` is a full write of the top-level keys, so `--site-name`, `--homepage-content`, `--locale`
+     * and `--timezone` are all required even when only one of them is changing, and
+     * `--search-indexing-enabled` falls back to enabled when omitted. Presentation is the exception:
+     * `--presentation-json` replaces the whole stored object, and the individual `--presentation-*`
+     * options — including `--presentation-schemes-json` — then overwrite one key each on top of it.
+     * Both actions require `settings.manage`, and every failure becomes one message and exit status 1.
+     *
+     * @param   list<string>  $arguments  Action name first, then `--name=value` options: `--site` and
+     *          `--token-file` always, plus the update options when updating.
+     * @param   Output        $output     Sink for the JSON settings document, or for the failure message.
+     *
+     * @return  int  0 when the document was printed, 1 when any step failed.
+     *
+     * @since   2.0.0
+     */
     public function execute(array $arguments, Output $output): int
     {
         try {

@@ -9,43 +9,119 @@ use JsonException;
 use Kumwe\CMS\Extension\Contribution\ManifestContributionSet;
 use ValueError;
 
+/**
+ * Validated in-memory form of an extension's `kumwe.json`, and the only shape the installer trusts.
+ *
+ * Construction is the validation boundary for everything a package declares about itself. Every
+ * collection is checked for shape and bounded in size, and every autoload prefix, migration class,
+ * capability identifier, and asset path is matched against a grammar before it is stored, so the
+ * installer, the runtime loader, and the contribution registrar all read manifest data without
+ * re-checking it. Two schema revisions are accepted: schema 1 predates typed shell contributions and
+ * is given an empty contribution set, while schema 2 rejects unknown keys wherever it knows the key
+ * set and must keep its `permissions` list identical to the capabilities it contributes.
+ *
+ * @since  2.0.0
+ */
 final readonly class ExtensionManifest
 {
-    /** @var list<ExtensionDependency> */
+    /**
+     * Declared dependencies in manifest order, each extension named at most once and never this one.
+     *
+     * @var    list<ExtensionDependency>
+     * @since  2.0.0
+     */
     private array $dependencies;
 
-    /** @var array<string, string> */
+    /**
+     * PSR-4 prefix to package-relative directory, sorted by prefix so the map is deterministic.
+     *
+     * @var    array<string, string>
+     * @since  2.0.0
+     */
     private array $autoload;
 
-    /** @var list<class-string> */
+    /**
+     * Migration classes the installer runs, kept in declaration order because migrations are ordered.
+     *
+     * @var    list<class-string>
+     * @since  2.0.0
+     */
     private array $migrations;
 
-    /** @var array<string, mixed> */
+    /**
+     * Configuration block carried through verbatim; the manifest only guarantees it is an object.
+     *
+     * @var    array<string, mixed>
+     * @since  2.0.0
+     */
     private array $configuration;
 
-    /** @var list<string> */
+    /**
+     * Capability identifiers the extension declares, de-duplicated, in first-seen order.
+     *
+     * @var    list<string>
+     * @since  2.0.0
+     */
     private array $permissions;
 
-    /** @var list<array<string, mixed>> */
+    /**
+     * Route declarations left uninterpreted here; each entry is an object, never a list.
+     *
+     * @var    list<array<string, mixed>>
+     * @since  2.0.0
+     */
     private array $routes;
 
-    /** @var list<array<string, mixed>> */
+    /**
+     * Event listener declarations left uninterpreted here; each entry is an object, never a list.
+     *
+     * @var    list<array<string, mixed>>
+     * @since  2.0.0
+     */
     private array $events;
 
-    /** @var list<string> */
+    /**
+     * Package-relative asset paths, de-duplicated, none of them containing a traversal segment.
+     *
+     * @var    list<string>
+     * @since  2.0.0
+     */
     private array $assets;
 
+    /**
+     * Typed shell contributions; an empty legacy set when the manifest is schema 1.
+     *
+     * @var    ManifestContributionSet
+     * @since  2.0.0
+     */
     private ManifestContributionSet $contributions;
 
     /**
-     * @param array<mixed> $dependencies
-     * @param array<mixed> $autoload
-     * @param array<mixed> $migrations
-     * @param array<mixed> $configuration
-     * @param array<mixed> $permissions
-     * @param array<mixed> $routes
-     * @param array<mixed> $events
-     * @param array<mixed> $assets
+     * Validate and store everything a package declares about itself.
+     *
+     * Callers that already hold parsed values use this directly; anything starting from a document
+     * should go through `fromJson`, which performs the schema-level checks this constructor does not.
+     *
+     * @param   ExtensionIdentifier       $identifier          Identity the extension registers under.
+     * @param   ExtensionType             $type                Kind of extension the package installs as.
+     * @param   SemanticVersion           $version             Version this manifest describes.
+     * @param   string                    $serviceProvider     Fully qualified provider class the runtime instantiates.
+     * @param   VersionConstraint         $kumweCompatibility  Kumwe versions the extension declares support for.
+     * @param   VersionConstraint         $phpCompatibility    PHP versions the extension declares support for.
+     * @param   array<mixed>              $dependencies        `ExtensionDependency` list, at most 256, no repeats.
+     * @param   array<mixed>              $autoload            PSR-4 prefix to package-relative directory map.
+     * @param   array<mixed>              $migrations          Migration class names to run, in order.
+     * @param   array<mixed>              $configuration       Configuration object, stored as given.
+     * @param   array<mixed>              $permissions         Capability identifiers the extension declares.
+     * @param   array<mixed>              $routes              Route declaration objects, at most 256.
+     * @param   array<mixed>              $events              Event declaration objects, at most 256.
+     * @param   array<mixed>              $assets              Package-relative asset paths, at most 512.
+     * @param   ?ManifestContributionSet  $contributions       Schema-2 contributions; null selects the legacy set.
+     * @param   int                       $schemaVersion       Manifest schema revision; only 1 and 2 are supported.
+     *
+     * @throws  InvalidArgumentException  When the schema is unsupported or any declared value fails its check.
+     *
+     * @since   2.0.0
      */
     public function __construct(
         private ExtensionIdentifier $identifier,
@@ -135,6 +211,24 @@ final readonly class ExtensionManifest
         $this->contributions = $contributions ?? ManifestContributionSet::legacy($identifier, $this->permissions);
     }
 
+    /**
+     * Parse a `kumwe.json` document into a validated manifest.
+     *
+     * Decoding is bounded before anything else happens — one mebibyte of input, 32 levels of nesting
+     * — so a hostile document cannot exhaust memory on its way to being rejected. A schema-2
+     * document is additionally closed to unknown keys at every level whose key set is known, which
+     * turns a misspelled field into an install failure instead of a silently ignored declaration.
+     * Schema 2 also reconciles `permissions` with the contributed capabilities: an absent list is
+     * filled in from them, and a present one must match them exactly, order included.
+     *
+     * @param   string  $json  Raw manifest document read from the package root.
+     *
+     * @return  self  The validated manifest, with its contribution set resolved for the schema in use.
+     *
+     * @throws  InvalidArgumentException  When the document is oversized, malformed, or fails any check.
+     *
+     * @since   2.0.0
+     */
     public static function fromJson(string $json): self
     {
         if (strlen($json) > 1_048_576) {
@@ -288,93 +382,205 @@ final readonly class ExtensionManifest
         );
     }
 
+    /**
+     * Report which manifest revision the package was written against.
+     *
+     * @return  int  1 for a legacy manifest, 2 for one that may contribute to the application shell.
+     *
+     * @since   2.0.0
+     */
     public function schemaVersion(): int
     {
         return $this->schemaVersion;
     }
 
+    /**
+     * Name the extension this manifest describes.
+     *
+     * @return  ExtensionIdentifier  Identity the registry keys the extension by.
+     *
+     * @since   2.0.0
+     */
     public function identifier(): ExtensionIdentifier
     {
         return $this->identifier;
     }
 
+    /**
+     * Report the kind of extension the package installs as.
+     *
+     * @return  ExtensionType  Kind fixed at first install, which a later upgrade may not change.
+     *
+     * @since   2.0.0
+     */
     public function type(): ExtensionType
     {
         return $this->type;
     }
 
+    /**
+     * Report the version the package declares for itself.
+     *
+     * @return  SemanticVersion  Version an upgrade is compared against.
+     *
+     * @since   2.0.0
+     */
     public function version(): SemanticVersion
     {
         return $this->version;
     }
 
+    /**
+     * Name the class the runtime instantiates to let the extension register its services.
+     *
+     * @return  string  Fully qualified class name; validated as a shape, never checked for existence.
+     *
+     * @since   2.0.0
+     */
     public function serviceProvider(): string
     {
         return $this->serviceProvider;
     }
 
+    /**
+     * Decide whether this extension declares support for a given Kumwe and PHP pair.
+     *
+     * @param   SemanticVersion  $kumweVersion  Kumwe version the extension would run on.
+     * @param   SemanticVersion  $phpVersion    PHP version of that runtime.
+     *
+     * @return  bool  True only when both declared constraints accept their version.
+     *
+     * @since   2.0.0
+     */
     public function supports(SemanticVersion $kumweVersion, SemanticVersion $phpVersion): bool
     {
         return $this->kumweCompatibility->accepts($kumweVersion)
             && $this->phpCompatibility->accepts($phpVersion);
     }
 
-    /** @return list<ExtensionDependency> */
+    /**
+     * List the extensions that must be present before this one can be enabled.
+     *
+     * @return  list<ExtensionDependency>  Dependencies in manifest order; empty when the package stands alone.
+     *
+     * @since   2.0.0
+     */
     public function dependencies(): array
     {
         return $this->dependencies;
     }
 
-    /** @return array<string, string> */
+    /**
+     * Report the PSR-4 mapping the runtime registers so the extension's classes can be found.
+     *
+     * @return  array<string, string>  Namespace prefix to package-relative directory, sorted by prefix.
+     *
+     * @since   2.0.0
+     */
     public function autoload(): array
     {
         return $this->autoload;
     }
 
-    /** @return list<class-string> */
+    /**
+     * List the migration classes the installer runs for this extension.
+     *
+     * @return  list<class-string>  Migrations in declaration order, which is the order they must run in.
+     *
+     * @since   2.0.0
+     */
     public function migrations(): array
     {
         return $this->migrations;
     }
 
-    /** @return array<string, mixed> */
+    /**
+     * Report the configuration block the package ships.
+     *
+     * @return  array<string, mixed>  The object exactly as declared; empty when the package declares none.
+     *
+     * @since   2.0.0
+     */
     public function configuration(): array
     {
         return $this->configuration;
     }
 
-    /** @return list<string> */
+    /**
+     * List the capability identifiers the extension declares.
+     *
+     * @return  list<string>  De-duplicated identifiers; for schema 2 these mirror the contributed capabilities.
+     *
+     * @since   2.0.0
+     */
     public function permissions(): array
     {
         return $this->permissions;
     }
 
-    /** @return list<array<string, mixed>> */
+    /**
+     * List the route declarations the package ships, for the route registrar to interpret.
+     *
+     * @return  list<array<string, mixed>>  Objects as declared; this type checks their shape, not their content.
+     *
+     * @since   2.0.0
+     */
     public function routes(): array
     {
         return $this->routes;
     }
 
-    /** @return list<array<string, mixed>> */
+    /**
+     * List the event declarations the package ships, for the runtime loader to interpret.
+     *
+     * @return  list<array<string, mixed>>  Objects as declared; this type checks their shape, not their content.
+     *
+     * @since   2.0.0
+     */
     public function events(): array
     {
         return $this->events;
     }
 
-    /** @return list<string> */
+    /**
+     * List the package-relative asset paths the extension publishes.
+     *
+     * @return  list<string>  De-duplicated relative paths, each already proven free of traversal.
+     *
+     * @since   2.0.0
+     */
     public function assets(): array
     {
         return $this->assets;
     }
 
+    /**
+     * Report the typed contributions the extension makes to the application shell.
+     *
+     * @return  ManifestContributionSet  Parsed contributions for schema 2; an empty owned set for schema 1.
+     *
+     * @since   2.0.0
+     */
     public function contributions(): ManifestContributionSet
     {
         return $this->contributions;
     }
 
     /**
-     * @param array<string, mixed> $values
-     * @param list<string> $allowed
+     * Close a schema-2 object to keys it does not define.
+     *
+     * Unknown keys are sorted before reporting so the same document always names the same key,
+     * which keeps the failure message stable across PHP versions and hash orders.
+     *
+     * @param   array<string, mixed>  $values   Decoded object to inspect.
+     * @param   list<string>          $allowed  Keys the schema defines for that object.
+     * @param   string                $field    Human-readable name of the object, used in the message.
+     *
+     * @return  void
+     *
+     * @throws  InvalidArgumentException  When the object carries a key outside the allowed set.
+     *
+     * @since   2.0.0
      */
     private static function assertKnownKeys(array $values, array $allowed, string $field): void
     {
@@ -386,8 +592,19 @@ final readonly class ExtensionManifest
     }
 
     /**
-     * @param array<mixed> $values
-     * @return list<class-string>
+     * Narrow a declared list to class names, preserving order.
+     *
+     * The names are validated as shapes only — a namespace-separated PHP identifier of at least two
+     * parts — because the classes belong to code that is not autoloadable yet at manifest time.
+     *
+     * @param   array<mixed>  $values  Declared entries, expected to be a list of at most 256 strings.
+     * @param   string        $field   Manifest field being validated, used in the failure message.
+     *
+     * @return  list<class-string>  The names in declaration order.
+     *
+     * @throws  InvalidArgumentException  When the value is not a bounded list of qualified class names.
+     *
+     * @since   2.0.0
      */
     private function classList(array $values, string $field): array
     {
@@ -409,8 +626,19 @@ final readonly class ExtensionManifest
     }
 
     /**
-     * @param array<mixed> $value
-     * @return array<string, mixed>
+     * Narrow a declared value to a JSON object.
+     *
+     * An empty array is accepted, because JSON `{}` and `[]` both decode to it and an absent block
+     * is written either way; a non-empty list is not.
+     *
+     * @param   array<mixed>  $value  Decoded value, expected to be an object.
+     * @param   string        $field  Manifest field being validated, used in the failure message.
+     *
+     * @return  array<string, mixed>  The object as declared, empty when nothing was declared.
+     *
+     * @throws  InvalidArgumentException  When the value is a non-empty list rather than an object.
+     *
+     * @since   2.0.0
      */
     private function object(array $value, string $field): array
     {
@@ -422,8 +650,19 @@ final readonly class ExtensionManifest
     }
 
     /**
-     * @param array<mixed> $values
-     * @return list<string>
+     * Narrow a declared list to dotted lowercase identifiers, dropping repeats.
+     *
+     * De-duplication keeps first-seen order, so a declaration order that carries meaning to the
+     * package survives into the stored list.
+     *
+     * @param   array<mixed>  $values  Declared entries, expected to be a list of at most 256 strings.
+     * @param   string        $field   Manifest field being validated, used in the failure message.
+     *
+     * @return  list<string>  Distinct identifiers in first-seen order.
+     *
+     * @throws  InvalidArgumentException  When the value is not a bounded list of valid identifiers.
+     *
+     * @since   2.0.0
      */
     private function identifierList(array $values, string $field): array
     {
@@ -441,8 +680,19 @@ final readonly class ExtensionManifest
     }
 
     /**
-     * @param array<mixed> $values
-     * @return list<array<string, mixed>>
+     * Narrow a declared list to JSON objects, leaving their contents alone.
+     *
+     * Repeats are kept, because route and event declarations are positional rather than identified,
+     * and nothing here reads far enough into an entry to know when two of them collide.
+     *
+     * @param   array<mixed>  $values  Declared entries, expected to be a list of at most 256 objects.
+     * @param   string        $field   Manifest field being validated, used in the failure message.
+     *
+     * @return  list<array<string, mixed>>  The entries in declaration order.
+     *
+     * @throws  InvalidArgumentException  When the value is not a bounded list, or an entry is not an object.
+     *
+     * @since   2.0.0
      */
     private function objectList(array $values, string $field): array
     {
@@ -461,8 +711,20 @@ final readonly class ExtensionManifest
     }
 
     /**
-     * @param array<mixed> $values
-     * @return list<string>
+     * Narrow a declared list to relative paths that are safe to join onto a package root.
+     *
+     * A path may only use unreserved filename characters and forward slashes, may not begin or end
+     * with a slash, and may not contain `..` anywhere — including inside a segment — so no declared
+     * asset can reach outside the package. Repeats are dropped, keeping first-seen order.
+     *
+     * @param   array<mixed>  $values  Declared entries, expected to be a list of at most 512 strings.
+     * @param   string        $field   Manifest field being validated, used in the failure message.
+     *
+     * @return  list<string>  Distinct relative paths in first-seen order.
+     *
+     * @throws  InvalidArgumentException  When the value is not a bounded list, or a path is unsafe.
+     *
+     * @since   2.0.0
      */
     private function pathList(array $values, string $field): array
     {
@@ -484,8 +746,19 @@ final readonly class ExtensionManifest
     }
 
     /**
-     * @param array<string, mixed> $data
-     * @return array<string, mixed>
+     * Read a field that the manifest schema requires to be an object.
+     *
+     * A missing field and one holding the wrong type fail identically, so the caller never has to
+     * distinguish "absent" from "present but malformed".
+     *
+     * @param   array<string, mixed>  $data   Decoded object to read the field from.
+     * @param   string                $field  Name of the required field.
+     *
+     * @return  array<string, mixed>  The field's value as an object.
+     *
+     * @throws  InvalidArgumentException  When the field is absent, not an array, or a JSON list.
+     *
+     * @since   2.0.0
      */
     private static function requiredObject(array $data, string $field): array
     {
@@ -498,7 +771,21 @@ final readonly class ExtensionManifest
         return $value;
     }
 
-    /** @param array<mixed> $data */
+    /**
+     * Read a field that the manifest schema requires to be a non-blank string.
+     *
+     * Blankness is judged after trimming, but the value is returned exactly as written, leaving any
+     * surrounding whitespace for the value object that parses it to normalise or reject.
+     *
+     * @param   array<mixed>  $data   Decoded object to read the field from.
+     * @param   string        $field  Name of the required field.
+     *
+     * @return  string  The field's value, unmodified.
+     *
+     * @throws  InvalidArgumentException  When the field is absent, not a string, or blank once trimmed.
+     *
+     * @since   2.0.0
+     */
     private static function requiredString(array $data, string $field): string
     {
         $value = $data[$field] ?? null;

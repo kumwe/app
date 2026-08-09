@@ -14,14 +14,55 @@ use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 use ValueError;
 
+/**
+ * Serves `POST /api/v1/plans`, the preview that describes a change without carrying a way to apply it.
+ *
+ * The route exists so an automation client — an agent, a review workflow, an integration — can state
+ * what it intends before a human approves anything. It reads no domain state and writes none: the
+ * answer is assembled entirely from the request, always says `mode: plan_only` and
+ * `apply_supported: false`, and only the reviews named by `SafePlanOperation` are accepted, so an
+ * unexposed action cannot be smuggled through the `operation` member. Applying a change still goes
+ * through the content, navigation or identity endpoint that owns it, under that endpoint's own
+ * capability and precondition rules.
+ *
+ * @since  2.0.0
+ */
 final readonly class PlanPreviewHandler implements RequestHandlerInterface
 {
+    /**
+     * Wire the route to the factory that mints plans and the factory that renders its refusals.
+     *
+     * @param  SafePlanFactory                $plans     Mints the plan with its identifier and validity window.
+     * @param  ProblemDetailsResponseFactory  $problems  Builds the 400 problem documents this route answers with.
+     *
+     * @since  2.0.0
+     */
     public function __construct(
         private SafePlanFactory $plans,
         private ProblemDetailsResponseFactory $problems,
     ) {
     }
 
+    /**
+     * Answer with a plan describing the requested review, or a problem document refusing the request.
+     *
+     * The idempotency attribute is checked before anything else: its absence means the route was
+     * mounted without `RequireIdempotencyKeyMiddleware`, and rather than serve a request whose replay
+     * protection was never established the handler refuses it. Everything after that is request
+     * validation — the body must be a JSON object carrying string `operation` and `target` members,
+     * the operation must name a `SafePlanOperation` case, and the target must survive the plan's own
+     * length and character rules — and each of those failures is answered 400 with the sentence that
+     * rejected it as the problem detail.
+     *
+     * The response is marked `no-store` and tagged with an entity tag built from the plan identifier,
+     * since each request mints a fresh plan that expires rather than a cacheable resource.
+     *
+     * @param   ServerRequestInterface  $request  Request whose JSON body names the operation and target.
+     *
+     * @return  ResponseInterface  The plan as JSON with a 200 status, or a 400 problem document.
+     *
+     * @since   2.0.0
+     */
     public function handle(ServerRequestInterface $request): ResponseInterface
     {
         if (!$request->getAttribute(RequireIdempotencyKeyMiddleware::ATTRIBUTE) instanceof IdempotencyKey) {
@@ -68,6 +109,19 @@ final readonly class PlanPreviewHandler implements RequestHandlerInterface
         );
     }
 
+    /**
+     * Build the 400 problem document every validation failure on this route shares.
+     *
+     * Only the detail sentence varies between the body, member and operation checks, so the status,
+     * title, problem type and instance are fixed here and each caller supplies what it rejected.
+     *
+     * @param   ServerRequestInterface  $request  Request whose URI is recorded as the problem `instance`.
+     * @param   string                  $detail   Operator-facing sentence naming what was wrong.
+     *
+     * @return  ResponseInterface  An `application/problem+json` response with a 400 status.
+     *
+     * @since   2.0.0
+     */
     private function invalidRequest(ServerRequestInterface $request, string $detail): ResponseInterface
     {
         return $this->problems->create(

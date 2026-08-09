@@ -23,27 +23,108 @@ use RuntimeException;
  * published migration is not repeatable. Current idempotent migrations and migrations explicitly
  * implementing RepeatableMigration are replayed in place. Every other interrupted migration fails
  * closed rather than guessing whether partially committed DDL is safe.
+ *
+ * This is the Doctrine implementation `MigrationRunner` reaches for on MySQL. It keeps at most one
+ * open attempt at a time in a prefixed `migration_attempts` table, holding the migration's checksum,
+ * the strategy it was classified under and whatever baseline that strategy needs to undo or verify an
+ * interrupted run. Every read proves the journal's own schema first, so a table that has drifted from
+ * the shape written here is reported rather than misread.
+ *
+ * @since  2.0.0
  */
 final readonly class DoctrineNonTransactionalMigrationRecovery implements NonTransactionalMigrationRecovery
 {
+    /**
+     * Logical name of the attempt journal, resolved through `TableNames` to this installation's prefix.
+     *
+     * @var    string
+     * @since  2.0.0
+     */
     private const TABLE = 'migration_attempts';
+    /**
+     * Strategy tag for the immutable Core migration: undo back to the journaled baseline, then replay.
+     *
+     * The `_v1` suffix is part of the contract, because the tag is stored in the attempt row and
+     * re-checked on resume: a later build that reconstructs differently registers a new tag rather
+     * than resuming from state this one wrote.
+     *
+     * @var    string
+     * @since  2.0.0
+     */
     private const STRATEGY_CORE = 'fresh_core_v1';
+    /**
+     * Strategy tag for the immutable application-authorization migration: rebuild, verify, never replay.
+     *
+     * Deliberately identical to `ApplicationAuthorizationMigrationRecovery::STRATEGY`, which stamps the
+     * same value into the state it captures and refuses a snapshot carrying anything else.
+     *
+     * @var    string
+     * @since  2.0.0
+     */
     private const STRATEGY_APPLICATION_AUTHORIZATION = 'application_authorization_v1';
+    /**
+     * Strategy tag for a migration whose whole `up()` may simply be executed again.
+     *
+     * @var    string
+     * @since  2.0.0
+     */
     private const STRATEGY_REPEAT = 'repeatable_v1';
+    /**
+     * Strategy tag for everything else: an interrupted attempt stops the run and waits for an operator.
+     *
+     * @var    string
+     * @since  2.0.0
+     */
     private const STRATEGY_FAIL_CLOSED = 'fail_closed_v1';
 
+    /**
+     * SHA-256 of `CoreSchemaMigration` as released, which the baseline-and-replay strategy is pinned to.
+     *
+     * Core recovery drops tables, so it is granted only to the exact migration bytes this build was
+     * released against; a Core migration whose checksum differs is refused instead of recovered.
+     *
+     * @var    string
+     * @since  2.0.0
+     */
     private const PUBLISHED_CORE_CHECKSUM = '69741c8e3fc14a1a0e318a643deb3fa7901685ba8f534a1782917839ad1f0b57';
+    /**
+     * SHA-256 of `ApplicationAuthorizationMigration` as released, pinning the skip-`up()` strategy to it.
+     *
+     * That strategy records the migration as applied without ever running it again, so it is granted
+     * only to the published bytes whose postcondition the paired verifier knows how to reconstruct.
+     *
+     * @var    string
+     * @since  2.0.0
+     */
     private const PUBLISHED_APPLICATION_AUTHORIZATION_CHECKSUM =
         '873179e96a0e4ce35ec40adc7c62ea90c707fbbc7f4ede3baa1c56d849a5e785';
 
-    /** @var list<string> */
+    /**
+     * IDs of already-released migrations whose `up()` is idempotent but which cannot say so in code.
+     *
+     * `RepeatableMigration` is the route open to anything written from now on. These three shipped
+     * before that interface existed, and editing them to implement it would change the checksums
+     * installed sites have already recorded, so recovery classifies them by ID instead.
+     *
+     * @var    list<string>
+     * @since  2.0.0
+     */
     private const CURRENT_REPEATABLE_MIGRATIONS = [
         JobRecoveryMigration::ID,
         AuthorizationRecoveryIntegrationMigration::ID,
         TokenAndTrustLifecycleMigration::ID,
     ];
 
-    /** @var list<string> */
+    /**
+     * Every logical table `CoreSchemaMigration` creates, and the only tables Core recovery may drop.
+     *
+     * `recoverFreshCore()` matches each prefixed table that appeared since the baseline against this
+     * list and aborts without removing anything when one is not on it, so an undo cannot destroy a
+     * table some other writer created inside the same prefix.
+     *
+     * @var    list<string>
+     * @since  2.0.0
+     */
     private const CORE_TABLES = [
         'administrator_sessions',
         'api_tokens',
@@ -76,6 +157,19 @@ final readonly class DoctrineNonTransactionalMigrationRecovery implements NonTra
         'workflows',
     ];
 
+    /**
+     * Bind recovery to the database it journals in and the verifier it delegates authorization repair to.
+     *
+     * @param  Connection                                 $database                  Connection every
+     *         journal read, DDL statement and recovery write goes through, outside any transaction.
+     * @param  TableNames                                 $tables                    Compiler turning
+     *         logical names into this installation's prefixed identifiers; that prefix also bounds
+     *         which tables Core recovery is allowed to see and drop.
+     * @param  ApplicationAuthorizationMigrationRecovery  $applicationAuthorization  Verifier that
+     *         captures and rebuilds the immutable application-authorization migration's postcondition.
+     *
+     * @since  2.0.0
+     */
     public function __construct(
         private Connection $database,
         private TableNames $tables,
@@ -83,6 +177,23 @@ final readonly class DoctrineNonTransactionalMigrationRecovery implements NonTra
     ) {
     }
 
+    /**
+     * Refuse to continue when the journal holds an attempt for a migration this binary does not ship.
+     *
+     * Returns quietly when no journal table exists, which is the state of every database that has
+     * never been interrupted. Otherwise the journal's own schema is proven before a single attempt is
+     * read, so a rollback onto an older build stops here rather than stepping over a recovery it
+     * cannot reason about.
+     *
+     * @param   list<string>  $knownMigrationIds  IDs of every migration in the deployed plan.
+     *
+     * @return  void
+     *
+     * @throws  RuntimeException  When the journal schema has diverged, or a journaled attempt names a
+     *          migration outside the deployed plan.
+     *
+     * @since   2.0.0
+     */
     public function assertKnownAttempts(array $knownMigrationIds): void
     {
         if (!$this->journalExists()) {
@@ -103,6 +214,20 @@ final readonly class DoctrineNonTransactionalMigrationRecovery implements NonTra
         }
     }
 
+    /**
+     * Report whether any journaled attempt is still open.
+     *
+     * A database with no journal table has nothing unresolved, so its absence answers false rather than
+     * failing. `ReadinessProbe` calls this on every platform, while the journal itself is only ever
+     * created on one whose DDL commits implicitly, so the missing table is the ordinary case.
+     *
+     * @return  bool  True while at least one attempt row is present and has not been retired.
+     *
+     * @throws  RuntimeException  When the journal schema has diverged, or the driver returns a count
+     *          that is neither an integer nor a string of decimal digits.
+     *
+     * @since   2.0.0
+     */
     public function hasUnresolvedAttempts(): bool
     {
         if (!$this->journalExists()) {
@@ -116,6 +241,31 @@ final readonly class DoctrineNonTransactionalMigrationRecovery implements NonTra
         )), 'migration recovery attempt count') > 0;
     }
 
+    /**
+     * Journal the attempt about to start, and decide how an interrupted earlier one resumes.
+     *
+     * A first attempt stores the migration's checksum, its strategy and whatever baseline that strategy
+     * will need — the current prefix-scoped table list for Core, the captured snapshot for application
+     * authorization, nothing for the rest — and asks the runner to execute. A repeat attempt must match
+     * the journaled checksum and strategy exactly before anything else happens; Core is then undone
+     * back to its baseline and replayed, application authorization is rebuilt and verified so that
+     * `up()` is skipped entirely, a repeatable migration is replayed in place, and anything else stops
+     * the run for an operator.
+     *
+     * Only one attempt may be open across the whole installation, so an unresolved attempt for a
+     * different migration blocks this one rather than being stepped over.
+     *
+     * @param   Migration  $migration  Migration whose attempt is being opened or resumed.
+     *
+     * @return  NonTransactionalMigrationAction  `Execute` when the runner must call `up()`,
+     *          `RecordRecovered` when recovery has already restored the postcondition itself.
+     *
+     * @throws  RuntimeException  When another attempt is unresolved, an immutable migration's checksum
+     *          is not the published one, the journaled checksum or strategy has drifted, the journaled
+     *          baseline or state is unusable, or the interrupted migration is not repeatable.
+     *
+     * @since   2.0.0
+     */
     public function prepare(Migration $migration): NonTransactionalMigrationAction
     {
         $this->ensureJournal();
@@ -177,6 +327,22 @@ final readonly class DoctrineNonTransactionalMigrationRecovery implements NonTra
         return NonTransactionalMigrationAction::Execute;
     }
 
+    /**
+     * Retire the attempt now that the migration's ledger row has been written.
+     *
+     * Deliberately strict, because the journal is the only account of what an interrupted run left
+     * behind: a missing attempt row, or a delete that removes anything other than exactly one row,
+     * stops the pass rather than leaving behind a row that would block every later migration.
+     *
+     * @param   Migration  $migration  Migration whose attempt is being closed.
+     *
+     * @return  void
+     *
+     * @throws  RuntimeException  When no attempt is journaled for the migration, its journaled checksum
+     *          has drifted, or the row could not be removed.
+     *
+     * @since   2.0.0
+     */
     public function complete(Migration $migration): void
     {
         $attempt = $this->attempt($migration->id());
@@ -198,6 +364,23 @@ final readonly class DoctrineNonTransactionalMigrationRecovery implements NonTra
         }
     }
 
+    /**
+     * Clear a leftover attempt for a migration the ledger already records as applied.
+     *
+     * Covers the window between the ledger write and `complete()`: the migration did finish, so the
+     * stale row is deleted instead of driving a replay, and readiness stops reporting an unresolved
+     * attempt. Doing nothing when no attempt is journaled is the usual case, since the runner calls
+     * this for every already-applied migration on every MySQL pass.
+     *
+     * @param   Migration  $migration  Applied migration whose stale attempt is being cleared.
+     *
+     * @return  void
+     *
+     * @throws  RuntimeException  When the journal schema has diverged, the journaled checksum does not
+     *          match the migration, or the row could not be removed.
+     *
+     * @since   2.0.0
+     */
     public function reconcileApplied(Migration $migration): void
     {
         $this->ensureJournal();
@@ -217,6 +400,24 @@ final readonly class DoctrineNonTransactionalMigrationRecovery implements NonTra
         }
     }
 
+    /**
+     * Classify how an interrupted attempt at this migration would be allowed to resume.
+     *
+     * The two immutable published migrations are recognized by ID and then pinned to the checksum this
+     * build shipped against, so a migration whose bytes no longer match cannot claim a strategy that
+     * drops tables or skips `up()`. Everything else earns a replay only by implementing
+     * `RepeatableMigration` or by appearing in `CURRENT_REPEATABLE_MIGRATIONS`; the remainder falls
+     * through to failing closed.
+     *
+     * @param   Migration  $migration  Migration being journaled for the first time, or resumed.
+     *
+     * @return  string  One of the `STRATEGY_*` tags, stored in the attempt row and compared again on
+     *          every resume.
+     *
+     * @throws  RuntimeException  When an immutable migration's checksum is not the published one.
+     *
+     * @since   2.0.0
+     */
     private function strategy(Migration $migration): string
     {
         if ($migration->id() === CoreSchemaMigration::ID) {
@@ -243,6 +444,19 @@ final readonly class DoctrineNonTransactionalMigrationRecovery implements NonTra
         return self::STRATEGY_FAIL_CLOSED;
     }
 
+    /**
+     * Create the attempt journal when this installation has none, and prove its schema when it has one.
+     *
+     * The created table keys attempts by `version` and carries the checksum, the JSON baseline and
+     * recovery-state payloads, and the two timestamps — the exact shape `assertJournalSchema()` insists
+     * on afterwards.
+     *
+     * @return  void
+     *
+     * @throws  RuntimeException  When an existing journal table diverges from the shape written here.
+     *
+     * @since   2.0.0
+     */
     private function ensureJournal(): void
     {
         $schema = $this->database->createSchemaManager();
@@ -266,11 +480,34 @@ final readonly class DoctrineNonTransactionalMigrationRecovery implements NonTra
         $this->assertJournalSchema();
     }
 
+    /**
+     * Check whether this installation's prefix already carries the attempt journal.
+     *
+     * @return  bool  True when the table exists; false on a database that has never opened an attempt,
+     *          which the read-only entry points treat as "nothing to recover" rather than an error.
+     *
+     * @since   2.0.0
+     */
     private function journalExists(): bool
     {
         return $this->database->createSchemaManager()->tablesExist([$this->tables->raw(self::TABLE)]);
     }
 
+    /**
+     * Prove an existing journal is the table recovery writes, before any attempt is read out of it.
+     *
+     * Checks the exact column set, the `version` and `checksum` string columns with their declared
+     * lengths and fixedness, both JSON payload columns, and a primary key over `version` alone. A
+     * journal failing any of these could hold rows this code would misread into a decision to drop
+     * tables, so it is refused rather than trusted.
+     *
+     * @return  void
+     *
+     * @throws  RuntimeException  When the column set, a column definition, or the primary key differs
+     *          from what `ensureJournal()` creates.
+     *
+     * @since   2.0.0
+     */
     private function assertJournalSchema(): void
     {
         $schema = $this->database->createSchemaManager();
@@ -309,6 +546,20 @@ final readonly class DoctrineNonTransactionalMigrationRecovery implements NonTra
         throw new RuntimeException('The non-transactional migration journal primary key is divergent.');
     }
 
+    /**
+     * Refuse to open an attempt while some other migration's attempt is still unresolved.
+     *
+     * Two open attempts would mean two half-applied migrations with no ordering between their undo
+     * paths, so the second one never starts and the operator deals with the first.
+     *
+     * @param   string  $id  Migration ID about to be journaled, the one attempt allowed to be open.
+     *
+     * @return  void
+     *
+     * @throws  RuntimeException  When the journal holds an attempt for any other migration.
+     *
+     * @since   2.0.0
+     */
     private function assertOnlyAttempt(string $id): void
     {
         $other = $this->database->fetchOne(sprintf(
@@ -323,7 +574,16 @@ final readonly class DoctrineNonTransactionalMigrationRecovery implements NonTra
         }
     }
 
-    /** @return array<string, mixed>|null */
+    /**
+     * Read the journaled attempt row for a migration, if one is open.
+     *
+     * @param   string  $id  Migration ID the attempt is keyed by.
+     *
+     * @return  array<string, mixed>|null  The `version`, `checksum`, `baseline_tables` and
+     *          `recovery_state` columns as the driver hands them back, or null when no attempt is open.
+     *
+     * @since   2.0.0
+     */
     private function attempt(string $id): ?array
     {
         $attempt = $this->database->fetchAssociative(sprintf(
@@ -334,7 +594,23 @@ final readonly class DoctrineNonTransactionalMigrationRecovery implements NonTra
         return $attempt === false ? null : $attempt;
     }
 
-    /** @param array<string, mixed> $attempt */
+    /**
+     * Insist the journaled attempt was opened by the same migration code that is now resuming it.
+     *
+     * A deployment that changed a migration's body between the interruption and the resume would
+     * otherwise recover a schema change nobody can name, so the two checksums are compared before any
+     * undo, replay or retirement is allowed to proceed.
+     *
+     * @param   Migration             $migration  Migration whose checksum the journal must agree with.
+     * @param   array<string, mixed>  $attempt    Journaled attempt row, as `attempt()` returned it.
+     *
+     * @return  void
+     *
+     * @throws  RuntimeException  When the row carries no usable checksum, or one that differs from the
+     *          migration's own.
+     *
+     * @since   2.0.0
+     */
     private function assertChecksum(Migration $migration, array $attempt): void
     {
         $checksum = $attempt['checksum'] ?? null;
@@ -347,8 +623,22 @@ final readonly class DoctrineNonTransactionalMigrationRecovery implements NonTra
     }
 
     /**
-     * @param array<string, mixed> $attempt
-     * @return list<string>
+     * Read back the prefix-scoped table list captured before the interrupted Core attempt started.
+     *
+     * Every entry is re-proved to sit inside the configured prefix. This list is what
+     * `recoverFreshCore()` subtracts from the live schema to decide which tables to drop, so a payload
+     * naming anything outside the installation is not one this code wrote and is refused outright
+     * rather than allowed to shape that decision.
+     *
+     * @param   array<string, mixed>  $attempt  Journaled attempt row carrying `baseline_tables`.
+     *
+     * @return  list<string>  Physical table names that already existed when the attempt was opened;
+     *          empty when the prefix held no tables at all, which is the fresh-install case.
+     *
+     * @throws  RuntimeException  When the payload is unusable, is not a list, or names a table outside
+     *          the installation's prefix.
+     *
+     * @since   2.0.0
      */
     private function baseline(array $attempt): array
     {
@@ -367,8 +657,20 @@ final readonly class DoctrineNonTransactionalMigrationRecovery implements NonTra
     }
 
     /**
-     * @param array<string, mixed> $attempt
-     * @return array<string, mixed>
+     * Read back the recovery state the strategy journaled when the attempt was opened.
+     *
+     * The payload has been through JSON, so a list is rejected outright and every key is proven to be
+     * a string before the map is handed to a strategy that will read named entries out of it.
+     *
+     * @param   array<string, mixed>  $attempt  Journaled attempt row carrying `recovery_state`.
+     *
+     * @return  array<string, mixed>  The decoded state: the strategy tag, plus whatever that strategy
+     *          captured — for application authorization, the snapshot its verifier rebuilds from.
+     *
+     * @throws  RuntimeException  When the payload is unusable, or decodes to anything other than a
+     *          string-keyed map.
+     *
+     * @since   2.0.0
      */
     private function state(array $attempt): array
     {
@@ -387,7 +689,24 @@ final readonly class DoctrineNonTransactionalMigrationRecovery implements NonTra
         return $state;
     }
 
-    /** @param list<string> $baseline */
+    /**
+     * Undo an interrupted Core attempt back to its baseline so the migration can be replayed cleanly.
+     *
+     * Only tables that appeared inside this installation's prefix since the baseline are candidates,
+     * and every one of them must be a table `CoreSchemaMigration` itself creates; a single unrecognized
+     * name aborts the whole recovery before anything is removed. Foreign keys are then dropped across
+     * all the candidates first, which is what makes the table drops that follow safe whatever order the
+     * names happen to sort in. An interruption that created nothing new leaves this a no-op.
+     *
+     * @param   list<string>  $baseline  Prefixed table names present when the attempt was opened.
+     *
+     * @return  void
+     *
+     * @throws  RuntimeException  When a table created since the baseline is not one Core creates, in
+     *          which case nothing is dropped, or when such a table carries an unnamed foreign key.
+     *
+     * @since   2.0.0
+     */
     private function recoverFreshCore(array $baseline): void
     {
         $created = array_values(array_diff($this->prefixedTables(), $baseline));
@@ -422,7 +741,14 @@ final readonly class DoctrineNonTransactionalMigrationRecovery implements NonTra
         }
     }
 
-    /** @return list<string> */
+    /**
+     * List the physical tables belonging to this installation, as introspection currently sees them.
+     *
+     * @return  list<string>  Unqualified table names carrying the configured prefix, sorted as strings
+     *          so a baseline captured on one run compares directly against a later introspection.
+     *
+     * @since   2.0.0
+     */
     private function prefixedTables(): array
     {
         $tables = array_values(array_filter(array_map(
@@ -435,6 +761,20 @@ final readonly class DoctrineNonTransactionalMigrationRecovery implements NonTra
         return $tables;
     }
 
+    /**
+     * Decide whether a physical table name belongs to this installation's table prefix.
+     *
+     * The prefix is recovered from a name `TableNames` compiles rather than held as a second copy here,
+     * so the two can never disagree. The empty-prefix guard is defensive: a blank prefix would match
+     * every table in the database, and matching nothing is the safe answer for a check that decides
+     * what Core recovery may drop.
+     *
+     * @param   string  $table  Unqualified physical table name, as introspection reports it.
+     *
+     * @return  bool  True when the name starts with the installation's non-empty prefix.
+     *
+     * @since   2.0.0
+     */
     private function hasPrefix(string $table): bool
     {
         $ledger = $this->tables->raw('schema_migrations');
@@ -443,6 +783,21 @@ final readonly class DoctrineNonTransactionalMigrationRecovery implements NonTra
         return $prefix !== '' && str_starts_with($table, $prefix);
     }
 
+    /**
+     * Stamp a resumed attempt as still being worked on, and confirm its row survived the resume.
+     *
+     * An update that reports no rows changed is not by itself a failure — a driver reports that when
+     * the timestamp it would write equals the one already stored — so the row is re-read and only a
+     * genuinely vanished attempt stops the run.
+     *
+     * @param   string  $id  Migration ID of the attempt being kept open.
+     *
+     * @return  void
+     *
+     * @throws  RuntimeException  When the update matched nothing and the attempt row is gone.
+     *
+     * @since   2.0.0
+     */
     private function touch(string $id): void
     {
         $updated = $this->database->update(
@@ -456,6 +811,18 @@ final readonly class DoctrineNonTransactionalMigrationRecovery implements NonTra
         }
     }
 
+    /**
+     * Read the name a foreign key has to be dropped by while undoing an interrupted Core attempt.
+     *
+     * @param   ForeignKeyConstraint  $constraint  Constraint introspected from a table Core recovery is
+     *          about to remove.
+     *
+     * @return  string  The unquoted constraint identifier.
+     *
+     * @throws  RuntimeException  When the constraint is anonymous and so cannot be dropped by name.
+     *
+     * @since   2.0.0
+     */
     private function constraintName(ForeignKeyConstraint $constraint): string
     {
         $name = $constraint->getObjectName();
@@ -466,7 +833,20 @@ final readonly class DoctrineNonTransactionalMigrationRecovery implements NonTra
         return $name->getIdentifier()->getValue();
     }
 
-    /** @param array<mixed> $value */
+    /**
+     * Serialize a journal payload for one of the attempt row's JSON columns.
+     *
+     * A JSON failure is translated into this class's operator-facing wording, with the original kept
+     * as the previous exception, so callers only ever have to handle the recovery vocabulary.
+     *
+     * @param   array<mixed>  $value  Baseline table list, or recovery state map, about to be journaled.
+     *
+     * @return  string  JSON with slashes left unescaped, as stored in the attempt row.
+     *
+     * @throws  RuntimeException  When the value cannot be represented as JSON.
+     *
+     * @since   2.0.0
+     */
     private function encode(array $value): string
     {
         try {
@@ -476,7 +856,22 @@ final readonly class DoctrineNonTransactionalMigrationRecovery implements NonTra
         }
     }
 
-    /** @return array<mixed> */
+    /**
+     * Read a journal payload back out of an attempt row's JSON column.
+     *
+     * Decoding is capped at 32 levels, and the caller's label is what reaches the operator, so a
+     * failure names the payload that is unusable rather than the column it happened to sit in.
+     *
+     * @param   mixed   $encoded  Raw column value, which has to be the JSON string the journal stored.
+     * @param   string  $label    Name of the payload, used to phrase the failure for an operator.
+     *
+     * @return  array<mixed>  The decoded payload; `baseline()` and `state()` narrow it from here.
+     *
+     * @throws  RuntimeException  When the column is not a string, is not JSON within the depth limit,
+     *          or decodes to something other than an array.
+     *
+     * @since   2.0.0
+     */
     private function decode(mixed $encoded, string $label): array
     {
         if (!is_string($encoded)) {
@@ -494,11 +889,31 @@ final readonly class DoctrineNonTransactionalMigrationRecovery implements NonTra
         return $decoded;
     }
 
+    /**
+     * Timestamp the attempt rows this journal opens and touches, in UTC.
+     *
+     * @return  \DateTimeImmutable  The current instant in UTC, so `started_at` and `updated_at` stay
+     *          comparable across replicas whose local zones differ.
+     *
+     * @since   2.0.0
+     */
     private function now(): \DateTimeImmutable
     {
         return new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
     }
 
+    /**
+     * Read a count a driver may hand back as either an integer or a numeric string.
+     *
+     * @param   mixed   $value  Raw column value from the journal's attempt-count query.
+     * @param   string  $label  Name of the value, used to phrase the failure for an operator.
+     *
+     * @return  int  The value as an integer.
+     *
+     * @throws  RuntimeException  When the value is neither an integer nor a string of decimal digits.
+     *
+     * @since   2.0.0
+     */
     private function nonNegativeInteger(mixed $value, string $label): int
     {
         if (!is_int($value) && (!is_string($value) || preg_match('/^[0-9]+$/D', $value) !== 1)) {
