@@ -40,13 +40,15 @@ final class BusinessSecurityPortalMigrationTest extends TestCase
             $byName[$definition->getObjectName()->getUnqualifiedName()->getValue()] = $definition;
         }
 
-        foreach ([
+        foreach (
+            [
             'kumwe_organizations',
             'kumwe_separation_duty_rules',
             'kumwe_approval_requests',
             'kumwe_step_up_proofs',
             'kumwe_portal_sessions',
-        ] as $tableName) {
+            ] as $tableName
+        ) {
             $definition = $byName[$tableName] ?? null;
             self::assertInstanceOf(Table::class, $definition);
             $siteIdentifier = $definition->getColumn('site_identifier');
