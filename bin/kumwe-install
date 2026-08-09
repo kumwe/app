@@ -4,7 +4,12 @@ declare(strict_types=1);
 
 /**
  * Interactive project bootstrap used by `composer create-project kumwe/cms`.
- * It deliberately delegates schema and identity work to Kumwe's public CLI.
+ *
+ * The script writes an initial `.env` and stops there: it deliberately delegates schema migration and
+ * owner creation to Kumwe's public CLI so that a scripted installation and an interactive one follow
+ * exactly the same path. It is a no-op when `.env` already exists.
+ *
+ * @since  2.0.0
  */
 
 $root = dirname(__DIR__);
