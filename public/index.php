@@ -1,5 +1,16 @@
 <?php
 
+/**
+ * HTTP front controller for every public, administrator, and API request.
+ *
+ * The script fails soft when dependencies are absent so an unfinished deployment answers 503 rather
+ * than a fatal error, and it routes health probes and the extension trust-key endpoint through the
+ * recovery container so an operator can observe and repair a site whose extension registry will not
+ * boot.
+ *
+ * @since  2.0.0
+ */
+
 declare(strict_types=1);
 
 use Mezzio\Application;

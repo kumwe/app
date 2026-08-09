@@ -1,5 +1,17 @@
 <?php
 
+/**
+ * Observability contract for logging, health endpoints, and metric exposure.
+ *
+ * The values here are the deployment-independent parts of the contract: which context fields every
+ * log line must carry, which fields are redacted before a line is written, and the paths and budgets
+ * the health probes use. Environment variables tune the deployment-specific parts.
+ *
+ * @return array<string, mixed> The observability configuration tree.
+ *
+ * @since  2.0.0
+ */
+
 declare(strict_types=1);
 
 return [

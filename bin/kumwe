@@ -1,6 +1,15 @@
 #!/usr/bin/env php
 <?php
 
+/**
+ * Command-line entry point for Kumwe.
+ *
+ * Resolves the console container — recovery or full, depending on the requested command — and hands
+ * the argument vector to `ConsoleApplication`, whose exit status becomes the process exit status.
+ *
+ * @since  2.0.0
+ */
+
 declare(strict_types=1);
 
 use Kumwe\CMS\Delivery\Console\ConsoleApplication;
