@@ -78,6 +78,24 @@ Kumwe prevents an administrator from disabling their own account or removing the
 
 Tokens are shown once and stored only as a digest. Copy a new token directly into its destination secret manager. Give it the smallest capability set and an expiry; never paste tokens into issue trackers, templates, or content fields.
 
+## Business security and second factor
+
+The security administration screen manages organizations, workspaces, memberships and membership roles,
+conditional record/field policies, separation-of-duty rules, approval requests, step-up status, and scoped token
+diagnostics. Forms expose only typed, allowlisted choices. Policy conditions are assembled from field, attribute,
+operator, and typed-value controls; there is no raw JSON, SQL, or expression editor.
+
+Security changes require `business.security.manage`. Approval requests, votes, and lifecycle operations use the
+separate `business.approval.request`, `business.approval.approve`, and `business.approval.manage` capabilities.
+Step-up credential administration requires `business.step_up.manage`. The server blocks self-assignment,
+self-revocation that changes the actor's effective membership authority, maker-approver collapse, stale form
+versions, and changes outside the selected organization/workspace.
+
+Enroll an authenticator from **Account security**, confirm it with a current TOTP code, and copy the ten recovery
+codes into an offline secret store. High-impact forms request a new TOTP or unused recovery code and rotate the
+administrator session and CSRF secret on success. A password-only session cannot approve or execute a protected
+operation. See [Business security](business-security.md) for policy evaluation and proof binding.
+
 ## Capability catalog
 
 | Area | Capabilities |
@@ -87,6 +105,9 @@ Tokens are shown once and stored only as a digest. Copy a new token directly int
 | Workflow | `content.submit`, `content.review`, `content.publish`, `content.unpublish`, `content.archive`, `content.restore` |
 | Site structure | `navigation.manage` |
 | Identity | `users.manage` |
+| Business records | `business.record.create`, `business.record.read`, `business.record.update`, `business.record.archive`, `business.record.delete`, `business.record.restore`, `business.record.transition`, `business.record.export`, `business.record.report` |
+| Business control | `business.approval.request`, `business.approval.approve`, `business.approval.manage`, `business.security.manage`, `business.step_up.manage` |
+| Ordinary portal | `portal.access` |
 | Configuration | `settings.manage` |
 | Extension lifecycle | `extensions.manage` |
 | Jobs and schedules | `automation.manage` |

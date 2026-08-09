@@ -20,6 +20,12 @@
   services so rotated values take effect.
 - If an extension is implicated, disable it through the audited extension
   lifecycle rather than deleting files in a running container.
+- Suspend affected organization/workspace memberships, increment the subject security epoch, and revoke portal
+  and administrator sessions plus all API/CLI/MCP token families. Do not wait for credential expiry.
+- Disable the affected contribution owner so its capabilities, resource policies, portal routes, navigation, and
+  templates leave the live registries together.
+- Revoke pending approvals whose requester authority, resource version, payload, policy, or approver set may have
+  been affected. A remembered step-up timestamp is not evidence; nonce proofs are purpose/session bound.
 - Preserve the compromised image and filesystem snapshot for analysis; replace
   service containers from a verified digest.
 
@@ -29,6 +35,11 @@ Restore into an isolated environment, verify backup authenticity and integrity,
 apply only supported 2.x migrations, and validate readiness plus application
 smoke tests. Reopen traffic gradually and monitor authentication failures, audit
 events, 5xx responses, job failures and database activity.
+
+Re-enroll TOTP credentials if the encryption key or enrollment secret may have been exposed; invalidate every
+recovery code and session associated with the old credential. Rebuild memberships and security policies through
+typed administrator forms, then verify effective access with a limited account in every affected organization and
+workspace.
 
 Document scope, root cause, dwell time, affected records, credential exposure,
 corrective actions and release evidence. Follow applicable notification and data

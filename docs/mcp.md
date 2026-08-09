@@ -89,4 +89,9 @@ Publishing, unpublishing, extension activation, settings changes, and schedules 
 - Keep operation IDs and returned versions in the calling workflow so retries remain safe.
 - Monitor audit events, authentication failures, denied capabilities, and unusual mutation volume.
 
+MCP tokens use the `kumwe-mcp` audience and MCP purpose and remain bound to their live site, organization,
+workspace, membership version, policy generation, security epoch, token family, and delegation depth. Tool,
+resource, and prompt discovery does not expand that authority. Any business-record resource or tool must pass the
+shared row and field disclosure plan before returning identities, counts, relations, aggregates, or values.
+
 Use [REST](rest-api.md) for the complete machine-to-machine API and [Architecture: delivery](architecture/delivery.md) for the shared-service contract.

@@ -54,6 +54,12 @@ php bin/kumwe token:create \
 
 The plaintext token is printed once. Route it directly to a secret manager and clear terminal capture according to site policy.
 
+CLI credentials use the `kumwe-cli` audience and a closed management purpose. Site, organization, workspace,
+membership version, policy generation, security epoch, family, and delegation depth are revalidated before a
+concrete command is authorized. A CLI flag cannot select an organization or workspace outside the token's live
+membership. Commands that expose business records must use the same record and field policy plan as HTTP, MCP,
+workers, and the portal.
+
 ## Content
 
 The `content` command prints JSON and calls the same content service as the administrator, API, and MCP:

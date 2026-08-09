@@ -129,3 +129,13 @@ schema approval rejects absent, stale, mismatched, or untested evidence.
 Cut over only after application and business fixtures pass. Never restore over the active database or active media/extension directories.
 
 CI performs backup, verification, empty-target restore, and file comparison for MariaDB, MySQL, and PostgreSQL. Operators must also run scheduled off-host drills and record recovery time, recovery point, exact client/server versions, and acceptance evidence.
+
+The database backup includes organizations, workspaces, membership versions and roles, owner-bound capability and
+resource-policy declarations, conditional record/field policies, SoD rules, approval requests/votes/consumption,
+encrypted step-up credentials, recovery-code digests, proof replay fences, scoped token bindings, portal sessions,
+resource ownership, and security audit history. Secrets remain encrypted or digested in the archive.
+
+On a clean-target drill, verify catalog owner/checksum/lifecycle parity, effective access for one allowed and one
+denied membership, row and field non-enumeration, stale-session rejection, approval spent state, and TOTP/recovery
+replay fences. Invalidate restored browser sessions and token families before connecting a drill copy to any
+network that can reach production resources.

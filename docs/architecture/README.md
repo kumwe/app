@@ -1,5 +1,8 @@
 # Architecture guide
 
+The runtime's cross-surface security boundaries are documented in [Business security](../business-security.md)
+and [Ordinary-user portal](../portal.md).
+
 This section records the boundaries that must remain stable as Kumwe grows. It is for maintainers, extension authors, and automated coding agents that need to change the system without reconstructing its intent from implementation details.
 
 - [Principles and ownership](principles.md)

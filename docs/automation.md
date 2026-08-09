@@ -66,5 +66,11 @@ Built-in job types include `system.sessions.purge`, `extensions.runtime.rebuild`
 - Do not retry permanent validation or authorization failures.
 - Include actor or system identity in jobs that mutate application state so the audit record remains attributable.
 - Alert on pending-job age, failed jobs, expired leases, repeated retries, scheduler lag, and stale heartbeats.
+- Capture a server-resolved organization/workspace membership and authorization digest when enqueueing protected
+  work; revalidate membership, policy generation, security epoch, owner trust, and capability at execution time.
+- Apply business record predicates and field usage before job selection, counts, aggregates, reports, or exports.
+  Do not serialize an executable policy, SQL fragment, or client-supplied context into a job payload.
+- A queued high-impact action carries only the immutable approval request identifier. Execution locks and spends
+  the exact current approval and step-up proof; enqueueing never counts as approval.
 
 Worker and scheduler process control is a deployment responsibility. Site administrators may define permitted schedules through application services, but browser users never receive shell or container control.

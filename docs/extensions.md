@@ -242,6 +242,24 @@ Migrations are forward-moving application assets. `down()` exists to compensate 
 
 Never expose deployment secrets in extension settings. An extension that needs an API credential should integrate with the site's protected secret provider and show only connection status in the administrator.
 
+### Business security and portal contributions
+
+Declare capabilities and resource policies in the signed manifest before registering a business or portal
+surface that references them. Each declaration has an owner-bound canonical checksum, target resource types,
+allowed scopes, delegation/system flags, impact classification, and lifecycle. Kumwe rejects missing references,
+duplicate identifiers, cross-owner replacement, stale checksums, and untrusted owners. Core uses the same
+contribution path as extensions; providers must not construct a second capability or policy registry.
+
+Portal providers receive an owner-restricted registrar for workspaces, templates, navigation, and routes. Routes
+are confined to `/portal/extensions/{vendor}/{name}`, declare closed HTTP methods and required capabilities, and
+receive CSRF middleware automatically for mutations. Templates must resolve inside the trusted active extension
+runtime root. Providers receive a constrained contribution renderer, never the container, database connection,
+identity stores, or arbitrary Twig loader.
+
+Registration order is capability/resource policy, workspace/template, then navigation/route. Disable, uninstall,
+replacement, and trust revocation remove in reverse order and are enforced on every request. See
+[Ordinary-user portal](portal.md) and [Business security](business-security.md).
+
 ## Install and lifecycle
 
 ```bash
