@@ -40,6 +40,7 @@ Use this index to install, operate, administer, integrate, extend, or evolve Kum
 
 - [Development and testing](development.md): local checks, database matrix, deployment tests, and release gates.
 - [Architecture guide](architecture/README.md): stable boundaries, persistence choice, delivery parity, extension model, and growth paths.
+- [Coding standard](coding-standard.md): documentation blocks, types, naming, structure, and errors, for human and agent contributors.
 - [Contributing](../CONTRIBUTING.md): repository workflow and contribution requirements.
 
 Run `php bin/kumwe list` in an installed release for the exact CLI command index. Public documentation describes released behavior; temporary plans and internal implementation status do not belong here.
