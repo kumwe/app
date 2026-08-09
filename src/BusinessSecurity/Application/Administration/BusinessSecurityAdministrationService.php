@@ -903,7 +903,7 @@ final readonly class BusinessSecurityAdministrationService
      * Assert that every current grant on a role remains within the actor's delegation ceiling.
      *
      * @param   ExecutionContext  $context  Authenticated administrator and exact site scope.
-     * @param   string            $roleId  Role whose complete live grant set must remain delegable.
+     * @param   string            $roleId   Role whose complete live grant set must remain delegable.
      *
      * @return  void
      *
@@ -1451,7 +1451,7 @@ final readonly class BusinessSecurityAdministrationService
      * workspace-bound rows again. Global role and capability definitions remain visible because assignment
      * still passes through the delegation ceiling and they carry no organization-owned business data.
      *
-     * @param   ExecutionContext                         $context   Authenticated administrator scope.
+     * @param   ExecutionContext                           $context   Authenticated administrator scope.
      * @param   array<string, list<array<string, mixed>>>  $overview  Complete site read model.
      *
      * @return  array<string, list<array<string, mixed>>>  Scope-confined presentation model.

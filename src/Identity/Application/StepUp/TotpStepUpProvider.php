@@ -42,17 +42,17 @@ final readonly class TotpStepUpProvider implements StepUpProvider, Administrator
     /**
      * Bind the provider to its cryptographic, persistence, transaction, audit, and session boundaries.
      *
-     * @param  StepUpCredentialStore       $credentials  Encrypted credential and digest store.
-     * @param  StepUpSecretCipher          $cipher       Authenticated encryption for TOTP secrets.
-     * @param  StepUpRecoveryCodeHasher    $recovery     Keyed recovery-code digest implementation.
-     * @param  StepUpRandomSource          $random       CSPRNG and UUID source.
-     * @param  TotpAlgorithm               $totp         RFC 6238 implementation.
-     * @param  StepUpAttemptThrottle       $throttle     Distributed, fail-closed attempt budget.
-     * @param  StepUpSessionRotator        $sessions     Transaction-participating browser session rotator.
-     * @param  StepUpProofStore            $proofs       Durable single-use proof replay fence.
-     * @param  TransactionManager          $transactions Shared transaction coordinator.
-     * @param  AuditRecorder               $audit        Durable security event sink.
-     * @param  ClockInterface              $clock        Trusted UTC time source.
+     * @param  StepUpCredentialStore     $credentials   Encrypted credential and digest store.
+     * @param  StepUpSecretCipher        $cipher        Authenticated encryption for TOTP secrets.
+     * @param  StepUpRecoveryCodeHasher  $recovery      Keyed recovery-code digest implementation.
+     * @param  StepUpRandomSource        $random        CSPRNG and UUID source.
+     * @param  TotpAlgorithm             $totp          RFC 6238 implementation.
+     * @param  StepUpAttemptThrottle     $throttle      Distributed, fail-closed attempt budget.
+     * @param  StepUpSessionRotator      $sessions      Transaction-participating browser session rotator.
+     * @param  StepUpProofStore          $proofs        Durable single-use proof replay fence.
+     * @param  TransactionManager        $transactions  Shared transaction coordinator.
+     * @param  AuditRecorder             $audit         Durable security event sink.
+     * @param  ClockInterface            $clock         Trusted UTC time source.
      *
      * @since  2.0.0
      */
@@ -74,9 +74,9 @@ final readonly class TotpStepUpProvider implements StepUpProvider, Administrator
     /**
      * Create a ten-minute pending enrollment and return the plaintext provisioning secret once.
      *
-     * @param   string  $subjectId    Authenticated actor UUID.
-     * @param   string  $issuer       Authenticator issuer label, 1 through 80 printable characters.
-     * @param   string  $accountLabel Account label, 1 through 191 printable characters.
+     * @param   string  $subjectId     Authenticated actor UUID.
+     * @param   string  $issuer        Authenticator issuer label, 1 through 80 printable characters.
+     * @param   string  $accountLabel  Account label, 1 through 191 printable characters.
      *
      * @return  StepUpEnrollmentSetup  Pending UUID, Base32 secret, provisioning URI, and expiry.
      *
@@ -270,9 +270,9 @@ final readonly class TotpStepUpProvider implements StepUpProvider, Administrator
     /**
      * Consume one keyed recovery digest and rotate the challenged session atomically.
      *
-     * @param   StepUpIntent  $intent       Server-resolved context to bind the proof to.
-     * @param   string        $recoveryCode One-time code as displayed during enrollment.
-     * @param   string        $source       Trusted-proxy-resolved source.
+     * @param   StepUpIntent  $intent        Server-resolved context to bind the proof to.
+     * @param   string        $recoveryCode  One-time code as displayed during enrollment.
+     * @param   string        $source        Trusted-proxy-resolved source.
      *
      * @return  StepUpVerification  Fresh context-bound recovery result.
      *
@@ -331,10 +331,10 @@ final readonly class TotpStepUpProvider implements StepUpProvider, Administrator
      *
      * @template T
      *
-     * @param   StepUpIntent  $intent     Attempted actor and context.
-     * @param   string        $source     Trusted origin.
-     * @param   string        $purpose    Budget partition.
-     * @param   callable(): T $operation  Credential work to attempt.
+     * @param   StepUpIntent   $intent     Attempted actor and context.
+     * @param   string         $source     Trusted origin.
+     * @param   string         $purpose    Budget partition.
+     * @param   callable(): T  $operation  Credential work to attempt.
      *
      * @return  T  Operation result.
      *
@@ -471,11 +471,11 @@ final readonly class TotpStepUpProvider implements StepUpProvider, Administrator
     /**
      * Record a successful enrollment or challenge without credential material.
      *
-     * @param   StepUpIntent      $intent        Actor and resolved scope.
-     * @param   string            $credentialId  Credential UUID.
-     * @param   StepUpMethod      $method        Accepted method.
-     * @param   DateTimeImmutable $now           Verification instant.
-     * @param   string            $action        Event suffix.
+     * @param   StepUpIntent       $intent        Actor and resolved scope.
+     * @param   string             $credentialId  Credential UUID.
+     * @param   StepUpMethod       $method        Accepted method.
+     * @param   DateTimeImmutable  $now           Verification instant.
+     * @param   string             $action        Event suffix.
      *
      * @return  void
      *
@@ -545,9 +545,9 @@ final readonly class TotpStepUpProvider implements StepUpProvider, Administrator
     /**
      * Normalize a printable authenticator label within its bound.
      *
-     * @param   string  $value   Candidate label.
-     * @param   int     $maximum Maximum Unicode characters.
-     * @param   string  $field   Field named in a rejection.
+     * @param   string  $value    Candidate label.
+     * @param   int     $maximum  Maximum Unicode characters.
+     * @param   string  $field    Field named in a rejection.
      *
      * @return  string  Trimmed label.
      *

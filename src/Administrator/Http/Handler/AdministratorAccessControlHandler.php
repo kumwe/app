@@ -47,18 +47,18 @@ final readonly class AdministratorAccessControlHandler implements RequestHandler
     /**
      * Wire the screen to the services that read and change administrator identities.
      *
-     * @param  AccessControlService             $access          Reads and mutates users, roles, grants and tokens.
-     * @param  AdministratorIdentityGateway     $identities      Issues and rotates tokens, the secret-bearing acts.
-     * @param  AdministratorRenderer            $renderer        Renders the `access-control` template.
-     * @param  AdministratorSessionStore        $sessions        Rotates authenticated organization selections.
-     * @param  MembershipDirectory              $memberships     Lists only selections the actor currently holds.
-     * @param  AdministratorStepUpProvider      $stepUp          Production administrator second-factor provider.
-     * @param  AuthorizationStepUpProofAdapter  $proofs          Adapts provider verification to authorization proof.
-     * @param  StepUpProofConsumer              $proofConsumer   Atomically spends every adapted proof once.
-     * @param  TransactionManager               $transactions    Joins proof use, session rotation and mutation.
-     * @param  ClockInterface                   $clock           Trusted proof-consumption instant.
-     * @param  bool                             $secureCookie    Whether the rotated cookie carries `Secure`.
-     * @param  int                              $sessionLifetime Cookie maximum age in seconds.
+     * @param  AccessControlService             $access           Reads and mutates users, roles, grants and tokens.
+     * @param  AdministratorIdentityGateway     $identities       Issues and rotates tokens, the secret-bearing acts.
+     * @param  AdministratorRenderer            $renderer         Renders the `access-control` template.
+     * @param  AdministratorSessionStore        $sessions         Rotates authenticated organization selections.
+     * @param  MembershipDirectory              $memberships      Lists only selections the actor currently holds.
+     * @param  AdministratorStepUpProvider      $stepUp           Production administrator second-factor provider.
+     * @param  AuthorizationStepUpProofAdapter  $proofs           Adapts provider verification to authorization proof.
+     * @param  StepUpProofConsumer              $proofConsumer    Atomically spends every adapted proof once.
+     * @param  TransactionManager               $transactions     Joins proof use, session rotation and mutation.
+     * @param  ClockInterface                   $clock            Trusted proof-consumption instant.
+     * @param  bool                             $secureCookie     Whether the rotated cookie carries `Secure`.
+     * @param  int                              $sessionLifetime  Cookie maximum age in seconds.
      *
      * @since  2.0.0
      */
@@ -158,10 +158,10 @@ final readonly class AdministratorAccessControlHandler implements RequestHandler
             } else {
                 $purpose = $this->stepUpPurpose($action);
                 /**
-                 * @var array{
-                 *     verification: StepUpVerification,
-                 *     created_token: ?array{token: string, token_id: string}
-                 * } $result
+                 * @var    array{
+                 *             verification: StepUpVerification,
+                 *             created_token: ?array{token: string, token_id: string}
+                 *         } $result
                  */
                 $result = $this->transactions->transactional(function () use (
                     $context,

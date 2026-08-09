@@ -344,7 +344,7 @@ final readonly class ExtensionContributionRegistrySet
      *
      * @return  PortalWorkspaceRegistry  Live owner-aware portal workspaces.
      *
-     * @since  2.0.0
+     * @since   2.0.0
      */
     public function portalWorkspaces(): PortalWorkspaceRegistry
     {
@@ -356,7 +356,7 @@ final readonly class ExtensionContributionRegistrySet
      *
      * @return  PortalNavigationRegistry  Live capability- and trust-filtered navigation.
      *
-     * @since  2.0.0
+     * @since   2.0.0
      */
     public function portalNavigation(): PortalNavigationRegistry
     {
@@ -368,7 +368,7 @@ final readonly class ExtensionContributionRegistrySet
      *
      * @return  PortalTemplateRegistry  Live owner-aware portal templates.
      *
-     * @since  2.0.0
+     * @since   2.0.0
      */
     public function portalTemplates(): PortalTemplateRegistry
     {
@@ -380,7 +380,7 @@ final readonly class ExtensionContributionRegistrySet
      *
      * @return  PortalRouteRegistry  Live guarded contributed portal routes.
      *
-     * @since  2.0.0
+     * @since   2.0.0
      */
     public function portalRoutes(): PortalRouteRegistry
     {

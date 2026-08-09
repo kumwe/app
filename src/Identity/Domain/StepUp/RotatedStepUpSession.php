@@ -17,10 +17,10 @@ final readonly class RotatedStepUpSession
     /**
      * Validate the fresh session and its one-time browser secrets.
      *
-     * @param   string             $sessionId   Canonical UUID of the replacement session row.
-     * @param   string             $cookieToken Opaque high-entropy token disclosed only to the browser.
-     * @param   string             $csrfToken   Independent high-entropy CSRF secret.
-     * @param   DateTimeImmutable  $expiresAt   Absolute session expiry.
+     * @param   string             $sessionId    Canonical UUID of the replacement session row.
+     * @param   string             $cookieToken  Opaque high-entropy token disclosed only to the browser.
+     * @param   string             $csrfToken    Independent high-entropy CSRF secret.
+     * @param   DateTimeImmutable  $expiresAt    Absolute session expiry.
      *
      * @throws  InvalidArgumentException  When an identifier or secret is malformed.
      *

@@ -21,15 +21,15 @@ final readonly class TotpCredential
     /**
      * Validate a credential reconstituted from storage.
      *
-     * @param   string             $id                    Canonical credential UUID.
-     * @param   string             $subjectId             Canonical actor UUID.
-     * @param   string             $encryptedSecret       Authenticated ciphertext envelope.
-     * @param   bool               $active                Whether enrollment has been confirmed.
-     * @param   DateTimeImmutable  $createdAt             Enrollment creation instant.
-     * @param   ?DateTimeImmutable $enrollmentExpiresAt   Pending enrollment expiry; null once active.
-     * @param   ?DateTimeImmutable $confirmedAt           Confirmation instant; null while pending.
-     * @param   ?int               $lastAcceptedTimeStep  Greatest accepted TOTP counter, or null before one.
-     * @param   int                $version               Positive optimistic concurrency version.
+     * @param   string              $id                    Canonical credential UUID.
+     * @param   string              $subjectId             Canonical actor UUID.
+     * @param   string              $encryptedSecret       Authenticated ciphertext envelope.
+     * @param   bool                $active                Whether enrollment has been confirmed.
+     * @param   DateTimeImmutable   $createdAt             Enrollment creation instant.
+     * @param   ?DateTimeImmutable  $enrollmentExpiresAt   Pending enrollment expiry; null once active.
+     * @param   ?DateTimeImmutable  $confirmedAt           Confirmation instant; null while pending.
+     * @param   ?int                $lastAcceptedTimeStep  Greatest accepted TOTP counter, or null before one.
+     * @param   int                 $version               Positive optimistic concurrency version.
      *
      * @throws  InvalidArgumentException  When identities, state, ciphertext, counter, or version disagree.
      *

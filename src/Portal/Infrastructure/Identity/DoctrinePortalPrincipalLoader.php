@@ -38,9 +38,9 @@ final readonly class DoctrinePortalPrincipalLoader implements PortalPrincipalLoa
     /**
      * Rebuild one active user's whole scoped grant set and current security epoch.
      *
-     * @param   string             $subjectId    User UUID.
-     * @param   string             $credentialId Bounded portal credential identity.
-     * @param   ?MembershipContext $membership   Exact live membership whose roles may add grants.
+     * @param   string              $subjectId     User UUID.
+     * @param   string              $credentialId  Bounded portal credential identity.
+     * @param   ?MembershipContext  $membership    Exact live membership whose roles may add grants.
      *
      * @return  ?PortalPasswordIdentity  Live principal and epoch or null for an inactive or unknown user.
      *
@@ -88,7 +88,7 @@ final readonly class DoctrinePortalPrincipalLoader implements PortalPrincipalLoa
      * @return  list<array{capability: string, scope_type: string, scope_identifier: ?string}>
      *          Deduplicated global-role grants.
      *
-     * @since  2.0.0
+     * @since   2.0.0
      */
     private function globalGrants(string $subjectId): array
     {
@@ -111,16 +111,16 @@ final readonly class DoctrinePortalPrincipalLoader implements PortalPrincipalLoa
      * policy-stale, or inactive-workspace selection returns no sentinel row and fails closed. The left
      * join deliberately retains one sentinel when the valid actor has no grants.
      *
-     * @param   string             $subjectId     Active user UUID.
-     * @param   int                $securityEpoch User epoch observed immediately before this statement.
-     * @param   MembershipContext  $membership    Server-resolved membership snapshot to revalidate.
+     * @param   string             $subjectId      Active user UUID.
+     * @param   int                $securityEpoch  User epoch observed immediately before this statement.
+     * @param   MembershipContext  $membership     Server-resolved membership snapshot to revalidate.
      *
      * @return  ?list<array{capability: string, scope_type: string, scope_identifier: ?string}>
      *          Deduplicated global and selected-membership grants, or null when the selection is stale.
      *
      * @throws  InvalidArgumentException  When a returned grant or membership sentinel is malformed.
      *
-     * @since  2.0.0
+     * @since   2.0.0
      */
     private function membershipGrants(
         string $subjectId,

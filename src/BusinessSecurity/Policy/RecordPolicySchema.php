@@ -108,7 +108,7 @@ final readonly class RecordPolicySchema
      *
      * @return  array<string, string>  Field handles keyed to scalar type identifiers.
      *
-     * @since  2.0.0
+     * @since   2.0.0
      */
     public function toArray(): array
     {

@@ -17,8 +17,8 @@ final readonly class PortalContext
     /**
      * Hold a live server-resolved portal scope.
      *
-     * @param  SiteContext        $site        Site selected by host and membership resolution.
-     * @param  ?MembershipContext $membership Active membership and optional workspace snapshot.
+     * @param  SiteContext         $site        Site selected by host and membership resolution.
+     * @param  ?MembershipContext  $membership  Active membership and optional workspace snapshot.
      *
      * @since  2.0.0
      */

@@ -41,10 +41,10 @@ final readonly class DoctrineBusinessRecordRevisionRepository implements Busines
     /**
      * Wire the log to its connection and to physical table naming.
      *
-     * @param  Connection  $database  DBAL connection whose open transaction every append joins, and that
+     * @param Connection $database DBAL connection whose open transaction every append joins, and that
      *         every history window is read from.
-     * @param  TableNames                            $tables   Resolver for the prefixed revision table name.
-     * @param  DoctrineBusinessRecordQueryCompiler  $queries  Compiler that applies immutable row policy
+     * @param  TableNames                           $tables    Resolver for the prefixed revision table name.
+     * @param  DoctrineBusinessRecordQueryCompiler  $queries   Compiler that applies immutable row policy
      *         directly to canonical revision snapshots.
      *
      * @since  2.0.0

@@ -14,12 +14,12 @@ interface PortalSessionIdentityLoader
     /**
      * Rebuild the actor and prove its stored portal selection is still active.
      *
-     * @param   string   $subjectId          User UUID stored with the session.
-     * @param   string   $siteIdentifier     Stored server-resolved site.
-     * @param   ?string  $organizationIdentifier Stored organization selection, or null.
-     * @param   ?string  $membershipId       Stored membership UUID, or null for site-only portal access.
-     * @param   ?string  $workspaceIdentifier Stored workspace selection, or null.
-     * @param   string   $sessionId          Stored session UUID used as principal credential provenance.
+     * @param   string   $subjectId               User UUID stored with the session.
+     * @param   string   $siteIdentifier          Stored server-resolved site.
+     * @param   ?string  $organizationIdentifier  Stored organization selection, or null.
+     * @param   ?string  $membershipId            Stored membership UUID, or null for site-only portal access.
+     * @param   ?string  $workspaceIdentifier     Stored workspace selection, or null.
+     * @param   string   $sessionId               Stored session UUID used as principal credential provenance.
      *
      * @return  ?PortalSessionIdentity  Live identity or null after any user, site, membership, or policy invalidation.
      *

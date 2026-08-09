@@ -28,8 +28,8 @@ interface ApprovalRepository
     /**
      * Check the requester's live role eligibility for a selected rule.
      *
-     * @param   ApprovalRule     $rule     Selected active rule.
-     * @param   ExecutionContext $context  Requesting actor and exact membership context.
+     * @param   ApprovalRule      $rule     Selected active rule.
+     * @param   ExecutionContext  $context  Requesting actor and exact membership context.
      *
      * @return  bool  Whether the requester satisfies the rule's optional role restriction.
      *
@@ -40,8 +40,8 @@ interface ApprovalRepository
     /**
      * Check one prospective approver against the frozen rule and live membership.
      *
-     * @param   ApprovalRequest  $request  Locked pending request.
-     * @param   ExecutionContext $context  Prospective approver and exact membership context.
+     * @param   ApprovalRequest   $request  Locked pending request.
+     * @param   ExecutionContext  $context  Prospective approver and exact membership context.
      *
      * @return  bool  Whether the approver satisfies live membership and optional role restriction.
      *
@@ -90,8 +90,8 @@ interface ApprovalRepository
      * @param   string             $decision            Closed approve or reject value.
      * @param   ?string            $reason              Optional bounded operator note.
      * @param   string             $contextFingerprint  Actor authority fingerprint.
-     * @param   ?string            $stepUpProofId        Persisted consumed proof UUID.
-     * @param   DateTimeImmutable  $at                   Decision instant.
+     * @param   ?string            $stepUpProofId       Persisted consumed proof UUID.
+     * @param   DateTimeImmutable  $at                  Decision instant.
      *
      * @return  void
      *
@@ -122,11 +122,11 @@ interface ApprovalRepository
     /**
      * Apply one exact optimistic lifecycle transition.
      *
-     * @param   string             $requestId       Request UUID.
-     * @param   ApprovalStatus     $from            Required current state.
-     * @param   ApprovalStatus     $to              Terminal or approved target state.
-     * @param   int                $expectedVersion Required optimistic version.
-     * @param   DateTimeImmutable  $at              Transition instant.
+     * @param   string             $requestId        Request UUID.
+     * @param   ApprovalStatus     $from             Required current state.
+     * @param   ApprovalStatus     $to               Terminal or approved target state.
+     * @param   int                $expectedVersion  Required optimistic version.
+     * @param   DateTimeImmutable  $at               Transition instant.
      *
      * @return  void
      *

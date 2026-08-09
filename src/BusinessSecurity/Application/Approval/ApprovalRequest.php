@@ -18,17 +18,17 @@ final readonly class ApprovalRequest
     /**
      * Validate and expose one locked approval request snapshot.
      *
-     * @param  string             $id         Request UUID.
-     * @param  string             $ruleId     Applied rule UUID.
-     * @param  int                $ruleVersion Frozen applied rule version.
-     * @param  string             $approvalAction Frozen checker capability.
-     * @param  ?string            $approverRoleId Frozen required approver role.
-     * @param  bool               $distinctActors Frozen maker-checker separation flag.
-     * @param  ApprovalBinding    $binding    Non-transferable action binding.
-     * @param  int                $quorum     Required approvals fixed at request time.
-     * @param  ApprovalStatus     $status     Current lifecycle state.
-     * @param  DateTimeImmutable  $expiresAt  Exclusive expiry.
-     * @param  int                $version    Positive optimistic version.
+     * @param  string             $id              Request UUID.
+     * @param  string             $ruleId          Applied rule UUID.
+     * @param  int                $ruleVersion     Frozen applied rule version.
+     * @param  string             $approvalAction  Frozen checker capability.
+     * @param  ?string            $approverRoleId  Frozen required approver role.
+     * @param  bool               $distinctActors  Frozen maker-checker separation flag.
+     * @param  ApprovalBinding    $binding         Non-transferable action binding.
+     * @param  int                $quorum          Required approvals fixed at request time.
+     * @param  ApprovalStatus     $status          Current lifecycle state.
+     * @param  DateTimeImmutable  $expiresAt       Exclusive expiry.
+     * @param  int                $version         Positive optimistic version.
      *
      * @since  2.0.0
      */

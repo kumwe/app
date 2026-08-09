@@ -119,7 +119,7 @@ interface ExtensionContributionRegistrar
      *
      * @return  void
      *
-     * @since  2.0.0
+     * @since   2.0.0
      */
     public function portalWorkspace(PortalWorkspaceDefinition $definition): void;
 
@@ -130,7 +130,7 @@ interface ExtensionContributionRegistrar
      *
      * @return  void
      *
-     * @since  2.0.0
+     * @since   2.0.0
      */
     public function portalNavigation(PortalNavigationDefinition $definition): void;
 
@@ -141,7 +141,7 @@ interface ExtensionContributionRegistrar
      *
      * @return  void
      *
-     * @since  2.0.0
+     * @since   2.0.0
      */
     public function portalTemplate(PortalTemplateDefinition $definition): void;
 
@@ -153,7 +153,7 @@ interface ExtensionContributionRegistrar
      *
      * @return  void
      *
-     * @since  2.0.0
+     * @since   2.0.0
      */
     public function portalRoute(PortalRouteDefinition $definition, PortalRouteHandlerFactory $factory): void;
 

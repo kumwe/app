@@ -33,12 +33,12 @@ final readonly class MembershipPortalSessionIdentityLoader implements PortalSess
     /**
      * Rebuild an exact portal session identity, returning null for any stale or malformed coordinate.
      *
-     * @param   string   $subjectId              User UUID.
-     * @param   string   $siteIdentifier         Stored site identifier.
-     * @param   ?string  $organizationIdentifier Stored organization identifier.
-     * @param   ?string  $membershipId           Stored membership UUID.
-     * @param   ?string  $workspaceIdentifier    Stored workspace identifier.
-     * @param   string   $sessionId              Stored session UUID.
+     * @param   string   $subjectId               User UUID.
+     * @param   string   $siteIdentifier          Stored site identifier.
+     * @param   ?string  $organizationIdentifier  Stored organization identifier.
+     * @param   ?string  $membershipId            Stored membership UUID.
+     * @param   ?string  $workspaceIdentifier     Stored workspace identifier.
+     * @param   string   $sessionId               Stored session UUID.
      *
      * @return  ?PortalSessionIdentity  Live identity and context or null.
      *

@@ -20,13 +20,13 @@ final readonly class StepUpIntent
     /**
      * Validate the context a successful challenge will be bound to.
      *
-     * @param   string   $subjectId              UUID of the authenticated human actor.
-     * @param   string   $sessionId              UUID of the browser session being elevated.
-     * @param   string   $siteIdentifier         Server-resolved site identifier.
-     * @param   ?string  $organizationIdentifier Server-resolved organization, or null outside one.
-     * @param   ?string  $workspaceIdentifier    Server-resolved workspace, or null outside one.
-     * @param   string   $purpose                Narrow machine token naming the protected operation.
-     * @param   int      $securityEpoch          Current authorization epoch of the actor.
+     * @param   string   $subjectId               UUID of the authenticated human actor.
+     * @param   string   $sessionId               UUID of the browser session being elevated.
+     * @param   string   $siteIdentifier          Server-resolved site identifier.
+     * @param   ?string  $organizationIdentifier  Server-resolved organization, or null outside one.
+     * @param   ?string  $workspaceIdentifier     Server-resolved workspace, or null outside one.
+     * @param   string   $purpose                 Narrow machine token naming the protected operation.
+     * @param   int      $securityEpoch           Current authorization epoch of the actor.
      *
      * @throws  InvalidArgumentException  When an identifier, purpose, or epoch is invalid.
      *

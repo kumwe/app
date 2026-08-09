@@ -264,7 +264,7 @@ final readonly class ExtensionRuntimeLoader
      *
      * @throws  RuntimeException  When the portal template root is a symbolic link.
      *
-     * @since  2.0.0
+     * @since   2.0.0
      */
     private function addPortalTemplates(ActiveExtensionSet $active, string $identifier, string $root): void
     {

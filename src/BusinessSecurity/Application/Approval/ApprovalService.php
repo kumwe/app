@@ -29,14 +29,14 @@ final readonly class ApprovalService
     /**
      * Wire the relational workflow, authorization, live membership and replay fences.
      *
-     * @param  ApprovalRepository   $repository     Approval and SoD store.
-     * @param  StepUpProofConsumer  $stepUp         Atomic proof replay fence.
-     * @param  MembershipDirectory  $memberships    Live membership/version resolver.
-     * @param  TransactionManager   $transactions   Atomic workflow boundary.
-     * @param  AuthorizationGateway $authorization  Canonical authorization gateway.
-     * @param  ResourceSiteOwnershipWriter $ownership Site ownership for item-level approval decisions.
-     * @param  AuditRecorder        $audit          Durable audit sink.
-     * @param  ClockInterface       $clock          Trusted current time.
+     * @param  ApprovalRepository           $repository     Approval and SoD store.
+     * @param  StepUpProofConsumer          $stepUp         Atomic proof replay fence.
+     * @param  MembershipDirectory          $memberships    Live membership/version resolver.
+     * @param  TransactionManager           $transactions   Atomic workflow boundary.
+     * @param  AuthorizationGateway         $authorization  Canonical authorization gateway.
+     * @param  ResourceSiteOwnershipWriter  $ownership      Site ownership for item-level approval decisions.
+     * @param  AuditRecorder                $audit          Durable audit sink.
+     * @param  ClockInterface               $clock          Trusted current time.
      *
      * @since  2.0.0
      */
@@ -61,8 +61,8 @@ final readonly class ApprovalService
      *
      * @return  ?string  New request UUID, or null when no active rule requires approval.
      *
-     * @throws  ApprovalDenied           When scope, membership, role or binding does not match.
-     * @throws  InvalidArgumentException When lifetime is not positive or exceeds seven days.
+     * @throws  ApprovalDenied  When scope, membership, role or binding does not match.
+     * @throws  InvalidArgumentException  When lifetime is not positive or exceeds seven days.
      *
      * @since   2.0.0
      */
@@ -248,9 +248,9 @@ final readonly class ApprovalService
      * Application services call this inside their own transaction immediately before changing the
      * resource, so a replay, version change, membership change or payload substitution cannot land.
      *
-     * @param   ExecutionContext  $context   Original requester and unchanged authority context.
-     * @param   string            $requestId Approved request UUID.
-     * @param   ApprovalBinding   $binding   Binding rebuilt from current resource version and payload.
+     * @param   ExecutionContext  $context    Original requester and unchanged authority context.
+     * @param   string            $requestId  Approved request UUID.
+     * @param   ApprovalBinding   $binding    Binding rebuilt from current resource version and payload.
      *
      * @return  void
      *
@@ -427,10 +427,10 @@ final readonly class ApprovalService
     /**
      * Record a workflow transition without raw payload or secret material.
      *
-     * @param   ExecutionContext    $context    Accountable actor and scope.
-     * @param   string              $action     Audit action.
-     * @param   string              $requestId  Approval request UUID.
-     * @param   array<string,mixed> $metadata   Safe additional evidence.
+     * @param   ExecutionContext     $context    Accountable actor and scope.
+     * @param   string               $action     Audit action.
+     * @param   string               $requestId  Approval request UUID.
+     * @param   array<string,mixed>  $metadata   Safe additional evidence.
      *
      * @return  void
      *

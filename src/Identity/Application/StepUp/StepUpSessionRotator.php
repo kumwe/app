@@ -21,8 +21,8 @@ interface StepUpSessionRotator
     /**
      * Replace the challenged session inside the provider's transaction.
      *
-     * @param   StepUpIntent      $intent      Exact old session and context being elevated.
-     * @param   DateTimeImmutable $verifiedAt  Successful verification instant to stamp.
+     * @param   StepUpIntent       $intent      Exact old session and context being elevated.
+     * @param   DateTimeImmutable  $verifiedAt  Successful verification instant to stamp.
      *
      * @return  RotatedStepUpSession  New row identity and secrets disclosed once.
      *

@@ -26,8 +26,8 @@ final class PortalTemplateRegistry implements ContributionSurface
     /**
      * Register a uniquely owned template declaration.
      *
-     * @param   ContributionOwner        $owner       Claiming contributor.
-     * @param   PortalTemplateDefinition $definition Validated declaration.
+     * @param   ContributionOwner         $owner       Claiming contributor.
+     * @param   PortalTemplateDefinition  $definition  Validated declaration.
      *
      * @return  void
      *

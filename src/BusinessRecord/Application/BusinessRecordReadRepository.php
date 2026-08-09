@@ -192,7 +192,7 @@ interface BusinessRecordReadRepository
      * @param   RecordScope                 $scope          Site and organization the page is confined to.
      * @param   RecordQuerySpecification    $specification  Filter, search, sort, page bound, cursor and
      *          projection to compile.
-     * @param   BusinessRecordAccessPlan    $access          Row, field and relationship query decision.
+     * @param   BusinessRecordAccessPlan    $access         Row, field and relationship query decision.
      *
      * @return  RecordBrowseResult  Views for this page, the cursor to continue from when more rows
      *          matched, and any requested aggregates.
@@ -220,13 +220,13 @@ interface BusinessRecordReadRepository
      * owner's key rather than by a record scope, and a line belonging to another owner is simply not
      * found.
      *
-     * @param   ResolvedBusinessDefinition  $owner           Owner definition whose installation carries
+     * @param   ResolvedBusinessDefinition  $owner         Owner definition whose installation carries
      *          the line table.
-     * @param   BusinessRecord              $ownerRecord     Owner record the line must belong to.
-     * @param   RelationshipDefinition      $relationship    Owned-line relationship naming that table.
-     * @param   ResolvedBusinessDefinition  $lineResolved    Pinned line definition and its installed schema.
-     * @param   BusinessRecordAccessPlan    $access          Target-line row and field decision.
-     * @param   string                      $lineId          Caller-facing identity of the line.
+     * @param   BusinessRecord              $ownerRecord   Owner record the line must belong to.
+     * @param   RelationshipDefinition      $relationship  Owned-line relationship naming that table.
+     * @param   ResolvedBusinessDefinition  $lineResolved  Pinned line definition and its installed schema.
+     * @param   BusinessRecordAccessPlan    $access        Target-line row and field decision.
+     * @param   string                      $lineId        Caller-facing identity of the line.
      *
      * @return  StoredRecordIdentity|null  Internal key and optimistic-lock version of the line, with the
      *          version of the line definition passed in; null when this owner holds no such line.

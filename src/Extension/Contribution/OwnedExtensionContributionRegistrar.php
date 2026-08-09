@@ -240,7 +240,7 @@ final class OwnedExtensionContributionRegistrar implements ExtensionContribution
      *
      * @return  void
      *
-     * @since  2.0.0
+     * @since   2.0.0
      */
     public function portalWorkspace(PortalWorkspaceDefinition $definition): void
     {
@@ -255,7 +255,7 @@ final class OwnedExtensionContributionRegistrar implements ExtensionContribution
      *
      * @return  void
      *
-     * @since  2.0.0
+     * @since   2.0.0
      */
     public function portalNavigation(PortalNavigationDefinition $definition): void
     {
@@ -270,7 +270,7 @@ final class OwnedExtensionContributionRegistrar implements ExtensionContribution
      *
      * @return  void
      *
-     * @since  2.0.0
+     * @since   2.0.0
      */
     public function portalTemplate(PortalTemplateDefinition $definition): void
     {
@@ -286,7 +286,7 @@ final class OwnedExtensionContributionRegistrar implements ExtensionContribution
      *
      * @return  void
      *
-     * @since  2.0.0
+     * @since   2.0.0
      */
     public function portalRoute(PortalRouteDefinition $definition, PortalRouteHandlerFactory $factory): void
     {

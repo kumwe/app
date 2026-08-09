@@ -28,14 +28,14 @@ final readonly class DenyByDefaultAuthorizationGateway implements AuthorizationG
     /**
      * Wire the gateway to the authority, policy table, ownership registry and audit sink it decides with.
      *
-     * @param  object                         $provenance  Authority object contexts must have been minted
+     * @param  object                         $provenance   Authority object contexts must have been minted
      *         with; anything else is untrusted.
-     * @param  AuthorizationPolicyRegistry    $policies    Owner-aware typed capability and resource-policy
+     * @param  AuthorizationPolicyRegistry    $policies     Owner-aware typed capability and resource-policy
      *         registry shared with the contribution runtime.
-     * @param  MembershipContextValidator     $memberships Live authority that revalidates contextual
+     * @param  MembershipContextValidator     $memberships  Live authority that revalidates contextual
      *         organization and workspace scopes.
-     * @param  ResourceSiteOwnership          $ownership   Resolver for the site owning a given resource.
-     * @param  AuthorizationDecisionRecorder  $decisions   Sink every decision is written to before it is acted on.
+     * @param  ResourceSiteOwnership          $ownership    Resolver for the site owning a given resource.
+     * @param  AuthorizationDecisionRecorder  $decisions    Sink every decision is written to before it is acted on.
      *
      * @since  2.0.0
      */

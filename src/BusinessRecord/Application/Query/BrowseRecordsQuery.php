@@ -24,14 +24,14 @@ final readonly class BrowseRecordsQuery
     /**
      * Assemble a browse request and validate the identifiers it will be scoped by.
      *
-     * @param   ExecutionContext          $context                 Actor and site the browse runs as.
-     * @param   string                    $definitionIdentifier    Definition UUID or handle naming the
+     * @param   ExecutionContext            $context                 Actor and site the browse runs as.
+     * @param   string                      $definitionIdentifier    Definition UUID or handle naming the
      *          record type to list.
-     * @param   RecordQuerySpecification  $specification           Filter, search, sort, cursor and
+     * @param   RecordQuerySpecification    $specification           Filter, search, sort, cursor and
      *          projection describing the page wanted.
-     * @param   ?string                   $organizationIdentifier  Organization to scope the listing to;
+     * @param   ?string                     $organizationIdentifier  Organization to scope the listing to;
      *          required for an organization-scoped definition and null for any other.
-     * @param   BusinessRecordQueryPurpose $purpose                Security purpose of the collection output.
+     * @param   BusinessRecordQueryPurpose  $purpose                 Security purpose of the collection output.
      *
      * @throws  \InvalidArgumentException  When the definition identifier is neither a UUID nor a dotted
      *          handle, or the organization identifier is not a bounded printable identifier.

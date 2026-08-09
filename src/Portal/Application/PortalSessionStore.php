@@ -34,7 +34,7 @@ interface PortalSessionStore
      * Resolve a portal cookie using live identity and membership state.
      *
      * @param   string  $cookieToken  Opaque `kumwe_portal` cookie value.
-     * @param   string  $userAgent   Presenting browser user agent.
+     * @param   string  $userAgent    Presenting browser user agent.
      *
      * @return  ?PortalSession  Live session or null for every failure.
      *
