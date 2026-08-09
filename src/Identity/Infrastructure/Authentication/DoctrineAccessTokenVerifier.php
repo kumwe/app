@@ -6,6 +6,7 @@ namespace Kumwe\CMS\Identity\Infrastructure\Authentication;
 
 use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use Doctrine\DBAL\Types\Types;
 use InvalidArgumentException;
 use JsonException;
@@ -121,6 +122,9 @@ final readonly class DoctrineAccessTokenVerifier implements ScopedAccessTokenVer
             return null;
         }
 
+        $membershipIdExpression = $this->database->getDatabasePlatform() instanceof PostgreSQLPlatform
+            ? 'CAST(m.id AS VARCHAR)'
+            : 'm.id';
         $row = $this->database->fetchAssociative(sprintf(
             'SELECT t.id, t.subject_id, t.capabilities, t.last_used_at, t.site_identifier, '
             . 't.organization_identifier, t.workspace_identifier, t.membership_id, t.membership_version, '
@@ -136,7 +140,7 @@ final readonly class DoctrineAccessTokenVerifier implements ScopedAccessTokenVer
             . 'OR EXISTS (SELECT 1 FROM %s o INNER JOIN %s m ON m.organization_id = o.id '
             . 'WHERE o.identifier = t.organization_identifier AND o.site_identifier = t.site_identifier '
             . "AND o.status = 'active' AND o.policy_generation = t.policy_generation "
-            . 'AND m.id = t.membership_id AND m.user_id = t.subject_id AND m.version = t.membership_version '
+            . 'AND %s = t.membership_id AND m.user_id = t.subject_id AND m.version = t.membership_version '
             . "AND m.status = 'active' AND m.valid_from <= CURRENT_TIMESTAMP "
             . 'AND (m.valid_until IS NULL OR m.valid_until > CURRENT_TIMESTAMP) '
             . 'AND (t.workspace_identifier IS NULL OR EXISTS (SELECT 1 FROM %s mw INNER JOIN %s w '
@@ -147,6 +151,7 @@ final readonly class DoctrineAccessTokenVerifier implements ScopedAccessTokenVer
             $this->tables->quoted('sites'),
             $this->tables->quoted('organizations'),
             $this->tables->quoted('organization_memberships'),
+            $membershipIdExpression,
             $this->tables->quoted('membership_workspaces'),
             $this->tables->quoted('workspaces'),
         ), [hash('sha256', $token), $context->audience, $context->purpose, $siteIdentifier, true], [
