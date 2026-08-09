@@ -16,12 +16,43 @@ use Kumwe\CMS\Navigation\Application\NavigationRepository;
 use Kumwe\CMS\Navigation\Application\NavigationVersionConflict;
 use RuntimeException;
 
+/**
+ * Doctrine DBAL implementation of the navigation repository, backed by two relational tables.
+ *
+ * Menus live in `navigation_menus` and their entries in `navigation_items`, both addressed through
+ * `TableNames` so the configured prefix is applied and quoted in one place. Two concerns are this
+ * adapter's own. Optimistic concurrency: every update and delete carries the version the caller read,
+ * and a statement that matches no row is reported as `NavigationVersionConflict` rather than passing
+ * silently. Row hygiene: a driver row is untyped, so each column is checked as it is mapped and a
+ * missing or wrongly typed value is refused, keeping malformed data out of the application layer.
+ * Entry paths are stored, not recomputed on read, which is why the move operations here rewrite them
+ * explicitly.
+ *
+ * @since  2.0.0
+ */
 final readonly class DoctrineNavigationRepository implements NavigationRepository
 {
+    /**
+     * Binds the repository to the connection and table-name resolver it works through.
+     *
+     * @param  Connection  $database  DBAL connection every navigation statement runs on.
+     * @param  TableNames  $tables    Resolver applying the configured prefix to the navigation tables.
+     *
+     * @since  2.0.0
+     */
     public function __construct(private Connection $database, private TableNames $tables)
     {
     }
 
+    /**
+     * Reads every menu in the installation.
+     *
+     * @return  list<MenuRecord>  All menus, ordered by title; empty when none exist.
+     *
+     * @throws  RuntimeException  When a stored menu row lacks a column or holds the wrong type.
+     *
+     * @since   2.0.0
+     */
     public function menus(): array
     {
         return array_map($this->menuFromRow(...), $this->database->fetchAllAssociative(sprintf(
@@ -30,6 +61,17 @@ final readonly class DoctrineNavigationRepository implements NavigationRepositor
         )));
     }
 
+    /**
+     * Reads one menu by identifier.
+     *
+     * @param   string  $id  UUID of the menu, as stored in the `id` column.
+     *
+     * @return  ?MenuRecord  The menu, or null when no row carries that id.
+     *
+     * @throws  RuntimeException  When the stored row lacks a column or holds the wrong type.
+     *
+     * @since   2.0.0
+     */
     public function menu(string $id): ?MenuRecord
     {
         $row = $this->database->fetchAssociative(sprintf(
@@ -40,6 +82,18 @@ final readonly class DoctrineNavigationRepository implements NavigationRepositor
         return $row === false ? null : $this->menuFromRow($row);
     }
 
+    /**
+     * Reads every entry of one menu, in the order a renderer wants to walk them.
+     *
+     * @param   string  $menuId  UUID of the menu whose entries are wanted.
+     *
+     * @return  list<MenuItemRecord>  Entries ordered by path, then position, then title; empty when the
+     *          menu holds none or does not exist.
+     *
+     * @throws  RuntimeException  When a stored entry row lacks a column or holds the wrong type.
+     *
+     * @since   2.0.0
+     */
     public function items(string $menuId): array
     {
         return array_map($this->itemFromRow(...), $this->database->fetchAllAssociative(sprintf(
@@ -48,6 +102,17 @@ final readonly class DoctrineNavigationRepository implements NavigationRepositor
         ), [$menuId]));
     }
 
+    /**
+     * Reads one menu entry by identifier, without restricting it to a menu.
+     *
+     * @param   string  $id  UUID of the entry, as stored in the `id` column.
+     *
+     * @return  ?MenuItemRecord  The entry, or null when no row carries that id.
+     *
+     * @throws  RuntimeException  When the stored row lacks a column or holds the wrong type.
+     *
+     * @since   2.0.0
+     */
     public function item(string $id): ?MenuItemRecord
     {
         $row = $this->database->fetchAssociative(sprintf(
@@ -58,6 +123,16 @@ final readonly class DoctrineNavigationRepository implements NavigationRepositor
         return $row === false ? null : $this->itemFromRow($row);
     }
 
+    /**
+     * Writes a new menu row.
+     *
+     * @param   MenuRecord  $menu  Menu to store; its version is written as supplied, so the caller owns
+     *          where the version sequence starts.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     public function insertMenu(MenuRecord $menu): void
     {
         $this->database->insert($this->tables->raw('navigation_menus'), [
@@ -73,6 +148,19 @@ final readonly class DoctrineNavigationRepository implements NavigationRepositor
         ]);
     }
 
+    /**
+     * Overwrites a menu row, but only while it still carries the version the caller read.
+     *
+     * @param   MenuRecord  $menu             Menu in its new state, already carrying the raised version.
+     * @param   int         $expectedVersion  Version the caller read, matched in the `WHERE` clause.
+     *
+     * @return  void
+     *
+     * @throws  NavigationVersionConflict  When no row matched the id and expected version, meaning
+     *          another writer got there first.
+     *
+     * @since   2.0.0
+     */
     public function updateMenu(MenuRecord $menu, int $expectedVersion): void
     {
         $affected = $this->database->executeStatement(sprintf(
@@ -84,6 +172,25 @@ final readonly class DoctrineNavigationRepository implements NavigationRepositor
         $this->assertChanged($affected, 'menu');
     }
 
+    /**
+     * Locks a menu at the expected version and lists the entry ids its deletion will take with it.
+     *
+     * Deleting the menu row cascades to its entries in the database, which leaves a caller no way to
+     * learn afterwards which entry ids to clean up authorization ownership rows for. This method
+     * collects them first and takes `FOR UPDATE` on the menu row, so it belongs in the same transaction
+     * as the delete; run outside one, the list can go stale before it is used.
+     *
+     * @param   string  $id               UUID of the menu about to be deleted.
+     * @param   int     $expectedVersion  Version the caller read, matched against the locked row.
+     *
+     * @return  list<non-empty-string>  Ids of the entries belonging to the menu, ordered by id; empty
+     *          when the menu holds none.
+     *
+     * @throws  NavigationVersionConflict  When the menu is gone or no longer at the expected version.
+     * @throws  RuntimeException  When a stored entry identifier is not a non-empty string.
+     *
+     * @since   2.0.0
+     */
     public function itemIdsForMenuDeletion(string $id, int $expectedVersion): array
     {
         $version = $this->database->fetchOne(sprintf(
@@ -111,6 +218,20 @@ final readonly class DoctrineNavigationRepository implements NavigationRepositor
         return array_values($ids);
     }
 
+    /**
+     * Deletes a menu row, but only while it still carries the version the caller read.
+     *
+     * The statement removes the menu row alone; the database cascades the delete to its entries.
+     *
+     * @param   string  $id               UUID of the menu to delete.
+     * @param   int     $expectedVersion  Version the caller read, matched in the `WHERE` clause.
+     *
+     * @return  void
+     *
+     * @throws  NavigationVersionConflict  When no row matched the id and expected version.
+     *
+     * @since   2.0.0
+     */
     public function deleteMenu(string $id, int $expectedVersion): void
     {
         $this->assertChanged($this->database->executeStatement(sprintf(
@@ -119,6 +240,16 @@ final readonly class DoctrineNavigationRepository implements NavigationRepositor
         ), [$id, $expectedVersion]), 'menu');
     }
 
+    /**
+     * Writes a new menu entry row.
+     *
+     * @param   MenuItemRecord  $item  Entry to store, carrying the path the application already derived
+     *          from its parent.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     public function insertItem(MenuItemRecord $item): void
     {
         $this->database->insert($this->tables->raw('navigation_items'), [
@@ -147,6 +278,22 @@ final readonly class DoctrineNavigationRepository implements NavigationRepositor
         ]);
     }
 
+    /**
+     * Overwrites a menu entry, but only while it still carries the version the caller read.
+     *
+     * Only this entry's own path is written. Paths of the entries below it are left alone, which is what
+     * `moveDescendantPaths()` exists to finish.
+     *
+     * @param   MenuItemRecord  $item             Entry in its new state, already carrying the raised
+     *          version.
+     * @param   int             $expectedVersion  Version the caller read, matched in the `WHERE` clause.
+     *
+     * @return  void
+     *
+     * @throws  NavigationVersionConflict  When no row matched the id and expected version.
+     *
+     * @since   2.0.0
+     */
     public function updateItem(MenuItemRecord $item, int $expectedVersion): void
     {
         $affected = $this->database->executeStatement(sprintf(
@@ -163,6 +310,18 @@ final readonly class DoctrineNavigationRepository implements NavigationRepositor
         $this->assertChanged($affected, 'menu item');
     }
 
+    /**
+     * Deletes one menu entry, but only while it still carries the version the caller read.
+     *
+     * @param   string  $id               UUID of the entry to delete.
+     * @param   int     $expectedVersion  Version the caller read, matched in the `WHERE` clause.
+     *
+     * @return  void
+     *
+     * @throws  NavigationVersionConflict  When no row matched the id and expected version.
+     *
+     * @since   2.0.0
+     */
     public function deleteItem(string $id, int $expectedVersion): void
     {
         $this->assertChanged($this->database->executeStatement(sprintf(
@@ -171,6 +330,22 @@ final readonly class DoctrineNavigationRepository implements NavigationRepositor
         ), [$id, $expectedVersion]), 'menu item');
     }
 
+    /**
+     * Works out the absolute path an entry would occupy under a given parent.
+     *
+     * The parent's stored path is the source of truth, so a child's path is that path with one segment
+     * appended rather than a fresh walk up the parent chain.
+     *
+     * @param   string   $menuId    UUID of the menu the entry belongs to; the parent must be in it too.
+     * @param   ?string  $parentId  UUID of the intended parent, or null to place the entry at the root.
+     * @param   string   $slug      URL segment the entry contributes.
+     *
+     * @return  string  Leading-slash path the entry would resolve to.
+     *
+     * @throws  InvalidArgumentException  When the named parent is not an entry of that menu.
+     *
+     * @since   2.0.0
+     */
     public function pathForParent(string $menuId, ?string $parentId, string $slug): string
     {
         if ($parentId === null) {
@@ -189,6 +364,24 @@ final readonly class DoctrineNavigationRepository implements NavigationRepositor
         return $path . '/' . $slug;
     }
 
+    /**
+     * Refuses a re-parenting that would fold a subtree into itself or move it out of its menu.
+     *
+     * Ancestry is tested with the stored paths rather than by walking parent links, so the check costs
+     * two reads whatever the nesting depth. Moving an entry to the root can never create a cycle and
+     * returns immediately.
+     *
+     * @param   string   $itemId    UUID of the entry being moved.
+     * @param   string   $menuId    UUID of the menu the entry must stay inside.
+     * @param   ?string  $parentId  UUID of the intended new parent, or null to move it to the root.
+     *
+     * @return  void
+     *
+     * @throws  InvalidArgumentException  When the entry would become its own parent, either entry is
+     *          missing, the parent belongs to another menu, or the parent already sits below the entry.
+     *
+     * @since   2.0.0
+     */
     public function assertMoveIsAcyclic(string $itemId, string $menuId, ?string $parentId): void
     {
         if ($parentId === null) {
@@ -211,6 +404,26 @@ final readonly class DoctrineNavigationRepository implements NavigationRepositor
         }
     }
 
+    /**
+     * Rewrites the stored paths beneath a moved entry so they sit under its new path.
+     *
+     * Each descendant is updated on its own so that its version advances and its `updated_at` matches
+     * the move, which keeps optimistic concurrency honest for callers still holding stale copies. It
+     * runs after the moved entry itself has been updated and belongs in that same transaction.
+     *
+     * @param   string             $itemId   UUID of the entry that moved.
+     * @param   string             $oldPath  Path the entry held before the move, stripped as a prefix.
+     * @param   string             $newPath  Path the entry holds now, written in the prefix's place.
+     * @param   DateTimeImmutable  $at       Timestamp recorded as `updated_at` on every rewritten row.
+     *
+     * @return  void
+     *
+     * @throws  RuntimeException  When the moved entry no longer exists, or a descendant row does not
+     *          carry a usable id and path.
+     * @throws  NavigationVersionConflict  When rewriting a descendant matches no row.
+     *
+     * @since   2.0.0
+     */
     public function moveDescendantPaths(string $itemId, string $oldPath, string $newPath, DateTimeImmutable $at): void
     {
         $root = $this->item($itemId);
@@ -239,7 +452,17 @@ final readonly class DoctrineNavigationRepository implements NavigationRepositor
         }
     }
 
-    /** @param array<string, mixed> $row */
+    /**
+     * Maps one driver row onto a menu record, refusing anything malformed.
+     *
+     * @param   array<string, mixed>  $row  Associative row selected from `navigation_menus`.
+     *
+     * @return  MenuRecord  The typed menu record.
+     *
+     * @throws  RuntimeException  When a required column is absent or holds the wrong type.
+     *
+     * @since   2.0.0
+     */
     private function menuFromRow(array $row): MenuRecord
     {
         return new MenuRecord(
@@ -252,7 +475,20 @@ final readonly class DoctrineNavigationRepository implements NavigationRepositor
         );
     }
 
-    /** @param array<string, mixed> $row */
+    /**
+     * Maps one driver row onto a menu entry record, refusing anything malformed.
+     *
+     * A row written before navigation targets existed carries no usable `target_type`; such a row reads
+     * back as a content target, which is what those entries have always meant.
+     *
+     * @param   array<string, mixed>  $row  Associative row selected from `navigation_items`.
+     *
+     * @return  MenuItemRecord  The typed entry record.
+     *
+     * @throws  RuntimeException  When a required column is absent or holds the wrong type.
+     *
+     * @since   2.0.0
+     */
     private function itemFromRow(array $row): MenuItemRecord
     {
         $parent = $row['parent_id'] ?? null;
@@ -277,6 +513,22 @@ final readonly class DoctrineNavigationRepository implements NavigationRepositor
         );
     }
 
+    /**
+     * Turns a versioned statement that changed no row into a conflict the caller can act on.
+     *
+     * A versioned update or delete matches exactly one row when the caller's expectation held, so any
+     * other count means the record moved on beneath them.
+     *
+     * @param   int|string  $affected  Row count the driver reported; some drivers return it as a string.
+     * @param   string      $resource  Noun naming what was being written, quoted into the operator-facing
+     *          message.
+     *
+     * @return  void
+     *
+     * @throws  NavigationVersionConflict  When the affected-row count is anything other than one.
+     *
+     * @since   2.0.0
+     */
     private function assertChanged(int|string $affected, string $resource): void
     {
         if ((string) $affected !== '1') {
@@ -284,7 +536,18 @@ final readonly class DoctrineNavigationRepository implements NavigationRepositor
         }
     }
 
-    /** @param array<string, mixed> $row */
+    /**
+     * Reads a column that has to hold a non-empty string.
+     *
+     * @param   array<string, mixed>  $row    Associative row being mapped.
+     * @param   string                $field  Column name to read.
+     *
+     * @return  string  The column value, guaranteed non-empty.
+     *
+     * @throws  RuntimeException  When the column is absent, empty, or not a string.
+     *
+     * @since   2.0.0
+     */
     private function requiredString(array $row, string $field): string
     {
         $value = $row[$field] ?? null;
@@ -295,7 +558,19 @@ final readonly class DoctrineNavigationRepository implements NavigationRepositor
         return $value;
     }
 
-    /** @param array<string, mixed> $row */
+    /**
+     * Reads a column that has to hold an integer, accepting the digit strings some drivers hand back.
+     *
+     * @param   array<string, mixed>  $row    Associative row being mapped.
+     * @param   string                $field  Column name to read.
+     *
+     * @return  int  The column value as an integer.
+     *
+     * @throws  RuntimeException  When the column is absent, or holds neither an integer nor a run of
+     *          digits.
+     *
+     * @since   2.0.0
+     */
     private function requiredInteger(array $row, string $field): int
     {
         $value = $row[$field] ?? null;
@@ -306,7 +581,18 @@ final readonly class DoctrineNavigationRepository implements NavigationRepositor
         return (int) $value;
     }
 
-    /** @param array<string, mixed> $row */
+    /**
+     * Reads an optional column, treating an empty string as absent.
+     *
+     * @param   array<string, mixed>  $row    Associative row being mapped.
+     * @param   string                $field  Column name to read.
+     *
+     * @return  ?string  The column value, or null when it is absent or empty.
+     *
+     * @throws  RuntimeException  When the column holds something that is neither null nor a string.
+     *
+     * @since   2.0.0
+     */
     private function nullableString(array $row, string $field): ?string
     {
         $value = $row[$field] ?? null;
@@ -320,6 +606,21 @@ final readonly class DoctrineNavigationRepository implements NavigationRepositor
         return $value;
     }
 
+    /**
+     * Normalises whatever the driver returned for a timestamp column into an immutable date.
+     *
+     * Drivers differ: some hydrate a date object, others hand back the raw string, so both are accepted
+     * rather than pinning the mapper to one platform.
+     *
+     * @param   mixed  $value  Raw timestamp column value from a navigation row.
+     *
+     * @return  DateTimeImmutable  The timestamp, converted when the driver returned another date type.
+     *
+     * @throws  RuntimeException  When the value is neither a date object nor a string.
+     * @throws  \DateMalformedStringException  When the string cannot be read as a date.
+     *
+     * @since   2.0.0
+     */
     private function dateTime(mixed $value): DateTimeImmutable
     {
         if ($value instanceof DateTimeImmutable) {

@@ -25,8 +25,48 @@ use Psr\Clock\ClockInterface;
 use Ramsey\Uuid\Uuid;
 use RuntimeException;
 
+/**
+ * Doctrine implementation of the administrator session store, backed by the `administrator_sessions` table.
+ *
+ * The row keeps only the SHA-256 digest of the cookie token and a keyed digest of the client
+ * `User-Agent`, so neither the credential nor the header can be read back out of the database and a
+ * cookie replayed from a different client does not resolve. Every resolution rebuilds the principal
+ * from the user's current role grants and the security epoch on the user row rather than from anything
+ * cached in the session, which is what makes a revocation bite on the next request instead of at the
+ * session's expiry. Creation, deletion and purging each run inside one transaction together with the
+ * matching `resource_site_ownership` write, so a session and the record of which site owns it appear
+ * and disappear as a unit.
+ *
+ * @since  2.0.0
+ */
 final readonly class DoctrineAdministratorSessionStore implements AdministratorSessionStore
 {
+    /**
+     * Wire the store to its connection and authorization collaborators, and fix the session lifetime.
+     *
+     * @param   Connection                   $database           DBAL connection the session rows are read
+     *          and written through.
+     * @param   TableNames                   $tables             Resolver applying the configured prefix to
+     *          the session, user and ownership tables.
+     * @param   ClockInterface               $clock              Source of the creation, last-seen and
+     *          expiry timestamps.
+     * @param   string                       $applicationSecret  Installation secret keying the
+     *          `User-Agent` fingerprint, so digests are useless in another deployment.
+     * @param   AuthorizationGateway         $authorization      Judge of whether the actor may open, end
+     *          or purge administrator sessions.
+     * @param   TransactionManager           $transactions       Scope each write runs inside, alongside
+     *          its ownership row.
+     * @param   ResourceSiteOwnershipWriter  $ownership          Writer recording and withdrawing which
+     *          site owns each session.
+     * @param   object                       $provenance         Composition-root authority every principal
+     *          resolved here is stamped with; anything else is untrusted.
+     * @param   int                          $lifetimeSeconds    How long a newly opened session stays
+     *          valid; eight hours unless configured, and never outside five minutes to seven days.
+     *
+     * @throws  InvalidArgumentException  When the configured lifetime is below 300 or above 604800 seconds.
+     *
+     * @since   2.0.0
+     */
     public function __construct(
         private Connection $database,
         private TableNames $tables,
@@ -43,6 +83,28 @@ final readonly class DoctrineAdministratorSessionStore implements AdministratorS
         }
     }
 
+    /**
+     * Open a session for the context's principal and hand back the only copy of its cookie token.
+     *
+     * The token is 48 random bytes and the CSRF secret 32, both rendered as base64url. Only the token's
+     * digest is stored, while the CSRF secret is kept in the clear because `AdministratorCsrfMiddleware`
+     * compares it against what the browser posts back. The insert and its ownership row commit together,
+     * so a rejected write cannot leave a session the authorization gateway would later refuse as unowned.
+     *
+     * @param   ExecutionContext  $context    Actor, site and provenance the sign-in happened under; its
+     *          principal becomes the session's subject.
+     * @param   string            $userAgent  Client `User-Agent` header; only its keyed digest is stored,
+     *          and the session resolves later only for a client presenting the same one.
+     *
+     * @return  CreatedAdministratorSession  The stored session paired with the plaintext cookie token.
+     *
+     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not hold an
+     *          administrator session.
+     * @throws  InvalidArgumentException  When the context carries no human principal to sign in as.
+     * @throws  \Doctrine\DBAL\Exception  When the driver rejects the insert.
+     *
+     * @since   2.0.0
+     */
     public function create(ExecutionContext $context, string $userAgent): CreatedAdministratorSession
     {
         $this->authorization->assertAllowed(
@@ -94,6 +156,30 @@ final readonly class DoctrineAdministratorSessionStore implements AdministratorS
         );
     }
 
+    /**
+     * Resolve a cookie token back into the live session it names, or answer null.
+     *
+     * Everything an untrusted caller could learn from is collapsed into null: a token of the wrong shape
+     * never reaches the database, and an unknown digest, a passed expiry, a non-active user and a
+     * mismatched `User-Agent` are indistinguishable in the answer. The fingerprint comparison runs in
+     * constant time. A resolution that succeeds rebuilds the principal from the user's current role
+     * grants and epoch and stamps `last_seen_at`, so the row tracks the last request that used it.
+     *
+     * @param   string  $token      Opaque token from the administrator cookie; anything outside 43 to 128
+     *          base64url characters is refused before a query is issued.
+     * @param   string  $userAgent  Client `User-Agent` header, which must fingerprint to the value stored
+     *          when the session was opened.
+     *
+     * @return  ?AdministratorSession  The session carrying a freshly rebuilt principal, or null whenever
+     *          the token does not currently resolve to a live session of an active user.
+     *
+     * @throws  InvalidArgumentException  When the stored security epoch is unusable, or the stored grants
+     *          do not assemble into a valid principal.
+     * @throws  \DateMalformedStringException  When the stored expiry is a string no date reader accepts.
+     * @throws  \Doctrine\DBAL\Exception  When the driver rejects the lookup or the last-seen update.
+     *
+     * @since   2.0.0
+     */
     public function find(string $token, string $userAgent): ?AdministratorSession
     {
         if (strlen($token) < 43 || strlen($token) > 128 || preg_match('/^[A-Za-z0-9_-]+$/D', $token) !== 1) {
@@ -148,6 +234,23 @@ final readonly class DoctrineAdministratorSessionStore implements AdministratorS
         );
     }
 
+    /**
+     * Read a stored security epoch that reaches PHP as either a native integer or a decimal string.
+     *
+     * Drivers disagree on whether an integer column comes back typed, so both spellings are accepted: an
+     * `int` is taken as it stands, a string only when it is a positive decimal without a leading zero.
+     * Anything else is a corrupt row rather than a value to coerce, because the epoch is what a
+     * revocation raises to invalidate every credential already issued to the user.
+     *
+     * @param   mixed  $value  Raw `security_epoch` column value exactly as the driver returned it.
+     *
+     * @return  int  The epoch, cast from the string form when that is what the driver produced.
+     *
+     * @throws  InvalidArgumentException  When the value is neither an integer nor a string of digits
+     *          beginning with 1 through 9.
+     *
+     * @since   2.0.0
+     */
     private function positiveInteger(mixed $value): int
     {
         if (!is_int($value) && (!is_string($value) || preg_match('/^[1-9][0-9]*$/D', $value) !== 1)) {
@@ -157,6 +260,30 @@ final readonly class DoctrineAdministratorSessionStore implements AdministratorS
         return (int) $value;
     }
 
+    /**
+     * End one session and withdraw its ownership row in the same transaction.
+     *
+     * The delete is matched on the identifier alone and must affect exactly one row, so ending a session
+     * another request has already ended is reported rather than quietly accepted. Ownership is withdrawn
+     * for the context's own site, so an actor acting for the wrong site aborts the transaction instead of
+     * removing a session that belongs elsewhere.
+     *
+     * @param   ExecutionContext  $context    Actor, site and provenance the sign-out runs under.
+     * @param   string            $sessionId  UUID of the session to end.
+     *
+     * @return  void
+     *
+     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not end this
+     *          session.
+     * @throws  InvalidArgumentException  When no row carries that identifier, so nothing was ended.
+     * @throws  \Kumwe\CMS\Application\Authorization\ResourceSiteOwnershipConflict  When the session's
+     *          ownership row names a site other than the context's.
+     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationResourceOwnershipUnknown  When the
+     *          session carries no ownership row to withdraw.
+     * @throws  \Doctrine\DBAL\Exception  When the driver rejects the delete.
+     *
+     * @since   2.0.0
+     */
     public function delete(ExecutionContext $context, string $sessionId): void
     {
         $this->authorization->assertAllowed(
@@ -179,6 +306,33 @@ final readonly class DoctrineAdministratorSessionStore implements AdministratorS
         });
     }
 
+    /**
+     * Delete every expired session the context's site owns, inside one locked transaction.
+     *
+     * Candidates are chosen by joining the ownership table, so a purge run for one site never reaches
+     * another's rows — on PostgreSQL the session identifier is cast to text to meet the ownership
+     * column's type. Candidates are locked `FOR UPDATE` in identifier order, so two concurrent purges
+     * take them in the same order and queue rather than deadlock, and each session is deleted together
+     * with its ownership row. A row that vanished between the select and its delete aborts the whole
+     * purge instead of being skipped.
+     *
+     * @param   ExecutionContext  $context  Actor, site and provenance the purge runs under; the site
+     *          decides which sessions are in scope.
+     *
+     * @return  int  How many expired sessions were removed, zero when there was nothing to clear.
+     *
+     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not run
+     *          administrator housekeeping.
+     * @throws  RuntimeException  When a selected identifier is not a usable string, or a locked row no
+     *          longer existed when its delete ran.
+     * @throws  \Kumwe\CMS\Application\Authorization\ResourceSiteOwnershipConflict  When a session's
+     *          ownership row names a site other than the context's.
+     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationResourceOwnershipUnknown  When a session
+     *          carries no ownership row to withdraw.
+     * @throws  \Doctrine\DBAL\Exception  When the driver rejects the candidate read or one of the deletes.
+     *
+     * @since   2.0.0
+     */
     public function purgeExpired(ExecutionContext $context): int
     {
         $this->authorization->assertAllowed(
@@ -224,7 +378,23 @@ final readonly class DoctrineAdministratorSessionStore implements AdministratorS
         });
     }
 
-    /** @return list<array{capability: string, scope_type: string, scope_identifier: ?string}> */
+    /**
+     * Read every role grant the user holds, keeping the reach each one was recorded at.
+     *
+     * This is what `AuthenticatedPrincipal::issueFromGrantRows()` consumes on each resolution, so a
+     * capability granted over a single resource stays confined to it instead of being promoted to a
+     * global grant when the session is rebuilt.
+     *
+     * @param   string  $userId  UUID of the user whose role grants are read.
+     *
+     * @return  list<array{capability: string, scope_type: string, scope_identifier: ?string}>
+     *          One row per distinct grant, ordered by capability, scope type and scope identifier; empty
+     *          when the user's roles grant nothing.
+     *
+     * @throws  \Doctrine\DBAL\Exception  When the driver rejects the read.
+     *
+     * @since   2.0.0
+     */
     private function grantsFor(string $userId): array
     {
         /** @var list<array{capability: string, scope_type: string, scope_identifier: ?string}> */
@@ -237,11 +407,37 @@ final readonly class DoctrineAdministratorSessionStore implements AdministratorS
         ), [$userId]);
     }
 
+    /**
+     * Reduce a client `User-Agent` header to the keyed digest stored beside the session.
+     *
+     * Only the first 512 bytes are folded in, so an unusually long header still fingerprints to a fixed
+     * width, and the installation secret keys the HMAC, so a digest lifted from one deployment's table
+     * cannot be recognised in another. The raw header itself never reaches storage.
+     *
+     * @param   string  $userAgent  Header exactly as the client sent it, of any length.
+     *
+     * @return  string  Hex SHA-256 HMAC to store or compare, identical for the same header and secret.
+     *
+     * @since   2.0.0
+     */
     private function fingerprint(string $userAgent): string
     {
         return hash_hmac('sha256', substr($userAgent, 0, 512), $this->applicationSecret);
     }
 
+    /**
+     * Render random bytes as unpadded base64url, the only alphabet `find()` will accept back.
+     *
+     * `+` and `/` are swapped for `-` and `_` and the `=` padding is dropped, so the value survives a
+     * `Set-Cookie` header and a URL without escaping and still matches the character class the token
+     * shape check applies before any query is issued.
+     *
+     * @param   string  $bytes  Raw random bytes to encode.
+     *
+     * @return  string  URL-safe, unpadded base64 text.
+     *
+     * @since   2.0.0
+     */
     private function base64Url(string $bytes): string
     {
         return rtrim(strtr(base64_encode($bytes), '+/', '-_'), '=');

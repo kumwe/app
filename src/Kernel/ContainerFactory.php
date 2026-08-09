@@ -375,19 +375,85 @@ use Psr\Log\LoggerInterface;
 use RuntimeException;
 use Redis;
 
+/**
+ * Composition root that wires every Kumwe service a process can boot.
+ *
+ * This is the only place service construction happens. The HTTP front controller, the console entry
+ * points and the test kernel all obtain their container from here, so there is exactly one
+ * description of how persistence, extensions, delivery and automation fit together and no second
+ * service locator to keep in step. The factory takes no constructor arguments and accepts no
+ * caller-supplied authority: the kernel proof it mints per build is what binds the authorization
+ * gateway and the system principals to services this class composed, and it never leaves the method
+ * that created it.
+ *
+ * @since  2.0.0
+ */
 final class ContainerFactory
 {
+    /**
+     * Compose the container for a normal boot, with the installed extension runtime loaded.
+     *
+     * Console services are registered too, so one container serves the front controller, the queue
+     * worker and the CLI. Reach for `createRecovery()` instead when the caller must stay isolated
+     * from installed extension code.
+     *
+     * @param   Environment  $environment  Allow-listed process and dotenv variables to configure from.
+     *
+     * @return  Container  Container with every shared service registered and the extension set active.
+     *
+     * @throws  \InvalidArgumentException  When a configuration variable is missing or malformed.
+     * @throws  \ValueError  When `APP_ENV` names no known runtime or no trusted host is configured.
+     * @throws  RuntimeException  When a trusted compiled runtime map is present but fails to load.
+     *
+     * @since   2.0.0
+     */
     public function create(Environment $environment): Container
     {
         return $this->build($environment, true, true);
     }
 
-    /** Builds recovery surfaces without executing any installed extension code. */
+    /**
+     * Builds recovery surfaces without executing any installed extension code.
+     *
+     * `public/index.php` sends the health probes and the extension trust-key endpoints here, so an
+     * operator can observe and re-key an installation whose compiled runtime map is missing,
+     * untrusted or unloadable. Core services are wired exactly as in a normal boot; only the
+     * extension providers are left unexecuted, which is why this cannot raise a map-loading failure.
+     *
+     * @param   Environment  $environment  Allow-listed process and dotenv variables to configure from.
+     *
+     * @return  Container  Container with core services only and an empty active extension set.
+     *
+     * @throws  \InvalidArgumentException  When a configuration variable is missing or malformed.
+     * @throws  \ValueError  When `APP_ENV` names no known runtime or no trusted host is configured.
+     *
+     * @since   2.0.0
+     */
     public function createRecovery(Environment $environment): Container
     {
         return $this->build($environment, true, false);
     }
 
+    /**
+     * Wire one container for the requested surface and extension policy.
+     *
+     * The kernel proof minted here is the object identity that `DenyByDefaultAuthorizationGateway`
+     * and `SystemPrincipal` compare against. It is created inside this method, handed only to the
+     * registrars that must issue trusted execution contexts, and never shared into the container, so
+     * no extension or delivery adapter can obtain it and forge an authorized context.
+     *
+     * @param   Environment  $environment  Allow-listed process and dotenv variables to configure from.
+     * @param   bool         $console      Whether to register the console commands, job handlers and worker.
+     * @param   bool         $loadRuntime  Whether installed extension providers may execute during the build.
+     *
+     * @return  Container  Container with every registrar applied, ready to resolve services.
+     *
+     * @throws  \InvalidArgumentException  When a configuration variable is missing or malformed.
+     * @throws  \ValueError  When `APP_ENV` names no known runtime or no trusted host is configured.
+     * @throws  RuntimeException  When a trusted compiled runtime map is present but fails to load.
+     *
+     * @since   2.0.0
+     */
     private function build(Environment $environment, bool $console, bool $loadRuntime): Container
     {
         // The proof never crosses the production composition boundary. In-process PHP
@@ -428,6 +494,20 @@ final class ContainerFactory
         return $container;
     }
 
+    /**
+     * Register the Monolog logger and its PSR-3 alias.
+     *
+     * Records go to `php://stderr` so the container runtime owns log shipping rather than the
+     * application. A debug deployment emits `Level::Debug` records; every other one starts at
+     * `Level::Info`.
+     *
+     * @param   Container                 $container      Container being composed.
+     * @param   ApplicationConfiguration  $configuration  Boot configuration; only the debug flag is read.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     private function registerLogging(Container $container, ApplicationConfiguration $configuration): void
     {
         $container->share(Logger::class, static function () use ($configuration): Logger {
@@ -442,6 +522,23 @@ final class ContainerFactory
         $container->alias(LoggerInterface::class, Logger::class);
     }
 
+    /**
+     * Register the storage, authorization and domain-service half of the graph.
+     *
+     * Every entry is a lazy shared factory, so composing a container opens no database or Redis
+     * connection: the first `get()` for a service does. The kernel proof reaches the authorization
+     * gateway, the access-token verifier and the identity, session and scheduling stores from here,
+     * which is what makes the execution contexts they issue trustworthy.
+     *
+     * @param   Container                 $container      Container being composed.
+     * @param   ApplicationConfiguration  $configuration  Boot configuration for credentials, limits and secrets.
+     * @param   string                    $root           Absolute path of the repository root.
+     * @param   \stdClass                 $kernelProof    Composition-root capability the gateway is bound to.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     private function registerPersistence(
         Container $container,
         ApplicationConfiguration $configuration,
@@ -860,6 +957,22 @@ final class ContainerFactory
             ), true);
     }
 
+    /**
+     * Register the presentation, routing and PSR-15 runner services, then share the application.
+     *
+     * Twig environments are built through `IsolatedTwigEnvironmentFactory` so a site template and an
+     * administrator template can never read each other's files. The shared `Application` is
+     * registered last because its factory pipes the middleware and declares every route, and so must
+     * see the middleware and handlers this method registers on the way.
+     *
+     * @param   Container                 $container      Container being composed.
+     * @param   ApplicationConfiguration  $configuration  Boot configuration for base URL, site and caching.
+     * @param   string                    $root           Absolute path of the repository root.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     private function registerHttp(
         Container $container,
         ApplicationConfiguration $configuration,
@@ -978,6 +1091,26 @@ final class ContainerFactory
         }, true);
     }
 
+    /**
+     * Register the extension, trust and business-schema graph, then materialise the active set.
+     *
+     * This is the one registrar that does work eagerly. It inspects the locally compiled runtime map
+     * and, when the caller allows it and the map is trusted, executes each extension provider with a
+     * fixed allow-list of core services rather than the container itself. A missing, untrusted or
+     * unverified map degrades to an empty `ActiveExtensionSet` instead of failing the boot, so a
+     * damaged installation still answers on its recovery surfaces.
+     *
+     * @param   Container                 $container      Container being composed.
+     * @param   ApplicationConfiguration  $configuration  Boot configuration for signing keys and identities.
+     * @param   string                    $root           Absolute path of the repository root.
+     * @param   bool                      $loadRuntime    Whether providers named by the map may execute.
+     *
+     * @return  void
+     *
+     * @throws  RuntimeException  When a trusted map is loaded but its structure or an entry is invalid.
+     *
+     * @since   2.0.0
+     */
     private function registerExtensions(
         Container $container,
         ApplicationConfiguration $configuration,
@@ -1361,6 +1494,21 @@ final class ContainerFactory
         $container->share(ActiveExtensionSet::class, $active, true);
     }
 
+    /**
+     * Register every PSR-15 middleware the pipeline and the individual routes select from.
+     *
+     * Registration order carries no meaning here; `configureApplication()` decides the pipeline
+     * order. The idempotency, if-match and CSRF middleware are registered even though only specific
+     * routes name them, because a route references middleware by service name and Mezzio resolves it
+     * from this container at dispatch time.
+     *
+     * @param   Container                 $container      Container being composed.
+     * @param   ApplicationConfiguration  $configuration  Boot configuration for hosts, proxies and body limits.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     private function registerMiddleware(Container $container, ApplicationConfiguration $configuration): void
     {
         $container->share(RequestIdMiddleware::class, new RequestIdMiddleware(), true);
@@ -1473,6 +1621,21 @@ final class ContainerFactory
         $container->share(DispatchMiddleware::class, new DispatchMiddleware(), true);
     }
 
+    /**
+     * Register every request handler, presenter and responder the routes dispatch to.
+     *
+     * Administrator cookie security is derived here from the configured base URL scheme, so an
+     * installation served over plain HTTP still issues a usable session cookie while an HTTPS
+     * deployment gets a secure one without a second configuration switch.
+     *
+     * @param   Container                 $container      Container being composed.
+     * @param   ApplicationConfiguration  $configuration  Boot configuration for base URL, site and limits.
+     * @param   string                    $root           Absolute path of the repository root.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     private function registerHandlers(
         Container $container,
         ApplicationConfiguration $configuration,
@@ -1855,6 +2018,22 @@ final class ContainerFactory
         }, true);
     }
 
+    /**
+     * Pipe the middleware and declare every route the application answers.
+     *
+     * Pipeline order is the security contract: request identity and problem details wrap everything,
+     * the trusted proxy and host filters run before the body limit and the security headers, and
+     * routing, session, authorization and bearer authentication all precede dispatch. Routes are
+     * declared core first, then the routes contributed by active extensions, then the catch-all
+     * published-content route, so an extension can add a path but never shadow a core one.
+     *
+     * @param   Application  $application  Mezzio application to pipe middleware into and route.
+     * @param   Container    $container    Container the application resolves handlers from.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     private function configureApplication(Application $application, Container $container): void
     {
         $application->pipe(RequestIdMiddleware::class);
@@ -2547,6 +2726,21 @@ final class ContainerFactory
         $application->get('/{path:.+}', PublishedContentHandler::class, 'site.content.path');
     }
 
+    /**
+     * Register the automation job handlers, the queue worker and every console command.
+     *
+     * Each command that acts without an operator present receives a `SystemPrincipal` issued from
+     * the kernel proof, which is how unattended work reaches the authorization gateway at all. The
+     * administrator theme recovery path is given its own capability object rather than the kernel
+     * proof, so ordinary theme mutation cannot reach the recovery behaviour.
+     *
+     * @param   Container  $container    Container being composed.
+     * @param   \stdClass  $kernelProof  Composition-root capability system principals are issued from.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     private function registerConsole(Container $container, object $kernelProof): void
     {
         $provenance = $kernelProof;
@@ -2808,6 +3002,21 @@ final class ContainerFactory
             ], self::service($container, Output::class)), true);
     }
 
+    /**
+     * Register the Model Context Protocol server factory, its handlers and its session store.
+     *
+     * Sessions are files under `storage/sessions/mcp` with a one-hour lifetime, so a horizontally
+     * scaled deployment has to give every replica the same volume for a session to survive a request
+     * that lands on another instance. Both the HTTP transport and the `mcp:serve` console command
+     * resolve the same handlers, so the two transports expose an identical capability surface.
+     *
+     * @param   Container  $container  Container being composed.
+     * @param   string     $root       Absolute path of the repository root.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     private function registerMcp(Container $container, string $root): void
     {
         $container->share(McpCapabilityCatalog::class, new McpCapabilityCatalog(), true);
@@ -2849,6 +3058,20 @@ final class ContainerFactory
             ), true);
     }
 
+    /**
+     * Require an authenticated administrator session holding every listed capability.
+     *
+     * `AdministratorAuthorizationMiddleware` rejects any `/administrator` route that declares no
+     * capability, so every such route other than the login form is registered through here. The
+     * capabilities are conjunctive: the session must hold all of them.
+     *
+     * @param   Route   $route         Route returned by the router, to attach the requirement to.
+     * @param   string  $capabilities  Capability names the session must hold, all of them required.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     private static function administratorRoute(Route $route, string ...$capabilities): void
     {
         $route->setOptions([
@@ -2856,6 +3079,20 @@ final class ContainerFactory
         ]);
     }
 
+    /**
+     * Require a bearer token issued for the HTTP API and holding every listed capability.
+     *
+     * Besides the capabilities this pins the audience to `kumwe-http` and the purpose to `api`, so a
+     * token minted for another transport is refused even when it carries the right capability. Pass
+     * no capability for a route that only needs an authenticated token.
+     *
+     * @param   Route   $route         Route returned by the router, to attach the requirement to.
+     * @param   string  $capabilities  Capability names the presented token must carry, all required.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     private static function apiRoute(Route $route, string ...$capabilities): void
     {
         $route->setOptions([
@@ -2867,9 +3104,23 @@ final class ContainerFactory
     }
 
     /**
+     * Resolve a shared service and prove it is of the requested type.
+     *
+     * Joomla DI hands back an untyped value, so every factory in this class resolves through here.
+     * That keeps the container's contents typed for static analysis and turns a misregistered
+     * service into an immediate composition failure rather than a wrong object reaching a
+     * constructor.
+     *
      * @template T of object
-     * @param class-string<T> $service
-     * @return T
+     *
+     * @param   Container        $container  Container to resolve from.
+     * @param   class-string<T>  $service    Service identifier, always the class or interface name.
+     *
+     * @return  T  The resolved service, guaranteed to be an instance of the requested type.
+     *
+     * @throws  RuntimeException  When the container resolves the identifier to a value of another type.
+     *
+     * @since   2.0.0
      */
     private static function service(Container $container, string $service): object
     {

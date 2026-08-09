@@ -13,8 +13,35 @@ use Kumwe\CMS\Identity\Domain\Capability;
 use Psr\Clock\ClockInterface;
 use Ramsey\Uuid\Uuid;
 
+/**
+ * Use case boundary for the media library: browse, upload and delete are all authorized here, and the
+ * two mutations are audited.
+ *
+ * Handlers call this service rather than `MediaStorage` directly, so that each operation is checked
+ * against the caller's capabilities on the `media` collection and scoped to the site carried on the
+ * execution context. Uploads and deletions are written to the audit trail; a browse is a read and
+ * leaves no entry behind. The public media route is the one deliberate exception to going through
+ * this service: serving an already-published file is a read of a resolved URL, not a library
+ * operation.
+ *
+ * An upload whose audit record cannot be written is deleted again before the failure propagates, so
+ * the library never keeps a file that the trail does not account for.
+ *
+ * @since  2.0.0
+ */
 final readonly class MediaService
 {
+    /**
+     * Wire the service to its storage, policy, audit and clock collaborators.
+     *
+     * @param  MediaStorage          $storage        Library the assets are read from and written to.
+     * @param  AuthorizationGateway  $authorization  Decides whether the caller holds the needed capability.
+     * @param  AuditRecorder         $audit          Receives the `media.upload` and `media.delete` events.
+     * @param  ClockInterface        $clock          Supplies the timestamp shared by the asset and its event.
+     * @param  int                   $maximumBytes   Largest upload accepted, in bytes; the storage enforces it.
+     *
+     * @since  2.0.0
+     */
     public function __construct(
         private MediaStorage $storage,
         private AuthorizationGateway $authorization,
@@ -24,6 +51,25 @@ final readonly class MediaService
     ) {
     }
 
+    /**
+     * List the site's media, narrowed by a name search and a kind filter, as one page.
+     *
+     * Filtering and slicing happen in memory over the whole library, so the page size is clamped to 96
+     * to bound the work a single request can ask for. The `$total` on the returned page counts the
+     * filtered set, not the library.
+     *
+     * @param   ExecutionContext  $context  Identity and site the listing is scoped to.
+     * @param   string            $query    Case-insensitive substring matched against the display name.
+     * @param   string            $kind     `image`, `document` for PDFs, or anything else for no filter.
+     * @param   int               $page     One-based page to return; anything below 1 is clamped.
+     * @param   int               $perPage  Requested page size, clamped to between 1 and 96.
+     *
+     * @return  MediaPage  The requested slice plus the counters the pager renders from.
+     *
+     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When `content.read` is refused.
+     *
+     * @since   2.0.0
+     */
     public function browse(
         ExecutionContext $context,
         string $query = '',
@@ -58,6 +104,25 @@ final readonly class MediaService
         );
     }
 
+    /**
+     * Add an uploaded file to the site's library and record the upload in the audit trail.
+     *
+     * The file is stored first and audited second. If the recorder rejects the event the stored asset
+     * is deleted again and the original failure is re-thrown, so a caller either gets an asset that is
+     * fully accounted for or gets an error and no file at all.
+     *
+     * @param   ExecutionContext  $context       Identity and site the upload is attributed to.
+     * @param   string            $source        Path of the temporary file holding the uploaded bytes.
+     * @param   string            $originalName  Filename as the client sent it, sanitised by the storage.
+     *
+     * @return  MediaAsset  The stored asset, with the identifier and media type the storage assigned.
+     *
+     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When `content.update` is refused.
+     * @throws  \InvalidArgumentException  When the source is unreadable, empty, oversized, or unsupported.
+     * @throws  \RuntimeException  When the storage cannot write the file or its metadata.
+     *
+     * @since   2.0.0
+     */
     public function upload(ExecutionContext $context, string $source, string $originalName): MediaAsset
     {
         $this->authorize($context, 'content.update');
@@ -88,6 +153,24 @@ final readonly class MediaService
         return $asset;
     }
 
+    /**
+     * Remove an asset from the site's library and record the deletion.
+     *
+     * An identifier the library does not hold is ignored rather than reported, so a resubmitted delete
+     * form is harmless. Read-only bundled assets are visible to the lookup but live outside the
+     * writable root, so the file survives the call untouched even though the `media.delete` event is
+     * still recorded for it.
+     *
+     * @param   ExecutionContext  $context  Identity and site the deletion is attributed to.
+     * @param   string            $id       Identifier of the asset to remove.
+     *
+     * @return  void
+     *
+     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When `content.delete` is refused.
+     * @throws  \RuntimeException  When the storage cannot remove the file or its metadata.
+     *
+     * @since   2.0.0
+     */
     public function delete(ExecutionContext $context, string $id): void
     {
         $this->authorize($context, 'content.delete');
@@ -109,6 +192,21 @@ final readonly class MediaService
         ));
     }
 
+    /**
+     * Assert the caller may perform a capability against the media collection as a whole.
+     *
+     * Media is authorized at collection granularity: there is no per-asset policy, so the resource is
+     * always the `media` collection and a grant covers every file in the site's library.
+     *
+     * @param   ExecutionContext  $context     Identity the decision is made for.
+     * @param   string            $capability  Capability name, such as `content.update`.
+     *
+     * @return  void
+     *
+     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the gateway refuses it.
+     *
+     * @since   2.0.0
+     */
     private function authorize(ExecutionContext $context, string $capability): void
     {
         $this->authorization->assertAllowed(

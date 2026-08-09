@@ -13,9 +13,35 @@ use Kumwe\CMS\Media\Application\MediaStorage;
 use Ramsey\Uuid\Uuid;
 use RuntimeException;
 
+/**
+ * Media library kept as plain files in two directories on the local filesystem.
+ *
+ * Each asset is a payload file beside a JSON sidecar of the same identifier: the sidecar records the
+ * display name, media type, extension, byte size, creation time and SHA-256 of the payload. Every
+ * read re-derives that pairing — extension against recorded type, resolved path against the
+ * directory it was found in, size and checksum against the file itself — and reports any asset that
+ * fails as absent. A tampered sidecar, a swapped payload, or a symlink pointing outside the library
+ * therefore disappears from listings instead of being served, which is what lets callers stream
+ * `MediaAsset::$path` directly.
+ *
+ * Reads consult two roots. The writable root holds uploads and is the only place `store()` and
+ * `delete()` ever touch. The optional bundled root supplies assets shipped with the distribution:
+ * they are listed with `MediaAsset::$deletable` false, must carry a checksum to be trusted at all,
+ * and are shadowed by a writable asset of the same identifier.
+ *
+ * @since  2.0.0
+ */
 final readonly class FilesystemMediaStorage implements MediaStorage
 {
-    /** @var array<string, string> */
+    /**
+     * Media types this store will serve, mapped to the extension a stored payload must use.
+     *
+     * A sidecar whose recorded type and extension disagree with this table is treated as corrupt, so
+     * the mapping doubles as the guard against a metadata file that renames a payload's type.
+     *
+     * @var    array<string, string>
+     * @since  2.0.0
+     */
     private const MIME_EXTENSIONS = [
         'image/jpeg' => 'jpg',
         'image/png' => 'png',
@@ -26,7 +52,15 @@ final readonly class FilesystemMediaStorage implements MediaStorage
         'application/pdf' => 'pdf',
     ];
 
-    /** @var array<string, string> */
+    /**
+     * Media types accepted from an upload, deliberately narrower than the set the store will serve.
+     *
+     * SVG is readable because bundled distribution assets may ship it, but it is never accepted from a
+     * client: an uploaded SVG is a script-bearing document served from the site's own origin.
+     *
+     * @var    array<string, string>
+     * @since  2.0.0
+     */
     private const UPLOAD_MIME_EXTENSIONS = [
         'image/jpeg' => 'jpg',
         'image/png' => 'png',
@@ -36,10 +70,32 @@ final readonly class FilesystemMediaStorage implements MediaStorage
         'application/pdf' => 'pdf',
     ];
 
+    /**
+     * Bind the store to the directory roots it reads from and writes to.
+     *
+     * @param  string   $root         Writable base directory; per-site libraries hang below it by identifier.
+     * @param  ?string  $bundledRoot  Read-only base directory for distribution assets, or null for none.
+     *
+     * @since  2.0.0
+     */
     public function __construct(private string $root, private ?string $bundledRoot = null)
     {
     }
 
+    /**
+     * List every asset in the site's directories that still passes its integrity checks.
+     *
+     * Both roots are scanned in precedence order and the writable root wins an identifier collision,
+     * so a site can shadow a bundled asset with its own upload. Sidecars that fail validation are
+     * skipped silently: a damaged file must not take the whole media screen down with it.
+     *
+     * @param   SiteContext  $site  Site whose directories are scanned.
+     *
+     * @return  list<MediaAsset>  Newest first, with the identifier breaking ties; empty when neither
+     *          root holds readable media for the site.
+     *
+     * @since   2.0.0
+     */
     public function all(SiteContext $site): array
     {
         $assets = [];
@@ -74,6 +130,20 @@ final readonly class FilesystemMediaStorage implements MediaStorage
         return $assets;
     }
 
+    /**
+     * Look up one asset, checking the writable root before the bundled root.
+     *
+     * The identifier is required to be a UUID before any path is built from it, so a traversal attempt
+     * arriving on the public media route is rejected without a filesystem call.
+     *
+     * @param   SiteContext  $site  Site whose directories are searched.
+     * @param   string       $id    Asset identifier; matched case-insensitively against the filenames.
+     *
+     * @return  ?MediaAsset  Null when the identifier is not a UUID, no such asset exists in either
+     *          root, or the files behind it fail validation.
+     *
+     * @since   2.0.0
+     */
     public function find(SiteContext $site, string $id): ?MediaAsset
     {
         if (!Uuid::isValid($id)) {
@@ -89,6 +159,25 @@ final readonly class FilesystemMediaStorage implements MediaStorage
         return null;
     }
 
+    /**
+     * Read one asset out of a single directory and validate it end to end.
+     *
+     * This is the only place an on-disk pair becomes a `MediaAsset`, so it carries every check the
+     * rest of the class relies on: the sidecar must be a regular file rather than a symlink, parse as
+     * an object and carry each field with the type expected of it, the recorded type must match its
+     * extension, the payload must resolve inside the directory and not be a symlink, the size must
+     * equal what was recorded, and the recorded timestamp must parse. A recorded SHA-256 is always
+     * verified, and bundled read-only assets must carry one — an unchecksummed file in the
+     * distribution root is refused rather than trusted.
+     *
+     * @param   string  $directory  Directory to read from, and the boundary the payload must resolve inside.
+     * @param   string  $id         Asset identifier; the filenames it maps to are lowercase.
+     * @param   bool    $deletable  Whether assets from this directory may be deleted; false for bundled.
+     *
+     * @return  ?MediaAsset  Null whenever any check fails, which every caller reads as "not present".
+     *
+     * @since   2.0.0
+     */
     private function findInDirectory(string $directory, string $id, bool $deletable): ?MediaAsset
     {
         $metadataPath = $directory . '/' . strtolower($id) . '.json';
@@ -145,6 +234,29 @@ final readonly class FilesystemMediaStorage implements MediaStorage
         return new MediaAsset(strtolower($id), $name, $mime, $size, $createdAt, $resolved, $deletable);
     }
 
+    /**
+     * Copy an uploaded file into the site's writable directory and write its metadata sidecar.
+     *
+     * The media type is detected from the bytes with `finfo` and checked against the upload whitelist,
+     * so a renamed file or a lying `Content-Type` is rejected rather than stored. The payload is
+     * copied to a hidden temporary name, given restrictive permissions and only then renamed into
+     * place, so a concurrent reader never observes a partial file. If the sidecar cannot be written
+     * afterwards both files are removed before the failure propagates, leaving no orphaned payload.
+     *
+     * @param   SiteContext        $site          Site the asset is filed under.
+     * @param   string             $source        Path of the uploaded file; it is copied, not moved.
+     * @param   string             $originalName  Client-supplied filename, reduced to a safe display name.
+     * @param   int                $maximumBytes  Largest accepted size in bytes; larger files are refused.
+     * @param   DateTimeImmutable  $createdAt     Creation timestamp recorded in the sidecar.
+     *
+     * @return  MediaAsset  The stored asset, carrying its new UUIDv7 identifier and detected type.
+     *
+     * @throws  InvalidArgumentException  When the source is missing, a symlink, empty, over the limit, or
+     *          not one of JPEG, PNG, GIF, WebP, AVIF or PDF.
+     * @throws  RuntimeException  When the directory, the payload, the checksum or the sidecar cannot be written.
+     *
+     * @since   2.0.0
+     */
     public function store(
         SiteContext $site,
         string $source,
@@ -202,6 +314,23 @@ final readonly class FilesystemMediaStorage implements MediaStorage
         return new MediaAsset($id, $name, $mime, $size, $createdAt, $path);
     }
 
+    /**
+     * Remove an asset's payload and sidecar from the site's writable directory.
+     *
+     * Only the writable root is searched, so a bundled distribution asset is left alone even when its
+     * identifier is passed in, as is an identifier the library does not hold. Removal is not atomic:
+     * a failure between the two unlinks leaves a sidecar whose payload is gone, which the validation
+     * in `findInDirectory()` then reports as absent.
+     *
+     * @param   SiteContext  $site  Site whose writable directory is searched.
+     * @param   string       $id    Identifier of the asset to remove.
+     *
+     * @return  void
+     *
+     * @throws  RuntimeException  When the payload or its sidecar exists but cannot be unlinked.
+     *
+     * @since   2.0.0
+     */
     public function delete(SiteContext $site, string $id): void
     {
         $asset = $this->findInDirectory($this->siteDirectory($site), $id, true);
@@ -217,12 +346,33 @@ final readonly class FilesystemMediaStorage implements MediaStorage
         }
     }
 
+    /**
+     * Build the writable directory path that holds one site's uploads.
+     *
+     * @param   SiteContext  $site  Site whose directory is wanted.
+     *
+     * @return  string  Path below the writable root; it may not exist until the first upload creates it.
+     *
+     * @since   2.0.0
+     */
     private function siteDirectory(SiteContext $site): string
     {
         return rtrim($this->root, '/') . '/' . $site->identifier();
     }
 
-    /** @return list<array{string, bool}> */
+    /**
+     * List the directories a read consults, in the order that decides precedence.
+     *
+     * The writable root always comes first so that a site's own upload shadows a bundled asset sharing
+     * its identifier, and the bundled entry is omitted entirely when no bundled root was configured.
+     *
+     * @param   SiteContext  $site  Site whose directories are wanted.
+     *
+     * @return  list<array{string, bool}>  Directory path paired with whether assets found there may be
+     *          deleted; false marks the read-only bundled root.
+     *
+     * @since   2.0.0
+     */
     private function directories(SiteContext $site): array
     {
         $directories = [[$this->siteDirectory($site), true]];
@@ -233,6 +383,21 @@ final readonly class FilesystemMediaStorage implements MediaStorage
         return $directories;
     }
 
+    /**
+     * Reduce a client-supplied filename to a name that is safe to store and to echo back.
+     *
+     * Both directory separators are collapsed to a basename and control characters are stripped, so
+     * the result cannot escape its directory or inject a header when it is returned in a
+     * `Content-Disposition`. A name that reduces to nothing, `.` or `..` — including one that was not
+     * valid UTF-8 — falls back to `upload.<extension>`, and the survivor is capped at 180 characters.
+     *
+     * @param   string  $originalName  Filename as the client sent it, path separators and all.
+     * @param   string  $extension     Extension derived from the detected type, used by the fallback name.
+     *
+     * @return  string  A basename with no directory component, never empty.
+     *
+     * @since   2.0.0
+     */
     private function displayName(string $originalName, string $extension): string
     {
         $name = basename(str_replace('\\', '/', trim($originalName)));

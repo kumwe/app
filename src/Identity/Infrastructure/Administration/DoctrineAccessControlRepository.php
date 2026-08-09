@@ -13,12 +13,59 @@ use Kumwe\CMS\Identity\Application\Administration\AccessControlRepository;
 use Kumwe\CMS\Infrastructure\Persistence\TableNames;
 use RuntimeException;
 
+/**
+ * Doctrine DBAL adapter that keeps users, roles, capability grants and API tokens in the identity tables.
+ *
+ * This is the only implementation `AccessControlService` runs against, and it is where the two
+ * obligations the port states are actually made good. A write that names a stale version or a vanished
+ * row is turned into an `InvalidArgumentException` by `assertChanged()` rather than being absorbed as a
+ * zero-row success, so a lost update surfaces at the caller. And every change to what a user may do
+ * bumps `security_epoch` on their row — inline in the user update, directly on a role assignment or
+ * revocation and on a subject-wide token revocation, and once per current member when a role's grants
+ * change — which is the mechanism that stops a bearer token minted under the old authority from
+ * verifying afterwards.
+ *
+ * Physical table names come from `TableNames`, quoted for the platform, so the prefix never reaches a
+ * statement unvalidated. Paged reads are capped at 500 rows because the window is interpolated into the
+ * SQL rather than bound. Locking is plain `SELECT ... FOR UPDATE`: this class opens no transaction of
+ * its own, so the caller must already be inside one for a lock or a multi-statement write to mean
+ * anything. Stored JSON capability inventories are decoded and checked element by element here, so a
+ * corrupted row fails at this boundary instead of travelling on as an untyped value.
+ *
+ * @since  2.0.0
+ */
 final readonly class DoctrineAccessControlRepository implements AccessControlRepository
 {
+    /**
+     * Bind the adapter to the connection it runs on and the table names it resolves through.
+     *
+     * @param  Connection  $database  DBAL connection every statement uses; transactions belong to the caller.
+     * @param  TableNames  $tables    Resolver for prefixed physical table names, quoted for this platform.
+     *
+     * @since  2.0.0
+     */
     public function __construct(private Connection $database, private TableNames $tables)
     {
     }
 
+    /**
+     * Read one page of users, each with the roles assigned to it.
+     *
+     * Rows come back unfiltered, as the port requires: judging who may see which user is the service's
+     * job. Ordering is display name, then email, then identifier, so paging is stable when names repeat.
+     * Roles are collected with one extra query per user rather than a join, which keeps a user to one row
+     * at the cost of a query per row in the page.
+     *
+     * @param   int  $limit   Maximum rows to read in this page, from 1 to 500.
+     * @param   int  $offset  Rows to skip before collecting the page.
+     *
+     * @return  list<array<string, mixed>>  One row per user carrying its columns plus a `roles` key whose
+     *          value lists the role id, code and name, ordered by role name.
+     *
+     * @throws  InvalidArgumentException  When the limit is outside 1 to 500 or the offset is negative.
+     *
+     * @since   2.0.0
+     */
     public function users(int $limit = 100, int $offset = 0): array
     {
         $this->assertPage($limit, $offset);
@@ -43,6 +90,22 @@ final readonly class DoctrineAccessControlRepository implements AccessControlRep
         return $users;
     }
 
+    /**
+     * Read one page of roles, each with the capability grants attached to it.
+     *
+     * Grants are collected per role with an extra query, the same shape `users()` uses, and are ordered
+     * by capability code so a role's authority reads the same way on every request.
+     *
+     * @param   int  $limit   Maximum rows to read in this page, from 1 to 500.
+     * @param   int  $offset  Rows to skip before collecting the page.
+     *
+     * @return  list<array<string, mixed>>  One row per role carrying its columns plus a `grants` key whose
+     *          value lists the grant id, capability, scope type and scope identifier.
+     *
+     * @throws  InvalidArgumentException  When the limit is outside 1 to 500 or the offset is negative.
+     *
+     * @since   2.0.0
+     */
     public function roles(int $limit = 100, int $offset = 0): array
     {
         $this->assertPage($limit, $offset);
@@ -65,6 +128,22 @@ final readonly class DoctrineAccessControlRepository implements AccessControlRep
         return $roles;
     }
 
+    /**
+     * Read one page of the capability vocabulary a grant may name.
+     *
+     * Straight off the `capabilities` table the migrations populate, ordered by code. It says what may be
+     * granted, never what any role currently holds.
+     *
+     * @param   int  $limit   Maximum rows to read in this page, from 1 to 500.
+     * @param   int  $offset  Rows to skip before collecting the page.
+     *
+     * @return  list<array{code: string, description: string}>  Capability codes with their operator-facing
+     *          text, in ascending code order.
+     *
+     * @throws  InvalidArgumentException  When the limit is outside 1 to 500 or the offset is negative.
+     *
+     * @since   2.0.0
+     */
     public function capabilities(int $limit = 100, int $offset = 0): array
     {
         $this->assertPage($limit, $offset);
@@ -79,6 +158,27 @@ final readonly class DoctrineAccessControlRepository implements AccessControlRep
         return $rows;
     }
 
+    /**
+     * Read one page of the API tokens issued for one site, newest first.
+     *
+     * The site filter is part of the statement, not a post-filter, so another site's tokens are never
+     * fetched. Only metadata is selected — the digest column stays behind — and the subject is joined in
+     * so a listing needs no second lookup. Each row's stored capability inventory is decoded from JSON
+     * and every element checked, so a corrupted row is rejected here rather than reaching the caller as a
+     * raw string.
+     *
+     * @param   string  $siteIdentifier  Site whose tokens are listed; another site's tokens never appear.
+     * @param   int     $limit           Maximum rows to read in this page, from 1 to 500.
+     * @param   int     $offset          Rows to skip before collecting the page.
+     *
+     * @return  list<array<string, mixed>>  Newest first, each row carrying the token's life and scope, its
+     *          subject columns, and a `capabilities` key holding a list of capability codes.
+     *
+     * @throws  InvalidArgumentException  When the page window is invalid, or a stored token's capabilities
+     *          are not valid JSON, not a list, or hold a non-string entry.
+     *
+     * @since   2.0.0
+     */
     public function tokens(string $siteIdentifier, int $limit = 100, int $offset = 0): array
     {
         $this->assertPage($limit, $offset);
@@ -118,6 +218,25 @@ final readonly class DoctrineAccessControlRepository implements AccessControlRep
         return $tokens;
     }
 
+    /**
+     * Write a new user row together with the password credential it signs in with.
+     *
+     * The address is stored twice, as given and as the normalised lookup key, and the account starts at
+     * version 1 and security epoch 1. Two inserts are issued without a transaction of their own, so the
+     * caller must supply one for the user and its credential to land together.
+     *
+     * @param   string             $id            UUID to store the user under.
+     * @param   string             $email         Address the user signs in with, already normalised.
+     * @param   string             $displayName   Human-readable name shown wherever the user is listed.
+     * @param   string             $status        Lifecycle status to start at, as a `UserStatus` value.
+     * @param   string             $passwordHash  Already-hashed password; plaintext never reaches this adapter.
+     * @param   DateTimeImmutable  $at            Instant recorded as the creation, last-change and credential
+     *          change time.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     public function insertUser(
         string $id,
         string $email,
@@ -149,6 +268,19 @@ final readonly class DoctrineAccessControlRepository implements AccessControlRep
         ]);
     }
 
+    /**
+     * Read the lifecycle status stored for one user.
+     *
+     * A single-column read with no lock of its own; callers that intend to act on the answer take
+     * `lockUser()` first so the status cannot move underneath the decision.
+     *
+     * @param   string  $userId  UUID of the user whose stored status is read.
+     *
+     * @return  ?string  The stored status value, or null when no such user exists or the column does not
+     *          hold a string.
+     *
+     * @since   2.0.0
+     */
     public function userStatus(string $userId): ?string
     {
         $status = $this->database->fetchOne(sprintf(
@@ -159,6 +291,29 @@ final readonly class DoctrineAccessControlRepository implements AccessControlRep
         return is_string($status) ? $status : null;
     }
 
+    /**
+     * Apply an edited user record, refusing the write when someone else has moved it on.
+     *
+     * The expected version sits in the `WHERE` clause, so the row changes only while it still carries the
+     * version the caller read; a mismatch affects no rows and is raised rather than ignored. The same
+     * statement advances `version` and `security_epoch` together, which is what makes tokens minted
+     * before the edit stop verifying.
+     *
+     * @param   string             $id               UUID of the user being edited.
+     * @param   string             $email            Replacement address, already normalised; written to both
+     *          the display and lookup columns.
+     * @param   string             $displayName      Replacement human-readable name.
+     * @param   string             $status           Replacement lifecycle status, as a `UserStatus` value.
+     * @param   int                $expectedVersion  Version the caller read; the write applies only at it.
+     * @param   DateTimeImmutable  $at               Instant recorded as the last-change time.
+     *
+     * @return  void
+     *
+     * @throws  InvalidArgumentException  When no row matched, meaning the user vanished or was edited
+     *          concurrently and the caller must reload before retrying.
+     *
+     * @since   2.0.0
+     */
     public function updateUser(
         string $id,
         string $email,
@@ -184,6 +339,20 @@ final readonly class DoctrineAccessControlRepository implements AccessControlRep
         $this->assertChanged($affected, 'user');
     }
 
+    /**
+     * Write a new role row for capability grants to hang from.
+     *
+     * The role is created bare: it confers nothing until `grant()` attaches capabilities to it.
+     *
+     * @param   string             $id    UUID to store the role under.
+     * @param   string             $code  Stable lowercase identifier policy refers to the role by.
+     * @param   string             $name  Human-readable name shown in the administrator.
+     * @param   DateTimeImmutable  $at    Instant recorded as the creation time.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     public function insertRole(string $id, string $code, string $name, DateTimeImmutable $at): void
     {
         $this->database->insert($this->tables->raw('roles'), [
@@ -193,6 +362,26 @@ final readonly class DoctrineAccessControlRepository implements AccessControlRep
         ]);
     }
 
+    /**
+     * Give a user a role unless they already hold it.
+     *
+     * The existing assignment is looked up first, so a replay inserts nothing and leaves the security
+     * epoch alone; only an assignment that actually lands advances it, because that is the moment the
+     * user's authority widens. The read and the insert are not atomic on their own, so the caller holds
+     * the user and role locks around the pair.
+     *
+     * @param   string             $userId   UUID of the user gaining the role.
+     * @param   string             $roleId   UUID of the role being assigned.
+     * @param   string             $actorId  UUID of the administrator assigning it, kept for the audit trail.
+     * @param   DateTimeImmutable  $at       Instant recorded as the assignment time.
+     *
+     * @return  void
+     *
+     * @throws  InvalidArgumentException  When the assignment landed but the user row could not be found to
+     *          advance its security epoch.
+     *
+     * @since   2.0.0
+     */
     public function assignRole(string $userId, string $roleId, string $actorId, DateTimeImmutable $at): void
     {
         $exists = $this->database->fetchOne(sprintf(
@@ -213,6 +402,23 @@ final readonly class DoctrineAccessControlRepository implements AccessControlRep
         }
     }
 
+    /**
+     * Take a role away from a user.
+     *
+     * Unlike assignment this is not idempotent: the delete must remove exactly one row, so revoking a
+     * role the user does not hold is reported rather than passed over. The epoch bump follows, so tokens
+     * minted while they still held the role stop verifying.
+     *
+     * @param   string  $userId  UUID of the user losing the role.
+     * @param   string  $roleId  UUID of the role being taken away.
+     *
+     * @return  void
+     *
+     * @throws  InvalidArgumentException  When the user did not hold that role, or when the user row could
+     *          not be found to advance its security epoch.
+     *
+     * @since   2.0.0
+     */
     public function revokeRole(string $userId, string $roleId): void
     {
         $this->assertChanged(
@@ -222,6 +428,28 @@ final readonly class DoctrineAccessControlRepository implements AccessControlRep
         $this->incrementSecurityEpoch($userId);
     }
 
+    /**
+     * Attach a capability to a role, globally or within one named scope.
+     *
+     * Whether the actor may confer this is settled before the call; the adapter writes the row it is
+     * given. Because the role's members immediately gain the capability, every current member has their
+     * security epoch advanced, so a token they already hold cannot silently pick it up.
+     *
+     * @param   string             $id               UUID to store the grant under.
+     * @param   string             $roleId           UUID of the role receiving the capability.
+     * @param   string             $capability       Capability code being granted.
+     * @param   string             $scopeType        Kind of scope it applies in, `global` or a named kind.
+     * @param   ?string            $scopeIdentifier  Which instance of that kind, or null for a global grant.
+     * @param   string             $actorId          UUID of the administrator granting it, kept for audit.
+     * @param   DateTimeImmutable  $at               Instant recorded as the grant time.
+     *
+     * @return  void
+     *
+     * @throws  InvalidArgumentException  When a member's user row could not be found to advance its
+     *          security epoch.
+     *
+     * @since   2.0.0
+     */
     public function grant(
         string $id,
         string $roleId,
@@ -245,6 +473,23 @@ final readonly class DoctrineAccessControlRepository implements AccessControlRep
         $this->incrementRoleMembersEpoch($roleId);
     }
 
+    /**
+     * Remove a capability grant from the role that holds it.
+     *
+     * The owning role is read before the delete, because afterwards there is nothing left to join
+     * through; its members are then invalidated so a token that already carried the capability loses it
+     * rather than keeping it until expiry. When the role could not be read the delete still stands and
+     * only the epoch bump is skipped.
+     *
+     * @param   string  $grantId  UUID of the grant to remove.
+     *
+     * @return  void
+     *
+     * @throws  InvalidArgumentException  When no grant carries that identifier, or when a member's user row
+     *          could not be found to advance its security epoch.
+     *
+     * @since   2.0.0
+     */
     public function revokeGrant(string $grantId): void
     {
         $roleId = $this->database->fetchOne(sprintf(
@@ -260,6 +505,22 @@ final readonly class DoctrineAccessControlRepository implements AccessControlRep
         }
     }
 
+    /**
+     * Mark one live API token as revoked.
+     *
+     * The row is stamped rather than deleted, so the token's history and the reason it ended survive for
+     * audit. The `revoked_at IS NULL` guard makes this a one-shot: revoking an already-revoked token
+     * affects nothing and is reported as a failure rather than treated as success.
+     *
+     * @param   string             $tokenId  UUID of the token to revoke.
+     * @param   DateTimeImmutable  $at       Instant recorded as the revocation time.
+     *
+     * @return  void
+     *
+     * @throws  InvalidArgumentException  When the token does not exist or was already revoked.
+     *
+     * @since   2.0.0
+     */
     public function revokeToken(string $tokenId, DateTimeImmutable $at): void
     {
         $affected = $this->database->executeStatement(sprintf(
@@ -269,6 +530,18 @@ final readonly class DoctrineAccessControlRepository implements AccessControlRep
         $this->assertChanged($affected, 'active API token');
     }
 
+    /**
+     * Resolve a normalised email address to the user allowed to sign in with it.
+     *
+     * The `active` status is part of the statement, so a suspended, pending or disabled account simply
+     * does not answer; that is what stops a token being issued for a subject who may no longer sign in.
+     *
+     * @param   string  $normalizedEmail  Address already put through `EmailAddress` normalisation.
+     *
+     * @return  ?string  UUID of the active user, or null when no active account holds that address.
+     *
+     * @since   2.0.0
+     */
     public function userIdByEmail(string $normalizedEmail): ?string
     {
         $id = $this->database->fetchOne(sprintf(
@@ -279,6 +552,18 @@ final readonly class DoctrineAccessControlRepository implements AccessControlRep
         return is_string($id) ? $id : null;
     }
 
+    /**
+     * Read which site a token belongs to.
+     *
+     * Callers compare the answer against their own site before acting, so a token cannot be revoked or
+     * rotated from a site that does not own it.
+     *
+     * @param   string  $tokenId  UUID of the token being located.
+     *
+     * @return  ?string  Site identifier the token is confined to, or null when no such token exists.
+     *
+     * @since   2.0.0
+     */
     public function tokenSite(string $tokenId): ?string
     {
         $site = $this->database->fetchOne(sprintf(
@@ -288,6 +573,28 @@ final readonly class DoctrineAccessControlRepository implements AccessControlRep
         return is_string($site) ? $site : null;
     }
 
+    /**
+     * Read everything a rotation must copy from a token that is still usable.
+     *
+     * Usability is decided in SQL and is stricter than mere existence: the token must be unrevoked and
+     * unexpired, still sitting on its subject's current security epoch, and owned by an account whose
+     * status is `active`. A token that fails any of those reads as absent. With the lock requested the
+     * joined rows are held for the rest of the caller's transaction, which is how rotation stops the
+     * record being revoked between this read and the replacement it writes.
+     *
+     * @param   string  $tokenId  UUID of the token about to be rotated.
+     * @param   bool    $lock     Whether to append `FOR UPDATE` and hold the rows for the transaction.
+     *
+     * @return  array{subject_id: string, email: string, capabilities: list<string>, site_identifier: string,
+     *          audience: string, purpose: string}|null  Null when the token is absent or no longer usable.
+     *
+     * @throws  JsonException  When the stored capability inventory is not decodable JSON; unlike
+     *          `tokens()`, this path lets the decoder error propagate.
+     * @throws  RuntimeException  When the inventory decodes to something other than a list of strings, or
+     *          a joined column that must be text is not.
+     *
+     * @since   2.0.0
+     */
     public function activeTokenForRotation(string $tokenId, bool $lock = false): ?array
     {
         $row = $this->database->fetchAssociative(sprintf(
@@ -338,6 +645,24 @@ final readonly class DoctrineAccessControlRepository implements AccessControlRep
         ];
     }
 
+    /**
+     * Revoke every live token a subject holds, in every site, as a break-glass measure.
+     *
+     * The security epoch is advanced first, so even a token the update somehow misses fails its epoch
+     * check on the next request; that ordering also means the whole call fails when the subject does not
+     * exist, before any token is touched.
+     *
+     * @param   string             $userId  UUID of the subject whose tokens are all being destroyed.
+     * @param   DateTimeImmutable  $at      Instant recorded as the revocation time.
+     * @param   string             $reason  Operator-supplied justification stored beside each token.
+     *
+     * @return  int  How many live tokens were revoked, zero when the subject held none.
+     *
+     * @throws  InvalidArgumentException  When no user row carries that identifier, so the epoch could not
+     *          be advanced.
+     *
+     * @since   2.0.0
+     */
     public function revokeSubjectTokens(string $userId, DateTimeImmutable $at, string $reason): int
     {
         $this->incrementSecurityEpoch($userId);
@@ -347,6 +672,21 @@ final readonly class DoctrineAccessControlRepository implements AccessControlRep
         ), [$at, $reason, $userId], [Types::DATETIME_IMMUTABLE, Types::STRING, Types::GUID]);
     }
 
+    /**
+     * Revoke the live tokens a subject holds for one site, leaving their other sites alone.
+     *
+     * The contained counterpart of `revokeSubjectTokens()`: it deliberately does not touch the security
+     * epoch, because doing so would invalidate the subject's credentials everywhere else too.
+     *
+     * @param   string             $userId          UUID of the subject whose tokens are being revoked.
+     * @param   string             $siteIdentifier  Site whose tokens are revoked; others are untouched.
+     * @param   DateTimeImmutable  $at              Instant recorded as the revocation time.
+     * @param   string             $reason          Operator-supplied justification stored beside each token.
+     *
+     * @return  int  How many live tokens were revoked, zero when the subject held none for that site.
+     *
+     * @since   2.0.0
+     */
     public function revokeSubjectTokensForSite(
         string $userId,
         string $siteIdentifier,
@@ -365,6 +705,22 @@ final readonly class DoctrineAccessControlRepository implements AccessControlRep
         ]);
     }
 
+    /**
+     * Hold the user's row for the rest of the caller's transaction.
+     *
+     * The lock is taken by selecting `security_epoch` `FOR UPDATE`, and the value read back is what
+     * proves the row exists: a missing user yields no epoch and is refused. Outside a transaction the
+     * lock is released immediately, so this is only meaningful inside one.
+     *
+     * @param   string  $userId  UUID of the user to lock.
+     *
+     * @return  void
+     *
+     * @throws  InvalidArgumentException  When no row answered, so the user does not exist or could not be
+     *          locked.
+     *
+     * @since   2.0.0
+     */
     public function lockUser(string $userId): void
     {
         $epoch = $this->database->fetchOne(sprintf(
@@ -376,6 +732,21 @@ final readonly class DoctrineAccessControlRepository implements AccessControlRep
         }
     }
 
+    /**
+     * Hold the role's row for the rest of the caller's transaction.
+     *
+     * Role assignment and granting lock here first, so the delegation check cannot be made against grants
+     * another administrator changes before the write lands.
+     *
+     * @param   string  $roleId  UUID of the role to lock.
+     *
+     * @return  void
+     *
+     * @throws  InvalidArgumentException  When no row answered, so the role does not exist or could not be
+     *          locked.
+     *
+     * @since   2.0.0
+     */
     public function lockRole(string $roleId): void
     {
         $id = $this->database->fetchOne(sprintf(
@@ -387,6 +758,18 @@ final readonly class DoctrineAccessControlRepository implements AccessControlRep
         }
     }
 
+    /**
+     * Read the stable code policy identifies a role by.
+     *
+     * The access-control service uses it to recognise the `administrator` role, which an actor may not
+     * strip from themselves.
+     *
+     * @param   string  $roleId  UUID of the role being inspected.
+     *
+     * @return  ?string  The role's code, or null when no such role exists.
+     *
+     * @since   2.0.0
+     */
     public function roleCode(string $roleId): ?string
     {
         $code = $this->database->fetchOne(sprintf(
@@ -397,6 +780,20 @@ final readonly class DoctrineAccessControlRepository implements AccessControlRep
         return is_string($code) ? $code : null;
     }
 
+    /**
+     * Read the capabilities one role confers, with the scope each applies in.
+     *
+     * The delegation check walks this list before a role is handed on, measuring each grant it finds
+     * against what the actor may themselves delegate. Ordering is capability, then scope type, then
+     * scope identifier, so the same role always presents its authority in the same order.
+     *
+     * @param   string  $roleId  UUID of the role being inspected.
+     *
+     * @return  list<array{capability: string, scope_type: string, scope_identifier: ?string}>  Empty when
+     *          the role confers nothing.
+     *
+     * @since   2.0.0
+     */
     public function roleGrants(string $roleId): array
     {
         /** @var list<array{capability: string, scope_type: string, scope_identifier: ?string}> $rows */
@@ -409,6 +806,20 @@ final readonly class DoctrineAccessControlRepository implements AccessControlRep
         return $rows;
     }
 
+    /**
+     * Read every capability a user holds through their roles, with the scope each applies in.
+     *
+     * The statement joins the user's roles to their grants and deduplicates, so a capability conferred by
+     * two roles appears once. Token issuance checks each requested capability against this list, which is
+     * what keeps a token from carrying more than its subject already has.
+     *
+     * @param   string  $userId  UUID of the user being inspected.
+     *
+     * @return  list<array{capability: string, scope_type: string, scope_identifier: ?string}>  Empty when
+     *          the user holds nothing.
+     *
+     * @since   2.0.0
+     */
     public function userGrants(string $userId): array
     {
         /** @var list<array{capability: string, scope_type: string, scope_identifier: ?string}> $rows */
@@ -423,6 +834,23 @@ final readonly class DoctrineAccessControlRepository implements AccessControlRep
         return $rows;
     }
 
+    /**
+     * Read one capability grant by its identifier.
+     *
+     * Revocation reads the grant first so it can authorize against the role that holds it. The owning
+     * role, capability and scope type are asserted to be text and the scope identifier to be text or
+     * null, so a grant row that has lost a column is refused instead of being partially believed.
+     *
+     * @param   string  $grantId  UUID of the grant being read.
+     *
+     * @return  array{role_id: string, capability: string, scope_type: string, scope_identifier: ?string}|null
+     *          Null when no grant carries that identifier.
+     *
+     * @throws  InvalidArgumentException  When the stored row's role, capability or scope type is not text,
+     *          or its scope identifier is neither text nor null.
+     *
+     * @since   2.0.0
+     */
     public function grantRecord(string $grantId): ?array
     {
         $row = $this->database->fetchAssociative(sprintf(
@@ -452,6 +880,23 @@ final readonly class DoctrineAccessControlRepository implements AccessControlRep
         ];
     }
 
+    /**
+     * Refuse a write that did not change exactly one row.
+     *
+     * This is where the port's promise that a stale or vanished target fails loudly is kept. DBAL reports
+     * affected rows as an integer on some drivers and a numeric string on others, so the comparison is
+     * made on the string form; anything but one row means the target was gone or had already moved on.
+     *
+     * @param   int|string  $affected  Rows the statement reported as affected.
+     * @param   string      $resource  Name of the thing being written, read back to the operator in the
+     *          failure message.
+     *
+     * @return  void
+     *
+     * @throws  InvalidArgumentException  When the statement did not affect exactly one row.
+     *
+     * @since   2.0.0
+     */
     private function assertChanged(int|string $affected, string $resource): void
     {
         if ((string) $affected !== '1') {
@@ -462,6 +907,22 @@ final readonly class DoctrineAccessControlRepository implements AccessControlRep
         }
     }
 
+    /**
+     * Refuse a page window that is unbounded or malformed.
+     *
+     * Every paged read interpolates its window into the statement instead of binding it, so this is the
+     * one place the values are constrained; the 500-row ceiling is what stops a single call from reading
+     * the whole table.
+     *
+     * @param   int  $limit   Maximum rows requested, which must fall between 1 and 500.
+     * @param   int  $offset  Rows to skip, which must not be negative.
+     *
+     * @return  void
+     *
+     * @throws  InvalidArgumentException  When the limit is outside 1 to 500 or the offset is negative.
+     *
+     * @since   2.0.0
+     */
     private function assertPage(int $limit, int $offset): void
     {
         if ($limit < 1 || $limit > 500 || $offset < 0) {
@@ -469,6 +930,21 @@ final readonly class DoctrineAccessControlRepository implements AccessControlRep
         }
     }
 
+    /**
+     * Advance one user's security epoch so credentials issued under the old authority stop verifying.
+     *
+     * Called by every change that alters what a user may do. The update must touch exactly one row: a
+     * change made against a user who is no longer there fails here rather than quietly losing the
+     * invalidation that the change depended on.
+     *
+     * @param   string  $userId  UUID of the user whose epoch is advanced.
+     *
+     * @return  void
+     *
+     * @throws  InvalidArgumentException  When no user row carries that identifier.
+     *
+     * @since   2.0.0
+     */
     private function incrementSecurityEpoch(string $userId): void
     {
         $this->assertChanged($this->database->executeStatement(sprintf(
@@ -477,6 +953,22 @@ final readonly class DoctrineAccessControlRepository implements AccessControlRep
         ), [$userId], [Types::GUID]), 'user');
     }
 
+    /**
+     * Advance the security epoch of every user currently holding a role.
+     *
+     * A role carries no epoch of its own, so changing what it confers has to be pushed down to each
+     * member individually. Membership is read once before the loop, which means a user assigned the role
+     * after that read is not covered — callers hold the role lock to close that window.
+     *
+     * @param   string  $roleId  UUID of the role whose members are invalidated.
+     *
+     * @return  void
+     *
+     * @throws  InvalidArgumentException  When a member's user row disappears between the membership read
+     *          and its own update.
+     *
+     * @since   2.0.0
+     */
     private function incrementRoleMembersEpoch(string $roleId): void
     {
         $users = $this->database->fetchFirstColumn(sprintf(

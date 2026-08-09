@@ -22,8 +22,37 @@ use Psr\Clock\ClockInterface;
 use Ramsey\Uuid\Uuid;
 use RuntimeException;
 
+/**
+ * The one place users, roles, capability grants and token revocation are changed.
+ *
+ * The administrator screens, the identity REST surface, the `access` console command and the MCP
+ * tools all funnel through this service instead of touching the store, which is what keeps them at
+ * parity: what one refuses, the others refuse too. Four rules hold across every entry point here.
+ * `users.manage` is asserted against the exact record being touched, never merely against the
+ * installation. Listings are filtered row by row, so a partially scoped administrator gets a short
+ * list rather than a refusal. Each mutation runs in one transaction that writes its audit entry
+ * beside the change, taking a row lock first wherever the decision depends on stored state. And an
+ * actor may neither delegate authority it does not hold nor take away its own administrator access.
+ *
+ * @since  2.0.0
+ */
 final readonly class AccessControlService
 {
+    /**
+     * Wire the store and the collaborators every mutation here depends on.
+     *
+     * @param  AccessControlRepository      $repository     Store the users, roles, grants and tokens live in.
+     * @param  PasswordHasher               $passwords      Hashes a new user's password before it is stored.
+     * @param  TransactionManager           $transactions   Wraps each mutation so its lock, write and audit
+     *         entry commit together or not at all.
+     * @param  AuditRecorder                $audit          Records who changed what, on every mutation.
+     * @param  ClockInterface               $clock          Supplies the instants written onto the records.
+     * @param  AuthorizationGateway         $authorization  Answers both the access and the delegation question.
+     * @param  ResourceSiteOwnershipWriter  $ownership      Registers each new record against the site that owns
+     *         it, so later authorization can resolve its scope.
+     *
+     * @since  2.0.0
+     */
     public function __construct(
         private AccessControlRepository $repository,
         private PasswordHasher $passwords,
@@ -35,21 +64,61 @@ final readonly class AccessControlService
     ) {
     }
 
-    /** @return list<array<string, mixed>> */
+    /**
+     * List the users this actor may manage.
+     *
+     * The collection is authorized first and then every row again, so an administrator scoped to part
+     * of the installation sees a shorter list instead of being refused outright.
+     *
+     * @param   ExecutionContext  $context  Actor, site and request identifiers the listing runs under.
+     *
+     * @return  list<array<string, mixed>>  One row per visible user, each carrying its assigned roles.
+     *
+     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not manage users
+     *          at all.
+     *
+     * @since   2.0.0
+     */
     public function users(ExecutionContext $context): array
     {
         $this->authorize($context, AuthorizationResource::collection('user'));
         return $this->filterPaged($context, 'user', $this->repository->users(...));
     }
 
-    /** @return list<array<string, mixed>> */
+    /**
+     * List the roles this actor may manage, each with the capabilities it confers.
+     *
+     * @param   ExecutionContext  $context  Actor, site and request identifiers the listing runs under.
+     *
+     * @return  list<array<string, mixed>>  One row per visible role, each carrying its capability grants.
+     *
+     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not manage roles
+     *          at all.
+     *
+     * @since   2.0.0
+     */
     public function roles(ExecutionContext $context): array
     {
         $this->authorize($context, AuthorizationResource::collection('role'));
         return $this->filterPaged($context, 'role', $this->repository->roles(...));
     }
 
-    /** @return list<array{code: string, description: string}> */
+    /**
+     * List the capability vocabulary a grant may name.
+     *
+     * This is the choice list the administrator and the API offer when someone writes a grant; it says
+     * what exists, not what any role holds.
+     *
+     * @param   ExecutionContext  $context  Actor, site and request identifiers the listing runs under.
+     *
+     * @return  list<array{code: string, description: string}>  Capability codes with their operator-facing text.
+     *
+     * @throws  RuntimeException  When a stored capability row is missing its code or its description.
+     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not manage
+     *          capabilities.
+     *
+     * @since   2.0.0
+     */
     public function capabilities(ExecutionContext $context): array
     {
         $this->authorize($context, AuthorizationResource::collection('capability'));
@@ -71,7 +140,20 @@ final readonly class AccessControlService
         }, $rows);
     }
 
-    /** @return list<array<string, mixed>> */
+    /**
+     * List the API tokens issued for the context's site.
+     *
+     * Only metadata comes back: a token's secret exists solely in the response that minted it.
+     *
+     * @param   ExecutionContext  $context  Actor and site; only that site's tokens are considered.
+     *
+     * @return  list<array<string, mixed>>  Newest first, each row carrying the token's subject, scope and life.
+     *
+     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not manage the
+     *          site's tokens.
+     *
+     * @since   2.0.0
+     */
     public function tokens(ExecutionContext $context): array
     {
         $this->authorize($context, AuthorizationResource::item('site', $context->site()->identifier()));
@@ -87,6 +169,25 @@ final readonly class AccessControlService
         );
     }
 
+    /**
+     * Create a user with a hashed password and register it against the default site.
+     *
+     * The address, name and password are normalised, checked and hashed before anything is written; the
+     * insert, the ownership record and the audit entry then share one transaction.
+     *
+     * @param   ExecutionContext  $context      Actor, site and request identifiers the creation runs under.
+     * @param   string            $email        Address the new user will sign in with.
+     * @param   string            $displayName  Human-readable name, 1 to 191 characters once trimmed.
+     * @param   string            $password     Plaintext password; only its hash reaches the store.
+     * @param   UserStatus        $status       Lifecycle status to start at, active unless stated otherwise.
+     *
+     * @return  string  UUID of the created user.
+     *
+     * @throws  InvalidArgumentException  When the address is not an email or the display name is unusable.
+     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not create users.
+     *
+     * @since   2.0.0
+     */
     public function createUser(
         ExecutionContext $context,
         string $email,
@@ -125,6 +226,30 @@ final readonly class AccessControlService
         });
     }
 
+    /**
+     * Apply an edited user record under the store's optimistic-concurrency rule.
+     *
+     * Two guards stand in front of the write: an actor may not move its own account to a status that
+     * cannot sign in, and the requested status must be a legal move from the one currently stored, which
+     * is read under a lock taken inside the transaction. The store advances the user's security epoch as
+     * the write lands, so tokens issued before the edit stop verifying.
+     *
+     * @param   ExecutionContext  $context          Actor, site and request identifiers the edit runs under.
+     * @param   string            $id               UUID of the user being edited.
+     * @param   string            $email            Replacement address.
+     * @param   string            $displayName      Replacement human-readable name.
+     * @param   UserStatus        $status           Lifecycle status the user is asked to move to.
+     * @param   int               $expectedVersion  Version the caller read; a stale one aborts the write.
+     *
+     * @return  void
+     *
+     * @throws  InvalidArgumentException  When the actor would lock itself out, the input is unusable, the
+     *          transition is illegal, or the record moved on under the caller.
+     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not manage this
+     *          user.
+     *
+     * @since   2.0.0
+     */
     public function updateUser(
         ExecutionContext $context,
         string $id,
@@ -164,6 +289,24 @@ final readonly class AccessControlService
         });
     }
 
+    /**
+     * Create a role for capability grants to hang from.
+     *
+     * The role starts empty and confers nothing until `grant()` attaches a capability to it, so creating
+     * one delegates no authority. The code is lowercased and both arguments trimmed before validation.
+     *
+     * @param   ExecutionContext  $context  Actor, site and request identifiers the creation runs under.
+     * @param   string            $code     Stable identifier policy refers to the role by; lowercased, 2 to
+     *          64 characters of letters, digits, dot, dash or underscore.
+     * @param   string            $name     Human-readable name, 1 to 191 characters once trimmed.
+     *
+     * @return  string  UUID of the created role.
+     *
+     * @throws  InvalidArgumentException  When the code is not a stable identifier or the name is unusable.
+     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not create roles.
+     *
+     * @since   2.0.0
+     */
     public function createRole(ExecutionContext $context, string $code, string $name): string
     {
         $this->authorize($context, AuthorizationResource::collection('role'));
@@ -187,6 +330,25 @@ final readonly class AccessControlService
         });
     }
 
+    /**
+     * Give a user a role, but only one the actor could have granted itself.
+     *
+     * Assignment is where authority spreads fastest, so the role is locked and every capability it
+     * confers is re-checked for delegation inside the transaction. That closes the obvious hole: an
+     * administrator cannot use a role to hand on more than they hold themselves.
+     *
+     * @param   ExecutionContext  $context  Actor, site and request identifiers the assignment runs under.
+     * @param   string            $userId   UUID of the user gaining the role.
+     * @param   string            $roleId   UUID of the role being assigned.
+     *
+     * @return  void
+     *
+     * @throws  InvalidArgumentException  When the role does not exist, so it could not be locked.
+     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not manage the
+     *          user or the role, or may not delegate one of the role's grants.
+     *
+     * @since   2.0.0
+     */
     public function assignRole(ExecutionContext $context, string $userId, string $roleId): void
     {
         $this->authorize($context, AuthorizationResource::item('user', $userId));
@@ -201,6 +363,25 @@ final readonly class AccessControlService
         });
     }
 
+    /**
+     * Take a role away from a user.
+     *
+     * An actor may not remove its own `administrator` role, which is what stops a single mistake leaving
+     * an installation with nobody able to administer it.
+     *
+     * @param   ExecutionContext  $context  Actor, site and request identifiers the revocation runs under.
+     * @param   string            $userId   UUID of the user losing the role.
+     * @param   string            $roleId   UUID of the role being taken away.
+     *
+     * @return  void
+     *
+     * @throws  InvalidArgumentException  When the actor is removing its own administrator role, or the user
+     *          did not hold the role at all.
+     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not manage the
+     *          user or the role.
+     *
+     * @since   2.0.0
+     */
     public function revokeRole(ExecutionContext $context, string $userId, string $roleId): void
     {
         $this->authorize($context, AuthorizationResource::item('user', $userId));
@@ -215,6 +396,29 @@ final readonly class AccessControlService
         });
     }
 
+    /**
+     * Attach a capability to a role, globally or within one named scope.
+     *
+     * Delegation is asserted twice: once before the transaction, to refuse the clear case cheaply, and
+     * once inside it with the role locked, so a concurrent change to the actor's own authority cannot be
+     * raced. Scope pairing is exclusive — a global grant carries no identifier, and a scoped one demands
+     * exactly one.
+     *
+     * @param   ExecutionContext  $context          Actor, site and request identifiers the grant runs under.
+     * @param   string            $roleId           UUID of the role receiving the capability.
+     * @param   string            $capability       Capability code being granted.
+     * @param   string            $scopeType        Kind of scope it applies in; `global` unless stated.
+     * @param   ?string           $scopeIdentifier  Which instance of that kind, or null for a global grant.
+     *
+     * @return  string  UUID of the created grant.
+     *
+     * @throws  InvalidArgumentException  When the capability, the scope type, or the pairing of scope type
+     *          and identifier is invalid.
+     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not manage the
+     *          role or may not delegate that capability at that scope.
+     *
+     * @since   2.0.0
+     */
     public function grant(
         ExecutionContext $context,
         string $roleId,
@@ -277,6 +481,23 @@ final readonly class AccessControlService
         });
     }
 
+    /**
+     * Remove a capability grant, authorized against both the grant and the role behind it.
+     *
+     * The role is read from the stored grant rather than taken from the caller, so naming a grant is not
+     * a way to edit a role the actor does not manage.
+     *
+     * @param   ExecutionContext  $context  Actor, site and request identifiers the revocation runs under.
+     * @param   string            $grantId  UUID of the grant to remove.
+     *
+     * @return  void
+     *
+     * @throws  InvalidArgumentException  When no grant carries that identifier.
+     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not manage the
+     *          grant or the role that holds it.
+     *
+     * @since   2.0.0
+     */
     public function revokeGrant(ExecutionContext $context, string $grantId): void
     {
         $this->authorize($context, AuthorizationResource::item('grant', $grantId));
@@ -294,6 +515,24 @@ final readonly class AccessControlService
         });
     }
 
+    /**
+     * Revoke one API token belonging to the context's site.
+     *
+     * The token's stored site must equal the context's, so a credential can never be killed from a site
+     * that does not own it.
+     *
+     * @param   ExecutionContext  $context  Actor and site the revocation runs under.
+     * @param   string            $tokenId  UUID of the token to revoke.
+     *
+     * @return  void
+     *
+     * @throws  InvalidArgumentException  When the token belongs to another site, is unknown, or has already
+     *          been revoked.
+     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not manage the
+     *          token.
+     *
+     * @since   2.0.0
+     */
     public function revokeToken(ExecutionContext $context, string $tokenId): void
     {
         $this->authorize($context, AuthorizationResource::item('api_token', $tokenId));
@@ -308,6 +547,26 @@ final readonly class AccessControlService
         });
     }
 
+    /**
+     * Revoke every token a subject holds for the context's site.
+     *
+     * The contained revocation: whatever the subject holds in other sites keeps working. The reason is
+     * mandatory because it is stored on each revoked token as well as in the audit entry, which is what
+     * makes an incident reconstructable afterwards.
+     *
+     * @param   ExecutionContext  $context  Actor and site; only that site's tokens are revoked.
+     * @param   string            $userId   UUID of the subject whose tokens are revoked.
+     * @param   string            $reason   Operator justification, 1 to 500 characters once trimmed.
+     *
+     * @return  int  How many live tokens were revoked, zero when the subject held none for the site.
+     *
+     * @throws  InvalidArgumentException  When the reason is empty or too long, or the subject does not exist
+     *          and so could not be locked.
+     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not manage the
+     *          site's tokens.
+     *
+     * @since   2.0.0
+     */
     public function revokeSubjectTokens(ExecutionContext $context, string $userId, string $reason): int
     {
         $this->authorize($context, AuthorizationResource::item('site', $context->site()->identifier()));
@@ -342,6 +601,26 @@ final readonly class AccessControlService
         });
     }
 
+    /**
+     * Revoke every token a subject holds, in every site, as a break-glass measure.
+     *
+     * The unbounded counterpart of `revokeSubjectTokens()`, so it is authorized against the user rather
+     * than against one site. The store also advances the subject's security epoch, which means even a
+     * credential the sweep somehow missed stops verifying.
+     *
+     * @param   ExecutionContext  $context  Actor, site and request identifiers the revocation runs under.
+     * @param   string            $userId   UUID of the subject whose tokens are all destroyed.
+     * @param   string            $reason   Operator justification, 1 to 500 characters once trimmed.
+     *
+     * @return  int  How many live tokens were revoked, zero when the subject held none.
+     *
+     * @throws  InvalidArgumentException  When the reason is empty or too long, or the subject does not exist
+     *          and so could not be locked.
+     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not manage this
+     *          user.
+     *
+     * @since   2.0.0
+     */
     public function emergencyRevokeAllSubjectTokens(
         ExecutionContext $context,
         string $userId,
@@ -364,6 +643,17 @@ final readonly class AccessControlService
         });
     }
 
+    /**
+     * Trim a submitted display name and refuse one that could not be shown.
+     *
+     * @param   string  $name  Display name exactly as submitted.
+     *
+     * @return  string  The trimmed name.
+     *
+     * @throws  InvalidArgumentException  When the name is empty or longer than 191 characters.
+     *
+     * @since   2.0.0
+     */
     private function displayName(string $name): string
     {
         $name = trim($name);
@@ -379,6 +669,16 @@ final readonly class AccessControlService
      *
      * Administrator forms and the management API submit a target status rather than a named
      * transition, so the invariant is asserted here against the locked stored status.
+     *
+     * @param   string      $id      UUID of the user whose stored status the target is judged against.
+     * @param   UserStatus  $target  Status the caller is asking the user to move to.
+     *
+     * @return  void
+     *
+     * @throws  InvalidArgumentException  When the user is gone, its stored status is not one this version
+     *          knows, or the move is illegal from it.
+     *
+     * @since   2.0.0
      */
     private function assertLifecycleTransition(string $id, UserStatus $target): void
     {
@@ -397,6 +697,22 @@ final readonly class AccessControlService
         }
     }
 
+    /**
+     * Demand `users.manage` on one resource, the single gate every entry point here passes through.
+     *
+     * Every read and write in this service demands that one capability; only the resource it is demanded
+     * on differs, which is what keeps the gate identical across all four delivery surfaces.
+     *
+     * @param   ExecutionContext       $context   Actor, site and request identifiers the check runs under.
+     * @param   AuthorizationResource  $resource  Collection or item the capability is demanded on.
+     *
+     * @return  void
+     *
+     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor does not hold
+     *          `users.manage` for that resource.
+     *
+     * @since   2.0.0
+     */
     private function authorize(ExecutionContext $context, AuthorizationResource $resource): void
     {
         $this->authorization->assertAllowed(
@@ -407,8 +723,27 @@ final readonly class AccessControlService
     }
 
     /**
-     * @param callable(int, int): list<array<string, mixed>> $page
-     * @return list<array<string, mixed>>
+     * Walk a paged reader and keep only the rows the actor may manage.
+     *
+     * Filtering after reading is what lets a partially scoped administrator list records instead of
+     * being refused. Rows arrive a page at a time and the walk ends as soon as the caller's limit is
+     * filled or a short page shows the store is exhausted, so the answer stays bounded however few rows
+     * turn out to be visible. A row whose identifier field is missing or is not a string is skipped.
+     *
+     * @param   ExecutionContext                                $context          Actor the rows are judged
+     *          against.
+     * @param   string                                          $resourceType     Type each row is
+     *          authorized as.
+     * @param   callable(int, int): list<array<string, mixed>>  $page             Reader taking a page size
+     *          and an offset.
+     * @param   string                                          $identifierField  Row key holding the
+     *          record's identifier.
+     * @param   int                                             $limit            Most rows to return once
+     *          filtering is done.
+     *
+     * @return  list<array<string, mixed>>  The visible rows, in the reader's own order.
+     *
+     * @since   2.0.0
      */
     private function filterPaged(
         ExecutionContext $context,
@@ -444,6 +779,16 @@ final readonly class AccessControlService
         return $result;
     }
 
+    /**
+     * Turn a stored scope pair into the value object the delegation check speaks in.
+     *
+     * @param   string   $type        Scope kind as stored, where `global` is the unscoped case.
+     * @param   ?string  $identifier  Instance of that kind; null is passed on as an empty identifier.
+     *
+     * @return  GrantScope  The global scope for `global`, otherwise a named scope of that kind.
+     *
+     * @since   2.0.0
+     */
     private function scope(string $type, ?string $identifier): GrantScope
     {
         return $type === 'global'
@@ -451,6 +796,22 @@ final readonly class AccessControlService
             : GrantScope::named($type, $identifier ?? '');
     }
 
+    /**
+     * Require that the actor could have written every grant the role already carries.
+     *
+     * Holding `users.manage` is not enough to hand someone a role: each of its grants is measured
+     * against the actor's own ceiling, at the scope the grant was written in.
+     *
+     * @param   ExecutionContext  $context  Actor whose delegation ceiling the grants are measured against.
+     * @param   string            $roleId   UUID of the role being handed on.
+     *
+     * @return  void
+     *
+     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When one of the role's grants
+     *          exceeds what the actor may delegate.
+     *
+     * @since   2.0.0
+     */
     private function assertCanDelegateRole(ExecutionContext $context, string $roleId): void
     {
         foreach ($this->repository->roleGrants($roleId) as $grant) {
@@ -462,7 +823,23 @@ final readonly class AccessControlService
         }
     }
 
-    /** @param array<string, mixed> $metadata */
+    /**
+     * Record one successful access-control change in the audit trail.
+     *
+     * Every call sits inside the mutation's transaction, so the trail commits with the change it
+     * describes and a rolled-back attempt leaves no misleading entry.
+     *
+     * @param   string                $actorId   UUID of the administrator that made the change.
+     * @param   string                $action    Dotted action name, such as `role.assign`.
+     * @param   string                $type      Resource type the change landed on.
+     * @param   string                $id        Identifier of the changed resource.
+     * @param   array<string, mixed>  $metadata  Detail worth keeping beside the event, such as the status
+     *          written or the number of tokens revoked.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     private function audit(string $actorId, string $action, string $type, string $id, array $metadata = []): void
     {
         $this->audit->record(new AuditEvent(

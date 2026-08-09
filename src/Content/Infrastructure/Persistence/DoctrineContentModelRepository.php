@@ -23,12 +23,47 @@ use Kumwe\CMS\Workflow\Domain\WorkflowTransitionDefinition;
 use Ramsey\Uuid\Uuid;
 use RuntimeException;
 
+/**
+ * Doctrine DBAL implementation of the content model repository, over paired head and history tables.
+ *
+ * Every content type and workflow keeps one head row — in `content_types` and `workflows` — naming the
+ * version currently published, beside an append-only history in `content_type_definition_versions` and
+ * `workflow_definition_versions`. Reads join the head to a version row, so loading a pinned version
+ * costs no more than loading the current one and an entry authored against version three keeps
+ * resolving long after version four ships. Publication moves the head with an UPDATE filtered on the
+ * version the caller read, reporting `VersionConflict` when it matches no row, and refuses to run
+ * without an open transaction so the head move and its version row cannot land apart. Driver rows are
+ * untyped, so each column is checked as it is mapped and malformed storage is refused here instead of
+ * reaching the application layer.
+ *
+ * @since  2.0.0
+ */
 final readonly class DoctrineContentModelRepository implements ContentModelRepository
 {
+    /**
+     * Binds the repository to the connection and table-name resolver it works through.
+     *
+     * @param  Connection  $database  DBAL connection every content model statement runs on.
+     * @param  TableNames  $tables    Resolver applying the configured prefix to the model tables.
+     *
+     * @since  2.0.0
+     */
     public function __construct(private Connection $database, private TableNames $tables)
     {
     }
 
+    /**
+     * Reads the head version of every content type published for a site.
+     *
+     * @param   SiteContext  $site  Site whose content model is being listed.
+     *
+     * @return  list<ContentTypeDefinition>  Ordered by handle so administrator pickers are stable; empty
+     *          when the site has published no content types.
+     *
+     * @throws  RuntimeException  When a stored definition row lacks a column or holds the wrong type.
+     *
+     * @since   2.0.0
+     */
     public function contentTypes(SiteContext $site): array
     {
         $rows = $this->database->fetchAllAssociative(sprintf(
@@ -40,6 +75,22 @@ final readonly class DoctrineContentModelRepository implements ContentModelRepos
         return array_map($this->mapContentType(...), $rows);
     }
 
+    /**
+     * Reads one content type definition, at its head or at a specific published version.
+     *
+     * An identifier that parses as a UUID is matched against the id and the handle alike, so an
+     * installation whose handles happen to look like UUIDs still resolves either way.
+     *
+     * @param   SiteContext  $site        Site the definition must belong to.
+     * @param   string       $identifier  UUID or operator-facing handle of the content type.
+     * @param   ?int         $version     Version to load, or null for the site's current head.
+     *
+     * @return  ?ContentTypeDefinition  Null when no row joins that site, identifier and version.
+     *
+     * @throws  RuntimeException  When the stored definition row lacks a column or holds the wrong type.
+     *
+     * @since   2.0.0
+     */
     public function contentType(SiteContext $site, string $identifier, ?int $version = null): ?ContentTypeDefinition
     {
         $identity = Uuid::isValid($identifier) ? '(h.id = ? OR h.handle = ?)' : 'h.handle = ?';
@@ -61,6 +112,16 @@ final readonly class DoctrineContentModelRepository implements ContentModelRepos
         return $row === false ? null : $this->mapContentType($row);
     }
 
+    /**
+     * Writes the head row for a brand new content type together with its first history row.
+     *
+     * @param   ContentTypeDefinition  $definition  Definition to store; its version is written as
+     *          supplied, so the caller owns where the version sequence starts.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     public function insertContentType(ContentTypeDefinition $definition): void
     {
         $this->database->insert($this->tables->raw('content_types'), [
@@ -81,6 +142,24 @@ final readonly class DoctrineContentModelRepository implements ContentModelRepos
         $this->insertContentTypeVersion($definition);
     }
 
+    /**
+     * Moves a content type's head onto the supplied definition and appends the matching history row.
+     *
+     * The UPDATE is filtered on the version the caller read, so a competing publication is detected by
+     * the affected-row count rather than by holding a lock across the operator's edit. Both statements
+     * must share a transaction the caller has already opened, otherwise a rejected head move would
+     * leave an orphaned version row behind.
+     *
+     * @param   ContentTypeDefinition  $definition       Definition carrying the already-incremented version.
+     * @param   int                    $expectedVersion  Version the caller read before editing.
+     *
+     * @return  void
+     *
+     * @throws  LogicException  When no transaction is open, so the two writes could not be made atomic.
+     * @throws  VersionConflict  When the head no longer carries the expected version, or has been removed.
+     *
+     * @since   2.0.0
+     */
     public function publishContentType(ContentTypeDefinition $definition, int $expectedVersion): void
     {
         if (!$this->database->isTransactionActive()) {
@@ -115,6 +194,18 @@ final readonly class DoctrineContentModelRepository implements ContentModelRepos
         $this->insertContentTypeVersion($definition);
     }
 
+    /**
+     * Reads the head version of every workflow published for a site.
+     *
+     * @param   SiteContext  $site  Site whose workflows are being listed.
+     *
+     * @return  list<WorkflowDefinition>  Ordered by handle so administrator pickers are stable; empty
+     *          when the site has published no workflows.
+     *
+     * @throws  RuntimeException  When a stored definition row lacks a column or holds the wrong type.
+     *
+     * @since   2.0.0
+     */
     public function workflows(SiteContext $site): array
     {
         $rows = $this->database->fetchAllAssociative(sprintf(
@@ -126,6 +217,22 @@ final readonly class DoctrineContentModelRepository implements ContentModelRepos
         return array_map($this->mapWorkflow(...), $rows);
     }
 
+    /**
+     * Reads one workflow definition, at its head or at a specific published version.
+     *
+     * Content entries pin the workflow version they were authored against, so loading an older version
+     * is the ordinary path here rather than an administrative exception.
+     *
+     * @param   SiteContext  $site        Site the definition must belong to.
+     * @param   string       $identifier  UUID or operator-facing handle of the workflow.
+     * @param   ?int         $version     Version to load, or null for the site's current head.
+     *
+     * @return  ?WorkflowDefinition  Null when no row joins that site, identifier and version.
+     *
+     * @throws  RuntimeException  When the stored definition row lacks a column or holds the wrong type.
+     *
+     * @since   2.0.0
+     */
     public function workflow(SiteContext $site, string $identifier, ?int $version = null): ?WorkflowDefinition
     {
         $identity = Uuid::isValid($identifier) ? '(h.id = ? OR h.handle = ?)' : 'h.handle = ?';
@@ -147,6 +254,16 @@ final readonly class DoctrineContentModelRepository implements ContentModelRepos
         return $row === false ? null : $this->mapWorkflow($row);
     }
 
+    /**
+     * Writes the head row for a brand new workflow together with its first history row.
+     *
+     * @param   WorkflowDefinition  $definition  Definition to store; its version is written as supplied,
+     *          so the caller owns where the version sequence starts.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     public function insertWorkflow(WorkflowDefinition $definition): void
     {
         $this->database->insert($this->tables->raw('workflows'), [
@@ -161,6 +278,23 @@ final readonly class DoctrineContentModelRepository implements ContentModelRepos
         $this->insertWorkflowVersion($definition);
     }
 
+    /**
+     * Moves a workflow's head onto the supplied definition and appends the matching history row.
+     *
+     * The head row carries no state or transition columns, so only the name and version are rewritten
+     * here; the shape of the workflow lives entirely in the appended history row. As with content
+     * types, the caller must already hold a transaction open.
+     *
+     * @param   WorkflowDefinition  $definition       Definition carrying the already-incremented version.
+     * @param   int                 $expectedVersion  Version the caller read before editing.
+     *
+     * @return  void
+     *
+     * @throws  LogicException  When no transaction is open, so the two writes could not be made atomic.
+     * @throws  VersionConflict  When the head no longer carries the expected version, or has been removed.
+     *
+     * @since   2.0.0
+     */
     public function publishWorkflow(WorkflowDefinition $definition, int $expectedVersion): void
     {
         if (!$this->database->isTransactionActive()) {
@@ -190,6 +324,19 @@ final readonly class DoctrineContentModelRepository implements ContentModelRepos
         $this->insertWorkflowVersion($definition);
     }
 
+    /**
+     * Appends one immutable row to the content type history.
+     *
+     * The history row denormalises the handle, site and pinned workflow version alongside the schema,
+     * so an old definition can be rebuilt from history alone without consulting the head row that has
+     * since moved on.
+     *
+     * @param   ContentTypeDefinition  $definition  Definition to record under its own version number.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     private function insertContentTypeVersion(ContentTypeDefinition $definition): void
     {
         $this->database->insert($this->tables->raw('content_type_definition_versions'), [
@@ -210,6 +357,19 @@ final readonly class DoctrineContentModelRepository implements ContentModelRepos
         ]);
     }
 
+    /**
+     * Appends one immutable row to the workflow history.
+     *
+     * States and transitions are stored as JSON documents, and the keys of the publicly visible states
+     * are duplicated into a column of their own so delivery queries can decide visibility without
+     * decoding the whole state list.
+     *
+     * @param   WorkflowDefinition  $definition  Definition to record under its own version number.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     private function insertWorkflowVersion(WorkflowDefinition $definition): void
     {
         $publicStates = [];
@@ -244,7 +404,17 @@ final readonly class DoctrineContentModelRepository implements ContentModelRepos
         ]);
     }
 
-    /** @param array<string, mixed> $row */
+    /**
+     * Rebuilds a content type definition from a joined head and history row.
+     *
+     * @param   array<string, mixed>  $row  Associative row selected from the content type history table.
+     *
+     * @return  ContentTypeDefinition  The definition exactly as it was published at that version.
+     *
+     * @throws  RuntimeException  When a required column is absent, empty, or holds the wrong type.
+     *
+     * @since   2.0.0
+     */
     private function mapContentType(array $row): ContentTypeDefinition
     {
         return new ContentTypeDefinition(
@@ -261,7 +431,21 @@ final readonly class DoctrineContentModelRepository implements ContentModelRepos
         );
     }
 
-    /** @param array<string, mixed> $row */
+    /**
+     * Rebuilds a workflow definition, decoding its stored state and transition documents.
+     *
+     * The `public_states` column written alongside them is a query convenience and is not read back
+     * here; visibility is recovered from each state's own flag so the two can never disagree.
+     *
+     * @param   array<string, mixed>  $row  Associative row selected from the workflow history table.
+     *
+     * @return  WorkflowDefinition  The definition exactly as it was published at that version.
+     *
+     * @throws  RuntimeException  When a required column is absent or wrongly typed, or a stored state
+     *          or transition is not a JSON object.
+     *
+     * @since   2.0.0
+     */
     private function mapWorkflow(array $row): WorkflowDefinition
     {
         $states = [];
@@ -302,6 +486,20 @@ final readonly class DoctrineContentModelRepository implements ContentModelRepos
         );
     }
 
+    /**
+     * Reads the version a head row carries right now, to describe a lost publication race.
+     *
+     * This runs only on the failure path, after a conditional UPDATE matched nothing, so it reports
+     * rather than decides: a missing row and an unreadable version are both flattened to zero so the
+     * conflict can still be raised with a concrete number.
+     *
+     * @param   string  $table  Unprefixed head table to read, `content_types` or `workflows`.
+     * @param   string  $id     UUID of the definition whose current head version is wanted.
+     *
+     * @return  int  The stored head version, or zero when the row is gone or holds no readable number.
+     *
+     * @since   2.0.0
+     */
     private function headVersion(string $table, string $id): int
     {
         $value = $this->database->fetchOne(
@@ -311,7 +509,18 @@ final readonly class DoctrineContentModelRepository implements ContentModelRepos
         return is_numeric($value) ? (int) $value : 0;
     }
 
-    /** @param array<string, mixed> $row */
+    /**
+     * Reads a column that has to hold a non-empty string.
+     *
+     * @param   array<string, mixed>  $row  Associative row being mapped.
+     * @param   string                $key  Column name to read.
+     *
+     * @return  string  The column value, guaranteed non-empty.
+     *
+     * @throws  RuntimeException  When the column is absent, empty, or not a string.
+     *
+     * @since   2.0.0
+     */
     private function string(array $row, string $key): string
     {
         if (!isset($row[$key]) || !is_string($row[$key]) || $row[$key] === '') {
@@ -320,7 +529,19 @@ final readonly class DoctrineContentModelRepository implements ContentModelRepos
         return $row[$key];
     }
 
-    /** @param array<string, mixed> $row */
+    /**
+     * Reads a column that has to hold an integer, accepting the digit strings some drivers hand back.
+     *
+     * @param   array<string, mixed>  $row  Associative row being mapped.
+     * @param   string                $key  Column name to read.
+     *
+     * @return  int  The column value as an integer.
+     *
+     * @throws  RuntimeException  When the column is absent, or holds neither an integer nor a run of
+     *          digits.
+     *
+     * @since   2.0.0
+     */
     private function integer(array $row, string $key): int
     {
         $value = $row[$key] ?? null;
@@ -330,7 +551,22 @@ final readonly class DoctrineContentModelRepository implements ContentModelRepos
         return (int) $value;
     }
 
-    /** @param array<string, mixed> $row */
+    /**
+     * Reads a flag that has to be a genuine boolean.
+     *
+     * Unlike the integer reader this makes no allowance for a driver's `0` and `1`, because these flags
+     * only ever arrive from a decoded JSON document rather than from a column of their own; anything
+     * else means the stored workflow document is malformed.
+     *
+     * @param   array<string, mixed>  $row  Decoded state document being mapped.
+     * @param   string                $key  Key to read.
+     *
+     * @return  bool  The flag as stored.
+     *
+     * @throws  RuntimeException  When the key is absent or holds anything other than a boolean.
+     *
+     * @since   2.0.0
+     */
     private function boolean(array $row, string $key): bool
     {
         $value = $row[$key] ?? null;
@@ -342,8 +578,17 @@ final readonly class DoctrineContentModelRepository implements ContentModelRepos
     }
 
     /**
-     * @param array<string, mixed> $row
-     * @return array<string, mixed>
+     * Decodes a JSON column that has to hold an object, such as a stored field schema.
+     *
+     * @param   array<string, mixed>  $row  Associative row being mapped.
+     * @param   string                $key  Column name to read.
+     *
+     * @return  array<string, mixed>  The decoded document; empty when the column held an empty object.
+     *
+     * @throws  RuntimeException  When the column is not valid JSON, or decodes to a list rather than to
+     *          an object.
+     *
+     * @since   2.0.0
      */
     private function jsonObject(array $row, string $key): array
     {
@@ -356,8 +601,18 @@ final readonly class DoctrineContentModelRepository implements ContentModelRepos
     }
 
     /**
-     * @param array<string, mixed> $row
-     * @return list<mixed>
+     * Decodes a JSON column that has to hold a list, such as stored states or transitions.
+     *
+     * @param   array<string, mixed>  $row  Associative row being mapped.
+     * @param   string                $key  Column name to read.
+     *
+     * @return  list<mixed>  The entries in stored order; individual entries are still unchecked here and
+     *          the caller validates each one.
+     *
+     * @throws  RuntimeException  When the column is not valid JSON, or decodes to an object rather than
+     *          to a list.
+     *
+     * @since   2.0.0
      */
     private function jsonList(array $row, string $key): array
     {
@@ -369,6 +624,21 @@ final readonly class DoctrineContentModelRepository implements ContentModelRepos
         return $value;
     }
 
+    /**
+     * Decodes a JSON column, passing through whatever the driver already decoded for itself.
+     *
+     * Doctrine's JSON type hands back a decoded structure while a plain text column hands back the raw
+     * string, so both shapes reach here and only the string is parsed. The decoder's failure is
+     * translated into the repository's own exception so no `JsonException` escapes this adapter.
+     *
+     * @param   mixed  $value  Raw column value: a JSON string, or a structure the driver already decoded.
+     *
+     * @return  mixed  The decoded value, or the input unchanged when it was not a string.
+     *
+     * @throws  RuntimeException  When the string is not valid JSON or nests deeper than 64 levels.
+     *
+     * @since   2.0.0
+     */
     private function json(mixed $value): mixed
     {
         if (!is_string($value)) {
@@ -381,6 +651,22 @@ final readonly class DoctrineContentModelRepository implements ContentModelRepos
         }
     }
 
+    /**
+     * Normalises whatever the driver returned for a timestamp column into an immutable date.
+     *
+     * Drivers differ: some hydrate a date object, others hand back the raw string, so both are accepted
+     * rather than pinning the mapper to one platform. A bare string is read as UTC, which is the zone
+     * every definition timestamp is written in.
+     *
+     * @param   mixed  $value  Raw timestamp column value from a definition row.
+     *
+     * @return  DateTimeImmutable  The timestamp, converted when the driver returned another date type.
+     *
+     * @throws  RuntimeException  When the value is neither a date object nor a string.
+     * @throws  \DateMalformedStringException  When the string cannot be read as a date.
+     *
+     * @since   2.0.0
+     */
     private function date(mixed $value): DateTimeImmutable
     {
         if ($value instanceof DateTimeImmutable) {

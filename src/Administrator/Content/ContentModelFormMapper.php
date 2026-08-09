@@ -6,11 +6,34 @@ namespace Kumwe\CMS\Administrator\Content;
 
 use InvalidArgumentException;
 
+/**
+ * Translates the administrator model builder form into stored content type and workflow documents.
+ *
+ * The content models screen offers two ways to define a model: paste raw JSON, or fill in a repeating
+ * builder form. This mapper backs the builder, reading the numbered `field_N_*`, `state_N_*` and
+ * `transition_N_*` inputs and assembling the JSON Schema and workflow arrays `ContentModelService`
+ * publishes. Every mistake an operator can make in the builder surfaces here as an
+ * `InvalidArgumentException` before the service is called, so a malformed submission never reaches
+ * persistence. `ContentModelFormPresenter` performs the reverse translation when the screen renders.
+ *
+ * @since  2.0.0
+ */
 final readonly class ContentModelFormMapper
 {
     /**
-     * @param array<string, string> $form
-     * @return array<string, mixed>
+     * Assemble the JSON Schema document a content type is published with.
+     *
+     * Rows are read from index zero to ninety-nine and blank rows are skipped, so the browser may
+     * submit a sparse set. The result always closes the object against additional properties.
+     *
+     * @param   array<string, string>  $form  Submitted builder form, holding the `field_N_*` inputs.
+     *
+     * @return  array<string, mixed>  Object schema with `properties`, `required` and the closing flag.
+     *
+     * @throws  InvalidArgumentException  When a field key is malformed or duplicated, a field type is
+     *          unsupported, a bound does not parse, or no field row was filled in at all.
+     *
+     * @since   2.0.0
      */
     public function contentTypeSchema(array $form): array
     {
@@ -52,8 +75,19 @@ final readonly class ContentModelFormMapper
     }
 
     /**
-     * @param array<string, string> $form
-     * @return list<array<string, mixed>>
+     * Assemble the workflow state list the model service publishes.
+     *
+     * Exactly one state is marked initial, chosen by the separate `initial_state_key` input; a form
+     * whose choice does not name one of the submitted states is rejected rather than silently fixed.
+     *
+     * @param   array<string, string>  $form  Submitted builder form, holding the `state_N_*` inputs.
+     *
+     * @return  list<array<string, mixed>>  States in row order, each with key, name, initial and public.
+     *
+     * @throws  InvalidArgumentException  When a state key is malformed or duplicated, a name is blank,
+     *          no state row was filled in, or the initial state is missing or unknown.
+     *
+     * @since   2.0.0
      */
     public function workflowStates(array $form): array
     {
@@ -90,8 +124,19 @@ final readonly class ContentModelFormMapper
     }
 
     /**
-     * @param array<string, string> $form
-     * @return list<array<string, mixed>>
+     * Assemble the workflow transition list the model service publishes.
+     *
+     * A row with both endpoints blank is skipped so the builder can carry spare rows, but a row that
+     * fills in only part of a transition is rejected instead of being quietly dropped.
+     *
+     * @param   array<string, string>  $form  Submitted builder form, with the `transition_N_*` inputs.
+     *
+     * @return  list<array<string, mixed>>  Transitions in row order, each with from, to and capability.
+     *
+     * @throws  InvalidArgumentException  When either endpoint is not a valid state key, or the required
+     *          capability is missing or malformed.
+     *
+     * @since   2.0.0
      */
     public function workflowTransitions(array $form): array
     {
@@ -120,8 +165,22 @@ final readonly class ContentModelFormMapper
     }
 
     /**
-     * @param array<string, string> $form
-     * @return array<string, mixed>
+     * Build the schema fragment for one builder field row.
+     *
+     * The builder's type names are editor-facing rather than JSON Schema types, so each maps to a
+     * type and format pair. Numeric bounds apply only to `integer` and `number` rows, length bounds
+     * only to `string` and `text` rows, and an options list becomes an `enum` only for those two.
+     *
+     * @param   array<string, string>  $form   Submitted builder form, read for this row's extra inputs.
+     * @param   int                    $index  Zero-based row number whose inputs are read.
+     * @param   string                 $type   Builder type, such as `media`, `string-list` or `date`.
+     *
+     * @return  array<string, mixed>  Schema fragment for the property, without title or description.
+     *
+     * @throws  InvalidArgumentException  When the builder type is unsupported, or a bound is not valid
+     *          for the type it constrains.
+     *
+     * @since   2.0.0
      */
     private function fieldSchema(array $form, int $index, string $type): array
     {
@@ -174,6 +233,19 @@ final readonly class ContentModelFormMapper
         return $schema;
     }
 
+    /**
+     * Assert that a numeric bound parses as the field type it constrains.
+     *
+     * @param   string  $value     Raw bound exactly as the operator typed it.
+     * @param   string  $type      Builder type the bound belongs to, `integer` or `number`.
+     * @param   string  $boundary  Which bound is under check, used to name it in the error message.
+     *
+     * @return  void
+     *
+     * @throws  InvalidArgumentException  When the value is not a whole number, or not a finite number.
+     *
+     * @since   2.0.0
+     */
     private function assertNumber(string $value, string $type, string $boundary): void
     {
         $valid = $type === 'integer'
@@ -184,6 +256,18 @@ final readonly class ContentModelFormMapper
         }
     }
 
+    /**
+     * Assert that a string length bound parses as a non-negative integer.
+     *
+     * @param   string  $value     Raw bound exactly as the operator typed it.
+     * @param   string  $boundary  Which bound is under check, used to name it in the error message.
+     *
+     * @return  void
+     *
+     * @throws  InvalidArgumentException  When the value contains anything other than digits.
+     *
+     * @since   2.0.0
+     */
     private function assertLength(string $value, string $boundary): void
     {
         if (preg_match('/^[0-9]+$/D', $value) !== 1) {

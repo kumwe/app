@@ -12,16 +12,61 @@ use Kumwe\CMS\Identity\Domain\Capability;
 use Kumwe\CMS\Identity\Domain\EmailAddress;
 use Kumwe\CMS\Identity\Domain\GrantScope;
 
-/** Reusable exact authorization for all token issuance adapters and the application mutation. */
+/**
+ * The single delegation check every path that mints an API token must clear before one is written.
+ *
+ * `HttpMutationPreauthorizer` screens the REST issuance route with it, `TokenRotationPreauthorizer` runs
+ * it again for every rotation, and `DoctrineAdministratorIdentityGateway::issueAccessToken()` calls it as
+ * the token is written, so no delivery surface can mint a token another would refuse. Issuance calls it
+ * twice — once before the transaction and once inside it, once the subject's row is locked — so a grant
+ * revoked between the two attempts cannot be captured in a token. It also normalises untrusted input:
+ * capability strings are parsed and deduplicated here rather than taken on trust from the request.
+ *
+ * @since  2.0.0
+ */
 final readonly class TokenDelegationPreauthorizer
 {
+    /**
+     * Wire the reader of subject grants to the gateway that judges them.
+     *
+     * @param  AccessControlRepository  $repository     Resolves the subject's UUID from an email and lists
+     *         the grants backing each requested capability.
+     * @param  AuthorizationGateway     $authorization  Judges both the actor's own access and, separately,
+     *         whether it may hand each capability onward.
+     *
+     * @since  2.0.0
+     */
     public function __construct(
         private AccessControlRepository $repository,
         private AuthorizationGateway $authorization,
     ) {
     }
 
-    /** @param array<mixed> $capabilities */
+    /**
+     * Clear an actor to mint a token for one subject and return the capability set that survived.
+     *
+     * Three conditions must hold: the actor holds `users.manage` over the site, and over the subject's own
+     * user record whenever the subject is not the actor; the subject is already granted every requested
+     * capability; and the actor may delegate each of those at every scope the subject holds it under, not
+     * merely at one. Capabilities are parsed and deduplicated before any of that runs, so the returned
+     * list is canonical and ordered by first request.
+     *
+     * @param   ExecutionContext  $context       Actor, site and provenance the issuance runs under.
+     * @param   string            $email         Email naming the subject the token will authenticate as;
+     *          normalised before it is looked up.
+     * @param   array<mixed>      $capabilities  Capability codes exactly as the caller supplied them,
+     *          validated here rather than trusted.
+     *
+     * @return  TokenDelegation  The resolved subject with the deduplicated capabilities it may be issued.
+     *
+     * @throws  InvalidArgumentException  When the capability list is empty, is not a list, holds a
+     *          non-string, names an unparseable capability or email, points at a subject that does not
+     *          exist, or names a capability the subject is not granted.
+     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not manage the
+     *          site or the subject, or may not delegate one of the capabilities at the scope it is held.
+     *
+     * @since   2.0.0
+     */
     public function authorize(
         ExecutionContext $context,
         string $email,

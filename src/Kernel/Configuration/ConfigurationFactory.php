@@ -9,8 +9,36 @@ use JsonException;
 use InvalidArgumentException;
 use ValueError;
 
+/**
+ * Turns the raw environment into the validated configuration graph the rest of the process reads.
+ *
+ * This is the only translation step between `Environment` and `ApplicationConfiguration`, so it owns
+ * every default a deployment may omit: the engine-specific database port and server version, the
+ * body and session limits, the Redis namespace, and the placeholder secrets and identities that only
+ * a `Testing` runtime is allowed to fall back on. `ContainerFactory` calls it once at boot and shares
+ * the result, which is why a bad variable surfaces here rather than deep inside a request.
+ *
+ * @since  2.0.0
+ */
 final class ConfigurationFactory
 {
+    /**
+     * Assemble the application, database, and Redis configuration from the supplied environment.
+     *
+     * Defaults are resolved before validation, so an unset variable yields the documented fallback
+     * while a variable that is set but malformed is an error. Outside a `Testing` runtime the
+     * extension runtime signing key and the four deployment identities are mandatory; under it they
+     * take fixed placeholder values so a test run needs no secret material.
+     *
+     * @param   Environment  $environment  Allow-listed variables resolved from the process and dotenv file.
+     *
+     * @return  ApplicationConfiguration  Fully validated configuration, safe to share for the process lifetime.
+     *
+     * @throws  InvalidArgumentException  When a variable is missing, malformed, or fails a configuration rule.
+     * @throws  ValueError  When `APP_ENV` names no known runtime, or no trusted host is configured.
+     *
+     * @since   2.0.0
+     */
     public function create(Environment $environment): ApplicationConfiguration
     {
         $runtime = RuntimeEnvironment::from($environment->string('APP_ENV', 'production'));
@@ -68,7 +96,23 @@ final class ConfigurationFactory
         );
     }
 
-    /** @return array<string, string> */
+    /**
+     * Decode the retired runtime signing keys a rotation still needs to verify old artifacts with.
+     *
+     * The payload is a flat JSON object of key identifier to secret. Both a decode failure and a
+     * structurally wrong payload are reported as a configuration error rather than being tolerated,
+     * because silently dropping a retired key would make previously published runtime maps
+     * unverifiable.
+     *
+     * @param   ?string  $encoded  JSON object of retired keys, or null when none are configured.
+     *
+     * @return  array<string, string>  Retired secrets keyed by identifier; empty when none are configured.
+     *
+     * @throws  InvalidArgumentException  When the payload is not valid JSON, is not an object, or maps
+     *          something other than string identifiers to string secrets.
+     *
+     * @since   2.0.0
+     */
     private function previousRuntimeKeys(?string $encoded): array
     {
         if ($encoded === null) {
@@ -94,6 +138,23 @@ final class ConfigurationFactory
         return $keys;
     }
 
+    /**
+     * Resolve where the retired runtime signing keys are read from, by value or by file.
+     *
+     * Operators may inline the JSON in `EXTENSION_RUNTIME_PREVIOUS_KEYS` or point
+     * `EXTENSION_RUNTIME_PREVIOUS_KEYS_FILE` at a mounted secret, never both, so there is no question
+     * which one wins. The file must be an absolute path to a readable regular file and must not be a
+     * symbolic link, which stops a writable link in the deployment tree from redirecting a secret read.
+     *
+     * @param   Environment  $environment  Allow-listed variables to read the two settings from.
+     *
+     * @return  ?string  Raw JSON payload, or null when no retired keys are configured.
+     *
+     * @throws  InvalidArgumentException  When both settings are supplied, the file is not a readable
+     *          regular file, or the file is blank.
+     *
+     * @since   2.0.0
+     */
     private function previousKeysPayload(Environment $environment): ?string
     {
         $encoded = $environment->optionalString('EXTENSION_RUNTIME_PREVIOUS_KEYS');
@@ -116,7 +177,18 @@ final class ConfigurationFactory
     }
 
     /**
-     * @return non-empty-list<string>
+     * Read the host names the application is permitted to answer to.
+     *
+     * An empty list is refused rather than defaulted, because a deployment with no host allow-list
+     * would accept any `Host` header and open the door to host-header poisoning.
+     *
+     * @param   Environment  $environment  Allow-listed variables to read `APP_TRUSTED_HOSTS` from.
+     *
+     * @return  non-empty-list<string>  Configured host names in declaration order, never empty.
+     *
+     * @throws  ValueError  When `APP_TRUSTED_HOSTS` is unset or contains no usable entry.
+     *
+     * @since   2.0.0
      */
     private function trustedHosts(Environment $environment): array
     {

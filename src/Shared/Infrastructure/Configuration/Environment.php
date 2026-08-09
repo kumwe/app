@@ -6,8 +6,28 @@ namespace Kumwe\CMS\Shared\Infrastructure\Configuration;
 
 use InvalidArgumentException;
 
+/**
+ * Immutable, typed view over the allow-listed configuration values a deployment supplies.
+ *
+ * This is the only first-party class permitted to read the process environment or a dotenv file;
+ * every other class receives an already-constructed instance, so configuration can never be pulled
+ * from a superglobal deep inside a request. `ConfigurationFactory` is the primary consumer, turning
+ * these raw strings into `ApplicationConfiguration`, and the accessors below reject malformed input at
+ * that boundary so a mistyped port or byte limit fails at boot rather than at first use.
+ *
+ * @since  2.0.0
+ */
 final readonly class Environment
 {
+    /**
+     * Environment variable names Kumwe reads; anything else in the process or dotenv scope is ignored.
+     *
+     * The allow-list is why an unrelated exported variable, or a stray line in a hand-edited `.env`,
+     * cannot reach application configuration.
+     *
+     * @var    list<string>
+     * @since  2.0.0
+     */
     private const PROCESS_KEYS = [
         'APP_ENV',
         'APP_DEBUG',
@@ -44,14 +64,33 @@ final readonly class Environment
     ];
 
     /**
-     * @param array<string, string> $values
+     * Wrap an already-resolved set of configuration values.
+     *
+     * Tests construct instances directly to pin behaviour without touching the machine; production
+     * code goes through `fromGlobals()` so the allow-list and the precedence rules apply.
+     *
+     * @param  array<string, string>  $values  Raw variable values keyed by variable name, unvalidated.
+     *
+     * @since  2.0.0
      */
     public function __construct(private array $values)
     {
     }
 
     /**
-     * The only first-party boundary permitted to read the process environment.
+     * Build an instance from the dotenv file and the process environment.
+     *
+     * The only first-party boundary permitted to read the process environment. Dotenv values are read
+     * first and process values are applied over them, so a variable exported by the container or the
+     * shell always wins over the file.
+     *
+     * @param   ?string  $dotenvFile  Absolute path to the dotenv file, or null for the repository-root `.env`.
+     *
+     * @return  self  Instance carrying the allow-listed variables that resolved to a value.
+     *
+     * @throws  InvalidArgumentException  When the dotenv file exists but cannot be read or parsed.
+     *
+     * @since   2.0.0
      */
     public static function fromGlobals(?string $dotenvFile = null): self
     {
@@ -70,10 +109,21 @@ final readonly class Environment
     }
 
     /**
-     * Read only Kumwe's allow-listed settings. Process environment values are
-     * applied afterwards and therefore always take precedence over this file.
+     * Parse the dotenv file into the subset of assignments Kumwe recognises.
      *
-     * @return array<string, string>
+     * Read only Kumwe's allow-listed settings. Process environment values are applied afterwards and
+     * therefore always take precedence over this file. Blank lines and `#` comments are skipped, an
+     * optional `export ` prefix is stripped, and an unknown key is dropped silently rather than
+     * reported, so an operator can keep unrelated variables in the same file.
+     *
+     * @param   string  $path  Absolute path to the dotenv file; a missing file is not an error.
+     *
+     * @return  array<string, string>  Allow-listed values by variable name; empty when the file is absent.
+     *
+     * @throws  InvalidArgumentException  When the file cannot be read, a line carries no `=` assignment,
+     *          or a quoted value is unterminated.
+     *
+     * @since   2.0.0
      */
     private static function readDotenv(string $path): array
     {
@@ -127,6 +177,23 @@ final readonly class Environment
         return $values;
     }
 
+    /**
+     * Decode one dotenv right-hand side into the literal string the variable should carry.
+     *
+     * An unquoted value is trimmed and truncated at the first ` #` inline comment. A single-quoted
+     * value is taken literally. A double-quoted value has `\n`, `\r`, `\t`, `\"` and `\\` expanded in a
+     * single left-to-right pass, so the output of an escape is never rescanned as another escape.
+     *
+     * @param   string  $value       Right-hand side of the assignment, already trimmed of outer spaces.
+     * @param   string  $path        Dotenv file path, used only to build the failure message.
+     * @param   int     $lineNumber  One-based line number, used only to build the failure message.
+     *
+     * @return  string  The decoded value, which may legitimately be an empty string.
+     *
+     * @throws  InvalidArgumentException  When a quoted value has no matching closing quote.
+     *
+     * @since   2.0.0
+     */
     private static function parseDotenvValue(string $value, string $path, int $lineNumber): string
     {
         if ($value === '') {
@@ -176,11 +243,37 @@ final readonly class Environment
         return $decoded;
     }
 
+    /**
+     * Report whether a variable is present and carries a non-empty value.
+     *
+     * @param   string  $name  Environment variable name to test.
+     *
+     * @return  bool  False both when the variable is unset and when it resolves to an empty string.
+     *
+     * @since   2.0.0
+     */
     public function has(string $name): bool
     {
         return array_key_exists($name, $this->values) && $this->values[$name] !== '';
     }
 
+    /**
+     * Read a variable the deployment is required to provide.
+     *
+     * The default covers an absent variable only. A present but empty assignment is a configuration
+     * mistake rather than a request for the default, so it is rejected instead of falling back, unlike
+     * `optionalString()` which treats the two alike.
+     *
+     * @param   string   $name     Environment variable name to read.
+     * @param   ?string  $default  Fallback when the variable is absent; null makes it mandatory.
+     *
+     * @return  string  The configured value, never an empty string.
+     *
+     * @throws  InvalidArgumentException  When the variable is present but empty, or absent with no
+     *          non-empty default.
+     *
+     * @since   2.0.0
+     */
     public function string(string $name, ?string $default = null): string
     {
         $value = $this->values[$name] ?? $default;
@@ -192,6 +285,19 @@ final readonly class Environment
         return $value;
     }
 
+    /**
+     * Read a variable the deployment may legitimately leave unset.
+     *
+     * An empty assignment counts as absent, so `REDIS_PASSWORD=` in a dotenv file yields the default
+     * rather than an empty password.
+     *
+     * @param   string   $name     Environment variable name to read.
+     * @param   ?string  $default  Value to return when the variable is unset or empty.
+     *
+     * @return  ?string  The configured value, or the default; null means the setting is not in use.
+     *
+     * @since   2.0.0
+     */
     public function optionalString(string $name, ?string $default = null): ?string
     {
         $value = $this->values[$name] ?? $default;
@@ -199,6 +305,22 @@ final readonly class Environment
         return $value === '' ? $default : $value;
     }
 
+    /**
+     * Read a variable as a flag, accepting the spellings operators actually write.
+     *
+     * `1`, `true`, `yes` and `on` are true; `0`, `false`, `no` and `off` are false; the comparison is
+     * case-insensitive. Any other spelling is a configuration error rather than a silent false, so a
+     * mistyped security switch cannot quietly disable itself.
+     *
+     * @param   string  $name     Environment variable name to read.
+     * @param   bool    $default  Value to use when the variable is unset or empty.
+     *
+     * @return  bool  The parsed flag, or the default when the variable is unset or empty.
+     *
+     * @throws  InvalidArgumentException  When the value is not one of the accepted spellings.
+     *
+     * @since   2.0.0
+     */
     public function boolean(string $name, bool $default = false): bool
     {
         $value = $this->values[$name] ?? null;
@@ -216,6 +338,21 @@ final readonly class Environment
         };
     }
 
+    /**
+     * Read a variable that must denote a count, port, or size of at least one.
+     *
+     * The default applies only when the variable is absent; a present but empty, non-numeric, or
+     * non-positive assignment is rejected instead of falling back to it.
+     *
+     * @param   string  $name     Environment variable name to read.
+     * @param   int     $default  Value to use when the variable is absent; it must itself be positive.
+     *
+     * @return  int  The parsed value, guaranteed to be one or greater.
+     *
+     * @throws  InvalidArgumentException  When the configured value is not an integer of at least one.
+     *
+     * @since   2.0.0
+     */
     public function positiveInteger(string $name, int $default): int
     {
         $value = $this->values[$name] ?? (string) $default;
@@ -229,6 +366,23 @@ final readonly class Environment
         return (int) $value;
     }
 
+    /**
+     * Read a variable that must denote an index inside a fixed inclusive range.
+     *
+     * Serves bounded selectors such as the Redis database number, where zero is meaningful but a value
+     * above the server's limit is not. As with `positiveInteger()`, the default applies only when the
+     * variable is absent.
+     *
+     * @param   string  $name     Environment variable name to read.
+     * @param   int     $default  Value to use when the variable is absent; it must itself be in range.
+     * @param   int     $maximum  Largest accepted value, inclusive.
+     *
+     * @return  int  The parsed value, between zero and `$maximum` inclusive.
+     *
+     * @throws  InvalidArgumentException  When the value is not an integer within the permitted range.
+     *
+     * @since   2.0.0
+     */
     public function nonNegativeInteger(string $name, int $default, int $maximum): int
     {
         $value = $this->values[$name] ?? (string) $default;
@@ -244,7 +398,16 @@ final readonly class Environment
     }
 
     /**
-     * @return list<string>
+     * Read a variable as a list of comma-separated entries.
+     *
+     * Entries are trimmed and empty ones discarded, so a trailing comma or padded separator in a
+     * hand-edited dotenv file cannot widen a trusted-host or trusted-proxy list with a blank entry.
+     *
+     * @param   string  $name  Environment variable name to read.
+     *
+     * @return  list<string>  Entries in declaration order; empty when the variable is unset or blank.
+     *
+     * @since   2.0.0
      */
     public function commaSeparatedList(string $name): array
     {

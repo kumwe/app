@@ -7,8 +7,40 @@ namespace Kumwe\CMS\Kernel\Configuration;
 use InvalidArgumentException;
 use Kumwe\CMS\Shared\Domain\DatabaseTablePrefix;
 
+/**
+ * Validated connection settings for the relational database that holds all Kumwe state.
+ *
+ * `ConfigurationFactory` builds one instance from the `DB_*` variables and hands it to
+ * `DoctrineConnectionFactory`, which turns it into a DBAL connection, and to `TableNames` and the
+ * physical name compiler, which build table names from the prefix. Every rule lives in the
+ * constructor so an unreachable host, an out-of-range port, or a prefix that is unsafe to
+ * concatenate into SQL stops the process at boot instead of surfacing on the first query.
+ *
+ * @since  2.0.0
+ */
 final readonly class DatabaseConfiguration
 {
+    /**
+     * Capture and validate the settings needed to open a connection.
+     *
+     * @param   string  $driver         Engine to bind to: `pgsql`, `mysql`, or `mariadb`.
+     * @param   string  $host           Host name or IP address of the database server.
+     * @param   int     $port           TCP port the server listens on, between 1 and 65535.
+     * @param   string  $database       Name of the database Kumwe's tables live in.
+     * @param   string  $user           Account Kumwe authenticates as.
+     * @param   string  $password       Secret for that account; never include it in log or error output.
+     * @param   string  $tablePrefix    Prefix concatenated onto every physical table name, validated
+     *          against `DatabaseTablePrefix` because it reaches SQL unquoted.
+     * @param   string  $sslMode        Transport policy: `disable`, `prefer`, `require`, `verify-ca`,
+     *          or `verify-full`.
+     * @param   string  $serverVersion  Engine version Doctrine assumes when choosing platform
+     *          behaviour, so it need not probe the server to find out.
+     *
+     * @throws  InvalidArgumentException  When the driver, host, port, table prefix, SSL mode, or
+     *          server version is missing or outside the accepted set.
+     *
+     * @since   2.0.0
+     */
     public function __construct(
         public string $driver,
         public string $host,

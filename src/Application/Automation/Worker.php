@@ -15,8 +15,35 @@ use Kumwe\CMS\Identity\Domain\Capability;
 use RuntimeException;
 use Throwable;
 
+/**
+ * The durable half of job execution: claim one job, run its handler under a fence, settle the row.
+ *
+ * `queue:work` loops on `runOnce()` and owns nothing else, so every crash-recovery decision lives
+ * here. A claimed job is executed under a context built for the job rather than for the worker: a
+ * site-scoped job runs as the system principal against the site that durably owns it, while an
+ * installation-global one runs as the narrow principal its type declares, which stops a job inheriting
+ * the worker's own reach. Every settlement goes back through the queue carrying the claim's fencing
+ * token, so a worker that lost its lease cannot complete or fail a job a sibling has since taken. The
+ * handler itself runs under a wall-clock alarm, so work that wedges surfaces as a failed job instead
+ * of as a worker process that never returns.
+ *
+ * @since  2.0.0
+ */
 final readonly class Worker
 {
+    /**
+     * Wire the worker to the queue it drains and the collaborators that scope each job.
+     *
+     * @param  JobQueue               $queue             Queue claimed from, and settled through.
+     * @param  JobHandlerRegistry     $handlers          Lookup from a claimed job's type to its handler.
+     * @param  AuthorizationGateway   $authorization     Decides whether the caller may operate a queue.
+     * @param  ResourceSiteOwnership  $ownership         Resolves the site that durably owns a job.
+     * @param  SystemPrincipal        $system            Issues the context a site-scoped job runs under.
+     * @param  JobExecutionScope      $jobScope          Re-checks a row's stored execution class.
+     * @param  GlobalJobPrincipals    $globalPrincipals  Issues the context a global job type runs under.
+     *
+     * @since  2.0.0
+     */
     public function __construct(
         private JobQueue $queue,
         private JobHandlerRegistry $handlers,
@@ -28,6 +55,32 @@ final readonly class Worker
     ) {
     }
 
+    /**
+     * Claim at most one job from a queue, execute it, and settle its row.
+     *
+     * The return value is the caller's polling signal: false means the queue had nothing to hand out
+     * and the loop should sleep. No failure a job produces escapes here. A handler failure is recorded
+     * through the queue, permanently for a `PermanentFailure` and for another attempt otherwise, while
+     * an unregistered job type, a stored execution class that disagrees with the declaration, and a
+     * global type with no principal registered are each failed permanently without a handler running
+     * at all. The two races against site retirement are the exception: a job whose owning site
+     * disappears between the claim and the execution is left alone for its lease to expire, and a
+     * failure that cannot be recorded for that same reason is dropped, because either way the
+     * ownership-filtered claim query stops the orphaned row being selected again.
+     *
+     * @param   ExecutionContext  $context                Caller the worker capability is checked against.
+     * @param   string            $queueName              Queue to claim from.
+     * @param   string            $workerId               Identity this worker leases and heartbeats under.
+     * @param   int               $leaseSeconds           Initial lease a claimed job is reserved for.
+     * @param   int               $maximumHandlerSeconds  Wall-clock budget the handler is aborted after.
+     *
+     * @return  bool  True when a job was claimed, false when the queue had nothing available.
+     *
+     * @throws  AuthorizationDenied  When the caller may not operate this queue, or when recording a
+     *          failure is refused for any reason other than the job's site having been retired.
+     *
+     * @since   2.0.0
+     */
     public function runOnce(
         ExecutionContext $context,
         string $queueName,
@@ -127,12 +180,46 @@ final readonly class Worker
         return true;
     }
 
+    /**
+     * Retire this worker's heartbeat so operators stop seeing it as a live consumer.
+     *
+     * Call it from the shutdown path of the worker process. Nothing about job recovery depends on it —
+     * an in-flight job is recovered by its lease expiring, not by the heartbeat going away — so a
+     * worker that dies without disconnecting only leaves a stale row behind.
+     *
+     * @param   ExecutionContext  $context    Caller the worker capability is checked against.
+     * @param   string            $workerId   Identity whose heartbeat row is removed.
+     * @param   string            $queueName  Queue the heartbeat was published against.
+     *
+     * @return  void
+     *
+     * @throws  AuthorizationDenied  When the caller may not operate this queue.
+     *
+     * @since   2.0.0
+     */
     public function disconnect(ExecutionContext $context, string $workerId, string $queueName): void
     {
         $this->queue->disconnect($context, $workerId, $queueName);
     }
 
-    /** @param callable(): void $operation */
+    /**
+     * Run one handler invocation under a signal deadline, restoring the previous alarm handler after.
+     *
+     * A handler that never returns would otherwise pin the worker process for good while its lease
+     * quietly expires and a sibling re-claims the same job; the alarm converts that into an ordinary
+     * failure the caller can record and move past. The signal functions are required rather than
+     * best-effort, so a runtime without them fails loudly instead of silently running unbounded.
+     *
+     * @param   callable(): void  $operation              Handler invocation to run under the deadline.
+     * @param   int               $maximumHandlerSeconds  Wall-clock seconds before the alarm fires.
+     *
+     * @return  void
+     *
+     * @throws  RuntimeException  When the deadline is not positive or the pcntl signal functions are
+     *          missing, and when the alarm fires before the invocation returns.
+     *
+     * @since   2.0.0
+     */
     private function handleWithinRuntimeLease(callable $operation, int $maximumHandlerSeconds): void
     {
         if (

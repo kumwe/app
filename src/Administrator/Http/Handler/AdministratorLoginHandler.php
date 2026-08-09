@@ -21,8 +21,35 @@ use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 
+/**
+ * Serves the administrator sign-in screen and trades a correct credential for a session cookie.
+ *
+ * This is the one administrator route that runs without a session, so it is where the session is
+ * created rather than read: it authenticates the credential, issues the execution context the rest of
+ * the administrator authorises against, and hands the browser the opaque token that
+ * `AdministratorSessionMiddleware` will exchange for that session on every later request. Failure
+ * re-renders the form instead of redirecting — a wrong password as 401, a throttled address as 429 —
+ * so the reason and the typed email survive, and neither outcome is ever cached.
+ *
+ * @since  2.0.0
+ */
 final readonly class AdministratorLoginHandler implements RequestHandlerInterface
 {
+    /**
+     * Wire the sign-in screen to the identity gateway, the session store and the cookie policy.
+     *
+     * @param  AdministratorIdentityGateway  $identities       Verifies the credential and applies throttling.
+     * @param  AdministratorSessionStore     $sessions         Creates the stored session the cookie points at.
+     * @param  AdministratorRenderer         $renderer         Renders the `login` template.
+     * @param  bool                          $secureCookie     Whether the cookie carries `Secure`; true when the
+     *         configured base URL is served over HTTPS.
+     * @param  int                           $sessionLifetime  Cookie `Max-Age` in seconds, matching the stored
+     *         session's own lifetime.
+     * @param  ?SiteContext                  $site             Site the session is issued for; null signs the
+     *         operator in against the default site.
+     *
+     * @since  2.0.0
+     */
     public function __construct(
         private AdministratorIdentityGateway $identities,
         private AdministratorSessionStore $sessions,
@@ -33,6 +60,23 @@ final readonly class AdministratorLoginHandler implements RequestHandlerInterfac
     ) {
     }
 
+    /**
+     * Render the sign-in form, or exchange a posted credential for a session cookie.
+     *
+     * The address the attempt is throttled against is read from the attribute `TrustedProxyMiddleware`
+     * publishes and never from a header here, so a forwarded header cannot be used to escape the
+     * throttle; an unusable value degrades to `unknown` rather than skipping the count. A wrong
+     * credential and a throttled one both re-render the form, at 401 and 429, and the rejection message
+     * deliberately does not say which of the two fields was wrong. Success binds the new session to the
+     * pipeline's request identifier — or to a freshly generated one when the pipeline published none —
+     * so the sign-in can be correlated in the audit trail.
+     *
+     * @param   ServerRequestInterface  $request  Sign-in request; `GET` renders the form, `POST` submits it.
+     *
+     * @return  ResponseInterface  The rendered form, or a 303 to `/administrator` carrying the session cookie.
+     *
+     * @since   2.0.0
+     */
     public function handle(ServerRequestInterface $request): ResponseInterface
     {
         if (strtoupper($request->getMethod()) === 'GET') {
@@ -79,6 +123,13 @@ final readonly class AdministratorLoginHandler implements RequestHandlerInterfac
         ]);
     }
 
+    /**
+     * Render the empty sign-in form for a `GET`.
+     *
+     * @return  ResponseInterface  The form at 200, marked `no-store` so a shared browser cannot go back to it.
+     *
+     * @since   2.0.0
+     */
     private function form(): ResponseInterface
     {
         return new HtmlResponse(
@@ -88,6 +139,20 @@ final readonly class AdministratorLoginHandler implements RequestHandlerInterfac
         );
     }
 
+    /**
+     * Build the `Set-Cookie` value that carries the new session token to the browser.
+     *
+     * The cookie is scoped to `/administrator` so it is never sent with a public page request, and it
+     * is `HttpOnly` and `SameSite=Strict` because nothing but the administrator pipeline may present
+     * it. `AdministratorLogoutHandler` must repeat these attributes for the browser to accept its
+     * expiring replacement.
+     *
+     * @param   string  $token  Opaque session token the browser will send back on each request.
+     *
+     * @return  string  Header value, gaining `Secure` when the installation is configured for HTTPS.
+     *
+     * @since   2.0.0
+     */
     private function cookie(string $token): string
     {
         return sprintf(

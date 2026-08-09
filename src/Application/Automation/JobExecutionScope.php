@@ -7,21 +7,53 @@ namespace Kumwe\CMS\Application\Automation;
 use Kumwe\CMS\Application\Authorization\SystemIdentity;
 use LogicException;
 
-/** Classifies built-in jobs whose effect is installation-wide rather than site-local. */
+/**
+ * Classifies built-in jobs whose effect is installation-wide rather than site-local.
+ *
+ * The table below is the only declaration of that classification. The queue and scheduler stamp the
+ * derived class onto every row they write and re-check it on every row they read, so a rewritten
+ * `execution_scope` column cannot promote site-owned work into installation-global work. For the
+ * global types the same table also names the internal identity permitted to execute them.
+ *
+ * @since  2.0.0
+ */
 final readonly class JobExecutionScope
 {
-    /** @var array<string, SystemIdentity> */
+    /**
+     * Installation-global job types, each mapped to the internal identity allowed to run it.
+     *
+     * @var    array<string, SystemIdentity>
+     * @since  2.0.0
+     */
     private const INSTALLATION_GLOBAL = [
         'business.record.idempotency.purge' => SystemIdentity::InstallationMaintenance,
         'extensions.runtime.rebuild' => SystemIdentity::ExtensionMaterializer,
         'system.idempotency.purge' => SystemIdentity::InstallationMaintenance,
     ];
 
+    /**
+     * Report whether a job type is declared installation-global.
+     *
+     * @param   string  $jobType  Registered job type name, as declared by its handler.
+     *
+     * @return  bool  True when the type is one of the installation-global built-ins.
+     *
+     * @since   2.0.0
+     */
     public function isInstallationGlobal(string $jobType): bool
     {
         return isset(self::INSTALLATION_GLOBAL[$jobType]);
     }
 
+    /**
+     * Derive the execution class a job type must be stored and executed under.
+     *
+     * @param   string  $jobType  Registered job type name, as declared by its handler.
+     *
+     * @return  JobExecutionClass  Installation for the declared global types, Site for every other type.
+     *
+     * @since   2.0.0
+     */
     public function executionClass(string $jobType): JobExecutionClass
     {
         return $this->isInstallationGlobal($jobType)
@@ -29,12 +61,39 @@ final readonly class JobExecutionScope
             : JobExecutionClass::Site;
     }
 
+    /**
+     * Name the internal identity that may execute an installation-global job type.
+     *
+     * @param   string  $jobType  Registered job type name, which must be declared installation-global.
+     *
+     * @return  SystemIdentity  Identity the worker builds the job's execution context from.
+     *
+     * @throws  LogicException  When the job type is not declared installation-global.
+     *
+     * @since   2.0.0
+     */
     public function systemIdentity(string $jobType): SystemIdentity
     {
         return self::INSTALLATION_GLOBAL[$jobType]
             ?? throw new LogicException(sprintf('Job type "%s" is not installation-global.', $jobType));
     }
 
+    /**
+     * Check the execution class read back from storage against the one the job type declares.
+     *
+     * Every reader of a persisted schedule or job row runs this before acting on it, so a stale or
+     * tampered `execution_scope` value is rejected instead of granting the row the claim path and
+     * principal of the other class.
+     *
+     * @param   string  $jobType  Registered job type name taken from the same row.
+     * @param   string  $stored   Persisted execution class as its backing string.
+     *
+     * @return  JobExecutionClass  The stored class, once it agrees with the declaration.
+     *
+     * @throws  LogicException  When the stored value is unknown, or disagrees with the declaration.
+     *
+     * @since   2.0.0
+     */
     public function assertStoredClass(string $jobType, string $stored): JobExecutionClass
     {
         $executionClass = JobExecutionClass::tryFrom($stored)

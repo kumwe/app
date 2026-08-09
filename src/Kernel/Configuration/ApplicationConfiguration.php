@@ -8,12 +8,67 @@ use InvalidArgumentException;
 use Kumwe\CMS\Application\Authorization\SiteContext;
 use Kumwe\CMS\Http\Security\TrustedProxyMatcher;
 
+/**
+ * The complete, already-validated settings one Kumwe process runs on.
+ *
+ * `ConfigurationFactory` builds a single instance during boot and `ContainerFactory` shares it, so
+ * no other class needs to consult the environment: a collaborator that wants a setting asks for this
+ * object. The constructor is the deployment's coherence check — an absolute base URL that is HTTPS
+ * in production, a resolvable public site context, a parseable proxy trust boundary, secrets that
+ * are long enough and independent of one another, well-formed deployment identities, and an
+ * administrator session inside the supported window — so a misconfigured deployment refuses to start
+ * instead of failing unpredictably under traffic.
+ *
+ * @since  2.0.0
+ */
 final readonly class ApplicationConfiguration
 {
     /**
-     * @param non-empty-list<string> $trustedHosts
-     * @param list<string> $trustedProxies
-     * @param array<string, string> $runtimePreviousSigningKeys
+     * Capture and validate the settings the whole process will read.
+     *
+     * @param   RuntimeEnvironment      $environment                   Deployment mode, which decides how
+     *          strict the remaining checks are.
+     * @param   bool                    $debug                         Whether verbose diagnostics and debug-level
+     *          logging are enabled.
+     * @param   string                  $baseUrl                       Absolute URL the site is served from; it
+     *          must use HTTPS in production.
+     * @param   string                  $publicSite                    Site context anonymous front-end requests
+     *          resolve to.
+     * @param   non-empty-list<string>  $trustedHosts                  Host names the application answers to; a
+     *          request for any other host is refused.
+     * @param   list<string>            $trustedProxies                Addresses or CIDR ranges whose forwarding
+     *          headers may be believed when rebuilding the client address.
+     * @param   int                     $maxBodyBytes                  Largest request body accepted before the
+     *          request is rejected.
+     * @param   int                     $administratorSessionSeconds   Administrator session lifetime, from 300
+     *          to 604800 seconds.
+     * @param   bool                    $allowUnsignedLocalExtensions  Whether an extension installed from a local
+     *          path may skip signature verification; meant for development, not production.
+     * @param   string                  $release                       Version stamp recorded on queued jobs and
+     *          reported to business schema execution, tying stored work to the build that made it.
+     * @param   string                  $secret                        Application signing secret of at least 32
+     *          bytes, used for session and token material.
+     * @param   string                  $runtimeSigningKeyId           Identifier of the key currently signing
+     *          the compiled extension runtime map.
+     * @param   string                  $runtimeSigningKey             Active runtime signing key, at least 32
+     *          bytes and deliberately independent of `$secret`, so compromising one cannot forge
+     *          the other.
+     * @param   array<string, string>   $runtimePreviousSigningKeys    Retired signing keys by identifier,
+     *          kept so already-published runtime maps still verify while a rotation completes.
+     * @param   string                  $deploymentId                  Stable name of the deployment this process
+     *          belongs to.
+     * @param   string                  $replicaId                     Stable name of the replica, distinguishing
+     *          peers within one deployment.
+     * @param   string                  $processId                     Stable name of the process within the replica.
+     * @param   string                  $instanceId                    Stable name of this instance; the four
+     *          identities together derive the lease a runtime map compilation holds.
+     * @param   DatabaseConfiguration   $database                      Connection settings for the relational store.
+     * @param   RedisConfiguration      $redis                         Connection settings for the Redis server.
+     *
+     * @throws  InvalidArgumentException  When a setting is malformed, a secret is too short or
+     *          reused, an identity is not a stable identifier, or a production-only rule is violated.
+     *
+     * @since   2.0.0
      */
     public function __construct(
         public RuntimeEnvironment $environment,
@@ -89,6 +144,16 @@ final readonly class ApplicationConfiguration
         }
     }
 
+    /**
+     * Report whether this process runs under production rules.
+     *
+     * Callers use it to switch on the caching that is only safe when the deployment is immutable,
+     * such as the compiled route table and the template cache.
+     *
+     * @return  bool  True when `APP_ENV` selected `RuntimeEnvironment::Production`.
+     *
+     * @since   2.0.0
+     */
     public function isProduction(): bool
     {
         return $this->environment === RuntimeEnvironment::Production;

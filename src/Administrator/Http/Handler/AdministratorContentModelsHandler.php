@@ -19,8 +19,30 @@ use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 use stdClass;
 
+/**
+ * Serves the administrator screen where content types and workflows are authored and republished.
+ *
+ * The two live on one screen because a content type pins a workflow, so changing either in isolation
+ * is misleading. Each can be authored two ways — a guided builder or a raw JSON field — and this
+ * handler is what reconciles them: the `workflow_mode` and `schema_mode` flags select which reader
+ * runs, and both readers produce the same associative arrays that `ContentModelService` validates and
+ * publishes. Every render therefore emits both views of each stored definition, so an operator can
+ * switch editors without either one having to reconstruct the other's state.
+ *
+ * @since  2.0.0
+ */
 final readonly class AdministratorContentModelsHandler implements RequestHandlerInterface
 {
+    /**
+     * Wire the screen to the model service and the two form translators it drives.
+     *
+     * @param  ContentModelService         $models     Reads and publishes content type and workflow versions.
+     * @param  AdministratorRenderer       $renderer   Renders the `content-models` template.
+     * @param  ?ContentModelFormMapper     $mapper     Reads builder fields into definitions; null uses a default.
+     * @param  ?ContentModelFormPresenter  $presenter  Renders a schema back into builder fields; null defaults.
+     *
+     * @since  2.0.0
+     */
     public function __construct(
         private ContentModelService $models,
         private AdministratorRenderer $renderer,
@@ -29,6 +51,23 @@ final readonly class AdministratorContentModelsHandler implements RequestHandler
     ) {
     }
 
+    /**
+     * Render the content-model screen, first publishing whatever a `POST` carries.
+     *
+     * The `kind` field chooses content type or workflow and `action` chooses create or update. An
+     * update also carries the version the operator loaded and an explicit `allow_breaking` flag, so a
+     * change that would strand stored entries is published only when that was consciously accepted. A
+     * successful post always redirects, so a refresh cannot publish a second version.
+     *
+     * @param   ServerRequestInterface  $request  Administrator request, already authenticated and CSRF-checked.
+     *
+     * @return  ResponseInterface  The rendered screen, or a 303 redirect back to it after publishing.
+     *
+     * @throws  \InvalidArgumentException  When `kind` is unknown, or a field is missing or malformed.
+     * @throws  JsonException  When a stored schema or workflow document cannot be re-encoded for display.
+     *
+     * @since   2.0.0
+     */
     public function handle(ServerRequestInterface $request): ResponseInterface
     {
         $context = AdministratorRequest::context($request);
@@ -102,7 +141,22 @@ final readonly class AdministratorContentModelsHandler implements RequestHandler
         ]), 200, ['Cache-Control' => 'no-store']);
     }
 
-    /** @return array<string, mixed> */
+    /**
+     * Read one raw JSON field as a keyed document.
+     *
+     * Decoding into objects rather than arrays is deliberate: it is the only way to tell an empty
+     * JSON object from an empty array, and a schema with no properties is legal while a JSON array is
+     * not a schema at all. `normalizeObject()` then converts the tree back into arrays.
+     *
+     * @param   string  $json  Raw field value submitted by the JSON editor.
+     * @param   string  $name  Field name, used to name the offending field in the failure message.
+     *
+     * @return  array<string, mixed>  The decoded document, every nested object converted to an array.
+     *
+     * @throws  \InvalidArgumentException  When the value is not valid JSON, or is not a JSON object.
+     *
+     * @since   2.0.0
+     */
     private function object(string $json, string $name): array
     {
         try {
@@ -116,7 +170,22 @@ final readonly class AdministratorContentModelsHandler implements RequestHandler
         return $this->normalizeObject($value);
     }
 
-    /** @return list<array<string, mixed>> */
+    /**
+     * Read one raw JSON field as an ordered list of keyed documents.
+     *
+     * The list twin of `object()`, used for the workflow `states` and `transitions` fields. Every
+     * element must itself be a JSON object, so a stray scalar in the array fails the whole field
+     * rather than being skipped and silently dropping a state.
+     *
+     * @param   string  $json  Raw field value submitted by the JSON editor.
+     * @param   string  $name  Field name, used to name the offending field in the failure message.
+     *
+     * @return  list<array<string, mixed>>  The decoded items, in the order they were submitted.
+     *
+     * @throws  \InvalidArgumentException  When the value is not a JSON array, or an item is not an object.
+     *
+     * @since   2.0.0
+     */
     private function objectList(string $json, string $name): array
     {
         try {
@@ -137,7 +206,15 @@ final readonly class AdministratorContentModelsHandler implements RequestHandler
         return $items;
     }
 
-    /** @return array<string, mixed> */
+    /**
+     * Convert a decoded JSON object, and everything nested inside it, into associative arrays.
+     *
+     * @param   stdClass  $object  Object produced by decoding JSON in object mode.
+     *
+     * @return  array<string, mixed>  The same document with every object replaced by an array.
+     *
+     * @since   2.0.0
+     */
     private function normalizeObject(stdClass $object): array
     {
         $normalized = [];
@@ -150,6 +227,15 @@ final readonly class AdministratorContentModelsHandler implements RequestHandler
         return $normalized;
     }
 
+    /**
+     * Convert one decoded JSON value, recursing through nested objects and arrays.
+     *
+     * @param   mixed  $value  Value taken from a decoded JSON tree.
+     *
+     * @return  mixed  The value with every nested object replaced by an array; scalars unchanged.
+     *
+     * @since   2.0.0
+     */
     private function normalizeValue(mixed $value): mixed
     {
         if ($value instanceof stdClass) {
@@ -162,7 +248,20 @@ final readonly class AdministratorContentModelsHandler implements RequestHandler
         return $value;
     }
 
-    /** @return array<string, mixed> */
+    /**
+     * Present one content type in both of the shapes the screen's two editors bind to.
+     *
+     * The builder reads `builder_fields` and the JSON editor reads `schema_json`, both rendered from
+     * the same stored schema, which is what lets an operator switch editors mid-edit.
+     *
+     * @param   ContentTypeDefinition  $definition  Head version of the content type to present.
+     *
+     * @return  array<string, mixed>  The definition's own fields plus `builder_fields` and `schema_json`.
+     *
+     * @throws  JsonException  When the stored schema cannot be encoded for the JSON editor.
+     *
+     * @since   2.0.0
+     */
     private function contentTypeDocument(ContentTypeDefinition $definition): array
     {
         return $definition->toArray() + [
@@ -174,7 +273,20 @@ final readonly class AdministratorContentModelsHandler implements RequestHandler
         ];
     }
 
-    /** @return array<string, mixed> */
+    /**
+     * Present one workflow, adding the pretty-printed JSON the raw editor binds to.
+     *
+     * States and transitions are encoded separately because the screen edits them as two fields, and
+     * the builder reads the array form of the same two keys.
+     *
+     * @param   WorkflowDefinition  $definition  Head version of the workflow to present.
+     *
+     * @return  array<string, mixed>  The definition's own fields plus `states_json` and `transitions_json`.
+     *
+     * @throws  JsonException  When the stored states or transitions cannot be encoded for the editor.
+     *
+     * @since   2.0.0
+     */
     private function workflowDocument(WorkflowDefinition $definition): array
     {
         $document = $definition->toArray();

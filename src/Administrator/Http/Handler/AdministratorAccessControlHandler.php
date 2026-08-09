@@ -18,8 +18,28 @@ use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 
+/**
+ * Serves the administrator access-control screen and applies the identity changes it posts back.
+ *
+ * Users, roles, capability grants and API tokens are managed from one screen behind one
+ * `users.manage` capability, because deciding who may do what means seeing all four together. `GET`
+ * renders the current state; `POST` dispatches on the form's `action` field and then redirects, so a
+ * refresh cannot replay a change. Token issue and rotation are the deliberate exception: they render
+ * instead of redirecting, because the plaintext secret is shown once and is never recoverable.
+ *
+ * @since  2.0.0
+ */
 final readonly class AdministratorAccessControlHandler implements RequestHandlerInterface
 {
+    /**
+     * Wire the screen to the services that read and change administrator identities.
+     *
+     * @param  AccessControlService          $access      Reads and mutates users, roles, grants and tokens.
+     * @param  AdministratorIdentityGateway  $identities  Issues and rotates tokens, the two secret-bearing acts.
+     * @param  AdministratorRenderer         $renderer    Renders the `access-control` template.
+     *
+     * @since  2.0.0
+     */
     public function __construct(
         private AccessControlService $access,
         private AdministratorIdentityGateway $identities,
@@ -27,6 +47,23 @@ final readonly class AdministratorAccessControlHandler implements RequestHandler
     ) {
     }
 
+    /**
+     * Render the access-control screen, first applying whatever change a `POST` carries.
+     *
+     * A change that produces no secret redirects to `?saved=1` so the browser cannot resubmit it.
+     * Token issue and rotation fall through to the render instead, because the plaintext token is
+     * handed to the operator exactly once. The response is marked `no-store` for that reason as much
+     * as for the CSRF token it carries.
+     *
+     * @param   ServerRequestInterface  $request  Administrator request, already authenticated and CSRF-checked.
+     *
+     * @return  ResponseInterface  The rendered screen, or a 303 redirect when there is no secret to show.
+     *
+     * @throws  InvalidArgumentException  When a required field is missing or the action is not supported.
+     * @throws  \DateMalformedStringException  When a token expiry field is not a readable date and time.
+     *
+     * @since   2.0.0
+     */
     public function handle(ServerRequestInterface $request): ResponseInterface
     {
         $session = AdministratorRequest::session($request);
@@ -54,8 +91,21 @@ final readonly class AdministratorAccessControlHandler implements RequestHandler
     }
 
     /**
-     * @param array<string, string> $form
-     * @return array{token: string, token_id: string}|null
+     * Apply the single access-control operation named by the form's `action` field.
+     *
+     * Each branch reads only its own fields, so one action can never pick up a value meant for
+     * another. The return value is what tells the caller apart: only the token branches yield
+     * something, and everything else goes through `after()` to say "done, redirect".
+     *
+     * @param   ExecutionContext       $context  Actor and site the change is authorised and audited against.
+     * @param   array<string, string>  $form     Flattened form as returned by `AdministratorRequest::form()`.
+     *
+     * @return  array{token: string, token_id: string}|null  Secret and id, or null when none was issued.
+     *
+     * @throws  InvalidArgumentException  When a required field is missing or `action` names no known operation.
+     * @throws  \DateMalformedStringException  When the rotation expiry field is not a readable date and time.
+     *
+     * @since   2.0.0
      */
     private function mutate(ExecutionContext $context, array $form): ?array
     {
@@ -138,7 +188,18 @@ final readonly class AdministratorAccessControlHandler implements RequestHandler
         };
     }
 
-    /** @param callable(): void $operation */
+    /**
+     * Run a change that yields nothing and report the absence of a secret to show.
+     *
+     * The helper exists so that every non-token arm of the `match` above is an expression of the same
+     * type; returning `null` rather than `void` is what lets a statement-shaped operation sit there.
+     *
+     * @param   callable(): void  $operation  The access-control change to perform.
+     *
+     * @return  null  Always null, telling the caller to redirect rather than render.
+     *
+     * @since   2.0.0
+     */
     private function after(callable $operation): null
     {
         $operation();
@@ -147,8 +208,21 @@ final readonly class AdministratorAccessControlHandler implements RequestHandler
     }
 
     /**
-     * @param array<string, string> $form
-     * @return array{token: string, token_id: string}
+     * Issue a new API token for a subject and return the only copy of its secret.
+     *
+     * Capabilities arrive as one comma-separated field because the form posts a multi-select; blank
+     * entries are dropped so a trailing comma cannot request an unnamed capability. Audience and
+     * purpose fall back to the HTTP API defaults when the form leaves them out.
+     *
+     * @param   array<string, string>  $form     Flattened form carrying the token fields.
+     * @param   ExecutionContext       $context  Actor and site the issue is authorised and audited against.
+     *
+     * @return  array{token: string, token_id: string}  Plaintext secret, shown once, and the stored id.
+     *
+     * @throws  InvalidArgumentException  When a required token field is missing or blank.
+     * @throws  \DateMalformedStringException  When the expiry field is not a readable date and time.
+     *
+     * @since   2.0.0
      */
     private function createToken(array $form, ExecutionContext $context): array
     {

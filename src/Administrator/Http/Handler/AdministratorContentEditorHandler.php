@@ -18,8 +18,33 @@ use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 
+/**
+ * Serves the administrator content editor, for both a brand new entry and an existing one.
+ *
+ * The same screen backs `/administrator/content/new` and `/administrator/content/{id}/edit`; the
+ * presence of an `id` route attribute is what decides which. It is read-only — the rendered form
+ * posts to the separate create and update handlers — so this class exists purely to assemble
+ * everything the form needs in one place: the stored entry, the content type it is pinned to, the
+ * workflow governing it, the field descriptors derived from that type's schema, and the media
+ * library to pick from. Definitions are read at the versions the entry pinned rather than at head,
+ * which is what keeps an older entry editable after its type or workflow was republished.
+ *
+ * @since  2.0.0
+ */
 final readonly class AdministratorContentEditorHandler implements RequestHandlerInterface
 {
+    /**
+     * Wire the editor to the services supplying the entry and the vocabulary it is edited against.
+     *
+     * @param  ContentService         $content      Loads the entry being edited, trashed ones included.
+     * @param  ContentModelService    $models       Supplies the pinned content type and workflow versions.
+     * @param  AdministratorRenderer  $renderer     Renders the `content-form` template.
+     * @param  ?ContentFormPresenter  $form         Turns a schema into field descriptors; null builds a default.
+     * @param  ?MediaService          $media        Backs the media picker; null renders the form without one.
+     * @param  ?PublicPageLocator     $publicPages  Resolves the entry's public URL; null omits the link.
+     *
+     * @since  2.0.0
+     */
     public function __construct(
         private ContentService $content,
         private ContentModelService $models,
@@ -30,6 +55,22 @@ final readonly class AdministratorContentEditorHandler implements RequestHandler
     ) {
     }
 
+    /**
+     * Assemble and render the editor for a new entry or for the entry the route names.
+     *
+     * An existing entry is loaded with trashed entries included, so an operator about to restore one
+     * can still see it. Stored entry data is filtered down to string keys before it reaches the
+     * presenter, because a numeric key could never correspond to a schema field.
+     *
+     * @param   ServerRequestInterface  $request  Administrator request; an `id` attribute selects edit mode.
+     *
+     * @return  ResponseInterface  The rendered editor, marked `no-store` because it carries a CSRF token.
+     *
+     * @throws  \RuntimeException  When the stored entry's pinned type or workflow reference is unusable.
+     * @throws  \Kumwe\CMS\Content\Application\ContentNotFound  When the route names an entry out of reach.
+     *
+     * @since   2.0.0
+     */
     public function handle(ServerRequestInterface $request): ResponseInterface
     {
         $session = AdministratorRequest::session($request);
@@ -87,8 +128,22 @@ final readonly class AdministratorContentEditorHandler implements RequestHandler
     }
 
     /**
-     * @param list<ContentTypeDefinition> $definitions
-     * @param array<string, mixed>|null $entry
+     * Decide which content type the editor builds its fields from.
+     *
+     * An existing entry always wins, and is resolved at the version it pinned, so opening an old
+     * entry never quietly migrates it onto a newer schema. For a new entry the `content_type` query
+     * parameter selects by UUID or handle — that is how the "new entry of this type" links work —
+     * and the first defined type is the fallback when nothing was asked for.
+     *
+     * @param   ServerRequestInterface       $request      Request whose query string may name a type.
+     * @param   list<ContentTypeDefinition>  $definitions  Head versions available to the acting site.
+     * @param   array<string, mixed>|null    $entry        Stored entry being edited, or null when creating.
+     *
+     * @return  ContentTypeDefinition  The definition whose schema the rendered form is built from.
+     *
+     * @throws  \RuntimeException  When the entry's pinned type reference is unusable, or no type is defined.
+     *
+     * @since   2.0.0
      */
     private function selectedType(
         ServerRequestInterface $request,

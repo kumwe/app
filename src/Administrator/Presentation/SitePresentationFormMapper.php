@@ -7,10 +7,26 @@ namespace Kumwe\CMS\Administrator\Presentation;
 use InvalidArgumentException;
 use Kumwe\CMS\Presentation\Application\SitePresentation;
 
-/** Maps the graphical site-settings controls to the shared presentation contract. */
+/**
+ * Maps the graphical site-settings controls to the shared presentation contract.
+ *
+ * The settings screen posts branding and theme choices as one flat form, with every colour scheme
+ * spread across indexed fields such as `scheme_0_handle`. `AdministratorSettingsHandler` hands that form
+ * here on save and stores what comes back, so this is the only place the screen's field naming is
+ * understood. What it returns has already been through `SitePresentation`, which means the handler
+ * cannot persist a palette or a style choice that has not passed the rules keeping those values safe to
+ * interpolate into a page.
+ *
+ * @since  2.0.0
+ */
 final readonly class SitePresentationFormMapper
 {
-    /** @var list<string> */
+    /**
+     * Colour roles read out of each scheme's fields, matching the roles a presentation scheme must define.
+     *
+     * @var    list<string>
+     * @since  2.0.0
+     */
     private const array COLOR_KEYS = [
         'navy',
         'ink',
@@ -25,8 +41,21 @@ final readonly class SitePresentationFormMapper
     ];
 
     /**
-     * @param array<string, mixed> $form
-     * @return array<string, mixed>
+     * Fold the flat settings form into the validated presentation document the site stores.
+     *
+     * Schemes are discovered from whichever `scheme_<n>_handle` fields the form carries and are ordered
+     * by that index, so removing a row simply leaves a gap in the numbering and the rows that remain
+     * keep the order the operator saw. Every field but the logo is required: a blank logo means the site
+     * shows none, whereas a blank handle or colour is a malformed submission rather than a choice.
+     *
+     * @param   array<string, mixed>  $form  Flat settings form as posted by the administrator screen.
+     *
+     * @return  array<string, mixed>  The presentation document in the shape site settings persists.
+     *
+     * @throws  InvalidArgumentException  When a required field is missing or blank, or the assembled
+     *          document breaks one of the presentation safety rules.
+     *
+     * @since   2.0.0
      */
     public function map(array $form): array
     {
@@ -65,7 +94,25 @@ final readonly class SitePresentationFormMapper
         ])->toArray();
     }
 
-    /** @param array<string, mixed> $form */
+    /**
+     * Read one form field as a trimmed string, refusing anything the contract cannot carry.
+     *
+     * A non-string value is refused whether or not the field is required, so an array posted where a
+     * scalar was expected fails with the field named instead of reaching `SitePresentation` as something
+     * it has no rule for.
+     *
+     * @param   array<string, mixed>  $form      Flat settings form as posted by the administrator screen.
+     * @param   string                $key       Name of the field to read.
+     * @param   bool                  $required  Whether a blank value is refused; false admits the empty
+     *          string, which is what the optional logo field needs.
+     *
+     * @return  string  The value with surrounding whitespace removed.
+     *
+     * @throws  InvalidArgumentException  When the field is absent, is not a string, or is required and
+     *          trims to empty.
+     *
+     * @since   2.0.0
+     */
     private function value(array $form, string $key, bool $required = true): string
     {
         $value = $form[$key] ?? null;

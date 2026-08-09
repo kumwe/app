@@ -20,12 +20,54 @@ use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 
+/**
+ * Applies every button on the extensions screen: the lifecycle changes and the signing-key operations.
+ *
+ * One route, `POST /administrator/extensions/action`, backs both because they share a screen, a
+ * capability and a refusal vocabulary. What makes this handler more than a dispatcher is that it turns
+ * the refusals into problem documents rather than letting them reach the generic error page: an
+ * operator who is throttled, who has not re-entered their password, or who lacks the theme capability
+ * gets a machine-readable 429, 403 or 422 with the reason in `detail`, which is what the screen renders
+ * beside the control that was pressed. Anything that succeeds ends in a redirect, so the browser never
+ * holds a resubmittable extension mutation.
+ *
+ * @since  2.0.0
+ */
 final readonly class AdministratorExtensionActionHandler implements RequestHandlerInterface
 {
+    /**
+     * Wire the action route to the extension registry and the signing-key trust store.
+     *
+     * @param  ExtensionManager  $extensions  Performs the activate, disable and uninstall lifecycle changes.
+     * @param  TrustStore        $trust       Adds, rotates and revokes the keys extension packages are signed with.
+     *
+     * @since  2.0.0
+     */
     public function __construct(private ExtensionManager $extensions, private TrustStore $trust)
     {
     }
 
+    /**
+     * Apply the extension or trust-key operation the form's `action` field names.
+     *
+     * The four `trust-*` actions manage signing keys and each returns as soon as it is applied;
+     * everything else is a lifecycle change against the `identifier` field. A `surface` is only
+     * meaningful for template extensions, and `current_password` is passed straight through to the
+     * step-up boundary rather than being checked here. A refusal raised while an action is applied
+     * becomes a JSON problem document — throttling a 429, a missing step-up or capability a 403, a
+     * rejected argument a 422 — so the screen can show the reason inline; every success ends in a 303
+     * back to the screen.
+     *
+     * @param   ServerRequestInterface  $request  Administrator request, already authenticated and CSRF-checked.
+     *
+     * @return  ResponseInterface  A 303 back to the extensions screen, or a JSON problem document on refusal.
+     *
+     * @throws  InvalidArgumentException  When the request carries no execution context, or `action` is missing;
+     *          the same failure raised while applying an action is answered with a 422 instead.
+     * @throws  \DateMalformedStringException  When a trust key form's `expires_at` is not a readable date.
+     *
+     * @since   2.0.0
+     */
     public function handle(ServerRequestInterface $request): ResponseInterface
     {
         $form = AdministratorRequest::form($request);
