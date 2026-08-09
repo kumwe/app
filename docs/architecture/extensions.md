@@ -43,4 +43,10 @@ Kumwe treats extension manifests, the contribution SPI version, typed definition
 
 Recovery construction uses the same core contribution path but never evaluates the signed extension publication, instantiates providers, or adds extension template namespaces. Runtime generations that are stale, altered, disabled, uninstalled, quarantined, or no longer trusted cannot expose executable contributions.
 
+Security and portal definitions use the same owner-aware contribution lifecycle as every other extension
+surface. The live capability/resource-policy registries are shared by core and extensions; persisted declarations
+are diagnostic and lifecycle evidence, not a second enforcement catalog. Portal contribution registries retain
+owner and trust metadata and recheck it when a handler renders or executes, so a long-running process cannot keep
+serving a revoked owner.
+
 See [Extension development](../extensions.md) for package construction and lifecycle commands.

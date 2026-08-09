@@ -44,3 +44,13 @@ Repeat for the web image. Compare both digests with release provenance subjects 
 ## Composer releases
 
 Before `composer create-project`, verify that the selected `kumwe/cms` version resolves to the same protected Git tag and locked dependency set as the GitHub release. Use `composer audit --locked --abandoned=fail` after installation, preserve `composer.lock`, and do not accept an unexpected source branch or development constraint in production.
+
+## Business-security acceptance
+
+Before promotion, retain evidence from the supported-database matrix for owner-aware catalog synchronization,
+deny-overrides policy evaluation, field-usage isolation, policy-before-pagination SQL, non-enumerating direct reads,
+organization/workspace freshness, scoped token non-escalation, maker-checker quorum and replay, TOTP/recovery replay,
+portal cookie and CSRF isolation, extension trust lifecycle, recovery-mode isolation, and accessible browser flows.
+Run `composer qa`, `npm run check`, `npm run build`, and `npm run test:browser` from the exact release source and
+repeat clean install, migration, backup, restore, and post-restore security acceptance for MariaDB, MySQL, and
+PostgreSQL.

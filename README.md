@@ -48,6 +48,10 @@ Open <http://localhost:8080/administrator>. The [getting-started guide](docs/get
 - Apply the same content, navigation, identity, and extension rules through application services shared by the browser, CLI, REST, MCP, workers, and scheduler.
 - Install signed plugins, components, modules, templates, languages, and packages without rebuilding the application image.
 - Graphically author and immutably publish typed business definitions with exact fields, relationships, views, actions, workflows, safe formulas, compatibility plans, and extension-owned contributions.
+- Enforce organization and workspace memberships, deny-overrides record and field policies, maker-checker approvals,
+  replay-safe step-up authentication, and scoped delegation through every delivery surface.
+- Serve an isolated ordinary-user portal with its own sessions, CSRF boundary, account security, approvals, and
+  signed extension workspaces, navigation, templates, and routes.
 - Run optimistic, retry-safe API mutations with capability-scoped tokens, ETags, persisted idempotency results, revisions, and audit events.
 - Run durable jobs and recurring schedules with bounded retries, leases, occurrence keys, and failure records.
 - Deploy immutable nginx and PHP-FPM images with MariaDB by default, or select MySQL or PostgreSQL.
@@ -84,6 +88,8 @@ The [documentation index](docs/README.md) organizes guides by task:
 | Install and configure a site | [Getting started](docs/getting-started.md) and [configuration](docs/configuration.md) |
 | Administer content, navigation, users, and settings | [Administrator](docs/administration.md) |
 | Define operational entities and extension schemas | [Business definitions](docs/business-definitions.md) |
+| Configure policy, approvals, step-up, and scoped authority | [Business security](docs/business-security.md) |
+| Use or extend the ordinary-user portal | [Ordinary-user portal](docs/portal.md) |
 | Operate Kumwe from a shell | [Command-line interface](docs/cli.md) |
 | Integrate an application or AI client | [REST API](docs/rest-api.md) and [MCP](docs/mcp.md) |
 | Create extensions, events, migrations, or templates | [Extensions](docs/extensions.md) and [templates](docs/templates.md) |

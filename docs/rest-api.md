@@ -13,6 +13,12 @@ Kumwe-Site: corporate
 
 Every authenticated request must contain exactly one canonical `Kumwe-Site` header. The value is validated and must exactly match the site recorded on the token; Kumwe never derives this security context from `Host`, `Forwarded`, or `X-Forwarded-*`. Tokens are stored as SHA-256 digests, may expire, and carry an explicit capability set. Disabled or deleted sites fail authentication immediately. Route authorization and workflow authorization both apply. A token with `content.read` cannot publish merely because it can reach the transition endpoint.
 
+Tokens are also bound to an optional organization/workspace and live membership version, policy generation,
+subject security epoch, audience, purpose, family, and bounded delegation depth. A valid digest is insufficient if
+any binding is stale or the requested route has no concrete matching scope. Issuance and rotation may only reduce
+the caller's effective capabilities, scope, lifetime, audience, purpose, and delegation depth. Business security
+row and field policy is applied inside the shared application service, not inferred from HTTP input.
+
 ## Retry and concurrency contract
 
 Every mutation requires a caller-generated `Idempotency-Key`. Kumwe persists the request digest and completed response for 24 hours. An identical retry returns the stored response with `Idempotency-Replayed: true`; reuse for different request data is rejected.

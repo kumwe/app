@@ -81,4 +81,9 @@ From outside the stack and from the exact deployed application image:
 7. inspect logs, worker heartbeat, queue age, database health, and Redis health;
 8. retain the previous image digests and verified backup until acceptance succeeds.
 
+Also sign in through `/portal` as an ordinary user and verify administrator cookies cannot authenticate it; select
+a permitted organization/workspace; prove a denied record is non-enumerable; exercise TOTP enrollment and one
+fresh challenge; approve and spend a disposable maker-checker request; reject replay; then disable a test extension
+and verify its contributed capability, policy, navigation, route, and template disappear without a restart.
+
 CI performs an equivalent clean deployment for MariaDB, MySQL, and PostgreSQL before release. Site-specific acceptance remains necessary because proxy, TLS, storage, extensions, and identity policy differ by installation.

@@ -86,6 +86,17 @@ mapping, every value is bound with its DBAL type, scope and lifecycle predicates
 identity tie-breaker is always present. Raw SQL, table names, column names, DBAL expressions, and offset pagination
 are not public inputs.
 
+The repository also receives the immutable [business-security access plan](business-security.md) before it
+constructs SQL. Row policy is therefore applied before identity lookup, count, aggregation, keyset pagination,
+relation traversal, includes, report, or export. The signed cursor binds the access-plan digest, so a membership,
+policy, trust, or field-disclosure change invalidates an old cursor. List, detail, filter, search, sort, aggregate,
+report, export, history, relation, include, and public-reference field usages are independently allowlisted.
+
+Record actions require the base transition capability, the action's declared capability, and the exact workflow
+transition capability. A high-impact action additionally consumes one immutable maker-checker approval and one
+fresh step-up proof bound to the action, record identity, expected version, and canonical payload. Requesting an
+approval performs the same definition, policy, capability, condition, and transition validation as execution.
+
 ## Disablement, uninstall, purge, and recovery
 
 Disablement and uninstall make owned definitions unavailable to executable record commands but preserve catalog
