@@ -258,6 +258,18 @@ final readonly class AuthenticatedPrincipal
     }
 
     /**
+     * Return the authorization epoch observed while this principal was authenticated.
+     *
+     * @return  int  Positive epoch invalidated whenever the actor's security state changes.
+     *
+     * @since   2.0.0
+     */
+    public function securityEpoch(): int
+    {
+        return $this->securityEpoch;
+    }
+
+    /**
      * Whether the principal holds a capability at all, ignoring the reach of the grant that confers it.
      *
      * This is the cheap pre-flight check a guard makes before doing work, not an authorization
@@ -333,6 +345,35 @@ final readonly class AuthenticatedPrincipal
     }
 
     /**
+     * Digest effective authority independently of the browser session or token that presented it.
+     *
+     * A successful step-up rotates the session credential by design. Long-running maker-checker
+     * bindings therefore use this digest: grants and the security epoch remain exact, while replacing
+     * the session secret does not make an otherwise unchanged approval impossible to consume.
+     *
+     * @return  string  SHA-256 over subject, epoch, and the complete ordered grant set.
+     *
+     * @since   2.0.0
+     */
+    public function authorityFingerprint(): string
+    {
+        $grants = array_map(
+            static fn (PrincipalGrant $grant): string => implode(':', [
+                $grant->capability()->value(),
+                $grant->scope()->type(),
+                $grant->scope()->identifier() ?? '',
+            ]),
+            $this->grants,
+        );
+
+        return hash('sha256', implode("\n", [
+            $this->subject(),
+            (string) $this->securityEpoch,
+            ...$grants,
+        ]));
+    }
+
+    /**
      * Whether any single grant confers this capability over at least one of the scopes requested.
      *
      * A global grant satisfies the check outright; a scoped grant satisfies it only when it covers one
@@ -386,6 +427,11 @@ final readonly class AuthenticatedPrincipal
      *          of this single unit of work.
      * @param   ?string                                                      $correlationId           Trace
      *          identifier shared by related work; defaults to `$requestId`.
+     * @param   ?\Kumwe\CMS\Application\Authorization\AuthenticatedSurface $surface Authenticated delivery boundary.
+     * @param   ?\Kumwe\CMS\Application\Authorization\MembershipContext    $membership Exact live membership scope.
+     * @param   ?string                                                      $sessionId Rotated browser-session
+     *          identity.
+     * @param   ?\Kumwe\CMS\Application\Authorization\StepUpProof          $stepUpProof Fresh multi-factor proof.
      *
      * @return  \Kumwe\CMS\Application\Authorization\ExecutionContext  A human context bound to this
      *          principal's authority.
@@ -400,6 +446,10 @@ final readonly class AuthenticatedPrincipal
         \Kumwe\CMS\Application\Authorization\AuthenticationStrength $authenticationStrength,
         string $requestId,
         ?string $correlationId = null,
+        ?\Kumwe\CMS\Application\Authorization\AuthenticatedSurface $surface = null,
+        ?\Kumwe\CMS\Application\Authorization\MembershipContext $membership = null,
+        ?string $sessionId = null,
+        ?\Kumwe\CMS\Application\Authorization\StepUpProof $stepUpProof = null,
     ): \Kumwe\CMS\Application\Authorization\ExecutionContext {
         return \Kumwe\CMS\Application\Authorization\ExecutionContext::issueHuman(
             $this->provenance,
@@ -408,6 +458,10 @@ final readonly class AuthenticatedPrincipal
             $authenticationStrength,
             $requestId,
             $correlationId,
+            $surface,
+            $membership,
+            $sessionId,
+            $stepUpProof,
         );
     }
 

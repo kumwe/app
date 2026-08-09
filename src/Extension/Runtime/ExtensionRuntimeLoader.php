@@ -172,6 +172,7 @@ final readonly class ExtensionRuntimeLoader
             $container = new RestrictedExtensionContainer($identifier, $services);
             $provider->register($container);
             $active->add($identifier, $provider, $container, $declared, $manifestSchema === 2);
+            $this->addPortalTemplates($active, $identifier, $root);
 
             if ($type !== 'template') {
                 foreach ([ThemeSurface::Site, ThemeSurface::Administrator] as $surface) {
@@ -249,6 +250,30 @@ final readonly class ExtensionRuntimeLoader
         }
         if (is_dir($extensionViews)) {
             $active->addExtensionViewPath($surface, $identifier, $extensionViews);
+        }
+    }
+
+    /**
+     * Discover an extension's portal templates without permitting a linked root.
+     *
+     * @param   ActiveExtensionSet  $active      Runtime set receiving the template namespace.
+     * @param   string              $identifier  Extension whose namespace owns the templates.
+     * @param   string              $root        Canonical extension root on disk.
+     *
+     * @return  void
+     *
+     * @throws  RuntimeException  When the portal template root is a symbolic link.
+     *
+     * @since  2.0.0
+     */
+    private function addPortalTemplates(ActiveExtensionSet $active, string $identifier, string $root): void
+    {
+        $templates = $root . '/templates/views/portal';
+        if (is_link($templates)) {
+            throw new RuntimeException('An extension portal template root cannot be a symbolic link.');
+        }
+        if (is_dir($templates)) {
+            $active->addPortalTemplatePath($identifier, $templates);
         }
     }
 

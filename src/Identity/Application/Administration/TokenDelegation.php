@@ -20,14 +20,26 @@ final readonly class TokenDelegation
     /**
      * Capture the subject and capability set an issuance was cleared for.
      *
-     * @param  string                  $subjectId     UUID the resolved email belongs to; the identity the
+     * @param  string                  $subjectId          UUID the resolved email belongs to; the identity the
      *         token will authenticate as.
-     * @param  non-empty-list<string>  $capabilities  Canonical capability codes cleared for delegation,
+     * @param  non-empty-list<string>  $capabilities       Canonical capability codes cleared for delegation,
      *         deduplicated and ordered by first request.
+     * @param  ?string                 $organization       Exact target-subject organization, when scoped.
+     * @param  ?string                 $workspace          Exact target-subject workspace, when scoped.
+     * @param  ?string                 $membershipId       Live target-subject membership UUID.
+     * @param  ?int                    $membershipVersion  Locked target membership version.
+     * @param  ?int                    $policyGeneration   Locked organization policy generation.
      *
      * @since  2.0.0
      */
-    public function __construct(public string $subjectId, public array $capabilities)
-    {
+    public function __construct(
+        public string $subjectId,
+        public array $capabilities,
+        public ?string $organization = null,
+        public ?string $workspace = null,
+        public ?string $membershipId = null,
+        public ?int $membershipVersion = null,
+        public ?int $policyGeneration = null,
+    ) {
     }
 }

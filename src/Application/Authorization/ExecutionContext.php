@@ -43,6 +43,10 @@ final readonly class ExecutionContext
      * @param   AuthenticationStrength   $authenticationStrength  How the actor proved itself.
      * @param   string                   $requestId               Identifier of this single unit of work.
      * @param   string                   $correlationId           Identifier shared across one trace.
+     * @param   AuthenticatedSurface     $surface                 Authenticated delivery boundary.
+     * @param   ?MembershipContext       $membership              Server-resolved organization membership.
+     * @param   ?string                  $sessionId               Rotated browser-session identity, when present.
+     * @param   ?StepUpProof             $stepUpProof             Fresh multi-factor proof, when completed.
      *
      * @throws  InvalidArgumentException  When both or neither identity is supplied, when the identity and
      *          the authentication strength disagree, or when either identifier
@@ -58,6 +62,10 @@ final readonly class ExecutionContext
         private AuthenticationStrength $authenticationStrength,
         private string $requestId,
         private string $correlationId,
+        private AuthenticatedSurface $surface,
+        private ?MembershipContext $membership,
+        private ?string $sessionId,
+        private ?StepUpProof $stepUpProof,
     ) {
         if (($principal === null) === ($systemIdentity === null)) {
             throw new InvalidArgumentException(
@@ -75,6 +83,27 @@ final readonly class ExecutionContext
 
         self::assertIdentity($requestId, 'request');
         self::assertIdentity($correlationId, 'correlation');
+        if ($sessionId !== null) {
+            self::assertIdentity($sessionId, 'session');
+        }
+        if (($authenticationStrength === AuthenticationStrength::MultiFactor) !== ($stepUpProof !== null)) {
+            throw new InvalidArgumentException('Multi-factor authentication requires exactly one step-up proof.');
+        }
+        if ($stepUpProof !== null && (
+            $principal === null
+            || $sessionId === null
+            || $stepUpProof->actorId() !== $principal->subject()
+            || $stepUpProof->sessionId() !== $sessionId
+            || $stepUpProof->site()->identifier() !== $site->identifier()
+            || $stepUpProof->organization()?->identifier() !== $membership?->organization()->identifier()
+            || $stepUpProof->workspace()?->identifier() !== $membership?->workspace()?->identifier()
+            || $stepUpProof->securityEpoch() !== $principal->securityEpoch()
+        )) {
+            throw new InvalidArgumentException('The step-up proof does not match the execution context.');
+        }
+        if ($systemIdentity !== null && $surface !== AuthenticatedSurface::Background) {
+            throw new InvalidArgumentException('A system execution context must use the background surface.');
+        }
     }
 
     /**
@@ -90,6 +119,10 @@ final readonly class ExecutionContext
      *          rejected here.
      * @param   string                  $requestId               Identifier of this single unit of work.
      * @param   ?string                 $correlationId           Trace identifier; defaults to `$requestId`.
+     * @param   ?AuthenticatedSurface   $surface                 Delivery boundary; inferred for legacy callers.
+     * @param   ?MembershipContext      $membership              Server-resolved organization membership.
+     * @param   ?string                 $sessionId               Rotated browser-session identity.
+     * @param   ?StepUpProof            $stepUpProof             Fresh proof for multi-factor strength.
      *
      * @return  self  A human context bound to the supplied authority.
      *
@@ -105,6 +138,10 @@ final readonly class ExecutionContext
         AuthenticationStrength $authenticationStrength,
         string $requestId,
         ?string $correlationId = null,
+        ?AuthenticatedSurface $surface = null,
+        ?MembershipContext $membership = null,
+        ?string $sessionId = null,
+        ?StepUpProof $stepUpProof = null,
     ): self {
         if (!$principal->hasProvenance($provenance)) {
             throw new InvalidArgumentException('A human context requires a principal from the same authority.');
@@ -118,6 +155,13 @@ final readonly class ExecutionContext
             $authenticationStrength,
             $requestId,
             $correlationId ?? $requestId,
+            $surface ?? match ($authenticationStrength) {
+                AuthenticationStrength::BearerToken => AuthenticatedSurface::Api,
+                default => AuthenticatedSurface::Administrator,
+            },
+            $membership,
+            $sessionId,
+            $stepUpProof,
         );
     }
 
@@ -154,6 +198,10 @@ final readonly class ExecutionContext
             AuthenticationStrength::System,
             $requestId,
             $correlationId ?? $requestId,
+            AuthenticatedSurface::Background,
+            null,
+            null,
+            null,
         );
     }
 
@@ -203,6 +251,78 @@ final readonly class ExecutionContext
     public function authenticationStrength(): AuthenticationStrength
     {
         return $this->authenticationStrength;
+    }
+
+    /**
+     * Report the authenticated delivery boundary.
+     *
+     * @return  AuthenticatedSurface  Surface whose session or credential issued this context.
+     *
+     * @since   2.0.0
+     */
+    public function surface(): AuthenticatedSurface
+    {
+        return $this->surface;
+    }
+
+    /**
+     * Reach the server-resolved organization, when this unit of work is organization-scoped.
+     *
+     * @return  ?OrganizationContext  Organization from live membership state, never request input.
+     *
+     * @since   2.0.0
+     */
+    public function organization(): ?OrganizationContext
+    {
+        return $this->membership?->organization();
+    }
+
+    /**
+     * Reach the optional workspace nested inside the active membership.
+     *
+     * @return  ?WorkspaceContext  Selected workspace or null for organization-wide work.
+     *
+     * @since   2.0.0
+     */
+    public function workspace(): ?WorkspaceContext
+    {
+        return $this->membership?->workspace();
+    }
+
+    /**
+     * Reach the versioned membership snapshot used by authorization.
+     *
+     * @return  ?MembershipContext  Membership, versions and policy generation, when organization-scoped.
+     *
+     * @since   2.0.0
+     */
+    public function membership(): ?MembershipContext
+    {
+        return $this->membership;
+    }
+
+    /**
+     * Reach the rotated browser-session identity without exposing a cookie secret.
+     *
+     * @return  ?string  Stored session row identity, or null for non-session credentials.
+     *
+     * @since   2.0.0
+     */
+    public function sessionId(): ?string
+    {
+        return $this->sessionId;
+    }
+
+    /**
+     * Reach the fresh multi-factor proof attached to this context.
+     *
+     * @return  ?StepUpProof  Bound proof, present only with multi-factor strength.
+     *
+     * @since   2.0.0
+     */
+    public function stepUpProof(): ?StepUpProof
+    {
+        return $this->stepUpProof;
     }
 
     /**
@@ -266,6 +386,34 @@ final readonly class ExecutionContext
             $identity,
             $this->site->identifier(),
             $this->authenticationStrength->value,
+            $this->surface->value,
+            $this->membership?->fingerprint() ?? '-',
+            $this->sessionId === null ? '-' : hash('sha256', $this->sessionId),
+            $this->stepUpProof?->nonce() ?? '-',
+        ]));
+    }
+
+    /**
+     * Digest authority that remains stable across a password-to-step-up elevation of one session.
+     *
+     * Approval bindings use this digest so a request can wait for independent approvers and still be
+     * consumed after a fresh proof and its mandatory session rotation, while any principal grant,
+     * epoch, site, membership, or surface change makes the binding unusable.
+     *
+     * @return  string  Lowercase SHA-256 authority fingerprint without ephemeral proof state.
+     *
+     * @since   2.0.0
+     */
+    public function approvalFingerprint(): string
+    {
+        $identity = $this->principal?->authorityFingerprint()
+            ?? 'system:' . ($this->systemIdentity->value ?? 'unknown');
+
+        return hash('sha256', implode("\n", [
+            $identity,
+            $this->site->identifier(),
+            $this->surface->value,
+            $this->membership?->fingerprint() ?? '-',
         ]));
     }
 
@@ -314,6 +462,10 @@ final readonly class ExecutionContext
             $this->authenticationStrength,
             $requestId,
             $correlationId ?? $this->correlationId,
+            $this->surface,
+            $this->membership,
+            $this->sessionId,
+            $this->stepUpProof,
         );
     }
 

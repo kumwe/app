@@ -147,6 +147,7 @@ final readonly class AdministratorRenderer
             'business-schema-plans' => 'core.business-schema-plans',
             'navigation' => 'core.navigation',
             'access-control' => 'core.access',
+            'business-security' => 'core.business-security',
             'extensions' => 'core.extensions',
             'automation' => 'core.automation',
             'settings' => 'core.settings',

@@ -23,6 +23,15 @@
       "label": "Manage announcements example",
       "description": "Open and manage the announcements conformance workspace."
     }],
+    "resource_policies": [{
+      "id": "kumwe.announcements-example.administrator",
+      "capability": "kumwe.announcements-example.manage",
+      "resources": [{"type": "administrator_session", "identifiers": []}],
+      "installation_global": false,
+      "system_identities": [],
+      "lifecycle": "active",
+      "version": 1
+    }],
     "administrator": {
       "workspaces": [{
         "id": "kumwe.announcements-example.workspace",

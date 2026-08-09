@@ -1,0 +1,28 @@
+{% extends 'portal/layout.twig' %}
+
+{% block title %}Sign in · Kumwe Portal{% endblock %}
+
+{% block content %}
+<section class="portal-login" aria-labelledby="portal-login-title">
+    <p class="eyebrow">Business workspace</p>
+    <h1 id="portal-login-title">Sign in to the portal</h1>
+    <p>Use your Kumwe identity. Your organization and workspace are resolved from active memberships.</p>
+    {% if error %}
+        <div class="portal-alert" role="alert">{{ error }}</div>
+    {% endif %}
+    <form method="post" action="/portal/login">
+        <input type="hidden" name="_csrf" value="{{ login_csrf }}">
+        <label for="portal-email">Email address</label>
+        <input id="portal-email" name="email" type="email" value="{{ email }}" autocomplete="username" required>
+
+        <label for="portal-password">Password</label>
+        <input id="portal-password" name="password" type="password" autocomplete="current-password" required>
+
+        <label for="portal-workspace">Workspace <span>(optional)</span></label>
+        <input id="portal-workspace" name="workspace" type="text" autocomplete="off" aria-describedby="portal-workspace-help">
+        <small id="portal-workspace-help">Leave blank to use your default active workspace.</small>
+
+        <button type="submit">Sign in</button>
+    </form>
+</section>
+{% endblock %}

@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace Kumwe\CMS\Delivery\Console\Command;
 
 use Kumwe\CMS\Application\Authorization\AuthenticationStrength;
+use Kumwe\CMS\Application\Authorization\AuthenticatedSurface;
 use Kumwe\CMS\Application\Authorization\ExecutionContext;
 use Kumwe\CMS\Application\Authorization\SiteContext;
 use Kumwe\CMS\Identity\Application\Authentication\AccessTokenVerifier;
+use Kumwe\CMS\Identity\Application\Authentication\ScopedAccessTokenVerifier;
 use Kumwe\CMS\Identity\Application\Authorization\InsufficientCapability;
 use Kumwe\CMS\Identity\Domain\Capability;
 
@@ -63,15 +65,23 @@ final readonly class ConsoleAuthorizer
     {
         $site = SiteContext::fromString(CommandInput::required($options, 'site'));
         $token = CommandInput::secretFile(CommandInput::required($options, 'token-file'));
-        $principal = $this->tokens->verify($token, 'kumwe-cli', 'management', $site->identifier());
+        $verified = $this->tokens instanceof ScopedAccessTokenVerifier
+            ? $this->tokens->verifyScoped($token, 'kumwe-cli', 'management', $site->identifier())
+            : null;
+        $principal = $verified?->principal
+            ?? ($verified === null && !($this->tokens instanceof ScopedAccessTokenVerifier)
+                ? $this->tokens->verify($token, 'kumwe-cli', 'management', $site->identifier())
+                : null);
         if ($principal === null || !$principal->hasCapability(Capability::fromString($capability))) {
             throw new InsufficientCapability($capability);
         }
 
-        return $principal->context(
+        return $verified?->context('cli-' . bin2hex(random_bytes(16)), AuthenticatedSurface::Cli)
+            ?? $principal->context(
             $site,
             AuthenticationStrength::BearerToken,
             'cli-' . bin2hex(random_bytes(16)),
+            surface: AuthenticatedSurface::Cli,
         );
     }
 }

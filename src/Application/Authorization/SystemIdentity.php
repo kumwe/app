@@ -9,9 +9,9 @@ namespace Kumwe\CMS\Application\Authorization;
  *
  * Work that runs with no operator present still has to name who is acting. A `SystemPrincipal` binds
  * one of these cases for the life of the process, `ExecutionContext::issueSystem()` stamps it on the
- * context, and `DenyByDefaultAuthorizationGateway` looks the backing value up in a fixed table of
- * capabilities — the authority of unattended code is therefore decided here and in that table, never
- * by a stored grant. Keeping the set small and the capability list per case narrow is what stops one
+ * context, and owner-bound resource-policy definitions explicitly name the cases permitted to use each
+ * action/resource binding — unattended authority is therefore registered as typed core data, never
+ * inferred from a stored grant. Keeping the set small and each binding narrow is what stops one
  * compromised background task from acting with the authority of another; the backing value is also the
  * actor identifier written into audit records, which is why it is a stable `system:` token.
  *
@@ -32,8 +32,8 @@ enum SystemIdentity: string
     /**
      * Console execution that carries no authority of its own.
      *
-     * The capability table maps it to an empty list, so a context issued under this identity is refused
-     * every action; console work that must change something is given a purpose-built identity instead.
+     * No resource policy names it, so a context issued under this identity is refused every action;
+     * console work that must change something is given a purpose-built identity instead.
      *
      * @since  2.0.0
      */

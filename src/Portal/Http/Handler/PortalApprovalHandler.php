@@ -1,0 +1,373 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Kumwe\CMS\Portal\Http\Handler;
+
+use Kumwe\CMS\Application\Authorization\AuthenticatedSurface;
+use Kumwe\CMS\Application\Authorization\AuthenticationStrength;
+use Kumwe\CMS\Application\Authorization\AuthorizationDenied;
+use Kumwe\CMS\BusinessSecurity\Application\Approval\ApprovalDenied;
+use Kumwe\CMS\BusinessSecurity\Application\Approval\ApprovalQueryService;
+use Kumwe\CMS\BusinessSecurity\Application\Approval\ApprovalRequestView;
+use Kumwe\CMS\BusinessSecurity\Application\Approval\ApprovalService;
+use Kumwe\CMS\Http\Middleware\TrustedProxyMiddleware;
+use Kumwe\CMS\Identity\Application\Administration\AuthenticationThrottled;
+use Kumwe\CMS\Identity\Application\StepUp\AuthorizationStepUpProofAdapter;
+use Kumwe\CMS\Identity\Application\StepUp\StepUpProvider;
+use Kumwe\CMS\Identity\Application\StepUp\StepUpRejected;
+use Kumwe\CMS\Identity\Domain\StepUp\StepUpIntent;
+use Kumwe\CMS\Identity\Domain\StepUp\StepUpVerification;
+use Kumwe\CMS\Infrastructure\Persistence\TransactionManager;
+use Kumwe\CMS\Portal\Application\PortalSession;
+use Kumwe\CMS\Portal\Http\Middleware\PortalSessionMiddleware;
+use Kumwe\CMS\Portal\Http\PortalRequest;
+use Kumwe\CMS\Portal\Presentation\PortalRenderer;
+use Laminas\Diactoros\Response\HtmlResponse;
+use Laminas\Diactoros\Response\RedirectResponse;
+use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\ServerRequestInterface;
+use Psr\Http\Server\RequestHandlerInterface;
+
+/**
+ * Scoped portal approval inbox, non-enumerating detail, and exact-purpose step-up decisions.
+ *
+ * @since 2.0.0
+ */
+final readonly class PortalApprovalHandler implements RequestHandlerInterface
+{
+    /**
+     * Bind the approval delivery surface to scoped queries, mutations, and portal step-up.
+     *
+     * @param  ApprovalQueryService              $queries          Scoped approval projections.
+     * @param  ApprovalService                   $approvals        Protected approval mutations.
+     * @param  StepUpProvider                    $stepUp           Portal authenticator and recovery verifier.
+     * @param  AuthorizationStepUpProofAdapter   $proofs           Proof adapter for authorization contexts.
+     * @param  TransactionManager                $transactions     Atomic verification and decision scope.
+     * @param  PortalRenderer                    $renderer         Isolated portal template renderer.
+     * @param  bool                              $secureCookie     Whether portal cookies require HTTPS.
+     * @param  int                               $sessionLifetime  Portal cookie lifetime in seconds.
+     *
+     * @throws  \InvalidArgumentException  When the session lifetime falls outside the supported range.
+     *
+     * @since  2.0.0
+     */
+    public function __construct(
+        private ApprovalQueryService $queries,
+        private ApprovalService $approvals,
+        private StepUpProvider $stepUp,
+        private AuthorizationStepUpProofAdapter $proofs,
+        private TransactionManager $transactions,
+        private PortalRenderer $renderer,
+        private bool $secureCookie,
+        private int $sessionLifetime,
+    ) {
+        if ($sessionLifetime < 300 || $sessionLifetime > 604_800) {
+            throw new \InvalidArgumentException('The portal cookie lifetime is invalid.');
+        }
+    }
+
+    /**
+     * Render a scoped approval projection or execute one exact-purpose protected decision.
+     *
+     * @param   ServerRequestInterface  $request  Resolved portal request.
+     *
+     * @return  ResponseInterface  Inbox, detail, error, or post-decision redirect response.
+     *
+     * @since  2.0.0
+     */
+    public function handle(ServerRequestInterface $request): ResponseInterface
+    {
+        $session = PortalRequest::session($request);
+        $context = PortalRequest::context($request);
+        if ($request->getMethod() === 'GET' && $request->getUri()->getPath() === '/portal/approvals') {
+            $query = $request->getQueryParams();
+            $notice = is_string($query['updated'] ?? null) ? 'The approval request was updated.' : '';
+            return $this->inbox($session, $this->queries->inbox($context), $notice);
+        }
+
+        $requestId = $request->getAttribute('id');
+        if (!is_string($requestId)) {
+            return $this->notFound($session);
+        }
+        $detail = $this->queries->detail($context, $requestId);
+        if (!$detail instanceof ApprovalRequestView) {
+            return $this->notFound($session);
+        }
+        if ($request->getMethod() === 'GET') {
+            $query = $request->getQueryParams();
+            $notice = is_string($query['updated'] ?? null) ? 'The approval request was updated.' : '';
+            return $this->detail($session, $detail, $notice);
+        }
+
+        $decision = $this->decision($request->getUri()->getPath());
+        if ($decision === null || !$this->allowed($detail, $decision)) {
+            return $this->notFound($session);
+        }
+        $form = PortalRequest::form($request);
+        try {
+            $verification = $this->transactions->transactional(function () use (
+                $session,
+                $context,
+                $decision,
+                $form,
+                $request,
+                $requestId,
+            ): StepUpVerification {
+                $verification = $this->verify($session, $decision, $form, $request);
+                $mfa = $session->identity->principal->context(
+                    $session->identity->context->site,
+                    AuthenticationStrength::MultiFactor,
+                    $context->requestId(),
+                    $context->correlationId(),
+                    AuthenticatedSurface::Portal,
+                    $session->identity->context->membership,
+                    $verification->rotatedSession->sessionId,
+                    $this->proofs->adapt($verification),
+                );
+                if ($decision === 'approve') {
+                    $this->approvals->approve($mfa, $requestId, $this->reason($form));
+                } elseif ($decision === 'reject') {
+                    $this->approvals->reject($mfa, $requestId, $this->reason($form));
+                } else {
+                    $this->approvals->revoke($mfa, $requestId);
+                }
+
+                return $verification;
+            });
+        } catch (AuthenticationThrottled $exception) {
+            return $this->detail($session, $detail, '', $exception->getMessage(), 429, ['Retry-After' => '900']);
+        } catch (StepUpRejected) {
+            return $this->detail(
+                $session,
+                $detail,
+                '',
+                'The verification code is invalid, expired, or already used.',
+                403,
+            );
+        } catch (\InvalidArgumentException $exception) {
+            return $this->detail($session, $detail, '', $exception->getMessage(), 422);
+        } catch (ApprovalDenied | AuthorizationDenied) {
+            $fresh = $this->queries->detail($context, $requestId);
+            return $fresh instanceof ApprovalRequestView
+                ? $this->detail(
+                    $session,
+                    $fresh,
+                    '',
+                    'The approval request changed or the decision is no longer permitted.',
+                    409,
+                )
+                : $this->notFound($session);
+        }
+
+        return new RedirectResponse('/portal/approvals/' . rawurlencode($requestId) . '?updated=1', 303, [
+            'Cache-Control' => 'no-store',
+            'Set-Cookie' => $this->cookie($verification->rotatedSession->cookieToken),
+        ]);
+    }
+
+    /**
+     * Render the actor's scoped approval inbox without exposing unavailable requests.
+     *
+     * @param   PortalSession             $session    Resolved portal session.
+     * @param   list<ApprovalRequestView> $approvals  Scoped approval projections.
+     * @param   string                    $notice     Optional status message.
+     *
+     * @return  ResponseInterface  Non-cacheable approval inbox response.
+     *
+     * @since  2.0.0
+     */
+    private function inbox(PortalSession $session, array $approvals, string $notice = ''): ResponseInterface
+    {
+        return new HtmlResponse($this->renderer->render('approvals', [
+            'approvals' => $approvals,
+            'notice' => $notice,
+            'active_navigation' => 'core.portal-approvals',
+        ], $session), 200, ['Cache-Control' => 'no-store']);
+    }
+
+    /**
+     * Render one scoped approval request and its currently permitted controls.
+     *
+     * @param   PortalSession          $session   Resolved portal session.
+     * @param   ApprovalRequestView    $approval  Scoped approval projection.
+     * @param   string                 $notice    Optional success message.
+     * @param   string                 $error     Optional protected error message.
+     * @param   int                    $status    HTTP status code.
+     * @param   array<string, string>  $headers   Additional response headers.
+     *
+     * @return  ResponseInterface  Non-cacheable approval detail response.
+     *
+     * @since  2.0.0
+     */
+    private function detail(
+        PortalSession $session,
+        ApprovalRequestView $approval,
+        string $notice = '',
+        string $error = '',
+        int $status = 200,
+        array $headers = [],
+    ): ResponseInterface {
+        return new HtmlResponse($this->renderer->render('approval-detail', [
+            'approval' => $approval,
+            'notice' => $notice,
+            'error' => $error,
+            'active_navigation' => 'core.portal-approvals',
+        ], $session), $status, ['Cache-Control' => 'no-store'] + $headers);
+    }
+
+    /**
+     * Return the same not-found response for absent and unauthorized approval requests.
+     *
+     * @param   PortalSession          $session  Resolved portal session.
+     * @param   array<string, string>  $headers  Additional response headers.
+     *
+     * @return  ResponseInterface  Non-enumerating not-found response.
+     *
+     * @since  2.0.0
+     */
+    private function notFound(PortalSession $session, array $headers = []): ResponseInterface
+    {
+        return new HtmlResponse($this->renderer->render('approval-not-found', [
+            'active_navigation' => 'core.portal-approvals',
+        ], $session), 404, ['Cache-Control' => 'no-store'] + $headers);
+    }
+
+    /**
+     * Resolve the protected decision from the server-owned route path.
+     *
+     * @param   string  $path  Matched portal request path.
+     *
+     * @return  ?string  Decision suffix, or null for an unsupported path.
+     *
+     * @since  2.0.0
+     */
+    private function decision(string $path): ?string
+    {
+        foreach (['approve', 'reject', 'revoke'] as $decision) {
+            if (str_ends_with($path, '/' . $decision)) {
+                return $decision;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Check the projection's live decision eligibility before requesting step-up.
+     *
+     * @param   ApprovalRequestView  $detail    Scoped approval projection.
+     * @param   string               $decision  Server-resolved decision suffix.
+     *
+     * @return  bool  Whether the current actor may perform the decision.
+     *
+     * @since  2.0.0
+     */
+    private function allowed(ApprovalRequestView $detail, string $decision): bool
+    {
+        return $decision === 'revoke' ? $detail->canRevoke : $detail->canApprove;
+    }
+
+    /**
+     * Verify the server-selected decision purpose through TOTP or one recovery code.
+     *
+     * @param   PortalSession          $session   Resolved portal session.
+     * @param   string                 $decision  Server-resolved decision suffix.
+     * @param   array<string, string>  $form      Parsed decision form.
+     * @param   ServerRequestInterface $request   Request carrying the trusted source address.
+     *
+     * @return  StepUpVerification  Fresh proof and rotated portal session.
+     *
+     * @since  2.0.0
+     */
+    private function verify(
+        PortalSession $session,
+        string $decision,
+        array $form,
+        ServerRequestInterface $request,
+    ): StepUpVerification {
+        $intent = $this->intent($session, 'business.approval.' . $decision);
+        return match ($form['verification_method'] ?? '') {
+            'totp' => $this->stepUp->challenge($intent, $form['verification'] ?? '', $this->source($request)),
+            'recovery' => $this->stepUp->recover(
+                $intent,
+                $form['verification'] ?? '',
+                $this->source($request),
+            ),
+            default => throw new \InvalidArgumentException('Choose an authenticator or recovery code.'),
+        };
+    }
+
+    /**
+     * Build an exact portal-session-bound step-up intent.
+     *
+     * @param   PortalSession  $session  Resolved portal session and membership scope.
+     * @param   string         $purpose  Server-selected proof purpose.
+     *
+     * @return  StepUpIntent  Intent bound to actor, session, scope, purpose, and security epoch.
+     *
+     * @since  2.0.0
+     */
+    private function intent(PortalSession $session, string $purpose): StepUpIntent
+    {
+        $membership = $session->identity->context->membership;
+        return new StepUpIntent(
+            $session->identity->principal->subject(),
+            $session->id,
+            $session->identity->context->site->identifier(),
+            $membership?->organization()->identifier(),
+            $membership?->workspace()?->identifier(),
+            $purpose,
+            $session->identity->securityEpoch,
+        );
+    }
+
+    /**
+     * Read the trusted client address used by the verification throttle.
+     *
+     * @param   ServerRequestInterface  $request  Request carrying the trusted-proxy result.
+     *
+     * @return  string  Trusted client address or a stable unknown marker.
+     *
+     * @since  2.0.0
+     */
+    private function source(ServerRequestInterface $request): string
+    {
+        $source = $request->getAttribute(TrustedProxyMiddleware::ATTRIBUTE_CLIENT_ADDRESS, 'unknown');
+        return is_string($source) && $source !== '' ? $source : 'unknown';
+    }
+
+    /**
+     * Normalize an optional human-readable decision reason.
+     *
+     * @param   array<string, string>  $form  Parsed decision form.
+     *
+     * @return  ?string  Trimmed reason, or null when omitted.
+     *
+     * @since  2.0.0
+     */
+    private function reason(array $form): ?string
+    {
+        $reason = trim($form['reason'] ?? '');
+        return $reason === '' ? null : $reason;
+    }
+
+    /**
+     * Serialize a host-only portal session cookie with strict browser protections.
+     *
+     * @param   string  $token  Opaque rotated portal cookie token.
+     *
+     * @return  string  Set-Cookie header value constrained to the portal path.
+     *
+     * @since  2.0.0
+     */
+    private function cookie(string $token): string
+    {
+        return sprintf(
+            '%s=%s; Path=/portal; Max-Age=%d; HttpOnly; SameSite=Strict%s',
+            PortalSessionMiddleware::COOKIE_NAME,
+            $token,
+            $this->sessionLifetime,
+            $this->secureCookie ? '; Secure' : '',
+        );
+    }
+}

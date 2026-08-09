@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Kumwe\CMS\BusinessRecord\Application;
 
 use Kumwe\CMS\BusinessRecord\Domain\BusinessRecordRevision;
+use Kumwe\CMS\BusinessRecord\Domain\RecordScope;
+use Kumwe\CMS\BusinessSecurity\Application\BusinessRecordAccessPlan;
 
 /**
  * Port for the append-only log that keeps every past state of a business record.
@@ -82,16 +84,22 @@ interface BusinessRecordRevisionRepository
      * record within that scope but is not proof of one: a caller that requires a single subject checks
      * that the returned entries all carry the same record key.
      *
-     * @param   string   $definitionId            UUID of the entity type whose log is read.
-     * @param   string   $siteIdentifier          Site the record belonged to.
-     * @param   ?string  $organizationIdentifier  Organization branch within that site, or null to match
-     *          the entries written site-wide.
-     * @param   string   $recordIdentityDigest    Keyed 64-character digest of the record's caller-facing
+     * The immutable row predicate is compiled against the stored revision snapshot and executes in the
+     * same statement as the identity digest, scope, ordering and limit. A denied snapshot therefore never
+     * leaves persistence and cannot trigger checksum mapping or a definition-version follow-up lookup.
+     *
+     * @param   ResolvedBusinessDefinition  $resolved              Installed definition whose current
+     *          immutable record policy is applied to the stored snapshot.
+     * @param   RecordScope                 $scope                 Site and organization the revision must
+     *          belong to.
+     * @param   BusinessRecordAccessPlan    $access                Default-deny row decision compiled into
+     *          the revision query before ordering and limiting.
+     * @param   string                      $recordIdentityDigest  Keyed 64-character digest of the record's
      *          identity, as `RecordFingerprint::digest()` produces it.
-     * @param   int      $limit                   Most rows to return; implementations reject an
+     * @param   int                         $limit                 Most rows to return; implementations reject an
      *          unbounded or oversized window.
-     * @param   ?int     $beforeVersion           Exclusive upper bound on record version, taken from the
-     *          oldest entry of the previous page; null starts at the newest entry.
+     * @param   ?int                        $beforeVersion         Exclusive upper record-version bound from
+     *          the oldest entry of the previous page; null starts at the newest entry.
      *
      * @return  list<BusinessRecordRevision>  Entries ordered by record version and then revision number,
      *          both descending; empty when no history matches the digest in this scope.
@@ -104,9 +112,9 @@ interface BusinessRecordRevisionRepository
      * @since   2.0.0
      */
     public function historyByIdentityDigest(
-        string $definitionId,
-        string $siteIdentifier,
-        ?string $organizationIdentifier,
+        ResolvedBusinessDefinition $resolved,
+        RecordScope $scope,
+        BusinessRecordAccessPlan $access,
         string $recordIdentityDigest,
         int $limit,
         ?int $beforeVersion = null,

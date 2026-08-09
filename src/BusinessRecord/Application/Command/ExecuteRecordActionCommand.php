@@ -51,6 +51,8 @@ final readonly class ExecuteRecordActionCommand
      *          rejects anything but an empty map.
      * @param   ?string               $organizationIdentifier  Organization the record is scoped to, or null for
      *          a type that is not organization-scoped.
+     * @param   ?string               $approvalRequestId       Exact approved maker-checker request for a
+     *          high-impact action, or null while requesting approval or for ordinary actions.
      *
      * @throws  \InvalidArgumentException  When the definition identifier, record identity, expected version,
      *          action handle or organization identifier fails its format rule, or the input is oversized or
@@ -67,6 +69,7 @@ final readonly class ExecuteRecordActionCommand
         public IdempotencyKey $idempotencyKey,
         array $input = [],
         public ?string $organizationIdentifier = null,
+        public ?string $approvalRequestId = null,
     ) {
         RecordRequestGuard::definition($definitionIdentifier);
         RecordRequestGuard::record($recordId);
@@ -74,6 +77,9 @@ final readonly class ExecuteRecordActionCommand
         RecordRequestGuard::handle($action, 'action');
         RecordRequestGuard::organization($organizationIdentifier);
         RecordRequestGuard::values($input, true);
+        if ($approvalRequestId !== null && !\Ramsey\Uuid\Uuid::isValid($approvalRequestId)) {
+            throw new \InvalidArgumentException('The approval request identity must be a canonical UUID.');
+        }
         $this->input = $input;
     }
 }

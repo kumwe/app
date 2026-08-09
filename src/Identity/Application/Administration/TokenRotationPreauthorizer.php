@@ -78,9 +78,29 @@ final readonly class TokenRotationPreauthorizer
         if ($token['site_identifier'] !== $context->site()->identifier()) {
             throw new InvalidArgumentException('A token cannot be rotated outside its site context.');
         }
-        $delegation = $this->delegation->authorize($context, $token['email'], $token['capabilities']);
+        if (
+            ($token['organization_identifier'] ?? null) !== $context->organization()?->identifier()
+            || ($token['workspace_identifier'] ?? null) !== $context->workspace()?->identifier()
+        ) {
+            throw new InvalidArgumentException('A token cannot be rotated outside its exact authority context.');
+        }
+        $delegation = $this->delegation->authorize(
+            $context,
+            $token['email'],
+            $token['capabilities'],
+            $lock,
+        );
         if ($delegation->subjectId !== $token['subject_id']) {
             throw new InvalidArgumentException('The active token subject changed during authorization.');
+        }
+        if (
+            $delegation->organization !== ($token['organization_identifier'] ?? null)
+            || $delegation->workspace !== ($token['workspace_identifier'] ?? null)
+            || $delegation->membershipId !== ($token['membership_id'] ?? null)
+            || $delegation->membershipVersion !== ($token['membership_version'] ?? null)
+            || $delegation->policyGeneration !== ($token['policy_generation'] ?? null)
+        ) {
+            throw new InvalidArgumentException('The token subject membership changed during rotation authorization.');
         }
 
         /** @var non-empty-list<string> $capabilities */
@@ -92,6 +112,14 @@ final readonly class TokenRotationPreauthorizer
             $token['site_identifier'],
             $token['audience'],
             $token['purpose'],
+            $token['expires_at'],
+            $token['organization_identifier'] ?? null,
+            $token['workspace_identifier'] ?? null,
+            $token['membership_id'] ?? null,
+            $token['membership_version'] ?? null,
+            $token['policy_generation'] ?? null,
+            $token['family_id'] ?? $tokenId,
+            $token['delegation_depth'] ?? 0,
         );
     }
 }

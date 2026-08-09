@@ -6,6 +6,7 @@ namespace Kumwe\CMS\Identity\Infrastructure\Administration;
 
 use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\Platforms\SQLitePlatform;
 use Doctrine\DBAL\Types\Types;
 use InvalidArgumentException;
 use JsonException;
@@ -586,7 +587,7 @@ final readonly class DoctrineAccessControlRepository implements AccessControlRep
      * @param   bool    $lock     Whether to append `FOR UPDATE` and hold the rows for the transaction.
      *
      * @return  array{subject_id: string, email: string, capabilities: list<string>, site_identifier: string,
-     *          audience: string, purpose: string}|null  Null when the token is absent or no longer usable.
+     *          audience: string, purpose: string, expires_at: DateTimeImmutable}|null  Null when absent or unusable.
      *
      * @throws  JsonException  When the stored capability inventory is not decodable JSON; unlike
      *          `tokens()`, this path lets the decoder error propagate.
@@ -598,13 +599,15 @@ final readonly class DoctrineAccessControlRepository implements AccessControlRep
     public function activeTokenForRotation(string $tokenId, bool $lock = false): ?array
     {
         $row = $this->database->fetchAssociative(sprintf(
-            'SELECT t.subject_id, u.email, t.capabilities, t.site_identifier, t.audience, t.purpose FROM %s t '
+            'SELECT t.subject_id, u.email, t.capabilities, t.site_identifier, t.audience, t.purpose, '
+            . 't.organization_identifier, t.workspace_identifier, t.membership_id, t.membership_version, '
+            . 't.policy_generation, t.family_id, t.delegation_depth, t.expires_at FROM %s t '
             . 'INNER JOIN %s u ON u.id = t.subject_id WHERE t.id = ? AND t.revoked_at IS NULL '
             . 'AND t.security_epoch = u.security_epoch '
             . "AND t.expires_at > CURRENT_TIMESTAMP AND u.status = 'active'%s",
             $this->tables->quoted('api_tokens'),
             $this->tables->quoted('users'),
-            $lock ? ' FOR UPDATE' : '',
+            $lock && !($this->database->getDatabasePlatform() instanceof SQLitePlatform) ? ' FOR UPDATE' : '',
         ), [$tokenId]);
         if ($row === false) {
             return null;
@@ -626,12 +629,27 @@ final readonly class DoctrineAccessControlRepository implements AccessControlRep
         $site = $row['site_identifier'] ?? null;
         $audience = $row['audience'] ?? null;
         $purpose = $row['purpose'] ?? null;
+        $organization = $row['organization_identifier'] ?? null;
+        $workspace = $row['workspace_identifier'] ?? null;
+        $membershipId = $row['membership_id'] ?? null;
+        $storedExpiry = $row['expires_at'] ?? null;
+        try {
+            $expiresAt = $storedExpiry instanceof DateTimeImmutable
+                ? $storedExpiry
+                : (is_string($storedExpiry) ? new DateTimeImmutable($storedExpiry) : null);
+        } catch (\Exception $exception) {
+            throw new RuntimeException('The active token expiry is invalid.', 0, $exception);
+        }
         if (
             !is_string($subjectId)
             || !is_string($email)
             || !is_string($site)
             || !is_string($audience)
             || !is_string($purpose)
+            || ($organization !== null && !is_string($organization))
+            || ($workspace !== null && !is_string($workspace))
+            || ($membershipId !== null && !is_string($membershipId))
+            || !$expiresAt instanceof DateTimeImmutable
         ) {
             throw new RuntimeException('The active token rotation record is invalid.');
         }
@@ -642,6 +660,14 @@ final readonly class DoctrineAccessControlRepository implements AccessControlRep
             'site_identifier' => $site,
             'audience' => $audience,
             'purpose' => $purpose,
+            'organization_identifier' => $organization,
+            'workspace_identifier' => $workspace,
+            'membership_id' => $membershipId,
+            'membership_version' => $this->nullablePositiveInteger($row['membership_version'] ?? null),
+            'policy_generation' => $this->nullablePositiveInteger($row['policy_generation'] ?? null),
+            'family_id' => is_string($row['family_id'] ?? null) ? $row['family_id'] : $tokenId,
+            'delegation_depth' => $this->nonNegativeInteger($row['delegation_depth'] ?? 0),
+            'expires_at' => $expiresAt,
         ];
     }
 
@@ -835,6 +861,82 @@ final readonly class DoctrineAccessControlRepository implements AccessControlRep
     }
 
     /**
+     * Resolve live membership-role authority for one exact organization and optional workspace.
+     *
+     * @param   string   $userId                  User whose membership authority is being verified.
+     * @param   string   $siteIdentifier          Site that must own the organization.
+     * @param   string   $organizationIdentifier  Exact organization selected for the token.
+     * @param   ?string  $workspaceIdentifier     Optional exact workspace selected for the token.
+     * @param   bool     $lock                    Whether to lock the membership snapshot for token issuance.
+     *
+     * @return  ?array{membership_id: string, membership_version: int, policy_generation: int,
+     *          organization_identifier: string, workspace_identifier: ?string,
+     *          grants: list<array{capability: string, scope_type: string, scope_identifier: ?string}>}
+     *          Exact membership authority, or null when the requested context is unavailable.
+     *
+     * @since   2.0.0
+     */
+    public function organizationMembershipAuthority(
+        string $userId,
+        string $siteIdentifier,
+        string $organizationIdentifier,
+        ?string $workspaceIdentifier,
+        bool $lock = false,
+    ): ?array {
+        $parameters = [
+            $userId,
+            $siteIdentifier,
+            $organizationIdentifier,
+            $workspaceIdentifier,
+            $workspaceIdentifier,
+        ];
+        $row = $this->database->fetchAssociative(sprintf(
+            'SELECT m.id, m.version, o.policy_generation FROM %s m '
+            . 'INNER JOIN %s o ON o.id = m.organization_id '
+            . "WHERE m.user_id = ? AND m.status = 'active' AND m.valid_from <= CURRENT_TIMESTAMP "
+            . 'AND (m.valid_until IS NULL OR m.valid_until > CURRENT_TIMESTAMP) '
+            . "AND o.site_identifier = ? AND o.identifier = ? AND o.status = 'active' "
+            . 'AND (? IS NULL OR EXISTS (SELECT 1 FROM %s mw INNER JOIN %s w ON w.id = mw.workspace_id '
+            . 'WHERE mw.membership_id = m.id AND w.organization_id = o.id AND w.identifier = ? '
+            . "AND w.status = 'active'))%s",
+            $this->tables->quoted('organization_memberships'),
+            $this->tables->quoted('organizations'),
+            $this->tables->quoted('membership_workspaces'),
+            $this->tables->quoted('workspaces'),
+            $lock
+                && !($this->database->getDatabasePlatform() instanceof \Doctrine\DBAL\Platforms\SQLitePlatform)
+                ? ' FOR UPDATE'
+                : '',
+        ), $parameters);
+        if ($row === false) {
+            return null;
+        }
+        $membershipId = $row['id'] ?? null;
+        if (!is_string($membershipId)) {
+            throw new RuntimeException('A stored organization membership identity is invalid.');
+        }
+        /** @var list<array{capability: string, scope_type: string, scope_identifier: ?string}> $grants */
+        $grants = $this->database->fetchAllAssociative(sprintf(
+            'SELECT DISTINCT g.capability_code AS capability, g.scope_type, g.scope_identifier '
+            . 'FROM %s mr INNER JOIN %s g ON g.role_id = mr.role_id WHERE mr.membership_id = ? '
+            . 'ORDER BY g.capability_code, g.scope_type, g.scope_identifier',
+            $this->tables->quoted('membership_roles'),
+            $this->tables->quoted('role_capability_grants'),
+        ), [$membershipId]);
+
+        return [
+            'membership_id' => $membershipId,
+            'membership_version' => $this->nullablePositiveInteger($row['version'] ?? null)
+                ?? throw new RuntimeException('A stored membership version is invalid.'),
+            'policy_generation' => $this->nullablePositiveInteger($row['policy_generation'] ?? null)
+                ?? throw new RuntimeException('A stored organization policy generation is invalid.'),
+            'organization_identifier' => $organizationIdentifier,
+            'workspace_identifier' => $workspaceIdentifier,
+            'grants' => $grants,
+        ];
+    }
+
+    /**
      * Read one capability grant by its identifier.
      *
      * Revocation reads the grant first so it can authorize against the role that holds it. The owning
@@ -954,11 +1056,15 @@ final readonly class DoctrineAccessControlRepository implements AccessControlRep
     }
 
     /**
-     * Advance the security epoch of every user currently holding a role.
+     * Advance the security epoch of every user attached to a role by either assignment path.
      *
      * A role carries no epoch of its own, so changing what it confers has to be pushed down to each
-     * member individually. Membership is read once before the loop, which means a user assigned the role
-     * after that read is not covered — callers hold the role lock to close that window.
+     * user individually. Both installation-wide assignments and organization membership assignments
+     * are included without lifecycle or site filtering: an old credential must remain stale if a user,
+     * membership or organization is later reactivated. `UNION` deduplicates a user attached through
+     * both paths before their epoch is incremented. Membership is read once before the loop, which means
+     * a user assigned the role after that read is not covered — callers hold the role lock to close that
+     * window.
      *
      * @param   string  $roleId  UUID of the role whose members are invalidated.
      *
@@ -972,13 +1078,65 @@ final readonly class DoctrineAccessControlRepository implements AccessControlRep
     private function incrementRoleMembersEpoch(string $roleId): void
     {
         $users = $this->database->fetchFirstColumn(sprintf(
-            'SELECT user_id FROM %s WHERE role_id = ?',
+            'SELECT ur.user_id FROM %s ur WHERE ur.role_id = ? '
+            . 'UNION SELECT m.user_id FROM %s mr INNER JOIN %s m ON m.id = mr.membership_id '
+            . 'WHERE mr.role_id = ? ORDER BY user_id',
             $this->tables->quoted('user_roles'),
-        ), [$roleId]);
+            $this->tables->quoted('membership_roles'),
+            $this->tables->quoted('organization_memberships'),
+        ), [$roleId, $roleId]);
         foreach ($users as $userId) {
             if (is_string($userId)) {
                 $this->incrementSecurityEpoch($userId);
             }
         }
+    }
+
+    /**
+     * Decode an optional positive integer returned by different database drivers.
+     *
+     * @param   mixed  $value  Nullable raw column value.
+     *
+     * @return  ?int  Positive integer or null.
+     *
+     * @throws  RuntimeException  When a non-null value is not positive integer text or an integer.
+     *
+     * @since   2.0.0
+     */
+    private function nullablePositiveInteger(mixed $value): ?int
+    {
+        if ($value === null) {
+            return null;
+        }
+        $integer = $this->nonNegativeInteger($value);
+        if ($integer < 1) {
+            throw new RuntimeException('A stored token generation is invalid.');
+        }
+
+        return $integer;
+    }
+
+    /**
+     * Decode a non-negative integer returned by different database drivers.
+     *
+     * @param   mixed  $value  Raw integer column value.
+     *
+     * @return  int  Non-negative integer.
+     *
+     * @throws  RuntimeException  When the value cannot represent a non-negative integer.
+     *
+     * @since   2.0.0
+     */
+    private function nonNegativeInteger(mixed $value): int
+    {
+        if (!is_int($value) && (!is_string($value) || preg_match('/^[0-9]+$/D', $value) !== 1)) {
+            throw new RuntimeException('A stored token delegation depth is invalid.');
+        }
+        $integer = (int) $value;
+        if ($integer < 0) {
+            throw new RuntimeException('A stored token delegation depth is invalid.');
+        }
+
+        return $integer;
     }
 }

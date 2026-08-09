@@ -41,6 +41,16 @@ enum AuthenticationStrength: string
     case BearerToken = 'bearer_token';
 
     /**
+     * A signed-in human completed a fresh multi-factor challenge in the current rotated session.
+     *
+     * The accompanying `StepUpProof`, rather than this label alone, supplies the actor, session, scope,
+     * method and freshness bindings a high-impact action must verify.
+     *
+     * @since  2.0.0
+     */
+    case MultiFactor = 'multi_factor';
+
+    /**
      * No human is behind the request: the context was issued to a trusted in-process identity.
      *
      * Reserved for `ExecutionContext::issueSystem()` and the `SystemIdentity` cases behind it, such as

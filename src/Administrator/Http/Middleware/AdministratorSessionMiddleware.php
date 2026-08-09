@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\CMS\Administrator\Http\Middleware;
 
 use Kumwe\CMS\Application\Authorization\AuthenticationStrength;
+use Kumwe\CMS\Application\Authorization\AuthenticatedSurface;
 use Kumwe\CMS\Application\Authorization\AuthorizationDenied;
 use Kumwe\CMS\Application\Authorization\AuthorizationGateway;
 use Kumwe\CMS\Application\Authorization\AuthorizationResource;
@@ -107,9 +108,12 @@ final readonly class AdministratorSessionMiddleware implements MiddlewareInterfa
         }
 
         $context = $session->principal->context(
-            $this->site ?? SiteContext::default(),
+            $session->site ?? $this->site ?? SiteContext::default(),
             AuthenticationStrength::Password,
             $this->requestId($request),
+            surface: AuthenticatedSurface::Administrator,
+            membership: $session->membership,
+            sessionId: $session->id,
         );
         try {
             $this->authorization->assertAllowed(

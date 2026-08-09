@@ -12,6 +12,7 @@ use Kumwe\CMS\Extension\Contribution\ExtensionContributionRegistrySet;
 use Kumwe\CMS\Extension\Contribution\ManifestContributionSet;
 use Kumwe\CMS\Administrator\Presentation\AdministratorRenderer;
 use Kumwe\CMS\Presentation\ThemeSurface;
+use Kumwe\CMS\Portal\Presentation\PortalRenderer;
 use LogicException;
 use Mezzio\Application;
 
@@ -133,6 +134,14 @@ final class ActiveExtensionSet
     ];
 
     /**
+     * Portal template directories keyed by contributing extension identifier.
+     *
+     * @var    array<string, string>
+     * @since  2.0.0
+     */
+    private array $portalTemplatePaths = [];
+
+    /**
      * Record the template directory of the theme activated for one surface.
      *
      * @param   ThemeSurface  $surface  Surface the theme was activated for.
@@ -171,6 +180,21 @@ final class ActiveExtensionSet
     public function addExtensionViewPath(ThemeSurface $surface, string $identifier, string $path): void
     {
         $this->extensionViewPaths[$surface->value][$identifier] = $path;
+    }
+
+    /**
+     * Record one extension's isolated portal template directory.
+     *
+     * @param   string  $identifier  Contributing extension used as the Twig namespace.
+     * @param   string  $path        Absolute directory containing portal templates.
+     *
+     * @return  void
+     *
+     * @since  2.0.0
+     */
+    public function addPortalTemplatePath(string $identifier, string $path): void
+    {
+        $this->portalTemplatePaths[$identifier] = $path;
     }
 
     /**
@@ -276,6 +300,8 @@ final class ActiveExtensionSet
      * @param   Application            $application  Mezzio application the routes are declared on.
      * @param   AdministratorRenderer  $renderer     Renderer handed to each contributed administrator
      *          route handler when it is built.
+     * @param   ?PortalRenderer         $portalRenderer Renderer handed to contributed portal handlers, or null
+     *          when composing the recovery-only application.
      *
      * @return  void
      *
@@ -284,7 +310,11 @@ final class ActiveExtensionSet
      *
      * @since   2.0.0
      */
-    public function registerRoutes(Application $application, AdministratorRenderer $renderer): void
+    public function registerRoutes(
+        Application $application,
+        AdministratorRenderer $renderer,
+        ?PortalRenderer $portalRenderer = null,
+    ): void
     {
         foreach ($this->extensions as $extension) {
             if ($extension['provider'] instanceof RuntimeExtension) {
@@ -304,6 +334,9 @@ final class ActiveExtensionSet
         $trust = $this->trust
             ?? throw new LogicException('Administrator extension routes require an installed trust boundary.');
         $this->contributions->routes()->registerInto($application, $trust, $renderer);
+        if ($portalRenderer instanceof PortalRenderer) {
+            $this->contributions->portalRoutes()->registerInto($application, $trust, $portalRenderer);
+        }
     }
 
     /**
@@ -362,6 +395,18 @@ final class ActiveExtensionSet
     public function extensionViewPaths(ThemeSurface $surface): array
     {
         return $this->extensionViewPaths[$surface->value];
+    }
+
+    /**
+     * List the extension template directories available to the portal renderer.
+     *
+     * @return  array<string, string>  Absolute paths keyed by extension Twig namespace.
+     *
+     * @since  2.0.0
+     */
+    public function portalTemplatePaths(): array
+    {
+        return $this->portalTemplatePaths;
     }
 
     /**

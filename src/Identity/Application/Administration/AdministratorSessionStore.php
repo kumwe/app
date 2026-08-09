@@ -56,6 +56,31 @@ interface AdministratorSessionStore
     public function find(string $token, string $userAgent): ?AdministratorSession;
 
     /**
+     * Rotate a live session onto one exact organization/workspace membership selection.
+     *
+     * The supplied identifiers only select among the actor's current memberships. Implementations
+     * resolve them from storage, rotate both session and CSRF credentials, and return the new token once;
+     * an absent, stale or foreign selection fails without changing the existing session.
+     *
+     * @param   ExecutionContext  $context                 Current administrator context and session identity.
+     * @param   string            $organizationIdentifier  Organization the actor asks to enter.
+     * @param   ?string           $workspaceIdentifier     Optional workspace inside that organization.
+     * @param   string            $userAgent               Client binding for the replacement session.
+     *
+     * @return  CreatedAdministratorSession  Replacement session and one-time opaque cookie token.
+     *
+     * @throws  \InvalidArgumentException  When the context has no current session or the selection is not live.
+     *
+     * @since   2.0.0
+     */
+    public function selectMembership(
+        ExecutionContext $context,
+        string $organizationIdentifier,
+        ?string $workspaceIdentifier,
+        string $userAgent,
+    ): CreatedAdministratorSession;
+
+    /**
      * End one session immediately, as a sign-out does.
      *
      * @param   ExecutionContext  $context    Actor, site and request identifiers the sign-out runs under.

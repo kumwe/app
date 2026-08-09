@@ -8,6 +8,11 @@ use InvalidArgumentException;
 use Kumwe\CMS\BusinessDefinition\Domain\DefinitionOwner;
 use Kumwe\CMS\BusinessDefinition\Domain\EntityTypeDefinition;
 use Kumwe\CMS\BusinessDefinition\Domain\FieldTypeDefinition;
+use Kumwe\CMS\Portal\Contribution\PortalNavigationDefinition;
+use Kumwe\CMS\Portal\Contribution\PortalRouteDefinition;
+use Kumwe\CMS\Portal\Contribution\PortalRouteHandlerFactory;
+use Kumwe\CMS\Portal\Contribution\PortalTemplateDefinition;
+use Kumwe\CMS\Portal\Contribution\PortalWorkspaceDefinition;
 
 /**
  * The single-owner, single-phase registrar an extension actually contributes through.
@@ -80,10 +85,15 @@ final class OwnedExtensionContributionRegistrar implements ExtensionContribution
     ) {
         $this->expected = [
             'capability' => $this->index($declared->capabilities()),
+            'resource_policy' => $this->index($declared->resourcePolicies()),
             'workspace' => $this->index($declared->workspaces()),
             'navigation' => $this->index($declared->navigation()),
             'view' => $this->index($declared->views()),
             'route' => $this->index($declared->routes()),
+            'portal_workspace' => $this->index($declared->portalWorkspaces()),
+            'portal_navigation' => $this->index($declared->portalNavigation()),
+            'portal_template' => $this->index($declared->portalTemplates()),
+            'portal_route' => $this->index($declared->portalRoutes()),
             'field_type' => $this->businessIndex($declared->fieldTypes()),
             'business_definition' => $this->businessIndex($declared->businessDefinitions()),
         ];
@@ -106,6 +116,29 @@ final class OwnedExtensionContributionRegistrar implements ExtensionContribution
     {
         $this->accept('capability', $definition->id, $definition->toArray());
         $this->registries->capabilities()->register($this->owner, $definition);
+    }
+
+    /**
+     * Reconcile a resource policy and activate it in the shared authorization registry.
+     *
+     * The bound capability must already have been registered by this owner, so contribution order is
+     * part of the privilege boundary rather than a deferred reference that could resolve to someone else.
+     *
+     * @param   ResourcePolicyDefinition  $definition  Owner-bound action/resource declaration.
+     *
+     * @return  void
+     *
+     * @throws  InvalidArgumentException  When the policy is foreign, repeated, undeclared or altered,
+     *          references a missing or foreign capability, grants a system identity from an extension,
+     *          or collides with an existing binding.
+     * @throws  \LogicException  When the contribution phase has already been completed.
+     *
+     * @since   2.0.0
+     */
+    public function resourcePolicy(ResourcePolicyDefinition $definition): void
+    {
+        $this->accept('resource_policy', $definition->id, $definition->toArray());
+        $this->registries->resourcePolicies()->register($this->owner, $definition);
     }
 
     /**
@@ -198,6 +231,67 @@ final class OwnedExtensionContributionRegistrar implements ExtensionContribution
     ): void {
         $this->accept('route', $definition->name, $definition->toArray());
         $this->registries->routes()->register($this->owner, $definition, $factory);
+    }
+
+    /**
+     * Reconcile and publish an owner-bound portal workspace.
+     *
+     * @param   PortalWorkspaceDefinition  $definition  Manifest-declared workspace.
+     *
+     * @return  void
+     *
+     * @since  2.0.0
+     */
+    public function portalWorkspace(PortalWorkspaceDefinition $definition): void
+    {
+        $this->accept('portal_workspace', $definition->id, $definition->toArray());
+        $this->registries->portalWorkspaces()->register($this->owner, $definition);
+    }
+
+    /**
+     * Reconcile and publish an owner-bound portal navigation item.
+     *
+     * @param   PortalNavigationDefinition  $definition  Manifest-declared navigation item.
+     *
+     * @return  void
+     *
+     * @since  2.0.0
+     */
+    public function portalNavigation(PortalNavigationDefinition $definition): void
+    {
+        $this->accept('portal_navigation', $definition->id, $definition->toArray());
+        $this->registries->portalNavigation()->register($this->owner, $definition);
+    }
+
+    /**
+     * Reconcile and publish an owner-bound portal template.
+     *
+     * @param   PortalTemplateDefinition  $definition  Manifest-declared template.
+     *
+     * @return  void
+     *
+     * @since  2.0.0
+     */
+    public function portalTemplate(PortalTemplateDefinition $definition): void
+    {
+        $this->accept('portal_template', $definition->name, $definition->toArray());
+        $this->registries->portalTemplates()->register($this->owner, $definition);
+    }
+
+    /**
+     * Reconcile and publish an owner-bound guarded portal route.
+     *
+     * @param   PortalRouteDefinition      $definition  Manifest-declared route.
+     * @param   PortalRouteHandlerFactory  $factory     Handler factory retained until mount time.
+     *
+     * @return  void
+     *
+     * @since  2.0.0
+     */
+    public function portalRoute(PortalRouteDefinition $definition, PortalRouteHandlerFactory $factory): void
+    {
+        $this->accept('portal_route', $definition->name, $definition->toArray());
+        $this->registries->portalRoutes()->register($this->owner, $definition, $factory);
     }
 
     /**

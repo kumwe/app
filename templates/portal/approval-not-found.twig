@@ -1,0 +1,12 @@
+{% extends 'portal/layout.twig' %}
+
+{% block title %}Approval unavailable · Kumwe Portal{% endblock %}
+
+{% block content %}
+<section aria-labelledby="approval-not-found-title">
+    <p class="eyebrow">Approval inbox</p>
+    <h1 id="approval-not-found-title">Approval request unavailable</h1>
+    <p>The request does not exist or is not visible in your current workspace.</p>
+    <p><a href="/portal/approvals">Return to the approval inbox</a></p>
+</section>
+{% endblock %}

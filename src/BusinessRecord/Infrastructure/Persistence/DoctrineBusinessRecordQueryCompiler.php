@@ -7,6 +7,8 @@ namespace Kumwe\CMS\BusinessRecord\Infrastructure\Persistence;
 use DateTimeImmutable;
 use DateTimeZone;
 use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\Platforms\AbstractMySQLPlatform;
+use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use Doctrine\DBAL\Types\Types;
 use InvalidArgumentException;
 use Kumwe\CMS\Application\Authorization\SiteContext;
@@ -46,6 +48,16 @@ use Kumwe\CMS\BusinessSchema\Domain\PhysicalColumnBlueprint;
 use Kumwe\CMS\BusinessSchema\Domain\PhysicalTableBlueprint;
 use Kumwe\CMS\BusinessSchema\Domain\SchemaEvolutionHints;
 use Kumwe\CMS\BusinessSchema\Domain\SchemaInstallationStatus;
+use Kumwe\CMS\BusinessSecurity\Application\BusinessRecordAccessPlan;
+use Kumwe\CMS\BusinessSecurity\Application\FieldAccessUsage;
+use Kumwe\CMS\BusinessSecurity\Policy\RecordPolicyBoolean;
+use Kumwe\CMS\BusinessSecurity\Policy\RecordPolicyBooleanOperator;
+use Kumwe\CMS\BusinessSecurity\Policy\RecordPolicyComparison;
+use Kumwe\CMS\BusinessSecurity\Policy\RecordPolicyComparisonOperator;
+use Kumwe\CMS\BusinessSecurity\Policy\RecordPolicyConstant;
+use Kumwe\CMS\BusinessSecurity\Policy\RecordPolicyNullCheck;
+use Kumwe\CMS\BusinessSecurity\Policy\RecordPolicyPredicate;
+use Kumwe\CMS\BusinessSecurity\Policy\RecordPolicyValueType;
 use Ramsey\Uuid\Uuid;
 
 /**
@@ -113,6 +125,7 @@ final readonly class DoctrineBusinessRecordQueryCompiler
      *          bound into the statement rather than written into it.
      * @param   RecordQuerySpecification    $specification  Filter, search, ordering, cursor, page size and
      *          projection of the page being read.
+     * @param   BusinessRecordAccessPlan    $access         Row, field and related-resource query decision.
      *
      * @return  CompiledRecordQuery  Page statement and optional aggregate statement with their bindings,
      *          the field handles the projection resolved to, the columns the next cursor is read from, and
@@ -128,9 +141,104 @@ final readonly class DoctrineBusinessRecordQueryCompiler
         ResolvedBusinessDefinition $resolved,
         RecordScope $scope,
         RecordQuerySpecification $specification,
+        BusinessRecordAccessPlan $access,
     ): CompiledRecordQuery {
         try {
-            return $this->doCompile($resolved, $scope, $specification);
+            return $this->doCompile($resolved, $scope, $specification, $access);
+        } catch (InvalidBusinessRecordQuery $exception) {
+            throw $exception;
+        } catch (InvalidArgumentException $exception) {
+            throw new InvalidBusinessRecordQuery($exception->getMessage());
+        }
+    }
+
+    /**
+     * Compile the access predicate used by a single-record or relationship read.
+     *
+     * The returned predicate targets the `r0` alias, matching the read repository's policy-sensitive
+     * statements. It is the same compiler used by browse, so direct reads and pages cannot disagree on
+     * allow/deny or null semantics.
+     *
+     * @param   ResolvedBusinessDefinition  $resolved  Pinned definition and installed schema being read.
+     * @param   RecordScope                 $scope     Site and organization entity references are confined to.
+     * @param   BusinessRecordAccessPlan    $access    Authoritative row and related-target decision.
+     * @param   ?PhysicalTableBlueprint     $table     Alternate installed line table, or null for records.
+     *
+     * @return  CompiledRecordPredicate  Definite-boolean SQL and ordered Doctrine bindings.
+     *
+     * @throws  InvalidBusinessRecordQuery  When the plan names another resource or an unavailable field/type.
+     *
+     * @since   2.0.0
+     */
+    public function compileAccessPredicate(
+        ResolvedBusinessDefinition $resolved,
+        RecordScope $scope,
+        BusinessRecordAccessPlan $access,
+        ?PhysicalTableBlueprint $table = null,
+    ): CompiledRecordPredicate {
+        try {
+            $this->assertAccessResource($resolved, $access);
+            $parameters = [];
+            $types = [];
+            $sql = $this->recordPolicy(
+                $resolved,
+                $table ?? $this->recordTable($resolved),
+                'r0',
+                $scope,
+                $access,
+                $parameters,
+                $types,
+            );
+
+            return new CompiledRecordPredicate($sql, $parameters, $types);
+        } catch (InvalidBusinessRecordQuery $exception) {
+            throw $exception;
+        } catch (InvalidArgumentException $exception) {
+            throw new InvalidBusinessRecordQuery($exception->getMessage());
+        }
+    }
+
+    /**
+     * Compile immutable row policy over the canonical JSON snapshot of a hard-deleted record revision.
+     *
+     * Hard-deleted history has no live row to join, so its identity-digest lookup must apply policy to the
+     * append-only snapshot itself. The returned predicate targets the fixed `rv0.snapshot` expression and
+     * preserves evaluator null, scalar-type, decimal and temporal semantics on both MySQL-compatible and
+     * PostgreSQL platforms. No policy-authored identifier or SQL fragment is accepted.
+     *
+     * @param   ResolvedBusinessDefinition  $resolved  Installed definition supplying the closed field schema.
+     * @param   BusinessRecordAccessPlan    $access    Default-deny policy resolved for history access.
+     *
+     * @return  CompiledRecordPredicate  Definite-boolean revision predicate and ordered bindings.
+     *
+     * @throws  InvalidBusinessRecordQuery  When the policy belongs to another resource, names an unavailable
+     *          field or scalar domain, or the configured database cannot query canonical JSON safely.
+     *
+     * @since   2.0.0
+     */
+    public function compileRevisionAccessPredicate(
+        ResolvedBusinessDefinition $resolved,
+        BusinessRecordAccessPlan $access,
+    ): CompiledRecordPredicate {
+        try {
+            $this->assertAccessResource($resolved, $access);
+            $platform = $this->database->getDatabasePlatform();
+            if (!$platform instanceof AbstractMySQLPlatform && !$platform instanceof PostgreSQLPlatform) {
+                throw new InvalidBusinessRecordQuery(
+                    'The configured database cannot enforce policy over revision snapshots.',
+                );
+            }
+            $parameters = [];
+            $types = [];
+            $sql = $this->revisionRecordPolicy(
+                $resolved,
+                $this->recordTable($resolved),
+                $access,
+                $parameters,
+                $types,
+            );
+
+            return new CompiledRecordPredicate($sql, $parameters, $types);
         } catch (InvalidBusinessRecordQuery $exception) {
             throw $exception;
         } catch (InvalidArgumentException $exception) {
@@ -154,6 +262,7 @@ final readonly class DoctrineBusinessRecordQueryCompiler
      *          confined to.
      * @param   RecordQuerySpecification    $specification  The page being read, already inside the bounds
      *          its own constructor enforces.
+     * @param   BusinessRecordAccessPlan    $access         Authorization decision compiled before paging.
      *
      * @return  CompiledRecordQuery  The compiled page, ready to execute.
      *
@@ -170,7 +279,9 @@ final readonly class DoctrineBusinessRecordQueryCompiler
         ResolvedBusinessDefinition $resolved,
         RecordScope $scope,
         RecordQuerySpecification $specification,
+        BusinessRecordAccessPlan $access,
     ): CompiledRecordQuery {
+        $this->assertAccessResource($resolved, $access);
         $table = $this->recordTable($resolved);
         $alias = 'r0';
         /** @var list<mixed> $parameters */
@@ -179,6 +290,15 @@ final readonly class DoctrineBusinessRecordQueryCompiler
         $types = [];
         $where = $this->scopePredicates($table, $alias, $scope, $parameters, $types);
         $this->lifecyclePredicates($table, $alias, $specification, $where);
+        $where[] = $this->recordPolicy(
+            $resolved,
+            $table,
+            $alias,
+            $scope,
+            $access,
+            $parameters,
+            $types,
+        );
         $counter = 0;
         if ($specification->filter !== null) {
             $where[] = $this->filter(
@@ -186,6 +306,8 @@ final readonly class DoctrineBusinessRecordQueryCompiler
                 $table,
                 $alias,
                 $scope,
+                $access,
+                FieldAccessUsage::Filter,
                 $specification->filter,
                 $parameters,
                 $types,
@@ -196,8 +318,12 @@ final readonly class DoctrineBusinessRecordQueryCompiler
             $search = [];
             foreach ($specification->search->fields as $handle) {
                 $field = $this->field($resolved->definition, $handle);
-                if (!$field->searchable || !$this->queryVisible($field)) {
-                    throw new InvalidBusinessRecordQuery('A requested search field is not searchable.');
+                if (
+                    !$field->searchable
+                    || !$this->queryVisible($field)
+                    || !$access->fields->allows(FieldAccessUsage::Search, $handle)
+                ) {
+                    throw new InvalidBusinessRecordQuery('A requested query field is unavailable.');
                 }
                 $columns = $this->fieldColumns($resolved->definition, $table, $field);
                 if (
@@ -220,8 +346,8 @@ final readonly class DoctrineBusinessRecordQueryCompiler
         $aggregateParameters = $parameters;
         $aggregateTypes = $types;
 
-        [$order, $cursorColumns] = $this->sorts($resolved, $table, $alias, $specification);
-        $cursorDigest = $this->cursorDigest($resolved, $scope, $specification);
+        [$order, $cursorColumns] = $this->sorts($resolved, $table, $alias, $specification, $access);
+        $cursorDigest = $this->cursorDigest($resolved, $scope, $specification, $access);
         if ($specification->after !== null) {
             $position = $this->cursors->decode($specification->after);
             if (!hash_equals($cursorDigest, $position->specificationDigest)) {
@@ -239,7 +365,7 @@ final readonly class DoctrineBusinessRecordQueryCompiler
             );
         }
 
-        $projection = $this->projection($resolved->definition, $table, $specification);
+        $projection = $this->projection($resolved->definition, $table, $specification, $access);
         $select = $this->selectedPhysicalColumns($resolved->definition, $table, $projection);
         foreach ($cursorColumns as $cursorColumn) {
             $select[] = $cursorColumn['physical'];
@@ -264,6 +390,7 @@ final readonly class DoctrineBusinessRecordQueryCompiler
             $alias,
             $specification->projection->aggregates,
             $aggregateWhere,
+            $access,
         );
 
         return new CompiledRecordQuery(
@@ -372,6 +499,529 @@ final readonly class DoctrineBusinessRecordQueryCompiler
     }
 
     /**
+     * Compile default-deny, deny-overrides access over one table alias.
+     *
+     * @param   ResolvedBusinessDefinition  $resolved    Definition whose policy fields are resolved.
+     * @param   PhysicalTableBlueprint      $table       Installed table carrying those fields.
+     * @param   string                      $alias       Trusted compiler-owned table alias.
+     * @param   RecordScope                 $scope       Scope entity-reference literals are resolved within.
+     * @param   BusinessRecordAccessPlan    $access      Validated access decision to compile.
+     * @param   list<mixed>                 $parameters  Bindings collected so far, appended in place.
+     * @param   list<string>                $types       Doctrine types collected in lockstep.
+     *
+     * @return  string  Definite-boolean SQL: one allow must hold and no deny may hold.
+     *
+     * @throws  InvalidBusinessRecordQuery  When a policy field or physical type is unavailable.
+     *
+     * @since   2.0.0
+     */
+    private function recordPolicy(
+        ResolvedBusinessDefinition $resolved,
+        PhysicalTableBlueprint $table,
+        string $alias,
+        RecordScope $scope,
+        BusinessRecordAccessPlan $access,
+        array &$parameters,
+        array &$types,
+    ): string {
+        $policy = $access->records;
+        if ($policy->allows === []) {
+            return '(1 = 0)';
+        }
+        $allows = [];
+        foreach ($policy->allows as $predicate) {
+            $allows[] = $this->policyPredicate(
+                $resolved,
+                $table,
+                $alias,
+                $scope,
+                $access,
+                $predicate,
+                $parameters,
+                $types,
+            );
+        }
+        $allow = '(' . implode(' OR ', $allows) . ')';
+        if ($policy->denies === []) {
+            return $allow;
+        }
+        $denies = [];
+        foreach ($policy->denies as $predicate) {
+            $denies[] = $this->policyPredicate(
+                $resolved,
+                $table,
+                $alias,
+                $scope,
+                $access,
+                $predicate,
+                $parameters,
+                $types,
+            );
+        }
+
+        return '(' . $allow . ' AND NOT (' . implode(' OR ', $denies) . '))';
+    }
+
+    /**
+     * Compile allow-first, deny-overrides policy against one immutable revision snapshot.
+     *
+     * @param   ResolvedBusinessDefinition  $resolved    Definition whose field schema is authoritative.
+     * @param   PhysicalTableBlueprint      $table       Installed record table supplying exact field types.
+     * @param   BusinessRecordAccessPlan    $access      Validated history access decision.
+     * @param   list<mixed>                 $parameters  Bindings collected in predicate order.
+     * @param   list<string>                $types       Doctrine binding types collected in lockstep.
+     *
+     * @return  string  Definite-boolean predicate targeting `rv0.snapshot`.
+     *
+     * @throws  InvalidBusinessRecordQuery  When a policy node cannot be represented over canonical JSON.
+     *
+     * @since   2.0.0
+     */
+    private function revisionRecordPolicy(
+        ResolvedBusinessDefinition $resolved,
+        PhysicalTableBlueprint $table,
+        BusinessRecordAccessPlan $access,
+        array &$parameters,
+        array &$types,
+    ): string {
+        if ($access->records->allows === []) {
+            return '(1 = 0)';
+        }
+        $allows = [];
+        foreach ($access->records->allows as $predicate) {
+            $allows[] = $this->revisionPolicyPredicate(
+                $resolved,
+                $table,
+                $predicate,
+                $parameters,
+                $types,
+            );
+        }
+        $allow = '(' . implode(' OR ', $allows) . ')';
+        if ($access->records->denies === []) {
+            return $allow;
+        }
+        $denies = [];
+        foreach ($access->records->denies as $predicate) {
+            $denies[] = $this->revisionPolicyPredicate(
+                $resolved,
+                $table,
+                $predicate,
+                $parameters,
+                $types,
+            );
+        }
+
+        return '(' . $allow . ' AND NOT (' . implode(' OR ', $denies) . '))';
+    }
+
+    /**
+     * Compile one typed policy node over canonical revision JSON without coercing another JSON type.
+     *
+     * @param   ResolvedBusinessDefinition  $resolved    Definition whose field is addressed.
+     * @param   PhysicalTableBlueprint      $table       Installed record table proving the field's type.
+     * @param   RecordPolicyPredicate       $predicate   Closed policy node to compile.
+     * @param   list<mixed>                 $parameters  Bindings collected so far, appended in place.
+     * @param   list<string>                $types       Doctrine binding types collected in lockstep.
+     *
+     * @return  string  SQL predicate that is always true or false, never unknown.
+     *
+     * @throws  InvalidBusinessRecordQuery  When the node, field, type, or literal is not portable.
+     *
+     * @since   2.0.0
+     */
+    private function revisionPolicyPredicate(
+        ResolvedBusinessDefinition $resolved,
+        PhysicalTableBlueprint $table,
+        RecordPolicyPredicate $predicate,
+        array &$parameters,
+        array &$types,
+    ): string {
+        if ($predicate instanceof RecordPolicyConstant) {
+            return $predicate->value ? '(1 = 1)' : '(1 = 0)';
+        }
+        if ($predicate instanceof RecordPolicyBoolean) {
+            $children = [];
+            foreach ($predicate->children as $child) {
+                $children[] = $this->revisionPolicyPredicate(
+                    $resolved,
+                    $table,
+                    $child,
+                    $parameters,
+                    $types,
+                );
+            }
+
+            return '(' . implode(
+                $predicate->operator === RecordPolicyBooleanOperator::All ? ' AND ' : ' OR ',
+                $children,
+            ) . ')';
+        }
+        if ($predicate instanceof RecordPolicyNullCheck) {
+            [$json, , $kind] = $this->revisionJsonField($predicate->field);
+            $nullKind = $this->database->getDatabasePlatform() instanceof AbstractMySQLPlatform
+                ? 'NULL'
+                : 'null';
+            $null = sprintf('(%s IS NULL OR %s = \'%s\')', $json, $kind, $nullKind);
+
+            return $predicate->isNull
+                ? '(CASE WHEN ' . $null . ' THEN 1 ELSE 0 END = 1)'
+                : '(CASE WHEN ' . $null . ' THEN 0 ELSE 1 END = 1)';
+        }
+        if (!$predicate instanceof RecordPolicyComparison) {
+            throw new InvalidBusinessRecordQuery('A revision record-policy predicate type is unsupported.');
+        }
+        [, $text, $kind] = $this->revisionJsonField($predicate->field);
+        $field = $this->field($resolved->definition, $predicate->field);
+        $columns = $this->fieldColumns($resolved->definition, $table, $field);
+        if (count($columns) !== 1 || !$this->policyTypeMatches($predicate->valueType, $columns[0])) {
+            throw new InvalidBusinessRecordQuery('A revision record-policy field type is unavailable.');
+        }
+        $operator = $this->policyOperator($predicate->operator);
+        $mysql = $this->database->getDatabasePlatform() instanceof AbstractMySQLPlatform;
+        $expectedKind = match ($predicate->valueType) {
+            RecordPolicyValueType::String,
+            RecordPolicyValueType::Decimal,
+            RecordPolicyValueType::Temporal => $mysql ? 'STRING' : 'string',
+            RecordPolicyValueType::Integer => $mysql ? 'INTEGER' : 'number',
+            RecordPolicyValueType::Boolean => $mysql ? 'BOOLEAN' : 'boolean',
+        };
+        $guard = sprintf('%s = \'%s\'', $kind, $expectedKind);
+        $comparison = '';
+        if ($predicate->valueType === RecordPolicyValueType::String) {
+            $parameters[] = $predicate->value;
+            $types[] = Types::STRING;
+            $comparison = $this->revisionTextComparison($text, $operator);
+        } elseif ($predicate->valueType === RecordPolicyValueType::Integer) {
+            $parameters[] = $predicate->value;
+            $types[] = Types::BIGINT;
+            $guard .= ' AND ' . $this->revisionRegex($text, '^-?(0|[1-9][0-9]*)$');
+            $cast = $mysql ? 'SIGNED' : 'BIGINT';
+            $comparison = sprintf('CAST(%s AS %s) %s ?', $text, $cast, $operator);
+        } elseif ($predicate->valueType === RecordPolicyValueType::Decimal) {
+            $this->assertRevisionDecimalFits($columns[0], (string) $predicate->value);
+            $parameters[] = $predicate->value;
+            $types[] = Types::STRING;
+            $guard .= ' AND ' . $this->revisionRegex(
+                $text,
+                '^-?(0|[1-9][0-9]*)([.][0-9]+)?$',
+            );
+            $cast = $mysql
+                ? sprintf(
+                    'DECIMAL(%d, %d)',
+                    $columns[0]->options['precision'],
+                    $columns[0]->options['scale'],
+                )
+                : 'NUMERIC';
+            $comparison = sprintf('CAST(%s AS %s) %s CAST(? AS %s)', $text, $cast, $operator, $cast);
+        } elseif ($predicate->valueType === RecordPolicyValueType::Boolean) {
+            $parameters[] = $predicate->value ? 'true' : 'false';
+            $types[] = Types::STRING;
+            $comparison = $this->revisionTextComparison($text, $operator);
+        } else {
+            $expected = (string) $predicate->value;
+            $normalized = match ($columns[0]->doctrineType) {
+                'date_immutable' => sprintf('SUBSTR(%s, 1, 10)', $text),
+                'time_immutable' => sprintf('SUBSTR(%s, 12, 15)', $text),
+                'datetime_immutable', 'datetimetz_immutable' => sprintf(
+                    'CONCAT(SUBSTR(%s, 1, 26), \'Z\')',
+                    $text,
+                ),
+                default => throw new InvalidBusinessRecordQuery(
+                    'A revision temporal policy field type is unavailable.',
+                ),
+            };
+            if (
+                $columns[0]->doctrineType === 'time_immutable'
+                && preg_match('/^[0-9]{2}:[0-9]{2}:[0-9]{2}$/D', $expected) === 1
+            ) {
+                $expected .= '.000000';
+            }
+            $parameters[] = $expected;
+            $types[] = Types::STRING;
+            $guard .= ' AND CHAR_LENGTH(' . $text . ') = 32 AND ' . $this->revisionRegex(
+                $text,
+                '^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}'
+                    . '[.][0-9]{6}[+-][0-9]{2}:[0-9]{2}$',
+            );
+            if (in_array($columns[0]->doctrineType, ['datetime_immutable', 'datetimetz_immutable'], true)) {
+                $guard .= sprintf(' AND SUBSTR(%s, 27, 6) = \'+00:00\'', $text);
+            }
+            $comparison = $this->revisionTextComparison($normalized, $operator);
+        }
+
+        return sprintf('(CASE WHEN %s THEN CASE WHEN %s THEN 1 ELSE 0 END ELSE 0 END = 1)', $guard, $comparison);
+    }
+
+    /**
+     * Return driver-specific expressions for one validated field in `rv0.snapshot`.
+     *
+     * @param   string  $field  Stable policy field handle from the closed AST.
+     *
+     * @return  array{string, string, string}  JSON value, unquoted text value, and JSON type expressions.
+     *
+     * @throws  InvalidBusinessRecordQuery  When the configured database has no supported JSON operators.
+     *
+     * @since   2.0.0
+     */
+    private function revisionJsonField(string $field): array
+    {
+        $snapshot = 'rv0.' . $this->quote('snapshot');
+        $platform = $this->database->getDatabasePlatform();
+        if ($platform instanceof AbstractMySQLPlatform) {
+            $value = sprintf('JSON_EXTRACT(%s, \'$."%s"\')', $snapshot, $field);
+
+            return [$value, 'JSON_UNQUOTE(' . $value . ')', 'JSON_TYPE(' . $value . ')'];
+        }
+        if ($platform instanceof PostgreSQLPlatform) {
+            $value = sprintf('(CAST(%s AS JSONB) -> \'%s\')', $snapshot, $field);
+            $text = sprintf('(CAST(%s AS JSONB) ->> \'%s\')', $snapshot, $field);
+
+            return [$value, $text, 'jsonb_typeof(' . $value . ')'];
+        }
+        throw new InvalidBusinessRecordQuery(
+            'The configured database cannot enforce policy over revision snapshots.',
+        );
+    }
+
+    /**
+     * Compile a byte-stable text comparison for the configured database platform.
+     *
+     * @param   string  $expression  Trusted compiler-produced textual SQL expression.
+     * @param   string  $operator    Closed comparison operator.
+     *
+     * @return  string  Comparison against one bound string placeholder.
+     *
+     * @since   2.0.0
+     */
+    private function revisionTextComparison(string $expression, string $operator): string
+    {
+        if ($this->database->getDatabasePlatform() instanceof AbstractMySQLPlatform) {
+            return sprintf('BINARY %s %s BINARY ?', $expression, $operator);
+        }
+
+        return sprintf("convert_to(%s, 'UTF8') %s convert_to(?, 'UTF8')", $expression, $operator);
+    }
+
+    /**
+     * Compile a canonical-number shape guard without evaluating a cast first.
+     *
+     * @param   string  $expression  Trusted unquoted JSON scalar expression.
+     * @param   string  $pattern     Compiler-owned regular expression without quotes.
+     *
+     * @return  string  Platform-specific regular-expression predicate.
+     *
+     * @since   2.0.0
+     */
+    private function revisionRegex(string $expression, string $pattern): string
+    {
+        return $this->database->getDatabasePlatform() instanceof AbstractMySQLPlatform
+            ? sprintf('%s REGEXP \'%s\'', $expression, $pattern)
+            : sprintf('%s ~ \'%s\'', $expression, $pattern);
+    }
+
+    /**
+     * Refuse a decimal policy literal that the field's installed precision and scale cannot represent.
+     *
+     * @param   PhysicalColumnBlueprint  $column  Installed decimal column supplying precision and scale.
+     * @param   string                   $value   Canonical decimal policy literal.
+     *
+     * @return  void
+     *
+     * @throws  InvalidBusinessRecordQuery  When casting the literal would round or overflow.
+     *
+     * @since   2.0.0
+     */
+    private function assertRevisionDecimalFits(PhysicalColumnBlueprint $column, string $value): void
+    {
+        $precision = $column->options['precision'] ?? null;
+        $scale = $column->options['scale'] ?? null;
+        if (!is_int($precision) || !is_int($scale)) {
+            throw new InvalidBusinessRecordQuery('A revision decimal policy field has no installed bounds.');
+        }
+        [$integer, $fraction] = array_pad(explode('.', ltrim($value, '-'), 2), 2, '');
+        $integer = ltrim($integer, '0') ?: '0';
+        $integerDigits = $integer === '0' ? 0 : strlen($integer);
+        $significantFraction = rtrim($fraction, '0');
+        if ($integerDigits > $precision - $scale || strlen($significantFraction) > $scale) {
+            throw new InvalidBusinessRecordQuery('A revision decimal policy literal exceeds installed bounds.');
+        }
+    }
+
+    /**
+     * Translate a closed record-policy comparison operator to SQL.
+     *
+     * @param   RecordPolicyComparisonOperator  $operator  Portable policy operator.
+     *
+     * @return  string  Trusted SQL operator token.
+     *
+     * @since   2.0.0
+     */
+    private function policyOperator(RecordPolicyComparisonOperator $operator): string
+    {
+        return match ($operator) {
+            RecordPolicyComparisonOperator::Equal => '=',
+            RecordPolicyComparisonOperator::NotEqual => '<>',
+            RecordPolicyComparisonOperator::LessThan => '<',
+            RecordPolicyComparisonOperator::LessThanOrEqual => '<=',
+            RecordPolicyComparisonOperator::GreaterThan => '>',
+            RecordPolicyComparisonOperator::GreaterThanOrEqual => '>=',
+        };
+    }
+
+    /**
+     * Compile one closed policy node with two-valued null semantics matching `RecordPolicyEvaluator`.
+     *
+     * @param   ResolvedBusinessDefinition  $resolved    Definition whose field is addressed.
+     * @param   PhysicalTableBlueprint      $table       Installed table carrying that field.
+     * @param   string                      $alias       Trusted table alias.
+     * @param   RecordScope                 $scope       Scope for entity-reference normalization.
+     * @param   BusinessRecordAccessPlan    $access      Related-target access used by reference values.
+     * @param   RecordPolicyPredicate       $predicate   Validated policy node.
+     * @param   list<mixed>                 $parameters  Bindings collected so far, appended in place.
+     * @param   list<string>                $types       Doctrine types collected in lockstep.
+     *
+     * @return  string  SQL predicate that is always true or false, never unknown.
+     *
+     * @throws  InvalidBusinessRecordQuery  When a field or operator cannot be represented portably.
+     *
+     * @since   2.0.0
+     */
+    private function policyPredicate(
+        ResolvedBusinessDefinition $resolved,
+        PhysicalTableBlueprint $table,
+        string $alias,
+        RecordScope $scope,
+        BusinessRecordAccessPlan $access,
+        RecordPolicyPredicate $predicate,
+        array &$parameters,
+        array &$types,
+    ): string {
+        if ($predicate instanceof RecordPolicyConstant) {
+            return $predicate->value ? '(1 = 1)' : '(1 = 0)';
+        }
+        if ($predicate instanceof RecordPolicyBoolean) {
+            $children = [];
+            foreach ($predicate->children as $child) {
+                $children[] = $this->policyPredicate(
+                    $resolved,
+                    $table,
+                    $alias,
+                    $scope,
+                    $access,
+                    $child,
+                    $parameters,
+                    $types,
+                );
+            }
+
+            return '(' . implode(
+                $predicate->operator === RecordPolicyBooleanOperator::All ? ' AND ' : ' OR ',
+                $children,
+            ) . ')';
+        }
+        if ($predicate instanceof RecordPolicyNullCheck) {
+            $field = $this->field($resolved->definition, $predicate->field);
+            $columns = $this->fieldColumns($resolved->definition, $table, $field);
+            if (count($columns) !== 1) {
+                throw new InvalidBusinessRecordQuery('A record-policy field requires one physical column.');
+            }
+
+            return sprintf(
+                '(%s.%s IS %sNULL)',
+                $alias,
+                $this->quote($columns[0]->physicalName),
+                $predicate->isNull ? '' : 'NOT ',
+            );
+        }
+        if (!$predicate instanceof RecordPolicyComparison) {
+            throw new InvalidBusinessRecordQuery('A record-policy predicate type is unsupported.');
+        }
+        $field = $this->field($resolved->definition, $predicate->field);
+        $columns = $this->fieldColumns($resolved->definition, $table, $field);
+        if (count($columns) !== 1 || !$this->policyTypeMatches($predicate->valueType, $columns[0])) {
+            throw new InvalidBusinessRecordQuery('A record-policy field type is unavailable.');
+        }
+        $operator = $this->policyOperator($predicate->operator);
+        $parameters[] = $predicate->valueType === RecordPolicyValueType::Temporal
+            ? $this->values->cursorStorageValue($columns[0], $predicate->value)
+            : $predicate->value;
+        $types[] = $columns[0]->doctrineType;
+        $qualified = $alias . '.' . $this->quote($columns[0]->physicalName);
+        $placeholder = '?';
+        if (
+            $predicate->valueType === RecordPolicyValueType::String
+            && $this->database->getDatabasePlatform() instanceof AbstractMySQLPlatform
+        ) {
+            $qualified = 'BINARY ' . $qualified;
+            $placeholder = 'BINARY ?';
+        }
+
+        return sprintf(
+            '(CASE WHEN %s %s %s THEN 1 ELSE 0 END = 1)',
+            $qualified,
+            $operator,
+            $placeholder,
+        );
+    }
+
+    /**
+     * Prove a policy scalar matches the installed column without coercion.
+     *
+     * @param   RecordPolicyValueType     $type    Portable comparison domain declared by policy.
+     * @param   PhysicalColumnBlueprint   $column  Installed column used by the predicate.
+     *
+     * @return  bool  True when evaluator and database comparisons share a scalar domain.
+     *
+     * @since  2.0.0
+     */
+    private function policyTypeMatches(
+        RecordPolicyValueType $type,
+        PhysicalColumnBlueprint $column,
+    ): bool {
+        return match ($type) {
+            RecordPolicyValueType::String => in_array(
+                $column->doctrineType,
+                ['ascii_string', 'guid', 'string', 'text'],
+                true,
+            ),
+            RecordPolicyValueType::Integer => in_array(
+                $column->doctrineType,
+                ['bigint', 'integer', 'smallint'],
+                true,
+            ),
+            RecordPolicyValueType::Decimal => $column->doctrineType === 'decimal',
+            RecordPolicyValueType::Boolean => $column->doctrineType === 'boolean',
+            RecordPolicyValueType::Temporal => in_array(
+                $column->doctrineType,
+                ['date_immutable', 'datetime_immutable', 'datetimetz_immutable', 'time_immutable'],
+                true,
+            ),
+        };
+    }
+
+    /**
+     * Require an access plan to describe the definition being compiled.
+     *
+     * @param   ResolvedBusinessDefinition  $resolved  Definition whose query is being compiled.
+     * @param   BusinessRecordAccessPlan    $access    Plan that must name that definition.
+     *
+     * @return  void
+     *
+     * @throws  InvalidBusinessRecordQuery  When a plan is replayed against another definition.
+     *
+     * @since  2.0.0
+     */
+    private function assertAccessResource(
+        ResolvedBusinessDefinition $resolved,
+        BusinessRecordAccessPlan $access,
+    ): void {
+        if (!hash_equals($resolved->definition->id, $access->resourceIdentifier)) {
+            throw new InvalidBusinessRecordQuery('A business-record access plan belongs to another resource.');
+        }
+    }
+
+    /**
      * Compile one node of a filter tree into a predicate, descending into everything below it.
      *
      * The node kinds are dispatched here and the shared counter is charged one operation for each,
@@ -388,6 +1038,8 @@ final readonly class DoctrineBusinessRecordQueryCompiler
      * @param   string                      $alias       Alias those columns are qualified with.
      * @param   RecordScope                 $scope       Scope entity references are resolved within and
      *          related rows are confined to.
+     * @param   BusinessRecordAccessPlan    $access      Field and related-target query permissions.
+     * @param   FieldAccessUsage            $usage       Direct-filter or relationship-selector permission.
      * @param   RecordFilter                $filter      Node to compile.
      * @param   list<mixed>                 $parameters  Bound values so far; this node's are appended.
      * @param   list<string>                $types       Doctrine type names so far, appended in step with $parameters.
@@ -407,6 +1059,8 @@ final readonly class DoctrineBusinessRecordQueryCompiler
         PhysicalTableBlueprint $table,
         string $alias,
         RecordScope $scope,
+        BusinessRecordAccessPlan $access,
+        FieldAccessUsage $usage,
         RecordFilter $filter,
         array &$parameters,
         array &$types,
@@ -417,10 +1071,20 @@ final readonly class DoctrineBusinessRecordQueryCompiler
             throw new InvalidBusinessRecordQuery('A query exceeds 64 compiled filter operations.');
         }
         if ($filter instanceof ComparisonFilter) {
-            return $this->comparison($resolved, $table, $alias, $scope, $filter, $parameters, $types);
+            return $this->comparison(
+                $resolved,
+                $table,
+                $alias,
+                $scope,
+                $access,
+                $usage,
+                $filter,
+                $parameters,
+                $types,
+            );
         }
         if ($filter instanceof SetFilter) {
-            $field = $this->filterable($resolved->definition, $filter->field);
+            $field = $this->filterable($resolved->definition, $filter->field, $access, $usage);
             $columns = $this->fieldColumns($resolved->definition, $table, $field);
             if (count($columns) !== 1) {
                 throw new InvalidBusinessRecordQuery('A set predicate requires a single physical field.');
@@ -432,7 +1096,7 @@ final readonly class DoctrineBusinessRecordQueryCompiler
             }
             $placeholders = [];
             foreach ($filter->values as $value) {
-                $encoded = $this->queryColumns($resolved, $table, $field, $value, $scope);
+                $encoded = $this->queryColumns($resolved, $table, $field, $value, $scope, $access);
                 $parameters[] = array_values($encoded)[0];
                 $types[] = $columns[0]->doctrineType;
                 $placeholders[] = '?';
@@ -447,7 +1111,7 @@ final readonly class DoctrineBusinessRecordQueryCompiler
             return $filter->negated ? $this->notTrue($predicate) : $predicate;
         }
         if ($filter instanceof NullFilter) {
-            $field = $this->filterable($resolved->definition, $filter->field);
+            $field = $this->filterable($resolved->definition, $filter->field, $access, $usage);
             $columns = $this->fieldColumns($resolved->definition, $table, $field);
             $parts = array_map(
                 fn (PhysicalColumnBlueprint $column): string => sprintf(
@@ -461,7 +1125,7 @@ final readonly class DoctrineBusinessRecordQueryCompiler
             return '(' . implode(' AND ', $parts) . ')';
         }
         if ($filter instanceof TextFilter) {
-            $field = $this->filterable($resolved->definition, $filter->field);
+            $field = $this->filterable($resolved->definition, $filter->field, $access, $usage);
             $columns = $this->fieldColumns($resolved->definition, $table, $field);
             if (
                 count($columns) !== 1
@@ -490,6 +1154,8 @@ final readonly class DoctrineBusinessRecordQueryCompiler
                     $table,
                     $alias,
                     $scope,
+                    $access,
+                    $usage,
                     $child,
                     $parameters,
                     $types,
@@ -507,6 +1173,7 @@ final readonly class DoctrineBusinessRecordQueryCompiler
                 $table,
                 $alias,
                 $scope,
+                $access,
                 $filter,
                 $parameters,
                 $types,
@@ -531,6 +1198,8 @@ final readonly class DoctrineBusinessRecordQueryCompiler
      * @param   string                      $alias       Alias those columns are qualified with.
      * @param   RecordScope                 $scope       Scope an entity-reference value is resolved
      *          within.
+     * @param   BusinessRecordAccessPlan    $access      Field and related-target query permissions.
+     * @param   FieldAccessUsage            $usage       Direct-filter or relationship-selector permission.
      * @param   ComparisonFilter            $filter      Field, operator and literal to compare.
      * @param   list<mixed>                 $parameters  Bound values so far; the encoded literal is
      *          appended once per column.
@@ -549,13 +1218,15 @@ final readonly class DoctrineBusinessRecordQueryCompiler
         PhysicalTableBlueprint $table,
         string $alias,
         RecordScope $scope,
+        BusinessRecordAccessPlan $access,
+        FieldAccessUsage $usage,
         ComparisonFilter $filter,
         array &$parameters,
         array &$types,
     ): string {
-        $field = $this->filterable($resolved->definition, $filter->field);
+        $field = $this->filterable($resolved->definition, $filter->field, $access, $usage);
         $columns = $this->fieldColumns($resolved->definition, $table, $field);
-        $encoded = $this->queryColumns($resolved, $table, $field, $filter->value, $scope);
+        $encoded = $this->queryColumns($resolved, $table, $field, $filter->value, $scope, $access);
         $operator = match ($filter->operator) {
             ComparisonOperator::Equal => '=',
             ComparisonOperator::NotEqual => '<>',
@@ -675,6 +1346,7 @@ final readonly class DoctrineBusinessRecordQueryCompiler
      * @param   string                      $sourceAlias  Alias the subquery correlates back to.
      * @param   RecordScope                 $scope        Scope the junction and the related rows are
      *          confined to.
+     * @param   BusinessRecordAccessPlan    $access       Source and target relationship decision.
      * @param   RelationFilter              $filter       Relationship to traverse, the quantifier to
      *          apply, and the filter the related records are measured against.
      * @param   list<mixed>                 $parameters   Bound values so far; the hop's are appended.
@@ -695,13 +1367,19 @@ final readonly class DoctrineBusinessRecordQueryCompiler
         PhysicalTableBlueprint $sourceTable,
         string $sourceAlias,
         RecordScope $scope,
+        BusinessRecordAccessPlan $access,
         RelationFilter $filter,
         array &$parameters,
         array &$types,
         int &$counter,
     ): string {
         $relationship = $this->relationship($source->definition, $filter->relationship);
+        $targetAccess = $access->related($relationship->handle);
+        if ($targetAccess === null) {
+            throw new InvalidBusinessRecordQuery('A requested relationship is unavailable.');
+        }
         $target = $this->target($source->definition, $relationship);
+        $this->assertAccessResource($target, $targetAccess);
         $number = ++$counter;
         $targetAlias = 'r' . $number;
         if ($relationship->kind === RelationshipKind::OwnedLineCollection) {
@@ -796,11 +1474,22 @@ final readonly class DoctrineBusinessRecordQueryCompiler
                 ...$this->scopePredicates($targetTable, $targetAlias, $scope, $parameters, $types),
             );
         }
+        $targetWhere[] = $this->recordPolicy(
+            $target,
+            $targetTable,
+            $targetAlias,
+            $scope,
+            $targetAccess,
+            $parameters,
+            $types,
+        );
         $targetPredicate = $this->filter(
             $target,
             $targetTable,
             $targetAlias,
             $scope,
+            $targetAccess,
+            FieldAccessUsage::Relation,
             $filter->target,
             $parameters,
             $types,
@@ -854,6 +1543,7 @@ final readonly class DoctrineBusinessRecordQueryCompiler
      * @param   PhysicalTableBlueprint      $table          Installed record table being ordered.
      * @param   string                      $alias          Alias the ordering qualifies columns with.
      * @param   RecordQuerySpecification    $specification  Page request carrying the ordering keys.
+     * @param   BusinessRecordAccessPlan    $access         Dynamic sort-field permissions.
      *
      * @return  array{list<string>, list<array{field: ?string, physical: string}>}  The `ORDER BY` terms in
      *          order, and the columns the next cursor is built from, whose `field` is null for the default
@@ -870,6 +1560,7 @@ final readonly class DoctrineBusinessRecordQueryCompiler
         PhysicalTableBlueprint $table,
         string $alias,
         RecordQuerySpecification $specification,
+        BusinessRecordAccessPlan $access,
     ): array {
         $order = [];
         $cursor = [];
@@ -880,8 +1571,12 @@ final readonly class DoctrineBusinessRecordQueryCompiler
         } else {
             foreach ($specification->sorts as $sort) {
                 $field = $this->field($resolved->definition, $sort->field);
-                if (!$field->sortable || !$this->queryVisible($field)) {
-                    throw new InvalidBusinessRecordQuery('A requested sort field is not sortable.');
+                if (
+                    !$field->sortable
+                    || !$this->queryVisible($field)
+                    || !$access->fields->allows(FieldAccessUsage::Sort, $field->handle)
+                ) {
+                    throw new InvalidBusinessRecordQuery('A requested query field is unavailable.');
                 }
                 $columns = $this->fieldColumns($resolved->definition, $table, $field);
                 if (count($columns) !== 1) {
@@ -1083,6 +1778,7 @@ final readonly class DoctrineBusinessRecordQueryCompiler
      *          projection is settled from the definition alone, so it is not consulted here.
      * @param   RecordQuerySpecification  $specification  Page request carrying the requested fields and
      *          includes.
+     * @param   BusinessRecordAccessPlan  $access         Explicit list-field and relation disclosure.
      *
      * @return  list<string>  Field handles to read, each named once and in request order, with a formula's
      *          dependencies appended after it.
@@ -1096,23 +1792,22 @@ final readonly class DoctrineBusinessRecordQueryCompiler
         EntityTypeDefinition $definition,
         PhysicalTableBlueprint $table,
         RecordQuerySpecification $specification,
+        BusinessRecordAccessPlan $access,
     ): array {
         $projection = $specification->projection->fields;
+        $usage = $this->collectionUsage($access);
         if ($projection === []) {
-            $projection = array_map(
-                static fn (FieldDefinition $field): string => $field->handle,
-                array_values(array_filter(
-                    $definition->fields(),
-                    static fn (FieldDefinition $field): bool => $field->readVisible,
-                )),
-            );
+            $projection = $access->fields->fields($usage);
+        }
+        foreach ($projection as $handle) {
+            $field = $this->field($definition, $handle);
+            if (!$field->readVisible || !$access->fields->allows($usage, $handle)) {
+                throw new InvalidBusinessRecordQuery('A requested projection field is unavailable.');
+            }
         }
         for ($index = 0; $index < count($projection); ++$index) {
             $handle = $projection[$index];
             $field = $this->field($definition, $handle);
-            if (!$field->readVisible) {
-                throw new InvalidBusinessRecordQuery('A requested projection field is not readable.');
-            }
             foreach ($field->formula?->dependencies() ?? [] as $dependency) {
                 if (!in_array($dependency, $projection, true)) {
                     $projection[] = $dependency;
@@ -1121,9 +1816,30 @@ final readonly class DoctrineBusinessRecordQueryCompiler
         }
         foreach ($specification->projection->includes as $relationship) {
             $this->relationship($definition, $relationship);
+            if ($access->related($relationship) === null) {
+                throw new InvalidBusinessRecordQuery('A requested relationship is unavailable.');
+            }
         }
 
         return array_values(array_unique($projection));
+    }
+
+    /**
+     * Select the exact field-disclosure use for this collection operation.
+     *
+     * @param   BusinessRecordAccessPlan  $access  Operation-specific access decision.
+     *
+     * @return  FieldAccessUsage  Browse list, report, or export use.
+     *
+     * @since   2.0.0
+     */
+    private function collectionUsage(BusinessRecordAccessPlan $access): FieldAccessUsage
+    {
+        return match ($access->operation) {
+            'business.record.report' => FieldAccessUsage::Report,
+            'business.record.export' => FieldAccessUsage::Export,
+            default => FieldAccessUsage::List,
+        };
     }
 
     /**
@@ -1195,6 +1911,7 @@ final readonly class DoctrineBusinessRecordQueryCompiler
      * @param   list<RecordAggregate>       $aggregates  Summaries the projection asked for.
      * @param   list<string>                $where       Predicates compiled for the page, taken before the
      *          cursor seek was appended to them.
+     * @param   BusinessRecordAccessPlan    $access      Dynamic aggregate-field permissions.
      *
      * @return  ?string  The aggregate statement, or null when the projection requested no aggregate.
      *
@@ -1210,6 +1927,7 @@ final readonly class DoctrineBusinessRecordQueryCompiler
         string $alias,
         array $aggregates,
         array $where,
+        BusinessRecordAccessPlan $access,
     ): ?string {
         if ($aggregates === []) {
             return null;
@@ -1222,8 +1940,12 @@ final readonly class DoctrineBusinessRecordQueryCompiler
                 continue;
             }
             $field = $this->field($resolved->definition, (string) $aggregate->field);
-            if (!$field->reportable || !$this->queryVisible($field)) {
-                throw new InvalidBusinessRecordQuery('An aggregate field is not reportable.');
+            if (
+                !$field->reportable
+                || !$this->queryVisible($field)
+                || !$access->fields->allows(FieldAccessUsage::Aggregate, $field->handle)
+            ) {
+                throw new InvalidBusinessRecordQuery('A requested aggregate field is unavailable.');
             }
             $columns = $this->fieldColumns($resolved->definition, $table, $field);
             if (count($columns) !== 1) {
@@ -1269,6 +1991,8 @@ final readonly class DoctrineBusinessRecordQueryCompiler
      *
      * @param   EntityTypeDefinition  $definition  Definition the handle resolves against.
      * @param   string                $handle      Field handle taken from a filter node.
+     * @param   BusinessRecordAccessPlan  $access  Dynamic field permissions.
+     * @param   FieldAccessUsage          $usage   Direct-filter or relationship-selector use.
      *
      * @return  FieldDefinition  The declared field, proved filterable and visible to queries.
      *
@@ -1277,11 +2001,23 @@ final readonly class DoctrineBusinessRecordQueryCompiler
      *
      * @since   2.0.0
      */
-    private function filterable(EntityTypeDefinition $definition, string $handle): FieldDefinition
+    private function filterable(
+        EntityTypeDefinition $definition,
+        string $handle,
+        BusinessRecordAccessPlan $access,
+        FieldAccessUsage $usage,
+    ): FieldDefinition
     {
         $field = $this->field($definition, $handle);
-        if (!$field->filterable || !$this->queryVisible($field)) {
-            throw new InvalidBusinessRecordQuery('A requested filter field is not filterable.');
+        if (
+            !$field->filterable
+            || !$this->queryVisible($field)
+            || !$access->fields->allows($usage, $handle)
+            || ($usage === FieldAccessUsage::Relation
+                && $field === $this->identityField($definition)
+                && !$access->fields->allows(FieldAccessUsage::PublicReference, $handle))
+        ) {
+            throw new InvalidBusinessRecordQuery('A requested query field is unavailable.');
         }
 
         return $field;
@@ -1322,6 +2058,7 @@ final readonly class DoctrineBusinessRecordQueryCompiler
      * @param   mixed                       $value     Literal exactly as the filter or cursor carried it.
      * @param   ?RecordScope                $scope     Scope an entity reference is resolved within; null
      *          while a cursor value is being restored, which then requires a record key.
+     * @param   ?BusinessRecordAccessPlan   $access    Related-target decision for entity references.
      *
      * @return  array<string, mixed>  Bound values keyed by physical column name; a composite field yields
      *          one entry per column it occupies.
@@ -1339,6 +2076,7 @@ final readonly class DoctrineBusinessRecordQueryCompiler
         FieldDefinition $field,
         mixed $value,
         ?RecordScope $scope = null,
+        ?BusinessRecordAccessPlan $access = null,
     ): array {
         $identity = $this->identityField($resolved->definition);
         if ($field === $identity && $resolved->definition->identityStrategy === IdentityStrategy::Uuid) {
@@ -1358,7 +2096,16 @@ final readonly class DoctrineBusinessRecordQueryCompiler
                 }
                 $recordKey = strtolower($value);
             } else {
-                $recordKey = $this->referenceRecordKey($resolved->definition, $field, $scope, $value);
+                if ($access === null) {
+                    throw new InvalidBusinessRecordQuery('An entity-reference access plan is unavailable.');
+                }
+                $recordKey = $this->referenceRecordKey(
+                    $resolved->definition,
+                    $field,
+                    $scope,
+                    $value,
+                    $access,
+                );
             }
 
             return [$this->physical($table, $field->handle) => $recordKey];
@@ -1395,6 +2142,7 @@ final readonly class DoctrineBusinessRecordQueryCompiler
      *          cannot be resolved without one.
      * @param   string                $publicIdentity  Identity of the target record as the caller wrote
      *          it.
+     * @param   BusinessRecordAccessPlan  $access      Source plan carrying the reference target plan.
      *
      * @return  string  Record key of the referenced row, or the nil UUID when nothing matches.
      *
@@ -1410,6 +2158,7 @@ final readonly class DoctrineBusinessRecordQueryCompiler
         FieldDefinition $field,
         ?RecordScope $scope,
         string $publicIdentity,
+        BusinessRecordAccessPlan $access,
     ): string {
         if ($scope === null) {
             throw new InvalidBusinessRecordQuery('A public entity-reference cursor cannot be resolved without scope.');
@@ -1419,7 +2168,15 @@ final readonly class DoctrineBusinessRecordQueryCompiler
             throw new InvalidBusinessRecordQuery('An entity-reference target is unavailable.');
         }
         $target = $this->targetHandle($source, $targetHandle);
+        $targetAccess = $access->related($field->handle);
+        if ($targetAccess === null) {
+            throw new InvalidBusinessRecordQuery('An entity-reference target is unavailable.');
+        }
+        $this->assertAccessResource($target, $targetAccess);
         $identity = $this->identityField($target->definition);
+        if (!$targetAccess->fields->allows(FieldAccessUsage::PublicReference, $identity->handle)) {
+            throw new InvalidBusinessRecordQuery('An entity-reference public identity is unavailable.');
+        }
         $normalized = $this->values->identity(
             $target->definition,
             [$identity->handle => $publicIdentity],
@@ -1436,6 +2193,15 @@ final readonly class DoctrineBusinessRecordQueryCompiler
         if ($table->column('deleted_at') !== null) {
             $where[] = 'x.' . $this->quote($this->physical($table, 'deleted_at')) . ' IS NULL';
         }
+        $where[] = $this->recordPolicy(
+            $target,
+            $table,
+            'x',
+            $scope,
+            $targetAccess,
+            $parameters,
+            $types,
+        );
         $recordKey = $this->database->fetchOne(sprintf(
             'SELECT x.%s FROM %s x WHERE %s',
             $this->quote($this->physical($table, 'record_id')),
@@ -1510,7 +2276,7 @@ final readonly class DoctrineBusinessRecordQueryCompiler
                 return $field;
             }
         }
-        throw new InvalidBusinessRecordQuery('A business-record query references an unknown field.');
+        throw new InvalidBusinessRecordQuery('A requested query field is unavailable.');
     }
 
     /**
@@ -1794,6 +2560,7 @@ final readonly class DoctrineBusinessRecordQueryCompiler
      *          read under.
      * @param   RecordScope                 $scope          Site and organization the page is confined to.
      * @param   RecordQuerySpecification    $specification  Page request, canonicalized without its cursor.
+     * @param   BusinessRecordAccessPlan    $access         Authorization decision the token is bound to.
      *
      * @return  string  Lowercase 64-character SHA-256 over the canonical form of all of it.
      *
@@ -1807,6 +2574,7 @@ final readonly class DoctrineBusinessRecordQueryCompiler
         ResolvedBusinessDefinition $resolved,
         RecordScope $scope,
         RecordQuerySpecification $specification,
+        BusinessRecordAccessPlan $access,
     ): string {
         return CanonicalDefinitionJson::checksum([
             'definition_id' => $resolved->definition->id,
@@ -1815,6 +2583,7 @@ final readonly class DoctrineBusinessRecordQueryCompiler
             'schema_checksum' => $resolved->installation->schemaChecksum,
             'scope' => $scope->toArray(),
             'specification' => $specification->toArray(false),
+            'access' => $access->digest(),
         ]);
     }
 }

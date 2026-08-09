@@ -8,6 +8,9 @@ use DateTimeImmutable;
 use Kumwe\CMS\BusinessDefinition\Domain\EntityTypeDefinition;
 use Kumwe\CMS\BusinessDefinition\Domain\Sensitivity;
 use Kumwe\CMS\BusinessRecord\Domain\BusinessRecordRevision;
+use Kumwe\CMS\BusinessRecord\Domain\RecordValueGuard;
+use Kumwe\CMS\BusinessSecurity\Application\FieldAccessUsage;
+use Kumwe\CMS\BusinessSecurity\Application\FieldDisclosurePlan;
 
 /**
  * Disclosure-safe view over one integrity-verified revision, as a history page hands it to a caller.
@@ -107,18 +110,22 @@ final readonly class BusinessRecordRevisionView
      * @param   BusinessRecordRevision  $revision    Integrity-verified revision to project.
      * @param   EntityTypeDefinition    $definition  Definition at the version the revision was written
      *          under, supplying each field's type and sensitivity.
+     * @param   ?FieldDisclosurePlan    $disclosure  Explicit audit-field allow-list, or null for the
+     *          legacy definition-only projection.
      *
      * @return  self  View over the redacted snapshot, carrying the revision's identity and the checksum
      *          re-derived from it.
      *
      * @throws  \InvalidArgumentException  When the revision cannot be canonicalised and encoded, so the
      *          checksum this view reports cannot be derived.
+     * @throws  \JsonException  When a disclosure checksum cannot encode its bounded projection.
      *
      * @since   2.0.0
      */
     public static function fromRevision(
         BusinessRecordRevision $revision,
         EntityTypeDefinition $definition,
+        ?FieldDisclosurePlan $disclosure = null,
     ): self {
         $sensitive = [];
         foreach ($definition->fields() as $field) {
@@ -130,11 +137,29 @@ final readonly class BusinessRecordRevisionView
             }
         }
         $snapshot = $revision->snapshot();
+        $changedFields = $revision->changedFields();
+        if ($disclosure !== null) {
+            $allowed = array_fill_keys($disclosure->fields(FieldAccessUsage::Audit), true);
+            $snapshot = array_intersect_key($snapshot, $allowed);
+            $changedFields = array_values(array_filter(
+                $changedFields,
+                static fn (string $handle): bool => isset($allowed[$handle]),
+            ));
+        }
         foreach ($snapshot as $handle => $_value) {
             if (isset($sensitive[$handle])) {
                 $snapshot[$handle] = ['redacted' => true];
             }
         }
+
+        $integrityChecksum = $disclosure === null ? $revision->checksum() : hash('sha256', json_encode(
+            RecordValueGuard::canonical([
+                'revision_id' => $revision->revisionId,
+                'snapshot' => $snapshot,
+                'changed_fields' => $changedFields,
+            ]),
+            JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE,
+        ));
 
         return new self(
             $revision->revisionId,
@@ -145,10 +170,10 @@ final readonly class BusinessRecordRevisionView
             $revision->revisionNumber,
             $revision->operation,
             $snapshot,
-            $revision->changedFields(),
+            $changedFields,
             $revision->actorId,
             $revision->occurredAt,
-            $revision->checksum(),
+            $integrityChecksum,
         );
     }
 }

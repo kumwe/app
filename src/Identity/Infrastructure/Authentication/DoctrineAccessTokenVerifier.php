@@ -10,9 +10,13 @@ use Doctrine\DBAL\Types\Types;
 use InvalidArgumentException;
 use JsonException;
 use Kumwe\CMS\Application\Authorization\SiteContext;
+use Kumwe\CMS\Application\Authorization\MembershipContext;
+use Kumwe\CMS\Application\Authorization\OrganizationContext;
+use Kumwe\CMS\Application\Authorization\WorkspaceContext;
 use Kumwe\CMS\Identity\Application\Authentication\AccessTokenContext;
-use Kumwe\CMS\Identity\Application\Authentication\AccessTokenVerifier;
 use Kumwe\CMS\Identity\Application\Authentication\AuthenticatedPrincipal;
+use Kumwe\CMS\Identity\Application\Authentication\ScopedAccessTokenVerifier;
+use Kumwe\CMS\Identity\Application\Authentication\VerifiedAccessToken;
 use Kumwe\CMS\Infrastructure\Persistence\TableNames;
 use Psr\Clock\ClockInterface;
 
@@ -35,7 +39,7 @@ use Psr\Clock\ClockInterface;
  *
  * @since  2.0.0
  */
-final readonly class DoctrineAccessTokenVerifier implements AccessTokenVerifier
+final readonly class DoctrineAccessTokenVerifier implements ScopedAccessTokenVerifier
 {
     /**
      * Bind the verifier to the store it reads and to the authority it issues principals under.
@@ -85,6 +89,27 @@ final readonly class DoctrineAccessTokenVerifier implements AccessTokenVerifier
         string $purpose = 'api',
         string $siteIdentifier = 'default',
     ): ?AuthenticatedPrincipal {
+        return $this->verifyScoped($token, $audience, $purpose, $siteIdentifier)?->principal;
+    }
+
+    /**
+     * Resolve the principal together with its exact live organization delegation envelope.
+     *
+     * @param   string  $token           Presented bearer secret.
+     * @param   string  $audience        Exact delivery audience.
+     * @param   string  $purpose         Exact delegated purpose.
+     * @param   string  $siteIdentifier  Exact site being presented against.
+     *
+     * @return  ?VerifiedAccessToken  Verified scope and principal, or null for every failure.
+     *
+     * @since   2.0.0
+     */
+    public function verifyScoped(
+        string $token,
+        string $audience = 'kumwe-http',
+        string $purpose = 'api',
+        string $siteIdentifier = 'default',
+    ): ?VerifiedAccessToken {
         try {
             $context = AccessTokenContext::fromStrings($audience, $purpose);
             $siteIdentifier = SiteContext::fromString($siteIdentifier)->identifier();
@@ -98,15 +123,32 @@ final readonly class DoctrineAccessTokenVerifier implements AccessTokenVerifier
 
         $row = $this->database->fetchAssociative(sprintf(
             'SELECT t.id, t.subject_id, t.capabilities, t.last_used_at, t.site_identifier, '
+            . 't.organization_identifier, t.workspace_identifier, t.membership_id, t.membership_version, '
+            . 't.policy_generation, t.family_id, '
             . 'u.security_epoch FROM %s t '
             . 'INNER JOIN %s u ON u.id = t.subject_id '
             . 'INNER JOIN %s s ON s.identifier = t.site_identifier '
             . 'WHERE t.token_digest = ? AND t.revoked_at IS NULL AND t.expires_at > CURRENT_TIMESTAMP '
             . "AND t.audience = ? AND t.purpose = ? AND t.site_identifier = ? "
-            . "AND t.security_epoch = u.security_epoch AND u.status = 'active' AND s.enabled = ?",
+            . "AND t.security_epoch = u.security_epoch AND u.status = 'active' AND s.enabled = ? "
+            . 'AND ((t.organization_identifier IS NULL AND t.workspace_identifier IS NULL '
+            . 'AND t.membership_id IS NULL AND t.membership_version IS NULL AND t.policy_generation IS NULL) '
+            . 'OR EXISTS (SELECT 1 FROM %s o INNER JOIN %s m ON m.organization_id = o.id '
+            . 'WHERE o.identifier = t.organization_identifier AND o.site_identifier = t.site_identifier '
+            . "AND o.status = 'active' AND o.policy_generation = t.policy_generation "
+            . 'AND m.id = t.membership_id AND m.user_id = t.subject_id AND m.version = t.membership_version '
+            . "AND m.status = 'active' AND m.valid_from <= CURRENT_TIMESTAMP "
+            . 'AND (m.valid_until IS NULL OR m.valid_until > CURRENT_TIMESTAMP) '
+            . 'AND (t.workspace_identifier IS NULL OR EXISTS (SELECT 1 FROM %s mw INNER JOIN %s w '
+            . 'ON w.id = mw.workspace_id WHERE mw.membership_id = m.id AND w.organization_id = o.id '
+            . "AND w.identifier = t.workspace_identifier AND w.status = 'active'))))",
             $this->tables->quoted('api_tokens'),
             $this->tables->quoted('users'),
             $this->tables->quoted('sites'),
+            $this->tables->quoted('organizations'),
+            $this->tables->quoted('organization_memberships'),
+            $this->tables->quoted('membership_workspaces'),
+            $this->tables->quoted('workspaces'),
         ), [hash('sha256', $token), $context->audience, $context->purpose, $siteIdentifier, true], [
             Types::STRING,
             Types::STRING,
@@ -124,16 +166,35 @@ final readonly class DoctrineAccessTokenVerifier implements AccessTokenVerifier
         }
 
         try {
+            $membership = $this->membership($row);
             $principal = AuthenticatedPrincipal::issueFromGrantRows(
                 $this->provenance,
                 $row['subject_id'],
-                $this->grantsFor($row['subject_id'], $this->decodeCapabilities($row['capabilities'] ?? null)),
+                $this->grantsFor(
+                    $row['subject_id'],
+                    $this->decodeCapabilities($row['capabilities'] ?? null),
+                    $membership?->membershipId(),
+                ),
                 'api-token:' . $row['id'],
                 $this->positiveInteger($row['security_epoch'] ?? null),
             );
             $this->touchUsage($row['id'], $row['last_used_at'] ?? null);
 
-            return $principal;
+            $tokenId = $row['id'];
+            $familyId = $row['family_id'] ?? $tokenId;
+            if (!is_string($familyId)) {
+                throw new InvalidArgumentException('Stored token family is invalid.');
+            }
+
+            return new VerifiedAccessToken(
+                $principal,
+                $tokenId,
+                $familyId,
+                SiteContext::fromString($siteIdentifier),
+                $membership,
+                $context->audience,
+                $context->purpose,
+            );
         } catch (InvalidArgumentException | JsonException) {
             return null;
         }
@@ -163,6 +224,56 @@ final readonly class DoctrineAccessTokenVerifier implements AccessTokenVerifier
         }
 
         return (int) $value;
+    }
+
+    /**
+     * Rebuild the exact organization/workspace membership bound to a verified token.
+     *
+     * The SQL predicate has already proved the generations live; this method validates the driver values
+     * before they enter an execution context. A site-only token must carry no partial membership columns.
+     *
+     * @param   array<string, mixed>  $row  Verified token row.
+     *
+     * @return  ?MembershipContext  Exact live membership or null for a site-only token.
+     *
+     * @throws  InvalidArgumentException  When stored scope columns are partial or malformed.
+     *
+     * @since   2.0.0
+     */
+    private function membership(array $row): ?MembershipContext
+    {
+        $organization = $row['organization_identifier'] ?? null;
+        $workspace = $row['workspace_identifier'] ?? null;
+        $membershipId = $row['membership_id'] ?? null;
+        $membershipVersion = $row['membership_version'] ?? null;
+        $policyGeneration = $row['policy_generation'] ?? null;
+        if ($organization === null) {
+            if (
+                $workspace !== null
+                || $membershipId !== null
+                || $membershipVersion !== null
+                || $policyGeneration !== null
+            ) {
+                throw new InvalidArgumentException('A stored token has a partial organization binding.');
+            }
+
+            return null;
+        }
+        if (
+            !is_string($organization)
+            || ($workspace !== null && !is_string($workspace))
+            || !is_string($membershipId)
+        ) {
+            throw new InvalidArgumentException('A stored token organization binding is invalid.');
+        }
+
+        return new MembershipContext(
+            $membershipId,
+            OrganizationContext::fromString($organization),
+            $workspace === null ? null : WorkspaceContext::fromString($workspace),
+            $this->positiveInteger($membershipVersion),
+            $this->positiveInteger($policyGeneration),
+        );
     }
 
     /**
@@ -251,6 +362,7 @@ final readonly class DoctrineAccessTokenVerifier implements AccessTokenVerifier
      *
      * @param   string        $subjectId          UUID of the user the token was issued to.
      * @param   list<string>  $tokenCapabilities  Capability names recorded on the token row.
+     * @param   ?string       $membershipId       Exact SQL-validated organization membership, when scoped.
      *
      * @return  list<array{capability: string, scope_type: string, scope_identifier: ?string}>
      *          One row per surviving grant, ordered by capability, scope type and scope identifier.
@@ -261,22 +373,47 @@ final readonly class DoctrineAccessTokenVerifier implements AccessTokenVerifier
      *
      * @since   2.0.0
      */
-    private function grantsFor(string $subjectId, array $tokenCapabilities): array
+    private function grantsFor(
+        string $subjectId,
+        array $tokenCapabilities,
+        ?string $membershipId,
+    ): array
     {
         if ($tokenCapabilities === []) {
             return [];
         }
 
         $placeholders = implode(', ', array_fill(0, count($tokenCapabilities), '?'));
-        $rows = $this->database->fetchAllAssociative(sprintf(
-            'SELECT DISTINCT g.capability_code AS capability, g.scope_type, g.scope_identifier '
+        $sql = 'SELECT g.capability_code AS capability, g.scope_type, g.scope_identifier '
             . 'FROM %s ur INNER JOIN %s g ON g.role_id = ur.role_id '
-            . 'WHERE ur.user_id = ? AND g.capability_code IN (%s) '
-            . 'ORDER BY g.capability_code, g.scope_type, g.scope_identifier',
-            $this->tables->quoted('user_roles'),
-            $this->tables->quoted('role_capability_grants'),
-            $placeholders,
-        ), [$subjectId, ...$tokenCapabilities]);
+            . 'WHERE ur.user_id = ? AND g.capability_code IN (%s)';
+        $parameters = [$subjectId, ...$tokenCapabilities];
+        if ($membershipId !== null) {
+            $sql .= ' UNION SELECT g.capability_code AS capability, g.scope_type, g.scope_identifier '
+                . 'FROM %s mr INNER JOIN %s g ON g.role_id = mr.role_id '
+                . 'WHERE mr.membership_id = ? AND g.capability_code IN (%s)';
+            $parameters = [...$parameters, $membershipId, ...$tokenCapabilities];
+            $sql = sprintf(
+                $sql,
+                $this->tables->quoted('user_roles'),
+                $this->tables->quoted('role_capability_grants'),
+                $placeholders,
+                $this->tables->quoted('membership_roles'),
+                $this->tables->quoted('role_capability_grants'),
+                $placeholders,
+            );
+        } else {
+            $sql = sprintf(
+                $sql,
+                $this->tables->quoted('user_roles'),
+                $this->tables->quoted('role_capability_grants'),
+                $placeholders,
+            );
+        }
+        $rows = $this->database->fetchAllAssociative(
+            $sql . ' ORDER BY capability, scope_type, scope_identifier',
+            $parameters,
+        );
 
         $grants = [];
         foreach ($rows as $row) {

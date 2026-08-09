@@ -10,6 +10,7 @@ use Doctrine\DBAL\Platforms\SQLitePlatform;
 use Doctrine\DBAL\Types\Types;
 use InvalidArgumentException;
 use Kumwe\CMS\Application\Authorization\AuthorizationGateway;
+use Kumwe\CMS\Application\Authorization\AuthorizationPolicyRegistry;
 use Kumwe\CMS\Application\Authorization\AuthorizationResource;
 use Kumwe\CMS\Application\Authorization\ExecutionContext;
 use Kumwe\CMS\Application\Authorization\ResourceSiteOwnershipWriter;
@@ -64,27 +65,6 @@ final readonly class DoctrineAdministratorIdentityGateway implements Administrat
      */
     private const MAXIMUM_TOKEN_LIFETIME = '+90 days';
     /**
-     * Every capability the shared `administrator` role is granted globally when it is provisioned.
-     *
-     * The set is checked against the `capabilities` catalogue before any account is written, and re-run
-     * on each bootstrap, so a role created by an earlier release picks up capabilities added since.
-     *
-     * @var    list<string>
-     * @since  2.0.0
-     */
-    private const ADMINISTRATOR_CAPABILITIES = [
-        'administrator.access', 'automation.manage', 'content.archive', 'content.create', 'content.delete',
-        'business.record.action', 'business.record.archive', 'business.record.browse', 'business.record.create',
-        'business.record.delete', 'business.record.history', 'business.record.read', 'business.record.relate',
-        'business.record.restore', 'business.record.update', 'business.schema.approve',
-        'business.schema.destructive', 'business.schema.execute', 'business.schema.plan', 'business.schema.read',
-        'business.schema.recover',
-        'content.publish', 'content.read', 'content.restore', 'content.review', 'content.submit',
-        'content.unpublish', 'content.update', 'extensions.manage', 'navigation.manage', 'settings.manage',
-        'themes.administrator.manage', 'themes.site.manage', 'users.manage',
-    ];
-
-    /**
      * Wire the gateway to the connection, throttle, authorization and audit collaborators it works through.
      *
      * @param  Connection                    $database           DBAL connection every identity table is
@@ -107,6 +87,8 @@ final readonly class DoctrineAdministratorIdentityGateway implements Administrat
      *         stand in for the address and the origin at the throttle.
      * @param  AuthorizationGateway          $authorization      Judge of the bootstrap authority the
      *         administrator provisioning path demands.
+     * @param  AuthorizationPolicyRegistry   $authorizationPolicies  Live typed catalog from which the
+     *         administrator role derives enforceable human core capabilities.
      * @param  TokenDelegationPreauthorizer  $tokenDelegation    Delegation check every issuance clears,
      *         once before the transaction and once inside it.
      * @param  TokenRotationPreauthorizer    $tokenRotation      Rotation check resolving the superseded
@@ -129,6 +111,7 @@ final readonly class DoctrineAdministratorIdentityGateway implements Administrat
         private AccessTokenQuotaPolicy $quota,
         private string $applicationSecret,
         private AuthorizationGateway $authorization,
+        private AuthorizationPolicyRegistry $authorizationPolicies,
         private TokenDelegationPreauthorizer $tokenDelegation,
         private TokenRotationPreauthorizer $tokenRotation,
         private ResourceSiteOwnershipWriter $ownership,
@@ -350,14 +333,18 @@ final readonly class DoctrineAdministratorIdentityGateway implements Administrat
      */
     private function assertAdministratorCapabilitiesAvailable(): void
     {
-        $placeholders = implode(', ', array_fill(0, count(self::ADMINISTRATOR_CAPABILITIES), '?'));
+        $required = $this->administratorCapabilities();
+        if ($required === []) {
+            throw new RuntimeException('The live authorization registry has no administrator capabilities.');
+        }
+        $placeholders = implode(', ', array_fill(0, count($required), '?'));
         $available = $this->database->fetchFirstColumn(sprintf(
             'SELECT code FROM %s WHERE code IN (%s)',
             $this->tables->quoted('capabilities'),
             $placeholders,
-        ), self::ADMINISTRATOR_CAPABILITIES);
+        ), $required);
         $missing = array_values(array_diff(
-            self::ADMINISTRATOR_CAPABILITIES,
+            $required,
             array_values(array_filter($available, 'is_string')),
         ));
 
@@ -462,7 +449,7 @@ final readonly class DoctrineAdministratorIdentityGateway implements Administrat
      */
     private function ensureAdministratorGrants(string $roleId, string $userId, DateTimeImmutable $now): void
     {
-        foreach (self::ADMINISTRATOR_CAPABILITIES as $capability) {
+        foreach ($this->administratorCapabilities() as $capability) {
             $existing = $this->database->fetchOne(sprintf(
                 'SELECT id FROM %s WHERE role_id = ? AND capability_code = ? '
                 . "AND scope_type = 'global' AND scope_identifier IS NULL LIMIT 1",
@@ -487,6 +474,30 @@ final readonly class DoctrineAdministratorIdentityGateway implements Administrat
                 SiteContext::default(),
             );
         }
+    }
+
+    /**
+     * Derive the administrator role from enforceable human capabilities published by core.
+     *
+     * System-only bootstrap and worker capabilities carry no human grant scopes and are therefore
+     * excluded by their typed definition rather than by another denylist. Extension capabilities are
+     * also excluded: installation administrators may grant them explicitly but installing a package
+     * must not silently expand every administrator's authority.
+     *
+     * @return  list<string>  Deterministically ordered core capability identifiers safe for human grants.
+     *
+     * @since   2.0.0
+     */
+    private function administratorCapabilities(): array
+    {
+        $capabilities = [];
+        foreach ($this->authorizationPolicies->capabilityDefinitions()->ownedBy('core') as $definition) {
+            if ($definition->enforceable() && $definition->allowsHumanGrant()) {
+                $capabilities[] = $definition->capability->value();
+            }
+        }
+
+        return $capabilities;
     }
 
     /**
@@ -576,6 +587,21 @@ final readonly class DoctrineAdministratorIdentityGateway implements Administrat
         $siteIdentifier = SiteContext::fromString($siteIdentifier)->identifier();
 
         $uniqueCapabilities = $delegation->capabilities;
+        $organizationIdentifier = $delegation->organization;
+        $workspaceIdentifier = $delegation->workspace;
+        $membershipId = $delegation->membershipId;
+        $membershipVersion = $delegation->membershipVersion;
+        $policyGeneration = $delegation->policyGeneration;
+        foreach ($uniqueCapabilities as $capability) {
+            if (
+                $this->authorizationPolicies->requiresMembershipContext(Capability::fromString($capability))
+                && $membershipId === null
+            ) {
+                throw new InvalidArgumentException(
+                    'Organization-sensitive tokens require an exact organization membership context.',
+                );
+            }
+        }
 
         $now = $this->clock->now();
         $expiresAt ??= $now->modify(self::DEFAULT_TOKEN_LIFETIME);
@@ -603,31 +629,47 @@ final readonly class DoctrineAdministratorIdentityGateway implements Administrat
             $rotatedFrom,
             $context,
             $email,
+            $organizationIdentifier,
+            $workspaceIdentifier,
+            $membershipId,
+            $membershipVersion,
+            $policyGeneration,
         ): void {
             $epoch = $this->database->fetchOne(sprintf(
-                "SELECT security_epoch FROM %s WHERE id = ? AND status = 'active' FOR UPDATE",
+                "SELECT security_epoch FROM %s WHERE id = ? AND status = 'active'%s",
                 $this->tables->quoted('users'),
+                $this->database->getDatabasePlatform() instanceof SQLitePlatform ? '' : ' FOR UPDATE',
             ), [$userId]);
             if (!is_int($epoch) && (!is_string($epoch) || preg_match('/^[0-9]+$/D', $epoch) !== 1)) {
                 throw new RuntimeException('The user security epoch could not be locked.');
             }
-            $lockedDelegation = $this->tokenDelegation->authorize($context, $email, $uniqueCapabilities);
-            if ($lockedDelegation->subjectId !== $userId) {
-                throw new RuntimeException('The token subject changed during issuance.');
-            }
-            $granted = $this->capabilitiesFor($userId, $siteIdentifier);
-            foreach ($uniqueCapabilities as $capability) {
-                if (!in_array($capability, $granted, true)) {
-                    throw new InvalidArgumentException(sprintf(
-                        'The user does not grant capability %s.',
-                        $capability,
-                    ));
-                }
+            $lockedDelegation = $this->tokenDelegation->authorize($context, $email, $uniqueCapabilities, true);
+            if (
+                $lockedDelegation->subjectId !== $userId
+                || $lockedDelegation->organization !== $organizationIdentifier
+                || $lockedDelegation->workspace !== $workspaceIdentifier
+                || $lockedDelegation->membershipId !== $membershipId
+                || $lockedDelegation->membershipVersion !== $membershipVersion
+                || $lockedDelegation->policyGeneration !== $policyGeneration
+            ) {
+                throw new RuntimeException('The token subject authority changed during issuance.');
             }
             $quotaSql = 'SELECT COUNT(*) FROM %s WHERE subject_id = ? AND site_identifier = ? '
                 . 'AND audience = ? AND purpose = ? AND security_epoch = ? '
+                . 'AND ((organization_identifier = ?) OR (organization_identifier IS NULL AND ? IS NULL)) '
+                . 'AND ((workspace_identifier = ?) OR (workspace_identifier IS NULL AND ? IS NULL)) '
                 . 'AND revoked_at IS NULL AND expires_at > CURRENT_TIMESTAMP';
-            $quotaParameters = [$userId, $siteIdentifier, $audience, $purpose, (int) $epoch];
+            $quotaParameters = [
+                $userId,
+                $siteIdentifier,
+                $audience,
+                $purpose,
+                (int) $epoch,
+                $organizationIdentifier,
+                $organizationIdentifier,
+                $workspaceIdentifier,
+                $workspaceIdentifier,
+            ];
             if ($rotatedFrom !== null) {
                 $quotaSql .= ' AND id <> ?';
                 $quotaParameters[] = $rotatedFrom;
@@ -649,6 +691,43 @@ final readonly class DoctrineAdministratorIdentityGateway implements Administrat
                 $purpose,
                 (int) $activeCount,
             );
+            $familyId = $tokenId;
+            $parentTokenId = null;
+            $delegationDepth = 0;
+            if ($rotatedFrom !== null) {
+                $parent = $this->database->fetchAssociative(sprintf(
+                    'SELECT family_id, delegation_depth, site_identifier, organization_identifier, '
+                    . 'workspace_identifier, membership_id, membership_version, policy_generation '
+                    . 'FROM %s WHERE id = ? AND revoked_at IS NULL%s',
+                    $this->tables->quoted('api_tokens'),
+                    $this->database->getDatabasePlatform() instanceof \Doctrine\DBAL\Platforms\SQLitePlatform
+                        ? ''
+                        : ' FOR UPDATE',
+                ), [$rotatedFrom]);
+                if (
+                    $parent === false
+                    || !is_string($parent['family_id'] ?? null)
+                    || $parent['site_identifier'] !== $siteIdentifier
+                    || ($parent['organization_identifier'] ?? null) !== $organizationIdentifier
+                    || ($parent['workspace_identifier'] ?? null) !== $workspaceIdentifier
+                    || ($parent['membership_id'] ?? null) !== $membershipId
+                    || (int) ($parent['membership_version'] ?? 0) !== ($membershipVersion ?? 0)
+                    || (int) ($parent['policy_generation'] ?? 0) !== ($policyGeneration ?? 0)
+                ) {
+                    throw new InvalidArgumentException('A replacement token must inherit its exact parent scope.');
+                }
+                $depth = $parent['delegation_depth'] ?? null;
+                if (!is_int($depth) && (!is_string($depth) || preg_match('/^[0-9]+$/D', $depth) !== 1)) {
+                    throw new RuntimeException('The parent token delegation depth is invalid.');
+                }
+                $parentDepth = (int) $depth;
+                if ($parentDepth > 16) {
+                    throw new RuntimeException('The parent token delegation depth is invalid.');
+                }
+                $delegationDepth = $parentDepth;
+                $familyId = $parent['family_id'];
+                $parentTokenId = $rotatedFrom;
+            }
             $this->database->insert($this->tables->raw('api_tokens'), [
                 'id' => $tokenId,
                 'subject_id' => $userId,
@@ -660,6 +739,15 @@ final readonly class DoctrineAdministratorIdentityGateway implements Administrat
                 'purpose' => $purpose,
                 'site_identifier' => $siteIdentifier,
                 'rotated_from' => $rotatedFrom,
+                'organization_identifier' => $organizationIdentifier,
+                'workspace_identifier' => $workspaceIdentifier,
+                'membership_id' => $membershipId,
+                'membership_version' => $membershipVersion,
+                'policy_generation' => $policyGeneration,
+                'family_id' => $familyId,
+                'parent_token_id' => $parentTokenId,
+                'delegation_depth' => $delegationDepth,
+                'owner_identifier' => 'core',
                 'expires_at' => $expiresAt,
                 'revoked_at' => null,
                 'revocation_reason' => null,
@@ -688,6 +776,13 @@ final readonly class DoctrineAdministratorIdentityGateway implements Administrat
                     'audience' => $audience,
                     'purpose' => $purpose,
                     'site_identifier' => $siteIdentifier,
+                    'organization_identifier' => $organizationIdentifier,
+                    'workspace_identifier' => $workspaceIdentifier,
+                    'membership_id' => $membershipId,
+                    'membership_version' => $membershipVersion,
+                    'policy_generation' => $policyGeneration,
+                    'family_id' => $familyId,
+                    'parent_token_id' => $parentTokenId,
                     'expires_at' => $expiresAt->format(DATE_ATOM),
                     'rotated_from' => $rotatedFrom,
                 ],
@@ -743,12 +838,16 @@ final readonly class DoctrineAdministratorIdentityGateway implements Administrat
             $tokenId,
         ): array {
             $rotation = $this->tokenRotation->authorize($context, $tokenId, true);
+            $replacementExpiry = $expiresAt ?? $rotation->expiresAt;
+            if ($replacementExpiry > $rotation->expiresAt) {
+                throw new InvalidArgumentException('A token rotation cannot extend its credential lifetime.');
+            }
             $created = $this->issueAccessToken(
                 $context,
                 $rotation->email,
                 $name,
                 $rotation->capabilities,
-                $expiresAt,
+                $replacementExpiry,
                 $rotation->audience,
                 $rotation->purpose,
                 $tokenId,
@@ -773,37 +872,6 @@ final readonly class DoctrineAdministratorIdentityGateway implements Administrat
             ));
             return $created;
         });
-    }
-
-    /**
-     * List the distinct capability codes the user holds globally or for one named site.
-     *
-     * Issuance uses this inside its write transaction as a second, scope-flattened check that every
-     * requested capability is one the subject really has. Scope is deliberately collapsed here because a
-     * token is already confined to a single site; the scoped truth belongs to `grantsFor()`.
-     *
-     * @param   string  $userId          UUID of the user whose role grants are read.
-     * @param   string  $siteIdentifier  Site whose site-scoped grants count alongside the global ones.
-     *
-     * @return  list<string>  Capability codes, deduplicated and ordered by code; empty when the user's
-     *          roles grant nothing within that scope.
-     *
-     * @throws  \Doctrine\DBAL\Exception  When the driver rejects the read.
-     *
-     * @since   2.0.0
-     */
-    private function capabilitiesFor(string $userId, string $siteIdentifier = 'default'): array
-    {
-        $values = $this->database->fetchFirstColumn(sprintf(
-            'SELECT DISTINCT g.capability_code FROM %s ur INNER JOIN %s g ON g.role_id = ur.role_id '
-            . "WHERE ur.user_id = ? AND (g.scope_type = 'global' "
-            . "OR (g.scope_type = 'site' AND g.scope_identifier = ?)) "
-            . 'ORDER BY g.capability_code',
-            $this->tables->quoted('user_roles'),
-            $this->tables->quoted('role_capability_grants'),
-        ), [$userId, $siteIdentifier]);
-
-        return array_values(array_filter($values, 'is_string'));
     }
 
     /**

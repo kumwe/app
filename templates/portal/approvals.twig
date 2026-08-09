@@ -1,0 +1,33 @@
+{% extends 'portal/layout.twig' %}
+
+{% block title %}Approvals · Kumwe Portal{% endblock %}
+
+{% block content %}
+<section aria-labelledby="approval-inbox-title">
+    <p class="eyebrow">Maker-checker workflow</p>
+    <h1 id="approval-inbox-title">Approval inbox</h1>
+    <p>Only requests visible in your current organization and workspace are listed.</p>
+    {% if notice %}<div class="portal-notice" role="status">{{ notice }}</div>{% endif %}
+</section>
+
+{% if approvals is empty %}
+    <p>No approval requests are available in this workspace.</p>
+{% else %}
+<div class="portal-table-wrap" tabindex="0" role="region" aria-label="Approval requests">
+    <table class="portal-table">
+        <thead><tr><th scope="col">Request</th><th scope="col">Action</th><th scope="col">Resource</th><th scope="col">Progress</th><th scope="col">Expires</th></tr></thead>
+        <tbody>
+        {% for approval in approvals %}
+            <tr>
+                <th scope="row"><a href="/portal/approvals/{{ approval.id }}">{{ approval.id }}</a><br><small>{{ approval.status.value }}</small></th>
+                <td><code>{{ approval.action }}</code></td>
+                <td>{{ approval.resourceType }}<br><code>{{ approval.resourceId }}</code></td>
+                <td>{{ approval.approvalCount }} of {{ approval.requiredQuorum }}</td>
+                <td><time datetime="{{ approval.expiresAt|date('c') }}">{{ approval.expiresAt|date('Y-m-d H:i T') }}</time></td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+{% endblock %}

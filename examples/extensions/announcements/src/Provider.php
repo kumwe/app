@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace KumweExample\Announcements;
 
+use Kumwe\CMS\Application\Authorization\ResourcePolicyTarget;
 use Kumwe\CMS\Extension\Contribution\AdministratorNavigationDefinition;
 use Kumwe\CMS\Extension\Contribution\AdministratorRouteDefinition;
 use Kumwe\CMS\Extension\Contribution\AdministratorRouteHandlerFactory;
@@ -12,6 +13,7 @@ use Kumwe\CMS\Extension\Contribution\AdministratorWorkspaceDefinition;
 use Kumwe\CMS\Extension\Contribution\CapabilityDefinition;
 use Kumwe\CMS\Extension\Contribution\ExtensionContributionProvider;
 use Kumwe\CMS\Extension\Contribution\ExtensionContributionRegistrar;
+use Kumwe\CMS\Extension\Contribution\ResourcePolicyDefinition;
 use Kumwe\CMS\Extension\Runtime\ExtensionContainer;
 use Kumwe\CMS\Extension\Runtime\ExtensionRouteRegistrar;
 use Kumwe\CMS\Extension\Runtime\RuntimeExtension;
@@ -55,6 +57,11 @@ final class Provider implements RuntimeExtension, ExtensionContributionProvider
             'kumwe.announcements-example.manage',
             'Manage announcements example',
             'Open and manage the announcements conformance workspace.',
+        ));
+        $contributions->resourcePolicy(new ResourcePolicyDefinition(
+            'kumwe.announcements-example.administrator',
+            'kumwe.announcements-example.manage',
+            [new ResourcePolicyTarget('administrator_session')],
         ));
         $contributions->fieldType(BusinessDefinitions::severity());
         foreach (BusinessDefinitions::all() as $definition) {
