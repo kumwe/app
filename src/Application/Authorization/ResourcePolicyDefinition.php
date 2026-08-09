@@ -82,18 +82,18 @@ final readonly class ResourcePolicyDefinition
         }
 
         $indexed = [];
-        foreach ($targets as $target) {
-            $signature = json_encode($target->toArray(), JSON_THROW_ON_ERROR);
-            $indexed[$signature] = $target;
+        foreach ($targets as $declaredTarget) {
+            $signature = json_encode($declaredTarget->toArray(), JSON_THROW_ON_ERROR);
+            $indexed[$signature] = $declaredTarget;
         }
         if ($indexed === [] || count($indexed) > 64) {
             throw new InvalidArgumentException('A resource policy must declare between 1 and 64 targets.');
         }
         ksort($indexed, SORT_STRING);
         $normalized = array_values($indexed);
-        foreach ($normalized as $index => $target) {
+        foreach ($normalized as $index => $normalizedTarget) {
             foreach (array_slice($normalized, $index + 1) as $other) {
-                if ($target->overlaps($other)) {
+                if ($normalizedTarget->overlaps($other)) {
                     throw new InvalidArgumentException('A resource policy cannot contain overlapping targets.');
                 }
             }

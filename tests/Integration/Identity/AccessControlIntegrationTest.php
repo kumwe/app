@@ -83,6 +83,50 @@ final class AccessControlIntegrationTest extends TestCase
     }
 
     /**
+     * Proves unscoped quota lookup uses SQL null predicates rather than untyped null placeholders.
+     *
+     * PostgreSQL cannot infer the type of a standalone `? IS NULL` parameter. Issuing two tokens in the
+     * site/global context exercises both nullable tenant columns and also proves they share one quota
+     * partition without relying on database-specific null-safe equality syntax.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testUnscopedTokenQuotaLookupIsPortable(): void
+    {
+        $container = TestKernelFactory::create(Environment::fromGlobals());
+        $access = $container->get(AccessControlService::class);
+        $identities = $container->get(AdministratorIdentityGateway::class);
+        $database = $container->get(Connection::class);
+        $tables = $container->get(TableNames::class);
+        self::assertInstanceOf(AccessControlService::class, $access);
+        self::assertInstanceOf(AdministratorIdentityGateway::class, $identities);
+        self::assertInstanceOf(Connection::class, $database);
+        self::assertInstanceOf(TableNames::class, $tables);
+        $context = TestKernelFactory::administratorContext($container);
+        $marker = Uuid::uuid7()->toString();
+        $email = sprintf('null-quota-%s@example.test', $marker);
+        $userId = $access->createUser($context, $email, 'Null quota user', 'correct horse battery staple');
+        $roleId = $access->createRole($context, 'null-quota-' . $marker, 'Null quota test');
+        $access->grant($context, $roleId, 'content.read');
+        $access->assignRole($context, $userId, $roleId);
+
+        $first = $identities->issueAccessToken($context, $email, 'Null quota one', ['content.read']);
+        $second = $identities->issueAccessToken($context, $email, 'Null quota two', ['content.read']);
+
+        foreach ([$first['token_id'], $second['token_id']] as $tokenId) {
+            $scope = $database->fetchAssociative(sprintf(
+                'SELECT organization_identifier, workspace_identifier FROM %s WHERE id = ?',
+                $tables->quoted('api_tokens'),
+            ), [$tokenId]);
+            self::assertIsArray($scope);
+            self::assertNull($scope['organization_identifier']);
+            self::assertNull($scope['workspace_identifier']);
+        }
+    }
+
+    /**
      * Proves grant changes invalidate every distinct direct or membership role attachment.
      *
      * Inactive memberships remain in the affected set so reactivation cannot revive an old credential,

@@ -54,12 +54,12 @@ final readonly class PortalLoginHandler implements RequestHandlerInterface
     /**
      * Bind login to shared identities, server membership resolution, portal storage, and cookie policy.
      *
-     * @param   PortalAuthenticator    $authenticator   Password authentication and throttling port.
-     * @param   PortalContextResolver  $contexts        Server-owned membership selection authority.
-     * @param   PortalSessionStore     $sessions        Dedicated portal session store.
-     * @param   PortalRenderer         $renderer        Distinct portal shell renderer.
-     * @param   bool                   $secureCookie    Whether HTTPS requires the `Secure` attribute.
-     * @param   int                    $sessionLifetime Cookie `Max-Age`, matching stored lifetime.
+     * @param   PortalAuthenticator    $authenticator    Password authentication and throttling port.
+     * @param   PortalContextResolver  $contexts         Server-owned membership selection authority.
+     * @param   PortalSessionStore     $sessions         Dedicated portal session store.
+     * @param   PortalRenderer         $renderer         Distinct portal shell renderer.
+     * @param   bool                   $secureCookie     Whether HTTPS requires the `Secure` attribute.
+     * @param   int                    $sessionLifetime  Cookie `Max-Age`, matching stored lifetime.
      *
      * @throws  \InvalidArgumentException  When cookie lifetime is outside 5 minutes through 7 days.
      *
@@ -154,10 +154,10 @@ final readonly class PortalLoginHandler implements RequestHandlerInterface
     /**
      * Render a safe sign-in error while preserving only the submitted email.
      *
-     * @param   string                $message  Operator-facing safe error.
-     * @param   string                $email    Submitted email.
-     * @param   int                   $status   HTTP status.
-     * @param   array<string, string> $headers  Additional headers.
+     * @param   string                                         $message  Operator-facing safe error.
+     * @param   string                                         $email    Submitted email.
+     * @param   int                                            $status   HTTP status.
+     * @param   array<non-empty-string, array<string>|string>  $headers  Additional headers.
      *
      * @return  ResponseInterface  No-store error form.
      *
@@ -258,7 +258,7 @@ final readonly class PortalLoginHandler implements RequestHandlerInterface
     /**
      * Generate an unpadded URL-safe token with the requested entropy.
      *
-     * @param   int  $bytes  Random byte count.
+     * @param   positive-int  $bytes  Random byte count.
      *
      * @return  string  URL-safe opaque token.
      *

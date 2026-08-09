@@ -32,25 +32,25 @@ use Psr\Http\Server\RequestHandlerInterface;
 /**
  * Scoped portal approval inbox, non-enumerating detail, and exact-purpose step-up decisions.
  *
- * @since 2.0.0
+ * @since  2.0.0
  */
 final readonly class PortalApprovalHandler implements RequestHandlerInterface
 {
     /**
      * Bind the approval delivery surface to scoped queries, mutations, and portal step-up.
      *
-     * @param  ApprovalQueryService              $queries          Scoped approval projections.
-     * @param  ApprovalService                   $approvals        Protected approval mutations.
-     * @param  StepUpProvider                    $stepUp           Portal authenticator and recovery verifier.
-     * @param  AuthorizationStepUpProofAdapter   $proofs           Proof adapter for authorization contexts.
-     * @param  TransactionManager                $transactions     Atomic verification and decision scope.
-     * @param  PortalRenderer                    $renderer         Isolated portal template renderer.
-     * @param  bool                              $secureCookie     Whether portal cookies require HTTPS.
-     * @param  int                               $sessionLifetime  Portal cookie lifetime in seconds.
+     * @param   ApprovalQueryService             $queries          Scoped approval projections.
+     * @param   ApprovalService                  $approvals        Protected approval mutations.
+     * @param   StepUpProvider                   $stepUp           Portal authenticator and recovery verifier.
+     * @param   AuthorizationStepUpProofAdapter  $proofs           Proof adapter for authorization contexts.
+     * @param   TransactionManager               $transactions     Atomic verification and decision scope.
+     * @param   PortalRenderer                   $renderer         Isolated portal template renderer.
+     * @param   bool                             $secureCookie     Whether portal cookies require HTTPS.
+     * @param   int                              $sessionLifetime  Portal cookie lifetime in seconds.
      *
      * @throws  \InvalidArgumentException  When the session lifetime falls outside the supported range.
      *
-     * @since  2.0.0
+     * @since   2.0.0
      */
     public function __construct(
         private ApprovalQueryService $queries,
@@ -74,7 +74,7 @@ final readonly class PortalApprovalHandler implements RequestHandlerInterface
      *
      * @return  ResponseInterface  Inbox, detail, error, or post-decision redirect response.
      *
-     * @since  2.0.0
+     * @since   2.0.0
      */
     public function handle(ServerRequestInterface $request): ResponseInterface
     {
@@ -169,13 +169,13 @@ final readonly class PortalApprovalHandler implements RequestHandlerInterface
     /**
      * Render the actor's scoped approval inbox without exposing unavailable requests.
      *
-     * @param   PortalSession             $session    Resolved portal session.
-     * @param   list<ApprovalRequestView> $approvals  Scoped approval projections.
-     * @param   string                    $notice     Optional status message.
+     * @param   PortalSession              $session    Resolved portal session.
+     * @param   list<ApprovalRequestView>  $approvals  Scoped approval projections.
+     * @param   string                     $notice     Optional status message.
      *
      * @return  ResponseInterface  Non-cacheable approval inbox response.
      *
-     * @since  2.0.0
+     * @since   2.0.0
      */
     private function inbox(PortalSession $session, array $approvals, string $notice = ''): ResponseInterface
     {
@@ -189,16 +189,16 @@ final readonly class PortalApprovalHandler implements RequestHandlerInterface
     /**
      * Render one scoped approval request and its currently permitted controls.
      *
-     * @param   PortalSession          $session   Resolved portal session.
-     * @param   ApprovalRequestView    $approval  Scoped approval projection.
-     * @param   string                 $notice    Optional success message.
-     * @param   string                 $error     Optional protected error message.
-     * @param   int                    $status    HTTP status code.
-     * @param   array<string, string>  $headers   Additional response headers.
+     * @param   PortalSession                                  $session   Resolved portal session.
+     * @param   ApprovalRequestView                            $approval  Scoped approval projection.
+     * @param   string                                         $notice    Optional success message.
+     * @param   string                                         $error     Optional protected error message.
+     * @param   int                                            $status    HTTP status code.
+     * @param   array<non-empty-string, array<string>|string>  $headers   Additional response headers.
      *
      * @return  ResponseInterface  Non-cacheable approval detail response.
      *
-     * @since  2.0.0
+     * @since   2.0.0
      */
     private function detail(
         PortalSession $session,
@@ -219,12 +219,12 @@ final readonly class PortalApprovalHandler implements RequestHandlerInterface
     /**
      * Return the same not-found response for absent and unauthorized approval requests.
      *
-     * @param   PortalSession          $session  Resolved portal session.
-     * @param   array<string, string>  $headers  Additional response headers.
+     * @param   PortalSession                                  $session  Resolved portal session.
+     * @param   array<non-empty-string, array<string>|string>  $headers  Additional response headers.
      *
      * @return  ResponseInterface  Non-enumerating not-found response.
      *
-     * @since  2.0.0
+     * @since   2.0.0
      */
     private function notFound(PortalSession $session, array $headers = []): ResponseInterface
     {
@@ -240,7 +240,7 @@ final readonly class PortalApprovalHandler implements RequestHandlerInterface
      *
      * @return  ?string  Decision suffix, or null for an unsupported path.
      *
-     * @since  2.0.0
+     * @since   2.0.0
      */
     private function decision(string $path): ?string
     {
@@ -260,7 +260,7 @@ final readonly class PortalApprovalHandler implements RequestHandlerInterface
      *
      * @return  bool  Whether the current actor may perform the decision.
      *
-     * @since  2.0.0
+     * @since   2.0.0
      */
     private function allowed(ApprovalRequestView $detail, string $decision): bool
     {
@@ -270,14 +270,14 @@ final readonly class PortalApprovalHandler implements RequestHandlerInterface
     /**
      * Verify the server-selected decision purpose through TOTP or one recovery code.
      *
-     * @param   PortalSession          $session   Resolved portal session.
-     * @param   string                 $decision  Server-resolved decision suffix.
-     * @param   array<string, string>  $form      Parsed decision form.
-     * @param   ServerRequestInterface $request   Request carrying the trusted source address.
+     * @param   PortalSession           $session   Resolved portal session.
+     * @param   string                  $decision  Server-resolved decision suffix.
+     * @param   array<string, string>   $form      Parsed decision form.
+     * @param   ServerRequestInterface  $request   Request carrying the trusted source address.
      *
      * @return  StepUpVerification  Fresh proof and rotated portal session.
      *
-     * @since  2.0.0
+     * @since   2.0.0
      */
     private function verify(
         PortalSession $session,
@@ -305,7 +305,7 @@ final readonly class PortalApprovalHandler implements RequestHandlerInterface
      *
      * @return  StepUpIntent  Intent bound to actor, session, scope, purpose, and security epoch.
      *
-     * @since  2.0.0
+     * @since   2.0.0
      */
     private function intent(PortalSession $session, string $purpose): StepUpIntent
     {
@@ -328,7 +328,7 @@ final readonly class PortalApprovalHandler implements RequestHandlerInterface
      *
      * @return  string  Trusted client address or a stable unknown marker.
      *
-     * @since  2.0.0
+     * @since   2.0.0
      */
     private function source(ServerRequestInterface $request): string
     {
@@ -343,7 +343,7 @@ final readonly class PortalApprovalHandler implements RequestHandlerInterface
      *
      * @return  ?string  Trimmed reason, or null when omitted.
      *
-     * @since  2.0.0
+     * @since   2.0.0
      */
     private function reason(array $form): ?string
     {
@@ -358,7 +358,7 @@ final readonly class PortalApprovalHandler implements RequestHandlerInterface
      *
      * @return  string  Set-Cookie header value constrained to the portal path.
      *
-     * @since  2.0.0
+     * @since   2.0.0
      */
     private function cookie(string $token): string
     {

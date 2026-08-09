@@ -240,6 +240,7 @@ final class BusinessRecordPolicyCompilerIntegrationTest extends TestCase
             $database,
             $table,
             $definition,
+            $context,
             &$policyCodes
 ): void {
             $policyCode = 'test.business.record.' . Uuid::uuid7()->toString();

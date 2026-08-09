@@ -69,8 +69,8 @@ final readonly class RecordPolicySet
         }
         usort($allows, self::order(...));
         usort($denies, self::order(...));
-        $this->allows = array_values($allows);
-        $this->denies = array_values($denies);
+        $this->allows = $allows;
+        $this->denies = $denies;
     }
 
     /**
@@ -113,7 +113,7 @@ final readonly class RecordPolicySet
      *
      * @throws  JsonException  When a canonical predicate cannot be encoded.
      *
-     * @since  2.0.0
+     * @since   2.0.0
      */
     private static function order(RecordPolicyPredicate $left, RecordPolicyPredicate $right): int
     {

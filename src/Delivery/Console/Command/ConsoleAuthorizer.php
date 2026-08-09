@@ -68,16 +68,18 @@ final readonly class ConsoleAuthorizer
         $verified = $this->tokens instanceof ScopedAccessTokenVerifier
             ? $this->tokens->verifyScoped($token, 'kumwe-cli', 'management', $site->identifier())
             : null;
-        $principal = $verified?->principal
-            ?? ($verified === null && !($this->tokens instanceof ScopedAccessTokenVerifier)
+        $principal = $verified !== null
+            ? $verified->principal
+            : (!($this->tokens instanceof ScopedAccessTokenVerifier)
                 ? $this->tokens->verify($token, 'kumwe-cli', 'management', $site->identifier())
                 : null);
         if ($principal === null || !$principal->hasCapability(Capability::fromString($capability))) {
             throw new InsufficientCapability($capability);
         }
 
-        return $verified?->context('cli-' . bin2hex(random_bytes(16)), AuthenticatedSurface::Cli)
-            ?? $principal->context(
+        return $verified !== null
+            ? $verified->context('cli-' . bin2hex(random_bytes(16)), AuthenticatedSurface::Cli)
+            : $principal->context(
                 $site,
                 AuthenticationStrength::BearerToken,
                 'cli-' . bin2hex(random_bytes(16)),

@@ -45,7 +45,7 @@ final readonly class RecordPolicyBoolean implements RecordPolicyPredicate
         }
         usort($children, static fn (RecordPolicyPredicate $left, RecordPolicyPredicate $right): int =>
             self::canonical($left) <=> self::canonical($right));
-        $this->children = array_values($children);
+        $this->children = $children;
     }
 
     /**
@@ -53,7 +53,7 @@ final readonly class RecordPolicyBoolean implements RecordPolicyPredicate
      *
      * @return  array<string, mixed>  Canonical boolean predicate document.
      *
-     * @since  2.0.0
+     * @since   2.0.0
      */
     public function toArray(): array
     {
@@ -72,7 +72,7 @@ final readonly class RecordPolicyBoolean implements RecordPolicyPredicate
      *
      * @return  int  Positive operation count for the complete subtree.
      *
-     * @since  2.0.0
+     * @since   2.0.0
      */
     public function operationCount(): int
     {
@@ -87,7 +87,7 @@ final readonly class RecordPolicyBoolean implements RecordPolicyPredicate
      *
      * @return  int  Positive tree depth including this node.
      *
-     * @since  2.0.0
+     * @since   2.0.0
      */
     public function depth(): int
     {

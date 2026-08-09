@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace Kumwe\CMS\Tests\Architecture;
 
+use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\TestCase;
 
 /** @since 2.0.0 */
+#[CoversNothing]
 final class PortalCompositionBoundaryTest extends TestCase
 {
     public function testPortalCompositionUsesItsOwnMiddlewareCookieRendererAndRoutes(): void

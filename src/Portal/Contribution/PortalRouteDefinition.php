@@ -71,7 +71,7 @@ final readonly class PortalRouteDefinition implements ContributionDefinition
         if (in_array('GET', $values, true) && array_intersect($values, ['DELETE', 'PATCH', 'POST', 'PUT']) !== []) {
             throw new InvalidArgumentException('A contributed portal route cannot mix safe and mutating methods.');
         }
-        /** @var non-empty-list<string> $values */
+        /** @var non-empty-list<non-falsy-string> $values */
         $this->methods = $values;
         $this->capability = Capability::fromString($capability)->value();
     }

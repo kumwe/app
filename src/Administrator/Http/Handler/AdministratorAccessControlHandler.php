@@ -203,7 +203,7 @@ final readonly class AdministratorAccessControlHandler implements RequestHandler
                 if ($enrollment === null && $recoveryCodes === []) {
                     return new RedirectResponse('/administrator/access?saved=1', 303, array_filter([
                         'Set-Cookie' => $replacementToken === null ? null : $this->cookie($replacementToken),
-                    ]));
+                    ], static fn (?string $header): bool => $header !== null));
                 }
             }
         }
@@ -229,7 +229,7 @@ final readonly class AdministratorAccessControlHandler implements RequestHandler
         ]), 200, array_filter([
             'Cache-Control' => 'no-store',
             'Set-Cookie' => $replacementToken === null ? null : $this->cookie($replacementToken),
-        ]));
+        ], static fn (?string $header): bool => $header !== null));
     }
 
     /**

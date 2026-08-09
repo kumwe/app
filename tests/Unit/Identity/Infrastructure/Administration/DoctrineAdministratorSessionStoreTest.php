@@ -115,8 +115,10 @@ final class DoctrineAdministratorSessionStoreTest extends TestCase
         ]);
         $database->expects(self::once())->method('update')->willReturn(1);
         $database->expects(self::once())->method('fetchAllAssociative')->with(
-            self::stringContains('kumwe_membership_roles'),
-            [self::USER, self::MEMBERSHIP, self::USER, 5, SiteContext::DEFAULT, 'acme', 8, 'finance', 'finance'],
+            self::callback(static fn (string $sql): bool => str_contains($sql, 'kumwe_membership_roles')
+                && str_contains($sql, 'w.identifier = ?')
+                && !str_contains($sql, '? IS NULL')),
+            [self::USER, self::MEMBERSHIP, self::USER, 5, SiteContext::DEFAULT, 'acme', 8, 'finance'],
         )->willReturn([[
             'capability' => 'business.record.read',
             'scope_type' => 'organization',

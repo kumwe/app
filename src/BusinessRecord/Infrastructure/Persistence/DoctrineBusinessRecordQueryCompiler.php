@@ -699,7 +699,7 @@ final readonly class DoctrineBusinessRecordQueryCompiler
             $cast = $mysql ? 'SIGNED' : 'BIGINT';
             $comparison = sprintf('CAST(%s AS %s) %s ?', $text, $cast, $operator);
         } elseif ($predicate->valueType === RecordPolicyValueType::Decimal) {
-            $this->assertRevisionDecimalFits($columns[0], (string) $predicate->value);
+            [$precision, $scale] = $this->assertRevisionDecimalFits($columns[0], (string) $predicate->value);
             $parameters[] = $predicate->value;
             $types[] = Types::STRING;
             $guard .= ' AND ' . $this->revisionRegex(
@@ -709,13 +709,13 @@ final readonly class DoctrineBusinessRecordQueryCompiler
             $cast = $mysql
                 ? sprintf(
                     'DECIMAL(%d, %d)',
-                    $columns[0]->options['precision'],
-                    $columns[0]->options['scale'],
+                    $precision,
+                    $scale,
                 )
                 : 'NUMERIC';
             $comparison = sprintf('CAST(%s AS %s) %s CAST(? AS %s)', $text, $cast, $operator, $cast);
         } elseif ($predicate->valueType === RecordPolicyValueType::Boolean) {
-            $parameters[] = $predicate->value ? 'true' : 'false';
+            $parameters[] = $predicate->value === true ? 'true' : 'false';
             $types[] = Types::STRING;
             $comparison = $this->revisionTextComparison($text, $operator);
         } else {
@@ -826,13 +826,13 @@ final readonly class DoctrineBusinessRecordQueryCompiler
      * @param   PhysicalColumnBlueprint  $column  Installed decimal column supplying precision and scale.
      * @param   string                   $value   Canonical decimal policy literal.
      *
-     * @return  void
+     * @return  array{int, int}  Validated installed precision and scale for the SQL cast.
      *
      * @throws  InvalidBusinessRecordQuery  When casting the literal would round or overflow.
      *
      * @since   2.0.0
      */
-    private function assertRevisionDecimalFits(PhysicalColumnBlueprint $column, string $value): void
+    private function assertRevisionDecimalFits(PhysicalColumnBlueprint $column, string $value): array
     {
         $precision = $column->options['precision'] ?? null;
         $scale = $column->options['scale'] ?? null;
@@ -840,12 +840,17 @@ final readonly class DoctrineBusinessRecordQueryCompiler
             throw new InvalidBusinessRecordQuery('A revision decimal policy field has no installed bounds.');
         }
         [$integer, $fraction] = array_pad(explode('.', ltrim($value, '-'), 2), 2, '');
-        $integer = ltrim($integer, '0') ?: '0';
+        $integer = ltrim($integer, '0');
+        if ($integer === '') {
+            $integer = '0';
+        }
         $integerDigits = $integer === '0' ? 0 : strlen($integer);
         $significantFraction = rtrim($fraction, '0');
         if ($integerDigits > $precision - $scale || strlen($significantFraction) > $scale) {
             throw new InvalidBusinessRecordQuery('A revision decimal policy literal exceeds installed bounds.');
         }
+
+        return [$precision, $scale];
     }
 
     /**
@@ -968,12 +973,12 @@ final readonly class DoctrineBusinessRecordQueryCompiler
     /**
      * Prove a policy scalar matches the installed column without coercion.
      *
-     * @param   RecordPolicyValueType     $type    Portable comparison domain declared by policy.
-     * @param   PhysicalColumnBlueprint   $column  Installed column used by the predicate.
+     * @param   RecordPolicyValueType    $type    Portable comparison domain declared by policy.
+     * @param   PhysicalColumnBlueprint  $column  Installed column used by the predicate.
      *
      * @return  bool  True when evaluator and database comparisons share a scalar domain.
      *
-     * @since  2.0.0
+     * @since   2.0.0
      */
     private function policyTypeMatches(
         RecordPolicyValueType $type,
@@ -1010,7 +1015,7 @@ final readonly class DoctrineBusinessRecordQueryCompiler
      *
      * @throws  InvalidBusinessRecordQuery  When a plan is replayed against another definition.
      *
-     * @since  2.0.0
+     * @since   2.0.0
      */
     private function assertAccessResource(
         ResolvedBusinessDefinition $resolved,
@@ -1989,10 +1994,10 @@ final readonly class DoctrineBusinessRecordQueryCompiler
     /**
      * Resolve a handle to a field the definition permits a filter to name.
      *
-     * @param   EntityTypeDefinition  $definition  Definition the handle resolves against.
-     * @param   string                $handle      Field handle taken from a filter node.
-     * @param   BusinessRecordAccessPlan  $access  Dynamic field permissions.
-     * @param   FieldAccessUsage          $usage   Direct-filter or relationship-selector use.
+     * @param   EntityTypeDefinition      $definition  Definition the handle resolves against.
+     * @param   string                    $handle      Field handle taken from a filter node.
+     * @param   BusinessRecordAccessPlan  $access      Dynamic field permissions.
+     * @param   FieldAccessUsage          $usage       Direct-filter or relationship-selector use.
      *
      * @return  FieldDefinition  The declared field, proved filterable and visible to queries.
      *
@@ -2133,15 +2138,15 @@ final readonly class DoctrineBusinessRecordQueryCompiler
      * and ignores soft-deleted rows, and an identity matching nothing yields the nil UUID rather than no
      * predicate at all, so the filter matches no record instead of every record.
      *
-     * @param   EntityTypeDefinition  $source          Definition holding the reference field, whose site
+     * @param   EntityTypeDefinition      $source          Definition holding the reference field, whose site
      *          the target is resolved on.
-     * @param   FieldDefinition       $field           The `core.entity_reference` field being filtered,
+     * @param   FieldDefinition           $field           The `core.entity_reference` field being filtered,
      *          whose configuration names the target definition.
-     * @param   ?RecordScope          $scope           Scope the lookup is confined to; a public identity
+     * @param   ?RecordScope              $scope           Scope the lookup is confined to; a public identity
      *          cannot be resolved without one.
-     * @param   string                $publicIdentity  Identity of the target record as the caller wrote
+     * @param   string                    $publicIdentity  Identity of the target record as the caller wrote
      *          it.
-     * @param   BusinessRecordAccessPlan  $access      Source plan carrying the reference target plan.
+     * @param   BusinessRecordAccessPlan  $access          Source plan carrying the reference target plan.
      *
      * @return  string  Record key of the referenced row, or the nil UUID when nothing matches.
      *

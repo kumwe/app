@@ -179,21 +179,24 @@ final readonly class KumweMcpHandlers
             $verified = $tokens instanceof ScopedAccessTokenVerifier
                 ? $tokens->verifyScoped($token, 'kumwe-mcp', 'mcp', $siteIdentifier)
                 : null;
-            $principal = $verified?->principal
-                ?? ($verified === null && !($tokens instanceof ScopedAccessTokenVerifier)
+            $principal = $verified !== null
+                ? $verified->principal
+                : (!($tokens instanceof ScopedAccessTokenVerifier)
                     ? $tokens->verify($token, 'kumwe-mcp', 'mcp', $siteIdentifier)
-                    : null)
-                ?? throw new InsufficientCapability('authenticated');
+                    : null);
+            $principal ??= throw new InsufficientCapability('authenticated');
 
-            return $verified?->context(
-                'mcp-stdio-' . bin2hex(random_bytes(16)),
-                AuthenticatedSurface::Mcp,
-            ) ?? $principal->context(
-                $site,
-                AuthenticationStrength::BearerToken,
-                'mcp-stdio-' . bin2hex(random_bytes(16)),
-                surface: AuthenticatedSurface::Mcp,
-            );
+            return $verified !== null
+                ? $verified->context(
+                    'mcp-stdio-' . bin2hex(random_bytes(16)),
+                    AuthenticatedSurface::Mcp,
+                )
+                : $principal->context(
+                    $site,
+                    AuthenticationStrength::BearerToken,
+                    'mcp-stdio-' . bin2hex(random_bytes(16)),
+                    surface: AuthenticatedSurface::Mcp,
+                );
         };
 
         return new self(

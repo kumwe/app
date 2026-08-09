@@ -194,13 +194,6 @@ final readonly class DoctrineBusinessRecordReadRepository implements BusinessRec
      *          has no record table, the requested scope disagrees with the installed scope columns, a
      *          row's pinned definition version is unavailable, or a stored column is not its declared
      *          type.
-     * @throws  \Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordValidationFailed  When a
-     *          decoded row's virtual formula fields cannot be recomputed.
-     * @throws  InvalidArgumentException  When a stored value contradicts the physical type declared for
-     *          its column, or a decoded row breaks a `BusinessRecord` invariant.
-     * @throws  \DateMalformedStringException  When a stored timestamp column holds an unparsable string.
-     * @throws  \Doctrine\DBAL\Exception  When the driver rejects the scan, or the platform to quote
-     *          identifiers for cannot be resolved.
      *
      * @since   2.0.0
      */
@@ -262,12 +255,12 @@ final readonly class DoctrineBusinessRecordReadRepository implements BusinessRec
     /**
      * Execute the shared bounded inbound scan, optionally narrowed by an actor access plan.
      *
-     * @param   ResolvedBusinessDefinition  $resolved         Source definition and installed table.
-     * @param   RecordScope                 $scope            Site and organization required of every source.
-     * @param   RelationshipDefinition      $relationship     Direct relationship column being matched.
-     * @param   string                      $targetRecordKey  Internal target key stored in that column.
-     * @param   int                         $limit            Most rows to return, from 1 through 501.
-     * @param   BusinessRecordAccessPlan|null $access         Actor policy, or null only for delete integrity.
+     * @param   ResolvedBusinessDefinition     $resolved         Source definition and installed table.
+     * @param   RecordScope                    $scope            Site and organization required of every source.
+     * @param   RelationshipDefinition         $relationship     Direct relationship column being matched.
+     * @param   string                         $targetRecordKey  Internal target key stored in that column.
+     * @param   int                            $limit            Most rows to return, from 1 through 501.
+     * @param   BusinessRecordAccessPlan|null  $access           Actor policy, or null only for delete integrity.
      *
      * @return  list<BusinessRecord>  Referring rows in stable storage-key order.
      *
@@ -705,17 +698,14 @@ final readonly class DoctrineBusinessRecordReadRepository implements BusinessRec
             $groups[$field->handle] = $targetHandle;
         }
         foreach ($groups as $fieldHandle => $targetHandle) {
-            $fieldHandles = [$fieldHandle];
             $keys = [];
             foreach ($records as $record) {
-                foreach ($fieldHandles as $fieldHandle) {
-                    $value = $record->values()[$fieldHandle] ?? null;
-                    if ($value !== null) {
-                        if (!is_string($value) || !\Ramsey\Uuid\Uuid::isValid($value)) {
-                            throw new BusinessRecordSchemaUnavailable('A stored entity reference is invalid.');
-                        }
-                        $keys[] = $value;
+                $value = $record->values()[$fieldHandle] ?? null;
+                if ($value !== null) {
+                    if (!is_string($value) || !\Ramsey\Uuid\Uuid::isValid($value)) {
+                        throw new BusinessRecordSchemaUnavailable('A stored entity reference is invalid.');
                     }
+                    $keys[] = $value;
                 }
             }
             $keys = array_values(array_unique($keys));
@@ -764,14 +754,12 @@ final readonly class DoctrineBusinessRecordReadRepository implements BusinessRec
                 $public[$this->string($row, 'record_key')] = $this->string($row, 'public_id');
             }
             foreach ($records as $record) {
-                foreach ($fieldHandles as $fieldHandle) {
-                    $key = $record->values()[$fieldHandle] ?? null;
-                    if ($key !== null) {
-                        if (!is_string($key)) {
-                            throw new BusinessRecordSchemaUnavailable('A stored entity reference is invalid.');
-                        }
-                        $result[$record->recordKey][$fieldHandle] = $public[$key] ?? ['redacted' => true];
+                $key = $record->values()[$fieldHandle] ?? null;
+                if ($key !== null) {
+                    if (!is_string($key)) {
+                        throw new BusinessRecordSchemaUnavailable('A stored entity reference is invalid.');
                     }
+                    $result[$record->recordKey][$fieldHandle] = $public[$key] ?? ['redacted' => true];
                 }
             }
         }
@@ -800,7 +788,7 @@ final readonly class DoctrineBusinessRecordReadRepository implements BusinessRec
      *          records; owned lines are unaffected.
      * @param   bool                        $includeDeleted   True to also include soft-deleted related
      *          records; owned lines are unaffected.
-     * @param   BusinessRecordAccessPlan    $access          Source plan carrying target relation plans.
+     * @param   BusinessRecordAccessPlan    $access           Source plan carrying target relation plans.
      *
      * @return  array<string, array<string, list<BusinessRecordRelationView>>>  Relation views per source
      *          storage key, keyed by handle, in source then position then key order.
@@ -955,7 +943,7 @@ final readonly class DoctrineBusinessRecordReadRepository implements BusinessRec
      *          records.
      * @param   bool                        $includeDeleted   True to also return soft-deleted related
      *          records.
-     * @param   BusinessRecordAccessPlan    $targetAccess    Target row policy compiled into the include.
+     * @param   BusinessRecordAccessPlan    $targetAccess     Target row policy compiled into the include.
      *
      * @return  array{list<array<string, mixed>>, PhysicalTableBlueprint, bool}  Raw rows in source then
      *          position then key order, the blueprint they must be decoded against, and whether they are
@@ -1132,11 +1120,11 @@ final readonly class DoctrineBusinessRecordReadRepository implements BusinessRec
      * secret or entity-reference field stays present carrying a redaction marker. References are
      * redacted rather than resolved because the stored value is an internal record key.
      *
-     * @param   EntityTypeDefinition  $definition  Line definition supplying read visibility and per-field
+     * @param   EntityTypeDefinition      $definition  Line definition supplying read visibility and per-field
      *          sensitivity.
-     * @param   array<string, mixed>  $values      Decoded line values keyed by field handle.
-     * @param   BusinessRecordAccessPlan  $access  Target field disclosure decision.
-     * @param   FieldAccessUsage           $usage   Exact collection disclosure use.
+     * @param   array<string, mixed>      $values      Decoded line values keyed by field handle.
+     * @param   BusinessRecordAccessPlan  $access      Target field disclosure decision.
+     * @param   FieldAccessUsage          $usage       Exact collection disclosure use.
      *
      * @return  array<string, mixed>  Reader-visible values keyed by handle, redacted fields carrying
      *          `['redacted' => true]`; a handle the row decoded nothing for stays absent.
@@ -1444,15 +1432,15 @@ final readonly class DoctrineBusinessRecordReadRepository implements BusinessRec
      * another owner is simply not found. The pinned version reported back is the line definition's own,
      * taken from the argument rather than read off the row.
      *
-     * @param   ResolvedBusinessDefinition  $owner           Owner definition whose installation carries
+     * @param   ResolvedBusinessDefinition  $owner         Owner definition whose installation carries
      *          the line table for this relationship.
-     * @param   BusinessRecord              $ownerRecord     Owner record the line must belong to.
-     * @param   RelationshipDefinition      $relationship    Owned-line relationship naming that table.
-     * @param   ResolvedBusinessDefinition  $lineResolved    Pinned line definition and installed schema;
+     * @param   BusinessRecord              $ownerRecord   Owner record the line must belong to.
+     * @param   RelationshipDefinition      $relationship  Owned-line relationship naming that table.
+     * @param   ResolvedBusinessDefinition  $lineResolved  Pinned line definition and installed schema;
      *          its identity strategy decides which column the id is matched against.
-     * @param   BusinessRecordAccessPlan    $access          Target row policy evaluated before identity
+     * @param   BusinessRecordAccessPlan    $access        Target row policy evaluated before identity
      *          is returned.
-     * @param   string                      $lineId          Caller-facing identity of the line.
+     * @param   string                      $lineId        Caller-facing identity of the line.
      *
      * @return  ?StoredRecordIdentity  Internal key and optimistic-lock version of the line, carrying the
      *          line definition's version; null when this owner holds no such line.

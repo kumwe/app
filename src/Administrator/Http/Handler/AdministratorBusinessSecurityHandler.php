@@ -126,7 +126,7 @@ final readonly class AdministratorBusinessSecurityHandler implements RequestHand
             return new RedirectResponse('/administrator/business-security?saved=1', 303, array_filter([
                 'Cache-Control' => 'no-store',
                 'Set-Cookie' => $replacementToken === null ? null : $this->cookie($replacementToken),
-            ]));
+            ], static fn (?string $header): bool => $header !== null));
         }
 
         return new HtmlResponse($this->renderer->render('business-security', [

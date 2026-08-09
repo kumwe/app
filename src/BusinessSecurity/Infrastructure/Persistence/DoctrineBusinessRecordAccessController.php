@@ -34,6 +34,7 @@ use Kumwe\CMS\BusinessSecurity\Policy\RecordPolicyPredicate;
 use Kumwe\CMS\BusinessSecurity\Policy\RecordPolicySchema;
 use Kumwe\CMS\BusinessSecurity\Policy\RecordPolicySet;
 use Kumwe\CMS\BusinessSecurity\Policy\RecordPolicyValueType;
+use Kumwe\CMS\BusinessSchema\Domain\SchemaEvolutionHints;
 use Kumwe\CMS\Infrastructure\Persistence\TableNames;
 use Psr\Clock\ClockInterface;
 use RuntimeException;
@@ -50,9 +51,9 @@ final readonly class DoctrineBusinessRecordAccessController implements BusinessR
      *
      * @param  Connection                        $database     Policy catalog connection.
      * @param  TableNames                        $tables       Portable table-name compiler.
-     * @param  BusinessRecordDefinitionResolver $definitions Resolves related target definitions.
-     * @param  MembershipDirectory               $memberships Live membership freshness gate.
-     * @param  ClockInterface                    $clock       Trusted instant for temporal policy attributes.
+     * @param  BusinessRecordDefinitionResolver  $definitions  Resolves related target definitions.
+     * @param  MembershipDirectory               $memberships  Live membership freshness gate.
+     * @param  ClockInterface                    $clock        Trusted instant for temporal policy attributes.
      *
      * @since  2.0.0
      */
@@ -75,7 +76,7 @@ final readonly class DoctrineBusinessRecordAccessController implements BusinessR
      *
      * @return  BusinessRecordAccessPlan  Immutable row, field, relation, and action decision.
      *
-     * @since  2.0.0
+     * @since   2.0.0
      */
     public function plan(
         ExecutionContext $context,
@@ -132,11 +133,11 @@ final readonly class DoctrineBusinessRecordAccessController implements BusinessR
     /**
      * Resolve one plan and a single bounded layer of related-target plans.
      *
-     * @param   ExecutionContext            $context   Actor and exact authenticated scope.
-     * @param   string                      $operation Business operation.
-     * @param   ResolvedBusinessDefinition  $resolved  Pinned entity definition.
-     * @param   RecordScope                 $scope     Exact repository scope.
-     * @param   int                         $depth     Current related-resource depth.
+     * @param   ExecutionContext            $context    Actor and exact authenticated scope.
+     * @param   string                      $operation  Business operation.
+     * @param   ResolvedBusinessDefinition  $resolved   Pinned entity definition.
+     * @param   RecordScope                 $scope      Exact repository scope.
+     * @param   int                         $depth      Current related-resource depth.
      *
      * @return  BusinessRecordAccessPlan  Immutable compiled authorization input.
      *
@@ -193,18 +194,21 @@ final readonly class DoctrineBusinessRecordAccessController implements BusinessR
                 if (!is_array($configured) || !array_is_list($configured)) {
                     throw new RuntimeException('A stored field-policy usage must be a list.');
                 }
+                $currentFields = [];
                 foreach ($configured as $field) {
-                    if (
-                        !is_string($field)
-                        || !$this->fieldAvailable($resolved->definition, $usage, $field)
-                    ) {
+                    if (!is_string($field)) {
                         throw new RuntimeException('A stored field policy references an unavailable field.');
                     }
+                    $currentField = $this->currentField($resolved->definition, $field);
+                    if (!$this->fieldAvailable($resolved->definition, $usage, $currentField)) {
+                        throw new RuntimeException('A stored field policy references an unavailable field.');
+                    }
+                    $currentFields[] = $currentField;
                 }
                 if ($effect === 'allow' && $mayMatch) {
-                    $rowFields[$usage->value] = array_values(array_unique($configured));
+                    $rowFields[$usage->value] = array_values(array_unique($currentFields));
                 } elseif ($effect === 'deny' && $mayMatch) {
-                    array_push($fieldDenies[$usage->value], ...$configured);
+                    array_push($fieldDenies[$usage->value], ...$currentFields);
                 }
             }
             $configuredActions = $rules['actions'] ?? [];
@@ -265,9 +269,9 @@ final readonly class DoctrineBusinessRecordAccessController implements BusinessR
     /**
      * Load only policies that match the exact action, definition and organization before evaluation.
      *
-     * @param   ExecutionContext            $context   Actor and exact authenticated scope.
-     * @param   string                      $operation Business operation matched against stored policies.
-     * @param   ResolvedBusinessDefinition  $resolved  Definition whose resource policies are loaded.
+     * @param   ExecutionContext            $context    Actor and exact authenticated scope.
+     * @param   string                      $operation  Business operation matched against stored policies.
+     * @param   ResolvedBusinessDefinition  $resolved   Definition whose resource policies are loaded.
      *
      * @return  list<array<string,mixed>>  Canonically ordered matching policy rows.
      *
@@ -303,9 +307,9 @@ final readonly class DoctrineBusinessRecordAccessController implements BusinessR
     /**
      * Resolve relationship and entity-reference targets under the same authenticated scope.
      *
-     * @param   ExecutionContext           $context   Actor and exact authenticated scope.
-     * @param   string                     $operation Parent operation inherited by every target plan.
-     * @param   ResolvedBusinessDefinition $resolved Source definition declaring the target handles.
+     * @param   ExecutionContext            $context    Actor and exact authenticated scope.
+     * @param   string                      $operation  Parent operation inherited by every target plan.
+     * @param   ResolvedBusinessDefinition  $resolved   Source definition declaring the target handles.
      *
      * @return  array<string, BusinessRecordAccessPlan>  Target plans keyed by source handle.
      *
@@ -335,7 +339,9 @@ final readonly class DoctrineBusinessRecordAccessController implements BusinessR
                 $plans[$handle] = $byTarget[$targetHandle];
                 continue;
             }
-            $target = $this->definitions->forCreate($context, $targetHandle);
+            $target = $operation === 'business.record.history'
+                ? $this->definitions->forHistory($context, $targetHandle)
+                : $this->definitions->forCreate($context, $targetHandle);
             $targetScope = RecordScope::forDefinition(
                 $target->definition->scope,
                 $context->site(),
@@ -387,7 +393,7 @@ final readonly class DoctrineBusinessRecordAccessController implements BusinessR
      *
      * @return  array<string, list<string>>  Empty field handles keyed by usage identifier.
      *
-     * @since  2.0.0
+     * @since   2.0.0
      */
     private function emptyFields(): array
     {
@@ -402,10 +408,10 @@ final readonly class DoctrineBusinessRecordAccessController implements BusinessR
     /**
      * Parse one bounded canonical predicate document.
      *
-     * @param   array<string,mixed>  $document  Stored AST node.
-     * @param   ExecutionContext     $context   Actor and exact authenticated scope.
-     * @param   ResolvedBusinessDefinition $resolved Definition whose resource attributes may be addressed.
-     * @param   string               $operation Operation available as a closed resource attribute.
+     * @param   array<string,mixed>         $document   Stored AST node.
+     * @param   ExecutionContext            $context    Actor and exact authenticated scope.
+     * @param   ResolvedBusinessDefinition  $resolved   Definition whose resource attributes may be addressed.
+     * @param   string                      $operation  Operation available as a closed resource attribute.
      *
      * @return  RecordPolicyPredicate  Closed executable-free policy node.
      *
@@ -427,7 +433,10 @@ final readonly class DoctrineBusinessRecordAccessController implements BusinessR
             && is_bool($document['is_null'] ?? null)
             && count($document) === 3
         ) {
-            return new RecordPolicyNullCheck($document['field'], $document['is_null']);
+            return new RecordPolicyNullCheck(
+                $this->currentField($resolved->definition, $document['field']),
+                $document['is_null'],
+            );
         }
         if ($type === 'comparison' && count($document) === 5) {
             $field = $document['field'] ?? null;
@@ -439,7 +448,7 @@ final readonly class DoctrineBusinessRecordAccessController implements BusinessR
             }
 
             $comparison = new RecordPolicyComparison(
-                $field,
+                $this->currentField($resolved->definition, $field),
                 RecordPolicyComparisonOperator::tryFrom($operator)
                     ?? throw new RuntimeException('A stored comparison operator is invalid.'),
                 RecordPolicyValueType::tryFrom($valueType)
@@ -527,7 +536,7 @@ final readonly class DoctrineBusinessRecordAccessController implements BusinessR
             }
 
             $comparison = new RecordPolicyComparison(
-                $field,
+                $this->currentField($resolved->definition, $field),
                 RecordPolicyComparisonOperator::tryFrom($operator)
                     ?? throw new RuntimeException('A stored field-to-attribute operator is invalid.'),
                 $typeValue,
@@ -556,9 +565,14 @@ final readonly class DoctrineBusinessRecordAccessController implements BusinessR
             }
             $parsed = [];
             foreach ($children as $child) {
-                if (!is_array($child) || array_is_list($child)) {
+                if (
+                    !is_array($child)
+                    || array_is_list($child)
+                    || array_any(array_keys($child), static fn (mixed $key): bool => !is_string($key))
+                ) {
                     throw new RuntimeException('A stored boolean child policy is invalid.');
                 }
+                /** @var array<string, mixed> $child */
                 $parsed[] = $this->predicate($child, $context, $resolved, $operation);
             }
 
@@ -577,9 +591,9 @@ final readonly class DoctrineBusinessRecordAccessController implements BusinessR
      *
      * @param   string                      $source     Allowlisted attribute source.
      * @param   string                      $attribute  Allowlisted attribute name.
-     * @param   ExecutionContext            $context   Actor and exact authenticated scope.
-     * @param   ResolvedBusinessDefinition  $resolved  Definition supplying resource attributes.
-     * @param   string                      $operation Operation supplying the resource-operation attribute.
+     * @param   ExecutionContext            $context    Actor and exact authenticated scope.
+     * @param   ResolvedBusinessDefinition  $resolved   Definition supplying resource attributes.
+     * @param   string                      $operation  Operation supplying the resource-operation attribute.
      *
      * @return  array{string|int|bool|null, RecordPolicyValueType}  Exact value and declared scalar type.
      *
@@ -650,8 +664,8 @@ final readonly class DoctrineBusinessRecordAccessController implements BusinessR
      * UTC instants. Rejecting a cross-domain predicate here keeps the in-memory evaluator and every SQL
      * platform from assigning different meaning to the same persisted bytes.
      *
-     * @param   EntityTypeDefinition   $definition  Definition supplying the field's exact temporal kind.
-     * @param   RecordPolicyComparison $comparison Validated comparison whose literal is checked.
+     * @param   EntityTypeDefinition    $definition  Definition supplying the field's exact temporal kind.
+     * @param   RecordPolicyComparison  $comparison  Validated comparison whose literal is checked.
      *
      * @return  void
      *
@@ -709,9 +723,9 @@ final readonly class DoctrineBusinessRecordAccessController implements BusinessR
     /**
      * Compare two already type-checked scalar attributes without coercion.
      *
-     * @param   string|int|bool                $actual    Trusted attribute value.
-     * @param   string|int|bool                $expected  Canonical policy literal.
-     * @param   RecordPolicyComparisonOperator $operator Closed comparison operation.
+     * @param   string|int|bool                 $actual    Trusted attribute value.
+     * @param   string|int|bool                 $expected  Canonical policy literal.
+     * @param   RecordPolicyComparisonOperator  $operator  Closed comparison operation.
      *
      * @return  bool  Comparison result under the closed portable operator set.
      *
@@ -740,8 +754,8 @@ final readonly class DoctrineBusinessRecordAccessController implements BusinessR
     /**
      * Bind plans and cursors to exact stored policy bytes, versions, owners, and caller authority.
      *
-     * @param   ExecutionContext          $context  Actor and exact authenticated scope.
-     * @param   list<array<string,mixed>> $rows     Matching policy rows in canonical priority order.
+     * @param   ExecutionContext           $context  Actor and exact authenticated scope.
+     * @param   list<array<string,mixed>>  $rows     Matching policy rows in canonical priority order.
      *
      * @return  string  Lowercase SHA-256 authorization-and-policy fingerprint.
      *
@@ -800,10 +814,15 @@ final readonly class DoctrineBusinessRecordAccessController implements BusinessR
         } catch (JsonException $exception) {
             throw new RuntimeException('A stored policy document is invalid JSON.', 0, $exception);
         }
-        if (!is_array($value) || array_is_list($value)) {
+        if (
+            !is_array($value)
+            || array_is_list($value)
+            || array_any(array_keys($value), static fn (mixed $key): bool => !is_string($key))
+        ) {
             throw new RuntimeException('A stored policy document must be an object.');
         }
 
+        /** @var array<string, mixed> $value */
         return $value;
     }
 
@@ -872,6 +891,25 @@ final readonly class DoctrineBusinessRecordAccessController implements BusinessR
     }
 
     /**
+     * Resolve a stored policy handle through the definition's explicit record-column rename contract.
+     *
+     * Policies remain immutable audit documents while a published evolution may deliberately rename a
+     * field. Only the trusted, validated schema-evolution hint can bridge that name; a removed or misspelled
+     * policy field without an exact rename remains unavailable and therefore fails closed.
+     *
+     * @param   EntityTypeDefinition  $definition  Current published definition and its validated hints.
+     * @param   string                $handle      Field handle persisted in the policy document.
+     *
+     * @return  string  Current field handle, or the original handle when no rename is declared.
+     *
+     * @since   2.0.0
+     */
+    private function currentField(EntityTypeDefinition $definition, string $handle): string
+    {
+        return SchemaEvolutionHints::fromDefinition($definition)->renameForTable('record')[$handle] ?? $handle;
+    }
+
+    /**
      * Report whether a definition declares an action handle.
      *
      * @param   EntityTypeDefinition  $definition  Definition searched for the action.
@@ -893,8 +931,8 @@ final readonly class DoctrineBusinessRecordAccessController implements BusinessR
      * still compare every generation without taking a write-oriented lock, so revoked or changed
      * membership cannot retain field or row authority through a stale execution context.
      *
-     * @param   ExecutionContext  $context   Context carrying the membership snapshot.
-     * @param   string            $operation Operation deciding whether a mutation lock is required.
+     * @param   ExecutionContext  $context    Context carrying the membership snapshot.
+     * @param   string            $operation  Operation deciding whether a mutation lock is required.
      *
      * @return  void
      *

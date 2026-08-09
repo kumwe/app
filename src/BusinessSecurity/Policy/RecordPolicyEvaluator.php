@@ -105,7 +105,7 @@ final class RecordPolicyEvaluator
      *
      * @return  int|null  Three-way comparison, or null when the stored value has another type.
      *
-     * @since  2.0.0
+     * @since   2.0.0
      */
     private function compare(RecordPolicyValueType $type, mixed $actual, string|int|bool $expected): ?int
     {
@@ -167,7 +167,7 @@ final class RecordPolicyEvaluator
      *
      * @return  int|null  Exact comparison, or null for a non-decimal stored value.
      *
-     * @since  2.0.0
+     * @since   2.0.0
      */
     private function decimal(mixed $actual, string $expected): ?int
     {
@@ -180,8 +180,12 @@ final class RecordPolicyEvaluator
         $parts = static function (string $value): array {
             $negative = str_starts_with($value, '-');
             [$integer, $fraction] = array_pad(explode('.', ltrim($value, '-'), 2), 2, '');
+            $integer = ltrim($integer, '0');
+            if ($integer === '') {
+                $integer = '0';
+            }
 
-            return [$negative, ltrim($integer, '0') ?: '0', rtrim($fraction, '0')];
+            return [$negative, $integer, rtrim($fraction, '0')];
         };
         [$leftNegative, $leftInteger, $leftFraction] = $parts($actual);
         [$rightNegative, $rightInteger, $rightFraction] = $parts($expected);

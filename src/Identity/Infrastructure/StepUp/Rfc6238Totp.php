@@ -69,7 +69,14 @@ final readonly class Rfc6238Totp implements TotpAlgorithm
         $encoded = '';
         $buffer = 0;
         $bits = 0;
-        foreach (unpack('C*', $secret) ?: [] as $byte) {
+        $bytes = unpack('C*', $secret);
+        if ($bytes === false) {
+            throw new InvalidArgumentException('A TOTP secret could not be encoded.');
+        }
+        foreach ($bytes as $byte) {
+            if (!is_int($byte)) {
+                throw new InvalidArgumentException('A TOTP secret contains an invalid byte.');
+            }
             $buffer = ($buffer << 8) | $byte;
             $bits += 8;
             while ($bits >= 5) {

@@ -48,14 +48,14 @@ final readonly class DoctrinePortalSessionStore implements PortalSessionStore, S
     /**
      * Bind the store to persistence, live identity resolution, time, and a user-agent HMAC key.
      *
-     * @param   Connection                   $database  Shared DBAL connection.
-     * @param   TableNames                   $tables    Installation table-prefix mapper.
-     * @param   PortalSessionIdentityLoader  $identities Live user and membership loader.
-     * @param   ClockInterface               $clock     Trusted UTC time source.
-     * @param   ResourceSiteOwnershipWriter  $ownership Portal-session site-ownership writer.
-     * @param   TransactionManager           $transactions Shared nesting-aware transaction coordinator.
-     * @param   string                       $bindingKey Dedicated raw key of at least 32 bytes.
-     * @param   DateInterval                 $lifetime  Absolute portal session lifetime, 5 minutes through 7 days.
+     * @param   Connection                   $database      Shared DBAL connection.
+     * @param   TableNames                   $tables        Installation table-prefix mapper.
+     * @param   PortalSessionIdentityLoader  $identities    Live user and membership loader.
+     * @param   ClockInterface               $clock         Trusted UTC time source.
+     * @param   ResourceSiteOwnershipWriter  $ownership     Portal-session site-ownership writer.
+     * @param   TransactionManager           $transactions  Shared nesting-aware transaction coordinator.
+     * @param   string                       $bindingKey    Dedicated raw key of at least 32 bytes.
+     * @param   DateInterval                 $lifetime      Absolute portal session lifetime, 5 minutes through 7 days.
      *
      * @throws  InvalidArgumentException  When the key or lifetime falls outside its security bound.
      *
@@ -161,7 +161,7 @@ final readonly class DoctrinePortalSessionStore implements PortalSessionStore, S
      * Resolve a portal cookie, bind it to its browser, and reload live identity and membership state.
      *
      * @param   string  $cookieToken  Opaque browser token.
-     * @param   string  $userAgent   Presenting browser user agent.
+     * @param   string  $userAgent    Presenting browser user agent.
      *
      * @return  ?PortalSession  Live session or null for every unknown, stale, or mismatched state.
      *
@@ -223,8 +223,8 @@ final readonly class DoctrinePortalSessionStore implements PortalSessionStore, S
     /**
      * Replace an exact live portal session after successful step-up.
      *
-     * @param   StepUpIntent      $intent      Old session and exact server-issued context.
-     * @param   DateTimeImmutable $verifiedAt  Successful challenge instant.
+     * @param   StepUpIntent       $intent      Old session and exact server-issued context.
+     * @param   DateTimeImmutable  $verifiedAt  Successful challenge instant.
      *
      * @return  RotatedStepUpSession  Replacement identity, cookie, CSRF token, and expiry.
      *
@@ -471,7 +471,7 @@ final readonly class DoctrinePortalSessionStore implements PortalSessionStore, S
     /**
      * Generate an unpadded URL-safe token with the requested entropy.
      *
-     * @param   int  $bytes  Random byte count.
+     * @param   positive-int  $bytes  Random byte count.
      *
      * @return  string  URL-safe opaque token.
      *

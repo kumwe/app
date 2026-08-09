@@ -10,8 +10,11 @@ use Doctrine\DBAL\Platforms\SQLitePlatform;
 use Kumwe\CMS\Application\Authorization\AuthenticatedSurface;
 use Kumwe\CMS\Application\Authorization\AuthenticationStrength;
 use Kumwe\CMS\Application\Authorization\ExecutionContext;
+use Kumwe\CMS\Application\Authorization\MembershipContext;
+use Kumwe\CMS\Application\Authorization\OrganizationContext;
 use Kumwe\CMS\Application\Authorization\SiteContext;
 use Kumwe\CMS\Application\Authorization\StepUpProof;
+use Kumwe\CMS\Application\Authorization\WorkspaceContext;
 use Kumwe\CMS\BusinessSecurity\Application\Approval\ApprovalDenied;
 use Kumwe\CMS\BusinessSecurity\Infrastructure\Persistence\DoctrineStepUpProofConsumer;
 use Kumwe\CMS\Identity\Application\Authentication\AuthenticatedPrincipal;
@@ -45,10 +48,14 @@ final class DoctrineStepUpProofConsumerTest extends TestCase
                     $sql,
                     'INNER JOIN kumwe_administrator_sessions s ON s.id = p.session_id',
                 )
+                && str_contains($sql, 'p.organization_identifier IS NULL')
+                && str_contains($sql, 'p.workspace_identifier IS NULL')
+                && !str_contains($sql, '? IS NULL')
                 && str_contains($sql, 's.expires_at > ?')
                 && str_contains($sql, "u.status = 'active'")),
-            self::isType('array'),
-            self::isType('array'),
+            self::callback(static fn (array $parameters): bool => count($parameters) === 9
+                && $parameters[4] === 'business.approval.approve'),
+            self::callback(static fn (array $types): bool => count($types) === 9),
         )->willReturn(['id' => self::PROOF]);
         $database->expects(self::once())->method('executeStatement')->with(
             self::stringContains('consumed_at IS NULL AND revoked_at IS NULL'),
@@ -56,6 +63,47 @@ final class DoctrineStepUpProofConsumerTest extends TestCase
             self::isType('array'),
         )->willReturn(1);
         [$context, $proof, $now] = $this->context();
+
+        self::assertSame(
+            self::PROOF,
+            (new DoctrineStepUpProofConsumer(
+                $database,
+                new TableNames($database, 'kumwe_'),
+            ))->consume($proof, $context, 'business.approval.approve', $now),
+        );
+    }
+
+    /**
+     * Prove tenant-bound proof lookup uses typed equality without nullable sentinel placeholders.
+     *
+     * @return void
+     *
+     * @since  2.0.0
+     */
+    public function testTenantProofUsesOnlyBoundScopeParameters(): void
+    {
+        $membership = new MembershipContext(
+            '0191574f-f0b8-7bf3-a9aa-91c6b8244e13',
+            OrganizationContext::fromString('acme'),
+            WorkspaceContext::fromString('finance'),
+            4,
+            7,
+        );
+        $database = $this->database();
+        $database->expects(self::once())->method('fetchAssociative')->with(
+            self::callback(static fn (string $sql): bool => str_contains(
+                $sql,
+                'p.organization_identifier = ?',
+            ) && str_contains($sql, 'p.workspace_identifier = ?')
+                && !str_contains($sql, '? IS NULL')),
+            self::callback(static fn (array $parameters): bool => count($parameters) === 11
+                && $parameters[4] === 'acme'
+                && $parameters[5] === 'finance'
+                && $parameters[6] === 'business.approval.approve'),
+            self::callback(static fn (array $types): bool => count($types) === 11),
+        )->willReturn(['id' => self::PROOF]);
+        $database->expects(self::once())->method('executeStatement')->willReturn(1);
+        [$context, $proof, $now] = $this->context(membership: $membership);
 
         self::assertSame(
             self::PROOF,
@@ -138,14 +186,17 @@ final class DoctrineStepUpProofConsumerTest extends TestCase
     /**
      * Issue one internally consistent multi-factor context and proof.
      *
-     * @param  AuthenticatedSurface  $surface  Browser boundary whose rotated session is bound.
+     * @param  AuthenticatedSurface  $surface     Browser boundary whose rotated session is bound.
+     * @param  ?MembershipContext    $membership  Optional organization and workspace proof binding.
      *
      * @return array{ExecutionContext, StepUpProof, DateTimeImmutable} Test values.
      *
      * @since  2.0.0
      */
-    private function context(AuthenticatedSurface $surface = AuthenticatedSurface::Administrator): array
-    {
+    private function context(
+        AuthenticatedSurface $surface = AuthenticatedSurface::Administrator,
+        ?MembershipContext $membership = null,
+    ): array {
         $now = new DateTimeImmutable('2026-08-09T10:00:00+00:00');
         $provenance = new \stdClass();
         $principal = AuthenticatedPrincipal::issueFromStrings(
@@ -158,11 +209,12 @@ final class DoctrineStepUpProofConsumerTest extends TestCase
             self::SUBJECT,
             self::SESSION,
             SiteContext::default(),
-            null,
+            $membership?->organization(),
             'totp',
             $now->modify('-1 minute'),
             $now->modify('+4 minutes'),
             str_repeat('N', 32),
+            workspace: $membership?->workspace(),
             purpose: 'business.approval.approve',
             securityEpoch: 7,
         );
@@ -173,6 +225,7 @@ final class DoctrineStepUpProofConsumerTest extends TestCase
             AuthenticationStrength::MultiFactor,
             'step-up-consumer-test',
             surface: $surface,
+            membership: $membership,
             sessionId: self::SESSION,
             stepUpProof: $proof,
         );

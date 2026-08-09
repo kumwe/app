@@ -34,14 +34,14 @@ final readonly class PortalSecurityHandler implements RequestHandlerInterface
     /**
      * Bind account-security delivery to the portal step-up provider and isolated renderer.
      *
-     * @param  StepUpProvider  $stepUp           Portal authenticator and recovery verifier.
-     * @param  PortalRenderer  $renderer         Isolated portal template renderer.
-     * @param  bool            $secureCookie     Whether portal cookies require HTTPS.
-     * @param  int             $sessionLifetime  Portal cookie lifetime in seconds.
+     * @param   StepUpProvider  $stepUp           Portal authenticator and recovery verifier.
+     * @param   PortalRenderer  $renderer         Isolated portal template renderer.
+     * @param   bool            $secureCookie     Whether portal cookies require HTTPS.
+     * @param   int             $sessionLifetime  Portal cookie lifetime in seconds.
      *
      * @throws  \InvalidArgumentException  When the session lifetime falls outside the supported range.
      *
-     * @since  2.0.0
+     * @since   2.0.0
      */
     public function __construct(
         private StepUpProvider $stepUp,
@@ -61,7 +61,7 @@ final readonly class PortalSecurityHandler implements RequestHandlerInterface
      *
      * @return  ResponseInterface  Account-security page, protected error, or success redirect.
      *
-     * @since  2.0.0
+     * @since   2.0.0
      */
     public function handle(ServerRequestInterface $request): ResponseInterface
     {
@@ -97,7 +97,7 @@ final readonly class PortalSecurityHandler implements RequestHandlerInterface
      *
      * @return  ResponseInterface  Setup page containing the one-time provisioning secret.
      *
-     * @since  2.0.0
+     * @since   2.0.0
      */
     private function enroll(PortalSession $session): ResponseInterface
     {
@@ -115,13 +115,13 @@ final readonly class PortalSecurityHandler implements RequestHandlerInterface
     /**
      * Confirm enrollment with a valid first code and show single-use recovery codes once.
      *
-     * @param   PortalSession          $session  Resolved portal session.
-     * @param   array<string, string>  $form     Parsed enrollment confirmation form.
-     * @param   ServerRequestInterface $request  Request carrying the trusted source address.
+     * @param   PortalSession           $session  Resolved portal session.
+     * @param   array<string, string>   $form     Parsed enrollment confirmation form.
+     * @param   ServerRequestInterface  $request  Request carrying the trusted source address.
      *
      * @return  ResponseInterface  Completion page bound to the rotated portal session.
      *
-     * @since  2.0.0
+     * @since   2.0.0
      */
     private function confirm(
         PortalSession $session,
@@ -149,14 +149,14 @@ final readonly class PortalSecurityHandler implements RequestHandlerInterface
     /**
      * Verify TOTP or consume one recovery code for the generic portal challenge purpose.
      *
-     * @param   PortalSession          $session   Resolved portal session.
-     * @param   array<string, string>  $form      Parsed challenge form.
-     * @param   ServerRequestInterface $request   Request carrying the trusted source address.
-     * @param   bool                   $recovery  Whether to use the recovery-code path.
+     * @param   PortalSession           $session   Resolved portal session.
+     * @param   array<string, string>   $form      Parsed challenge form.
+     * @param   ServerRequestInterface  $request   Request carrying the trusted source address.
+     * @param   bool                    $recovery  Whether to use the recovery-code path.
      *
      * @return  ResponseInterface  Redirect carrying only the newly rotated portal cookie.
      *
-     * @since  2.0.0
+     * @since   2.0.0
      */
     private function challenge(
         PortalSession $session,
@@ -183,7 +183,7 @@ final readonly class PortalSecurityHandler implements RequestHandlerInterface
      *
      * @return  StepUpIntent  Intent bound to actor, session, scope, purpose, and security epoch.
      *
-     * @since  2.0.0
+     * @since   2.0.0
      */
     private function intent(PortalSession $session, string $purpose): StepUpIntent
     {
@@ -206,7 +206,7 @@ final readonly class PortalSecurityHandler implements RequestHandlerInterface
      *
      * @return  string  Trusted client address or a stable unknown marker.
      *
-     * @since  2.0.0
+     * @since   2.0.0
      */
     private function source(ServerRequestInterface $request): string
     {
@@ -217,13 +217,13 @@ final readonly class PortalSecurityHandler implements RequestHandlerInterface
     /**
      * Rebuild presentation state around a newly rotated browser session.
      *
-     * @param   PortalSession        $old         Previous resolved portal session.
-     * @param   RotatedStepUpSession $rotated     Fresh opaque session and CSRF values.
-     * @param   \DateTimeImmutable   $verifiedAt  Verification instant recorded by the provider.
+     * @param   PortalSession         $old         Previous resolved portal session.
+     * @param   RotatedStepUpSession  $rotated     Fresh opaque session and CSRF values.
+     * @param   \DateTimeImmutable    $verifiedAt  Verification instant recorded by the provider.
      *
      * @return  PortalSession  Fresh session state for the current response.
      *
-     * @since  2.0.0
+     * @since   2.0.0
      */
     private function rotatedSession(
         PortalSession $old,
@@ -243,16 +243,16 @@ final readonly class PortalSecurityHandler implements RequestHandlerInterface
     /**
      * Render the non-cacheable account-security page with bounded presentation data.
      *
-     * @param   PortalSession          $session  Resolved portal session.
-     * @param   string                 $notice   Optional success message.
-     * @param   string                 $error    Optional protected error message.
-     * @param   int                    $status   HTTP status code.
-     * @param   array<string, string>  $headers  Additional response headers.
-     * @param   array<string, mixed>   $data     One-time enrollment or recovery presentation data.
+     * @param   PortalSession                                  $session  Resolved portal session.
+     * @param   string                                         $notice   Optional success message.
+     * @param   string                                         $error    Optional protected error message.
+     * @param   int                                            $status   HTTP status code.
+     * @param   array<non-empty-string, array<string>|string>  $headers  Additional response headers.
+     * @param   array<string, mixed>                           $data     One-time enrollment or recovery data.
      *
      * @return  ResponseInterface  Non-cacheable account-security response.
      *
-     * @since  2.0.0
+     * @since   2.0.0
      */
     private function page(
         PortalSession $session,
@@ -278,7 +278,7 @@ final readonly class PortalSecurityHandler implements RequestHandlerInterface
      *
      * @return  string  Set-Cookie header value constrained to the portal path.
      *
-     * @since  2.0.0
+     * @since   2.0.0
      */
     private function cookie(string $token): string
     {
