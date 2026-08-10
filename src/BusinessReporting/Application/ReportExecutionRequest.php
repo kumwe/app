@@ -15,7 +15,12 @@ use Kumwe\CMS\BusinessRecord\Application\Query\BusinessRecordQueryPurpose;
  */
 final readonly class ReportExecutionRequest
 {
-    /** @var array<string, mixed> @since 2.0.0 */
+    /**
+     * Caller-supplied report parameters pending definition validation.
+     *
+     * @var    array<string, mixed>
+     * @since  2.0.0
+     */
     public array $parameters;
 
     /**

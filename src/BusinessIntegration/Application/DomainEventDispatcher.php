@@ -13,16 +13,21 @@ use Kumwe\CMS\BusinessIntegration\Domain\DomainEvent;
  */
 final readonly class DomainEventDispatcher
 {
-    /** @var list<DomainEventHandler> Ordered listeners. @since 2.0.0 */
+    /**
+     * Synchronous domain-event handlers searched in deterministic priority order.
+     *
+     * @var    list<DomainEventHandler>  Ordered listeners.
+     * @since  2.0.0
+     */
     private array $handlers;
 
     /**
      * Bind deterministic listeners to the trusted event catalog.
      *
-     * @param   EventContractRegistry          $contracts  Exact runtime event catalog.
-     * @param   iterable<DomainEventHandler>   $handlers   Synchronous listener instances in dispatch order.
+     * @param  EventContractRegistry         $contracts  Exact runtime event catalog.
+     * @param  iterable<DomainEventHandler>  $handlers   Synchronous listener instances in dispatch order.
      *
-     * @since   2.0.0
+     * @since  2.0.0
      */
     public function __construct(private EventContractRegistry $contracts, iterable $handlers)
     {

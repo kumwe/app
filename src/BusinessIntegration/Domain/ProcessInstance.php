@@ -15,7 +15,12 @@ use Ramsey\Uuid\Uuid;
  */
 final readonly class ProcessInstance
 {
-    /** @var array<string, mixed> Bounded process-defined state. @since 2.0.0 */
+    /**
+     * Validated process-manager state captured at the current version.
+     *
+     * @var    array<string, mixed>  Bounded process-defined state.
+     * @since  2.0.0
+     */
     private array $state;
 
     /**
@@ -82,85 +87,169 @@ final readonly class ProcessInstance
         $this->state = $state;
     }
 
-    /** @return string Process UUID. @since 2.0.0 */
+    /**
+     * Return the ID carried by this process instance.
+     *
+     * @return  string  Process UUID.
+     *
+     * @since   2.0.0
+     */
     public function id(): string
     {
         return $this->id;
     }
 
-    /** @return string Process contract. @since 2.0.0 */
+    /**
+     * Return the stable process-manager type.
+     *
+     * @return  string  Process contract.
+     *
+     * @since   2.0.0
+     */
     public function processType(): string
     {
         return $this->processType;
     }
 
-    /** @return string Process correlation identity. @since 2.0.0 */
+    /**
+     * Derive the process correlation identifier from the event.
+     *
+     * @return  string  Process correlation identity.
+     *
+     * @since   2.0.0
+     */
     public function correlationId(): string
     {
         return $this->correlationId;
     }
 
-    /** @return string Owning site. @since 2.0.0 */
+    /**
+     * Return the site identifier carried by this process instance.
+     *
+     * @return  string  Owning site.
+     *
+     * @since   2.0.0
+     */
     public function siteIdentifier(): string
     {
         return $this->siteIdentifier;
     }
 
-    /** @return ?string Owning organization. @since 2.0.0 */
+    /**
+     * Return the organization ID carried by this process instance.
+     *
+     * @return  ?string  Owning organization.
+     *
+     * @since   2.0.0
+     */
     public function organizationId(): ?string
     {
         return $this->organizationId;
     }
 
-    /** @return ?string Starting human actor. @since 2.0.0 */
+    /**
+     * Return the actor ID carried by this process instance.
+     *
+     * @return  ?string  Starting human actor.
+     *
+     * @since   2.0.0
+     */
     public function actorId(): ?string
     {
         return $this->actorId;
     }
 
-    /** @return ?string Starting system actor. @since 2.0.0 */
+    /**
+     * Return the system identity carried by this process instance.
+     *
+     * @return  ?string  Starting system actor.
+     *
+     * @since   2.0.0
+     */
     public function systemIdentity(): ?string
     {
         return $this->systemIdentity;
     }
 
-    /** @return int Optimistic state version. @since 2.0.0 */
+    /**
+     * Return the version carried by this process instance.
+     *
+     * @return  int  Optimistic state version.
+     *
+     * @since   2.0.0
+     */
     public function version(): int
     {
         return $this->version;
     }
 
-    /** @return ProcessStatus Current lifecycle state. @since 2.0.0 */
+    /**
+     * Return the status carried by this process instance.
+     *
+     * @return  ProcessStatus  Current lifecycle state.
+     *
+     * @since   2.0.0
+     */
     public function status(): ProcessStatus
     {
         return $this->status;
     }
 
-    /** @return array<string, mixed> Process-defined state. @since 2.0.0 */
+    /**
+     * Return the state carried by this process instance.
+     *
+     * @return  array<string, mixed>  Process-defined state.
+     *
+     * @since   2.0.0
+     */
     public function state(): array
     {
         return $this->state;
     }
 
-    /** @return DateTimeImmutable Start instant. @since 2.0.0 */
+    /**
+     * Return the created at carried by this process instance.
+     *
+     * @return  DateTimeImmutable  Start instant.
+     *
+     * @since   2.0.0
+     */
     public function createdAt(): DateTimeImmutable
     {
         return $this->createdAt;
     }
 
-    /** @return DateTimeImmutable Last transition instant. @since 2.0.0 */
+    /**
+     * Return the updated at carried by this process instance.
+     *
+     * @return  DateTimeImmutable  Last transition instant.
+     *
+     * @since   2.0.0
+     */
     public function updatedAt(): DateTimeImmutable
     {
         return $this->updatedAt;
     }
 
-    /** @return ?string Cancelling operator identity. @since 2.0.0 */
+    /**
+     * Return the cancellation by carried by this process instance.
+     *
+     * @return  ?string  Cancelling operator identity.
+     *
+     * @since   2.0.0
+     */
     public function cancellationBy(): ?string
     {
         return $this->cancellationBy;
     }
 
-    /** @return ?string Cancellation rationale. @since 2.0.0 */
+    /**
+     * Return the cancellation note carried by this process instance.
+     *
+     * @return  ?string  Cancellation rationale.
+     *
+     * @since   2.0.0
+     */
     public function cancellationNote(): ?string
     {
         return $this->cancellationNote;

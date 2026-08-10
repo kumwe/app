@@ -110,38 +110,38 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
     /**
      * Wire the service to every collaborator a record operation composes.
      *
-     * @param  BusinessRecordWriteRepository        $writes         Store every record and relationship
+     * @param  BusinessRecordWriteRepository          $writes         Store every record and relationship
      *         write is applied through.
-     * @param  BusinessRecordReadRepository         $reads          Store rows, views and browse pages are
+     * @param  BusinessRecordReadRepository           $reads          Store rows, views and browse pages are
      *         read back from.
-     * @param  BusinessRecordRevisionRepository     $revisions      Append-only log this service writes
+     * @param  BusinessRecordRevisionRepository       $revisions      Append-only log this service writes
      *         history to and pages back.
-     * @param  BusinessRecordIdempotencyRepository  $idempotency    Ledger that claims a command's key and
+     * @param  BusinessRecordIdempotencyRepository    $idempotency    Ledger that claims a command's key and
      *         holds its result for replay.
-     * @param  BusinessRecordMutationFence          $mutationFence  Lock held over a definition's
+     * @param  BusinessRecordMutationFence            $mutationFence  Lock held over a definition's
      *         installation for the whole operation.
-     * @param  BusinessRecordDefinitionResolver     $definitions    Resolver pairing a published definition
+     * @param  BusinessRecordDefinitionResolver       $definitions    Resolver pairing a published definition
      *         version with its installed schema.
-     * @param  RecordValueCodec                     $values         Value codec, used here to normalize a
+     * @param  RecordValueCodec                       $values         Value codec, used here to normalize a
      *         caller-supplied record identity.
-     * @param  RecordRuleValidator                  $rules          Field-rule validator that turns
+     * @param  RecordRuleValidator                    $rules          Field-rule validator that turns
      *         submitted values into a stored value set.
-     * @param  BusinessRecordAccessController       $recordAccess   Canonical row, field, action, and relation
+     * @param  BusinessRecordAccessController         $recordAccess   Canonical row, field, action, and relation
      *         policy planner applied before every repository call.
-     * @param  ApprovalService                      $approvals      Generic maker-checker and step-up workflow.
-     * @param  ResourceSiteOwnershipWriter          $ownership      Records approval-resource ownership with
+     * @param  ApprovalService                        $approvals      Generic maker-checker and step-up workflow.
+     * @param  ResourceSiteOwnershipWriter            $ownership      Records approval-resource ownership with
      *         create and removes it only with a physical delete.
-     * @param  AuthorizationGateway                 $authorization  Gateway asked for the operation, action
+     * @param  AuthorizationGateway                   $authorization  Gateway asked for the operation, action
      *         and transition capabilities.
-     * @param  TransactionManager                   $transactions   Owner of the single transaction each
+     * @param  TransactionManager                     $transactions   Owner of the single transaction each
      *         operation runs inside.
-     * @param  AuditRecorder                        $audit          Sink for the redacted audit entry every
+     * @param  AuditRecorder                          $audit          Sink for the redacted audit entry every
      *         mutation writes.
-     * @param  RecordFingerprint                    $fingerprints   Keyed digest used for idempotency
+     * @param  RecordFingerprint                      $fingerprints   Keyed digest used for idempotency
      *         scopes and for identities held in the trail.
-     * @param  ClockInterface                       $clock          Supplies the one instant stamped on
+     * @param  ClockInterface                         $clock          Supplies the one instant stamped on
      *         every row a mutation touches.
-     * @param  ?BusinessRecordMutationEventPublisher $events       Transactional domain and integration
+     * @param  ?BusinessRecordMutationEventPublisher  $events         Transactional domain and integration
      *         event publisher; nullable only for isolated legacy tests.
      *
      * @since  2.0.0

@@ -19,6 +19,8 @@ final class ReportDefinitionGuard
      * @param   string  $value  Candidate handle.
      * @param   string  $label  Safe diagnostic label.
      *
+     * @return  void
+     *
      * @throws  InvalidArgumentException  When the value is not a bounded lowercase handle.
      *
      * @since   2.0.0
@@ -36,6 +38,8 @@ final class ReportDefinitionGuard
      * @param   string  $value  Candidate dotted identifier.
      * @param   string  $label  Safe diagnostic label.
      *
+     * @return  void
+     *
      * @throws  InvalidArgumentException  When the value is not a bounded dotted identifier.
      *
      * @since   2.0.0
@@ -52,6 +56,8 @@ final class ReportDefinitionGuard
      *
      * @param   string  $value  Candidate source path.
      * @param   string  $label  Safe diagnostic label.
+     *
+     * @return  void
      *
      * @throws  InvalidArgumentException  When the path contains an unsupported segment or hop count.
      *

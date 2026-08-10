@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\CMS\Delivery\Console\Command;
 
 use InvalidArgumentException;
+use Kumwe\CMS\Application\Automation\QueueRuntimePolicyCatalog;
 use Kumwe\CMS\Application\Automation\Worker;
 use Kumwe\CMS\Application\Authorization\ExecutionContext;
 use Kumwe\CMS\Application\Authorization\SiteContext;
@@ -41,6 +42,8 @@ final readonly class QueueWorkCommand implements Command
      *         the check runs only when both this and `$loadedRuntime` are given.
      * @param  ?RuntimeMaterializationState  $loadedRuntime  Generation this process loaded, and the source of
      *         its worker identity; null falls back to a random one.
+     * @param  ?QueueRuntimePolicyCatalog    $policies       Active contributed queue limits; null preserves
+     *         the core worker defaults for isolated command instances.
      *
      * @since  2.0.0
      */
@@ -49,6 +52,7 @@ final readonly class QueueWorkCommand implements Command
         private SystemPrincipal $system,
         private ?ExtensionRuntimeMapCompiler $runtime = null,
         private ?RuntimeMaterializationState $loadedRuntime = null,
+        private ?QueueRuntimePolicyCatalog $policies = null,
     ) {
     }
 
@@ -80,7 +84,8 @@ final readonly class QueueWorkCommand implements Command
      * Consume one queue until the process is asked to drain, or for a single pass with `--once`.
      *
      * Accepts `--queue=NAME`, `--once`, `--sleep-ms=N` (50-60000), `--lease-seconds=N` (5-3600),
-     * `--max-jobs=N` and `--max-runtime=N`. A `SIGTERM`, `SIGINT`, `SIGHUP` or `SIGQUIT`, an exhausted
+     * `--max-jobs=N` and `--max-runtime=N`. A contributed queue defaults to its signed lease and refuses
+     * a wider override. A `SIGTERM`, `SIGINT`, `SIGHUP` or `SIGQUIT`, an exhausted
      * job budget, or an exhausted runtime budget each end the loop after the current job has settled;
      * the sleep is skipped whenever a job was handled, so a busy queue drains without pausing. The
      * heartbeat is retired from a `finally` block, but only once a worker identity and context exist,
@@ -108,6 +113,7 @@ final readonly class QueueWorkCommand implements Command
             if (!is_string($queue)) {
                 throw new InvalidArgumentException('The worker queue must be a string.');
             }
+            $policy = $this->policies?->policy($queue);
 
             $sleepOption = $options['sleep-ms'] ?? null;
 
@@ -121,13 +127,32 @@ final readonly class QueueWorkCommand implements Command
                 throw new InvalidArgumentException('Worker sleep must be between 50 and 60000 milliseconds.');
             }
 
-            $leaseSeconds = $this->integerOption($options, 'lease-seconds', 60, 5, 3_600);
+            $leaseSeconds = $this->integerOption(
+                $options,
+                'lease-seconds',
+                $policy?->leaseSeconds ?? 60,
+                5,
+                3_600,
+            );
+            if ($policy !== null && $leaseSeconds > $policy->leaseSeconds) {
+                throw new InvalidArgumentException('A contributed queue lease cannot exceed its signed policy.');
+            }
             $maximumJobs = $this->integerOption($options, 'max-jobs', 0, 0, 1_000_000);
             $maximumRuntime = $this->integerOption($options, 'max-runtime', 0, 0, 604_800);
             $workerId = $this->loadedRuntime === null
                 ? 'worker:' . bin2hex(random_bytes(16))
                 : 'runtime:' . $this->loadedRuntime->replicaId;
             $output->line(sprintf('Kumwe worker %s is consuming queue %s.', $workerId, $queue));
+            if ($policy !== null) {
+                $output->line(sprintf(
+                    'Queue policy generation %d: lease %ds, attempts %d, in-flight %d, retention %dd.',
+                    $policy->runtimeGeneration,
+                    $policy->leaseSeconds,
+                    $policy->maximumAttempts,
+                    $policy->maximumInFlight,
+                    $policy->retentionDays,
+                ));
+            }
             $context = $this->system->context(
                 SiteContext::default(),
                 'worker-' . bin2hex(random_bytes(16)),

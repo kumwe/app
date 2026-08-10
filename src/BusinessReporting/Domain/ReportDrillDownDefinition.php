@@ -14,7 +14,7 @@ final readonly class ReportDrillDownDefinition
     /**
      * Declare a drill-down without accepting a URL or executable template.
      *
-     * @param  string  $recordAlias          Output alias carrying the target public record identity.
+     * @param  string  $recordAlias           Output alias carrying the target public record identity.
      * @param  string  $definitionIdentifier  Target business-definition handle.
      * @param  string  $viewIdentifier        Generated view contribution handle.
      *

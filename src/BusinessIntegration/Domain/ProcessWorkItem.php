@@ -15,7 +15,12 @@ use Ramsey\Uuid\Uuid;
  */
 final readonly class ProcessWorkItem
 {
-    /** @var array<string, mixed> Bounded handler payload. @since 2.0.0 */
+    /**
+     * Validated work payload kept private until dispatch.
+     *
+     * @var    array<string, mixed>  Bounded handler payload.
+     * @since  2.0.0
+     */
     private array $payload;
 
     /**
@@ -51,37 +56,73 @@ final readonly class ProcessWorkItem
         $this->payload = $payload;
     }
 
-    /** @return string Work UUID. @since 2.0.0 */
+    /**
+     * Return the ID carried by this process work item.
+     *
+     * @return  string  Work UUID.
+     *
+     * @since   2.0.0
+     */
     public function id(): string
     {
         return $this->id;
     }
 
-    /** @return ProcessWorkKind Work classification. @since 2.0.0 */
+    /**
+     * Return the kind carried by this process work item.
+     *
+     * @return  ProcessWorkKind  Work classification.
+     *
+     * @since   2.0.0
+     */
     public function kind(): ProcessWorkKind
     {
         return $this->kind;
     }
 
-    /** @return string Handler contract name. @since 2.0.0 */
+    /**
+     * Return the handler or job name carried by this work item.
+     *
+     * @return  string  Handler contract name.
+     *
+     * @since   2.0.0
+     */
     public function name(): string
     {
         return $this->name;
     }
 
-    /** @return array<string, mixed> Handler payload. @since 2.0.0 */
+    /**
+     * Return the validated payload.
+     *
+     * @return  array<string, mixed>  Handler payload.
+     *
+     * @since   2.0.0
+     */
     public function payload(): array
     {
         return $this->payload;
     }
 
-    /** @return DateTimeImmutable Earliest execution instant. @since 2.0.0 */
+    /**
+     * Return the due at carried by this process work item.
+     *
+     * @return  DateTimeImmutable  Earliest execution instant.
+     *
+     * @since   2.0.0
+     */
     public function dueAt(): DateTimeImmutable
     {
         return $this->dueAt;
     }
 
-    /** @return int Attempt budget. @since 2.0.0 */
+    /**
+     * Return the maximum number of delivery attempts.
+     *
+     * @return  int  Attempt budget.
+     *
+     * @since   2.0.0
+     */
     public function maximumAttempts(): int
     {
         return $this->maximumAttempts;

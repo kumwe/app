@@ -9,7 +9,9 @@ use Joomla\DI\Container;
 use Joomla\Event\Dispatcher;
 use Joomla\Event\DispatcherInterface;
 use Kumwe\CMS\Application\Automation\AutomationManagementService;
+use Kumwe\CMS\Application\Automation\CryptographicJitterSource;
 use Kumwe\CMS\Application\Automation\Job\DoctrineJobQueue;
+use Kumwe\CMS\Application\Automation\Job\DoctrineQueueRuntimeOperations;
 use Kumwe\CMS\Application\Automation\Job\DoctrineScheduler;
 use Kumwe\CMS\Application\Automation\Job\PurgeAdministratorSessionsHandler;
 use Kumwe\CMS\Application\Automation\Job\PurgeBusinessRecordIdempotencyHandler;
@@ -18,9 +20,14 @@ use Kumwe\CMS\Application\Automation\Job\RebuildExtensionMapHandler;
 use Kumwe\CMS\Application\Automation\Job\ScheduleRepository;
 use Kumwe\CMS\Application\Automation\Job\TransitionContentHandler;
 use Kumwe\CMS\Application\Automation\JobHandlerRegistry;
+use Kumwe\CMS\Application\Automation\JobHandler;
 use Kumwe\CMS\Application\Automation\GlobalJobPrincipals;
 use Kumwe\CMS\Application\Automation\JobExecutionScope;
 use Kumwe\CMS\Application\Automation\JobQueue;
+use Kumwe\CMS\Application\Automation\QueueRuntimeOperations;
+use Kumwe\CMS\Application\Automation\QueueRuntimePolicyCatalog;
+use Kumwe\CMS\Application\Automation\JitterSource;
+use Kumwe\CMS\Application\Automation\RetryPolicy;
 use Kumwe\CMS\Application\Automation\IdempotencyPurger;
 use Kumwe\CMS\Application\Automation\Scheduler;
 use Kumwe\CMS\Application\Automation\Worker;
@@ -42,6 +49,7 @@ use Kumwe\CMS\Administrator\Content\ContentFormPresenter;
 use Kumwe\CMS\Administrator\Content\ContentModelFormMapper;
 use Kumwe\CMS\Administrator\Content\ContentModelFormPresenter;
 use Kumwe\CMS\Administrator\Automation\AutomationJobFormRegistry;
+use Kumwe\CMS\Administrator\Automation\ContributedJobFormCompiler;
 use Kumwe\CMS\Administrator\Navigation\AdministratorNavigationRegistry;
 use Kumwe\CMS\Administrator\Http\Handler\AdministratorContentEditorHandler;
 use Kumwe\CMS\Administrator\Http\Handler\AdministratorContentListHandler;
@@ -106,6 +114,61 @@ use Kumwe\CMS\BusinessRecord\Infrastructure\Persistence\DoctrineBusinessRecordRe
 use Kumwe\CMS\BusinessRecord\Infrastructure\Persistence\DoctrineBusinessRecordWriteRepository;
 use Kumwe\CMS\BusinessRecord\Infrastructure\Persistence\DoctrineBusinessSchemaRecordRepinGateway;
 use Kumwe\CMS\BusinessRecord\Infrastructure\Security\SodiumSecretCipher;
+use Kumwe\CMS\BusinessIntegration\Application\BusinessRecordMutationEventPublisher;
+use Kumwe\CMS\BusinessIntegration\Application\DurableOutboundAdapterDispatcher;
+use Kumwe\CMS\BusinessIntegration\Application\EventContractRegistry;
+use Kumwe\CMS\BusinessIntegration\Application\InboxStore;
+use Kumwe\CMS\BusinessIntegration\Application\IntegrationEventConsumerDispatcher;
+use Kumwe\CMS\BusinessIntegration\Application\IntegrationEventTransport;
+use Kumwe\CMS\BusinessIntegration\Application\IntegrationOperationsService;
+use Kumwe\CMS\BusinessIntegration\Application\JobQueueProcessWorkHandler;
+use Kumwe\CMS\BusinessIntegration\Application\OutboxDispatcher;
+use Kumwe\CMS\BusinessIntegration\Application\OutboxStore;
+use Kumwe\CMS\BusinessIntegration\Application\ScheduleRuntimeSynchronizer;
+use Kumwe\CMS\BusinessIntegration\Application\ProcessManagerService;
+use Kumwe\CMS\BusinessIntegration\Application\ProcessManagerStore;
+use Kumwe\CMS\BusinessIntegration\Application\ProcessWorkDispatcher;
+use Kumwe\CMS\BusinessIntegration\Application\TrustedRuntimeGenerationGuard;
+use Kumwe\CMS\BusinessIntegration\Application\ValidatedContributedJobHandler;
+use Kumwe\CMS\BusinessIntegration\Domain\EventConsumerDefinition;
+use Kumwe\CMS\BusinessIntegration\Domain\EventSchemaDefinition;
+use Kumwe\CMS\BusinessIntegration\Domain\JobContributionDefinition;
+use Kumwe\CMS\BusinessIntegration\Infrastructure\DoctrineInboxStore;
+use Kumwe\CMS\BusinessIntegration\Infrastructure\DoctrineOutboxStore;
+use Kumwe\CMS\BusinessIntegration\Infrastructure\DoctrineProcessManagerStore;
+use Kumwe\CMS\BusinessIntegration\Infrastructure\ContributedScheduleSynchronizer;
+use Kumwe\CMS\BusinessIntegration\Infrastructure\ContributedQueueRuntimePolicyCatalog;
+use Kumwe\CMS\BusinessIntegration\Infrastructure\ExtensionRuntimeGenerationGuard;
+use Kumwe\CMS\BusinessIntegration\Infrastructure\RuntimeIntegrationEventTransport;
+use Kumwe\CMS\BusinessReporting\Application\ExportArtifactRepository;
+use Kumwe\CMS\BusinessReporting\Application\ExportArtifactStorage;
+use Kumwe\CMS\BusinessReporting\Application\ExportExecutionContextResolver;
+use Kumwe\CMS\BusinessReporting\Application\ExportGenerationService;
+use Kumwe\CMS\BusinessReporting\Application\ExportJobDispatcher;
+use Kumwe\CMS\BusinessReporting\Application\ExportPolicySnapshotProvider;
+use Kumwe\CMS\BusinessReporting\Application\ExportQueueProducerContextProvider;
+use Kumwe\CMS\BusinessReporting\Application\ExportService;
+use Kumwe\CMS\BusinessReporting\Application\GenerateReportExportHandler;
+use Kumwe\CMS\BusinessReporting\Application\ProjectionRuntime;
+use Kumwe\CMS\BusinessReporting\Application\ReportCsvEncoder;
+use Kumwe\CMS\BusinessReporting\Application\ReportDefinitionRegistry;
+use Kumwe\CMS\BusinessReporting\Application\ReportService;
+use Kumwe\CMS\BusinessReporting\Application\ReportScopeResolver;
+use Kumwe\CMS\BusinessReporting\Delivery\Administrator\AdministratorReportHandler;
+use Kumwe\CMS\BusinessReporting\Delivery\Api\ReportApiHandler;
+use Kumwe\CMS\BusinessReporting\Delivery\Api\ReportApiPresenter;
+use Kumwe\CMS\BusinessReporting\Delivery\Console\ReportCommand;
+use Kumwe\CMS\BusinessReporting\Delivery\Portal\PortalReportHandler;
+use Kumwe\CMS\BusinessReporting\Domain\ReportDefinition;
+use Kumwe\CMS\BusinessReporting\Infrastructure\BusinessRecordExportPolicySnapshotProvider;
+use Kumwe\CMS\BusinessReporting\Infrastructure\BusinessRecordReportScopeResolver;
+use Kumwe\CMS\BusinessReporting\Infrastructure\BusinessRecordServiceReportReader;
+use Kumwe\CMS\BusinessReporting\Infrastructure\DoctrineExportArtifactRepository;
+use Kumwe\CMS\BusinessReporting\Infrastructure\DoctrineProjectionRuntime;
+use Kumwe\CMS\BusinessReporting\Infrastructure\FilesystemExportArtifactStorage;
+use Kumwe\CMS\BusinessReporting\Infrastructure\JobQueueExportJobDispatcher;
+use Kumwe\CMS\BusinessReporting\Infrastructure\LiveExportExecutionContextResolver;
+use Kumwe\CMS\BusinessReporting\Infrastructure\SystemExportQueueProducerContextProvider;
 use Kumwe\CMS\BusinessSurface\Application\BusinessApprovalSurfaceService;
 use Kumwe\CMS\BusinessSurface\Application\BusinessFormInputMapper;
 use Kumwe\CMS\BusinessSurface\Application\BusinessMutationPlanService;
@@ -207,6 +270,12 @@ use Kumwe\CMS\Extension\Infrastructure\RedisLockedExtensionManager;
 use Kumwe\CMS\Extension\Infrastructure\Trust\DoctrineTrustStoreRepository;
 use Kumwe\CMS\Extension\Infrastructure\Trust\FilesystemExtensionArtifactVerifier;
 use Kumwe\CMS\Extension\Infrastructure\Trust\SodiumTrustKeySignatureVerifier;
+use Kumwe\CMS\Extension\Development\ComponentScaffolder;
+use Kumwe\CMS\Extension\Development\DeterministicPackageBuilder;
+use Kumwe\CMS\Extension\Development\PackageInspector;
+use Kumwe\CMS\Extension\Development\PackageSigner;
+use Kumwe\CMS\Extension\Development\ProtectedSigningKeyReader;
+use Kumwe\CMS\Extension\Development\StaticConformanceRunner;
 use Kumwe\CMS\Extension\Runtime\ActiveExtensionSet;
 use Kumwe\CMS\Extension\Contribution\ExtensionContributionRegistrySet;
 use Kumwe\CMS\Extension\Contribution\AdministratorViewRegistry;
@@ -225,11 +294,15 @@ use Kumwe\CMS\Delivery\Console\Command\CreateAccessTokenCommand;
 use Kumwe\CMS\Delivery\Console\Command\CreateAdministratorCommand;
 use Kumwe\CMS\Delivery\Console\Command\ConsoleAuthorizer;
 use Kumwe\CMS\Delivery\Console\Command\ActivateExtensionCommand;
+use Kumwe\CMS\Delivery\Console\Command\BuildExtensionCommand;
 use Kumwe\CMS\Delivery\Console\Command\DisableExtensionCommand;
 use Kumwe\CMS\Delivery\Console\Command\HealthCheckCommand;
 use Kumwe\CMS\Delivery\Console\Command\InstallExtensionCommand;
+use Kumwe\CMS\Delivery\Console\Command\InspectExtensionCommand;
+use Kumwe\CMS\Delivery\Console\Command\IntegrationWorkCommand;
 use Kumwe\CMS\Delivery\Console\Command\ListExtensionsCommand;
 use Kumwe\CMS\Delivery\Console\Command\ManageAutomationCommand;
+use Kumwe\CMS\Delivery\Console\Command\ManageIntegrationsCommand;
 use Kumwe\CMS\Delivery\Console\Command\ManageAccessCommand;
 use Kumwe\CMS\Delivery\Console\Command\ManageContentCommand;
 use Kumwe\CMS\Delivery\Console\Command\ManageBusinessDefinitionsCommand;
@@ -249,6 +322,9 @@ use Kumwe\CMS\Delivery\Console\Command\MigrationStatusCommand;
 use Kumwe\CMS\Delivery\Console\Command\QueueWorkCommand;
 use Kumwe\CMS\Delivery\Console\Command\RecoverMigrationLockCommand;
 use Kumwe\CMS\Delivery\Console\Command\ScheduleRunCommand;
+use Kumwe\CMS\Delivery\Console\Command\ScaffoldExtensionCommand;
+use Kumwe\CMS\Delivery\Console\Command\SignExtensionCommand;
+use Kumwe\CMS\Delivery\Console\Command\RunExtensionConformanceCommand;
 use Kumwe\CMS\Delivery\Console\Command\UninstallExtensionCommand;
 use Kumwe\CMS\Delivery\Console\Command\RecoverAdministratorThemeCommand;
 use Kumwe\CMS\Delivery\Console\ConsoleApplication;
@@ -344,6 +420,7 @@ use Kumwe\CMS\Infrastructure\Persistence\Migration\ApplicationAuthorizationMigra
 use Kumwe\CMS\Infrastructure\Persistence\Migration\ApplicationAuthorizationMigrationRecovery;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\AuthorizationRecoveryIntegrationMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\BusinessDefinitionCatalogMigration;
+use Kumwe\CMS\Infrastructure\Persistence\Migration\BusinessIntegrationSdkMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\BusinessRecordIdempotencyRetentionMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\BusinessSecurityPortalMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\BusinessTransactionalRuntimeMigration;
@@ -373,6 +450,7 @@ use Kumwe\CMS\Infrastructure\Mcp\KumweMcpHandlers;
 use Kumwe\CMS\Infrastructure\Mcp\KumweMcpServerFactory;
 use Kumwe\CMS\Infrastructure\Mcp\McpCapabilityCatalog;
 use Kumwe\CMS\Infrastructure\Mcp\McpMutationGuard;
+use Kumwe\CMS\Infrastructure\Mcp\ReportMcpHandlers;
 use Kumwe\CMS\Infrastructure\Authorization\DoctrineResourceSiteOwnership;
 use Kumwe\CMS\Infrastructure\Authorization\DoctrineResourceSiteOwnershipWriter;
 use Kumwe\CMS\Infrastructure\Time\SystemClock;
@@ -568,6 +646,11 @@ final class ContainerFactory
         $container->share(ApplicationConfiguration::class, $configuration, true);
         $container->share(ClockInterface::class, new SystemClock(), true);
         $container->share(AutomationJobFormRegistry::class, AutomationJobFormRegistry::core(), true);
+        $container->share(JitterSource::class, new CryptographicJitterSource(), true);
+        $container->share(RetryPolicy::class, static fn (Container $container): RetryPolicy => new RetryPolicy(
+            self::service($container, ClockInterface::class),
+            self::service($container, JitterSource::class),
+        ), true);
         $container->share(Dispatcher::class, new Dispatcher(), true);
         $container->alias(DispatcherInterface::class, Dispatcher::class);
         $container->share('config', [
@@ -583,8 +666,8 @@ final class ContainerFactory
 
         $this->registerLogging($container, $configuration);
         $this->registerPersistence($container, $configuration, $root, $kernelProof, $loadRuntime);
-        $this->registerExtensions($container, $configuration, $root, $loadRuntime);
-        $this->registerBusinessSurfaces($container, $root);
+        $this->registerExtensions($container, $configuration, $root, $kernelProof, $loadRuntime);
+        $this->registerBusinessSurfaces($container, $root, $kernelProof);
         $this->registerMcp($container, $root);
         $this->registerHttp($container, $configuration, $root, $loadRuntime);
         if ($console) {
@@ -732,14 +815,14 @@ final class ContainerFactory
             self::service($container, Connection::class),
             self::service($container, TableNames::class),
         ), true);
+        $container->share(PortalPrincipalLoader::class, static fn (
+            Container $container,
+        ): PortalPrincipalLoader => new DoctrinePortalPrincipalLoader(
+            self::service($container, Connection::class),
+            self::service($container, TableNames::class),
+            $provenance,
+        ), true);
         if ($portalEnabled) {
-            $container->share(PortalPrincipalLoader::class, static fn (
-                Container $container,
-            ): PortalPrincipalLoader => new DoctrinePortalPrincipalLoader(
-                self::service($container, Connection::class),
-                self::service($container, TableNames::class),
-                $provenance,
-            ), true);
             $container->share(PortalAuthenticator::class, static fn (
                 Container $container,
             ): PortalAuthenticator => new SharedIdentityPortalAuthenticator(
@@ -1125,8 +1208,7 @@ final class ContainerFactory
                 self::service($container, PublicNavigation::class),
                 SiteContext::fromString($configuration->publicSite),
             ), true);
-        $container->share(JobExecutionScope::class, static fn (): JobExecutionScope =>
-            new JobExecutionScope(), true);
+        $container->share(JobExecutionScope::class, new JobExecutionScope(), true);
         $container->share(JobQueue::class, static fn (Container $container): JobQueue =>
             new DoctrineJobQueue(
                 self::service($container, Connection::class),
@@ -1137,6 +1219,7 @@ final class ContainerFactory
                 self::service($container, AuthorizationGateway::class),
                 self::service($container, ResourceSiteOwnershipWriter::class),
                 self::service($container, JobExecutionScope::class),
+                self::service($container, QueueRuntimePolicyCatalog::class),
             ), true);
         $container->share(DoctrineScheduler::class, static fn (
             Container $container,
@@ -1150,6 +1233,8 @@ final class ContainerFactory
             self::service($container, ResourceSiteOwnershipWriter::class),
             SystemPrincipal::issue($provenance, SystemIdentity::Scheduler),
             self::service($container, JobExecutionScope::class),
+            self::service($container, ScheduleRuntimeSynchronizer::class),
+            self::service($container, QueueRuntimePolicyCatalog::class),
         ), true);
         $container->alias(Scheduler::class, DoctrineScheduler::class);
         $container->alias(ScheduleRepository::class, DoctrineScheduler::class);
@@ -1164,6 +1249,7 @@ final class ContainerFactory
             self::service($container, ClockInterface::class),
             self::service($container, AuthorizationGateway::class),
             self::service($container, JobExecutionScope::class),
+            self::service($container, QueueRuntimeOperations::class),
         ), true);
         $container->share(MigrationPlan::class, static fn (Container $container): MigrationPlan =>
             new MigrationPlan(
@@ -1188,6 +1274,7 @@ final class ContainerFactory
                     new BusinessTransactionalRuntimeMigration(self::service($container, TableNames::class)),
                     new BusinessRecordIdempotencyRetentionMigration(self::service($container, TableNames::class)),
                     new BusinessSecurityPortalMigration(self::service($container, TableNames::class)),
+                    new BusinessIntegrationSdkMigration(self::service($container, TableNames::class)),
                 ],
                 [
                     // Previously distributed builds used a DBAL-equivalent static-analysis rewrite, then
@@ -1324,6 +1411,7 @@ final class ContainerFactory
                     new GeneratedBusinessPortalNavigationVisibility(
                         self::service($container, BusinessSurfaceCatalog::class),
                         self::service($container, PortalExecutionContextFactory::class),
+                        self::service($container, ReportService::class),
                     ),
                 ), true);
         }
@@ -1393,6 +1481,7 @@ final class ContainerFactory
      * @param   Container                 $container      Container being composed.
      * @param   ApplicationConfiguration  $configuration  Boot configuration for signing keys and identities.
      * @param   string                    $root           Absolute path of the repository root.
+     * @param   object                    $kernelProof    Private provenance for worker integration contexts.
      * @param   bool                      $loadRuntime    Whether providers named by the map may execute.
      *
      * @return  void
@@ -1405,6 +1494,7 @@ final class ContainerFactory
         Container $container,
         ApplicationConfiguration $configuration,
         string $root,
+        object $kernelProof,
         bool $loadRuntime,
     ): void {
         $mapFile = $root . '/storage/cache/extensions.json';
@@ -1446,6 +1536,28 @@ final class ContainerFactory
         );
         $container->share(ArchiveReader::class, new ZipArchiveReader(), true);
         $container->share(PackageSafetyPolicy::class, new PackageSafetyPolicy(), true);
+        $container->share(ComponentScaffolder::class, new ComponentScaffolder(), true);
+        $container->share(PackageInspector::class, static fn (Container $container): PackageInspector =>
+            new PackageInspector(
+                self::service($container, ArchiveReader::class),
+                self::service($container, PackageSafetyPolicy::class),
+            ), true);
+        $container->share(DeterministicPackageBuilder::class, static fn (
+            Container $container,
+        ): DeterministicPackageBuilder => new DeterministicPackageBuilder(
+            self::service($container, PackageInspector::class),
+        ), true);
+        $container->share(ProtectedSigningKeyReader::class, new ProtectedSigningKeyReader(), true);
+        $container->share(PackageSigner::class, static fn (Container $container): PackageSigner =>
+            new PackageSigner(
+                self::service($container, ProtectedSigningKeyReader::class),
+                self::service($container, PackageInspector::class),
+            ), true);
+        $container->share(StaticConformanceRunner::class, static fn (
+            Container $container,
+        ): StaticConformanceRunner => new StaticConformanceRunner(
+            self::service($container, PackageInspector::class),
+        ), true);
         $container->share(ExtensionMigrationRunner::class, static fn (
             Container $container,
         ): ExtensionMigrationRunner => new ExtensionMigrationRunner(
@@ -1506,6 +1618,59 @@ final class ContainerFactory
             authorizationPolicies: self::service($container, AuthorizationPolicyRegistry::class),
         );
         $container->share(ExtensionContributionRegistrySet::class, $contributionRegistries, true);
+        $eventContracts = $contributionRegistries->validateIntegrationContributions();
+        $container->share(EventContractRegistry::class, $eventContracts, true);
+        $container->share(OutboxStore::class, static fn (Container $container): OutboxStore =>
+            new DoctrineOutboxStore(
+                self::service($container, Connection::class),
+                self::service($container, TableNames::class),
+                self::service($container, TransactionManager::class),
+                self::service($container, ClockInterface::class),
+                self::service($container, EventContractRegistry::class),
+            ), true);
+        $container->share(InboxStore::class, static fn (Container $container): InboxStore =>
+            new DoctrineInboxStore(
+                self::service($container, Connection::class),
+                self::service($container, TableNames::class),
+                self::service($container, TransactionManager::class),
+                self::service($container, ClockInterface::class),
+                self::service($container, EventContractRegistry::class),
+                self::service($container, QueueRuntimePolicyCatalog::class),
+            ), true);
+        $container->share(ProcessManagerStore::class, static fn (Container $container): ProcessManagerStore =>
+            new DoctrineProcessManagerStore(
+                self::service($container, Connection::class),
+                self::service($container, TableNames::class),
+                self::service($container, TransactionManager::class),
+                self::service($container, ClockInterface::class),
+            ), true);
+        $container->share(ProcessManagerService::class, static fn (
+            Container $container,
+        ): ProcessManagerService => new ProcessManagerService(
+            self::service($container, ProcessManagerStore::class),
+            self::service($container, EventContractRegistry::class),
+            self::service($container, ClockInterface::class),
+        ), true);
+        $container->share(IntegrationOperationsService::class, static fn (
+            Container $container,
+        ): IntegrationOperationsService => new IntegrationOperationsService(
+            self::service($container, OutboxStore::class),
+            self::service($container, InboxStore::class),
+            self::service($container, ProcessManagerStore::class),
+            self::service($container, ProcessManagerService::class),
+            self::service($container, AuthorizationGateway::class),
+            self::service($container, TransactionManager::class),
+            self::service($container, AuditRecorder::class),
+            self::service($container, ClockInterface::class),
+            self::service($container, ProjectionRuntime::class),
+        ), true);
+        $container->share(BusinessRecordMutationEventPublisher::class, static fn (
+            Container $container,
+        ): BusinessRecordMutationEventPublisher => new BusinessRecordMutationEventPublisher(
+            self::service($container, EventContractRegistry::class),
+            self::service($container, ExtensionContributionRegistrySet::class),
+            self::service($container, OutboxStore::class),
+        ), true);
         $container->share(FieldTypeRegistry::class, $contributionRegistries->fieldTypes(), true);
         $container->share(DoctrinePersistedFieldTypeDefinitionResolver::class, static fn (
             Container $container,
@@ -1715,6 +1880,7 @@ final class ContainerFactory
             self::service($container, AuditRecorder::class),
             self::service($container, RecordFingerprint::class),
             self::service($container, ClockInterface::class),
+            self::service($container, BusinessRecordMutationEventPublisher::class),
         ), true);
         $container->share(
             BusinessDefinitionValidator::class,
@@ -1815,11 +1981,118 @@ final class ContainerFactory
                     self::service($container, DispatcherInterface::class),
                 ),
                 NavigationService::class => self::service($container, NavigationService::class),
-                AutomationJobFormRegistry::class => self::service($container, AutomationJobFormRegistry::class),
                 SiteSettings::class => self::service($container, SiteSettings::class),
             ], $contributionRegistries)
             : new ActiveExtensionSet($contributionRegistries, self::service($container, TrustStore::class));
         $container->share(ActiveExtensionSet::class, $active, true);
+        $container->share(QueueRuntimePolicyCatalog::class, new ContributedQueueRuntimePolicyCatalog(
+            $contributionRegistries,
+            $materialization,
+        ), true);
+        $container->share(QueueRuntimeOperations::class, static fn (
+            Container $container,
+        ): QueueRuntimeOperations => new DoctrineQueueRuntimeOperations(
+            self::service($container, Connection::class),
+            self::service($container, TableNames::class),
+            self::service($container, TransactionManager::class),
+            self::service($container, ClockInterface::class),
+            self::service($container, AuthorizationGateway::class),
+            self::service($container, QueueRuntimePolicyCatalog::class),
+        ), true);
+        $contributionRegistries->validateIntegrationContributions();
+        $eventContracts->replace(
+            $contributionRegistries->eventSchemas()->definitions(),
+            $contributionRegistries->eventConsumers()->definitions(),
+        );
+        self::service($container, JobExecutionScope::class)->replace(
+            $contributionRegistries->jobs()->definitions(),
+        );
+        (new ContributedJobFormCompiler())->compile(
+            $contributionRegistries->jobs()->definitions(),
+            self::service($container, AutomationJobFormRegistry::class),
+        );
+        $container->share(ScheduleRuntimeSynchronizer::class, static fn (
+            Container $container,
+        ): ScheduleRuntimeSynchronizer => new ContributedScheduleSynchronizer(
+            self::service($container, Connection::class),
+            self::service($container, TableNames::class),
+            self::service($container, TransactionManager::class),
+            self::service($container, ClockInterface::class),
+            self::service($container, ExtensionContributionRegistrySet::class),
+            self::service($container, RuntimeMaterializationState::class),
+            queuePolicies: self::service($container, QueueRuntimePolicyCatalog::class),
+        ), true);
+
+        $container->share(TrustedRuntimeGenerationGuard::class, new ExtensionRuntimeGenerationGuard(
+            $compiler,
+            $materialization,
+        ), true);
+        $container->share(ProjectionRuntime::class, static fn (Container $container): ProjectionRuntime =>
+            new DoctrineProjectionRuntime(
+                self::service($container, Connection::class),
+                self::service($container, TableNames::class),
+                self::service($container, TransactionManager::class),
+                self::service($container, ClockInterface::class),
+                self::service($container, TrustedRuntimeGenerationGuard::class),
+                self::service($container, RuntimeMaterializationState::class),
+                self::service($container, ExtensionContributionRegistrySet::class)
+                    ->projections()
+                    ->executableEntries(),
+            ), true);
+        $container->share(IntegrationEventConsumerDispatcher::class, static fn (
+            Container $container,
+        ): IntegrationEventConsumerDispatcher => new IntegrationEventConsumerDispatcher(
+            self::service($container, InboxStore::class),
+            self::service($container, EventContractRegistry::class),
+            self::service($container, RetryPolicy::class),
+            self::service($container, TrustedRuntimeGenerationGuard::class),
+            self::service($container, TransactionManager::class),
+            self::service($container, LoggerInterface::class),
+            self::service($container, QueueRuntimePolicyCatalog::class),
+        ), true);
+        $container->share(DurableOutboundAdapterDispatcher::class, static fn (
+            Container $container,
+        ): DurableOutboundAdapterDispatcher => new DurableOutboundAdapterDispatcher(
+            self::service($container, InboxStore::class),
+            self::service($container, EventContractRegistry::class),
+            self::service($container, RetryPolicy::class),
+            self::service($container, TrustedRuntimeGenerationGuard::class),
+            self::service($container, LoggerInterface::class),
+            self::service($container, QueueRuntimePolicyCatalog::class),
+        ), true);
+        $container->share(IntegrationEventTransport::class, static fn (
+            Container $container,
+        ): IntegrationEventTransport => new RuntimeIntegrationEventTransport(
+            self::service($container, ExtensionContributionRegistrySet::class),
+            self::service($container, IntegrationEventConsumerDispatcher::class),
+            self::service($container, DurableOutboundAdapterDispatcher::class),
+            self::service($container, ProjectionRuntime::class),
+            SystemPrincipal::issue($kernelProof, SystemIdentity::Worker),
+            self::service($container, RuntimeMaterializationState::class),
+        ), true);
+        $container->share(OutboxDispatcher::class, static fn (Container $container): OutboxDispatcher =>
+            new OutboxDispatcher(
+                self::service($container, OutboxStore::class),
+                self::service($container, EventContractRegistry::class),
+                self::service($container, IntegrationEventTransport::class),
+                self::service($container, RetryPolicy::class),
+                self::service($container, TrustedRuntimeGenerationGuard::class),
+                self::service($container, LoggerInterface::class),
+            ), true);
+        $container->share(ProcessWorkDispatcher::class, static fn (
+            Container $container,
+        ): ProcessWorkDispatcher => new ProcessWorkDispatcher(
+            self::service($container, ProcessManagerStore::class),
+            [new JobQueueProcessWorkHandler(
+                self::service($container, JobQueue::class),
+                self::service($container, ClockInterface::class),
+            )],
+            SystemPrincipal::issue($kernelProof, SystemIdentity::Worker),
+            self::service($container, RetryPolicy::class),
+            self::service($container, TrustedRuntimeGenerationGuard::class),
+            self::service($container, TransactionManager::class),
+            self::service($container, LoggerInterface::class),
+        ), true);
     }
 
     /**
@@ -1830,15 +2103,98 @@ final class ContainerFactory
      * runtime publication state; adapters therefore cannot create an alternate metadata or disclosure
      * path. Core field presenters are registered eagerly so a missing built-in context fails at boot.
      *
-     * @param   Container  $container  Container being composed.
-     * @param   string     $root       Absolute repository root containing the checked-in core contract.
+     * @param   Container  $container    Container being composed.
+     * @param   string     $root         Absolute repository root containing the checked-in core contract.
+     * @param   object     $kernelProof  Private provenance for export queue producer contexts.
      *
      * @return  void
      *
      * @since   2.0.0
      */
-    private function registerBusinessSurfaces(Container $container, string $root): void
+    private function registerBusinessSurfaces(Container $container, string $root, object $kernelProof): void
     {
+        $reportDefinitions = array_values(array_filter(
+            self::service($container, ExtensionContributionRegistrySet::class)->reports()->definitions(),
+            static fn (object $definition): bool => $definition instanceof ReportDefinition,
+        ));
+        $container->share(ReportDefinitionRegistry::class, new ReportDefinitionRegistry($reportDefinitions), true);
+        $container->share(ReportApiPresenter::class, new ReportApiPresenter(), true);
+        $container->share(ReportScopeResolver::class, static fn (
+            Container $container,
+        ): ReportScopeResolver => new BusinessRecordReportScopeResolver(
+            self::service($container, BusinessRecordDefinitionResolver::class),
+        ), true);
+        $container->share(ReportService::class, static fn (Container $container): ReportService =>
+            new ReportService(
+                self::service($container, ReportDefinitionRegistry::class),
+                new BusinessRecordServiceReportReader(self::service($container, BusinessRecordService::class)),
+                self::service($container, AuthorizationGateway::class),
+                self::service($container, ReportScopeResolver::class),
+            ), true);
+        $container->share(ExportArtifactRepository::class, static fn (
+            Container $container,
+        ): ExportArtifactRepository => new DoctrineExportArtifactRepository(
+            self::service($container, Connection::class),
+            self::service($container, TableNames::class),
+            self::service($container, TransactionManager::class),
+        ), true);
+        $container->share(ExportArtifactStorage::class, static fn (): ExportArtifactStorage =>
+            new FilesystemExportArtifactStorage(
+                $root . '/storage/private/report-exports/objects',
+            ), true);
+        $container->share(ExportPolicySnapshotProvider::class, static fn (
+            Container $container,
+        ): ExportPolicySnapshotProvider => new BusinessRecordExportPolicySnapshotProvider(
+            self::service($container, BusinessRecordDefinitionResolver::class),
+            self::service($container, BusinessRecordAccessController::class),
+        ), true);
+        $container->share(ExportQueueProducerContextProvider::class, new SystemExportQueueProducerContextProvider(
+            SystemPrincipal::issue($kernelProof, SystemIdentity::Worker),
+        ), true);
+        $container->share(ExportJobDispatcher::class, static fn (Container $container): ExportJobDispatcher =>
+            new JobQueueExportJobDispatcher(
+                self::service($container, JobQueue::class),
+                self::service($container, ExportQueueProducerContextProvider::class),
+                self::service($container, ClockInterface::class),
+            ), true);
+        $container->share(ExportExecutionContextResolver::class, static fn (
+            Container $container,
+        ): ExportExecutionContextResolver => new LiveExportExecutionContextResolver(
+            self::service($container, PortalPrincipalLoader::class),
+            self::service($container, MembershipDirectory::class),
+        ), true);
+        $container->share(ExportService::class, static fn (Container $container): ExportService => new ExportService(
+            self::service($container, ReportDefinitionRegistry::class),
+            self::service($container, ReportScopeResolver::class),
+            self::service($container, ExportArtifactRepository::class),
+            self::service($container, ExportArtifactStorage::class),
+            self::service($container, ExportJobDispatcher::class),
+            self::service($container, ExportPolicySnapshotProvider::class),
+            self::service($container, AuthorizationGateway::class),
+            self::service($container, TransactionManager::class),
+            self::service($container, AuditRecorder::class),
+            self::service($container, ClockInterface::class),
+        ), true);
+        $container->share(ReportCsvEncoder::class, new ReportCsvEncoder(), true);
+        $container->share(ExportGenerationService::class, static fn (
+            Container $container,
+        ): ExportGenerationService => new ExportGenerationService(
+            self::service($container, ExportArtifactRepository::class),
+            self::service($container, ExportExecutionContextResolver::class),
+            self::service($container, ExportService::class),
+            self::service($container, ReportService::class),
+            self::service($container, ReportCsvEncoder::class),
+            self::service($container, ExportArtifactStorage::class),
+            self::service($container, TransactionManager::class),
+            self::service($container, AuditRecorder::class),
+            self::service($container, ClockInterface::class),
+        ), true);
+        $container->share(GenerateReportExportHandler::class, static fn (
+            Container $container,
+        ): GenerateReportExportHandler => new GenerateReportExportHandler(
+            self::service($container, ExportGenerationService::class),
+        ), true);
+
         $container->share(
             FieldPresentationRegistry::class,
             self::service($container, ExtensionContributionRegistrySet::class)->fieldPresentations(),
@@ -2280,6 +2636,15 @@ final class ContainerFactory
                 $secureCookie,
                 $configuration->administratorSessionSeconds,
             ), true);
+            $container->share(PortalReportHandler::class, static fn (
+                Container $container,
+            ): PortalReportHandler => new PortalReportHandler(
+                self::service($container, ReportService::class),
+                self::service($container, ExportService::class),
+                self::service($container, ReportApiPresenter::class),
+                self::service($container, PortalRenderer::class),
+                self::service($container, StreamFactoryInterface::class),
+            ), true);
         }
         $container->share(AdministratorDashboardHandler::class, static fn (
             Container $container,
@@ -2288,6 +2653,15 @@ final class ContainerFactory
             self::service($container, ContentModelService::class),
             self::service($container, AdministratorRenderer::class),
             self::service($container, PublicPageLocator::class),
+        ), true);
+        $container->share(AdministratorReportHandler::class, static fn (
+            Container $container,
+        ): AdministratorReportHandler => new AdministratorReportHandler(
+            self::service($container, ReportService::class),
+            self::service($container, ExportService::class),
+            self::service($container, ReportApiPresenter::class),
+            self::service($container, AdministratorRenderer::class),
+            self::service($container, StreamFactoryInterface::class),
         ), true);
         $container->share(AdministratorContentListHandler::class, static fn (
             Container $container,
@@ -2339,6 +2713,15 @@ final class ContainerFactory
             self::service($container, BusinessRecordApiResponder::class),
             self::service($container, BusinessSurfaceCatalog::class),
             self::service($container, BusinessSurfaceService::class),
+        ), true);
+        $container->share(ReportApiHandler::class, static fn (
+            Container $container,
+        ): ReportApiHandler => new ReportApiHandler(
+            self::service($container, ReportService::class),
+            self::service($container, ExportService::class),
+            self::service($container, ReportApiPresenter::class),
+            self::service($container, StreamFactoryInterface::class),
+            self::service($container, ProblemDetailsResponseFactory::class),
         ), true);
         $container->share(BusinessOperationStatusApiHandler::class, static fn (
             Container $container,
@@ -2750,6 +3133,31 @@ final class ContainerFactory
                     'portal.approvals.' . $decision,
                 ), 'portal.access');
             }
+            self::portalRoute($application->get(
+                '/portal/reports',
+                PortalReportHandler::class,
+                'portal.reports',
+            ), 'portal.access');
+            self::portalRoute($application->post(
+                '/portal/reports/{report}',
+                [PortalCsrfMiddleware::class, PortalReportHandler::class],
+                'portal.reports.execute',
+            ), 'portal.access');
+            self::portalRoute($application->post(
+                '/portal/reports/{report}/exports',
+                [PortalCsrfMiddleware::class, PortalReportHandler::class],
+                'portal.reports.export',
+            ), 'portal.access');
+            self::portalRoute($application->get(
+                '/portal/reports/exports/{artifact}',
+                PortalReportHandler::class,
+                'portal.report-exports.read',
+            ), 'portal.access');
+            self::portalRoute($application->get(
+                '/portal/reports/exports/{artifact}/download',
+                PortalReportHandler::class,
+                'portal.report-exports.download',
+            ), 'portal.access');
             self::portalRoute(
                 $application->get(
                     '/portal/business/operations/{operation}',
@@ -2910,6 +3318,31 @@ final class ContainerFactory
                 $name . '.mutate',
             ), 'administrator.access');
         }
+        self::administratorRoute($application->get(
+            '/administrator/reports',
+            AdministratorReportHandler::class,
+            'administrator.reports',
+        ), 'business.record.report');
+        self::administratorRoute($application->post(
+            '/administrator/reports/{report}',
+            [AdministratorCsrfMiddleware::class, AdministratorReportHandler::class],
+            'administrator.reports.execute',
+        ), 'business.record.report');
+        self::administratorRoute($application->post(
+            '/administrator/reports/{report}/exports',
+            [AdministratorCsrfMiddleware::class, AdministratorReportHandler::class],
+            'administrator.reports.export',
+        ), 'business.record.export');
+        self::administratorRoute($application->get(
+            '/administrator/reports/exports/{artifact}',
+            AdministratorReportHandler::class,
+            'administrator.report-exports.read',
+        ), 'business.record.export');
+        self::administratorRoute($application->get(
+            '/administrator/reports/exports/{artifact}/download',
+            AdministratorReportHandler::class,
+            'administrator.report-exports.download',
+        ), 'business.record.export');
         self::administratorRoute($application->get(
             '/administrator/content',
             AdministratorContentListHandler::class,
@@ -3100,6 +3533,35 @@ final class ContainerFactory
             OpenApiHandler::class,
             'api.v1.openapi',
         ));
+        self::apiRoute($application->get(
+            '/api/v1/business/reports',
+            ReportApiHandler::class,
+            'api.v1.business.reports',
+        ), 'business.record.report');
+        self::apiRoute($application->post(
+            '/api/v1/business/reports/{report}',
+            ReportApiHandler::class,
+            'api.v1.business.reports.execute',
+        ), 'business.record.report');
+        self::apiRoute($application->post(
+            '/api/v1/business/reports/{report}/exports',
+            [
+                RequireIdempotencyKeyMiddleware::class,
+                PersistentIdempotencyMiddleware::class,
+                ReportApiHandler::class,
+            ],
+            'api.v1.business.reports.export',
+        ), 'business.record.export');
+        self::apiRoute($application->get(
+            '/api/v1/business/report-exports/{artifact}',
+            ReportApiHandler::class,
+            'api.v1.business.report-exports.read',
+        ), 'business.record.export');
+        self::apiRoute($application->get(
+            '/api/v1/business/report-exports/{artifact}/download',
+            ReportApiHandler::class,
+            'api.v1.business.report-exports.download',
+        ), 'business.record.export');
         self::apiRoute($application->get(
             '/api/v1/business/definitions',
             BusinessDefinitionDiscoveryApiHandler::class,
@@ -3790,14 +4252,31 @@ final class ContainerFactory
         ): TransitionContentHandler => new TransitionContentHandler(
             self::service($container, ContentService::class),
         ), true);
-        $container->share(JobHandlerRegistry::class, static fn (Container $container): JobHandlerRegistry =>
-            new JobHandlerRegistry([
+        $container->share(JobHandlerRegistry::class, static function (
+            Container $container,
+        ): JobHandlerRegistry {
+            $handlers = [
                 self::service($container, PurgeAdministratorSessionsHandler::class),
                 self::service($container, PurgeIdempotencyRecordsHandler::class),
                 self::service($container, PurgeBusinessRecordIdempotencyHandler::class),
                 self::service($container, RebuildExtensionMapHandler::class),
                 self::service($container, TransitionContentHandler::class),
-            ]), true);
+                self::service($container, GenerateReportExportHandler::class),
+            ];
+            foreach (self::service(
+                $container,
+                ExtensionContributionRegistrySet::class,
+            )->jobs()->executableEntries() as $entry) {
+                $definition = $entry['definition'];
+                $handler = $entry['implementation'];
+                if (!$definition instanceof JobContributionDefinition || !$handler instanceof JobHandler) {
+                    throw new RuntimeException('The trusted job registry contains an invalid executable entry.');
+                }
+                $handlers[] = new ValidatedContributedJobHandler($definition, $handler);
+            }
+
+            return new JobHandlerRegistry($handlers);
+        }, true);
         $container->share(GlobalJobPrincipals::class, static fn (): GlobalJobPrincipals => new GlobalJobPrincipals(
             SystemPrincipal::issue($provenance, SystemIdentity::InstallationMaintenance),
             SystemPrincipal::issue($provenance, SystemIdentity::ExtensionMaterializer),
@@ -3867,6 +4346,31 @@ final class ContainerFactory
             self::service($container, ExtensionManager::class),
             self::service($container, ConsoleAuthorizer::class),
         ), true);
+        $container->share(ScaffoldExtensionCommand::class, static fn (
+            Container $container,
+        ): ScaffoldExtensionCommand => new ScaffoldExtensionCommand(
+            self::service($container, ComponentScaffolder::class),
+        ), true);
+        $container->share(BuildExtensionCommand::class, static fn (
+            Container $container,
+        ): BuildExtensionCommand => new BuildExtensionCommand(
+            self::service($container, DeterministicPackageBuilder::class),
+        ), true);
+        $container->share(InspectExtensionCommand::class, static fn (
+            Container $container,
+        ): InspectExtensionCommand => new InspectExtensionCommand(
+            self::service($container, PackageInspector::class),
+        ), true);
+        $container->share(SignExtensionCommand::class, static fn (
+            Container $container,
+        ): SignExtensionCommand => new SignExtensionCommand(
+            self::service($container, PackageSigner::class),
+        ), true);
+        $container->share(RunExtensionConformanceCommand::class, static fn (
+            Container $container,
+        ): RunExtensionConformanceCommand => new RunExtensionConformanceCommand(
+            self::service($container, StaticConformanceRunner::class),
+        ), true);
         $container->share(ActivateExtensionCommand::class, static fn (
             Container $container,
         ): ActivateExtensionCommand => new ActivateExtensionCommand(
@@ -3896,6 +4400,7 @@ final class ContainerFactory
                 SystemPrincipal::issue($provenance, SystemIdentity::Worker),
                 self::service($container, ExtensionRuntimeMapCompiler::class),
                 self::service($container, RuntimeMaterializationState::class),
+                self::service($container, QueueRuntimePolicyCatalog::class),
             ), true);
         $container->share(ScheduleRunCommand::class, static fn (Container $container): ScheduleRunCommand =>
             new ScheduleRunCommand(
@@ -3904,8 +4409,29 @@ final class ContainerFactory
                 self::service($container, ExtensionRuntimeMapCompiler::class),
                 self::service($container, RuntimeMaterializationState::class),
             ), true);
+        $container->share(IntegrationWorkCommand::class, static fn (
+            Container $container,
+        ): IntegrationWorkCommand => new IntegrationWorkCommand(
+            self::service($container, OutboxDispatcher::class),
+            self::service($container, ProcessWorkDispatcher::class),
+            self::service($container, ExtensionRuntimeMapCompiler::class),
+            self::service($container, RuntimeMaterializationState::class),
+        ), true);
+        $container->share(ReportCommand::class, static fn (Container $container): ReportCommand =>
+            new ReportCommand(
+                self::service($container, ReportService::class),
+                self::service($container, ExportService::class),
+                self::service($container, ConsoleAuthorizer::class),
+                self::service($container, ReportApiPresenter::class),
+            ), true);
         $container->share(ConsoleAuthorizer::class, static fn (Container $container): ConsoleAuthorizer =>
             new ConsoleAuthorizer(self::service($container, AccessTokenVerifier::class)), true);
+        $container->share(ManageIntegrationsCommand::class, static fn (
+            Container $container,
+        ): ManageIntegrationsCommand => new ManageIntegrationsCommand(
+            self::service($container, IntegrationOperationsService::class),
+            self::service($container, ConsoleAuthorizer::class),
+        ), true);
         $container->share(ManageAutomationCommand::class, static fn (
             Container $container,
         ): ManageAutomationCommand => new ManageAutomationCommand(
@@ -3993,12 +4519,20 @@ final class ContainerFactory
                 self::service($container, CreateAccessTokenCommand::class),
                 self::service($container, ListExtensionsCommand::class),
                 self::service($container, InstallExtensionCommand::class),
+                self::service($container, ScaffoldExtensionCommand::class),
+                self::service($container, BuildExtensionCommand::class),
+                self::service($container, InspectExtensionCommand::class),
+                self::service($container, SignExtensionCommand::class),
+                self::service($container, RunExtensionConformanceCommand::class),
                 self::service($container, ActivateExtensionCommand::class),
                 self::service($container, DisableExtensionCommand::class),
                 self::service($container, UninstallExtensionCommand::class),
                 self::service($container, RecoverAdministratorThemeCommand::class),
                 self::service($container, QueueWorkCommand::class),
                 self::service($container, ScheduleRunCommand::class),
+                self::service($container, IntegrationWorkCommand::class),
+                self::service($container, ManageIntegrationsCommand::class),
+                self::service($container, ReportCommand::class),
                 self::service($container, ManageAutomationCommand::class),
                 self::service($container, ManageContentCommand::class),
                 self::service($container, ManageContentModelsCommand::class),
@@ -4047,6 +4581,12 @@ final class ContainerFactory
                 self::service($container, BusinessOperationStatusService::class),
                 self::service($container, BusinessSurfaceService::class),
             ), true);
+        $container->share(ReportMcpHandlers::class, static fn (Container $container): ReportMcpHandlers =>
+            new ReportMcpHandlers(
+                self::service($container, ReportService::class),
+                self::service($container, ExportService::class),
+                self::service($container, ReportApiPresenter::class),
+            ), true);
         $container->share(SessionStoreInterface::class, static fn (Container $container): SessionStoreInterface =>
             new FileSessionStore(
                 $root . '/storage/sessions/mcp',
@@ -4067,6 +4607,7 @@ final class ContainerFactory
                 self::service($container, BusinessDefinitionService::class),
                 self::service($container, BusinessSchemaService::class),
                 self::service($container, BusinessMcpHandlers::class),
+                self::service($container, ReportMcpHandlers::class),
                 self::service($container, McpMutationGuard::class),
                 self::service($container, ClockInterface::class),
                 self::service($container, AuthorizationGateway::class),

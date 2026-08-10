@@ -10,6 +10,8 @@ use Kumwe\CMS\Application\Automation\JobHandlerRegistry;
 use Kumwe\CMS\Application\Automation\GlobalJobPrincipals;
 use Kumwe\CMS\Application\Automation\JobExecutionScope;
 use Kumwe\CMS\Application\Automation\JobQueue;
+use Kumwe\CMS\Application\Automation\QueueRuntimePolicy;
+use Kumwe\CMS\Application\Automation\QueueRuntimePolicyCatalog;
 use Kumwe\CMS\Application\Automation\StoredJob;
 use Kumwe\CMS\Application\Automation\Worker;
 use Kumwe\CMS\Application\Authorization\ExecutionContext;
@@ -52,8 +54,39 @@ final class QueueWorkCommandTest extends TestCase
         self::assertStringContainsString('between 5 and 3600', $output->errors[0]);
     }
 
+    public function testContributedQueueDefaultsToSignedLeaseAndRejectsAContradictingOverride(): void
+    {
+        $policy = new CommandQueuePolicyCatalog(new QueueRuntimePolicy(
+            'acme.example.priority',
+            45,
+            3,
+            2,
+            14,
+            17,
+        ));
+        $queue = new DrainQueue(0);
+        $command = $this->command($queue, [], $policy);
+        $output = new DrainOutput();
+
+        self::assertSame(0, $command->execute(['--queue=acme.example.priority', '--once'], $output));
+        self::assertSame([45], $queue->claimLeases);
+        self::assertStringContainsString('in-flight 2', $output->lines[1]);
+
+        $refused = new DrainQueue(0);
+        self::assertSame(1, $this->command($refused, [], $policy)->execute([
+            '--queue=acme.example.priority',
+            '--lease-seconds=46',
+            '--once',
+        ], new DrainOutput()));
+        self::assertSame([], $refused->claimLeases);
+    }
+
     /** @param list<JobHandler> $handlers */
-    private function command(JobQueue $queue, array $handlers): QueueWorkCommand
+    private function command(
+        JobQueue $queue,
+        array $handlers,
+        ?QueueRuntimePolicyCatalog $policies = null,
+    ): QueueWorkCommand
     {
         $ownership = AuthorizationContext::ownership();
 
@@ -71,6 +104,7 @@ final class QueueWorkCommandTest extends TestCase
                 ),
             ),
             AuthorizationContext::system(SystemIdentity::Worker),
+            policies: $policies,
         );
     }
 }
@@ -81,6 +115,8 @@ final class DrainQueue implements JobQueue
     private array $jobs = [];
     public int $completed = 0;
     public int $disconnects = 0;
+    /** @var list<int> */
+    public array $claimLeases = [];
 
     public function __construct(int $jobs)
     {
@@ -121,6 +157,7 @@ final class DrainQueue implements JobQueue
         string $workerId,
         int $leaseSeconds,
     ): ?StoredJob {
+        $this->claimLeases[] = $leaseSeconds;
         return array_shift($this->jobs);
     }
 
@@ -170,6 +207,28 @@ final class DrainQueue implements JobQueue
 
     public function cancel(ExecutionContext $context, string $id): void
     {
+    }
+}
+
+final readonly class CommandQueuePolicyCatalog implements QueueRuntimePolicyCatalog
+{
+    public function __construct(private QueueRuntimePolicy $policy)
+    {
+    }
+
+    public function policy(string $queue): ?QueueRuntimePolicy
+    {
+        return $queue === $this->policy->queue ? $this->policy : null;
+    }
+
+    public function maximumAttempts(string $queue, string $jobType, int $requested): int
+    {
+        return $this->policy($queue) === null ? $requested : min($requested, $this->policy->maximumAttempts);
+    }
+
+    public function policies(): array
+    {
+        return [$this->policy];
     }
 }
 

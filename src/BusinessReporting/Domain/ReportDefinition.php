@@ -20,51 +20,91 @@ use Kumwe\CMS\Identity\Domain\Capability;
  */
 final readonly class ReportDefinition implements ContributionDefinition
 {
-    /** @var list<ReportParameterDefinition> @since 2.0.0 */
+    /**
+     * Parameters validated in declaration order.
+     *
+     * @var    list<ReportParameterDefinition>
+     * @since  2.0.0
+     */
     public array $parameters;
 
-    /** @var list<ReportFilterDefinition> @since 2.0.0 */
+    /**
+     * Filters validated in declaration order.
+     *
+     * @var    list<ReportFilterDefinition>
+     * @since  2.0.0
+     */
     public array $filters;
 
-    /** @var non-empty-list<ReportColumnDefinition> @since 2.0.0 */
+    /**
+     * Columns validated in declaration order.
+     *
+     * @var    non-empty-list<ReportColumnDefinition>
+     * @since  2.0.0
+     */
     public array $columns;
 
-    /** @var list<ReportGroupDefinition> @since 2.0.0 */
+    /**
+     * Groups validated in declaration order.
+     *
+     * @var    list<ReportGroupDefinition>
+     * @since  2.0.0
+     */
     public array $groups;
 
-    /** @var list<ReportAggregateDefinition> @since 2.0.0 */
+    /**
+     * Aggregates validated in declaration order.
+     *
+     * @var    list<ReportAggregateDefinition>
+     * @since  2.0.0
+     */
     public array $aggregates;
 
-    /** @var list<ReportFormulaDefinition> @since 2.0.0 */
+    /**
+     * Formulas validated in declaration order.
+     *
+     * @var    list<ReportFormulaDefinition>
+     * @since  2.0.0
+     */
     public array $formulas;
 
-    /** @var list<ReportSortDefinition> @since 2.0.0 */
+    /**
+     * Sorts validated in declaration order.
+     *
+     * @var    list<ReportSortDefinition>
+     * @since  2.0.0
+     */
     public array $sorts;
 
-    /** @var list<ReportDrillDownDefinition> @since 2.0.0 */
+    /**
+     * Drill downs validated in declaration order.
+     *
+     * @var    list<ReportDrillDownDefinition>
+     * @since  2.0.0
+     */
     public array $drillDowns;
 
     /**
      * Assemble and cross-check one report contribution.
      *
-     * @param   string                              $id                Namespaced contribution identifier.
-     * @param   int                                 $version           Positive immutable definition version.
-     * @param   string                              $title             Human report title.
-     * @param   string                              $sourceDefinition  Business entity definition handle.
-     * @param   string                              $requiredCapability Capability required in addition to the
+     * @param   string                                  $id                    Namespaced contribution identifier.
+     * @param   int                                     $version               Positive immutable definition version.
+     * @param   string                                  $title                 Human report title.
+     * @param   string                                  $sourceDefinition      Business entity definition handle.
+     * @param   string                                  $requiredCapability    Capability required in addition to the
      *          business-record report or export capability.
-     * @param   list<ReportParameterDefinition>     $parameters        Typed caller inputs, at most 32.
-     * @param   list<ReportFilterDefinition>        $filters           Query predicates, at most 32.
-     * @param   non-empty-list<ReportColumnDefinition> $columns        Disclosed output columns, at most 64.
-     * @param   list<ReportGroupDefinition>         $groups            Grouping keys, at most four.
-     * @param   list<ReportAggregateDefinition>     $aggregates        Aggregate outputs, at most 16.
-     * @param   list<ReportFormulaDefinition>       $formulas          Bounded formulas, at most 16.
-     * @param   list<ReportSortDefinition>          $sorts             Output sorts, at most five.
-     * @param   list<ReportDrillDownDefinition>     $drillDowns        Declarative record links, at most eight.
-     * @param   int                                 $synchronousRowCap Interactive row limit, from 1 to 1000.
-     * @param   bool                                $administratorVisible Whether generated administrator
+     * @param   list<ReportParameterDefinition>         $parameters            Typed caller inputs, at most 32.
+     * @param   list<ReportFilterDefinition>            $filters               Query predicates, at most 32.
+     * @param   non-empty-list<ReportColumnDefinition>  $columns               Disclosed output columns, at most 64.
+     * @param   list<ReportGroupDefinition>             $groups                Grouping keys, at most four.
+     * @param   list<ReportAggregateDefinition>         $aggregates            Aggregate outputs, at most 16.
+     * @param   list<ReportFormulaDefinition>           $formulas              Bounded formulas, at most 16.
+     * @param   list<ReportSortDefinition>              $sorts                 Output sorts, at most five.
+     * @param   list<ReportDrillDownDefinition>         $drillDowns            Declarative record links, at most eight.
+     * @param   int                                     $synchronousRowCap     Interactive row limit, from 1 to 1000.
+     * @param   bool                                    $administratorVisible  Whether generated administrator
      *          delivery may expose this report.
-     * @param   bool                                $portalVisible    Explicit opt-in for generated portal delivery.
+     * @param bool $portalVisible Explicit opt-in for generated portal delivery.
      *
      * @throws  InvalidArgumentException  When a bound, reference or identifier is invalid.
      *
@@ -149,20 +189,33 @@ final readonly class ReportDefinition implements ContributionDefinition
             $groupedOutputAliases[$group->columnAlias] = true;
         }
         $outputAliases = ($groups !== [] || $aggregates !== []) ? $groupedOutputAliases : $columnAliases;
+        $outputTypes = ($groups !== [] || $aggregates !== [])
+            ? array_intersect_key($columnTypes, $groupedOutputAliases)
+            : $columnTypes;
         foreach ($aggregates as $aggregate) {
             self::addUnique($outputAliases, $aggregate->alias, 'output');
+            $outputTypes[$aggregate->alias] = match ($aggregate->function) {
+                ReportAggregateFunction::Count => ReportValueType::Integer,
+                ReportAggregateFunction::Sum, ReportAggregateFunction::Average => ReportValueType::Decimal,
+                default => $columnTypes[$aggregate->columnAlias]
+                    ?? throw new InvalidArgumentException('A report aggregate source type is unavailable.'),
+            };
         }
         foreach ($formulas as $formula) {
             foreach ($formula->expression->dependencies() as $dependency) {
                 self::assertReference($outputAliases, $dependency, 'formula dependency');
             }
             self::addUnique($outputAliases, $formula->alias, 'output');
+            $outputTypes[$formula->alias] = $formula->type;
         }
         foreach ($sorts as $sort) {
             self::assertReference($outputAliases, $sort->outputAlias, 'sort');
         }
         foreach ($drillDowns as $drillDown) {
             self::assertReference($outputAliases, $drillDown->recordAlias, 'drill-down');
+            if (($outputTypes[$drillDown->recordAlias] ?? null) !== ReportValueType::Identifier) {
+                throw new InvalidArgumentException('A report drill-down requires an identifier output.');
+            }
         }
         $relation = null;
         foreach (array_merge($columns, $filters) as $definition) {
@@ -366,7 +419,16 @@ final readonly class ReportDefinition implements ContributionDefinition
         return CanonicalDefinitionJson::checksum($this->toArray());
     }
 
-    /** @param list<object> $items @param class-string $class @since 2.0.0 */
+    /**
+     * Validate instances before continuing.
+     *
+     * @param   list<object>  $items  Definitions whose runtime type and uniqueness are validated.
+     * @param   class-string  $class  Expected definition class for every list member.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     private static function assertInstances(array $items, string $class): void
     {
         foreach ($items as $item) {
@@ -377,10 +439,14 @@ final readonly class ReportDefinition implements ContributionDefinition
     }
 
     /**
-     * @param list<object> $items
-     * @param callable(object): string $identifier
-     * @return array<string, true>
-     * @since 2.0.0
+     * Return the unique references in their declared order.
+     *
+     * @param   list<object>              $items       Definitions whose runtime type and uniqueness are validated.
+     * @param   callable(object): string  $identifier  Stable namespaced identifier to render or persist.
+     *
+     * @return  array<string, true>
+     *
+     * @since   2.0.0
      */
     private static function unique(array $items, callable $identifier): array
     {
@@ -392,7 +458,17 @@ final readonly class ReportDefinition implements ContributionDefinition
         return $seen;
     }
 
-    /** @param array<string, true> $seen @since 2.0.0 */
+    /**
+     * Append a reference only when it has not already been declared.
+     *
+     * @param   array<string, true>  $seen   References already encountered while preserving declaration order.
+     * @param   string               $value  Candidate value being validated or normalized.
+     * @param   string               $label  Human-readable field name used in validation errors.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     private static function addUnique(array &$seen, string $value, string $label): void
     {
         if (isset($seen[$value])) {
@@ -401,7 +477,17 @@ final readonly class ReportDefinition implements ContributionDefinition
         $seen[$value] = true;
     }
 
-    /** @param array<string, true> $available @since 2.0.0 */
+    /**
+     * Validate a stable report-definition reference.
+     *
+     * @param   array<string, true>  $available  Declared references that this definition may use.
+     * @param   string               $value      Candidate value being validated or normalized.
+     * @param   string               $label      Human-readable field name used in validation errors.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     private static function assertReference(array $available, string $value, string $label): void
     {
         if (!isset($available[$value])) {
@@ -426,7 +512,16 @@ final readonly class ReportDefinition implements ContributionDefinition
         return $value;
     }
 
-    /** @param array<string, mixed> $document @since 2.0.0 */
+    /**
+     * Read a required string from the supplied data.
+     *
+     * @param   array<string, mixed>  $document  Serialized document from which the named member is read.
+     * @param   string                $key       Array or row key whose value is being read.
+     *
+     * @return  string  Required string stored under the requested key.
+     *
+     * @since   2.0.0
+     */
     private static function string(array $document, string $key): string
     {
         $value = $document[$key] ?? null;
@@ -437,7 +532,16 @@ final readonly class ReportDefinition implements ContributionDefinition
         return $value;
     }
 
-    /** @param array<string, mixed> $document @since 2.0.0 */
+    /**
+     * Read an optional string from the supplied data.
+     *
+     * @param   array<string, mixed>  $document  Serialized document from which the named member is read.
+     * @param   string                $key       Array or row key whose value is being read.
+     *
+     * @return  ?string  String stored under the key, or null when the member is absent.
+     *
+     * @since   2.0.0
+     */
     private static function nullableString(array $document, string $key): ?string
     {
         $value = $document[$key] ?? null;
@@ -448,7 +552,16 @@ final readonly class ReportDefinition implements ContributionDefinition
         return $value;
     }
 
-    /** @param array<string, mixed> $document @since 2.0.0 */
+    /**
+     * Read and validate an integer value.
+     *
+     * @param   array<string, mixed>  $document  Serialized document from which the named member is read.
+     * @param   string                $key       Array or row key whose value is being read.
+     *
+     * @return  int  Integer stored under the requested key.
+     *
+     * @since   2.0.0
+     */
     private static function integer(array $document, string $key): int
     {
         $value = $document[$key] ?? null;
@@ -459,7 +572,16 @@ final readonly class ReportDefinition implements ContributionDefinition
         return $value;
     }
 
-    /** @param array<string, mixed> $document @since 2.0.0 */
+    /**
+     * Read and validate a boolean value.
+     *
+     * @param   array<string, mixed>  $document  Serialized document from which the named member is read.
+     * @param   string                $key       Array or row key whose value is being read.
+     *
+     * @return  bool  Boolean stored under the requested key.
+     *
+     * @since   2.0.0
+     */
     private static function boolean(array $document, string $key): bool
     {
         $value = $document[$key] ?? null;
@@ -470,7 +592,16 @@ final readonly class ReportDefinition implements ContributionDefinition
         return $value;
     }
 
-    /** @param array<string, mixed> $document @return array<string, mixed> @since 2.0.0 */
+    /**
+     * Read a structured object from the supplied data.
+     *
+     * @param   array<string, mixed>  $document  Serialized document from which the named member is read.
+     * @param   string                $key       Array or row key whose value is being read.
+     *
+     * @return  array<string, mixed>
+     *
+     * @since   2.0.0
+     */
     private static function object(array $document, string $key): array
     {
         $value = $document[$key] ?? null;
@@ -481,7 +612,16 @@ final readonly class ReportDefinition implements ContributionDefinition
         return $value;
     }
 
-    /** @param array<string, mixed> $document @param list<string> $expected @since 2.0.0 */
+    /**
+     * Return the allowed keys for this report-definition object.
+     *
+     * @param   array<string, mixed>  $document  Serialized document from which the named member is read.
+     * @param   list<string>          $expected  Exact keys allowed in the serialized definition.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     private static function keys(array $document, array $expected): void
     {
         $actual = array_keys($document);

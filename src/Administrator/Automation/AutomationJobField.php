@@ -22,16 +22,16 @@ final readonly class AutomationJobField
     /**
      * Declare one payload field, refusing a declaration the form could not render or validate.
      *
-     * @param   string           $key       Payload key this field writes, lowercase with underscores.
-     * @param   string           $label     Caption shown beside the input, and the name used in errors.
-     * @param   string           $type      Widget kind: `text`, `integer`, `boolean`, or `select`.
-     * @param   bool             $required  Whether the operator must supply a value before saving.
-     * @param   bool|string|int|null  $default  Value substituted for an empty input; null omits the key.
-     * @param   int|null         $minimum   Smallest accepted `integer` value, or null for no floor.
-     * @param   int|null         $maximum   Largest accepted `integer` value, or null for no ceiling.
-     * @param   string|null      $pattern   PCRE a text value must match, or null to accept any text.
-     * @param   list<string>     $options   Accepted values for a `select`; empty leaves the value free.
-     * @param   string           $help      Hint rendered under the input to explain what to enter.
+     * @param   string                $key       Payload key this field writes, lowercase with underscores.
+     * @param   string                $label     Caption shown beside the input, and the name used in errors.
+     * @param   string                $type      Widget kind: `text`, `integer`, `boolean`, or `select`.
+     * @param   bool                  $required  Whether the operator must supply a value before saving.
+     * @param   bool|string|int|null  $default   Value substituted for an empty input; null omits the key.
+     * @param   int|null              $minimum   Smallest accepted `integer` value, or null for no floor.
+     * @param   int|null              $maximum   Largest accepted `integer` value, or null for no ceiling.
+     * @param   string|null           $pattern   PCRE a text value must match, or null to accept any text.
+     * @param   list<string>          $options   Accepted values for a `select`; empty leaves the value free.
+     * @param   string                $help      Hint rendered under the input to explain what to enter.
      *
      * @throws  InvalidArgumentException  When the key or label is malformed, or the type is not one of
      *          the three supported widget kinds.

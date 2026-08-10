@@ -19,10 +19,10 @@ final readonly class ExtensionRuntimeGenerationGuard implements TrustedRuntimeGe
     /**
      * Capture the exact materialization loaded at process boot.
      *
-     * @param   ExtensionRuntimeMapCompiler  $compiler  Live runtime authority.
-     * @param   RuntimeMaterializationState  $loaded    Immutable boot-time materialization.
+     * @param  ExtensionRuntimeMapCompiler  $compiler  Live runtime authority.
+     * @param  RuntimeMaterializationState  $loaded    Immutable boot-time materialization.
      *
-     * @since   2.0.0
+     * @since  2.0.0
      */
     public function __construct(
         private ExtensionRuntimeMapCompiler $compiler,
@@ -30,11 +30,21 @@ final readonly class ExtensionRuntimeGenerationGuard implements TrustedRuntimeGe
     ) {
     }
 
-    /** @inheritDoc */
+    /**
+     * Require the supplied execution context to remain current and authorized.
+     *
+     * @param   string  $generation  Trusted runtime generation that owns the lease.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     public function assertCurrent(string $generation): void
     {
         if (!$this->loaded->trusted || $generation !== (string) $this->loaded->generation) {
-            throw new RuntimeException('The claimed integration work does not belong to the loaded runtime generation.');
+            throw new RuntimeException(
+                'The claimed integration work does not belong to the loaded runtime generation.',
+            );
         }
         $this->compiler->assertLoadedGenerationCurrent($this->loaded);
     }

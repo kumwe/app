@@ -7,6 +7,7 @@ namespace Kumwe\CMS\BusinessSurface\Delivery\Portal;
 use Kumwe\CMS\BusinessSurface\Application\BusinessSurface;
 use Kumwe\CMS\BusinessSurface\Application\BusinessSurfaceCatalog;
 use Kumwe\CMS\BusinessSurface\Application\BusinessSurfaceOperation;
+use Kumwe\CMS\BusinessReporting\Application\ReportService;
 use Kumwe\CMS\Portal\Application\PortalExecutionContextFactory;
 use Kumwe\CMS\Portal\Application\PortalSession;
 use Kumwe\CMS\Portal\Presentation\PortalNavigationVisibility;
@@ -28,16 +29,26 @@ final readonly class GeneratedBusinessPortalNavigationVisibility implements Port
     public const string NAVIGATION_ID = 'core.portal-business-records';
 
     /**
+     * Core navigation identity reserved for contributed portal reports.
+     *
+     * @var    string
+     * @since  2.0.0
+     */
+    public const string REPORT_NAVIGATION_ID = 'core.portal-business-reports';
+
+    /**
      * Bind request visibility to the canonical portal context and policy-filtered surface catalog.
      *
      * @param  BusinessSurfaceCatalog         $catalog   Shared definition exposure and policy boundary.
      * @param  PortalExecutionContextFactory  $contexts  Portal provenance-owning context factory.
+     * @param  ReportService                  $reports   Shared report discovery and authorization service.
      *
      * @since  2.0.0
      */
     public function __construct(
         private BusinessSurfaceCatalog $catalog,
         private PortalExecutionContextFactory $contexts,
+        private ReportService $reports,
     ) {
     }
 
@@ -53,6 +64,12 @@ final readonly class GeneratedBusinessPortalNavigationVisibility implements Port
      */
     public function visible(PortalSession $session, array $item): bool
     {
+        if (($item['id'] ?? null) === self::REPORT_NAVIGATION_ID) {
+            return $this->reports->available($this->contexts->create(
+                $session,
+                'portal-report-navigation-' . Uuid::uuid7()->toString(),
+            )) !== [];
+        }
         if (($item['id'] ?? null) !== self::NAVIGATION_ID) {
             return true;
         }

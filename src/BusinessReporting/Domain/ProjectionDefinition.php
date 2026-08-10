@@ -16,26 +16,41 @@ use Kumwe\CMS\BusinessIntegration\Domain\IntegrationContract;
  */
 final readonly class ProjectionDefinition implements IntegrationContract
 {
-    /** @var non-empty-list<ProjectionSourceDefinition> @since 2.0.0 */
+    /**
+     * Sources validated for deterministic projection rebuilds.
+     *
+     * @var    non-empty-list<ProjectionSourceDefinition>
+     * @since  2.0.0
+     */
     public array $sources;
 
-    /** @var non-empty-list<ProjectionFieldDefinition> @since 2.0.0 */
+    /**
+     * Fields validated for deterministic projection rebuilds.
+     *
+     * @var    non-empty-list<ProjectionFieldDefinition>
+     * @since  2.0.0
+     */
     public array $fields;
 
-    /** @var non-empty-list<string> @since 2.0.0 */
+    /**
+     * Key fields validated for deterministic projection rebuilds.
+     *
+     * @var    non-empty-list<string>
+     * @since  2.0.0
+     */
     public array $keyFields;
 
     /**
      * Assemble one reproducible projection declaration.
      *
-     * @param   string                                  $id               Namespaced contribution identifier.
-     * @param   int                                     $version          Positive builder contract version.
-     * @param   string                                  $handlerVersion   Executable builder revision token.
-     * @param   EventSensitivity                        $sensitivityCeiling Most sensitive event accepted.
-     * @param   non-empty-list<ProjectionSourceDefinition> $sources      Versioned event inputs, at most 16.
-     * @param   non-empty-list<ProjectionFieldDefinition> $fields        Typed derived fields, at most 64.
-     * @param   non-empty-list<string>                  $keyFields        Field handles forming the row key.
-     * @param   int                                     $rebuildBatchSize Deterministic replay batch, 1 to 1000.
+     * @param   string                                      $id                  Namespaced contribution identifier.
+     * @param   int                                         $version             Positive builder contract version.
+     * @param   string                                      $handlerVersion      Executable builder revision token.
+     * @param   EventSensitivity                            $sensitivityCeiling  Most sensitive event accepted.
+     * @param   non-empty-list<ProjectionSourceDefinition>  $sources             Versioned event inputs, at most 16.
+     * @param   non-empty-list<ProjectionFieldDefinition>   $fields              Typed derived fields, at most 64.
+     * @param   non-empty-list<string>                      $keyFields           Field handles forming the row key.
+     * @param   int                                         $rebuildBatchSize    Deterministic replay batch, 1 to 1000.
      *
      * @throws  InvalidArgumentException  When a bound, identifier or key-field reference is invalid.
      *

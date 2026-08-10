@@ -734,6 +734,123 @@ final readonly class OpenApiContractCompiler
                     'next_before_version' => ['type' => ['integer', 'null'], 'minimum' => 1],
                 ],
             ],
+            'GeneratedBusinessReportParameters' => [
+                'type' => 'object',
+                'maxProperties' => 32,
+                'propertyNames' => ['pattern' => '^[a-z][a-z0-9_]{0,62}$'],
+                'additionalProperties' => [
+                    'oneOf' => [
+                        ['type' => 'string', 'maxLength' => 4096],
+                        ['type' => 'integer'],
+                        ['type' => 'boolean'],
+                        ['type' => 'array', 'minItems' => 1, 'maxItems' => 100, 'items' => [
+                            'oneOf' => [
+                                ['type' => 'string', 'maxLength' => 4096],
+                                ['type' => 'integer'],
+                                ['type' => 'boolean'],
+                            ],
+                        ]],
+                    ],
+                ],
+            ],
+            'GeneratedBusinessReportRequest' => [
+                'type' => 'object',
+                'additionalProperties' => false,
+                'properties' => [
+                    'parameters' => ['$ref' => '#/components/schemas/GeneratedBusinessReportParameters'],
+                ],
+            ],
+            'GeneratedBusinessReportColumn' => [
+                'type' => 'object',
+                'additionalProperties' => false,
+                'required' => ['alias', 'label', 'type'],
+                'properties' => [
+                    'alias' => ['type' => 'string', 'pattern' => '^[a-z][a-z0-9_]{0,62}$'],
+                    'label' => ['type' => 'string', 'maxLength' => 191],
+                    'type' => [
+                        'type' => 'string',
+                        'enum' => ['string', 'integer', 'decimal', 'boolean', 'date', 'date_time', 'identifier'],
+                    ],
+                ],
+            ],
+            'GeneratedBusinessReportDrillDown' => [
+                'type' => 'object',
+                'additionalProperties' => false,
+                'required' => ['record_alias', 'definition', 'view', 'url'],
+                'properties' => [
+                    'record_alias' => ['type' => 'string', 'pattern' => '^[a-z][a-z0-9_]{0,62}$'],
+                    'definition' => ['type' => 'string', 'maxLength' => 191],
+                    'view' => ['type' => 'string', 'maxLength' => 191],
+                    'url' => ['type' => 'string', 'maxLength' => 1024, 'pattern' => '^/api/v1/business/views/'],
+                ],
+            ],
+            'GeneratedBusinessReportResult' => [
+                'type' => 'object',
+                'additionalProperties' => false,
+                'required' => [
+                    'report', 'definition_checksum', 'query_digest', 'columns', 'rows', 'row_count',
+                    'drill_downs', 'has_drill_downs',
+                ],
+                'properties' => [
+                    'report' => ['type' => 'string', 'maxLength' => 191],
+                    'definition_checksum' => ['type' => 'string', 'pattern' => '^[a-f0-9]{64}$'],
+                    'query_digest' => ['type' => 'string', 'pattern' => '^[a-f0-9]{64}$'],
+                    'columns' => [
+                        'type' => 'array',
+                        'maxItems' => 96,
+                        'items' => ['$ref' => '#/components/schemas/GeneratedBusinessReportColumn'],
+                    ],
+                    'rows' => [
+                        'type' => 'array',
+                        'maxItems' => 1000,
+                        'items' => [
+                            'type' => 'object',
+                            'maxProperties' => 96,
+                            'additionalProperties' => [
+                                'oneOf' => [
+                                    ['type' => 'string', 'maxLength' => 65_536],
+                                    ['type' => 'integer'],
+                                    ['type' => 'boolean'],
+                                    ['type' => 'null'],
+                                ],
+                            ],
+                        ],
+                    ],
+                    'row_count' => ['type' => 'integer', 'minimum' => 0, 'maximum' => 1000],
+                    'drill_downs' => [
+                        'type' => 'array',
+                        'maxItems' => 1000,
+                        'items' => [
+                            'type' => 'array',
+                            'maxItems' => 8,
+                            'items' => ['$ref' => '#/components/schemas/GeneratedBusinessReportDrillDown'],
+                        ],
+                    ],
+                    'has_drill_downs' => ['type' => 'boolean'],
+                ],
+            ],
+            'GeneratedBusinessReportExportRequest' => [
+                'type' => 'object',
+                'additionalProperties' => false,
+                'properties' => [
+                    'parameters' => ['$ref' => '#/components/schemas/GeneratedBusinessReportParameters'],
+                    'retention_seconds' => ['type' => 'integer', 'minimum' => 60, 'maximum' => 604_800],
+                ],
+            ],
+            'GeneratedBusinessReportExport' => $this->reportExportSchema(),
+            'GeneratedBusinessReportDefinition' => $this->reportDefinitionSchema(),
+            'GeneratedBusinessReportCollection' => [
+                'type' => 'object',
+                'additionalProperties' => false,
+                'required' => ['items'],
+                'properties' => [
+                    'items' => [
+                        'type' => 'array',
+                        'maxItems' => 256,
+                        'items' => ['$ref' => '#/components/schemas/GeneratedBusinessReportDefinition'],
+                    ],
+                ],
+            ],
             'GeneratedBusinessQuery' => $this->querySchema(),
         ], $this->definitionMetadataSchemas());
         if (array_intersect(array_keys($existing), array_keys($schemas)) !== []) {
@@ -741,6 +858,97 @@ final readonly class OpenApiContractCompiler
         }
 
         return $schemas;
+    }
+
+    /**
+     * Describe safe report discovery metadata generated for REST clients.
+     *
+     * @return  array<string, mixed>  Closed report definition JSON Schema.
+     *
+     * @since   2.0.0
+     */
+    private function reportDefinitionSchema(): array
+    {
+        return [
+            'type' => 'object',
+            'additionalProperties' => false,
+            'required' => ['id', 'title', 'parameters', 'execute_url', 'export_url'],
+            'properties' => [
+                'id' => ['type' => 'string', 'maxLength' => 191],
+                'title' => ['type' => 'string', 'maxLength' => 191],
+                'parameters' => [
+                    'type' => 'array',
+                    'maxItems' => 32,
+                    'items' => [
+                        'type' => 'object',
+                        'additionalProperties' => false,
+                        'required' => ['name', 'type', 'required', 'multiple', 'default'],
+                        'properties' => [
+                            'name' => ['type' => 'string', 'pattern' => '^[a-z][a-z0-9_]{0,62}$'],
+                            'type' => [
+                                'type' => 'string',
+                                'enum' => [
+                                    'string', 'integer', 'decimal', 'boolean', 'date', 'date_time', 'identifier',
+                                ],
+                            ],
+                            'required' => ['type' => 'boolean'],
+                            'multiple' => ['type' => 'boolean'],
+                            'default' => [
+                                'oneOf' => [
+                                    ['type' => 'string', 'maxLength' => 4096],
+                                    ['type' => 'integer'],
+                                    ['type' => 'boolean'],
+                                    ['type' => 'array', 'maxItems' => 100, 'items' => [
+                                        'oneOf' => [
+                                            ['type' => 'string', 'maxLength' => 4096],
+                                            ['type' => 'integer'],
+                                            ['type' => 'boolean'],
+                                        ],
+                                    ]],
+                                    ['type' => 'null'],
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+                'execute_url' => ['type' => 'string', 'maxLength' => 512],
+                'export_url' => ['type' => 'string', 'maxLength' => 512],
+            ],
+        ];
+    }
+
+    /**
+     * Describe omission-safe durable export lifecycle metadata.
+     *
+     * @return  array<string, mixed>  Closed export artifact JSON Schema.
+     *
+     * @since   2.0.0
+     */
+    private function reportExportSchema(): array
+    {
+        return [
+            'type' => 'object',
+            'additionalProperties' => false,
+            'required' => [
+                'id', 'report', 'status', 'created_at', 'expires_at', 'started_at', 'completed_at',
+                'filename', 'size', 'row_count', 'checksum', 'failure_code', 'version',
+            ],
+            'properties' => [
+                'id' => ['type' => 'string', 'format' => 'uuid'],
+                'report' => ['type' => 'string', 'maxLength' => 191],
+                'status' => ['type' => 'string', 'enum' => ['queued', 'running', 'completed', 'failed']],
+                'created_at' => ['type' => 'string', 'format' => 'date-time'],
+                'expires_at' => ['type' => 'string', 'format' => 'date-time'],
+                'started_at' => ['type' => ['string', 'null'], 'format' => 'date-time'],
+                'completed_at' => ['type' => ['string', 'null'], 'format' => 'date-time'],
+                'filename' => ['type' => ['string', 'null'], 'maxLength' => 127],
+                'size' => ['type' => ['integer', 'null'], 'minimum' => 1],
+                'row_count' => ['type' => ['integer', 'null'], 'minimum' => 0],
+                'checksum' => ['type' => ['string', 'null'], 'pattern' => '^[a-f0-9]{64}$'],
+                'failure_code' => ['type' => ['string', 'null'], 'maxLength' => 63],
+                'version' => ['type' => 'integer', 'minimum' => 1, 'maximum' => 16],
+            ],
+        ];
     }
 
     /**
@@ -1342,6 +1550,11 @@ final readonly class OpenApiContractCompiler
             'pattern' => '^[A-Za-z0-9][A-Za-z0-9._:-]{7,127}$',
         ]);
         $approval = $this->parameter('approval', 'path', true, ['type' => 'string', 'format' => 'uuid']);
+        $report = $this->parameter('report', 'path', true, [
+            'type' => 'string', 'maxLength' => 191,
+            'pattern' => '^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)+$',
+        ]);
+        $artifact = $this->parameter('artifact', 'path', true, ['type' => 'string', 'format' => 'uuid']);
         $queryDocument = $this->querySchema();
         $query = $this->objectArray(
             $queryDocument['properties'] ?? null,
@@ -1415,8 +1628,72 @@ final readonly class OpenApiContractCompiler
             'GeneratedBusinessApproval',
         ));
         $approvalOperation = $this->withResponseAlias($approvalOperation, '201', '200');
+        $downloadOperation = $this->operation(
+            'businessReportExportDownload',
+            'Download a verified business report CSV export',
+            '200',
+        );
+        $downloadResponses = $this->responseRegistry(
+            $downloadOperation['responses'] ?? null,
+            'The generated report download response registry is invalid.',
+        );
+        $downloadResponses[200] = [
+            'description' => 'Verified CSV export.',
+            'headers' => [
+                'ETag' => ['schema' => ['type' => 'string', 'pattern' => '^"sha256-[a-f0-9]{64}"$']],
+                'Content-Disposition' => ['schema' => ['type' => 'string', 'maxLength' => 512]],
+                'X-Content-Type-Options' => ['schema' => ['type' => 'string', 'const' => 'nosniff']],
+            ],
+            'content' => [
+                'text/csv' => ['schema' => ['type' => 'string', 'format' => 'binary']],
+            ],
+        ];
+        $downloadOperation['responses'] = $downloadResponses;
 
         return [
+            '/api/v1/business/reports' => [
+                'get' => $this->operation(
+                    'businessReportList',
+                    'List active reports visible to the API credential',
+                    '200',
+                    null,
+                    'GeneratedBusinessReportCollection',
+                ),
+            ],
+            '/api/v1/business/reports/{report}' => [
+                'parameters' => [$report],
+                'post' => $this->operation(
+                    'businessReportExecute',
+                    'Execute a contributed business report',
+                    '200',
+                    'GeneratedBusinessReportRequest',
+                    'GeneratedBusinessReportResult',
+                ),
+            ],
+            '/api/v1/business/reports/{report}/exports' => [
+                'parameters' => [$report],
+                'post' => $this->operation(
+                    'businessReportExportRequest',
+                    'Queue a policy-bound CSV business report export',
+                    '202',
+                    'GeneratedBusinessReportExportRequest',
+                    'GeneratedBusinessReportExport',
+                ),
+            ],
+            '/api/v1/business/report-exports/{artifact}' => [
+                'parameters' => [$artifact],
+                'get' => $this->operation(
+                    'businessReportExportStatus',
+                    'Read business report export status',
+                    '200',
+                    null,
+                    'GeneratedBusinessReportExport',
+                ),
+            ],
+            '/api/v1/business/report-exports/{artifact}/download' => [
+                'parameters' => [$artifact],
+                'get' => $downloadOperation,
+            ],
             '/api/v1/business/approvals' => [
                 'get' => $this->operation(
                     'businessApprovalList',
@@ -1654,6 +1931,7 @@ final readonly class OpenApiContractCompiler
             'businessRecordRelate',
             'businessRecordUnrelate',
             'businessRecordReorder',
+            'businessReportExportRequest',
         ];
         if (in_array($operationId, $mutations, true)) {
             $operation['parameters'] = [[
@@ -1667,7 +1945,7 @@ final readonly class OpenApiContractCompiler
                     'pattern' => '^[A-Za-z0-9][A-Za-z0-9._:-]{7,127}$',
                 ],
             ]];
-            if ($operationId !== 'businessRecordCreate') {
+            if ($operationId !== 'businessRecordCreate' && $operationId !== 'businessReportExportRequest') {
                 $operation['parameters'][] = [
                     'name' => 'If-Match',
                     'in' => 'header',

@@ -16,18 +16,23 @@ use Kumwe\CMS\BusinessReporting\Domain\ReportDefinitionGuard;
  */
 final readonly class ProjectionEvent
 {
-    /** @var array<string, mixed> @since 2.0.0 */
+    /**
+     * Validated event payload presented to the projection builder.
+     *
+     * @var    array<string, mixed>
+     * @since  2.0.0
+     */
     public array $payload;
 
     /**
      * Capture a versioned event and prove its payload is canonically reproducible.
      *
-     * @param   int                  $sequence       Strictly increasing source sequence.
-     * @param   string               $id             Canonical event UUID.
-     * @param   string               $type           Namespaced event type.
-     * @param   int                  $schemaVersion  Positive payload schema version.
-     * @param   DateTimeImmutable    $occurredAt     Original event instant.
-     * @param   array<string, mixed> $payload        Immutable canonical event object.
+     * @param   int                   $sequence       Strictly increasing source sequence.
+     * @param   string                $id             Canonical event UUID.
+     * @param   string                $type           Namespaced event type.
+     * @param   int                   $schemaVersion  Positive payload schema version.
+     * @param   DateTimeImmutable     $occurredAt     Original event instant.
+     * @param   array<string, mixed>  $payload        Immutable canonical event object.
      *
      * @throws  InvalidArgumentException  When event identity, version, sequence or payload is invalid.
      *
@@ -42,7 +47,7 @@ final readonly class ProjectionEvent
         array $payload,
     ) {
         if ($sequence < 1 || $schemaVersion < 1
-            || preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/Di', $id) !== 1
+            || preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/D', $id) !== 1
         ) {
             throw new InvalidArgumentException('A projection event identity or version is invalid.');
         }

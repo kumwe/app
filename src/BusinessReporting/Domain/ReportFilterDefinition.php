@@ -16,10 +16,10 @@ final readonly class ReportFilterDefinition
     /**
      * Declare one root or single-hop relation filter.
      *
-     * @param   string                    $fieldPath       Root field or `relationship.field` path.
-     * @param   ReportFilterOperator      $operator        Closed operator translated without SQL text.
-     * @param   ?string                   $parameter       Parameter handle, null only for null tests.
-     * @param   ReportRelationQuantifier  $quantifier      Quantifier used for a relationship path.
+     * @param   string                    $fieldPath   Root field or `relationship.field` path.
+     * @param   ReportFilterOperator      $operator    Closed operator translated without SQL text.
+     * @param   ?string                   $parameter   Parameter handle, null only for null tests.
+     * @param   ReportRelationQuantifier  $quantifier  Quantifier used for a relationship path.
      *
      * @throws  InvalidArgumentException  When the path or parameter pairing is invalid.
      *

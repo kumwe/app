@@ -23,7 +23,7 @@ final readonly class FilesystemExportArtifactStorage implements ExportArtifactSt
      * @param   int     $maximumBytes  Maximum bytes per artifact, up to 512 MiB.
      *
      * @throws  InvalidArgumentException  When the byte ceiling is invalid.
-     * @throws  RuntimeException          When the directory cannot be secured.
+     * @throws  RuntimeException  When the directory cannot be secured.
      *
      * @since   2.0.0
      */
@@ -44,7 +44,7 @@ final readonly class FilesystemExportArtifactStorage implements ExportArtifactSt
     }
 
     /**
-     * Write, hash, fsync and atomically publish one never-overwritten CSV file.
+     * Write, hash, fsync and atomically publish one attempt-tokenized, never-overwritten CSV file.
      *
      * @param   string            $artifactId  Canonical artifact UUID.
      * @param   iterable<string>  $chunks      Ordered CSV chunks.
@@ -57,8 +57,8 @@ final readonly class FilesystemExportArtifactStorage implements ExportArtifactSt
      */
     public function store(string $artifactId, iterable $chunks): StoredExportArtifact
     {
-        $this->assertKey($artifactId . '.csv');
-        $key = strtolower($artifactId) . '.csv';
+        $key = $artifactId . '.' . bin2hex(random_bytes(16)) . '.csv';
+        $this->assertKey($key);
         $path = $this->path($key);
         if (file_exists($path) || is_link($path)) {
             throw new RuntimeException('An export artifact object already exists.');
@@ -159,24 +159,50 @@ final readonly class FilesystemExportArtifactStorage implements ExportArtifactSt
         }
     }
 
-    /** @since 2.0.0 */
+    /**
+     * Resolve the confined filesystem path for the supplied identifier.
+     *
+     * @param   string  $key  Array or row key whose value is being read.
+     *
+     * @return  string  Confined absolute path for the requested export artifact.
+     *
+     * @since   2.0.0
+     */
     private function path(string $key): string
     {
         return $this->directory . DIRECTORY_SEPARATOR . $key;
     }
 
-    /** @since 2.0.0 */
+    /**
+     * Validate a storage key before confined path resolution.
+     *
+     * @param   string  $key  Array or row key whose value is being read.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     private function assertKey(string $key): void
     {
         if (preg_match(
-            '/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\.csv$/Di',
+            '/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}'
+            . '\.[0-9a-f]{32}\.csv$/D',
             $key,
         ) !== 1) {
             throw new RuntimeException('An export artifact storage key is invalid.');
         }
     }
 
-    /** @param resource $stream @since 2.0.0 */
+    /**
+     * Write bytes completely to an already opened artifact stream.
+     *
+     * @param   resource  $stream  Opened artifact stream that receives all bytes.
+     * @param   string    $bytes   Complete artifact bytes to write.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     private function write(mixed $stream, string $bytes): void
     {
         while ($bytes !== '') {

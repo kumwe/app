@@ -17,22 +17,33 @@ use InvalidArgumentException;
  */
 final readonly class WebhookContributionDefinition implements IntegrationContract
 {
-    /** @var list<string> Event types routed to this adapter. @since 2.0.0 */
+    /**
+     * Versioned event types routed to this outbound adapter.
+     *
+     * @var    list<string>  Event types routed to this adapter.
+     * @since  2.0.0
+     */
     private array $eventTypes;
 
-    /** @var list<int> Exact schema revisions accepted for every routed event type. @since 2.0.0 */
+    /**
+     * Exact schema versions accepted by the outbound adapter.
+     *
+     * @var    list<int>  Exact schema revisions accepted for every routed event type.
+     * @since  2.0.0
+     */
     private array $schemaVersions;
 
     /**
      * Declare one durable outbound adapter.
      *
-     * @param   string            $adapterId           Namespaced outbound adapter identity.
-     * @param   list<string>      $eventTypes          Non-empty event type allowlist.
-     * @param   list<int>         $schemaVersions      Exact accepted schema revisions.
-     * @param   string            $handlerVersion      Immutable executable revision.
-     * @param   string            $queue               Declared logical delivery queue.
-     * @param   int               $maximumAttempts     Attempt budget before quarantine.
-     * @param   EventSensitivity  $sensitivityCeiling  Most sensitive event accepted by the boundary.
+     * @param   string               $adapterId           Namespaced outbound adapter identity.
+     * @param   list<string>         $eventTypes          Non-empty event type allowlist.
+     * @param   list<int>            $schemaVersions      Exact accepted schema revisions.
+     * @param   string               $handlerVersion      Immutable executable revision.
+     * @param   string               $queue               Declared logical delivery queue.
+     * @param   ConsumerIdempotency  $idempotency         Receipt strategy required before the outbound effect runs.
+     * @param   int                  $maximumAttempts     Attempt budget before quarantine.
+     * @param   EventSensitivity     $sensitivityCeiling  Most sensitive event accepted by the boundary.
      *
      * @throws  InvalidArgumentException  When a declaration value is invalid.
      *
@@ -68,62 +79,125 @@ final readonly class WebhookContributionDefinition implements IntegrationContrac
         $this->schemaVersions = $schemaVersions;
     }
 
-    /** @return string Namespaced outbound adapter identity. @since 2.0.0 */
+    /**
+     * Return the stable identifier for the webhook contribution definition.
+     *
+     * @return  string  Namespaced outbound adapter identity.
+     *
+     * @since   2.0.0
+     */
     public function identifier(): string
     {
         return $this->adapterId;
     }
 
-    /** @return list<string> Routed event types. @since 2.0.0 */
+    /**
+     * Return the event types carried by this webhook contribution definition.
+     *
+     * @return  list<string>  Routed event types.
+     *
+     * @since   2.0.0
+     */
     public function eventTypes(): array
     {
         return $this->eventTypes;
     }
 
-    /** @return list<int> Exact accepted schema revisions. @since 2.0.0 */
+    /**
+     * Return the exact event schema versions accepted by this contribution.
+     *
+     * @return  list<int>  Exact accepted schema revisions.
+     *
+     * @since   2.0.0
+     */
     public function schemaVersions(): array
     {
         return $this->schemaVersions;
     }
 
-    /** @return bool Whether this adapter accepts an exact event contract. @since 2.0.0 */
+    /**
+     * Determine whether this contribution accepts the supplied event contract.
+     *
+     * @param   string  $eventType      Stable namespaced type of the event.
+     * @param   int     $schemaVersion  Exact payload schema version to test.
+     *
+     * @return  bool  Whether this adapter accepts an exact event contract.
+     *
+     * @since   2.0.0
+     */
     public function accepts(string $eventType, int $schemaVersion): bool
     {
         return in_array($eventType, $this->eventTypes, true)
             && in_array($schemaVersion, $this->schemaVersions, true);
     }
 
-    /** @return string Handler revision. @since 2.0.0 */
+    /**
+     * Return the handler implementation version used for compatibility checks.
+     *
+     * @return  string  Handler revision.
+     *
+     * @since   2.0.0
+     */
     public function handlerVersion(): string
     {
         return $this->handlerVersion;
     }
 
-    /** @return string Logical queue identity. @since 2.0.0 */
+    /**
+     * Return the declared durable queue identifier.
+     *
+     * @return  string  Logical queue identity.
+     *
+     * @since   2.0.0
+     */
     public function queue(): string
     {
         return $this->queue;
     }
 
-    /** @return int Attempt budget. @since 2.0.0 */
+    /**
+     * Return the maximum number of delivery attempts.
+     *
+     * @return  int  Attempt budget.
+     *
+     * @since   2.0.0
+     */
     public function maximumAttempts(): int
     {
         return $this->maximumAttempts;
     }
 
-    /** @return ConsumerIdempotency Required durable duplicate behavior. @since 2.0.0 */
+    /**
+     * Return the idempotency strategy required by this consumer.
+     *
+     * @return  ConsumerIdempotency  Required durable duplicate behavior.
+     *
+     * @since   2.0.0
+     */
     public function idempotency(): ConsumerIdempotency
     {
         return $this->idempotency;
     }
 
-    /** @return EventSensitivity Disclosure ceiling. @since 2.0.0 */
+    /**
+     * Return the highest event sensitivity this contribution may receive.
+     *
+     * @return  EventSensitivity  Disclosure ceiling.
+     *
+     * @since   2.0.0
+     */
     public function sensitivityCeiling(): EventSensitivity
     {
         return $this->sensitivityCeiling;
     }
 
-    /** @return array<string, mixed> Canonical publication representation. @since 2.0.0 */
+    /**
+     * Serialize the webhook contribution definition for durable storage or inspection.
+     *
+     * @return  array<string, mixed>  Canonical publication representation.
+     *
+     * @since   2.0.0
+     */
     public function toArray(): array
     {
         return [
@@ -138,7 +212,15 @@ final readonly class WebhookContributionDefinition implements IntegrationContrac
         ];
     }
 
-    /** @param array<string, mixed> $data @return self Validated adapter declaration. @since 2.0.0 */
+    /**
+     * Reconstitute the webhook contribution definition from validated array data.
+     *
+     * @param   array<string, mixed>  $data  Validated contribution data from which the named member is read.
+     *
+     * @return  self  Validated adapter declaration.
+     *
+     * @since   2.0.0
+     */
     public static function fromArray(array $data): self
     {
         IntegrationContractValidator::keys($data, [

@@ -49,7 +49,7 @@ final class ReportCsvEncoder
      * Encode one typed value as an always-quoted RFC 4180 field.
      *
      * @param   bool|int|string|null  $value  Safe report cell.
-     * @param   ReportValueType      $type   Declared type deciding formula neutralization.
+     * @param   ReportValueType       $type   Declared type deciding formula neutralization.
      *
      * @return  string  Quoted field with internal quotes doubled.
      *

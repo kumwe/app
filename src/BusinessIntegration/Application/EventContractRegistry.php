@@ -17,18 +17,28 @@ use Kumwe\CMS\BusinessIntegration\Domain\EventSchemaDefinition;
  */
 final class EventContractRegistry
 {
-    /** @var array<string, EventSchemaDefinition> Schemas keyed by type and version. @since 2.0.0 */
+    /**
+     * Versioned event schemas keyed by their canonical identifiers.
+     *
+     * @var    array<string, EventSchemaDefinition>  Schemas keyed by type and version.
+     * @since  2.0.0
+     */
     private array $schemas;
 
-    /** @var array<string, EventConsumerDefinition> Consumers keyed by identity. @since 2.0.0 */
+    /**
+     * Durable consumers keyed by their stable identifiers.
+     *
+     * @var    array<string, EventConsumerDefinition>  Consumers keyed by identity.
+     * @since  2.0.0
+     */
     private array $consumers;
 
     /**
      * Compile data-only declarations into a collision-free runtime catalog.
      *
-     * @param   iterable<EventSchemaDefinition>    $schemas     Active event schemas.
-     * @param   iterable<EventConsumerDefinition>  $consumers   Active durable consumers.
-     * @param   PayloadSchemaValidator              $validator   Validates schemas and event payloads.
+     * @param   iterable<EventSchemaDefinition>    $schemas    Active event schemas.
+     * @param   iterable<EventConsumerDefinition>  $consumers  Active durable consumers.
+     * @param   PayloadSchemaValidator             $validator  Validates schemas and event payloads.
      *
      * @throws  InvalidArgumentException  When identifiers collide or a consumer names an absent contract.
      *
@@ -134,14 +144,30 @@ final class EventContractRegistry
         $this->validator->assertPayload($schema->payloadSchema(), $event->payload());
     }
 
-    /** @return EventConsumerDefinition Registered consumer. @since 2.0.0 */
+    /**
+     * Return the consumer carried by this event contract registry.
+     *
+     * @param   string  $consumerId  Stable consumer identifier used to scope receipt history.
+     *
+     * @return  EventConsumerDefinition  Registered consumer.
+     *
+     * @since   2.0.0
+     */
     public function consumer(string $consumerId): EventConsumerDefinition
     {
         return $this->consumers[$consumerId]
             ?? throw new InvalidArgumentException('The event consumer is not registered.');
     }
 
-    /** @return list<EventConsumerDefinition> Consumers accepting this exact event revision. @since 2.0.0 */
+    /**
+     * Return the consumers for carried by this event contract registry.
+     *
+     * @param   EventEnvelope  $event  Versioned event being validated or processed.
+     *
+     * @return  list<EventConsumerDefinition>  Consumers accepting this exact event revision.
+     *
+     * @since   2.0.0
+     */
     public function consumersFor(EventEnvelope $event): array
     {
         return array_values(array_filter(

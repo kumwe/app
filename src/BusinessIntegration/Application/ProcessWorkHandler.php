@@ -14,9 +14,27 @@ use Kumwe\CMS\BusinessIntegration\Domain\ProcessWorkKind;
  */
 interface ProcessWorkHandler
 {
-    /** @return bool Whether this handler owns the kind/name pair. @since 2.0.0 */
+    /**
+     * Determine whether this handler supports the supplied work kind and name.
+     *
+     * @param   ProcessWorkKind  $kind  Process-work kind proposed for dispatch.
+     * @param   string           $name  Stable contribution or option name being addressed.
+     *
+     * @return  bool  Whether this handler owns the kind/name pair.
+     *
+     * @since   2.0.0
+     */
     public function supports(ProcessWorkKind $kind, string $name): bool;
 
-    /** @return void @since 2.0.0 */
+    /**
+     * Process the supplied item under its authenticated execution context.
+     *
+     * @param   ProcessWorkLease  $lease    Fenced lease proving ownership of the durable item.
+     * @param   ExecutionContext  $context  Authenticated execution context for authorization and audit.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     public function handle(ProcessWorkLease $lease, ExecutionContext $context): void;
 }

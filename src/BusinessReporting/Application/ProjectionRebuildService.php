@@ -39,7 +39,7 @@ final readonly class ProjectionRebuildService
      * @return  ProjectionRebuildResult  Terminal sequence and source/output checksums.
      *
      * @throws  RuntimeException  When the event source violates strict ordering or declared source versions.
-     * @throws  Throwable         When the builder or writer fails; the replacement generation is rolled back.
+     * @throws  Throwable  When the builder or writer fails; the replacement generation is rolled back.
      *
      * @since   2.0.0
      */
@@ -79,7 +79,16 @@ final readonly class ProjectionRebuildService
         }
     }
 
-    /** @since 2.0.0 */
+    /**
+     * Require the event to match the projection source declaration.
+     *
+     * @param   ProjectionDefinition  $definition  Signed contribution definition governing the operation.
+     * @param   ProjectionEvent       $event       Versioned event being validated or processed.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     private function assertDeclared(ProjectionDefinition $definition, ProjectionEvent $event): void
     {
         foreach ($definition->sources as $source) {

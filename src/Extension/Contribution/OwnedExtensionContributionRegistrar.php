@@ -455,14 +455,31 @@ final class OwnedExtensionContributionRegistrar implements ExtensionContribution
         $this->registries->customBusinessActionHandlers()->register($this->businessOwner(), $contract, $handler);
     }
 
-    /** @inheritdoc */
+    /**
+     * Register the manifest-reconciled event schema under the current package owner.
+     *
+     * @param   EventSchemaDefinition  $definition  Signed contribution definition governing the operation.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     public function eventSchema(EventSchemaDefinition $definition): void
     {
         $this->accept('event_schema', $definition->identifier(), $definition->toArray());
         $this->registries->eventSchemas()->register($this->owner, $definition);
     }
 
-    /** @inheritdoc */
+    /**
+     * Register a domain listener only when its implementation matches the signed declaration.
+     *
+     * @param   DomainListenerDefinition  $definition  Signed contribution definition governing the operation.
+     * @param   DomainEventHandler        $handler     Runtime handler bound to the signed contribution.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     public function domainListener(DomainListenerDefinition $definition, DomainEventHandler $handler): void
     {
         if ($handler->definition()->toArray() !== $definition->toArray()) {
@@ -472,7 +489,16 @@ final class OwnedExtensionContributionRegistrar implements ExtensionContribution
         $this->registries->domainListeners()->register($this->owner, $definition, $handler);
     }
 
-    /** @inheritdoc */
+    /**
+     * Register a durable consumer only when its implementation matches the signed declaration.
+     *
+     * @param   EventConsumerDefinition  $definition  Signed contribution definition governing the operation.
+     * @param   IntegrationEventHandler  $handler     Runtime handler bound to the signed contribution.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     public function eventConsumer(EventConsumerDefinition $definition, IntegrationEventHandler $handler): void
     {
         if ($handler->definition()->toArray() !== $definition->toArray()) {
@@ -482,7 +508,16 @@ final class OwnedExtensionContributionRegistrar implements ExtensionContribution
         $this->registries->eventConsumers()->register($this->owner, $definition, $handler);
     }
 
-    /** @inheritdoc */
+    /**
+     * Register a job handler only when its type matches the signed declaration.
+     *
+     * @param   JobContributionDefinition  $definition  Signed contribution definition governing the operation.
+     * @param   JobHandler                 $handler     Runtime handler bound to the signed contribution.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     public function jobHandler(JobContributionDefinition $definition, JobHandler $handler): void
     {
         if ($handler->type() !== $definition->identifier()) {
@@ -492,21 +527,46 @@ final class OwnedExtensionContributionRegistrar implements ExtensionContribution
         $this->registries->jobs()->register($this->owner, $definition, $handler);
     }
 
-    /** @inheritdoc */
+    /**
+     * Register a logical queue with bounded leases, retries, concurrency, and retention.
+     *
+     * @param   QueueContributionDefinition  $definition  Signed contribution definition governing the operation.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     public function queue(QueueContributionDefinition $definition): void
     {
         $this->accept('queue', $definition->identifier(), $definition->toArray());
         $this->registries->queues()->register($this->owner, $definition);
     }
 
-    /** @inheritdoc */
+    /**
+     * Register the manifest-reconciled schedule under the current package owner.
+     *
+     * @param   ScheduleContributionDefinition  $definition  Signed contribution definition governing the operation.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     public function schedule(ScheduleContributionDefinition $definition): void
     {
         $this->accept('schedule', $definition->identifier(), $definition->toArray());
         $this->registries->schedules()->register($this->owner, $definition);
     }
 
-    /** @inheritdoc */
+    /**
+     * Compile the report column projection for policy-safe record access.
+     *
+     * @param   ProjectionDefinition  $definition  Signed contribution definition governing the operation.
+     * @param   ProjectionBuilder     $builder     Projection builder registered for the signed definition.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     public function projection(ProjectionDefinition $definition, ProjectionBuilder $builder): void
     {
         if ($builder->definition()->toArray() !== $definition->toArray()) {
@@ -516,14 +576,31 @@ final class OwnedExtensionContributionRegistrar implements ExtensionContribution
         $this->registries->projections()->register($this->owner, $definition, $builder);
     }
 
-    /** @inheritdoc */
+    /**
+     * Register the manifest-reconciled report under the current package owner.
+     *
+     * @param   ReportDefinition  $definition  Signed contribution definition governing the operation.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     public function report(ReportDefinition $definition): void
     {
         $this->accept('report', $definition->identifier(), $definition->toArray());
         $this->registries->reports()->register($this->owner, $definition);
     }
 
-    /** @inheritdoc */
+    /**
+     * Register an outbound adapter only when its implementation matches the signed declaration.
+     *
+     * @param   WebhookContributionDefinition  $definition  Signed contribution definition governing the operation.
+     * @param   IntegrationEventTransport      $transport   Declared outbound transport bound to the webhook.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     public function webhook(
         WebhookContributionDefinition $definition,
         IntegrationEventTransport $transport,

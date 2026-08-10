@@ -13,9 +13,21 @@ use Kumwe\CMS\Extension\Contribution\ContributionDefinition;
  */
 interface IntegrationContract extends ContributionDefinition
 {
-    /** @return string Stable identifier used for ownership and collision checks. @since 2.0.0 */
+    /**
+     * Return the stable identifier for the integration contract.
+     *
+     * @return  string  Stable identifier used for ownership and collision checks.
+     *
+     * @since   2.0.0
+     */
     public function identifier(): string;
 
-    /** @return array<string, mixed> Canonical publication representation. @since 2.0.0 */
+    /**
+     * Serialize the integration contract for durable storage or inspection.
+     *
+     * @return  array<string, mixed>  Canonical publication representation.
+     *
+     * @since   2.0.0
+     */
     public function toArray(): array;
 }

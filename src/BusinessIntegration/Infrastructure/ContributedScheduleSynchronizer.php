@@ -8,6 +8,7 @@ use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Types\Types;
 use Kumwe\CMS\Application\Automation\CronExpression;
 use Kumwe\CMS\Application\Automation\JobExecutionClass;
+use Kumwe\CMS\Application\Automation\QueueRuntimePolicyCatalog;
 use Kumwe\CMS\BusinessDefinition\Domain\CanonicalDefinitionJson;
 use Kumwe\CMS\BusinessIntegration\Application\PayloadSchemaValidator;
 use Kumwe\CMS\BusinessIntegration\Application\ScheduleRuntimeSynchronizer;
@@ -32,7 +33,20 @@ use RuntimeException;
  */
 final readonly class ContributedScheduleSynchronizer implements ScheduleRuntimeSynchronizer
 {
-    /** @since 2.0.0 */
+    /**
+     * Create the contributed schedule synchronizer.
+     *
+     * @param  Connection                        $database       Database connection used for durable state changes.
+     * @param  TableNames                        $tables         Configured database table-name mapping.
+     * @param  TransactionManager                $transactions   Transaction runner protecting the durable transition.
+     * @param  ClockInterface                    $clock          Authoritative clock for schedule and lease timestamps.
+     * @param  ExtensionContributionRegistrySet  $contributions  Active owner-bound runtime contribution registries.
+     * @param  RuntimeMaterializationState       $runtime        Trusted active extension runtime.
+     * @param  PayloadSchemaValidator            $payloads       Bounded payload-schema validator for contributed data.
+     * @param  ?QueueRuntimePolicyCatalog        $queuePolicies  Active trusted queue and job attempt limits.
+     *
+     * @since  2.0.0
+     */
     public function __construct(
         private Connection $database,
         private TableNames $tables,
@@ -41,15 +55,16 @@ final readonly class ContributedScheduleSynchronizer implements ScheduleRuntimeS
         private ExtensionContributionRegistrySet $contributions,
         private RuntimeMaterializationState $runtime,
         private PayloadSchemaValidator $payloads = new PayloadSchemaValidator(),
+        private ?QueueRuntimePolicyCatalog $queuePolicies = null,
     ) {
     }
 
     /**
      * Synchronize only after the integration migration exists; pre-migration CLI boot is a safe no-op.
      *
-     * @return bool True when the persistence schema was available and reconciled.
+     * @return  bool  True when the persistence schema was available and reconciled.
      *
-     * @since 2.0.0
+     * @since   2.0.0
      */
     public function synchronize(): bool
     {
@@ -105,7 +120,18 @@ final readonly class ContributedScheduleSynchronizer implements ScheduleRuntimeS
         return true;
     }
 
-    /** @since 2.0.0 */
+    /**
+     * Insert or update a contributed schedule without replacing its durable identity.
+     *
+     * @param   ScheduleContributionDefinition  $schedule  Signed contributed schedule being reconciled.
+     * @param   JobContributionDefinition       $job       Signed job contract referenced by the contributed schedule.
+     * @param   RuntimeMaterializationState     $runtime   Trusted active extension runtime.
+     * @param   ?string                         $site      Site scope that owns the durable contribution row.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     private function upsert(
         ScheduleContributionDefinition $schedule,
         JobContributionDefinition $job,
@@ -117,10 +143,15 @@ final readonly class ContributedScheduleSynchronizer implements ScheduleRuntimeS
         $generation = $runtime->trusted ? (string) $runtime->generation : 'untrusted';
         $id = Uuid::uuid5(Uuid::NAMESPACE_URL, 'kumwe:schedule:' . $schedule->identifier())->toString();
         $row = $this->database->fetchAssociative(sprintf(
-            'SELECT id, contribution_checksum FROM %s WHERE contribution_id = ?',
+            'SELECT id, contribution_checksum, maximum_attempts FROM %s WHERE contribution_id = ?',
             $this->tables->quoted('schedules'),
         ), [$schedule->identifier()]);
         $scope = $job->installationWide() ? JobExecutionClass::Installation : JobExecutionClass::Site;
+        $maximumAttempts = $this->queuePolicies?->maximumAttempts(
+            $schedule->queue(),
+            $job->identifier(),
+            $job->maximumAttempts(),
+        ) ?? $job->maximumAttempts();
 
         if ($row === false) {
             $this->database->insert($this->tables->raw('schedules'), [
@@ -133,7 +164,7 @@ final readonly class ContributedScheduleSynchronizer implements ScheduleRuntimeS
                 'job_schema_version' => $job->schemaVersion(),
                 'payload' => $schedule->payload(),
                 'priority' => 0,
-                'maximum_attempts' => $job->maximumAttempts(),
+                'maximum_attempts' => $maximumAttempts,
                 'enabled' => $schedule->enabled(),
                 'next_run_at' => (new CronExpression($schedule->cronExpression()))->next(
                     $now,
@@ -163,9 +194,13 @@ final readonly class ContributedScheduleSynchronizer implements ScheduleRuntimeS
             throw new RuntimeException('A contributed schedule identity is inconsistent.');
         }
         $changed = ($row['contribution_checksum'] ?? null) !== $checksum;
+        $storedMaximum = $row['maximum_attempts'] ?? null;
+        $policyChanged = (!is_int($storedMaximum) && !is_string($storedMaximum))
+            || (int) $storedMaximum !== $maximumAttempts;
         $values = [
             'contribution_active' => true,
             'contribution_generation' => $generation,
+            'maximum_attempts' => $maximumAttempts,
             'updated_at' => $now,
         ];
         $types = [
@@ -180,7 +215,6 @@ final readonly class ContributedScheduleSynchronizer implements ScheduleRuntimeS
                 'job_type' => $job->identifier(),
                 'job_schema_version' => $job->schemaVersion(),
                 'payload' => $schedule->payload(),
-                'maximum_attempts' => $job->maximumAttempts(),
                 'enabled' => $schedule->enabled(),
                 'execution_scope' => $scope->value,
                 'contribution_checksum' => $checksum,
@@ -189,7 +223,7 @@ final readonly class ContributedScheduleSynchronizer implements ScheduleRuntimeS
             $types['enabled'] = Types::BOOLEAN;
         }
         $this->database->update($this->tables->raw('schedules'), $values, ['id' => $id], $types);
-        if ($changed) {
+        if ($changed || $policyChanged) {
             $this->database->executeStatement(sprintf(
                 'UPDATE %s SET version = version + 1 WHERE id = ?',
                 $this->tables->quoted('schedules'),
@@ -198,7 +232,16 @@ final readonly class ContributedScheduleSynchronizer implements ScheduleRuntimeS
         $this->assertOwnership($id, $site);
     }
 
-    /** @since 2.0.0 */
+    /**
+     * Require the durable row to remain owned by its signed contribution.
+     *
+     * @param   string   $id    Stable identifier of the durable record being addressed.
+     * @param   ?string  $site  Site scope that owns the durable contribution row.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     private function assertOwnership(string $id, ?string $site): void
     {
         $stored = $this->database->fetchOne(sprintf(
@@ -224,7 +267,15 @@ final readonly class ContributedScheduleSynchronizer implements ScheduleRuntimeS
         }
     }
 
-    /** @since 2.0.0 */
+    /**
+     * Derive a bounded scheduler row name from the contribution identifier.
+     *
+     * @param   string  $identifier  Stable namespaced identifier to render or persist.
+     *
+     * @return  string  Bounded scheduler row name with a collision-resistant suffix.
+     *
+     * @since   2.0.0
+     */
     private function name(string $identifier): string
     {
         return substr('Extension: ' . $identifier, 0, 143) . ' [' . substr(hash('sha256', $identifier), 0, 12) . ']';

@@ -68,8 +68,11 @@ interface AuthorizationGateway
      *
      * Granting a capability to a role, or minting a token that carries one, is authority transfer
      * rather than use, so it is checked against the actor's own ceiling: nobody may delegate wider than
-     * they hold, and some actions are not delegatable at any scope. Callers issuing a grant assert this
-     * before and inside the write transaction.
+     * they hold, and some actions are not delegatable at any scope. The sole bootstrap exception is an
+     * explicitly trusted extension capability: a global `extensions.manage` holder may make its first
+     * human grant after activation, because no principal can hold an owner-new capability before that
+     * grant exists. Core and system-only capabilities never enter that exception. Callers issuing a
+     * grant assert this before and inside the write transaction.
      *
      * @param   ExecutionContext  $context  Actor, site, and provenance the delegation runs under.
      * @param   Capability        $action   Capability the actor proposes to grant onward.

@@ -37,7 +37,13 @@ enum EventSensitivity: string
         return $this->rank() <= $ceiling->rank();
     }
 
-    /** @return int Stable sensitivity ordering. @since 2.0.0 */
+    /**
+     * Return the disclosure-order rank of this sensitivity level.
+     *
+     * @return  int  Stable sensitivity ordering.
+     *
+     * @since   2.0.0
+     */
     private function rank(): int
     {
         return match ($this) {

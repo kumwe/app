@@ -24,12 +24,12 @@ final readonly class JobQueueIntegrationEventHandler implements IntegrationEvent
     /**
      * Configure the declared consumer and destination job type.
      *
-     * @param   EventConsumerDefinition  $definition  Durable consumer contract.
-     * @param   JobQueue                 $jobs        Existing durable queue.
-     * @param   ClockInterface           $clock       Supplies immediate availability.
-     * @param   string                   $jobType     Registered target job handler type.
+     * @param  EventConsumerDefinition  $definition  Durable consumer contract.
+     * @param  JobQueue                 $jobs        Existing durable queue.
+     * @param  ClockInterface           $clock       Supplies immediate availability.
+     * @param  string                   $jobType     Registered target job handler type.
      *
-     * @since   2.0.0
+     * @since  2.0.0
      */
     public function __construct(
         private EventConsumerDefinition $definition,
@@ -40,7 +40,13 @@ final readonly class JobQueueIntegrationEventHandler implements IntegrationEvent
         IntegrationContractValidator::identifier($jobType, 'Integration-event job type');
     }
 
-    /** @return EventConsumerDefinition Consumer contract. @since 2.0.0 */
+    /**
+     * Return the signed contribution definition implemented by this handler.
+     *
+     * @return  EventConsumerDefinition  Consumer contract.
+     *
+     * @since   2.0.0
+     */
     public function definition(): EventConsumerDefinition
     {
         return $this->definition;

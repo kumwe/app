@@ -38,8 +38,8 @@ interface ExportArtifactRepository
     /**
      * Replace metadata only when its prior version remains current.
      *
-     * @param   ExportArtifact  $artifact        New immutable state.
-     * @param   int             $expectedVersion Version read before the transition.
+     * @param   ExportArtifact  $artifact         New immutable state.
+     * @param   int             $expectedVersion  Version read before the transition.
      *
      * @return  void
      *

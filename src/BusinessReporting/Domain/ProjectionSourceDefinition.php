@@ -16,8 +16,8 @@ final readonly class ProjectionSourceDefinition
     /**
      * Declare one event type and the exact schema versions its builder understands.
      *
-     * @param   string         $eventType       Namespaced immutable event type.
-     * @param   non-empty-list<int> $schemaVersions  Accepted positive schema versions.
+     * @param   string               $eventType       Namespaced immutable event type.
+     * @param   non-empty-list<int>  $schemaVersions  Accepted positive schema versions.
      *
      * @throws  InvalidArgumentException  When the event type or version list is invalid.
      *

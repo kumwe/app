@@ -24,7 +24,7 @@ final readonly class LiveExportExecutionContextResolver implements ExportExecuti
      * Wire live identity and membership stores.
      *
      * @param  PortalPrincipalLoader  $principals   Active-user and current-grant loader.
-     * @param  MembershipDirectory   $memberships  Live organization/workspace resolver.
+     * @param  MembershipDirectory    $memberships  Live organization/workspace resolver.
      *
      * @since  2.0.0
      */
@@ -37,8 +37,8 @@ final readonly class LiveExportExecutionContextResolver implements ExportExecuti
     /**
      * Rebuild a credential-independent context and prove its authority digest matches the request.
      *
-     * @param   ExportArtifact   $artifact       Stored original actor and scope.
-     * @param   ExecutionContext $workerContext  Queue worker trace context.
+     * @param   ExportArtifact    $artifact       Stored original actor and scope.
+     * @param   ExecutionContext  $workerContext  Queue worker trace context.
      *
      * @return  ExecutionContext  Fresh original-human context at the original surface.
      *

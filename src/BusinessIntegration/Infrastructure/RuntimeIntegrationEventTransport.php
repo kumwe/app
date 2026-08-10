@@ -9,6 +9,7 @@ use Kumwe\CMS\Application\Authorization\SystemPrincipal;
 use Kumwe\CMS\Application\Automation\PermanentFailure;
 use Kumwe\CMS\BusinessIntegration\Application\DurableOutboundAdapterDispatcher;
 use Kumwe\CMS\BusinessIntegration\Application\InboxDisposition;
+use Kumwe\CMS\BusinessIntegration\Application\IntegrationDeliveryBackpressure;
 use Kumwe\CMS\BusinessIntegration\Application\IntegrationEventConsumerDispatcher;
 use Kumwe\CMS\BusinessIntegration\Application\IntegrationEventHandler;
 use Kumwe\CMS\BusinessIntegration\Application\IntegrationEventTransport;
@@ -16,6 +17,7 @@ use Kumwe\CMS\BusinessIntegration\Domain\EventConsumerDefinition;
 use Kumwe\CMS\BusinessIntegration\Domain\EventSensitivity;
 use Kumwe\CMS\BusinessIntegration\Domain\IntegrationEvent;
 use Kumwe\CMS\BusinessIntegration\Domain\WebhookContributionDefinition;
+use Kumwe\CMS\BusinessReporting\Application\ProjectionRuntime;
 use Kumwe\CMS\Extension\Contribution\ExtensionContributionRegistrySet;
 use Kumwe\CMS\Extension\Runtime\RuntimeMaterializationState;
 use RuntimeException;
@@ -31,29 +33,61 @@ use RuntimeException;
  */
 final readonly class RuntimeIntegrationEventTransport implements IntegrationEventTransport
 {
-    /** @since 2.0.0 */
+    /**
+     * Create the runtime integration event transport.
+     *
+     * @param  ExtensionContributionRegistrySet    $contributions  Active owner-bound runtime contribution registries.
+     * @param  IntegrationEventConsumerDispatcher  $consumers      Durable dispatcher for internal consumers.
+     * @param  DurableOutboundAdapterDispatcher    $outbound       Durable outbound dispatcher used for webhook fan-out.
+     * @param  ProjectionRuntime                   $projections    Idempotent live projection dispatcher.
+     * @param  SystemPrincipal                     $worker         Stable identity of the claiming worker.
+     * @param  RuntimeMaterializationState         $runtime        Trusted active extension runtime.
+     *
+     * @since  2.0.0
+     */
     public function __construct(
         private ExtensionContributionRegistrySet $contributions,
         private IntegrationEventConsumerDispatcher $consumers,
         private DurableOutboundAdapterDispatcher $outbound,
+        private ProjectionRuntime $projections,
         private SystemPrincipal $worker,
         private RuntimeMaterializationState $runtime,
     ) {
     }
 
-    /** @inheritDoc */
+    /**
+     * Return the stable identifier for the runtime integration event transport.
+     *
+     * @return  string  Stable identifier of the runtime fan-out transport.
+     *
+     * @since   2.0.0
+     */
     public function identifier(): string
     {
         return 'core.runtime-fanout';
     }
 
-    /** @inheritDoc */
+    /**
+     * Return the highest event sensitivity this contribution may receive.
+     *
+     * @return  EventSensitivity  Maximum event sensitivity accepted by runtime fan-out.
+     *
+     * @since   2.0.0
+     */
     public function sensitivityCeiling(): EventSensitivity
     {
         return EventSensitivity::SECRET;
     }
 
-    /** @inheritDoc */
+    /**
+     * Publish the supplied event through this declared transport.
+     *
+     * @param   IntegrationEvent  $event  Versioned event being validated or processed.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     public function publish(IntegrationEvent $event): void
     {
         if (!$this->runtime->trusted || $this->runtime->generation < 0) {
@@ -66,6 +100,8 @@ final readonly class RuntimeIntegrationEventTransport implements IntegrationEven
             'integration-' . $event->eventId(),
             $event->correlationId(),
         );
+
+        $this->projections->apply($event);
 
         foreach ($this->contributions->eventConsumers()->executableEntries() as $entry) {
             $definition = $entry['definition'];
@@ -83,6 +119,11 @@ final readonly class RuntimeIntegrationEventTransport implements IntegrationEven
                 $workerId,
                 $generation,
             );
+            if (in_array($disposition, [InboxDisposition::BUSY, InboxDisposition::REORDERED], true)) {
+                throw new IntegrationDeliveryBackpressure(
+                    'An active integration consumer is temporarily at capacity or awaiting event order.',
+                );
+            }
             if (!in_array($disposition, [InboxDisposition::CLAIMED, InboxDisposition::DUPLICATE], true)) {
                 throw new RuntimeException('An active integration consumer is not currently claimable.');
             }
@@ -91,7 +132,10 @@ final readonly class RuntimeIntegrationEventTransport implements IntegrationEven
         foreach ($this->contributions->webhooks()->executableEntries() as $entry) {
             $definition = $entry['definition'];
             $adapter = $entry['implementation'];
-            if (!$definition instanceof WebhookContributionDefinition || !$adapter instanceof IntegrationEventTransport) {
+            if (
+                !$definition instanceof WebhookContributionDefinition
+                || !$adapter instanceof IntegrationEventTransport
+            ) {
                 throw new PermanentFailure('The trusted webhook registry contains an invalid executable entry.');
             }
             if (!in_array($event->eventType(), $definition->eventTypes(), true)) {
@@ -104,6 +148,11 @@ final readonly class RuntimeIntegrationEventTransport implements IntegrationEven
                 $workerId,
                 $generation,
             );
+            if (in_array($disposition, [InboxDisposition::BUSY, InboxDisposition::REORDERED], true)) {
+                throw new IntegrationDeliveryBackpressure(
+                    'An active outbound adapter is temporarily at capacity or awaiting event order.',
+                );
+            }
             if (!in_array($disposition, [InboxDisposition::CLAIMED, InboxDisposition::DUPLICATE], true)) {
                 throw new RuntimeException('An active outbound adapter does not support this event revision.');
             }

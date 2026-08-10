@@ -1,0 +1,177 @@
+{
+  "schema": 4,
+  "name": "compatibility/schema-four",
+  "type": "component",
+  "version": "1.0.0",
+  "provider": "Compatibility\\SchemaFour\\Provider",
+  "autoload": {"psr-4": {"Compatibility\\SchemaFour\\": "src/"}},
+  "requires": {"kumwe": "^2.0.0", "php": "^8.5.0"},
+  "contributions": {
+    "version": 2,
+    "capabilities": [
+      {
+        "id": "compatibility.schema-four.view",
+        "label": "View schema-four compatibility reports",
+        "description": "Compatibility-only report capability.",
+        "allowed_scopes": ["global", "site"],
+        "delegatable": true,
+        "high_impact": false,
+        "lifecycle": "active",
+        "version": 1
+      }
+    ],
+    "resource_policies": [],
+    "administrator": {"workspaces": [], "navigation": [], "routes": [], "views": []},
+    "portal": {"workspaces": [], "navigation": [], "routes": [], "templates": []},
+    "business": {
+      "field_types": [],
+      "definitions": []
+    },
+    "integration": {
+      "event_schemas": [
+        {
+          "event_type": "compatibility.schema-four.observed",
+          "schema_version": 1,
+          "sensitivity": "public",
+          "payload_schema": {
+            "type": "object",
+            "properties": {
+              "message": {"type": "string", "minLength": 1, "maxLength": 100}
+            },
+            "required": ["message"],
+            "additionalProperties": false
+          },
+          "maximum_bytes": 4096
+        }
+      ],
+      "domain_listeners": [
+        {
+          "listener_id": "compatibility.schema-four.observe-now",
+          "event_type": "compatibility.schema-four.observed",
+          "schema_versions": [1],
+          "handler_version": "1.0.0",
+          "priority": 20,
+          "sensitivity_ceiling": "public"
+        }
+      ],
+      "consumers": [
+        {
+          "consumer_id": "compatibility.schema-four.observe-later",
+          "event_type": "compatibility.schema-four.observed",
+          "schema_versions": [1],
+          "handler_version": "1.0.0",
+          "queue": "compatibility.schema-four.integration",
+          "aggregate_ordered": true,
+          "idempotency": "aggregate_version",
+          "maximum_attempts": 7,
+          "sensitivity_ceiling": "public"
+        }
+      ],
+      "jobs": [
+        {
+          "job_type": "compatibility.schema-four.summarize",
+          "schema_version": 1,
+          "handler_version": "1.0.0",
+          "payload_schema": {
+            "type": "object",
+            "properties": {
+              "site_identifier": {"type": "string", "minLength": 1, "maxLength": 191},
+              "limit": {"type": "integer", "minimum": 1, "maximum": 100}
+            },
+            "required": ["site_identifier", "limit"],
+            "additionalProperties": false
+          },
+          "queue": "compatibility.schema-four.integration",
+          "maximum_attempts": 5,
+          "installation_wide": false
+        }
+      ],
+      "queues": [
+        {
+          "queue_id": "compatibility.schema-four.integration",
+          "lease_seconds": 90,
+          "maximum_attempts": 7,
+          "maximum_in_flight": 4,
+          "retention_days": 14
+        }
+      ],
+      "schedules": [
+        {
+          "schedule_id": "compatibility.schema-four.summarize-daily",
+          "job_type": "compatibility.schema-four.summarize",
+          "cron_expression": "30 3 * * *",
+          "timezone": "Africa/Windhoek",
+          "payload": {"site_identifier": "default", "limit": 25},
+          "queue": "compatibility.schema-four.integration",
+          "site_identifier": "default",
+          "enabled": true
+        }
+      ],
+      "projections": [
+        {
+          "identifier": "compatibility.schema-four.activity",
+          "version": 1,
+          "handler_version": "1.0.0",
+          "rebuildable": true,
+          "sensitivity_ceiling": "public",
+          "sources": [
+            {"event_type": "compatibility.schema-four.observed", "schema_versions": [1]}
+          ],
+          "fields": [
+            {"name": "aggregate_id", "type": "identifier", "nullable": false},
+            {"name": "message", "type": "string", "nullable": false}
+          ],
+          "key_fields": ["aggregate_id"],
+          "rebuild_batch_size": 250
+        }
+      ],
+      "reports": [
+        {
+          "identifier": "compatibility.schema-four.summary",
+          "version": 1,
+          "title": "Schema-four compatibility summary",
+          "source_definition": "compatibility.schema-four.entity",
+          "required_capability": "compatibility.schema-four.view",
+          "administrator_visible": true,
+          "portal_visible": false,
+          "parameters": [
+            {
+              "name": "minimum_count",
+              "type": "integer",
+              "required": false,
+              "multiple": false,
+              "default": 0
+            }
+          ],
+          "filters": [
+            {"field": "count", "operator": "gte", "parameter": "minimum_count", "quantifier": "any"}
+          ],
+          "columns": [
+            {"alias": "entity_id", "label": "Entity ID", "source": "id", "type": "identifier"},
+            {"alias": "count", "label": "Count", "source": "count", "type": "integer"}
+          ],
+          "groups": [],
+          "aggregates": [],
+          "formulas": [],
+          "sorts": [
+            {"output": "count", "direction": "desc", "nulls_last": true}
+          ],
+          "drill_downs": [],
+          "synchronous_row_cap": 100
+        }
+      ],
+      "webhooks": [
+        {
+          "adapter_id": "compatibility.schema-four.observed-webhook",
+          "event_types": ["compatibility.schema-four.observed"],
+          "schema_versions": [1],
+          "handler_version": "1.0.0",
+          "queue": "compatibility.schema-four.integration",
+          "idempotency": "event_id",
+          "maximum_attempts": 6,
+          "sensitivity_ceiling": "public"
+        }
+      ]
+    }
+  }
+}

@@ -27,8 +27,8 @@ interface ProjectionWriter
     /**
      * Replace one derived row by its declared composite key.
      *
-     * @param   array<string, bool|int|string>      $key     Values for every declared key field.
-     * @param   array<string, bool|int|string|null> $values  Complete typed derived row.
+     * @param   array<string, bool|int|string>       $key     Values for every declared key field.
+     * @param   array<string, bool|int|string|null>  $values  Complete typed derived row.
      *
      * @return  void
      *

@@ -17,28 +17,107 @@ use Throwable;
  */
 interface ProcessManagerStore
 {
-    /** @param iterable<ProcessWorkItem> $work @return void @since 2.0.0 */
+    /**
+     * Persist a new process instance and its initial work.
+     *
+     * @param   ProcessInstance            $process  Current process instance being read or transitioned.
+     * @param   iterable<ProcessWorkItem>  $work     Process work emitted by the transition.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     public function create(ProcessInstance $process, iterable $work = []): void;
 
-    /** @return ?ProcessInstance @since 2.0.0 */
+    /**
+     * Load the requested durable record when it exists.
+     *
+     * @param   string  $processId  Stable identifier of the process instance.
+     *
+     * @return  ?ProcessInstance
+     *
+     * @since   2.0.0
+     */
     public function load(string $processId): ?ProcessInstance;
 
-    /** @return ?ProcessInstance @since 2.0.0 */
-    public function findByCorrelation(string $processType, string $correlationId): ?ProcessInstance;
+    /**
+     * Find the process instance matching the supplied correlation key.
+     *
+     * @param   string  $processType     Stable process-manager type used to scope correlation.
+     * @param   string  $siteIdentifier  Owning site that isolates the correlation namespace.
+     * @param   string  $correlationId   Stable correlation key joining related process events.
+     *
+     * @return  ?ProcessInstance
+     *
+     * @since   2.0.0
+     */
+    public function findByCorrelation(
+        string $processType,
+        string $siteIdentifier,
+        string $correlationId,
+    ): ?ProcessInstance;
 
-    /** @param iterable<ProcessWorkItem> $work @return void @since 2.0.0 */
+    /**
+     * Persist the supplied state with optimistic concurrency protection.
+     *
+     * @param   ProcessInstance            $process          Current process instance being read or transitioned.
+     * @param   int                        $expectedVersion  Version required for optimistic concurrency.
+     * @param   iterable<ProcessWorkItem>  $work             Process work emitted by the transition.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     public function save(ProcessInstance $process, int $expectedVersion, iterable $work = []): void;
 
-    /** @return ?ProcessWorkLease @since 2.0.0 */
+    /**
+     * Claim the next eligible process work item for the named worker.
+     *
+     * @param   string  $workerId           Stable identity of the claiming worker.
+     * @param   string  $runtimeGeneration  Trusted runtime generation that owns the lease.
+     * @param   int     $leaseSeconds       Number of seconds before the worker lease expires.
+     *
+     * @return  ?ProcessWorkLease
+     *
+     * @since   2.0.0
+     */
     public function claimWork(string $workerId, string $runtimeGeneration, int $leaseSeconds): ?ProcessWorkLease;
 
-    /** @return void @since 2.0.0 */
+    /**
+     * Renew the supplied process-work lease.
+     *
+     * @param   ProcessWorkLease  $lease         Fenced lease proving ownership of the durable item.
+     * @param   int               $leaseSeconds  Number of seconds before the worker lease expires.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     public function renewWork(ProcessWorkLease $lease, int $leaseSeconds): void;
 
-    /** @return void @since 2.0.0 */
+    /**
+     * Mark the supplied process-work lease complete.
+     *
+     * @param   ProcessWorkLease  $lease  Fenced lease proving ownership of the durable item.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     public function completeWork(ProcessWorkLease $lease): void;
 
-    /** @return void @since 2.0.0 */
+    /**
+     * Record failed process work and its retry decision.
+     *
+     * @param   ProcessWorkLease       $lease           Fenced lease proving ownership of the durable item.
+     * @param   FailureClassification  $classification  Failure class controlling retry or quarantine behavior.
+     * @param   Throwable              $failure         Failure whose retry classification is being recorded.
+     * @param   ?DateTimeImmutable     $retryAt         Next eligible attempt timestamp, or null for quarantine.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     public function failWork(
         ProcessWorkLease $lease,
         FailureClassification $classification,
@@ -46,9 +125,26 @@ interface ProcessManagerStore
         ?DateTimeImmutable $retryAt,
     ): void;
 
-    /** @return list<array<string, mixed>> Operator-visible process snapshots. @since 2.0.0 */
+    /**
+     * Return the most recent operator-visible records.
+     *
+     * @param   int  $limit  Maximum number of records the operation may return or change.
+     *
+     * @return  list<array<string, mixed>>  Operator-visible process snapshots.
+     *
+     * @since   2.0.0
+     */
     public function recent(int $limit = 100): array;
 
-    /** @return list<array<string, mixed>> Operator-visible work for one process. @since 2.0.0 */
+    /**
+     * Return operator-visible work for the requested process.
+     *
+     * @param   string  $processId  Stable identifier of the process instance.
+     * @param   int     $limit      Maximum number of records the operation may return or change.
+     *
+     * @return  list<array<string, mixed>>  Operator-visible work for one process.
+     *
+     * @since   2.0.0
+     */
     public function work(string $processId, int $limit = 100): array;
 }

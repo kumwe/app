@@ -6,7 +6,9 @@ namespace Kumwe\CMS\Tests\Unit\Delivery\Http\Api\Idempotency;
 
 use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
+use Kumwe\CMS\Application\Authorization\AuthorizationGateway;
 use Kumwe\CMS\Application\Authorization\AuthorizationDenied;
+use Kumwe\CMS\Application\Authorization\AuthorizationResource;
 use Kumwe\CMS\Application\Authorization\ExecutionContext;
 use Kumwe\CMS\Content\Application\ContentService;
 use Kumwe\CMS\Delivery\Http\Api\Idempotency\HttpMutationPreauthorizer;
@@ -18,6 +20,7 @@ use Kumwe\CMS\Identity\Application\Authentication\AuthenticatedPrincipal;
 use Kumwe\CMS\Identity\Application\Administration\AccessControlRepository;
 use Kumwe\CMS\Identity\Application\Administration\TokenDelegationPreauthorizer;
 use Kumwe\CMS\Identity\Application\Administration\TokenRotationPreauthorizer;
+use Kumwe\CMS\Identity\Domain\Capability;
 use Kumwe\CMS\Infrastructure\Persistence\TableNames;
 use Kumwe\CMS\Infrastructure\Persistence\TransactionManager;
 use Kumwe\CMS\Tests\Support\AuthorizationContext;
@@ -36,6 +39,101 @@ use RuntimeException;
 #[CoversClass(HttpMutationPreauthorizer::class)]
 final class PersistentIdempotencyAuthorizationTest extends TestCase
 {
+    public function testReportExportPreauthorizationDecodesAndTargetsTheExactReport(): void
+    {
+        $context = AuthorizationContext::human(['business.record.export']);
+        $authorization = $this->createMock(AuthorizationGateway::class);
+        $authorization->expects(self::once())->method('assertAllowed')->with(
+            $context,
+            self::callback(
+                static fn (Capability $capability): bool => $capability->value() === 'business.record.export',
+            ),
+            self::callback(
+                static fn (AuthorizationResource $resource): bool => $resource->type() === 'business_report'
+                    && $resource->identifier() === 'acme.open_items',
+            ),
+        );
+
+        $this->preauthorizer($authorization)->authorize(
+            (new ServerRequestFactory())->createServerRequest(
+                'POST',
+                '/api/v1/business/reports/acme%2Eopen_items/exports',
+            ),
+            $context,
+        );
+    }
+
+    public function testMalformedReportExportIdentifierIsRejectedBeforeAuthorization(): void
+    {
+        $principal = AuthorizationContext::principal(['business.record.export']);
+        $context = $principal->context(
+            \Kumwe\CMS\Application\Authorization\SiteContext::default(),
+            \Kumwe\CMS\Application\Authorization\AuthenticationStrength::BearerToken,
+            'idempotency-malformed-report-export-test',
+        );
+        $authorization = $this->createMock(AuthorizationGateway::class);
+        $authorization->expects(self::never())->method('assertAllowed');
+        $database = $this->createMock(Connection::class);
+        $database->expects(self::never())->method('insert');
+        $database->expects(self::never())->method('fetchAssociative');
+        $request = (new ServerRequestFactory())
+            ->createServerRequest('POST', '/api/v1/business/reports/acme%2Fopen_items/exports')
+            ->withAttribute(RequireIdempotencyKeyMiddleware::ATTRIBUTE, IdempotencyKey::fromHeader('stable-key-0005'))
+            ->withAttribute(AuthenticatedPrincipal::REQUEST_ATTRIBUTE, $principal)
+            ->withAttribute(ExecutionContext::REQUEST_ATTRIBUTE, $context);
+        $handler = $this->createMock(RequestHandlerInterface::class);
+        $handler->expects(self::never())->method('handle');
+
+        $response = (new PersistentIdempotencyMiddleware(
+            $database,
+            new TableNames($database, 'kumwe_'),
+            $this->clock(),
+            new ProblemDetailsResponseFactory(),
+            $this->transactions(),
+            $this->preauthorizer($authorization),
+        ))->process($request, $handler);
+        /** @var array<string, mixed> $document */
+        $document = json_decode((string) $response->getBody(), true, 32, JSON_THROW_ON_ERROR);
+
+        self::assertSame(422, $response->getStatusCode());
+        self::assertSame('urn:kumwe:problem:invalid-business-report-export', $document['type']);
+        self::assertSame('no-store', $response->getHeaderLine('Cache-Control'));
+    }
+
+    public function testReportExportForAnotherReportCannotProbeOrReserveAnExistingKey(): void
+    {
+        $principal = AuthorizationContext::principalFromGrantRows([[
+            'capability' => 'business.record.export',
+            'scope_type' => 'business_report',
+            'scope_identifier' => 'acme.allowed_report',
+        ]]);
+        $context = $principal->context(
+            \Kumwe\CMS\Application\Authorization\SiteContext::default(),
+            \Kumwe\CMS\Application\Authorization\AuthenticationStrength::BearerToken,
+            'idempotency-report-export-test',
+        );
+        $database = $this->createMock(Connection::class);
+        $database->expects(self::never())->method('insert');
+        $database->expects(self::never())->method('fetchAssociative');
+        $request = (new ServerRequestFactory())
+            ->createServerRequest('POST', '/api/v1/business/reports/acme.denied_report/exports')
+            ->withAttribute(RequireIdempotencyKeyMiddleware::ATTRIBUTE, IdempotencyKey::fromHeader('stable-key-0004'))
+            ->withAttribute(AuthenticatedPrincipal::REQUEST_ATTRIBUTE, $principal)
+            ->withAttribute(ExecutionContext::REQUEST_ATTRIBUTE, $context);
+        $handler = $this->createMock(RequestHandlerInterface::class);
+        $handler->expects(self::never())->method('handle');
+
+        $this->expectException(AuthorizationDenied::class);
+        (new PersistentIdempotencyMiddleware(
+            $database,
+            new TableNames($database, 'kumwe_'),
+            $this->clock(),
+            new ProblemDetailsResponseFactory(),
+            $this->transactions(),
+            $this->preauthorizer(AuthorizationContext::gateway()),
+        ))->process($request, $handler);
+    }
+
     public function testWrongResourceCannotProbeOrReplayAnExistingKey(): void
     {
         $allowed = '018f22e2-7c8b-7ab0-8f3a-88e8026bb411';
@@ -186,6 +284,22 @@ final class PersistentIdempotencyAuthorizationTest extends TestCase
                 return new DateTimeImmutable('2026-08-05T12:00:00+00:00');
             }
         };
+    }
+
+    private function preauthorizer(AuthorizationGateway $authorization): HttpMutationPreauthorizer
+    {
+        $repository = $this->createStub(AccessControlRepository::class);
+        return new HttpMutationPreauthorizer(
+            $authorization,
+            (new ReflectionClass(ContentService::class))->newInstanceWithoutConstructor(),
+            $repository,
+            new TokenDelegationPreauthorizer($repository, $authorization),
+            new TokenRotationPreauthorizer(
+                $repository,
+                $authorization,
+                new TokenDelegationPreauthorizer($repository, $authorization),
+            ),
+        );
     }
 
     private function rotation(AccessControlRepository $repository): TokenRotationPreauthorizer

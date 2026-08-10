@@ -96,6 +96,12 @@ final readonly class ManageAutomationCommand implements Command
                 ],
                 'schedule' => $this->automation->schedule($context, CommandInput::required($options, 'id')),
                 'jobs' => ['items' => $this->automation->jobs($context, (int) ($options['limit'] ?? 100))],
+                'queues' => ['items' => $this->automation->queuePolicies($context)],
+                'purge-queue' => ['purged' => $this->automation->purgeQueue(
+                    $context,
+                    CommandInput::required($options, 'queue'),
+                    isset($options['limit']) ? CommandInput::positiveInteger($options, 'limit') : 100,
+                )],
                 'create' => ['id' => $this->automation->createSchedule(
                     $context,
                     CommandInput::required($options, 'name'),

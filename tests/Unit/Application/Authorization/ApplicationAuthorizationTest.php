@@ -17,6 +17,7 @@ use Kumwe\CMS\Application\Authorization\ExecutionContext;
 use Kumwe\CMS\Application\Authorization\MembershipContextValidator;
 use Kumwe\CMS\Application\Authorization\ResourceSiteOwnership;
 use Kumwe\CMS\Application\Authorization\ResourceSiteOwnershipWriter;
+use Kumwe\CMS\Application\Authorization\ResourcePolicyTarget;
 use Kumwe\CMS\Application\Authorization\SiteContext;
 use Kumwe\CMS\Application\Authorization\SystemIdentity;
 use Kumwe\CMS\Audit\Application\AuditRecorder;
@@ -28,6 +29,10 @@ use Kumwe\CMS\Delivery\Http\Api\Content\ContentApiResponder;
 use Kumwe\CMS\Delivery\Http\Api\Content\ContentCollectionHandler;
 use Kumwe\CMS\Delivery\Http\Api\ProblemDetailsResponseFactory;
 use Kumwe\CMS\Extension\Contribution\ExtensionContributionRegistrySet;
+use Kumwe\CMS\Extension\Contribution\CapabilityDefinition as ExtensionCapabilityDefinition;
+use Kumwe\CMS\Extension\Contribution\ContributionOwner;
+use Kumwe\CMS\Extension\Contribution\ManifestContributionSet;
+use Kumwe\CMS\Extension\Contribution\ResourcePolicyDefinition as ExtensionResourcePolicyDefinition;
 use Kumwe\CMS\Identity\Application\Authentication\AuthenticatedPrincipal;
 use Kumwe\CMS\Identity\Domain\Capability;
 use Kumwe\CMS\Identity\Domain\GrantScope;
@@ -140,6 +145,56 @@ final class ApplicationAuthorizationTest extends TestCase
             Capability::fromString('content.update'),
             GrantScope::named('menu', 'primary'),
         );
+    }
+
+    /**
+     * Allows an installation extension manager to make the explicit first grant of a trusted capability.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testGlobalExtensionManagerMayBootstrapOnlyExtensionOwnedDelegation(): void
+    {
+        $registries = new ExtensionContributionRegistrySet();
+        $owner = ContributionOwner::extension('acme/inspection');
+        $registrar = $registries->registrar($owner, new ManifestContributionSet($owner), false);
+        $registrar->capability(new ExtensionCapabilityDefinition(
+            'acme.inspection.view',
+            'View inspections',
+            'View policy-filtered inspection records.',
+        ));
+        $registrar->resourcePolicy(new ExtensionResourcePolicyDefinition(
+            'acme.inspection.view-records',
+            'acme.inspection.view',
+            [new ResourcePolicyTarget('business_record')],
+        ));
+        $registrar->complete();
+        $gateway = new DenyByDefaultAuthorizationGateway(
+            AuthorizationContext::provenance(),
+            $registries->authorizationPolicies(),
+            $this->createStub(MembershipContextValidator::class),
+            AuthorizationContext::ownership(),
+            $this->createStub(AuthorizationDecisionRecorder::class),
+        );
+
+        $gateway->assertCanDelegate(
+            AuthorizationContext::human(['extensions.manage']),
+            Capability::fromString('acme.inspection.view'),
+            GrantScope::global(),
+        );
+
+        try {
+            $gateway->assertCanDelegate(
+                AuthorizationContext::human(['extensions.manage']),
+                Capability::fromString('content.update'),
+                GrantScope::global(),
+            );
+            self::fail('Extension management must never bootstrap a core capability grant.');
+        } catch (AuthorizationDenied $denied) {
+            self::assertSame('core.delegation-ceiling.v1', $denied->policy);
+            self::assertSame('delegation_exceeds_effective_authority', $denied->reason);
+        }
     }
 
     public function testSiteScopedIdentityGrantCannotManageInstallationGlobalRole(): void

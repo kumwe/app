@@ -25,6 +25,7 @@ use Kumwe\CMS\Infrastructure\Mcp\BusinessMcpHandlers;
 use Kumwe\CMS\Infrastructure\Mcp\KumweMcpHandlers;
 use Kumwe\CMS\Infrastructure\Mcp\McpCapabilityCatalog;
 use Kumwe\CMS\Infrastructure\Mcp\McpMutationGuard;
+use Kumwe\CMS\Infrastructure\Mcp\ReportMcpHandlers;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\CoreSchemaMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\ApplicationAuthorizationMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\AuthorizationRecoveryIntegrationMigration;
@@ -145,6 +146,7 @@ final class McpThemeIntegrationTest extends TestCase
             $this->withoutConstructor(BusinessDefinitionService::class),
             $this->withoutConstructor(BusinessSchemaService::class),
             $this->withoutConstructor(BusinessMcpHandlers::class),
+            $this->withoutConstructor(ReportMcpHandlers::class),
             new McpMutationGuard($database, $tables, $clock, $transactions),
             $clock,
             AuthorizationContext::gateway(),

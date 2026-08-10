@@ -16,10 +16,10 @@ final readonly class ProjectionRebuildResult
     /**
      * Capture terminal sequence and checksums.
      *
-     * @param   int     $lastSequence       Last applied sequence, zero for an empty source.
-     * @param   int     $eventCount         Number of applied events.
-     * @param   string  $sourceChecksum     Rolling checksum of the ordered event stream.
-     * @param   string  $projectionChecksum Canonical checksum returned by the derived store.
+     * @param   int     $lastSequence        Last applied sequence, zero for an empty source.
+     * @param   int     $eventCount          Number of applied events.
+     * @param   string  $sourceChecksum      Rolling checksum of the ordered event stream.
+     * @param   string  $projectionChecksum  Canonical checksum returned by the derived store.
      *
      * @throws  InvalidArgumentException  When counters or checksums are malformed.
      *

@@ -24,17 +24,25 @@ use Throwable;
 final readonly class ExportGenerationService
 {
     /**
+     * Attempt-fenced immutable byte publisher.
+     *
+     * @var    ExportAttemptPublisher
+     * @since  2.0.0
+     */
+    private ExportAttemptPublisher $publisher;
+
+    /**
      * Wire job execution to fresh actor authority, report execution, storage and metadata.
      *
-     * @param  ExportArtifactRepository       $artifacts     Durable metadata ledger.
-     * @param  ExportExecutionContextResolver $contexts      Fresh original-actor context resolver.
-     * @param  ExportService                  $exports       Current binding and authorization verifier.
-     * @param  ReportService                  $reports       Policy-aware report executor.
-     * @param  ReportCsvEncoder               $csv           Deterministic safe CSV encoder.
-     * @param  ExportArtifactStorage          $storage       Private immutable artifact store.
-     * @param  TransactionManager             $transactions  Metadata/audit transaction owner.
-     * @param  AuditRecorder                  $audit         Redacted audit sink.
-     * @param  ClockInterface                 $clock         Trusted wall clock.
+     * @param  ExportArtifactRepository        $artifacts     Durable metadata ledger.
+     * @param  ExportExecutionContextResolver  $contexts      Fresh original-actor context resolver.
+     * @param  ExportService                   $exports       Current binding and authorization verifier.
+     * @param  ReportService                   $reports       Policy-aware report executor.
+     * @param  ReportCsvEncoder                $csv           Deterministic safe CSV encoder.
+     * @param  ExportArtifactStorage           $storage       Private immutable artifact store.
+     * @param  TransactionManager              $transactions  Metadata/audit transaction owner.
+     * @param  AuditRecorder                   $audit         Redacted audit sink.
+     * @param  ClockInterface                  $clock         Trusted wall clock.
      *
      * @since  2.0.0
      */
@@ -44,23 +52,24 @@ final readonly class ExportGenerationService
         private ExportService $exports,
         private ReportService $reports,
         private ReportCsvEncoder $csv,
-        private ExportArtifactStorage $storage,
+        ExportArtifactStorage $storage,
         private TransactionManager $transactions,
         private AuditRecorder $audit,
         private ClockInterface $clock,
     ) {
+        $this->publisher = new ExportAttemptPublisher($artifacts, $storage, $transactions);
     }
 
     /**
      * Generate or safely resume one artifact by id.
      *
-     * @param   string            $artifactId    Canonical artifact UUID from the queue payload.
-     * @param   ExecutionContext  $workerContext Narrow system context that claimed the job.
+     * @param   string            $artifactId     Canonical artifact UUID from the queue payload.
+     * @param   ExecutionContext  $workerContext  Narrow system context that claimed the job.
      *
      * @return  void
      *
      * @throws  ExportGenerationRejected  When authority, policy, report or expiry no longer matches.
-     * @throws  Throwable                  On a transient execution, storage or persistence failure.
+     * @throws  Throwable  On a transient execution, storage or persistence failure.
      *
      * @since   2.0.0
      */
@@ -91,8 +100,6 @@ final readonly class ExportGenerationService
         if ($artifact->status !== ExportArtifactStatus::Running) {
             return;
         }
-        $staleKey = strtolower($artifact->id) . '.csv';
-        $this->storage->delete($staleKey);
         try {
             $result = $this->reports->execute(new ReportExecutionRequest(
                 $context,
@@ -104,40 +111,43 @@ final readonly class ExportGenerationService
             if (!hash_equals($artifact->definitionChecksum, $result->definitionChecksum)) {
                 throw new ExportGenerationRejected('The report definition changed during export.');
             }
-            $stored = $this->storage->store($artifact->id, $this->csv->encode($result));
-            $completed = $artifact->complete(
+            $this->publisher->publish(
+                $artifact,
+                $this->csv->encode($result),
                 $this->clock->now(),
-                $stored->key,
-                $stored->size,
-                $stored->checksum,
                 count($result->rows),
                 $result->queryDigest,
+                function (ExportArtifact $completed): void {
+                    $this->audit(
+                        $completed,
+                        'business.report.export.complete',
+                        'success',
+                        $completed->completedAt,
+                    );
+                },
             );
-            $this->transactions->transactional(function () use ($artifact, $completed): void {
-                $this->artifacts->save($completed, $artifact->version);
-                $this->audit(
-                    $completed,
-                    'business.report.export.complete',
-                    'success',
-                    $completed->completedAt,
-                );
-            });
         } catch (ReportRowLimitExceeded $exception) {
-            $this->storage->delete($staleKey);
             $this->reject($artifact, 'row_limit');
             throw new ExportGenerationRejected('The export exceeds its configured row limit.', 0, $exception);
         } catch (ExportGenerationRejected $exception) {
-            $this->storage->delete($staleKey);
             $this->reject($artifact, 'definition_changed');
             throw $exception;
         } catch (Throwable $exception) {
-            $this->storage->delete($staleKey);
             $this->audit($artifact, 'business.report.export.attempt', 'failure', $this->clock->now());
             throw $exception;
         }
     }
 
-    /** @since 2.0.0 */
+    /**
+     * Reject export generation with a durable failure classification.
+     *
+     * @param   ExportArtifact  $artifact  Immutable export artifact being transitioned.
+     * @param   string          $code      Sanitized durable rejection code.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     private function reject(ExportArtifact $artifact, string $code): void
     {
         $current = $this->artifacts->find($artifact->id);
@@ -153,7 +163,18 @@ final readonly class ExportGenerationService
         });
     }
 
-    /** @since 2.0.0 */
+    /**
+     * Append an immutable audit record for the export operation.
+     *
+     * @param   ExportArtifact      $artifact  Immutable export artifact being transitioned.
+     * @param   string              $action    Stable audited action name.
+     * @param   string              $outcome   Stable audited result classification.
+     * @param   ?DateTimeImmutable  $now       Authoritative timestamp for the state transition.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     private function audit(
         ExportArtifact $artifact,
         string $action,

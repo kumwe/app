@@ -20,9 +20,9 @@ final readonly class JobQueueExportJobDispatcher implements ExportJobDispatcher
     /**
      * Wire durable queueing to producer-context resolution.
      *
-     * @param  JobQueue                           $queue     Durable job queue.
-     * @param  ExportQueueProducerContextProvider $producer Narrow internal producer resolver.
-     * @param  ClockInterface                     $clock     Trusted availability clock.
+     * @param  JobQueue                            $queue     Durable job queue.
+     * @param  ExportQueueProducerContextProvider  $producer  Narrow internal producer resolver.
+     * @param  ClockInterface                      $clock     Trusted availability clock.
      *
      * @since  2.0.0
      */

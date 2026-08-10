@@ -13,7 +13,12 @@ use InvalidArgumentException;
  */
 final readonly class JobContributionDefinition implements IntegrationContract
 {
-    /** @var array<string, mixed> Declarative payload schema. @since 2.0.0 */
+    /**
+     * Closed, bounded JSON schema for submitted job payloads.
+     *
+     * @var    array<string, mixed>  Declarative payload schema.
+     * @since  2.0.0
+     */
     private array $payloadSchema;
 
     /**
@@ -50,49 +55,97 @@ final readonly class JobContributionDefinition implements IntegrationContract
         $this->payloadSchema = $payloadSchema;
     }
 
-    /** @return string Job type. @since 2.0.0 */
+    /**
+     * Return the stable identifier for the job contribution definition.
+     *
+     * @return  string  Job type.
+     *
+     * @since   2.0.0
+     */
     public function identifier(): string
     {
         return $this->jobType;
     }
 
-    /** @return int Payload schema revision. @since 2.0.0 */
+    /**
+     * Return the event payload schema version.
+     *
+     * @return  int  Payload schema revision.
+     *
+     * @since   2.0.0
+     */
     public function schemaVersion(): int
     {
         return $this->schemaVersion;
     }
 
-    /** @return string Executable handler revision. @since 2.0.0 */
+    /**
+     * Return the handler implementation version used for compatibility checks.
+     *
+     * @return  string  Executable handler revision.
+     *
+     * @since   2.0.0
+     */
     public function handlerVersion(): string
     {
         return $this->handlerVersion;
     }
 
-    /** @return array<string, mixed> Declarative payload schema. @since 2.0.0 */
+    /**
+     * Return the bounded JSON schema governing the payload.
+     *
+     * @return  array<string, mixed>  Declarative payload schema.
+     *
+     * @since   2.0.0
+     */
     public function payloadSchema(): array
     {
         return $this->payloadSchema;
     }
 
-    /** @return string Default logical queue. @since 2.0.0 */
+    /**
+     * Return the declared durable queue identifier.
+     *
+     * @return  string  Default logical queue.
+     *
+     * @since   2.0.0
+     */
     public function queue(): string
     {
         return $this->queue;
     }
 
-    /** @return int Retry attempt budget. @since 2.0.0 */
+    /**
+     * Return the maximum number of delivery attempts.
+     *
+     * @return  int  Retry attempt budget.
+     *
+     * @since   2.0.0
+     */
     public function maximumAttempts(): int
     {
         return $this->maximumAttempts;
     }
 
-    /** @return bool Whether the handler executes outside a site scope. @since 2.0.0 */
+    /**
+     * Return the installation wide carried by this job contribution definition.
+     *
+     * @return  bool  Whether the handler executes outside a site scope.
+     *
+     * @since   2.0.0
+     */
     public function installationWide(): bool
     {
         return $this->installationWide;
     }
 
-    /** @return array<string, mixed> Canonical publication representation. @since 2.0.0 */
+    /**
+     * Serialize the job contribution definition for durable storage or inspection.
+     *
+     * @return  array<string, mixed>  Canonical publication representation.
+     *
+     * @since   2.0.0
+     */
     public function toArray(): array
     {
         return [

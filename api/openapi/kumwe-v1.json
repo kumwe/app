@@ -1935,6 +1935,427 @@
                 ],
                 "type": "object"
             },
+            "GeneratedBusinessReportCollection": {
+                "additionalProperties": false,
+                "properties": {
+                    "items": {
+                        "items": {
+                            "$ref": "#/components/schemas/GeneratedBusinessReportDefinition"
+                        },
+                        "maxItems": 256,
+                        "type": "array"
+                    }
+                },
+                "required": [
+                    "items"
+                ],
+                "type": "object"
+            },
+            "GeneratedBusinessReportColumn": {
+                "additionalProperties": false,
+                "properties": {
+                    "alias": {
+                        "pattern": "^[a-z][a-z0-9_]{0,62}$",
+                        "type": "string"
+                    },
+                    "label": {
+                        "maxLength": 191,
+                        "type": "string"
+                    },
+                    "type": {
+                        "enum": [
+                            "string",
+                            "integer",
+                            "decimal",
+                            "boolean",
+                            "date",
+                            "date_time",
+                            "identifier"
+                        ],
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "alias",
+                    "label",
+                    "type"
+                ],
+                "type": "object"
+            },
+            "GeneratedBusinessReportDefinition": {
+                "additionalProperties": false,
+                "properties": {
+                    "execute_url": {
+                        "maxLength": 512,
+                        "type": "string"
+                    },
+                    "export_url": {
+                        "maxLength": 512,
+                        "type": "string"
+                    },
+                    "id": {
+                        "maxLength": 191,
+                        "type": "string"
+                    },
+                    "parameters": {
+                        "items": {
+                            "additionalProperties": false,
+                            "properties": {
+                                "default": {
+                                    "oneOf": [
+                                        {
+                                            "maxLength": 4096,
+                                            "type": "string"
+                                        },
+                                        {
+                                            "type": "integer"
+                                        },
+                                        {
+                                            "type": "boolean"
+                                        },
+                                        {
+                                            "items": {
+                                                "oneOf": [
+                                                    {
+                                                        "maxLength": 4096,
+                                                        "type": "string"
+                                                    },
+                                                    {
+                                                        "type": "integer"
+                                                    },
+                                                    {
+                                                        "type": "boolean"
+                                                    }
+                                                ]
+                                            },
+                                            "maxItems": 100,
+                                            "type": "array"
+                                        },
+                                        {
+                                            "type": "null"
+                                        }
+                                    ]
+                                },
+                                "multiple": {
+                                    "type": "boolean"
+                                },
+                                "name": {
+                                    "pattern": "^[a-z][a-z0-9_]{0,62}$",
+                                    "type": "string"
+                                },
+                                "required": {
+                                    "type": "boolean"
+                                },
+                                "type": {
+                                    "enum": [
+                                        "string",
+                                        "integer",
+                                        "decimal",
+                                        "boolean",
+                                        "date",
+                                        "date_time",
+                                        "identifier"
+                                    ],
+                                    "type": "string"
+                                }
+                            },
+                            "required": [
+                                "name",
+                                "type",
+                                "required",
+                                "multiple",
+                                "default"
+                            ],
+                            "type": "object"
+                        },
+                        "maxItems": 32,
+                        "type": "array"
+                    },
+                    "title": {
+                        "maxLength": 191,
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "id",
+                    "title",
+                    "parameters",
+                    "execute_url",
+                    "export_url"
+                ],
+                "type": "object"
+            },
+            "GeneratedBusinessReportDrillDown": {
+                "additionalProperties": false,
+                "properties": {
+                    "definition": {
+                        "maxLength": 191,
+                        "type": "string"
+                    },
+                    "record_alias": {
+                        "pattern": "^[a-z][a-z0-9_]{0,62}$",
+                        "type": "string"
+                    },
+                    "url": {
+                        "maxLength": 1024,
+                        "pattern": "^/api/v1/business/views/",
+                        "type": "string"
+                    },
+                    "view": {
+                        "maxLength": 191,
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "record_alias",
+                    "definition",
+                    "view",
+                    "url"
+                ],
+                "type": "object"
+            },
+            "GeneratedBusinessReportExport": {
+                "additionalProperties": false,
+                "properties": {
+                    "checksum": {
+                        "pattern": "^[a-f0-9]{64}$",
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "completed_at": {
+                        "format": "date-time",
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "created_at": {
+                        "format": "date-time",
+                        "type": "string"
+                    },
+                    "expires_at": {
+                        "format": "date-time",
+                        "type": "string"
+                    },
+                    "failure_code": {
+                        "maxLength": 63,
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "filename": {
+                        "maxLength": 127,
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "id": {
+                        "format": "uuid",
+                        "type": "string"
+                    },
+                    "report": {
+                        "maxLength": 191,
+                        "type": "string"
+                    },
+                    "row_count": {
+                        "minimum": 0,
+                        "type": [
+                            "integer",
+                            "null"
+                        ]
+                    },
+                    "size": {
+                        "minimum": 1,
+                        "type": [
+                            "integer",
+                            "null"
+                        ]
+                    },
+                    "started_at": {
+                        "format": "date-time",
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "status": {
+                        "enum": [
+                            "queued",
+                            "running",
+                            "completed",
+                            "failed"
+                        ],
+                        "type": "string"
+                    },
+                    "version": {
+                        "maximum": 16,
+                        "minimum": 1,
+                        "type": "integer"
+                    }
+                },
+                "required": [
+                    "id",
+                    "report",
+                    "status",
+                    "created_at",
+                    "expires_at",
+                    "started_at",
+                    "completed_at",
+                    "filename",
+                    "size",
+                    "row_count",
+                    "checksum",
+                    "failure_code",
+                    "version"
+                ],
+                "type": "object"
+            },
+            "GeneratedBusinessReportExportRequest": {
+                "additionalProperties": false,
+                "properties": {
+                    "parameters": {
+                        "$ref": "#/components/schemas/GeneratedBusinessReportParameters"
+                    },
+                    "retention_seconds": {
+                        "maximum": 604800,
+                        "minimum": 60,
+                        "type": "integer"
+                    }
+                },
+                "type": "object"
+            },
+            "GeneratedBusinessReportParameters": {
+                "additionalProperties": {
+                    "oneOf": [
+                        {
+                            "maxLength": 4096,
+                            "type": "string"
+                        },
+                        {
+                            "type": "integer"
+                        },
+                        {
+                            "type": "boolean"
+                        },
+                        {
+                            "items": {
+                                "oneOf": [
+                                    {
+                                        "maxLength": 4096,
+                                        "type": "string"
+                                    },
+                                    {
+                                        "type": "integer"
+                                    },
+                                    {
+                                        "type": "boolean"
+                                    }
+                                ]
+                            },
+                            "maxItems": 100,
+                            "minItems": 1,
+                            "type": "array"
+                        }
+                    ]
+                },
+                "maxProperties": 32,
+                "propertyNames": {
+                    "pattern": "^[a-z][a-z0-9_]{0,62}$"
+                },
+                "type": "object"
+            },
+            "GeneratedBusinessReportRequest": {
+                "additionalProperties": false,
+                "properties": {
+                    "parameters": {
+                        "$ref": "#/components/schemas/GeneratedBusinessReportParameters"
+                    }
+                },
+                "type": "object"
+            },
+            "GeneratedBusinessReportResult": {
+                "additionalProperties": false,
+                "properties": {
+                    "columns": {
+                        "items": {
+                            "$ref": "#/components/schemas/GeneratedBusinessReportColumn"
+                        },
+                        "maxItems": 96,
+                        "type": "array"
+                    },
+                    "definition_checksum": {
+                        "pattern": "^[a-f0-9]{64}$",
+                        "type": "string"
+                    },
+                    "drill_downs": {
+                        "items": {
+                            "items": {
+                                "$ref": "#/components/schemas/GeneratedBusinessReportDrillDown"
+                            },
+                            "maxItems": 8,
+                            "type": "array"
+                        },
+                        "maxItems": 1000,
+                        "type": "array"
+                    },
+                    "has_drill_downs": {
+                        "type": "boolean"
+                    },
+                    "query_digest": {
+                        "pattern": "^[a-f0-9]{64}$",
+                        "type": "string"
+                    },
+                    "report": {
+                        "maxLength": 191,
+                        "type": "string"
+                    },
+                    "row_count": {
+                        "maximum": 1000,
+                        "minimum": 0,
+                        "type": "integer"
+                    },
+                    "rows": {
+                        "items": {
+                            "additionalProperties": {
+                                "oneOf": [
+                                    {
+                                        "maxLength": 65536,
+                                        "type": "string"
+                                    },
+                                    {
+                                        "type": "integer"
+                                    },
+                                    {
+                                        "type": "boolean"
+                                    },
+                                    {
+                                        "type": "null"
+                                    }
+                                ]
+                            },
+                            "maxProperties": 96,
+                            "type": "object"
+                        },
+                        "maxItems": 1000,
+                        "type": "array"
+                    }
+                },
+                "required": [
+                    "report",
+                    "definition_checksum",
+                    "query_digest",
+                    "columns",
+                    "rows",
+                    "row_count",
+                    "drill_downs",
+                    "has_drill_downs"
+                ],
+                "type": "object"
+            },
             "GeneratedBusinessRevision": {
                 "additionalProperties": false,
                 "properties": {
@@ -5565,6 +5986,476 @@
                 "summary": "Restore a business record"
             }
         },
+        "/api/v1/business/report-exports/{artifact}": {
+            "get": {
+                "operationId": "businessReportExportStatus",
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/GeneratedBusinessReportExport"
+                                }
+                            }
+                        },
+                        "description": "Successful operation."
+                    },
+                    "404": {
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            }
+                        },
+                        "description": "Resource not found or not visible."
+                    },
+                    "409": {
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            }
+                        },
+                        "description": "The operation conflicts with current state."
+                    },
+                    "412": {
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            }
+                        },
+                        "description": "The optimistic concurrency precondition failed."
+                    },
+                    "422": {
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            }
+                        },
+                        "description": "The submitted operation failed validation."
+                    },
+                    "503": {
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            }
+                        },
+                        "description": "The business runtime is temporarily unavailable."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": [],
+                        "siteContext": []
+                    }
+                ],
+                "summary": "Read business report export status"
+            },
+            "parameters": [
+                {
+                    "in": "path",
+                    "name": "artifact",
+                    "required": true,
+                    "schema": {
+                        "format": "uuid",
+                        "type": "string"
+                    }
+                }
+            ]
+        },
+        "/api/v1/business/report-exports/{artifact}/download": {
+            "get": {
+                "operationId": "businessReportExportDownload",
+                "responses": {
+                    "200": {
+                        "content": {
+                            "text/csv": {
+                                "schema": {
+                                    "format": "binary",
+                                    "type": "string"
+                                }
+                            }
+                        },
+                        "description": "Verified CSV export.",
+                        "headers": {
+                            "Content-Disposition": {
+                                "schema": {
+                                    "maxLength": 512,
+                                    "type": "string"
+                                }
+                            },
+                            "ETag": {
+                                "schema": {
+                                    "pattern": "^\"sha256-[a-f0-9]{64}\"$",
+                                    "type": "string"
+                                }
+                            },
+                            "X-Content-Type-Options": {
+                                "schema": {
+                                    "const": "nosniff",
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            }
+                        },
+                        "description": "Resource not found or not visible."
+                    },
+                    "409": {
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            }
+                        },
+                        "description": "The operation conflicts with current state."
+                    },
+                    "412": {
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            }
+                        },
+                        "description": "The optimistic concurrency precondition failed."
+                    },
+                    "422": {
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            }
+                        },
+                        "description": "The submitted operation failed validation."
+                    },
+                    "503": {
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            }
+                        },
+                        "description": "The business runtime is temporarily unavailable."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": [],
+                        "siteContext": []
+                    }
+                ],
+                "summary": "Download a verified business report CSV export"
+            },
+            "parameters": [
+                {
+                    "in": "path",
+                    "name": "artifact",
+                    "required": true,
+                    "schema": {
+                        "format": "uuid",
+                        "type": "string"
+                    }
+                }
+            ]
+        },
+        "/api/v1/business/reports": {
+            "get": {
+                "operationId": "businessReportList",
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/GeneratedBusinessReportCollection"
+                                }
+                            }
+                        },
+                        "description": "Successful operation."
+                    },
+                    "404": {
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            }
+                        },
+                        "description": "Resource not found or not visible."
+                    },
+                    "409": {
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            }
+                        },
+                        "description": "The operation conflicts with current state."
+                    },
+                    "412": {
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            }
+                        },
+                        "description": "The optimistic concurrency precondition failed."
+                    },
+                    "422": {
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            }
+                        },
+                        "description": "The submitted operation failed validation."
+                    },
+                    "503": {
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            }
+                        },
+                        "description": "The business runtime is temporarily unavailable."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": [],
+                        "siteContext": []
+                    }
+                ],
+                "summary": "List active reports visible to the API credential"
+            }
+        },
+        "/api/v1/business/reports/{report}": {
+            "parameters": [
+                {
+                    "in": "path",
+                    "name": "report",
+                    "required": true,
+                    "schema": {
+                        "maxLength": 191,
+                        "pattern": "^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)+$",
+                        "type": "string"
+                    }
+                }
+            ],
+            "post": {
+                "operationId": "businessReportExecute",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/GeneratedBusinessReportRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/GeneratedBusinessReportResult"
+                                }
+                            }
+                        },
+                        "description": "Successful operation."
+                    },
+                    "404": {
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            }
+                        },
+                        "description": "Resource not found or not visible."
+                    },
+                    "409": {
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            }
+                        },
+                        "description": "The operation conflicts with current state."
+                    },
+                    "412": {
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            }
+                        },
+                        "description": "The optimistic concurrency precondition failed."
+                    },
+                    "422": {
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            }
+                        },
+                        "description": "The submitted operation failed validation."
+                    },
+                    "503": {
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            }
+                        },
+                        "description": "The business runtime is temporarily unavailable."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": [],
+                        "siteContext": []
+                    }
+                ],
+                "summary": "Execute a contributed business report"
+            }
+        },
+        "/api/v1/business/reports/{report}/exports": {
+            "parameters": [
+                {
+                    "in": "path",
+                    "name": "report",
+                    "required": true,
+                    "schema": {
+                        "maxLength": 191,
+                        "pattern": "^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)+$",
+                        "type": "string"
+                    }
+                }
+            ],
+            "post": {
+                "operationId": "businessReportExportRequest",
+                "parameters": [
+                    {
+                        "in": "header",
+                        "name": "Idempotency-Key",
+                        "required": true,
+                        "schema": {
+                            "maxLength": 128,
+                            "minLength": 8,
+                            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{7,127}$",
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/GeneratedBusinessReportExportRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "202": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/GeneratedBusinessReportExport"
+                                }
+                            }
+                        },
+                        "description": "Successful operation."
+                    },
+                    "404": {
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            }
+                        },
+                        "description": "Resource not found or not visible."
+                    },
+                    "409": {
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            }
+                        },
+                        "description": "The operation conflicts with current state."
+                    },
+                    "412": {
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            }
+                        },
+                        "description": "The optimistic concurrency precondition failed."
+                    },
+                    "422": {
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            }
+                        },
+                        "description": "The submitted operation failed validation."
+                    },
+                    "503": {
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetails"
+                                }
+                            }
+                        },
+                        "description": "The business runtime is temporarily unavailable."
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": [],
+                        "siteContext": []
+                    }
+                ],
+                "summary": "Queue a policy-bound CSV business report export"
+            }
+        },
         "/api/v1/business/views/{definition}/{record}/{view}": {
             "parameters": [
                 {
@@ -7616,6 +8507,15 @@
         "GeneratedBusinessRelationRecord",
         "GeneratedBusinessRelationshipMetadata",
         "GeneratedBusinessReorder",
+        "GeneratedBusinessReportCollection",
+        "GeneratedBusinessReportColumn",
+        "GeneratedBusinessReportDefinition",
+        "GeneratedBusinessReportDrillDown",
+        "GeneratedBusinessReportExport",
+        "GeneratedBusinessReportExportRequest",
+        "GeneratedBusinessReportParameters",
+        "GeneratedBusinessReportRequest",
+        "GeneratedBusinessReportResult",
         "GeneratedBusinessRevision",
         "GeneratedBusinessSchemaDocument",
         "GeneratedBusinessUpdate",
@@ -7638,6 +8538,11 @@
         "/api/v1/business/records/{definition}/{record}/relations/{relation}/order",
         "/api/v1/business/records/{definition}/{record}/relations/{relation}/{target}",
         "/api/v1/business/records/{definition}/{record}/restore",
+        "/api/v1/business/report-exports/{artifact}",
+        "/api/v1/business/report-exports/{artifact}/download",
+        "/api/v1/business/reports",
+        "/api/v1/business/reports/{report}",
+        "/api/v1/business/reports/{report}/exports",
         "/api/v1/business/views/{definition}/{record}/{view}",
         "/api/v1/business/views/{definition}/{view}"
     ]

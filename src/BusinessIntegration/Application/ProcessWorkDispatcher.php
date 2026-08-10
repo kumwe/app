@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace Kumwe\CMS\BusinessIntegration\Application;
 
-use Kumwe\CMS\Application\Authorization\ExecutionContext;
+use Kumwe\CMS\Application\Authorization\SiteContext;
+use Kumwe\CMS\Application\Authorization\SystemPrincipal;
 use Kumwe\CMS\Application\Automation\RetryPolicy;
+use Kumwe\CMS\Infrastructure\Persistence\TransactionManager;
 use LogicException;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -17,25 +19,34 @@ use Throwable;
  */
 final readonly class ProcessWorkDispatcher
 {
-    /** @var list<ProcessWorkHandler> Exact active handler set. @since 2.0.0 */
+    /**
+     * Process-work handlers searched in deterministic registration order.
+     *
+     * @var    list<ProcessWorkHandler>  Exact active handler set.
+     * @since  2.0.0
+     */
     private array $handlers;
 
     /**
      * Assemble process work dispatch.
      *
-     * @param   ProcessManagerStore            $store     Durable process repository.
-     * @param   iterable<ProcessWorkHandler>   $handlers  Exact active handler set.
-     * @param   RetryPolicy                    $retries   Failure classification and backoff.
-     * @param   TrustedRuntimeGenerationGuard  $runtime   Trusted runtime authority guard.
-     * @param   LoggerInterface                $logger    Structured observability sink.
+     * @param  ProcessManagerStore            $store         Durable process repository.
+     * @param  iterable<ProcessWorkHandler>   $handlers      Exact active handler set.
+     * @param  SystemPrincipal                $system        Issues tenant-bound process execution contexts.
+     * @param  RetryPolicy                    $retries       Failure classification and backoff.
+     * @param  TrustedRuntimeGenerationGuard  $runtime       Trusted runtime authority guard.
+     * @param  TransactionManager             $transactions  Atomic effect and work-settlement boundary.
+     * @param  LoggerInterface                $logger        Structured observability sink.
      *
-     * @since   2.0.0
+     * @since  2.0.0
      */
     public function __construct(
         private ProcessManagerStore $store,
         iterable $handlers,
+        private SystemPrincipal $system,
         private RetryPolicy $retries,
         private TrustedRuntimeGenerationGuard $runtime,
+        private TransactionManager $transactions,
         private LoggerInterface $logger,
     ) {
         $this->handlers = [...$handlers];
@@ -44,17 +55,15 @@ final readonly class ProcessWorkDispatcher
     /**
      * Execute at most one due work item.
      *
-     * @param   ExecutionContext  $context            Freshly authorised worker context.
-     * @param   string            $workerId           Process identity.
-     * @param   string            $runtimeGeneration  Exact loaded runtime generation.
-     * @param   int               $leaseSeconds       Work lease duration.
+     * @param   string  $workerId           Process identity.
+     * @param   string  $runtimeGeneration  Exact loaded runtime generation.
+     * @param   int     $leaseSeconds       Work lease duration.
      *
      * @return  bool  True when work was claimed, including work rescheduled after failure.
      *
      * @since   2.0.0
      */
     public function dispatchOne(
-        ExecutionContext $context,
         string $workerId,
         string $runtimeGeneration,
         int $leaseSeconds = 60,
@@ -64,6 +73,10 @@ final readonly class ProcessWorkDispatcher
         if ($lease === null) {
             return false;
         }
+        $context = $this->system->context(
+            SiteContext::fromString($lease->siteIdentifier),
+            'process-work-' . $lease->work->id(),
+        );
         try {
             $this->runtime->assertCurrent($lease->runtimeGeneration);
             $matches = array_values(array_filter(
@@ -76,8 +89,11 @@ final readonly class ProcessWorkDispatcher
             if (count($matches) !== 1) {
                 throw new LogicException('Process work must resolve to exactly one active handler.');
             }
-            $matches[0]->handle($lease, $context);
-            $this->store->completeWork($lease);
+            $this->transactions->transactional(function () use ($matches, $lease, $context): void {
+                $this->runtime->assertCurrent($lease->runtimeGeneration);
+                $matches[0]->handle($lease, $context);
+                $this->store->completeWork($lease);
+            });
             $this->logger->info('Process work completed.', [
                 'process_id' => $lease->processId,
                 'work_id' => $lease->work->id(),

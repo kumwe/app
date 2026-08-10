@@ -24,11 +24,11 @@ final readonly class ProcessManagerService
     /**
      * Bind process decisions to storage and exact event contracts.
      *
-     * @param   ProcessManagerStore   $store      Durable state and work repository.
-     * @param   EventContractRegistry $contracts  Exact event catalog.
-     * @param   ClockInterface        $clock      Transition clock.
+     * @param  ProcessManagerStore    $store      Durable state and work repository.
+     * @param  EventContractRegistry  $contracts  Exact event catalog.
+     * @param  ClockInterface         $clock      Transition clock.
      *
-     * @since   2.0.0
+     * @since  2.0.0
      */
     public function __construct(
         private ProcessManagerStore $store,
@@ -54,7 +54,11 @@ final readonly class ProcessManagerService
         if ($correlation === '' || strlen($correlation) > 191 || preg_match('/[\x00-\x1F\x7F]/D', $correlation) === 1) {
             throw new InvalidArgumentException('A process correlation identity is invalid.');
         }
-        $current = $this->store->findByCorrelation($handler->processType(), $correlation);
+        $current = $this->store->findByCorrelation(
+            $handler->processType(),
+            $event->siteIdentifier(),
+            $correlation,
+        );
         $now = $this->clock->now();
         if ($current === null) {
             $transition = $handler->start($event);
@@ -78,6 +82,9 @@ final readonly class ProcessManagerService
         if ($current->status() !== ProcessStatus::RUNNING) {
             throw new InvalidArgumentException('A terminal process cannot consume another event.');
         }
+        if ($current->organizationId() !== $event->organizationId()) {
+            throw new InvalidArgumentException('A process cannot cross organization boundaries.');
+        }
         $transition = $handler->apply($current, $event);
         $next = $current->transition($transition->state(), $transition->status(), $now);
         $this->store->save($next, $current->version(), $transition->work());
@@ -87,11 +94,11 @@ final readonly class ProcessManagerService
     /**
      * Cancel a running process and atomically persist requested compensation work.
      *
-     * @param   string                    $processId     Process UUID.
-     * @param   int                       $expectedVersion Optimistic version presented by the operator.
-     * @param   string                    $operatorId    Freshly authorised operator identity.
-     * @param   string                    $note          Cancellation rationale.
-     * @param   iterable<ProcessWorkItem> $compensations Explicit best-effort compensation requests.
+     * @param   string                     $processId        Process UUID.
+     * @param   int                        $expectedVersion  Optimistic version presented by the operator.
+     * @param   string                     $operatorId       Freshly authorised operator identity.
+     * @param   string                     $note             Cancellation rationale.
+     * @param   iterable<ProcessWorkItem>  $compensations    Explicit best-effort compensation requests.
      *
      * @return  ProcessInstance  Cancelled persisted snapshot.
      *
