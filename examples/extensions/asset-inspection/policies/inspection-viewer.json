@@ -22,16 +22,16 @@
     "detail": ["id", "inspection_date", "reference", "risk_score"],
     "list": ["id", "inspection_date", "reference", "risk_score"],
     "filter": ["inspection_date", "reference", "risk_score"],
-    "search": ["reference"],
+    "search": [],
     "sort": ["inspection_date", "reference", "risk_score"],
     "aggregate": ["risk_score"],
     "report": ["id", "inspection_date", "reference", "risk_score"],
     "export": ["id", "inspection_date", "reference", "risk_score"],
     "audit": ["id", "inspection_date", "reference", "risk_score"],
     "mcp": ["id", "inspection_date", "reference", "risk_score"],
-    "relation": ["id", "reference"],
+    "relation": ["reference"],
     "include": ["id", "inspection_date", "reference", "risk_score"],
-    "public_reference": ["id", "reference"]
+    "public_reference": ["id"]
   },
   "policy_requests": [
     {

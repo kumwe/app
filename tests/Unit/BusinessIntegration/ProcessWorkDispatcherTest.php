@@ -127,7 +127,7 @@ final class ProcessWorkDispatcherTest extends TestCase
                 self::assertSame('organization-7', $payload['organization_id'] ?? null);
                 self::assertSame(3, $payload['process_version'] ?? null);
                 self::assertSame('SKU-7', $payload['payload']['sku'] ?? null);
-                self::assertSame($clock->now(), $availableAt);
+                self::assertEquals($clock->now(), $availableAt);
                 self::assertSame('default', $queueName);
                 self::assertSame(0, $priority);
                 self::assertSame(10, $maximumAttempts);

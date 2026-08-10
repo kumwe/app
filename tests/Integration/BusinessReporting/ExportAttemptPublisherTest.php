@@ -93,7 +93,7 @@ final class ExportAttemptPublisherTest extends TestCase
     {
         $this->directory = sys_get_temp_dir() . '/kumwe-export-race-' . bin2hex(random_bytes(8));
         $this->database = DriverManager::getConnection(['driver' => 'pdo_sqlite', 'memory' => true]);
-        $tables = new TableNames($this->database, '');
+        $tables = new TableNames($this->database, 'kumwe_');
         $this->transactions = new DoctrineTransactionManager($this->database);
         $this->artifacts = new DoctrineExportArtifactRepository($this->database, $tables, $this->transactions);
         (new CoreSchemaMigration($tables))->up($this->database);

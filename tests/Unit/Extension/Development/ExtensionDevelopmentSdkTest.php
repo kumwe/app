@@ -37,12 +37,28 @@ use Kumwe\CMS\Extension\Domain\ExtensionManifest;
 use Kumwe\CMS\Extension\Domain\PackageSignature;
 use Kumwe\CMS\Extension\Infrastructure\Package\ZipArchiveReader;
 use Kumwe\CMS\Extension\Runtime\RestrictedExtensionContainer;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 use RuntimeException;
 use SplFileInfo;
 
+#[CoversClass(BuildExtensionCommand::class)]
+#[CoversClass(InspectExtensionCommand::class)]
+#[CoversClass(RunExtensionConformanceCommand::class)]
+#[CoversClass(ScaffoldExtensionCommand::class)]
+#[CoversClass(SignExtensionCommand::class)]
+#[CoversClass(ComponentScaffolder::class)]
+#[CoversClass(ConformanceReport::class)]
+#[CoversClass(DeterministicPackageBuilder::class)]
+#[CoversClass(LifecycleConformanceRunner::class)]
+#[CoversClass(PackageInspector::class)]
+#[CoversClass(PackageSigner::class)]
+#[CoversClass(ProtectedSigningKeyReader::class)]
+#[CoversClass(ScaffoldRequest::class)]
+#[CoversClass(SignatureDocument::class)]
+#[CoversClass(StaticConformanceRunner::class)]
 /**
  * Exercises the complete scaffold, deterministic build, inspection, conformance, and signing path.
  *
