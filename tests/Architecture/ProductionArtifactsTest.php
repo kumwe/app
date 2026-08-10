@@ -179,6 +179,33 @@ final class ProductionArtifactsTest extends TestCase
         foreach (['business-record create', 'business-record relate', 'integration:work --once'] as $command) {
             self::assertStringContainsString($command, $driver);
         }
+        self::assertStringContainsString('Idempotency-Replayed', $driver);
+        self::assertStringContainsString("del(.replayed)", $driver);
+        self::assertStringContainsString('ordered_record_ids', $driver);
+        self::assertStringContainsString('/order', $driver);
+        $schemaLoopStart = strpos($driver, 'for definition in');
+        if ($schemaLoopStart === false) {
+            self::fail('The deployment schema-install loop is unavailable.');
+        }
+        $schemaLoopEnd = strpos($driver, 'install_schema "$definition"', $schemaLoopStart);
+        if ($schemaLoopEnd === false) {
+            self::fail('The deployment schema-install call is unavailable.');
+        }
+        $schemaLoop = substr($driver, $schemaLoopStart, $schemaLoopEnd - $schemaLoopStart);
+        $schemaCursor = 0;
+        foreach ([
+            '019bc200-0000-7000-8000-000000000001',
+            '019bc200-0000-7000-8000-000000000002',
+            '019bc200-0000-7000-8000-000000000004',
+            '019bc200-0000-7000-8000-000000000005',
+            '019bc200-0000-7000-8000-000000000003',
+        ] as $definitionId) {
+            $definitionPosition = strpos($schemaLoop, $definitionId, $schemaCursor);
+            if ($definitionPosition === false) {
+                self::fail('The deployment schema-install order is not dependency-safe.');
+            }
+            $schemaCursor = $definitionPosition + strlen($definitionId);
+        }
         self::assertStringContainsString('access grant', $driver);
         self::assertStringContainsString('integration:manage projection-rebuild', $driver);
         self::assertStringContainsString('integration:manage projections', $driver);

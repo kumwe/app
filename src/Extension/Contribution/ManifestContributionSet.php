@@ -11,6 +11,7 @@ use Kumwe\CMS\BusinessDefinition\Domain\DefinitionOwner;
 use Kumwe\CMS\BusinessDefinition\Domain\DefinitionStatus;
 use Kumwe\CMS\BusinessDefinition\Domain\EntityTypeDefinition;
 use Kumwe\CMS\BusinessDefinition\Domain\FieldTypeDefinition;
+use Kumwe\CMS\BusinessDefinition\Domain\RelationshipKind;
 use Kumwe\CMS\BusinessIntegration\Application\PayloadSchemaValidator;
 use Kumwe\CMS\BusinessIntegration\Domain\DomainListenerDefinition;
 use Kumwe\CMS\BusinessIntegration\Domain\EventConsumerDefinition;
@@ -296,8 +297,8 @@ final readonly class ManifestContributionSet
      * @param   int                                          $spiVersion             Contribution SPI revision.
      *
      * @throws  InvalidArgumentException  When an identifier is outside the owner's namespace or declared twice,
-     *          when navigation or a route references something this set does not declare, or when a business
-     *          definition names another owner.
+     *          navigation or a route references something this set does not declare, a business definition
+     *          names another owner, or SPI 2 claims ordering that has no portable storage shape.
      *
      * @since   2.0.0
      */
@@ -356,6 +357,9 @@ final readonly class ManifestContributionSet
         $this->projections = $this->integrationIndex($projections, 'projection');
         $this->reports = $this->integrationIndex($reports, 'report');
         $this->webhooks = $this->integrationIndex($webhooks, 'webhook');
+        if ($this->spiVersion >= self::CURRENT_SPI_VERSION) {
+            $this->assertPortableRelationshipOrdering();
+        }
 
         foreach ($this->navigation as $item) {
             if (!isset($this->workspaces[$item->workspace])) {
@@ -463,6 +467,38 @@ final readonly class ManifestContributionSet
             }
         }
         $this->assertIntegrationReferences();
+    }
+
+    /**
+     * Refuse SPI-2 ordering claims that the portable schema compiler cannot materialize.
+     *
+     * A reciprocal one-to-many/many-to-one pair is stored only in the many-to-one side's direct target
+     * column, which has nowhere to retain a collection position. Schema-4 packages therefore have to make
+     * an ordered one-to-many inverse-free so it owns a junction table. SPI 1 remains readable exactly as
+     * released; narrowing that established contract requires a future versioned compatibility path.
+     *
+     * @return  void
+     *
+     * @throws  InvalidArgumentException  When an ordered one-to-many declaration delegates storage to an
+     *          inverse relationship.
+     *
+     * @since   2.0.0
+     */
+    private function assertPortableRelationshipOrdering(): void
+    {
+        foreach ($this->businessDefinitions as $definition) {
+            foreach ($definition->relationships() as $relationship) {
+                if (
+                    $relationship->kind === RelationshipKind::OneToMany
+                    && $relationship->ordered
+                    && $relationship->inverse !== null
+                ) {
+                    throw new InvalidArgumentException(
+                        'An SPI-2 ordered one-to-many relationship must own inverse-free junction storage.',
+                    );
+                }
+            }
+        }
     }
 
     /**

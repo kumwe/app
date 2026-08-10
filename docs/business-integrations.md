@@ -83,6 +83,11 @@ namespace. The section contains exactly these lists:
 | `reports` | Policy-aware source, parameters, filters, output and row cap | None; safe compiled definition |
 | `webhooks` | Event versions, idempotency, queue, retries and sensitivity | `IntegrationEventTransport` |
 
+SPI 2 also refuses declaration-only relationship ordering. A reciprocal one-to-many/many-to-one pair is stored
+in the many-to-one record column and therefore cannot carry collection positions. An ordered one-to-many must
+omit `inverse`, which makes that side own the portable junction table and its unique source-position index.
+Schema 1 through 3 retain their historical parsing contract.
+
 The provider registers definitions and executable implementations during its one owner-bound contribution phase.
 Definitions declared but not registered, implementations registered without declarations, mismatched handler
 versions, foreign identifiers, missing references, and collisions fail activation. Do not retain the registrar.

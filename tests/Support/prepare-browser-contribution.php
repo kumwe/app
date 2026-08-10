@@ -197,9 +197,29 @@ try {
     if (!is_array($assetDefinitions) || !array_is_list($assetDefinitions)) {
         throw new RuntimeException('The browser report fixture definitions are unavailable.');
     }
+    $assetDefinitionsById = [];
     foreach ($assetDefinitions as $assetDefinition) {
-        if (!is_array($assetDefinition)) {
+        $definitionId = is_array($assetDefinition) ? ($assetDefinition['id'] ?? null) : null;
+        if (!is_string($definitionId) || isset($assetDefinitionsById[$definitionId])) {
             throw new RuntimeException('A browser report fixture definition is invalid.');
+        }
+        $assetDefinitionsById[$definitionId] = $assetDefinition;
+    }
+    // Inspection owns ordered junctions whose finding and measurement targets must already be installed.
+    $assetSchemaOrder = [
+        '019bc200-0000-7000-8000-000000000001',
+        '019bc200-0000-7000-8000-000000000002',
+        '019bc200-0000-7000-8000-000000000004',
+        '019bc200-0000-7000-8000-000000000005',
+        '019bc200-0000-7000-8000-000000000003',
+    ];
+    if (count($assetDefinitionsById) !== count($assetSchemaOrder)) {
+        throw new RuntimeException('The browser report fixture definition graph is incomplete.');
+    }
+    foreach ($assetSchemaOrder as $definitionId) {
+        $assetDefinition = $assetDefinitionsById[$definitionId] ?? null;
+        if (!is_array($assetDefinition)) {
+            throw new RuntimeException('A browser report fixture schema dependency is unavailable.');
         }
         NeutralBusinessFixture::install($container, $context, $assetDefinition);
     }
