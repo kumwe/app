@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Kumwe\CMS\Tests\Functional\Http;
 
+use Joomla\DI\Container;
+use Kumwe\CMS\Extension\Runtime\RuntimeMaterializationState;
 use Kumwe\CMS\Http\Handler\ApiIndexHandler;
 use Kumwe\CMS\Http\Handler\HomePageHandler;
 use Kumwe\CMS\Http\Handler\LivenessHandler;
@@ -14,8 +16,10 @@ use Kumwe\CMS\Presentation\Twig\SiteTwigEnvironment;
 use Kumwe\CMS\Shared\Infrastructure\Configuration\Environment;
 use Laminas\Diactoros\ServerRequestFactory;
 use Mezzio\Application;
+use Mezzio\Router\RouterInterface;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
+use ReflectionMethod;
 
 #[CoversClass(ContainerFactory::class)]
 #[CoversClass(HomePageHandler::class)]
@@ -94,6 +98,79 @@ final class KernelTest extends TestCase
         self::assertSame('', $response->getHeaderLine('Strict-Transport-Security'));
     }
 
+    public function testRecoveryBootCannotPoisonTheFullProductionRouteCache(): void
+    {
+        $environment = new Environment($this->productionValues());
+        $factory = new ContainerFactory();
+        $recovery = $factory->createRecovery($environment);
+        $runtime = $factory->create($environment);
+        $root = dirname(__DIR__, 3);
+        $recoveryCache = $this->routeCacheFile($recovery);
+        $runtimeCache = $this->routeCacheFile($runtime);
+
+        self::assertStringStartsWith($root . '/storage/cache/routes-recovery-', $recoveryCache);
+        self::assertStringStartsWith($root . '/storage/cache/routes-runtime-', $runtimeCache);
+        self::assertNotSame($recoveryCache, $runtimeCache);
+        foreach ([$recoveryCache, $runtimeCache] as $cache) {
+            if (is_file($cache)) {
+                unlink($cache);
+            }
+        }
+
+        try {
+            self::assertInstanceOf(Application::class, $recovery->get(Application::class));
+            $requestFactory = new ServerRequestFactory();
+            $recoveryRouter = $recovery->get(RouterInterface::class);
+            self::assertInstanceOf(RouterInterface::class, $recoveryRouter);
+            $health = $recoveryRouter->match(
+                $requestFactory->createServerRequest('GET', 'https://kumwe.test/health/live'),
+            );
+            self::assertTrue($health->isSuccess());
+            self::assertFileExists($recoveryCache);
+            self::assertFileDoesNotExist($runtimeCache);
+
+            self::assertInstanceOf(Application::class, $runtime->get(Application::class));
+            $runtimeRouter = $runtime->get(RouterInterface::class);
+            self::assertInstanceOf(RouterInterface::class, $runtimeRouter);
+            $portalLogin = $runtimeRouter->match(
+                $requestFactory->createServerRequest('GET', 'https://kumwe.test/portal/login'),
+            );
+            self::assertTrue($portalLogin->isSuccess());
+            $route = $portalLogin->getMatchedRoute();
+            self::assertNotFalse($route);
+            self::assertSame('portal.login', $route->getName());
+            self::assertFileExists($runtimeCache);
+        } finally {
+            foreach ([$recoveryCache, $runtimeCache] as $cache) {
+                if (is_file($cache)) {
+                    unlink($cache);
+                }
+            }
+        }
+    }
+
+    public function testRuntimeRouteCacheChangesWithReleaseAndMaterializedGeneration(): void
+    {
+        $method = new ReflectionMethod(ContainerFactory::class, 'routeCacheFile');
+        $first = new RuntimeMaterializationState('replica-one', 17, str_repeat('a', 64), 'proof', true);
+        $next = new RuntimeMaterializationState('replica-one', 18, str_repeat('b', 64), 'proof', true);
+
+        $firstCache = $method->invoke(null, '/app', '2.0.0', true, $first);
+        $nextCache = $method->invoke(null, '/app', '2.0.0', true, $next);
+        $nextReleaseCache = $method->invoke(null, '/app', '2.0.1', true, $next);
+        $firstRecoveryCache = $method->invoke(null, '/app', '2.0.0', false, $first);
+        $nextRecoveryCache = $method->invoke(null, '/app', '2.0.0', false, $next);
+
+        self::assertIsString($firstCache);
+        self::assertIsString($nextCache);
+        self::assertIsString($nextReleaseCache);
+        self::assertIsString($firstRecoveryCache);
+        self::assertIsString($nextRecoveryCache);
+        self::assertNotSame($firstCache, $nextCache);
+        self::assertNotSame($nextCache, $nextReleaseCache);
+        self::assertSame($firstRecoveryCache, $nextRecoveryCache);
+    }
+
     /**
      * @return array<string, string>
      */
@@ -129,5 +206,19 @@ final class KernelTest extends TestCase
         $value = getenv($name);
 
         return is_string($value) && $value !== '' ? $value : $fallback;
+    }
+
+    private function routeCacheFile(Container $container): string
+    {
+        $config = $container->get('config');
+        self::assertIsArray($config);
+        $router = $config['router'] ?? null;
+        self::assertIsArray($router);
+        $fastRoute = $router['fastroute'] ?? null;
+        self::assertIsArray($fastRoute);
+        $cache = $fastRoute['cache_file'] ?? null;
+        self::assertIsString($cache);
+
+        return $cache;
     }
 }

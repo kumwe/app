@@ -654,28 +654,75 @@ final class ContainerFactory
         ), true);
         $container->share(Dispatcher::class, new Dispatcher(), true);
         $container->alias(DispatcherInterface::class, Dispatcher::class);
+
+        $this->registerLogging($container, $configuration);
+        $this->registerPersistence($container, $configuration, $root, $kernelProof, $loadRuntime);
+        $this->registerExtensions($container, $configuration, $root, $kernelProof, $loadRuntime);
+        $routeCacheFile = self::routeCacheFile(
+            $root,
+            $configuration->release,
+            $loadRuntime,
+            self::service($container, RuntimeMaterializationState::class),
+        );
         $container->share('config', [
             'debug' => $configuration->debug,
             'router' => [
                 'detect_duplicates' => true,
                 'fastroute' => [
                     'cache_enabled' => $configuration->isProduction(),
-                    'cache_file' => $root . '/storage/cache/routes.php',
+                    'cache_file' => $routeCacheFile,
                 ],
             ],
         ], true);
-
-        $this->registerLogging($container, $configuration);
-        $this->registerPersistence($container, $configuration, $root, $kernelProof, $loadRuntime);
-        $this->registerExtensions($container, $configuration, $root, $kernelProof, $loadRuntime);
         $this->registerBusinessSurfaces($container, $root, $kernelProof);
         $this->registerMcp($container, $root);
-        $this->registerHttp($container, $configuration, $root, $loadRuntime);
+        $this->registerHttp($container, $configuration, $root, $routeCacheFile, $loadRuntime);
         if ($console) {
             $this->registerConsole($container, $kernelProof);
         }
 
         return $container;
+    }
+
+    /**
+     * Name a route cache for the exact immutable graph this kernel registers.
+     *
+     * Recovery deliberately omits portal and extension routes, so it must never share a dispatcher
+     * with the full kernel. The full cache also follows the release and trusted runtime publication:
+     * the runtime watcher reloads PHP-FPM without clearing its cache volume after activation, and a
+     * fixed filename would otherwise keep routes from the superseded generation. Hashing the identity
+     * keeps deployment-provided release values out of the filesystem path. New prefixes also retire
+     * the legacy shared `routes.php` cache on upgrade.
+     *
+     * @param   string                       $root             Absolute repository root.
+     * @param   string                       $release          Immutable application release identifier.
+     * @param   bool                         $loadRuntime      Whether the full extension runtime is loaded.
+     * @param   RuntimeMaterializationState  $materialization  Exact local runtime publication inspected at boot.
+     *
+     * @return  string  Absolute cache file unique to the kernel's route graph.
+     *
+     * @since   2.0.0
+     */
+    private static function routeCacheFile(
+        string $root,
+        string $release,
+        bool $loadRuntime,
+        RuntimeMaterializationState $materialization,
+    ): string {
+        $surface = $loadRuntime ? 'runtime' : 'recovery';
+        $identity = [$surface, $release];
+        if ($loadRuntime) {
+            $identity[] = $materialization->trusted ? 'trusted' : 'untrusted';
+            $identity[] = (string) $materialization->generation;
+            $identity[] = $materialization->publicationChecksum;
+        }
+
+        return sprintf(
+            '%s/storage/cache/routes-%s-%s.php',
+            $root,
+            $surface,
+            hash('sha256', implode("\0", $identity)),
+        );
     }
 
     /**
@@ -1323,6 +1370,7 @@ final class ContainerFactory
      * @param   Container                 $container      Container being composed.
      * @param   ApplicationConfiguration  $configuration  Boot configuration for base URL, site and caching.
      * @param   string                    $root           Absolute path of the repository root.
+     * @param   string                    $routeCacheFile  Kernel-specific FastRoute cache path.
      * @param   bool                      $portalEnabled  Whether to register the ordinary-user portal runtime.
      *
      * @return  void
@@ -1333,6 +1381,7 @@ final class ContainerFactory
         Container $container,
         ApplicationConfiguration $configuration,
         string $root,
+        string $routeCacheFile,
         bool $portalEnabled,
     ): void {
         $container->share(
@@ -1419,7 +1468,7 @@ final class ContainerFactory
         $container->share(RouterInterface::class, static fn (): RouterInterface =>
             new FastRouteRouter(null, null, [
                 'cache_enabled' => $configuration->isProduction(),
-                'cache_file' => $root . '/storage/cache/routes.php',
+                'cache_file' => $routeCacheFile,
             ]), true);
         $container->share(RouteCollector::class, static fn (Container $container): RouteCollector =>
             new RouteCollector(self::service($container, RouterInterface::class), true), true);
