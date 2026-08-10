@@ -421,6 +421,9 @@ test.describe('authenticated administrator', () => {
     await expect(page.locator('.business-record-table tbody tr').first()).toBeVisible();
     await expect(page.getByRole('link', { name: 'Report', exact: true })).toBeVisible();
     await expect(page.getByRole('link', { name: 'Export', exact: true })).toBeVisible();
+    await page.getByLabel('Search records').fill('Windhoek order');
+    await page.getByRole('button', { name: 'Apply', exact: true }).click();
+    await expectAdministratorRecordRow(page, 'Windhoek order');
     expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBe(0);
     if (isMobile) {
       expect(await page.locator('.business-table-wrap').evaluate((table) =>
@@ -512,9 +515,11 @@ test.describe('authenticated administrator', () => {
     });
     await tags.getByRole('link', { name: 'Search available records' }).click();
     await expect(page.getByRole('heading', { name: 'Choose tags' })).toBeVisible();
-    await expect(page.getByText('Windhoek relationship target', { exact: true })).toBeVisible();
-    await expect(page.getByText('Walvis Bay relationship target', { exact: true })).toBeVisible();
-    await page.getByRole('row', { name: /Windhoek relationship target/ })
+    const windhoekChoice = page.getByRole('row', { name: /Windhoek relationship target/ });
+    const walvisBayChoice = page.getByRole('row', { name: /Walvis Bay relationship target/ });
+    await expect(windhoekChoice).toBeVisible();
+    await expect(walvisBayChoice).toBeVisible();
+    await windhoekChoice
       .getByRole('link', { name: 'Choose' })
       .click();
     await tags.locator('select[name="target_record_id"]').selectOption(windhoekTargetId);
@@ -586,7 +591,7 @@ test.describe('authenticated administrator', () => {
       await page.getByRole('link', { name: 'View operation status' }).click();
       await expect(page.getByRole('heading', { level: 1, name: 'Operation status' })).toBeVisible();
       await expect(page.getByRole('heading', { name: 'Operation completed' })).toBeVisible();
-      await page.getByRole('link', { name: 'Return to record' }).click();
+      await page.getByRole('link', { name: 'Return to record', exact: true }).click();
       await page.getByRole('link', { name: 'Edit', exact: true }).click();
       const updatedName = `${name} updated`;
       await page.locator('[name="values[name]"]').fill(updatedName);

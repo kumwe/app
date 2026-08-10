@@ -445,6 +445,18 @@ final class GeneratedBusinessDeliveryParityTest extends TestCase
                 $path,
             );
         }
+        foreach (
+            [
+                'templates/administrator/business-confirm.twig',
+                'templates/portal/business-confirm.twig',
+            ] as $path
+        ) {
+            self::assertStringContainsString(
+                '{% if approval_requested|default(false) and approval_request_id|default(null) %}',
+                $this->contents($path),
+                $path,
+            );
+        }
     }
 
     /**

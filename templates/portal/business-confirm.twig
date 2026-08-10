@@ -28,7 +28,7 @@
 
 <section class="portal-business-panel portal-business-confirmation{% if confirmation in ['delete', 'action'] %} danger{% endif %}" aria-labelledby="portal-business-confirm-title">
     {% if error_summary is defined and error_summary %}<div class="portal-alert" role="alert"><h2>Action could not be completed</h2><p>{{ error_summary }}</p></div>{% endif %}
-    {% if approval_requested and approval_request_id %}
+    {% if approval_requested|default(false) and approval_request_id|default(null) %}
         <div class="portal-notice" role="status">
             <strong>Approval requested.</strong>
             Request <code>{{ approval_request_id }}</code> must be approved before execution.

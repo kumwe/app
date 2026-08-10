@@ -219,6 +219,13 @@ final readonly class DoctrineApprovalQueryRepository implements ApprovalQueryRep
                 $role,
                 $approvalVotes,
             );
+            if ($requestId !== null) {
+                $visible[] = sprintf(
+                    "(a.status <> 'pending' AND EXISTS (SELECT 1 FROM %s hv WHERE hv.request_id = a.id "
+                    . 'AND hv.approver_id = :actor))',
+                    $approvalVotes,
+                );
+            }
             $query->setParameter('now', $at, Types::DATETIME_IMMUTABLE)
                 ->setParameter('not_distinct', false, Types::BOOLEAN);
             if ($membership !== null) {

@@ -35,7 +35,7 @@
 
     <section class="panel panel-body stack business-confirmation{% if confirmation in ['delete', 'action'] %} danger{% endif %}" aria-labelledby="business-confirm-title">
       {% if error_summary is defined and error_summary %}<div class="notice error" role="alert"><h2>Action could not be completed</h2><p>{{ error_summary }}</p></div>{% endif %}
-      {% if approval_requested and approval_request_id %}
+      {% if approval_requested|default(false) and approval_request_id|default(null) %}
         <div class="notice success" role="status">
           <div>
             <strong>Approval requested.</strong>
