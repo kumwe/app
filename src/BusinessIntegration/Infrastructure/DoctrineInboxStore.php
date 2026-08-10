@@ -857,14 +857,14 @@ final readonly class DoctrineInboxStore implements InboxStore
             'runtime_generation' => $policy->runtimeGeneration,
             'updated_at' => $now,
         ], ['queue_id' => $policy->queue], ['updated_at' => Types::DATETIME_IMMUTABLE]);
-        $jobs = (int) $this->database->fetchOne(sprintf(
+        $jobs = $this->databaseCount($this->database->fetchOne(sprintf(
             "SELECT COUNT(*) FROM %s WHERE queue = ? AND status = 'reserved' AND lease_expires_at > ?",
             $this->tables->quoted('jobs'),
-        ), [$policy->queue, $now], [Types::STRING, Types::DATETIME_IMMUTABLE]);
-        $deliveries = (int) $this->database->fetchOne(sprintf(
+        ), [$policy->queue, $now], [Types::STRING, Types::DATETIME_IMMUTABLE]));
+        $deliveries = $this->databaseCount($this->database->fetchOne(sprintf(
             "SELECT COUNT(*) FROM %s WHERE queue = ? AND status = 'reserved' AND lease_expires_at > ?",
             $this->tables->quoted('integration_inbox'),
-        ), [$policy->queue, $now], [Types::STRING, Types::DATETIME_IMMUTABLE]);
+        ), [$policy->queue, $now], [Types::STRING, Types::DATETIME_IMMUTABLE]));
 
         return $jobs + $deliveries < $policy->maximumInFlight;
     }
@@ -886,6 +886,30 @@ final readonly class DoctrineInboxStore implements InboxStore
             throw new RuntimeException(sprintf('Inbox field "%s" is not an integer.', $key));
         }
         return (int) $value;
+    }
+
+    /**
+     * Normalize a DBAL aggregate count without accepting another scalar representation.
+     *
+     * @param   mixed  $value  Raw aggregate value returned by the active database driver.
+     *
+     * @return  int  Non-negative row count.
+     *
+     * @throws  RuntimeException  When the driver did not return an integer or decimal integer string.
+     *
+     * @since   2.0.0
+     */
+    private function databaseCount(mixed $value): int
+    {
+        if (is_int($value)) {
+            if ($value >= 0) {
+                return $value;
+            }
+        } elseif (is_string($value) && preg_match('/^[0-9]+$/D', $value) === 1) {
+            return (int) $value;
+        }
+
+        throw new RuntimeException('An integration inbox count is invalid.');
     }
 
     /**

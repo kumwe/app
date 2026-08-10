@@ -130,7 +130,7 @@ final readonly class QueueWorkCommand implements Command
             $leaseSeconds = $this->integerOption(
                 $options,
                 'lease-seconds',
-                $policy?->leaseSeconds ?? 60,
+                $policy->leaseSeconds ?? 60,
                 5,
                 3_600,
             );

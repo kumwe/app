@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\CMS\Infrastructure\Persistence\Migration;
 
 use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\Schema\PrimaryKeyConstraint;
 use Doctrine\DBAL\Schema\Table;
 use Doctrine\DBAL\Types\Types;
 use Kumwe\CMS\Infrastructure\Persistence\TableNames;
@@ -88,10 +89,10 @@ final readonly class BusinessIntegrationSdkMigration implements RepeatableMigrat
             }
         }
         if (
-            (int) $database->fetchOne(sprintf(
+            $this->databaseCount($database->fetchOne(sprintf(
                 'SELECT COUNT(*) FROM %s WHERE singleton_id = 1',
                 $this->tables->quoted('business_projection_event_head'),
-            )) === 0
+            ))) === 0
         ) {
             $database->insert($this->tables->raw('business_projection_event_head'), [
                 'singleton_id' => 1,
@@ -178,7 +179,7 @@ final readonly class BusinessIntegrationSdkMigration implements RepeatableMigrat
         $table->addColumn('runtime_generation', Types::BIGINT);
         $table->addColumn('last_claimed_at', Types::DATETIME_IMMUTABLE, ['notnull' => false]);
         $table->addColumn('updated_at', Types::DATETIME_IMMUTABLE);
-        $table->setPrimaryKey(['queue_id']);
+        $this->primary($table, 'queue_id');
 
         return $table;
     }
@@ -218,7 +219,7 @@ final readonly class BusinessIntegrationSdkMigration implements RepeatableMigrat
         $table->addColumn('replayed_at', Types::DATETIME_IMMUTABLE, ['notnull' => false]);
         $table->addColumn('replayed_by', Types::STRING, ['length' => 191, 'notnull' => false]);
         $this->timestamps($table);
-        $table->setPrimaryKey(['event_id']);
+        $this->primary($table, 'event_id');
         $table->addIndex(['status', 'available_at', 'attempts'], 'idx_integration_outbox_claim');
         $table->addIndex(['aggregate_type', 'aggregate_id', 'aggregate_version'], 'idx_integration_outbox_aggregate');
         $table->addIndex(['correlation_id'], 'idx_integration_outbox_correlation');
@@ -246,7 +247,7 @@ final readonly class BusinessIntegrationSdkMigration implements RepeatableMigrat
         $table->addColumn('aggregate_version', Types::BIGINT);
         $table->addColumn('event_id', Types::GUID, ['notnull' => false]);
         $table->addColumn('updated_at', Types::DATETIME_IMMUTABLE);
-        $table->setPrimaryKey(['consumer_id', 'scope_checksum', 'aggregate_type', 'aggregate_id']);
+        $this->primary($table, 'consumer_id', 'scope_checksum', 'aggregate_type', 'aggregate_id');
         $table->addIndex(['site_identifier', 'organization_scope'], 'idx_integration_checkpoint_scope');
         return $table;
     }
@@ -285,7 +286,7 @@ final readonly class BusinessIntegrationSdkMigration implements RepeatableMigrat
         $table->addColumn('completed_at', Types::DATETIME_IMMUTABLE, ['notnull' => false]);
         $table->addColumn('evidence_compacted_at', Types::DATETIME_IMMUTABLE, ['notnull' => false]);
         $table->addColumn('updated_at', Types::DATETIME_IMMUTABLE);
-        $table->setPrimaryKey(['consumer_id', 'event_id']);
+        $this->primary($table, 'consumer_id', 'event_id');
         $table->addIndex(['consumer_id', 'status', 'available_at'], 'idx_integration_inbox_claim');
         $table->addIndex(['queue', 'status', 'lease_expires_at'], 'idx_integration_inbox_queue');
         $table->addIndex(['consumer_id', 'site_identifier', 'organization_id'], 'idx_integration_inbox_scope');
@@ -321,7 +322,7 @@ final readonly class BusinessIntegrationSdkMigration implements RepeatableMigrat
         $this->timestamps($table);
         $table->addColumn('completed_at', Types::DATETIME_IMMUTABLE, ['notnull' => false]);
         $table->addColumn('cancelled_at', Types::DATETIME_IMMUTABLE, ['notnull' => false]);
-        $table->setPrimaryKey(['process_id']);
+        $this->primary($table, 'process_id');
         $table->addUniqueIndex(
             ['process_type', 'site_identifier', 'correlation_id'],
             'uniq_business_process_correlation',
@@ -357,7 +358,7 @@ final readonly class BusinessIntegrationSdkMigration implements RepeatableMigrat
         $table->addColumn('error_message', Types::TEXT, ['notnull' => false]);
         $table->addColumn('completed_at', Types::DATETIME_IMMUTABLE, ['notnull' => false]);
         $this->timestamps($table);
-        $table->setPrimaryKey(['work_id']);
+        $this->primary($table, 'work_id');
         $table->addForeignKeyConstraint(
             $this->tables->raw('business_process_instances'),
             ['process_id'],
@@ -382,7 +383,7 @@ final readonly class BusinessIntegrationSdkMigration implements RepeatableMigrat
         $table = new Table($this->tables->raw('business_projection_event_head'));
         $table->addColumn('singleton_id', Types::SMALLINT);
         $table->addColumn('last_sequence', Types::BIGINT, ['default' => 0]);
-        $table->setPrimaryKey(['singleton_id']);
+        $this->primary($table, 'singleton_id');
 
         return $table;
     }
@@ -405,7 +406,7 @@ final readonly class BusinessIntegrationSdkMigration implements RepeatableMigrat
         $table->addColumn('envelope', Types::JSON);
         $table->addColumn('event_checksum', Types::STRING, ['length' => 64, 'fixed' => true]);
         $table->addColumn('recorded_at', Types::DATETIME_IMMUTABLE);
-        $table->setPrimaryKey(['source_sequence']);
+        $this->primary($table, 'source_sequence');
         $table->addUniqueIndex(['event_id'], 'uniq_projection_source_event');
         $table->addIndex(
             ['event_type', 'schema_version', 'source_sequence'],
@@ -441,7 +442,7 @@ final readonly class BusinessIntegrationSdkMigration implements RepeatableMigrat
         $table->addColumn('activated_at', Types::DATETIME_IMMUTABLE, ['notnull' => false]);
         $table->addColumn('superseded_at', Types::DATETIME_IMMUTABLE, ['notnull' => false]);
         $table->addColumn('updated_at', Types::DATETIME_IMMUTABLE);
-        $table->setPrimaryKey(['generation_id']);
+        $this->primary($table, 'generation_id');
         $table->addIndex(['projection_id', 'status'], 'idx_projection_generation_active');
         $table->addIndex(['projection_id', 'created_at'], 'idx_projection_generation_history');
 
@@ -464,7 +465,7 @@ final readonly class BusinessIntegrationSdkMigration implements RepeatableMigrat
         $table->addColumn('row_key', Types::JSON);
         $table->addColumn('row_values', Types::JSON);
         $table->addColumn('updated_at', Types::DATETIME_IMMUTABLE);
-        $table->setPrimaryKey(['generation_id', 'row_key_checksum']);
+        $this->primary($table, 'generation_id', 'row_key_checksum');
         $table->addForeignKeyConstraint(
             $this->tables->raw('business_projection_generations'),
             ['generation_id'],
@@ -495,7 +496,7 @@ final readonly class BusinessIntegrationSdkMigration implements RepeatableMigrat
         $table->addColumn('expires_at', Types::DATETIME_IMMUTABLE);
         $table->addColumn('document', Types::TEXT);
         $table->addColumn('document_checksum', Types::STRING, ['length' => 64, 'fixed' => true]);
-        $table->setPrimaryKey(['artifact_id', 'version']);
+        $this->primary($table, 'artifact_id', 'version');
         $table->addIndex(['status', 'expires_at'], 'idx_report_exports_expiry');
         $table->addIndex(
             ['site_identifier', 'actor_id', 'expires_at'],
@@ -503,6 +504,48 @@ final readonly class BusinessIntegrationSdkMigration implements RepeatableMigrat
         );
 
         return $table;
+    }
+
+    /**
+     * Normalize a DBAL aggregate count before using it to seed singleton state.
+     *
+     * @param   mixed  $value  Raw aggregate value returned by the active database driver.
+     *
+     * @return  int  Non-negative row count.
+     *
+     * @throws  RuntimeException  When the driver did not return an integer or decimal integer string.
+     *
+     * @since   2.0.0
+     */
+    private function databaseCount(mixed $value): int
+    {
+        if (is_int($value)) {
+            if ($value >= 0) {
+                return $value;
+            }
+        } elseif (is_string($value) && preg_match('/^[0-9]+$/D', $value) === 1) {
+            return (int) $value;
+        }
+
+        throw new RuntimeException('The projection event head count is invalid.');
+    }
+
+    /**
+     * Add a primary key through the current DBAL constraint builder.
+     *
+     * @param   Table             $table    Mutable portable table declaration.
+     * @param   non-empty-string  $first    First primary-key column.
+     * @param   non-empty-string  ...$rest  Remaining primary-key columns in declaration order.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    private function primary(Table $table, string $first, string ...$rest): void
+    {
+        $table->addPrimaryKeyConstraint(
+            PrimaryKeyConstraint::editor()->setUnquotedColumnNames($first, ...$rest)->create(),
+        );
     }
 
     /**

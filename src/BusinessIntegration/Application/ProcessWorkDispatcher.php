@@ -49,7 +49,11 @@ final readonly class ProcessWorkDispatcher
         private TransactionManager $transactions,
         private LoggerInterface $logger,
     ) {
-        $this->handlers = [...$handlers];
+        $resolved = [];
+        foreach ($handlers as $handler) {
+            $resolved[] = $handler;
+        }
+        $this->handlers = $resolved;
     }
 
     /**

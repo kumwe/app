@@ -40,9 +40,13 @@ final readonly class DomainEventDispatcher
         }
         usort(
             $resolved,
-            static fn (DomainEventHandler $left, DomainEventHandler $right): int =>
-                $right->definition()->priority() <=> $left->definition()->priority()
-                ?: strcmp($left->definition()->identifier(), $right->definition()->identifier()),
+            static function (DomainEventHandler $left, DomainEventHandler $right): int {
+                $priority = $right->definition()->priority() <=> $left->definition()->priority();
+
+                return $priority !== 0
+                    ? $priority
+                    : strcmp($left->definition()->identifier(), $right->definition()->identifier());
+            },
         );
         $this->handlers = $resolved;
     }

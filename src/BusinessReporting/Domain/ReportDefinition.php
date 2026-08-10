@@ -201,8 +201,10 @@ final readonly class ReportDefinition implements ContributionDefinition
             $outputTypes[$aggregate->alias] = match ($aggregate->function) {
                 ReportAggregateFunction::Count => ReportValueType::Integer,
                 ReportAggregateFunction::Sum, ReportAggregateFunction::Average => ReportValueType::Decimal,
-                default => $columnTypes[$aggregate->columnAlias]
-                    ?? throw new InvalidArgumentException('A report aggregate source type is unavailable.'),
+                default => $aggregate->columnAlias === null
+                    ? throw new InvalidArgumentException('A report aggregate source type is unavailable.')
+                    : ($columnTypes[$aggregate->columnAlias]
+                        ?? throw new InvalidArgumentException('A report aggregate source type is unavailable.')),
             };
         }
         foreach ($formulas as $formula) {
@@ -341,6 +343,9 @@ final readonly class ReportDefinition implements ContributionDefinition
             $sorts = self::list($document, 'sorts');
             /** @var list<array<string, mixed>> $drillDowns */
             $drillDowns = self::list($document, 'drill_downs');
+            if ($columns === []) {
+                throw new InvalidArgumentException('A report definition requires at least one column.');
+            }
 
             return new self(
                 self::string($document, 'identifier'),
@@ -456,8 +461,10 @@ final readonly class ReportDefinition implements ContributionDefinition
     /**
      * Return the unique references in their declared order.
      *
-     * @param   list<object>              $items       Definitions whose runtime type and uniqueness are validated.
-     * @param   callable(object): string  $identifier  Stable namespaced identifier to render or persist.
+     * @template T of object
+     *
+     * @param   list<T>              $items       Definitions whose runtime type and uniqueness are validated.
+     * @param   callable(T): string  $identifier  Stable namespaced identifier to render or persist.
      *
      * @return  array<string, true>
      *
@@ -510,21 +517,28 @@ final readonly class ReportDefinition implements ContributionDefinition
         }
     }
 
-    /** @param array<string, mixed> $document @return list<array<string, mixed>> @since 2.0.0 */
+    /**
+     * Read one list of object-shaped definition members.
+     *
+     * @param   array<string, mixed>  $document  Serialized definition document.
+     * @param   string                $key       Required collection member.
+     *
+     * @return  list<array<string, mixed>>  Validated objects in declaration order.
+     *
+     * @since   2.0.0
+     */
     private static function list(array $document, string $key): array
     {
         $value = $document[$key] ?? null;
         if (!is_array($value) || !array_is_list($value)) {
             throw new InvalidArgumentException('A report definition document collection is invalid.');
         }
+        $result = [];
         foreach ($value as $item) {
-            if (!is_array($item) || array_is_list($item)) {
-                throw new InvalidArgumentException('A report definition document member is invalid.');
-            }
+            $result[] = self::objectValue($item);
         }
 
-        /** @var list<array<string, mixed>> $value */
-        return $value;
+        return $result;
     }
 
     /**
@@ -619,12 +633,32 @@ final readonly class ReportDefinition implements ContributionDefinition
      */
     private static function object(array $document, string $key): array
     {
-        $value = $document[$key] ?? null;
+        return self::objectValue($document[$key] ?? null);
+    }
+
+    /**
+     * Normalize one decoded object while rejecting integer keys and list-shaped values.
+     *
+     * @param   mixed  $value  Candidate decoded object.
+     *
+     * @return  array<string, mixed>  Validated object members.
+     *
+     * @since   2.0.0
+     */
+    private static function objectValue(mixed $value): array
+    {
         if (!is_array($value) || array_is_list($value)) {
             throw new InvalidArgumentException('A report definition object is invalid.');
         }
+        $object = [];
+        foreach ($value as $key => $member) {
+            if (!is_string($key)) {
+                throw new InvalidArgumentException('A report definition object has an invalid key.');
+            }
+            $object[$key] = $member;
+        }
 
-        return $value;
+        return $object;
     }
 
     /**

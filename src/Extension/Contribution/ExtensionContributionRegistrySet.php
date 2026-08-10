@@ -808,50 +808,6 @@ final readonly class ExtensionContributionRegistrySet
     }
 
     /**
-     * Require every subscribed event type to have at least one active schema revision.
-     *
-     * @param   EventContractRegistry        $catalog     Validated catalog used for exact lookups.
-     * @param   list<EventSchemaDefinition>  $schemas     Active schemas inspected by event type.
-     * @param   mixed                        $eventTypes  Candidate non-empty event type list.
-     * @param   string                       $kind        Contribution kind named in a stable failure.
-     *
-     * @return  void
-     *
-     * @throws  \InvalidArgumentException  When a type has no active contract revision.
-     *
-     * @since   2.0.0
-     */
-    private function assertEventTypesExist(
-        EventContractRegistry $catalog,
-        array $schemas,
-        mixed $eventTypes,
-        string $kind,
-    ): void {
-        if (!is_array($eventTypes) || !array_is_list($eventTypes) || $eventTypes === []) {
-            throw new \InvalidArgumentException(sprintf('A contributed %s event list is invalid.', $kind));
-        }
-        foreach ($eventTypes as $eventType) {
-            if (!is_string($eventType)) {
-                throw new \InvalidArgumentException(sprintf(
-                    'A contributed %s event type is invalid.',
-                    $kind,
-                ));
-            }
-            $versions = array_values(array_filter(
-                $schemas,
-                static fn (EventSchemaDefinition $schema): bool => $schema->eventType() === $eventType,
-            ));
-            if ($versions === []) {
-                throw new \InvalidArgumentException(sprintf(
-                    'A contributed %s references an unavailable event type.',
-                    $kind,
-                ));
-            }
-            $catalog->schema($versions[0]->eventType(), $versions[0]->schemaVersion());
-        }
-    }
-
-    /**
      * The declared contribution kinds, in declaration order.
      *
      * Exists so a caller can walk every kind this set actually declares — the unit suite uses it to

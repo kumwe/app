@@ -279,6 +279,7 @@ use Kumwe\CMS\Extension\Development\StaticConformanceRunner;
 use Kumwe\CMS\Extension\Runtime\ActiveExtensionSet;
 use Kumwe\CMS\Extension\Contribution\ExtensionContributionRegistrySet;
 use Kumwe\CMS\Extension\Contribution\AdministratorViewRegistry;
+use Kumwe\CMS\Extension\Contribution\ContributionDefinition;
 use Kumwe\CMS\Portal\Contribution\PortalNavigationRegistry;
 use Kumwe\CMS\Portal\Contribution\PortalTemplateRegistry;
 use Kumwe\CMS\Extension\Runtime\ExtensionRuntimeLoader;
@@ -2000,15 +2001,22 @@ final class ContainerFactory
             self::service($container, QueueRuntimePolicyCatalog::class),
         ), true);
         $contributionRegistries->validateIntegrationContributions();
-        $eventContracts->replace(
+        $eventSchemas = self::contributionDefinitions(
             $contributionRegistries->eventSchemas()->definitions(),
+            EventSchemaDefinition::class,
+        );
+        $eventConsumers = self::contributionDefinitions(
             $contributionRegistries->eventConsumers()->definitions(),
+            EventConsumerDefinition::class,
         );
-        self::service($container, JobExecutionScope::class)->replace(
+        $jobs = self::contributionDefinitions(
             $contributionRegistries->jobs()->definitions(),
+            JobContributionDefinition::class,
         );
+        $eventContracts->replace($eventSchemas, $eventConsumers);
+        self::service($container, JobExecutionScope::class)->replace($jobs);
         (new ContributedJobFormCompiler())->compile(
-            $contributionRegistries->jobs()->definitions(),
+            $jobs,
             self::service($container, AutomationJobFormRegistry::class),
         );
         $container->share(ScheduleRuntimeSynchronizer::class, static fn (
@@ -4709,6 +4717,36 @@ final class ContainerFactory
         /** @var array<string, mixed> $contract */
 
         return $contract;
+    }
+
+    /**
+     * Prove definitions from one generic owner-aware registry have the surface's exact contract type.
+     *
+     * @template T of ContributionDefinition
+     *
+     * @param   list<ContributionDefinition>  $definitions  Generic active declarations in stable order.
+     * @param   class-string<T>               $type         Required declaration type for the surface.
+     *
+     * @return  list<T>  Declarations proven to implement the requested surface contract.
+     *
+     * @throws  RuntimeException  When a registry contains a declaration for another surface.
+     *
+     * @since   2.0.0
+     */
+    private static function contributionDefinitions(array $definitions, string $type): array
+    {
+        $resolved = [];
+        foreach ($definitions as $definition) {
+            if (!$definition instanceof $type) {
+                throw new RuntimeException(sprintf(
+                    'An extension contribution registry contains a definition other than %s.',
+                    $type,
+                ));
+            }
+            $resolved[] = $definition;
+        }
+
+        return $resolved;
     }
 
     /**

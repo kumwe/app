@@ -148,9 +148,6 @@ final readonly class AdministratorReportHandler implements RequestHandlerInterfa
                 $source = AdministratorRequest::parsedBody($request);
             }
         }
-        if (!is_array($source)) {
-            throw new InvalidArgumentException('Administrator report parameters are invalid.');
-        }
         $parameters = $source['parameters'] ?? null;
         if ($parameters === null && isset($source['parameters_json']) && is_string($source['parameters_json'])) {
             try {

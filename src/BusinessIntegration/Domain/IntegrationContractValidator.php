@@ -110,6 +110,7 @@ final class IntegrationContractValidator
         if (!is_array($value) || ($value !== [] && array_is_list($value))) {
             throw new InvalidArgumentException(sprintf('Definition field "%s" must be an object.', $key));
         }
+        /** @var array<string, mixed> $value */
         return $value;
     }
 

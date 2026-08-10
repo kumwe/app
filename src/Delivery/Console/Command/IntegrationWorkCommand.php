@@ -109,7 +109,7 @@ final readonly class IntegrationWorkCommand implements Command
                 $this->runtime->assertLoadedGenerationCurrent($this->loadedRuntime);
                 $didWork = false;
                 if ($stream !== 'process') {
-                    $didWork = $this->outbox->dispatchOne($workerId, $generation, $lease) || $didWork;
+                    $didWork = $this->outbox->dispatchOne($workerId, $generation, $lease);
                 }
                 if ($stream !== 'outbox') {
                     $didWork = $this->processes->dispatchOne($workerId, $generation, $lease) || $didWork;

@@ -12,7 +12,6 @@ use Kumwe\CMS\Application\Authorization\AuthorizationResource;
 use Kumwe\CMS\Application\Authorization\ExecutionContext;
 use Kumwe\CMS\BusinessDefinition\Domain\CanonicalDefinitionJson;
 use Kumwe\CMS\BusinessDefinition\Domain\DecimalValue;
-use Kumwe\CMS\BusinessRecord\Application\BusinessRecordRelationView;
 use Kumwe\CMS\BusinessRecord\Application\BusinessRecordView;
 use Kumwe\CMS\BusinessRecord\Application\Exception\InvalidBusinessRecordQuery;
 use Kumwe\CMS\BusinessRecord\Application\Query\BusinessRecordQueryPurpose;
@@ -279,11 +278,16 @@ final readonly class ReportService
     {
         $filters = [];
         foreach ($report->filters as $definition) {
-            if ($definition->parameter !== null && !array_key_exists($definition->parameter, $parameters)) {
+            $parameter = $definition->parameter;
+            if ($parameter !== null && !array_key_exists($parameter, $parameters)) {
                 continue;
             }
             [$relationship, $field] = $this->splitPath($definition->fieldPath);
-            $filter = $this->compileFilter($definition, $field, $parameters[$definition->parameter] ?? null);
+            $filter = $this->compileFilter(
+                $definition,
+                $field,
+                $parameter === null ? null : $parameters[$parameter],
+            );
             if ($relationship !== null) {
                 $filter = new RelationFilter($relationship, match ($definition->quantifier) {
                     ReportRelationQuantifier::Any => RelationQuantifier::Any,
@@ -416,9 +420,6 @@ final readonly class ReportService
         foreach ($relatedRows as $related) {
             $row = $root;
             foreach ($relationColumns as [$column, $field]) {
-                if (!$column instanceof ReportColumnDefinition || !$related instanceof BusinessRecordRelationView) {
-                    throw new ReportUnavailable('The report relation projection is invalid.');
-                }
                 if (array_key_exists($field, $related->values)) {
                     $row[$column->alias] = $this->cell($related->values[$field], $column);
                 }
@@ -511,7 +512,7 @@ final readonly class ReportService
                 if (array_diff_key(array_fill_keys($dependencies, true), $row) !== []) {
                     throw new ReportUnavailable('The report is unavailable.');
                 }
-                /** @var array<string, scalar|null> $values */
+                /** @var array<string, bool|int|string|null> $values */
                 $values = array_intersect_key($row, array_fill_keys($dependencies, true));
                 $value = $formula->expression->evaluate($values);
                 if ($value !== null && !$formula->type->accepts($value)) {
@@ -780,8 +781,10 @@ final readonly class ReportService
             $types[$aggregate->alias] = match ($aggregate->function) {
                 ReportAggregateFunction::Count => ReportValueType::Integer,
                 ReportAggregateFunction::Sum, ReportAggregateFunction::Average => ReportValueType::Decimal,
-                default => $columns[$aggregate->columnAlias]
-                    ?? throw new ReportUnavailable('A report aggregate source type is unavailable.'),
+                default => $aggregate->columnAlias === null
+                    ? throw new ReportUnavailable('A report aggregate source type is unavailable.')
+                    : ($columns[$aggregate->columnAlias]
+                        ?? throw new ReportUnavailable('A report aggregate source type is unavailable.')),
             };
         }
         foreach ($report->formulas as $formula) {
