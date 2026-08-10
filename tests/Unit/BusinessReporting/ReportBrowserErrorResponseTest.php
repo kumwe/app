@@ -84,6 +84,7 @@ final class ReportBrowserErrorResponseTest extends TestCase
         self::assertSame(422, $response->getStatusCode());
         self::assertSame('no-store', $response->getHeaderLine('Cache-Control'));
         self::assertStringContainsString('role="alert"', (string) $response->getBody());
+        self::assertStringContainsString('data-csrf="' . str_repeat('a', 43) . '"', (string) $response->getBody());
         self::assertStringNotContainsString('commercially-sensitive', (string) $response->getBody());
         self::assertStringNotContainsString('valid JSON', (string) $response->getBody());
     }
@@ -164,7 +165,7 @@ final class ReportBrowserErrorResponseTest extends TestCase
 
     private function administratorRenderer(): AdministratorRenderer
     {
-        $template = '<div role="alert">{{ report_error }}</div>';
+        $template = '<div role="alert" data-csrf="{{ csrf }}">{{ report_error }}</div>';
         return new AdministratorRenderer(
             new AdministratorTwigEnvironment(new ArrayLoader(['business-report.twig' => $template])),
             new RecoveryAdministratorRenderer(new RecoveryAdministratorTwigEnvironment(

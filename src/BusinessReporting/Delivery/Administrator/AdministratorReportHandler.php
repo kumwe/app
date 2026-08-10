@@ -66,6 +66,7 @@ final readonly class AdministratorReportHandler implements RequestHandlerInterfa
     public function handle(ServerRequestInterface $request): ResponseInterface
     {
         $context = AdministratorRequest::context($request);
+        $session = AdministratorRequest::session($request);
         $operation = $this->operation($request);
         $reportId = $request->getAttribute('report');
         $artifactId = $request->getAttribute('artifact');
@@ -120,7 +121,8 @@ final readonly class AdministratorReportHandler implements RequestHandlerInterfa
             $this->reports->available($context),
         );
         $data['capabilities'] = AdministratorRequest::capabilityMap($request);
-        $data['administrator_session'] = AdministratorRequest::session($request);
+        $data['csrf'] = $session->csrfToken;
+        $data['administrator_session'] = $session;
         $data['active_navigation'] = 'core.business-reports';
 
         return new HtmlResponse($this->renderer->render('business-report', $data), $status, [

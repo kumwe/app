@@ -8,6 +8,7 @@ use Kumwe\CMS\Application\Authorization\AuthenticationStrength;
 use Kumwe\CMS\Application\Authorization\AuthorizationResource;
 use Kumwe\CMS\Application\Authorization\ResourceSiteOwnershipWriter;
 use Kumwe\CMS\Application\Authorization\SiteContext;
+use Kumwe\CMS\BusinessDefinition\Domain\CanonicalDefinitionJson;
 use Kumwe\CMS\BusinessRecord\Application\BusinessRecordService;
 use Kumwe\CMS\BusinessRecord\Application\Command\CreateRecordCommand;
 use Kumwe\CMS\BusinessSecurity\Infrastructure\Persistence\DoctrineBusinessSecurityAdministrationRepository;
@@ -20,6 +21,7 @@ use Kumwe\CMS\Identity\Application\Administration\AdministratorIdentityGateway;
 use Kumwe\CMS\Infrastructure\Persistence\TableNames;
 use Kumwe\CMS\Infrastructure\Persistence\TransactionManager;
 use Kumwe\CMS\Tests\Support\NeutralBusinessFixture;
+use KumweExample\AssetInspection\Application\InspectionPolicyProfile;
 use Ramsey\Uuid\Uuid;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
@@ -498,6 +500,95 @@ try {
         NeutralBusinessFixture::idempotencyKey('browser-asset-inspection'),
         recordId: $assetInspectionId,
     ));
+
+    if (!class_exists('KumweExample\\AssetInspection\\Definitions', false)) {
+        require_once $assetRoot . '/src/Definitions.php';
+    }
+    if (!class_exists(InspectionPolicyProfile::class, false)) {
+        require_once $assetRoot . '/src/Application/InspectionPolicyProfile.php';
+    }
+    $profileJson = file_get_contents($assetRoot . '/policies/inspection-viewer.json');
+    if (!is_string($profileJson)) {
+        throw new RuntimeException('The browser report fixture policy profile is unavailable.');
+    }
+    $profile = InspectionPolicyProfile::fromJson($profileJson);
+    if ($profile->checksum() !== '13103ca5d5d446eb040af729cbfb43d40c7d366c47a8f694a759b527ebcef5bd') {
+        throw new RuntimeException('The browser report fixture policy profile checksum is invalid.');
+    }
+    if (count($profile->records()->allows) !== 1 || $profile->records()->denies !== []) {
+        throw new RuntimeException('The browser report fixture row-policy shape is invalid.');
+    }
+    $predicate = $profile->records()->allows[0]->toArray();
+    $fieldRules = $profile->fields()->toArray() + ['actions' => []];
+    $policyRequests = [];
+    foreach ($profile->administrationRequests() as $request) {
+        $policyCode = $request['policyCode'] ?? null;
+        $operation = $request['operation'] ?? null;
+        $effect = $request['effect'] ?? null;
+        $organizationId = $request['organizationId'] ?? null;
+        $definitionId = $request['definitionId'] ?? null;
+        $requestFields = $request['fieldRules'] ?? null;
+        $priority = $request['priority'] ?? null;
+        if (
+            !is_string($policyCode)
+            || !is_string($operation)
+            || $effect !== 'allow'
+            || $organizationId !== null
+            || $definitionId !== '019bc200-0000-7000-8000-000000000003'
+            || $requestFields !== $fieldRules
+            || !is_int($priority)
+        ) {
+            throw new RuntimeException('A browser report fixture policy request is invalid.');
+        }
+        $policyRequests[] = [
+            'policy_code' => $policyCode,
+            'operation' => $operation,
+            'priority' => $priority,
+        ];
+    }
+    if (array_column($policyRequests, 'operation') !== [
+        'business.record.browse',
+        'business.record.export',
+        'business.record.read',
+        'business.record.report',
+    ]) {
+        throw new RuntimeException('The browser report fixture policy operations are incomplete.');
+    }
+    NeutralBusinessFixture::removeRecordAccess(
+        $container,
+        '019bc200-0000-7000-8000-000000000003',
+    );
+    $policyChecksum = CanonicalDefinitionJson::checksum([
+        'predicate' => $predicate,
+        'fields' => $fieldRules,
+    ]);
+    $policyAt = new DateTimeImmutable('2026-08-10T00:00:00+00:00');
+    foreach ($policyRequests as $request) {
+        if (
+            $database->fetchOne(sprintf(
+                'SELECT policy_code FROM %s WHERE policy_code = ?',
+                $tables->quoted('resource_policies'),
+            ), [$request['policy_code']]) !== false
+        ) {
+            continue;
+        }
+        $security->insertResourcePolicy(
+            Uuid::uuid7()->toString(),
+            $request['policy_code'],
+            $request['operation'],
+            $request['operation'],
+            'allow',
+            null,
+            '019bc200-0000-7000-8000-000000000003',
+            $predicate,
+            $fieldRules,
+            $policyChecksum,
+            $request['priority'],
+            $context->actorId(),
+            'default',
+            $policyAt,
+        );
+    }
     foreach (
         [
             ['019b40d9-8dd0-7ca2-a0db-9eae6a150521', 'Windhoek relationship target'],
