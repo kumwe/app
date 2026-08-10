@@ -560,8 +560,7 @@ final class BusinessIntegrationPersistenceTest extends TestCase
         int $schemaVersion = 1,
         string $siteIdentifier = 'default',
         ?string $organizationId = 'organization-1',
-    ): IntegrationEvent
-    {
+    ): IntegrationEvent {
         return new IntegrationEvent(
             'business.record.changed',
             $schemaVersion,

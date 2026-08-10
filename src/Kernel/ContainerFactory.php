@@ -4263,10 +4263,12 @@ final class ContainerFactory
                 self::service($container, TransitionContentHandler::class),
                 self::service($container, GenerateReportExportHandler::class),
             ];
-            foreach (self::service(
-                $container,
-                ExtensionContributionRegistrySet::class,
-            )->jobs()->executableEntries() as $entry) {
+            foreach (
+                self::service(
+                    $container,
+                    ExtensionContributionRegistrySet::class,
+                )->jobs()->executableEntries() as $entry
+            ) {
                 $definition = $entry['definition'];
                 $handler = $entry['implementation'];
                 if (!$definition instanceof JobContributionDefinition || !$handler instanceof JobHandler) {

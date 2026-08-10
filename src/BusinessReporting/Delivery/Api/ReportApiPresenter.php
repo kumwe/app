@@ -77,8 +77,7 @@ final class ReportApiPresenter
     public function report(
         ReportExecutionResult $result,
         AuthenticatedSurface $surface = AuthenticatedSurface::Api,
-    ): array
-    {
+    ): array {
         $drillDowns = [];
         foreach ($result->rows as $row) {
             $links = [];

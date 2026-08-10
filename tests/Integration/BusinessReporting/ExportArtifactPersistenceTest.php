@@ -70,9 +70,9 @@ final class ExportArtifactPersistenceTest extends TestCase
             self::assertSame('fail after every durable write', $exception->getMessage());
         }
 
-        self::assertSame(0, $this->count('business_report_export_artifacts'));
-        self::assertSame(0, $this->count('audit_events'));
-        self::assertSame(0, $this->count('jobs'));
+        self::assertSame(0, $this->rowCount('business_report_export_artifacts'));
+        self::assertSame(0, $this->rowCount('audit_events'));
+        self::assertSame(0, $this->rowCount('jobs'));
         self::assertNull($this->artifacts->find($rolledBack->id));
 
         $committed = $this->artifact();
@@ -82,9 +82,9 @@ final class ExportArtifactPersistenceTest extends TestCase
             $this->insertExportJob($committed);
         });
 
-        self::assertSame(1, $this->count('business_report_export_artifacts'));
-        self::assertSame(1, $this->count('audit_events'));
-        self::assertSame(1, $this->count('jobs'));
+        self::assertSame(1, $this->rowCount('business_report_export_artifacts'));
+        self::assertSame(1, $this->rowCount('audit_events'));
+        self::assertSame(1, $this->rowCount('jobs'));
         self::assertSame($committed->toArray(), $this->artifacts->find($committed->id)?->toArray());
     }
 
@@ -118,7 +118,7 @@ final class ExportArtifactPersistenceTest extends TestCase
         );
         $this->artifacts->save($completed, 2);
 
-        self::assertSame(3, $this->count('business_report_export_artifacts'));
+        self::assertSame(3, $this->rowCount('business_report_export_artifacts'));
         self::assertSame($completed->toArray(), $this->artifacts->find($queued->id)?->toArray());
     }
 
@@ -223,7 +223,7 @@ final class ExportArtifactPersistenceTest extends TestCase
         ]);
     }
 
-    private function count(string $table): int
+    private function rowCount(string $table): int
     {
         return (int) $this->database->fetchOne(sprintf(
             'SELECT COUNT(*) FROM %s',

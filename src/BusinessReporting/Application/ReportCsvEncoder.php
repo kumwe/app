@@ -67,7 +67,8 @@ final class ReportCsvEncoder
         if (!mb_check_encoding($text, 'UTF-8') || str_contains($text, "\0")) {
             throw new InvalidArgumentException('A CSV cell must be valid UTF-8 without NUL bytes.');
         }
-        if (in_array($type, [ReportValueType::String, ReportValueType::Identifier], true)
+        if (
+            in_array($type, [ReportValueType::String, ReportValueType::Identifier], true)
             && preg_match('/^[\x00-\x20]*[=+\-@\t\r\n]/u', $text) === 1
         ) {
             $text = "'" . $text;

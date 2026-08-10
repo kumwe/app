@@ -314,8 +314,10 @@ final readonly class DoctrineInboxStore implements InboxStore
                 }
             }
 
-            if (!$consumer->acceptsVersion($event->schemaVersion())
-                || !$event->sensitivity()->allowedBy($consumer->sensitivityCeiling())) {
+            if (
+                !$consumer->acceptsVersion($event->schemaVersion())
+                || !$event->sensitivity()->allowedBy($consumer->sensitivityCeiling())
+            ) {
                 $this->storeUnavailable($consumer, $event, $now, $row !== false);
                 return new InboxClaimResult(InboxDisposition::UNAVAILABLE);
             }
@@ -414,8 +416,7 @@ final readonly class DoctrineInboxStore implements InboxStore
         array $row,
         DateTimeImmutable $now,
         bool $handlerUpgraded,
-    ): ?InboxDisposition
-    {
+    ): ?InboxDisposition {
         $status = $row['status'] ?? null;
         if ($status === 'completed') {
             return InboxDisposition::DUPLICATE;
@@ -801,10 +802,12 @@ final readonly class DoctrineInboxStore implements InboxStore
      */
     private function ensureQueueRuntime(QueueRuntimePolicy $policy): void
     {
-        if ($this->database->fetchOne(sprintf(
-            'SELECT queue_id FROM %s WHERE queue_id = ?',
-            $this->tables->quoted('job_queue_runtime'),
-        ), [$policy->queue]) !== false) {
+        if (
+            $this->database->fetchOne(sprintf(
+                'SELECT queue_id FROM %s WHERE queue_id = ?',
+                $this->tables->quoted('job_queue_runtime'),
+            ), [$policy->queue]) !== false
+        ) {
             return;
         }
         $now = $this->clock->now();

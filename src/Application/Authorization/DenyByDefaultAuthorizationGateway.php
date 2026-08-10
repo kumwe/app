@@ -401,7 +401,8 @@ final readonly class DenyByDefaultAuthorizationGateway implements AuthorizationG
         // partitions shared by sites, while contributed report definitions are immutable runtime
         // declarations resolved inside the caller's active site; their durable jobs and artifacts carry
         // their own recorded ownership.
-        if ($resource->identifier() === '*'
+        if (
+            $resource->identifier() === '*'
             || in_array($resource->type(), ['business_report', 'queue'], true)
         ) {
             return $context->site();

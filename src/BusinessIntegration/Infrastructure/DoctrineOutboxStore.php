@@ -632,8 +632,7 @@ final readonly class DoctrineOutboxStore implements OutboxStore
     private function assertOne(
         int|string $affected,
         string $message = 'The worker no longer owns the active outbox lease.',
-    ): void
-    {
+    ): void {
         if ((string) $affected !== '1') {
             throw new RuntimeException($message);
         }

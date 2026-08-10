@@ -183,7 +183,8 @@ final readonly class ExportService
     public function download(ExecutionContext $context, string $artifactId): ExportDownload
     {
         $artifact = $this->status($context, $artifactId);
-        if ($artifact->status !== ExportArtifactStatus::Completed
+        if (
+            $artifact->status !== ExportArtifactStatus::Completed
             || $artifact->storageKey === null || $artifact->size === null || $artifact->checksum === null
         ) {
             throw new ExportArtifactUnavailable('The export artifact is unavailable.');
@@ -213,7 +214,8 @@ final readonly class ExportService
      */
     private function assertCurrent(ExecutionContext $context, ExportArtifact $artifact): void
     {
-        if ($artifact->expiresAt <= $this->clock->now()
+        if (
+            $artifact->expiresAt <= $this->clock->now()
             || $artifact->actorId !== $context->actorId()
             || $artifact->siteIdentifier !== $context->site()->identifier()
             || $artifact->organizationIdentifier !== $context->organization()?->identifier()
@@ -226,7 +228,8 @@ final readonly class ExportService
         try {
             $report = $this->reports->get($artifact->reportIdentifier);
             $this->assertSurface($report, $context->surface());
-            if ($report->version !== $artifact->reportVersion
+            if (
+                $report->version !== $artifact->reportVersion
                 || !hash_equals($report->checksum(), $artifact->definitionChecksum)
             ) {
                 throw new ExportArtifactUnavailable('The export artifact is unavailable.');
@@ -266,15 +269,17 @@ final readonly class ExportService
     private function authorize(ExecutionContext $context, ReportDefinition $report): void
     {
         $resource = AuthorizationResource::item('business_report', $report->identifier());
-        if (!$this->authorization->decide(
-            $context,
-            Capability::fromString($report->requiredCapability),
-            $resource,
-        )->allowed || !$this->authorization->decide(
-            $context,
-            Capability::fromString('business.record.export'),
-            $resource,
-        )->allowed) {
+        if (
+            !$this->authorization->decide(
+                $context,
+                Capability::fromString($report->requiredCapability),
+                $resource,
+            )->allowed || !$this->authorization->decide(
+                $context,
+                Capability::fromString('business.record.export'),
+                $resource,
+            )->allowed
+        ) {
             throw new ReportUnavailable('The report is unavailable.');
         }
     }
@@ -323,7 +328,8 @@ final readonly class ExportService
      */
     private function assertSurface(ReportDefinition $report, AuthenticatedSurface $surface): void
     {
-        if (($surface === AuthenticatedSurface::Administrator && !$report->administratorVisible)
+        if (
+            ($surface === AuthenticatedSurface::Administrator && !$report->administratorVisible)
             || ($surface === AuthenticatedSurface::Portal && !$report->portalVisible)
             || $surface === AuthenticatedSurface::Recovery
         ) {

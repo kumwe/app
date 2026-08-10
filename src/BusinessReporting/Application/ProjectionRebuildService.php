@@ -92,7 +92,8 @@ final readonly class ProjectionRebuildService
     private function assertDeclared(ProjectionDefinition $definition, ProjectionEvent $event): void
     {
         foreach ($definition->sources as $source) {
-            if ($source->eventType === $event->type
+            if (
+                $source->eventType === $event->type
                 && in_array($event->schemaVersion, $source->schemaVersions, true)
             ) {
                 return;

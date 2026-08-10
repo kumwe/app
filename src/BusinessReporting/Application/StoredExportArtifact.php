@@ -26,11 +26,12 @@ final readonly class StoredExportArtifact
      */
     public function __construct(public string $key, public int $size, public string $checksum)
     {
-        if (preg_match(
-            '/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}'
-            . '\.[0-9a-f]{32}\.csv$/D',
-            $key,
-        ) !== 1 || $size < 1
+        if (
+            preg_match(
+                '/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}'
+                . '\.[0-9a-f]{32}\.csv$/D',
+                $key,
+            ) !== 1 || $size < 1
             || preg_match('/^[0-9a-f]{64}$/D', $checksum) !== 1
         ) {
             throw new InvalidArgumentException('Stored export evidence is invalid.');

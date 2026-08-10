@@ -205,19 +205,23 @@ final readonly class ReportService
             return false;
         }
         $resource = AuthorizationResource::item('business_report', $report->identifier());
-        if (!$this->authorization->decide(
-            $context,
-            Capability::fromString($report->requiredCapability),
-            $resource,
-        )->allowed) {
+        if (
+            !$this->authorization->decide(
+                $context,
+                Capability::fromString($report->requiredCapability),
+                $resource,
+            )->allowed
+        ) {
             return false;
         }
 
-        if (!$this->authorization->decide(
-            $context,
-            Capability::fromString('business.record.' . $purpose->value),
-            $resource,
-        )->allowed) {
+        if (
+            !$this->authorization->decide(
+                $context,
+                Capability::fromString('business.record.' . $purpose->value),
+                $resource,
+            )->allowed
+        ) {
             return false;
         }
         try {
@@ -595,14 +599,17 @@ final readonly class ReportService
         if ($values === []) {
             return null;
         }
-        if ($aggregate->function === ReportAggregateFunction::Minimum
+        if (
+            $aggregate->function === ReportAggregateFunction::Minimum
             || $aggregate->function === ReportAggregateFunction::Maximum
         ) {
             $selected = array_shift($values);
             foreach ($values as $value) {
-                if ($selected === null || $this->compare($value, $selected) * (
+                if (
+                    $selected === null || $this->compare($value, $selected) * (
                     $aggregate->function === ReportAggregateFunction::Minimum ? 1 : -1
-                ) < 0) {
+                    ) < 0
+                ) {
                     $selected = $value;
                 }
             }

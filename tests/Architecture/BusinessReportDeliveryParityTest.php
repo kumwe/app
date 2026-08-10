@@ -41,11 +41,13 @@ final class BusinessReportDeliveryParityTest extends TestCase
     public function testEveryMachineAdapterUsesTheSharedReportAndExportServices(): void
     {
         $root = dirname(__DIR__, 2);
-        foreach ([
+        foreach (
+            [
             '/src/BusinessReporting/Delivery/Api/ReportApiHandler.php',
             '/src/BusinessReporting/Delivery/Console/ReportCommand.php',
             '/src/Infrastructure/Mcp/ReportMcpHandlers.php',
-        ] as $path) {
+            ] as $path
+        ) {
             $contents = file_get_contents($root . $path);
             self::assertIsString($contents);
             self::assertStringContainsString('ReportService', $contents);

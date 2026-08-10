@@ -98,7 +98,8 @@ final readonly class FilesystemExportArtifactRepository implements ExportArtifac
     {
         $this->locked($artifact->id, function () use ($artifact, $expectedVersion): void {
             $current = $this->findUnlocked($artifact->id);
-            if ($current === null || $current->version !== $expectedVersion
+            if (
+                $current === null || $current->version !== $expectedVersion
                 || $artifact->version !== $expectedVersion + 1
             ) {
                 throw new ExportVersionConflict('The export artifact changed concurrently.');

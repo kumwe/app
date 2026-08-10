@@ -172,7 +172,8 @@ final class AssetInspectionDeploymentAcceptance
         $stepUp = self::service($container, AdministratorStepUpProvider::class);
         $proofs = self::service($container, AuthorizationStepUpProofAdapter::class);
         $security = self::service($container, BusinessSecurityAdministrationService::class);
-        if (!$identities instanceof AdministratorIdentityGateway
+        if (
+            !$identities instanceof AdministratorIdentityGateway
             || !$sessions instanceof AdministratorSessionStore
             || !$stepUp instanceof AdministratorStepUpProvider
             || !$proofs instanceof AuthorizationStepUpProofAdapter
@@ -290,7 +291,8 @@ final class AssetInspectionDeploymentAcceptance
         object $verification,
         array $request,
     ): string {
-        if (!$principal instanceof \Kumwe\CMS\Identity\Application\Authentication\AuthenticatedPrincipal
+        if (
+            !$principal instanceof \Kumwe\CMS\Identity\Application\Authentication\AuthenticatedPrincipal
             || !$verification instanceof \Kumwe\CMS\Identity\Domain\StepUp\StepUpVerification
         ) {
             throw new RuntimeException('A typed policy proof is unavailable.');
@@ -320,7 +322,8 @@ final class AssetInspectionDeploymentAcceptance
         if (array_keys($request) !== $expectedKeys || !is_array($request['fieldRules'] ?? null)) {
             throw new RuntimeException('The policy field rules are malformed.');
         }
-        foreach ([
+        foreach (
+            [
             'policyCode',
             'operation',
             'effect',
@@ -330,7 +333,8 @@ final class AssetInspectionDeploymentAcceptance
             'operator',
             'valueType',
             'value',
-        ] as $key) {
+            ] as $key
+        ) {
             if (!is_string($request[$key] ?? null) || $request[$key] === '') {
                 throw new RuntimeException('A signed policy request string is malformed.');
             }
@@ -456,7 +460,8 @@ final class AssetInspectionDeploymentAcceptance
             throw new RuntimeException('An acceptance key file could not be created.');
         }
         try {
-            if (chmod($path, 0600) !== true || fwrite($handle, $contents) !== strlen($contents)
+            if (
+                chmod($path, 0600) !== true || fwrite($handle, $contents) !== strlen($contents)
                 || fflush($handle) !== true
             ) {
                 throw new RuntimeException('An acceptance key file could not be published safely.');
@@ -483,7 +488,8 @@ final class AssetInspectionDeploymentAcceptance
         $inbox = self::service($container, InboxStore::class);
         $dispatcher = self::service($container, OutboxDispatcher::class);
         $runtime = self::service($container, RuntimeMaterializationState::class);
-        if (!$outbox instanceof OutboxStore || !$inbox instanceof InboxStore
+        if (
+            !$outbox instanceof OutboxStore || !$inbox instanceof InboxStore
             || !$dispatcher instanceof OutboxDispatcher || !$runtime instanceof RuntimeMaterializationState
             || !$runtime->trusted || $runtime->generation < 1
         ) {
@@ -547,7 +553,8 @@ final class AssetInspectionDeploymentAcceptance
         $tables = self::service($container, TableNames::class);
         $registries = self::service($container, ExtensionContributionRegistrySet::class);
         $installations = self::service($container, BusinessSchemaInstallationRepository::class);
-        if (!$database instanceof Connection || !$tables instanceof TableNames
+        if (
+            !$database instanceof Connection || !$tables instanceof TableNames
             || !$registries instanceof ExtensionContributionRegistrySet
             || !$installations instanceof BusinessSchemaInstallationRepository
         ) {
@@ -655,7 +662,8 @@ final class AssetInspectionDeploymentAcceptance
         $exports = self::service($container, ExportArtifactRepository::class);
         $storage = self::service($container, ExportArtifactStorage::class);
         $projections = self::service($container, ProjectionRuntime::class);
-        if (!$database instanceof Connection || !$tables instanceof TableNames
+        if (
+            !$database instanceof Connection || !$tables instanceof TableNames
             || !$records instanceof BusinessRecordService || !$projector instanceof BusinessRecordProjector
             || !$registries instanceof ExtensionContributionRegistrySet
             || !$installations instanceof BusinessSchemaInstallationRepository
@@ -813,7 +821,8 @@ final class AssetInspectionDeploymentAcceptance
             throw new RuntimeException('The example audit trail does not cover its lifecycle and operations.');
         }
         $schedule = self::schedule($database, $tables);
-        if (!$schedule['active'] || !$schedule['enabled']
+        if (
+            !$schedule['active'] || !$schedule['enabled']
             || $schedule['generation'] !== (string) $runtime->generation
         ) {
             throw new RuntimeException('The contributed schedule is not active on the trusted generation.');
@@ -891,14 +900,16 @@ final class AssetInspectionDeploymentAcceptance
     private static function assertRecords(array $records): void
     {
         $inspection = $records['inspection']['values'] ?? null;
-        if (!is_array($inspection) || ($inspection['risk_score'] ?? null) !== 79
+        if (
+            !is_array($inspection) || ($inspection['risk_score'] ?? null) !== 79
             || array_key_exists('internal_note', $inspection)
         ) {
             throw new RuntimeException('Computed or restricted inspection-field policy evidence is invalid.');
         }
         $findings = $records['inspection']['includes']['findings'] ?? null;
         $measurements = $records['inspection']['includes']['measurements'] ?? null;
-        if (!is_array($findings) || !is_array($measurements)
+        if (
+            !is_array($findings) || !is_array($measurements)
             || array_column($findings, 'record_id') !== [self::RECORDS['finding_one'], self::RECORDS['finding_two']]
             || array_column($measurements, 'record_id') !== [
                 self::RECORDS['measurement_one'],
@@ -1005,7 +1016,8 @@ final class AssetInspectionDeploymentAcceptance
         $maximumAttempts = self::requiredRowInteger($row, 'maximum_attempts');
         $jobType = self::requiredRowString($row, 'job_type');
         $executionScope = self::requiredRowString($row, 'execution_scope');
-        if ($contributionId !== self::SCHEDULE
+        if (
+            $contributionId !== self::SCHEDULE
             || preg_match('/^[0-9a-f]{64}$/D', $checksum) !== 1
             || $queue !== 'kumwe.asset-inspection-example.integration'
             || $maximumAttempts !== 3
@@ -1081,7 +1093,8 @@ final class AssetInspectionDeploymentAcceptance
         $expectedSource = self::requiredState($state, 'projection_source_checksum', '/^[0-9a-f]{64}$/D');
         $expectedProjection = self::requiredState($state, 'projection_checksum', '/^[0-9a-f]{64}$/D');
         $expectedSequence = self::positiveStateInteger($state, 'projection_last_sequence');
-        if (($active['definition_current'] ?? null) !== true
+        if (
+            ($active['definition_current'] ?? null) !== true
             || ($active['generation_id'] ?? null) !== $expectedGeneration
             || ($active['source_checksum'] ?? null) !== $expectedSource
             || ($active['projection_checksum'] ?? null) !== $expectedProjection
@@ -1124,8 +1137,7 @@ final class AssetInspectionDeploymentAcceptance
     private static function boot(
         string $emailVariable = 'KUMWE_ACCEPTANCE_ADMIN_EMAIL',
         string $passwordVariable = 'KUMWE_ACCEPTANCE_ADMIN_PASSWORD',
-    ): array
-    {
+    ): array {
         $container = require dirname(__DIR__, 2) . '/bootstrap/container.php';
         if (!$container instanceof Container) {
             throw new RuntimeException('The production service container is unavailable.');
@@ -1199,7 +1211,8 @@ final class AssetInspectionDeploymentAcceptance
         $state = self::document($path, 'kumwe-asset-inspection-state-v1');
         $keys = array_keys($state);
         sort($keys, SORT_STRING);
-        if ($keys !== [
+        if (
+            $keys !== [
             'export_artifact_id',
             'format',
             'package_sha256',
@@ -1207,7 +1220,8 @@ final class AssetInspectionDeploymentAcceptance
             'projection_generation_id',
             'projection_last_sequence',
             'projection_source_checksum',
-        ]) {
+            ]
+        ) {
             throw new RuntimeException('The asset-inspection state document has unknown or missing keys.');
         }
 
@@ -1333,7 +1347,8 @@ final class AssetInspectionDeploymentAcceptance
                 if (is_float($value)) {
                     $value = (string) $value;
                 }
-                if (!is_null($value) && !is_bool($value) && !is_int($value)
+                if (
+                    !is_null($value) && !is_bool($value) && !is_int($value)
                     && !is_string($value) && !is_array($value)
                 ) {
                     throw new RuntimeException('A durable acceptance row contains an unsupported value.');

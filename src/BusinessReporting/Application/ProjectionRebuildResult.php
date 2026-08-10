@@ -31,7 +31,8 @@ final readonly class ProjectionRebuildResult
         public string $sourceChecksum,
         public string $projectionChecksum,
     ) {
-        if ($lastSequence < 0 || $eventCount < 0
+        if (
+            $lastSequence < 0 || $eventCount < 0
             || preg_match('/^[0-9a-f]{64}$/D', $sourceChecksum) !== 1
             || preg_match('/^[0-9a-f]{64}$/D', $projectionChecksum) !== 1
         ) {

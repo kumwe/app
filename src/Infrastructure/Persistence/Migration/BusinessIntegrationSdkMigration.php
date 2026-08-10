@@ -87,10 +87,12 @@ final readonly class BusinessIntegrationSdkMigration implements RepeatableMigrat
                 $manager->createTable($table);
             }
         }
-        if ((int) $database->fetchOne(sprintf(
-            'SELECT COUNT(*) FROM %s WHERE singleton_id = 1',
-            $this->tables->quoted('business_projection_event_head'),
-        )) === 0) {
+        if (
+            (int) $database->fetchOne(sprintf(
+                'SELECT COUNT(*) FROM %s WHERE singleton_id = 1',
+                $this->tables->quoted('business_projection_event_head'),
+            )) === 0
+        ) {
             $database->insert($this->tables->raw('business_projection_event_head'), [
                 'singleton_id' => 1,
                 'last_sequence' => 0,

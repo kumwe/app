@@ -98,7 +98,8 @@ abstract readonly class EventEnvelope
         if ($schemaVersion < 1 || $schemaVersion > 65_535 || $aggregateVersion < 1) {
             throw new InvalidArgumentException('Event schema and aggregate versions must be positive.');
         }
-        if (!Uuid::isValid($eventId) || strtolower($eventId) !== $eventId
+        if (
+            !Uuid::isValid($eventId) || strtolower($eventId) !== $eventId
             || Uuid::fromString($eventId)->toString() !== $eventId
         ) {
             throw new InvalidArgumentException('An event ID must be a canonical lowercase UUID.');

@@ -62,7 +62,10 @@ final class ProcessWorkDispatcherTest extends TestCase
         $handler = $this->createMock(ProcessWorkHandler::class);
         $handler->method('supports')->willReturn(true);
         $handler->expects(self::once())->method('handle')->willReturnCallback(
-            static function (ProcessWorkLease $actualLease, ExecutionContext $actualContext) use (
+            static function (
+                ProcessWorkLease $actualLease,
+                ExecutionContext $actualContext
+            ) use (
                 $transactions,
                 $lease,
             ): void {

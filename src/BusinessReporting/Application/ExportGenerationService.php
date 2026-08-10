@@ -77,7 +77,8 @@ final readonly class ExportGenerationService
     {
         $artifact = $this->artifacts->find($artifactId)
             ?? throw new ExportGenerationRejected('The export request is unavailable.');
-        if ($artifact->status === ExportArtifactStatus::Completed
+        if (
+            $artifact->status === ExportArtifactStatus::Completed
             || $artifact->status === ExportArtifactStatus::Failed
         ) {
             return;
@@ -151,7 +152,8 @@ final readonly class ExportGenerationService
     private function reject(ExportArtifact $artifact, string $code): void
     {
         $current = $this->artifacts->find($artifact->id);
-        if ($current === null || $current->status === ExportArtifactStatus::Completed
+        if (
+            $current === null || $current->status === ExportArtifactStatus::Completed
             || $current->status === ExportArtifactStatus::Failed
         ) {
             return;
