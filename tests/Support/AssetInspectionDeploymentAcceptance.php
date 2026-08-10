@@ -1245,10 +1245,12 @@ final class AssetInspectionDeploymentAcceptance
         if (
             !is_array($findings) || !is_array($measurements)
             || array_column($findings, 'record_id') !== [self::RECORDS['finding_one'], self::RECORDS['finding_two']]
+            || array_column($findings, 'position') !== [0, 1]
             || array_column($measurements, 'record_id') !== [
                 self::RECORDS['measurement_one'],
                 self::RECORDS['measurement_two'],
             ]
+            || array_column($measurements, 'position') !== [0, 1]
             || ($records['measurement_one']['values']['value'] ?? null) !== '12.3456'
             || ($records['measurement_two']['values']['value'] ?? null) !== '9.8765'
         ) {

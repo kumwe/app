@@ -15,6 +15,7 @@ use Kumwe\CMS\BusinessIntegration\Domain\ConsumerIdempotency;
 use Kumwe\CMS\BusinessSecurity\Application\FieldAccessUsage;
 use Kumwe\CMS\Extension\Application\Package\PackageSafetyPolicy;
 use Kumwe\CMS\Extension\Contribution\ExtensionContributionRegistrySet;
+use Kumwe\CMS\Extension\Contribution\ManifestContributionSet;
 use Kumwe\CMS\Extension\Development\DeterministicPackageBuilder;
 use Kumwe\CMS\Extension\Development\PackageInspector;
 use Kumwe\CMS\Extension\Development\PackageSigner;
@@ -36,6 +37,7 @@ use ReflectionMethod;
 #[CoversClass(PayloadSchemaValidator::class)]
 #[CoversClass(PackageSafetyPolicy::class)]
 #[CoversClass(ExtensionContributionRegistrySet::class)]
+#[CoversClass(ManifestContributionSet::class)]
 #[CoversClass(DeterministicPackageBuilder::class)]
 #[CoversClass(PackageInspector::class)]
 #[CoversClass(PackageSigner::class)]
@@ -139,6 +141,16 @@ final class AssetInspectionExampleTest extends TestCase
         }
         self::assertTrue($relationships['findings']->ordered);
         self::assertTrue($relationships['measurements']->ordered);
+        self::assertNull($relationships['findings']->inverse);
+        self::assertNull($relationships['measurements']->inverse);
+        $definitionRelationships = [];
+        foreach ($contributions->businessDefinitions() as $definition) {
+            $definitionRelationships[$definition->handle] = $definition->relationships();
+        }
+        self::assertFalse($definitionRelationships['kumwe.asset-inspection-example.location'][0]->ordered);
+        self::assertFalse($definitionRelationships['kumwe.asset-inspection-example.asset'][1]->ordered);
+        self::assertSame([], $definitionRelationships['kumwe.asset-inspection-example.finding']);
+        self::assertSame([], $definitionRelationships['kumwe.asset-inspection-example.measurement']);
         self::assertSame(['draft', 'submitted', 'verified', 'closed'], $inspection->workflow?->states);
         self::assertSame(
             ['submit', 'verify', 'close'],
@@ -171,6 +183,48 @@ final class AssetInspectionExampleTest extends TestCase
         self::assertIsArray($schedule['payload']);
         $validator->assertSchema($job['payload_schema']);
         $validator->assertPayload($job['payload_schema'], $schedule['payload']);
+    }
+
+    /**
+     * Prove SPI 2 rejects declaration-only ordering without narrowing the readable SPI-1 contract.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testSpiTwoRequiresOrderedOneToManyToOwnItsJunction(): void
+    {
+        $contributions = self::manifest()->contributions();
+        $location = null;
+        foreach ($contributions->businessDefinitions() as $definition) {
+            if ($definition->handle === 'kumwe.asset-inspection-example.location') {
+                $location = $definition->toArray();
+                break;
+            }
+        }
+        self::assertIsArray($location);
+        $relationships = $location['relationships'] ?? null;
+        self::assertIsArray($relationships);
+        self::assertArrayHasKey(0, $relationships);
+        self::assertIsArray($relationships[0]);
+        $relationships[0]['ordered'] = true;
+        $location['relationships'] = $relationships;
+        $invalid = EntityTypeDefinition::fromArray($location);
+
+        $legacy = new ManifestContributionSet(
+            owner: $contributions->owner,
+            businessDefinitions: [$invalid],
+            spiVersion: ManifestContributionSet::SPI_VERSION,
+        );
+        self::assertCount(1, $legacy->businessDefinitions());
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('must own inverse-free junction storage');
+        new ManifestContributionSet(
+            owner: $contributions->owner,
+            businessDefinitions: [$invalid],
+            spiVersion: ManifestContributionSet::CURRENT_SPI_VERSION,
+        );
     }
 
     /**

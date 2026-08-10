@@ -152,7 +152,7 @@
             {"handle":"name","label":"Name","type":"core.text","required":true,"nullable":false,"length":120,"unique":true,"indexed":true,"filterable":true,"sortable":true,"reportable":true,"exportable":true,"order":10},
             {"handle":"zone","label":"Zone","type":"core.text","required":false,"nullable":true,"length":80,"unique":false,"indexed":true,"filterable":true,"sortable":true,"reportable":true,"exportable":true,"order":20}
           ],
-          "relationships": [{"handle":"assets","label":"Assets","kind":"one_to_many","target":"kumwe.asset-inspection-example.asset","inverse":"location","required":false,"unique":false,"ordered":true,"on_delete":"restrict"}],
+          "relationships": [{"handle":"assets","label":"Assets","kind":"one_to_many","target":"kumwe.asset-inspection-example.asset","inverse":"location","required":false,"unique":false,"ordered":false,"on_delete":"restrict"}],
           "views": [
             {"handle":"list","label":"Location list","kind":"list","fields":["name","zone"],"filters":["name","zone"],"sorts":["name"],"administrator":true,"portal":false,"public":false},
             {"handle":"detail","label":"Location detail","kind":"detail","fields":["name","zone"],"filters":[],"sorts":[],"administrator":true,"portal":false,"public":false},
@@ -186,7 +186,7 @@
           ],
           "relationships": [
             {"handle":"location","label":"Location","kind":"many_to_one","target":"kumwe.asset-inspection-example.location","inverse":"assets","required":false,"unique":false,"ordered":false,"on_delete":"restrict"},
-            {"handle":"inspections","label":"Inspections","kind":"one_to_many","target":"kumwe.asset-inspection-example.inspection","inverse":"asset","required":false,"unique":false,"ordered":true,"on_delete":"restrict"}
+            {"handle":"inspections","label":"Inspections","kind":"one_to_many","target":"kumwe.asset-inspection-example.inspection","inverse":"asset","required":false,"unique":false,"ordered":false,"on_delete":"restrict"}
           ],
           "views": [
             {"handle":"list","label":"Asset list","kind":"list","fields":["asset_tag","name","active"],"filters":["asset_tag","name","active"],"sorts":["asset_tag","name"],"administrator":true,"portal":false,"public":false},
@@ -235,8 +235,8 @@
           ],
           "relationships": [
             {"handle":"asset","label":"Asset","kind":"many_to_one","target":"kumwe.asset-inspection-example.asset","inverse":"inspections","required":false,"unique":false,"ordered":false,"on_delete":"restrict"},
-            {"handle":"findings","label":"Ordered findings","kind":"one_to_many","target":"kumwe.asset-inspection-example.finding","inverse":"inspection","required":false,"unique":false,"ordered":true,"on_delete":"restrict"},
-            {"handle":"measurements","label":"Ordered measurements","kind":"one_to_many","target":"kumwe.asset-inspection-example.measurement","inverse":"inspection","required":false,"unique":false,"ordered":true,"on_delete":"restrict"}
+            {"handle":"findings","label":"Ordered findings","kind":"one_to_many","target":"kumwe.asset-inspection-example.finding","inverse":null,"required":false,"unique":false,"ordered":true,"on_delete":"restrict"},
+            {"handle":"measurements","label":"Ordered measurements","kind":"one_to_many","target":"kumwe.asset-inspection-example.measurement","inverse":null,"required":false,"unique":false,"ordered":true,"on_delete":"restrict"}
           ],
           "views": [
             {"handle":"list","label":"Inspection list","kind":"list","fields":["reference","inspection_date","risk_score"],"filters":["reference","inspection_date","risk_score"],"sorts":["inspection_date","risk_score"],"administrator":true,"portal":true,"public":false},
@@ -288,7 +288,7 @@
             {"handle":"severity","label":"Severity","type":"core.text","required":true,"nullable":false,"length":20,"validators":[{"rule":"one_of","value":["low","medium","high","critical"]}],"unique":false,"indexed":true,"filterable":true,"sortable":true,"reportable":true,"exportable":true,"order":20},
             {"handle":"remediation","label":"Remediation","type":"core.rich_text","required":false,"nullable":true,"length":10000,"unique":false,"indexed":false,"filterable":false,"sortable":false,"reportable":false,"exportable":false,"order":30}
           ],
-          "relationships": [{"handle":"inspection","label":"Inspection","kind":"many_to_one","target":"kumwe.asset-inspection-example.inspection","inverse":"findings","required":false,"unique":false,"ordered":false,"on_delete":"restrict"}],
+          "relationships": [],
           "views": [
             {"handle":"list","label":"Finding list","kind":"list","fields":["summary","severity"],"filters":["summary","severity"],"sorts":["severity","summary"],"administrator":true,"portal":false,"public":false},
             {"handle":"detail","label":"Finding detail","kind":"detail","fields":["summary","severity","remediation"],"filters":[],"sorts":[],"administrator":true,"portal":false,"public":false},
@@ -321,7 +321,7 @@
             {"handle":"unit","label":"Unit","type":"core.text","required":true,"nullable":false,"length":32,"unique":false,"indexed":true,"filterable":true,"sortable":true,"reportable":true,"exportable":true,"order":30},
             {"handle":"acceptable","label":"Acceptable","type":"core.boolean","required":true,"nullable":false,"default":true,"length":null,"unique":false,"indexed":true,"filterable":true,"sortable":true,"reportable":true,"exportable":true,"order":40}
           ],
-          "relationships": [{"handle":"inspection","label":"Inspection","kind":"many_to_one","target":"kumwe.asset-inspection-example.inspection","inverse":"measurements","required":false,"unique":false,"ordered":false,"on_delete":"restrict"}],
+          "relationships": [],
           "views": [
             {"handle":"list","label":"Measurement list","kind":"list","fields":["metric","value","unit","acceptable"],"filters":["metric","acceptable"],"sorts":["metric"],"administrator":true,"portal":false,"public":false},
             {"handle":"detail","label":"Measurement detail","kind":"detail","fields":["metric","value","unit","acceptable"],"filters":[],"sorts":[],"administrator":true,"portal":false,"public":false},

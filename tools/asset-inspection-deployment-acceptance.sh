@@ -293,6 +293,7 @@ api_request() {
     local body="$4"
     local expected="$5"
     local output="$6"
+    local headers="${7:-}"
     local token
     token="$(<"$api_token_file")"
     local arguments=(
@@ -309,6 +310,9 @@ api_request() {
     if [[ -n "$expected" ]]; then
         arguments+=(--header "If-Match: \"v$expected\"")
     fi
+    if [[ -n "$headers" ]]; then
+        arguments+=(--dump-header "$headers")
+    fi
     curl "${arguments[@]}" "$base_url$path"
 }
 
@@ -319,12 +323,17 @@ create_api_record() {
     local values="$4"
     local label="$5"
     local output="$work_root/$label-create.json"
+    local headers="$work_root/$label-create.headers"
     local body status
     body="$(jq -nc --arg record "$record" --argjson values "$values" \
         '{record_id: $record, values: $values}')"
-    status="$(api_request POST "/api/v1/business/records/$definition" "$operation" "$body" '' "$output")"
+    status="$(api_request POST "/api/v1/business/records/$definition" "$operation" "$body" '' "$output" "$headers")"
     [[ "$status" == 201 ]] || fail "$label REST create returned HTTP $status"
-    jq -e --arg record "$record" '.record_id == $record' "$output" >/dev/null
+    jq -e --arg record "$record" '
+        .record_id == $record and .version == 1 and .replayed == false
+    ' "$output" >/dev/null
+    [[ -z "$(header_value Idempotency-Replayed "$headers")" ]] \
+        || fail "$label fresh REST create was marked as replayed"
 }
 
 relate_api_records() {
@@ -337,12 +346,36 @@ relate_api_records() {
     local operation="$7"
     local output="$work_root/$operation.json"
     local body status
-    body="$(jq -nc --arg target "$target" --argjson position "$position" \
-        '{target_record_id: $target, position: $position}')"
+    if [[ "$position" == null ]]; then
+        body="$(jq -nc --arg target "$target" '{target_record_id: $target}')"
+    else
+        body="$(jq -nc --arg target "$target" --argjson position "$position" \
+            '{target_record_id: $target, position: $position}')"
+    fi
     status="$(api_request POST "/api/v1/business/records/$definition/$record/relations/$relationship" \
         "$operation" "$body" "$version" "$output")"
     [[ "$status" == 200 ]] || fail "$relationship REST relation returned HTTP $status"
-    jq -e --arg record "$record" '.record_id == $record' "$output" >/dev/null
+    jq -e --arg record "$record" --argjson expected "$((version + 1))" '
+        .record_id == $record and .version == $expected and .replayed == false
+    ' "$output" >/dev/null
+}
+
+reorder_api_records() {
+    local definition="$1"
+    local record="$2"
+    local version="$3"
+    local relationship="$4"
+    local ordered_records="$5"
+    local operation="$6"
+    local output="$work_root/$operation.json"
+    local body status
+    body="$(jq -nc --argjson records "$ordered_records" '{ordered_record_ids: $records}')"
+    status="$(api_request PUT "/api/v1/business/records/$definition/$record/relations/$relationship/order" \
+        "$operation" "$body" "$version" "$output")"
+    [[ "$status" == 200 ]] || fail "$relationship REST reorder returned HTTP $status"
+    jq -e --arg record "$record" --argjson expected "$((version + 1))" '
+        .record_id == $record and .version == $expected and .replayed == false
+    ' "$output" >/dev/null
 }
 
 drain_integrations() {
@@ -464,12 +497,13 @@ if [[ "$mode" == package ]]; then
     app php bin/kumwe extension:runtime:materialize >/dev/null
     compose --profile automation up --detach --wait --force-recreate app web worker scheduler
 
+    # Install ordered-junction targets before inspection creates its finding and measurement foreign keys.
     for definition in \
         019bc200-0000-7000-8000-000000000001 \
         019bc200-0000-7000-8000-000000000002 \
-        019bc200-0000-7000-8000-000000000003 \
         019bc200-0000-7000-8000-000000000004 \
-        019bc200-0000-7000-8000-000000000005; do
+        019bc200-0000-7000-8000-000000000005 \
+        019bc200-0000-7000-8000-000000000003; do
         install_schema "$definition"
     done
     umask 077
@@ -537,12 +571,23 @@ create_cli_record "$location_definition" "$location" asset-location-create-0001 
 create_api_record "$asset_definition" "$asset" asset-record-create-0001 \
     "$(jq -nc --arg id "$asset" '{id: $id, asset_tag: "ACCEPT-001", name: "Acceptance Asset", active: true}')" asset
 asset_replay="$work_root/asset-create-replay.json"
+asset_replay_headers="$work_root/asset-create-replay.headers"
 asset_body="$(jq -nc --arg record "$asset" --arg id "$asset" \
     '{record_id: $record, values: {id: $id, asset_tag: "ACCEPT-001", name: "Acceptance Asset", active: true}}')"
 [[ "$(api_request POST "/api/v1/business/records/$asset_definition" asset-record-create-0001 \
-    "$asset_body" '' "$asset_replay")" == 201 ]] || fail 'asset REST idempotent replay failed'
-cmp --silent "$work_root/asset-create.json" "$asset_replay" \
-    || fail 'asset REST idempotent replay changed its result'
+    "$asset_body" '' "$asset_replay" "$asset_replay_headers")" == 201 ]] \
+    || fail 'asset REST idempotent replay failed'
+jq -e --arg record "$asset" '
+    .record_id == $record and .version == 1 and .replayed == true
+' "$asset_replay" >/dev/null
+[[ "$(header_value Idempotency-Replayed "$asset_replay_headers")" == true ]] \
+    || fail 'asset REST idempotent replay omitted its response header'
+asset_first_normalized="$work_root/asset-create-normalized.json"
+asset_replay_normalized="$work_root/asset-create-replay-normalized.json"
+jq --sort-keys 'del(.replayed)' "$work_root/asset-create.json" > "$asset_first_normalized"
+jq --sort-keys 'del(.replayed)' "$asset_replay" > "$asset_replay_normalized"
+cmp --silent "$asset_first_normalized" "$asset_replay_normalized" \
+    || fail 'asset REST idempotent replay changed its durable result'
 create_cli_record "$inspection_definition" "$inspection" asset-inspection-create-0001 \
     "$(jq -nc --arg id "$inspection" '{id: $id, reference: "INSPECT-ACCEPT-001", inspection_date: "2026-08-10", raw_score: 82, adjustment: -3, internal_note: "restricted acceptance note"}')"
 create_api_record "$finding_definition" "$finding_one" asset-finding-one-create-0001 \
@@ -557,17 +602,30 @@ create_cli_record "$inspection_definition" "$inspection_denied" asset-inspection
     "$(jq -nc --arg id "$inspection_denied" '{id: $id, reference: "INSPECT-DENIED-001", inspection_date: "2026-08-10", raw_score: 69, adjustment: 0}')"
 
 app_token "$cli_token_file" business-record relate --definition="$location_definition" --record="$location" \
-    --expected-version=1 --relationship=assets --target-record="$asset" --position=0 \
-    --operation-id=asset-location-relate-0001 >/dev/null
-relate_api_records "$asset_definition" "$asset" 1 inspections "$inspection" 0 asset-inspection-relate-0001
+    --expected-version=1 --relationship=assets --target-record="$asset" \
+    --operation-id=asset-location-relate-0001 \
+    | jq -e --arg record "$location" '.ok == true and .data.record_id == $record and .data.version == 2' \
+        >/dev/null
+relate_api_records "$asset_definition" "$asset" 2 inspections "$inspection" null asset-inspection-relate-0001
 app_token "$cli_token_file" business-record relate --definition="$inspection_definition" --record="$inspection" \
-    --expected-version=1 --relationship=findings --target-record="$finding_one" --position=0 \
-    --operation-id=asset-finding-one-relate-0001 >/dev/null
-relate_api_records "$inspection_definition" "$inspection" 2 findings "$finding_two" 1 asset-finding-two-relate-0001
-relate_api_records "$inspection_definition" "$inspection" 3 measurements "$measurement_one" 0 asset-measurement-one-relate-0001
+    --expected-version=2 --relationship=findings --target-record="$finding_one" --position=1 \
+    --operation-id=asset-finding-one-relate-0001 \
+    | jq -e --arg record "$inspection" '.ok == true and .data.record_id == $record and .data.version == 3' \
+        >/dev/null
+relate_api_records "$inspection_definition" "$inspection" 3 findings "$finding_two" 0 asset-finding-two-relate-0001
+relate_api_records "$inspection_definition" "$inspection" 4 measurements "$measurement_one" 1 \
+    asset-measurement-one-relate-0001
 app_token "$cli_token_file" business-record relate --definition="$inspection_definition" --record="$inspection" \
-    --expected-version=4 --relationship=measurements --target-record="$measurement_two" --position=1 \
-    --operation-id=asset-measurement-two-relate-0001 >/dev/null
+    --expected-version=5 --relationship=measurements --target-record="$measurement_two" --position=0 \
+    --operation-id=asset-measurement-two-relate-0001 \
+    | jq -e --arg record "$inspection" '.ok == true and .data.record_id == $record and .data.version == 6' \
+        >/dev/null
+reorder_api_records "$inspection_definition" "$inspection" 6 findings \
+    "$(jq -nc --arg first "$finding_one" --arg second "$finding_two" '[$first, $second]')" \
+    asset-findings-reorder-0001
+reorder_api_records "$inspection_definition" "$inspection" 7 measurements \
+    "$(jq -nc --arg first "$measurement_one" --arg second "$measurement_two" '[$first, $second]')" \
+    asset-measurements-reorder-0001
 
 drain_integrations
 acceptance_php replay >/dev/null
