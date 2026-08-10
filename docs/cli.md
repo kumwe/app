@@ -95,7 +95,7 @@ whose active definition still declares the bound high-impact action for CLI. Unr
 malformed bindings, stale actions, and exact denied details are omitted without enumeration. Checker visibility
 still comes from approval authority and does not require the maker's action-execution grant. The CLI deliberately
 exposes no approval vote: a decision still requires the browser's fresh, session-bound
-step-up proof. The predecessor approval binding includes the authenticated surface, and proof consumption accepts
+step-up proof. The canonical approval binding includes the authenticated surface, and proof consumption accepts
 only administrator or portal sessions, so a CLI-originated high-impact request also cannot be consumed by CLI.
 Supplying `--approval-request` re-proves the exact binding and fails closed under that boundary; complete the
 high-impact request, decision, and execution through one browser surface. Ordinary non-high-impact actions remain
