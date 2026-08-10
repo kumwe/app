@@ -8,6 +8,8 @@ use DateTimeImmutable;
 use InvalidArgumentException;
 use Kumwe\CMS\Application\Authorization\AuthenticatedSurface;
 use Kumwe\CMS\BusinessDefinition\Domain\CanonicalDefinitionJson;
+use Kumwe\CMS\Identity\Domain\Capability;
+use Kumwe\CMS\Identity\Domain\GrantScope;
 use LogicException;
 
 /**
@@ -18,12 +20,36 @@ use LogicException;
 final readonly class ExportArtifact
 {
     /**
+     * Maximum rows in one persisted authority-grant chunk.
+     *
+     * @var    int
+     * @since  2.0.0
+     */
+    private const AUTHORITY_GRANT_CHUNK_SIZE = 512;
+
+    /**
+     * Maximum chunks in one persisted authority snapshot.
+     *
+     * @var    int
+     * @since  2.0.0
+     */
+    private const MAX_AUTHORITY_GRANT_CHUNKS = 512;
+
+    /**
      * Validated report parameters captured when the export was requested.
      *
      * @var    array<string, mixed>
      * @since  2.0.0
      */
     public array $parameters;
+
+    /**
+     * Exact effective grant ceiling captured from the requesting human principal.
+     *
+     * @var    ?list<array{capability: string, scope_type: string, scope_identifier: ?string}>
+     * @since  2.0.0
+     */
+    public ?array $authorityGrantRows;
 
     /**
      * Reconstitute one fully validated export ledger entry.
@@ -54,6 +80,7 @@ final readonly class ExportArtifact
      * @param   ?string               $queryDigest             Executed policy-filtered query digest.
      * @param   ?string               $failureCode             Safe machine code after failure.
      * @param   int                   $version                 Optimistic metadata version.
+     * @param ?array<mixed> $authorityGrantRows Candidate exact grant ceiling of the requesting credential.
      *
      * @throws  InvalidArgumentException  When metadata shape or lifecycle invariants are invalid.
      *
@@ -86,6 +113,7 @@ final readonly class ExportArtifact
         public ?string $queryDigest,
         public ?string $failureCode,
         public int $version,
+        ?array $authorityGrantRows = null,
     ) {
         if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/D', $id) !== 1) {
             throw new InvalidArgumentException('An export artifact id must be a canonical lowercase UUID.');
@@ -104,6 +132,9 @@ final readonly class ExportArtifact
         ) {
             throw new InvalidArgumentException('Export artifact identity, lifetime or filename is invalid.');
         }
+        $this->authorityGrantRows = $authorityGrantRows === null
+            ? null
+            : self::normalizeAuthorityGrantRows($authorityGrantRows);
         CanonicalDefinitionJson::encode($parameters);
         if (count($parameters) > 32) {
             throw new InvalidArgumentException('An export artifact has too many report parameters.');
@@ -256,6 +287,12 @@ final readonly class ExportArtifact
             'workspace_identifier' => $this->workspaceIdentifier,
             'surface' => $this->surface->value,
             'authority_fingerprint' => $this->authorityFingerprint,
+            ...($this->authorityGrantRows === null ? [] : [
+                'authority_grants' => array_chunk(
+                    $this->authorityGrantRows,
+                    self::AUTHORITY_GRANT_CHUNK_SIZE,
+                ),
+            ]),
             'policy_snapshot' => $this->policySnapshot,
             'parameters' => $this->parameters,
             'parameter_digest' => $this->parameterDigest,
@@ -295,11 +332,19 @@ final readonly class ExportArtifact
             'started_at', 'completed_at', 'filename', 'storage_key', 'size', 'checksum', 'row_count',
             'query_digest', 'failure_code', 'version',
         ];
+        $hasAuthorityGrants = array_key_exists('authority_grants', $document);
+        if ($hasAuthorityGrants) {
+            $expected[] = 'authority_grants';
+        }
         $keys = array_keys($document);
         sort($keys, SORT_STRING);
         sort($expected, SORT_STRING);
         if ($keys !== $expected) {
             throw new InvalidArgumentException('An export artifact document has missing or unknown keys.');
+        }
+        $authorityGrantRows = null;
+        if ($hasAuthorityGrants) {
+            $authorityGrantRows = self::flattenAuthorityGrantChunks($document['authority_grants']);
         }
         try {
             if (
@@ -337,6 +382,7 @@ final readonly class ExportArtifact
                 self::nullableString($document, 'query_digest'),
                 self::nullableString($document, 'failure_code'),
                 self::integer($document, 'version'),
+                authorityGrantRows: $authorityGrantRows,
             );
         } catch (\ValueError | \TypeError | \Exception $exception) {
             if ($exception instanceof InvalidArgumentException) {
@@ -401,7 +447,126 @@ final readonly class ExportArtifact
             $queryDigest,
             $failureCode,
             $this->version + 1,
+            $this->authorityGrantRows,
         );
+    }
+
+    /**
+     * Validate and canonicalize the requesting principal's persisted grant ceiling.
+     *
+     * @param   array<mixed>  $rows  Candidate exact capability-and-scope rows.
+     *
+     * @return  list<array{capability: string, scope_type: string, scope_identifier: ?string}>
+     *          Sorted, duplicate-free grant rows.
+     *
+     * @throws  InvalidArgumentException  When rows are malformed, duplicated, or out of canonical order.
+     *
+     * @since   2.0.0
+     */
+    private static function normalizeAuthorityGrantRows(array $rows): array
+    {
+        if (!array_is_list($rows)) {
+            throw new InvalidArgumentException('Export artifact authority grants must form a list.');
+        }
+        if (count($rows) > self::AUTHORITY_GRANT_CHUNK_SIZE * self::MAX_AUTHORITY_GRANT_CHUNKS) {
+            throw new InvalidArgumentException('An export artifact has too many authority grants.');
+        }
+        $normalized = [];
+        $previous = null;
+        foreach ($rows as $row) {
+            if (!is_array($row) || array_is_list($row)) {
+                throw new InvalidArgumentException('An export artifact authority grant is invalid.');
+            }
+            $keys = array_keys($row);
+            sort($keys, SORT_STRING);
+            if ($keys !== ['capability', 'scope_identifier', 'scope_type']) {
+                throw new InvalidArgumentException('An export artifact authority grant is invalid.');
+            }
+            $capability = $row['capability'];
+            $scopeType = $row['scope_type'];
+            $scopeIdentifier = $row['scope_identifier'];
+            if (!is_string($capability) || !is_string($scopeType)) {
+                throw new InvalidArgumentException('An export artifact authority grant is invalid.');
+            }
+            $validatedCapability = Capability::fromString($capability);
+            if ($validatedCapability->value() !== $capability) {
+                throw new InvalidArgumentException('An export artifact authority grant is invalid.');
+            }
+            if ($scopeType === 'global') {
+                if ($scopeIdentifier !== null) {
+                    throw new InvalidArgumentException('An export artifact authority grant is invalid.');
+                }
+                $validatedScope = GrantScope::global();
+            } elseif (!is_string($scopeIdentifier)) {
+                throw new InvalidArgumentException('An export artifact authority grant is invalid.');
+            } else {
+                $validatedScope = GrantScope::named($scopeType, $scopeIdentifier);
+            }
+            if (
+                $validatedScope->type() !== $scopeType
+                || $validatedScope->identifier() !== $scopeIdentifier
+            ) {
+                throw new InvalidArgumentException('An export artifact authority grant is invalid.');
+            }
+            $key = implode("\0", [$capability, $scopeType, $scopeIdentifier ?? '']);
+            if ($previous !== null && strcmp($previous, $key) >= 0) {
+                throw new InvalidArgumentException('Export artifact authority grants must be canonical.');
+            }
+            $previous = $key;
+            $normalized[] = [
+                'capability' => $capability,
+                'scope_type' => $scopeType,
+                'scope_identifier' => $scopeIdentifier,
+            ];
+        }
+
+        return $normalized;
+    }
+
+    /**
+     * Validate canonical persisted grant chunks and restore the flat in-memory snapshot.
+     *
+     * Every non-final chunk is exactly 512 rows and the final chunk contains 1 to 512 rows. This gives
+     * each flat snapshot one serialized shape while keeping every collection inside the canonical JSON
+     * encoder's width limit. An empty outer list is the sole representation of an empty captured snapshot.
+     *
+     * @param   mixed  $candidate  Persisted authority-grant chunks.
+     *
+     * @return  list<mixed>  Flattened rows for canonical domain validation by the constructor.
+     *
+     * @throws  InvalidArgumentException  When the outer list or a chunk has a non-canonical shape.
+     *
+     * @since   2.0.0
+     */
+    private static function flattenAuthorityGrantChunks(mixed $candidate): array
+    {
+        if (!is_array($candidate) || !array_is_list($candidate)) {
+            throw new InvalidArgumentException('Export artifact authority grants must form a list of chunks.');
+        }
+        if (count($candidate) > self::MAX_AUTHORITY_GRANT_CHUNKS) {
+            throw new InvalidArgumentException('An export artifact has too many authority-grant chunks.');
+        }
+
+        $rows = [];
+        $finalChunkIndex = count($candidate) - 1;
+        foreach ($candidate as $index => $chunk) {
+            if (!is_array($chunk) || !array_is_list($chunk)) {
+                throw new InvalidArgumentException('An export artifact authority-grant chunk is invalid.');
+            }
+            $rowCount = count($chunk);
+            if (
+                $rowCount < 1
+                || $rowCount > self::AUTHORITY_GRANT_CHUNK_SIZE
+                || ($index !== $finalChunkIndex && $rowCount !== self::AUTHORITY_GRANT_CHUNK_SIZE)
+            ) {
+                throw new InvalidArgumentException('An export artifact authority-grant chunk is invalid.');
+            }
+            foreach ($chunk as $row) {
+                $rows[] = $row;
+            }
+        }
+
+        return $rows;
     }
 
     /**

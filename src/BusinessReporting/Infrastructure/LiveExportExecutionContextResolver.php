@@ -14,7 +14,7 @@ use Kumwe\CMS\BusinessSecurity\Application\MembershipDirectory;
 use Kumwe\CMS\Portal\Application\PortalPrincipalLoader;
 
 /**
- * Rehydrates current grants, security epoch and membership for the original human export actor.
+ * Rehydrates current identity state under the original human export request's exact grant ceiling.
  *
  * @since  2.0.0
  */
@@ -36,6 +36,10 @@ final readonly class LiveExportExecutionContextResolver implements ExportExecuti
 
     /**
      * Rebuild a credential-independent context and prove its authority digest matches the request.
+     *
+     * New artifacts carry the exact effective grants of their requesting credential. Those grants must
+     * all remain live and form the returned principal's ceiling, so later additions cannot widen queued
+     * work. Legacy artifacts retain their original full-live-principal fingerprint comparison.
      *
      * @param   ExportArtifact    $artifact       Stored original actor and scope.
      * @param   ExecutionContext  $workerContext  Queue worker trace context.
@@ -70,7 +74,12 @@ final readonly class LiveExportExecutionContextResolver implements ExportExecuti
         if ($identity === null) {
             throw new ExportGenerationRejected('The export actor is no longer active.');
         }
-        $context = $identity->principal->context(
+        $principal = $identity->principal;
+        if ($artifact->authorityGrantRows !== null) {
+            $principal = $principal->restrictedToGrantRows($artifact->authorityGrantRows)
+                ?? throw new ExportGenerationRejected('The export actor authority changed.');
+        }
+        $context = $principal->context(
             $site,
             AuthenticationStrength::BearerToken,
             'report-export-' . $artifact->id,

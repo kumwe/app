@@ -75,4 +75,78 @@ final class AuthenticatedPrincipalTest extends TestCase
 
         AuthorizationContext::principal(['content.read'], 'user-1');
     }
+
+    public function testRestrictsALiveGrantSupersetToTheCapturedExactRows(): void
+    {
+        $captured = [[
+            'capability' => 'content.read',
+            'scope_type' => 'site',
+            'scope_identifier' => 'default',
+        ]];
+        $current = AuthorizationContext::principalFromGrantRows([
+            ...$captured,
+            [
+                'capability' => 'users.manage',
+                'scope_type' => 'global',
+                'scope_identifier' => null,
+            ],
+        ], self::SUBJECT);
+
+        $restricted = $current->restrictedToGrantRows($captured);
+
+        self::assertNotNull($restricted);
+        self::assertSame(
+            AuthorizationContext::principalFromGrantRows($captured, self::SUBJECT)->authorityFingerprint(),
+            $restricted->authorityFingerprint(),
+        );
+        self::assertFalse($restricted->hasCapability(Capability::fromString('users.manage')));
+    }
+
+    public function testRefusesACapturedGrantThatTheLivePrincipalNoLongerHoldsExactly(): void
+    {
+        $current = AuthorizationContext::principalFromGrantRows([[
+            'capability' => 'content.read',
+            'scope_type' => 'global',
+            'scope_identifier' => null,
+        ]], self::SUBJECT);
+
+        self::assertNull($current->restrictedToGrantRows([[
+            'capability' => 'content.read',
+            'scope_type' => 'site',
+            'scope_identifier' => 'default',
+        ]]));
+    }
+
+    public function testRestrictionRejectsNonCanonicalPersistedRows(): void
+    {
+        $current = AuthorizationContext::principal(['content.read'], self::SUBJECT);
+
+        $this->expectException(InvalidArgumentException::class);
+
+        $current->restrictedToGrantRows([[
+            'capability' => 'Content.Read',
+            'scope_type' => 'global',
+            'scope_identifier' => null,
+        ]]);
+    }
+
+    public function testRestrictionRejectsGrantRowsOutsideCanonicalOrder(): void
+    {
+        $current = AuthorizationContext::principal(['content.read', 'users.manage'], self::SUBJECT);
+
+        $this->expectException(InvalidArgumentException::class);
+
+        $current->restrictedToGrantRows([
+            [
+                'capability' => 'users.manage',
+                'scope_type' => 'global',
+                'scope_identifier' => null,
+            ],
+            [
+                'capability' => 'content.read',
+                'scope_type' => 'global',
+                'scope_identifier' => null,
+            ],
+        ]);
+    }
 }

@@ -693,8 +693,12 @@ artifact="$(jq -er '.id' <<< "$export_request")"
 app php bin/kumwe queue:work --queue=exports --once \
     | grep --fixed-strings --quiet 'drained after 1 job(s)'
 export_status="$(app_token "$cli_token_file" business-report status --artifact="$artifact")"
+if ! jq -e '.status == "completed" and .failure_code == null and .row_count == 1' \
+    <<< "$export_status" >/dev/null; then
+    export_summary="$(jq -c '{status, failure_code, row_count, version}' <<< "$export_status")"
+    fail "report export did not complete: $export_summary"
+fi
 export_checksum="$(jq -er '.checksum | select(test("^[0-9a-f]{64}$"))' <<< "$export_status")"
-jq -e '.status == "completed" and .row_count == 1' <<< "$export_status" >/dev/null
 download=/tmp/asset-inspection-report.csv
 app_token "$cli_token_file" business-report download --artifact="$artifact" --output-file="$download" >/dev/null
 [[ "$(app sha256sum "$download" | awk '{print $1}')" == "$export_checksum" ]] \

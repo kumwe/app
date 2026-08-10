@@ -313,6 +313,46 @@ final readonly class AuthenticatedPrincipal
     }
 
     /**
+     * Rebuild this live principal under an exact previously captured grant ceiling.
+     *
+     * Background work uses this to retain the authority of the credential that requested it without
+     * retaining that credential. Every requested grant must still occur in the freshly loaded principal;
+     * grants acquired after the request are deliberately omitted from the returned principal.
+     *
+     * @param   list<array{capability: string, scope_type: string, scope_identifier: ?string}>  $rows
+     *          Exact effective grant rows captured when work was requested.
+     *
+     * @return  ?self  Restricted live principal, or null when any captured grant is no longer held.
+     *
+     * @throws  InvalidArgumentException  When the captured rows are malformed, duplicated, or not canonically
+     *          ordered.
+     *
+     * @since   2.0.0
+     */
+    public function restrictedToGrantRows(array $rows): ?self
+    {
+        self::assertCanonicalGrantRows($rows);
+        $restricted = self::issueFromGrantRows(
+            $this->provenance,
+            $this->subject,
+            $rows,
+            $this->credentialId,
+            $this->securityEpoch,
+        );
+        $current = [];
+        foreach ($this->grants as $grant) {
+            $current[self::grantKey($grant)] = true;
+        }
+        foreach ($restricted->grants as $grant) {
+            if (!isset($current[self::grantKey($grant)])) {
+                return null;
+            }
+        }
+
+        return $restricted;
+    }
+
+    /**
      * Derive the digest that stands for this principal's exact effective authority.
      *
      * Binds idempotent results to the credential, current authorization epoch and
@@ -482,5 +522,80 @@ final readonly class AuthenticatedPrincipal
     public function hasProvenance(object $provenance): bool
     {
         return $this->provenance === $provenance;
+    }
+
+    /**
+     * Compile one exact capability-and-scope identity for subset comparisons.
+     *
+     * @param   PrincipalGrant  $grant  Validated principal grant.
+     *
+     * @return  string  Collision-free internal key.
+     *
+     * @since   2.0.0
+     */
+    private static function grantKey(PrincipalGrant $grant): string
+    {
+        return implode("\0", [
+            $grant->capability()->value(),
+            $grant->scope()->type(),
+            $grant->scope()->identifier() ?? '',
+        ]);
+    }
+
+    /**
+     * Require persisted authority rows to use the exact canonical grant representation.
+     *
+     * @param   array<mixed>  $rows  Candidate captured grant rows.
+     *
+     * @return  void
+     *
+     * @throws  InvalidArgumentException  When the list, row shape, value, uniqueness, or order is invalid.
+     *
+     * @since   2.0.0
+     */
+    private static function assertCanonicalGrantRows(array $rows): void
+    {
+        if (!array_is_list($rows)) {
+            throw new InvalidArgumentException('Restricted principal grant rows must form a list.');
+        }
+        $seen = [];
+        $previous = null;
+        foreach ($rows as $row) {
+            if (!is_array($row) || array_is_list($row)) {
+                throw new InvalidArgumentException('A restricted principal grant row is invalid.');
+            }
+            $keys = array_keys($row);
+            sort($keys, SORT_STRING);
+            if ($keys !== ['capability', 'scope_identifier', 'scope_type']) {
+                throw new InvalidArgumentException('A restricted principal grant row is invalid.');
+            }
+            $capability = $row['capability'];
+            $scopeType = $row['scope_type'];
+            $scopeIdentifier = $row['scope_identifier'];
+            if (!is_string($capability) || !is_string($scopeType)) {
+                throw new InvalidArgumentException('A restricted principal grant row is invalid.');
+            }
+            $validatedCapability = Capability::fromString($capability);
+            $scope = $scopeType === 'global'
+                ? GrantScope::global()
+                : (is_string($scopeIdentifier) ? GrantScope::named($scopeType, $scopeIdentifier) : null);
+            if (
+                $scope === null
+                || $validatedCapability->value() !== $capability
+                || $scope->type() !== $scopeType
+                || $scope->identifier() !== $scopeIdentifier
+            ) {
+                throw new InvalidArgumentException('A restricted principal grant row is invalid.');
+            }
+            $key = implode("\0", [$capability, $scopeType, $scopeIdentifier ?? '']);
+            if (isset($seen[$key])) {
+                throw new InvalidArgumentException('A restricted principal grant row occurs more than once.');
+            }
+            if ($previous !== null && strcmp($previous, $key) >= 0) {
+                throw new InvalidArgumentException('Restricted principal grant rows must be canonical.');
+            }
+            $seen[$key] = true;
+            $previous = $key;
+        }
     }
 }

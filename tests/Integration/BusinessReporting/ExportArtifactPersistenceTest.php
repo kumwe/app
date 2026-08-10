@@ -29,6 +29,15 @@ use RuntimeException;
 #[CoversClass(BusinessIntegrationSdkMigration::class)]
 final class ExportArtifactPersistenceTest extends TestCase
 {
+    /**
+     * @var    list<array{capability: string, scope_type: string, scope_identifier: ?string}>
+     */
+    private const AUTHORITY_GRANTS = [[
+        'capability' => 'business.record.export',
+        'scope_type' => 'global',
+        'scope_identifier' => null,
+    ]];
+
     private Connection $database;
 
     private TableNames $tables;
@@ -90,12 +99,13 @@ final class ExportArtifactPersistenceTest extends TestCase
 
     public function testAppendOnlyVersionsRoundTripEmptyParametersAndRejectStaleWriters(): void
     {
-        $queued = $this->artifact();
+        $queued = $this->artifact(authorityGrantRows: self::AUTHORITY_GRANTS);
         $this->artifacts->add($queued);
         $running = $queued->start(new DateTimeImmutable('2026-08-10T10:01:00+00:00'));
         $this->artifacts->save($running, 1);
 
         self::assertSame([], $this->artifacts->find($queued->id)?->parameters);
+        self::assertSame(self::AUTHORITY_GRANTS, $this->artifacts->find($queued->id)?->authorityGrantRows);
         self::assertSame(ExportArtifactStatus::Running, $this->artifacts->find($queued->id)?->status);
         self::assertSame(2, $this->artifacts->find($queued->id)?->version);
 
@@ -142,10 +152,15 @@ final class ExportArtifactPersistenceTest extends TestCase
         self::assertTrue($manager->tablesExist([$table]));
         $artifact = $this->artifact();
         $this->artifacts->add($artifact);
+        self::assertArrayNotHasKey('authority_grants', $artifact->toArray());
         self::assertSame($artifact->toArray(), $this->artifacts->find($artifact->id)?->toArray());
     }
 
-    private function artifact(?string $id = null): ExportArtifact
+    /**
+     * @param  ?list<array{capability: string, scope_type: string, scope_identifier: ?string}>
+     *         $authorityGrantRows  Exact request authority, or null for the legacy document shape.
+     */
+    private function artifact(?string $id = null, ?array $authorityGrantRows = null): ExportArtifact
     {
         $createdAt = new DateTimeImmutable('2026-08-10T10:00:00+00:00');
 
@@ -176,6 +191,7 @@ final class ExportArtifactPersistenceTest extends TestCase
             null,
             null,
             1,
+            authorityGrantRows: $authorityGrantRows,
         );
     }
 
