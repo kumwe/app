@@ -6,6 +6,7 @@ namespace Kumwe\CMS\BusinessSurface\Delivery\Administrator;
 
 use InvalidArgumentException;
 use Kumwe\CMS\Administrator\Http\AdministratorRequest;
+use Kumwe\CMS\Administrator\Http\Middleware\AdministratorCsrfMiddleware;
 use Kumwe\CMS\Administrator\Http\Middleware\AdministratorSessionMiddleware;
 use Kumwe\CMS\Administrator\Presentation\AdministratorRenderer;
 use Kumwe\CMS\Application\Authorization\ExecutionContext;
@@ -425,7 +426,10 @@ final readonly class AdministratorBusinessSurfaceHandler implements RequestHandl
      */
     private function body(ServerRequestInterface $request): array
     {
-        $body = $request->getParsedBody();
+        $body = $request->getAttribute(
+            AdministratorCsrfMiddleware::ATTRIBUTE_PARSED_BODY,
+            $request->getParsedBody(),
+        );
         if (!is_array($body) || array_is_list($body)) {
             return [];
         }

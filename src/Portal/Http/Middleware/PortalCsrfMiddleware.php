@@ -19,6 +19,14 @@ use Psr\Http\Server\RequestHandlerInterface;
 final class PortalCsrfMiddleware implements MiddlewareInterface
 {
     /**
+     * Request attribute carrying the original parsed body after successful CSRF validation.
+     *
+     * @var    string
+     * @since  2.0.0
+     */
+    public const ATTRIBUTE_PARSED_BODY = self::class . '.parsed_body';
+
+    /**
      * Compare the portal session token in constant time before forwarding a flattened form.
      *
      * @param   ServerRequestInterface   $request  Portal mutation.
@@ -31,6 +39,11 @@ final class PortalCsrfMiddleware implements MiddlewareInterface
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
         $session = PortalRequest::session($request);
+        $parsed = $request->getParsedBody();
+        if (!is_array($parsed)) {
+            $parsed = [];
+            parse_str((string) $request->getBody(), $parsed);
+        }
         $form = PortalRequest::form($request);
         $provided = $request->getHeaderLine('X-CSRF-Token');
         if ($provided === '') {
@@ -46,6 +59,10 @@ final class PortalCsrfMiddleware implements MiddlewareInterface
             );
         }
 
-        return $handler->handle($request->withParsedBody($form));
+        return $handler->handle(
+            $request
+                ->withParsedBody($form)
+                ->withAttribute(self::ATTRIBUTE_PARSED_BODY, $parsed),
+        );
     }
 }

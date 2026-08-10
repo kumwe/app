@@ -26,6 +26,17 @@ use Psr\Http\Server\RequestHandlerInterface;
 final class AdministratorCsrfMiddleware implements MiddlewareInterface
 {
     /**
+     * Request attribute carrying the original parsed body after successful CSRF validation.
+     *
+     * Legacy administrator handlers continue to receive the flattened parsed body, while handlers
+     * with schema-authorized nested controls can explicitly consume and revalidate this exact object.
+     *
+     * @var    string
+     * @since  2.0.0
+     */
+    public const ATTRIBUTE_PARSED_BODY = self::class . '.parsed_body';
+
+    /**
      * Forward the request only when it presents the session's CSRF token, and answer 403 otherwise.
      *
      * A refusal renders a self-contained HTML page rather than a problem document, because the
@@ -45,6 +56,7 @@ final class AdministratorCsrfMiddleware implements MiddlewareInterface
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
         $session = AdministratorRequest::session($request);
+        $parsed = AdministratorRequest::parsedBody($request);
         $form = AdministratorRequest::form($request);
         $provided = $request->getHeaderLine('X-CSRF-Token');
 
@@ -62,6 +74,10 @@ final class AdministratorCsrfMiddleware implements MiddlewareInterface
             );
         }
 
-        return $handler->handle($request->withParsedBody($form));
+        return $handler->handle(
+            $request
+                ->withParsedBody($form)
+                ->withAttribute(self::ATTRIBUTE_PARSED_BODY, $parsed),
+        );
     }
 }

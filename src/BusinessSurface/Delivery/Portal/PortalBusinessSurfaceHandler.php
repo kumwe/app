@@ -20,6 +20,7 @@ use Kumwe\CMS\Identity\Application\StepUp\StepUpRejected;
 use Kumwe\CMS\Identity\Domain\StepUp\StepUpVerification;
 use Kumwe\CMS\Portal\Application\PortalSession;
 use Kumwe\CMS\Portal\Http\Middleware\PortalSessionMiddleware;
+use Kumwe\CMS\Portal\Http\Middleware\PortalCsrfMiddleware;
 use Kumwe\CMS\Portal\Http\PortalRequest;
 use Kumwe\CMS\Portal\Presentation\PortalRenderer;
 use Laminas\Diactoros\Response\HtmlResponse;
@@ -431,7 +432,10 @@ final readonly class PortalBusinessSurfaceHandler implements RequestHandlerInter
      */
     private function body(ServerRequestInterface $request): array
     {
-        $body = $request->getParsedBody();
+        $body = $request->getAttribute(
+            PortalCsrfMiddleware::ATTRIBUTE_PARSED_BODY,
+            $request->getParsedBody(),
+        );
         if (!is_array($body) || array_is_list($body)) {
             return [];
         }

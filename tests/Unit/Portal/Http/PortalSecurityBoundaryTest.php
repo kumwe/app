@@ -88,8 +88,22 @@ final class PortalSecurityBoundaryTest extends TestCase
         self::assertSame(403, $middleware->process($request, $handler)->getStatusCode());
         self::assertNull($handler->request);
 
-        $request = $request->withParsedBody(['_csrf' => $session->csrfToken]);
+        $request = $request->withParsedBody([
+            '_csrf' => $session->csrfToken,
+            'values' => ['name' => 'Nested generated value'],
+        ]);
         self::assertSame(200, $middleware->process($request, $handler)->getStatusCode());
+        self::assertSame(
+            ['_csrf' => $session->csrfToken],
+            $handler->request?->getParsedBody(),
+        );
+        self::assertSame(
+            [
+                '_csrf' => $session->csrfToken,
+                'values' => ['name' => 'Nested generated value'],
+            ],
+            $handler->request?->getAttribute(PortalCsrfMiddleware::ATTRIBUTE_PARSED_BODY),
+        );
     }
 
     public function testPortalRouteCapabilityIsAuthorizedAgainstTheExactResolvedSessionResource(): void

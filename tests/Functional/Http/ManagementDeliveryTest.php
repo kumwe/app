@@ -347,7 +347,10 @@ final class ManagementDeliveryTest extends TestCase
         $principal = AuthorizationContext::principal($capabilities);
 
         return $request
-            ->withParsedBody(['_csrf' => $providedCsrf])
+            ->withParsedBody([
+                '_csrf' => $providedCsrf,
+                'values' => ['name' => 'Nested generated value'],
+            ])
             ->withAttribute(RouteResult::class, $routeResult)
             ->withAttribute(AuthenticatedPrincipal::REQUEST_ATTRIBUTE, $principal)
             ->withAttribute(AdministratorSession::REQUEST_ATTRIBUTE, new AdministratorSession(
@@ -372,7 +375,19 @@ final class ManagementDeliveryTest extends TestCase
                     new class implements RequestHandlerInterface {
                         public function handle(ServerRequestInterface $request): ResponseInterface
                         {
-                            return new TextResponse('', 204);
+                            TestCase::assertSame(
+                                ['_csrf' => 'valid-csrf'],
+                                $request->getParsedBody(),
+                            );
+                            $parsed = $request->getAttribute(AdministratorCsrfMiddleware::ATTRIBUTE_PARSED_BODY);
+                            $values = is_array($parsed) ? ($parsed['values'] ?? null) : null;
+
+                            return new TextResponse(
+                                '',
+                                is_array($values) && ($values['name'] ?? null) === 'Nested generated value'
+                                    ? 204
+                                    : 500,
+                            );
                         }
                     },
                 );

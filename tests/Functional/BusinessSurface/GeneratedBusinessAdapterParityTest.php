@@ -115,11 +115,13 @@ final class GeneratedBusinessAdapterParityTest extends TestCase
         self::assertInstanceOf(AuthenticatedPrincipal::class, $principal);
         $suffix = strtolower(substr(str_replace('-', '', Uuid::uuid7()->toString()), -10));
         $records = $this->service($container, BusinessRecordService::class);
-        $target = NeutralBusinessFixture::install(
-            $container,
-            $installer,
-            NeutralBusinessFixture::relationTargetDocument($suffix, Uuid::uuid7()->toString()),
-        );
+        $targetDocument = NeutralBusinessFixture::relationTargetDocument($suffix, Uuid::uuid7()->toString());
+        $targetDocument['portal_exposure'] = true;
+        $targetDocument['portal_operations'] = [
+            PortalOperation::Browse->value,
+            PortalOperation::Read->value,
+        ];
+        $target = NeutralBusinessFixture::install($container, $installer, $targetDocument);
         $targetRecords = [];
         $targetLabels = [];
         foreach (

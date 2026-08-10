@@ -57,7 +57,10 @@ final class OpenApiContractGenerationIntegrationTest extends TestCase
 
         self::assertNotSame($before->generation, $after->generation);
         self::assertNotSame($before->checksum, $after->checksum);
-        self::assertStringContainsString($definition->handle, $after->json);
+        self::assertStringContainsString(
+            'Business_' . str_replace(['.', '-'], '_', $definition->handle) . '_Record',
+            $after->json,
+        );
         self::assertEquals($after, $contracts->contract($api));
     }
 
