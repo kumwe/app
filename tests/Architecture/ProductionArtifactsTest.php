@@ -159,6 +159,7 @@ final class ProductionArtifactsTest extends TestCase
     {
         $acceptance = $this->contents('.github/workflows/deployment-acceptance.yml');
         $driver = $this->contents('tools/asset-inspection-deployment-acceptance.sh');
+        $support = $this->contents('tests/Support/AssetInspectionDeploymentAcceptance.php');
 
         self::assertStringContainsString('tools/asset-inspection-deployment-acceptance.sh package', $acceptance);
         self::assertStringContainsString('tools/asset-inspection-deployment-acceptance.sh grant', $acceptance);
@@ -215,6 +216,8 @@ final class ProductionArtifactsTest extends TestCase
         self::assertStringContainsString('business-report export', $driver);
         self::assertStringContainsString('kumwe_business_report_execute', $driver);
         self::assertStringContainsString('--force-recreate app web worker scheduler', $driver);
+        self::assertStringContainsString('$database->quoteSingleIdentifier($table->physicalName)', $support);
+        self::assertStringNotContainsString('$tables->quoted($table->physicalName)', $support);
     }
 
     /**

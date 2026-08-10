@@ -47,9 +47,9 @@ final readonly class PhysicalForeignKeyBlueprint
      * Assemble a constraint and prove its column pairing and referential actions are usable.
      *
      * @param   string        $logicalName     Handle a plan operation names this constraint by.
-     * @param   string        $physicalName    Installed constraint name, without the configured prefix applied.
+     * @param   string        $physicalName    Installed constraint name, with the configured prefix already applied.
      * @param   list<string>  $localColumns    Physical columns in constraint order.
-     * @param   string        $foreignTable    Installed name of the referenced table, without the prefix applied.
+     * @param   string        $foreignTable    Installed name of the referenced table, with the prefix already applied.
      * @param   list<string>  $foreignColumns  Physical target columns in constraint order.
      * @param   string        $onDelete        Action taken when a referenced row is deleted.
      * @param   string        $onUpdate        Action taken when a referenced key is updated.
