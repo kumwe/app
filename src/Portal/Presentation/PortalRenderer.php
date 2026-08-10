@@ -24,10 +24,10 @@ final readonly class PortalRenderer
     /**
      * Bind the renderer to its isolated Twig environment and portal-only contribution registries.
      *
-     * @param  Environment               $twig        Portal Twig environment.
-     * @param  PortalNavigationRegistry  $navigation  Capability and live-trust-filtered menu.
-     * @param  PortalTemplateRegistry    $templates   Explicit portal template authority.
-     * @param  PortalNavigationVisibility $visibility Request-session navigation predicate.
+     * @param  Environment                 $twig        Portal Twig environment.
+     * @param  PortalNavigationRegistry    $navigation  Capability and live-trust-filtered menu.
+     * @param  PortalTemplateRegistry      $templates   Explicit portal template authority.
+     * @param  PortalNavigationVisibility  $visibility  Request-session navigation predicate.
      *
      * @since  2.0.0
      */

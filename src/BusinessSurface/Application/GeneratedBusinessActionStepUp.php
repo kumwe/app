@@ -44,12 +44,12 @@ final readonly class GeneratedBusinessActionStepUp
      *
      * @template T
      *
-     * @param   ExecutionContext                $context    Current password-authenticated browser context.
-     * @param   string                          $purpose    Exact action purpose resolved from business metadata.
-     * @param   array<string, mixed>            $form       Submitted confirmation controls.
-     * @param   string                          $source     Trusted-proxy-resolved attempt source.
-     * @param   StepUpProvider                  $provider   Surface-specific session-rotating provider.
-     * @param   callable(ExecutionContext): T    $operation  Canonical action work using the elevated context.
+     * @param   ExecutionContext               $context    Current password-authenticated browser context.
+     * @param   string                         $purpose    Exact action purpose resolved from business metadata.
+     * @param   array<string, mixed>           $form       Submitted confirmation controls.
+     * @param   string                         $source     Trusted-proxy-resolved attempt source.
+     * @param   StepUpProvider                 $provider   Surface-specific session-rotating provider.
+     * @param   callable(ExecutionContext): T  $operation  Canonical action work using the elevated context.
      *
      * @return  array{0: T, 1: StepUpVerification}  Action result and committed rotated proof.
      *

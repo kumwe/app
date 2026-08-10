@@ -52,16 +52,16 @@ final readonly class CustomBusinessActionExecutor
     /**
      * Build the shared custom action mutation boundary.
      *
-     * @param  CustomBusinessSurfaceDispatcher   $dispatcher    Exact owner/handler/schema dispatcher.
-     * @param  BusinessRecordCustomActionGuard   $guard         Canonical row, condition and approval guard.
-     * @param  BusinessRecordIdempotencyRepository $idempotency Shared at-most-once operation ledger.
-     * @param  BusinessRecordMutationFence       $fence         Exclusive installed-definition fence.
-     * @param  BusinessRecordDefinitionResolver  $definitions   Trusted active definition resolver.
-     * @param  BusinessRecordAccessController    $access        Canonical record-policy planner.
-     * @param  RecordFingerprint                 $fingerprints  Keyed request, scope and result digests.
-     * @param  TransactionManager                $transactions  Transaction enclosing claim, handler and result.
-     * @param  ClockInterface                    $clock         Trusted claim and expiry time.
-     * @param  RuntimeMaterializationState       $runtime       Exact trusted handler publication generation.
+     * @param  CustomBusinessSurfaceDispatcher      $dispatcher    Exact owner/handler/schema dispatcher.
+     * @param  BusinessRecordCustomActionGuard      $guard         Canonical row, condition and approval guard.
+     * @param  BusinessRecordIdempotencyRepository  $idempotency   Shared at-most-once operation ledger.
+     * @param  BusinessRecordMutationFence          $fence         Exclusive installed-definition fence.
+     * @param  BusinessRecordDefinitionResolver     $definitions   Trusted active definition resolver.
+     * @param  BusinessRecordAccessController       $access        Canonical record-policy planner.
+     * @param  RecordFingerprint                    $fingerprints  Keyed request, scope and result digests.
+     * @param  TransactionManager                   $transactions  Transaction enclosing claim, handler and result.
+     * @param  ClockInterface                       $clock         Trusted claim and expiry time.
+     * @param  RuntimeMaterializationState          $runtime       Exact trusted handler publication generation.
      *
      * @since  2.0.0
      */
@@ -221,13 +221,13 @@ final readonly class CustomBusinessActionExecutor
     /**
      * Prove and reconstruct a completed custom result without invoking extension code again.
      *
-     * @param   BusinessRecordIdempotency  $entry                     Existing ledger claim.
-     * @param   string                     $requestFingerprint        Current exact request digest.
-     * @param   string                     $authorizationFingerprint  Current exact authority digest.
-     * @param   DateTimeImmutable          $now                       Trusted expiry time.
-     * @param   EntityTypeDefinition       $definition                Definition held by the fence.
-     * @param   ActionDefinition           $action                    Current exact custom declaration.
-     * @param   CustomBusinessActionCommand $command                  Current typed command.
+     * @param   BusinessRecordIdempotency    $entry                     Existing ledger claim.
+     * @param   string                       $requestFingerprint        Current exact request digest.
+     * @param   string                       $authorizationFingerprint  Current exact authority digest.
+     * @param   DateTimeImmutable            $now                       Trusted expiry time.
+     * @param   EntityTypeDefinition         $definition                Definition held by the fence.
+     * @param   ActionDefinition             $action                    Current exact custom declaration.
+     * @param   CustomBusinessActionCommand  $command                   Current typed command.
      *
      * @return  CustomBusinessActionResult  Stored result marked as an outer-ledger replay.
      *
@@ -292,8 +292,8 @@ final readonly class CustomBusinessActionExecutor
      * Build the canonical request digest input, including definition, contract and runtime generations.
      *
      * @param   CustomBusinessActionCommand  $command     Current typed command.
-     * @param   EntityTypeDefinition         $definition Active installed definition.
-     * @param   ActionDefinition             $action     Exact custom declaration.
+     * @param   EntityTypeDefinition         $definition  Active installed definition.
+     * @param   ActionDefinition             $action      Exact custom declaration.
      *
      * @return  array<string, mixed>  Canonical exact request binding.
      *
@@ -355,8 +355,8 @@ final readonly class CustomBusinessActionExecutor
     /**
      * Derive the immutable record scope exclusively from the authenticated execution context.
      *
-     * @param   ResolvedBusinessDefinition    $resolved  Definition and installation held by the fence.
-     * @param   CustomBusinessActionCommand   $command   Authenticated typed command.
+     * @param   ResolvedBusinessDefinition   $resolved  Definition and installation held by the fence.
+     * @param   CustomBusinessActionCommand  $command   Authenticated typed command.
      *
      * @return  RecordScope  Exact installation/site/organization scope.
      *

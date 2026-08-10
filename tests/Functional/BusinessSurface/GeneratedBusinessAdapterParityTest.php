@@ -465,6 +465,28 @@ final class GeneratedBusinessAdapterParityTest extends TestCase
             [],
             [],
         );
+        $apiBaseReadResponse = $api->handle($this->apiReadRequest(
+            $contexts[BusinessSurface::Api->value],
+            $principal,
+            $definition,
+            $record,
+        ));
+        self::assertSame(200, $apiBaseReadResponse->getStatusCode());
+        $apiBaseRead = $this->response($apiBaseReadResponse);
+        self::assertSame([], $apiBaseRead['includes']);
+        $cliBaseRead = $this->execute($cli, [
+            'get',
+            '--site=default',
+            '--token-file=' . $tokenFile,
+            '--definition=' . $definition,
+            '--record=' . $record,
+        ])['data'];
+        $mcpRead = $mcp->read($contexts[BusinessSurface::Mcp->value], $definition, $record);
+        $baseReads = [$cliBaseRead, $mcpRead['record'], $adminRead->data['record'], $portalRead->data['record']];
+        foreach ($baseReads as $actual) {
+            self::assertSame($apiBaseRead, $actual);
+        }
+
         $apiReadResponse = $api->handle($this->apiReadRequest(
             $contexts[BusinessSurface::Api->value],
             $principal,
@@ -482,7 +504,8 @@ final class GeneratedBusinessAdapterParityTest extends TestCase
             'related_targets',
         ));
         self::assertSame(200, $apiRelationResponse->getStatusCode());
-        self::assertSame($apiRead, $this->response($apiRelationResponse));
+        $apiRelationRead = $this->response($apiRelationResponse);
+        self::assertSame($apiRead, $apiRelationRead);
         $readQueryFile = $this->jsonFile([
             'projection' => ['includes' => ['related_targets']],
         ]);
@@ -494,9 +517,39 @@ final class GeneratedBusinessAdapterParityTest extends TestCase
             '--record=' . $record,
             '--query-file=' . $readQueryFile,
         ])['data'];
-        $mcpRead = $mcp->read($contexts[BusinessSurface::Mcp->value], $definition, $record);
-        foreach ([$cliRead, $mcpRead['record'], $adminRead->data['record'], $portalRead->data['record']] as $actual) {
-            self::assertSame($apiRead, $actual);
+        $mcpIncludedPage = $mcp->search($contexts[BusinessSurface::Mcp->value], $definition, [
+            'page_size' => 1,
+            'projection' => ['includes' => ['related_targets']],
+        ]);
+        self::assertCount(1, $mcpIncludedPage['items']);
+        self::assertSame($record, $mcpIncludedPage['items'][0]['record_id']);
+        $adminRelationRead = $browser->relationship(
+            $contexts[BusinessSurface::Administrator->value],
+            BusinessSurface::Administrator,
+            $definition,
+            $record,
+            'related_targets',
+            [],
+        );
+        $portalRelationRead = $browser->relationship(
+            $contexts[BusinessSurface::Portal->value],
+            BusinessSurface::Portal,
+            $definition,
+            $record,
+            'related_targets',
+            [],
+        );
+        $relatedTargets = $apiRead['includes']['related_targets'];
+        foreach (
+            [
+                $apiRelationRead['includes']['related_targets'],
+                $cliRead['includes']['related_targets'],
+                $mcpIncludedPage['items'][0]['includes']['related_targets'],
+                $adminRelationRead->data['record']['includes']['related_targets'],
+                $portalRelationRead->data['record']['includes']['related_targets'],
+            ] as $actual
+        ) {
+            self::assertSame($relatedTargets, $actual);
         }
         self::assertSame(10, $apiRead['version']);
         self::assertSame('approved', $apiRead['workflow_state']);

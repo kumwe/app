@@ -25,13 +25,13 @@ final readonly class RelatedRecordBrowseResult
     /**
      * Capture a target definition and the bounded page projected through its related-access plan.
      *
-     * @param  EntityTypeDefinition  $definition  Active target definition.
-     * @param  RecordBrowseResult    $page        Policy-filtered target page.
-     * @param  list<array{handle: string, label: string}> $searchFields  At most sixteen safe search controls.
+     * @param   EntityTypeDefinition                        $definition    Active target definition.
+     * @param   RecordBrowseResult                          $page          Policy-filtered target page.
+     * @param   list<array{handle: string, label: string}>  $searchFields  At most sixteen safe search controls.
      *
      * @throws  InvalidArgumentException  When search metadata is malformed, duplicated, or over its bound.
      *
-     * @since  2.0.0
+     * @since   2.0.0
      */
     public function __construct(
         public EntityTypeDefinition $definition,

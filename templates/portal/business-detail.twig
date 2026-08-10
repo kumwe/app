@@ -43,7 +43,7 @@
         The operation completed.{% if available_operations.status is defined %} <a href="{{ business_base_path }}/operations/{{ completed_operation_id|url_encode }}">View operation status</a>.{% endif %}
     </div>
 {% endif %}
-{% if error_summary %}
+{% if error_summary is defined and error_summary %}
     <section class="portal-alert" role="alert" tabindex="-1">
         <h2>The relationship could not be saved</h2><p>{{ error_summary }}</p>
     </section>

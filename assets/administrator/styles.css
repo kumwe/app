@@ -497,13 +497,13 @@ button[disabled], button[aria-disabled="true"] { cursor: not-allowed; opacity: .
   .business-table-toolbar .business-query-form { display: grid; width: 100%; grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr)); align-items: end; gap: .65rem; padding-top: .85rem; border-top: 1px solid var(--kumwe-border); }
   .business-query-form .check { min-height: 2.75rem; align-items: center; }
   .business-query-form .page-actions { align-items: end; }
-  .business-table-wrap { width: 100%; min-width: 0; max-height: min(68vh, 48rem); }
+  .business-table-wrap { position: relative; width: 100%; min-width: 0; max-height: min(68vh, 48rem); }
   .business-record-table { min-width: 52rem; }
   .business-record-table tbody th { text-align: left; }
   .business-record-table tbody th code, .business-record-table tbody th small { display: block; }
   .business-record-table tbody th small { margin-top: .25rem; color: var(--kumwe-text-muted); font-size: .7rem; }
   .business-page-search-empty { margin: 0; padding: 1rem; border-top: 1px solid var(--kumwe-border); text-align: center; }
-  .business-bulk-form { display: grid; min-width: 0; grid-template-columns: minmax(0, 1fr); }
+  .business-bulk-form { display: grid; width: 100%; min-width: 0; max-width: 100%; grid-template-columns: minmax(0, 1fr); }
   .business-bulk-controls { display: flex; flex-wrap: wrap; align-items: end; gap: .65rem; padding: 1rem; border-top: 1px solid var(--kumwe-border); background: var(--kumwe-surface-subtle); }
   .business-bulk-controls label { min-width: min(100%, 18rem); }
   .business-bulk-controls .field-help { flex-basis: 100%; }
@@ -592,6 +592,7 @@ button[disabled], button[aria-disabled="true"] { cursor: not-allowed; opacity: .
   @media (max-width: 48rem) {
     .business-fields { grid-template-columns: 1fr; }
     .business-table-toolbar, .business-table-toolbar form, .business-bulk-controls { display: grid; width: 100%; }
+    .business-table-wrap { max-height: none; }
     .business-table-toolbar select { min-width: 0; }
     .business-relation-form { grid-template-columns: 1fr; }
     .business-history-entry > header { display: grid; }

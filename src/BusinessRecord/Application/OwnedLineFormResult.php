@@ -17,8 +17,8 @@ final readonly class OwnedLineFormResult
     /**
      * Validate the field subset before it reaches semantic presentation.
      *
-     * @param   EntityTypeDefinition  $definition   Active owned-line target definition.
-     * @param   list<string>          $fieldHandles Create fields granted by the nested relation plan.
+     * @param   EntityTypeDefinition  $definition    Active owned-line target definition.
+     * @param   list<string>          $fieldHandles  Create fields granted by the nested relation plan.
      *
      * @throws  InvalidArgumentException  When handles are malformed, repeated, or unbounded.
      *

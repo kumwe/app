@@ -24,8 +24,8 @@ interface BusinessRecordAccessCatalogPlanner
     /**
      * Resolve plans for one bounded active-definition snapshot under one operation.
      *
-     * @param   ExecutionContext  $context    Actor and exact authenticated scope.
-     * @param   string            $operation  Dotted business-record operation identifier.
+     * @param ExecutionContext $context Actor and exact authenticated scope.
+     * @param string $operation Dotted business-record operation identifier.
      * @param   list<array{resolved: ResolvedBusinessDefinition, scope: RecordScope, requested: bool}>  $resources
      *          Active definitions, scopes, and whether each needs a top-level catalog plan.
      *

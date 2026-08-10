@@ -100,12 +100,12 @@ final readonly class CustomBusinessActionLedgerResult
     /**
      * Capture a freshly validated handler result under its immutable definition and action references.
      *
-     * @param   EntityTypeDefinition        $definition  Installed definition executed under the fence.
-     * @param   ActionDefinition            $action      Exact custom action declaration.
-     * @param   string                      $recordId    Caller-facing target identity.
-     * @param   int                         $runtimeGeneration Trusted extension runtime generation.
-     * @param   string                      $runtimeChecksum   Trusted runtime publication checksum.
-     * @param   CustomBusinessActionResult  $result      Registry-validated handler outcome.
+     * @param   EntityTypeDefinition        $definition         Installed definition executed under the fence.
+     * @param   ActionDefinition            $action             Exact custom action declaration.
+     * @param   string                      $recordId           Caller-facing target identity.
+     * @param   int                         $runtimeGeneration  Trusted extension runtime generation.
+     * @param   string                      $runtimeChecksum    Trusted runtime publication checksum.
+     * @param   CustomBusinessActionResult  $result             Registry-validated handler outcome.
      *
      * @return  self  Complete replayable ledger result.
      *

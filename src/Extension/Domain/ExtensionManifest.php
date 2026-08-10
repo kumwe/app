@@ -119,7 +119,7 @@ final readonly class ExtensionManifest
      * @param   array<mixed>              $events              Event declaration objects, at most 256.
      * @param   array<mixed>              $assets              Package-relative asset paths, at most 512.
      * @param   ?ManifestContributionSet  $contributions       Strict contributions; null selects the legacy set.
-     * @param   int                       $schemaVersion        Manifest schema revision; 1, 2, and 3 are supported.
+     * @param   int                       $schemaVersion       Manifest schema revision; 1, 2, and 3 are supported.
      *
      * @throws  InvalidArgumentException  When the schema is unsupported or any declared value fails its check.
      *

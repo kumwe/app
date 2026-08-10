@@ -40,7 +40,7 @@ final readonly class FieldPresentation
      * @param   bool                                       $required    Whether empty input is invalid.
      * @param   list<string>                               $errors      Field-level caller-visible errors.
      * @param   list<array{value: string, label: string}>  $options     Closed choice options.
-     * @param   array<string, int|string|bool>              $attributes  Allow-listed bounds for the core widget.
+     * @param   array<string, int|string|bool>             $attributes  Allow-listed bounds for the core widget.
      *
      * @throws  InvalidArgumentException  When identity, labels, widget state, input size, errors, options, or
      *          attributes are malformed or unbounded.

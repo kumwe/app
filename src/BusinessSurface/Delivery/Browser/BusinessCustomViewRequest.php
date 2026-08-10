@@ -21,13 +21,13 @@ final readonly class BusinessCustomViewRequest
     /**
      * Capture one validated custom-view browser request.
      *
-     * @param   BusinessBrowserQuery        $records     Bounded standard record query.
-     * @param   array<string, mixed>        $parameters  Typed signed-contract parameters.
-     * @param   list<array<string, mixed>>  $fields      Recursive safe semantic controls for Twig.
-     * @param   bool                        $submitted   Whether execution was requested.
-     * @param   bool                        $configured  Whether an array-row reconfiguration was requested.
+     * @param  BusinessBrowserQuery        $records     Bounded standard record query.
+     * @param  array<string, mixed>        $parameters  Typed signed-contract parameters.
+     * @param  list<array<string, mixed>>  $fields      Recursive safe semantic controls for Twig.
+     * @param  bool                        $submitted   Whether execution was requested.
+     * @param  bool                        $configured  Whether an array-row reconfiguration was requested.
      *
-     * @since   2.0.0
+     * @since  2.0.0
      */
     private function __construct(
         public BusinessBrowserQuery $records,

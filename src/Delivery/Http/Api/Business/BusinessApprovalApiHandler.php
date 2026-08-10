@@ -31,9 +31,9 @@ final readonly class BusinessApprovalApiHandler implements RequestHandlerInterfa
     /**
      * Bind approval delivery to the scoped query and shared problem boundaries.
      *
-     * @param  BusinessApprovalSurfaceService $approvals  Business-only live surface approval gate.
-     * @param  BusinessApprovalApiPresenter   $presenter  Actor- and evidence-omitting projection.
-     * @param  ProblemDetailsResponseFactory  $problems   Stable RFC 9457 response factory.
+     * @param  BusinessApprovalSurfaceService  $approvals  Business-only live surface approval gate.
+     * @param  BusinessApprovalApiPresenter    $presenter  Actor- and evidence-omitting projection.
+     * @param  ProblemDetailsResponseFactory   $problems   Stable RFC 9457 response factory.
      *
      * @since  2.0.0
      */
