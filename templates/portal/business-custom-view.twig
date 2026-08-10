@@ -30,7 +30,7 @@
     </nav>
 </header>
 
-{% if error_summary %}<div class="portal-notice error" role="alert" tabindex="-1"><h2>View input needs attention</h2><p>{{ error_summary }}</p></div>{% endif %}
+{% if error_summary is defined and error_summary %}<div class="portal-notice error" role="alert" tabindex="-1"><h2>View input needs attention</h2><p>{{ error_summary }}</p></div>{% endif %}
 
 <section class="portal-business-panel portal-business-stack" aria-labelledby="portal-custom-query-title">
     <div><p class="eyebrow">Parameters</p><h2 id="portal-custom-query-title">Run this view</h2></div>

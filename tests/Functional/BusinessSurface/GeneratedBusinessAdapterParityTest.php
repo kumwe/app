@@ -539,7 +539,17 @@ final class GeneratedBusinessAdapterParityTest extends TestCase
             'related_targets',
             [],
         );
-        $relatedTargets = $apiRead['includes']['related_targets'];
+        $canonicalRelatedRows = static fn (array $rows): array => array_map(
+            static fn (array $row): array => [
+                'definition_version' => $row['definition_version'],
+                'record_id' => $row['record_id'],
+                'version' => $row['version'],
+                'position' => $row['position'],
+                'values' => $row['values'],
+            ],
+            $rows,
+        );
+        $relatedTargets = $canonicalRelatedRows($apiRead['includes']['related_targets']);
         foreach (
             [
                 $apiRelationRead['includes']['related_targets'],
@@ -549,7 +559,28 @@ final class GeneratedBusinessAdapterParityTest extends TestCase
                 $portalRelationRead->data['record']['includes']['related_targets'],
             ] as $actual
         ) {
-            self::assertSame($relatedTargets, $actual);
+            self::assertSame($relatedTargets, $canonicalRelatedRows($actual));
+        }
+        foreach (
+            [
+                $adminRelationRead->data['record']['includes']['related_targets'],
+                $portalRelationRead->data['record']['includes']['related_targets'],
+            ] as $browserTargets
+        ) {
+            self::assertCount(5, $browserTargets);
+            foreach ($browserTargets as $position => $browserTarget) {
+                self::assertSame(array_values($targetLabels)[$position], $browserTarget['label']);
+                self::assertNotSame([], $browserTarget['fields']);
+                self::assertContains(
+                    array_values($targetLabels)[$position],
+                    array_column($browserTarget['fields'], 'display'),
+                );
+                self::assertArrayNotHasKey('record_key', $browserTarget);
+                self::assertArrayNotHasKey('definition_id', $browserTarget);
+                foreach ($browserTarget['fields'] as $field) {
+                    self::assertSame(['handle', 'label', 'display'], array_keys($field));
+                }
+            }
         }
         self::assertSame(10, $apiRead['version']);
         self::assertSame('approved', $apiRead['workflow_state']);

@@ -6,6 +6,7 @@ namespace Kumwe\CMS\BusinessSecurity\Infrastructure\Persistence;
 
 use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use Doctrine\DBAL\Platforms\SQLitePlatform;
 use Doctrine\DBAL\Types\Types;
 use InvalidArgumentException;
@@ -541,7 +542,12 @@ final readonly class DoctrineApprovalRepository implements ApprovalRepository
     /** Return the platform's row-lock suffix. @return string SQL lock suffix where supported. @since 2.0.0 */
     private function lockClause(): string
     {
-        return $this->database->getDatabasePlatform() instanceof SQLitePlatform ? '' : ' FOR UPDATE';
+        $platform = $this->database->getDatabasePlatform();
+        if ($platform instanceof SQLitePlatform) {
+            return '';
+        }
+
+        return $platform instanceof PostgreSQLPlatform ? ' FOR UPDATE OF a' : ' FOR UPDATE';
     }
 
     /**

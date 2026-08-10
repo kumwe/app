@@ -115,6 +115,18 @@ async function fillSession5OrderForm(page: Page, name: string): Promise<void> {
   await page.locator('[name="values[credential]"]').fill('portal-secret-value');
 }
 
+async function expectPortalRecordName(page: Page, value: string): Promise<void> {
+  const field = page.locator('.portal-business-details > div').filter({
+    has: page.getByText('Name', { exact: true }),
+  });
+  await expect(field.locator('dd')).toHaveText(value);
+}
+
+async function expectPortalRecordRow(page: Page, value: string): Promise<void> {
+  await expect(page.locator('.portal-business-table tbody tr').filter({ hasText: value }).first())
+    .toBeVisible();
+}
+
 test('portal login is accessible and visually bounded', async ({ page }, testInfo) => {
   await page.goto('/portal/login');
   await expect(page.getByRole('heading', { name: 'Sign in to the portal' })).toBeVisible();
@@ -241,13 +253,13 @@ test('opt-in business workspaces use the portal shell on desktop and mobile', as
   await expect(page.getByRole('heading', { name: 'Archive selected records' })).toBeVisible();
   await expect(page.locator('input[name="operation_id"]')).not.toHaveValue('');
   await expect(page.locator('input[name="confirmed"]')).toHaveValue('1');
-  await page.goBack();
+  await page.goto(`/portal/business/${businessDefinitionHandle}`);
   await expectStylesLoaded(page);
   await expectAccessible(page);
   expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBe(0);
   await expect(page).toHaveScreenshot('portal-generated-business-list.png', {
     fullPage: true,
-    mask: [page.locator('.portal-business-table tbody')],
+    mask: [page.locator('.portal-business-table tbody tr')],
     maskColor: '#d9e2e8',
   });
   await page.screenshot({
@@ -260,6 +272,7 @@ test('opt-in business workspaces use the portal shell on desktop and mobile', as
     `/portal/business/${businessDefinitionHandle}/019b40d9-8dd0-7ca2-a0db-9eae6a150511`,
   );
   await expect(page.getByRole('heading', { name: 'Record details' })).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBe(0);
   await expectAccessible(page);
   await expect(page).toHaveScreenshot('portal-generated-business-detail.png', {
     fullPage: true,
@@ -318,7 +331,7 @@ test('portal maker-checker approval requires a distinct step-up identity', async
   await page.getByLabel('Verification code').fill(makerRecoveryCode);
   await page.locator('input[type="checkbox"][required]').check();
   await page.getByRole('button', { name: 'Approve', exact: true }).click();
-  await expect(page.getByText(name, { exact: true })).toBeVisible();
+  await expectPortalRecordName(page, name);
   await expect(page.locator('.portal-business-status')).toContainText('Approved');
   await expectAccessible(page);
 });
@@ -341,7 +354,7 @@ test('portal generated forms complete a no-JavaScript lifecycle', async ({ brows
     await expect(page).toHaveURL(new RegExp(
       `/portal/business/${businessDefinitionHandle}/[^?]+\\?saved=1&completed_operation=`,
     ));
-    await expect(page.getByText(name, { exact: true })).toBeVisible();
+    await expectPortalRecordName(page, name);
     await expect(page.getByText('portal-secret-value', { exact: true })).toHaveCount(0);
     await page.getByRole('link', { name: 'View operation status' }).click();
     await expect(page.getByRole('heading', { level: 1, name: 'Operation status' })).toBeVisible();
@@ -352,14 +365,14 @@ test('portal generated forms complete a no-JavaScript lifecycle', async ({ brows
     await page.locator('[name="values[name]"]').fill(updatedName);
     await page.locator('[name="values[credential]"]').fill('portal-secret-updated');
     await page.getByRole('button', { name: 'Save changes' }).click();
-    await expect(page.getByText(updatedName, { exact: true })).toBeVisible();
+    await expectPortalRecordName(page, updatedName);
     await page.getByRole('link', { name: 'History', exact: true }).click();
     await expect(page.getByRole('heading', { level: 1, name: 'Record history' })).toBeVisible();
     await expect(page.getByText('update', { exact: true }).first()).toBeVisible();
     await page.goto(`/portal/business/${businessDefinitionHandle}`);
     await page.getByLabel('Search records').fill(updatedName);
     await page.getByRole('button', { name: 'Apply', exact: true }).click();
-    await expect(page.getByText(updatedName, { exact: true })).toBeVisible();
+    await expectPortalRecordRow(page, updatedName);
     await page.getByRole('checkbox', { name: /Select record/ }).check();
     await page.getByLabel('Bulk operation').selectOption('archive');
     await page.getByRole('button', { name: 'Review bulk operation' }).click();
@@ -370,7 +383,7 @@ test('portal generated forms complete a no-JavaScript lifecycle', async ({ brows
     await page.getByLabel('Search records').fill(updatedName);
     await page.getByLabel('Include archived').check();
     await page.getByRole('button', { name: 'Apply', exact: true }).click();
-    await expect(page.getByText(updatedName, { exact: true })).toBeVisible();
+    await expectPortalRecordRow(page, updatedName);
     await page.getByRole('checkbox', { name: /Select record/ }).check();
     await page.getByLabel('Bulk operation').selectOption('restore');
     await page.getByRole('button', { name: 'Review bulk operation' }).click();
