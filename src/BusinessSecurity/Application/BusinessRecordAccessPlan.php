@@ -73,14 +73,14 @@ final readonly class BusinessRecordAccessPlan
     private string $durableAuthorizationFingerprint;
 
     /**
-     * @param   string               $resourceIdentifier        Business-definition UUID this plan protects.
-     * @param   string               $operation                 Dotted operation identifier being authorized.
-     * @param   RecordPolicySet      $records                   Bounded row policy with default-deny semantics.
-     * @param   FieldDisclosurePlan  $fields                    Explicit per-use field permissions.
-     * @param   string               $authorizationFingerprint  Digest of actor, organization, membership
+     * @param   string               $resourceIdentifier               Business-definition UUID this plan protects.
+     * @param   string               $operation                        Dotted operation identifier being authorized.
+     * @param   RecordPolicySet      $records                          Bounded row policy with default-deny semantics.
+     * @param   FieldDisclosurePlan  $fields                           Explicit per-use field permissions.
+     * @param   string               $authorizationFingerprint         Digest of actor, organization, membership
      *          and policy epoch.
-     * @param   array<string, self>  $related                   Target plans keyed by relation or reference handle.
-     * @param   list<string>         $actions                   Action handles explicitly permitted on
+     * @param array<string, self> $related Target plans keyed by relation or reference handle.
+     * @param   list<string>         $actions                          Action handles explicitly permitted on
      *          matching rows.
      * @param   ?string              $durableAuthorizationFingerprint  Credential-independent authority and
      *          policy digest for queued work; defaults to the strict authorization fingerprint.
