@@ -84,28 +84,24 @@ final readonly class ExportGenerationService
             return;
         }
         $attempt = $artifact;
-        $authorityRejected = false;
         $attemptStarted = false;
         try {
             $this->transactions->transactional(function () use (
                 $artifact,
                 $workerContext,
                 &$attempt,
-                &$authorityRejected,
                 &$attemptStarted,
             ): void {
                 try {
                     $context = $this->contexts->resolve($artifact, $workerContext);
                 } catch (ExportGenerationRejected $exception) {
-                    $authorityRejected = true;
-                    throw $exception;
+                    throw new ExportArtifactUnavailable(
+                        'The export artifact is unavailable.',
+                        0,
+                        $exception,
+                    );
                 }
-                try {
-                    $current = $this->exports->status($context, $artifact->id);
-                } catch (ExportArtifactUnavailable $exception) {
-                    $authorityRejected = true;
-                    throw $exception;
-                }
+                $current = $this->exports->status($context, $artifact->id);
                 $attempt = $current;
                 $active = match ($current->status) {
                     ExportArtifactStatus::Completed, ExportArtifactStatus::Failed => null,
@@ -144,9 +140,14 @@ final readonly class ExportGenerationService
                 );
             });
         } catch (Throwable $exception) {
-            if ($authorityRejected) {
+            if ($exception instanceof ExportArtifactUnavailable) {
                 $this->reject($artifact, 'authorization_changed');
-                throw new ExportGenerationRejected('The export authority or policy changed.', 0, $exception);
+                $cause = $exception->getPrevious();
+                throw new ExportGenerationRejected(
+                    'The export authority or policy changed.',
+                    0,
+                    $cause instanceof ExportGenerationRejected ? $cause : $exception,
+                );
             }
             if ($exception instanceof ReportRowLimitExceeded) {
                 $this->reject($artifact, 'row_limit');
