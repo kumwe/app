@@ -5,9 +5,23 @@ declare(strict_types=1);
 namespace Kumwe\CMS\Extension\Contribution;
 
 use InvalidArgumentException;
+use Kumwe\CMS\Application\Automation\JobHandler;
 use Kumwe\CMS\BusinessDefinition\Domain\DefinitionOwner;
 use Kumwe\CMS\BusinessDefinition\Domain\EntityTypeDefinition;
 use Kumwe\CMS\BusinessDefinition\Domain\FieldTypeDefinition;
+use Kumwe\CMS\BusinessIntegration\Application\DomainEventHandler;
+use Kumwe\CMS\BusinessIntegration\Application\IntegrationEventHandler;
+use Kumwe\CMS\BusinessIntegration\Application\IntegrationEventTransport;
+use Kumwe\CMS\BusinessIntegration\Domain\DomainListenerDefinition;
+use Kumwe\CMS\BusinessIntegration\Domain\EventConsumerDefinition;
+use Kumwe\CMS\BusinessIntegration\Domain\EventSchemaDefinition;
+use Kumwe\CMS\BusinessIntegration\Domain\JobContributionDefinition;
+use Kumwe\CMS\BusinessIntegration\Domain\QueueContributionDefinition;
+use Kumwe\CMS\BusinessIntegration\Domain\ScheduleContributionDefinition;
+use Kumwe\CMS\BusinessIntegration\Domain\WebhookContributionDefinition;
+use Kumwe\CMS\BusinessReporting\Domain\ReportDefinition;
+use Kumwe\CMS\BusinessReporting\Application\ProjectionBuilder;
+use Kumwe\CMS\BusinessReporting\Domain\ProjectionDefinition;
 use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessActionContract;
 use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessActionHandler;
 use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessViewContract;
@@ -105,6 +119,15 @@ final class OwnedExtensionContributionRegistrar implements ExtensionContribution
             'business_definition' => $this->businessIndex($declared->businessDefinitions()),
             'custom_business_view_handler' => $this->customIndex($declared->customBusinessViews()),
             'custom_business_action_handler' => $this->customIndex($declared->customBusinessActions()),
+            'event_schema' => $this->index($declared->eventSchemas()),
+            'domain_listener' => $this->index($declared->domainListeners()),
+            'event_consumer' => $this->index($declared->eventConsumers()),
+            'job' => $this->index($declared->jobs()),
+            'queue' => $this->index($declared->queues()),
+            'schedule' => $this->index($declared->schedules()),
+            'projection' => $this->index($declared->projections()),
+            'report' => $this->index($declared->reports()),
+            'webhook' => $this->index($declared->webhooks()),
         ];
     }
 
@@ -430,6 +453,89 @@ final class OwnedExtensionContributionRegistrar implements ExtensionContribution
     ): void {
         $this->accept('custom_business_action_handler', $contract->handler, $contract->toArray());
         $this->registries->customBusinessActionHandlers()->register($this->businessOwner(), $contract, $handler);
+    }
+
+    /** @inheritdoc */
+    public function eventSchema(EventSchemaDefinition $definition): void
+    {
+        $this->accept('event_schema', $definition->identifier(), $definition->toArray());
+        $this->registries->eventSchemas()->register($this->owner, $definition);
+    }
+
+    /** @inheritdoc */
+    public function domainListener(DomainListenerDefinition $definition, DomainEventHandler $handler): void
+    {
+        if ($handler->definition()->toArray() !== $definition->toArray()) {
+            throw new InvalidArgumentException('A domain listener implementation contradicts its declaration.');
+        }
+        $this->accept('domain_listener', $definition->identifier(), $definition->toArray());
+        $this->registries->domainListeners()->register($this->owner, $definition, $handler);
+    }
+
+    /** @inheritdoc */
+    public function eventConsumer(EventConsumerDefinition $definition, IntegrationEventHandler $handler): void
+    {
+        if ($handler->definition()->toArray() !== $definition->toArray()) {
+            throw new InvalidArgumentException('An event consumer implementation contradicts its declaration.');
+        }
+        $this->accept('event_consumer', $definition->identifier(), $definition->toArray());
+        $this->registries->eventConsumers()->register($this->owner, $definition, $handler);
+    }
+
+    /** @inheritdoc */
+    public function jobHandler(JobContributionDefinition $definition, JobHandler $handler): void
+    {
+        if ($handler->type() !== $definition->identifier()) {
+            throw new InvalidArgumentException('A job handler implementation contradicts its declaration.');
+        }
+        $this->accept('job', $definition->identifier(), $definition->toArray());
+        $this->registries->jobs()->register($this->owner, $definition, $handler);
+    }
+
+    /** @inheritdoc */
+    public function queue(QueueContributionDefinition $definition): void
+    {
+        $this->accept('queue', $definition->identifier(), $definition->toArray());
+        $this->registries->queues()->register($this->owner, $definition);
+    }
+
+    /** @inheritdoc */
+    public function schedule(ScheduleContributionDefinition $definition): void
+    {
+        $this->accept('schedule', $definition->identifier(), $definition->toArray());
+        $this->registries->schedules()->register($this->owner, $definition);
+    }
+
+    /** @inheritdoc */
+    public function projection(ProjectionDefinition $definition, ProjectionBuilder $builder): void
+    {
+        if ($builder->definition()->toArray() !== $definition->toArray()) {
+            throw new InvalidArgumentException('A projection builder contradicts its declaration.');
+        }
+        $this->accept('projection', $definition->identifier(), $definition->toArray());
+        $this->registries->projections()->register($this->owner, $definition, $builder);
+    }
+
+    /** @inheritdoc */
+    public function report(ReportDefinition $definition): void
+    {
+        $this->accept('report', $definition->identifier(), $definition->toArray());
+        $this->registries->reports()->register($this->owner, $definition);
+    }
+
+    /** @inheritdoc */
+    public function webhook(
+        WebhookContributionDefinition $definition,
+        IntegrationEventTransport $transport,
+    ): void {
+        if (
+            $transport->identifier() !== $definition->identifier()
+            || $transport->sensitivityCeiling() !== $definition->sensitivityCeiling()
+        ) {
+            throw new InvalidArgumentException('An outbound adapter implementation contradicts its declaration.');
+        }
+        $this->accept('webhook', $definition->identifier(), $definition->toArray());
+        $this->registries->webhooks()->register($this->owner, $definition, $transport);
     }
 
     /**

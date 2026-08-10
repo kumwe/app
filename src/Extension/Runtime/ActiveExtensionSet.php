@@ -286,6 +286,7 @@ final class ActiveExtensionSet
             $registrar->complete();
         }
         $this->contributions->validateBusinessDefinitions();
+        $this->contributions->validateIntegrationContributions();
     }
 
     /**

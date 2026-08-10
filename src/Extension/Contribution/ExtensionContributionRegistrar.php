@@ -6,6 +6,20 @@ namespace Kumwe\CMS\Extension\Contribution;
 
 use Kumwe\CMS\BusinessDefinition\Domain\EntityTypeDefinition;
 use Kumwe\CMS\BusinessDefinition\Domain\FieldTypeDefinition;
+use Kumwe\CMS\Application\Automation\JobHandler;
+use Kumwe\CMS\BusinessIntegration\Application\DomainEventHandler;
+use Kumwe\CMS\BusinessIntegration\Application\IntegrationEventHandler;
+use Kumwe\CMS\BusinessIntegration\Application\IntegrationEventTransport;
+use Kumwe\CMS\BusinessIntegration\Domain\DomainListenerDefinition;
+use Kumwe\CMS\BusinessIntegration\Domain\EventConsumerDefinition;
+use Kumwe\CMS\BusinessIntegration\Domain\EventSchemaDefinition;
+use Kumwe\CMS\BusinessIntegration\Domain\JobContributionDefinition;
+use Kumwe\CMS\BusinessIntegration\Domain\QueueContributionDefinition;
+use Kumwe\CMS\BusinessIntegration\Domain\ScheduleContributionDefinition;
+use Kumwe\CMS\BusinessIntegration\Domain\WebhookContributionDefinition;
+use Kumwe\CMS\BusinessReporting\Domain\ReportDefinition;
+use Kumwe\CMS\BusinessReporting\Application\ProjectionBuilder;
+use Kumwe\CMS\BusinessReporting\Domain\ProjectionDefinition;
 use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessActionContract;
 use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessActionHandler;
 use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessViewContract;
@@ -234,5 +248,88 @@ interface ExtensionContributionRegistrar
     public function customBusinessActionHandler(
         CustomBusinessActionContract $contract,
         CustomBusinessActionHandler $handler,
+    ): void;
+
+    /**
+     * Publish one immutable event schema revision.
+     *
+     * @param   EventSchemaDefinition  $definition  Versioned payload and sensitivity contract.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function eventSchema(EventSchemaDefinition $definition): void;
+
+    /**
+     * Register one transaction-local domain listener against its exact signed declaration.
+     *
+     * @param   DomainListenerDefinition  $definition  Listener event, versions, priority, and revision.
+     * @param   DomainEventHandler        $handler     Synchronous implementation; throwing aborts the mutation.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function domainListener(DomainListenerDefinition $definition, DomainEventHandler $handler): void;
+
+    /**
+     * Register one durable, inbox-deduplicated integration-event consumer.
+     *
+     * @param   EventConsumerDefinition  $definition  Version, ordering, queue, retry, and sensitivity contract.
+     * @param   IntegrationEventHandler  $handler     Idempotent consumer implementation.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function eventConsumer(EventConsumerDefinition $definition, IntegrationEventHandler $handler): void;
+
+    /**
+     * Register an extension job handler with its payload schema and retry declaration.
+     *
+     * @param   JobContributionDefinition  $definition  Job type, payload, queue, and executable revision.
+     * @param   JobHandler                 $handler     Existing durable-worker handler contract.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function jobHandler(JobContributionDefinition $definition, JobHandler $handler): void;
+
+    /** @param QueueContributionDefinition $definition Logical queue limits. @return void @since 2.0.0 */
+    public function queue(QueueContributionDefinition $definition): void;
+
+    /** @param ScheduleContributionDefinition $definition Recurring owned job. @return void @since 2.0.0 */
+    public function schedule(ScheduleContributionDefinition $definition): void;
+
+    /**
+     * Register a disposable projection builder against its signed rebuild contract.
+     *
+     * @param   ProjectionDefinition  $definition  Projection event and rebuild contract.
+     * @param   ProjectionBuilder     $builder     Idempotent derived-state builder.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function projection(ProjectionDefinition $definition, ProjectionBuilder $builder): void;
+
+    /** @param ReportDefinition $definition Safe permission-aware report. @return void @since 2.0.0 */
+    public function report(ReportDefinition $definition): void;
+
+    /**
+     * Register a durable outbound adapter without exposing its destination or credentials in inventory.
+     *
+     * @param   WebhookContributionDefinition  $definition  Event, queue, retry, and disclosure contract.
+     * @param   IntegrationEventTransport      $transport   Trusted outbound implementation.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function webhook(
+        WebhookContributionDefinition $definition,
+        IntegrationEventTransport $transport,
     ): void;
 }

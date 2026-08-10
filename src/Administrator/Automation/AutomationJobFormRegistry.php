@@ -145,6 +145,16 @@ final class AutomationJobFormRegistry
                 $payload[$field->key] = $value;
                 continue;
             }
+            if ($field->type === 'boolean') {
+                if (!in_array($raw, ['true', 'false'], true)) {
+                    throw new InvalidArgumentException(sprintf(
+                        'The %s job field must be true or false.',
+                        $field->label,
+                    ));
+                }
+                $payload[$field->key] = $raw === 'true';
+                continue;
+            }
             if ($field->options !== [] && !in_array($raw, $field->options, true)) {
                 throw new InvalidArgumentException(sprintf(
                     'The %s job field has an unsupported value.',

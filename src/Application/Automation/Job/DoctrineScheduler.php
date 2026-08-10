@@ -24,6 +24,7 @@ use Kumwe\CMS\Application\Automation\JobExecutionClass;
 use Kumwe\CMS\Application\Automation\JobExecutionScope;
 use Kumwe\CMS\Application\Automation\ScheduleOccurrenceKey;
 use Kumwe\CMS\Application\Automation\Scheduler;
+use Kumwe\CMS\BusinessIntegration\Application\ScheduleRuntimeSynchronizer;
 use Kumwe\CMS\Infrastructure\Persistence\TableNames;
 use Kumwe\CMS\Infrastructure\Persistence\TransactionManager;
 use Kumwe\CMS\Identity\Domain\Capability;
@@ -72,6 +73,7 @@ final readonly class DoctrineScheduler implements Scheduler, ScheduleRepository
         private ResourceSiteOwnershipWriter $ownershipWriter,
         private SystemPrincipal $system,
         private JobExecutionScope $jobScope,
+        private ?ScheduleRuntimeSynchronizer $contributedSchedules = null,
     ) {
     }
 
@@ -98,6 +100,7 @@ final readonly class DoctrineScheduler implements Scheduler, ScheduleRepository
      */
     public function dispatchDue(ExecutionContext $context, int $limit = 100): int
     {
+        $this->contributedSchedules?->synchronize();
         $this->authorization->assertAllowed(
             $context,
             Capability::fromString('system.scheduler.dispatch'),
@@ -112,7 +115,8 @@ final readonly class DoctrineScheduler implements Scheduler, ScheduleRepository
                 ? 'CAST(s.id AS VARCHAR)'
                 : 's.id';
             $rows = $this->database->fetchAllAssociative(sprintf(
-                'SELECT s.* FROM %s s WHERE (s.execution_scope = ? OR (s.execution_scope = ? '
+                'SELECT s.* FROM %s s WHERE (s.contribution_id IS NULL OR s.contribution_active = ?) '
+                . 'AND (s.execution_scope = ? OR (s.execution_scope = ? '
                 . 'AND EXISTS (SELECT 1 FROM %s o INNER JOIN %s site ON site.identifier = o.site_identifier '
                 . 'WHERE o.resource_type = ? AND o.resource_id = %s AND site.enabled = ?))) '
                 . 'AND s.enabled = ? AND s.next_run_at <= ? '
@@ -123,6 +127,7 @@ final readonly class DoctrineScheduler implements Scheduler, ScheduleRepository
                 $scheduleOwnershipId,
                 $limit,
             ), [
+                true,
                 JobExecutionClass::Installation->value,
                 JobExecutionClass::Site->value,
                 'schedule',
@@ -130,6 +135,7 @@ final readonly class DoctrineScheduler implements Scheduler, ScheduleRepository
                 true,
                 $this->clock->now(),
             ], [
+                Types::BOOLEAN,
                 Types::STRING,
                 Types::STRING,
                 Types::STRING,
@@ -292,10 +298,11 @@ final readonly class DoctrineScheduler implements Scheduler, ScheduleRepository
      */
     public function all(ExecutionContext $context): array
     {
+        $this->contributedSchedules?->synchronize();
         $rows = array_map($this->normalize(...), $this->database->fetchAllAssociative(sprintf(
-            'SELECT * FROM %s ORDER BY name',
+            'SELECT * FROM %s WHERE contribution_id IS NULL OR contribution_active = ? ORDER BY name',
             $this->tables->quoted('schedules'),
-        )));
+        ), [true], [Types::BOOLEAN]));
 
         return array_values(array_filter(
             $rows,
@@ -324,10 +331,11 @@ final readonly class DoctrineScheduler implements Scheduler, ScheduleRepository
      */
     public function find(ExecutionContext $context, string $id): ?array
     {
+        $this->contributedSchedules?->synchronize();
         $row = $this->database->fetchAssociative(sprintf(
-            'SELECT * FROM %s WHERE id = ?',
+            'SELECT * FROM %s WHERE id = ? AND (contribution_id IS NULL OR contribution_active = ?)',
             $this->tables->quoted('schedules'),
-        ), [$id]);
+        ), [$id, true], [Types::GUID, Types::BOOLEAN]);
 
         if ($row === false) {
             return null;
@@ -410,6 +418,9 @@ final readonly class DoctrineScheduler implements Scheduler, ScheduleRepository
     public function delete(ExecutionContext $context, string $id, int $expectedVersion): void
     {
         $row = $this->scheduleRow($id);
+        if (is_string($row['contribution_id'] ?? null)) {
+            throw new InvalidArgumentException('A package-owned schedule is removed by disabling its extension.');
+        }
         $executionClass = $this->authorizeRow($context, $row);
         if ($expectedVersion < 1) {
             throw new InvalidArgumentException('The expected schedule version must be positive.');
@@ -815,10 +826,12 @@ final readonly class DoctrineScheduler implements Scheduler, ScheduleRepository
      */
     private function scheduleRow(string $id): array
     {
+        $this->contributedSchedules?->synchronize();
         $row = $this->database->fetchAssociative(sprintf(
-            'SELECT id, job_type, execution_scope FROM %s WHERE id = ?',
+            'SELECT id, job_type, execution_scope, contribution_id FROM %s WHERE id = ? '
+            . 'AND (contribution_id IS NULL OR contribution_active = ?)',
             $this->tables->quoted('schedules'),
-        ), [$id]);
+        ), [$id, true], [Types::GUID, Types::BOOLEAN]);
         if ($row === false) {
             throw new InvalidArgumentException('The schedule does not exist.');
         }

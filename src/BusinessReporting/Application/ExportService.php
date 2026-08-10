@@ -1,0 +1,330 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Kumwe\CMS\BusinessReporting\Application;
+
+use InvalidArgumentException;
+use Kumwe\CMS\Application\Authorization\AuthenticatedSurface;
+use Kumwe\CMS\Application\Authorization\AuthorizationGateway;
+use Kumwe\CMS\Application\Authorization\AuthorizationResource;
+use Kumwe\CMS\Application\Authorization\ExecutionContext;
+use Kumwe\CMS\Audit\Application\AuditRecorder;
+use Kumwe\CMS\Audit\Domain\AuditEvent;
+use Kumwe\CMS\BusinessDefinition\Domain\CanonicalDefinitionJson;
+use Kumwe\CMS\BusinessRecord\Application\Query\BusinessRecordQueryPurpose;
+use Kumwe\CMS\BusinessReporting\Domain\ExportArtifact;
+use Kumwe\CMS\BusinessReporting\Domain\ExportArtifactStatus;
+use Kumwe\CMS\BusinessReporting\Domain\ReportDefinition;
+use Kumwe\CMS\Identity\Domain\Capability;
+use Kumwe\CMS\Infrastructure\Persistence\TransactionManager;
+use Psr\Clock\ClockInterface;
+use Ramsey\Uuid\Uuid;
+use Throwable;
+
+/**
+ * Requests, inspects and downloads policy-bound queued report exports.
+ *
+ * @since  2.0.0
+ */
+final readonly class ExportService
+{
+    /**
+     * Wire export metadata, queueing, authorization, storage and audit boundaries.
+     *
+     * @param  ReportDefinitionRegistry      $reports        Active report contributions.
+     * @param  ExportArtifactRepository      $artifacts      Durable immutable metadata versions.
+     * @param  ExportArtifactStorage         $storage        Private verified byte store.
+     * @param  ExportJobDispatcher           $jobs           Durable internal queue producer.
+     * @param  ExportPolicySnapshotProvider  $policies       Canonical record access-plan snapshots.
+     * @param  AuthorizationGateway          $authorization  Deny-by-default capability gateway.
+     * @param  TransactionManager            $transactions   Metadata and audit transaction owner.
+     * @param  AuditRecorder                 $audit          Redacted audit sink.
+     * @param  ClockInterface                $clock          Trusted wall clock.
+     *
+     * @since  2.0.0
+     */
+    public function __construct(
+        private ReportDefinitionRegistry $reports,
+        private ExportArtifactRepository $artifacts,
+        private ExportArtifactStorage $storage,
+        private ExportJobDispatcher $jobs,
+        private ExportPolicySnapshotProvider $policies,
+        private AuthorizationGateway $authorization,
+        private TransactionManager $transactions,
+        private AuditRecorder $audit,
+        private ClockInterface $clock,
+    ) {
+    }
+
+    /**
+     * Persist and enqueue one export after validating scope, parameters, capability and current policy.
+     *
+     * @param   ExecutionContext      $context                 Authenticated requesting actor.
+     * @param   string                $reportIdentifier        Namespaced report handle.
+     * @param   array<string, mixed>  $parameters              Declared typed report parameters.
+     * @param   ?string               $organizationIdentifier  Organization record scope.
+     * @param   int                   $retentionSeconds        Download lifetime, 60 seconds to seven days.
+     *
+     * @return  ExportArtifact  Queued immutable artifact metadata.
+     *
+     * @throws  InvalidArgumentException  When retention or parameters are invalid.
+     * @throws  Throwable                 When persistence or durable dispatch fails.
+     *
+     * @since   2.0.0
+     */
+    public function request(
+        ExecutionContext $context,
+        string $reportIdentifier,
+        array $parameters = [],
+        ?string $organizationIdentifier = null,
+        int $retentionSeconds = 86_400,
+    ): ExportArtifact {
+        if ($retentionSeconds < 60 || $retentionSeconds > 604_800) {
+            throw new InvalidArgumentException('Export retention must be between one minute and seven days.');
+        }
+        $report = $this->reports->get($reportIdentifier);
+        if ($context->principal() === null) {
+            throw new InvalidArgumentException('A report export must have an accountable human actor.');
+        }
+        $this->assertSurface($report, $context->surface());
+        $this->authorize($context, $report);
+        $parameters = $this->bindParameters($report, $parameters);
+        $policy = $this->policies->snapshot(
+            $context,
+            $report,
+            $organizationIdentifier,
+            BusinessRecordQueryPurpose::Export,
+        );
+        $now = $this->clock->now();
+        $organization = $context->organization()?->identifier();
+        $workspace = $context->workspace()?->identifier();
+        $parameterDigest = CanonicalDefinitionJson::checksum([
+            'report_checksum' => $report->checksum(),
+            'parameters' => $parameters,
+            'organization' => $organization,
+            'workspace' => $workspace,
+        ]);
+        $id = Uuid::uuid7()->toString();
+        $filenameStem = substr(str_replace('.', '_', $report->identifier()), 0, 80);
+        $artifact = new ExportArtifact(
+            $id,
+            $report->identifier(),
+            $report->version,
+            $report->checksum(),
+            $context->actorId(),
+            $context->site()->identifier(),
+            $organization,
+            $workspace,
+            $context->surface(),
+            $context->approvalFingerprint(),
+            $policy,
+            $parameters,
+            $parameterDigest,
+            ExportArtifactStatus::Queued,
+            $now,
+            $now->modify('+' . $retentionSeconds . ' seconds'),
+            null,
+            null,
+            $filenameStem . '-' . $now->format('Ymd-His') . '.csv',
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            1,
+        );
+        $this->transactions->transactional(function () use ($artifact, $context, $now): void {
+            $this->artifacts->add($artifact);
+            $this->audit($context, $artifact, 'business.report.export.request', 'success', $now);
+        });
+        try {
+            $this->jobs->dispatch($context, $artifact->id);
+        } catch (Throwable $exception) {
+            $failed = $artifact->fail($this->clock->now(), 'dispatch_failed');
+            $this->transactions->transactional(function () use ($artifact, $failed, $context): void {
+                $this->artifacts->save($failed, $artifact->version);
+                $this->audit(
+                    $context,
+                    $failed,
+                    'business.report.export.dispatch',
+                    'failure',
+                    $failed->completedAt ?? $this->clock->now(),
+                );
+            });
+            throw $exception;
+        }
+
+        return $artifact;
+    }
+
+    /**
+     * Return current metadata only while current actor, authority, report and policy still match.
+     *
+     * @param   ExecutionContext  $context     Authenticated requesting actor.
+     * @param   string            $artifactId  Opaque artifact UUID.
+     *
+     * @return  ExportArtifact  Current authorized state.
+     *
+     * @throws  ExportArtifactUnavailable  When any binding differs or the artifact expired.
+     *
+     * @since   2.0.0
+     */
+    public function status(ExecutionContext $context, string $artifactId): ExportArtifact
+    {
+        $artifact = $this->artifacts->find($artifactId)
+            ?? throw new ExportArtifactUnavailable('The export artifact is unavailable.');
+        $this->assertCurrent($context, $artifact);
+
+        return $artifact;
+    }
+
+    /**
+     * Open one completed artifact only after current authorization, policy and checksum verification.
+     *
+     * @param   ExecutionContext  $context     Authenticated requesting actor.
+     * @param   string            $artifactId  Opaque artifact UUID.
+     *
+     * @return  ExportDownload  Verified stream and safe response metadata.
+     *
+     * @throws  ExportArtifactUnavailable  When the artifact is not completed or any binding differs.
+     *
+     * @since   2.0.0
+     */
+    public function download(ExecutionContext $context, string $artifactId): ExportDownload
+    {
+        $artifact = $this->status($context, $artifactId);
+        if ($artifact->status !== ExportArtifactStatus::Completed
+            || $artifact->storageKey === null || $artifact->size === null || $artifact->checksum === null
+        ) {
+            throw new ExportArtifactUnavailable('The export artifact is unavailable.');
+        }
+        $stored = new StoredExportArtifact($artifact->storageKey, $artifact->size, $artifact->checksum);
+        $stream = $this->storage->open($stored);
+        $this->audit(
+            $context,
+            $artifact,
+            'business.report.export.download',
+            'success',
+            $this->clock->now(),
+        );
+
+        return new ExportDownload($stream, $artifact->filename, $artifact->size, $artifact->checksum);
+    }
+
+    /** @since 2.0.0 */
+    private function assertCurrent(ExecutionContext $context, ExportArtifact $artifact): void
+    {
+        if ($artifact->expiresAt <= $this->clock->now()
+            || $artifact->actorId !== $context->actorId()
+            || $artifact->siteIdentifier !== $context->site()->identifier()
+            || $artifact->organizationIdentifier !== $context->organization()?->identifier()
+            || $artifact->workspaceIdentifier !== $context->workspace()?->identifier()
+            || $artifact->surface !== $context->surface()
+            || !hash_equals($artifact->authorityFingerprint, $context->approvalFingerprint())
+        ) {
+            throw new ExportArtifactUnavailable('The export artifact is unavailable.');
+        }
+        try {
+            $report = $this->reports->get($artifact->reportIdentifier);
+            $this->assertSurface($report, $context->surface());
+            if ($report->version !== $artifact->reportVersion
+                || !hash_equals($report->checksum(), $artifact->definitionChecksum)
+            ) {
+                throw new ExportArtifactUnavailable('The export artifact is unavailable.');
+            }
+            $this->authorize($context, $report);
+            $policy = $this->policies->snapshot(
+                $context,
+                $report,
+                $artifact->organizationIdentifier,
+                BusinessRecordQueryPurpose::Export,
+            );
+            if (!hash_equals($artifact->policySnapshot, $policy)) {
+                throw new ExportArtifactUnavailable('The export artifact is unavailable.');
+            }
+        } catch (ExportArtifactUnavailable $exception) {
+            throw $exception;
+        } catch (Throwable $exception) {
+            throw new ExportArtifactUnavailable('The export artifact is unavailable.', 0, $exception);
+        }
+    }
+
+    /** @since 2.0.0 */
+    private function authorize(ExecutionContext $context, ReportDefinition $report): void
+    {
+        $resource = AuthorizationResource::collection('business_report');
+        $this->authorization->assertAllowed(
+            $context,
+            Capability::fromString($report->requiredCapability),
+            $resource,
+        );
+        $this->authorization->assertAllowed(
+            $context,
+            Capability::fromString('business.record.export'),
+            $resource,
+        );
+    }
+
+    /** @param array<string, mixed> $supplied @return array<string, mixed> @since 2.0.0 */
+    private function bindParameters(ReportDefinition $report, array $supplied): array
+    {
+        $declared = [];
+        $bound = [];
+        foreach ($report->parameters as $parameter) {
+            $declared[$parameter->name] = true;
+            $value = array_key_exists($parameter->name, $supplied)
+                ? $supplied[$parameter->name]
+                : $parameter->defaultValue;
+            if ($value === null && !$parameter->required) {
+                continue;
+            }
+            $bound[$parameter->name] = $parameter->assertValue($value);
+        }
+        if (array_diff_key($supplied, $declared) !== []) {
+            throw new InvalidArgumentException('An export contains an undeclared report parameter.');
+        }
+        ksort($bound, SORT_STRING);
+
+        return $bound;
+    }
+
+    /** @since 2.0.0 */
+    private function assertSurface(ReportDefinition $report, AuthenticatedSurface $surface): void
+    {
+        if (($surface === AuthenticatedSurface::Administrator && !$report->administratorVisible)
+            || ($surface === AuthenticatedSurface::Portal && !$report->portalVisible)
+            || $surface === AuthenticatedSurface::Recovery
+        ) {
+            throw new ReportUnavailable('The report is unavailable.');
+        }
+    }
+
+    /** @since 2.0.0 */
+    private function audit(
+        ExecutionContext $context,
+        ExportArtifact $artifact,
+        string $action,
+        string $outcome,
+        \DateTimeImmutable $now,
+    ): void {
+        $this->audit->record(new AuditEvent(
+            Uuid::uuid7()->toString(),
+            $now,
+            $context->actorId(),
+            $action,
+            'report_export',
+            $artifact->id,
+            $outcome,
+            [
+                'report_identifier' => $artifact->reportIdentifier,
+                'definition_checksum' => $artifact->definitionChecksum,
+                'parameter_digest' => $artifact->parameterDigest,
+                'status' => $artifact->status->value,
+                'row_count' => $artifact->rowCount,
+                'artifact_checksum' => $artifact->checksum,
+            ],
+        ));
+    }
+}
