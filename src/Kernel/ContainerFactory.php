@@ -1367,11 +1367,11 @@ final class ContainerFactory
      * registered last because its factory pipes the middleware and declares every route, and so must
      * see the middleware and handlers this method registers on the way.
      *
-     * @param   Container                 $container      Container being composed.
-     * @param   ApplicationConfiguration  $configuration  Boot configuration for base URL, site and caching.
-     * @param   string                    $root           Absolute path of the repository root.
+     * @param   Container                 $container       Container being composed.
+     * @param   ApplicationConfiguration  $configuration   Boot configuration for base URL, site and caching.
+     * @param   string                    $root            Absolute path of the repository root.
      * @param   string                    $routeCacheFile  Kernel-specific FastRoute cache path.
-     * @param   bool                      $portalEnabled  Whether to register the ordinary-user portal runtime.
+     * @param   bool                      $portalEnabled   Whether to register the ordinary-user portal runtime.
      *
      * @return  void
      *
