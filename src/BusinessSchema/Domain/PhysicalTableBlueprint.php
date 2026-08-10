@@ -66,7 +66,7 @@ final readonly class PhysicalTableBlueprint
      * Assemble a table and prove it is internally consistent.
      *
      * @param string $logicalName Handle a plan operation names this table by, such as `record`.
-     * @param string $physicalName Installed table name, without the configured prefix applied.
+     * @param string $physicalName Installed table name, with the configured prefix already applied.
      * @param PhysicalTableKind $kind Whether the table holds records, links, or owned lines.
      * @param   list<PhysicalColumnBlueprint>      $columns       Columns in any order; at least one, at most 512.
      * @param list<string> $primaryKey Physical column names in key order; at most 16, all present in $columns.

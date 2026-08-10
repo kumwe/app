@@ -923,7 +923,8 @@ final class AssetInspectionDeploymentAcceptance
                 $physicalTables[$table->physicalName] = true;
                 $recordRows += (int) $database->fetchOne(sprintf(
                     'SELECT COUNT(*) FROM %s',
-                    $tables->quoted($table->physicalName),
+                    // Generated blueprint names already carry the configured prefix and portable validation.
+                    $database->quoteSingleIdentifier($table->physicalName),
                 ));
             }
         }
