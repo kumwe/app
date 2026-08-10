@@ -715,10 +715,21 @@ admin_password="$(<"$KUMWE_ACCEPTANCE_ADMIN_PASSWORD_FILE")"
 admin_cookie="$(header_value set-cookie "$admin_headers" | cut -d';' -f1)"
 [[ "$admin_cookie" == kumwe_administrator=* ]] || fail 'administrator login omitted its session cookie'
 admin_page="$work_root/asset-inspection-administrator.html"
-[[ "$(curl --silent --show-error --output "$admin_page" --write-out '%{http_code}' \
+admin_status="$(curl --silent --show-error --output "$admin_page" --write-out '%{http_code}' \
     --header "Cookie: $admin_cookie" \
-    "$base_url/administrator/extensions/kumwe/asset-inspection-example")" == 200 ]] \
-    || fail 'contributed administrator page was unavailable'
+    "$base_url/administrator/extensions/kumwe/asset-inspection-example")"
+if [[ "$admin_status" != 200 ]]; then
+    sed -n '1,20p' "$admin_page" >&2
+    app sh -euc '
+        log=/var/www/kumwe/storage/logs/php-fpm.log
+        if [ -r "$log" ]; then
+            tail -n 120 "$log"
+        else
+            echo "PHP-FPM error log is unavailable."
+        fi
+    ' >&2 || true
+    fail "contributed administrator page returned HTTP $admin_status"
+fi
 grep --fixed-strings --quiet 'not an ERP module' "$admin_page" \
     || fail 'contributed administrator page omitted its neutral-example notice'
 
