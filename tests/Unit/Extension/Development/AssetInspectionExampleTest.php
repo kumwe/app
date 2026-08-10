@@ -27,8 +27,20 @@ use Kumwe\CMS\Extension\Runtime\RestrictedExtensionContainer;
 use KumweExample\AssetInspection\Application\InspectionPolicyProfile;
 use KumweExample\AssetInspection\Definitions;
 use KumweExample\AssetInspection\Provider;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 
+#[CoversClass(EntityTypeDefinition::class)]
+#[CoversClass(PayloadSchemaValidator::class)]
+#[CoversClass(PackageSafetyPolicy::class)]
+#[CoversClass(ExtensionContributionRegistrySet::class)]
+#[CoversClass(DeterministicPackageBuilder::class)]
+#[CoversClass(PackageInspector::class)]
+#[CoversClass(PackageSigner::class)]
+#[CoversClass(ProtectedSigningKeyReader::class)]
+#[CoversClass(StaticConformanceRunner::class)]
+#[CoversClass(ExtensionManifest::class)]
+#[CoversClass(RestrictedExtensionContainer::class)]
 /**
  * Proves the committed asset-inspection source is a complete, reconciled, signable SPI-v2 package.
  *
@@ -178,6 +190,11 @@ final class AssetInspectionExampleTest extends TestCase
         self::assertFalse($profile->records()->allows([]));
         self::assertTrue($profile->fields()->allows(FieldAccessUsage::Detail, 'reference'));
         self::assertTrue($profile->fields()->allows(FieldAccessUsage::Report, 'risk_score'));
+        self::assertFalse($profile->fields()->allows(FieldAccessUsage::Search, 'reference'));
+        self::assertTrue($profile->fields()->allows(FieldAccessUsage::Relation, 'reference'));
+        self::assertFalse($profile->fields()->allows(FieldAccessUsage::Relation, 'id'));
+        self::assertTrue($profile->fields()->allows(FieldAccessUsage::PublicReference, 'id'));
+        self::assertFalse($profile->fields()->allows(FieldAccessUsage::PublicReference, 'reference'));
         foreach (FieldAccessUsage::cases() as $usage) {
             self::assertFalse($profile->fields()->allows($usage, 'internal_note'));
         }

@@ -6,9 +6,11 @@ namespace Kumwe\CMS\Tests\Unit\Extension\Development;
 
 use Kumwe\CMS\Extension\Contribution\ManifestContributionSet;
 use Kumwe\CMS\Extension\Domain\ExtensionManifest;
+use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
+#[CoversNothing]
 /**
  * Locks the public parser contract for every supported extension manifest schema.
  *

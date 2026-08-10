@@ -167,7 +167,7 @@ final class ProductionArtifactsTest extends TestCase
         self::assertStringContainsString('extension:runtime:materialize', $acceptance);
         self::assertStringContainsString('KUMWE_ACCEPTANCE_ASSET_MANIFEST', $acceptance);
         self::assertStringContainsString('KUMWE_ACCEPTANCE_ASSET_STATE', $acceptance);
-        self::assertStringContainsString('storage/private/report-exports/objects', $acceptance);
+        self::assertStringContainsString('$source_private/report-exports/objects', $acceptance);
         self::assertStringContainsString('app web worker scheduler', $acceptance);
 
         foreach (['extension:build', 'extension:inspect', 'extension:conformance', 'extension:sign'] as $command) {

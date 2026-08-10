@@ -307,7 +307,7 @@ final class GeneratedBusinessDeliveryParityTest extends TestCase
         $container = $this->contents('src/Kernel/ContainerFactory.php');
         $start = strpos($container, "'/api/v1/openapi.json'");
         self::assertIsInt($start);
-        $end = strpos($container, "'/api/v1/business/definitions'", $start);
+        $end = strpos($container, 'self::apiRoute(', $start);
         self::assertIsInt($end);
         $route = substr($container, $start, $end - $start);
 

@@ -51,7 +51,7 @@ final class ProjectionRuntimePersistenceTest extends TestCase
     protected function setUp(): void
     {
         $this->database = DriverManager::getConnection(['driver' => 'pdo_sqlite', 'memory' => true]);
-        $this->tables = new TableNames($this->database, '');
+        $this->tables = new TableNames($this->database, 'kumwe_');
         $this->transactions = new DoctrineTransactionManager($this->database);
         $this->clock = new ProjectionRuntimeClock();
         $schema = new EventSchemaDefinition(

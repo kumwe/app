@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
 use Kumwe\CMS\Application\Authorization\AuthenticationStrength;
 use Kumwe\CMS\Application\Authorization\AuthorizationResource;
@@ -23,10 +22,6 @@ use Kumwe\CMS\Infrastructure\Persistence\TransactionManager;
 use Kumwe\CMS\Tests\Support\NeutralBusinessFixture;
 use KumweExample\AssetInspection\Application\InspectionPolicyProfile;
 use Ramsey\Uuid\Uuid;
-use RecursiveDirectoryIterator;
-use RecursiveIteratorIterator;
-use SplFileInfo;
-use ZipArchive;
 
 require dirname(__DIR__, 2) . '/vendor/autoload.php';
 
@@ -512,7 +507,7 @@ try {
         throw new RuntimeException('The browser report fixture policy profile is unavailable.');
     }
     $profile = InspectionPolicyProfile::fromJson($profileJson);
-    if ($profile->checksum() !== '13103ca5d5d446eb040af729cbfb43d40c7d366c47a8f694a759b527ebcef5bd') {
+    if ($profile->checksum() !== '4111a514bab062215a032df003a3edd940f8b2648c8c20030567b6e46c1c220b') {
         throw new RuntimeException('The browser report fixture policy profile checksum is invalid.');
     }
     if (count($profile->records()->allows) !== 1 || $profile->records()->denies !== []) {
@@ -546,12 +541,14 @@ try {
             'priority' => $priority,
         ];
     }
-    if (array_column($policyRequests, 'operation') !== [
+    if (
+        array_column($policyRequests, 'operation') !== [
         'business.record.browse',
         'business.record.export',
         'business.record.read',
         'business.record.report',
-    ]) {
+        ]
+    ) {
         throw new RuntimeException('The browser report fixture policy operations are incomplete.');
     }
     NeutralBusinessFixture::removeRecordAccess(

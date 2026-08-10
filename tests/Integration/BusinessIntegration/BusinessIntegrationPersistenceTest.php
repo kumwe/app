@@ -54,7 +54,7 @@ final class BusinessIntegrationPersistenceTest extends TestCase
     protected function setUp(): void
     {
         $this->database = DriverManager::getConnection(['driver' => 'pdo_sqlite', 'memory' => true]);
-        $this->tables = new TableNames($this->database, '');
+        $this->tables = new TableNames($this->database, 'kumwe_');
         $this->transactions = new DoctrineTransactionManager($this->database);
         $this->clock = new FixedBusinessIntegrationClock(new DateTimeImmutable('2026-08-10T10:00:00+00:00'));
         $schema = new EventSchemaDefinition(

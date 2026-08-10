@@ -73,7 +73,7 @@ final class AssetInspectionDeploymentAcceptance
     private const string SCHEDULE = 'kumwe.asset-inspection-example.review-overdue-daily';
 
     /** Canonical checksum of the signed, operator-applied policy profile. @since 2.0.0 */
-    private const string POLICY_PROFILE_CHECKSUM = '13103ca5d5d446eb040af729cbfb43d40c7d366c47a8f694a759b527ebcef5bd';
+    private const string POLICY_PROFILE_CHECKSUM = '4111a514bab062215a032df003a3edd940f8b2648c8c20030567b6e46c1c220b';
 
     /** @var array<string, string> Definition handles keyed by stable definition UUID. @since 2.0.0 */
     private const array DEFINITIONS = [

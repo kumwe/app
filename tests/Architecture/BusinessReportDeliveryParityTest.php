@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace Kumwe\CMS\Tests\Architecture;
 
+use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\TestCase;
 
+#[CoversNothing]
 final class BusinessReportDeliveryParityTest extends TestCase
 {
     public function testBrowserAdaptersExposeCsrfProtectedExecutionAndVerifiedDownload(): void
@@ -62,14 +64,17 @@ final class BusinessReportDeliveryParityTest extends TestCase
         $visibility = file_get_contents(
             $root . '/src/BusinessSurface/Delivery/Portal/GeneratedBusinessPortalNavigationVisibility.php',
         );
+        $reports = file_get_contents($root . '/src/BusinessReporting/Application/ReportService.php');
 
         self::assertIsString($core);
         self::assertIsString($visibility);
+        self::assertIsString($reports);
         self::assertStringContainsString("'core.business-reports'", $core);
         self::assertStringContainsString("'core.portal-business-reports'", $core);
         self::assertStringContainsString('REPORT_NAVIGATION_ID', $visibility);
-        self::assertStringContainsString('$this->reports->all()', $visibility);
-        self::assertStringContainsString('$report->portalVisible', $visibility);
-        self::assertStringContainsString('$report->requiredCapability', $visibility);
+        self::assertStringContainsString('$this->reports->available(', $visibility);
+        self::assertStringContainsString('$this->reports->all()', $reports);
+        self::assertStringContainsString('$report->portalVisible', $reports);
+        self::assertStringContainsString('$report->requiredCapability', $reports);
     }
 }
