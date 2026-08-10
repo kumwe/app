@@ -80,6 +80,94 @@ final class BusinessRecordAccessPlanTest extends TestCase
         self::assertNotSame($base->digest(), $changedAuthorization->digest());
     }
 
+    public function testDurableDigestSeparatesCredentialIdentityAndRecursesThroughRelatedPlans(): void
+    {
+        $records = new RecordPolicySet(new RecordPolicySchema([]), [new RecordPolicyConstant(true)]);
+        $firstChild = new BusinessRecordAccessPlan(
+            '0191574f-f0b8-7bf3-a9aa-91c6b8244e11',
+            'business.record.export',
+            $records,
+            new FieldDisclosurePlan(['export' => ['name']]),
+            str_repeat('a', 64),
+            durableAuthorizationFingerprint: str_repeat('d', 64),
+        );
+        $rehydratedChild = new BusinessRecordAccessPlan(
+            $firstChild->resourceIdentifier,
+            $firstChild->operation,
+            $records,
+            new FieldDisclosurePlan(['export' => ['name']]),
+            str_repeat('b', 64),
+            durableAuthorizationFingerprint: str_repeat('d', 64),
+        );
+        $changedAuthorityChild = new BusinessRecordAccessPlan(
+            $firstChild->resourceIdentifier,
+            $firstChild->operation,
+            $records,
+            new FieldDisclosurePlan(['export' => ['name']]),
+            str_repeat('b', 64),
+            durableAuthorizationFingerprint: str_repeat('e', 64),
+        );
+        $first = new BusinessRecordAccessPlan(
+            '0191574f-f0b8-7bf3-a9aa-91c6b8244e10',
+            'business.record.export',
+            $records,
+            new FieldDisclosurePlan(['export' => ['name']]),
+            str_repeat('a', 64),
+            ['customer' => $firstChild],
+            durableAuthorizationFingerprint: str_repeat('d', 64),
+        );
+        $rehydrated = new BusinessRecordAccessPlan(
+            $first->resourceIdentifier,
+            $first->operation,
+            $records,
+            new FieldDisclosurePlan(['export' => ['name']]),
+            str_repeat('b', 64),
+            ['customer' => $rehydratedChild],
+            durableAuthorizationFingerprint: str_repeat('d', 64),
+        );
+        $changedAuthority = new BusinessRecordAccessPlan(
+            $first->resourceIdentifier,
+            $first->operation,
+            $records,
+            new FieldDisclosurePlan(['export' => ['name']]),
+            str_repeat('b', 64),
+            ['customer' => $changedAuthorityChild],
+            durableAuthorizationFingerprint: str_repeat('d', 64),
+        );
+
+        self::assertNotSame($first->digest(), $rehydrated->digest());
+        self::assertSame($first->durableDigest(), $rehydrated->durableDigest());
+        self::assertNotSame($first->durableDigest(), $changedAuthority->durableDigest());
+    }
+
+    public function testDurableDigestDefaultsToTheStrictDigest(): void
+    {
+        $plan = new BusinessRecordAccessPlan(
+            '0191574f-f0b8-7bf3-a9aa-91c6b8244e10',
+            'business.record.export',
+            new RecordPolicySet(new RecordPolicySchema([]), [new RecordPolicyConstant(true)]),
+            new FieldDisclosurePlan(['export' => ['name']]),
+            str_repeat('a', 64),
+        );
+
+        self::assertSame($plan->digest(), $plan->durableDigest());
+        self::assertSame(str_repeat('a', 64), $plan->toArray()['authorization']);
+    }
+
+    public function testDurableDigestRejectsAnInvalidAuthorizationFingerprint(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+
+        new BusinessRecordAccessPlan(
+            '0191574f-f0b8-7bf3-a9aa-91c6b8244e10',
+            'business.record.export',
+            new RecordPolicySet(new RecordPolicySchema([]), [new RecordPolicyConstant(true)]),
+            new FieldDisclosurePlan(),
+            str_repeat('a', 64),
+            durableAuthorizationFingerprint: 'invalid',
+        );
+    }
+
     public function testDisclosureBoundSupportsEveryFieldAtEveryUsage(): void
     {
         $handles = [];

@@ -57,6 +57,22 @@ final readonly class BusinessRecordAccessPlan
     private string $digest;
 
     /**
+     * Credential-independent digest used only by durable queued work.
+     *
+     * @var    string
+     * @since  2.0.0
+     */
+    private string $durableDigest;
+
+    /**
+     * Approval-bound authorization and policy fingerprint used only by the durable digest.
+     *
+     * @var    string
+     * @since  2.0.0
+     */
+    private string $durableAuthorizationFingerprint;
+
+    /**
      * @param   string               $resourceIdentifier        Business-definition UUID this plan protects.
      * @param   string               $operation                 Dotted operation identifier being authorized.
      * @param   RecordPolicySet      $records                   Bounded row policy with default-deny semantics.
@@ -66,6 +82,8 @@ final readonly class BusinessRecordAccessPlan
      * @param   array<string, self>  $related                   Target plans keyed by relation or reference handle.
      * @param   list<string>         $actions                   Action handles explicitly permitted on
      *          matching rows.
+     * @param   ?string              $durableAuthorizationFingerprint  Credential-independent authority and
+     *          policy digest for queued work; defaults to the strict authorization fingerprint.
      *
      * @throws  InvalidArgumentException  When identifiers, fingerprints, relations, actions, or graph
      *          bounds are invalid.
@@ -81,6 +99,7 @@ final readonly class BusinessRecordAccessPlan
         public string $authorizationFingerprint,
         array $related = [],
         array $actions = [],
+        ?string $durableAuthorizationFingerprint = null,
     ) {
         if (preg_match('/^[a-z0-9][a-z0-9._:-]{0,190}$/D', $resourceIdentifier) !== 1) {
             throw new InvalidArgumentException('A business-record access resource identifier is invalid.');
@@ -88,7 +107,11 @@ final readonly class BusinessRecordAccessPlan
         if (preg_match('/^[a-z][a-z0-9]*(?:\.[a-z0-9_]+)+$/D', $operation) !== 1) {
             throw new InvalidArgumentException('A business-record access operation is invalid.');
         }
-        if (preg_match('/^[a-f0-9]{64}$/D', $authorizationFingerprint) !== 1) {
+        $durableAuthorizationFingerprint ??= $authorizationFingerprint;
+        if (
+            preg_match('/^[a-f0-9]{64}$/D', $authorizationFingerprint) !== 1
+            || preg_match('/^[a-f0-9]{64}$/D', $durableAuthorizationFingerprint) !== 1
+        ) {
             throw new InvalidArgumentException('A business-record authorization fingerprint is invalid.');
         }
         if (
@@ -121,7 +144,12 @@ final readonly class BusinessRecordAccessPlan
         sort($actions, SORT_STRING);
         $this->related = $related;
         $this->actions = $actions;
+        $this->durableAuthorizationFingerprint = $durableAuthorizationFingerprint;
         $this->digest = hash('sha256', json_encode($this->toArray(), JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES));
+        $this->durableDigest = hash(
+            'sha256',
+            json_encode($this->toDurableArray(), JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES),
+        );
     }
 
     /**
@@ -165,6 +193,22 @@ final readonly class BusinessRecordAccessPlan
     }
 
     /**
+     * Return the credential-independent, approval-bound digest for durable queued work.
+     *
+     * Unlike the ordinary digest used by interactive cursors and replays, this digest survives worker
+     * credential rehydration. It still binds the exact effective authority, policy identities, row and
+     * field decisions, actions, and recursively resolved related plans.
+     *
+     * @return  string  Lowercase SHA-256 digest.
+     *
+     * @since   2.0.0
+     */
+    public function durableDigest(): string
+    {
+        return $this->durableDigest;
+    }
+
+    /**
      * Return the canonical plan document without its derived digest.
      *
      * @return  array<string, mixed>  Deterministic authorization decision.
@@ -180,6 +224,26 @@ final readonly class BusinessRecordAccessPlan
             'fields' => $this->fields->toArray(),
             'authorization' => $this->authorizationFingerprint,
             'related' => array_map(static fn (self $plan): array => $plan->toArray(), $this->related),
+            'actions' => $this->actions,
+        ];
+    }
+
+    /**
+     * Return the recursively approval-bound plan document used by durable queued work.
+     *
+     * @return  array<string, mixed>  Deterministic credential-independent authorization decision.
+     *
+     * @since   2.0.0
+     */
+    private function toDurableArray(): array
+    {
+        return [
+            'resource' => $this->resourceIdentifier,
+            'operation' => $this->operation,
+            'records' => $this->records->toArray(),
+            'fields' => $this->fields->toArray(),
+            'authorization' => $this->durableAuthorizationFingerprint,
+            'related' => array_map(static fn (self $plan): array => $plan->toDurableArray(), $this->related),
             'actions' => $this->actions,
         ];
     }

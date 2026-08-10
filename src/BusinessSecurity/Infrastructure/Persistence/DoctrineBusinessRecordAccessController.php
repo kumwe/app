@@ -429,14 +429,17 @@ final readonly class DoctrineBusinessRecordAccessController implements
             )
             : [];
 
+        $policyFingerprints = $this->policyFingerprints($context, $rows);
+
         return new BusinessRecordAccessPlan(
             $resolved->definition->id,
             $operation,
             new RecordPolicySet($schema, $allows, $denies),
             new FieldDisclosurePlan($fields),
-            $this->policyFingerprint($context, $rows),
+            $policyFingerprints['strict'],
             $related,
             $actions,
+            $policyFingerprints['durable'],
         );
     }
 
@@ -1089,18 +1092,18 @@ final readonly class DoctrineBusinessRecordAccessController implements
     }
 
     /**
-     * Bind plans and cursors to exact stored policy bytes, versions, owners, and caller authority.
+     * Bind strict and durable plans to exact stored policy bytes, versions, owners, and caller authority.
      *
      * @param   ExecutionContext           $context  Actor and exact authenticated scope.
      * @param   list<array<string,mixed>>  $rows     Matching policy rows in canonical priority order.
      *
-     * @return  string  Lowercase SHA-256 authorization-and-policy fingerprint.
+     * @return  array{strict: string, durable: string}  Credential-bound and approval-bound policy fingerprints.
      *
      * @throws  RuntimeException  When a stored checksum is malformed or does not match the documents.
      *
      * @since   2.0.0
      */
-    private function policyFingerprint(ExecutionContext $context, array $rows): string
+    private function policyFingerprints(ExecutionContext $context, array $rows): array
     {
         $policies = [];
         foreach ($rows as $row) {
@@ -1122,10 +1125,16 @@ final readonly class DoctrineBusinessRecordAccessController implements
             ];
         }
 
-        return CanonicalDefinitionJson::checksum([
-            'authorization' => $context->authorizationFingerprint(),
-            'policies' => $policies,
-        ]);
+        return [
+            'strict' => CanonicalDefinitionJson::checksum([
+                'authorization' => $context->authorizationFingerprint(),
+                'policies' => $policies,
+            ]),
+            'durable' => CanonicalDefinitionJson::checksum([
+                'authorization' => $context->approvalFingerprint(),
+                'policies' => $policies,
+            ]),
+        ];
     }
 
     /**

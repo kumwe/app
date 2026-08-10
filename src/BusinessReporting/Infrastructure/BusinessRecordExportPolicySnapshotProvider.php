@@ -87,7 +87,7 @@ final readonly class BusinessRecordExportPolicySnapshotProvider implements Expor
             'definition' => $resolved->definition->checksum(),
             'installation_version' => $resolved->installation->definitionVersion,
             'scope' => $scope->toArray(),
-            'plan' => $plan->digest(),
+            'plan' => $plan->durableDigest(),
         ]);
     }
 }
