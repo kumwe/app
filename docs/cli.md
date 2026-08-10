@@ -46,13 +46,22 @@ an exact compare-and-delete. It will not clear an active, changed, malformed, or
 
 ```bash
 php bin/kumwe token:create \
+  --site=default \
   --email=owner@example.com \
   --name=deployment-integration \
   --capabilities=content.read,content.create,content.update \
-  --expires-at=2027-01-01T00:00:00Z
+  --expires-at=2027-01-01T00:00:00Z \
+  --password-file=/run/secrets/kumwe-owner-password
 ```
 
 The plaintext token is printed once. Route it directly to a secret manager and clear terminal capture according to site policy.
+
+When a password-authenticated operator issues capabilities whose resource policies reach organization-sensitive
+records, pass `--organization=IDENTIFIER` and, for a workspace-bound credential, also
+`--workspace=IDENTIFIER`. Kumwe resolves that exact live membership from storage and embeds its membership and
+policy generations in the token; the identifiers alone confer no authority. A workspace option without an
+organization is refused. Issuance authorized by an existing `--token-file` cannot override either selection,
+because its organization and workspace come only from the verified token.
 
 CLI credentials use the `kumwe-cli` audience and a closed management purpose. Site, organization, workspace,
 membership version, policy generation, security epoch, family, and delegation depth are revalidated before a

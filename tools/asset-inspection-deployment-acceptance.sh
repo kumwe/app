@@ -56,6 +56,8 @@ mcp_token_file="$work_root/asset-inspection-mcp-token"
 policy_password_file="$work_root/asset-inspection-policy-password"
 projection_evidence_file="$work_root/asset-inspection-projection.json"
 projection_id='kumwe.asset-inspection-example.inspection-activity'
+acceptance_organization='asset-inspection-acceptance'
+bootstrap_capabilities='administrator.access,automation.manage,business.schema.approve,business.schema.execute,business.schema.plan,business.schema.read,content.read,content.create,content.update,content.submit,content.review,content.publish,extensions.manage,users.manage'
 management_capabilities='administrator.access,automation.manage,business.record.action,business.record.browse,business.record.create,business.record.export,business.record.read,business.record.relate,business.record.report,business.record.update,business.schema.approve,business.schema.execute,business.schema.plan,business.schema.read,business.security.manage,business.step_up.manage,extensions.manage,users.manage'
 
 compose() {
@@ -86,32 +88,43 @@ app_token() {
 acceptance_php() {
     local password
     password="$(<"$KUMWE_ACCEPTANCE_ADMIN_PASSWORD_FILE")"
+    local -a policy_environment=()
+    if [[ -n "${KUMWE_ACCEPTANCE_POLICY_EMAIL:-}" && -n "${KUMWE_ACCEPTANCE_POLICY_PASSWORD:-}" ]]; then
+        policy_environment=(
+            --env KUMWE_ACCEPTANCE_POLICY_EMAIL
+            --env KUMWE_ACCEPTANCE_POLICY_PASSWORD
+        )
+    fi
     compose run --rm --no-deps \
         --volume "$repository_root/tests/Support:/var/www/kumwe/tests/Support:ro" \
         --env "KUMWE_ACCEPTANCE_ADMIN_EMAIL=$admin_email" \
         --env "KUMWE_ACCEPTANCE_ADMIN_PASSWORD=$password" \
+        --env "KUMWE_ACCEPTANCE_ORGANIZATION=$acceptance_organization" \
+        "${policy_environment[@]}" \
         app sh -euc '
             php bin/kumwe extension:runtime:materialize >/dev/null
             php tests/Support/asset-inspection-deployment-acceptance.php "$@"
         ' sh "$@"
 }
 
-refresh_management_token() {
-    local extension_capabilities="${1:-}"
-    local requested_capabilities="$management_capabilities"
-    if [[ -n "$extension_capabilities" ]]; then
-        requested_capabilities+=",$extension_capabilities"
-    fi
+replace_management_token() {
+    local requested_capabilities="$1"
+    local organization="${2:-}"
     local password output token replacement
     password="$(<"$KUMWE_ACCEPTANCE_ADMIN_PASSWORD_FILE")"
     output="$(compose exec -T \
         --env "KUMWE_ACCEPTANCE_ADMIN_PASSWORD=$password" \
         --env "KUMWE_ACCEPTANCE_MANAGEMENT_CAPABILITIES=$requested_capabilities" \
+        --env "KUMWE_ACCEPTANCE_ORGANIZATION=$organization" \
         app /usr/local/bin/kumwe-entrypoint sh -euc '
             umask 077
             password_file="$(mktemp)"
             trap '\''rm -f "$password_file"'\'' EXIT
             printf %s "$KUMWE_ACCEPTANCE_ADMIN_PASSWORD" > "$password_file"
+            set --
+            if [ -n "$KUMWE_ACCEPTANCE_ORGANIZATION" ]; then
+                set -- --organization="$KUMWE_ACCEPTANCE_ORGANIZATION"
+            fi
             php bin/kumwe token:create \
                 --site=default \
                 --email=administrator@kumwe.test \
@@ -119,7 +132,8 @@ refresh_management_token() {
                 --capabilities="$KUMWE_ACCEPTANCE_MANAGEMENT_CAPABILITIES" \
                 --audience=kumwe-cli \
                 --purpose=management \
-                --password-file="$password_file"
+                --password-file="$password_file" \
+                "$@"
         ')"
     token="$(sed -n '2p' <<< "$output")"
     [[ "$token" =~ ^[A-Za-z0-9_-]{32,}$ ]] || fail 'a refreshed management token was not issued'
@@ -131,51 +145,31 @@ refresh_management_token() {
     mv -- "$replacement" "$KUMWE_ACCEPTANCE_CLI_TOKEN_FILE"
 }
 
+refresh_bootstrap_token() {
+    replace_management_token "$bootstrap_capabilities"
+}
+
+refresh_management_token() {
+    local extension_capabilities="${1:-}"
+    local requested_capabilities="$management_capabilities"
+    if [[ -n "$extension_capabilities" ]]; then
+        requested_capabilities+=",$extension_capabilities"
+    fi
+    replace_management_token "$requested_capabilities" "$acceptance_organization"
+}
+
 apply_policy_profile() {
     local policy_email='asset-inspection-policy-operator@kumwe.test'
     [[ ! -e "$policy_password_file" ]] || fail "policy password '$policy_password_file' already exists"
     umask 077
     openssl rand -base64 32 | tr -d '\n' > "$policy_password_file"
     chmod 0600 "$policy_password_file"
-    local management_token policy_password user role
-    management_token="$(<"$KUMWE_ACCEPTANCE_CLI_TOKEN_FILE")"
-    policy_password="$(<"$policy_password_file")"
-    user="$(compose exec -T \
-        --env "KUMWE_ACCEPTANCE_TOKEN=$management_token" \
-        --env "KUMWE_ACCEPTANCE_POLICY_PASSWORD=$policy_password" \
-        app /usr/local/bin/kumwe-entrypoint sh -euc '
-            umask 077
-            token_file="$(mktemp)"
-            password_file="$(mktemp)"
-            trap '\''rm -f "$token_file" "$password_file"'\'' EXIT
-            printf %s "$KUMWE_ACCEPTANCE_TOKEN" > "$token_file"
-            printf %s "$KUMWE_ACCEPTANCE_POLICY_PASSWORD" > "$password_file"
-            php bin/kumwe access create-user \
-                --site=default \
-                --token-file="$token_file" \
-                --email=asset-inspection-policy-operator@kumwe.test \
-                --display-name="Asset inspection policy operator" \
-                --password-file="$password_file"
-        ' | jq -er '.id')"
-    role="$(app_token "$KUMWE_ACCEPTANCE_CLI_TOKEN_FILE" access create-role \
-        --code=asset-inspection-policy-operator \
-        --name='Asset inspection policy operator' | jq -er '.id')"
-    app_token "$KUMWE_ACCEPTANCE_CLI_TOKEN_FILE" access grant --role="$role" \
-        --capability=administrator.access --scope-type=global >/dev/null
-    app_token "$KUMWE_ACCEPTANCE_CLI_TOKEN_FILE" access grant --role="$role" \
-        --capability=business.security.manage --scope-type=global >/dev/null
-    app_token "$KUMWE_ACCEPTANCE_CLI_TOKEN_FILE" access grant --role="$role" \
-        --capability=business.step_up.manage --scope-type=global >/dev/null
-    app_token "$KUMWE_ACCEPTANCE_CLI_TOKEN_FILE" access assign-role --user="$user" --role="$role" >/dev/null
-    compose run --rm --no-deps \
-        --volume "$repository_root/tests/Support:/var/www/kumwe/tests/Support:ro" \
-        --env "KUMWE_ACCEPTANCE_POLICY_EMAIL=$policy_email" \
-        --env "KUMWE_ACCEPTANCE_POLICY_PASSWORD=$policy_password" \
-        app sh -euc '
-            php bin/kumwe extension:runtime:materialize >/dev/null
-            php tests/Support/asset-inspection-deployment-acceptance.php apply-policy
-        ' \
+    export KUMWE_ACCEPTANCE_POLICY_EMAIL="$policy_email"
+    export KUMWE_ACCEPTANCE_POLICY_PASSWORD
+    KUMWE_ACCEPTANCE_POLICY_PASSWORD="$(<"$policy_password_file")"
+    acceptance_php apply-policy \
         | jq -e '.policy_ids | length == 4' >/dev/null
+    unset KUMWE_ACCEPTANCE_POLICY_EMAIL KUMWE_ACCEPTANCE_POLICY_PASSWORD
 }
 
 issue_token() {
@@ -448,8 +442,10 @@ if [[ "$mode" == grant ]]; then
             --capability="$capability" \
             --scope-type=global >/dev/null
         delegated_capabilities="${delegated_capabilities:+$delegated_capabilities,}$capability"
-        refresh_management_token "$delegated_capabilities"
+        refresh_bootstrap_token
     done
+    apply_policy_profile
+    refresh_management_token "$delegated_capabilities"
     roles="$(app_token "$KUMWE_ACCEPTANCE_CLI_TOKEN_FILE" access roles)"
     jq -e --arg role "$administrator_role" '
         [.items[] | select(.id == $role) | .grants[].capability]
@@ -462,7 +458,6 @@ if [[ "$mode" == grant ]]; then
     exit 0
 fi
 
-apply_policy_profile
 common_record_capabilities='business.record.browse,business.record.read,business.record.create,business.record.update,business.record.action,business.record.relate,business.record.report,business.record.export,automation.manage,kumwe.asset-inspection-example.manage,kumwe.asset-inspection-example.view'
 issue_token "$cli_token_file" kumwe-cli management asset-inspection-cli "$common_record_capabilities"
 issue_token "$api_token_file" kumwe-http api asset-inspection-api "$common_record_capabilities"

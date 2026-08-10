@@ -23,7 +23,7 @@ enum ReportValueType: string
     /** Bounded human-readable text. @since 2.0.0 */
     case String = 'string';
 
-    /** A lowercase report or record identifier. @since 2.0.0 */
+    /** A lowercase handle or canonical record UUID. @since 2.0.0 */
     case Identifier = 'identifier';
 
     /** An ISO calendar date. @since 2.0.0 */
@@ -49,8 +49,13 @@ enum ReportValueType: string
             self::Decimal => is_int($value)
                 || (is_string($value) && preg_match('/^-?(?:0|[1-9][0-9]*)(?:\.[0-9]+)?$/D', $value) === 1),
             self::String => is_string($value) && mb_strlen($value) <= 4096,
-            self::Identifier => is_string($value)
-                && preg_match('/^[a-z][a-z0-9_.-]{0,190}$/D', $value) === 1,
+            self::Identifier => is_string($value) && (
+                preg_match('/^[a-z][a-z0-9_.-]{0,190}$/D', $value) === 1
+                || preg_match(
+                    '/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/D',
+                    $value,
+                ) === 1
+            ),
             self::Date => is_string($value)
                 && preg_match('/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/D', $value) === 1,
             self::DateTime => is_string($value)

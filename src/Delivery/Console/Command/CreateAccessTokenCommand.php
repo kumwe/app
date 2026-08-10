@@ -9,6 +9,7 @@ use InvalidArgumentException;
 use Kumwe\CMS\Application\Authorization\AuthenticationStrength;
 use Kumwe\CMS\Application\Authorization\ExecutionContext;
 use Kumwe\CMS\Application\Authorization\SiteContext;
+use Kumwe\CMS\BusinessSecurity\Application\MembershipDirectory;
 use Kumwe\CMS\Delivery\Console\Command;
 use Kumwe\CMS\Delivery\Console\Output;
 use Kumwe\CMS\Identity\Application\Administration\AdministratorIdentityGateway;
@@ -37,12 +38,15 @@ final readonly class CreateAccessTokenCommand implements Command
      *         the token record.
      * @param  ConsoleAuthorizer             $authorization  Authorization route used when `--token-file` is
      *         supplied instead of a password file.
+     * @param  MembershipDirectory           $memberships    Resolves an exact live organization/workspace
+     *         selection for password-authenticated issuance.
      *
      * @since  2.0.0
      */
     public function __construct(
         private AdministratorIdentityGateway $identities,
         private ConsoleAuthorizer $authorization,
+        private MembershipDirectory $memberships,
     ) {
     }
 
@@ -82,7 +86,8 @@ final readonly class CreateAccessTokenCommand implements Command
      *
      * @param   list<string>  $arguments  Only `--name=value` options: `--email`, `--name` and
      *          `--capabilities`, one of `--token-file` (with `--site`) or `--password-file`, and
-     *          optionally `--expires-at`, `--audience` and `--purpose`.
+     *          optionally `--expires-at`, `--audience`, `--purpose`, and a password-authenticated
+     *          `--organization` with optional `--workspace`.
      * @param   Output        $output     Sink for the token, its identifier, or the failure message.
      *
      * @return  int  0 when the token was issued, 1 when any step failed.
@@ -177,9 +182,10 @@ final readonly class CreateAccessTokenCommand implements Command
      * Resolve the context the token is issued under, from either a token file or a password file.
      *
      * The presence of `--token-file` selects the route. With it, `ConsoleAuthorizer` verifies the token
-     * and scopes the context to `--site`, exactly as for the other management commands. Without it, the
-     * operator's own password authenticates them against the default site — the bootstrap route, and the
-     * only one available before a first token exists. Both routes end at the same requirement:
+     * and scopes the context to `--site`, exactly as for the other management commands; organization flags
+     * cannot replace that credential's scope. Without a token, the operator's password authenticates them
+     * against the default site. An optional organization and workspace are then resolved as the subject's
+     * exact live membership rather than trusted as authority. Both routes end at the same requirement:
      * `users.manage`, held by the principal the credential resolves to.
      *
      * @param   array<string, string>  $options  Parsed command options; must carry `--token-file`, or
@@ -189,15 +195,25 @@ final readonly class CreateAccessTokenCommand implements Command
      *
      * @throws  InsufficientCapability  When the credential resolves to no principal, or to one that does
      *          not hold `users.manage`.
-     * @throws  InvalidArgumentException  When a required option is missing, or the password file fails its
-     *          location and permission checks.
+     * @throws  InvalidArgumentException  When a required option is missing, the password file fails its
+     *          location and permission checks, or the requested membership is unavailable.
      *
      * @since   2.0.0
      */
     private function authorizationContext(array $options): ExecutionContext
     {
         if (isset($options['token-file'])) {
+            if (isset($options['organization']) || isset($options['workspace'])) {
+                throw new InvalidArgumentException(
+                    'Organization and workspace selection is derived from the verified token.',
+                );
+            }
+
             return $this->authorization->require($options, 'users.manage');
+        }
+
+        if (isset($options['workspace']) && !isset($options['organization'])) {
+            throw new InvalidArgumentException('The --workspace option requires --organization.');
         }
 
         $principal = $this->identities->authenticate(
@@ -209,10 +225,27 @@ final readonly class CreateAccessTokenCommand implements Command
             throw new InsufficientCapability('users.manage');
         }
 
+        $site = SiteContext::default();
+        $membership = null;
+        if (isset($options['organization'])) {
+            $membership = $this->memberships->resolve(
+                $principal->subject(),
+                $site,
+                $options['organization'],
+                $options['workspace'] ?? null,
+            );
+            if ($membership === null) {
+                throw new InvalidArgumentException(
+                    'The requested live organization membership is unavailable.',
+                );
+            }
+        }
+
         return $principal->context(
-            SiteContext::default(),
+            $site,
             AuthenticationStrength::Password,
             'cli-' . bin2hex(random_bytes(16)),
+            membership: $membership,
         );
     }
 }
