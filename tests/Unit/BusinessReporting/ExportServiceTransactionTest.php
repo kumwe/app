@@ -53,7 +53,11 @@ final class ExportServiceTransactionTest extends TestCase
                 ReportDefinition $report,
                 ?string $organizationIdentifier,
                 BusinessRecordQueryPurpose $purpose,
-            ) use ($transactions, $policy, &$snapshotDepths): string {
+            ) use (
+                $transactions,
+                $policy,
+                &$snapshotDepths
+): string {
                 self::assertTrue($transactions->active());
                 self::assertSame(BusinessRecordQueryPurpose::Export, $purpose);
                 self::assertNull($organizationIdentifier);
@@ -85,7 +89,10 @@ final class ExportServiceTransactionTest extends TestCase
         $jobs = $this->createMock(ExportJobDispatcher::class);
         $jobs->expects(self::once())
             ->method('dispatch')
-            ->willReturnCallback(function (ExecutionContext $context, string $artifactId) use (
+            ->willReturnCallback(function (
+                ExecutionContext $context,
+                string $artifactId
+            ) use (
                 $transactions,
                 &$storedArtifact,
             ): void {
