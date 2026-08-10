@@ -195,12 +195,27 @@ issue_token() {
 
 install_schema() {
     local definition="$1"
-    local plan id checksum execution schema_checksum
+    local plan id checksum risk execution schema_checksum
+    local -a confirmation=()
     plan="$(app_token "$KUMWE_ACCEPTANCE_CLI_TOKEN_FILE" business-schema plan --definition="$definition")"
     id="$(jq -er '.id' <<< "$plan")"
     checksum="$(jq -er '.checksum | select(test("^[0-9a-f]{64}$"))' <<< "$plan")"
+    risk="$(jq -er '.risk' <<< "$plan")"
+    case "$risk" in
+        online_safe_additive)
+            ;;
+        backfill_required | behavior_changing)
+            confirmation=(--confirmation="$checksum")
+            ;;
+        rebuild_or_locking | destructive)
+            fail "fresh schema installation unexpectedly requires recovery evidence ($risk)"
+            ;;
+        *)
+            fail "schema plan '$id' returned unsupported risk '$risk'"
+            ;;
+    esac
     app_token "$KUMWE_ACCEPTANCE_CLI_TOKEN_FILE" business-schema approve \
-        --plan="$id" --expected-checksum="$checksum" >/dev/null
+        --plan="$id" --expected-checksum="$checksum" "${confirmation[@]}" >/dev/null
     execution="$(app_token "$KUMWE_ACCEPTANCE_CLI_TOKEN_FILE" business-schema execute --plan="$id")"
     jq -e --arg plan_id "$id" '
         .plan_id == $plan_id
