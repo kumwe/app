@@ -168,7 +168,21 @@ apply_policy_profile() {
     export KUMWE_ACCEPTANCE_POLICY_PASSWORD
     KUMWE_ACCEPTANCE_POLICY_PASSWORD="$(<"$policy_password_file")"
     acceptance_php apply-policy \
-        | jq -e '.policy_ids | length == 4' >/dev/null
+        | jq -e --arg organization "$acceptance_organization" '
+            .organization.identifier == $organization
+            and (.profile_policy_ids | length == 4)
+            and (.seed_policy_ids | length == 6)
+            and (.policy_ids | length == 10)
+            and .proofs == {enrollment: 1, recovery: 10, totp: 1}
+        ' >/dev/null
+    refresh_bootstrap_token
+    KUMWE_ACCEPTANCE_POLICY_EMAIL='asset-inspection-seed-policy-operator@kumwe.test'
+    acceptance_php apply-seed-policy \
+        | jq -e '
+            (.seed_policy_ids | length == 8)
+            and (.policy_ids | length == 8)
+            and .proofs == {enrollment: 1, recovery: 7, totp: 0}
+        ' >/dev/null
     unset KUMWE_ACCEPTANCE_POLICY_EMAIL KUMWE_ACCEPTANCE_POLICY_PASSWORD
 }
 
@@ -540,7 +554,7 @@ create_api_record "$measurement_definition" "$measurement_one" asset-measurement
 create_cli_record "$measurement_definition" "$measurement_two" asset-measurement-two-create-0001 \
     "$(jq -nc --arg id "$measurement_two" '{id: $id, metric: "vibration", value: "9.8765", unit: "mm/s", acceptable: false}')"
 create_cli_record "$inspection_definition" "$inspection_denied" asset-inspection-denied-create-0001 \
-    "$(jq -nc --arg id "$inspection_denied" '{id: $id, reference: "INSPECT-DENIED-001", inspection_date: "2026-08-10", raw_score: 69, adjustment: 0, internal_note: "denied acceptance note"}')"
+    "$(jq -nc --arg id "$inspection_denied" '{id: $id, reference: "INSPECT-DENIED-001", inspection_date: "2026-08-10", raw_score: 69, adjustment: 0}')"
 
 app_token "$cli_token_file" business-record relate --definition="$location_definition" --record="$location" \
     --expected-version=1 --relationship=assets --target-record="$asset" --position=0 \
