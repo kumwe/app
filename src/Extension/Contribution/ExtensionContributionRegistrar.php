@@ -6,6 +6,12 @@ namespace Kumwe\CMS\Extension\Contribution;
 
 use Kumwe\CMS\BusinessDefinition\Domain\EntityTypeDefinition;
 use Kumwe\CMS\BusinessDefinition\Domain\FieldTypeDefinition;
+use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessActionContract;
+use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessActionHandler;
+use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessViewContract;
+use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessViewHandler;
+use Kumwe\CMS\BusinessSurface\Presentation\Field\FieldPresentationContribution;
+use Kumwe\CMS\BusinessSurface\Presentation\Field\FieldPresenter;
 use Kumwe\CMS\Portal\Contribution\PortalNavigationDefinition;
 use Kumwe\CMS\Portal\Contribution\PortalRouteDefinition;
 use Kumwe\CMS\Portal\Contribution\PortalRouteHandlerFactory;
@@ -169,6 +175,24 @@ interface ExtensionContributionRegistrar
     public function fieldType(FieldTypeDefinition $definition): void;
 
     /**
+     * Add one safe semantic presenter for an owned field type and its declared contexts.
+     *
+     * The executable presenter is reconciled against the signed declaration and receives only a typed,
+     * already policy-filtered `FieldPresentationRequest`; it cannot emit markup or access delivery state.
+     *
+     * @param   FieldPresentationContribution  $contribution  Signed field type and context coverage.
+     * @param   FieldPresenter                 $presenter     Transport-free semantic presenter implementation.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function fieldPresentation(
+        FieldPresentationContribution $contribution,
+        FieldPresenter $presenter,
+    ): void;
+
+    /**
      * Add an entity type this package owns to the contributed business-definition set.
      *
      * The whole contributed set is validated as one graph after every provider has run, so a
@@ -181,4 +205,34 @@ interface ExtensionContributionRegistrar
      * @since   2.0.0
      */
     public function businessDefinition(EntityTypeDefinition $definition): void;
+
+    /**
+     * Add one typed extension-specific business view handler and its signed schema contract.
+     *
+     * @param   CustomBusinessViewContract  $contract  Manifest-equivalent query and result schemas.
+     * @param   CustomBusinessViewHandler   $handler   Delivery-neutral application handler implementation.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function customBusinessViewHandler(
+        CustomBusinessViewContract $contract,
+        CustomBusinessViewHandler $handler,
+    ): void;
+
+    /**
+     * Add one typed extension-specific business action handler and its signed schema contract.
+     *
+     * @param   CustomBusinessActionContract  $contract  Manifest-equivalent command and result schemas.
+     * @param   CustomBusinessActionHandler   $handler   Delivery-neutral application handler implementation.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function customBusinessActionHandler(
+        CustomBusinessActionContract $contract,
+        CustomBusinessActionHandler $handler,
+    ): void;
 }

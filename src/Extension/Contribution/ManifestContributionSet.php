@@ -8,8 +8,13 @@ use InvalidArgumentException;
 use Kumwe\CMS\Application\Authorization\AuthorizationDefinitionLifecycle;
 use Kumwe\CMS\Application\Authorization\ResourcePolicyTarget;
 use Kumwe\CMS\BusinessDefinition\Domain\DefinitionOwner;
+use Kumwe\CMS\BusinessDefinition\Domain\DefinitionStatus;
 use Kumwe\CMS\BusinessDefinition\Domain\EntityTypeDefinition;
 use Kumwe\CMS\BusinessDefinition\Domain\FieldTypeDefinition;
+use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessActionContract;
+use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessViewContract;
+use Kumwe\CMS\BusinessSurface\Presentation\Field\FieldPresentationContribution;
+use Kumwe\CMS\BusinessSurface\Presentation\Field\FieldPresentationCoverage;
 use Kumwe\CMS\Extension\Domain\ExtensionIdentifier;
 use Kumwe\CMS\Portal\Contribution\PortalNavigationDefinition;
 use Kumwe\CMS\Portal\Contribution\PortalRouteDefinition;
@@ -133,6 +138,14 @@ final readonly class ManifestContributionSet
     private array $fieldTypes;
 
     /**
+     * Declared safe field presenters, keyed and sorted by their owned field-type identifier.
+     *
+     * @var    array<string, FieldPresentationContribution>
+     * @since  2.0.0
+     */
+    private array $fieldPresentations;
+
+    /**
      * Declared entity types, keyed and sorted by definition handle.
      *
      * @var    array<string, EntityTypeDefinition>
@@ -141,25 +154,44 @@ final readonly class ManifestContributionSet
     private array $businessDefinitions;
 
     /**
+     * Declared custom business view handlers and schema contracts, keyed by handler reference.
+     *
+     * @var    array<string, CustomBusinessViewContract>
+     * @since  2.0.0
+     */
+    private array $customBusinessViews;
+
+    /**
+     * Declared custom business action handlers and schema contracts, keyed by handler reference.
+     *
+     * @var    array<string, CustomBusinessActionContract>
+     * @since  2.0.0
+     */
+    private array $customBusinessActions;
+
+    /**
      * Assemble one package's declarations and reject any set that is already inconsistent.
      *
      * Called directly only for an empty or hand-built set, such as core's; a real manifest arrives
      * through `fromManifest()`. Business identifiers are checked against the business context's own
      * owner, which is why a field type or entity type belonging to another package fails here.
      *
-     * @param   ContributionOwner                            $owner                Package declaring all of it.
-     * @param   iterable<CapabilityDefinition>               $capabilities         Permission codes it adds.
-     * @param   iterable<AdministratorWorkspaceDefinition>   $workspaces           Administrator groupings.
-     * @param   iterable<AdministratorNavigationDefinition>  $navigation           Menu entries it adds.
-     * @param   iterable<AdministratorRouteDefinition>       $routes               Guarded routes it serves.
-     * @param   iterable<AdministratorViewDefinition>        $views                Templates its routes render.
-     * @param   iterable<FieldTypeDefinition>                $fieldTypes           Field types it publishes.
-     * @param   iterable<EntityTypeDefinition>               $businessDefinitions  Entity types it publishes.
-     * @param   iterable<ResourcePolicyDefinition>           $resourcePolicies     Capability/resource bindings.
-     * @param   iterable<PortalWorkspaceDefinition>          $portalWorkspaces     Portal groupings it adds.
-     * @param   iterable<PortalNavigationDefinition>         $portalNavigation     Portal menu entries it adds.
-     * @param   iterable<PortalRouteDefinition>              $portalRoutes         Guarded portal routes it serves.
-     * @param   iterable<PortalTemplateDefinition>           $portalTemplates      Portal templates its routes render.
+     * @param   ContributionOwner                            $owner                  Package declaring all of it.
+     * @param   iterable<CapabilityDefinition>               $capabilities           Permission codes it adds.
+     * @param   iterable<AdministratorWorkspaceDefinition>   $workspaces             Administrator groupings.
+     * @param   iterable<AdministratorNavigationDefinition>  $navigation             Menu entries it adds.
+     * @param   iterable<AdministratorRouteDefinition>       $routes                 Guarded routes it serves.
+     * @param   iterable<AdministratorViewDefinition>        $views                  Templates its routes render.
+     * @param   iterable<FieldTypeDefinition>                $fieldTypes             Field types it publishes.
+     * @param   iterable<EntityTypeDefinition>               $businessDefinitions    Entity types it publishes.
+     * @param   iterable<ResourcePolicyDefinition>           $resourcePolicies       Capability/resource bindings.
+     * @param   iterable<PortalWorkspaceDefinition>          $portalWorkspaces       Portal groupings it adds.
+     * @param   iterable<PortalNavigationDefinition>         $portalNavigation       Portal menu entries it adds.
+     * @param   iterable<PortalRouteDefinition>              $portalRoutes           Guarded portal routes it serves.
+     * @param   iterable<PortalTemplateDefinition>           $portalTemplates        Portal templates its routes render.
+     * @param   iterable<CustomBusinessViewContract>         $customBusinessViews    Custom view handler contracts.
+     * @param   iterable<CustomBusinessActionContract>       $customBusinessActions  Custom action handler contracts.
+     * @param   iterable<FieldPresentationContribution>      $fieldPresentations     Safe presenter declarations.
      *
      * @throws  InvalidArgumentException  When an identifier is outside the owner's namespace or declared twice,
      *          when navigation or a route references something this set does not declare, or when a business
@@ -181,6 +213,9 @@ final readonly class ManifestContributionSet
         iterable $portalNavigation = [],
         iterable $portalRoutes = [],
         iterable $portalTemplates = [],
+        iterable $customBusinessViews = [],
+        iterable $customBusinessActions = [],
+        iterable $fieldPresentations = [],
     ) {
         $this->capabilities = $this->index($capabilities, 'capability');
         $this->resourcePolicies = $this->index($resourcePolicies, 'resource policy');
@@ -193,7 +228,10 @@ final readonly class ManifestContributionSet
         $this->portalRoutes = $this->index($portalRoutes, 'portal route');
         $this->portalTemplates = $this->index($portalTemplates, 'portal template');
         $this->fieldTypes = $this->businessIndex($fieldTypes, 'field type');
+        $this->fieldPresentations = $this->fieldPresentationIndex($fieldPresentations);
         $this->businessDefinitions = $this->businessIndex($businessDefinitions, 'business definition');
+        $this->customBusinessViews = $this->customContractIndex($customBusinessViews, 'view');
+        $this->customBusinessActions = $this->customContractIndex($customBusinessActions, 'action');
 
         foreach ($this->navigation as $item) {
             if (!isset($this->workspaces[$item->workspace])) {
@@ -238,16 +276,72 @@ final readonly class ManifestContributionSet
         foreach ($this->fieldTypes as $fieldType) {
             $businessOwner->assertOwns($fieldType->id);
         }
+        foreach ($this->fieldPresentations as $presentation) {
+            $businessOwner->assertOwns($presentation->fieldType);
+            if (!isset($this->fieldTypes[$presentation->fieldType])) {
+                throw new InvalidArgumentException(
+                    'A field-presentation contribution must reference its owner\'s declared field type.',
+                );
+            }
+        }
         foreach ($this->businessDefinitions as $definition) {
             $businessOwner->assertOwns($definition->handle);
             if ($definition->owner->toArray() !== $businessOwner->toArray()) {
                 throw new InvalidArgumentException('A business definition contribution has inconsistent ownership.');
             }
+            foreach ($definition->views() as $view) {
+                if ($view->handler === null || $view->schema === null) {
+                    continue;
+                }
+                $businessOwner->assertOwns($view->handler);
+                $businessOwner->assertOwns($view->schema);
+                $contract = $this->customBusinessViews[$view->handler] ?? null;
+                if ($contract === null || $contract->schema !== $view->schema) {
+                    throw new InvalidArgumentException(
+                        'A custom business view must reference its owner\'s declared handler contract.',
+                    );
+                }
+            }
+            foreach ($definition->actions() as $action) {
+                if ($action->handler === null || $action->schema === null) {
+                    continue;
+                }
+                $businessOwner->assertOwns($action->handler);
+                $businessOwner->assertOwns($action->schema);
+                $contract = $this->customBusinessActions[$action->handler] ?? null;
+                if ($contract === null || $contract->schema !== $action->schema) {
+                    throw new InvalidArgumentException(
+                        'A custom business action must reference its owner\'s declared handler contract.',
+                    );
+                }
+            }
+        }
+        $customReferences = [];
+        foreach (
+            [
+            'view' => $this->customBusinessViews,
+            'action' => $this->customBusinessActions,
+            ] as $kind => $contracts
+        ) {
+            foreach ($contracts as $contract) {
+                $businessOwner->assertOwns($contract->handler);
+                $businessOwner->assertOwns($contract->schema);
+                foreach (['handler' => $contract->handler, 'schema' => $contract->schema] as $role => $reference) {
+                    if (isset($customReferences[$reference])) {
+                        throw new InvalidArgumentException(sprintf(
+                            'Custom business reference %s collides with the declared %s.',
+                            $reference,
+                            $customReferences[$reference],
+                        ));
+                    }
+                    $customReferences[$reference] = $kind . ' ' . $role;
+                }
+            }
         }
     }
 
     /**
-     * Read a schema-2 manifest's `contributions` object into a checked declaration set.
+     * Read a strict manifest's `contributions` object into a checked declaration set.
      *
      * The parsing is deliberately unforgiving, because this is the boundary where untrusted package
      * metadata becomes objects the shell will act on: unknown keys are rejected rather than ignored,
@@ -256,16 +350,22 @@ final readonly class ManifestContributionSet
      *
      * @param   ExtensionIdentifier  $extension  Package the manifest belongs to, which owns everything in it.
      * @param   array<mixed>         $data       The manifest's decoded `contributions` value.
+     * @param   int                  $manifestSchema  Manifest grammar: 2 for original typed contributions or
+     *          3 for signed field presentations and custom business handlers.
      *
      * @return  self  The package's declarations, indexed and consistency-checked.
      *
      * @throws  InvalidArgumentException  When the SPI version is not 1, a key or value has the wrong shape,
-     *          a list is over its cap, or an identifier is not the package's to claim.
+     *          a list is over its cap, an identifier is not the package's to claim, or a published custom field
+     *          lacks signed presentation coverage.
      *
      * @since   2.0.0
      */
-    public static function fromManifest(ExtensionIdentifier $extension, array $data): self
+    public static function fromManifest(ExtensionIdentifier $extension, array $data, int $manifestSchema = 3): self
     {
+        if (!in_array($manifestSchema, [2, 3], true)) {
+            throw new InvalidArgumentException('Typed extension contributions require manifest schema 2 or 3.');
+        }
         $data = self::object($data, 'contributions');
         self::knownKeys(
             $data,
@@ -279,7 +379,13 @@ final readonly class ManifestContributionSet
         $administrator = self::object($data['administrator'] ?? [], 'contributions.administrator');
         self::knownKeys($administrator, ['workspaces', 'navigation', 'routes', 'views'], 'administrator contributions');
         $business = self::object($data['business'] ?? [], 'contributions.business');
-        self::knownKeys($business, ['field_types', 'definitions'], 'business contributions');
+        $businessKeys = ['field_types', 'definitions'];
+        if ($manifestSchema >= 3) {
+            $businessKeys[] = 'field_presentations';
+            $businessKeys[] = 'view_handlers';
+            $businessKeys[] = 'action_handlers';
+        }
+        self::knownKeys($business, $businessKeys, 'business contributions');
         $portal = self::object($data['portal'] ?? [], 'contributions.portal');
         self::knownKeys($portal, ['workspaces', 'navigation', 'routes', 'templates'], 'portal contributions');
 
@@ -491,8 +597,23 @@ final readonly class ManifestContributionSet
             }
             return $definition;
         }, self::objects($business['definitions'] ?? [], 'contributions.business.definitions'));
+        $customBusinessViews = array_map(
+            static fn (array $item): CustomBusinessViewContract => CustomBusinessViewContract::fromArray($item),
+            self::objects($business['view_handlers'] ?? [], 'contributions.business.view_handlers'),
+        );
+        $customBusinessActions = array_map(
+            static fn (array $item): CustomBusinessActionContract => CustomBusinessActionContract::fromArray($item),
+            self::objects($business['action_handlers'] ?? [], 'contributions.business.action_handlers'),
+        );
+        $fieldPresentations = array_map(
+            static fn (array $item): FieldPresentationContribution => FieldPresentationContribution::fromArray($item),
+            self::objects(
+                $business['field_presentations'] ?? [],
+                'contributions.business.field_presentations',
+            ),
+        );
 
-        return new self(
+        $set = new self(
             $owner,
             $capabilities,
             $workspaces,
@@ -506,7 +627,13 @@ final readonly class ManifestContributionSet
             $portalNavigation,
             $portalRoutes,
             $portalTemplates,
+            $customBusinessViews,
+            $customBusinessActions,
+            $fieldPresentations,
         );
+        $set->assertFieldPresentationCoverage();
+
+        return $set;
     }
 
     /**
@@ -514,7 +641,7 @@ final readonly class ManifestContributionSet
      *
      * Schema 1 cannot publish any of these surfaces, so the permission list a caller passes is taken
      * and ignored rather than translated into capabilities. The point is that a legacy package can
-     * travel the same code path as a schema-2 one instead of every caller branching on the schema.
+     * travel the same code path as a strict one instead of every caller branching on the schema.
      *
      * @param   ExtensionIdentifier  $extension    Package the empty set is attributed to.
      * @param   list<string>         $permissions  The manifest's schema-1 permission codes; not read.
@@ -681,6 +808,42 @@ final readonly class ManifestContributionSet
     }
 
     /**
+     * The safe field-presentation declarations this package signed.
+     *
+     * @return  list<FieldPresentationContribution>  In field-type identifier order.
+     *
+     * @since   2.0.0
+     */
+    public function fieldPresentations(): array
+    {
+        return array_values($this->fieldPresentations);
+    }
+
+    /**
+     * The custom business view contracts this package declared.
+     *
+     * @return  list<CustomBusinessViewContract>  In handler-reference order.
+     *
+     * @since   2.0.0
+     */
+    public function customBusinessViews(): array
+    {
+        return array_values($this->customBusinessViews);
+    }
+
+    /**
+     * The custom business action contracts this package declared.
+     *
+     * @return  list<CustomBusinessActionContract>  In handler-reference order.
+     *
+     * @since   2.0.0
+     */
+    public function customBusinessActions(): array
+    {
+        return array_values($this->customBusinessActions);
+    }
+
+    /**
      * Write the set back out in the same shape `fromManifest()` reads.
      *
      * The runtime publication carries this rather than the original manifest text, so the structure has
@@ -700,7 +863,10 @@ final readonly class ManifestContributionSet
      *              },
      *              business: array{
      *                  field_types: list<array<string, mixed>>,
-     *                  definitions: list<array<string, mixed>>
+     *                  definitions: list<array<string, mixed>>,
+     *                  field_presentations?: list<array<string, mixed>>,
+     *                  view_handlers?: list<array<string, mixed>>,
+     *                  action_handlers?: list<array<string, mixed>>
      *              }
      *          }
      *
@@ -708,6 +874,35 @@ final readonly class ManifestContributionSet
      */
     public function toArray(): array
     {
+        $business = [
+            'field_types' => array_map(
+                static fn (FieldTypeDefinition $item): array => $item->toArray(),
+                $this->fieldTypes(),
+            ),
+            'definitions' => array_map(
+                static fn (EntityTypeDefinition $item): array => $item->toArray(),
+                $this->businessDefinitions(),
+            ),
+        ];
+        if ($this->fieldPresentations !== []) {
+            $business['field_presentations'] = array_map(
+                static fn (FieldPresentationContribution $item): array => $item->toArray(),
+                $this->fieldPresentations(),
+            );
+        }
+        if ($this->customBusinessViews !== []) {
+            $business['view_handlers'] = array_map(
+                static fn (CustomBusinessViewContract $item): array => $item->toArray(),
+                $this->customBusinessViews(),
+            );
+        }
+        if ($this->customBusinessActions !== []) {
+            $business['action_handlers'] = array_map(
+                static fn (CustomBusinessActionContract $item): array => $item->toArray(),
+                $this->customBusinessActions(),
+            );
+        }
+
         return [
             'version' => self::SPI_VERSION,
             'capabilities' => array_map(
@@ -754,16 +949,7 @@ final readonly class ManifestContributionSet
                     $this->portalTemplates(),
                 ),
             ],
-            'business' => [
-                'field_types' => array_map(
-                    static fn (FieldTypeDefinition $item): array => $item->toArray(),
-                    $this->fieldTypes(),
-                ),
-                'definitions' => array_map(
-                    static fn (EntityTypeDefinition $item): array => $item->toArray(),
-                    $this->businessDefinitions(),
-                ),
-            ],
+            'business' => $business,
         ];
     }
 
@@ -833,6 +1019,125 @@ final readonly class ManifestContributionSet
                 ));
             }
             $result[$identifier] = $item;
+        }
+        ksort($result, SORT_STRING);
+        return $result;
+    }
+
+    /**
+     * Key safe field-presentation declarations by their owned field type.
+     *
+     * @param   iterable<FieldPresentationContribution>  $items  Signed presenter declarations.
+     *
+     * @return  array<string, FieldPresentationContribution>  Declarations in field-type order.
+     *
+     * @throws  InvalidArgumentException  When one field type is declared more than once.
+     *
+     * @since   2.0.0
+     */
+    private function fieldPresentationIndex(iterable $items): array
+    {
+        $result = [];
+        foreach ($items as $item) {
+            if (isset($result[$item->fieldType])) {
+                throw new InvalidArgumentException(sprintf(
+                    'Field presentation %s is declared more than once.',
+                    $item->fieldType,
+                ));
+            }
+            $result[$item->fieldType] = $item;
+        }
+        ksort($result, SORT_STRING);
+
+        return $result;
+    }
+
+    /**
+     * Prove published generated surfaces cannot outlive their custom field-type presenters.
+     *
+     * Install and runtime publication both parse the signed manifest through this method. Requiring every
+     * package-owned custom type used by a published definition to cover its potentially visible render and
+     * edit contexts therefore fails before persistence or provider code, instead of waiting for the first
+     * administrator, portal, or public render to discover a missing strategy.
+     *
+     * @return  void
+     *
+     * @throws  InvalidArgumentException  When a published definition uses an owned custom field type without
+     *          signed coverage for every context that field can reach.
+     *
+     * @since   2.0.0
+     */
+    private function assertFieldPresentationCoverage(): void
+    {
+        /** @var array<string, array<string, true>> $required */
+        $required = [];
+        foreach ($this->businessDefinitions as $definition) {
+            if ($definition->status !== DefinitionStatus::Published) {
+                continue;
+            }
+            foreach ($definition->fields() as $field) {
+                if (!isset($this->fieldTypes[$field->type])) {
+                    continue;
+                }
+                foreach (FieldPresentationCoverage::requiredContexts($field) as $context) {
+                    $required[$field->type][$context->value] = true;
+                }
+            }
+        }
+        foreach ($required as $fieldType => $contexts) {
+            $declared = [];
+            $presentation = $this->fieldPresentations[$fieldType] ?? null;
+            foreach ($presentation?->contexts ?? [] as $context) {
+                $declared[$context->value] = true;
+            }
+            $missing = array_keys(array_diff_key($contexts, $declared));
+            if ($missing === []) {
+                continue;
+            }
+            sort($missing, SORT_STRING);
+            throw new InvalidArgumentException(sprintf(
+                'Published business definitions require signed presentation contexts for %s: %s.',
+                $fieldType,
+                implode(', ', $missing),
+            ));
+        }
+    }
+
+    /**
+     * Key custom handler contracts by handler reference and reject handler or schema duplication.
+     *
+     * @template T of CustomBusinessViewContract|CustomBusinessActionContract
+     *
+     * @param   iterable<T>  $items  Signed custom handler contracts as declared.
+     * @param   string       $kind   View or action kind used in stable failures.
+     *
+     * @return  array<string, T>  Contracts keyed and sorted by handler reference.
+     *
+     * @throws  InvalidArgumentException  When a handler or schema reference repeats within this kind.
+     *
+     * @since   2.0.0
+     */
+    private function customContractIndex(iterable $items, string $kind): array
+    {
+        $result = [];
+        $schemas = [];
+        foreach ($items as $item) {
+            if (isset($result[$item->handler])) {
+                throw new InvalidArgumentException(sprintf(
+                    'Custom business %s handler %s is declared more than once.',
+                    $kind,
+                    $item->handler,
+                ));
+            }
+            if (isset($schemas[$item->schema])) {
+                throw new InvalidArgumentException(sprintf(
+                    'Custom business %s schema %s is declared more than once.',
+                    $kind,
+                    $item->schema,
+                ));
+            }
+            $result[$item->handler] = $item;
+            $schemas[$item->schema] = true;
         }
         ksort($result, SORT_STRING);
         return $result;

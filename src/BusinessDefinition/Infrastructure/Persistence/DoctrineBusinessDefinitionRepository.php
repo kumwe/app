@@ -41,13 +41,13 @@ use RuntimeException;
  * UUID or its handle in the same argument, branching the SQL identity clause on `Uuid::isValid()`, so a
  * caller never has to resolve one spelling into the other first.
  *
- * Writes are optimistic rather than locked, and each one refuses to start unless the caller already opened a
- * transaction, so a refusal midway leaves the catalog, the drafts and the history as they were. `saveDraft()`
- * and `publish()` put the revision they were composed against into the WHERE clause and turn an affected-row
- * count other than one into `BusinessDefinitionRevisionConflict`, re-reading the head so the conflict reports
- * the revision the catalog actually holds; a first save that loses the race to create the handle surfaces as
- * a unique-constraint violation and is translated into the same conflict. Identity and ownership are checked
- * against the stored head on every save, so a handle cannot be moved to another definition or another owner.
+ * Individual definition writes are optimistic, and each one refuses to start unless the caller already opened
+ * a transaction. Publication additionally exposes a site-wide namespace lock on the stable site row so two
+ * differently spelled handles cannot concurrently claim one normalized public component. `saveDraft()` and
+ * `publish()` put the revision they were composed against into the WHERE clause and turn an affected-row count
+ * other than one into `BusinessDefinitionRevisionConflict`, re-reading the head so the conflict reports the
+ * revision the catalog actually holds. Identity and ownership are checked against the stored head on every
+ * save, so a handle cannot be moved to another definition or another owner.
  *
  * Nothing coming out of storage is trusted. Every column is read through a typed accessor that raises
  * `RuntimeException` rather than coercing, JSON columns have to decode to the object or list shape their
@@ -77,22 +77,49 @@ final readonly class DoctrineBusinessDefinitionRepository implements BusinessDef
      *
      * @param   SiteContext  $site  Site whose `business_definitions` rows are read.
      *
-     * @return  list<DefinitionCatalogEntry>  One head per handle, ordered by handle; empty when the site has
+     * @return  list<DefinitionCatalogEntry>  At most 4096 heads ordered by handle; empty when the site has
      *          no definitions at all.
      *
      * @throws  RuntimeException  When a stored head is missing a column, holds a wrongly typed value, or its
-     *          owner type or publication state names no case.
+     *          owner type or publication state names no case, or the site exceeds the catalog bound.
      *
      * @since   2.0.0
      */
     public function catalog(SiteContext $site): array
     {
         $rows = $this->database->fetchAllAssociative(sprintf(
-            'SELECT * FROM %s WHERE site_identifier = ? ORDER BY handle',
+            'SELECT * FROM %s WHERE site_identifier = ? ORDER BY handle LIMIT 4097',
             $this->tables->quoted('business_definitions'),
         ), [$site->identifier()]);
+        if (count($rows) > 4096) {
+            throw new RuntimeException('The business-definition catalog exceeds its supported bound.');
+        }
 
         return array_map($this->mapEntry(...), $rows);
+    }
+
+    /**
+     * Lock the site's stable authority row for exclusive contract-name admission.
+     *
+     * @param   SiteContext  $site  Site whose normalized component namespace is being changed.
+     *
+     * @return  void
+     *
+     * @throws  LogicException  When the caller has no transaction open.
+     * @throws  RuntimeException  When the site row is unavailable or malformed.
+     *
+     * @since   2.0.0
+     */
+    public function lockContractNamespace(SiteContext $site): void
+    {
+        $this->assertTransaction('Business-definition contract namespace locking');
+        $identifier = $this->database->fetchOne(sprintf(
+            'SELECT identifier FROM %s WHERE identifier = ? FOR UPDATE',
+            $this->tables->quoted('sites'),
+        ), [$site->identifier()], [Types::STRING]);
+        if (!is_string($identifier) || $identifier !== $site->identifier()) {
+            throw new RuntimeException('The business-definition contract namespace site is unavailable.');
+        }
     }
 
     /**
@@ -205,6 +232,68 @@ final readonly class DoctrineBusinessDefinitionRepository implements BusinessDef
         $row = $this->database->fetchAssociative($sql, $parameters);
 
         return $row === false ? null : $this->mapVersion($row);
+    }
+
+    /**
+     * Load exact published versions through driver-safe bounded batches.
+     *
+     * Each statement carries at most two hundred UUID/version pairs, keeping parameter counts below the
+     * supported drivers' conservative limits while replacing catalog discovery's former query-per-entry
+     * behavior. Site ownership remains part of every statement through the catalog-head join.
+     *
+     * @param   SiteContext         $site      Site every requested definition must belong to.
+     * @param   array<string, int>  $versions  Definition UUID to exact positive version.
+     *
+     * @return  array<string, DefinitionVersionRecord>  Valid stored versions keyed by definition UUID.
+     *
+     * @throws  InvalidBusinessDefinition  When the request is malformed or a stored version is inconsistent.
+     * @throws  RuntimeException  When a stored row is malformed or a duplicate identity is returned.
+     *
+     * @since   2.0.0
+     */
+    public function publishedBatch(SiteContext $site, array $versions): array
+    {
+        if (count($versions) > 4096) {
+            throw new InvalidBusinessDefinition('A published-definition batch exceeds its supported bound.');
+        }
+        foreach ($versions as $definitionId => $version) {
+            if (!is_string($definitionId) || !Uuid::isValid($definitionId) || !is_int($version) || $version < 1) {
+                throw new InvalidBusinessDefinition('A published-definition batch request is invalid.');
+            }
+        }
+        $records = [];
+        foreach (array_chunk($versions, 200, true) as $chunk) {
+            $clauses = [];
+            $parameters = [$site->identifier()];
+            $types = [Types::STRING];
+            foreach ($chunk as $definitionId => $version) {
+                $clauses[] = '(v.definition_id = ? AND v.version = ?)';
+                $parameters[] = $definitionId;
+                $parameters[] = $version;
+                $types[] = Types::GUID;
+                $types[] = Types::INTEGER;
+            }
+            if ($clauses === []) {
+                continue;
+            }
+            $rows = $this->database->fetchAllAssociative(sprintf(
+                'SELECT v.* FROM %s v INNER JOIN %s h ON h.id = v.definition_id '
+                . 'WHERE h.site_identifier = ? AND (%s)',
+                $this->tables->quoted('business_definition_versions'),
+                $this->tables->quoted('business_definitions'),
+                implode(' OR ', $clauses),
+            ), $parameters, $types);
+            foreach ($rows as $row) {
+                $record = $this->mapVersion($row);
+                $definitionId = $record->definition->id;
+                if (isset($records[$definitionId])) {
+                    throw new RuntimeException('A published-definition batch returned a duplicate identity.');
+                }
+                $records[$definitionId] = $record;
+            }
+        }
+
+        return $records;
     }
 
     /**

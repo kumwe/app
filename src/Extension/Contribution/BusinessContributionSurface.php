@@ -8,6 +8,12 @@ use Closure;
 use Kumwe\CMS\BusinessDefinition\Application\BusinessDefinitionContributionRegistry;
 use Kumwe\CMS\BusinessDefinition\Application\FieldTypeRegistry;
 use Kumwe\CMS\BusinessDefinition\Domain\DefinitionOwner;
+use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessActionContract;
+use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessActionHandlerRegistry;
+use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessViewContract;
+use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessViewHandlerRegistry;
+use Kumwe\CMS\BusinessSurface\Presentation\Field\FieldPresentationContribution;
+use Kumwe\CMS\BusinessSurface\Presentation\Field\FieldPresentationRegistry;
 
 /**
  * Presents a business-definition registry as a contribution surface.
@@ -64,6 +70,77 @@ final readonly class BusinessContributionSurface implements ContributionSurface
     {
         return new self(
             static fn (DefinitionOwner $owner): array => $registry->ownedBy($owner),
+            static function (DefinitionOwner $owner) use ($registry): void {
+                $registry->remove($owner);
+            },
+        );
+    }
+
+    /**
+     * Expose safe field presenters as an inventoried and lifecycle-removable contribution surface.
+     *
+     * Executable presenter objects remain private to the registry; inventory contains only the signed field
+     * type and context declaration that was reconciled when the provider registered the implementation.
+     *
+     * @param   FieldPresentationRegistry  $registry  Owner-aware semantic presenter registry.
+     *
+     * @return  self  Surface exporting declarations and withdrawing presenter objects by owner.
+     *
+     * @since   2.0.0
+     */
+    public static function forFieldPresentations(FieldPresentationRegistry $registry): self
+    {
+        return new self(
+            static fn (DefinitionOwner $owner): array => array_map(
+                static fn (FieldPresentationContribution $contribution): array => $contribution->toArray(),
+                $registry->ownedBy($owner),
+            ),
+            static function (DefinitionOwner $owner) use ($registry): void {
+                $registry->removeOwner($owner);
+            },
+        );
+    }
+
+    /**
+     * Expose custom business view handlers as an inventoried and removable contribution surface.
+     *
+     * Executable handler objects never enter inventory; only their signed schema contracts do.
+     *
+     * @param   CustomBusinessViewHandlerRegistry  $registry  Owner-aware validating handler registry.
+     *
+     * @return  self  Surface exporting signed contracts and withdrawing their handlers by owner.
+     *
+     * @since   2.0.0
+     */
+    public static function forCustomViewHandlers(CustomBusinessViewHandlerRegistry $registry): self
+    {
+        return new self(
+            static fn (DefinitionOwner $owner): array => array_map(
+                static fn (CustomBusinessViewContract $contract): array => $contract->toArray(),
+                $registry->ownedBy($owner),
+            ),
+            static function (DefinitionOwner $owner) use ($registry): void {
+                $registry->remove($owner);
+            },
+        );
+    }
+
+    /**
+     * Expose custom business action handlers as an inventoried and removable contribution surface.
+     *
+     * @param   CustomBusinessActionHandlerRegistry  $registry  Owner-aware validating handler registry.
+     *
+     * @return  self  Surface exporting signed contracts and withdrawing their handlers by owner.
+     *
+     * @since   2.0.0
+     */
+    public static function forCustomActionHandlers(CustomBusinessActionHandlerRegistry $registry): self
+    {
+        return new self(
+            static fn (DefinitionOwner $owner): array => array_map(
+                static fn (CustomBusinessActionContract $contract): array => $contract->toArray(),
+                $registry->ownedBy($owner),
+            ),
             static function (DefinitionOwner $owner) use ($registry): void {
                 $registry->remove($owner);
             },

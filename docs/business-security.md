@@ -45,6 +45,12 @@ Plan resolution and repository execution share one transaction and hold a shared
 generation. Policy and SoD writes increment that generation in their own transaction, so a change commits wholly
 before a record operation plans or waits until that operation finishes; a plan cannot execute across the change.
 
+Generated metadata resolves the same plan before describing a field or operation. A denied handle is omitted from
+HTML, JSON, CLI/MCP, OpenAPI, filters, sorts, search fields, relation choices, aggregates, errors, and history
+changed-field lists; adapters never serialize the internal redaction sentinel. Operation-status lookup is also
+non-enumerating and binds the original actor, site, organization, authority fingerprint, definition generation,
+and current record access plan before releasing a stored result.
+
 ## Conditional record policy language
 
 Conditional policies are data, not code. The canonical representation is a bounded JSON document decoded into a
@@ -92,9 +98,13 @@ relations, related-definition plans, and a SHA-256 authorization digest. It appl
 counting, grouping, sorting, keyset pagination, relation `EXISTS`, includes, or projection. Cursors bind the query
 shape, scope, definition version, and access digest, so a cursor cannot be replayed after authority changes.
 
+Entity-reference and relationship selectors consume the source operation's exact nested target plan. Create,
+update, and owned-line writes reapply that same nested row predicate and public-reference grant before translating
+the selected public identity to an internal key, so submitting a forged identifier cannot bypass selector policy.
+
 Secret fields remain encrypted envelopes and never enter predicates, full-text indexes, history plaintext,
-exports, reports, or audit payloads. Restricted fields may appear as explicit redaction markers only where the
-usage policy allows the surrounding record to be shown.
+exports, reports, or audit payloads. Application-internal withheld values may use a redaction marker, but generated
+HTML, REST, OpenAPI, CLI, and MCP projectors omit the denied handle entirely, including metadata and errors.
 
 ## Organizations, workspaces, and memberships
 
@@ -124,6 +134,14 @@ distinct-actor requirement, and scope, then requires that exact rule version to 
 cancellation, revocation, expiry, resource-version change, context change, and authority change fail closed.
 Execution locks and spends one approved request exactly once. The requester also presents a fresh step-up proof
 bound to the exact action and current rotated session.
+
+Generated approval adapters add a shared active-surface ceiling after this scoped approval visibility check.
+REST and CLI admit only canonical `business_record` action requests. Portal preserves other approval resource
+families, but a business request additionally requires the active definition's exact portal approval opt-in and
+the bound high-impact action's portal exposure. The predicate deliberately does not require
+`business.record.action`: approvers retain maker-checker separation and receive visibility only through request,
+approve, or manage authority. Portal decisions re-run the same gate in the mutation transaction before consuming
+step-up evidence, and portal presentation omits internal record, actor, digest, role, and raw rule evidence.
 
 ## Step-up authentication
 

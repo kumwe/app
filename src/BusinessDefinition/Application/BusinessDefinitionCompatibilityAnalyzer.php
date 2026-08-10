@@ -81,8 +81,9 @@ final class BusinessDefinitionCompatibilityAnalyzer
      * Storage mode, identity strategy and scope are the three that cannot move without abandoning the rows
      * already stored, so any change to them is destructive. Turning soft deletion off is destructive too,
      * since the restore metadata goes with it, while turning it on only adds. Everything else here —
-     * labels, audit policy, revision policy, compatibility metadata and the three delivery surfaces —
-     * leaves stored records untouched and is classified as behaviour changing.
+     * labels, audit policy, revision policy, compatibility metadata, the three delivery surfaces and the
+     * explicit portal-operation allowlist — leaves stored records untouched and is classified as behaviour
+     * changing.
      *
      * @param   EntityTypeDefinition       $before   Published version currently in service.
      * @param   EntityTypeDefinition       $after    Draft as it would be published.
@@ -148,6 +149,13 @@ final class BusinessDefinitionCompatibilityAnalyzer
                     sprintf('%s %s exposure.', $new ? 'Enable' : 'Disable', $surface),
                 );
             }
+        }
+        if ($before->portalOperations() !== $after->portalOperations()) {
+            $changes[] = new CompatibilityChange(
+                '/exposure/portal_operations',
+                CompatibilityClassification::BehaviorChanging,
+                'Change the explicitly enabled portal business-record operations.',
+            );
         }
     }
 

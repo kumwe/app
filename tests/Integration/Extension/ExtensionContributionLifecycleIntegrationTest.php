@@ -88,7 +88,7 @@ final class ExtensionContributionLifecycleIntegrationTest extends TestCase
             self::assertSame('disabled', $result['status']);
             self::assertTrue($database->createSchemaManager()->tablesExist([$dataTable]));
             $diagnostic = $this->installed($manager, $context, $identifier);
-            self::assertSame(2, $diagnostic['manifest_schema']);
+            self::assertSame(3, $diagnostic['manifest_schema']);
             self::assertFalse($diagnostic['contributions']['active']);
             self::assertFalse($diagnostic['contributions']['capabilities'][0]['active']);
             self::assertFalse($diagnostic['contributions']['resource_policies'][0]['active']);
@@ -127,6 +127,7 @@ final class ExtensionContributionLifecycleIntegrationTest extends TestCase
                 'active',
             ]));
             self::assertFalse($diagnostic['contributions']['business']['field_types'][0]['active']);
+            self::assertFalse($diagnostic['contributions']['business']['field_presentations'][0]['active']);
             self::assertSame(2, count($diagnostic['contributions']['business']['definitions']));
             self::assertSame(2, $this->definitionCount($database, $tables, $identifier));
             self::assertSame(2, $this->versionCount($database, $tables, $identifier));
@@ -148,6 +149,13 @@ final class ExtensionContributionLifecycleIntegrationTest extends TestCase
             self::assertSame(
                 $namespace . '.administrator',
                 $active->contributionInventory($identifier)['resource_policies'][0]['id'],
+            );
+            self::assertSame(
+                [
+                    'field_type' => $namespace . '.severity',
+                    'contexts' => ['create', 'detail', 'filter', 'history', 'list', 'relation', 'update'],
+                ],
+                $active->contributionInventory($identifier)['business']['field_presentations'][0],
             );
             self::assertSame([], $registries->navigation()->visible([]));
             $visible = $registries->navigation()->visible([$capability => true]);

@@ -41,6 +41,41 @@ final class McpMutationGuardIntegrationTest extends TestCase
         self::assertSame(1, $calls);
     }
 
+    /**
+     * Proves nested object key order does not change an MCP idempotency binding.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testNestedMapOrderDoesNotChangeTheIdempotencyBinding(): void
+    {
+        $container = TestKernelFactory::create(Environment::fromGlobals());
+        $guard = $container->get(McpMutationGuard::class);
+        self::assertInstanceOf(McpMutationGuard::class, $guard);
+        $context = TestKernelFactory::administratorContext($container);
+        $operationId = 'nested-canonical-' . Uuid::uuid7()->toString();
+        $calls = 0;
+        $mutation = static function () use (&$calls): array {
+            ++$calls;
+
+            return ['applied' => true];
+        };
+
+        $first = $guard->run($context, 'probe.nested', $operationId, [
+            'items' => [['beta' => 2, 'alpha' => 1]],
+            'metadata' => ['zulu' => ['two' => 2, 'one' => 1], 'alpha' => true],
+        ], $mutation);
+        $replay = $guard->run($context, 'probe.nested', $operationId, [
+            'metadata' => ['alpha' => true, 'zulu' => ['one' => 1, 'two' => 2]],
+            'items' => [['alpha' => 1, 'beta' => 2]],
+        ], $mutation);
+
+        self::assertSame(['applied' => true], $first);
+        self::assertSame($first, $replay);
+        self::assertSame(1, $calls);
+    }
+
     public function testExpiredLeaseIsFencedAndRecovered(): void
     {
         $container = TestKernelFactory::create(Environment::fromGlobals());

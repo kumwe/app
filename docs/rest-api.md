@@ -25,6 +25,67 @@ Every mutation requires a caller-generated `Idempotency-Key`. Kumwe persists the
 
 Updates and deletes of versioned content, menus, and menu items require the latest `ETag` in `If-Match`. User updates carry their positive optimistic `version` in the JSON document. A stale version returns a precondition or conflict response and never overwrites the current state.
 
+## Generated business resources
+
+Published, actively installed business definitions use one stable generic route family. Discovery and every result
+are filtered by the same row/field/action plan used by administrator, portal, CLI, and MCP. Definition or field
+denial is omission; missing and denied record, relation target, approval, and operation IDs are indistinguishable.
+
+| Method | Path | Purpose |
+|---|---|---|
+| `GET` | `/api/v1/business/definitions` | Discover visible definitions, fields, views, actions, and relations |
+| `GET` | `/api/v1/business/definitions/{definition}` | Inspect one visible generated schema |
+| `GET`, `POST` | `/api/v1/business/records/{definition}` | Browse or create records |
+| `POST` | `/api/v1/business/records/{definition}/search` | Execute the full bounded read-only query document |
+| `POST` | `/api/v1/business/views/{definition}/{view}` | Run a collection-scoped typed custom view |
+| `POST` | `/api/v1/business/views/{definition}/{record}/{view}` | Run a record-scoped typed custom view |
+| `GET`, `PATCH`, `DELETE` | `/api/v1/business/records/{definition}/{record}` | Read, update, or delete one record |
+| `POST` | `.../{record}/archive`, `.../{record}/restore` | Change lifecycle state |
+| `GET` | `.../{record}/history` | Read a bounded revision window |
+| `POST` | `.../{record}/actions/{action}` | Execute a published policy-visible action |
+| `POST` | `.../{record}/actions/{action}/approval` | Request approval for the exact action binding |
+| `GET`, `POST` | `.../{record}/relations/{relation}` | Browse or add target relations |
+| `DELETE` | `.../{record}/relations/{relation}/{target}` | Remove an exact target relation |
+| `PUT` | `.../{record}/relations/{relation}/order` | Replace the ordered target sequence |
+| `GET` | `/api/v1/business/approvals`, `/api/v1/business/approvals/{approval}` | List/read scoped redacted approval projections |
+| `GET` | `/api/v1/business/operations/{operation}` | Read the caller-bound completed mutation result |
+| `GET` | `/api/v1/openapi.json` | Read the deterministic current OpenAPI 3.1 contract |
+
+Browse query parameters cover the small graphical case. `POST .../search` accepts the closed
+`GeneratedBusinessQuery` schema for recursive filters, search, sorts, opaque cursor, page size, projections,
+includes, lifecycle flags, and aggregates; it is read-only and does not consume an idempotency key. Unknown keys,
+floats for exact values, more than five sorts, 64 filter operations, eight levels, two relation hops, 64 fields,
+four includes, 16 aggregates, or 200 rows are rejected before repository access. An include is additionally capped
+at 1,000 hydrated rows and never performs one query per source record.
+
+Create accepts `{"values": {...}, "record_id": null}`; update accepts `{"values": {...}}`. Exact decimals are JSON
+strings. Money and quantity are closed `{amount, currency}` and `{amount, unit}` objects. Retryable mutations require
+`Idempotency-Key`; all existing-record mutations require exactly one strong `If-Match: "vN"`. Reads and mutation
+results return `ETag`. Identical application replay returns `Idempotency-Replayed: true`; key reuse with changed
+input, authority, scope, or definition is refused.
+
+Approval inbox/detail is business-only: unrelated approval resource families and malformed or stale business
+bindings are omitted, and exact detail uses the same not-found result. A request remains visible only while its
+active definition still declares the bound high-impact action for the API surface; this exposure check does not
+require a checker to inherit the maker's action-execution grant. Output omits requester, approver, role, policy,
+payload, and binding digest identities. Bearer REST cannot manufacture the fresh session-bound step-up proof
+required to approve, reject, or revoke; use the
+administrator or portal decision flow. A bearer-originated request cannot later be consumed by REST either: the
+predecessor binding includes the authenticated surface and proof consumption accepts only administrator or portal
+sessions. Supplying an approved request ID therefore re-proves the binding and fails closed; complete high-impact
+execution through one browser surface. A typed custom action still carries the same contract-validated `input`
+object into approval and attempted execution; changing it invalidates the binding, and reusing the operation key
+for another input is rejected. Ordinary actions remain fully available through REST.
+
+The generated contract is canonical OpenAPI 3.1, cached outside the public tree by trusted runtime, definition,
+and authorization generation, checksum verified on read, and served with a strong ETag/304. Deterministic component
+claims fail a site publication or extension activation before it commits. Caller-specific contracts compile only
+pre-admitted declarative metadata on an exact-generation cache miss; no extension handler runs. Corrupt entries are
+rebuilt for that exact generation and are never replaced with stale output. An unexpected current-contract
+invariant failure returns a no-store 503 with `Retry-After: 30`. See
+[Generated business surfaces](architecture/generated-business-surfaces.md) for limits, failure types, cache
+recovery, and custom-handler rules.
+
 ## Content
 
 | Method | Path | Route capability | Purpose |

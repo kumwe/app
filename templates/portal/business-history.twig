@@ -1,0 +1,60 @@
+{% extends 'portal/layout.twig' %}
+
+{% block title %}Record history · Kumwe Portal{% endblock %}
+
+{% block content %}
+<header class="portal-business-heading">
+    <div><p class="eyebrow">{{ definition_handle }}</p><h1>Record history</h1><p><code>{{ record_id }}</code></p></div>
+    <a class="portal-button secondary" href="{{ business_base_path }}/{{ definition_handle|url_encode }}/{{ record_id|url_encode }}">Back to record</a>
+</header>
+
+{% if items is empty %}
+    <section class="portal-business-empty"><h2>No revisions are available</h2><p>This record has no visible history entries.</p></section>
+{% else %}
+    <ol class="portal-business-history">
+        {% for revision in items %}
+            <li class="portal-business-panel">
+                <header class="portal-business-section-heading">
+                    <div>
+                        <p class="eyebrow">{{ revision.operation|replace({'_': ' '}) }}</p>
+                        <h2>Version {{ revision.record_version }} · Revision {{ revision.revision_number }}</h2>
+                    </div>
+                    <time datetime="{{ revision.occurred_at }}">{{ revision.occurred_at|date('Y-m-d H:i:s') }}</time>
+                </header>
+                <p>
+                    {% if revision.actor_id is defined and revision.actor_id %}Performed by <code>{{ revision.actor_id }}</code>.{% else %}Actor attribution is not disclosed.{% endif %}
+                    {% if revision.changed_fields is not empty %}Changed {{ revision.changed_fields|join(', ') }}.{% endif %}
+                </p>
+                {% if revision.snapshot is not empty %}
+                    <details>
+                        <summary>View disclosed snapshot</summary>
+                        <dl class="portal-details">
+                            {% for handle, value in revision.snapshot %}
+                                <div>
+                                    <dt>{{ handle|replace({'_': ' '})|title }}</dt>
+                                    <dd>
+                                        {{ value is same as(true)
+                                            ? 'Yes'
+                                            : (value is same as(false)
+                                                ? 'No'
+                                                : (value is null
+                                                    ? 'Not set'
+                                                    : (value is iterable ? value|json_encode : value)))
+                                        }}
+                                    </dd>
+                                </div>
+                            {% endfor %}
+                        </dl>
+                    </details>
+                {% endif %}
+                {% if revision.integrity_checksum is defined %}
+                    <small>Integrity checksum <code class="portal-digest">{{ revision.integrity_checksum }}</code></small>
+                {% endif %}
+            </li>
+        {% endfor %}
+    </ol>
+    {% if has_more and before_version %}
+        <nav class="portal-actions" aria-label="History pages"><a class="portal-button secondary" href="?history=1&before_version={{ before_version }}" rel="next">Older revisions</a></nav>
+    {% endif %}
+{% endif %}
+{% endblock %}

@@ -21,6 +21,7 @@ Individual checks:
 ```bash
 composer architecture:policy
 composer docs:api
+composer openapi:check
 composer cs
 composer analyse
 composer test:unit
@@ -28,6 +29,24 @@ composer test:integration
 composer security:audit
 npm run test:browser
 ```
+
+For a generated-business change, also run focused record/surface/OpenAPI/CLI/MCP tests, compile the golden contract,
+and execute the neutral cross-surface browser fixture with JavaScript enabled and disabled:
+
+```bash
+composer openapi:compile
+composer openapi:check
+composer test -- tests/Unit/BusinessSurface tests/Unit/OpenApi
+composer test -- tests/Integration/BusinessRecord tests/Functional
+npm run test:browser -- --grep 'generated business'
+git diff --exit-code api/openapi public/assets/build
+```
+
+Contract output must be byte-identical on a second compilation and across all supported database jobs. Generated
+delivery acceptance covers metadata omission, exact strings, stale versions, replay/key reuse/in-progress, policy
+cursor drift, cross-site/organization denial, oversized/chunked bodies, deep/wide filters, include fan-out, relation
+choices, action/approval/history bindings, caller-bound status, and adapter dependency parity. See
+[Generated business surfaces](architecture/generated-business-surfaces.md).
 
 Frontend dependencies are locked in `package-lock.json`. Production serves the committed hashed files under `public/assets/build`; rebuilding them must leave that directory unchanged. Browser tests run Chromium at desktop and mobile viewports, scan rendered pages against WCAG 2.2 AA rules, and compare screenshots under `tests/Browser/screenshots`.
 

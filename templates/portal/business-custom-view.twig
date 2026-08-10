@@ -1,0 +1,73 @@
+{% extends 'portal/layout.twig' %}
+{% import _self as custom_result %}
+{% import 'portal/_business-schema-fields.twig' as schema_fields %}
+
+{% macro node(node) %}
+    {% if node.kind == 'scalar' %}
+        <span{% if node.empty %} class="portal-text-muted"{% endif %}>{{ node.value }}</span>
+    {% elseif node.kind == 'list' %}
+        {% if node.items is empty %}<p>No items</p>{% else %}<ol class="portal-business-custom-list">{% for item in node.items %}<li>{{ _self.node(item.value) }}</li>{% endfor %}</ol>{% endif %}
+    {% elseif node.kind == 'object' %}
+        {% if node.entries is empty %}<p>No values</p>{% else %}<dl class="portal-details portal-business-custom-object">{% for entry in node.entries %}<div><dt>{{ entry.label }}</dt><dd>{{ _self.node(entry.value) }}</dd></div>{% endfor %}</dl>{% endif %}
+    {% endif %}
+{% endmacro %}
+
+{% block title %}{{ view.label }} · Kumwe Portal{% endblock %}
+
+{% block content %}
+{% set custom_path = business_base_path ~ '/' ~ (definition.handle|url_encode)
+    ~ (record_id ? '/' ~ (record_id|url_encode) : '') ~ '/views/' ~ (view.handle|url_encode) %}
+{% set searchable_fields = definition.fields|filter(field => field.handle in view.fields and field.uses.search)|slice(0, 16) %}
+{% set filter_fields = definition.fields|filter(field =>
+    field.handle in view.filters
+    and not field.write_only
+    and field.value_type in ['string', 'reference', 'integer', 'boolean']
+)|slice(0, 128) %}
+<header class="portal-business-heading">
+    <div><p class="eyebrow">{{ view.kind|replace({'_': ' '}) }} custom view</p><h1>{{ view.label }}</h1><p>{{ definition.plural_label }} · definition version {{ definition.version }}</p></div>
+    <nav class="portal-actions" aria-label="View actions">
+        {% if record_id %}<a class="portal-button secondary" href="{{ business_base_path }}/{{ definition.handle|url_encode }}/{{ record_id|url_encode }}">Back to record</a>{% else %}<a class="portal-button secondary" href="{{ business_base_path }}/{{ definition.handle|url_encode }}">Back to records</a>{% endif %}
+    </nav>
+</header>
+
+{% if error_summary %}<div class="portal-notice error" role="alert" tabindex="-1"><h2>View input needs attention</h2><p>{{ error_summary }}</p></div>{% endif %}
+
+<section class="portal-business-panel portal-business-stack" aria-labelledby="portal-custom-query-title">
+    <div><p class="eyebrow">Parameters</p><h2 id="portal-custom-query-title">Run this view</h2></div>
+    {% if parameter_supported %}
+        <form class="portal-business-query-form" action="{{ custom_path }}" method="get">
+            {{ schema_fields.fields(parameter_fields) }}
+            {% if searchable_fields is not empty %}
+                <label for="portal-custom-search">Search records<input id="portal-custom-search" type="search" name="search_term" value="{{ query_state.search_term|default('') }}"></label>
+                {% for field in searchable_fields %}<input type="hidden" name="search_fields[]" value="{{ field.handle }}">{% endfor %}
+            {% endif %}
+            {% for field in filter_fields %}
+                <label for="portal-custom-filter-{{ field.handle }}">{{ field.label }} filter
+                    {% if field.schema.enum is defined %}
+                        <select id="portal-custom-filter-{{ field.handle }}" name="filters[{{ field.handle }}]"><option value="">Any</option>{% for option in field.schema.enum %}<option value="{{ option }}"{% if query_state.filters[field.handle] is defined and query_state.filters[field.handle] is same as(option) %} selected{% endif %}>{{ option|replace({'_': ' '})|title }}</option>{% endfor %}</select>
+                    {% elseif field.value_type == 'boolean' %}
+                        <select id="portal-custom-filter-{{ field.handle }}" name="boolean_filters[{{ field.handle }}]"><option value="">Any</option><option value="true">Yes</option><option value="false">No</option></select>
+                    {% else %}
+                        <input id="portal-custom-filter-{{ field.handle }}" name="{{ field.value_type == 'integer' ? 'integer_filters' : 'filters' }}[{{ field.handle }}]" value="{{ query_state.filters[field.handle]|default('') }}"{% if field.value_type == 'integer' %} type="number" step="1"{% endif %}>
+                    {% endif %}
+                </label>
+            {% endfor %}
+            {% if view.sorts is not empty %}
+                <label for="portal-custom-sort">Sort records<select id="portal-custom-sort" name="sort_field"><option value="">Definition order</option>{% for handle in view.sorts %}{% set matches = definition.fields|filter(field => field.handle == handle) %}<option value="{{ handle }}"{% if query_state.sort_field is same as(handle) %} selected{% endif %}>{{ matches is empty ? handle|replace({'_': ' '})|title : (matches|first).label }}</option>{% endfor %}</select></label>
+                <label for="portal-custom-direction">Direction<select id="portal-custom-direction" name="sort_direction"><option value="">Default</option><option value="asc"{% if query_state.sort_direction == 'asc' %} selected{% endif %}>Ascending</option><option value="desc"{% if query_state.sort_direction == 'desc' %} selected{% endif %}>Descending</option></select></label>
+            {% endif %}
+            <label for="portal-custom-page-size">Rows available to the view<select id="portal-custom-page-size" name="page_size">{% for size in [25, 50, 100, 200] %}<option value="{{ size }}"{% if query_state.page_size == size %} selected{% endif %}>{{ size }}</option>{% endfor %}</select></label>
+            <div class="portal-actions">
+                <button type="submit" name="run" value="1">Run view</button>
+                <button type="submit" name="configure" value="1" formnovalidate>Update rows</button>
+                <a class="portal-button secondary" href="{{ custom_path }}">Reset</a>
+            </div>
+        </form>
+    {% endif %}
+</section>
+
+<section class="portal-business-panel portal-business-stack" aria-labelledby="portal-custom-result-title" aria-live="polite">
+    <div><p class="eyebrow">Contract-validated result</p><h2 id="portal-custom-result-title">View result</h2></div>
+    {% if data_projection %}{{ custom_result.node(data_projection) }}{% elseif parameter_supported and not custom_view_submitted %}<p>Choose any parameters above, then run the view.</p>{% else %}<p>No result is available.</p>{% endif %}
+</section>
+{% endblock %}

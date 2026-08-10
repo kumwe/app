@@ -1770,13 +1770,14 @@ final readonly class DoctrineBusinessRecordQueryCompiler
     }
 
     /**
-     * Settle which field handles the page returns, expanding defaults and formula dependencies.
+     * Settle which field handles the page returns, expanding defaults and expression dependencies.
      *
      * An empty projection stands for every field the definition marks readable. A formula field then
      * pulls the fields it reads in behind it, and because the loop re-measures the list as it grows, a
-     * dependency of a dependency is picked up as well: the value is computed after the row is read, so
-     * its inputs have to be on the row. Requested includes are resolved only to prove the relationship
-     * exists — related records are fetched separately, not by this statement.
+     * dependency of a dependency is picked up as well. Formula inputs have to be present for computation,
+     * and visibility inputs have to be present for fail-closed disclosure even when the caller did not request
+     * those internal fields. Requested includes are resolved only to prove the relationship exists — related
+     * records are fetched separately, not by this statement.
      *
      * @param   EntityTypeDefinition      $definition     Definition the handles resolve against.
      * @param   PhysicalTableBlueprint    $table          Installed record table of that definition; the
@@ -1785,8 +1786,8 @@ final readonly class DoctrineBusinessRecordQueryCompiler
      *          includes.
      * @param   BusinessRecordAccessPlan  $access         Explicit list-field and relation disclosure.
      *
-     * @return  list<string>  Field handles to read, each named once and in request order, with a formula's
-     *          dependencies appended after it.
+     * @return  list<string>  Field handles to read, each named once and in request order, with internal
+     *          formula and visibility dependencies appended after it.
      *
      * @throws  InvalidBusinessRecordQuery  When a requested handle names no field, names one the
      *          definition does not expose to readers, or an include names no relationship.
@@ -1813,7 +1814,9 @@ final readonly class DoctrineBusinessRecordQueryCompiler
         for ($index = 0; $index < count($projection); ++$index) {
             $handle = $projection[$index];
             $field = $this->field($definition, $handle);
-            foreach ($field->formula?->dependencies() ?? [] as $dependency) {
+            $dependencies = $field->formula?->dependencies() ?? [];
+            array_push($dependencies, ...($field->visibilityCondition?->dependencies() ?? []));
+            foreach ($dependencies as $dependency) {
                 if (!in_array($dependency, $projection, true)) {
                     $projection[] = $dependency;
                 }
@@ -2032,17 +2035,19 @@ final readonly class DoctrineBusinessRecordQueryCompiler
      *
      * Restricted and secret fields come back redacted on the read path, so letting one be filtered,
      * searched, sorted or aggregated would let a caller recover the hidden value from which records the
-     * query returns.
+     * query returns. A conditional field is also refused defensively even though definition construction
+     * disallows query flags on it: a legacy or corrupt installed shape must not become an inference channel.
      *
      * @param   FieldDefinition  $field  Declared field being considered.
      *
-     * @return  bool  True when the field is readable and classified below `Restricted`.
+     * @return  bool  True when the field is unconditionally readable and classified below `Restricted`.
      *
      * @since   2.0.0
      */
     private function queryVisible(FieldDefinition $field): bool
     {
         return $field->readVisible
+            && $field->visibilityCondition === null
             && !in_array($field->sensitivity, [Sensitivity::Restricted, Sensitivity::Secret], true);
     }
 

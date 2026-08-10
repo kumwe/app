@@ -22,8 +22,10 @@ use Kumwe\CMS\BusinessRecord\Application\BusinessRecordRelationView;
 use Kumwe\CMS\BusinessRecord\Application\BusinessRecordMutationFence;
 use Kumwe\CMS\BusinessRecord\Application\BusinessRecordView;
 use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordSchemaUnavailable;
+use Kumwe\CMS\BusinessRecord\Application\Exception\InvalidBusinessRecordQuery;
 use Kumwe\CMS\BusinessRecord\Application\RecordBrowseResult;
 use Kumwe\CMS\BusinessRecord\Application\RecordCursorCodec;
+use Kumwe\CMS\BusinessRecord\Application\RecordFieldVisibility;
 use Kumwe\CMS\BusinessRecord\Application\RecordRuleValidator;
 use Kumwe\CMS\BusinessRecord\Application\RecordValueCodec;
 use Kumwe\CMS\BusinessRecord\Application\ResolvedBusinessDefinition;
@@ -63,6 +65,14 @@ use Kumwe\CMS\BusinessSchema\Domain\SchemaInstallationStatus;
  */
 final readonly class DoctrineBusinessRecordReadRepository implements BusinessRecordReadRepository
 {
+    /**
+     * Maximum related rows one request may materialize across one include handle.
+     *
+     * @var    int
+     * @since  2.0.0
+     */
+    private const int MAX_INCLUDED_ROWS = 1000;
+
     /**
      * Wire the reader to the connection, codecs and metadata sources one decoded row needs.
      *
@@ -386,19 +396,22 @@ final readonly class DoctrineBusinessRecordReadRepository implements BusinessRec
      *
      * The record itself is already in hand, so the only query this runs is the one that exchanges each
      * stored entity reference for the target's caller-facing identity — an internal record key never
-     * leaves the read side. Fields the definition hides from readers are dropped and restricted or
-     * secret fields are redacted by `BusinessRecordView` itself.
+     * leaves the read side. Fields the definition hides from readers, restricted fields and secret fields
+     * are omitted by `BusinessRecordView` itself.
      *
-     * @param   ResolvedBusinessDefinition  $resolved    Definition the record was decoded with, whose
+     * @param   ResolvedBusinessDefinition  $resolved         Definition the record was decoded with, whose
      *          reference fields name the targets to resolve.
-     * @param   RecordScope                 $scope       Scope the referenced rows must also belong to; a
+     * @param   RecordScope                 $scope            Scope the referenced rows must also belong to; a
      *          reference pointing outside it counts as broken.
-     * @param   BusinessRecord              $record      Record to project.
-     * @param   BusinessRecordAccessPlan    $access      Field and reference-target disclosure decision.
-     * @param   list<string>                $projection  Field handles to keep, or empty for every
+     * @param   BusinessRecord              $record           Record to project.
+     * @param   BusinessRecordAccessPlan    $access           Field and reference-target disclosure decision.
+     * @param   list<string>                $projection       Field handles to keep, or empty for every
      *          read-visible field.
+     * @param   list<string>                $includes         Relationship handles to hydrate, capped at four.
+     * @param   bool                        $includeArchived  True to include archived related records.
+     * @param   bool                        $includeDeleted   True to include soft-deleted related records.
      *
-     * @return  BusinessRecordView  The projected record, with no relationship includes attached.
+     * @return  BusinessRecordView  The projected record with requested relationship includes attached.
      *
      * @throws  BusinessRecordSchemaUnavailable  When a reference field declares no string target, a
      *          stored reference is not a UUID or has no target row in this scope, or the target's
@@ -421,6 +434,9 @@ final readonly class DoctrineBusinessRecordReadRepository implements BusinessRec
         BusinessRecord $record,
         BusinessRecordAccessPlan $access,
         array $projection = [],
+        array $includes = [],
+        bool $includeArchived = false,
+        bool $includeDeleted = false,
     ): BusinessRecordView {
         $values = $this->publicReferenceValues(
             $resolved,
@@ -432,7 +448,7 @@ final readonly class DoctrineBusinessRecordReadRepository implements BusinessRec
             $projection,
         );
 
-        return BusinessRecordView::fromRecord(
+        $view = BusinessRecordView::fromRecord(
             $record,
             $projection,
             $resolved->definition,
@@ -440,6 +456,20 @@ final readonly class DoctrineBusinessRecordReadRepository implements BusinessRec
             $access->fields,
             FieldAccessUsage::Detail,
         );
+        if ($includes === []) {
+            return $view;
+        }
+        $included = $this->includes(
+            $resolved,
+            $scope,
+            [$record],
+            $includes,
+            $includeArchived,
+            $includeDeleted,
+            $access,
+        );
+
+        return $view->withIncludes($included[$record->recordKey] ?? []);
     }
 
     /**
@@ -715,15 +745,10 @@ final readonly class DoctrineBusinessRecordReadRepository implements BusinessRec
             $target = $this->targetByHandle($source, $targetHandle);
             $targetAccess = $access->related($fieldHandle)
                 ?? throw new BusinessRecordSchemaUnavailable('An entity-reference target is unavailable.');
-            if (
-                !$targetAccess->fields->allows(
-                    FieldAccessUsage::PublicReference,
-                    $this->identityHandle($target->definition),
-                )
-            ) {
+            if (!$this->publicIdentityAvailable($target->definition, $targetAccess)) {
                 foreach ($records as $record) {
                     if (($record->values()[$fieldHandle] ?? null) !== null) {
-                        $result[$record->recordKey][$fieldHandle] = ['redacted' => true];
+                        unset($result[$record->recordKey][$fieldHandle]);
                     }
                 }
                 continue;
@@ -759,7 +784,11 @@ final readonly class DoctrineBusinessRecordReadRepository implements BusinessRec
                     if (!is_string($key)) {
                         throw new BusinessRecordSchemaUnavailable('A stored entity reference is invalid.');
                     }
-                    $result[$record->recordKey][$fieldHandle] = $public[$key] ?? ['redacted' => true];
+                    if (isset($public[$key])) {
+                        $result[$record->recordKey][$fieldHandle] = $public[$key];
+                    } else {
+                        unset($result[$record->recordKey][$fieldHandle]);
+                    }
                 }
             }
         }
@@ -772,7 +801,8 @@ final readonly class DoctrineBusinessRecordReadRepository implements BusinessRec
      *
      * One statement per handle covers every source on the page, which is what stops an include from
      * costing a query per row. Owned lines are projected directly from the line table, decoded and
-     * redacted here; every other relationship is decoded as a record and flattened into the same
+     * narrowed here with withheld handles omitted; every other relationship is decoded as a record and
+     * flattened into the same
      * relation view, so a caller cannot tell the two apart. Included rows carry no includes of their
      * own, which bounds how far one browse can walk the relationship graph. Every source key is
      * pre-seeded, so a source with no related rows is present with an empty list rather than absent.
@@ -831,12 +861,7 @@ final readonly class DoctrineBusinessRecordReadRepository implements BusinessRec
             $targetAccess = $access->related($handle)
                 ?? throw new BusinessRecordSchemaUnavailable('An included relationship is unavailable.');
             $target = $this->relationshipTarget($source, $relationship);
-            if (
-                !$targetAccess->fields->allows(
-                    FieldAccessUsage::PublicReference,
-                    $this->identityHandle($target->definition),
-                )
-            ) {
+            if (!$this->publicIdentityAvailable($target->definition, $targetAccess)) {
                 continue;
             }
             [$rows, $targetTable, $ownedLine] = $this->includeRows(
@@ -991,9 +1016,9 @@ final readonly class DoctrineBusinessRecordReadRepository implements BusinessRec
             $where[] = $policy->sql;
             array_push($parameters, ...$policy->parameters);
             array_push($types, ...$policy->types);
-            $rows = $this->database->executeQuery(sprintf(
+            $sql = sprintf(
                 'SELECT %s.*, %s.%s AS __source_key, %s.%s AS __position FROM %s %s '
-                . 'WHERE %s ORDER BY %s.%s, %s.%s, %s.%s',
+                . 'WHERE %s ORDER BY %s.%s, %s.%s, %s.%s LIMIT %d',
                 $alias,
                 $alias,
                 $this->quote($this->physical($targetTable, 'owner_id')),
@@ -1008,7 +1033,9 @@ final readonly class DoctrineBusinessRecordReadRepository implements BusinessRec
                 $this->quote($this->physical($targetTable, 'position')),
                 $alias,
                 $this->quote($this->physical($targetTable, 'line_id')),
-            ), $parameters, $types)->fetchAllAssociative();
+                self::MAX_INCLUDED_ROWS + 1,
+            );
+            $rows = $this->boundedIncludedRows($sql, $parameters, $types);
 
             return [$rows, $targetTable, true];
         }
@@ -1097,9 +1124,9 @@ final readonly class DoctrineBusinessRecordReadRepository implements BusinessRec
         $where[] = $policy->sql;
         array_push($parameters, ...$policy->parameters);
         array_push($types, ...$policy->types);
-        $rows = $this->database->executeQuery(sprintf(
+        $sql = sprintf(
             'SELECT %s.*, %s AS __source_key, %s AS __position FROM %s WHERE %s '
-            . 'ORDER BY __source_key, __position, %s.%s',
+            . 'ORDER BY __source_key, __position, %s.%s LIMIT %d',
             $targetAlias,
             $sourceExpression,
             $positionExpression,
@@ -1107,18 +1134,50 @@ final readonly class DoctrineBusinessRecordReadRepository implements BusinessRec
             implode(' AND ', $where),
             $targetAlias,
             $this->quote($this->physical($targetTable, 'record_id')),
-        ), $parameters, $types)->fetchAllAssociative();
+            self::MAX_INCLUDED_ROWS + 1,
+        );
+        $rows = $this->boundedIncludedRows($sql, $parameters, $types);
 
         return [$rows, $targetTable, false];
+    }
+
+    /**
+     * Execute an include query with one overflow sentinel and reject excessive fan-out.
+     *
+     * The literal SQL limit is a server-owned constant accepted by every supported database. Fetching
+     * one sentinel distinguishes an exact thousand-row result from an unbounded relationship without a
+     * second count query that could itself become expensive.
+     *
+     * @param   string                           $sql         Fully compiled bounded include SQL.
+     * @param   list<mixed>                      $parameters  Bound statement values.
+     * @param   list<string|ArrayParameterType>  $types       Doctrine binding types.
+     *
+     * @return  list<array<string, mixed>>  At most one thousand included rows.
+     *
+     * @throws  InvalidBusinessRecordQuery  When the requested include would materialize too many rows.
+     * @throws  \Doctrine\DBAL\Exception  When the driver rejects the statement.
+     *
+     * @since   2.0.0
+     */
+    private function boundedIncludedRows(string $sql, array $parameters, array $types): array
+    {
+        $rows = $this->database->executeQuery($sql, $parameters, $types)->fetchAllAssociative();
+        if (count($rows) > self::MAX_INCLUDED_ROWS) {
+            throw new InvalidBusinessRecordQuery(
+                'A relationship include exceeds the bounded row budget; reduce the page or requested includes.',
+            );
+        }
+
+        return $rows;
     }
 
     /**
      * Narrow a decoded owned line to the values a reader may see.
      *
      * Owned lines never pass through `BusinessRecordView`, so they are filtered here instead, under the
-     * same rule: a field the definition hides from readers is dropped entirely, while a restricted,
-     * secret or entity-reference field stays present carrying a redaction marker. References are
-     * redacted rather than resolved because the stored value is an internal record key.
+     * same rule: a field the definition statically or conditionally hides from readers is dropped entirely,
+     * as is a restricted, secret or entity-reference field. References are withheld rather than resolved
+     * because the stored value is an internal record key.
      *
      * @param   EntityTypeDefinition      $definition  Line definition supplying read visibility and per-field
      *          sensitivity.
@@ -1126,8 +1185,8 @@ final readonly class DoctrineBusinessRecordReadRepository implements BusinessRec
      * @param   BusinessRecordAccessPlan  $access      Target field disclosure decision.
      * @param   FieldAccessUsage          $usage       Exact collection disclosure use.
      *
-     * @return  array<string, mixed>  Reader-visible values keyed by handle, redacted fields carrying
-     *          `['redacted' => true]`; a handle the row decoded nothing for stays absent.
+     * @return  array<string, mixed>  Reader-visible values keyed by handle; withheld and absent handles
+     *          both stay absent.
      *
      * @since   2.0.0
      */
@@ -1138,21 +1197,46 @@ final readonly class DoctrineBusinessRecordReadRepository implements BusinessRec
         FieldAccessUsage $usage,
     ): array {
         $visible = [];
+        $definitionVisible = RecordFieldVisibility::fields($definition, $values);
         foreach ($definition->fields() as $field) {
             if (
-                !$field->readVisible
+                !isset($definitionVisible[$field->handle])
                 || !$access->fields->allows($usage, $field->handle)
                 || !array_key_exists($field->handle, $values)
+                || $field->type === 'core.entity_reference'
+                || in_array($field->sensitivity, [Sensitivity::Restricted, Sensitivity::Secret], true)
             ) {
                 continue;
             }
-            $visible[$field->handle] = $field->type === 'core.entity_reference'
-                || in_array($field->sensitivity, [Sensitivity::Restricted, Sensitivity::Secret], true)
-                ? ['redacted' => true]
-                : $values[$field->handle];
+            $visible[$field->handle] = $values[$field->handle];
         }
 
         return $visible;
+    }
+
+    /**
+     * Prove one nested plan belongs to its declared target and may release that target's public identity.
+     *
+     * A source field grant does not itself authorize an entity-reference value or included row identity.
+     * Both release paths require the exact nested resource and its explicit `public_reference` identity
+     * field; a mismatched or narrower plan is treated as withheld rather than passed to a later query.
+     *
+     * @param   EntityTypeDefinition      $target  Definition reached through the source declaration.
+     * @param   BusinessRecordAccessPlan  $access  Exact nested target policy plan.
+     *
+     * @return  bool  True only when the plan owns and publicly identifies this target.
+     *
+     * @since   2.0.0
+     */
+    private function publicIdentityAvailable(
+        EntityTypeDefinition $target,
+        BusinessRecordAccessPlan $access,
+    ): bool {
+        return hash_equals($target->id, $access->resourceIdentifier)
+            && $access->fields->allows(
+                FieldAccessUsage::PublicReference,
+                $this->identityHandle($target),
+            );
     }
 
     /**

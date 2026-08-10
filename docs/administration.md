@@ -60,6 +60,27 @@ Drag items to change their order, or use the graphical parent and position contr
 
 Menu management requires `navigation.manage`. Template or module code reads navigation through the navigation application service; it must not query navigation tables directly.
 
+## Generated business workspaces
+
+Every published, actively installed definition with administrator exposure appears under **Business** only when
+the current administrator may browse it. Generated lists provide bounded search/filter/sort and opaque cursor
+continuation; detail pages provide authorized fields, relations/ordered lines, actions and approval requests,
+history, report/export links, and operation status. Create/update forms are compiled from the exact field-use plan,
+retain submitted values after validation, link the error summary to controls, and exclude server, computed,
+read-only, encrypted, and policy-denied input.
+
+Exact decimals, money, and quantities remain strings through display and submission. Secrets are never prefilled.
+Conditional visibility/editability is re-evaluated in the application service against the full normalized record,
+so hiding a control in the browser is not the enforcement. Relation choices and includes are cursor/batch bounded;
+the UI never loads an entire target table or media library as options.
+
+Archive and delete use explicit confirmation pages. Existing-record writes carry the displayed version and a
+stable operation ID; a concurrent edit fails rather than overwriting. Bounded bulk work uses the same per-record
+policy, version, transaction, revision, audit, and idempotency rules, and larger work exposes caller-bound operation
+status. Native links/forms provide the essential lifecycle without JavaScript; focused Lit enhancement supplies
+loading feedback, structured collection/ordered-line controls, and keyboard-friendly interaction. See
+[Generated business surfaces](architecture/generated-business-surfaces.md).
+
 ## Users, groups, and permissions
 
 Open **Users and access** to:

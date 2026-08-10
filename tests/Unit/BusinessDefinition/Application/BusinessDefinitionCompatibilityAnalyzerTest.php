@@ -46,4 +46,30 @@ final class BusinessDefinitionCompatibilityAnalyzerTest extends TestCase
             array_map(static fn ($change) => $change->classification, $plan->changes()),
         );
     }
+
+    /**
+     * Proves changing the portal operation allowlist requires an explicit behavior-change review.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testPortalOperationChangesAreExplicitBehaviorChanges(): void
+    {
+        $document = EntityTypeDefinitionTest::document();
+        $document['portal_exposure'] = true;
+        $before = EntityTypeDefinition::fromArray($document)->published(1);
+        $document['portal_operations'] = ['read', 'browse'];
+        $draft = EntityTypeDefinition::fromArray($document);
+
+        $plan = (new BusinessDefinitionCompatibilityAnalyzer())->analyze($before, $draft);
+        $change = array_values(array_filter(
+            $plan->changes(),
+            static fn ($candidate): bool => $candidate->path === '/exposure/portal_operations',
+        ));
+
+        self::assertCount(1, $change);
+        self::assertSame(CompatibilityClassification::BehaviorChanging, $change[0]->classification);
+        self::assertTrue($plan->requiresConfirmation());
+    }
 }

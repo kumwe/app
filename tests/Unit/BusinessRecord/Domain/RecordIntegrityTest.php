@@ -36,7 +36,8 @@ final class RecordIntegrityTest extends TestCase
 
         self::assertNotSame($revision->checksum(), $changedOperation->checksum());
         self::assertMatchesRegularExpression('/^[a-f0-9]{64}$/D', $revision->checksum());
-        self::assertSame(['redacted' => true], $view->snapshot['credential']);
+        self::assertArrayNotHasKey('credential', $view->snapshot);
+        self::assertNotContains('credential', $view->changedFields);
         self::assertSame('Visible', $view->snapshot['name']);
         self::assertSame($revision->checksum(), $view->integrityChecksum);
     }

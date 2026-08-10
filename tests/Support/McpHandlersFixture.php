@@ -13,6 +13,7 @@ use Kumwe\CMS\Extension\Infrastructure\RedisLockedExtensionManager;
 use Kumwe\CMS\Identity\Application\Administration\AccessControlService;
 use Kumwe\CMS\Identity\Infrastructure\Administration\DoctrineAdministratorIdentityGateway;
 use Kumwe\CMS\Identity\Application\Administration\TokenRotationPreauthorizer;
+use Kumwe\CMS\Infrastructure\Mcp\BusinessMcpHandlers;
 use Kumwe\CMS\Infrastructure\Mcp\KumweMcpHandlers;
 use Kumwe\CMS\Infrastructure\Mcp\McpCapabilityCatalog;
 use Kumwe\CMS\Infrastructure\Mcp\McpMutationGuard;
@@ -37,6 +38,7 @@ final class McpHandlersFixture
             self::withoutConstructor(AutomationManagementService::class),
             self::withoutConstructor(BusinessDefinitionService::class),
             self::withoutConstructor(BusinessSchemaService::class),
+            self::withoutConstructor(BusinessMcpHandlers::class),
             self::withoutConstructor(McpMutationGuard::class),
             new SystemClock(),
             AuthorizationContext::gateway(),
@@ -46,8 +48,10 @@ final class McpHandlersFixture
 
     /**
      * @template T of object
-     * @param class-string<T> $class
-     * @return T
+     *
+     * @param   class-string<T>  $class
+     *
+     * @return  T
      */
     private static function withoutConstructor(string $class): object
     {

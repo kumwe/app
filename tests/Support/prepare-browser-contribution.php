@@ -8,6 +8,8 @@ use Kumwe\CMS\Application\Authorization\AuthenticationStrength;
 use Kumwe\CMS\Application\Authorization\AuthorizationResource;
 use Kumwe\CMS\Application\Authorization\ResourceSiteOwnershipWriter;
 use Kumwe\CMS\Application\Authorization\SiteContext;
+use Kumwe\CMS\BusinessRecord\Application\BusinessRecordService;
+use Kumwe\CMS\BusinessRecord\Application\Command\CreateRecordCommand;
 use Kumwe\CMS\BusinessSecurity\Infrastructure\Persistence\DoctrineBusinessSecurityAdministrationRepository;
 use Kumwe\CMS\Extension\Application\ExtensionManager;
 use Kumwe\CMS\Extension\Application\Trust\TrustStore;
@@ -17,6 +19,7 @@ use Kumwe\CMS\Identity\Application\Administration\AccessControlService;
 use Kumwe\CMS\Identity\Application\Administration\AdministratorIdentityGateway;
 use Kumwe\CMS\Infrastructure\Persistence\TableNames;
 use Kumwe\CMS\Infrastructure\Persistence\TransactionManager;
+use Kumwe\CMS\Tests\Support\NeutralBusinessFixture;
 use Ramsey\Uuid\Uuid;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
@@ -215,6 +218,229 @@ try {
             'default',
             $context->actorId(),
             $at,
+        );
+    });
+    foreach (['desktop', 'mobile'] as $project) {
+        foreach ([0, 1] as $retry) {
+            foreach (['maker', 'approver'] as $approvalActor) {
+                $approvalUser = $access->createUser(
+                    $context,
+                    sprintf('browser-%s-%s-%d@kumwe.test', $approvalActor, $project, $retry),
+                    sprintf('Browser %s %s %d', ucfirst($project), $approvalActor, $retry),
+                    sprintf('browser %s %s password %d', $project, $approvalActor, $retry),
+                );
+                $approvalMembership = Uuid::uuid7()->toString();
+                $transactions->transactional(function () use (
+                    $security,
+                    $approvalMembership,
+                    $organizationId,
+                    $workspaceId,
+                    $approvalUser,
+                    $portalRole,
+                    $context,
+                    $at,
+                ): void {
+                    $security->insertMembership(
+                        $approvalMembership,
+                        $organizationId,
+                        'default',
+                        $approvalUser,
+                        $at->modify('-1 minute'),
+                        $at->modify('+1 day'),
+                        $context->actorId(),
+                        $at,
+                    );
+                    $security->assignMembershipWorkspace(
+                        $approvalMembership,
+                        $workspaceId,
+                        'default',
+                        $context->actorId(),
+                        $at,
+                    );
+                    $security->assignMembershipRole(
+                        $approvalMembership,
+                        $portalRole,
+                        'default',
+                        $context->actorId(),
+                        $at,
+                    );
+                });
+            }
+        }
+    }
+
+    $relationshipSuffix = 's5browser';
+    $targetDocument = NeutralBusinessFixture::relationTargetDocument(
+        $relationshipSuffix,
+        '019b40d9-8dd0-7ca2-a0db-9eae6a150502',
+    );
+    $targetDocument['portal_exposure'] = true;
+    $targetDocument['portal_operations'] = ['browse', 'read', 'relation', 'reorder'];
+    $targetDefinition = NeutralBusinessFixture::install(
+        $container,
+        $context,
+        $targetDocument,
+    );
+    $lineDocument = NeutralBusinessFixture::ownedLineDocument(
+        $relationshipSuffix,
+        '019b40d9-8dd0-7ca2-a0db-9eae6a150503',
+    );
+    $lineDocument['portal_exposure'] = true;
+    $lineDocument['portal_operations'] = ['browse', 'create', 'read', 'relation', 'reorder'];
+    $lineDefinition = NeutralBusinessFixture::install(
+        $container,
+        $context,
+        $lineDocument,
+    );
+    $businessDocument = NeutralBusinessFixture::document(
+        'session5order',
+        '019b40d9-8dd0-7ca2-a0db-9eae6a150501',
+    );
+    $businessDocument['handle'] = 'site.default.session5_order';
+    $businessDocument['singular_label'] = 'Session 5 order';
+    $businessDocument['plural_label'] = 'Session 5 orders';
+    $businessDocument['portal_exposure'] = true;
+    $businessDocument['fields'][] = [
+        'handle' => 'conditional_note',
+        'label' => 'Conditional note',
+        'type' => 'core.text',
+        'default' => 'Stored conditional note',
+        'length' => 160,
+        'visibility_condition' => [
+            'op' => 'eq',
+            'type' => 'boolean',
+            'args' => [
+                ['op' => 'field', 'type' => 'boolean', 'field' => 'enabled'],
+                ['op' => 'literal', 'type' => 'boolean', 'value' => true],
+            ],
+        ],
+        'editability_condition' => [
+            'op' => 'eq',
+            'type' => 'boolean',
+            'args' => [
+                ['op' => 'field', 'type' => 'string', 'field' => 'status'],
+                ['op' => 'literal', 'type' => 'string', 'value' => 'ready'],
+            ],
+        ],
+    ];
+    $businessDocument['relationships'] = [
+        [
+            'handle' => 'tags',
+            'label' => 'Tags',
+            'kind' => 'many_to_many',
+            'target' => $targetDefinition->handle,
+            'ordered' => true,
+            'on_delete' => 'restrict',
+        ],
+        [
+            'handle' => 'lines',
+            'label' => 'Lines',
+            'kind' => 'owned_line_collection',
+            'target' => $lineDefinition->handle,
+            'ordered' => true,
+            'on_delete' => 'cascade',
+        ],
+    ];
+    $businessDocument['portal_operations'] = [
+        'action',
+        'approval',
+        'archive',
+        'browse',
+        'create',
+        'delete',
+        'export',
+        'history',
+        'read',
+        'relation',
+        'reorder',
+        'report',
+        'restore',
+        'status',
+        'update',
+    ];
+    foreach ($businessDocument['views'] as &$view) {
+        $view['portal'] = true;
+    }
+    unset($view);
+    foreach ($businessDocument['actions'] as &$action) {
+        $action['portal'] = true;
+        $action['high_impact'] = true;
+    }
+    unset($action);
+    $businessDefinition = NeutralBusinessFixture::install($container, $context, $businessDocument);
+    foreach (
+        [
+            'business.approval.request',
+            'business.approval.approve',
+            'business.step_up.manage',
+            'business.record.action',
+            'business.record.archive',
+            'business.record.browse',
+            'business.record.create',
+            'business.record.delete',
+            'business.record.export',
+            'business.record.history',
+            'business.record.read',
+            'business.record.relate',
+            'business.record.report',
+            'business.record.restore',
+            'business.record.transition',
+            'business.record.update',
+        ] as $capability
+    ) {
+        $access->grant($context, $portalRole, $capability, 'site', 'default');
+    }
+    $businessRecords = $container->get(BusinessRecordService::class);
+    if (!$businessRecords instanceof BusinessRecordService) {
+        throw new RuntimeException('The generated-business browser fixture service is unavailable.');
+    }
+    foreach (
+        [
+            ['019b40d9-8dd0-7ca2-a0db-9eae6a150521', 'Windhoek relationship target'],
+            ['019b40d9-8dd0-7ca2-a0db-9eae6a150522', 'Walvis Bay relationship target'],
+        ] as [$recordId, $label]
+    ) {
+        $businessRecords->create(new CreateRecordCommand(
+            $context,
+            $targetDefinition->handle,
+            ['label' => $label],
+            NeutralBusinessFixture::idempotencyKey('browser-target-' . substr($recordId, -4)),
+            recordId: $recordId,
+        ));
+    }
+    foreach (
+        [
+            ['019b40d9-8dd0-7ca2-a0db-9eae6a150511', 'Windhoek order'],
+            ['019b40d9-8dd0-7ca2-a0db-9eae6a150512', 'Walvis Bay order'],
+        ] as [$recordId, $name]
+    ) {
+        $businessRecords->create(new CreateRecordCommand(
+            $context,
+            $businessDefinition->handle,
+            NeutralBusinessFixture::recordValues($name),
+            NeutralBusinessFixture::idempotencyKey('browser-' . substr($recordId, -4)),
+            recordId: $recordId,
+        ));
+    }
+    $transactions->transactional(function () use (
+        $security,
+        $portalRole,
+        $context,
+    ): void {
+        $security->insertSeparationRule(
+            '019b40d9-8dd0-7ca2-a0db-9eae6a150550',
+            null,
+            'browser-session5-order-approval',
+            'business_record',
+            'business.record.action:approve',
+            'business.approval.approve',
+            null,
+            $portalRole,
+            1,
+            true,
+            $context->actorId(),
+            $context->site()->identifier(),
+            new DateTimeImmutable(),
         );
     });
 } finally {

@@ -158,12 +158,15 @@ interface BusinessRecordReadRepository
      * redacted, and stored entity references are exchanged for the target's caller-facing identity so
      * a view never leaks an internal key.
      *
-     * @param   ResolvedBusinessDefinition  $resolved    Definition the record was decoded with.
-     * @param   RecordScope                 $scope       Scope the referenced targets are resolved in.
-     * @param   BusinessRecord              $record      Record to project.
-     * @param   BusinessRecordAccessPlan    $access      Explicit field and related-target disclosure decision.
-     * @param   list<string>                $projection  Field handles to keep, or empty for every
+     * @param   ResolvedBusinessDefinition  $resolved         Definition the record was decoded with.
+     * @param   RecordScope                 $scope            Scope the referenced targets are resolved in.
+     * @param   BusinessRecord              $record           Record to project.
+     * @param   BusinessRecordAccessPlan    $access           Explicit field and related-target disclosure decision.
+     * @param   list<string>                $projection       Field handles to keep, or empty for every
      *          readable field.
+     * @param   list<string>                $includes         Relationship handles to hydrate, capped at four.
+     * @param   bool                        $includeArchived  Whether archived related rows may be included.
+     * @param   bool                        $includeDeleted   Whether soft-deleted related rows may be included.
      *
      * @return  BusinessRecordView  The projected record, without relationship includes.
      *
@@ -178,6 +181,9 @@ interface BusinessRecordReadRepository
         BusinessRecord $record,
         BusinessRecordAccessPlan $access,
         array $projection = [],
+        array $includes = [],
+        bool $includeArchived = false,
+        bool $includeDeleted = false,
     ): BusinessRecordView;
 
     /**

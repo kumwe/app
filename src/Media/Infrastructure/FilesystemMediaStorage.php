@@ -8,6 +8,7 @@ use DateTimeImmutable;
 use InvalidArgumentException;
 use JsonException;
 use Kumwe\CMS\Application\Authorization\SiteContext;
+use Kumwe\CMS\Media\Application\BoundedMediaChoiceStorage;
 use Kumwe\CMS\Media\Application\MediaAsset;
 use Kumwe\CMS\Media\Application\MediaStorage;
 use Ramsey\Uuid\Uuid;
@@ -31,7 +32,7 @@ use RuntimeException;
  *
  * @since  2.0.0
  */
-final readonly class FilesystemMediaStorage implements MediaStorage
+final readonly class FilesystemMediaStorage implements MediaStorage, BoundedMediaChoiceStorage
 {
     /**
      * Media types this store will serve, mapped to the extension a stored payload must use.
@@ -131,6 +132,74 @@ final readonly class FilesystemMediaStorage implements MediaStorage
     }
 
     /**
+     * Search a bounded number of sidecars for generated media-reference choices.
+     *
+     * Directory iteration is used instead of `glob()` so a library with millions of entries cannot make
+     * the selector first allocate a list of every filename. Writable entries retain collision precedence;
+     * every candidate still passes the same payload, metadata and checksum verification as `find()`.
+     *
+     * @param   SiteContext  $site       Site whose library is searched.
+     * @param   string       $query      Case-insensitive display-name substring, at most 200 bytes.
+     * @param   int          $limit      Most matches to return, from one to fifty.
+     * @param   int          $scanLimit  Most directory entries to inspect, from `$limit` to 4096.
+     *
+     * @return  list<MediaAsset>  Validated matches ordered by name and identifier.
+     *
+     * @throws  InvalidArgumentException  When query or bounds are invalid.
+     *
+     * @since   2.0.0
+     */
+    public function choices(SiteContext $site, string $query, int $limit, int $scanLimit): array
+    {
+        $query = trim($query);
+        if (strlen($query) > 200 || $limit < 1 || $limit > 50 || $scanLimit < $limit || $scanLimit > 4096) {
+            throw new InvalidArgumentException('A media-choice query or bound is invalid.');
+        }
+        $needle = mb_strtolower($query);
+        $assets = [];
+        $seen = [];
+        $scanned = 0;
+        foreach ($this->directories($site) as [$directory, $deletable]) {
+            if (!is_dir($directory)) {
+                continue;
+            }
+            foreach (new \FilesystemIterator($directory, \FilesystemIterator::SKIP_DOTS) as $file) {
+                if (++$scanned > $scanLimit) {
+                    break 2;
+                }
+                if (!$file instanceof \SplFileInfo || $file->getExtension() !== 'json') {
+                    continue;
+                }
+                $id = $file->getBasename('.json');
+                if (isset($seen[$id])) {
+                    continue;
+                }
+                $asset = $this->findInDirectory($directory, $id, $deletable);
+                if (!$asset instanceof MediaAsset) {
+                    continue;
+                }
+                $seen[$id] = true;
+                if ($needle !== '' && !str_contains(mb_strtolower($asset->name), $needle)) {
+                    continue;
+                }
+                $assets[] = $asset;
+                if (count($assets) === $limit) {
+                    break 2;
+                }
+            }
+        }
+        usort($assets, static fn (MediaAsset $left, MediaAsset $right): int => [
+            mb_strtolower($left->name),
+            $left->id,
+        ] <=> [
+            mb_strtolower($right->name),
+            $right->id,
+        ]);
+
+        return $assets;
+    }
+
+    /**
      * Look up one asset, checking the writable root before the bundled root.
      *
      * The identifier is required to be a UUID before any path is built from it, so a traversal attempt
@@ -199,7 +268,9 @@ final readonly class FilesystemMediaStorage implements MediaStorage
         $extension = $metadata['extension'] ?? null;
         $sha256 = $metadata['sha256'] ?? null;
         if (
-            !is_string($name) || !is_string($mime) || !is_int($size)
+            !is_string($name) || $name === '' || strlen($name) > 180
+            || preg_match('/[\x00-\x1F\x7F]/', $name) === 1
+            || !is_string($mime) || !is_int($size)
             || !is_string($created) || !is_string($extension)
             || (self::MIME_EXTENSIONS[$mime] ?? null) !== $extension
             || ($sha256 !== null && (!is_string($sha256) || preg_match('/^[a-f0-9]{64}$/D', $sha256) !== 1))

@@ -86,6 +86,8 @@
     "cs": "phpcs -q",
     "docs:api": "php tools/verify-docblocks.php src",
     "docs:format": "php tools/format-docblocks.php src",
+    "openapi:compile": "php tools/compile-openapi.php",
+    "openapi:check": "php tools/compile-openapi.php --check",
     "cs:fix": "phpcbf",
     "architecture:policy": "bash tools/verify-policy.sh",
     "test": "phpunit --colors=always",
@@ -94,6 +96,7 @@
     "qa": [
       "@architecture:policy",
       "@docs:api",
+      "@openapi:check",
       "@cs",
       "@analyse",
       "@test"

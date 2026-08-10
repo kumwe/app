@@ -8,6 +8,7 @@ This section records the boundaries that must remain stable as Kumwe grows. It i
 - [Principles and ownership](principles.md)
 - [Persistence and database portability](persistence.md)
 - [Delivery surfaces and authorization](delivery.md)
+- [Generated business surfaces](generated-business-surfaces.md)
 - [Extension and event model](extensions.md)
 - [Business definitions](../business-definitions.md)
 - [Growth paths](growth.md)

@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace KumweExample\Announcements;
 
 use Kumwe\CMS\Application\Authorization\ResourcePolicyTarget;
+use Kumwe\CMS\BusinessSurface\Presentation\Field\FieldPresentationContext;
+use Kumwe\CMS\BusinessSurface\Presentation\Field\FieldPresentationContribution;
 use Kumwe\CMS\Extension\Contribution\AdministratorNavigationDefinition;
 use Kumwe\CMS\Extension\Contribution\AdministratorRouteDefinition;
 use Kumwe\CMS\Extension\Contribution\AdministratorRouteHandlerFactory;
@@ -20,6 +22,7 @@ use Kumwe\CMS\Extension\Runtime\RuntimeExtension;
 use Kumwe\CMS\Site\Application\SiteSettings;
 use KumweExample\Announcements\Application\AnnouncementService;
 use KumweExample\Announcements\Delivery\AnnouncementsPageHandlerFactory;
+use KumweExample\Announcements\Presentation\SeverityFieldPresenter;
 
 final class Provider implements RuntimeExtension, ExtensionContributionProvider
 {
@@ -63,7 +66,12 @@ final class Provider implements RuntimeExtension, ExtensionContributionProvider
             'kumwe.announcements-example.manage',
             [new ResourcePolicyTarget('administrator_session')],
         ));
-        $contributions->fieldType(BusinessDefinitions::severity());
+        $severity = BusinessDefinitions::severity();
+        $contributions->fieldType($severity);
+        $contributions->fieldPresentation(
+            new FieldPresentationContribution($severity->id, FieldPresentationContext::cases()),
+            new SeverityFieldPresenter(),
+        );
         foreach (BusinessDefinitions::all() as $definition) {
             $contributions->businessDefinition($definition);
         }

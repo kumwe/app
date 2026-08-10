@@ -13,7 +13,6 @@ use Kumwe\CMS\Application\Authorization\SiteContext;
 use Kumwe\CMS\Application\Authorization\SystemIdentity;
 use Kumwe\CMS\BusinessRecord\Application\BusinessRecordIdempotencyPurger;
 use Kumwe\CMS\BusinessRecord\Application\BusinessRecordIdempotencyRepository;
-use Kumwe\CMS\BusinessRecord\Application\RecordMutationResult;
 use Kumwe\CMS\BusinessRecord\Domain\BusinessRecordIdempotency;
 use Kumwe\CMS\Infrastructure\Persistence\TransactionManager;
 use Kumwe\CMS\Tests\Support\AuthorizationContext;
@@ -135,7 +134,7 @@ final class CountingBusinessRecordIdempotencyRepository implements BusinessRecor
 
     public function complete(
         string $id,
-        RecordMutationResult $result,
+        array $result,
         string $resultChecksum,
         DateTimeImmutable $completedAt,
     ): void {

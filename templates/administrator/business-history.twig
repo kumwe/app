@@ -1,0 +1,72 @@
+{% extends "layout.twig" %}
+
+{% block title %}Record history · Kumwe{% endblock %}
+{% block context_title %}Record history{% endblock %}
+{% block context_subtitle %}Disclosure-filtered revision evidence{% endblock %}
+
+{% block content %}
+  <kumwe-business-surface>
+    <header class="page-heading">
+      <div>
+        <p class="eyebrow">{{ definition_handle }}</p>
+        <h1>Record history</h1>
+        <p><code>{{ record_id }}</code></p>
+      </div>
+      <div class="page-actions">
+        <a class="button" href="{{ business_base_path }}/{{ definition_handle|url_encode }}/{{ record_id|url_encode }}">Back to record</a>
+      </div>
+    </header>
+
+    {% if items is empty %}
+      <section class="empty-state"><div class="empty-state-content"><h2>No revisions are available</h2><p>This record has no visible history entries.</p></div></section>
+    {% else %}
+      <ol class="business-history-list">
+        {% for revision in items %}
+          <li class="panel business-history-entry">
+            <header>
+              <div>
+                <p class="eyebrow">{{ revision.operation|replace({'_': ' '}) }}</p>
+                <h2>Version {{ revision.record_version }} · Revision {{ revision.revision_number }}</h2>
+              </div>
+              <time datetime="{{ revision.occurred_at }}">{{ revision.occurred_at|date('M j, Y H:i:s') }}</time>
+            </header>
+            <p>
+              {% if revision.actor_id is defined and revision.actor_id %}Performed by <code>{{ revision.actor_id }}</code>.{% else %}Actor attribution is not disclosed.{% endif %}
+              {% if revision.changed_fields is not empty %}
+                Changed {{ revision.changed_fields|join(', ') }}.
+              {% endif %}
+            </p>
+            {% if revision.snapshot is not empty %}
+              <details>
+                <summary>View disclosed snapshot</summary>
+                <dl class="business-history-snapshot">
+                  {% for handle, value in revision.snapshot %}
+                    <div>
+                      <dt>{{ handle|replace({'_': ' '})|title }}</dt>
+                      <dd>
+                        {{ value is same as(true)
+                          ? 'Yes'
+                          : (value is same as(false)
+                            ? 'No'
+                            : (value is null ? 'Not set' : (value is iterable ? value|json_encode : value)))
+                        }}
+                      </dd>
+                    </div>
+                  {% endfor %}
+                </dl>
+              </details>
+            {% endif %}
+            {% if revision.integrity_checksum is defined %}
+              <small>Integrity checksum <code>{{ revision.integrity_checksum }}</code></small>
+            {% endif %}
+          </li>
+        {% endfor %}
+      </ol>
+      {% if has_more and before_version %}
+        <nav class="pagination-actions" aria-label="History pages">
+          <a class="button" href="?history=1&before_version={{ before_version }}" rel="next">Older revisions</a>
+        </nav>
+      {% endif %}
+    {% endif %}
+  </kumwe-business-surface>
+{% endblock %}

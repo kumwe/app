@@ -9,6 +9,7 @@ use DateTimeImmutable;
 use InvalidArgumentException;
 use Kumwe\CMS\Application\Authorization\AuthorizationGateway;
 use Kumwe\CMS\Application\Authorization\AuthorizationResource;
+use Kumwe\CMS\Application\Authorization\AuthenticatedSurface;
 use Kumwe\CMS\Application\Authorization\ExecutionContext;
 use Kumwe\CMS\Application\Authorization\ResourceSiteOwnershipWriter;
 use Kumwe\CMS\Application\Automation\IdempotencyKey;
@@ -20,6 +21,7 @@ use Kumwe\CMS\BusinessDefinition\Domain\DeleteBehavior;
 use Kumwe\CMS\BusinessDefinition\Domain\EntityTypeDefinition;
 use Kumwe\CMS\BusinessDefinition\Domain\FieldDefinition;
 use Kumwe\CMS\BusinessDefinition\Domain\IdentityStrategy;
+use Kumwe\CMS\BusinessDefinition\Domain\PortalOperation;
 use Kumwe\CMS\BusinessDefinition\Domain\ScopeMode;
 use Kumwe\CMS\BusinessDefinition\Domain\RelationshipDefinition;
 use Kumwe\CMS\BusinessDefinition\Domain\RelationshipKind;
@@ -34,6 +36,7 @@ use Kumwe\CMS\BusinessRecord\Application\Command\RestoreRecordCommand;
 use Kumwe\CMS\BusinessRecord\Application\Command\UnrelateRecordsCommand;
 use Kumwe\CMS\BusinessRecord\Application\Command\UpdateRecordCommand;
 use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordActionRejected;
+use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordDefinitionUnavailable;
 use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordIdempotencyConflict;
 use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordIdempotencyRace;
 use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordNotFound;
@@ -44,7 +47,10 @@ use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordValidationFaile
 use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordVersionConflict;
 use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRelationshipRejected;
 use Kumwe\CMS\BusinessRecord\Application\Query\BrowseRecordsQuery;
+use Kumwe\CMS\BusinessRecord\Application\Query\BrowseOwnedLineFieldChoicesQuery;
+use Kumwe\CMS\BusinessRecord\Application\Query\BrowseRelatedRecordsQuery;
 use Kumwe\CMS\BusinessRecord\Application\Query\BusinessRecordQueryPurpose;
+use Kumwe\CMS\BusinessRecord\Application\Query\OwnedLineFormQuery;
 use Kumwe\CMS\BusinessRecord\Application\Query\ReadRecordQuery;
 use Kumwe\CMS\BusinessRecord\Application\Query\RecordHistoryQuery;
 use Kumwe\CMS\BusinessRecord\Domain\BusinessRecord;
@@ -60,6 +66,7 @@ use Kumwe\CMS\BusinessSecurity\Application\FieldAccessUsage;
 use Kumwe\CMS\BusinessSecurity\Application\Approval\ApprovalBinding;
 use Kumwe\CMS\BusinessSecurity\Application\Approval\ApprovalDenied;
 use Kumwe\CMS\BusinessSecurity\Application\Approval\ApprovalService;
+use Kumwe\CMS\BusinessSecurity\Policy\RecordPolicyConstant;
 use Kumwe\CMS\Identity\Domain\Capability;
 use Kumwe\CMS\Infrastructure\Persistence\TransactionManager;
 use Psr\Clock\ClockInterface;
@@ -85,7 +92,7 @@ use Ramsey\Uuid\Uuid;
  *
  * @since  2.0.0
  */
-final readonly class BusinessRecordService
+final readonly class BusinessRecordService implements BusinessRecordCustomActionGuard
 {
     /**
      * Most inbound set-null references a hard delete will clear within its own transaction.
@@ -217,28 +224,45 @@ final readonly class BusinessRecordService
                         $command->recordId,
                     );
                 } catch (InvalidArgumentException $exception) {
-                    throw new BusinessRecordValidationFailed([
-                        new ValidationViolation(
-                            $this->identityField($resolved->definition)->handle,
-                            'identity',
-                            $exception->getMessage(),
-                        ),
-                    ]);
+                    throw $this->validationForAccess(
+                        new BusinessRecordValidationFailed([
+                            new ValidationViolation(
+                                $this->identityField($resolved->definition)->handle,
+                                'identity',
+                                $exception->getMessage(),
+                            ),
+                        ]),
+                        $command->context,
+                        $resolved->definition,
+                        $access,
+                        FieldAccessUsage::Create,
+                    );
                 }
                 $recordKey = $resolved->definition->identityStrategy === IdentityStrategy::Uuid
                     ? $recordId
                     : Uuid::uuid7()->toString();
-                $values = $this->rules->create(
-                    $resolved->definition,
-                    $command->values,
-                    $resolved->definition->siteIdentifier,
-                    $recordKey,
-                    $recordId,
-                );
+                try {
+                    $values = $this->rules->create(
+                        $resolved->definition,
+                        $command->values,
+                        $resolved->definition->siteIdentifier,
+                        $recordKey,
+                        $recordId,
+                    );
+                } catch (BusinessRecordValidationFailed $exception) {
+                    throw $this->validationForAccess(
+                        $exception,
+                        $command->context,
+                        $resolved->definition,
+                        $access,
+                        FieldAccessUsage::Create,
+                    );
+                }
                 $values = $this->resolveEntityReferences(
                     $command->context,
                     $resolved->definition,
                     $scope,
+                    $access,
                     $values,
                     array_keys($values),
                 );
@@ -286,8 +310,7 @@ final readonly class BusinessRecordService
      *          organization scope, projection, and the two lifecycle switches.
      *
      * @return  BusinessRecordView  The record narrowed to the readable fields the projection kept, with
-     *          restricted and secret values present but redacted so withheld is distinguishable from
-     *          absent.
+     *          restricted, secret and unresolved-reference handles omitted.
      *
      * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not read
      *          business records.
@@ -325,8 +348,24 @@ final readonly class BusinessRecordService
                 $query->includeDeleted,
                 $generation,
             );
+            $this->assertPortalIncludes(
+                $query->context,
+                $resolved->definition,
+                $access,
+                $query->includes,
+                PortalOperation::Read,
+            );
 
-            return $this->reads->view($resolved, $record->scope, $record, $access, $query->projection);
+            return $this->reads->view(
+                $resolved,
+                $record->scope,
+                $record,
+                $access,
+                $query->projection,
+                $query->includes,
+                $query->includeArchived,
+                $query->includeDeleted,
+            );
         });
     }
 
@@ -385,8 +424,269 @@ final readonly class BusinessRecordService
                 $resolved,
                 $scope,
             );
+            $this->assertPortalIncludes(
+                $query->context,
+                $resolved->definition,
+                $access,
+                $query->specification->projection->includes,
+                PortalOperation::Browse,
+            );
 
             return $this->reads->browse($resolved, $scope, $query->specification, $access);
+        });
+    }
+
+    /**
+     * List a bounded page of records selectable through one exact source relationship or reference field.
+     *
+     * This is intentionally not a normal target browse. Authorization starts from the source definition's
+     * operation plan and uses only the nested plan keyed by the requested source handle, so direct target
+     * visibility cannot widen a selector and a denied relation or reference returns no identities. The target
+     * definition is independently fenced and its query is compiled with that nested row and field plan.
+     * Owned-line collections are excluded because their rows exist only under an owner and are created from
+     * embedded values instead of selected from a global target table.
+     *
+     * @param   BrowseRelatedRecordsQuery  $query  Source definition, related handle and bounded target query.
+     *
+     * @return  RelatedRecordBrowseResult  Active target definition and its policy-filtered page.
+     *
+     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor cannot relate records.
+     * @throws  BusinessRecordNotFound  When the source handle, nested access plan, target, or scope is unavailable.
+     * @throws  BusinessRecordTemporarilyUnavailable  When either installation changes under its shared fence.
+     *
+     * @since   2.0.0
+     */
+    public function browseRelated(BrowseRelatedRecordsQuery $query): RelatedRecordBrowseResult
+    {
+        $operation = $query->operation;
+        $this->authorize($query->context, $operation);
+
+        return $this->transactions->transactional(function () use ($query, $operation): RelatedRecordBrowseResult {
+            $sourceGeneration = $this->mutationFence->shared(
+                $query->context->site(),
+                $query->definitionIdentifier,
+            );
+            if ($query->sourceRecordId === null) {
+                $source = $this->definitions->forCreate($query->context, $query->definitionIdentifier);
+                $sourceGeneration->assertMatches($source);
+                $sourceScope = $this->scope($source, $query->context, $query->organizationIdentifier);
+                $sourceAccess = $this->recordAccess->plan(
+                    $query->context,
+                    $operation,
+                    $source,
+                    $sourceScope,
+                );
+            } else {
+                [$source, $sourceScope, , $sourceAccess] = $this->load(
+                    $query->context,
+                    $query->definitionIdentifier,
+                    $query->sourceRecordId,
+                    $query->organizationIdentifier,
+                    $operation,
+                    generation: $sourceGeneration,
+                );
+            }
+            $relatedAccess = $sourceAccess->related($query->relatedHandle)
+                ?? throw new BusinessRecordNotFound();
+            [$targetIdentifier, $relationship] = $this->relatedTarget(
+                $source->definition,
+                $query->relatedHandle,
+            );
+            if (
+                $relationship?->kind === RelationshipKind::OwnedLineCollection
+                || ($relationship === null && $operation === 'business.record.relate')
+                || ($relationship !== null && $operation !== 'business.record.relate')
+            ) {
+                throw new BusinessRecordNotFound();
+            }
+
+            if ($relationship === null) {
+                $field = $this->optionalField($source->definition, $query->relatedHandle);
+                $usage = $operation === 'business.record.create'
+                    ? FieldAccessUsage::Create
+                    : FieldAccessUsage::Update;
+                if (
+                    $field?->type !== 'core.entity_reference'
+                    || !$sourceAccess->fields->allows($usage, $field->handle)
+                    || !$this->inputFieldAvailable($field, $usage)
+                ) {
+                    throw new BusinessRecordNotFound();
+                }
+            }
+
+            $targetGeneration = $this->mutationFence->shared($query->context->site(), $targetIdentifier);
+            $target = $this->definitions->forCreate($query->context, $targetIdentifier);
+            $targetGeneration->assertMatches($target);
+            $targetScope = $this->scope($target, $query->context, $query->organizationIdentifier);
+            $this->assertPortalTargetOperation($query->context, $target->definition, PortalOperation::Browse);
+            $this->assertRelatedTargetAccess($target->definition, $relatedAccess);
+            if ($relationship !== null && $sourceScope->toArray() !== $targetScope->toArray()) {
+                throw new BusinessRecordNotFound();
+            }
+
+            return new RelatedRecordBrowseResult(
+                $target->definition,
+                $this->reads->browse($target, $targetScope, $query->specification, $relatedAccess),
+                $this->relatedSearchFields($target->definition, $relatedAccess),
+            );
+        });
+    }
+
+    /**
+     * List entity-reference choices through an owned line's exact two-hop access plan.
+     *
+     * The source row is loaded under `business.record.relate`, the owned relationship selects its nested
+     * line-target plan, and the requested line field selects the second nested target plan. Both definition
+     * installations are fenced, and only that final plan reaches the query repository. This prevents a direct
+     * browse of either target definition from widening a selector embedded in an owned-line create form.
+     *
+     * @param   BrowseOwnedLineFieldChoicesQuery  $query  Source, owned relationship, field, and bounded query.
+     *
+     * @return  RelatedRecordBrowseResult  Policy-filtered entity-reference target choices.
+     *
+     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When relate authority is absent.
+     * @throws  BusinessRecordNotFound  When either target, scope, field, or nested plan is unavailable.
+     * @throws  BusinessRecordTemporarilyUnavailable  When an installation changes under its shared fence.
+     *
+     * @since   2.0.0
+     */
+    public function browseOwnedLineFieldChoices(
+        BrowseOwnedLineFieldChoicesQuery $query,
+    ): RelatedRecordBrowseResult {
+        $operation = 'business.record.relate';
+        $this->authorize($query->context, $operation);
+
+        return $this->transactions->transactional(function () use ($query, $operation): RelatedRecordBrowseResult {
+            $sourceGeneration = $this->mutationFence->shared(
+                $query->context->site(),
+                $query->definitionIdentifier,
+            );
+            [$source, $sourceScope, , $sourceAccess] = $this->load(
+                $query->context,
+                $query->definitionIdentifier,
+                $query->sourceRecordId,
+                $query->organizationIdentifier,
+                $operation,
+                generation: $sourceGeneration,
+            );
+            $relationship = $source->definition->runtimeRelationship($query->relationship);
+            $lineAccess = $sourceAccess->related($query->relationship);
+            if ($relationship?->kind !== RelationshipKind::OwnedLineCollection || $lineAccess === null) {
+                throw new BusinessRecordNotFound();
+            }
+            $table = $source->installation->blueprint->table('line:' . $relationship->handle);
+            $version = $table?->options['target_definition_version'] ?? null;
+            if (!is_int($version)) {
+                throw new BusinessRecordNotFound();
+            }
+            $lineGeneration = $this->mutationFence->shared($query->context->site(), $relationship->target);
+            $line = $this->definitions->pinned($query->context, $relationship->target, $version);
+            $lineGeneration->assertMatches($line);
+            $lineScope = $this->scope($line, $query->context, $query->organizationIdentifier);
+            $field = $this->optionalField($line->definition, $query->field);
+            $choiceAccess = $lineAccess->related($query->field);
+            $this->assertPortalTargetOperation($query->context, $line->definition, PortalOperation::Relation);
+            $this->assertRelatedTargetAccess($line->definition, $lineAccess);
+            if (
+                $sourceScope->toArray() !== $lineScope->toArray()
+                || $field?->type !== 'core.entity_reference'
+                || !$field->createVisible
+                || $field->readOnly
+                || $field->computed
+                || $field->serverOnly
+                || !$lineAccess->fields->allows(FieldAccessUsage::Create, $field->handle)
+                || $choiceAccess === null
+            ) {
+                throw new BusinessRecordNotFound();
+            }
+            [$choiceIdentifier, $nestedRelationship] = $this->relatedTarget($line->definition, $query->field);
+            if ($nestedRelationship !== null) {
+                throw new BusinessRecordNotFound();
+            }
+            $choiceGeneration = $this->mutationFence->shared($query->context->site(), $choiceIdentifier);
+            $choice = $this->definitions->forCreate($query->context, $choiceIdentifier);
+            $choiceGeneration->assertMatches($choice);
+            $choiceScope = $this->scope($choice, $query->context, $query->organizationIdentifier);
+            $this->assertPortalTargetOperation($query->context, $choice->definition, PortalOperation::Browse);
+            $this->assertRelatedTargetAccess($choice->definition, $choiceAccess);
+
+            return new RelatedRecordBrowseResult(
+                $choice->definition,
+                $this->reads->browse($choice, $choiceScope, $query->specification, $choiceAccess),
+                $this->relatedSearchFields($choice->definition, $choiceAccess),
+            );
+        });
+    }
+
+    /**
+     * Resolve the authorized create fields for one owned-line editor.
+     *
+     * The source record is loaded under the exact relate operation before its nested target plan is read.
+     * The target version is pinned by the installed owned-line table blueprint, and only fields granted for
+     * Create by that nested plan leave the service. No standalone target browse or target create capability
+     * can widen what the source relationship allows.
+     *
+     * @param   OwnedLineFormQuery  $query  Existing source record and owned-line relationship.
+     *
+     * @return  OwnedLineFormResult  Pinned target definition and policy-authorized create handles.
+     *
+     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When relate authority is absent.
+     * @throws  BusinessRecordNotFound  When the source, relationship, target, scope, or nested plan is unavailable.
+     * @throws  BusinessRecordTemporarilyUnavailable  When an installation changes under a shared fence.
+     *
+     * @since   2.0.0
+     */
+    public function ownedLineForm(OwnedLineFormQuery $query): OwnedLineFormResult
+    {
+        $operation = 'business.record.relate';
+        $this->authorize($query->context, $operation);
+
+        return $this->transactions->transactional(function () use ($query, $operation): OwnedLineFormResult {
+            $sourceGeneration = $this->mutationFence->shared(
+                $query->context->site(),
+                $query->definitionIdentifier,
+            );
+            [$source, $sourceScope, , $sourceAccess] = $this->load(
+                $query->context,
+                $query->definitionIdentifier,
+                $query->sourceRecordId,
+                $query->organizationIdentifier,
+                $operation,
+                generation: $sourceGeneration,
+            );
+            $relationship = $source->definition->runtimeRelationship($query->relationship);
+            $relatedAccess = $sourceAccess->related($query->relationship);
+            if ($relationship?->kind !== RelationshipKind::OwnedLineCollection || $relatedAccess === null) {
+                throw new BusinessRecordNotFound();
+            }
+            $table = $source->installation->blueprint->table('line:' . $relationship->handle);
+            $version = $table?->options['target_definition_version'] ?? null;
+            if (!is_int($version)) {
+                throw new BusinessRecordNotFound();
+            }
+            $targetGeneration = $this->mutationFence->shared($query->context->site(), $relationship->target);
+            $target = $this->definitions->pinned($query->context, $relationship->target, $version);
+            $targetGeneration->assertMatches($target);
+            $targetScope = $this->scope($target, $query->context, $query->organizationIdentifier);
+            $this->assertPortalTargetOperation($query->context, $target->definition, PortalOperation::Relation);
+            $this->assertRelatedTargetAccess($target->definition, $relatedAccess);
+            if ($sourceScope->toArray() !== $targetScope->toArray()) {
+                throw new BusinessRecordNotFound();
+            }
+            $fields = [];
+            foreach ($target->definition->fields() as $field) {
+                if (
+                    $field->createVisible
+                    && !$field->readOnly
+                    && !$field->computed
+                    && !$field->serverOnly
+                    && $relatedAccess->fields->allows(FieldAccessUsage::Create, $field->handle)
+                ) {
+                    $fields[] = $field->handle;
+                }
+            }
+
+            return new OwnedLineFormResult($target->definition, $fields);
         });
     }
 
@@ -444,18 +744,29 @@ final readonly class BusinessRecordService
                 );
                 $this->expected($record, $command->expectedVersion);
                 $this->assertFieldInput($access, FieldAccessUsage::Update, array_keys($command->values));
-                $values = $this->rules->update(
-                    $resolved->definition,
-                    $record->values(),
-                    $command->values,
-                    $resolved->definition->siteIdentifier,
-                    $record->recordKey,
-                    $record->recordId,
-                );
+                try {
+                    $values = $this->rules->update(
+                        $resolved->definition,
+                        $record->values(),
+                        $command->values,
+                        $resolved->definition->siteIdentifier,
+                        $record->recordKey,
+                        $record->recordId,
+                    );
+                } catch (BusinessRecordValidationFailed $exception) {
+                    throw $this->validationForAccess(
+                        $exception,
+                        $command->context,
+                        $resolved->definition,
+                        $access,
+                        FieldAccessUsage::Update,
+                    );
+                }
                 $values = $this->resolveEntityReferences(
                     $command->context,
                     $resolved->definition,
                     $scope,
+                    $access,
                     $values,
                     array_keys($command->values),
                 );
@@ -713,6 +1024,68 @@ final readonly class BusinessRecordService
     }
 
     /**
+     * Apply the canonical record, action, condition, capability, concurrency, and approval guards for a
+     * typed custom action without selecting or invoking extension code.
+     *
+     * `CustomBusinessActionExecutor` calls this only after taking the canonical idempotency claim and
+     * definition fence in its outer transaction. Approval consumption therefore rolls back with a handler
+     * failure, while the business-record layer remains independent of custom registries and result schemas.
+     *
+     * @param   ExecuteRecordActionCommand         $command     Validated custom action attempt.
+     * @param   BusinessRecordMutationGeneration  $generation  Installed generation held by the caller.
+     *
+     * @return  void
+     *
+     * @throws  BusinessRecordNotFound  When the target or action is absent, denied, or outside row policy.
+     * @throws  BusinessRecordVersionConflict  When the expected version is stale.
+     * @throws  BusinessRecordActionRejected  When the declaration is not custom or its condition rejects.
+     * @throws  ApprovalDenied  When high-impact execution lacks an exact approved request.
+     *
+     * @since   2.0.0
+     */
+    public function guardCustomAction(
+        ExecuteRecordActionCommand $command,
+        BusinessRecordMutationGeneration $generation,
+    ): void {
+        $this->authorize($command->context, 'business.record.action');
+        [$resolved, , $record, $access] = $this->load(
+            $command->context,
+            $command->definitionIdentifier,
+            $command->recordId,
+            $command->organizationIdentifier,
+            'business.record.action',
+            generation: $generation,
+        );
+        $this->expected($record, $command->expectedVersion);
+        if (!$access->allowsAction($command->action)) {
+            throw new BusinessRecordNotFound();
+        }
+        $action = $this->actionDefinition($resolved->definition, $command->action);
+        if ($action->handler === null || $action->schema === null || $action->transition !== null) {
+            throw new BusinessRecordActionRejected('The action is not a typed custom action.');
+        }
+        $this->authorization->assertAllowed(
+            $command->context,
+            Capability::fromString($action->capability),
+            AuthorizationResource::collection('business_record'),
+        );
+        if (
+            $action->condition !== null
+            && $action->condition->evaluate($this->expressionValues($record)) !== true
+        ) {
+            throw new BusinessRecordActionRejected('The action precondition rejected this record.');
+        }
+        if ($action->highImpact) {
+            $approvalRequestId = $command->approvalRequestId ?? throw new ApprovalDenied();
+            $this->approvals->consume(
+                $command->context,
+                $approvalRequestId,
+                $this->actionApprovalBinding($command, $record, $action),
+            );
+        }
+    }
+
+    /**
      * Request generic maker-checker approval for one exact high-impact record action.
      *
      * The same policy-filtered load, version, action capability, condition, and workflow transition
@@ -730,66 +1103,102 @@ final readonly class BusinessRecordService
     public function requestActionApproval(ExecuteRecordActionCommand $command): ?string
     {
         $this->authorize($command->context, 'business.record.action');
-        if ($command->input !== [] || $command->approvalRequestId !== null) {
+        if ($command->approvalRequestId !== null) {
             throw new BusinessRecordActionRejected('An approval request requires an unconsumed action attempt.');
         }
 
-        return $this->transactions->transactional(function () use ($command): ?string {
-            [$resolved, , $record, $access] = $this->load(
-                $command->context,
-                $command->definitionIdentifier,
-                $command->recordId,
-                $command->organizationIdentifier,
-                'business.record.action',
-            );
-            $this->expected($record, $command->expectedVersion);
-            if (!$access->allowsAction($command->action)) {
-                throw new BusinessRecordNotFound();
-            }
-            $action = $this->actionDefinition($resolved->definition, $command->action);
-            if (!$action->highImpact) {
-                throw new BusinessRecordActionRejected('The action does not require maker-checker approval.');
-            }
-            $this->authorization->assertAllowed(
-                $command->context,
-                Capability::fromString($action->capability),
-                AuthorizationResource::collection('business_record'),
-            );
-            if (
-                $action->condition !== null
-                && $action->condition->evaluate($this->expressionValues($record)) !== true
-            ) {
-                throw new BusinessRecordActionRejected('The action precondition rejected this record.');
-            }
-            if ($action->transition === null || $resolved->definition->workflow === null) {
-                throw new BusinessRecordActionRejected('The action has no executable workflow transition.');
-            }
-            $transition = null;
-            foreach ($resolved->definition->workflow->transitions as $candidate) {
-                if ($candidate['handle'] === $action->transition && $candidate['from'] === $record->workflowState) {
-                    $transition = $candidate;
-                    break;
+        return $this->idempotentApprovalRequest(
+            $command->context,
+            $command->definitionIdentifier,
+            $command->organizationIdentifier,
+            $command->idempotencyKey,
+            [
+                'definition' => $command->definitionIdentifier,
+                'record_id' => $command->recordId,
+                'expected_version' => $command->expectedVersion,
+                'action' => $command->action,
+                'input' => $command->input,
+            ],
+            function (
+                DateTimeImmutable $_now,
+                BusinessRecordMutationGeneration $generation,
+            ) use ($command): ?string {
+                [$resolved, , $record, $access] = $this->load(
+                    $command->context,
+                    $command->definitionIdentifier,
+                    $command->recordId,
+                    $command->organizationIdentifier,
+                    'business.record.action',
+                    generation: $generation,
+                );
+                $this->expected($record, $command->expectedVersion);
+                if (!$access->allowsAction($command->action)) {
+                    throw new BusinessRecordNotFound();
                 }
-            }
-            if ($transition === null) {
-                throw new BusinessRecordActionRejected('The workflow transition is invalid from the current state.');
-            }
-            $this->authorization->assertAllowed(
-                $command->context,
-                Capability::fromString('business.record.transition'),
-                AuthorizationResource::collection('business_record'),
-            );
-            $this->authorization->assertAllowed(
-                $command->context,
-                Capability::fromString($transition['capability']),
-                AuthorizationResource::collection('business_record'),
-            );
+                $action = $this->actionDefinition($resolved->definition, $command->action);
+                if (!$action->highImpact) {
+                    throw new BusinessRecordActionRejected(
+                        'The action does not require maker-checker approval.',
+                    );
+                }
+                $this->authorization->assertAllowed(
+                    $command->context,
+                    Capability::fromString($action->capability),
+                    AuthorizationResource::collection('business_record'),
+                );
+                if (
+                    $action->condition !== null
+                    && $action->condition->evaluate($this->expressionValues($record)) !== true
+                ) {
+                    throw new BusinessRecordActionRejected('The action precondition rejected this record.');
+                }
+                $custom = $action->handler !== null
+                    && $action->schema !== null
+                    && $action->transition === null;
+                if (!$custom && $command->input !== []) {
+                    throw new BusinessRecordActionRejected('This definition declares no typed action input.');
+                }
+                if ($custom) {
+                    return $this->approvals->request(
+                        $command->context,
+                        $this->actionApprovalBinding($command, $record, $action),
+                    );
+                }
+                if ($action->transition === null || $resolved->definition->workflow === null) {
+                    throw new BusinessRecordActionRejected('The action has no executable workflow transition.');
+                }
+                $transition = null;
+                foreach ($resolved->definition->workflow->transitions as $candidate) {
+                    if (
+                        $candidate['handle'] === $action->transition
+                        && $candidate['from'] === $record->workflowState
+                    ) {
+                        $transition = $candidate;
+                        break;
+                    }
+                }
+                if ($transition === null) {
+                    throw new BusinessRecordActionRejected(
+                        'The workflow transition is invalid from the current state.',
+                    );
+                }
+                $this->authorization->assertAllowed(
+                    $command->context,
+                    Capability::fromString('business.record.transition'),
+                    AuthorizationResource::collection('business_record'),
+                );
+                $this->authorization->assertAllowed(
+                    $command->context,
+                    Capability::fromString($transition['capability']),
+                    AuthorizationResource::collection('business_record'),
+                );
 
-            return $this->approvals->request(
-                $command->context,
-                $this->actionApprovalBinding($command, $record, $action),
-            );
-        });
+                return $this->approvals->request(
+                    $command->context,
+                    $this->actionApprovalBinding($command, $record, $action),
+                );
+            },
+        );
     }
 
     /**
@@ -868,6 +1277,12 @@ final readonly class BusinessRecordService
                     );
                     $lineResolved = $this->lineDefinition($command->context, $resolved, $relationship);
                     $lineDefinition = $lineResolved->definition;
+                    $this->assertPortalTargetOperation(
+                        $command->context,
+                        $lineDefinition,
+                        PortalOperation::Relation,
+                    );
+                    $this->assertRelatedTargetAccess($lineDefinition, $relatedAccess);
                     try {
                         $lineId = $this->values->identity(
                             $lineDefinition,
@@ -880,17 +1295,28 @@ final readonly class BusinessRecordService
                     $targetKey = $lineDefinition->identityStrategy === IdentityStrategy::Uuid
                         ? $lineId
                         : Uuid::uuid7()->toString();
-                    $lineValues = $this->rules->create(
-                        $lineDefinition,
-                        $command->targetValues,
-                        $lineDefinition->siteIdentifier,
-                        $targetKey,
-                        $lineId,
-                    );
+                    try {
+                        $lineValues = $this->rules->create(
+                            $lineDefinition,
+                            $command->targetValues,
+                            $lineDefinition->siteIdentifier,
+                            $targetKey,
+                            $lineId,
+                        );
+                    } catch (BusinessRecordValidationFailed $exception) {
+                        throw $this->validationForAccess(
+                            $exception,
+                            $command->context,
+                            $lineDefinition,
+                            $relatedAccess,
+                            FieldAccessUsage::Create,
+                        );
+                    }
                     $lineValues = $this->resolveEntityReferences(
                         $command->context,
                         $lineDefinition,
                         $scope,
+                        $relatedAccess,
                         $lineValues,
                         array_keys($lineValues),
                     );
@@ -905,7 +1331,18 @@ final readonly class BusinessRecordService
                         $command->context,
                         $relationship->target,
                     );
-                    [$targetResolved, , $target] = $this->load(
+                    $targetResolved = $this->definitions->forCreate(
+                        $command->context,
+                        $relationship->target,
+                    );
+                    $targetGeneration->assertMatches($targetResolved);
+                    $this->assertPortalTargetOperation(
+                        $command->context,
+                        $targetResolved->definition,
+                        PortalOperation::Relation,
+                    );
+                    $this->assertRelatedTargetAccess($targetResolved->definition, $relatedAccess);
+                    [$loadedTarget, , $target] = $this->load(
                         $command->context,
                         $relationship->target,
                         $command->targetRecordId,
@@ -913,10 +1350,11 @@ final readonly class BusinessRecordService
                         'business.record.relate',
                         generation: $targetGeneration,
                     );
-                    if (
-                        !hash_equals($targetResolved->definition->id, $relatedAccess->resourceIdentifier)
-                        || !$relatedAccess->records->allows($target->values())
-                    ) {
+                    if ($loadedTarget->definition->id !== $targetResolved->definition->id) {
+                        throw new BusinessRecordReferenceConflict();
+                    }
+                    $targetResolved = $loadedTarget;
+                    if (!$relatedAccess->records->allows($target->values())) {
                         throw new BusinessRecordNotFound();
                     }
                     $this->sameScope($source, $target);
@@ -1036,6 +1474,12 @@ final readonly class BusinessRecordService
                 $target = null;
                 if ($relationship->kind === RelationshipKind::OwnedLineCollection) {
                     $line = $this->lineDefinition($command->context, $resolved, $relationship);
+                    $this->assertPortalTargetOperation(
+                        $command->context,
+                        $line->definition,
+                        PortalOperation::Relation,
+                    );
+                    $this->assertRelatedTargetAccess($line->definition, $relatedAccess);
                     $identity = $this->reads->ownedLineIdentity(
                         $resolved,
                         $source,
@@ -1050,7 +1494,18 @@ final readonly class BusinessRecordService
                         $command->context,
                         $relationship->target,
                     );
-                    [$targetResolved, , $target] = $this->load(
+                    $targetResolved = $this->definitions->forCreate(
+                        $command->context,
+                        $relationship->target,
+                    );
+                    $targetGeneration->assertMatches($targetResolved);
+                    $this->assertPortalTargetOperation(
+                        $command->context,
+                        $targetResolved->definition,
+                        PortalOperation::Relation,
+                    );
+                    $this->assertRelatedTargetAccess($targetResolved->definition, $relatedAccess);
+                    [$loadedTarget, , $target] = $this->load(
                         $command->context,
                         $relationship->target,
                         $command->targetRecordId,
@@ -1060,10 +1515,11 @@ final readonly class BusinessRecordService
                         true,
                         $targetGeneration,
                     );
-                    if (
-                        !hash_equals($targetResolved->definition->id, $relatedAccess->resourceIdentifier)
-                        || !$relatedAccess->records->allows($target->values())
-                    ) {
+                    if ($loadedTarget->definition->id !== $targetResolved->definition->id) {
+                        throw new BusinessRecordReferenceConflict();
+                    }
+                    $targetResolved = $loadedTarget;
+                    if (!$relatedAccess->records->allows($target->values())) {
                         throw new BusinessRecordNotFound();
                     }
                     $targetKey = $target->recordKey;
@@ -1171,6 +1627,12 @@ final readonly class BusinessRecordService
                 $targetResolved = null;
                 if ($relationship->kind === RelationshipKind::OwnedLineCollection) {
                     $line = $this->lineDefinition($command->context, $resolved, $relationship);
+                    $this->assertPortalTargetOperation(
+                        $command->context,
+                        $line->definition,
+                        PortalOperation::Reorder,
+                    );
+                    $this->assertRelatedTargetAccess($line->definition, $relatedAccess);
                     foreach ($command->orderedRecordIds as $recordId) {
                         $identity = $this->reads->ownedLineIdentity(
                             $resolved,
@@ -1189,6 +1651,12 @@ final readonly class BusinessRecordService
                     );
                     $targetResolved = $this->definitions->forCreate($command->context, $relationship->target);
                     $targetGeneration->assertMatches($targetResolved);
+                    $this->assertPortalTargetOperation(
+                        $command->context,
+                        $targetResolved->definition,
+                        PortalOperation::Reorder,
+                    );
+                    $this->assertRelatedTargetAccess($targetResolved->definition, $relatedAccess);
                     foreach ($command->orderedRecordIds as $recordId) {
                         [$loadedTarget, , $target] = $this->load(
                             $command->context,
@@ -1203,10 +1671,7 @@ final readonly class BusinessRecordService
                         if ($loadedTarget->definition->id !== $targetResolved->definition->id) {
                             throw new BusinessRecordReferenceConflict();
                         }
-                        if (
-                            !hash_equals($loadedTarget->definition->id, $relatedAccess->resourceIdentifier)
-                            || !$relatedAccess->records->allows($target->values())
-                        ) {
+                        if (!$relatedAccess->records->allows($target->values())) {
                             throw new BusinessRecordNotFound();
                         }
                         $this->sameScope($source, $target);
@@ -1738,7 +2203,7 @@ final readonly class BusinessRecordService
                     $this->idempotency->begin($entry);
                     $result = $effect($now, $generation);
                     $resultChecksum = $this->fingerprints->digest($result->toArray());
-                    $this->idempotency->complete($entry->id, $result, $resultChecksum, $now);
+                    $this->idempotency->complete($entry->id, $result->toArray(), $resultChecksum, $now);
 
                     return $result;
                 });
@@ -1751,6 +2216,173 @@ final readonly class BusinessRecordService
             }
         }
         throw new BusinessRecordTemporarilyUnavailable();
+    }
+
+    /**
+     * Claim and replay one approval request through the record mutation ledger.
+     *
+     * Approval creation is deliberately kept inside the same fence, policy digest and transaction as
+     * record mutations. A network retry therefore receives the original request identifier instead of
+     * creating a second maker-checker request, while a reused key, changed authority or moved definition
+     * generation is refused before the approval store is touched.
+     *
+     * @param ExecutionContext $context Actor and site requesting approval.
+     * @param string $definitionIdentifier Definition UUID or handle fenced for the attempt.
+     * @param string|null $organizationIdentifier Organization asserted by the command, or null.
+     * @param IdempotencyKey $key Caller-supplied logical operation identifier.
+     * @param array<string, mixed> $request Canonical approval attempt fingerprint input.
+     * @param callable(DateTimeImmutable, BusinessRecordMutationGeneration): ?string $effect Approval
+     *          request effect, returning its UUID or null when no active rule requires approval.
+     *
+     * @return  string|null  The newly created or replayed approval request UUID.
+     *
+     * @throws  BusinessRecordIdempotencyConflict  When the key cannot be safely replayed.
+     * @throws  BusinessRecordTemporarilyUnavailable  When three transactional attempts fail transiently.
+     *
+     * @since   2.0.0
+     */
+    private function idempotentApprovalRequest(
+        ExecutionContext $context,
+        string $definitionIdentifier,
+        ?string $organizationIdentifier,
+        IdempotencyKey $key,
+        array $request,
+        callable $effect,
+    ): ?string {
+        $operation = 'business.record.action_approval_request';
+        $requestFingerprint = $this->fingerprints->digest($request);
+        $authenticatedOrganization = $context->organization()?->identifier();
+        $scopeDigest = $this->fingerprints->digest([
+            'site' => $context->site()->identifier(),
+            'organization' => $authenticatedOrganization,
+            'actor' => $context->actorId(),
+            'operation' => $operation,
+            'key' => $key->value(),
+        ]);
+        for ($attempt = 0; $attempt < 3; ++$attempt) {
+            try {
+                return $this->transactions->transactional(function () use (
+                    $context,
+                    $definitionIdentifier,
+                    $organizationIdentifier,
+                    $operation,
+                    $key,
+                    $effect,
+                    $scopeDigest,
+                    $requestFingerprint,
+                    $authenticatedOrganization,
+                ): ?string {
+                    $generation = $this->mutationFence->lock($context, $definitionIdentifier);
+                    $resolved = $this->definitions->forCreate($context, $definitionIdentifier);
+                    $generation->assertMatches($resolved);
+                    $scope = $this->scope($resolved, $context, $organizationIdentifier);
+                    $access = $this->recordAccess->plan(
+                        $context,
+                        'business.record.action',
+                        $resolved,
+                        $scope,
+                    );
+                    $authorizationFingerprint = $this->fingerprints->digest([
+                        'context' => $context->authorizationFingerprint(),
+                        'record_access' => $access->digest(),
+                    ]);
+                    $now = $this->clock->now();
+                    $existing = $this->idempotency->find($scopeDigest);
+                    if ($existing !== null) {
+                        return $this->replayApprovalRequest(
+                            $existing,
+                            $requestFingerprint,
+                            $authorizationFingerprint,
+                            $now,
+                        );
+                    }
+                    $entry = new BusinessRecordIdempotency(
+                        Uuid::uuid7()->toString(),
+                        $scopeDigest,
+                        $context->site()->identifier(),
+                        $authenticatedOrganization,
+                        $context->actorId(),
+                        $operation,
+                        $key->value(),
+                        $requestFingerprint,
+                        $authorizationFingerprint,
+                        BusinessRecordIdempotencyState::InProgress,
+                        null,
+                        null,
+                        $now,
+                        null,
+                        $now->add(new DateInterval('P1D')),
+                    );
+                    $this->idempotency->begin($entry);
+                    $approvalRequestId = $effect($now, $generation);
+                    $result = [
+                        'definition_id' => $resolved->definition->id,
+                        'approval_request_id' => $approvalRequestId,
+                    ];
+                    $checksum = $this->fingerprints->digest($result);
+                    $this->idempotency->complete($entry->id, $result, $checksum, $now);
+
+                    return $approvalRequestId;
+                });
+            } catch (BusinessRecordIdempotencyRace) {
+                continue;
+            } catch (BusinessRecordTemporarilyUnavailable $exception) {
+                if ($attempt === 2) {
+                    throw $exception;
+                }
+            }
+        }
+
+        throw new BusinessRecordTemporarilyUnavailable();
+    }
+
+    /**
+     * Prove and recover a completed approval-request outcome from the shared ledger.
+     *
+     * @param   BusinessRecordIdempotency  $entry                     Stored command claim.
+     * @param   string                     $requestFingerprint        Digest of the approval attempt now presented.
+     * @param   string                     $authorizationFingerprint  Digest of the caller's current authority.
+     * @param   DateTimeImmutable          $now                       Instant against which expiry is checked.
+     *
+     * @return  string|null  The original approval request UUID, or null for the original no-rule outcome.
+     *
+     * @throws  BusinessRecordIdempotencyConflict  When any replay proof fails.
+     *
+     * @since   2.0.0
+     */
+    private function replayApprovalRequest(
+        BusinessRecordIdempotency $entry,
+        string $requestFingerprint,
+        string $authorizationFingerprint,
+        DateTimeImmutable $now,
+    ): ?string {
+        if (!$entry->matches($requestFingerprint, $authorizationFingerprint) || $now >= $entry->expiresAt) {
+            throw new BusinessRecordIdempotencyConflict('key_reused');
+        }
+        $result = $entry->result();
+        if (!$entry->isCompleted() || $result === null) {
+            throw new BusinessRecordIdempotencyConflict('in_progress');
+        }
+        if (
+            $entry->resultChecksum === null
+            || !hash_equals($entry->resultChecksum, $this->fingerprints->digest($result))
+            || array_keys($result) !== ['definition_id', 'approval_request_id']
+        ) {
+            throw new BusinessRecordIdempotencyConflict('corrupt');
+        }
+        $definitionId = $result['definition_id'];
+        $approvalRequestId = $result['approval_request_id'];
+        if (
+            !is_string($definitionId) || !Uuid::isValid($definitionId)
+            || (
+                $approvalRequestId !== null
+                && (!is_string($approvalRequestId) || !Uuid::isValid($approvalRequestId))
+            )
+        ) {
+            throw new BusinessRecordIdempotencyConflict('corrupt');
+        }
+
+        return $approvalRequestId;
     }
 
     /**
@@ -1961,14 +2593,18 @@ final readonly class BusinessRecordService
      *
      * Only the handles named are considered, which is what keeps an update from re-resolving references it
      * never touched. Each target is fenced, resolved, and looked up in the same organization as the record
-     * being written, so a reference can never be made to cross a scope boundary; a target that is missing,
-     * out of scope, or whose field declares no usable target is reported as a violation on that field
-     * rather than aborting the pass, so every bad reference in a submission is reported at once.
+     * being written. Resolution consumes the source operation's exact nested access plan rather than
+     * independently authorizing a target read, so a submitted identifier cannot bypass the row and
+     * public-reference policy that produced a graphical selector. A target that is missing, out of scope,
+     * or whose field declares no usable target is reported as a violation on that field rather than
+     * aborting the pass, so every bad reference in a submission is reported at once.
      *
      * @param   ExecutionContext      $context     Actor and site the resolution runs as.
      * @param   EntityTypeDefinition  $definition  Definition whose fields are inspected for references.
      * @param   RecordScope           $scope       Scope the source record belongs to, which every target
      *          must share.
+     * @param   BusinessRecordAccessPlan  $access  Source operation plan carrying each field's exact nested
+     *          target row and field-disclosure decision.
      * @param   array<string, mixed>  $values      Value set to rewrite, keyed by field handle.
      * @param   list<string>          $handles     Handles this pass is allowed to touch; anything outside
      *          it is left exactly as it arrived.
@@ -1992,6 +2628,7 @@ final readonly class BusinessRecordService
         ExecutionContext $context,
         EntityTypeDefinition $definition,
         RecordScope $scope,
+        BusinessRecordAccessPlan $access,
         array $values,
         array $handles,
     ): array {
@@ -2014,19 +2651,20 @@ final readonly class BusinessRecordService
                 continue;
             }
             try {
+                $targetAccess = $access->related($field->handle);
+                if ($targetAccess === null) {
+                    throw new BusinessRecordNotFound();
+                }
                 $targetGeneration = $this->mutationFence->lock($context, $targetHandle);
                 $target = $this->definitions->forCreate($context, $targetHandle);
                 $targetGeneration->assertMatches($target);
                 $targetScope = $this->scope($target, $context, $scope->organizationIdentifier);
-                $targetAccess = $this->recordAccess->plan(
-                    $context,
-                    'business.record.read',
-                    $target,
-                    $targetScope,
-                );
+                $identityField = $this->identityField($target->definition);
+                $this->assertPortalTargetOperation($context, $target->definition, PortalOperation::Read);
+                $this->assertRelatedTargetAccess($target->definition, $targetAccess);
                 $targetId = $this->values->identity(
                     $target->definition,
-                    [$this->identityField($target->definition)->handle => $value],
+                    [$identityField->handle => $value],
                     null,
                 );
                 $identity = $this->reads->identity($target, $targetScope, $targetAccess, $targetId);
@@ -2074,6 +2712,99 @@ final readonly class BusinessRecordService
                 ]);
             }
         }
+    }
+
+    /**
+     * Project validator failures through the exact operation field-disclosure plan.
+     *
+     * A definition validator necessarily sees required, conditional, formula, and invariant dependencies
+     * that the caller may not. Violations on permitted input handles retain their useful field-specific
+     * detail. Any number of violations on unavailable handles collapses to one generic record failure, so
+     * neither names nor counts can be recovered from REST, CLI, MCP, or generated form errors.
+     *
+     * @param   BusinessRecordValidationFailed  $failure     Complete trusted validator result.
+     * @param   ExecutionContext                $context     Authenticated site and surface.
+     * @param   EntityTypeDefinition            $definition  Definition whose immutable flags are ceilings.
+     * @param   BusinessRecordAccessPlan        $access      Exact create/update or owned-line access plan.
+     * @param   FieldAccessUsage                $usage       Create or update disclosure use.
+     *
+     * @return  BusinessRecordValidationFailed  Omission-safe caller-visible validation failure.
+     *
+     * @since   2.0.0
+     */
+    private function validationForAccess(
+        BusinessRecordValidationFailed $failure,
+        ExecutionContext $context,
+        EntityTypeDefinition $definition,
+        BusinessRecordAccessPlan $access,
+        FieldAccessUsage $usage,
+    ): BusinessRecordValidationFailed {
+        $visible = [];
+        $withheld = false;
+        foreach ($failure->violations as $violation) {
+            $field = $this->optionalField($definition, $violation->field);
+            if (
+                $field !== null
+                && $access->fields->allows($usage, $field->handle)
+                && $this->inputFieldAvailable($field, $usage)
+                && $this->validationReferenceAvailable($context, $field, $access)
+            ) {
+                $visible[] = $violation;
+            } else {
+                $withheld = true;
+            }
+        }
+        if ($withheld) {
+            $visible[] = new ValidationViolation(
+                'record',
+                'field_access',
+                'One or more submitted fields are unavailable.',
+            );
+        }
+
+        return new BusinessRecordValidationFailed($visible);
+    }
+
+    /**
+     * Prove a validator-visible reference field has the exact nested public identity required by metadata.
+     *
+     * Non-reference inputs need no second resource boundary. Entity-reference fields fail closed when the
+     * target is unavailable, the nested plan belongs to another definition, or its public-reference grant
+     * omits the target's real identity field. Submitted known-reference failures are raised later by
+     * `resolveEntityReferences()` and therefore retain their useful source handle when this field is visible.
+     *
+     * @param   ExecutionContext          $context  Authenticated site used to resolve the declared target.
+     * @param   FieldDefinition           $field    Definition field named by a validator violation.
+     * @param   BusinessRecordAccessPlan  $access   Exact source operation access plan.
+     *
+     * @return  bool  True for non-references or an exactly authorized target identity.
+     *
+     * @since   2.0.0
+     */
+    private function validationReferenceAvailable(
+        ExecutionContext $context,
+        FieldDefinition $field,
+        BusinessRecordAccessPlan $access,
+    ): bool {
+        if ($field->type !== 'core.entity_reference') {
+            return true;
+        }
+        $targetHandle = $field->configuration['target'] ?? null;
+        $targetAccess = $access->related($field->handle);
+        if (!is_string($targetHandle) || $targetAccess === null) {
+            return false;
+        }
+        try {
+            $target = $this->definitions->forCreate($context, $targetHandle);
+        } catch (BusinessRecordDefinitionUnavailable | BusinessRecordSchemaUnavailable) {
+            return false;
+        }
+
+        return hash_equals($target->definition->id, $targetAccess->resourceIdentifier)
+            && $targetAccess->fields->allows(
+                FieldAccessUsage::PublicReference,
+                $this->identityField($target->definition)->handle,
+            );
     }
 
     /**
@@ -2160,8 +2891,8 @@ final readonly class BusinessRecordService
      * it. The revision holds a canonical snapshot of the stored values — virtual computed fields are left
      * out because nothing about them is stored — and relationship evidence is folded into that snapshot
      * under a reserved key the definition is not allowed to collide with. A definition with revisions
-     * turned off gets no snapshot at all, but is still audited: the audit entry never carries values, only
-     * the changed handles with the restricted and secret ones marked as redacted, and it stands in for the
+     * turned off gets no snapshot at all, but is still audited: the audit entry never carries values, and
+     * omits restricted and secret handles from its changed-field metadata. It stands in for the
      * record's identity with a keyed digest so the trail discloses nothing the record itself protects.
      *
      * @param   ExecutionContext            $context        Actor, site and request the mutation ran under.
@@ -2221,13 +2952,18 @@ final readonly class BusinessRecordService
         $metadata = [];
         foreach ($changedFields as $handle) {
             $field = $this->optionalField($resolved->definition, $handle);
-            $metadata[] = [
-                'field' => $handle,
-                'redacted' => $field !== null && in_array(
+            if (
+                $field !== null && in_array(
                     $field->sensitivity,
                     [Sensitivity::Restricted, Sensitivity::Secret],
                     true,
-                ),
+                )
+            ) {
+                continue;
+            }
+            $metadata[] = [
+                'field' => $handle,
+                'redacted' => false,
             ];
         }
         $this->audit->record(new AuditEvent(
@@ -2406,6 +3142,233 @@ final readonly class BusinessRecordService
         }
 
         return null;
+    }
+
+    /**
+     * Require a nested relation plan to identify the declared target and disclose its public identity.
+     *
+     * Row access alone is insufficient when a caller supplies a target identity. Every selector and
+     * relationship mutation consumes the same public-reference permission so a known or forged identity
+     * cannot bypass the plan that made target choices visible.
+     *
+     * @param   EntityTypeDefinition      $target  Declared target definition.
+     * @param   BusinessRecordAccessPlan  $access  Nested plan rooted at the source field or relationship.
+     *
+     * @return  void
+     *
+     * @throws  BusinessRecordNotFound  When the plan points elsewhere or withholds the target identity.
+     *
+     * @since   2.0.0
+     */
+    private function assertRelatedTargetAccess(
+        EntityTypeDefinition $target,
+        BusinessRecordAccessPlan $access,
+    ): void {
+        if (
+            !hash_equals($target->id, $access->resourceIdentifier)
+            || !$access->fields->allows(
+                FieldAccessUsage::PublicReference,
+                $this->identityField($target)->handle,
+            )
+        ) {
+            throw new BusinessRecordNotFound();
+        }
+    }
+
+    /**
+     * Enforce a related target's exact portal exposure without affecting other authenticated surfaces.
+     *
+     * Source definition exposure is enforced by the generated surface before this service is called. A
+     * traversal is a second definition boundary, so a portal actor must also receive an explicit target-side
+     * opt-in for the read, browse, relation, or reorder operation being performed.
+     *
+     * @param   ExecutionContext      $context    Authenticated surface and tenant.
+     * @param   EntityTypeDefinition  $target     Definition reached through a source field or relationship.
+     * @param   PortalOperation       $operation  Exact target-side portal operation required.
+     *
+     * @return  void
+     *
+     * @throws  BusinessRecordNotFound  When a portal target or operation is not explicitly exposed.
+     *
+     * @since   2.0.0
+     */
+    private function assertPortalTargetOperation(
+        ExecutionContext $context,
+        EntityTypeDefinition $target,
+        PortalOperation $operation,
+    ): void {
+        if (
+            $context->surface() === AuthenticatedSurface::Portal
+            && (!$target->portalExposure || !$target->allowsPortalOperation($operation))
+        ) {
+            throw new BusinessRecordNotFound();
+        }
+    }
+
+    /**
+     * Reject a portal include unless its exact nested target remains discoverable for this read operation.
+     *
+     * Generated adapters validate includes against the shared catalog, but the canonical service also
+     * defends its own direct callers. A target with no public identity, no explicit portal operation, or a
+     * statically empty row policy is indistinguishable from an undeclared relationship.
+     *
+     * @param   ExecutionContext          $context     Authenticated surface and tenant.
+     * @param   EntityTypeDefinition      $definition  Source definition declaring the include handles.
+     * @param   BusinessRecordAccessPlan  $access      Exact source read or browse access plan.
+     * @param   list<string>              $includes    Requested relationship handles.
+     * @param   PortalOperation           $operation   Target-side portal operation required.
+     *
+     * @return  void
+     *
+     * @throws  BusinessRecordNotFound  When a portal include is absent from its policy-filtered catalog.
+     *
+     * @since   2.0.0
+     */
+    private function assertPortalIncludes(
+        ExecutionContext $context,
+        EntityTypeDefinition $definition,
+        BusinessRecordAccessPlan $access,
+        array $includes,
+        PortalOperation $operation,
+    ): void {
+        if ($context->surface() !== AuthenticatedSurface::Portal) {
+            return;
+        }
+        foreach ($includes as $handle) {
+            $relationship = $definition->runtimeRelationship($handle)
+                ?? throw new BusinessRecordNotFound();
+            $targetAccess = $access->related($handle)
+                ?? throw new BusinessRecordNotFound();
+            try {
+                $target = $this->definitions->forCreate($context, $relationship->target);
+            } catch (BusinessRecordDefinitionUnavailable | BusinessRecordSchemaUnavailable) {
+                throw new BusinessRecordNotFound();
+            }
+            $this->assertPortalTargetOperation($context, $target->definition, $operation);
+            $this->assertRelatedTargetAccess($target->definition, $targetAccess);
+            if (!$this->maySelectRelatedRows($targetAccess)) {
+                throw new BusinessRecordNotFound();
+            }
+        }
+    }
+
+    /**
+     * Report whether a nested row plan could select at least one target without loading business rows.
+     *
+     * @param   BusinessRecordAccessPlan  $access  Exact nested target plan.
+     *
+     * @return  bool  False only for default/constant deny-all plans.
+     *
+     * @since   2.0.0
+     */
+    private function maySelectRelatedRows(BusinessRecordAccessPlan $access): bool
+    {
+        foreach ($access->records->denies as $deny) {
+            if ($deny instanceof RecordPolicyConstant && $deny->value) {
+                return false;
+            }
+        }
+        foreach ($access->records->allows as $allow) {
+            if (!($allow instanceof RecordPolicyConstant) || $allow->value) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Apply immutable field ceilings before a reference selector can enumerate choices.
+     *
+     * @param   FieldDefinition   $field  Entity-reference field requesting target choices.
+     * @param   FieldAccessUsage  $usage  Create or update use selected by the source operation.
+     *
+     * @return  bool  True only when the definition itself permits input for this operation.
+     *
+     * @since   2.0.0
+     */
+    private function inputFieldAvailable(FieldDefinition $field, FieldAccessUsage $usage): bool
+    {
+        if (
+            $field->readOnly
+            || $field->computed
+            || $field->serverOnly
+            || $field->formula !== null
+        ) {
+            return false;
+        }
+
+        return match ($usage) {
+            FieldAccessUsage::Create => $field->createVisible,
+            FieldAccessUsage::Update => $field->updateVisible && !$field->immutableAfterCreate,
+            default => false,
+        };
+    }
+
+    /**
+     * Resolve a selector handle to its target and distinguish field references from relationships.
+     *
+     * @param   EntityTypeDefinition  $definition  Source definition declaring the handle.
+     * @param   string                $handle      Relationship or entity-reference field handle.
+     *
+     * @return  array{string, ?RelationshipDefinition}  Target handle and relationship when applicable.
+     *
+     * @throws  BusinessRecordNotFound  When the handle is absent or has no usable target.
+     *
+     * @since   2.0.0
+     */
+    private function relatedTarget(EntityTypeDefinition $definition, string $handle): array
+    {
+        $field = $this->optionalField($definition, $handle);
+        if ($field?->type === 'core.entity_reference') {
+            $target = $field->configuration['target'] ?? null;
+            if (!is_string($target)) {
+                throw new BusinessRecordNotFound();
+            }
+
+            return [$target, null];
+        }
+        $relationship = $definition->runtimeRelationship($handle)
+            ?? throw new BusinessRecordNotFound();
+
+        return [$relationship->target, $relationship];
+    }
+
+    /**
+     * Describe at most sixteen target fields the nested selector plan authorizes for text search.
+     *
+     * A conditional-visibility field is deliberately absent even when its static definition says searchable:
+     * until a row-correlated visibility predicate can be compiled, offering it as a selector predicate would
+     * let result membership disclose a value hidden on some rows. Declaration order is retained for stable UI.
+     *
+     * @param   EntityTypeDefinition     $definition  Target definition being browsed.
+     * @param   BusinessRecordAccessPlan $access      Nested related-target authorization plan.
+     *
+     * @return  list<array{handle: string, label: string}>  Bounded policy-safe search controls.
+     *
+     * @since   2.0.0
+     */
+    private function relatedSearchFields(
+        EntityTypeDefinition $definition,
+        BusinessRecordAccessPlan $access,
+    ): array {
+        $fields = [];
+        foreach ($definition->fields() as $field) {
+            if (
+                !$field->searchable
+                || !$field->readVisible
+                || $field->visibilityCondition !== null
+                || !$access->fields->allows(FieldAccessUsage::Search, $field->handle)
+            ) {
+                continue;
+            }
+            $fields[] = ['handle' => $field->handle, 'label' => $field->label];
+            if (count($fields) === 16) {
+                break;
+            }
+        }
+
+        return $fields;
     }
 
     /**

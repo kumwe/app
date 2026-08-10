@@ -32,6 +32,14 @@ final readonly class ReadRecordQuery
     public array $projection;
 
     /**
+     * Relationship handles to hydrate beside the record, de-duplicated and re-indexed.
+     *
+     * @var    list<string>
+     * @since  2.0.0
+     */
+    public array $includes;
+
+    /**
      * Assemble a read request and validate its identifiers and projection handles.
      *
      * @param   ExecutionContext  $context                 Actor and site the read runs as.
@@ -47,6 +55,7 @@ final readonly class ReadRecordQuery
      *          archived.
      * @param   bool              $includeDeleted          True to allow reading a record that has been
      *          soft-deleted.
+     * @param   list<string>      $includes                Relationship handles to hydrate, capped at four.
      *
      * @throws  InvalidArgumentException  When an identifier or projection handle is malformed, or the
      *          projection names more than 64 fields.
@@ -61,6 +70,7 @@ final readonly class ReadRecordQuery
         array $projection = [],
         public bool $includeArchived = false,
         public bool $includeDeleted = false,
+        array $includes = [],
     ) {
         RecordRequestGuard::definition($definitionIdentifier);
         RecordRequestGuard::record($recordId);
@@ -71,6 +81,13 @@ final readonly class ReadRecordQuery
         foreach ($projection as $field) {
             RecordRequestGuard::handle($field, 'projection');
         }
+        if (count($includes) > 4) {
+            throw new InvalidArgumentException('A business-record read projection exceeds 4 includes.');
+        }
+        foreach ($includes as $relationship) {
+            RecordRequestGuard::handle($relationship, 'include');
+        }
         $this->projection = array_values(array_unique($projection));
+        $this->includes = array_values(array_unique($includes));
     }
 }

@@ -5,6 +5,9 @@ const administratorEmail = process.env.KUMWE_BROWSER_ADMIN_EMAIL ?? 'browser-adm
 const administratorPassword = process.env.KUMWE_BROWSER_ADMIN_PASSWORD ?? 'browser administrator password';
 const limitedEmail = process.env.KUMWE_BROWSER_LIMITED_EMAIL ?? 'browser-limited@kumwe.test';
 const limitedPassword = process.env.KUMWE_BROWSER_LIMITED_PASSWORD ?? 'browser limited password';
+const businessDefinitionHandle = 'site.default.session5_order';
+const windhoekOrderId = '019b40d9-8dd0-7ca2-a0db-9eae6a150511';
+const windhoekTargetId = '019b40d9-8dd0-7ca2-a0db-9eae6a150521';
 
 async function expectAccessible(page: Page): Promise<void> {
   const scan = await new AxeBuilder({ page })
@@ -33,6 +36,24 @@ async function signIn(
   await page.getByLabel('Password').fill(password);
   await page.getByRole('button', { name: 'Sign in to Kumwe' }).click();
   await expect(page).toHaveURL(/\/administrator$/);
+}
+
+async function fillSession5OrderForm(page: Page, name: string): Promise<void> {
+  await page.locator('[name="values[name]"]').fill(name);
+  await page.locator('[name="values[status]"]').selectOption('ready');
+  await page.locator('[name="values[enabled]"][type="checkbox"]').check();
+  await page.locator('[name="values[amount]"]').fill('10.000000000000000000000000000000');
+  await page.locator('[name="values[price][amount]"]').fill('25.000000000000000000000000000000');
+  await page.locator('[name="values[price][currency]"]').fill('nad');
+  await page.locator('[name="values[quantity][amount]"]').fill('2.000000000000000000000000000000');
+  await page.locator('[name="values[quantity][unit]"]').fill('unit');
+  await page.locator('[name="values[service_date]"]').fill('2026-08-10');
+  await page.locator('[name="values[local_time]"]').fill('13:14:15.123456');
+  await page.locator('[name="values[recorded_at]"]').fill('2026-08-10T11:14:15.123456Z');
+  await page.locator('[name="values[scheduled_for][instant]"]')
+    .fill('2026-08-10T11:14:15.123456Z');
+  await page.locator('[name="values[scheduled_for][timezone]"]').fill('Africa/Windhoek');
+  await page.locator('[name="values[credential]"]').fill('browser-secret-value');
 }
 
 async function ensureAnnouncementsActive(page: Page): Promise<void> {
@@ -356,6 +377,231 @@ test.describe('authenticated administrator', () => {
     });
   });
 
+  test('generated business workspaces are responsive, accessible and visually bounded', async ({
+    page,
+  }, testInfo) => {
+    await page.goto('/administrator/business');
+    await expect(page.getByRole('heading', { level: 1, name: 'Business records' })).toBeVisible();
+    await expect(page.getByRole('link', { name: /Open session 5 orders/i })).toBeVisible();
+    await expectStylesLoaded(page);
+    await expectAccessible(page);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBe(0);
+    await expect(page).toHaveScreenshot('administrator-generated-business-workspace.png', {
+      fullPage: true,
+    });
+    await page.screenshot({
+      path: testInfo.outputPath('business-workspaces.png'),
+      fullPage: true,
+      animations: 'disabled',
+      caret: 'hide',
+    });
+  });
+
+  test('generated business list, detail and confirmations remain progressively enhanced', async ({
+    page,
+  }, testInfo) => {
+    await page.goto(`/administrator/business/${businessDefinitionHandle}`);
+    await expect(page.locator('.business-record-table tbody tr').first()).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Report', exact: true })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Export', exact: true })).toBeVisible();
+    await expect(page).toHaveScreenshot('administrator-generated-business-list.png', {
+      fullPage: true,
+      mask: [page.locator('.business-record-table tbody')],
+      maskColor: '#d9e2e8',
+    });
+    const pageSearch = page.getByLabel('Filter this page');
+    await pageSearch.fill('does-not-match-any-seeded-record');
+    await expect(page.getByText('No records on this page match your search.')).toBeVisible();
+    await pageSearch.clear();
+    await page.getByRole('checkbox', { name: /Select record/ }).first().check();
+    await page.getByLabel('Bulk operation').selectOption('archive');
+    await page.getByRole('button', { name: 'Review bulk operation' }).click();
+    await expect(page.getByRole('heading', { name: 'Archive selected records' })).toBeVisible();
+    await expect(page.locator('input[name="operation_id"]')).not.toHaveValue('');
+    await expect(page.locator('input[name="confirmed"]')).toHaveValue('1');
+    await page.goBack();
+    await page.goto(
+      `/administrator/business/${businessDefinitionHandle}/${windhoekOrderId}`,
+    );
+    await expect(page.getByRole('heading', { name: 'Record details' })).toBeVisible();
+    await expectAccessible(page);
+    await expect(page).toHaveScreenshot('administrator-generated-business-detail.png', {
+      fullPage: true,
+      mask: [page.locator('time')],
+      maskColor: '#d9e2e8',
+    });
+    await page.screenshot({
+      path: testInfo.outputPath('business-record-detail.png'),
+      fullPage: true,
+      animations: 'disabled',
+      caret: 'hide',
+    });
+
+    await page.getByRole('link', { name: 'Archive record' }).click();
+    await expect(page.getByRole('heading', { name: 'Archive record' })).toBeVisible();
+    const confirm = page.getByRole('button', { name: 'Archive record' });
+    await expect(confirm).toBeDisabled();
+    await page.getByRole('checkbox').check();
+    await expect(confirm).toBeEnabled();
+    await expectAccessible(page);
+    await expect(page).toHaveScreenshot('administrator-generated-business-confirmation.png', {
+      fullPage: true,
+    });
+    await page.screenshot({
+      path: testInfo.outputPath('business-record-confirmation.png'),
+      fullPage: true,
+      animations: 'disabled',
+      caret: 'hide',
+    });
+  });
+
+  test('generated relationship selectors and owned lines persist and reorder', async ({
+    page,
+  }, testInfo) => {
+    await page.goto(`/administrator/business/${businessDefinitionHandle}`);
+    await page.getByRole('link', { name: /Create session 5 order/i }).click();
+    await expect(page).toHaveScreenshot('administrator-generated-business-form.png', {
+      fullPage: true,
+    });
+    await expect(page.locator('[name="values[conditional_note]"]')).toHaveCount(0);
+    await expect(page.locator('[name="values[display_name]"]')).toHaveCount(0);
+    await expect(page.locator('[name="values[credential]"]')).toHaveAttribute('type', 'password');
+    const name = `Relationship order ${testInfo.project.name} ${Date.now()}`;
+    await fillSession5OrderForm(page, name);
+    await page.getByRole('button', { name: 'Create record' }).click();
+    await expect(page.getByText(name, { exact: true })).toBeVisible();
+    await expect(page.getByText('Stored conditional note', { exact: true })).toBeVisible();
+    await expect(page.getByText('browser-secret-value', { exact: true })).toHaveCount(0);
+    const recordUrl = new URL(page.url()).pathname;
+
+    await page.getByRole('link', { name: 'Edit', exact: true }).click();
+    await expect(page.locator('[name="values[conditional_note]"]')).toBeVisible();
+    await expect(page.locator('[name="values[display_name]"]')).toHaveCount(0);
+    await expect(page.locator('[name="values[credential]"]')).toHaveAttribute('type', 'password');
+    await page.goto(recordUrl);
+
+    let tags = page.locator('article.business-relation').filter({
+      has: page.getByRole('heading', { name: 'Tags', exact: true }),
+    });
+    await tags.getByRole('link', { name: 'View and manage' }).click();
+    tags = page.locator('article.business-relation').filter({
+      has: page.getByRole('heading', { name: 'Tags', exact: true }),
+    });
+    await tags.getByRole('link', { name: 'Search available records' }).click();
+    await expect(page.getByRole('heading', { name: 'Choose tags' })).toBeVisible();
+    await expect(page.getByText('Windhoek relationship target', { exact: true })).toBeVisible();
+    await expect(page.getByText('Walvis Bay relationship target', { exact: true })).toBeVisible();
+    await page.getByRole('row', { name: /Windhoek relationship target/ })
+      .getByRole('link', { name: 'Choose' })
+      .click();
+    await tags.locator('select[name="target_record_id"]').selectOption(windhoekTargetId);
+    await tags.getByRole('button', { name: 'Add relationship' }).click();
+    await expect(tags.locator('li').filter({ hasText: 'Windhoek relationship target' })).toBeVisible();
+
+    await page.getByRole('link', { name: 'Back to record' }).click();
+    let lines = page.locator('article.business-relation').filter({
+      has: page.getByRole('heading', { name: 'Lines', exact: true }),
+    });
+    await lines.getByRole('link', { name: 'View and manage' }).click();
+    lines = page.locator('article.business-relation').filter({
+      has: page.getByRole('heading', { name: 'Lines', exact: true }),
+    });
+    let lineForm = lines.locator('form.business-owned-line-form');
+    await lineForm.locator('[name="target_values[description]"]').fill('Browser line one');
+    await lineForm.locator('[name="target_values[units]"]').fill('1.000');
+    await lineForm.getByRole('button', { name: 'Add Neutral line' }).click();
+    lineForm = lines.locator('form.business-owned-line-form');
+    await lineForm.locator('[name="target_values[description]"]').fill('Browser line two');
+    await lineForm.locator('[name="target_values[units]"]').fill('2.000');
+    await lineForm.getByRole('button', { name: 'Add Neutral line' }).click();
+
+    const orderedItems = lines.locator('[data-business-order-list] li');
+    await expect(orderedItems).toHaveCount(2);
+    const originalIds = await orderedItems.evaluateAll((items) =>
+      items.map((item) => item.getAttribute('data-record-id') ?? ''),
+    );
+    const firstLineId = originalIds[0];
+    const secondLineId = originalIds[1];
+    if (!firstLineId || !secondLineId) {
+      throw new Error('The generated owned-line order is incomplete.');
+    }
+    await orderedItems.nth(1).getByRole('button', { name: /^Move .* up$/ }).click();
+    const orderControls = lines.locator('select[name="ordered_record_ids[]"]');
+    await expect(orderControls).toHaveCount(2);
+    await expect.poll(() => orderControls.evaluateAll((controls) =>
+      controls.map((control) => (control as HTMLSelectElement).value),
+    )).toEqual([secondLineId, firstLineId]);
+    await lines.getByRole('button', { name: 'Save order' }).click();
+    await expect(lines.locator('[data-business-order-list] li').first())
+      .toHaveAttribute('data-record-id', secondLineId);
+    await expectAccessible(page);
+  });
+
+  test('generated business forms complete an ordinary no-JavaScript lifecycle', async ({
+    browser,
+  }, testInfo) => {
+    const context = await browser.newContext({ javaScriptEnabled: false });
+    const page = await context.newPage();
+    try {
+      await signIn(page);
+      await page.goto(`/administrator/business/${businessDefinitionHandle}`);
+      await expect(page.locator('html')).not.toHaveClass(/\bjs\b/);
+      await page.getByRole('link', { name: /Create session 5 order/i }).click();
+      const form = page.locator('form.business-record-form');
+      await expect(form).toHaveAttribute('method', 'post');
+      await expect(form.locator('input[name="_csrf"]')).not.toHaveValue('');
+      await expect(form.locator('input[name="operation_id"]')).not.toHaveValue('');
+      await expect(form.getByRole('button', { name: 'Create record' })).toBeVisible();
+      const name = `No JS administrator order ${testInfo.project.name} ${Date.now()}`;
+      await fillSession5OrderForm(page, name);
+      await form.getByRole('button', { name: 'Create record' }).click();
+      await expect(page).toHaveURL(new RegExp(
+        `/administrator/business/${businessDefinitionHandle}/[^?]+\\?saved=1&completed_operation=`,
+      ));
+      await expect(page.getByText(name, { exact: true })).toBeVisible();
+      await expect(page.getByText('browser-secret-value', { exact: true })).toHaveCount(0);
+      await page.getByRole('link', { name: 'View operation status' }).click();
+      await expect(page.getByRole('heading', { level: 1, name: 'Operation status' })).toBeVisible();
+      await expect(page.getByRole('heading', { name: 'Operation completed' })).toBeVisible();
+      await page.getByRole('link', { name: 'Return to record' }).click();
+      await page.getByRole('link', { name: 'Edit', exact: true }).click();
+      const updatedName = `${name} updated`;
+      await page.locator('[name="values[name]"]').fill(updatedName);
+      await page.locator('[name="values[credential]"]').fill('browser-secret-updated');
+      await page.getByRole('button', { name: 'Save changes' }).click();
+      await expect(page.getByText(updatedName, { exact: true })).toBeVisible();
+      await page.getByRole('link', { name: 'History', exact: true }).click();
+      await expect(page.getByRole('heading', { level: 1, name: 'Record history' })).toBeVisible();
+      await expect(page.getByText('update', { exact: true }).first()).toBeVisible();
+      await page.goto(`/administrator/business/${businessDefinitionHandle}`);
+      await page.getByLabel('Search records').fill(updatedName);
+      await page.getByRole('button', { name: 'Apply', exact: true }).click();
+      await expect(page.getByText(updatedName, { exact: true })).toBeVisible();
+      await page.getByRole('checkbox', { name: /Select record/ }).check();
+      await page.getByLabel('Bulk operation').selectOption('archive');
+      await page.getByRole('button', { name: 'Review bulk operation' }).click();
+      await page.getByRole('checkbox').check();
+      await page.getByRole('button', { name: 'Archive selected records' }).click();
+      await expect(page).toHaveURL(new RegExp(
+        `/administrator/business/${businessDefinitionHandle}\\?saved=1&bulk_count=1$`,
+      ));
+      await expect(page.getByText('The bulk operation completed for 1 record.')).toBeVisible();
+      await page.getByLabel('Search records').fill(updatedName);
+      await page.getByLabel('Include archived').check();
+      await page.getByRole('button', { name: 'Apply', exact: true }).click();
+      await expect(page.getByText(updatedName, { exact: true })).toBeVisible();
+      await page.getByRole('checkbox', { name: /Select record/ }).check();
+      await page.getByLabel('Bulk operation').selectOption('restore');
+      await page.getByRole('button', { name: 'Review bulk operation' }).click();
+      await page.getByRole('checkbox').check();
+      await page.getByRole('button', { name: 'Restore selected records' }).click();
+      await expect(page.getByText('The bulk operation completed for 1 record.')).toBeVisible();
+      await expectAccessible(page);
+    } finally {
+      await context.close();
+    }
+  });
+
   test('typed component navigation opens an accessible graphical page', async ({
     page,
     isMobile,
@@ -398,6 +644,12 @@ test.describe('authenticated administrator', () => {
     await expect(page.getByRole('link', { name: 'Schema plans', exact: true })).toHaveCount(0);
     const schemaResponse = await page.goto('/administrator/business-schema-plans');
     expect(schemaResponse?.status()).toBe(403);
+    const generatedBusinessResponse = await page.goto(
+      `/administrator/business/${businessDefinitionHandle}`,
+    );
+    expect(generatedBusinessResponse?.status()).toBe(403);
+    await expect(page.getByText('Windhoek order', { exact: true })).toHaveCount(0);
+    await expect(page.getByText('Walvis Bay order', { exact: true })).toHaveCount(0);
     const response = await page.goto('/administrator/extensions/kumwe/announcements-example');
     expect(response?.status()).toBe(403);
   });

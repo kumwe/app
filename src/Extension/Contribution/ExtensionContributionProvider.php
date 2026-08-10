@@ -7,11 +7,11 @@ namespace Kumwe\CMS\Extension\Contribution;
 use Kumwe\CMS\Extension\Runtime\ExtensionContainer;
 
 /**
- * Contract a schema-2 extension implements to hand its declared shell contributions to the CMS.
+ * Contract a strict schema-2-or-newer extension implements to hand declared contributions to the CMS.
  *
  * A manifest only declares what an extension contributes; the live objects — capability, workspace,
  * navigation, view, route, field type, entity type — are produced here. The two have to agree, so
- * `ActiveExtensionSet` insists the pairing is exact: a schema-2 provider that does not implement this
+ * `ActiveExtensionSet` insists the pairing is exact: a strict provider that does not implement this
  * interface fails bootstrap, and so does a provider that implements it from a schema-1 package, where
  * there would be no declaration to check the registrations against.
  *

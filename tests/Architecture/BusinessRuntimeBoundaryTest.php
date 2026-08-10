@@ -35,13 +35,17 @@ final class BusinessRuntimeBoundaryTest extends TestCase
             . $this->source('src/BusinessSchema/Delivery')
             . $this->source('src/BusinessRecord/Application')
             . $this->source('src/BusinessRecord/Domain')
-            . $this->source('src/BusinessRecord/Query');
+            . $this->source('src/BusinessRecord/Query')
+            . $this->source('src/BusinessSurface/Application')
+            . $this->source('src/BusinessSurface/Delivery')
+            . $this->source('src/BusinessSurface/Presentation');
 
         self::assertStringNotContainsString('Doctrine\\DBAL\\Connection', $outsideInfrastructure);
         self::assertStringNotContainsString('Doctrine\\ORM\\EntityManager', $outsideInfrastructure);
-        self::assertDirectoryDoesNotExist(
-            dirname(__DIR__, 2) . '/src/BusinessRecord/Delivery',
-            'Session 3 must not expose record adapters before the policy runtime exists.',
+        self::assertStringNotContainsString(
+            'Kumwe\\CMS\\BusinessRecord\\Infrastructure',
+            $this->source('src/BusinessSurface/Delivery'),
+            'Generated delivery adapters must use application contracts instead of record infrastructure.',
         );
     }
 

@@ -55,7 +55,8 @@ final readonly class InstalledBusinessRecordDefinitionResolver implements Busine
      * rather than a failure, because the catalog legitimately holds more than this site can use. Once an
      * installation has passed those filters, a version that is missing, rejected, or whose checksum does
      * not match is fatal — it means the tables and the published shape have diverged. The result is
-     * ordered by definition handle so repeated scans agree with each other.
+     * ordered by definition handle so repeated scans agree with each other. Installations and exact versions
+     * are batch-loaded after the bounded catalog read, keeping generated discovery from becoming an N+1 query.
      *
      * @param   ExecutionContext  $context  Actor and site whose definition catalog is scanned.
      *
@@ -69,12 +70,24 @@ final readonly class InstalledBusinessRecordDefinitionResolver implements Busine
      */
     public function activeInstalled(ExecutionContext $context): array
     {
-        $resolved = [];
+        $entries = [];
         foreach ($this->definitions->catalog($context->site()) as $entry) {
-            if (!$entry->ownerActive) {
-                continue;
+            if ($entry->ownerActive) {
+                $entries[] = $entry;
             }
-            $installation = $this->installations->find($entry->id);
+        }
+        if (count($entries) > 4096) {
+            throw new BusinessRecordSchemaUnavailable('The active definition catalog exceeds its safe bound.');
+        }
+        $definitionIds = [];
+        foreach ($entries as $entry) {
+            $definitionIds[] = $entry->id;
+        }
+        $installations = $this->installations->findBatch($definitionIds);
+        $eligible = [];
+        $requestedVersions = [];
+        foreach ($entries as $entry) {
+            $installation = $installations[$entry->id] ?? null;
             if (
                 $installation === null
                 || $installation->status !== SchemaInstallationStatus::Active
@@ -83,11 +96,13 @@ final readonly class InstalledBusinessRecordDefinitionResolver implements Busine
             ) {
                 continue;
             }
-            $version = $this->definitions->published(
-                $context->site(),
-                $entry->id,
-                $installation->definitionVersion,
-            );
+            $eligible[] = [$entry, $installation];
+            $requestedVersions[$entry->id] = $installation->definitionVersion;
+        }
+        $versions = $this->definitions->publishedBatch($context->site(), $requestedVersions);
+        $resolved = [];
+        foreach ($eligible as [$entry, $installation]) {
+            $version = $versions[$entry->id] ?? null;
             if (
                 $version === null || $version->status === DefinitionStatus::Rejected
                 || !hash_equals($version->definition->checksum(), $installation->definitionChecksum)

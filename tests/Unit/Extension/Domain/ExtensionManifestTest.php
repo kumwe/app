@@ -163,6 +163,38 @@ JSON);
 JSON);
     }
 
+    /**
+     * Proves new presentation and handler declarations require schema 3 without changing schema-2 keys.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testSchemaTwoRejectsSchemaThreeBusinessKeys(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('business contributions contains unknown key action_handlers');
+
+        ExtensionManifest::fromJson($this->schemaThreeBusinessManifest(2));
+    }
+
+    /**
+     * Proves schema 3 retains strict parsing while admitting presentation and handler-contract keys.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testSchemaThreeAdmitsNewBusinessContributionKeys(): void
+    {
+        $manifest = ExtensionManifest::fromJson($this->schemaThreeBusinessManifest(3));
+
+        self::assertSame(3, $manifest->schemaVersion());
+        self::assertSame([], $manifest->contributions()->fieldPresentations());
+        self::assertSame([], $manifest->contributions()->customBusinessViews());
+        self::assertSame([], $manifest->contributions()->customBusinessActions());
+    }
+
     private function manifestJson(): string
     {
         return <<<'JSON'
@@ -177,5 +209,37 @@ JSON);
   "dependencies": [{"name": "acme/library", "constraint": "^1.0.0", "optional": false}]
 }
 JSON;
+    }
+
+    /**
+     * Build a strict manifest that names the schema-3-only presentation and custom contract collections.
+     *
+     * @param   int  $schema  Manifest schema to exercise.
+     *
+     * @return  string  JSON manifest using empty but explicitly present schema-3 collections.
+     *
+     * @since   2.0.0
+     */
+    private function schemaThreeBusinessManifest(int $schema): string
+    {
+        return json_encode([
+            'schema' => $schema,
+            'name' => 'acme/editor',
+            'type' => 'component',
+            'version' => '2.0.0',
+            'provider' => 'Acme\\Editor\\Provider',
+            'autoload' => ['psr-4' => ['Acme\\Editor\\' => 'src/']],
+            'requires' => ['kumwe' => '^2.0.0', 'php' => '^8.5.0'],
+            'contributions' => [
+                'version' => 1,
+                'business' => [
+                    'field_types' => [],
+                    'definitions' => [],
+                    'field_presentations' => [],
+                    'view_handlers' => [],
+                    'action_handlers' => [],
+                ],
+            ],
+        ], JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES);
     }
 }

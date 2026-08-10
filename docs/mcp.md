@@ -64,6 +64,41 @@ Two schema operations are deliberately absent. Composing a destructive purge pla
 
 High-risk operations that would transmit a password, install an arbitrary package, delete state, or grant permissions are intentionally not MCP tools. Use the administrator, protected CLI, or REST endpoint with the operation's explicit safeguards.
 
+## Generated business tools
+
+Generated records use a bounded static vocabulary; Kumwe never registers a tool for every entity. The current
+actor's catalog determines which definitions, fields, views, actions, and relations appear.
+
+| Tool | Behavior |
+|---|---|
+| `kumwe_business_discover` | List policy-visible generated entities and capabilities |
+| `kumwe_business_inspect` | Inspect one policy-visible schema, view, action, and relation set |
+| `kumwe_business_search` | Execute the shared bounded filter/search/sort/projection document |
+| `kumwe_business_read` | Read one record by public identity and optional lifecycle flags |
+| `kumwe_business_history` | Read up to 200 policy-filtered revisions before an optional version cursor |
+| `kumwe_business_plan_mutation` | Seal a proposed mutation to current actor, scope, policy, definition/runtime generation, input digest, and record version |
+| `kumwe_business_create`, `kumwe_business_update` | Create or version-update through the transactional record service |
+| `kumwe_business_archive`, `kumwe_business_restore`, `kumwe_business_delete` | Apply lifecycle mutation at an expected version |
+| `kumwe_business_relate`, `kumwe_business_unrelate`, `kumwe_business_reorder` | Change a declared relation or ordered line at an expected source version |
+| `kumwe_business_request_action` | Request maker-checker approval for an exact action binding |
+| `kumwe_business_execute_action` | Execute the action, consuming the exact approved binding when required |
+| `kumwe_business_operation_status` | Read a completed operation only under its original actor/scope/policy bindings |
+
+Schemas are closed and bounded, and tool annotations distinguish read-only, destructive, and idempotent behavior.
+Every write requires a 16–128 character `operationId` and the opaque five-minute token returned by
+`kumwe_business_plan_mutation` for the exact same arguments. Plan execution re-resolves every binding and fails
+closed if the policy generation, trusted runtime, definition checksum/version, actor/scope, authorization context,
+approval-request identity, record version, action, relation, or canonical payload changed. Results use the same
+omission-safe projector as REST/CLI/UI and never include record keys, actor IDs, policy evidence, or denied handles.
+
+Approval voting is intentionally absent. A bearer MCP context has no fresh single-use step-up proof, and Kumwe does
+not accept a password or authenticator code through a model tool. Request approval through MCP, decide it through
+the administrator or portal step-up flow for inspection, but do not treat that as an MCP execution grant: the
+predecessor binding fingerprints the requesting surface and the proof store accepts only browser sessions. An MCP
+attempt to consume a high-impact approval therefore fails closed. Complete high-impact execution in the browser;
+ordinary planned actions remain fully executable through MCP. See [Generated business
+surfaces](architecture/generated-business-surfaces.md).
+
 ## Safe mutations
 
 Every MCP mutation requires an `operationId` containing 16–128 safe characters. Generate one stable ID per intended change and keep it for retries. Kumwe stores its request digest and completed result for 24 hours:

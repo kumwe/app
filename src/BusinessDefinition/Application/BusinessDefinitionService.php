@@ -49,23 +49,25 @@ final readonly class BusinessDefinitionService
     /**
      * Wire the service to the collaborators every definition operation composes.
      *
-     * @param  BusinessDefinitionRepository             $repository      Store holding catalog heads, drafts
+     * @param  BusinessDefinitionRepository             $repository         Store holding catalog heads, drafts
      *         and published versions for every site.
-     * @param  BusinessDefinitionValidator              $validator       Checks a definition set as one closed
+     * @param  BusinessDefinitionValidator              $validator          Checks a definition set as one closed
      *         graph before it is saved or published.
-     * @param  BusinessDefinitionCompatibilityAnalyzer  $compatibility   Prices what publishing a draft would
+     * @param  BusinessDefinitionCompatibilityAnalyzer  $compatibility      Prices what publishing a draft would
      *         do to the version already in service.
-     * @param  AuthorizationGateway                     $authorization   Decides every capability question
+     * @param  BusinessDefinitionContractAdmission      $contractAdmission  Rejects derived public-contract
+     *         collisions before publication commits.
+     * @param  AuthorizationGateway                     $authorization      Decides every capability question
      *         this service asks.
-     * @param  ResourceSiteOwnershipWriter              $ownership       Records the owning site the first
+     * @param  ResourceSiteOwnershipWriter              $ownership          Records the owning site the first
      *         time a definition is saved.
-     * @param  AuditRecorder                            $audit           Sink for the success and rejection
+     * @param  AuditRecorder                            $audit              Sink for the success and rejection
      *         entries every operation writes.
-     * @param  TransactionManager                       $transactions    Scope a mutation shares with its
+     * @param  TransactionManager                       $transactions       Scope a mutation shares with its
      *         audit entry and its ownership row.
-     * @param  ClockInterface                           $clock           Supplies the instant stamped on
+     * @param  ClockInterface                           $clock              Supplies the instant stamped on
      *         writes and on the audit entries describing them.
-     * @param  ?PublishedDefinitionSchemaObserver       $schemaObserver  Told about a published graph so
+     * @param  ?PublishedDefinitionSchemaObserver       $schemaObserver     Told about a published graph so
      *         schema plans exist for it; null where the installation runs no schema services.
      *
      * @since  2.0.0
@@ -74,6 +76,7 @@ final readonly class BusinessDefinitionService
         private BusinessDefinitionRepository $repository,
         private BusinessDefinitionValidator $validator,
         private BusinessDefinitionCompatibilityAnalyzer $compatibility,
+        private BusinessDefinitionContractAdmission $contractAdmission,
         private AuthorizationGateway $authorization,
         private ResourceSiteOwnershipWriter $ownership,
         private AuditRecorder $audit,
@@ -584,6 +587,11 @@ final readonly class BusinessDefinitionService
                 $now,
                 $expectedDraftRevision,
             ): DefinitionVersionRecord {
+                $this->repository->lockContractNamespace($context->site());
+                $this->contractAdmission->admit(
+                    $context->site(),
+                    $this->postPublicationContract($context->site(), $published),
+                );
                 $record = $this->repository->publish(
                     $published,
                     $plan,
@@ -617,6 +625,53 @@ final readonly class BusinessDefinitionService
             $this->auditFailure($context, 'business_definition.publish.reject', $draft->definition->id, $failure);
             throw $failure;
         }
+    }
+
+    /**
+     * Assemble the complete active post-publication definition set for contract-name admission.
+     *
+     * The candidate replaces its own current head. Core, site, and active-extension heads remain in the
+     * set unless rejected; inactive extension definitions cannot appear in the runtime contract and are
+     * admitted again against this site when their package is activated. Exact versions are batch-loaded so
+     * publication adds a constant number of catalog reads instead of one query per definition.
+     *
+     * @param   SiteContext           $site       Site whose current catalog is being evaluated.
+     * @param   EntityTypeDefinition  $candidate  Definition about to become the published head.
+     *
+     * @return  list<EntityTypeDefinition>  Canonically ordered post-publication definitions.
+     *
+     * @throws  \RuntimeException  When a supposedly published catalog head has no matching immutable version.
+     *
+     * @since   2.0.0
+     */
+    private function postPublicationContract(
+        SiteContext $site,
+        EntityTypeDefinition $candidate,
+    ): array {
+        $requested = [];
+        foreach ($this->repository->catalog($site) as $entry) {
+            if (
+                $entry->id === $candidate->id
+                || !$entry->ownerActive
+                || $entry->publishedVersion === null
+                || $entry->status === DefinitionStatus::Rejected
+            ) {
+                continue;
+            }
+            $requested[$entry->id] = $entry->publishedVersion;
+        }
+        $versions = $this->repository->publishedBatch($site, $requested);
+        $definitions = [$candidate->handle => $candidate];
+        foreach ($requested as $identifier => $version) {
+            $record = $versions[$identifier] ?? null;
+            if ($record === null || $record->definition->definitionVersion !== $version) {
+                throw new \RuntimeException('A published definition contract version is unavailable.');
+            }
+            $definitions[$record->definition->handle] = $record->definition;
+        }
+        ksort($definitions, SORT_STRING);
+
+        return array_values($definitions);
     }
 
     /**

@@ -9,6 +9,7 @@ import './components/job-fields';
 import './components/rich-text';
 import './components/presentation-schemes';
 import './components/business-definition-editor';
+import './components/business-surface';
 
 document.documentElement.classList.add('js');
 

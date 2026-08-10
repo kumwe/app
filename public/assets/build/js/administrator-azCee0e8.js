@@ -1299,6 +1299,148 @@ var KumweDefinitionEditor = class extends i {
 };
 customElements.define("kumwe-definition-editor", KumweDefinitionEditor);
 //#endregion
+//#region assets/administrator/components/business-surface.ts
+var KumweBusinessSurface = class KumweBusinessSurface extends i {
+	static styles = i$3`:host { display: contents; }`;
+	createRenderRoot() {
+		return this;
+	}
+	connectedCallback() {
+		super.connectedCallback();
+		this.querySelector("[data-business-page-search]")?.addEventListener("input", this.filterPage);
+		this.querySelectorAll("form").forEach((form) => {
+			form.addEventListener("submit", this.markBusy);
+		});
+		this.querySelector(".business-error-summary")?.focus();
+	}
+	disconnectedCallback() {
+		this.querySelector("[data-business-page-search]")?.removeEventListener("input", this.filterPage);
+		this.querySelectorAll("form").forEach((form) => {
+			form.removeEventListener("submit", this.markBusy);
+		});
+		super.disconnectedCallback();
+	}
+	filterPage = (event) => {
+		const input = event.currentTarget;
+		if (!(input instanceof HTMLInputElement)) return;
+		const term = input.value.trim().toLocaleLowerCase();
+		let visible = 0;
+		this.querySelectorAll("[data-business-record-row]").forEach((row) => {
+			const matches = term === "" || (row.textContent ?? "").toLocaleLowerCase().includes(term);
+			row.hidden = !matches;
+			if (matches) visible += 1;
+		});
+		const empty = this.querySelector("[data-business-search-empty]");
+		if (empty) empty.hidden = visible > 0;
+	};
+	markBusy = (event) => {
+		const form = event.currentTarget;
+		if (!(form instanceof HTMLFormElement)) return;
+		form.setAttribute("aria-busy", "true");
+		const submitter = event.submitter;
+		if (submitter instanceof HTMLButtonElement) submitter.setAttribute("aria-disabled", "true");
+	};
+	render() {
+		return b`<slot></slot>`;
+	}
+};
+KumweBusinessSurface = __decorate([t("kumwe-business-surface")], KumweBusinessSurface);
+var KumweBusinessTable = class KumweBusinessTable extends i {
+	static styles = i$3`:host { display: contents; }`;
+	createRenderRoot() {
+		return this;
+	}
+	render() {
+		return b`<slot></slot>`;
+	}
+};
+KumweBusinessTable = __decorate([t("kumwe-business-table")], KumweBusinessTable);
+var KumweBusinessOrderedLines = class KumweBusinessOrderedLines extends i {
+	static styles = i$3`:host { display: contents; }`;
+	createRenderRoot() {
+		return this;
+	}
+	connectedCallback() {
+		super.connectedCallback();
+		this.dataset.enhanced = "";
+		this.addEventListener("click", this.move);
+		this.addEventListener("change", this.selectionChanged);
+		this.updateButtons();
+	}
+	disconnectedCallback() {
+		this.removeEventListener("click", this.move);
+		this.removeEventListener("change", this.selectionChanged);
+		super.disconnectedCallback();
+	}
+	selectionChanged = (event) => {
+		if (event.target instanceof HTMLSelectElement && event.target.matches("[data-business-order-select]")) this.sync();
+	};
+	move = (event) => {
+		const target = event.target;
+		if (!(target instanceof HTMLElement)) return;
+		const button = target.closest("[data-move]");
+		const item = button?.closest("[data-record-id]");
+		if (!button || !item) return;
+		if (button.dataset.move === "up" && item.previousElementSibling) item.previousElementSibling.before(item);
+		else if (button.dataset.move === "down" && item.nextElementSibling) item.nextElementSibling.after(item);
+		else return;
+		this.sync();
+		button.focus();
+	};
+	sync() {
+		const selections = Array.from(this.querySelectorAll("[data-business-order-select]"));
+		this.updateButtons();
+		const announcement = this.querySelector("[data-business-order-status]");
+		if (announcement) announcement.textContent = `Order updated: ${selections.map((selection) => selection.selectedOptions[0]?.textContent?.trim() ?? "").filter((label) => label !== "").join(", ")}.`;
+	}
+	updateButtons() {
+		const items = Array.from(this.querySelectorAll("[data-record-id]"));
+		items.forEach((item, index) => {
+			const position = item.querySelector("[data-business-order-position]");
+			const up = item.querySelector("[data-move=\"up\"]");
+			const down = item.querySelector("[data-move=\"down\"]");
+			if (position) position.textContent = `Position ${index + 1}`;
+			if (up) up.disabled = index === 0;
+			if (down) down.disabled = index === items.length - 1;
+		});
+		if (!this.querySelector("[data-business-order-status]")) {
+			const status = document.createElement("p");
+			status.className = "sr-only";
+			status.dataset.businessOrderStatus = "";
+			status.setAttribute("aria-live", "polite");
+			this.append(status);
+		}
+	}
+	render() {
+		return b`<slot></slot>`;
+	}
+};
+KumweBusinessOrderedLines = __decorate([t("kumwe-business-ordered-lines")], KumweBusinessOrderedLines);
+var KumweBusinessConfirmation = class KumweBusinessConfirmation extends i {
+	static styles = i$3`:host { display: contents; }`;
+	createRenderRoot() {
+		return this;
+	}
+	connectedCallback() {
+		super.connectedCallback();
+		this.querySelector("[data-business-confirm-check]")?.addEventListener("change", this.updateConfirmation);
+		this.updateConfirmation();
+	}
+	disconnectedCallback() {
+		this.querySelector("[data-business-confirm-check]")?.removeEventListener("change", this.updateConfirmation);
+		super.disconnectedCallback();
+	}
+	updateConfirmation = () => {
+		const checkbox = this.querySelector("[data-business-confirm-check]");
+		const submit = this.querySelector("[data-business-confirm-form] button[type=\"submit\"]");
+		if (submit) submit.disabled = !checkbox?.checked;
+	};
+	render() {
+		return b`<slot></slot>`;
+	}
+};
+KumweBusinessConfirmation = __decorate([t("kumwe-business-confirmation")], KumweBusinessConfirmation);
+//#endregion
 //#region assets/administrator/main.ts
 document.documentElement.classList.add("js");
 var focusableSelector = "a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex=\"-1\"])";

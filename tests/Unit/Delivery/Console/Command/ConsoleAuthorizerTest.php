@@ -56,6 +56,41 @@ final class ConsoleAuthorizerTest extends TestCase
         }
     }
 
+    /**
+     * Proves approval inspection accepts any one independent visibility grant without widening authority.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testRequireAnyAcceptsAnIndependentApprovalVisibilityGrant(): void
+    {
+        $token = str_repeat('b', 40);
+        $file = $this->tokenFile($token);
+        $tokens = $this->createMock(AccessTokenVerifier::class);
+        $tokens->expects(self::once())->method('verify')->with(
+            $token,
+            'kumwe-cli',
+            'management',
+            'default',
+        )->willReturn(AuthorizationContext::principal(['business.approval.approve']));
+
+        try {
+            $context = (new ConsoleAuthorizer($tokens))->requireAny([
+                'site' => 'default',
+                'token-file' => $file,
+            ], [
+                'business.approval.request',
+                'business.approval.approve',
+                'business.approval.manage',
+            ]);
+        } finally {
+            unlink($file);
+        }
+
+        self::assertSame(AuthorizationContext::SUBJECT, $context->actorId());
+    }
+
     private function tokenFile(string $token): string
     {
         $file = tempnam(sys_get_temp_dir(), 'kumwe-console-token-');

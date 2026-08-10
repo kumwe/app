@@ -210,6 +210,176 @@ final class RecordRuleValidatorTest extends TestCase
         }
     }
 
+    /**
+     * Proves create and update input satisfies the field's current visibility and editability conditions.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testCreateAndUpdateInputsMustSatisfyVisibilityAndEditabilityConditions(): void
+    {
+        $definition = self::conditionalDefinition();
+        $rules = self::rules();
+
+        $hiddenInput = NeutralBusinessFixture::recordValues();
+        $hiddenInput['conditional_note'] = 'Caller value';
+        self::assertValidationCode(
+            static fn (): array => $rules->create(
+                $definition,
+                $hiddenInput,
+                'default',
+                NeutralBusinessFixture::RECORD_ID,
+                NeutralBusinessFixture::RECORD_ID,
+            ),
+            'not_visible',
+        );
+
+        $readOnlyInput = NeutralBusinessFixture::recordValues();
+        $readOnlyInput['enabled'] = true;
+        $readOnlyInput['conditional_note'] = 'Caller value';
+        self::assertValidationCode(
+            static fn (): array => $rules->create(
+                $definition,
+                $readOnlyInput,
+                'default',
+                NeutralBusinessFixture::RECORD_ID,
+                NeutralBusinessFixture::RECORD_ID,
+            ),
+            'not_editable',
+        );
+
+        $allowedInput = NeutralBusinessFixture::recordValues();
+        $allowedInput['enabled'] = true;
+        $allowedInput['status'] = 'ready';
+        $allowedInput['conditional_note'] = 'Allowed on create';
+        $allowed = $rules->create(
+            $definition,
+            $allowedInput,
+            'default',
+            NeutralBusinessFixture::RECORD_ID,
+            NeutralBusinessFixture::RECORD_ID,
+        );
+        self::assertSame('Allowed on create', $allowed['conditional_note']);
+
+        $current = $rules->create(
+            $definition,
+            NeutralBusinessFixture::recordValues(),
+            'default',
+            NeutralBusinessFixture::RECORD_ID,
+            NeutralBusinessFixture::RECORD_ID,
+        );
+        self::assertValidationCode(
+            static fn (): array => $rules->update(
+                $definition,
+                $current,
+                ['conditional_note' => 'Hidden update'],
+                'default',
+                NeutralBusinessFixture::RECORD_ID,
+                NeutralBusinessFixture::RECORD_ID,
+            ),
+            'not_visible',
+        );
+        $visible = $rules->update(
+            $definition,
+            $current,
+            ['enabled' => true],
+            'default',
+            NeutralBusinessFixture::RECORD_ID,
+            NeutralBusinessFixture::RECORD_ID,
+        );
+        self::assertValidationCode(
+            static fn (): array => $rules->update(
+                $definition,
+                $visible,
+                ['conditional_note' => 'Read-only update'],
+                'default',
+                NeutralBusinessFixture::RECORD_ID,
+                NeutralBusinessFixture::RECORD_ID,
+            ),
+            'not_editable',
+        );
+        $editable = $rules->update(
+            $definition,
+            $visible,
+            ['status' => 'ready'],
+            'default',
+            NeutralBusinessFixture::RECORD_ID,
+            NeutralBusinessFixture::RECORD_ID,
+        );
+        $updated = $rules->update(
+            $definition,
+            $editable,
+            ['conditional_note' => 'Allowed on update'],
+            'default',
+            NeutralBusinessFixture::RECORD_ID,
+            NeutralBusinessFixture::RECORD_ID,
+        );
+        self::assertSame('Allowed on update', $updated['conditional_note']);
+    }
+
+    /**
+     * Build one definition with independent visibility and editability dependencies.
+     *
+     * @return  EntityTypeDefinition  Definition used by conditional input validation tests.
+     *
+     * @since   2.0.0
+     */
+    private static function conditionalDefinition(): EntityTypeDefinition
+    {
+        $document = NeutralBusinessFixture::backupDocument();
+        $document['fields'][] = [
+            'handle' => 'conditional_note',
+            'label' => 'Conditional note',
+            'type' => 'core.text',
+            'default' => 'Default note',
+            'visibility_condition' => [
+                'op' => 'eq',
+                'type' => 'boolean',
+                'args' => [
+                    ['op' => 'field', 'type' => 'boolean', 'field' => 'enabled'],
+                    ['op' => 'literal', 'type' => 'boolean', 'value' => true],
+                ],
+            ],
+            'editability_condition' => [
+                'op' => 'eq',
+                'type' => 'boolean',
+                'args' => [
+                    ['op' => 'field', 'type' => 'string', 'field' => 'status'],
+                    ['op' => 'literal', 'type' => 'string', 'value' => 'ready'],
+                ],
+            ],
+        ];
+
+        return EntityTypeDefinition::fromArray($document);
+    }
+
+    /**
+     * Require one rejected operation to carry an exact application validation code.
+     *
+     * @param   callable(): array<string, mixed>  $operation     Operation expected to fail validation.
+     * @param   string                            $expectedCode  Stable violation code to find.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    private static function assertValidationCode(callable $operation, string $expectedCode): void
+    {
+        try {
+            $operation();
+            self::fail('A condition-rejected input was accepted.');
+        } catch (BusinessRecordValidationFailed $exception) {
+            self::assertContains(
+                $expectedCode,
+                array_map(
+                    static fn (ValidationViolation $violation): string => $violation->code,
+                    $exception->violations,
+                ),
+            );
+        }
+    }
+
     private static function rules(): RecordRuleValidator
     {
         $cipher = new SodiumSecretCipher(

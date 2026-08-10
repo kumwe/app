@@ -25,12 +25,14 @@ use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordIdempotencyConf
 use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordNotFound;
 use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordSchemaUnavailable;
 use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordUniqueConflict;
+use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordValidationFailed;
 use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordVersionConflict;
 use Kumwe\CMS\BusinessRecord\Application\Exception\InvalidBusinessRecordQuery;
 use Kumwe\CMS\BusinessRecord\Application\Query\BrowseRecordsQuery;
 use Kumwe\CMS\BusinessRecord\Application\Query\ReadRecordQuery;
 use Kumwe\CMS\BusinessRecord\Application\Query\RecordHistoryQuery;
 use Kumwe\CMS\BusinessRecord\Application\BusinessRecordRevisionView;
+use Kumwe\CMS\BusinessRecord\Application\ValidationViolation;
 use Kumwe\CMS\BusinessRecord\Domain\ExactDecimal;
 use Kumwe\CMS\BusinessRecord\Domain\MoneyValue;
 use Kumwe\CMS\BusinessRecord\Domain\QuantityValue;
@@ -58,6 +60,142 @@ use Ramsey\Uuid\Uuid;
 #[CoversNothing]
 final class BusinessRecordRuntimeIntegrationTest extends TestCase
 {
+    /**
+     * Proves conditional visibility and editability are enforced on create, update, and read.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testConditionalVisibilityAndEditabilityAreEnforcedAcrossTheRuntimeBoundary(): void
+    {
+        $container = TestKernelFactory::create(Environment::fromGlobals());
+        $context = TestKernelFactory::administratorContext($container);
+        $records = $container->get(BusinessRecordService::class);
+        self::assertInstanceOf(BusinessRecordService::class, $records);
+        $suffix = strtolower(substr(str_replace('-', '', Uuid::uuid7()->toString()), -12));
+        $document = NeutralBusinessFixture::document($suffix, Uuid::uuid7()->toString());
+        $document['fields'][] = [
+            'handle' => 'conditional_note',
+            'label' => 'Conditional note',
+            'type' => 'core.text',
+            'default' => 'Stored default',
+            'visibility_condition' => [
+                'op' => 'eq',
+                'type' => 'boolean',
+                'args' => [
+                    ['op' => 'field', 'type' => 'boolean', 'field' => 'enabled'],
+                    ['op' => 'literal', 'type' => 'boolean', 'value' => true],
+                ],
+            ],
+            'editability_condition' => [
+                'op' => 'eq',
+                'type' => 'boolean',
+                'args' => [
+                    ['op' => 'field', 'type' => 'string', 'field' => 'status'],
+                    ['op' => 'literal', 'type' => 'string', 'value' => 'ready'],
+                ],
+            ],
+        ];
+        $definition = NeutralBusinessFixture::install($container, $context, $document);
+
+        $hiddenInput = NeutralBusinessFixture::recordValues();
+        $hiddenInput['conditional_note'] = 'Hidden create';
+        self::assertValidationCode(static fn () => $records->create(new CreateRecordCommand(
+            $context,
+            $definition->handle,
+            $hiddenInput,
+            NeutralBusinessFixture::idempotencyKey('conditional-hidden-create-' . $suffix),
+            recordId: Uuid::uuid7()->toString(),
+        )), 'not_visible');
+
+        $readOnlyInput = NeutralBusinessFixture::recordValues();
+        $readOnlyInput['enabled'] = true;
+        $readOnlyInput['conditional_note'] = 'Read-only create';
+        self::assertValidationCode(static fn () => $records->create(new CreateRecordCommand(
+            $context,
+            $definition->handle,
+            $readOnlyInput,
+            NeutralBusinessFixture::idempotencyKey('conditional-read-only-create-' . $suffix),
+            recordId: Uuid::uuid7()->toString(),
+        )), 'not_editable');
+
+        $recordId = Uuid::uuid7()->toString();
+        $records->create(new CreateRecordCommand(
+            $context,
+            $definition->handle,
+            NeutralBusinessFixture::recordValues(),
+            NeutralBusinessFixture::idempotencyKey('conditional-create-' . $suffix),
+            recordId: $recordId,
+        ));
+        self::assertArrayNotHasKey(
+            'conditional_note',
+            $records->read(new ReadRecordQuery($context, $definition->handle, $recordId))->values,
+        );
+
+        self::assertValidationCode(static fn () => $records->update(new UpdateRecordCommand(
+            $context,
+            $definition->handle,
+            $recordId,
+            1,
+            ['conditional_note' => 'Hidden update'],
+            NeutralBusinessFixture::idempotencyKey('conditional-hidden-update-' . $suffix),
+        )), 'not_visible');
+        $visible = $records->update(new UpdateRecordCommand(
+            $context,
+            $definition->handle,
+            $recordId,
+            1,
+            ['enabled' => true],
+            NeutralBusinessFixture::idempotencyKey('conditional-show-' . $suffix),
+        ));
+        self::assertSame(2, $visible->version);
+        self::assertSame(
+            'Stored default',
+            $records->read(new ReadRecordQuery($context, $definition->handle, $recordId))
+                ->values['conditional_note'],
+        );
+
+        self::assertValidationCode(static fn () => $records->update(new UpdateRecordCommand(
+            $context,
+            $definition->handle,
+            $recordId,
+            2,
+            ['conditional_note' => 'Read-only update'],
+            NeutralBusinessFixture::idempotencyKey('conditional-read-only-update-' . $suffix),
+        )), 'not_editable');
+        $editable = $records->update(new UpdateRecordCommand(
+            $context,
+            $definition->handle,
+            $recordId,
+            2,
+            ['status' => 'ready'],
+            NeutralBusinessFixture::idempotencyKey('conditional-editable-' . $suffix),
+        ));
+        self::assertSame(3, $editable->version);
+        $updated = $records->update(new UpdateRecordCommand(
+            $context,
+            $definition->handle,
+            $recordId,
+            3,
+            ['conditional_note' => 'Allowed update'],
+            NeutralBusinessFixture::idempotencyKey('conditional-update-' . $suffix),
+        ));
+        self::assertSame(4, $updated->version);
+        self::assertSame(
+            'Allowed update',
+            $records->read(new ReadRecordQuery($context, $definition->handle, $recordId))
+                ->values['conditional_note'],
+        );
+        $projected = $records->browse(new BrowseRecordsQuery(
+            $context,
+            $definition->handle,
+            new RecordQuerySpecification(projection: new RecordProjection(['conditional_note'])),
+        ));
+        self::assertCount(1, $projected->records);
+        self::assertSame(['conditional_note' => 'Allowed update'], $projected->records[0]->values);
+    }
+
     public function testStableStandaloneBackupFixtureSeedsAndReplaysThroughTheRuntime(): void
     {
         $container = TestKernelFactory::create(Environment::fromGlobals());
@@ -356,7 +494,7 @@ final class BusinessRecordRuntimeIntegrationTest extends TestCase
         $view = $records->read(new ReadRecordQuery($context, $definition->handle, $firstId));
         self::assertSame('Alpha', $view->values['name']);
         self::assertSame('Alpha', $view->values['display_name']);
-        self::assertSame(['redacted' => true], $view->values['credential']);
+        self::assertArrayNotHasKey('credential', $view->values);
         self::assertInstanceOf(ExactDecimal::class, $view->values['amount']);
         self::assertSame(
             '12345678901234567890123456789012345.123456789012345678901234567890',
@@ -599,7 +737,8 @@ final class BusinessRecordRuntimeIntegrationTest extends TestCase
             ),
         );
         foreach ($history->revisions as $revision) {
-            self::assertSame(['redacted' => true], $revision->snapshot['credential']);
+            self::assertArrayNotHasKey('credential', $revision->snapshot);
+            self::assertNotContains('credential', $revision->changedFields);
             self::assertMatchesRegularExpression('/^[a-f0-9]{64}$/D', $revision->integrityChecksum);
         }
 
@@ -611,6 +750,16 @@ final class BusinessRecordRuntimeIntegrationTest extends TestCase
             'SELECT COUNT(*) FROM %s WHERE subject_type = ? AND subject_id = ? AND outcome = ?',
             $tables->quoted('audit_events'),
         ), ['business_record', $created->recordKey, 'success']));
+        $auditMetadata = $database->fetchFirstColumn(sprintf(
+            'SELECT metadata FROM %s WHERE subject_type = ? AND subject_id = ? AND outcome = ?',
+            $tables->quoted('audit_events'),
+        ), ['business_record', $created->recordKey, 'success']);
+        foreach ($auditMetadata as $metadata) {
+            self::assertStringNotContainsString(
+                'credential',
+                is_string($metadata) ? $metadata : json_encode($metadata, JSON_THROW_ON_ERROR),
+            );
+        }
         self::assertSame(1, (int) $database->fetchOne(sprintf(
             'SELECT COUNT(*) FROM %s WHERE operation = ? AND operation_id = ? AND state = ?',
             $tables->quoted('business_command_idempotency'),
@@ -644,6 +793,32 @@ final class BusinessRecordRuntimeIntegrationTest extends TestCase
             self::assertStringNotContainsString(
                 'neutral-fixture-secret',
                 is_string($snapshot) ? $snapshot : json_encode($snapshot, JSON_THROW_ON_ERROR),
+            );
+        }
+    }
+
+    /**
+     * Assert that a real application mutation fails with one stable field-condition code.
+     *
+     * @param   callable(): mixed  $operation     Mutation expected to fail validation.
+     * @param   string             $expectedCode  Stable violation code that must be present.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    private static function assertValidationCode(callable $operation, string $expectedCode): void
+    {
+        try {
+            $operation();
+            self::fail('A condition-rejected runtime mutation was accepted.');
+        } catch (BusinessRecordValidationFailed $exception) {
+            self::assertContains(
+                $expectedCode,
+                array_map(
+                    static fn (ValidationViolation $violation): string => $violation->code,
+                    $exception->violations,
+                ),
             );
         }
     }

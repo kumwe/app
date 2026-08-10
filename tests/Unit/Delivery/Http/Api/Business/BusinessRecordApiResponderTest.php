@@ -1,0 +1,224 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Kumwe\CMS\Tests\Unit\Delivery\Http\Api\Business;
+
+use InvalidArgumentException;
+use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordIdempotencyConflict;
+use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordNotFound;
+use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordSchemaUnavailable;
+use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordValidationFailed;
+use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordVersionConflict;
+use Kumwe\CMS\BusinessRecord\Application\Exception\InvalidBusinessRecordQuery;
+use Kumwe\CMS\BusinessRecord\Application\RecordMutationResult;
+use Kumwe\CMS\BusinessRecord\Application\ValidationViolation;
+use Kumwe\CMS\BusinessSurface\Application\BusinessRecordProjector;
+use Kumwe\CMS\BusinessSecurity\Application\Approval\ApprovalDenied;
+use Kumwe\CMS\Delivery\Http\Api\Business\BusinessRecordApiPresenter;
+use Kumwe\CMS\Delivery\Http\Api\Business\BusinessRecordApiResponder;
+use Kumwe\CMS\Delivery\Http\Api\ProblemDetailsResponseFactory;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\TestCase;
+use Psr\Http\Message\ResponseInterface;
+
+#[CoversClass(BusinessRecordApiResponder::class)]
+/**
+ * Proves generated-business REST responses expose stable, non-enumerating public documents.
+ *
+ * @since  2.0.0
+ */
+final class BusinessRecordApiResponderTest extends TestCase
+{
+    /**
+     * Internal definition identity used to prove it is withheld.
+     *
+     * @var    string
+     * @since  2.0.0
+     */
+    private const DEFINITION = '018f22e2-7c8b-7ab0-8f3a-88e8026bb601';
+
+    /**
+     * Internal storage identity used to prove it is withheld.
+     *
+     * @var    string
+     * @since  2.0.0
+     */
+    private const RECORD_KEY = '018f22e2-7c8b-7ab0-8f3a-88e8026bb602';
+
+    /**
+     * Public problem instance used by responder assertions.
+     *
+     * @var    string
+     * @since  2.0.0
+     */
+    private const INSTANCE = 'https://kumwe.test/api/v1/business/records/core.invoice/INV-0001';
+
+    /**
+     * Proves a replay is marked without disclosing ledger or storage identities.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testRendersApplicationReplayWithoutInternalLedgerIdentity(): void
+    {
+        $response = $this->responder()->mutation(new RecordMutationResult(
+            self::DEFINITION,
+            2,
+            self::RECORD_KEY,
+            'INV-0001',
+            4,
+            'approved',
+            'action',
+            replayed: true,
+        ));
+        $body = $this->body($response);
+
+        self::assertSame(200, $response->getStatusCode());
+        self::assertSame('"v4"', $response->getHeaderLine('ETag'));
+        self::assertSame('true', $response->getHeaderLine('Idempotency-Replayed'));
+        self::assertSame('no-store', $response->getHeaderLine('Cache-Control'));
+        self::assertSame('INV-0001', $body['record_id']);
+        self::assertArrayNotHasKey('record_key', $body);
+        self::assertArrayNotHasKey('definition_id', $body);
+    }
+
+    /**
+     * Proves absent records and denied approvals collapse to the same public problem.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testMissingAndDeniedApprovalAreTheSameNonEnumeratingProblem(): void
+    {
+        $missing = $this->responder()->problem(new BusinessRecordNotFound(), self::INSTANCE);
+        $denied = $this->responder()->problem(new ApprovalDenied(), self::INSTANCE);
+
+        self::assertSame(404, $missing->getStatusCode());
+        self::assertSame((string) $missing->getBody(), (string) $denied->getBody());
+        self::assertSame('application/problem+json', $missing->getHeaderLine('Content-Type'));
+        self::assertSame('no-store', $missing->getHeaderLine('Cache-Control'));
+    }
+
+    /**
+     * Proves optimistic concurrency and idempotency conflicts keep stable HTTP semantics.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testMapsConcurrencyAndConflictFamiliesToStableStatuses(): void
+    {
+        $precondition = $this->responder()->problem(new BusinessRecordVersionConflict(3, 4), self::INSTANCE);
+        $idempotency = $this->responder()->problem(
+            new BusinessRecordIdempotencyConflict('in_progress'),
+            self::INSTANCE,
+        );
+
+        self::assertSame(412, $precondition->getStatusCode());
+        self::assertSame('urn:kumwe:problem:precondition-failed', $this->body($precondition)['type']);
+        self::assertSame(409, $idempotency->getStatusCode());
+        self::assertSame('1', $idempotency->getHeaderLine('Retry-After'));
+    }
+
+    /**
+     * Proves only application-approved validation details reach a public problem document.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testPublishesOnlyApplicationSafeValidationViolations(): void
+    {
+        $response = $this->responder()->problem(new BusinessRecordValidationFailed([
+            new ValidationViolation('amount', 'invalid_decimal', 'The exact decimal is invalid.'),
+            new ValidationViolation('record', 'field_access', 'One or more submitted fields are unavailable.'),
+        ]), self::INSTANCE);
+        $body = $this->body($response);
+
+        self::assertSame(422, $response->getStatusCode());
+        self::assertSame('amount', $body['violations'][0]['field']);
+        self::assertSame('record', $body['violations'][1]['field']);
+        self::assertCount(2, $body['violations']);
+    }
+
+    /**
+     * Proves query and schema internals are redacted while transient failures remain retryable.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testDoesNotPublishCompilerDetailsAndMarksTemporaryFailuresRetryable(): void
+    {
+        $invalid = $this->responder()->problem(
+            new InvalidBusinessRecordQuery('secret_margin is not filterable.'),
+            self::INSTANCE,
+        );
+        $unavailable = $this->responder()->problem(
+            new BusinessRecordSchemaUnavailable('table secret_records is missing.'),
+            self::INSTANCE,
+        );
+
+        self::assertSame(422, $invalid->getStatusCode());
+        self::assertStringNotContainsString('secret_margin', (string) $invalid->getBody());
+        self::assertSame(503, $unavailable->getStatusCode());
+        self::assertSame('1', $unavailable->getHeaderLine('Retry-After'));
+        self::assertStringNotContainsString('secret_records', (string) $unavailable->getBody());
+    }
+
+    /**
+     * Proves arbitrary invalid-argument messages from trusted custom handlers never reach REST callers.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testDoesNotPublishArbitraryInvalidArgumentMessages(): void
+    {
+        $response = $this->responder()->problem(
+            new InvalidArgumentException('Extension secret: database-password=do-not-publish'),
+            self::INSTANCE,
+        );
+        $body = $this->body($response);
+
+        self::assertSame(422, $response->getStatusCode());
+        self::assertSame('The business-record request is invalid.', $body['detail']);
+        self::assertStringNotContainsString('database-password', (string) $response->getBody());
+        self::assertStringNotContainsString('do-not-publish', (string) $response->getBody());
+    }
+
+    /**
+     * Decode one JSON response body for exact assertions.
+     *
+     * @param   ResponseInterface  $response  Response carrying one JSON object.
+     *
+     * @return  array<string, mixed>  Decoded response document.
+     *
+     * @since   2.0.0
+     */
+    private function body(ResponseInterface $response): array
+    {
+        /** @var array<string, mixed> $body */
+        $body = json_decode((string) $response->getBody(), true, 16, JSON_THROW_ON_ERROR);
+
+        return $body;
+    }
+
+    /**
+     * Construct the real responder and its shared safe projector.
+     *
+     * @return  BusinessRecordApiResponder  Responder under test.
+     *
+     * @since   2.0.0
+     */
+    private function responder(): BusinessRecordApiResponder
+    {
+        return new BusinessRecordApiResponder(
+            new BusinessRecordApiPresenter(new BusinessRecordProjector()),
+            new ProblemDetailsResponseFactory(),
+        );
+    }
+}

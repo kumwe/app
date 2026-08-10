@@ -27,6 +27,7 @@ final readonly class PortalRenderer
      * @param  Environment               $twig        Portal Twig environment.
      * @param  PortalNavigationRegistry  $navigation  Capability and live-trust-filtered menu.
      * @param  PortalTemplateRegistry    $templates   Explicit portal template authority.
+     * @param  PortalNavigationVisibility $visibility Request-session navigation predicate.
      *
      * @since  2.0.0
      */
@@ -34,6 +35,7 @@ final readonly class PortalRenderer
         private Environment $twig,
         private PortalNavigationRegistry $navigation,
         private PortalTemplateRegistry $templates,
+        private PortalNavigationVisibility $visibility,
     ) {
     }
 
@@ -109,6 +111,12 @@ final readonly class PortalRenderer
             }
         }
         $navigation = $this->navigation->visible($capabilities);
+        if ($session instanceof PortalSession) {
+            $navigation = array_values(array_filter(
+                $navigation,
+                fn (array $item): bool => $this->visibility->visible($session, $item),
+            ));
+        }
 
         return $data + [
             'portal_session' => $session,

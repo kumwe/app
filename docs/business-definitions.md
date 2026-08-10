@@ -15,6 +15,12 @@ Every entity has:
 - bounded field, relationship, view, action, and workflow collections;
 - explicit administrator, portal, and public exposure.
 
+Portal exposure also carries a closed per-operation allow-list that defaults to empty. Browse, read, create,
+update, archive, delete, restore, history, relation, reorder, action, approval, report, export, and status are
+independent choices; a form view or portal-visible action never implies another operation. Optional custom
+view/action handler and schema references are owner-namespaced signed contributions, omitted from canonical output
+when absent so historical checksums remain stable.
+
 Fields carry required/null/default rules, length or exact precision and scale, normalizers, typed configuration, validators, uniqueness and index intent, immutability, server/read-only rules, visibility, search/filter/sort/report/export use, sensitivity, localization, help, grouping, ordering, and placements. Built-in types cover UUID and external identities, plain and rich text, integer, exact decimal, money, quantity, boolean, choices, date/time variants, email, URL, phone-like text, media/entity references, embedded values, ordered lines, bounded JSON, encrypted secrets, and server-computed values.
 
 Decimal, money, and quantity values are represented as canonical base-10 strings and require precision and scale. Definition parsing rejects PHP floats. Secret fields require secret sensitivity and cannot be searched, filtered, sorted, reported, or exported.
@@ -47,9 +53,18 @@ Prior versions and their checksums remain immutable. Supersede, deprecate, and r
 
 Schema-2 packages may declare `contributions.business.field_types` and `contributions.business.definitions`. Their provider registers the identical typed objects through `fieldType()` and `businessDefinition()`. Identifiers must live under the extension namespace, field-type bytes cannot change under an existing identifier, and entity versions must advance by exactly one.
 
+An extension-specific view or action may add a `handler` and `schema` reference as a pair. Both references must
+belong to the definition owner and resolve to a signed `contributions.business.view_handlers` or
+`action_handlers` contract registered by the provider. A workflow-transition action cannot also name a custom
+handler. Omitting the pair preserves the generated view/action path and omits both keys from canonical output, so
+older published definition checksums remain stable. Custom schemas are closed and bounded; input is checked before
+extension code runs and result data is checked before any delivery surface receives it.
+
 Install and upgrade synchronize declarations inside the extension transaction. Activation makes them available; disablement, quarantine, emergency trust revocation, and uninstall make them inactive. Catalog rows, canonical versions, checksums, compatibility plans, and ownership remain available for audit and restore after uninstall. Removing a declaration deprecates its last published entity version instead of erasing history.
 
-The announcements example contributes a severity field type and related category and announcement definitions. It is the conformance example for package declaration, provider registration, inverse relationships, views, actions, workflow, lifecycle visibility, and history preservation.
+The schema-3 announcements example contributes a severity field type with a signed safe presenter and related
+category and announcement definitions. It is the conformance example for package declaration, provider
+registration, inverse relationships, views, actions, workflow, lifecycle visibility, and history preservation.
 
 ## Persistence, backup, and scope
 

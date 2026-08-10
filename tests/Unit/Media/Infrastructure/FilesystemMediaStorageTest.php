@@ -65,6 +65,11 @@ final class FilesystemMediaStorageTest extends TestCase
         self::assertSame('image/png', $asset->mimeType);
         self::assertSame('Editorial hero.png', $asset->name);
         self::assertSame($asset->id, $storage->all(SiteContext::default())[0]->id);
+        self::assertSame(
+            $asset->id,
+            $storage->choices(SiteContext::default(), 'editorial', 50, 4096)[0]->id,
+        );
+        self::assertSame([], $storage->choices(SiteContext::default(), 'missing', 50, 4096));
         self::assertNull($storage->find(SiteContext::fromString('another-site'), $asset->id));
         self::assertStringContainsString(rawurlencode($asset->name), $asset->toArray()['url']);
 
@@ -87,6 +92,21 @@ final class FilesystemMediaStorageTest extends TestCase
             1024,
             new DateTimeImmutable(),
         );
+    }
+
+    /**
+     * Proves media choice search rejects an excessive limit before walking storage.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testChoiceSearchRejectsUnboundedWorkBeforeDirectoryIteration(): void
+    {
+        $storage = new FilesystemMediaStorage($this->directory . '/library');
+
+        $this->expectException(InvalidArgumentException::class);
+        $storage->choices(SiteContext::default(), '', 51, 4096);
     }
 
     public function testExposesBundledSvgAsReadOnlyMediaWithoutAllowingSvgUploads(): void

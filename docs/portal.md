@@ -61,15 +61,27 @@ account-security page supports TOTP enrollment and confirmation, one-time recove
 recovery challenges, and logout of the current session. It refuses to overwrite an active TOTP credential, and
 recovery codes are never retrievable after enrollment.
 
-Approval pages use the scoped approval query boundary for an inbox and immutable request detail. Approve, reject,
-and revoke controls appear only when the projection permits them. The server resolves the detail again, repeats
-authorization and eligibility checks, rotates the portal session, and requires a fresh proof whose purpose is
-exactly `business.approval.approve`, `business.approval.reject`, or `business.approval.revoke`. The portal never
-reads approval tables directly or treats a remembered timestamp or UI state as approval or multi-factor evidence.
+Approval pages use the scoped approval query boundary for an inbox and immutable request detail. Non-business
+approval families continue through that generic workflow. A `business_record` request additionally remains
+visible only while its active definition has `portal_exposure`, explicitly lists `approval` in
+`portal_operations`, and still declares the bound high-impact action with `portal: true`. This is an exposure-only
+ceiling: an approver needs approval-review authority, not the maker's action-execution capability. Malformed, stale,
+unexposed, absent, and denied business bindings share the same omission/not-found behavior.
 
-Business entity screens may be contributed or added by later product slices. When present, they must call the
-shared `BusinessRecordService`; they may not query generated tables, count unauthorized rows, accept raw SQL, or
-reimplement field disclosure.
+Portal approval templates receive a minimal projection without the internal resource ID or record key,
+requester/approver IDs, role and rule evidence, or payload/binding digests. Approve, reject, and revoke controls
+appear only when the projection permits them. Inside the decision transaction the server resolves the detail
+again through the same approval-and-surface gate immediately before step-up and mutation, rotates the portal
+session, and requires a fresh proof whose purpose is exactly `business.approval.approve`,
+`business.approval.reject`, or `business.approval.revoke`. The portal never reads approval tables directly or
+treats a remembered timestamp or UI state as approval or multi-factor evidence.
+
+Published business definitions receive generated portal screens only when `portal_exposure` is true and the exact
+operation appears in `portal_operations`. The allow-list defaults to empty; a list/view/action flag never implies
+create, update, archive, relation, approval, report, export, or status access. Generated screens use the shared
+application boundary and omit denied fields from controls, values, choices, counts, errors, and metadata. Essential
+CRUD, confirmation, relation, action, and history paths remain native CSRF-protected forms without JavaScript. See
+[Generated business surfaces](architecture/generated-business-surfaces.md).
 
 ## Trusted portal contributions
 

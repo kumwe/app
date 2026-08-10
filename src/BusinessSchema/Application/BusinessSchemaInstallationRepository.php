@@ -35,6 +35,20 @@ interface BusinessSchemaInstallationRepository
     public function find(string $definitionId): ?SchemaInstallation;
 
     /**
+     * Read a bounded set of installations without one query per definition.
+     *
+     * The definition UUID remains the whole key and no site assumption is made; callers must still compare
+     * every returned row with their authenticated site and expected owner exactly as they do after `find()`.
+     *
+     * @param   list<string>  $definitionIds  At most 4096 unique canonical definition UUIDs.
+     *
+     * @return  array<string, SchemaInstallation>  Installations keyed by definition UUID; missing rows omitted.
+     *
+     * @since   2.0.0
+     */
+    public function findBatch(array $definitionIds): array;
+
+    /**
      * Make an installation the current record for its definition, inserting it when none exists yet.
      *
      * Identity is the definition ID alone, so this overwrites the shape, status, and timestamps

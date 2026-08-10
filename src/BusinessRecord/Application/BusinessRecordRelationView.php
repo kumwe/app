@@ -12,7 +12,7 @@ namespace Kumwe\CMS\BusinessRecord\Application;
  * deliberately flatter than the view it hangs from — an included record carries no includes of its
  * own, which is the bound that stops one query from walking the relationship graph — and its values
  * have already been filtered to the fields the definition exposes to readers, with restricted, secret
- * and entity-reference fields replaced by a redaction marker.
+ * and withheld restricted, secret and entity-reference fields omitted.
  *
  * @since  2.0.0
  */
@@ -21,9 +21,8 @@ final readonly class BusinessRecordRelationView
     /**
      * Reader-visible field values of the related record or line, keyed by field handle.
      *
-     * Fields the definition hides from readers are absent entirely, while restricted, secret and
-     * entity-reference fields are present but carry `['redacted' => true]` in place of the stored
-     * value, so an include never has to be filtered again downstream.
+     * Fields the definition hides from readers and restricted, secret or unresolved entity-reference
+     * fields are absent, so an include never has to be filtered again downstream.
      *
      * @var    array<string, mixed>
      * @since  2.0.0

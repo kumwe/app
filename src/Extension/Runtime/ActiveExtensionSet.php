@@ -34,7 +34,7 @@ final class ActiveExtensionSet
     /**
      * Every loaded extension with the collaborators its later phases need, in runtime map order.
      *
-     * `strict` records that the extension declared manifest schema 2, which is what decides whether it
+     * `strict` records that the extension declared manifest schema 2 or newer, which decides whether it
      * may contribute runtime surfaces at all.
      *
      * @var    list<array{
@@ -96,7 +96,7 @@ final class ActiveExtensionSet
      *          registered into, handed back to it in the later phases.
      * @param   ManifestContributionSet   $declared             Contributions the manifest declares, which
      *          the registrar then holds the provider to.
-     * @param   bool                      $strictContributions  True when the manifest is schema 2, which
+     * @param   bool                      $strictContributions  True when the manifest is schema 2 or newer, which
      *          is what admits the extension to `contribute()`.
      *
      * @return  void
@@ -241,7 +241,7 @@ final class ActiveExtensionSet
      * Collect the contributions of every loaded extension into the shared registries.
      *
      * Runs after every provider registered services and before boot or route registration. Manifest
-     * schema and provider contract have to agree here: an extension on schema 2 must implement
+     * schema and provider contract have to agree here: an extension on a strict schema must implement
      * `ExtensionContributionProvider`, and one still on schema 1 may not contribute at all. Each provider
      * registers through a registrar scoped to its own owner and to its manifest declarations, so it can
      * neither claim an identifier outside its namespace nor register something it did not declare. The
@@ -250,7 +250,7 @@ final class ActiveExtensionSet
      *
      * @return  void
      *
-     * @throws  LogicException  When a schema-2 extension does not implement the contribution provider
+     * @throws  LogicException  When a strict extension does not implement the contribution provider
      *          contract, or a schema-1 extension does implement it and tries to contribute.
      * @throws  \InvalidArgumentException  When a provider omits or repeats a contribution its manifest
      *          declared, or claims an identifier it does not own.
@@ -266,7 +266,7 @@ final class ActiveExtensionSet
             if (!$provider instanceof ExtensionContributionProvider) {
                 if ($extension['strict']) {
                     throw new LogicException(sprintf(
-                        'Schema-2 extension %s must implement the contribution provider contract.',
+                        'Strict extension %s must implement the contribution provider contract.',
                         $extension['identifier'],
                     ));
                 }
@@ -274,7 +274,7 @@ final class ActiveExtensionSet
             }
             if (!$extension['strict']) {
                 throw new LogicException(sprintf(
-                    'Extension %s must use manifest schema 2 before contributing runtime surfaces.',
+                    'Extension %s must use manifest schema 2 or newer before contributing runtime surfaces.',
                     $extension['identifier'],
                 ));
             }

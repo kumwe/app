@@ -2,16 +2,21 @@
 
 ## Shared use cases
 
-Kumwe exposes application capabilities through four operator-facing surfaces:
+Kumwe exposes application capabilities through five operator-facing surfaces:
 
 | Surface | Primary users | Security boundary |
 |---|---|---|
 | Administrator | Editors and site administrators | Session, CSRF token, capability grants |
+| Portal | Organization members | Isolated session, exact operation opt-in, CSRF, membership and field policy |
 | CLI | Installers, operators, workers | Explicit `--site`, capability token file for management; protected host identity for bootstrap and process commands |
 | REST | Applications and automation | Bearer token plus exact `Kumwe-Site`, scoped capabilities, ETags, idempotency keys |
 | MCP | Approved AI clients and local tools | Bearer token plus exact site for HTTP or protected token file plus `--site` for stdio, protocol checks |
 
 A core use case is complete only when every relevant surface either exposes it through the same application service or documents why that surface is intentionally read-only. Authorization is enforced in the application layer as well as at the route boundary; hiding a navigation link is not authorization.
+
+Generated definitions use one catalog, query decoder, projector, and application facade across all five surfaces
+and OpenAPI. See [Generated business surfaces](generated-business-surfaces.md) for the enforced dependency,
+omission, concurrency, idempotency, custom-handler, and performance contracts.
 
 ## Capability model
 

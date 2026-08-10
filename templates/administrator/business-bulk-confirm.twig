@@ -1,0 +1,80 @@
+{% extends "layout.twig" %}
+{% import "_business-schema-fields.twig" as schema_fields %}
+
+{% set selected_actions = definition.actions|filter(action => action.handle == bulk.action) %}
+{% set selected_action = selected_actions is not empty ? selected_actions|first : null %}
+{% set operation_label = bulk.operation == 'archive'
+  ? 'Archive selected records'
+  : (bulk.operation == 'restore'
+    ? 'Restore selected records'
+    : selected_action.label ~ ' selected records')
+%}
+{% set bulk_operation_value = bulk.operation == 'action' ? 'action:' ~ bulk.action : bulk.operation %}
+
+{% block title %}{{ operation_label }} · Kumwe{% endblock %}
+{% block context_title %}{{ operation_label }}{% endblock %}
+{% block context_subtitle %}Review every record and expected version{% endblock %}
+
+{% block content %}
+  <kumwe-business-confirmation>
+    <header class="page-heading">
+      <div>
+        <p class="eyebrow">Bulk confirmation required</p>
+        <h1 id="business-bulk-confirm-title">{{ operation_label }}</h1>
+        <p>All {{ bulk.items|length }} records are applied atomically and every reviewed version is rechecked.</p>
+      </div>
+    </header>
+
+    {% if error_summary %}
+      <section class="notice danger business-error-summary" role="alert" tabindex="-1">
+        <div><h2>The bulk action input is invalid</h2><p>{{ error_summary }}</p></div>
+      </section>
+    {% endif %}
+
+    <section class="panel panel-body stack business-confirmation{% if bulk.operation == 'action' %} danger{% endif %}" aria-labelledby="business-bulk-confirm-title">
+      <div class="table-wrap" tabindex="0" role="region" aria-label="Selected records and expected versions">
+        <table>
+          <thead><tr><th scope="col">Record</th><th scope="col">Expected version</th></tr></thead>
+          <tbody>
+            {% for item in bulk.items %}
+              <tr><th scope="row"><code>{{ item.record_id }}</code></th><td>{{ item.expected_version }}</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <form method="post" class="stack" data-business-confirm-form>
+        <input type="hidden" name="_csrf" value="{{ csrf }}">
+        <input type="hidden" name="operation" value="bulk">
+        <input type="hidden" name="operation_id" value="{{ operation_id }}">
+        <input type="hidden" name="confirmed" value="1">
+        <input type="hidden" name="bulk_operation" value="{{ bulk_operation_value }}">
+        {% for item in bulk.items %}
+          <input type="hidden" name="bulk_records[]" value="{{ {'record_id': item.record_id, 'expected_version': item.expected_version}|json_encode }}">
+        {% endfor %}
+        {% if bulk_action_fields|default([]) is not empty %}
+          <fieldset class="business-schema-group">
+            <legend>Input for every selected record</legend>
+            <p class="field-help">The same validated input is bound to every child action.</p>
+            {{ schema_fields.fields(bulk_action_fields) }}
+            <button
+              class="button"
+              type="submit"
+              name="prepare_bulk_input"
+              value="1"
+              formnovalidate
+            >Update action rows</button>
+          </fieldset>
+        {% endif %}
+        <label class="check business-confirm-check">
+          <input type="checkbox" required data-business-confirm-check>
+          <span>I reviewed all {{ bulk.items|length }} records and understand that one stale or denied record cancels the entire bulk operation.</span>
+        </label>
+        <div class="page-actions">
+          <button class="{% if bulk.operation == 'action' %}danger{% else %}primary{% endif %}" type="submit">{{ operation_label }}</button>
+          <a class="button" href="{{ business_base_path }}/{{ definition.handle|url_encode }}">Cancel</a>
+        </div>
+      </form>
+    </section>
+  </kumwe-business-confirmation>
+{% endblock %}

@@ -41,6 +41,7 @@ use Kumwe\CMS\Identity\Application\Administration\TokenRotationPreauthorizer;
 use Kumwe\CMS\Identity\Application\Authentication\AccessTokenVerifier;
 use Kumwe\CMS\Identity\Application\Authentication\AuthenticatedPrincipal;
 use Kumwe\CMS\Identity\Domain\Capability;
+use Kumwe\CMS\Infrastructure\Mcp\BusinessMcpHandlers;
 use Kumwe\CMS\Infrastructure\Mcp\KumweMcpHandlers;
 use Kumwe\CMS\Infrastructure\Mcp\McpCapabilityCatalog;
 use Kumwe\CMS\Infrastructure\Mcp\McpMutationGuard;
@@ -261,6 +262,7 @@ final class AdapterAuthorizationParityTest extends TestCase
             $this->withoutConstructor(AutomationManagementService::class),
             $this->withoutConstructor(BusinessDefinitionService::class),
             $this->withoutConstructor(BusinessSchemaService::class),
+            $this->withoutConstructor(BusinessMcpHandlers::class),
             $this->withoutConstructor(McpMutationGuard::class),
             $this->clock(),
             AuthorizationContext::gateway(),

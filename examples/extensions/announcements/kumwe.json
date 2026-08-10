@@ -1,5 +1,5 @@
 {
-  "schema": 2,
+  "schema": 3,
   "name": "kumwe/announcements-example",
   "type": "component",
   "version": "2.0.0",
@@ -71,6 +71,10 @@
         "storage_type": "string",
         "configuration_keys": ["options"]
       }],
+      "field_presentations": [{
+        "field_type": "kumwe.announcements-example.severity",
+        "contexts": ["create", "detail", "filter", "history", "list", "relation", "update"]
+      }],
       "definitions": [{
         "id": "01912f8a-8c4b-7eb1-8f7d-c256efd39801",
         "owner": {"type": "extension", "identifier": "kumwe/announcements-example"},
@@ -114,7 +118,7 @@
           {"handle":"id","label":"ID","type":"core.uuid","required":true,"nullable":false,"length":null,"unique":true,"indexed":true,"immutable_after_create":true,"filterable":false,"sortable":false,"order":0},
           {"handle":"title","label":"Title","type":"core.text","required":true,"nullable":false,"length":191,"unique":false,"indexed":true,"filterable":true,"sortable":true,"order":0},
           {"handle":"message","label":"Message","type":"core.rich_text","required":true,"nullable":false,"length":50000,"unique":false,"indexed":false,"filterable":false,"sortable":false,"order":0},
-          {"handle":"severity","label":"Severity","type":"kumwe.announcements-example.severity","required":true,"nullable":false,"length":null,"configuration":{"options":["info","notice","warning","critical"]},"unique":false,"indexed":true,"filterable":true,"sortable":true,"order":0},
+          {"handle":"severity","label":"Severity","type":"kumwe.announcements-example.severity","required":true,"nullable":false,"length":null,"configuration":{"options":["info","notice","warning","critical"]},"validators":[{"rule":"one_of","value":["info","notice","warning","critical"]}],"unique":false,"indexed":true,"filterable":true,"sortable":true,"order":0},
           {"handle":"published_at","label":"Published at","type":"core.instant","required":false,"nullable":true,"length":null,"unique":false,"indexed":true,"filterable":true,"sortable":true,"order":0}
         ],
         "relationships": [{"handle":"category","label":"Category","kind":"many_to_one","target":"kumwe.announcements-example.category","inverse":"announcements","on_delete":"restrict"}],

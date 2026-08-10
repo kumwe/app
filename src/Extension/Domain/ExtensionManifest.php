@@ -16,9 +16,11 @@ use ValueError;
  * collection is checked for shape and bounded in size, and every autoload prefix, migration class,
  * capability identifier, and asset path is matched against a grammar before it is stored, so the
  * installer, the runtime loader, and the contribution registrar all read manifest data without
- * re-checking it. Two schema revisions are accepted: schema 1 predates typed shell contributions and
- * is given an empty contribution set, while schema 2 rejects unknown keys wherever it knows the key
- * set and must keep its `permissions` list identical to the capabilities it contributes.
+ * re-checking it. Three schema revisions are accepted: schema 1 predates typed shell contributions and
+ * is given an empty contribution set, schema 2 adds closed typed shell/business declarations, and schema
+ * 3 adds signed field-presentation and custom business view/action contracts while leaving schema 2's
+ * accepted contribution grammar unchanged. Strict manifests keep their `permissions` list identical to
+ * the capabilities they contribute.
  *
  * @since  2.0.0
  */
@@ -116,8 +118,8 @@ final readonly class ExtensionManifest
      * @param   array<mixed>              $routes              Route declaration objects, at most 256.
      * @param   array<mixed>              $events              Event declaration objects, at most 256.
      * @param   array<mixed>              $assets              Package-relative asset paths, at most 512.
-     * @param   ?ManifestContributionSet  $contributions       Schema-2 contributions; null selects the legacy set.
-     * @param   int                       $schemaVersion       Manifest schema revision; only 1 and 2 are supported.
+     * @param   ?ManifestContributionSet  $contributions       Strict contributions; null selects the legacy set.
+     * @param   int                       $schemaVersion        Manifest schema revision; 1, 2, and 3 are supported.
      *
      * @throws  InvalidArgumentException  When the schema is unsupported or any declared value fails its check.
      *
@@ -141,7 +143,7 @@ final readonly class ExtensionManifest
         ?ManifestContributionSet $contributions = null,
         private int $schemaVersion = 1,
     ) {
-        if (!in_array($schemaVersion, [1, 2], true)) {
+        if (!in_array($schemaVersion, [1, 2, 3], true)) {
             throw new InvalidArgumentException('The extension manifest schema is unsupported.');
         }
         if (
@@ -215,10 +217,10 @@ final readonly class ExtensionManifest
      * Parse a `kumwe.json` document into a validated manifest.
      *
      * Decoding is bounded before anything else happens — one mebibyte of input, 32 levels of nesting
-     * — so a hostile document cannot exhaust memory on its way to being rejected. A schema-2
+     * — so a hostile document cannot exhaust memory on its way to being rejected. A strict
      * document is additionally closed to unknown keys at every level whose key set is known, which
      * turns a misspelled field into an install failure instead of a silently ignored declaration.
-     * Schema 2 also reconciles `permissions` with the contributed capabilities: an absent list is
+     * Schemas 2 and 3 also reconcile `permissions` with contributed capabilities: an absent list is
      * filled in from them, and a present one must match them exactly, order included.
      *
      * @param   string  $json  Raw manifest document read from the package root.
@@ -247,10 +249,10 @@ final readonly class ExtensionManifest
         /** @var array<string, mixed> $data */
 
         $schema = $data['schema'] ?? null;
-        if (!in_array($schema, [1, 2], true)) {
-            throw new InvalidArgumentException('The extension manifest schema must be 1 or 2.');
+        if (!in_array($schema, [1, 2, 3], true)) {
+            throw new InvalidArgumentException('The extension manifest schema must be 1, 2, or 3.');
         }
-        if ($schema === 2) {
+        if ($schema >= 2) {
             self::assertKnownKeys($data, [
                 'schema',
                 'name',
@@ -275,14 +277,14 @@ final readonly class ExtensionManifest
         $version = self::requiredString($data, 'version');
         $provider = self::requiredString($data, 'provider');
         $requires = self::requiredObject($data, 'requires');
-        if ($schema === 2) {
+        if ($schema >= 2) {
             self::assertKnownKeys($requires, ['kumwe', 'php'], 'The extension requirements object');
         }
         $kumweConstraint = self::requiredString($requires, 'kumwe');
         $phpConstraint = self::requiredString($requires, 'php');
         $dependencyData = $data['dependencies'] ?? [];
         $autoload = self::requiredObject($data, 'autoload');
-        if ($schema === 2) {
+        if ($schema >= 2) {
             self::assertKnownKeys($autoload, ['psr-4'], 'The extension autoload object');
         }
         $autoloadData = $autoload['psr-4'] ?? [];
@@ -293,14 +295,15 @@ final readonly class ExtensionManifest
         $events = $data['events'] ?? [];
         $assets = $data['assets'] ?? [];
         $identifier = ExtensionIdentifier::fromString($name);
-        $contributions = $schema === 2
+        $contributions = $schema >= 2
             ? ManifestContributionSet::fromManifest(
                 $identifier,
                 self::requiredObject($data, 'contributions'),
+                $schema,
             )
             : null;
 
-        if ($schema === 2 && $contributions !== null) {
+        if ($schema >= 2 && $contributions !== null) {
             $declaredCapabilities = array_map(
                 static fn (\Kumwe\CMS\Extension\Contribution\CapabilityDefinition $definition): string =>
                     $definition->id,
@@ -310,7 +313,7 @@ final readonly class ExtensionManifest
                 $permissions = $declaredCapabilities;
             } elseif (!is_array($permissions) || $permissions !== $declaredCapabilities) {
                 throw new InvalidArgumentException(
-                    'Schema-2 permissions must exactly match the ordered contributed capability identifiers.',
+                    'Strict manifest permissions must exactly match the ordered contributed capability identifiers.',
                 );
             }
         }
@@ -330,7 +333,7 @@ final readonly class ExtensionManifest
                 throw new InvalidArgumentException('Each extension dependency must be a JSON object.');
             }
             /** @var array<string, mixed> $dependency */
-            if ($schema === 2) {
+            if ($schema >= 2) {
                 self::assertKnownKeys(
                     $dependency,
                     ['name', 'constraint', 'optional'],
@@ -385,7 +388,7 @@ final readonly class ExtensionManifest
     /**
      * Report which manifest revision the package was written against.
      *
-     * @return  int  1 for a legacy manifest, 2 for one that may contribute to the application shell.
+     * @return  int  1 for legacy, 2 for typed contributions, or 3 for presenters and custom contracts.
      *
      * @since   2.0.0
      */
@@ -509,7 +512,7 @@ final readonly class ExtensionManifest
     /**
      * List the capability identifiers the extension declares.
      *
-     * @return  list<string>  De-duplicated identifiers; for schema 2 these mirror the contributed capabilities.
+     * @return  list<string>  De-duplicated identifiers; for strict schemas these mirror contributed capabilities.
      *
      * @since   2.0.0
      */
@@ -557,7 +560,7 @@ final readonly class ExtensionManifest
     /**
      * Report the typed contributions the extension makes to the application shell.
      *
-     * @return  ManifestContributionSet  Parsed contributions for schema 2; an empty owned set for schema 1.
+     * @return  ManifestContributionSet  Parsed strict contributions; an empty owned set for schema 1.
      *
      * @since   2.0.0
      */
@@ -567,7 +570,7 @@ final readonly class ExtensionManifest
     }
 
     /**
-     * Close a schema-2 object to keys it does not define.
+     * Close a strict manifest object to keys it does not define.
      *
      * Unknown keys are sorted before reporting so the same document always names the same key,
      * which keeps the failure message stable across PHP versions and hash orders.
