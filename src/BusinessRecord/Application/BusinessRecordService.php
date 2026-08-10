@@ -26,6 +26,7 @@ use Kumwe\CMS\BusinessDefinition\Domain\ScopeMode;
 use Kumwe\CMS\BusinessDefinition\Domain\RelationshipDefinition;
 use Kumwe\CMS\BusinessDefinition\Domain\RelationshipKind;
 use Kumwe\CMS\BusinessDefinition\Domain\Sensitivity;
+use Kumwe\CMS\BusinessIntegration\Application\BusinessRecordMutationEventPublisher;
 use Kumwe\CMS\BusinessRecord\Application\Command\ArchiveRecordCommand;
 use Kumwe\CMS\BusinessRecord\Application\Command\CreateRecordCommand;
 use Kumwe\CMS\BusinessRecord\Application\Command\DeleteRecordCommand;
@@ -140,6 +141,8 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
      *         scopes and for identities held in the trail.
      * @param  ClockInterface                       $clock          Supplies the one instant stamped on
      *         every row a mutation touches.
+     * @param  ?BusinessRecordMutationEventPublisher $events       Transactional domain and integration
+     *         event publisher; nullable only for isolated legacy tests.
      *
      * @since  2.0.0
      */
@@ -160,6 +163,7 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
         private AuditRecorder $audit,
         private RecordFingerprint $fingerprints,
         private ClockInterface $clock,
+        private ?BusinessRecordMutationEventPublisher $events = null,
     ) {
     }
 
@@ -2989,6 +2993,16 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
                 'mutation_evidence' => RecordValueGuard::canonical($evidence),
             ],
         ));
+        $this->events?->publish(
+            $context,
+            $record->definitionId,
+            $record->definitionVersion,
+            $record->recordKey,
+            $record->version,
+            $operation,
+            array_column($metadata, 'field'),
+            $now,
+        );
     }
 
     /**

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\CMS\Application\Automation;
 
 use Kumwe\CMS\Application\Authorization\SystemIdentity;
+use Kumwe\CMS\BusinessIntegration\Domain\JobContributionDefinition;
 use LogicException;
 
 /**
@@ -17,7 +18,7 @@ use LogicException;
  *
  * @since  2.0.0
  */
-final readonly class JobExecutionScope
+final class JobExecutionScope
 {
     /**
      * Installation-global job types, each mapped to the internal identity allowed to run it.
@@ -31,6 +32,39 @@ final readonly class JobExecutionScope
         'system.idempotency.purge' => SystemIdentity::InstallationMaintenance,
     ];
 
+    /** @var array<string, SystemIdentity> Trusted active global job declarations. @since 2.0.0 */
+    private array $installationGlobal;
+
+    /**
+     * Compile extension-owned installation-wide jobs into the same execution-scope authority table.
+     *
+     * @param iterable<JobContributionDefinition> $contributedJobs Active signed job definitions.
+     *
+     * @since 2.0.0
+     */
+    public function __construct(iterable $contributedJobs = [])
+    {
+        $this->replace($contributedJobs);
+    }
+
+    /**
+     * Replace extension classifications after the signed contribution phase completes.
+     *
+     * @param iterable<JobContributionDefinition> $contributedJobs Complete active declaration set.
+     *
+     * @since 2.0.0
+     */
+    public function replace(iterable $contributedJobs): void
+    {
+        $this->installationGlobal = self::INSTALLATION_GLOBAL;
+        foreach ($contributedJobs as $job) {
+            if ($job->installationWide()) {
+                $this->installationGlobal[$job->identifier()] = SystemIdentity::InstallationMaintenance;
+            }
+        }
+        ksort($this->installationGlobal, SORT_STRING);
+    }
+
     /**
      * Report whether a job type is declared installation-global.
      *
@@ -42,7 +76,7 @@ final readonly class JobExecutionScope
      */
     public function isInstallationGlobal(string $jobType): bool
     {
-        return isset(self::INSTALLATION_GLOBAL[$jobType]);
+        return isset($this->installationGlobal[$jobType]);
     }
 
     /**
@@ -74,7 +108,7 @@ final readonly class JobExecutionScope
      */
     public function systemIdentity(string $jobType): SystemIdentity
     {
-        return self::INSTALLATION_GLOBAL[$jobType]
+        return $this->installationGlobal[$jobType]
             ?? throw new LogicException(sprintf('Job type "%s" is not installation-global.', $jobType));
     }
 

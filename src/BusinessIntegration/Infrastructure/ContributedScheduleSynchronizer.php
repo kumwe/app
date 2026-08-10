@@ -1,0 +1,232 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Kumwe\CMS\BusinessIntegration\Infrastructure;
+
+use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\Types\Types;
+use Kumwe\CMS\Application\Automation\CronExpression;
+use Kumwe\CMS\Application\Automation\JobExecutionClass;
+use Kumwe\CMS\BusinessDefinition\Domain\CanonicalDefinitionJson;
+use Kumwe\CMS\BusinessIntegration\Application\PayloadSchemaValidator;
+use Kumwe\CMS\BusinessIntegration\Application\ScheduleRuntimeSynchronizer;
+use Kumwe\CMS\BusinessIntegration\Domain\JobContributionDefinition;
+use Kumwe\CMS\BusinessIntegration\Domain\ScheduleContributionDefinition;
+use Kumwe\CMS\Extension\Contribution\ExtensionContributionRegistrySet;
+use Kumwe\CMS\Extension\Runtime\RuntimeMaterializationState;
+use Kumwe\CMS\Infrastructure\Persistence\TableNames;
+use Kumwe\CMS\Infrastructure\Persistence\TransactionManager;
+use Psr\Clock\ClockInterface;
+use Ramsey\Uuid\Uuid;
+use RuntimeException;
+
+/**
+ * Reconciles package-owned schedule declarations into preserved core scheduler rows.
+ *
+ * Disabled or distrusted contributions are marked inactive and disappear from execution and operator
+ * listings while their recurrence history remains. Reactivation reuses the deterministic row and its
+ * last/next occurrence state; a definition change updates only signed configuration fields.
+ *
+ * @since  2.0.0
+ */
+final readonly class ContributedScheduleSynchronizer implements ScheduleRuntimeSynchronizer
+{
+    /** @since 2.0.0 */
+    public function __construct(
+        private Connection $database,
+        private TableNames $tables,
+        private TransactionManager $transactions,
+        private ClockInterface $clock,
+        private ExtensionContributionRegistrySet $contributions,
+        private RuntimeMaterializationState $runtime,
+        private PayloadSchemaValidator $payloads = new PayloadSchemaValidator(),
+    ) {
+    }
+
+    /**
+     * Synchronize only after the integration migration exists; pre-migration CLI boot is a safe no-op.
+     *
+     * @return bool True when the persistence schema was available and reconciled.
+     *
+     * @since 2.0.0
+     */
+    public function synchronize(): bool
+    {
+        $manager = $this->database->createSchemaManager();
+        if (!$manager->tablesExist([
+            $this->tables->raw('schedules'),
+            $this->tables->raw('resource_site_ownership'),
+        ])) {
+            return false;
+        }
+        $scheduleTable = $manager->introspectTableByUnquotedName($this->tables->raw('schedules'));
+        if (!$scheduleTable->hasColumn('contribution_id')) {
+            return false;
+        }
+
+        $jobs = [];
+        foreach ($this->contributions->jobs()->definitions() as $definition) {
+            if (!$definition instanceof JobContributionDefinition) {
+                throw new RuntimeException('The trusted job registry contains an invalid definition.');
+            }
+            $jobs[$definition->identifier()] = $definition;
+        }
+        $schedules = [];
+        foreach ($this->contributions->schedules()->definitions() as $definition) {
+            if (!$definition instanceof ScheduleContributionDefinition) {
+                throw new RuntimeException('The trusted schedule registry contains an invalid definition.');
+            }
+            $schedules[] = $definition;
+        }
+
+        $this->transactions->transactional(function () use ($jobs, $schedules): void {
+            $this->database->executeStatement(sprintf(
+                'UPDATE %s SET contribution_active = ?, updated_at = ? WHERE contribution_id IS NOT NULL',
+                $this->tables->quoted('schedules'),
+            ), [false, $this->clock->now()], [Types::BOOLEAN, Types::DATETIME_IMMUTABLE]);
+
+            foreach ($schedules as $schedule) {
+                $job = $jobs[$schedule->jobType()] ?? null;
+                if (!$job instanceof JobContributionDefinition) {
+                    throw new RuntimeException('A contributed schedule references an inactive job.');
+                }
+                $this->payloads->assertPayload($job->payloadSchema(), $schedule->payload());
+                $site = $schedule->siteIdentifier();
+                if ($job->installationWide() === ($site !== null)) {
+                    throw new RuntimeException(
+                        'A contributed schedule site must agree with its job execution scope.',
+                    );
+                }
+                $this->upsert($schedule, $job, $this->runtime, $site);
+            }
+        });
+
+        return true;
+    }
+
+    /** @since 2.0.0 */
+    private function upsert(
+        ScheduleContributionDefinition $schedule,
+        JobContributionDefinition $job,
+        RuntimeMaterializationState $runtime,
+        ?string $site,
+    ): void {
+        $now = $this->clock->now();
+        $checksum = CanonicalDefinitionJson::checksum($schedule->toArray());
+        $generation = $runtime->trusted ? (string) $runtime->generation : 'untrusted';
+        $id = Uuid::uuid5(Uuid::NAMESPACE_URL, 'kumwe:schedule:' . $schedule->identifier())->toString();
+        $row = $this->database->fetchAssociative(sprintf(
+            'SELECT id, contribution_checksum FROM %s WHERE contribution_id = ?',
+            $this->tables->quoted('schedules'),
+        ), [$schedule->identifier()]);
+        $scope = $job->installationWide() ? JobExecutionClass::Installation : JobExecutionClass::Site;
+
+        if ($row === false) {
+            $this->database->insert($this->tables->raw('schedules'), [
+                'id' => $id,
+                'name' => $this->name($schedule->identifier()),
+                'cron_expression' => $schedule->cronExpression(),
+                'timezone' => $schedule->timezone(),
+                'queue' => $schedule->queue(),
+                'job_type' => $job->identifier(),
+                'job_schema_version' => $job->schemaVersion(),
+                'payload' => $schedule->payload(),
+                'priority' => 0,
+                'maximum_attempts' => $job->maximumAttempts(),
+                'enabled' => $schedule->enabled(),
+                'next_run_at' => (new CronExpression($schedule->cronExpression()))->next(
+                    $now,
+                    $schedule->timezone(),
+                ),
+                'last_run_at' => null,
+                'version' => 1,
+                'created_at' => $now,
+                'updated_at' => $now,
+                'execution_scope' => $scope->value,
+                'contribution_id' => $schedule->identifier(),
+                'contribution_checksum' => $checksum,
+                'contribution_generation' => $generation,
+                'contribution_active' => true,
+            ], [
+                'payload' => Types::JSON,
+                'enabled' => Types::BOOLEAN,
+                'next_run_at' => Types::DATETIME_IMMUTABLE,
+                'created_at' => Types::DATETIME_IMMUTABLE,
+                'updated_at' => Types::DATETIME_IMMUTABLE,
+                'contribution_active' => Types::BOOLEAN,
+            ]);
+            $this->assertOwnership($id, $site);
+            return;
+        }
+        if (($row['id'] ?? null) !== $id) {
+            throw new RuntimeException('A contributed schedule identity is inconsistent.');
+        }
+        $changed = ($row['contribution_checksum'] ?? null) !== $checksum;
+        $values = [
+            'contribution_active' => true,
+            'contribution_generation' => $generation,
+            'updated_at' => $now,
+        ];
+        $types = [
+            'contribution_active' => Types::BOOLEAN,
+            'updated_at' => Types::DATETIME_IMMUTABLE,
+        ];
+        if ($changed) {
+            $values += [
+                'cron_expression' => $schedule->cronExpression(),
+                'timezone' => $schedule->timezone(),
+                'queue' => $schedule->queue(),
+                'job_type' => $job->identifier(),
+                'job_schema_version' => $job->schemaVersion(),
+                'payload' => $schedule->payload(),
+                'maximum_attempts' => $job->maximumAttempts(),
+                'enabled' => $schedule->enabled(),
+                'execution_scope' => $scope->value,
+                'contribution_checksum' => $checksum,
+            ];
+            $types['payload'] = Types::JSON;
+            $types['enabled'] = Types::BOOLEAN;
+        }
+        $this->database->update($this->tables->raw('schedules'), $values, ['id' => $id], $types);
+        if ($changed) {
+            $this->database->executeStatement(sprintf(
+                'UPDATE %s SET version = version + 1 WHERE id = ?',
+                $this->tables->quoted('schedules'),
+            ), [$id], [Types::GUID]);
+        }
+        $this->assertOwnership($id, $site);
+    }
+
+    /** @since 2.0.0 */
+    private function assertOwnership(string $id, ?string $site): void
+    {
+        $stored = $this->database->fetchOne(sprintf(
+            'SELECT site_identifier FROM %s WHERE resource_type = ? AND resource_id = ?',
+            $this->tables->quoted('resource_site_ownership'),
+        ), ['schedule', $id]);
+        if ($site === null) {
+            if ($stored !== false) {
+                throw new RuntimeException('An installation-wide contributed schedule has site ownership.');
+            }
+            return;
+        }
+        if ($stored === false) {
+            $this->database->insert($this->tables->raw('resource_site_ownership'), [
+                'resource_type' => 'schedule',
+                'resource_id' => $id,
+                'site_identifier' => $site,
+            ]);
+            return;
+        }
+        if ($stored !== $site) {
+            throw new RuntimeException('A contributed schedule cannot move between sites.');
+        }
+    }
+
+    /** @since 2.0.0 */
+    private function name(string $identifier): string
+    {
+        return substr('Extension: ' . $identifier, 0, 143) . ' [' . substr(hash('sha256', $identifier), 0, 12) . ']';
+    }
+}

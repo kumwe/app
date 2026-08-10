@@ -7,6 +7,8 @@ namespace Kumwe\CMS\Extension\Contribution;
 use Kumwe\CMS\Application\Authorization\ResourcePolicyTarget;
 use Kumwe\CMS\Application\Authorization\SystemIdentity;
 use Kumwe\CMS\BusinessDefinition\Domain\BuiltInFieldTypes;
+use Kumwe\CMS\BusinessIntegration\Domain\EventSchemaDefinition;
+use Kumwe\CMS\BusinessIntegration\Domain\EventSensitivity;
 use Kumwe\CMS\BusinessSurface\Presentation\Field\CoreFieldPresenter;
 use Kumwe\CMS\BusinessSurface\Presentation\Field\FieldPresentationContext;
 use Kumwe\CMS\BusinessSurface\Presentation\Field\FieldPresentationContribution;
@@ -134,6 +136,26 @@ final class CoreExtensionContributions
      */
     public static function register(ExtensionContributionRegistrar $registrar): void
     {
+        $registrar->eventSchema(new EventSchemaDefinition(
+            'core.business_record.mutated',
+            1,
+            EventSensitivity::INTERNAL,
+            [
+                'type' => 'object',
+                'properties' => [
+                    'definition_id' => ['type' => 'string', 'maxLength' => 191],
+                    'definition_version' => ['type' => 'integer', 'minimum' => 1],
+                    'operation' => ['type' => 'string', 'maxLength' => 127],
+                    'changed_fields' => [
+                        'type' => 'array',
+                        'maxItems' => 256,
+                        'items' => ['type' => 'string', 'maxLength' => 63],
+                    ],
+                ],
+                'required' => ['definition_id', 'definition_version', 'operation', 'changed_fields'],
+                'additionalProperties' => false,
+            ],
+        ));
         $fieldPresenter = new CoreFieldPresenter();
         foreach (BuiltInFieldTypes::all() as $fieldType) {
             $registrar->fieldType($fieldType);
@@ -321,6 +343,7 @@ final class CoreExtensionContributions
             ]),
             self::policy('core.business.record.export', 'business.record.export', [
                 new ResourcePolicyTarget('business_record'),
+                new ResourcePolicyTarget('business_report'),
             ]),
             self::policy('core.business.record.history', 'business.record.history', [
                 new ResourcePolicyTarget('business_record'),
@@ -333,6 +356,7 @@ final class CoreExtensionContributions
             ]),
             self::policy('core.business.record.report', 'business.record.report', [
                 new ResourcePolicyTarget('business_record'),
+                new ResourcePolicyTarget('business_report'),
             ]),
             self::policy('core.business.record.restore', 'business.record.restore', [
                 new ResourcePolicyTarget('business_record'),

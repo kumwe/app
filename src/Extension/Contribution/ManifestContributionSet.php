@@ -11,6 +11,16 @@ use Kumwe\CMS\BusinessDefinition\Domain\DefinitionOwner;
 use Kumwe\CMS\BusinessDefinition\Domain\DefinitionStatus;
 use Kumwe\CMS\BusinessDefinition\Domain\EntityTypeDefinition;
 use Kumwe\CMS\BusinessDefinition\Domain\FieldTypeDefinition;
+use Kumwe\CMS\BusinessIntegration\Application\PayloadSchemaValidator;
+use Kumwe\CMS\BusinessIntegration\Domain\DomainListenerDefinition;
+use Kumwe\CMS\BusinessIntegration\Domain\EventConsumerDefinition;
+use Kumwe\CMS\BusinessIntegration\Domain\EventSchemaDefinition;
+use Kumwe\CMS\BusinessIntegration\Domain\JobContributionDefinition;
+use Kumwe\CMS\BusinessIntegration\Domain\QueueContributionDefinition;
+use Kumwe\CMS\BusinessIntegration\Domain\ScheduleContributionDefinition;
+use Kumwe\CMS\BusinessIntegration\Domain\WebhookContributionDefinition;
+use Kumwe\CMS\BusinessReporting\Domain\ReportDefinition;
+use Kumwe\CMS\BusinessReporting\Domain\ProjectionDefinition;
 use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessActionContract;
 use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessViewContract;
 use Kumwe\CMS\BusinessSurface\Presentation\Field\FieldPresentationContribution;
@@ -48,6 +58,16 @@ final readonly class ManifestContributionSet
      * @since  2.0.0
      */
     public const SPI_VERSION = 1;
+
+    /**
+     * Current contribution SPI used by manifest schema 4 business-integration packages.
+     *
+     * Keeping `SPI_VERSION` at one preserves the public constant and exact schema-2/3 export bytes.
+     *
+     * @var    int
+     * @since  2.0.0
+     */
+    public const CURRENT_SPI_VERSION = 2;
 
     /**
      * Declared permission codes, keyed and sorted by capability identifier.
@@ -169,6 +189,33 @@ final readonly class ManifestContributionSet
      */
     private array $customBusinessActions;
 
+    /** @var array<string, EventSchemaDefinition> Declared event schemas. @since 2.0.0 */
+    private array $eventSchemas;
+
+    /** @var array<string, DomainListenerDefinition> Declared synchronous listeners. @since 2.0.0 */
+    private array $domainListeners;
+
+    /** @var array<string, EventConsumerDefinition> Declared durable consumers. @since 2.0.0 */
+    private array $eventConsumers;
+
+    /** @var array<string, JobContributionDefinition> Declared job handlers and payload schemas. @since 2.0.0 */
+    private array $jobs;
+
+    /** @var array<string, QueueContributionDefinition> Declared logical queues. @since 2.0.0 */
+    private array $queues;
+
+    /** @var array<string, ScheduleContributionDefinition> Declared recurring schedules. @since 2.0.0 */
+    private array $schedules;
+
+    /** @var array<string, ProjectionDefinition> Declared rebuildable projections. @since 2.0.0 */
+    private array $projections;
+
+    /** @var array<string, ReportDefinition> Declared safe reports. @since 2.0.0 */
+    private array $reports;
+
+    /** @var array<string, WebhookContributionDefinition> Declared outbound adapters. @since 2.0.0 */
+    private array $webhooks;
+
     /**
      * Assemble one package's declarations and reject any set that is already inconsistent.
      *
@@ -192,6 +239,16 @@ final readonly class ManifestContributionSet
      * @param   iterable<CustomBusinessViewContract>         $customBusinessViews    Custom view handler contracts.
      * @param   iterable<CustomBusinessActionContract>       $customBusinessActions  Custom action handler contracts.
      * @param   iterable<FieldPresentationContribution>      $fieldPresentations     Safe presenter declarations.
+     * @param   iterable<EventSchemaDefinition>               $eventSchemas           Versioned event contracts.
+     * @param   iterable<DomainListenerDefinition>            $domainListeners        Synchronous listener contracts.
+     * @param   iterable<EventConsumerDefinition>             $eventConsumers         Durable consumer contracts.
+     * @param   iterable<JobContributionDefinition>           $jobs                   Job and payload contracts.
+     * @param   iterable<QueueContributionDefinition>         $queues                 Logical queue declarations.
+     * @param   iterable<ScheduleContributionDefinition>      $schedules              Recurring schedules.
+     * @param   iterable<ProjectionDefinition>                $projections            Rebuildable projections.
+     * @param   iterable<ReportDefinition>                    $reports                Safe report definitions.
+     * @param   iterable<WebhookContributionDefinition>       $webhooks               Outbound adapter declarations.
+     * @param   int                                           $spiVersion             Contribution SPI revision.
      *
      * @throws  InvalidArgumentException  When an identifier is outside the owner's namespace or declared twice,
      *          when navigation or a route references something this set does not declare, or when a business
@@ -216,7 +273,20 @@ final readonly class ManifestContributionSet
         iterable $customBusinessViews = [],
         iterable $customBusinessActions = [],
         iterable $fieldPresentations = [],
+        iterable $eventSchemas = [],
+        iterable $domainListeners = [],
+        iterable $eventConsumers = [],
+        iterable $jobs = [],
+        iterable $queues = [],
+        iterable $schedules = [],
+        iterable $projections = [],
+        iterable $reports = [],
+        iterable $webhooks = [],
+        private int $spiVersion = self::SPI_VERSION,
     ) {
+        if (!in_array($spiVersion, [self::SPI_VERSION, self::CURRENT_SPI_VERSION], true)) {
+            throw new InvalidArgumentException('The extension contribution SPI version is unsupported.');
+        }
         $this->capabilities = $this->index($capabilities, 'capability');
         $this->resourcePolicies = $this->index($resourcePolicies, 'resource policy');
         $this->workspaces = $this->index($workspaces, 'workspace');
@@ -232,6 +302,15 @@ final readonly class ManifestContributionSet
         $this->businessDefinitions = $this->businessIndex($businessDefinitions, 'business definition');
         $this->customBusinessViews = $this->customContractIndex($customBusinessViews, 'view');
         $this->customBusinessActions = $this->customContractIndex($customBusinessActions, 'action');
+        $this->eventSchemas = $this->integrationIndex($eventSchemas, 'event schema');
+        $this->domainListeners = $this->integrationIndex($domainListeners, 'domain listener');
+        $this->eventConsumers = $this->integrationIndex($eventConsumers, 'event consumer');
+        $this->jobs = $this->integrationIndex($jobs, 'job');
+        $this->queues = $this->integrationIndex($queues, 'queue');
+        $this->schedules = $this->integrationIndex($schedules, 'schedule');
+        $this->projections = $this->integrationIndex($projections, 'projection');
+        $this->reports = $this->integrationIndex($reports, 'report');
+        $this->webhooks = $this->integrationIndex($webhooks, 'webhook');
 
         foreach ($this->navigation as $item) {
             if (!isset($this->workspaces[$item->workspace])) {
@@ -338,6 +417,7 @@ final readonly class ManifestContributionSet
                 }
             }
         }
+        $this->assertIntegrationReferences();
     }
 
     /**
@@ -350,12 +430,12 @@ final readonly class ManifestContributionSet
      *
      * @param   ExtensionIdentifier  $extension       Package the manifest belongs to, which owns everything in it.
      * @param   array<mixed>         $data            The manifest's decoded `contributions` value.
-     * @param   int                  $manifestSchema  Manifest grammar: 2 for original typed contributions or
-     *          3 for signed field presentations and custom business handlers.
+     * @param   int                  $manifestSchema  Manifest grammar: 2 for original typed contributions,
+     *          3 for signed presentations/custom handlers, or 4 for durable integration contributions.
      *
      * @return  self  The package's declarations, indexed and consistency-checked.
      *
-     * @throws  InvalidArgumentException  When the SPI version is not 1, a key or value has the wrong shape,
+     * @throws  InvalidArgumentException  When the SPI version does not match the manifest schema, a value is wrong,
      *          a list is over its cap, an identifier is not the package's to claim, or a published custom field
      *          lacks signed presentation coverage.
      *
@@ -363,17 +443,26 @@ final readonly class ManifestContributionSet
      */
     public static function fromManifest(ExtensionIdentifier $extension, array $data, int $manifestSchema = 3): self
     {
-        if (!in_array($manifestSchema, [2, 3], true)) {
-            throw new InvalidArgumentException('Typed extension contributions require manifest schema 2 or 3.');
+        if (!in_array($manifestSchema, [2, 3, 4], true)) {
+            throw new InvalidArgumentException('Typed extension contributions require manifest schema 2, 3, or 4.');
         }
         $data = self::object($data, 'contributions');
+        $topLevelKeys = ['version', 'capabilities', 'resource_policies', 'administrator', 'portal', 'business'];
+        if ($manifestSchema >= 4) {
+            $topLevelKeys[] = 'integration';
+        }
         self::knownKeys(
             $data,
-            ['version', 'capabilities', 'resource_policies', 'administrator', 'portal', 'business'],
+            $topLevelKeys,
             'contributions',
         );
-        if (($data['version'] ?? null) !== self::SPI_VERSION) {
-            throw new InvalidArgumentException('The extension contribution SPI version must be 1.');
+        $expectedSpi = $manifestSchema >= 4 ? self::CURRENT_SPI_VERSION : self::SPI_VERSION;
+        if (($data['version'] ?? null) !== $expectedSpi) {
+            throw new InvalidArgumentException(sprintf(
+                'Manifest schema %d requires extension contribution SPI version %d.',
+                $manifestSchema,
+                $expectedSpi,
+            ));
         }
         $owner = ContributionOwner::extension($extension->value());
         $administrator = self::object($data['administrator'] ?? [], 'contributions.administrator');
@@ -388,6 +477,22 @@ final readonly class ManifestContributionSet
         self::knownKeys($business, $businessKeys, 'business contributions');
         $portal = self::object($data['portal'] ?? [], 'contributions.portal');
         self::knownKeys($portal, ['workspaces', 'navigation', 'routes', 'templates'], 'portal contributions');
+        $integration = self::object($data['integration'] ?? [], 'contributions.integration');
+        self::knownKeys(
+            $integration,
+            [
+                'event_schemas',
+                'domain_listeners',
+                'consumers',
+                'jobs',
+                'queues',
+                'schedules',
+                'projections',
+                'reports',
+                'webhooks',
+            ],
+            'integration contributions',
+        );
 
         $capabilities = array_map(static function (array $item) use ($owner): CapabilityDefinition {
             self::knownKeys(
@@ -612,6 +717,42 @@ final readonly class ManifestContributionSet
                 'contributions.business.field_presentations',
             ),
         );
+        $eventSchemas = array_map(
+            static fn (array $item): EventSchemaDefinition => EventSchemaDefinition::fromArray($item),
+            self::objects($integration['event_schemas'] ?? [], 'contributions.integration.event_schemas'),
+        );
+        $domainListeners = array_map(
+            static fn (array $item): DomainListenerDefinition => DomainListenerDefinition::fromArray($item),
+            self::objects($integration['domain_listeners'] ?? [], 'contributions.integration.domain_listeners'),
+        );
+        $eventConsumers = array_map(
+            static fn (array $item): EventConsumerDefinition => EventConsumerDefinition::fromArray($item),
+            self::objects($integration['consumers'] ?? [], 'contributions.integration.consumers'),
+        );
+        $jobs = array_map(
+            static fn (array $item): JobContributionDefinition => JobContributionDefinition::fromArray($item),
+            self::objects($integration['jobs'] ?? [], 'contributions.integration.jobs'),
+        );
+        $queues = array_map(
+            static fn (array $item): QueueContributionDefinition => QueueContributionDefinition::fromArray($item),
+            self::objects($integration['queues'] ?? [], 'contributions.integration.queues'),
+        );
+        $schedules = array_map(
+            static fn (array $item): ScheduleContributionDefinition => ScheduleContributionDefinition::fromArray($item),
+            self::objects($integration['schedules'] ?? [], 'contributions.integration.schedules'),
+        );
+        $projections = array_map(
+            static fn (array $item): ProjectionDefinition => ProjectionDefinition::fromArray($item),
+            self::objects($integration['projections'] ?? [], 'contributions.integration.projections'),
+        );
+        $reports = array_map(
+            static fn (array $item): ReportDefinition => ReportDefinition::fromArray($item),
+            self::objects($integration['reports'] ?? [], 'contributions.integration.reports'),
+        );
+        $webhooks = array_map(
+            static fn (array $item): WebhookContributionDefinition => WebhookContributionDefinition::fromArray($item),
+            self::objects($integration['webhooks'] ?? [], 'contributions.integration.webhooks'),
+        );
 
         $set = new self(
             $owner,
@@ -630,6 +771,16 @@ final readonly class ManifestContributionSet
             $customBusinessViews,
             $customBusinessActions,
             $fieldPresentations,
+            $eventSchemas,
+            $domainListeners,
+            $eventConsumers,
+            $jobs,
+            $queues,
+            $schedules,
+            $projections,
+            $reports,
+            $webhooks,
+            $expectedSpi,
         );
         $set->assertFieldPresentationCoverage();
 
@@ -843,6 +994,66 @@ final readonly class ManifestContributionSet
         return array_values($this->customBusinessActions);
     }
 
+    /** @return list<EventSchemaDefinition> Versioned event contracts in identifier order. @since 2.0.0 */
+    public function eventSchemas(): array
+    {
+        return array_values($this->eventSchemas);
+    }
+
+    /** @return list<DomainListenerDefinition> Synchronous listener declarations. @since 2.0.0 */
+    public function domainListeners(): array
+    {
+        return array_values($this->domainListeners);
+    }
+
+    /** @return list<EventConsumerDefinition> Durable consumer declarations. @since 2.0.0 */
+    public function eventConsumers(): array
+    {
+        return array_values($this->eventConsumers);
+    }
+
+    /** @return list<JobContributionDefinition> Job handler and payload declarations. @since 2.0.0 */
+    public function jobs(): array
+    {
+        return array_values($this->jobs);
+    }
+
+    /** @return list<QueueContributionDefinition> Logical queue declarations. @since 2.0.0 */
+    public function queues(): array
+    {
+        return array_values($this->queues);
+    }
+
+    /** @return list<ScheduleContributionDefinition> Recurring schedule declarations. @since 2.0.0 */
+    public function schedules(): array
+    {
+        return array_values($this->schedules);
+    }
+
+    /** @return list<ProjectionDefinition> Rebuildable projection declarations. @since 2.0.0 */
+    public function projections(): array
+    {
+        return array_values($this->projections);
+    }
+
+    /** @return list<ReportDefinition> Safe report declarations. @since 2.0.0 */
+    public function reports(): array
+    {
+        return array_values($this->reports);
+    }
+
+    /** @return list<WebhookContributionDefinition> Outbound adapter declarations. @since 2.0.0 */
+    public function webhooks(): array
+    {
+        return array_values($this->webhooks);
+    }
+
+    /** @return int Contribution service-provider interface revision. @since 2.0.0 */
+    public function spiVersion(): int
+    {
+        return $this->spiVersion;
+    }
+
     /**
      * Write the set back out in the same shape `fromManifest()` reads.
      *
@@ -903,8 +1114,8 @@ final readonly class ManifestContributionSet
             );
         }
 
-        return [
-            'version' => self::SPI_VERSION,
+        $document = [
+            'version' => $this->spiVersion,
             'capabilities' => array_map(
                 static fn (CapabilityDefinition $item): array => $item->toArray(),
                 $this->capabilities(),
@@ -951,6 +1162,38 @@ final readonly class ManifestContributionSet
             ],
             'business' => $business,
         ];
+        if ($this->spiVersion >= self::CURRENT_SPI_VERSION) {
+            $document['integration'] = [
+                'event_schemas' => $this->exports($this->eventSchemas()),
+                'domain_listeners' => $this->exports($this->domainListeners()),
+                'consumers' => $this->exports($this->eventConsumers()),
+                'jobs' => $this->exports($this->jobs()),
+                'queues' => $this->exports($this->queues()),
+                'schedules' => $this->exports($this->schedules()),
+                'projections' => $this->exports($this->projections()),
+                'reports' => $this->exports($this->reports()),
+                'webhooks' => $this->exports($this->webhooks()),
+            ];
+        }
+
+        return $document;
+    }
+
+    /**
+     * Export a homogeneous contribution list without repeating closure boilerplate.
+     *
+     * @param   list<ContributionDefinition>  $definitions  Definitions in deterministic order.
+     *
+     * @return  list<array<string, mixed>>  Canonical manifest documents.
+     *
+     * @since   2.0.0
+     */
+    private function exports(array $definitions): array
+    {
+        return array_map(
+            static fn (ContributionDefinition $definition): array => $definition->toArray(),
+            $definitions,
+        );
     }
 
     /**
@@ -1022,6 +1265,123 @@ final readonly class ManifestContributionSet
         }
         ksort($result, SORT_STRING);
         return $result;
+    }
+
+    /**
+     * Key one integration declaration and require its embedded owner to match the registrar owner.
+     *
+     * Report definitions carry ownership through their identifier and therefore have no duplicate
+     * owner field. Every other integration contract includes the owner in its signed bytes, so a
+     * package cannot present a byte-equivalent identifier while attributing the behavior elsewhere.
+     *
+     * @template T of ContributionDefinition
+     *
+     * @param   iterable<T>  $items  Integration declarations of one kind.
+     * @param   string       $kind   Kind used for ownership and duplicate diagnostics.
+     *
+     * @return  array<string, T>  Definitions keyed in deterministic identifier order.
+     *
+     * @throws  InvalidArgumentException  When ownership is inconsistent or an identifier repeats.
+     *
+     * @since   2.0.0
+     */
+    private function integrationIndex(iterable $items, string $kind): array
+    {
+        $result = $this->index($items, $kind);
+        foreach ($result as $definition) {
+            $document = $definition->toArray();
+            if (
+                array_key_exists('owner', $document)
+                && $document['owner'] !== $this->owner->identifier()
+            ) {
+                throw new InvalidArgumentException(sprintf(
+                    'Contribution %s %s has inconsistent ownership.',
+                    $kind,
+                    $definition->identifier(),
+                ));
+            }
+        }
+
+        return $result;
+    }
+
+    /**
+     * Validate references that must stay inside one extension's declared automation graph.
+     *
+     * Consumers, listeners, projections and outbound adapters may subscribe to a core or another
+     * package's public event contract, so those event references are resolved against the complete
+     * runtime catalog later. A schedule may execute only an owned declared job, reports may read only
+     * owned business definitions, and non-default queues must be declared by this package.
+     *
+     * @return  void
+     *
+     * @throws  InvalidArgumentException  When an owned job, queue, report source, or capability reference is absent.
+     *
+     * @since   2.0.0
+     */
+    private function assertIntegrationReferences(): void
+    {
+        foreach ($this->jobs as $job) {
+            $this->assertQueueReference($job->toArray()['queue'] ?? null, 'job');
+        }
+        foreach ($this->eventConsumers as $consumer) {
+            $this->assertQueueReference($consumer->toArray()['queue'] ?? null, 'event consumer');
+        }
+        foreach ($this->schedules as $schedule) {
+            $document = $schedule->toArray();
+            $jobType = $document['job_type'] ?? null;
+            if (!is_string($jobType) || !isset($this->jobs[$jobType])) {
+                throw new InvalidArgumentException('A contributed schedule must reference an owned declared job.');
+            }
+            $job = $this->jobs[$jobType];
+            if (!$job instanceof JobContributionDefinition || !$schedule instanceof ScheduleContributionDefinition) {
+                throw new InvalidArgumentException('A contributed schedule or job definition is invalid.');
+            }
+            if ($job->installationWide() === ($schedule->siteIdentifier() !== null)) {
+                throw new InvalidArgumentException(
+                    'A contributed schedule site must agree with its job execution scope.',
+                );
+            }
+            (new PayloadSchemaValidator())->assertPayload($job->payloadSchema(), $schedule->payload());
+            $this->assertQueueReference($document['queue'] ?? null, 'schedule');
+        }
+        foreach ($this->webhooks as $webhook) {
+            $this->assertQueueReference($webhook->toArray()['queue'] ?? null, 'webhook');
+        }
+        foreach ($this->reports as $report) {
+            $document = $report->toArray();
+            $source = $document['source_definition'] ?? null;
+            if (!is_string($source)) {
+                throw new InvalidArgumentException('A contributed report source definition is invalid.');
+            }
+            $this->owner->assertOwns($source, 'report source');
+            $capability = $document['required_capability'] ?? null;
+            if (!is_string($capability) || !isset($this->capabilities[$capability])) {
+                throw new InvalidArgumentException('A contributed report must reference a declared capability.');
+            }
+        }
+    }
+
+    /**
+     * Accept the platform default queue or require an owner-declared queue identifier.
+     *
+     * @param   mixed   $queue  Queue value read from a canonical contribution document.
+     * @param   string  $kind   Referencing contribution kind.
+     *
+     * @return  void
+     *
+     * @throws  InvalidArgumentException  When the queue is invalid or unavailable.
+     *
+     * @since   2.0.0
+     */
+    private function assertQueueReference(mixed $queue, string $kind): void
+    {
+        if (!is_string($queue) || ($queue !== 'default' && !isset($this->queues[$queue]))) {
+            throw new InvalidArgumentException(sprintf(
+                'A contributed %s must reference the default or an owned declared queue.',
+                $kind,
+            ));
+        }
     }
 
     /**

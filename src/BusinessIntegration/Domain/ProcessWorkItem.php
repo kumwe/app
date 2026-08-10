@@ -1,0 +1,89 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Kumwe\CMS\BusinessIntegration\Domain;
+
+use DateTimeImmutable;
+use InvalidArgumentException;
+use Ramsey\Uuid\Uuid;
+
+/**
+ * Immutable timer, command or compensation request emitted by one process transition.
+ *
+ * @since  2.0.0
+ */
+final readonly class ProcessWorkItem
+{
+    /** @var array<string, mixed> Bounded handler payload. @since 2.0.0 */
+    private array $payload;
+
+    /**
+     * Define a durable process effect.
+     *
+     * @param   string                $id               Canonical work UUID and idempotency key.
+     * @param   ProcessWorkKind       $kind             Timer, command or compensation.
+     * @param   string                $name             Namespaced handler contract.
+     * @param   array<string, mixed>  $payload          Bounded JSON object.
+     * @param   DateTimeImmutable     $dueAt            Earliest execution instant.
+     * @param   int                   $maximumAttempts  Attempt budget.
+     *
+     * @throws  InvalidArgumentException  When identity, payload or attempt budget is invalid.
+     *
+     * @since   2.0.0
+     */
+    public function __construct(
+        private string $id,
+        private ProcessWorkKind $kind,
+        private string $name,
+        array $payload,
+        private DateTimeImmutable $dueAt,
+        private int $maximumAttempts = 10,
+    ) {
+        if (!Uuid::isValid($id)) {
+            throw new InvalidArgumentException('A process work item ID must be a UUID.');
+        }
+        IntegrationContractValidator::identifier($name, 'Process work name');
+        IntegrationContractValidator::object($payload, 'Process work payload', EventEnvelope::MAX_PAYLOAD_BYTES);
+        if ($maximumAttempts < 1 || $maximumAttempts > 100) {
+            throw new InvalidArgumentException('A process work attempt budget must be between 1 and 100.');
+        }
+        $this->payload = $payload;
+    }
+
+    /** @return string Work UUID. @since 2.0.0 */
+    public function id(): string
+    {
+        return $this->id;
+    }
+
+    /** @return ProcessWorkKind Work classification. @since 2.0.0 */
+    public function kind(): ProcessWorkKind
+    {
+        return $this->kind;
+    }
+
+    /** @return string Handler contract name. @since 2.0.0 */
+    public function name(): string
+    {
+        return $this->name;
+    }
+
+    /** @return array<string, mixed> Handler payload. @since 2.0.0 */
+    public function payload(): array
+    {
+        return $this->payload;
+    }
+
+    /** @return DateTimeImmutable Earliest execution instant. @since 2.0.0 */
+    public function dueAt(): DateTimeImmutable
+    {
+        return $this->dueAt;
+    }
+
+    /** @return int Attempt budget. @since 2.0.0 */
+    public function maximumAttempts(): int
+    {
+        return $this->maximumAttempts;
+    }
+}

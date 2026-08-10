@@ -9,7 +9,19 @@ use Kumwe\CMS\Application\Authorization\AuthorizationPolicyRegistry;
 use Kumwe\CMS\BusinessDefinition\Application\BusinessDefinitionContributionRegistry;
 use Kumwe\CMS\BusinessDefinition\Application\BusinessDefinitionValidator;
 use Kumwe\CMS\BusinessDefinition\Application\FieldTypeRegistry;
+use Kumwe\CMS\Application\Automation\JobHandler;
+use Kumwe\CMS\BusinessIntegration\Application\DomainEventHandler;
+use Kumwe\CMS\BusinessIntegration\Application\EventContractRegistry;
+use Kumwe\CMS\BusinessIntegration\Application\IntegrationEventHandler;
+use Kumwe\CMS\BusinessIntegration\Application\IntegrationEventTransport;
+use Kumwe\CMS\BusinessIntegration\Application\PayloadSchemaValidator;
+use Kumwe\CMS\BusinessIntegration\Domain\DomainListenerDefinition;
+use Kumwe\CMS\BusinessIntegration\Domain\EventConsumerDefinition;
+use Kumwe\CMS\BusinessIntegration\Domain\EventSchemaDefinition;
+use Kumwe\CMS\BusinessIntegration\Domain\WebhookContributionDefinition;
 use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessActionHandlerRegistry;
+use Kumwe\CMS\BusinessReporting\Application\ProjectionBuilder;
+use Kumwe\CMS\BusinessReporting\Domain\ProjectionDefinition;
 use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessReferenceRegistry;
 use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessViewHandlerRegistry;
 use Kumwe\CMS\BusinessSurface\Presentation\Field\FieldPresentationRegistry;
@@ -162,6 +174,33 @@ final readonly class ExtensionContributionRegistrySet
      */
     private CustomBusinessActionHandlerRegistry $customBusinessActionHandlers;
 
+    /** @var OwnedRuntimeContributionRegistry Versioned event schema declarations. @since 2.0.0 */
+    private OwnedRuntimeContributionRegistry $eventSchemas;
+
+    /** @var OwnedRuntimeContributionRegistry Synchronous domain listeners. @since 2.0.0 */
+    private OwnedRuntimeContributionRegistry $domainListeners;
+
+    /** @var OwnedRuntimeContributionRegistry Durable integration consumers. @since 2.0.0 */
+    private OwnedRuntimeContributionRegistry $eventConsumers;
+
+    /** @var OwnedRuntimeContributionRegistry Contributed job handlers. @since 2.0.0 */
+    private OwnedRuntimeContributionRegistry $jobs;
+
+    /** @var OwnedRuntimeContributionRegistry Logical queue declarations. @since 2.0.0 */
+    private OwnedRuntimeContributionRegistry $queues;
+
+    /** @var OwnedRuntimeContributionRegistry Recurring schedule declarations. @since 2.0.0 */
+    private OwnedRuntimeContributionRegistry $schedules;
+
+    /** @var OwnedRuntimeContributionRegistry Rebuildable projection builders. @since 2.0.0 */
+    private OwnedRuntimeContributionRegistry $projections;
+
+    /** @var OwnedRuntimeContributionRegistry Safe report definitions. @since 2.0.0 */
+    private OwnedRuntimeContributionRegistry $reports;
+
+    /** @var OwnedRuntimeContributionRegistry Durable outbound adapters. @since 2.0.0 */
+    private OwnedRuntimeContributionRegistry $webhooks;
+
     /**
      * Every contribution kind, keyed by its dotted inventory path.
      *
@@ -227,6 +266,21 @@ final readonly class ExtensionContributionRegistrySet
         $customBusinessReferences = new CustomBusinessReferenceRegistry();
         $this->customBusinessViewHandlers = new CustomBusinessViewHandlerRegistry($customBusinessReferences);
         $this->customBusinessActionHandlers = new CustomBusinessActionHandlerRegistry($customBusinessReferences);
+        $this->eventSchemas = new OwnedRuntimeContributionRegistry('event schema');
+        $this->domainListeners = new OwnedRuntimeContributionRegistry(
+            'domain listener',
+            DomainEventHandler::class,
+        );
+        $this->eventConsumers = new OwnedRuntimeContributionRegistry(
+            'event consumer',
+            IntegrationEventHandler::class,
+        );
+        $this->jobs = new OwnedRuntimeContributionRegistry('job', JobHandler::class);
+        $this->queues = new OwnedRuntimeContributionRegistry('queue');
+        $this->schedules = new OwnedRuntimeContributionRegistry('schedule');
+        $this->projections = new OwnedRuntimeContributionRegistry('projection', ProjectionBuilder::class);
+        $this->reports = new OwnedRuntimeContributionRegistry('report');
+        $this->webhooks = new OwnedRuntimeContributionRegistry('webhook', IntegrationEventTransport::class);
         $this->surfaces = [
             'capabilities' => $this->capabilities,
             'resource_policies' => $this->resourcePolicies,
@@ -249,6 +303,15 @@ final readonly class ExtensionContributionRegistrySet
             'business.action_handlers' => BusinessContributionSurface::forCustomActionHandlers(
                 $this->customBusinessActionHandlers,
             ),
+            'integration.event_schemas' => $this->eventSchemas,
+            'integration.domain_listeners' => $this->domainListeners,
+            'integration.consumers' => $this->eventConsumers,
+            'integration.jobs' => $this->jobs,
+            'integration.queues' => $this->queues,
+            'integration.schedules' => $this->schedules,
+            'integration.projections' => $this->projections,
+            'integration.reports' => $this->reports,
+            'integration.webhooks' => $this->webhooks,
         ];
         if ($withCore) {
             $registrar = $this->registrar(
@@ -489,6 +552,60 @@ final readonly class ExtensionContributionRegistrySet
         return $this->customBusinessActionHandlers;
     }
 
+    /** @return OwnedRuntimeContributionRegistry Active event schemas. @since 2.0.0 */
+    public function eventSchemas(): OwnedRuntimeContributionRegistry
+    {
+        return $this->eventSchemas;
+    }
+
+    /** @return OwnedRuntimeContributionRegistry Active synchronous domain listeners. @since 2.0.0 */
+    public function domainListeners(): OwnedRuntimeContributionRegistry
+    {
+        return $this->domainListeners;
+    }
+
+    /** @return OwnedRuntimeContributionRegistry Active durable event consumers. @since 2.0.0 */
+    public function eventConsumers(): OwnedRuntimeContributionRegistry
+    {
+        return $this->eventConsumers;
+    }
+
+    /** @return OwnedRuntimeContributionRegistry Active contributed job handlers. @since 2.0.0 */
+    public function jobs(): OwnedRuntimeContributionRegistry
+    {
+        return $this->jobs;
+    }
+
+    /** @return OwnedRuntimeContributionRegistry Active logical queues. @since 2.0.0 */
+    public function queues(): OwnedRuntimeContributionRegistry
+    {
+        return $this->queues;
+    }
+
+    /** @return OwnedRuntimeContributionRegistry Active recurring schedule declarations. @since 2.0.0 */
+    public function schedules(): OwnedRuntimeContributionRegistry
+    {
+        return $this->schedules;
+    }
+
+    /** @return OwnedRuntimeContributionRegistry Active rebuildable projection builders. @since 2.0.0 */
+    public function projections(): OwnedRuntimeContributionRegistry
+    {
+        return $this->projections;
+    }
+
+    /** @return OwnedRuntimeContributionRegistry Active safe report definitions. @since 2.0.0 */
+    public function reports(): OwnedRuntimeContributionRegistry
+    {
+        return $this->reports;
+    }
+
+    /** @return OwnedRuntimeContributionRegistry Active outbound adapters. @since 2.0.0 */
+    public function webhooks(): OwnedRuntimeContributionRegistry
+    {
+        return $this->webhooks;
+    }
+
     /**
      * Check the contributed entity types as one graph, after every provider has contributed.
      *
@@ -508,6 +625,130 @@ final readonly class ExtensionContributionRegistrySet
         $this->businessDefinitions->validate();
         foreach ($this->businessDefinitions->all() as $definition) {
             $this->fieldPresentations->assertCovers($definition);
+        }
+    }
+
+    /**
+     * Validate the complete cross-package event graph after every active provider has contributed.
+     *
+     * A package may consume a public event owned by core or another package, so manifest-local parsing
+     * cannot resolve those references. This pass runs before extension boot and refuses an unavailable
+     * schema revision, a sensitivity mismatch, or a listener/projection/adapter with no active source.
+     *
+     * @return  EventContractRegistry  Immutable catalog safe to share with dispatchers and workers.
+     *
+     * @throws  \InvalidArgumentException  When an integration contribution graph is inconsistent.
+     * @throws  \LogicException  When an internal registry contains the wrong definition type.
+     *
+     * @since   2.0.0
+     */
+    public function validateIntegrationContributions(): EventContractRegistry
+    {
+        $schemas = $this->definitionsOf($this->eventSchemas, EventSchemaDefinition::class);
+        $consumers = $this->definitionsOf($this->eventConsumers, EventConsumerDefinition::class);
+        $catalog = new EventContractRegistry($schemas, $consumers, new PayloadSchemaValidator());
+
+        foreach ($this->definitionsOf($this->domainListeners, DomainListenerDefinition::class) as $listener) {
+            foreach ($listener->schemaVersions() as $version) {
+                $catalog->schema($listener->eventType(), $version);
+            }
+        }
+        foreach ($this->definitionsOf($this->projections, ProjectionDefinition::class) as $projection) {
+            foreach ($projection->sources as $source) {
+                foreach ($source->schemaVersions as $version) {
+                    $schema = $catalog->schema($source->eventType, $version);
+                    if (!$schema->sensitivity()->allowedBy($projection->sensitivityCeiling)) {
+                        throw new \InvalidArgumentException(
+                            'A contributed projection sensitivity ceiling is too low.',
+                        );
+                    }
+                }
+            }
+        }
+        foreach ($this->definitionsOf($this->webhooks, WebhookContributionDefinition::class) as $webhook) {
+            foreach ($webhook->eventTypes() as $eventType) {
+                foreach ($webhook->schemaVersions() as $version) {
+                    $schema = $catalog->schema($eventType, $version);
+                    if (!$schema->sensitivity()->allowedBy($webhook->sensitivityCeiling())) {
+                        throw new \InvalidArgumentException(
+                            'A contributed webhook sensitivity ceiling is too low.',
+                        );
+                    }
+                }
+            }
+        }
+
+        return $catalog;
+    }
+
+    /**
+     * Read one generic runtime surface as an exact definition type.
+     *
+     * @template T of ContributionDefinition
+     *
+     * @param   OwnedRuntimeContributionRegistry  $registry  Generic owner-aware surface.
+     * @param   class-string<T>                   $class     Required declaration type.
+     *
+     * @return  list<T>  Definitions in stable identifier order.
+     *
+     * @throws  \LogicException  When composition put another definition type in the surface.
+     *
+     * @since   2.0.0
+     */
+    private function definitionsOf(OwnedRuntimeContributionRegistry $registry, string $class): array
+    {
+        $result = [];
+        foreach ($registry->definitions() as $definition) {
+            if (!$definition instanceof $class) {
+                throw new \LogicException('An integration contribution registry contains an invalid definition.');
+            }
+            $result[] = $definition;
+        }
+
+        return $result;
+    }
+
+    /**
+     * Require every subscribed event type to have at least one active schema revision.
+     *
+     * @param   EventContractRegistry          $catalog     Validated catalog used for exact lookups.
+     * @param   list<EventSchemaDefinition>    $schemas     Active schemas inspected by event type.
+     * @param   mixed                          $eventTypes  Candidate non-empty event type list.
+     * @param   string                         $kind        Contribution kind named in a stable failure.
+     *
+     * @return  void
+     *
+     * @throws  \InvalidArgumentException  When a type has no active contract revision.
+     *
+     * @since   2.0.0
+     */
+    private function assertEventTypesExist(
+        EventContractRegistry $catalog,
+        array $schemas,
+        mixed $eventTypes,
+        string $kind,
+    ): void {
+        if (!is_array($eventTypes) || !array_is_list($eventTypes) || $eventTypes === []) {
+            throw new \InvalidArgumentException(sprintf('A contributed %s event list is invalid.', $kind));
+        }
+        foreach ($eventTypes as $eventType) {
+            if (!is_string($eventType)) {
+                throw new \InvalidArgumentException(sprintf(
+                    'A contributed %s event type is invalid.',
+                    $kind,
+                ));
+            }
+            $versions = array_values(array_filter(
+                $schemas,
+                static fn (EventSchemaDefinition $schema): bool => $schema->eventType() === $eventType,
+            ));
+            if ($versions === []) {
+                throw new \InvalidArgumentException(sprintf(
+                    'A contributed %s references an unavailable event type.',
+                    $kind,
+                ));
+            }
+            $catalog->schema($versions[0]->eventType(), $versions[0]->schemaVersion());
         }
     }
 
