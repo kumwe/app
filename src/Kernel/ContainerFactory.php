@@ -4343,6 +4343,7 @@ final class ContainerFactory
         ): CreateAccessTokenCommand => new CreateAccessTokenCommand(
             self::service($container, AdministratorIdentityGateway::class),
             self::service($container, ConsoleAuthorizer::class),
+            self::service($container, MembershipDirectory::class),
         ), true);
         $container->share(ListExtensionsCommand::class, static fn (
             Container $container,

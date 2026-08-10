@@ -403,7 +403,7 @@ jobs:
                 --site=default \
                 --email=administrator@kumwe.test \
                 --name=deployment-cli-management \
-                --capabilities=administrator.access,automation.manage,business.record.action,business.record.browse,business.record.create,business.record.export,business.record.read,business.record.relate,business.record.report,business.record.update,business.schema.approve,business.schema.execute,business.schema.plan,business.schema.read,business.security.manage,business.step_up.manage,content.read,content.create,content.update,content.submit,content.review,content.publish,extensions.manage,users.manage \
+                --capabilities=administrator.access,automation.manage,business.schema.approve,business.schema.execute,business.schema.plan,business.schema.read,content.read,content.create,content.update,content.submit,content.review,content.publish,extensions.manage,users.manage \
                 --audience=kumwe-cli \
                 --purpose=management \
                 --password-file="$password_file"

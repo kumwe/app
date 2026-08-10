@@ -188,6 +188,48 @@ final class ProductionArtifactsTest extends TestCase
         self::assertStringContainsString('--force-recreate app web worker scheduler', $driver);
     }
 
+    /**
+     * Keep deployment bootstrap credentials unscoped until an exact live membership exists.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testDeploymentAcceptanceBindsSensitiveTokensAfterMembershipBootstrap(): void
+    {
+        $acceptance = $this->contents('.github/workflows/deployment-acceptance.yml');
+        $driver = $this->contents('tools/asset-inspection-deployment-acceptance.sh');
+        $support = $this->contents('tests/Support/AssetInspectionDeploymentAcceptance.php');
+        $bootstrapStart = strpos($acceptance, '--name=deployment-cli-management');
+        if ($bootstrapStart === false) {
+            self::fail('The deployment management-token bootstrap is missing.');
+        }
+        $bootstrapEnd = strpos($acceptance, '--password-file="$password_file"', $bootstrapStart);
+        if ($bootstrapEnd === false) {
+            self::fail('The deployment management-token bootstrap is incomplete.');
+        }
+        $bootstrap = substr($acceptance, $bootstrapStart, $bootstrapEnd - $bootstrapStart);
+        if (preg_match('/--capabilities=([^\s\\\\]+)/D', $bootstrap, $workflowCapabilities) !== 1) {
+            self::fail('The workflow bootstrap capability set is unavailable.');
+        }
+        if (preg_match("/bootstrap_capabilities='([^']+)'/D", $driver, $driverCapabilities) !== 1) {
+            self::fail('The driver bootstrap capability set is unavailable.');
+        }
+
+        self::assertStringContainsString('business.schema.plan', $bootstrap);
+        self::assertSame($driverCapabilities[1], $workflowCapabilities[1]);
+        foreach (['business.record.', 'business.security.manage', 'business.step_up.manage'] as $sensitive) {
+            self::assertStringNotContainsString($sensitive, $bootstrap);
+        }
+        self::assertStringNotContainsString('--organization=', $bootstrap);
+        self::assertStringContainsString('--organization="$KUMWE_ACCEPTANCE_ORGANIZATION"', $driver);
+        self::assertStringContainsString("delegated_capabilities=\"\${delegated_capabilities", $driver);
+        self::assertStringContainsString("        refresh_bootstrap_token\n", $driver);
+        self::assertStringContainsString("apply_policy_profile\n    refresh_management_token", $driver);
+        self::assertStringContainsString('$security->createOrganization(', $support);
+        self::assertStringContainsString('$security->createMembership(', $support);
+    }
+
     public function testNativeInstallerPersistsIndependentRuntimeTrustAndStableIdentity(): void
     {
         $installer = $this->contents('bin/kumwe-install');

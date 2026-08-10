@@ -32,11 +32,13 @@ use Kumwe\CMS\BusinessIntegration\Application\OutboxStore;
 use Kumwe\CMS\Extension\Contribution\ContributionOwner;
 use Kumwe\CMS\Extension\Contribution\ExtensionContributionRegistrySet;
 use Kumwe\CMS\Extension\Runtime\RuntimeMaterializationState;
+use Kumwe\CMS\Identity\Application\Administration\AccessControlService;
 use Kumwe\CMS\Identity\Application\Administration\AdministratorIdentityGateway;
 use Kumwe\CMS\Identity\Application\Administration\AdministratorSessionStore;
 use Kumwe\CMS\Identity\Application\StepUp\AdministratorStepUpProvider;
 use Kumwe\CMS\Identity\Application\StepUp\AuthorizationStepUpProofAdapter;
 use Kumwe\CMS\Identity\Domain\StepUp\StepUpIntent;
+use Kumwe\CMS\Identity\Domain\UserStatus;
 use Kumwe\CMS\Infrastructure\Persistence\TableNames;
 use KumweExample\AssetInspection\Application\InspectionPolicyProfile;
 use RuntimeException;
@@ -166,14 +168,16 @@ final class AssetInspectionDeploymentAcceptance
      */
     private static function applyPolicy(): void
     {
-        [$container] = self::boot('KUMWE_ACCEPTANCE_POLICY_EMAIL', 'KUMWE_ACCEPTANCE_POLICY_PASSWORD');
+        [$container, $administratorContext] = self::boot();
         $identities = self::service($container, AdministratorIdentityGateway::class);
+        $access = self::service($container, AccessControlService::class);
         $sessions = self::service($container, AdministratorSessionStore::class);
         $stepUp = self::service($container, AdministratorStepUpProvider::class);
         $proofs = self::service($container, AuthorizationStepUpProofAdapter::class);
         $security = self::service($container, BusinessSecurityAdministrationService::class);
         if (
             !$identities instanceof AdministratorIdentityGateway
+            || !$access instanceof AccessControlService
             || !$sessions instanceof AdministratorSessionStore
             || !$stepUp instanceof AdministratorStepUpProvider
             || !$proofs instanceof AuthorizationStepUpProofAdapter
@@ -184,6 +188,22 @@ final class AssetInspectionDeploymentAcceptance
 
         $email = self::environment('KUMWE_ACCEPTANCE_POLICY_EMAIL');
         $password = self::environment('KUMWE_ACCEPTANCE_POLICY_PASSWORD');
+        $operator = $access->createUser(
+            $administratorContext,
+            $email,
+            'Asset inspection policy operator',
+            $password,
+            UserStatus::Active,
+        );
+        $role = $access->createRole(
+            $administratorContext,
+            'asset-inspection-policy-operator',
+            'Asset inspection policy operator',
+        );
+        $access->grant($administratorContext, $role, 'administrator.access');
+        $access->grant($administratorContext, $role, 'business.security.manage');
+        $access->grant($administratorContext, $role, 'business.step_up.manage');
+        $access->assignRole($administratorContext, $operator, $role);
         $principal = $identities->authenticate($email, $password, 'asset-inspection-policy-acceptance');
         if ($principal === null) {
             throw new RuntimeException('The separated policy operator could not be authenticated.');
@@ -201,45 +221,87 @@ final class AssetInspectionDeploymentAcceptance
             throw new RuntimeException('The signed policy profile did not produce four closed requests.');
         }
 
-        $purpose = BusinessSecurityAdministrationService::stepUpPurpose('resource_policy.create');
+        $organization = self::environment('KUMWE_ACCEPTANCE_ORGANIZATION');
         $setup = $stepUp->beginEnrollment($principal->subject(), 'Kumwe', $email);
         $currentCounter = intdiv(time(), 30);
-        $intent = self::stepUpIntent($principal, $createdSession->session->id, $purpose);
         $completion = $stepUp->confirmEnrollment(
-            $intent,
+            self::stepUpIntent(
+                $principal,
+                $createdSession->session->id,
+                BusinessSecurityAdministrationService::stepUpPurpose('organization.create'),
+            ),
             $setup->enrollmentId,
             self::totpCode($setup->secret, $currentCounter),
             'asset-inspection-policy-acceptance',
         );
         $verification = $completion->verification;
-        $policyIds = [self::createPolicy($security, $proofs, $principal, $verification, $requests[0])];
+        $organizationId = $security->createOrganization(
+            $principal->context(
+                $site,
+                AuthenticationStrength::MultiFactor,
+                'asset-inspection-organization',
+                surface: AuthenticatedSurface::Administrator,
+                sessionId: $verification->rotatedSession->sessionId,
+                stepUpProof: $proofs->adapt($verification),
+            ),
+            $organization,
+            'Asset inspection acceptance',
+        );
 
         $challengeCounter = max(intdiv(time(), 30), $currentCounter + 1);
-        $intent = self::stepUpIntent($principal, $verification->rotatedSession->sessionId, $purpose);
         $verification = $stepUp->challenge(
-            $intent,
+            self::stepUpIntent(
+                $principal,
+                $verification->rotatedSession->sessionId,
+                BusinessSecurityAdministrationService::stepUpPurpose('membership.create'),
+            ),
             self::totpCode($setup->secret, $challengeCounter),
             'asset-inspection-policy-acceptance',
         );
-        $policyIds[] = self::createPolicy($security, $proofs, $principal, $verification, $requests[1]);
+        $membershipId = $security->createMembership(
+            $principal->context(
+                $site,
+                AuthenticationStrength::MultiFactor,
+                'asset-inspection-membership',
+                surface: AuthenticatedSurface::Administrator,
+                sessionId: $verification->rotatedSession->sessionId,
+                stepUpProof: $proofs->adapt($verification),
+            ),
+            $organizationId,
+            $administratorContext->actorId(),
+            new DateTimeImmutable('-1 minute'),
+            null,
+        );
 
-        foreach ([2, 3] as $offset) {
-            $intent = self::stepUpIntent($principal, $verification->rotatedSession->sessionId, $purpose);
+        if (count($completion->recoveryCodes) < count($requests)) {
+            throw new RuntimeException('Policy acceptance did not receive enough recovery challenges.');
+        }
+        $policyIds = [];
+        foreach ($requests as $offset => $request) {
             $verification = $stepUp->recover(
-                $intent,
-                $completion->recoveryCodes[$offset - 2],
+                self::stepUpIntent(
+                    $principal,
+                    $verification->rotatedSession->sessionId,
+                    BusinessSecurityAdministrationService::stepUpPurpose('resource_policy.create'),
+                ),
+                $completion->recoveryCodes[$offset],
                 'asset-inspection-policy-acceptance',
             );
-            $policyIds[] = self::createPolicy($security, $proofs, $principal, $verification, $requests[$offset]);
+            $policyIds[] = self::createPolicy($security, $proofs, $principal, $verification, $request);
         }
 
         if (count(array_unique($policyIds)) !== 4) {
             throw new RuntimeException('Policy administration did not create four distinct rows.');
         }
         fwrite(STDOUT, CanonicalDefinitionJson::encode([
+            'organization' => [
+                'id' => $organizationId,
+                'identifier' => $organization,
+                'membership_id' => $membershipId,
+            ],
             'profile_checksum' => $profile->checksum(),
             'policy_ids' => $policyIds,
-            'proofs' => ['enrollment', 'totp', 'recovery', 'recovery'],
+            'proofs' => ['enrollment', 'totp', 'recovery', 'recovery', 'recovery', 'recovery'],
         ]) . "\n");
     }
 
