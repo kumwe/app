@@ -14,6 +14,7 @@ use Kumwe\CMS\Http\Security\TrustedHostMatcher;
 use Kumwe\CMS\Identity\Application\Administration\AuthenticationThrottled;
 use Laminas\Diactoros\Response\TextResponse;
 use Laminas\Diactoros\ServerRequestFactory;
+use Laminas\Diactoros\StreamFactory;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\ResponseInterface;
@@ -59,6 +60,47 @@ final class SecurityMiddlewareTest extends TestCase
         );
 
         self::assertSame(413, $response->getStatusCode());
+    }
+
+    /**
+     * Proves streamed bodies are bounded without relying on Content-Length and accepted bytes are preserved.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testOversizedUndeclaredBodyIsRejectedAndBoundedBodyIsPreserved(): void
+    {
+        $streams = new StreamFactory();
+        $middleware = new BodyLimitMiddleware(10);
+        $oversized = $middleware->process(
+            $this->request()->withBody($streams->createStream('12345678901')),
+            $this->successfulHandler(),
+        );
+
+        self::assertSame(413, $oversized->getStatusCode());
+
+        $echo = new class implements RequestHandlerInterface {
+            /**
+             * Echo the bounded request bytes after middleware inspection.
+             *
+             * @param   ServerRequestInterface  $request  Request whose body passed the limit.
+             *
+             * @return  ResponseInterface  Text response carrying the unchanged body.
+             *
+             * @since   2.0.0
+             */
+            public function handle(ServerRequestInterface $request): ResponseInterface
+            {
+                return new TextResponse((string) $request->getBody());
+            }
+        };
+        $bounded = $middleware->process(
+            $this->request()->withBody($streams->createStream('1234567890')),
+            $echo,
+        );
+
+        self::assertSame('1234567890', (string) $bounded->getBody());
     }
 
     public function testRequestIdIsGeneratedAndReturned(): void

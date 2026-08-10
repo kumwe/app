@@ -21,6 +21,7 @@ use Kumwe\CMS\Identity\Application\Administration\AccessControlService;
 use Kumwe\CMS\Identity\Application\Administration\AdministratorIdentityGateway;
 use Kumwe\CMS\Identity\Application\Administration\TokenRotationPreauthorizer;
 use Kumwe\CMS\Identity\Application\Authorization\InsufficientCapability;
+use Kumwe\CMS\Infrastructure\Mcp\BusinessMcpHandlers;
 use Kumwe\CMS\Infrastructure\Mcp\KumweMcpHandlers;
 use Kumwe\CMS\Infrastructure\Mcp\McpCapabilityCatalog;
 use Kumwe\CMS\Infrastructure\Mcp\McpMutationGuard;
@@ -143,6 +144,7 @@ final class McpThemeIntegrationTest extends TestCase
             $this->withoutConstructor(AutomationManagementService::class),
             $this->withoutConstructor(BusinessDefinitionService::class),
             $this->withoutConstructor(BusinessSchemaService::class),
+            $this->withoutConstructor(BusinessMcpHandlers::class),
             new McpMutationGuard($database, $tables, $clock, $transactions),
             $clock,
             AuthorizationContext::gateway(),

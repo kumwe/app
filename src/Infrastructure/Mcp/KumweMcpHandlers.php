@@ -78,6 +78,7 @@ final readonly class KumweMcpHandlers
      * @param  AutomationManagementService   $automation        Schedules and jobs behind the automation tools.
      * @param  BusinessDefinitionService     $definitions       Business entity definition drafts and versions.
      * @param  BusinessSchemaService         $schema            Schema plans and their approval and execution.
+     * @param  BusinessMcpHandlers           $businessRecords   Bounded generated-business MCP delegate.
      * @param  McpMutationGuard              $mutations         Idempotency fence every write is run through.
      * @param  ClockInterface                $clock             Supplies the first-run instant a new schedule is
      *         anchored to.
@@ -104,6 +105,7 @@ final readonly class KumweMcpHandlers
         private AutomationManagementService $automation,
         private BusinessDefinitionService $definitions,
         private BusinessSchemaService $schema,
+        private BusinessMcpHandlers $businessRecords,
         private McpMutationGuard $mutations,
         private ClockInterface $clock,
         private AuthorizationGateway $authorization,
@@ -140,6 +142,7 @@ final readonly class KumweMcpHandlers
             $this->automation,
             $this->definitions,
             $this->schema,
+            $this->businessRecords,
             $this->mutations,
             $this->clock,
             $this->authorization,
@@ -211,6 +214,7 @@ final readonly class KumweMcpHandlers
             $this->automation,
             $this->definitions,
             $this->schema,
+            $this->businessRecords,
             $this->mutations,
             $this->clock,
             $this->authorization,
@@ -1874,6 +1878,582 @@ final readonly class KumweMcpHandlers
     }
 
     /**
+     * Discover the generated business entities visible to this MCP credential.
+     *
+     * @return  array{items: list<array<string, mixed>>, truncated: bool}  Bounded policy-filtered metadata.
+     *
+     * @throws  InsufficientCapability  When the credential cannot browse business records.
+     *
+     * @since   2.0.0
+     */
+    public function discoverBusinessRecords(): array
+    {
+        $this->require('business.record.browse');
+
+        return $this->businessRecords->discover($this->context());
+    }
+
+    /**
+     * Inspect one policy-visible generated business entity.
+     *
+     * @param   string  $definition  Definition UUID or namespaced handle.
+     *
+     * @return  array{definition: array<string, mixed>}  Safe typed metadata for this entity.
+     *
+     * @throws  InsufficientCapability  When the credential cannot read business records.
+     *
+     * @since   2.0.0
+     */
+    public function inspectBusinessRecord(string $definition): array
+    {
+        $this->require('business.record.read');
+
+        return $this->businessRecords->inspect($this->context(), $definition);
+    }
+
+    /**
+     * Execute one typed custom view declared by a policy-visible business definition.
+     *
+     * The custom view kind selects its exact browse/read/create/update/history/relation policy inside the
+     * shared surface service, so this adapter performs no weaker static capability shortcut beforehand.
+     *
+     * @param   string                $definition  Definition UUID or namespaced handle.
+     * @param   string                $view        Custom view handle.
+     * @param   array<string, mixed>  $query       Shared bounded record-query document.
+     * @param   array<string, mixed>  $parameters  Contract-specific bounded parameters.
+     * @param   ?string               $record      Optional public record identity for detail-like views.
+     *
+     * @return  array<string, mixed>  Policy-filtered view metadata and validated result.
+     *
+     * @since   2.0.0
+     */
+    public function executeBusinessView(
+        string $definition,
+        string $view,
+        array $query = [],
+        array $parameters = [],
+        ?string $record = null,
+    ): array {
+        return $this->businessRecords->view(
+            $this->context(),
+            $definition,
+            $view,
+            $query,
+            $parameters,
+            $record,
+        );
+    }
+
+    /**
+     * Search one generated business entity through the shared bounded query grammar.
+     *
+     * @param   string                $definition  Definition UUID or namespaced handle.
+     * @param   array<string, mixed>  $query       Closed filter, search, sort and projection document.
+     *
+     * @return  array<string, mixed>  Policy-filtered definition metadata and one bounded record page.
+     *
+     * @throws  InsufficientCapability  When the credential cannot browse business records.
+     *
+     * @since   2.0.0
+     */
+    public function searchBusinessRecords(string $definition, array $query = []): array
+    {
+        $this->require('business.record.browse');
+
+        return $this->businessRecords->search($this->context(), $definition, $query);
+    }
+
+    /**
+     * Read one generated business record by its public identity.
+     *
+     * @param   string  $definition       Definition UUID or namespaced handle.
+     * @param   string  $record           Public record identity.
+     * @param   bool    $includeArchived  Whether archived rows may be returned.
+     * @param   bool    $includeDeleted   Whether soft-deleted rows may be returned.
+     *
+     * @return  array<string, mixed>  Safe definition, record and semantic fields.
+     *
+     * @throws  InsufficientCapability  When the credential cannot read business records.
+     *
+     * @since   2.0.0
+     */
+    public function readBusinessRecord(
+        string $definition,
+        string $record,
+        bool $includeArchived = false,
+        bool $includeDeleted = false,
+    ): array {
+        $this->require('business.record.read');
+
+        return $this->businessRecords->read(
+            $this->context(),
+            $definition,
+            $record,
+            $includeArchived,
+            $includeDeleted,
+        );
+    }
+
+    /**
+     * Read one bounded page of generated business record history.
+     *
+     * @param   string  $definition     Definition UUID or namespaced handle.
+     * @param   string  $record         Public record identity.
+     * @param   int     $limit          Maximum revisions, from 1 through 200.
+     * @param   ?int    $beforeVersion  Exclusive positive record-version cursor.
+     *
+     * @return  array<string, mixed>  Omission-safe revisions and continuation metadata.
+     *
+     * @throws  InsufficientCapability  When the credential cannot read business record history.
+     *
+     * @since   2.0.0
+     */
+    public function businessRecordHistory(
+        string $definition,
+        string $record,
+        int $limit = 100,
+        ?int $beforeVersion = null,
+    ): array {
+        $this->require('business.record.history');
+
+        return $this->businessRecords->history(
+            $this->context(),
+            $definition,
+            $record,
+            $limit,
+            $beforeVersion,
+        );
+    }
+
+    /**
+     * Plan one exact generated-business mutation against current trusted state.
+     *
+     * Planning is read-only but requires both record read and the exact mutation capability. The shared
+     * planner then derives the definition, runtime generation, record policy, actor context, payload, and
+     * current source-record version bindings that execution must re-prove.
+     *
+     * @param   string                $operationId        Identity the plan and eventual mutation share.
+     * @param   string                $operation          Closed generated-business mutation name.
+     * @param   string                $definition         Definition UUID or namespaced handle.
+     * @param   ?string               $record             Existing or optional create record identity.
+     * @param   ?int                  $expectedVersion    Current version for an existing record.
+     * @param   array<string, mixed>  $values             Create or update values.
+     * @param   ?string               $relationship       Declared relationship handle.
+     * @param   ?string               $target             Target record identity.
+     * @param   ?int                  $position           Optional ordered relation position.
+     * @param   array<string, mixed>  $targetValues       Optional owned-line values.
+     * @param   list<string>          $orderedRecordIds   Complete ordered relationship member list.
+     * @param   ?string               $action             Declared action handle.
+     * @param   array<string, mixed>  $input              Typed action input.
+     * @param   ?string               $approvalRequestId  Independent approval UUID for execution.
+     *
+     * @return  array<string, mixed>  Signed five-minute plan and its safe current bindings.
+     *
+     * @throws  InsufficientCapability  When the credential lacks read or exact mutation capability.
+     *
+     * @since   2.0.0
+     */
+    public function planBusinessRecordMutation(
+        string $operationId,
+        string $operation,
+        string $definition,
+        ?string $record = null,
+        ?int $expectedVersion = null,
+        array $values = [],
+        ?string $relationship = null,
+        ?string $target = null,
+        ?int $position = null,
+        array $targetValues = [],
+        array $orderedRecordIds = [],
+        ?string $action = null,
+        array $input = [],
+        ?string $approvalRequestId = null,
+    ): array {
+        $this->require('business.record.read');
+        $this->require(BusinessMcpHandlers::capabilityFor($operation));
+
+        return $this->businessRecords->planMutation(
+            $this->context(),
+            $operationId,
+            $operation,
+            $definition,
+            $record,
+            $expectedVersion,
+            $values,
+            $relationship,
+            $target,
+            $position,
+            $targetValues,
+            $orderedRecordIds,
+            $action,
+            $input,
+            $approvalRequestId,
+        );
+    }
+
+    /**
+     * Create one typed generated business record under a replay-safe identity.
+     *
+     * @param   string                $operationId  Caller-chosen stable operation identity.
+     * @param   string                $plan         Signed plan for these exact mutation arguments.
+     * @param   string                $definition   Definition UUID or namespaced handle.
+     * @param   array<string, mixed>  $values       Values keyed by declared field handle.
+     * @param   ?string               $record       Optional caller-chosen public identity.
+     *
+     * @return  array<string, mixed>  Omission-safe mutation result or an identical replay.
+     *
+     * @since   2.0.0
+     */
+    public function createBusinessRecord(
+        string $operationId,
+        string $plan,
+        string $definition,
+        array $values,
+        ?string $record = null,
+    ): array {
+        return $this->businessRecords->create(
+            $this->businessMutationContext($operationId, 'create'),
+            $operationId,
+            $plan,
+            $definition,
+            $values,
+            $record,
+        );
+    }
+
+    /**
+     * Update one generated business record at the exact version the caller inspected.
+     *
+     * @param   string                $operationId      Caller-chosen stable operation identity.
+     * @param   string                $plan             Signed plan for these exact mutation arguments.
+     * @param   string                $definition       Definition UUID or namespaced handle.
+     * @param   string                $record           Public record identity.
+     * @param   int                   $expectedVersion  Optimistic version previously read.
+     * @param   array<string, mixed>  $values           Replacement values by declared field handle.
+     *
+     * @return  array<string, mixed>  Omission-safe mutation result or an identical replay.
+     *
+     * @since   2.0.0
+     */
+    public function updateBusinessRecord(
+        string $operationId,
+        string $plan,
+        string $definition,
+        string $record,
+        int $expectedVersion,
+        array $values,
+    ): array {
+        return $this->businessRecords->update(
+            $this->businessMutationContext($operationId, 'update'),
+            $operationId,
+            $plan,
+            $definition,
+            $record,
+            $expectedVersion,
+            $values,
+        );
+    }
+
+    /**
+     * Archive one generated business record at an exact optimistic version.
+     *
+     * @param   string  $operationId      Caller-chosen stable operation identity.
+     * @param   string  $plan             Signed plan for these exact mutation arguments.
+     * @param   string  $definition       Definition UUID or namespaced handle.
+     * @param   string  $record           Public record identity.
+     * @param   int     $expectedVersion  Optimistic version previously read.
+     *
+     * @return  array<string, mixed>  Omission-safe mutation result or an identical replay.
+     *
+     * @since   2.0.0
+     */
+    public function archiveBusinessRecord(
+        string $operationId,
+        string $plan,
+        string $definition,
+        string $record,
+        int $expectedVersion,
+    ): array {
+        return $this->businessRecords->archive(
+            $this->businessMutationContext($operationId, 'archive'),
+            $operationId,
+            $plan,
+            $definition,
+            $record,
+            $expectedVersion,
+        );
+    }
+
+    /**
+     * Restore one archived or soft-deleted generated record at an exact version.
+     *
+     * @param   string  $operationId      Caller-chosen stable operation identity.
+     * @param   string  $plan             Signed plan for these exact mutation arguments.
+     * @param   string  $definition       Definition UUID or namespaced handle.
+     * @param   string  $record           Public record identity.
+     * @param   int     $expectedVersion  Optimistic version previously read.
+     *
+     * @return  array<string, mixed>  Omission-safe mutation result or an identical replay.
+     *
+     * @since   2.0.0
+     */
+    public function restoreBusinessRecord(
+        string $operationId,
+        string $plan,
+        string $definition,
+        string $record,
+        int $expectedVersion,
+    ): array {
+        return $this->businessRecords->restore(
+            $this->businessMutationContext($operationId, 'restore'),
+            $operationId,
+            $plan,
+            $definition,
+            $record,
+            $expectedVersion,
+        );
+    }
+
+    /**
+     * Delete one generated business record at an exact optimistic version.
+     *
+     * @param   string  $operationId      Caller-chosen stable operation identity.
+     * @param   string  $plan             Signed plan for these exact mutation arguments.
+     * @param   string  $definition       Definition UUID or namespaced handle.
+     * @param   string  $record           Public record identity.
+     * @param   int     $expectedVersion  Optimistic version previously read.
+     *
+     * @return  array<string, mixed>  Omission-safe mutation result or an identical replay.
+     *
+     * @since   2.0.0
+     */
+    public function deleteBusinessRecord(
+        string $operationId,
+        string $plan,
+        string $definition,
+        string $record,
+        int $expectedVersion,
+    ): array {
+        return $this->businessRecords->delete(
+            $this->businessMutationContext($operationId, 'delete'),
+            $operationId,
+            $plan,
+            $definition,
+            $record,
+            $expectedVersion,
+        );
+    }
+
+    /**
+     * Create one declared relationship link or owned line.
+     *
+     * @param   string                $operationId      Caller-chosen stable operation identity.
+     * @param   string                $plan             Signed plan for these exact mutation arguments.
+     * @param   string                $definition       Definition UUID or namespaced handle.
+     * @param   string                $record           Public source-record identity.
+     * @param   int                   $expectedVersion  Optimistic source version previously read.
+     * @param   string                $relationship     Declared relationship handle.
+     * @param   string                $target           Public target identity or new owned-line identity.
+     * @param   ?int                  $position         Optional zero-based ordered position.
+     * @param   array<string, mixed>  $targetValues     Values used only to create an owned line.
+     *
+     * @return  array<string, mixed>  Omission-safe mutation result or an identical replay.
+     *
+     * @since   2.0.0
+     */
+    public function relateBusinessRecords(
+        string $operationId,
+        string $plan,
+        string $definition,
+        string $record,
+        int $expectedVersion,
+        string $relationship,
+        string $target,
+        ?int $position = null,
+        array $targetValues = [],
+    ): array {
+        return $this->businessRecords->relate(
+            $this->businessMutationContext($operationId, 'relate'),
+            $operationId,
+            $plan,
+            $definition,
+            $record,
+            $expectedVersion,
+            $relationship,
+            $target,
+            $position,
+            $targetValues,
+        );
+    }
+
+    /**
+     * Remove one declared generated-record relationship link.
+     *
+     * @param   string  $operationId      Caller-chosen stable operation identity.
+     * @param   string  $plan             Signed plan for these exact mutation arguments.
+     * @param   string  $definition       Definition UUID or namespaced handle.
+     * @param   string  $record           Public source-record identity.
+     * @param   int     $expectedVersion  Optimistic source version previously read.
+     * @param   string  $relationship     Declared relationship handle.
+     * @param   string  $target           Public target identity.
+     *
+     * @return  array<string, mixed>  Omission-safe mutation result or an identical replay.
+     *
+     * @since   2.0.0
+     */
+    public function unrelateBusinessRecords(
+        string $operationId,
+        string $plan,
+        string $definition,
+        string $record,
+        int $expectedVersion,
+        string $relationship,
+        string $target,
+    ): array {
+        return $this->businessRecords->unrelate(
+            $this->businessMutationContext($operationId, 'unrelate'),
+            $operationId,
+            $plan,
+            $definition,
+            $record,
+            $expectedVersion,
+            $relationship,
+            $target,
+        );
+    }
+
+    /**
+     * Replace the complete order of one declared relationship.
+     *
+     * @param   string        $operationId       Caller-chosen stable operation identity.
+     * @param   string        $plan              Signed plan for these exact mutation arguments.
+     * @param   string        $definition        Definition UUID or namespaced handle.
+     * @param   string        $record            Public source-record identity.
+     * @param   int           $expectedVersion   Optimistic source version previously read.
+     * @param   string        $relationship      Declared ordered relationship handle.
+     * @param   list<string>  $orderedRecordIds  Complete target identities in their new order.
+     *
+     * @return  array<string, mixed>  Omission-safe mutation result or an identical replay.
+     *
+     * @since   2.0.0
+     */
+    public function reorderBusinessRecords(
+        string $operationId,
+        string $plan,
+        string $definition,
+        string $record,
+        int $expectedVersion,
+        string $relationship,
+        array $orderedRecordIds,
+    ): array {
+        return $this->businessRecords->reorder(
+            $this->businessMutationContext($operationId, 'reorder'),
+            $operationId,
+            $plan,
+            $definition,
+            $record,
+            $expectedVersion,
+            $relationship,
+            $orderedRecordIds,
+        );
+    }
+
+    /**
+     * Request independent maker-checker approval for one high-impact action attempt.
+     *
+     * This surface publishes no vote, approve, reject, or step-up proof method.
+     *
+     * @param   string                $operationId      Caller-chosen stable operation identity.
+     * @param   string                $plan             Signed plan for these exact mutation arguments.
+     * @param   string                $definition       Definition UUID or namespaced handle.
+     * @param   string                $record           Public record identity.
+     * @param   int                   $expectedVersion  Optimistic version previously read.
+     * @param   string                $action           Declared high-impact action handle.
+     * @param   array<string, mixed>  $input            Typed action input, empty for current core actions.
+     *
+     * @return  array{approval_request_id: ?string}  Newly created approval identity.
+     *
+     * @since   2.0.0
+     */
+    public function requestBusinessRecordAction(
+        string $operationId,
+        string $plan,
+        string $definition,
+        string $record,
+        int $expectedVersion,
+        string $action,
+        array $input = [],
+    ): array {
+        return $this->businessRecords->requestAction(
+            $this->businessMutationContext($operationId, 'request_action'),
+            $operationId,
+            $plan,
+            $definition,
+            $record,
+            $expectedVersion,
+            $action,
+            $input,
+        );
+    }
+
+    /**
+     * Execute one ordinary declared action; a high-impact attempt fails closed without browser step-up.
+     *
+     * @param   string                $operationId        Caller-chosen stable operation identity.
+     * @param   string                $plan               Signed plan for these exact mutation arguments.
+     * @param   string                $definition         Definition UUID or namespaced handle.
+     * @param   string                $record             Public record identity.
+     * @param   int                   $expectedVersion    Optimistic version previously read.
+     * @param   string                $action             Declared action handle.
+     * @param   array<string, mixed>  $input              Typed action input.
+     * @param   ?string               $approvalRequestId  Independent approval UUID when required.
+     *
+     * @return  array<string, mixed>  Omission-safe mutation result or an identical replay.
+     *
+     * @since   2.0.0
+     */
+    public function executeBusinessRecordAction(
+        string $operationId,
+        string $plan,
+        string $definition,
+        string $record,
+        int $expectedVersion,
+        string $action,
+        array $input = [],
+        ?string $approvalRequestId = null,
+    ): array {
+        return $this->businessRecords->executeAction(
+            $this->businessMutationContext($operationId, 'execute_action'),
+            $operationId,
+            $plan,
+            $definition,
+            $record,
+            $expectedVersion,
+            $action,
+            $input,
+            $approvalRequestId,
+        );
+    }
+
+    /**
+     * Inspect a completed generated-business mutation owned by this exact actor and policy context.
+     *
+     * @param   string  $operationId  Identity used for the original generated-business mutation.
+     *
+     * @return  array<string, mixed>  Caller-bound status and omission-safe mutation result.
+     *
+     * @throws  InsufficientCapability  When the credential cannot read business records.
+     *
+     * @since   2.0.0
+     */
+    public function businessRecordOperationStatus(string $operationId): array
+    {
+        $this->require('business.record.read');
+
+        return $this->businessRecords->operationStatus($this->context(), $operationId);
+    }
+
+    /**
      * Business definition and schema tools.
      *
      * These read and drive exactly the services the REST routes and console commands use.
@@ -2344,6 +2924,36 @@ final readonly class KumweMcpHandlers
     private function schemaPlan(SchemaPlan $plan): array
     {
         return [...$plan->toArray(), 'checksum' => $plan->checksum()];
+    }
+
+    /**
+     * Resolve, capability-check, resource-authorize, and bind one generated-business mutation context.
+     *
+     * The generic delegate still enforces definition exposure and row policy, while this outer handler
+     * records the coarse collection decision before either idempotency ledger is entered.
+     *
+     * @param   string  $operationId  Caller-chosen stable operation identity.
+     * @param   string  $operation    Closed generated-business mutation name.
+     *
+     * @return  ExecutionContext  MCP child context carrying the same operation identity.
+     *
+     * @throws  InsufficientCapability  When the credential lacks the operation's capability.
+     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When policy refuses the collection write.
+     * @throws  InvalidArgumentException  When the operation or operation identity is invalid.
+     *
+     * @since   2.0.0
+     */
+    private function businessMutationContext(string $operationId, string $operation): ExecutionContext
+    {
+        $capability = BusinessMcpHandlers::capabilityFor($operation);
+        $this->require($capability);
+        $this->preauthorize(
+            $operationId,
+            $capability,
+            AuthorizationResource::collection('business_record'),
+        );
+
+        return $this->context($operationId);
     }
 
     /**

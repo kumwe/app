@@ -1,0 +1,247 @@
+{% extends "layout.twig" %}
+
+{% block title %}{{ definition.plural_label }} · Kumwe{% endblock %}
+{% block context_title %}{{ definition.plural_label }}{% endblock %}
+{% block context_subtitle %}Generated business workspace{% endblock %}
+
+{% block content %}
+  {% set searchable_fields = definition.fields|filter(field => field.uses.search)|slice(0, 16) %}
+  {% set graphical_filter_fields = definition.fields|filter(field =>
+    field.uses.filter
+    and not field.write_only
+    and field.value_type in ['string', 'reference', 'integer', 'boolean']
+  )|slice(0, 128) %}
+  {% set bulk_actions = definition.actions|filter(action => action.bulk and not action.high_impact) %}
+  {% set bulk_available = query_purpose == 'browse' and (
+    available_operations.archive is defined
+    or available_operations.restore is defined
+    or (available_operations.action is defined and bulk_actions is not empty)
+  ) %}
+  <kumwe-business-surface>
+    <header class="page-heading">
+      <div>
+        <p class="eyebrow">{{ definition.scope|replace({'_': ' '}) }}</p>
+        <h1>{{ definition.plural_label }}</h1>
+        <p>Browse policy-filtered {{ definition.plural_label|lower }} from definition version {{ definition.version }}.</p>
+      </div>
+      <div class="page-actions">
+        <a class="button" href="{{ business_base_path }}">All workspaces</a>
+        {% for declared_view in definition.views %}
+          {% if declared_view.custom and (
+            declared_view.kind == 'list'
+            or (declared_view.kind == 'form' and available_operations.create is defined)
+          ) %}
+            <a class="button" href="{{ business_base_path }}/{{ definition.handle|url_encode }}/views/{{ declared_view.handle|url_encode }}">
+              {{ declared_view.label }}
+            </a>
+          {% endif %}
+        {% endfor %}
+        {% if available_operations.report is defined %}
+          <a class="button" href="{{ business_base_path }}/{{ definition.handle|url_encode }}?purpose=report">Report</a>
+        {% endif %}
+        {% if available_operations.export is defined %}
+          <a class="button" href="{{ business_base_path }}/{{ definition.handle|url_encode }}?purpose=export">Export</a>
+        {% endif %}
+        {% if available_operations.create is defined %}
+          <a class="button primary" href="{{ business_base_path }}/{{ definition.handle|url_encode }}?new=1">
+            Create {{ definition.singular_label|lower }}
+          </a>
+        {% endif %}
+      </div>
+    </header>
+
+    {% if completed_operation_id %}
+      <div class="notice success" role="status">
+        The operation completed.{% if available_operations.status is defined %} <a href="{{ business_base_path }}/operations/{{ completed_operation_id|url_encode }}">View operation status</a>.{% endif %}
+      </div>
+    {% elseif completed_bulk_count %}
+      <div class="notice success" role="status">The bulk operation completed for {{ completed_bulk_count }} record{{ completed_bulk_count == 1 ? '' : 's' }}.</div>
+    {% endif %}
+
+    {% if aggregates is not empty %}
+      <section class="business-aggregate-grid" aria-label="Report totals">
+        {% for label, value in aggregates %}
+          <article class="panel business-aggregate"><span>{{ label|replace({'_': ' '})|title }}</span><strong>{{ value }}</strong></article>
+        {% endfor %}
+      </section>
+    {% endif %}
+
+    <section class="panel business-list-panel" aria-labelledby="business-results-title">
+      <div class="table-toolbar business-table-toolbar">
+        <div>
+          <h2 id="business-results-title">Records</h2>
+          <p class="text-muted text-small">Only records and fields disclosed by the current policy are included.</p>
+        </div>
+        <label class="search-field js-only" for="business-page-search">Filter this page
+          <input id="business-page-search" type="search" autocomplete="off" data-business-page-search>
+        </label>
+        <form class="business-query-form" action="{{ business_base_path }}/{{ definition.handle|url_encode }}" method="get">
+          {% if query_purpose != 'browse' %}<input type="hidden" name="purpose" value="{{ query_purpose }}">{% endif %}
+          {% if searchable_fields is not empty %}
+            <label for="business-search">Search records
+              <input id="business-search" type="search" name="search_term" value="{{ query_state.search_term|default('') }}">
+            </label>
+            {% for field in searchable_fields %}<input type="hidden" name="search_fields[]" value="{{ field.handle }}">{% endfor %}
+          {% endif %}
+          {% for field in graphical_filter_fields %}
+            {% if field.schema.enum is defined %}
+              <label for="business-filter-{{ field.handle }}">{{ field.label }}
+                <select id="business-filter-{{ field.handle }}" name="filters[{{ field.handle }}]">
+                  <option value="">Any</option>
+                  {% for option in field.schema.enum %}
+                    <option value="{{ option }}"{% if query_state.filters[field.handle] is defined and query_state.filters[field.handle] is same as(option) %} selected{% endif %}>
+                      {{ option|replace({'_': ' '})|title }}
+                    </option>
+                  {% endfor %}
+                </select>
+              </label>
+            {% elseif field.value_type == 'boolean' %}
+              <label for="business-filter-{{ field.handle }}">{{ field.label }}
+                <select id="business-filter-{{ field.handle }}" name="boolean_filters[{{ field.handle }}]">
+                  <option value="">Any</option>
+                  <option value="true"{% if query_state.filters[field.handle] is defined and query_state.filters[field.handle] is same as(true) %} selected{% endif %}>Yes</option>
+                  <option value="false"{% if query_state.filters[field.handle] is defined and query_state.filters[field.handle] is same as(false) %} selected{% endif %}>No</option>
+                </select>
+              </label>
+            {% elseif field.value_type == 'integer' %}
+              <label for="business-filter-{{ field.handle }}">{{ field.label }}
+                <input id="business-filter-{{ field.handle }}" type="number" step="1" name="integer_filters[{{ field.handle }}]" value="{{ query_state.filters[field.handle] is defined ? query_state.filters[field.handle] : '' }}">
+              </label>
+            {% else %}
+              <label for="business-filter-{{ field.handle }}">{{ field.label }}
+                <input id="business-filter-{{ field.handle }}" type="{% if field.schema.format|default('') == 'date' %}date{% elseif field.schema.format|default('') == 'time' %}time{% elseif field.schema.format|default('') == 'email' %}email{% else %}text{% endif %}"{% if field.type == 'core.decimal' %} inputmode="decimal"{% endif %} name="filters[{{ field.handle }}]" value="{{ query_state.filters[field.handle] is defined ? query_state.filters[field.handle] : '' }}">
+              </label>
+            {% endif %}
+          {% endfor %}
+          {% if graphical_filter_fields is not empty %}<span class="field-help">Choose at most 16 exact field filters.</span>{% endif %}
+          <label for="business-sort-field">Sort field
+            <select id="business-sort-field" name="sort_field">
+              <option value="">Definition order</option>
+              {% for field in definition.fields %}
+                {% if field.uses.sort %}
+                  <option value="{{ field.handle }}"{% if query_state.sort_field is same as(field.handle) %} selected{% endif %}>{{ field.label }}</option>
+                {% endif %}
+              {% endfor %}
+            </select>
+          </label>
+          <label for="business-sort-direction">Direction
+            <select id="business-sort-direction" name="sort_direction">
+              <option value=""{% if query_state.sort_direction is null %} selected{% endif %}>Default</option>
+              <option value="asc"{% if query_state.sort_direction == 'asc' %} selected{% endif %}>Ascending</option>
+              <option value="desc"{% if query_state.sort_direction == 'desc' %} selected{% endif %}>Descending</option>
+            </select>
+          </label>
+          <label for="business-page-size">Rows per page
+            <select id="business-page-size" name="page_size">
+              {% for size in [25, 50, 100, 200] %}<option value="{{ size }}"{% if query_state.page_size == size %} selected{% endif %}>{{ size }}</option>{% endfor %}
+            </select>
+          </label>
+          {% if available_operations.restore is defined %}
+            <label class="check"><input type="checkbox" name="include_archived" value="1"{% if query_state.include_archived %} checked{% endif %}> <span>Include archived</span></label>
+            {% if definition.soft_delete %}
+              <label class="check"><input type="checkbox" name="include_deleted" value="1"{% if query_state.include_deleted %} checked{% endif %}> <span>Include deleted</span></label>
+            {% endif %}
+          {% endif %}
+          <div class="page-actions">
+            <button type="submit">Apply</button>
+            <a class="button" href="{{ business_base_path }}/{{ definition.handle|url_encode }}{% if query_purpose != 'browse' %}?purpose={{ query_purpose|url_encode }}{% endif %}">Reset</a>
+          </div>
+        </form>
+      </div>
+
+      {% if items is empty %}
+        <div class="empty-state">
+          <div class="empty-state-content">
+            <h2>No {{ definition.plural_label|lower }} found</h2>
+            <p>The current scope and filters returned no visible records.</p>
+            {% if available_operations.create is defined %}
+              <a class="button primary" href="{{ business_base_path }}/{{ definition.handle|url_encode }}?new=1">
+                Create {{ definition.singular_label|lower }}
+              </a>
+            {% endif %}
+          </div>
+        </div>
+      {% else %}
+        {% if bulk_available %}<form class="business-bulk-form" action="{{ business_base_path }}/{{ definition.handle|url_encode }}" method="get">{% endif %}
+        <kumwe-business-table>
+          <div class="table-wrap business-table-wrap" tabindex="0" role="region" aria-label="{{ definition.plural_label }} results">
+            <table class="business-record-table">
+              <thead>
+                <tr>
+                  {% if bulk_available %}<th scope="col"><span class="sr-only">Select</span></th>{% endif %}
+                  <th scope="col">Record</th>
+                  {% for field in definition.fields %}<th scope="col">{{ field.label }}</th>{% endfor %}
+                  <th scope="col">State</th>
+                  <th scope="col"><span class="sr-only">Actions</span></th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for item in items %}
+                  {% set item_state = item.deleted_at ? 'Deleted' : (item.archived_at ? 'Archived' : item.workflow_state|default('Active')) %}
+                  <tr data-business-record-row>
+                    {% if bulk_available %}
+                      <td data-label="Select">
+                        <label class="check">
+                          <input type="checkbox" name="bulk_records[]" value="{{ {'record_id': item.record_id, 'expected_version': item.version}|json_encode }}">
+                          <span class="sr-only">Select record {{ item.record_id }}</span>
+                        </label>
+                      </td>
+                    {% endif %}
+                    <th scope="row"><code>{{ item.record_id }}</code><small>v{{ item.version }}</small></th>
+                    {% for column in definition.fields %}
+                      {% set matches = item.fields|filter(field => field.handle == column.handle) %}
+                      <td data-label="{{ column.label }}">
+                        {% if matches is not empty %}
+                          {{ (matches|first).display is not same as('') ? (matches|first).display : 'Not set' }}
+                        {% else %}
+                          <span class="text-muted" aria-label="Not available">—</span>
+                        {% endif %}
+                      </td>
+                    {% endfor %}
+                    <td data-label="State"><span class="status">{{ item_state|replace({'_': ' '})|title }}</span></td>
+                    <td class="actions">
+                      {% if available_operations.read is defined %}
+                        <a href="{{ business_base_path }}/{{ definition.handle|url_encode }}/{{ item.record_id|url_encode }}">View</a>
+                      {% endif %}
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          <p class="business-page-search-empty" role="status" hidden data-business-search-empty>
+            No records on this page match your search.
+          </p>
+        </kumwe-business-table>
+        {% if bulk_available %}
+          <div class="business-bulk-controls">
+            <label for="business-bulk-operation">Bulk operation
+              <select id="business-bulk-operation" name="bulk_operation" required>
+                <option value="" selected disabled>Choose an operation</option>
+                {% if available_operations.archive is defined %}<option value="archive">Archive selected</option>{% endif %}
+                {% if available_operations.restore is defined %}<option value="restore">Restore selected</option>{% endif %}
+                {% if available_operations.action is defined %}
+                  {% for action in bulk_actions %}<option value="action:{{ action.handle }}">{{ action.label }} selected</option>{% endfor %}
+                {% endif %}
+              </select>
+            </label>
+            <button type="submit">Review bulk operation</button>
+            <span class="field-help">Select no more than 50 records. Versions are rechecked when you confirm.</span>
+          </div>
+        </form>
+        {% endif %}
+      {% endif %}
+
+      <footer class="pagination">
+        <span>Bounded record page</span>
+        <nav class="pagination-actions" aria-label="Record pages">
+          {% if next_query %}
+            <a class="button" href="{{ business_base_path }}/{{ definition.handle|url_encode }}?{% if query_purpose != 'browse' %}purpose={{ query_purpose|url_encode }}&amp;{% endif %}query={{ next_query|url_encode }}" rel="next">
+              Next page
+            </a>
+          {% endif %}
+        </nav>
+      </footer>
+    </section>
+  </kumwe-business-surface>
+{% endblock %}

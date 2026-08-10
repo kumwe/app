@@ -11,11 +11,13 @@ use Doctrine\DBAL\Types\Types;
 use InvalidArgumentException;
 use Joomla\Event\DispatcherInterface;
 use Kumwe\CMS\Application\Authorization\ExecutionContext;
+use Kumwe\CMS\Application\Authorization\SiteContext;
 use Kumwe\CMS\Audit\Application\AuditRecorder;
 use Kumwe\CMS\Audit\Domain\AuditEvent;
 use Kumwe\CMS\Extension\Application\Migration\ExtensionMigrationRunner;
 use Kumwe\CMS\Extension\Application\ExtensionRegistryLease;
 use Kumwe\CMS\Extension\Application\Package\PackageSafetyPolicy;
+use Kumwe\CMS\Extension\Application\Package\ExtensionActivationAdmission;
 use Kumwe\CMS\Extension\Application\Trust\ExtensionArtifactVerifier;
 use Kumwe\CMS\Extension\Application\Trust\TrustKeySignatureVerifier;
 use Kumwe\CMS\Extension\Application\Trust\TrustStore;
@@ -24,6 +26,7 @@ use Kumwe\CMS\Extension\Infrastructure\DoctrineExtensionManager;
 use Kumwe\CMS\Extension\Infrastructure\ExtensionRegistryFenceAllocator;
 use Kumwe\CMS\Extension\Infrastructure\Package\ZipArchiveReader;
 use Kumwe\CMS\Extension\Infrastructure\Trust\FilesystemExtensionArtifactVerifier;
+use Kumwe\CMS\Extension\Domain\ExtensionManifest;
 use Kumwe\CMS\Extension\Runtime\ExtensionRuntimeMapCompiler;
 use Kumwe\CMS\Extension\Runtime\RuntimeArtifactDigester;
 use Kumwe\CMS\Extension\Runtime\RuntimeIdentity;
@@ -160,6 +163,67 @@ final class DoctrineThemeManagerIntegrationTest extends TestCase
 
         self::assertSame(2, $allocator->allocate());
         self::assertSame(3, $allocator->allocate());
+    }
+
+    /**
+     * Proves contract admission failure rolls activation back before runtime publication.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testContractAdmissionFailureRollsBackActivationBeforeRuntimePublication(): void
+    {
+        $admission = new class implements ExtensionActivationAdmission {
+            /**
+             * Reject the candidate as though its generated contract collided.
+             *
+             * @param   ExtensionManifest        $candidate        Candidate being admitted.
+             * @param   SiteContext              $site             Site receiving the candidate.
+             * @param   list<ExtensionManifest>  $activeManifests  Active manifests checked alongside it.
+             *
+             * @return  void
+             *
+             * @since   2.0.0
+             */
+            public function admit(
+                ExtensionManifest $candidate,
+                SiteContext $site,
+                array $activeManifests,
+            ): void {
+                throw new InvalidArgumentException('candidate OpenAPI collision');
+            }
+        };
+        $manager = $this->manager(new RecordingAuditRecorder(), activationAdmission: $admission);
+        $manager->install($this->pluginArchive('1.0.0'), self::context(), lease: $this->lease());
+        $generation = (int) $this->database->fetchOne(sprintf(
+            'SELECT generation FROM %s WHERE singleton_key = 1',
+            $this->tables->quoted('extension_runtime_generation'),
+        ));
+        $publications = (int) $this->database->fetchOne(sprintf(
+            'SELECT COUNT(*) FROM %s',
+            $this->tables->quoted('extension_runtime_publications'),
+        ));
+
+        try {
+            $manager->activate('acme/plugin', self::context(), lease: $this->lease());
+            self::fail('A contract-colliding extension was activated.');
+        } catch (InvalidArgumentException $exception) {
+            self::assertSame('candidate OpenAPI collision', $exception->getMessage());
+        }
+
+        self::assertSame('disabled', $this->database->fetchOne(sprintf(
+            'SELECT status FROM %s WHERE identifier = ?',
+            $this->tables->quoted('extensions'),
+        ), ['acme/plugin']));
+        self::assertSame($generation, (int) $this->database->fetchOne(sprintf(
+            'SELECT generation FROM %s WHERE singleton_key = 1',
+            $this->tables->quoted('extension_runtime_generation'),
+        )));
+        self::assertSame($publications, (int) $this->database->fetchOne(sprintf(
+            'SELECT COUNT(*) FROM %s',
+            $this->tables->quoted('extension_runtime_publications'),
+        )));
     }
 
     public function testAuditFailureRollsBackDoctrineBeforeRuntimePublication(): void
@@ -581,6 +645,7 @@ final class DoctrineThemeManagerIntegrationTest extends TestCase
     private function manager(
         AuditRecorder $audit,
         ?ThemeMutationAuthorizer $themeAuthorization = null,
+        ?ExtensionActivationAdmission $activationAdmission = null,
     ): DoctrineExtensionManager {
         $clock = new DoctrineThemeClock();
         $transactions = new DoctrineTransactionManager($this->database);
@@ -627,6 +692,8 @@ final class DoctrineThemeManagerIntegrationTest extends TestCase
             $trust,
             $authorization,
             AuthorizationContext::ownershipWriter(),
+            null,
+            $activationAdmission,
         );
     }
 

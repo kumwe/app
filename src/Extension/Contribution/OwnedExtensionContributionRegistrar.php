@@ -8,6 +8,12 @@ use InvalidArgumentException;
 use Kumwe\CMS\BusinessDefinition\Domain\DefinitionOwner;
 use Kumwe\CMS\BusinessDefinition\Domain\EntityTypeDefinition;
 use Kumwe\CMS\BusinessDefinition\Domain\FieldTypeDefinition;
+use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessActionContract;
+use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessActionHandler;
+use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessViewContract;
+use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessViewHandler;
+use Kumwe\CMS\BusinessSurface\Presentation\Field\FieldPresentationContribution;
+use Kumwe\CMS\BusinessSurface\Presentation\Field\FieldPresenter;
 use Kumwe\CMS\Portal\Contribution\PortalNavigationDefinition;
 use Kumwe\CMS\Portal\Contribution\PortalRouteDefinition;
 use Kumwe\CMS\Portal\Contribution\PortalRouteHandlerFactory;
@@ -95,7 +101,10 @@ final class OwnedExtensionContributionRegistrar implements ExtensionContribution
             'portal_template' => $this->index($declared->portalTemplates()),
             'portal_route' => $this->index($declared->portalRoutes()),
             'field_type' => $this->businessIndex($declared->fieldTypes()),
+            'field_presentation' => $this->fieldPresentationIndex($declared->fieldPresentations()),
             'business_definition' => $this->businessIndex($declared->businessDefinitions()),
+            'custom_business_view_handler' => $this->customIndex($declared->customBusinessViews()),
+            'custom_business_action_handler' => $this->customIndex($declared->customBusinessActions()),
         ];
     }
 
@@ -319,6 +328,43 @@ final class OwnedExtensionContributionRegistrar implements ExtensionContribution
     }
 
     /**
+     * Reconcile and register one safe presenter for an already contributed field type.
+     *
+     * @param   FieldPresentationContribution  $contribution  Signed type and exact context coverage.
+     * @param   FieldPresenter                 $presenter     Markup-free semantic presenter.
+     *
+     * @return  void
+     *
+     * @throws  InvalidArgumentException  When the declaration is foreign, absent, repeated, altered, or its
+     *          field type has not already been contributed by this owner.
+     * @throws  \LogicException  When the contribution phase has already been completed.
+     *
+     * @since   2.0.0
+     */
+    public function fieldPresentation(
+        FieldPresentationContribution $contribution,
+        FieldPresenter $presenter,
+    ): void {
+        $this->assertAcceptable('field_presentation', $contribution->fieldType, $contribution->toArray());
+        $ownedTypes = array_map(
+            static fn (FieldTypeDefinition $definition): string => $definition->id,
+            $this->registries->fieldTypes()->ownedBy($this->businessOwner()),
+        );
+        if (!in_array($contribution->fieldType, $ownedTypes, true)) {
+            throw new InvalidArgumentException(
+                'A field-presentation contribution must follow its owner\'s field-type contribution.',
+            );
+        }
+        $this->registries->fieldPresentations()->register(
+            $this->businessOwner(),
+            $contribution->fieldType,
+            $contribution->contexts,
+            $presenter,
+        );
+        $this->recordAccepted('field_presentation', $contribution->fieldType);
+    }
+
+    /**
      * Reconcile an entity type against the manifest and add it to the contributed definition set.
      *
      * Only this definition is checked here. References between definitions are resolved later, when
@@ -340,6 +386,50 @@ final class OwnedExtensionContributionRegistrar implements ExtensionContribution
     {
         $this->accept('business_definition', $definition->handle, $definition->toArray());
         $this->registries->businessDefinitions()->register($this->businessOwner(), $definition);
+    }
+
+    /**
+     * Reconcile and register one typed custom business view handler.
+     *
+     * @param   CustomBusinessViewContract  $contract  Signed query and result contract.
+     * @param   CustomBusinessViewHandler   $handler   Typed application handler implementation.
+     *
+     * @return  void
+     *
+     * @throws  InvalidArgumentException  When ownership, manifest equality, handler uniqueness, or schema
+     *          uniqueness fails.
+     * @throws  \LogicException  When the contribution phase has already been completed.
+     *
+     * @since   2.0.0
+     */
+    public function customBusinessViewHandler(
+        CustomBusinessViewContract $contract,
+        CustomBusinessViewHandler $handler,
+    ): void {
+        $this->accept('custom_business_view_handler', $contract->handler, $contract->toArray());
+        $this->registries->customBusinessViewHandlers()->register($this->businessOwner(), $contract, $handler);
+    }
+
+    /**
+     * Reconcile and register one typed custom business action handler.
+     *
+     * @param   CustomBusinessActionContract  $contract  Signed command and result contract.
+     * @param   CustomBusinessActionHandler   $handler   Typed application handler implementation.
+     *
+     * @return  void
+     *
+     * @throws  InvalidArgumentException  When ownership, manifest equality, handler uniqueness, or schema
+     *          uniqueness fails.
+     * @throws  \LogicException  When the contribution phase has already been completed.
+     *
+     * @since   2.0.0
+     */
+    public function customBusinessActionHandler(
+        CustomBusinessActionContract $contract,
+        CustomBusinessActionHandler $handler,
+    ): void {
+        $this->accept('custom_business_action_handler', $contract->handler, $contract->toArray());
+        $this->registries->customBusinessActionHandlers()->register($this->businessOwner(), $contract, $handler);
     }
 
     /**
@@ -396,6 +486,29 @@ final class OwnedExtensionContributionRegistrar implements ExtensionContribution
      */
     private function accept(string $kind, string $identifier, array $actual): void
     {
+        $this->assertAcceptable($kind, $identifier, $actual);
+        $this->recordAccepted($kind, $identifier);
+    }
+
+    /**
+     * Validate one registration without marking its declaration as fulfilled.
+     *
+     * Presenter registration uses this split form because its field-type prerequisite and registry write
+     * must both succeed before `complete()` may treat the signed declaration as implemented.
+     *
+     * @param   string                $kind        Contribution kind, as keyed in the declaration index.
+     * @param   string                $identifier  Identifier this contribution claims.
+     * @param   array<string, mixed>  $actual      Export compared with the declaration under strict mode.
+     *
+     * @return  void
+     *
+     * @throws  InvalidArgumentException  When ownership, uniqueness, or strict declaration equality fails.
+     * @throws  \LogicException  When the contribution phase has already been completed.
+     *
+     * @since   2.0.0
+     */
+    private function assertAcceptable(string $kind, string $identifier, array $actual): void
+    {
         $this->assertOpen();
         $this->owner->assertOwns($identifier, $kind);
         if (isset($this->seen[$kind][$identifier])) {
@@ -412,6 +525,20 @@ final class OwnedExtensionContributionRegistrar implements ExtensionContribution
                 $identifier,
             ));
         }
+    }
+
+    /**
+     * Mark one fully registered declaration as fulfilled for final reconciliation.
+     *
+     * @param   string  $kind        Contribution kind, as keyed in the declaration index.
+     * @param   string  $identifier  Identifier whose registry write completed successfully.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    private function recordAccepted(string $kind, string $identifier): void
+    {
         $this->seen[$kind][$identifier] = true;
     }
 
@@ -468,6 +595,43 @@ final class OwnedExtensionContributionRegistrar implements ExtensionContribution
             $identifier = $item instanceof FieldTypeDefinition ? $item->id : $item->handle;
             $result[$identifier] = $item->toArray();
         }
+        return $result;
+    }
+
+    /**
+     * Index signed custom handler contracts by their handler reference.
+     *
+     * @param   iterable<CustomBusinessViewContract|CustomBusinessActionContract>  $items  Contracts of one kind.
+     *
+     * @return  array<string, array<string, mixed>>  Contract exports keyed by handler reference.
+     *
+     * @since   2.0.0
+     */
+    private function customIndex(iterable $items): array
+    {
+        $result = [];
+        foreach ($items as $item) {
+            $result[$item->handler] = $item->toArray();
+        }
+        return $result;
+    }
+
+    /**
+     * Index signed field-presentation declarations by their exact field type.
+     *
+     * @param   iterable<FieldPresentationContribution>  $items  Presentation declarations for one owner.
+     *
+     * @return  array<string, array<string, mixed>>  Canonical exports keyed by field type.
+     *
+     * @since   2.0.0
+     */
+    private function fieldPresentationIndex(iterable $items): array
+    {
+        $result = [];
+        foreach ($items as $item) {
+            $result[$item->fieldType] = $item->toArray();
+        }
+
         return $result;
     }
 

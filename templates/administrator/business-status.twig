@@ -1,0 +1,61 @@
+{% extends "layout.twig" %}
+
+{% block title %}Operation status · Kumwe{% endblock %}
+{% block context_title %}Operation status{% endblock %}
+{% block context_subtitle %}Caller-bound mutation evidence{% endblock %}
+
+{% block content %}
+  <header class="page-heading">
+    <div><p class="eyebrow">Generated business operation</p><h1>Operation status</h1><p>Only operations bound to your current identity, scope, policy, and surface are disclosed.</p></div>
+  </header>
+
+  {% if operation_status is null %}
+    <section class="empty-state" aria-labelledby="business-operation-unavailable">
+      <div class="empty-state-content">
+        <h2 id="business-operation-unavailable">Operation unavailable</h2>
+        <p>The operation does not exist or is not available in your current context.</p>
+        <a class="button" href="{{ business_base_path }}">Return to business records</a>
+      </div>
+    </section>
+  {% else %}
+    <section class="panel panel-body stack" aria-labelledby="business-operation-complete">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">{{ operation_status.state }}</p>
+          <h2 id="business-operation-complete">Operation completed</h2>
+        </div>
+        <span class="status">
+          {{ operation_status.operation == 'business.record.action_approval_request'
+            ? 'Approval request'
+            : operation_status.result.operation|title }}
+        </span>
+      </div>
+      <dl class="business-record-metadata">
+        <div><dt>Operation ID</dt><dd><code>{{ operation_status.operation_id }}</code></dd></div>
+        <div><dt>Operation</dt><dd><code>{{ operation_status.operation }}</code></dd></div>
+        {% if operation_status.operation == 'business.record.action_approval_request' %}
+          <div>
+            <dt>Approval request</dt>
+            <dd><code>{{ operation_status.result.approval_request_id|default('No active rule') }}</code></dd>
+          </div>
+        {% else %}
+          <div><dt>Record</dt><dd><code>{{ operation_status.result.record_id }}</code></dd></div>
+          <div><dt>Version</dt><dd>{{ operation_status.result.version }}</dd></div>
+        {% endif %}
+        <div><dt>Created</dt><dd><time datetime="{{ operation_status.created_at }}">{{ operation_status.created_at|date('M j, Y H:i:s') }}</time></dd></div>
+        <div><dt>Completed</dt><dd><time datetime="{{ operation_status.completed_at }}">{{ operation_status.completed_at|date('M j, Y H:i:s') }}</time></dd></div>
+        <div><dt>Expires</dt><dd><time datetime="{{ operation_status.expires_at }}">{{ operation_status.expires_at|date('M j, Y H:i:s') }}</time></dd></div>
+      </dl>
+      <div class="page-actions">
+        {% if operation_status.operation == 'business.record.action_approval_request' %}
+          {% if operation_status.result.approval_request_id %}
+            <a class="button primary" href="/administrator/business-security#approval-heading">Open approvals</a>
+          {% endif %}
+        {% elseif operation_status.result.deleted == false %}
+          <a class="button primary" href="{{ business_base_path }}/{{ operation_status.definition_reference|url_encode }}/{{ operation_status.result.record_id|url_encode }}{% if operation_status.result.operation == 'archive' %}?archived=1{% endif %}">Return to record</a>
+        {% endif %}
+        <a class="button" href="{{ business_base_path }}/{{ operation_status.definition_reference|url_encode }}">Return to records</a>
+      </div>
+    </section>
+  {% endif %}
+{% endblock %}

@@ -192,6 +192,9 @@ jobs:
       - name: Verify source policy
         run: composer architecture:policy
 
+      - name: Verify deterministic OpenAPI artifact
+        run: composer openapi:check
+
       - name: Generate coding-standard normalization evidence
         run: |
           composer cs:fix || true

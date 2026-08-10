@@ -18,6 +18,7 @@ use Kumwe\CMS\Portal\Contribution\PortalTemplateRegistry;
 use Kumwe\CMS\Portal\Contribution\PortalWorkspaceRegistry;
 use Kumwe\CMS\Portal\Domain\PortalContext;
 use Kumwe\CMS\Portal\Http\Handler\PortalLoginHandler;
+use Kumwe\CMS\Portal\Presentation\PortalNavigationVisibility;
 use Kumwe\CMS\Portal\Presentation\PortalRenderer;
 use Laminas\Diactoros\ServerRequest;
 use Laminas\Diactoros\Uri;
@@ -104,6 +105,7 @@ final class PortalLoginHandlerTest extends TestCase
             ]), ['strict_variables' => true]),
             $navigation,
             new PortalTemplateRegistry(),
+            $this->createStub(PortalNavigationVisibility::class),
         );
 
         return new PortalLoginHandler(

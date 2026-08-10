@@ -10,6 +10,7 @@ use Kumwe\CMS\BusinessDefinition\Domain\EntityTypeDefinition;
 use Kumwe\CMS\BusinessRecord\Application\BusinessRecordRelationView;
 use Kumwe\CMS\BusinessRecord\Application\BusinessRecordRevisionView;
 use Kumwe\CMS\BusinessRecord\Application\BusinessRecordService;
+use Kumwe\CMS\BusinessRecord\Application\BusinessRecordView;
 use Kumwe\CMS\BusinessRecord\Application\Command\CreateRecordCommand;
 use Kumwe\CMS\BusinessRecord\Application\Command\DeleteRecordCommand;
 use Kumwe\CMS\BusinessRecord\Application\Command\RelateRecordsCommand;
@@ -17,7 +18,10 @@ use Kumwe\CMS\BusinessRecord\Application\Command\ReorderRecordLinesCommand;
 use Kumwe\CMS\BusinessRecord\Application\Command\UnrelateRecordsCommand;
 use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordReferenceConflict;
 use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordVersionConflict;
+use Kumwe\CMS\BusinessRecord\Application\Query\BrowseOwnedLineFieldChoicesQuery;
 use Kumwe\CMS\BusinessRecord\Application\Query\BrowseRecordsQuery;
+use Kumwe\CMS\BusinessRecord\Application\Query\OwnedLineFormQuery;
+use Kumwe\CMS\BusinessRecord\Application\Query\ReadRecordQuery;
 use Kumwe\CMS\BusinessRecord\Application\Query\RecordHistoryQuery;
 use Kumwe\CMS\BusinessRecord\Domain\ExactDecimal;
 use Kumwe\CMS\BusinessRecord\Query\BooleanFilter;
@@ -44,6 +48,140 @@ use Ramsey\Uuid\Uuid;
 #[CoversNothing]
 final class BusinessRecordRelationshipIntegrationTest extends TestCase
 {
+    /**
+     * Proves included owned lines apply conditional field visibility to each target row.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testOwnedLineIncludesApplyConditionalReadVisibility(): void
+    {
+        $container = TestKernelFactory::create(Environment::fromGlobals());
+        $context = TestKernelFactory::administratorContext($container);
+        $records = $container->get(BusinessRecordService::class);
+        self::assertInstanceOf(BusinessRecordService::class, $records);
+        $suffix = strtolower(substr(str_replace('-', '', Uuid::uuid7()->toString()), -12));
+        $target = NeutralBusinessFixture::install(
+            $container,
+            $context,
+            NeutralBusinessFixture::relationTargetDocument($suffix, Uuid::uuid7()->toString()),
+        );
+        $lineDocument = NeutralBusinessFixture::ownedLineDocument($suffix, Uuid::uuid7()->toString());
+        $lineDocument['fields'][] = [
+            'handle' => 'show_note',
+            'label' => 'Show note',
+            'type' => 'core.boolean',
+            'required' => true,
+            'nullable' => false,
+            'default' => false,
+        ];
+        $lineDocument['fields'][] = [
+            'handle' => 'conditional_note',
+            'label' => 'Conditional note',
+            'type' => 'core.text',
+            'default' => 'Owned-line note',
+            'visibility_condition' => [
+                'op' => 'eq',
+                'type' => 'boolean',
+                'args' => [
+                    ['op' => 'field', 'type' => 'boolean', 'field' => 'show_note'],
+                    ['op' => 'literal', 'type' => 'boolean', 'value' => true],
+                ],
+            ],
+        ];
+        $lineDocument['fields'][] = [
+            'handle' => 'product',
+            'label' => 'Product',
+            'type' => 'core.entity_reference',
+            'required' => false,
+            'nullable' => true,
+            'configuration' => ['target' => $target->handle],
+        ];
+        $line = NeutralBusinessFixture::install($container, $context, $lineDocument);
+        $owner = NeutralBusinessFixture::install(
+            $container,
+            $context,
+            NeutralBusinessFixture::relationshipOwnerDocument(
+                $suffix,
+                Uuid::uuid7()->toString(),
+                $target->handle,
+                $line->handle,
+            ),
+        );
+        $ownerId = Uuid::uuid7()->toString();
+        $records->create(new CreateRecordCommand(
+            $context,
+            $owner->handle,
+            ['title' => 'Conditional line owner'],
+            NeutralBusinessFixture::idempotencyKey('conditional-line-owner-' . $suffix),
+            recordId: $ownerId,
+        ));
+        $lineForm = $records->ownedLineForm(new OwnedLineFormQuery(
+            $context,
+            $owner->handle,
+            $ownerId,
+            'lines',
+        ));
+        self::assertSame($line->handle, $lineForm->definition->handle);
+        self::assertContains('description', $lineForm->fieldHandles);
+        self::assertContains('units', $lineForm->fieldHandles);
+        self::assertContains('show_note', $lineForm->fieldHandles);
+        self::assertContains('product', $lineForm->fieldHandles);
+        $productId = Uuid::uuid7()->toString();
+        $records->create(new CreateRecordCommand(
+            $context,
+            $target->handle,
+            ['label' => 'Selectable product'],
+            NeutralBusinessFixture::idempotencyKey('owned-line-product-' . $suffix),
+            recordId: $productId,
+        ));
+        $productChoices = $records->browseOwnedLineFieldChoices(new BrowseOwnedLineFieldChoicesQuery(
+            $context,
+            $owner->handle,
+            $ownerId,
+            'lines',
+            'product',
+            new RecordQuerySpecification(pageSize: 50),
+        ));
+        self::assertSame([$productId], array_map(
+            static fn (BusinessRecordView $record): string => $record->recordId,
+            $productChoices->page->records,
+        ));
+        $hiddenLineId = Uuid::uuid7()->toString();
+        $visibleLineId = Uuid::uuid7()->toString();
+        $version = $records->relate(new RelateRecordsCommand(
+            $context,
+            $owner->handle,
+            $ownerId,
+            1,
+            'lines',
+            $hiddenLineId,
+            NeutralBusinessFixture::idempotencyKey('conditional-line-hidden-' . $suffix),
+            0,
+            targetValues: ['description' => 'Hidden line', 'units' => '1.000'],
+        ))->version;
+        $records->relate(new RelateRecordsCommand(
+            $context,
+            $owner->handle,
+            $ownerId,
+            $version,
+            'lines',
+            $visibleLineId,
+            NeutralBusinessFixture::idempotencyKey('conditional-line-visible-' . $suffix),
+            1,
+            targetValues: ['description' => 'Visible line', 'units' => '2.000', 'show_note' => true],
+        ));
+
+        $lines = self::browseIncludes($records, $context, $owner->handle, ['lines'])['lines'];
+        $byId = [];
+        foreach ($lines as $related) {
+            $byId[$related->recordId] = $related;
+        }
+        self::assertArrayNotHasKey('conditional_note', $byId[$hiddenLineId]->values);
+        self::assertSame('Owned-line note', $byId[$visibleLineId]->values['conditional_note']);
+    }
+
     public function testEveryCardinalityOrderedLinesIncludesRestrictionAndCascadeUseGeneratedTables(): void
     {
         $container = TestKernelFactory::create(Environment::fromGlobals());
@@ -267,6 +405,16 @@ final class BusinessRecordRelationshipIntegrationTest extends TestCase
         self::assertSame([0, 1], array_map(
             static fn (BusinessRecordRelationView $related): ?int => $related->position,
             $relations['tags'],
+        ));
+        $detail = $records->read(new ReadRecordQuery(
+            $context,
+            $owner->handle,
+            $ownerId,
+            includes: ['tags'],
+        ));
+        self::assertSame([$targetIds[1], $targetIds[0]], array_map(
+            static fn (BusinessRecordRelationView $related): string => $related->recordId,
+            $detail->includes['tags'],
         ));
 
         $lineRelations = self::browseIncludes($records, $context, $owner->handle, ['lines']);

@@ -15,7 +15,6 @@ use JsonException;
 use Kumwe\CMS\BusinessRecord\Application\BusinessRecordIdempotencyRepository;
 use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordIdempotencyConflict;
 use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordIdempotencyRace;
-use Kumwe\CMS\BusinessRecord\Application\RecordMutationResult;
 use Kumwe\CMS\BusinessRecord\Application\RecordFingerprint;
 use Kumwe\CMS\BusinessRecord\Domain\BusinessRecordIdempotency;
 use Kumwe\CMS\BusinessRecord\Domain\BusinessRecordIdempotencyState;
@@ -147,7 +146,7 @@ final readonly class DoctrineBusinessRecordIdempotencyRepository implements Busi
      * reported as a conflict rather than overwriting what an earlier replay would already have returned.
      *
      * @param   string                $id              UUID of the entry `begin()` claimed.
-     * @param   RecordMutationResult  $result          Outcome to store for a later replay to hand back.
+     * @param   array<string, mixed>  $result          Outcome to store for a later replay to hand back.
      * @param   string                $resultChecksum  Digest the caller believes describes $result.
      * @param   DateTimeImmutable     $completedAt     Instant the guarded mutation finished.
      *
@@ -161,17 +160,20 @@ final readonly class DoctrineBusinessRecordIdempotencyRepository implements Busi
      */
     public function complete(
         string $id,
-        RecordMutationResult $result,
+        array $result,
         string $resultChecksum,
         DateTimeImmutable $completedAt,
     ): void {
         $this->assertTransaction();
-        if (!hash_equals($resultChecksum, $this->fingerprints->digest($result->toArray()))) {
+        if ($result === [] || array_is_list($result)) {
+            throw new BusinessRecordIdempotencyConflict('corrupt');
+        }
+        if (!hash_equals($resultChecksum, $this->fingerprints->digest($result))) {
             throw new BusinessRecordIdempotencyConflict('corrupt');
         }
         $affected = $this->database->update($this->tables->raw('business_command_idempotency'), [
             'state' => BusinessRecordIdempotencyState::Completed->value,
-            'result' => $result->toArray(),
+            'result' => $result,
             'result_checksum' => $resultChecksum,
             'completed_at' => $completedAt,
         ], [

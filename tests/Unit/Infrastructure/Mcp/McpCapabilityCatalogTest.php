@@ -151,4 +151,273 @@ final class McpCapabilityCatalogTest extends TestCase
             self::assertTrue($tool['inputSchema']['properties']['currentPassword']['writeOnly']);
         }
     }
+
+    /**
+     * Proves generated-business MCP tools publish exact capabilities and closed schemas.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testGeneratedBusinessToolsPublishExactCapabilitiesAndClosedEnvelopes(): void
+    {
+        $tools = [];
+        foreach ((new McpCapabilityCatalog())->tools() as $tool) {
+            $tools[$tool['name']] = $tool;
+        }
+
+        $expected = [
+            'kumwe_business_discover' => ['discoverBusinessRecords', 'business.record.browse'],
+            'kumwe_business_inspect' => ['inspectBusinessRecord', 'business.record.read'],
+            'kumwe_business_view' => ['executeBusinessView', null],
+            'kumwe_business_search' => ['searchBusinessRecords', 'business.record.browse'],
+            'kumwe_business_read' => ['readBusinessRecord', 'business.record.read'],
+            'kumwe_business_history' => ['businessRecordHistory', 'business.record.history'],
+            'kumwe_business_plan_mutation' => ['planBusinessRecordMutation', null],
+            'kumwe_business_create' => ['createBusinessRecord', 'business.record.create'],
+            'kumwe_business_update' => ['updateBusinessRecord', 'business.record.update'],
+            'kumwe_business_archive' => ['archiveBusinessRecord', 'business.record.archive'],
+            'kumwe_business_restore' => ['restoreBusinessRecord', 'business.record.restore'],
+            'kumwe_business_delete' => ['deleteBusinessRecord', 'business.record.delete'],
+            'kumwe_business_relate' => ['relateBusinessRecords', 'business.record.relate'],
+            'kumwe_business_unrelate' => ['unrelateBusinessRecords', 'business.record.relate'],
+            'kumwe_business_reorder' => ['reorderBusinessRecords', 'business.record.relate'],
+            'kumwe_business_request_action' => ['requestBusinessRecordAction', 'business.record.action'],
+            'kumwe_business_execute_action' => ['executeBusinessRecordAction', 'business.record.action'],
+            'kumwe_business_operation_status' => ['businessRecordOperationStatus', 'business.record.read'],
+        ];
+
+        foreach ($expected as $name => [$handler, $capability]) {
+            self::assertArrayHasKey($name, $tools, sprintf('%s is not published.', $name));
+            self::assertSame($handler, $tools[$name]['handler']);
+            self::assertSame($capability, $tools[$name]['capability']);
+            self::assertFalse($tools[$name]['inputSchema']['additionalProperties']);
+            self::assertFalse($tools[$name]['outputSchema']['additionalProperties']);
+        }
+
+        self::assertTrue($tools['kumwe_business_discover']['readOnly']);
+        self::assertTrue($tools['kumwe_business_history']['readOnly']);
+        self::assertTrue($tools['kumwe_business_plan_mutation']['readOnly']);
+        self::assertTrue($tools['kumwe_business_operation_status']['readOnly']);
+        self::assertFalse($tools['kumwe_business_create']['readOnly']);
+        self::assertTrue($tools['kumwe_business_delete']['destructive']);
+        self::assertTrue($tools['kumwe_business_execute_action']['destructive']);
+        self::assertSame(
+            128,
+            $tools['kumwe_business_execute_action']['outputSchema']['properties']['result']['maxProperties'],
+        );
+    }
+
+    /**
+     * Proves every MCP mutation requires a bounded operation identity, plan, and applicable version.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testGeneratedBusinessMutationsRequireBoundedOperationAndOptimisticVersionIdentities(): void
+    {
+        $tools = [];
+        foreach ((new McpCapabilityCatalog())->tools() as $tool) {
+            $tools[$tool['name']] = $tool;
+        }
+        $mutations = [
+            'kumwe_business_create',
+            'kumwe_business_update',
+            'kumwe_business_archive',
+            'kumwe_business_restore',
+            'kumwe_business_delete',
+            'kumwe_business_relate',
+            'kumwe_business_unrelate',
+            'kumwe_business_reorder',
+            'kumwe_business_request_action',
+            'kumwe_business_execute_action',
+        ];
+
+        foreach ($mutations as $name) {
+            $input = $tools[$name]['inputSchema'];
+            self::assertContains('operationId', $input['required']);
+            self::assertContains('plan', $input['required']);
+            self::assertSame(16, $input['properties']['operationId']['minLength']);
+            self::assertSame(128, $input['properties']['operationId']['maxLength']);
+            self::assertSame(
+                '^[A-Za-z0-9][A-Za-z0-9._:-]{15,127}$',
+                $input['properties']['operationId']['pattern'],
+            );
+            self::assertSame(4096, $input['properties']['plan']['maxLength']);
+            self::assertSame(
+                '^v2\\.[A-Za-z0-9_-]+$',
+                $input['properties']['plan']['pattern'],
+            );
+            self::assertArrayNotHasKey('organization', $input['properties']);
+            self::assertArrayNotHasKey('currentPassword', $input['properties']);
+        }
+
+        foreach (array_slice($mutations, 1) as $name) {
+            self::assertContains('expectedVersion', $tools[$name]['inputSchema']['required']);
+        }
+        self::assertArrayNotHasKey(
+            'expectedVersion',
+            $tools['kumwe_business_create']['inputSchema']['properties'],
+        );
+    }
+
+    /**
+     * Proves operation status accepts only an identity and exposes one non-enumerating state.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testGeneratedBusinessStatusIsNonEnumeratingAndDoesNotSelectAnOperation(): void
+    {
+        $tools = [];
+        foreach ((new McpCapabilityCatalog())->tools() as $tool) {
+            $tools[$tool['name']] = $tool;
+        }
+        $status = $tools['kumwe_business_operation_status'];
+
+        self::assertSame(['operationId'], $status['inputSchema']['required']);
+        self::assertSame(['operationId'], array_keys($status['inputSchema']['properties']));
+        self::assertSame(['completed'], $status['outputSchema']['properties']['state']['enum']);
+        self::assertSame(
+            '^business\\.record\\.[a-z_]+$',
+            $status['outputSchema']['properties']['operation']['pattern'],
+        );
+    }
+
+    /**
+     * Prove generated history publishes only the shared bounded page and positive version cursor.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testGeneratedBusinessHistoryIsClosedBoundedAndOmissionSafe(): void
+    {
+        $history = array_values(array_filter(
+            (new McpCapabilityCatalog())->tools(),
+            static fn (array $tool): bool => $tool['name'] === 'kumwe_business_history',
+        ))[0] ?? null;
+        self::assertIsArray($history);
+
+        self::assertSame(['definition', 'record'], $history['inputSchema']['required']);
+        self::assertSame(1, $history['inputSchema']['properties']['limit']['minimum']);
+        self::assertSame(200, $history['inputSchema']['properties']['limit']['maximum']);
+        self::assertSame(1, $history['inputSchema']['properties']['beforeVersion']['minimum']);
+        self::assertFalse($history['outputSchema']['additionalProperties']);
+        self::assertSame(200, $history['outputSchema']['properties']['items']['maxItems']);
+        $revision = $history['outputSchema']['properties']['items']['items'];
+        self::assertFalse($revision['additionalProperties']);
+        self::assertSame(256, $revision['properties']['changed_fields']['maxItems']);
+        self::assertArrayNotHasKey('record_key', $revision['properties']);
+        self::assertStringNotContainsString('record_key', json_encode($history, JSON_THROW_ON_ERROR));
+    }
+
+    /**
+     * Proves the generic MCP surface publishes neither checker votes nor secret step-up input.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testGeneratedBusinessSurfacePublishesNoCheckerVoteOrSecretInput(): void
+    {
+        $tools = array_values(array_filter(
+            (new McpCapabilityCatalog())->tools(),
+            static fn (array $tool): bool => str_starts_with($tool['name'], 'kumwe_business_'),
+        ));
+        $generated = array_values(array_filter(
+            $tools,
+            static fn (array $tool): bool => in_array(
+                $tool['handler'],
+                [
+                    'discoverBusinessRecords', 'inspectBusinessRecord', 'searchBusinessRecords',
+                    'readBusinessRecord', 'businessRecordHistory', 'planBusinessRecordMutation',
+                    'createBusinessRecord',
+                    'updateBusinessRecord',
+                    'archiveBusinessRecord', 'restoreBusinessRecord', 'deleteBusinessRecord',
+                    'relateBusinessRecords', 'unrelateBusinessRecords', 'reorderBusinessRecords',
+                    'requestBusinessRecordAction', 'executeBusinessRecordAction',
+                    'businessRecordOperationStatus',
+                ],
+                true,
+            ),
+        ));
+        $encoded = json_encode($generated, JSON_THROW_ON_ERROR);
+
+        self::assertStringNotContainsString('record_key', $encoded);
+        self::assertStringNotContainsString('recordKey', $encoded);
+        self::assertStringNotContainsString('currentPassword', $encoded);
+        self::assertStringNotContainsString('stepUp', $encoded);
+        foreach (array_column($generated, 'name') as $name) {
+            self::assertDoesNotMatchRegularExpression('/(?:approve|reject|vote|step[_-]?up)/', $name);
+        }
+    }
+
+    /**
+     * Proves the MCP query schema mirrors shared paging, sorting, include, and aggregate bounds.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testGeneratedBusinessQuerySchemaMatchesTheSharedBoundsAndAggregateVocabulary(): void
+    {
+        $search = array_values(array_filter(
+            (new McpCapabilityCatalog())->tools(),
+            static fn (array $tool): bool => $tool['name'] === 'kumwe_business_search',
+        ))[0] ?? null;
+        self::assertIsArray($search);
+        $query = $search['inputSchema']['properties']['query'];
+
+        self::assertFalse($query['additionalProperties']);
+        self::assertSame(200, $query['properties']['page_size']['maximum']);
+        self::assertSame(5, $query['properties']['sorts']['maxItems']);
+        self::assertSame(4, $query['properties']['projection']['properties']['includes']['maxItems']);
+        self::assertSame(
+            ['count', 'sum', 'min', 'max', 'avg'],
+            $query['properties']['projection']['properties']['aggregates']['items']['properties']['function']['enum'],
+        );
+    }
+
+    /**
+     * Proves mutation planning uses a closed operation vocabulary and withholds internal bindings.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testGeneratedBusinessPlanBindsClosedMutationAndCurrentStateVocabulary(): void
+    {
+        $plan = array_values(array_filter(
+            (new McpCapabilityCatalog())->tools(),
+            static fn (array $tool): bool => $tool['name'] === 'kumwe_business_plan_mutation',
+        ))[0] ?? null;
+        self::assertIsArray($plan);
+
+        self::assertSame(['operationId', 'operation', 'definition'], $plan['inputSchema']['required']);
+        self::assertSame(16, $plan['inputSchema']['properties']['operationId']['minLength']);
+        self::assertSame([
+            'create', 'update', 'archive', 'restore', 'delete', 'relate', 'unrelate', 'reorder',
+            'request_action', 'execute_action',
+        ], $plan['inputSchema']['properties']['operation']['enum']);
+        self::assertFalse($plan['inputSchema']['additionalProperties']);
+        self::assertSame(1000, $plan['inputSchema']['properties']['orderedRecordIds']['maxItems']);
+        self::assertTrue($plan['inputSchema']['properties']['orderedRecordIds']['uniqueItems']);
+
+        $output = $plan['outputSchema'];
+        self::assertFalse($output['additionalProperties']);
+        foreach (
+            [
+                'plan', 'operation_id', 'operation', 'definition_version', 'record_id',
+                'record_version', 'expires_at',
+            ] as $member
+        ) {
+            self::assertContains($member, $output['required']);
+        }
+        self::assertArrayNotHasKey('definition_id', $output['properties']);
+        self::assertArrayNotHasKey('runtime_binding', $output['properties']);
+        self::assertArrayNotHasKey('policy_binding', $output['properties']);
+    }
 }

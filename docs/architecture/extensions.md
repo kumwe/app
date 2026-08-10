@@ -23,9 +23,45 @@ Runtime publication keys are independent from the application/session secret. A 
 
 ## Services and events
 
-Providers register services through a restricted Joomla DI adapter. After every active provider has registered services, the runtime runs a separate typed contribution phase with a registrar bound to the signed publication's extension identifier. The registrar reconciles concrete capability, administrator workspace/navigation, route, and view definitions against the inspected schema-2 manifest before boot or route compilation. It closes after that phase; delivery handlers and templates cannot mutate registries.
+Providers register services through a restricted Joomla DI adapter. After every active provider has registered
+services, the runtime runs a separate typed contribution phase with a registrar bound to the signed publication's
+extension identifier. The registrar reconciles concrete capability, administrator workspace/navigation, route,
+view, and business definitions against the inspected strict manifest before boot or route compilation. Schema 2
+retains the original contribution grammar; schema 3 adds signed field-presentation declarations and custom
+business handler contracts. The registrar closes after that phase; delivery handlers and templates cannot mutate
+registries.
 
-ContainerFactory remains the composition root. It creates one registry family, sends core navigation through the same permission-aware path, and supplies only explicitly allowed application services to extension containers. Registries use typed definition objects and independent register/remove/inventory behavior, so another registry family can be introduced without a central callback switch.
+Custom business views and actions use the same phase. The signed manifest publishes owner-scoped handler and schema
+references plus closed input/result contracts; the provider supplies a typed application handler, never a raw
+callable. Owner-aware registries validate decoded query or command DTOs before invocation, validate bounded result
+DTOs afterwards, and remove handler plus contract together on owner withdrawal. These application contracts have no
+PSR request, DBAL, repository, or container dependency. Extension code reaches business data and mutations through
+the same policy-aware application services as generated adapters rather than through core tables.
+
+Field-presentation strategies follow the same signed, owner-scoped lifecycle. A schema-3 declaration binds one
+package-owned field type to a closed context set, and the provider registers its `FieldPresenter` only after that
+field type. The presenter receives immutable definition metadata plus an already disclosed value and returns a
+markup-free semantic widget model rendered by core Twig. The registry keeps server editability, field identity,
+labels, required state, and validation errors authoritative, bounds retained input, and removes executable strategy
+objects before their field type during owner withdrawal.
+Manifest parsing derives the list/detail/create/update/relation coverage a published custom field can reach and
+rejects a release with a missing signed context before install persistence or activation evaluates provider code.
+The assembled-graph validation repeats this against active registries to cover cross-extension field-type use.
+
+The generated-business facade resolves the active installed definition, checks policy-filtered surface metadata,
+and calls `CustomBusinessSurfaceDispatcher`. The dispatcher requires the definition's exact owner/handler/schema
+tuple to be active and asserts each custom action's declared capability before invoking extension application code.
+Unknown declarations, inactive owners, absent handler registrations, and mismatched schemas share one
+non-enumerating unavailable-definition result. Contract schemas constrain data shape; they never replace record,
+field, approval, concurrency, audit, transaction, or idempotency enforcement in the application service a handler
+composes.
+
+ContainerFactory remains the composition root. It creates one registry family, sends core navigation through the
+same permission-aware path, and supplies only explicitly allowed application services to extension containers.
+The allowlist includes `BusinessRecordService`, so typed custom handlers can perform canonical policy, approval,
+concurrency, audit, transaction, and idempotency enforcement. It does not expose the application container, DBAL
+connection, or core repositories. Registries use typed definition objects and independent register/remove/inventory
+behavior, so another registry family can be introduced without a central callback switch.
 
 Contributed routes are compiled under `/administrator/extensions/{vendor}/{name}`, receive the normal administrator session/capability pipeline, add CSRF enforcement for mutations, and wrap execution in live trust enforcement. Views are resolved only through the contributor's registered name and isolated Twig namespace. Duplicate identifiers, route method/path collisions, missing owned references, and provider/manifest drift fail closed.
 
@@ -39,7 +75,13 @@ Extensions use Doctrine DBAL or an ORM contained behind their own repository int
 
 ## Compatibility promise
 
-Kumwe treats extension manifests, the contribution SPI version, typed definition and provider interfaces, typed events, service IDs explicitly documented for extensions, capability names, API schemas, and migration contracts as versioned interfaces. Schema-1 packages continue to load but cannot opt into typed shell contributions without a schema-2 manifest. Internal controller classes, registry implementations, template implementation details, and raw database tables are not stable APIs.
+Kumwe treats extension manifests, the contribution SPI version, typed definition and provider interfaces, typed
+events, service IDs explicitly documented for extensions, capability names, API schemas, and migration contracts
+as versioned interfaces. Schema-1 packages continue to load but cannot opt into typed shell contributions without
+a schema-2 manifest; contributed field presenters and custom business handlers require schema 3 so schema 2
+remains a closed, unchanged grammar.
+Internal controller classes, registry implementations, template implementation details, and raw database tables
+are not stable APIs.
 
 Recovery construction uses the same core contribution path but never evaluates the signed extension publication, instantiates providers, or adds extension template namespaces. Runtime generations that are stale, altered, disabled, uninstalled, quarantined, or no longer trusted cannot expose executable contributions.
 

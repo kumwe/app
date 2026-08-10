@@ -94,6 +94,10 @@ final class BusinessDefinitions
                     filterable: true,
                     sortable: true,
                     configuration: ['options' => ['info', 'notice', 'warning', 'critical']],
+                    validators: [[
+                        'rule' => 'one_of',
+                        'value' => ['info', 'notice', 'warning', 'critical'],
+                    ]],
                 ),
                 self::field(
                     'published_at',
@@ -209,7 +213,25 @@ final class BusinessDefinitions
         ];
     }
 
-    /** @return array<string, mixed> */
+    /**
+     * Build one canonical field declaration for the example's signed business definitions.
+     *
+     * @param   string                      $handle         Stable field handle.
+     * @param   string                      $label          Operator-facing label.
+     * @param   string                      $type           Registered field-type identifier.
+     * @param   bool                        $required       Whether callers must supply the field.
+     * @param   ?int                        $length         Optional character bound.
+     * @param   bool                        $unique         Whether persisted values are unique.
+     * @param   bool                        $indexed        Whether storage carries an index.
+     * @param   bool                        $filterable     Whether bounded queries may filter it.
+     * @param   bool                        $sortable       Whether bounded queries may sort it.
+     * @param   array<string, mixed>        $configuration  Type-owned configuration.
+     * @param   list<array<string, mixed>>  $validators     Validation rules shared by every adapter.
+     *
+     * @return  array<string, mixed>  Canonical field document.
+     *
+     * @since   2.0.0
+     */
     private static function field(
         string $handle,
         string $label,
@@ -221,6 +243,7 @@ final class BusinessDefinitions
         bool $filterable = false,
         bool $sortable = false,
         array $configuration = [],
+        array $validators = [],
     ): array {
         return [
             'handle' => $handle, 'label' => $label, 'type' => $type,
@@ -229,6 +252,7 @@ final class BusinessDefinitions
             'sortable' => $sortable, 'order' => 0,
             'immutable_after_create' => $type === 'core.uuid',
             'configuration' => $configuration,
+            'validators' => $validators,
         ];
     }
 

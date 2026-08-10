@@ -1,0 +1,119 @@
+{% extends "layout.twig" %}
+
+{% block title %}Choose a value · Kumwe{% endblock %}
+{% block context_title %}Choose a value{% endblock %}
+{% block context_subtitle %}Policy-filtered generated business choices{% endblock %}
+
+{% block content %}
+  <kumwe-business-surface>
+    <header class="page-heading">
+      <div>
+        <p class="eyebrow">{{ choice_kind == 'media' ? 'Media reference' : 'Related record' }}</p>
+        <h1>Choose {{ choice_handle|replace({'_': ' '}) }}</h1>
+        <p>Only values available to this field and operation are shown.</p>
+      </div>
+      <div class="page-actions">
+        <a class="button" href="{{ choice_return_path }}">Return without choosing</a>
+      </div>
+    </header>
+
+    <section class="panel stack" aria-labelledby="choice-search-title">
+      <div class="section-heading">
+        <div>
+          <h2 id="choice-search-title">Search choices</h2>
+          <p>Search remains within the server-authorized choice set.</p>
+        </div>
+      </div>
+      <form method="get" class="business-query-form compact-form">
+        <input type="hidden" name="operation" value="{{ choice_operation }}">
+        {% if choice_kind == 'media' %}
+          <label for="choice-search">Media name</label>
+          <input id="choice-search" type="search" name="search" value="{{ choice_search }}" maxlength="200">
+        {% elseif choice_search_fields is not empty %}
+          <label for="choice-search">Search related records</label>
+          <input
+            id="choice-search"
+            type="search"
+            name="search_term"
+            value="{{ choice_query_state.search_term|default('') }}"
+            maxlength="500"
+          >
+          {% for field in choice_search_fields %}
+            <input type="hidden" name="search_fields[]" value="{{ field.handle }}">
+          {% endfor %}
+          <input type="hidden" name="page_size" value="50">
+          <p class="field-help">
+            Searches {{ choice_search_fields|map(field => field.label)|join(', ') }}.
+          </p>
+        {% else %}
+          <p class="empty-state">No search fields are available. Browse the bounded choice list below.</p>
+        {% endif %}
+        {% if choice_kind == 'media' or choice_search_fields is not empty %}
+          <div class="page-actions">
+            <button class="primary" type="submit">Search</button>
+          </div>
+        {% endif %}
+      </form>
+    </section>
+
+    <section class="panel stack" aria-labelledby="choice-results-title">
+      <div class="section-heading">
+        <div>
+          <h2 id="choice-results-title">Available choices</h2>
+          <p>Choose one value to return it to the generated editor.</p>
+        </div>
+        <span class="status">{{ choices|length }} on this page</span>
+      </div>
+      {% if choices is empty %}
+        <p class="empty-state">No available choices match this search.</p>
+      {% else %}
+        <div class="table-scroll" tabindex="0" aria-label="Available choices table">
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">Choice</th>
+                {% if choice_kind == 'related' %}<th scope="col">Details</th>{% endif %}
+                <th scope="col"><span class="visually-hidden">Select</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for choice in choices %}
+                <tr>
+                  <th scope="row">{{ choice.label }}</th>
+                  {% if choice_kind == 'related' %}
+                    <td>
+                      {% if choice.fields is empty %}
+                        <span class="muted">No additional disclosed fields</span>
+                      {% else %}
+                        <dl class="business-choice-fields">
+                          {% for field in choice.fields %}
+                            <div><dt>{{ field.label }}</dt><dd>{{ field.display is not empty ? field.display : 'Not set' }}</dd></div>
+                          {% endfor %}
+                        </dl>
+                      {% endif %}
+                    </td>
+                  {% endif %}
+                  <td class="table-actions">
+                    <a
+                      class="button"
+                      href="{{ choice_return_path }}&amp;choice_value={{ choice.id|url_encode }}&amp;choice_label={{ choice.label|url_encode }}"
+                    >Choose</a>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% endif %}
+      {% if next_query %}
+        <div class="page-actions">
+          <a
+            class="button"
+            rel="next"
+            href="?operation={{ choice_operation|url_encode }}&amp;query={{ next_query|url_encode }}"
+          >Next choices</a>
+        </div>
+      {% endif %}
+    </section>
+  </kumwe-business-surface>
+{% endblock %}

@@ -128,19 +128,20 @@ final readonly class ExtensionRuntimeLoader
                 || !is_array($themeSites)
                 || !array_is_list($themeSites)
                 || !is_int($manifestSchema)
-                || !in_array($manifestSchema, [1, 2], true)
-                || ($manifestSchema === 2 && !is_array($declaredContributions))
+                || !in_array($manifestSchema, [1, 2, 3], true)
+                || ($manifestSchema >= 2 && !is_array($declaredContributions))
             ) {
                 throw new RuntimeException('A compiled extension entry is incomplete.');
             }
             $extensionIdentifier = ExtensionIdentifier::fromString($identifier);
             $identifier = $extensionIdentifier->value();
-            $declared = $manifestSchema === 2
+            $declared = $manifestSchema >= 2
                 ? ManifestContributionSet::fromManifest(
                     $extensionIdentifier,
                     is_array($declaredContributions)
                         ? $declaredContributions
-                        : throw new RuntimeException('Schema-2 runtime contributions are unavailable.'),
+                        : throw new RuntimeException('Strict runtime contributions are unavailable.'),
+                    $manifestSchema,
                 )
                 : ManifestContributionSet::legacy($extensionIdentifier, []);
             $root = $this->safeRoot($relativeRoot);
@@ -171,7 +172,7 @@ final readonly class ExtensionRuntimeLoader
             }
             $container = new RestrictedExtensionContainer($identifier, $services);
             $provider->register($container);
-            $active->add($identifier, $provider, $container, $declared, $manifestSchema === 2);
+            $active->add($identifier, $provider, $container, $declared, $manifestSchema >= 2);
             $this->addPortalTemplates($active, $identifier, $root);
 
             if ($type !== 'template') {

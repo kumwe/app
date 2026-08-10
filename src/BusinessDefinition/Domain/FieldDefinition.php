@@ -237,6 +237,14 @@ final readonly class FieldDefinition
         if ($type === 'core.secret' && $sensitivity !== Sensitivity::Secret) {
             throw new InvalidBusinessDefinition('An encrypted secret field requires secret sensitivity.');
         }
+        if (
+            $visibilityCondition !== null
+            && ($searchable || $filterable || $sortable || $reportable || $exportable)
+        ) {
+            throw new InvalidBusinessDefinition(
+                'A conditionally visible field cannot be queried, reported, or exported.',
+            );
+        }
         if (preg_match('/^[a-z][a-z0-9_-]{0,62}$/D', $formGroup) !== 1 || $order < 0 || $order > 100_000) {
             throw new InvalidBusinessDefinition('A business field form placement is invalid.');
         }

@@ -7,10 +7,13 @@ namespace Kumwe\CMS\Tests\Unit\BusinessDefinition\Domain;
 use Kumwe\CMS\BusinessDefinition\Application\BusinessDefinitionValidator;
 use Kumwe\CMS\BusinessDefinition\Application\FieldTypeRegistry;
 use Kumwe\CMS\BusinessDefinition\Domain\BuiltInFieldTypes;
+use Kumwe\CMS\BusinessDefinition\Domain\CanonicalDefinitionJson;
 use Kumwe\CMS\BusinessDefinition\Domain\ComputationMode;
+use Kumwe\CMS\BusinessDefinition\Domain\DefinitionStatus;
 use Kumwe\CMS\BusinessDefinition\Domain\EntityTypeDefinition;
 use Kumwe\CMS\BusinessDefinition\Domain\FieldDefinition;
 use Kumwe\CMS\BusinessDefinition\Domain\InvalidBusinessDefinition;
+use Kumwe\CMS\BusinessDefinition\Domain\PortalOperation;
 use Kumwe\CMS\BusinessDefinition\Domain\RecordInvariantDefinition;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
@@ -20,6 +23,7 @@ use PHPUnit\Framework\TestCase;
 #[CoversClass(BusinessDefinitionValidator::class)]
 #[CoversClass(FieldTypeRegistry::class)]
 #[CoversClass(BuiltInFieldTypes::class)]
+#[CoversClass(PortalOperation::class)]
 #[CoversClass(RecordInvariantDefinition::class)]
 final class EntityTypeDefinitionTest extends TestCase
 {
@@ -37,6 +41,111 @@ final class EntityTypeDefinitionTest extends TestCase
         (new BusinessDefinitionValidator(new FieldTypeRegistry()))->validateGraph([$definition]);
     }
 
+    /**
+     * Proves an empty portal-operation allowlist preserves legacy canonical bytes and checksum.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testEmptyPortalOperationAllowlistPreservesLegacyCanonicalBytes(): void
+    {
+        $definition = EntityTypeDefinition::fromArray(self::document());
+        $legacyDocument = $definition->toArray();
+        $legacyBytes = CanonicalDefinitionJson::encode($legacyDocument);
+        $legacyChecksum = CanonicalDefinitionJson::checksum($legacyDocument);
+        $roundTrip = EntityTypeDefinition::fromArray($legacyDocument);
+
+        self::assertSame([], $roundTrip->portalOperations());
+        self::assertFalse($roundTrip->allowsPortalOperation(PortalOperation::Browse));
+        self::assertArrayNotHasKey('portal_operations', $roundTrip->toArray());
+        self::assertSame($legacyBytes, CanonicalDefinitionJson::encode($roundTrip->toArray()));
+        self::assertSame($legacyChecksum, $roundTrip->checksum());
+
+        $explicitEmptyDocument = $legacyDocument;
+        $explicitEmptyDocument['portal_operations'] = [];
+        self::assertSame(
+            $legacyChecksum,
+            EntityTypeDefinition::fromArray($explicitEmptyDocument)->checksum(),
+        );
+    }
+
+    /**
+     * Proves portal operations are typed, canonicalized, and retained across lifecycle copies.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testPortalOperationAllowlistIsTypedCanonicalAndSurvivesLifecycleCopies(): void
+    {
+        self::assertSame([
+            'action',
+            'approval',
+            'archive',
+            'browse',
+            'create',
+            'delete',
+            'export',
+            'history',
+            'read',
+            'relation',
+            'reorder',
+            'report',
+            'restore',
+            'status',
+            'update',
+        ], array_map(static fn (PortalOperation $operation): string => $operation->value, PortalOperation::cases()));
+        $document = self::document();
+        $document['portal_exposure'] = true;
+        $document['portal_operations'] = ['update', 'browse', 'read'];
+        $definition = EntityTypeDefinition::fromArray($document);
+
+        self::assertSame(
+            [PortalOperation::Browse, PortalOperation::Read, PortalOperation::Update],
+            $definition->portalOperations(),
+        );
+        self::assertTrue($definition->allowsPortalOperation(PortalOperation::Read));
+        self::assertFalse($definition->allowsPortalOperation(PortalOperation::Create));
+        self::assertSame(['browse', 'read', 'update'], $definition->toArray()['portal_operations']);
+
+        $published = $definition->published(1);
+        self::assertSame($definition->portalOperations(), $published->portalOperations());
+        self::assertSame(
+            $published->portalOperations(),
+            $published->withStatus(DefinitionStatus::Deprecated)->portalOperations(),
+        );
+    }
+
+    /**
+     * Proves malformed, duplicate, unknown, and unexposed portal operations are rejected.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testPortalOperationAllowlistRejectsUnknownDuplicateAndUnexposedOperations(): void
+    {
+        $invalidDocuments = [
+            ['operations' => ['unknown'], 'exposure' => true, 'message' => 'invalid'],
+            ['operations' => ['read', 'read'], 'exposure' => true, 'message' => 'duplicated'],
+            ['operations' => ['read' => true], 'exposure' => true, 'message' => 'must be a list'],
+            ['operations' => [1], 'exposure' => true, 'message' => 'must be a string'],
+            ['operations' => ['read'], 'exposure' => false, 'message' => 'require entity-level portal exposure'],
+        ];
+        foreach ($invalidDocuments as $invalid) {
+            $document = self::document();
+            $document['portal_exposure'] = $invalid['exposure'];
+            $document['portal_operations'] = $invalid['operations'];
+            try {
+                EntityTypeDefinition::fromArray($document);
+                self::fail('An invalid portal-operation allowlist was accepted.');
+            } catch (InvalidBusinessDefinition $exception) {
+                self::assertStringContainsString($invalid['message'], $exception->getMessage());
+            }
+        }
+    }
+
     public function testComputedFieldRequiresServerOnlyReadOnlyFormula(): void
     {
         $document = self::document();
@@ -45,6 +154,31 @@ final class EntityTypeDefinitionTest extends TestCase
         $this->expectException(InvalidBusinessDefinition::class);
         $definition = EntityTypeDefinition::fromArray($document);
         (new BusinessDefinitionValidator(new FieldTypeRegistry()))->validateGraph([$definition]);
+    }
+
+    /**
+     * Proves a conditionally visible field cannot be queried, reported, or exported as an inference channel.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testConditionallyVisibleFieldCannotExposeAQueryOrExportInferenceChannel(): void
+    {
+        $document = self::document();
+        $document['fields'][1]['visibility_condition'] = [
+            'op' => 'eq',
+            'type' => 'boolean',
+            'args' => [
+                ['op' => 'literal', 'type' => 'string', 'value' => 'hidden'],
+                ['op' => 'literal', 'type' => 'string', 'value' => 'visible'],
+            ],
+        ];
+
+        $this->expectException(InvalidBusinessDefinition::class);
+        $this->expectExceptionMessage('cannot be queried, reported, or exported');
+
+        EntityTypeDefinition::fromArray($document);
     }
 
     public function testIdentityFieldMustRemainRequiredUniqueAndImmutable(): void

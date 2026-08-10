@@ -555,6 +555,336 @@ final class McpCapabilityCatalog
                 ['operationId', 'identifier']
             ),
             $this->tool(
+                'kumwe_business_discover',
+                'Discover generated business entities',
+                'Discover policy-visible generated business entities, fields, views, actions, and relationships.',
+                'discoverBusinessRecords',
+                'business.record.browse',
+                true,
+                false,
+                true,
+                [],
+                $this->closedObject([
+                    'items' => ['type' => 'array', 'maxItems' => 200, 'items' => $this->businessMetadata()],
+                    'truncated' => ['type' => 'boolean'],
+                ], ['items', 'truncated'])
+            ),
+            $this->tool(
+                'kumwe_business_inspect',
+                'Inspect a generated business entity',
+                'Inspect one policy-visible generated entity schema and its typed contributions.',
+                'inspectBusinessRecord',
+                'business.record.read',
+                true,
+                false,
+                true,
+                ['definition' => $this->businessDefinitionIdentifier()],
+                $this->closedObject(['definition' => $this->businessMetadata()], ['definition']),
+                ['definition']
+            ),
+            $this->tool(
+                'kumwe_business_view',
+                'Execute a custom business view',
+                'Execute one policy-visible typed custom view through its signed bounded contract.',
+                'executeBusinessView',
+                null,
+                true,
+                false,
+                true,
+                [
+                    'definition' => $this->businessDefinitionIdentifier(),
+                    'view' => $this->businessHandle(),
+                    'query' => $this->businessQuery(),
+                    'parameters' => $this->businessValues(true),
+                    'record' => $this->nullable($this->businessRecordIdentifier()),
+                ],
+                $this->closedObject([
+                    'definition' => $this->businessMetadata(),
+                    'available_operations' => [
+                        'type' => 'object',
+                        'maxProperties' => 20,
+                        'additionalProperties' => ['type' => 'boolean'],
+                    ],
+                    'view' => ['type' => 'object', 'maxProperties' => 16, 'additionalProperties' => true],
+                    'data' => ['type' => 'object', 'maxProperties' => 128, 'additionalProperties' => true],
+                ], ['definition', 'available_operations', 'view', 'data']),
+                ['definition', 'view']
+            ),
+            $this->tool(
+                'kumwe_business_search',
+                'Search generated business records',
+                'Run one bounded policy-filtered query against a generated business entity.',
+                'searchBusinessRecords',
+                'business.record.browse',
+                true,
+                false,
+                true,
+                [
+                    'definition' => $this->businessDefinitionIdentifier(),
+                    'query' => $this->businessQuery(),
+                ],
+                $this->businessSearchOutput(),
+                ['definition']
+            ),
+            $this->tool(
+                'kumwe_business_read',
+                'Read a generated business record',
+                'Read one policy-visible generated business record by its public identity.',
+                'readBusinessRecord',
+                'business.record.read',
+                true,
+                false,
+                true,
+                [
+                    'definition' => $this->businessDefinitionIdentifier(),
+                    'record' => $this->businessRecordIdentifier(),
+                    'includeArchived' => ['type' => 'boolean'],
+                    'includeDeleted' => ['type' => 'boolean'],
+                ],
+                $this->businessReadOutput(),
+                ['definition', 'record']
+            ),
+            $this->tool(
+                'kumwe_business_history',
+                'Read generated business record history',
+                'Read one bounded policy-filtered revision page for a generated business record.',
+                'businessRecordHistory',
+                'business.record.history',
+                true,
+                false,
+                true,
+                [
+                    'definition' => $this->businessDefinitionIdentifier(),
+                    'record' => $this->businessRecordIdentifier(),
+                    'limit' => ['type' => 'integer', 'minimum' => 1, 'maximum' => 200],
+                    'beforeVersion' => ['type' => ['integer', 'null'], 'minimum' => 1],
+                ],
+                $this->businessHistoryOutput(),
+                ['definition', 'record']
+            ),
+            $this->tool(
+                'kumwe_business_plan_mutation',
+                'Plan a generated business mutation',
+                'Bind one exact mutation to current definition, runtime, policy, actor, and record state.',
+                'planBusinessRecordMutation',
+                null,
+                true,
+                false,
+                true,
+                [
+                    'operationId' => $this->operationId(),
+                    'operation' => $this->businessMutationOperation(),
+                    'definition' => $this->businessDefinitionIdentifier(),
+                    'record' => $this->nullable($this->businessRecordIdentifier()),
+                    'expectedVersion' => $this->nullable(['type' => 'integer', 'minimum' => 1]),
+                    'values' => $this->businessValues(true),
+                    'relationship' => $this->nullable($this->businessHandle()),
+                    'target' => $this->nullable($this->businessRecordIdentifier()),
+                    'position' => [
+                        'type' => ['integer', 'null'],
+                        'minimum' => 0,
+                        'maximum' => 1_000_000,
+                    ],
+                    'targetValues' => $this->businessValues(true),
+                    'orderedRecordIds' => [
+                        'type' => 'array',
+                        'maxItems' => 1000,
+                        'uniqueItems' => true,
+                        'items' => $this->businessRecordIdentifier(),
+                    ],
+                    'action' => $this->nullable($this->businessHandle()),
+                    'input' => $this->businessValues(true),
+                    'approvalRequestId' => $this->nullable(['type' => 'string', 'format' => 'uuid']),
+                ],
+                $this->businessMutationPlanOutput(),
+                ['operationId', 'operation', 'definition']
+            ),
+            $this->tool(
+                'kumwe_business_create',
+                'Create a generated business record',
+                'Execute a planned typed record create under a replay-safe operation identity.',
+                'createBusinessRecord',
+                'business.record.create',
+                false,
+                false,
+                true,
+                [
+                    'operationId' => $this->operationId(),
+                    'plan' => $this->businessPlan(),
+                    'definition' => $this->businessDefinitionIdentifier(),
+                    'values' => $this->businessValues(false),
+                    'record' => $this->businessRecordIdentifier(),
+                ],
+                $this->businessMutationOutput(),
+                ['operationId', 'plan', 'definition', 'values']
+            ),
+            $this->tool(
+                'kumwe_business_update',
+                'Update a generated business record',
+                'Update one typed generated record at the exact version previously read.',
+                'updateBusinessRecord',
+                'business.record.update',
+                false,
+                false,
+                true,
+                [
+                    ...$this->businessVersionedRecordProperties(),
+                    'values' => $this->businessValues(false),
+                ],
+                $this->businessMutationOutput(),
+                ['operationId', 'plan', 'definition', 'record', 'expectedVersion', 'values']
+            ),
+            $this->tool(
+                'kumwe_business_archive',
+                'Archive a generated business record',
+                'Archive one generated record at an exact optimistic version.',
+                'archiveBusinessRecord',
+                'business.record.archive',
+                false,
+                false,
+                true,
+                $this->businessVersionedRecordProperties(),
+                $this->businessMutationOutput(),
+                ['operationId', 'plan', 'definition', 'record', 'expectedVersion']
+            ),
+            $this->tool(
+                'kumwe_business_restore',
+                'Restore a generated business record',
+                'Restore one archived or soft-deleted generated record at an exact version.',
+                'restoreBusinessRecord',
+                'business.record.restore',
+                false,
+                false,
+                true,
+                $this->businessVersionedRecordProperties(),
+                $this->businessMutationOutput(),
+                ['operationId', 'plan', 'definition', 'record', 'expectedVersion']
+            ),
+            $this->tool(
+                'kumwe_business_delete',
+                'Delete a generated business record',
+                'Delete one generated record at an exact optimistic version.',
+                'deleteBusinessRecord',
+                'business.record.delete',
+                false,
+                true,
+                true,
+                $this->businessVersionedRecordProperties(),
+                $this->businessMutationOutput(),
+                ['operationId', 'plan', 'definition', 'record', 'expectedVersion']
+            ),
+            $this->tool(
+                'kumwe_business_relate',
+                'Relate generated business records',
+                'Create one declared relationship link or owned line at an exact source version.',
+                'relateBusinessRecords',
+                'business.record.relate',
+                false,
+                false,
+                true,
+                [
+                    ...$this->businessVersionedRecordProperties(),
+                    'relationship' => $this->businessHandle(),
+                    'target' => $this->businessRecordIdentifier(),
+                    'position' => ['type' => ['integer', 'null'], 'minimum' => 0, 'maximum' => 1_000_000],
+                    'targetValues' => $this->businessValues(true),
+                ],
+                $this->businessMutationOutput(),
+                ['operationId', 'plan', 'definition', 'record', 'expectedVersion', 'relationship', 'target']
+            ),
+            $this->tool(
+                'kumwe_business_unrelate',
+                'Unrelate generated business records',
+                'Remove one declared relationship link at an exact source version.',
+                'unrelateBusinessRecords',
+                'business.record.relate',
+                false,
+                false,
+                true,
+                [
+                    ...$this->businessVersionedRecordProperties(),
+                    'relationship' => $this->businessHandle(),
+                    'target' => $this->businessRecordIdentifier(),
+                ],
+                $this->businessMutationOutput(),
+                ['operationId', 'plan', 'definition', 'record', 'expectedVersion', 'relationship', 'target']
+            ),
+            $this->tool(
+                'kumwe_business_reorder',
+                'Reorder generated business records',
+                'Replace the complete order of one declared relationship at an exact source version.',
+                'reorderBusinessRecords',
+                'business.record.relate',
+                false,
+                false,
+                true,
+                [
+                    ...$this->businessVersionedRecordProperties(),
+                    'relationship' => $this->businessHandle(),
+                    'orderedRecordIds' => [
+                        'type' => 'array',
+                        'maxItems' => 1000,
+                        'uniqueItems' => true,
+                        'items' => $this->businessRecordIdentifier(),
+                    ],
+                ],
+                $this->businessMutationOutput(),
+                [
+                    'operationId', 'plan', 'definition', 'record', 'expectedVersion',
+                    'relationship', 'orderedRecordIds',
+                ]
+            ),
+            $this->tool(
+                'kumwe_business_request_action',
+                'Request a generated business action',
+                'Request independent maker-checker approval for one exact high-impact action attempt.',
+                'requestBusinessRecordAction',
+                'business.record.action',
+                false,
+                false,
+                true,
+                [
+                    ...$this->businessVersionedRecordProperties(),
+                    'action' => $this->businessHandle(),
+                    'input' => $this->businessValues(true),
+                ],
+                $this->closedObject([
+                    'approval_request_id' => ['type' => ['string', 'null'], 'format' => 'uuid'],
+                ], ['approval_request_id']),
+                ['operationId', 'plan', 'definition', 'record', 'expectedVersion', 'action']
+            ),
+            $this->tool(
+                'kumwe_business_execute_action',
+                'Execute a generated business action',
+                'Execute one ordinary declared action; high-impact consumption requires a browser step-up session.',
+                'executeBusinessRecordAction',
+                'business.record.action',
+                false,
+                true,
+                true,
+                [
+                    ...$this->businessVersionedRecordProperties(),
+                    'action' => $this->businessHandle(),
+                    'input' => $this->businessValues(true),
+                    'approvalRequestId' => ['type' => ['string', 'null'], 'format' => 'uuid'],
+                ],
+                $this->businessMutationOutput(),
+                ['operationId', 'plan', 'definition', 'record', 'expectedVersion', 'action']
+            ),
+            $this->tool(
+                'kumwe_business_operation_status',
+                'Inspect a generated business operation',
+                'Inspect one caller-, policy-, and credential-bound generated-business mutation.',
+                'businessRecordOperationStatus',
+                'business.record.read',
+                true,
+                false,
+                true,
+                ['operationId' => $this->operationId()],
+                $this->businessStatusOutput(),
+                ['operationId']
+            ),
+            $this->tool(
                 'kumwe_business_definition_list',
                 'List business definitions',
                 'List the versioned business entity definition catalogue.',
@@ -628,7 +958,7 @@ final class McpCapabilityCatalog
                 false,
                 true,
                 [
-                    'operationId' => ['type' => 'string'],
+                    'operationId' => $this->operationId(),
                     'handle' => ['type' => 'string'],
                     'expectedRevision' => ['type' => 'integer', 'minimum' => 1],
                     'confirmed' => ['type' => 'boolean'],
@@ -682,7 +1012,7 @@ final class McpCapabilityCatalog
                 false,
                 false,
                 true,
-                ['operationId' => ['type' => 'string'], 'definitionId' => ['type' => 'string']],
+                ['operationId' => $this->operationId(), 'definitionId' => ['type' => 'string']],
                 $object,
                 ['operationId', 'definitionId']
             ),
@@ -696,7 +1026,7 @@ final class McpCapabilityCatalog
                 false,
                 true,
                 [
-                    'operationId' => ['type' => 'string'],
+                    'operationId' => $this->operationId(),
                     'planId' => ['type' => 'string'],
                     'expectedChecksum' => ['type' => 'string'],
                     'recoveryEvidenceId' => ['type' => 'string'],
@@ -713,7 +1043,7 @@ final class McpCapabilityCatalog
                 false,
                 true,
                 true,
-                ['operationId' => ['type' => 'string'], 'planId' => ['type' => 'string']],
+                ['operationId' => $this->operationId(), 'planId' => ['type' => 'string']],
                 $object,
                 ['operationId', 'planId']
             ),
@@ -726,7 +1056,7 @@ final class McpCapabilityCatalog
                 false,
                 true,
                 true,
-                ['operationId' => ['type' => 'string'], 'planId' => ['type' => 'string']],
+                ['operationId' => $this->operationId(), 'planId' => ['type' => 'string']],
                 $object,
                 ['operationId', 'planId']
             ),
@@ -952,12 +1282,479 @@ final class McpCapabilityCatalog
     }
 
     /**
-     * Return the length-bounded schema fragment most mutating tools publish for their `operationId`.
+     * Build a closed JSON object schema with an explicit member vocabulary.
+     *
+     * @param   array<string, mixed>  $properties  Complete property schemas keyed by wire name.
+     * @param   list<string>          $required    Members that must be present.
+     *
+     * @return  array<string, mixed>  Closed JSON object schema.
+     *
+     * @since   2.0.0
+     */
+    private function closedObject(array $properties, array $required = []): array
+    {
+        return [
+            'type' => 'object',
+            'properties' => $properties,
+            'required' => $required,
+            'additionalProperties' => false,
+        ];
+    }
+
+    /**
+     * Describe a definition UUID or namespaced handle accepted by the shared resolver.
+     *
+     * @return  array<string, int|string>  Bounded definition identifier schema.
+     *
+     * @since   2.0.0
+     */
+    private function businessDefinitionIdentifier(): array
+    {
+        return [
+            'type' => 'string',
+            'minLength' => 3,
+            'maxLength' => 191,
+            'pattern' => '^(?:[0-9a-fA-F-]{36}|[a-z][a-z0-9]*(?:[._-][a-z0-9]+)+)$',
+        ];
+    }
+
+    /**
+     * Describe one public business-record identity without accepting control characters.
+     *
+     * @return  array<string, int|string>  Bounded public identity schema.
+     *
+     * @since   2.0.0
+     */
+    private function businessRecordIdentifier(): array
+    {
+        return [
+            'type' => 'string',
+            'minLength' => 1,
+            'maxLength' => 191,
+            'pattern' => '^[^\\u0000-\\u001F\\u007F]+$',
+        ];
+    }
+
+    /**
+     * Describe a definition field, relation, action, projection, or alias handle.
+     *
+     * @return  array<string, int|string>  Lowercase bounded handle schema.
+     *
+     * @since   2.0.0
+     */
+    private function businessHandle(): array
+    {
+        return [
+            'type' => 'string',
+            'minLength' => 1,
+            'maxLength' => 63,
+            'pattern' => '^[a-z][a-z0-9_]{0,62}$',
+        ];
+    }
+
+    /**
+     * Describe the closed mutation vocabulary accepted by the planning tool.
+     *
+     * @return  array<string, mixed>  Exact generated-business mutation-name schema.
+     *
+     * @since   2.0.0
+     */
+    private function businessMutationOperation(): array
+    {
+        return [
+            'type' => 'string',
+            'enum' => [
+                'create', 'update', 'archive', 'restore', 'delete', 'relate', 'unrelate', 'reorder',
+                'request_action', 'execute_action',
+            ],
+        ];
+    }
+
+    /**
+     * Describe an opaque signed generated-business mutation plan.
+     *
+     * @return  array<string, int|string>  Versioned, bounded signed plan schema.
+     *
+     * @since   2.0.0
+     */
+    private function businessPlan(): array
+    {
+        return [
+            'type' => 'string',
+            'minLength' => 128,
+            'maxLength' => 4096,
+            'pattern' => '^v2\\.[A-Za-z0-9_-]+$',
+        ];
+    }
+
+    /**
+     * Permit an explicit JSON null in an otherwise unchanged schema.
+     *
+     * @param   array<string, mixed>  $schema  Original non-null schema.
+     *
+     * @return  array<string, mixed>  A union of the original schema and null.
+     *
+     * @since   2.0.0
+     */
+    private function nullable(array $schema): array
+    {
+        return ['anyOf' => [$schema, ['type' => 'null']]];
+    }
+
+    /**
+     * Describe a dynamic but bounded map of values keyed by declared definition handles.
+     *
+     * Definition metadata supplies exact per-field schemas at runtime. The static envelope caps field
+     * count and property names; shared value guards enforce depth, node count, exact decimals and types.
+     *
+     * @param   bool  $allowEmpty  Whether an empty map is valid for this use.
+     *
+     * @return  array<string, mixed>  Bounded dynamic field-value object schema.
+     *
+     * @since   2.0.0
+     */
+    private function businessValues(bool $allowEmpty): array
+    {
+        return [
+            'type' => 'object',
+            'minProperties' => $allowEmpty ? 0 : 1,
+            'maxProperties' => 256,
+            'propertyNames' => $this->businessHandle(),
+            'additionalProperties' => true,
+        ];
+    }
+
+    /**
+     * Return the common input properties every existing-record mutation must carry.
+     *
+     * @return  array<string, array<string, mixed>>  Operation, definition, record and version schemas.
+     *
+     * @since   2.0.0
+     */
+    private function businessVersionedRecordProperties(): array
+    {
+        return [
+            'operationId' => $this->operationId(),
+            'plan' => $this->businessPlan(),
+            'definition' => $this->businessDefinitionIdentifier(),
+            'record' => $this->businessRecordIdentifier(),
+            'expectedVersion' => ['type' => 'integer', 'minimum' => 1],
+        ];
+    }
+
+    /**
+     * Describe the closed bounded query document compiled by `BusinessRecordQueryFactory`.
+     *
+     * @return  array<string, mixed>  Query, filter, search, sort, cursor and projection schema.
+     *
+     * @since   2.0.0
+     */
+    private function businessQuery(): array
+    {
+        $stringList = static fn (int $maximum): array => [
+            'type' => 'array',
+            'maxItems' => $maximum,
+            'uniqueItems' => true,
+            'items' => ['type' => 'string', 'minLength' => 1, 'maxLength' => 63],
+        ];
+        $filter = $this->closedObject([
+            'type' => [
+                'type' => 'string',
+                'enum' => ['comparison', 'text', 'set', 'null', 'boolean', 'relation'],
+            ],
+            'field' => $this->businessHandle(),
+            'operator' => ['type' => 'string', 'minLength' => 1, 'maxLength' => 16],
+            'value' => [],
+            'text' => ['type' => 'string', 'minLength' => 1, 'maxLength' => 4096],
+            'values' => ['type' => 'array', 'minItems' => 1, 'maxItems' => 100, 'items' => []],
+            'negated' => ['type' => 'boolean'],
+            'is_null' => ['type' => 'boolean'],
+            'children' => [
+                'type' => 'array',
+                'minItems' => 1,
+                'maxItems' => 16,
+                'items' => ['type' => 'object', 'maxProperties' => 13],
+            ],
+            'relationship' => $this->businessHandle(),
+            'quantifier' => ['type' => 'string', 'enum' => ['any', 'all', 'none']],
+            'target' => ['type' => 'object', 'maxProperties' => 13],
+        ]);
+
+        return $this->closedObject([
+            'filter' => $filter,
+            'search' => $this->closedObject([
+                'term' => ['type' => 'string', 'minLength' => 1, 'maxLength' => 500],
+                'fields' => $stringList(16),
+            ], ['term', 'fields']),
+            'sorts' => [
+                'type' => 'array',
+                'maxItems' => 5,
+                'items' => $this->closedObject([
+                    'field' => $this->businessHandle(),
+                    'direction' => ['type' => 'string', 'enum' => ['asc', 'desc']],
+                    'nulls_last' => ['type' => 'boolean'],
+                ], ['field']),
+            ],
+            'after' => ['type' => ['string', 'null'], 'maxLength' => 65_536],
+            'page_size' => ['type' => 'integer', 'minimum' => 1, 'maximum' => 200],
+            'projection' => $this->closedObject([
+                'fields' => $stringList(64),
+                'includes' => $stringList(4),
+                'aggregates' => [
+                    'type' => 'array',
+                    'maxItems' => 16,
+                    'items' => $this->closedObject([
+                        'alias' => $this->businessHandle(),
+                        'function' => [
+                            'type' => 'string',
+                            'enum' => ['count', 'sum', 'min', 'max', 'avg'],
+                        ],
+                        'field' => ['type' => ['string', 'null'], 'maxLength' => 63],
+                    ], ['alias', 'function']),
+                ],
+            ]),
+            'include_archived' => ['type' => 'boolean'],
+            'include_deleted' => ['type' => 'boolean'],
+        ]);
+    }
+
+    /**
+     * Describe one policy-filtered generated entity document.
+     *
+     * @return  array<string, mixed>  Closed stable metadata envelope with bounded contribution lists.
+     *
+     * @since   2.0.0
+     */
+    private function businessMetadata(): array
+    {
+        $list = static fn (int $maximum): array => [
+            'type' => 'array',
+            'maxItems' => $maximum,
+            'items' => ['type' => 'object', 'additionalProperties' => true],
+        ];
+
+        return $this->closedObject([
+            'id' => ['type' => 'string', 'format' => 'uuid'],
+            'handle' => ['type' => 'string'],
+            'singular_label' => ['type' => 'string'],
+            'plural_label' => ['type' => 'string'],
+            'version' => ['type' => 'integer', 'minimum' => 1],
+            'checksum' => ['type' => 'string', 'pattern' => '^[a-f0-9]{64}$'],
+            'owner' => $this->closedObject([
+                'type' => ['type' => 'string'],
+                'identifier' => ['type' => 'string'],
+            ], ['type', 'identifier']),
+            'scope' => ['type' => 'string'],
+            'soft_delete' => ['type' => 'boolean'],
+            'workflow' => ['type' => ['object', 'null'], 'additionalProperties' => true],
+            'operation' => ['type' => 'string'],
+            'fields' => $list(256),
+            'views' => $list(128),
+            'actions' => $list(128),
+            'relationships' => $list(256),
+        ], [
+            'id', 'handle', 'singular_label', 'plural_label', 'version', 'checksum', 'owner', 'scope',
+            'soft_delete', 'workflow', 'operation', 'fields', 'views', 'actions', 'relationships',
+        ]);
+    }
+
+    /**
+     * Describe one omission-safe projected business record.
+     *
+     * @param   bool  $withFields  Whether semantic presentation fields join the browse item.
+     *
+     * @return  array<string, mixed>  Closed public record schema with no internal record key.
+     *
+     * @since   2.0.0
+     */
+    private function businessRecord(bool $withFields = false): array
+    {
+        $properties = [
+            'definition_version' => ['type' => 'integer', 'minimum' => 1],
+            'record_id' => $this->businessRecordIdentifier(),
+            'version' => ['type' => 'integer', 'minimum' => 1],
+            'workflow_state' => ['type' => ['string', 'null']],
+            'values' => ['type' => 'object', 'additionalProperties' => true],
+            'created_at' => ['type' => 'string', 'format' => 'date-time'],
+            'updated_at' => ['type' => 'string', 'format' => 'date-time'],
+            'archived_at' => ['type' => ['string', 'null'], 'format' => 'date-time'],
+            'deleted_at' => ['type' => ['string', 'null'], 'format' => 'date-time'],
+            'includes' => ['type' => 'object', 'additionalProperties' => true],
+        ];
+        if ($withFields) {
+            $properties['fields'] = [
+                'type' => 'array',
+                'maxItems' => 256,
+                'items' => ['type' => 'object', 'additionalProperties' => true],
+            ];
+        }
+
+        return $this->closedObject($properties, array_keys($properties));
+    }
+
+    /**
+     * Describe one bounded generated-business search result.
+     *
+     * @return  array<string, mixed>  Closed metadata, records, cursor, and aggregate schema.
+     *
+     * @since   2.0.0
+     */
+    private function businessSearchOutput(): array
+    {
+        return $this->closedObject([
+            'definition' => $this->businessMetadata(),
+            'available_operations' => ['type' => 'object', 'additionalProperties' => ['type' => 'boolean']],
+            'items' => ['type' => 'array', 'maxItems' => 200, 'items' => $this->businessRecord(true)],
+            'next_cursor' => ['type' => ['string', 'null'], 'maxLength' => 65_536],
+            'aggregates' => ['type' => 'object', 'maxProperties' => 16, 'additionalProperties' => true],
+        ], ['definition', 'available_operations', 'items', 'next_cursor', 'aggregates']);
+    }
+
+    /**
+     * Describe one generated-business detail result.
+     *
+     * @return  array<string, mixed>  Closed metadata, record, and semantic field schema.
+     *
+     * @since   2.0.0
+     */
+    private function businessReadOutput(): array
+    {
+        return $this->closedObject([
+            'definition' => $this->businessMetadata(),
+            'available_operations' => ['type' => 'object', 'additionalProperties' => ['type' => 'boolean']],
+            'record' => $this->businessRecord(),
+            'fields' => [
+                'type' => 'array',
+                'maxItems' => 256,
+                'items' => ['type' => 'object', 'additionalProperties' => true],
+            ],
+        ], ['definition', 'available_operations', 'record', 'fields']);
+    }
+
+    /**
+     * Describe one bounded, omission-safe generated-business revision page.
+     *
+     * @return  array<string, mixed>  Closed history page and revision schema.
+     *
+     * @since   2.0.0
+     */
+    private function businessHistoryOutput(): array
+    {
+        $revision = $this->closedObject([
+            'definition_version' => ['type' => 'integer', 'minimum' => 1],
+            'record_version' => ['type' => 'integer', 'minimum' => 1],
+            'revision_number' => ['type' => 'integer', 'minimum' => 1],
+            'operation' => [
+                'type' => 'string',
+                'maxLength' => 96,
+                'pattern' => '^[a-z][a-z0-9._:-]{0,95}$',
+            ],
+            'snapshot' => $this->businessValues(true),
+            'changed_fields' => [
+                'type' => 'array',
+                'maxItems' => 256,
+                'uniqueItems' => true,
+                'items' => $this->businessHandle(),
+            ],
+            'occurred_at' => ['type' => 'string', 'format' => 'date-time'],
+        ], [
+            'definition_version',
+            'record_version',
+            'revision_number',
+            'operation',
+            'snapshot',
+            'changed_fields',
+            'occurred_at',
+        ]);
+
+        return $this->closedObject([
+            'items' => ['type' => 'array', 'maxItems' => 200, 'items' => $revision],
+            'has_more' => ['type' => 'boolean'],
+            'next_before_version' => ['type' => ['integer', 'null'], 'minimum' => 1],
+        ], ['items', 'has_more', 'next_before_version']);
+    }
+
+    /**
+     * Describe the common omission-safe mutation result.
+     *
+     * @return  array<string, mixed>  Closed result schema with no internal record key.
+     *
+     * @since   2.0.0
+     */
+    private function businessMutationOutput(): array
+    {
+        return $this->closedObject([
+            'definition_version' => ['type' => 'integer', 'minimum' => 1],
+            'record_id' => $this->businessRecordIdentifier(),
+            'version' => ['type' => 'integer', 'minimum' => 1],
+            'workflow_state' => ['type' => ['string', 'null']],
+            'operation' => ['type' => 'string'],
+            'deleted' => ['type' => 'boolean'],
+            'replayed' => ['type' => 'boolean'],
+            'result' => ['type' => 'object', 'maxProperties' => 128, 'additionalProperties' => true],
+        ], [
+            'definition_version', 'record_id', 'version', 'workflow_state',
+            'operation', 'deleted', 'replayed',
+        ]);
+    }
+
+    /**
+     * Describe one signed mutation plan and the safe bindings it captured.
+     *
+     * @return  array<string, mixed>  Closed five-minute plan response schema.
+     *
+     * @since   2.0.0
+     */
+    private function businessMutationPlanOutput(): array
+    {
+        return $this->closedObject([
+            'plan' => $this->businessPlan(),
+            'operation_id' => $this->operationId(),
+            'operation' => $this->businessMutationOperation(),
+            'definition_version' => ['type' => 'integer', 'minimum' => 1],
+            'record_id' => $this->nullable($this->businessRecordIdentifier()),
+            'record_version' => $this->nullable(['type' => 'integer', 'minimum' => 1]),
+            'destructive' => ['type' => 'boolean'],
+            'approval_required' => ['type' => 'boolean'],
+            'expires_at' => ['type' => 'string', 'format' => 'date-time'],
+        ], [
+            'plan', 'operation_id', 'operation', 'definition_version', 'record_id', 'record_version',
+            'destructive', 'approval_required', 'expires_at',
+        ]);
+    }
+
+    /**
+     * Describe a caller-bound completed business operation.
+     *
+     * @return  array<string, mixed>  Closed status schema from `BusinessOperationStatusService`.
+     *
+     * @since   2.0.0
+     */
+    private function businessStatusOutput(): array
+    {
+        return $this->closedObject([
+            'operation_id' => $this->operationId(),
+            'state' => ['type' => 'string', 'enum' => ['completed']],
+            'operation' => ['type' => 'string', 'pattern' => '^business\\.record\\.[a-z_]+$'],
+            'created_at' => ['type' => 'string', 'format' => 'date-time'],
+            'completed_at' => ['type' => ['string', 'null'], 'format' => 'date-time'],
+            'expires_at' => ['type' => 'string', 'format' => 'date-time'],
+            'result' => [
+                'oneOf' => [
+                    $this->businessMutationOutput(),
+                    $this->closedObject([
+                        'approval_request_id' => $this->nullable(['type' => 'string', 'format' => 'uuid']),
+                    ], ['approval_request_id']),
+                ],
+            ],
+        ], ['operation_id', 'state', 'operation', 'created_at', 'completed_at', 'expires_at', 'result']);
+    }
+
+    /**
+     * Return the schema fragment every mutating tool publishes for its `operationId`.
      *
      * Declaring the window once keeps it identical wherever it is reused, so a client is told the same
-     * bounds `McpMutationGuard` enforces before it claims a lease under the identifier. The business
-     * definition and schema tools declare `operationId` as a plain string instead and leave the length
-     * entirely to the guard.
+     * bounds and grammar `McpMutationGuard` enforces before it claims a lease under the identifier.
      *
      * @return  array<string, int|string>  A string schema constrained to 16 to 128 characters.
      *
@@ -965,7 +1762,12 @@ final class McpCapabilityCatalog
      */
     private function operationId(): array
     {
-        return ['type' => 'string', 'minLength' => 16, 'maxLength' => 128];
+        return [
+            'type' => 'string',
+            'minLength' => 16,
+            'maxLength' => 128,
+            'pattern' => '^[A-Za-z0-9][A-Za-z0-9._:-]{15,127}$',
+        ];
     }
 
     /**

@@ -1,0 +1,309 @@
+{% extends "layout.twig" %}
+{% import "_business-fields.twig" as business_fields %}
+{% set record_path = business_base_path ~ '/' ~ (definition.handle|url_encode)
+  ~ '/' ~ (record.record_id|url_encode) %}
+
+{% block title %}{{ definition.singular_label }} · Kumwe{% endblock %}
+{% block context_title %}{{ definition.singular_label }}{% endblock %}
+{% block context_subtitle %}Generated business record detail{% endblock %}
+
+{% block content %}
+  <kumwe-business-surface>
+    <header class="page-heading">
+      <div>
+        <p class="eyebrow">{{ definition.plural_label }}</p>
+        <h1>{{ definition.singular_label }}</h1>
+        <p><code>{{ record.record_id }}</code> · Version {{ record.version }}</p>
+      </div>
+      <div class="page-actions">
+        {% if relationship_focus|default(null) %}
+          <a class="button" href="{{ record_path }}">Back to record</a>
+        {% endif %}
+        <a class="button" href="{{ business_base_path }}/{{ definition.handle|url_encode }}">Back to list</a>
+        {% for declared_view in definition.views %}
+          {% if declared_view.custom and (
+            declared_view.kind == 'detail'
+            or (declared_view.kind == 'form' and available_operations.update is defined)
+            or (declared_view.kind == 'history' and available_operations.history is defined)
+            or (declared_view.kind == 'relation' and available_operations.relation is defined)
+          ) %}
+            <a class="button" href="{{ business_base_path }}/{{ definition.handle|url_encode }}/{{ record.record_id|url_encode }}/views/{{ declared_view.handle|url_encode }}">
+              {{ declared_view.label }}
+            </a>
+          {% endif %}
+        {% endfor %}
+        {% if available_operations.history is defined %}<a class="button" href="{{ record_path }}?history=1">History</a>{% endif %}
+        {% if available_operations.report is defined %}
+          <a class="button" href="{{ business_base_path }}/{{ definition.handle|url_encode }}?purpose=report">Report</a>
+        {% endif %}
+        {% if available_operations.export is defined %}
+          <a class="button" href="{{ business_base_path }}/{{ definition.handle|url_encode }}?purpose=export">Export</a>
+        {% endif %}
+        {% if available_operations.update is defined and record.deleted_at is null %}<a class="button primary" href="{{ record_path }}?edit=1">Edit</a>{% endif %}
+      </div>
+    </header>
+
+    {% if completed_operation_id %}
+      <div class="notice success" role="status">
+        The operation completed.{% if available_operations.status is defined %} <a href="{{ business_base_path }}/operations/{{ completed_operation_id|url_encode }}">View operation status</a>.{% endif %}
+      </div>
+    {% endif %}
+    {% if error_summary %}
+      <section class="notice danger business-error-summary" role="alert" tabindex="-1">
+        <div><h2>The relationship could not be saved</h2><p>{{ error_summary }}</p></div>
+      </section>
+    {% endif %}
+
+    <div class="business-detail-layout">
+      <div class="stack">
+        <section class="panel panel-body" aria-labelledby="business-values-title">
+          <div class="section-heading">
+            <h2 id="business-values-title">Record details</h2>
+            <span class="status">
+              {{ record.deleted_at ? 'Deleted' : (record.archived_at ? 'Archived' : record.workflow_state|default('Active'))|replace({'_': ' ')|title }}
+            </span>
+          </div>
+          {% if fields is empty %}
+            <p class="text-muted">No field values are available for this record.</p>
+          {% else %}
+            <dl class="business-detail-fields">
+              {% for field in fields %}
+                <div><dt>{{ field.label }}</dt><dd>{{ field.display is not same as('') ? field.display : 'Not set' }}</dd></div>
+              {% endfor %}
+            </dl>
+          {% endif %}
+        </section>
+
+        {% if definition.relationships is not empty %}
+          <section class="panel panel-body stack" aria-labelledby="business-relations-title">
+            <div><p class="eyebrow">Connected records</p><h2 id="business-relations-title">Relationships and ordered lines</h2></div>
+            {% for relationship in definition.relationships %}
+              {% set related = record.includes[relationship.handle]|default([]) %}
+              {% set relationship_loaded = relationship.loaded|default(false) %}
+              <article class="business-relation" aria-labelledby="relation-{{ relationship.handle }}-title">
+                <div class="section-heading">
+                  <div>
+                    <h3 id="relation-{{ relationship.handle }}-title">{{ relationship.label }}</h3>
+                    <p class="text-muted text-small">{{ relationship.kind|replace({'_': ' '})|title }}{% if relationship.ordered %} · ordered{% endif %}</p>
+                  </div>
+                  <div class="page-actions">
+                    <span class="count-badge">{{ relationship_loaded ? related|length : '…' }}</span>
+                    {% if relationship_focus|default(null) != relationship.handle %}
+                      <a
+                        class="button"
+                        href="{{ record_path }}/relationships/{{ relationship.handle|url_encode }}"
+                      >View and manage</a>
+                    {% endif %}
+                  </div>
+                </div>
+
+                {% if not relationship_loaded %}
+                  <p class="text-muted">Open this relationship to load its current records.</p>
+                {% elseif related is empty %}
+                  <p class="text-muted">No related records are currently included.</p>
+                {% else %}
+                  <ul class="business-related-records">
+                    {% for related_record in related %}
+                      <li>
+                        <span>
+                          <strong>{{ related_record.label|default('Unnamed record') }}</strong>
+                          <small>Version {{ related_record.version }}</small>
+                        </span>
+                        {% if relationship_focus|default(null) == relationship.handle
+                          and available_operations.relation is defined
+                        %}
+                          <form method="post">
+                            <input type="hidden" name="_csrf" value="{{ csrf }}">
+                            <input type="hidden" name="operation" value="unrelate">
+                            <input type="hidden" name="operation_id" value="{{ operation_id }}">
+                            <input type="hidden" name="expected_version" value="{{ record.version }}">
+                            <input type="hidden" name="relationship" value="{{ relationship.handle }}">
+                            <input type="hidden" name="target_record_id" value="{{ related_record.record_id }}">
+                            <button class="link-button danger" type="submit">Remove</button>
+                          </form>
+                        {% endif %}
+                      </li>
+                    {% endfor %}
+                  </ul>
+                {% endif %}
+
+                {% if relationship_focus|default(null) == relationship.handle
+                  and available_operations.relation is defined
+                  and relationship.owned_line_form|default(null)
+                %}
+                  {% set line_form = relationship.owned_line_form %}
+                  <form class="business-relation-form business-owned-line-form" method="post">
+                    <input type="hidden" name="_csrf" value="{{ csrf }}">
+                    <input type="hidden" name="operation" value="relate">
+                    <input type="hidden" name="operation_id" value="{{ operation_id }}">
+                    <input type="hidden" name="expected_version" value="{{ record.version }}">
+                    <input type="hidden" name="relationship" value="{{ relationship.handle }}">
+                    {% if line_form.identity_generated %}
+                      <input type="hidden" name="target_record_id" value="{{ line_form.suggested_record_id }}">
+                    {% endif %}
+                    <div class="section-heading">
+                      <div>
+                        <h4>Add {{ line_form.target_label }}</h4>
+                        <p class="field-help">The new line is created and attached in one transaction.</p>
+                      </div>
+                    </div>
+                    {{ business_fields.render(
+                      line_form.fields,
+                      definition,
+                      record,
+                      business_base_path,
+                      'target_values'
+                    ) }}
+                    {% if relationship.ordered %}
+                      <label for="relation-{{ relationship.handle }}-owned-position">Position
+                        <input
+                          id="relation-{{ relationship.handle }}-owned-position"
+                          type="number"
+                          min="0"
+                          name="position"
+                        >
+                      </label>
+                    {% endif %}
+                    <button type="submit">Add {{ line_form.target_label }}</button>
+                  </form>
+                {% elseif relationship_focus|default(null) == relationship.handle
+                  and available_operations.relation is defined
+                  and relationship.choice_available
+                %}
+                  <form class="business-relation-form" method="post">
+                    <input type="hidden" name="_csrf" value="{{ csrf }}">
+                    <input type="hidden" name="operation" value="relate">
+                    <input type="hidden" name="operation_id" value="{{ operation_id }}">
+                    <input type="hidden" name="expected_version" value="{{ record.version }}">
+                    <input type="hidden" name="relationship" value="{{ relationship.handle }}">
+                    <label for="relation-{{ relationship.handle }}-target">Target record
+                      <select id="relation-{{ relationship.handle }}-target" name="target_record_id" required>
+                        <option value=""{% if relationship.selected_choice is not defined %} selected{% endif %} disabled>
+                          Choose a related record
+                        </option>
+                        {% for choice in relationship.choices %}
+                          <option
+                            value="{{ choice.value }}"
+                            {% if relationship.selected_choice|default(null) is same as(choice.value) %}selected{% endif %}
+                          >{{ choice.label }}</option>
+                        {% endfor %}
+                      </select>
+                    </label>
+                    <a
+                      class="button"
+                      href="{{ business_base_path }}/{{ definition.handle|url_encode }}/{{ record.record_id|url_encode }}/choices/relations/{{ relationship.handle|url_encode }}?operation=relation"
+                    >Search available records</a>
+                    {% if relationship.ordered %}
+                      <label for="relation-{{ relationship.handle }}-position">Position
+                        <input id="relation-{{ relationship.handle }}-position" type="number" min="0" name="position">
+                      </label>
+                    {% endif %}
+                    <button type="submit">Add relationship</button>
+                  </form>
+                {% elseif relationship_focus|default(null) == relationship.handle
+                  and available_operations.relation is defined
+                  and relationship.kind == 'owned_line_collection'
+                %}
+                  <p class="field-help">No owned-line fields are available for this record and policy.</p>
+                {% endif %}
+
+                {% if relationship_focus|default(null) == relationship.handle
+                  and relationship.ordered
+                  and related is not empty
+                  and available_operations.reorder is defined
+                %}
+                  <kumwe-business-ordered-lines>
+                    <form class="business-order-form" method="post">
+                      <input type="hidden" name="_csrf" value="{{ csrf }}">
+                      <input type="hidden" name="operation" value="reorder">
+                      <input type="hidden" name="operation_id" value="{{ operation_id }}">
+                      <input type="hidden" name="expected_version" value="{{ record.version }}">
+                      <input type="hidden" name="relationship" value="{{ relationship.handle }}">
+                      <h4>Change order</h4>
+                      <p class="field-help">Choose each related record exactly once in its numbered position.</p>
+                      <ol data-business-order-list>
+                        {% for related_record in related %}
+                          <li data-record-id="{{ related_record.record_id }}">
+                            <label for="relation-{{ relationship.handle }}-order-{{ loop.index }}">
+                              <span data-business-order-position>Position {{ loop.index }}</span>
+                              <select
+                                id="relation-{{ relationship.handle }}-order-{{ loop.index }}"
+                                name="ordered_record_ids[]"
+                                data-business-order-select
+                                required
+                              >
+                                {% for candidate in related %}
+                                  <option
+                                    value="{{ candidate.record_id }}"
+                                    {% if candidate.record_id is same as(related_record.record_id) %}selected{% endif %}
+                                  >{{ candidate.label|default('Unnamed record') }}</option>
+                                {% endfor %}
+                              </select>
+                            </label>
+                            <span class="js-only business-order-buttons">
+                              <button
+                                type="button"
+                                data-move="up"
+                                aria-label="Move {{ related_record.label|default('record') }} up"
+                              >↑</button>
+                              <button
+                                type="button"
+                                data-move="down"
+                                aria-label="Move {{ related_record.label|default('record') }} down"
+                              >↓</button>
+                            </span>
+                          </li>
+                        {% endfor %}
+                      </ol>
+                      <button type="submit">Save order</button>
+                    </form>
+                  </kumwe-business-ordered-lines>
+                {% endif %}
+              </article>
+            {% endfor %}
+          </section>
+        {% endif %}
+      </div>
+
+      <aside class="stack business-detail-sidebar" aria-label="Record operations">
+        <section class="panel panel-body stack">
+          <div><p class="eyebrow">Record state</p><h2>{{ record.workflow_state|default('Active')|replace({'_': ' '})|title }}</h2></div>
+          <dl class="business-record-metadata">
+            <div><dt>Created</dt><dd><time datetime="{{ record.created_at }}">{{ record.created_at|date('M j, Y H:i') }}</time></dd></div>
+            <div><dt>Updated</dt><dd><time datetime="{{ record.updated_at }}">{{ record.updated_at|date('M j, Y H:i') }}</time></dd></div>
+            <div><dt>Definition</dt><dd>v{{ record.definition_version }}</dd></div>
+          </dl>
+        </section>
+
+        {% if available_operations.action is defined and definition.actions is not empty %}
+          <section class="panel panel-body stack" aria-labelledby="business-actions-title">
+            <div><p class="eyebrow">Workflow</p><h2 id="business-actions-title">Available actions</h2></div>
+            {% for action in definition.actions %}
+              <a class="button{% if action.high_impact %} danger{% endif %}" href="{{ record_path }}?confirm=action&action={{ action.handle|url_encode }}">
+                {{ action.label }}{% if action.transition %} → {{ action.transition|replace({'_': ' '})|title }}{% endif %}
+              </a>
+              {% if available_operations.approval is defined and action.high_impact %}
+                <a class="button" href="{{ record_path }}?confirm=action&amp;action={{ action.handle|url_encode }}&amp;approval=1">
+                  Request approval for {{ action.label }}
+                </a>
+              {% endif %}
+            {% endfor %}
+          </section>
+        {% endif %}
+
+        <section class="panel panel-body stack" aria-labelledby="business-lifecycle-title">
+          <div><p class="eyebrow">Lifecycle</p><h2 id="business-lifecycle-title">Record controls</h2></div>
+          {% if available_operations.restore is defined and (record.archived_at or record.deleted_at) %}
+            <a class="button" href="{{ record_path }}?confirm=restore&archived=1&deleted=1">Restore record</a>
+          {% endif %}
+          {% if available_operations.archive is defined and record.archived_at is null and record.deleted_at is null %}
+            <a class="button" href="{{ record_path }}?confirm=archive">Archive record</a>
+          {% endif %}
+          {% if available_operations.delete is defined and record.deleted_at is null %}
+            <a class="button danger" href="{{ record_path }}?confirm=delete{% if record.archived_at %}&archived=1{% endif %}">Delete record</a>
+          {% endif %}
+        </section>
+      </aside>
+    </div>
+  </kumwe-business-surface>
+{% endblock %}

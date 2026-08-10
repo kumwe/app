@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace Kumwe\CMS\BusinessSecurity\Infrastructure\Persistence;
 
 use DateTimeZone;
+use Doctrine\DBAL\ArrayParameterType;
 use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\ParameterType;
 use Doctrine\DBAL\Platforms\AbstractMySQLPlatform;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use InvalidArgumentException;
@@ -19,8 +21,10 @@ use Kumwe\CMS\BusinessDefinition\Domain\ScopeMode;
 use Kumwe\CMS\BusinessRecord\Application\BusinessRecordDefinitionResolver;
 use Kumwe\CMS\BusinessRecord\Application\ResolvedBusinessDefinition;
 use Kumwe\CMS\BusinessRecord\Domain\RecordScope;
-use Kumwe\CMS\BusinessSecurity\Application\BusinessRecordAccessPlan;
+use Kumwe\CMS\BusinessSecurity\Application\BusinessRecordAccessCatalogPlanner;
 use Kumwe\CMS\BusinessSecurity\Application\BusinessRecordAccessController;
+use Kumwe\CMS\BusinessSecurity\Application\BusinessRecordAccessOperationCatalogPlanner;
+use Kumwe\CMS\BusinessSecurity\Application\BusinessRecordAccessPlan;
 use Kumwe\CMS\BusinessSecurity\Application\FieldAccessUsage;
 use Kumwe\CMS\BusinessSecurity\Application\FieldDisclosurePlan;
 use Kumwe\CMS\BusinessSecurity\Application\MembershipDirectory;
@@ -44,7 +48,9 @@ use RuntimeException;
  *
  * @since  2.0.0
  */
-final readonly class DoctrineBusinessRecordAccessController implements BusinessRecordAccessController
+final readonly class DoctrineBusinessRecordAccessController implements
+    BusinessRecordAccessOperationCatalogPlanner,
+    BusinessRecordAccessController
 {
     /**
      * Configure the policy catalog and trusted definition, membership, and clock dependencies.
@@ -88,6 +94,159 @@ final readonly class DoctrineBusinessRecordAccessController implements BusinessR
         $this->lockPolicySnapshot($context);
 
         return $this->resolvePlan($context, $operation, $resolved, $scope, 0);
+    }
+
+    /**
+     * Resolve an active generated catalog from one policy snapshot and one batched policy read.
+     *
+     * @param   ExecutionContext  $context    Actor and exact authenticated scope.
+     * @param   string            $operation  Dotted business-record operation identifier.
+     * @param   list<array{resolved: ResolvedBusinessDefinition, scope: RecordScope, requested: bool}>  $resources
+     *          Bounded active definitions, scopes, and top-level plan selections.
+     *
+     * @return  array<string, BusinessRecordAccessPlan>  Plans keyed by definition UUID.
+     *
+     * @throws  RuntimeException  When the resource batch is malformed, duplicated, or exceeds 4096 entries.
+     *
+     * @since   2.0.0
+     */
+    public function catalogPlans(
+        ExecutionContext $context,
+        string $operation,
+        array $resources,
+    ): array {
+        if (!array_is_list($resources) || count($resources) > 4096) {
+            throw new RuntimeException('A business-record policy catalog exceeds its safe bound.');
+        }
+        if ($resources === []) {
+            return [];
+        }
+        $resolvedByHandle = [];
+        $definitionIds = [];
+        foreach ($resources as $resource) {
+            $resolved = $resource['resolved'] ?? null;
+            $scope = $resource['scope'] ?? null;
+            $requested = $resource['requested'] ?? null;
+            if (
+                !($resolved instanceof ResolvedBusinessDefinition)
+                || !($scope instanceof RecordScope)
+                || !is_bool($requested)
+                || isset($definitionIds[$resolved->definition->id])
+                || isset($resolvedByHandle[$resolved->definition->handle])
+            ) {
+                throw new RuntimeException('A business-record policy catalog resource is invalid.');
+            }
+            $this->assertScope($context, $scope);
+            $definitionIds[$resolved->definition->id] = true;
+            $resolvedByHandle[$resolved->definition->handle] = $resolved;
+        }
+        $this->assertMembership($context, $operation);
+        $this->lockPolicySnapshot($context);
+        $rows = $this->rowsForDefinitions($context, $operation, array_keys($definitionIds));
+        $plans = [];
+        foreach ($resources as $resource) {
+            if (!$resource['requested']) {
+                continue;
+            }
+            $resolved = $resource['resolved'];
+            $plans[$resolved->definition->id] = $this->resolvePlan(
+                $context,
+                $operation,
+                $resolved,
+                $resource['scope'],
+                0,
+                $rows,
+                $resolvedByHandle,
+            );
+        }
+
+        return $plans;
+    }
+
+    /**
+     * Resolve several generated operations from one membership, policy-generation, and policy-row snapshot.
+     *
+     * @param   ExecutionContext  $context     Actor and exact authenticated scope.
+     * @param   list<string>      $operations  Unique dotted business-record capabilities, capped at 32.
+     * @param   list<array{resolved: ResolvedBusinessDefinition, scope: RecordScope, requested: bool}> $resources
+     *          Bounded active definitions, scopes, and top-level plan selections.
+     *
+     * @return  array<string, array<string, BusinessRecordAccessPlan>>  Plans by capability and definition UUID.
+     *
+     * @throws  RuntimeException  When an operation or resource batch is malformed, duplicated, or unbounded.
+     *
+     * @since   2.0.0
+     */
+    public function catalogOperationPlans(
+        ExecutionContext $context,
+        array $operations,
+        array $resources,
+    ): array {
+        if (
+            !array_is_list($operations)
+            || $operations === []
+            || count($operations) > 32
+        ) {
+            throw new RuntimeException('A business-record operation catalog is invalid or unbounded.');
+        }
+        $seenOperations = [];
+        foreach ($operations as $operation) {
+            if (
+                !is_string($operation)
+                || preg_match('/^business\.record\.[a-z][a-z0-9_.-]{0,62}$/D', $operation) !== 1
+                || isset($seenOperations[$operation])
+            ) {
+                throw new RuntimeException('A business-record operation catalog contains an invalid capability.');
+            }
+            $seenOperations[$operation] = true;
+        }
+        if (!array_is_list($resources) || $resources === [] || count($resources) > 4096) {
+            throw new RuntimeException('A business-record policy catalog exceeds its safe bound.');
+        }
+        $resolvedByHandle = [];
+        $definitionIds = [];
+        foreach ($resources as $resource) {
+            $resolved = $resource['resolved'] ?? null;
+            $scope = $resource['scope'] ?? null;
+            $requested = $resource['requested'] ?? null;
+            if (
+                !($resolved instanceof ResolvedBusinessDefinition)
+                || !($scope instanceof RecordScope)
+                || !is_bool($requested)
+                || isset($definitionIds[$resolved->definition->id])
+                || isset($resolvedByHandle[$resolved->definition->handle])
+            ) {
+                throw new RuntimeException('A business-record policy catalog resource is invalid.');
+            }
+            $this->assertScope($context, $scope);
+            $definitionIds[$resolved->definition->id] = true;
+            $resolvedByHandle[$resolved->definition->handle] = $resolved;
+        }
+        $this->assertMembershipOperations($context, $operations);
+        $this->lockPolicySnapshot($context);
+        $rows = $this->rowsForDefinitionOperations($context, $operations, array_keys($definitionIds));
+        $catalog = [];
+        foreach ($operations as $operation) {
+            $plans = [];
+            foreach ($resources as $resource) {
+                if (!$resource['requested']) {
+                    continue;
+                }
+                $resolved = $resource['resolved'];
+                $plans[$resolved->definition->id] = $this->resolvePlan(
+                    $context,
+                    $operation,
+                    $resolved,
+                    $resource['scope'],
+                    0,
+                    $rows[$operation],
+                    $resolvedByHandle,
+                );
+            }
+            $catalog[$operation] = $plans;
+        }
+
+        return $catalog;
     }
 
     /**
@@ -138,6 +297,8 @@ final readonly class DoctrineBusinessRecordAccessController implements BusinessR
      * @param   ResolvedBusinessDefinition  $resolved   Pinned entity definition.
      * @param   RecordScope                 $scope      Exact repository scope.
      * @param   int                         $depth      Current related-resource depth.
+     * @param   array<string, list<array<string, mixed>>>|null  $catalogRows  Batched policies by UUID.
+     * @param   array<string, ResolvedBusinessDefinition>|null  $catalogDefinitions  Active targets by handle.
      *
      * @return  BusinessRecordAccessPlan  Immutable compiled authorization input.
      *
@@ -151,9 +312,13 @@ final readonly class DoctrineBusinessRecordAccessController implements BusinessR
         ResolvedBusinessDefinition $resolved,
         RecordScope $scope,
         int $depth,
+        ?array $catalogRows = null,
+        ?array $catalogDefinitions = null,
     ): BusinessRecordAccessPlan {
         $this->assertScope($context, $scope);
-        $rows = $this->rows($context, $operation, $resolved);
+        $rows = $catalogRows === null
+            ? $this->rows($context, $operation, $resolved)
+            : ($catalogRows[$resolved->definition->id] ?? []);
         $schema = $this->schema($resolved->definition);
         $allows = [];
         $denies = [];
@@ -253,7 +418,9 @@ final readonly class DoctrineBusinessRecordAccessController implements BusinessR
             ));
         }
         $actions = array_values(array_diff(array_unique($actions), array_unique($actionDenies)));
-        $related = $depth < 1 ? $this->related($context, $operation, $resolved) : [];
+        $related = $depth < 1
+            ? $this->related($context, $operation, $resolved, $catalogRows, $catalogDefinitions)
+            : [];
 
         return new BusinessRecordAccessPlan(
             $resolved->definition->id,
@@ -305,11 +472,146 @@ final readonly class DoctrineBusinessRecordAccessController implements BusinessR
     }
 
     /**
+     * Load policies for every catalog definition in one bounded statement while preserving plan order.
+     *
+     * Global policies are copied into every definition's row list at their exact priority position, so a
+     * batched plan has the same canonical fingerprint and field intersection as an individual `plan()` call.
+     * The caller already bounds the UUID list at 4096 and all values remain bound parameters.
+     *
+     * @param   ExecutionContext  $context        Actor and exact authenticated scope.
+     * @param   string            $operation      Business-record operation matched by stored policies.
+     * @param   list<string>      $definitionIds  Unique active definition UUIDs.
+     *
+     * @return  array<string, list<array<string, mixed>>>  Policy rows keyed by definition UUID.
+     *
+     * @since   2.0.0
+     */
+    private function rowsForDefinitions(
+        ExecutionContext $context,
+        string $operation,
+        array $definitionIds,
+    ): array {
+        $grouped = array_fill_keys($definitionIds, []);
+        $rows = $this->database->fetchAllAssociative(sprintf(
+            'SELECT p.policy_code, p.effect, p.canonical_ast, p.field_rules, p.ast_checksum, '
+            . 'p.policy_version, p.owner_kind, p.owner_identifier, p.entity_definition_id FROM %s p '
+            . 'LEFT JOIN %s o ON o.id = p.organization_id '
+            . "LEFT JOIN %s e ON p.owner_kind = 'extension' AND e.identifier = p.owner_identifier "
+            . "WHERE p.status = 'active' AND p.resource_type = 'business_record' AND p.action = ? "
+            . 'AND (p.entity_definition_id IS NULL OR p.entity_definition_id IN (?)) '
+            . 'AND (p.organization_id IS NULL OR (o.identifier = ? AND o.site_identifier = ? '
+            . "AND o.status = 'active')) "
+            . "AND (p.owner_kind = 'core' OR (p.owner_kind = 'extension' AND e.status = 'active')) "
+            . 'ORDER BY p.priority DESC, p.policy_code',
+            $this->tables->quoted('resource_policies'),
+            $this->tables->quoted('organizations'),
+            $this->tables->quoted('extensions'),
+        ), [
+            $operation,
+            $definitionIds,
+            $context->organization()?->identifier() ?? '__no_organization__',
+            $context->site()->identifier(),
+        ], [
+            ParameterType::STRING,
+            ArrayParameterType::STRING,
+            ParameterType::STRING,
+            ParameterType::STRING,
+        ]);
+        foreach ($rows as $row) {
+            $definitionId = $row['entity_definition_id'] ?? null;
+            unset($row['entity_definition_id']);
+            if ($definitionId === null) {
+                foreach ($definitionIds as $candidate) {
+                    $grouped[$candidate][] = $row;
+                }
+                continue;
+            }
+            if (!is_string($definitionId) || !array_key_exists($definitionId, $grouped)) {
+                throw new RuntimeException('A batched business-record policy names an unexpected resource.');
+            }
+            $grouped[$definitionId][] = $row;
+        }
+
+        return $grouped;
+    }
+
+    /**
+     * Load policies for several exact operations and definitions in one bounded database statement.
+     *
+     * @param   ExecutionContext  $context        Actor and exact authenticated scope.
+     * @param   list<string>      $operations     Validated unique capabilities.
+     * @param   list<string>      $definitionIds  Validated unique active definition UUIDs.
+     *
+     * @return  array<string, array<string, list<array<string, mixed>>>>  Rows by capability and definition UUID.
+     *
+     * @throws  RuntimeException  When a returned policy names an operation or definition outside the request.
+     *
+     * @since   2.0.0
+     */
+    private function rowsForDefinitionOperations(
+        ExecutionContext $context,
+        array $operations,
+        array $definitionIds,
+    ): array {
+        $grouped = [];
+        foreach ($operations as $operation) {
+            $grouped[$operation] = array_fill_keys($definitionIds, []);
+        }
+        $rows = $this->database->fetchAllAssociative(sprintf(
+            'SELECT p.action, p.policy_code, p.effect, p.canonical_ast, p.field_rules, p.ast_checksum, '
+            . 'p.policy_version, p.owner_kind, p.owner_identifier, p.entity_definition_id FROM %s p '
+            . 'LEFT JOIN %s o ON o.id = p.organization_id '
+            . "LEFT JOIN %s e ON p.owner_kind = 'extension' AND e.identifier = p.owner_identifier "
+            . "WHERE p.status = 'active' AND p.resource_type = 'business_record' AND p.action IN (?) "
+            . 'AND (p.entity_definition_id IS NULL OR p.entity_definition_id IN (?)) '
+            . 'AND (p.organization_id IS NULL OR (o.identifier = ? AND o.site_identifier = ? '
+            . "AND o.status = 'active')) "
+            . "AND (p.owner_kind = 'core' OR (p.owner_kind = 'extension' AND e.status = 'active')) "
+            . 'ORDER BY p.action, p.priority DESC, p.policy_code',
+            $this->tables->quoted('resource_policies'),
+            $this->tables->quoted('organizations'),
+            $this->tables->quoted('extensions'),
+        ), [
+            $operations,
+            $definitionIds,
+            $context->organization()?->identifier() ?? '__no_organization__',
+            $context->site()->identifier(),
+        ], [
+            ArrayParameterType::STRING,
+            ArrayParameterType::STRING,
+            ParameterType::STRING,
+            ParameterType::STRING,
+        ]);
+        foreach ($rows as $row) {
+            $operation = $row['action'] ?? null;
+            $definitionId = $row['entity_definition_id'] ?? null;
+            unset($row['action'], $row['entity_definition_id']);
+            if (!is_string($operation) || !array_key_exists($operation, $grouped)) {
+                throw new RuntimeException('A batched business-record policy names an unexpected operation.');
+            }
+            if ($definitionId === null) {
+                foreach ($definitionIds as $candidate) {
+                    $grouped[$operation][$candidate][] = $row;
+                }
+                continue;
+            }
+            if (!is_string($definitionId) || !array_key_exists($definitionId, $grouped[$operation])) {
+                throw new RuntimeException('A batched business-record policy names an unexpected resource.');
+            }
+            $grouped[$operation][$definitionId][] = $row;
+        }
+
+        return $grouped;
+    }
+
+    /**
      * Resolve relationship and entity-reference targets under the same authenticated scope.
      *
      * @param   ExecutionContext            $context    Actor and exact authenticated scope.
      * @param   string                      $operation  Parent operation inherited by every target plan.
      * @param   ResolvedBusinessDefinition  $resolved   Source definition declaring the target handles.
+     * @param   array<string, list<array<string, mixed>>>|null  $catalogRows  Batched policies by UUID.
+     * @param   array<string, ResolvedBusinessDefinition>|null  $catalogDefinitions  Active targets by handle.
      *
      * @return  array<string, BusinessRecordAccessPlan>  Target plans keyed by source handle.
      *
@@ -319,6 +621,8 @@ final readonly class DoctrineBusinessRecordAccessController implements BusinessR
         ExecutionContext $context,
         string $operation,
         ResolvedBusinessDefinition $resolved,
+        ?array $catalogRows = null,
+        ?array $catalogDefinitions = null,
     ): array {
         $targets = [];
         foreach ($resolved->definition->fields() as $field) {
@@ -339,17 +643,41 @@ final readonly class DoctrineBusinessRecordAccessController implements BusinessR
                 $plans[$handle] = $byTarget[$targetHandle];
                 continue;
             }
-            $target = $operation === 'business.record.history'
-                ? $this->definitions->forHistory($context, $targetHandle)
-                : $this->definitions->forCreate($context, $targetHandle);
-            $targetScope = RecordScope::forDefinition(
-                $target->definition->scope,
-                $context->site(),
-                in_array($target->definition->scope, [ScopeMode::Organization, ScopeMode::SiteOrganization], true)
-                    ? $context->organization()?->identifier()
-                    : null,
+            if ($catalogDefinitions === null) {
+                $target = $operation === 'business.record.history'
+                    ? $this->definitions->forHistory($context, $targetHandle)
+                    : $this->definitions->forCreate($context, $targetHandle);
+            } else {
+                $target = $catalogDefinitions[$targetHandle] ?? null;
+                if (!($target instanceof ResolvedBusinessDefinition)) {
+                    continue;
+                }
+            }
+            try {
+                $targetScope = RecordScope::forDefinition(
+                    $target->definition->scope,
+                    $context->site(),
+                    in_array(
+                        $target->definition->scope,
+                        [ScopeMode::Organization, ScopeMode::SiteOrganization],
+                        true,
+                    ) ? $context->organization()?->identifier() : null,
+                );
+            } catch (InvalidArgumentException $exception) {
+                if ($catalogDefinitions === null) {
+                    throw $exception;
+                }
+                continue;
+            }
+            $plan = $this->resolvePlan(
+                $context,
+                $operation,
+                $target,
+                $targetScope,
+                1,
+                $catalogRows,
+                $catalogDefinitions,
             );
-            $plan = $this->resolvePlan($context, $operation, $target, $targetScope, 1);
             $byTarget[$targetHandle] = $plan;
             $plans[$handle] = $plan;
         }
@@ -942,23 +1270,47 @@ final readonly class DoctrineBusinessRecordAccessController implements BusinessR
      */
     private function assertMembership(ExecutionContext $context, string $operation): void
     {
+        $this->assertMembershipOperations($context, [$operation]);
+    }
+
+    /**
+     * Revalidate one membership at the strictest freshness level required by a closed operation set.
+     *
+     * @param   ExecutionContext  $context     Actor carrying optional organization membership evidence.
+     * @param   list<string>      $operations  Exact operations about to share one policy snapshot.
+     *
+     * @return  void
+     *
+     * @throws  RuntimeException  When the authenticated membership is stale for any requested operation.
+     *
+     * @since   2.0.0
+     */
+    private function assertMembershipOperations(ExecutionContext $context, array $operations): void
+    {
         $membership = $context->membership();
         if ($membership === null) {
             return;
         }
-        $readOnly = in_array($operation, [
+        $readOperations = [
             'business.record.read',
             'business.record.browse',
             'business.record.history',
             'business.record.report',
             'business.record.export',
-        ], true);
+        ];
+        $write = false;
+        foreach ($operations as $operation) {
+            if (!in_array($operation, $readOperations, true)) {
+                $write = true;
+                break;
+            }
+        }
         if (
             !$this->memberships->current(
                 $context->actorId(),
                 $context->site(),
                 $membership,
-                !$readOnly,
+                $write,
             )
         ) {
             throw new RuntimeException('The business-record authorization context is stale.');

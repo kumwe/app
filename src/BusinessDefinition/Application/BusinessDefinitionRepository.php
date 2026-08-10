@@ -32,11 +32,31 @@ interface BusinessDefinitionRepository
      * @param   SiteContext  $site  Site whose catalog is being read.
      *
      * @return  list<DefinitionCatalogEntry>  Where each handle stands — draft revision, published version
-     *          and publication state — in handle order; empty when the site holds no definitions.
+     *          and publication state — in handle order, capped at 4096; empty when the site holds none.
+     *
+     * @throws  \RuntimeException  When the site's catalog exceeds the supported bound.
      *
      * @since   2.0.0
      */
     public function catalog(SiteContext $site): array;
+
+    /**
+     * Serialize publication-time claims over one site's derived public-contract namespace.
+     *
+     * The lock is taken on the site's stable authority row rather than on definition rows, because the first
+     * definition has no catalog row to lock and two differently spelled handles may normalize to the same
+     * public component name. It is held by the caller's transaction through admission and publication.
+     *
+     * @param   SiteContext  $site  Site whose complete component namespace is about to be admitted.
+     *
+     * @return  void
+     *
+     * @throws  \LogicException  When the caller has no transaction open.
+     * @throws  \RuntimeException  When the stable site authority row is unavailable.
+     *
+     * @since   2.0.0
+     */
+    public function lockContractNamespace(SiteContext $site): void;
 
     /**
      * Resolve one catalog head, without loading its draft or any published version.
@@ -80,6 +100,24 @@ interface BusinessDefinitionRepository
      * @since   2.0.0
      */
     public function published(SiteContext $site, string $identifier, ?int $version = null): ?DefinitionVersionRecord;
+
+    /**
+     * Load exact published versions for a bounded set of definition UUIDs in batches.
+     *
+     * Generated navigation and contract discovery use this instead of issuing one version query per
+     * catalog entry. Implementations may split the request into driver-safe chunks, but must keep query
+     * count proportional to chunks rather than definitions and must return only rows from the supplied site.
+     *
+     * @param   SiteContext         $site      Site every requested definition must belong to.
+     * @param   array<string, int>  $versions  Definition UUID to exact positive published version, at most
+     *          4096 unique entries.
+     *
+     * @return  array<string, DefinitionVersionRecord>  Records keyed by definition UUID; absent versions
+     *          are omitted.
+     *
+     * @since   2.0.0
+     */
+    public function publishedBatch(SiteContext $site, array $versions): array;
 
     /**
      * List every version of one definition that was ever published.

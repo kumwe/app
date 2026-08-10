@@ -71,6 +71,7 @@ use Kumwe\CMS\Administrator\Presentation\SitePresentationFormMapper;
 use Kumwe\CMS\Audit\Application\AuditRecorder;
 use Kumwe\CMS\Audit\Infrastructure\Persistence\DoctrineAuditRecorder;
 use Kumwe\CMS\BusinessDefinition\Application\BusinessDefinitionCompatibilityAnalyzer;
+use Kumwe\CMS\BusinessDefinition\Application\BusinessDefinitionContractAdmission;
 use Kumwe\CMS\BusinessDefinition\Application\BusinessDefinitionRepository;
 use Kumwe\CMS\BusinessDefinition\Application\BusinessDefinitionService;
 use Kumwe\CMS\BusinessDefinition\Application\BusinessDefinitionValidator;
@@ -105,6 +106,25 @@ use Kumwe\CMS\BusinessRecord\Infrastructure\Persistence\DoctrineBusinessRecordRe
 use Kumwe\CMS\BusinessRecord\Infrastructure\Persistence\DoctrineBusinessRecordWriteRepository;
 use Kumwe\CMS\BusinessRecord\Infrastructure\Persistence\DoctrineBusinessSchemaRecordRepinGateway;
 use Kumwe\CMS\BusinessRecord\Infrastructure\Security\SodiumSecretCipher;
+use Kumwe\CMS\BusinessSurface\Application\BusinessApprovalSurfaceService;
+use Kumwe\CMS\BusinessSurface\Application\BusinessFormInputMapper;
+use Kumwe\CMS\BusinessSurface\Application\BusinessMutationPlanService;
+use Kumwe\CMS\BusinessSurface\Application\BusinessOperationStatusRepository;
+use Kumwe\CMS\BusinessSurface\Application\BusinessOperationStatusService;
+use Kumwe\CMS\BusinessSurface\Application\BusinessRecordProjector;
+use Kumwe\CMS\BusinessSurface\Application\BusinessRecordQueryFactory;
+use Kumwe\CMS\BusinessSurface\Application\BusinessSurfaceCatalog;
+use Kumwe\CMS\BusinessSurface\Application\BusinessSurfaceService;
+use Kumwe\CMS\BusinessSurface\Application\CustomBusinessActionExecutor;
+use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessSurfaceDispatcher;
+use Kumwe\CMS\BusinessSurface\Application\GeneratedBusinessActionStepUp;
+use Kumwe\CMS\BusinessSurface\Delivery\Administrator\AdministratorBusinessSurfaceHandler;
+use Kumwe\CMS\BusinessSurface\Delivery\Browser\BusinessCustomViewPresenter;
+use Kumwe\CMS\BusinessSurface\Delivery\Browser\GeneratedBusinessBrowserController;
+use Kumwe\CMS\BusinessSurface\Delivery\Portal\GeneratedBusinessPortalNavigationVisibility;
+use Kumwe\CMS\BusinessSurface\Delivery\Portal\PortalBusinessSurfaceHandler;
+use Kumwe\CMS\BusinessSurface\Infrastructure\Persistence\DoctrineBusinessOperationStatusRepository;
+use Kumwe\CMS\BusinessSurface\Presentation\Field\FieldPresentationRegistry;
 use Kumwe\CMS\BusinessSecurity\Application\Approval\ApprovalRepository;
 use Kumwe\CMS\BusinessSecurity\Application\Approval\ApprovalQueryRepository;
 use Kumwe\CMS\BusinessSecurity\Application\Approval\ApprovalQueryService;
@@ -138,6 +158,13 @@ use Kumwe\CMS\BusinessSchema\Application\PublishedDefinitionSchemaObserver;
 use Kumwe\CMS\BusinessSchema\Delivery\Api\BusinessSchemaApiHandler;
 use Kumwe\CMS\BusinessSchema\Delivery\Api\BusinessSchemaApiPresenter;
 use Kumwe\CMS\Delivery\Http\Api\Business\BusinessApiResponder;
+use Kumwe\CMS\Delivery\Http\Api\Business\BusinessApprovalApiHandler;
+use Kumwe\CMS\Delivery\Http\Api\Business\BusinessApprovalApiPresenter;
+use Kumwe\CMS\Delivery\Http\Api\Business\BusinessDefinitionDiscoveryApiHandler;
+use Kumwe\CMS\Delivery\Http\Api\Business\BusinessOperationStatusApiHandler;
+use Kumwe\CMS\Delivery\Http\Api\Business\BusinessRecordApiHandler;
+use Kumwe\CMS\Delivery\Http\Api\Business\BusinessRecordApiPresenter;
+use Kumwe\CMS\Delivery\Http\Api\Business\BusinessRecordApiResponder;
 use Kumwe\CMS\BusinessSchema\Delivery\Administrator\ApproveBusinessSchemaPlanHandler;
 use Kumwe\CMS\BusinessSchema\Delivery\Administrator\BusinessSchemaPlansHandler;
 use Kumwe\CMS\BusinessSchema\Delivery\Administrator\CreateBusinessSchemaPlanHandler;
@@ -166,6 +193,7 @@ use Kumwe\CMS\Extension\Application\ExtensionManager;
 use Kumwe\CMS\Extension\Application\Install\ExtensionInstallReconciler;
 use Kumwe\CMS\Extension\Application\Migration\ExtensionMigrationRunner;
 use Kumwe\CMS\Extension\Application\Package\ArchiveReader;
+use Kumwe\CMS\Extension\Application\Package\ExtensionActivationAdmission;
 use Kumwe\CMS\Extension\Application\Package\PackageSafetyPolicy;
 use Kumwe\CMS\Extension\Application\Trust\ExtensionArtifactVerifier;
 use Kumwe\CMS\Extension\Application\Trust\TrustKeySignatureVerifier;
@@ -205,6 +233,9 @@ use Kumwe\CMS\Delivery\Console\Command\ManageAutomationCommand;
 use Kumwe\CMS\Delivery\Console\Command\ManageAccessCommand;
 use Kumwe\CMS\Delivery\Console\Command\ManageContentCommand;
 use Kumwe\CMS\Delivery\Console\Command\ManageBusinessDefinitionsCommand;
+use Kumwe\CMS\Delivery\Console\Command\BusinessConsoleFailureMapper;
+use Kumwe\CMS\Delivery\Console\Command\BusinessRecordConsolePresenter;
+use Kumwe\CMS\Delivery\Console\Command\ManageBusinessRecordsCommand;
 use Kumwe\CMS\Delivery\Console\Command\ManageBusinessSchemaCommand;
 use Kumwe\CMS\Delivery\Console\Command\ManageContentModelsCommand;
 use Kumwe\CMS\Delivery\Console\Command\ManageNavigationCommand;
@@ -337,6 +368,7 @@ use Kumwe\CMS\Infrastructure\Persistence\TransactionManager;
 use Kumwe\CMS\Infrastructure\Persistence\TableNames;
 use Kumwe\CMS\Infrastructure\Redis\RedisConnectionFactory;
 use Kumwe\CMS\Infrastructure\Redis\RedisRuntime;
+use Kumwe\CMS\Infrastructure\Mcp\BusinessMcpHandlers;
 use Kumwe\CMS\Infrastructure\Mcp\KumweMcpHandlers;
 use Kumwe\CMS\Infrastructure\Mcp\KumweMcpServerFactory;
 use Kumwe\CMS\Infrastructure\Mcp\McpCapabilityCatalog;
@@ -344,6 +376,13 @@ use Kumwe\CMS\Infrastructure\Mcp\McpMutationGuard;
 use Kumwe\CMS\Infrastructure\Authorization\DoctrineResourceSiteOwnership;
 use Kumwe\CMS\Infrastructure\Authorization\DoctrineResourceSiteOwnershipWriter;
 use Kumwe\CMS\Infrastructure\Time\SystemClock;
+use Kumwe\CMS\OpenApi\Application\OpenApiContractCache;
+use Kumwe\CMS\OpenApi\Application\OpenApiComponentClaimAdmission;
+use Kumwe\CMS\OpenApi\Application\OpenApiContractCompiler;
+use Kumwe\CMS\OpenApi\Application\OpenApiContractService;
+use Kumwe\CMS\OpenApi\Application\OpenApiExtensionActivationAdmission;
+use Kumwe\CMS\OpenApi\Delivery\Http\OpenApiHandler;
+use Kumwe\CMS\OpenApi\Infrastructure\FilesystemOpenApiContractCache;
 use Kumwe\CMS\Kernel\Configuration\ApplicationConfiguration;
 use Kumwe\CMS\Kernel\Configuration\ConfigurationFactory;
 use Kumwe\CMS\Shared\Infrastructure\Configuration\Environment;
@@ -545,6 +584,7 @@ final class ContainerFactory
         $this->registerLogging($container, $configuration);
         $this->registerPersistence($container, $configuration, $root, $kernelProof, $loadRuntime);
         $this->registerExtensions($container, $configuration, $root, $loadRuntime);
+        $this->registerBusinessSurfaces($container, $root);
         $this->registerMcp($container, $root);
         $this->registerHttp($container, $configuration, $root, $loadRuntime);
         if ($console) {
@@ -1281,6 +1321,10 @@ final class ContainerFactory
                     ),
                     self::service($container, PortalNavigationRegistry::class),
                     self::service($container, PortalTemplateRegistry::class),
+                    new GeneratedBusinessPortalNavigationVisibility(
+                        self::service($container, BusinessSurfaceCatalog::class),
+                        self::service($container, PortalExecutionContextFactory::class),
+                    ),
                 ), true);
         }
         $container->share(RouterInterface::class, static fn (): RouterInterface =>
@@ -1380,6 +1424,28 @@ final class ContainerFactory
                 $container,
                 BusinessSchemaLifecycleObserver::class,
             ),
+        );
+        $coreOpenApiJson = file_get_contents($root . '/api/openapi/kumwe-v1.json');
+        if ($coreOpenApiJson === false) {
+            throw new RuntimeException('The checked-in core OpenAPI contract cannot be read.');
+        }
+        $coreOpenApi = json_decode($coreOpenApiJson, true, 512, JSON_THROW_ON_ERROR);
+        if (!is_array($coreOpenApi) || array_is_list($coreOpenApi)) {
+            throw new RuntimeException('The checked-in core OpenAPI contract is not an object.');
+        }
+        $componentClaims = new OpenApiComponentClaimAdmission($coreOpenApi);
+        $container->share(OpenApiComponentClaimAdmission::class, $componentClaims, true);
+        $container->share(BusinessDefinitionContractAdmission::class, $componentClaims, true);
+        $container->share(
+            ExtensionActivationAdmission::class,
+            new OpenApiExtensionActivationAdmission(
+                $componentClaims,
+                static fn (): BusinessDefinitionRepository => self::service(
+                    $container,
+                    BusinessDefinitionRepository::class,
+                ),
+            ),
+            true,
         );
         $container->share(ArchiveReader::class, new ZipArchiveReader(), true);
         $container->share(PackageSafetyPolicy::class, new PackageSafetyPolicy(), true);
@@ -1664,6 +1730,7 @@ final class ContainerFactory
             self::service($container, BusinessDefinitionRepository::class),
             self::service($container, BusinessDefinitionValidator::class),
             self::service($container, BusinessDefinitionCompatibilityAnalyzer::class),
+            self::service($container, BusinessDefinitionContractAdmission::class),
             self::service($container, AuthorizationGateway::class),
             self::service($container, ResourceSiteOwnershipWriter::class),
             self::service($container, AuditRecorder::class),
@@ -1725,6 +1792,7 @@ final class ContainerFactory
                     self::service($container, AuthorizationGateway::class),
                     self::service($container, ResourceSiteOwnershipWriter::class),
                     self::service($container, PackageDefinitionSynchronizer::class),
+                    self::service($container, ExtensionActivationAdmission::class),
                 ),
                 self::service($container, RedisRuntime::class),
                 self::service($container, AuthorizationGateway::class),
@@ -1744,6 +1812,7 @@ final class ContainerFactory
                 $keyRing,
                 self::service($container, TrustStore::class),
             ))->load([
+                BusinessRecordService::class => self::service($container, BusinessRecordService::class),
                 ContentService::class => self::service($container, ContentService::class),
                 ExtensionEventRegistrar::class => new JoomlaExtensionEventRegistrar(
                     self::service($container, DispatcherInterface::class),
@@ -1754,6 +1823,159 @@ final class ContainerFactory
             ], $contributionRegistries)
             : new ActiveExtensionSet($contributionRegistries, self::service($container, TrustStore::class));
         $container->share(ActiveExtensionSet::class, $active, true);
+    }
+
+    /**
+     * Register the delivery-neutral generated-business catalog, projection and contract services.
+     *
+     * Every browser, REST, console and MCP adapter resolves these same shared objects. The composition
+     * root supplies only the trusted installed-definition resolver, canonical policy controller and
+     * runtime publication state; adapters therefore cannot create an alternate metadata or disclosure
+     * path. Core field presenters are registered eagerly so a missing built-in context fails at boot.
+     *
+     * @param   Container  $container  Container being composed.
+     * @param   string     $root       Absolute repository root containing the checked-in core contract.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    private function registerBusinessSurfaces(Container $container, string $root): void
+    {
+        $container->share(
+            FieldPresentationRegistry::class,
+            self::service($container, ExtensionContributionRegistrySet::class)->fieldPresentations(),
+            true,
+        );
+        $container->share(BusinessRecordQueryFactory::class, new BusinessRecordQueryFactory(), true);
+        $container->share(BusinessRecordProjector::class, new BusinessRecordProjector(), true);
+        $container->share(BusinessFormInputMapper::class, new BusinessFormInputMapper(), true);
+        $container->share(BusinessCustomViewPresenter::class, new BusinessCustomViewPresenter(), true);
+        $container->share(GeneratedBusinessActionStepUp::class, static fn (
+            Container $container,
+        ): GeneratedBusinessActionStepUp => new GeneratedBusinessActionStepUp(
+            self::service($container, AuthorizationStepUpProofAdapter::class),
+            self::service($container, TransactionManager::class),
+        ), true);
+        $container->share(CustomBusinessSurfaceDispatcher::class, static fn (
+            Container $container,
+        ): CustomBusinessSurfaceDispatcher => new CustomBusinessSurfaceDispatcher(
+            self::service($container, ExtensionContributionRegistrySet::class)->customBusinessViewHandlers(),
+            self::service($container, ExtensionContributionRegistrySet::class)->customBusinessActionHandlers(),
+            self::service($container, AuthorizationGateway::class),
+        ), true);
+        $container->share(CustomBusinessActionExecutor::class, static fn (
+            Container $container,
+        ): CustomBusinessActionExecutor => new CustomBusinessActionExecutor(
+            self::service($container, CustomBusinessSurfaceDispatcher::class),
+            self::service($container, BusinessRecordService::class),
+            self::service($container, BusinessRecordIdempotencyRepository::class),
+            self::service($container, BusinessRecordMutationFence::class),
+            self::service($container, BusinessRecordDefinitionResolver::class),
+            self::service($container, BusinessRecordAccessController::class),
+            self::service($container, RecordFingerprint::class),
+            self::service($container, TransactionManager::class),
+            self::service($container, ClockInterface::class),
+            self::service($container, RuntimeMaterializationState::class),
+        ), true);
+        $container->share(BusinessSurfaceCatalog::class, static fn (
+            Container $container,
+        ): BusinessSurfaceCatalog => new BusinessSurfaceCatalog(
+            self::service($container, BusinessRecordDefinitionResolver::class),
+            self::service($container, BusinessRecordAccessController::class),
+            self::service($container, FieldTypeRegistry::class),
+            self::service($container, AuthorizationGateway::class),
+            self::service($container, TransactionManager::class),
+            self::service($container, RuntimeMaterializationState::class),
+            self::service($container, CustomBusinessSurfaceDispatcher::class),
+        ), true);
+        $container->share(BusinessApprovalSurfaceService::class, static fn (
+            Container $container,
+        ): BusinessApprovalSurfaceService => new BusinessApprovalSurfaceService(
+            self::service($container, ApprovalQueryService::class),
+            self::service($container, BusinessSurfaceCatalog::class),
+        ), true);
+        $container->share(BusinessOperationStatusRepository::class, static fn (
+            Container $container,
+        ): BusinessOperationStatusRepository => new DoctrineBusinessOperationStatusRepository(
+            self::service($container, Connection::class),
+            self::service($container, TableNames::class),
+            self::service($container, BusinessRecordIdempotencyRepository::class),
+        ), true);
+        $container->share(BusinessOperationStatusService::class, static fn (
+            Container $container,
+        ): BusinessOperationStatusService => new BusinessOperationStatusService(
+            self::service($container, BusinessOperationStatusRepository::class),
+            self::service($container, BusinessRecordDefinitionResolver::class),
+            self::service($container, BusinessRecordAccessController::class),
+            self::service($container, RecordFingerprint::class),
+            self::service($container, BusinessSurfaceCatalog::class),
+            self::service($container, BusinessRecordProjector::class),
+            self::service($container, CustomBusinessSurfaceDispatcher::class),
+            self::service($container, RuntimeMaterializationState::class),
+            self::service($container, ClockInterface::class),
+        ), true);
+        $container->share(BusinessSurfaceService::class, static fn (
+            Container $container,
+        ): BusinessSurfaceService => new BusinessSurfaceService(
+            self::service($container, BusinessSurfaceCatalog::class),
+            self::service($container, BusinessRecordService::class),
+            self::service($container, BusinessRecordDefinitionResolver::class),
+            self::service($container, FieldTypeRegistry::class),
+            self::service($container, BusinessRecordQueryFactory::class),
+            self::service($container, BusinessRecordProjector::class),
+            self::service($container, CustomBusinessSurfaceDispatcher::class),
+            self::service($container, CustomBusinessActionExecutor::class),
+            self::service($container, FieldPresentationRegistry::class),
+            self::service($container, MediaService::class),
+            self::service($container, TransactionManager::class),
+        ), true);
+        $container->share(BusinessMutationPlanService::class, static fn (
+            Container $container,
+        ): BusinessMutationPlanService => new BusinessMutationPlanService(
+            self::service($container, BusinessSurfaceCatalog::class),
+            self::service($container, BusinessRecordService::class),
+            self::service($container, BusinessRecordDefinitionResolver::class),
+            self::service($container, BusinessRecordAccessController::class),
+            self::service($container, RecordFingerprint::class),
+            self::service($container, SecretCipher::class),
+            self::service($container, TransactionManager::class),
+            self::service($container, ClockInterface::class),
+        ), true);
+        $container->share(GeneratedBusinessBrowserController::class, static fn (
+            Container $container,
+        ): GeneratedBusinessBrowserController => new GeneratedBusinessBrowserController(
+            self::service($container, BusinessSurfaceService::class),
+            self::service($container, BusinessFormInputMapper::class),
+            self::service($container, BusinessOperationStatusService::class),
+            self::service($container, BusinessCustomViewPresenter::class),
+        ), true);
+        $container->share(OpenApiContractCompiler::class, new OpenApiContractCompiler(), true);
+        $container->share(
+            OpenApiContractCache::class,
+            new FilesystemOpenApiContractCache($root . '/storage/cache/openapi'),
+            true,
+        );
+        $container->share(OpenApiContractService::class, static function (
+            Container $container,
+        ) use ($root): OpenApiContractService {
+            $json = file_get_contents($root . '/api/openapi/kumwe-v1.json');
+            if ($json === false) {
+                throw new RuntimeException('The checked-in core OpenAPI contract cannot be read.');
+            }
+            $contract = json_decode($json, true, 512, JSON_THROW_ON_ERROR);
+            if (!is_array($contract) || array_is_list($contract)) {
+                throw new RuntimeException('The checked-in core OpenAPI contract is not an object.');
+            }
+
+            return new OpenApiContractService(
+                $contract,
+                self::service($container, BusinessSurfaceCatalog::class),
+                self::service($container, OpenApiContractCompiler::class),
+                self::service($container, OpenApiContractCache::class),
+                self::service($container, LoggerInterface::class),
+            );
+        }, true);
     }
 
     /**
@@ -2054,7 +2276,7 @@ final class ContainerFactory
             $container->share(PortalApprovalHandler::class, static fn (
                 Container $container,
             ): PortalApprovalHandler => new PortalApprovalHandler(
-                self::service($container, ApprovalQueryService::class),
+                self::service($container, BusinessApprovalSurfaceService::class),
                 self::service($container, ApprovalService::class),
                 self::service($container, StepUpProvider::class),
                 self::service($container, AuthorizationStepUpProofAdapter::class),
@@ -2103,6 +2325,77 @@ final class ContainerFactory
         ): BusinessApiResponder => new BusinessApiResponder(
             self::service($container, ProblemDetailsResponseFactory::class),
         ), true);
+        $container->share(BusinessRecordApiPresenter::class, static fn (
+            Container $container,
+        ): BusinessRecordApiPresenter => new BusinessRecordApiPresenter(
+            self::service($container, BusinessRecordProjector::class),
+        ), true);
+        $container->share(BusinessRecordApiResponder::class, static fn (
+            Container $container,
+        ): BusinessRecordApiResponder => new BusinessRecordApiResponder(
+            self::service($container, BusinessRecordApiPresenter::class),
+            self::service($container, ProblemDetailsResponseFactory::class),
+        ), true);
+        $container->share(BusinessRecordApiHandler::class, static fn (
+            Container $container,
+        ): BusinessRecordApiHandler => new BusinessRecordApiHandler(
+            self::service($container, BusinessRecordService::class),
+            self::service($container, BusinessRecordQueryFactory::class),
+            self::service($container, BusinessRecordApiResponder::class),
+            self::service($container, BusinessSurfaceCatalog::class),
+            self::service($container, BusinessSurfaceService::class),
+        ), true);
+        $container->share(BusinessOperationStatusApiHandler::class, static fn (
+            Container $container,
+        ): BusinessOperationStatusApiHandler => new BusinessOperationStatusApiHandler(
+            self::service($container, BusinessOperationStatusService::class),
+            self::service($container, ProblemDetailsResponseFactory::class),
+        ), true);
+        $container->share(
+            BusinessApprovalApiPresenter::class,
+            new BusinessApprovalApiPresenter(),
+            true,
+        );
+        $container->share(BusinessApprovalApiHandler::class, static fn (
+            Container $container,
+        ): BusinessApprovalApiHandler => new BusinessApprovalApiHandler(
+            self::service($container, BusinessApprovalSurfaceService::class),
+            self::service($container, BusinessApprovalApiPresenter::class),
+            self::service($container, ProblemDetailsResponseFactory::class),
+        ), true);
+        $container->share(BusinessDefinitionDiscoveryApiHandler::class, static fn (
+            Container $container,
+        ): BusinessDefinitionDiscoveryApiHandler => new BusinessDefinitionDiscoveryApiHandler(
+            self::service($container, BusinessSurfaceCatalog::class),
+            self::service($container, BusinessRecordApiResponder::class),
+        ), true);
+        $container->share(OpenApiHandler::class, static fn (Container $container): OpenApiHandler =>
+            new OpenApiHandler(
+                self::service($container, OpenApiContractService::class),
+                self::service($container, ProblemDetailsResponseFactory::class),
+            ), true);
+        $container->share(AdministratorBusinessSurfaceHandler::class, static fn (
+            Container $container,
+        ): AdministratorBusinessSurfaceHandler => new AdministratorBusinessSurfaceHandler(
+            self::service($container, GeneratedBusinessBrowserController::class),
+            self::service($container, AdministratorRenderer::class),
+            self::service($container, AdministratorStepUpProvider::class),
+            self::service($container, GeneratedBusinessActionStepUp::class),
+            $secureCookie,
+            $configuration->administratorSessionSeconds,
+        ), true);
+        if ($portalEnabled) {
+            $container->share(PortalBusinessSurfaceHandler::class, static fn (
+                Container $container,
+            ): PortalBusinessSurfaceHandler => new PortalBusinessSurfaceHandler(
+                self::service($container, GeneratedBusinessBrowserController::class),
+                self::service($container, PortalRenderer::class),
+                self::service($container, StepUpProvider::class),
+                self::service($container, GeneratedBusinessActionStepUp::class),
+                $secureCookie,
+                $configuration->administratorSessionSeconds,
+            ), true);
+        }
         $container->share(BusinessDefinitionApiHandler::class, static fn (
             Container $container,
         ): BusinessDefinitionApiHandler => new BusinessDefinitionApiHandler(
@@ -2462,11 +2755,166 @@ final class ContainerFactory
                     'portal.approvals.' . $decision,
                 ), 'portal.access');
             }
+            self::portalRoute(
+                $application->get(
+                    '/portal/business/operations/{operation}',
+                    PortalBusinessSurfaceHandler::class,
+                    'portal.business.operation',
+                ),
+                'portal.access',
+            );
+            self::portalRoute(
+                $application->get(
+                    '/portal/business/{definition}/{record}/relationships/{business_relationship}',
+                    PortalBusinessSurfaceHandler::class,
+                    'portal.business.relationship',
+                ),
+                'portal.access',
+            );
+            self::portalRoute($application->post(
+                '/portal/business/{definition}/{record}/relationships/{business_relationship}',
+                [PortalCsrfMiddleware::class, PortalBusinessSurfaceHandler::class],
+                'portal.business.relationship.mutate',
+            ), 'portal.access');
+            foreach (
+                [
+                    [
+                        '/portal/business/{definition}/{record}/choices/owned-lines/'
+                            . '{owned_relationship}/{owned_kind:relations|media}/{owned_field}',
+                        'owned-line-field',
+                    ],
+                    ['/portal/business/{definition}/choices/relations/{related}', 'relations.collection'],
+                    ['/portal/business/{definition}/choices/media/{media}', 'media.collection'],
+                    ['/portal/business/{definition}/{record}/choices/relations/{related}', 'relations.record'],
+                    ['/portal/business/{definition}/{record}/choices/media/{media}', 'media.record'],
+                ] as [$path, $name]
+            ) {
+                self::portalRoute(
+                    $application->get(
+                        $path,
+                        PortalBusinessSurfaceHandler::class,
+                        'portal.business.choices.' . $name,
+                    ),
+                    'portal.access',
+                );
+            }
+            self::portalRoute(
+                $application->get(
+                    '/portal/business/{definition}/views/{view}',
+                    PortalBusinessSurfaceHandler::class,
+                    'portal.business.custom-view',
+                ),
+                'portal.access',
+            );
+            self::portalRoute(
+                $application->get(
+                    '/portal/business/{definition}/{record}/views/{view}',
+                    PortalBusinessSurfaceHandler::class,
+                    'portal.business.custom-record-view',
+                ),
+                'portal.access',
+            );
+            foreach (
+                [
+                    ['/portal/business', 'portal.business'],
+                    ['/portal/business/{definition}', 'portal.business.definition'],
+                    ['/portal/business/{definition}/{record}', 'portal.business.record'],
+                ] as [$path, $name]
+            ) {
+                self::portalRoute(
+                    $application->get($path, PortalBusinessSurfaceHandler::class, $name),
+                    'portal.access',
+                );
+                self::portalRoute($application->post(
+                    $path,
+                    [PortalCsrfMiddleware::class, PortalBusinessSurfaceHandler::class],
+                    $name . '.mutate',
+                ), 'portal.access');
+            }
         }
         self::administratorRoute(
             $application->get('/administrator', AdministratorDashboardHandler::class, 'administrator.index'),
             'content.read',
         );
+        self::administratorRoute(
+            $application->get(
+                '/administrator/business/operations/{operation}',
+                AdministratorBusinessSurfaceHandler::class,
+                'administrator.business.operation',
+            ),
+            'administrator.access',
+        );
+        self::administratorRoute(
+            $application->get(
+                '/administrator/business/{definition}/{record}/relationships/{business_relationship}',
+                AdministratorBusinessSurfaceHandler::class,
+                'administrator.business.relationship',
+            ),
+            'administrator.access',
+        );
+        self::administratorRoute($application->post(
+            '/administrator/business/{definition}/{record}/relationships/{business_relationship}',
+            [AdministratorCsrfMiddleware::class, AdministratorBusinessSurfaceHandler::class],
+            'administrator.business.relationship.mutate',
+        ), 'administrator.access');
+        foreach (
+            [
+                [
+                    '/administrator/business/{definition}/{record}/choices/owned-lines/'
+                        . '{owned_relationship}/{owned_kind:relations|media}/{owned_field}',
+                    'owned-line-field',
+                ],
+                ['/administrator/business/{definition}/choices/relations/{related}', 'relations.collection'],
+                ['/administrator/business/{definition}/choices/media/{media}', 'media.collection'],
+                [
+                    '/administrator/business/{definition}/{record}/choices/relations/{related}',
+                    'relations.record',
+                ],
+                ['/administrator/business/{definition}/{record}/choices/media/{media}', 'media.record'],
+            ] as [$path, $name]
+        ) {
+            self::administratorRoute(
+                $application->get(
+                    $path,
+                    AdministratorBusinessSurfaceHandler::class,
+                    'administrator.business.choices.' . $name,
+                ),
+                'administrator.access',
+            );
+        }
+        self::administratorRoute(
+            $application->get(
+                '/administrator/business/{definition}/views/{view}',
+                AdministratorBusinessSurfaceHandler::class,
+                'administrator.business.custom-view',
+            ),
+            'administrator.access',
+        );
+        self::administratorRoute(
+            $application->get(
+                '/administrator/business/{definition}/{record}/views/{view}',
+                AdministratorBusinessSurfaceHandler::class,
+                'administrator.business.custom-record-view',
+            ),
+            'administrator.access',
+        );
+        foreach (
+            [
+                ['/administrator/business', 'administrator.business'],
+                ['/administrator/business/{definition}', 'administrator.business.definition'],
+                ['/administrator/business/{definition}/{record}', 'administrator.business.record'],
+            ] as [$path, $name]
+        ) {
+            self::administratorRoute(
+                $application->get($path, AdministratorBusinessSurfaceHandler::class, $name),
+                'administrator.access',
+            );
+            self::administratorRoute($application->post(
+                $path,
+                [AdministratorCsrfMiddleware::class, AdministratorBusinessSurfaceHandler::class],
+                $name . '.mutate',
+            ), 'administrator.access');
+        }
         self::administratorRoute($application->get(
             '/administrator/content',
             AdministratorContentListHandler::class,
@@ -2651,6 +3099,145 @@ final class ContainerFactory
         $application->get('/media/{id}/{name}', MediaAssetHandler::class, 'site.media.asset');
         $application->get('/assets/extensions/{path:.+}', ExtensionAssetHandler::class, 'site.extension.asset');
         $application->get('/api/v1', ApiIndexHandler::class, 'api.v1.index');
+
+        self::apiRoute($application->get(
+            '/api/v1/openapi.json',
+            OpenApiHandler::class,
+            'api.v1.openapi',
+        ));
+        self::apiRoute($application->get(
+            '/api/v1/business/definitions',
+            BusinessDefinitionDiscoveryApiHandler::class,
+            'api.v1.business.definitions',
+        ), 'business.record.browse');
+        self::apiRoute($application->get(
+            '/api/v1/business/definitions/{definition}',
+            BusinessDefinitionDiscoveryApiHandler::class,
+            'api.v1.business.definitions.read',
+        ), 'business.record.read');
+        self::apiRoute($application->get(
+            '/api/v1/business/operations/{operation}',
+            BusinessOperationStatusApiHandler::class,
+            'api.v1.business.operations.read',
+        ), 'business.record.read');
+        self::apiRoute($application->get(
+            '/api/v1/business/approvals',
+            BusinessApprovalApiHandler::class,
+            'api.v1.business.approvals',
+        ));
+        self::apiRoute($application->get(
+            '/api/v1/business/approvals/{approval}',
+            BusinessApprovalApiHandler::class,
+            'api.v1.business.approvals.read',
+        ));
+        self::apiRoute($application->get(
+            '/api/v1/business/records/{definition}',
+            BusinessRecordApiHandler::class,
+            'api.v1.business.records.browse',
+        ), 'business.record.browse');
+        self::apiRoute($application->post(
+            '/api/v1/business/records/{definition}/search',
+            BusinessRecordApiHandler::class,
+            'api.v1.business.records.search',
+        ), 'business.record.browse');
+        self::apiRoute($application->post(
+            '/api/v1/business/views/{definition}/{view}',
+            BusinessRecordApiHandler::class,
+            'api.v1.business.records.custom_view',
+        ));
+        self::apiRoute($application->post(
+            '/api/v1/business/records/{definition}',
+            [RequireIdempotencyKeyMiddleware::class, BusinessRecordApiHandler::class],
+            'api.v1.business.records.create',
+        ), 'business.record.create');
+        self::apiRoute($application->get(
+            '/api/v1/business/records/{definition}/{record}',
+            BusinessRecordApiHandler::class,
+            'api.v1.business.records.read',
+        ), 'business.record.read');
+        self::apiRoute($application->post(
+            '/api/v1/business/views/{definition}/{record}/{view}',
+            BusinessRecordApiHandler::class,
+            'api.v1.business.records.custom_record_view',
+        ));
+        self::apiRoute($application->patch(
+            '/api/v1/business/records/{definition}/{record}',
+            [
+                RequireIdempotencyKeyMiddleware::class,
+                RequireIfMatchMiddleware::class,
+                BusinessRecordApiHandler::class,
+            ],
+            'api.v1.business.records.update',
+        ), 'business.record.update');
+        self::apiRoute($application->delete(
+            '/api/v1/business/records/{definition}/{record}',
+            [
+                RequireIdempotencyKeyMiddleware::class,
+                RequireIfMatchMiddleware::class,
+                BusinessRecordApiHandler::class,
+            ],
+            'api.v1.business.records.delete',
+        ), 'business.record.delete');
+        foreach (['archive', 'restore'] as $lifecycle) {
+            self::apiRoute($application->post(
+                '/api/v1/business/records/{definition}/{record}/' . $lifecycle,
+                [
+                    RequireIdempotencyKeyMiddleware::class,
+                    RequireIfMatchMiddleware::class,
+                    BusinessRecordApiHandler::class,
+                ],
+                'api.v1.business.records.' . $lifecycle,
+            ), 'business.record.' . $lifecycle);
+        }
+        self::apiRoute($application->get(
+            '/api/v1/business/records/{definition}/{record}/history',
+            BusinessRecordApiHandler::class,
+            'api.v1.business.records.history',
+        ), 'business.record.history');
+        foreach (['action', 'approval'] as $actionOperation) {
+            $suffix = $actionOperation === 'approval' ? '/approval' : '';
+            self::apiRoute($application->post(
+                '/api/v1/business/records/{definition}/{record}/actions/{action}' . $suffix,
+                [
+                    RequireIdempotencyKeyMiddleware::class,
+                    RequireIfMatchMiddleware::class,
+                    BusinessRecordApiHandler::class,
+                ],
+                'api.v1.business.records.action.' . $actionOperation,
+            ), 'business.record.action');
+        }
+        self::apiRoute($application->post(
+            '/api/v1/business/records/{definition}/{record}/relations/{relation}',
+            [
+                RequireIdempotencyKeyMiddleware::class,
+                RequireIfMatchMiddleware::class,
+                BusinessRecordApiHandler::class,
+            ],
+            'api.v1.business.records.relate',
+        ), 'business.record.relate');
+        self::apiRoute($application->get(
+            '/api/v1/business/records/{definition}/{record}/relations/{relation}',
+            BusinessRecordApiHandler::class,
+            'api.v1.business.records.relation.read',
+        ), 'business.record.read');
+        self::apiRoute($application->delete(
+            '/api/v1/business/records/{definition}/{record}/relations/{relation}/{target}',
+            [
+                RequireIdempotencyKeyMiddleware::class,
+                RequireIfMatchMiddleware::class,
+                BusinessRecordApiHandler::class,
+            ],
+            'api.v1.business.records.unrelate',
+        ), 'business.record.relate');
+        self::apiRoute($application->put(
+            '/api/v1/business/records/{definition}/{record}/relations/{relation}/order',
+            [
+                RequireIdempotencyKeyMiddleware::class,
+                RequireIfMatchMiddleware::class,
+                BusinessRecordApiHandler::class,
+            ],
+            'api.v1.business.records.reorder',
+        ), 'business.record.relate');
 
         $contentCollection = $application->get(
             '/api/v1/content',
@@ -3347,6 +3934,22 @@ final class ContainerFactory
             self::service($container, BusinessDefinitionService::class),
             self::service($container, ConsoleAuthorizer::class),
         ), true);
+        $container->share(BusinessRecordConsolePresenter::class, new BusinessRecordConsolePresenter(), true);
+        $container->share(BusinessConsoleFailureMapper::class, new BusinessConsoleFailureMapper(), true);
+        $container->share(ManageBusinessRecordsCommand::class, static fn (
+            Container $container,
+        ): ManageBusinessRecordsCommand => new ManageBusinessRecordsCommand(
+            self::service($container, BusinessRecordService::class),
+            self::service($container, BusinessSurfaceService::class),
+            self::service($container, BusinessSurfaceCatalog::class),
+            self::service($container, BusinessRecordQueryFactory::class),
+            self::service($container, BusinessRecordProjector::class),
+            self::service($container, BusinessOperationStatusService::class),
+            self::service($container, BusinessApprovalSurfaceService::class),
+            self::service($container, ConsoleAuthorizer::class),
+            self::service($container, BusinessRecordConsolePresenter::class),
+            self::service($container, BusinessConsoleFailureMapper::class),
+        ), true);
         $container->share(ManageBusinessSchemaCommand::class, static fn (
             Container $container,
         ): ManageBusinessSchemaCommand => new ManageBusinessSchemaCommand(
@@ -3405,6 +4008,7 @@ final class ContainerFactory
                 self::service($container, ManageContentCommand::class),
                 self::service($container, ManageContentModelsCommand::class),
                 self::service($container, ManageBusinessDefinitionsCommand::class),
+                self::service($container, ManageBusinessRecordsCommand::class),
                 self::service($container, ManageBusinessSchemaCommand::class),
                 self::service($container, ManageNavigationCommand::class),
                 self::service($container, ManageSettingsCommand::class),
@@ -3439,6 +4043,15 @@ final class ContainerFactory
                 self::service($container, ClockInterface::class),
                 self::service($container, TransactionManager::class),
             ), true);
+        $container->share(BusinessMcpHandlers::class, static fn (Container $container): BusinessMcpHandlers =>
+            new BusinessMcpHandlers(
+                self::service($container, BusinessSurfaceCatalog::class),
+                self::service($container, BusinessSurfaceService::class),
+                self::service($container, BusinessMutationPlanService::class),
+                self::service($container, McpMutationGuard::class),
+                self::service($container, BusinessOperationStatusService::class),
+                self::service($container, BusinessSurfaceService::class),
+            ), true);
         $container->share(SessionStoreInterface::class, static fn (Container $container): SessionStoreInterface =>
             new FileSessionStore(
                 $root . '/storage/sessions/mcp',
@@ -3458,6 +4071,7 @@ final class ContainerFactory
                 self::service($container, AutomationManagementService::class),
                 self::service($container, BusinessDefinitionService::class),
                 self::service($container, BusinessSchemaService::class),
+                self::service($container, BusinessMcpHandlers::class),
                 self::service($container, McpMutationGuard::class),
                 self::service($container, ClockInterface::class),
                 self::service($container, AuthorizationGateway::class),

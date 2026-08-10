@@ -22,6 +22,7 @@ use Kumwe\CMS\Extension\Application\ExtensionRegistryLease;
 use Kumwe\CMS\Extension\Application\Install\ExtensionInstallOutcome;
 use Kumwe\CMS\Extension\Application\Migration\ExtensionMigrationRunner;
 use Kumwe\CMS\Extension\Application\Package\ArchiveReader;
+use Kumwe\CMS\Extension\Application\Package\ExtensionActivationAdmission;
 use Kumwe\CMS\Extension\Application\Package\PackageSafetyPolicy;
 use Kumwe\CMS\Extension\Application\Trust\TrustStore;
 use Kumwe\CMS\Extension\Contribution\ContributionDefinitionChecksum;
@@ -112,6 +113,8 @@ final readonly class DoctrineExtensionManager
      *         that owns an extension resource.
      * @param  ?PackageDefinitionSynchronizer  $businessDefinitions   Synchronizer for the field types and
      *         business definitions a package contributes; null when the installation ships none.
+     * @param  ?ExtensionActivationAdmission   $activationAdmission   Declarative public-contract admission
+     *         run inside an activation/active-upgrade transaction before runtime publication is staged.
      *
      * @since  2.0.0
      */
@@ -135,6 +138,7 @@ final readonly class DoctrineExtensionManager
         private AuthorizationGateway $authorization,
         private ResourceSiteOwnershipWriter $ownership,
         private ?PackageDefinitionSynchronizer $businessDefinitions = null,
+        private ?ExtensionActivationAdmission $activationAdmission = null,
     ) {
     }
 
@@ -1066,6 +1070,16 @@ final readonly class DoctrineExtensionManager
                 throw new InvalidArgumentException('The requested extension is not installed.');
             }
 
+            if ($status === 'active' && $this->activationAdmission !== null) {
+                if (!$context instanceof ExecutionContext) {
+                    throw new RuntimeException('Extension contract admission requires an execution context.');
+                }
+                $this->activationAdmission->admit(
+                    $this->installedManifest($identifier),
+                    $context->site(),
+                    $this->activeManifests(),
+                );
+            }
             $this->businessDefinitions?->setActive($identifier, $persistedStatus === 'active', $actorId);
 
             $this->audit($actorId, $action, $identifier, $surface === null ? [] : [
@@ -1222,6 +1236,9 @@ final readonly class DoctrineExtensionManager
         }
         $installed = $this->findInstalled($identifier);
         try {
+            if (($installed['status'] ?? null) === 'active' && $this->activationAdmission !== null) {
+                $this->activationAdmission->admit($manifest, $site, $this->activeManifests());
+            }
             $this->businessDefinitions?->synchronize(
                 $identifier,
                 (string) $manifest->version(),
@@ -1499,9 +1516,10 @@ final readonly class DoctrineExtensionManager
      * What a package declares lives in its manifest and whether it is switched on lives in the registry,
      * so an operator screen needs both to explain why a declared route or field type is not reachable.
      * The flag is stamped on every contributed capability, on every administrator workspace, navigation
-     * entry, route and view, on every resource policy, on every business field type and definition,
-     * and on the set as a whole. Capability and policy lifecycle participates in their individual flag,
-     * so disabled and retired declarations are never reported as live merely because their owner is.
+     * entry, route and view, on every resource policy, on every business field type, field presentation,
+     * definition and custom handler, and on the set as a whole. Capability and policy lifecycle participates
+     * in their individual flag, so disabled and retired declarations are never reported as live merely
+     * because their owner is.
      *
      * @param   ExtensionManifest  $manifest  Manifest whose declared contribution set is described.
      * @param   bool               $active    Whether the extension's registry status is currently `active`.
@@ -1531,6 +1549,15 @@ final readonly class DoctrineExtensionManager
             unset($item);
         }
         foreach (['field_types', 'definitions'] as $kind) {
+            foreach ($contributions['business'][$kind] as &$item) {
+                $item['active'] = $active;
+            }
+            unset($item);
+        }
+        foreach (['field_presentations', 'view_handlers', 'action_handlers'] as $kind) {
+            if (!isset($contributions['business'][$kind])) {
+                continue;
+            }
             foreach ($contributions['business'][$kind] as &$item) {
                 $item['active'] = $active;
             }
@@ -2741,6 +2768,46 @@ final readonly class DoctrineExtensionManager
         }
 
         return ExtensionManifest::fromJson($manifest);
+    }
+
+    /**
+     * Read the installed manifests that the in-flight lifecycle transaction records as active.
+     *
+     * The activation admission pass needs the post-change set, not the previous compiled publication. The
+     * query therefore runs after the candidate status/release write in the same transaction and resolves each
+     * manifest from its authoritative installed release. The extra row above the cap turns an unexpectedly
+     * broad registry into a stable failure before contract validation allocates unbounded state.
+     *
+     * @return  list<ExtensionManifest>  Active installed manifests ordered by extension identifier.
+     *
+     * @throws  RuntimeException  When the active set is over its cap or a stored manifest is unavailable.
+     * @throws  InvalidArgumentException  When a stored manifest no longer parses.
+     *
+     * @since   2.0.0
+     */
+    private function activeManifests(): array
+    {
+        $values = $this->database->fetchFirstColumn(sprintf(
+            'SELECT r.manifest FROM %s e INNER JOIN %s r ON r.extension_id = e.id '
+            . 'AND r.version = e.installed_version WHERE e.status = ? ORDER BY e.identifier LIMIT 1025',
+            $this->tables->quoted('extensions'),
+            $this->tables->quoted('extension_releases'),
+        ), ['active']);
+        if (count($values) > 1024) {
+            throw new RuntimeException('The active extension contract set exceeds its supported bound.');
+        }
+        $manifests = [];
+        foreach ($values as $value) {
+            if (is_array($value)) {
+                $value = json_encode($value, JSON_THROW_ON_ERROR);
+            }
+            if (!is_string($value)) {
+                throw new RuntimeException('An active extension manifest is unavailable.');
+            }
+            $manifests[] = ExtensionManifest::fromJson($value);
+        }
+
+        return $manifests;
     }
 
     /**

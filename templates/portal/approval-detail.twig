@@ -5,22 +5,17 @@
 {% block content %}
 <p><a href="/portal/approvals">← Approval inbox</a></p>
 <section aria-labelledby="approval-detail-title">
-    <p class="eyebrow">{{ approval.status.value }}</p>
+    <p class="eyebrow">{{ approval.status }}</p>
     <h1 id="approval-detail-title">Approval request</h1>
     {% if notice %}<div class="portal-notice" role="status">{{ notice }}</div>{% endif %}
     {% if error %}<div class="portal-alert" role="alert">{{ error }}</div>{% endif %}
     <dl class="portal-details">
         <div><dt>Request</dt><dd><code>{{ approval.id }}</code></dd></div>
-        <div><dt>Rule</dt><dd><code>{{ approval.ruleCode }}</code></dd></div>
         <div><dt>Action</dt><dd><code>{{ approval.action }}</code></dd></div>
-        <div><dt>Resource</dt><dd>{{ approval.resourceType }} <code>{{ approval.resourceId }}</code>, version {{ approval.resourceVersion }}</dd></div>
-        <div><dt>Requester</dt><dd><code>{{ approval.requesterId }}</code></dd></div>
-        <div><dt>Scope</dt><dd>{{ approval.siteIdentifier }}{% if approval.organizationIdentifier %} / {{ approval.organizationIdentifier }}{% endif %}{% if approval.workspaceIdentifier %} / {{ approval.workspaceIdentifier }}{% endif %}</dd></div>
+        <div><dt>Resource</dt><dd>{{ approval.resourceType }}, version {{ approval.resourceVersion }}</dd></div>
         <div><dt>Quorum</dt><dd>{{ approval.approvalCount }} of {{ approval.requiredQuorum }}</dd></div>
         <div><dt>Created</dt><dd><time datetime="{{ approval.createdAt|date('c') }}">{{ approval.createdAt|date('Y-m-d H:i T') }}</time></dd></div>
         <div><dt>Expires</dt><dd><time datetime="{{ approval.expiresAt|date('c') }}">{{ approval.expiresAt|date('Y-m-d H:i T') }}</time></dd></div>
-        <div><dt>Binding evidence</dt><dd><code class="portal-digest">{{ approval.bindingDigest }}</code></dd></div>
-        <div><dt>Payload evidence</dt><dd><code class="portal-digest">{{ approval.payloadDigest }}</code></dd></div>
     </dl>
 </section>
 
@@ -29,7 +24,7 @@
     <h2 id="approval-votes-title">Decisions</h2>
     <ol>
     {% for vote in approval.votes %}
-        <li><strong>{{ vote.decision }}</strong> by <code>{{ vote.approverId }}</code> at <time datetime="{{ vote.decidedAt|date('c') }}">{{ vote.decidedAt|date('Y-m-d H:i T') }}</time>{% if vote.reason %}: {{ vote.reason }}{% endif %}</li>
+        <li><strong>{{ vote.decision }}</strong> at <time datetime="{{ vote.decidedAt|date('c') }}">{{ vote.decidedAt|date('Y-m-d H:i T') }}</time>{% if vote.reason %}: {{ vote.reason }}{% endif %}</li>
     {% endfor %}
     </ol>
 </section>

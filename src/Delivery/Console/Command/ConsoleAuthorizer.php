@@ -63,6 +63,38 @@ final readonly class ConsoleAuthorizer
      */
     public function require(array $options, string $capability): ExecutionContext
     {
+        return $this->requireAny($options, [$capability]);
+    }
+
+    /**
+     * Authorize an invocation when one of several independent capabilities grants application visibility.
+     *
+     * This is reserved for query services, such as the approval inbox, whose canonical policy deliberately
+     * combines requester, eligible-checker, and manager access. It authenticates only once and proves that
+     * the principal holds at least one entry; the application service must still evaluate resource scope.
+     *
+     * @param   array<string, string>   $options       Parsed command options containing site and token file.
+     * @param   non-empty-list<string>  $capabilities  Independent capabilities that can reach the query service.
+     *
+     * @return  ExecutionContext  Authenticated CLI context holding at least one requested capability.
+     *
+     * @throws  InsufficientCapability  When the token authenticates nobody or holds none of the capabilities.
+     * @throws  \InvalidArgumentException  When the capability list, site, or protected token file is invalid.
+     *
+     * @since   2.0.0
+     */
+    public function requireAny(array $options, array $capabilities): ExecutionContext
+    {
+        if ($capabilities === [] || !array_is_list($capabilities)) {
+            throw new \InvalidArgumentException('At least one console capability is required.');
+        }
+        $requirements = [];
+        foreach ($capabilities as $capability) {
+            if (!is_string($capability)) {
+                throw new \InvalidArgumentException('A console capability must be a string.');
+            }
+            $requirements[] = Capability::fromString($capability);
+        }
         $site = SiteContext::fromString(CommandInput::required($options, 'site'));
         $token = CommandInput::secretFile(CommandInput::required($options, 'token-file'));
         $verified = $this->tokens instanceof ScopedAccessTokenVerifier
@@ -73,17 +105,22 @@ final readonly class ConsoleAuthorizer
             : (!($this->tokens instanceof ScopedAccessTokenVerifier)
                 ? $this->tokens->verify($token, 'kumwe-cli', 'management', $site->identifier())
                 : null);
-        if ($principal === null || !$principal->hasCapability(Capability::fromString($capability))) {
-            throw new InsufficientCapability($capability);
+        if ($principal === null) {
+            throw new InsufficientCapability($capabilities[0]);
+        }
+        foreach ($requirements as $requirement) {
+            if ($principal->hasCapability($requirement)) {
+                return $verified !== null
+                    ? $verified->context('cli-' . bin2hex(random_bytes(16)), AuthenticatedSurface::Cli)
+                    : $principal->context(
+                        $site,
+                        AuthenticationStrength::BearerToken,
+                        'cli-' . bin2hex(random_bytes(16)),
+                        surface: AuthenticatedSurface::Cli,
+                    );
+            }
         }
 
-        return $verified !== null
-            ? $verified->context('cli-' . bin2hex(random_bytes(16)), AuthenticatedSurface::Cli)
-            : $principal->context(
-                $site,
-                AuthenticationStrength::BearerToken,
-                'cli-' . bin2hex(random_bytes(16)),
-                surface: AuthenticatedSurface::Cli,
-            );
+        throw new InsufficientCapability($capabilities[0]);
     }
 }

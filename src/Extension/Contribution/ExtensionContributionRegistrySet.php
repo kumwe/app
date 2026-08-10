@@ -9,6 +9,10 @@ use Kumwe\CMS\Application\Authorization\AuthorizationPolicyRegistry;
 use Kumwe\CMS\BusinessDefinition\Application\BusinessDefinitionContributionRegistry;
 use Kumwe\CMS\BusinessDefinition\Application\BusinessDefinitionValidator;
 use Kumwe\CMS\BusinessDefinition\Application\FieldTypeRegistry;
+use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessActionHandlerRegistry;
+use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessReferenceRegistry;
+use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessViewHandlerRegistry;
+use Kumwe\CMS\BusinessSurface\Presentation\Field\FieldPresentationRegistry;
 use Kumwe\CMS\Extension\Application\Trust\TrustStore;
 use Kumwe\CMS\Portal\Contribution\PortalNavigationRegistry;
 use Kumwe\CMS\Portal\Contribution\PortalRouteRegistry;
@@ -127,12 +131,36 @@ final readonly class ExtensionContributionRegistrySet
     private FieldTypeRegistry $fieldTypes;
 
     /**
+     * Safe semantic field presenters contributed for exact field-type and context pairs.
+     *
+     * @var    FieldPresentationRegistry
+     * @since  2.0.0
+     */
+    private FieldPresentationRegistry $fieldPresentations;
+
+    /**
      * The entity types contributed this process, validated as one graph once every provider has run.
      *
      * @var    BusinessDefinitionContributionRegistry
      * @since  2.0.0
      */
     private BusinessDefinitionContributionRegistry $businessDefinitions;
+
+    /**
+     * Typed extension-specific view handlers with owner-bound signed schemas.
+     *
+     * @var    CustomBusinessViewHandlerRegistry
+     * @since  2.0.0
+     */
+    private CustomBusinessViewHandlerRegistry $customBusinessViewHandlers;
+
+    /**
+     * Typed extension-specific action handlers with owner-bound signed schemas.
+     *
+     * @var    CustomBusinessActionHandlerRegistry
+     * @since  2.0.0
+     */
+    private CustomBusinessActionHandlerRegistry $customBusinessActionHandlers;
 
     /**
      * Every contribution kind, keyed by its dotted inventory path.
@@ -192,9 +220,13 @@ final readonly class ExtensionContributionRegistrySet
             $this->authorizationPolicies,
         );
         $this->fieldTypes = new FieldTypeRegistry(false);
+        $this->fieldPresentations = new FieldPresentationRegistry();
         $this->businessDefinitions = new BusinessDefinitionContributionRegistry(
             new BusinessDefinitionValidator($this->fieldTypes),
         );
+        $customBusinessReferences = new CustomBusinessReferenceRegistry();
+        $this->customBusinessViewHandlers = new CustomBusinessViewHandlerRegistry($customBusinessReferences);
+        $this->customBusinessActionHandlers = new CustomBusinessActionHandlerRegistry($customBusinessReferences);
         $this->surfaces = [
             'capabilities' => $this->capabilities,
             'resource_policies' => $this->resourcePolicies,
@@ -207,7 +239,16 @@ final readonly class ExtensionContributionRegistrySet
             'portal.templates' => $this->portalTemplates,
             'portal.routes' => $this->portalRoutes,
             'business.field_types' => BusinessContributionSurface::forFieldTypes($this->fieldTypes),
+            'business.field_presentations' => BusinessContributionSurface::forFieldPresentations(
+                $this->fieldPresentations,
+            ),
             'business.definitions' => BusinessContributionSurface::forDefinitions($this->businessDefinitions),
+            'business.view_handlers' => BusinessContributionSurface::forCustomViewHandlers(
+                $this->customBusinessViewHandlers,
+            ),
+            'business.action_handlers' => BusinessContributionSurface::forCustomActionHandlers(
+                $this->customBusinessActionHandlers,
+            ),
         ];
         if ($withCore) {
             $registrar = $this->registrar(
@@ -400,6 +441,18 @@ final readonly class ExtensionContributionRegistrySet
     }
 
     /**
+     * Reach the owner-aware safe field-presentation registry populated by contribution providers.
+     *
+     * @return  FieldPresentationRegistry  Complete active type/context presentation registry.
+     *
+     * @since   2.0.0
+     */
+    public function fieldPresentations(): FieldPresentationRegistry
+    {
+        return $this->fieldPresentations;
+    }
+
+    /**
      * Reach the registry of entity types contributed by core and by extensions this process.
      *
      * @return  BusinessDefinitionContributionRegistry  The live registry; validating it as a graph is a
@@ -413,18 +466,49 @@ final readonly class ExtensionContributionRegistrySet
     }
 
     /**
+     * Reach the owner-aware custom business view handler registry.
+     *
+     * @return  CustomBusinessViewHandlerRegistry  Registry validating query and result schemas at dispatch.
+     *
+     * @since   2.0.0
+     */
+    public function customBusinessViewHandlers(): CustomBusinessViewHandlerRegistry
+    {
+        return $this->customBusinessViewHandlers;
+    }
+
+    /**
+     * Reach the owner-aware custom business action handler registry.
+     *
+     * @return  CustomBusinessActionHandlerRegistry  Registry enforcing command, result, and operation identity.
+     *
+     * @since   2.0.0
+     */
+    public function customBusinessActionHandlers(): CustomBusinessActionHandlerRegistry
+    {
+        return $this->customBusinessActionHandlers;
+    }
+
+    /**
      * Check the contributed entity types as one graph, after every provider has contributed.
      *
      * Cross-package references only resolve once the last provider has run, so this cannot be folded
-     * into registration and has to be driven by whoever owns the contribution phase as a whole.
+     * into registration and has to be driven by whoever owns the contribution phase as a whole. The same
+     * pass proves each field type has active presenter coverage for every generated context it can reach.
      *
      * @return  void
+     *
+     * @throws  \Kumwe\CMS\BusinessDefinition\Domain\InvalidBusinessDefinition  When the assembled graph or
+     *          its presentation coverage is incomplete.
      *
      * @since   2.0.0
      */
     public function validateBusinessDefinitions(): void
     {
         $this->businessDefinitions->validate();
+        foreach ($this->businessDefinitions->all() as $definition) {
+            $this->fieldPresentations->assertCovers($definition);
+        }
     }
 
     /**

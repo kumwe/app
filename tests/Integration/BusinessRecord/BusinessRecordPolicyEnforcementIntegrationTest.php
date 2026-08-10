@@ -14,8 +14,10 @@ use Kumwe\CMS\BusinessRecord\Application\Command\ExecuteRecordActionCommand;
 use Kumwe\CMS\BusinessRecord\Application\Command\RelateRecordsCommand;
 use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordNotFound;
 use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordSchemaUnavailable;
+use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordValidationFailed;
 use Kumwe\CMS\BusinessRecord\Application\Exception\InvalidBusinessRecordQuery;
 use Kumwe\CMS\BusinessRecord\Application\Query\BrowseRecordsQuery;
+use Kumwe\CMS\BusinessRecord\Application\Query\BrowseRelatedRecordsQuery;
 use Kumwe\CMS\BusinessRecord\Application\Query\BusinessRecordQueryPurpose;
 use Kumwe\CMS\BusinessRecord\Application\Query\ReadRecordQuery;
 use Kumwe\CMS\BusinessRecord\Application\Query\RecordHistoryQuery;
@@ -96,6 +98,20 @@ final class BusinessRecordPolicyEnforcementIntegrationTest extends TestCase
             $targetIds[0],
             NeutralBusinessFixture::idempotencyKey('policy-relate-' . $suffix),
         ));
+        $allowedChoices = $records->browseRelated(new BrowseRelatedRecordsQuery(
+            $context,
+            $owner->handle,
+            'primary_target',
+            'business.record.relate',
+            $ownerId,
+            new RecordQuerySpecification(
+                pageSize: 2,
+                projection: new RecordProjection(['label']),
+            ),
+        ));
+        self::assertCount(2, $allowedChoices->page->records);
+        self::assertSame($target->id, $allowedChoices->definition->id);
+        self::assertSame([['handle' => 'label', 'label' => 'Label']], $allowedChoices->searchFields);
         NeutralBusinessFixture::removeRecordAccess($container, $target->id);
 
         $policyCodes = [];
@@ -193,6 +209,17 @@ final class BusinessRecordPolicyEnforcementIntegrationTest extends TestCase
             ));
             self::assertSame([], $deniedPage->records);
             self::assertNull($deniedPage->nextCursor);
+
+            $deniedChoices = $records->browseRelated(new BrowseRelatedRecordsQuery(
+                $context,
+                $owner->handle,
+                'primary_target',
+                'business.record.relate',
+                $ownerId,
+                new RecordQuerySpecification(projection: new RecordProjection(['label'])),
+            ));
+            self::assertSame([], $deniedChoices->page->records);
+            self::assertSame([], $deniedChoices->searchFields);
 
             $deniedReport = $records->browse(new BrowseRecordsQuery(
                 $context,
@@ -447,8 +474,11 @@ final class BusinessRecordPolicyEnforcementIntegrationTest extends TestCase
 
         try {
             $redacted = $records->read(new ReadRecordQuery($context, $owner->handle, $ownerId));
-            self::assertSame(['redacted' => true], $redacted->values['target_ref']);
-            self::assertNotSame($targetCreate->recordKey, $redacted->values['target_ref']);
+            self::assertArrayNotHasKey('target_ref', $redacted->values);
+            self::assertStringNotContainsString($targetCreate->recordKey, json_encode(
+                $redacted->values,
+                JSON_THROW_ON_ERROR,
+            ));
 
             $fieldRules = ['public_reference' => ['code']];
             $database->update($tables->raw('resource_policies'), [
@@ -464,6 +494,131 @@ final class BusinessRecordPolicyEnforcementIntegrationTest extends TestCase
             self::assertNotSame($targetCreate->recordKey, $released->values['target_ref']);
         } finally {
             $database->delete($tables->raw('resource_policies'), ['policy_code' => $policyCode]);
+        }
+    }
+
+    /**
+     * Proves entity-reference writes use the source operation's nested target policy plan.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testEntityReferenceWritesUseTheSourceOperationsNestedTargetPlan(): void
+    {
+        $container = TestKernelFactory::create(Environment::fromGlobals());
+        $context = TestKernelFactory::administratorContext($container);
+        $records = $container->get(BusinessRecordService::class);
+        $database = $container->get(Connection::class);
+        $tables = $container->get(TableNames::class);
+        self::assertInstanceOf(BusinessRecordService::class, $records);
+        self::assertInstanceOf(Connection::class, $database);
+        self::assertInstanceOf(TableNames::class, $tables);
+        $suffix = strtolower(substr(str_replace('-', '', Uuid::uuid7()->toString()), -12));
+        $target = NeutralBusinessFixture::install(
+            $container,
+            $context,
+            NeutralBusinessFixture::referenceTargetDocument($suffix, Uuid::uuid7()->toString()),
+        );
+        $owner = NeutralBusinessFixture::install(
+            $container,
+            $context,
+            NeutralBusinessFixture::entityReferenceOwnerDocument(
+                $suffix,
+                Uuid::uuid7()->toString(),
+                $target->handle,
+            ),
+        );
+        $targetId = 'NESTED-' . strtoupper($suffix);
+        $records->create(new CreateRecordCommand(
+            $context,
+            $target->handle,
+            ['label' => 'Nested-policy target'],
+            NeutralBusinessFixture::idempotencyKey('nested-target-' . $suffix),
+            recordId: $targetId,
+        ));
+        NeutralBusinessFixture::removeRecordAccess($container, $target->id);
+        $always = ['type' => 'constant', 'value' => true];
+        $never = ['type' => 'constant', 'value' => false];
+        $readFields = ['public_reference' => ['code']];
+        $createFields = ['public_reference' => []];
+        $readPolicy = self::insertPolicy(
+            $database,
+            $tables,
+            $target->id,
+            'business.record.read',
+            $always,
+            $readFields,
+            $context->actorId(),
+        );
+        $createPolicy = self::insertPolicy(
+            $database,
+            $tables,
+            $target->id,
+            'business.record.create',
+            $always,
+            $createFields,
+            $context->actorId(),
+        );
+
+        try {
+            try {
+                $records->create(new CreateRecordCommand(
+                    $context,
+                    $owner->handle,
+                    ['title' => 'Denied nested reference', 'target_ref' => $targetId],
+                    NeutralBusinessFixture::idempotencyKey('nested-denied-field-' . $suffix),
+                    recordId: Uuid::uuid7()->toString(),
+                ));
+                self::fail('A direct read grant must not bypass a nested public-reference denial.');
+            } catch (BusinessRecordValidationFailed $exception) {
+                self::assertSame('target_ref', $exception->violations[0]->field);
+                self::assertSame('reference', $exception->violations[0]->code);
+            }
+
+            $createFields = ['public_reference' => ['code']];
+            $database->update($tables->raw('resource_policies'), [
+                'canonical_ast' => CanonicalDefinitionJson::encode($never),
+                'field_rules' => CanonicalDefinitionJson::encode($createFields),
+                'ast_checksum' => CanonicalDefinitionJson::checksum([
+                    'ast' => $never,
+                    'fields' => $createFields,
+                ]),
+                'policy_version' => 2,
+            ], ['policy_code' => $createPolicy]);
+            try {
+                $records->create(new CreateRecordCommand(
+                    $context,
+                    $owner->handle,
+                    ['title' => 'Denied nested row', 'target_ref' => $targetId],
+                    NeutralBusinessFixture::idempotencyKey('nested-denied-row-' . $suffix),
+                    recordId: Uuid::uuid7()->toString(),
+                ));
+                self::fail('A direct read grant must not bypass a nested row-policy denial.');
+            } catch (BusinessRecordValidationFailed $exception) {
+                self::assertSame('target_ref', $exception->violations[0]->field);
+                self::assertSame('reference', $exception->violations[0]->code);
+            }
+
+            $database->update($tables->raw('resource_policies'), [
+                'canonical_ast' => CanonicalDefinitionJson::encode($always),
+                'ast_checksum' => CanonicalDefinitionJson::checksum([
+                    'ast' => $always,
+                    'fields' => $createFields,
+                ]),
+                'policy_version' => 3,
+            ], ['policy_code' => $createPolicy]);
+            $created = $records->create(new CreateRecordCommand(
+                $context,
+                $owner->handle,
+                ['title' => 'Allowed nested reference', 'target_ref' => $targetId],
+                NeutralBusinessFixture::idempotencyKey('nested-allowed-' . $suffix),
+                recordId: Uuid::uuid7()->toString(),
+            ));
+            self::assertSame(1, $created->version);
+        } finally {
+            $database->delete($tables->raw('resource_policies'), ['policy_code' => $createPolicy]);
+            $database->delete($tables->raw('resource_policies'), ['policy_code' => $readPolicy]);
         }
     }
 

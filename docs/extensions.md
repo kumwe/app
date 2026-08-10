@@ -10,7 +10,7 @@ The repository contains small, inspectable packages under [`examples/extensions`
 
 | Example | Demonstrates |
 |---|---|
-| [`announcements`](../examples/extensions/announcements) | Schema-2 shell contributions, package-owned field/entity definitions, injected service, and portable migration |
+| [`announcements`](../examples/extensions/announcements) | Schema-3 shell, entity and safe field-presenter contributions, injected service, and portable migration |
 | [`audit-listener`](../examples/extensions/audit-listener) | Plugin provider and Joomla Event listener registration |
 | [`minimal-template`](../examples/extensions/minimal-template) | Template override and packaged public asset |
 
@@ -95,11 +95,78 @@ Schema 2 is required for application-shell contributions. A minimal graphical co
 
 Identifiers use `vendor/name`; compatibility and dependency constraints use semantic versions. The manifest is installation input and part of the extension's compatibility contract. Do not infer registration by scanning PHP files.
 
-Schema-2 manifests reject unknown root, requirement, autoload, dependency, and contribution keys. Every contribution identifier must begin with the extension namespace (`acme/announcements` becomes `acme.announcements`). Lists are bounded, paths cannot traverse, route methods are restricted, and navigation/routes must reference capabilities, workspaces, and views owned by the same package. `permissions`, when present, must exactly match the deterministically ordered contributed capability identifiers.
+Schema-2 and schema-3 manifests reject unknown root, requirement, autoload, dependency, and contribution keys.
+Every contribution identifier must begin with the extension namespace (`acme/announcements` becomes
+`acme.announcements`). Lists are bounded, paths cannot traverse, route methods are restricted, and
+navigation/routes must reference capabilities, workspaces, and views owned by the same package. `permissions`,
+when present, must exactly match the deterministically ordered contributed capability identifiers. Schema 2 keeps
+its original business grammar (`field_types` and `definitions`); use schema 3 to declare safe field presentations
+and custom business handlers.
 
 ### Business-definition contributions
 
-The optional `contributions.business` object contains strict `field_types` and `definitions` lists. A provider must register byte-equivalent typed objects through `ExtensionContributionRegistrar::fieldType()` and `businessDefinition()`; missing, additional, or changed runtime registrations reject the provider. Field-type and entity handles use the package namespace. Published field types are immutable under their identifier, and entity upgrades advance `definition_version` by one.
+The optional `contributions.business` object contains strict `field_types` and `definitions` lists. A schema-3
+manifest may additionally declare `field_presentations`, `view_handlers`, and `action_handlers`. A provider must
+register byte-equivalent typed objects through `ExtensionContributionRegistrar::fieldType()`,
+`fieldPresentation()`, `businessDefinition()`, `customBusinessViewHandler()`, and
+`customBusinessActionHandler()`; missing, additional, or changed runtime registrations reject the provider.
+Field-type, entity, handler, and schema references use the package namespace. Published field types are
+immutable under their identifier, and entity upgrades advance `definition_version` by one.
+
+Each field-presentation declaration names one package-owned field type and a non-empty, duplicate-free subset of
+the closed presentation contexts. The provider supplies a `FieldPresenter` for exactly that signed declaration,
+after registering the field type. Presenters receive only `FieldPresentationRequest` and return a bounded semantic
+model: no HTML, Twig path, request, container, repository, connection, or SQL is admitted. Core types use this same
+registrar path. Activation, disable, quarantine, trust revocation, replacement, and uninstall inventory or remove
+presenters with their owner before the underlying field type is withdrawn.
+
+For example, a schema-3 component that owns `acme.announcements.priority` can sign the exact contexts its provider
+implements:
+
+```json
+{
+  "business": {
+    "field_presentations": [{
+      "field_type": "acme.announcements.priority",
+      "contexts": ["create", "detail", "list", "relation", "update"]
+    }]
+  }
+}
+```
+
+Call `fieldType()` before `fieldPresentation()` during contribution. The registry rejects undeclared contexts,
+partial registration after a collision, mismatched field/type metadata, changed labels or validation errors, and
+any presenter that widens the server's read-only, computed, server-only, immutable, conditional, or policy decision.
+Non-editable presentations must use the core output widget; editor widgets and retained values remain bounded and
+are rendered only by core-owned, auto-escaped templates.
+
+Manifest admission also derives presentation coverage from every published definition before provider code runs.
+A package-owned custom field that may be read must sign `list`, `detail`, and `relation`; writable fields additionally
+sign `create` and/or `update` according to their declared visibility, read-only, server-only, and immutable flags.
+Consequently, a schema-2 package may keep using the unchanged shell and declaration grammar, but it must move to
+schema 3 before publishing an exposed definition that uses its own custom field type.
+After every provider has contributed, activation repeats the coverage check against the assembled owner-aware
+registry, so a definition using another extension's custom type also fails closed when that owner's presenter is
+missing or incomplete.
+
+A custom handler declaration pairs separate `handler` and `schema` references with closed query/command and
+result JSON schemas. The schema subset rejects references, floats, open objects, unknown keywords, unsafe formats,
+and unbounded arrays. A definition view or action opts in by naming both references; definitions that name neither
+retain the generated behavior and their legacy canonical bytes. The runtime validates input before invoking the
+typed handler and validates its bounded result afterwards. Handlers receive `CustomBusinessViewQuery` or
+`CustomBusinessActionCommand`, including `ExecutionContext`; they never receive PSR requests, a container, a DBAL
+connection, or a repository for core tables. Action commands also carry expected version, idempotency key,
+organization scope, and approval identity.
+
+`CustomBusinessSurfaceDispatcher` is the runtime bridge from a policy-visible installed definition to executable
+code. It resolves the exact definition owner, handler, and schema tuple, treats every missing or inactive tuple as
+the same unavailable definition, and asserts an action's declared capability before dispatch. The generated-surface
+facade invokes it for custom views and custom actions; generated actions without a handler continue through
+`BusinessRecordService`. A custom action handler must compose the same authorized, audited, transactional,
+concurrency-safe, approval-aware, and idempotent application services for its domain mutation. Schema validation is
+an input/output integrity boundary, not an authorization substitute. Trusted providers may resolve
+`BusinessRecordService` from their restricted extension container for this purpose. The host container, DBAL
+connection, and core repositories remain unavailable.
 
 Package definitions are synchronized transactionally on install and upgrade, become available only while the package is active and trusted, and preserve their catalog/version history through disable, quarantine, trust revocation, and uninstall. See [Business definitions](business-definitions.md) for the complete schema, compatibility, and lifecycle contract.
 
@@ -107,7 +174,9 @@ Valid schema-1 manifests remain installable and retain their service registratio
 
 ## Provider and runtime contract
 
-Every provider implements `Kumwe\CMS\Extension\Application\ExtensionServiceProvider`, Kumwe's Joomla DI service-provider contract. A schema-2 contributor also implements `ExtensionContributionProvider`; legacy lifecycle hooks remain on `RuntimeExtension`:
+Every provider implements `Kumwe\CMS\Extension\Application\ExtensionServiceProvider`, Kumwe's Joomla DI
+service-provider contract. A schema-2-or-newer contributor also implements `ExtensionContributionProvider`;
+legacy lifecycle hooks remain on `RuntimeExtension`:
 
 ```php
 <?php
@@ -141,6 +210,7 @@ final class Provider implements RuntimeExtension, ExtensionContributionProvider
             'Open and manage the announcements workspace.',
         ));
         // Register every manifest-declared workspace, navigation item, view, and route exactly once.
+        // Register each field presenter and custom business handler with its exact signed declaration as well.
     }
 
     public function boot(ExtensionContainer $container): void
@@ -156,6 +226,32 @@ final class Provider implements RuntimeExtension, ExtensionContributionProvider
 ```
 
 The runtime order is service registration for every active provider, one owner-bound contribution phase, boot, and route compilation. A provider cannot retain or obtain a global registry. Its registrar closes after reconciliation and rejects duplicate, undeclared, omitted, foreign-owned, or changed definitions. Resolve infrastructure dependencies only while composing services. Inject dependencies into ordinary classes. Domain code must not read environment variables, obtain a container, or query Kumwe tables.
+
+## Custom generated-business views and actions
+
+A signed component may extend a published entity with owner-namespaced custom view and action declarations. The
+schema-3 manifest is the admission contract: it names the handler identity and closed input/output JSON Schemas,
+while the
+provider must register exactly the corresponding owner-bound typed handler. Declaration without registration,
+registration without declaration, duplicate identifiers, owner escape, unsupported formats, unbounded strings or
+collections, arbitrary additional properties, and references to fields/actions/relations the owner does not expose
+all fail reconciliation or activation.
+
+Custom application code implements the interfaces under `BusinessSurface/Application/Custom`. A view receives an
+immutable validated query and `ExecutionContext`; an action receives an immutable validated command and context.
+Results are bounded typed values. Handlers obtain records only from policy-filtered application services and return
+only caller-visible values; the signed result schema validates structure but cannot grant field disclosure.
+These handlers never receive a PSR request, form, console options, MCP object, service container, DBAL connection,
+repository, SQL fragment, or arbitrary Twig path. They therefore remain reusable from administrator, portal, REST,
+CLI, and MCP without embedding a delivery rule.
+
+Provider registration is owner-scoped and collision-safe. Disable, uninstall, replacement, trust revocation, or a
+failed activation withdraws custom handlers before their dependent definition metadata. Generated REST paths and
+operation IDs are fixed core routes rather than extension declarations. Activation validates signed schemas and
+the complete deterministic component-name family across the post-change active set, refusing normalization
+collisions, core shadowing, owner-prefix escape, and unsafe/unbounded schemas before the new runtime publication
+becomes visible. The previous publication and contract cache remain authoritative when admission rolls back. See
+[Generated business surfaces](architecture/generated-business-surfaces.md).
 
 ## Administrator contribution contract
 
@@ -302,6 +398,11 @@ The announcements example is the conformance reference. Its browser fixture pack
 
 The forward migration adds `extension_contribution_capabilities`, linking package-owned capability codes to installed extensions. Installation and upgrade synchronize only the current release's declared capabilities. Removing a capability on upgrade or uninstall removes dependent grants through existing foreign keys; extension-owned data tables are not dropped. Back up identity/grant data before intentionally removing a published capability.
 
-The signed runtime publication now carries `manifest_schema` and canonical contribution declarations. Older schema-1 publications remain readable through defaults, while schema-2 publications are compared with the installed manifest before code loads. After deploying this change, run core migrations, materialize the current runtime generation, and replace long-lived processes. If materialization is stale or invalid, readiness remains closed; use the existing runtime repair operation. Recovery composition deliberately skips extension loading and exposes only core navigation/templates, so an invalid contributed page cannot block extension management recovery.
+The signed runtime publication now carries `manifest_schema` and canonical contribution declarations. Older
+schema-1 publications remain readable through defaults, while schema-2 and schema-3 publications are compared with
+the installed manifest before code loads. After deploying this change, run core migrations, materialize the current
+runtime generation, and replace long-lived processes. If materialization is stale or invalid, readiness remains
+closed; use the existing runtime repair operation. Recovery composition deliberately skips extension loading and
+exposes only core navigation/templates, so an invalid contributed page cannot block extension management recovery.
 
 See [Architecture: extensions](architecture/extensions.md), [Templates](templates.md), and [Development](development.md).

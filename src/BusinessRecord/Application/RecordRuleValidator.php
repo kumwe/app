@@ -4,16 +4,13 @@ declare(strict_types=1);
 
 namespace Kumwe\CMS\BusinessRecord\Application;
 
-use DateTimeImmutable;
 use InvalidArgumentException;
 use Kumwe\CMS\BusinessDefinition\Domain\EntityTypeDefinition;
+use Kumwe\CMS\BusinessDefinition\Domain\Expression;
 use Kumwe\CMS\BusinessDefinition\Domain\FieldDefinition;
 use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordValidationFailed;
 use Kumwe\CMS\BusinessRecord\Domain\ExactDecimal;
-use Kumwe\CMS\BusinessRecord\Domain\MoneyValue;
-use Kumwe\CMS\BusinessRecord\Domain\QuantityValue;
 use Kumwe\CMS\BusinessRecord\Domain\RecordValueGuard;
-use Kumwe\CMS\BusinessRecord\Domain\ZonedDateTimeValue;
 use Ramsey\Uuid\Uuid;
 
 /**
@@ -21,11 +18,11 @@ use Ramsey\Uuid\Uuid;
  *
  * This is where a published definition's write policy is enforced: identity is server-assigned, computed
  * and server-only fields refuse caller values, immutable fields refuse to move after creation,
- * editability conditions gate an update, the required and nullable rules and each field's declared
- * validator list judge single values, and record invariants judge the set. `RecordValueCodec` owns the
- * per-value type conversion this delegates to, so the rules here stay about policy rather than
- * representation. Every breach is collected instead of aborting the pass, and the whole list is raised
- * once as `BusinessRecordValidationFailed`, which is what lets a caller correct a form in one round trip.
+ * visibility and editability conditions gate submitted create and update values, the required and nullable
+ * rules and each field's declared validator list judge single values, and record invariants judge the set.
+ * `RecordValueCodec` owns the per-value type conversion this delegates to, so the rules here stay about policy
+ * rather than representation. Every breach is collected instead of aborting the pass, and the whole list is
+ * raised once as `BusinessRecordValidationFailed`, which lets a caller correct a form in one round trip.
  *
  * `BusinessRecordService` calls `create()` and `update()` on the write path, the read repository calls
  * `materialize()` to put virtual computations back onto a decoded row, and the schema repin gateway calls
@@ -53,7 +50,8 @@ final readonly class RecordRuleValidator
      * Identity is never taken from the input: the definition's identity field is set to `$recordId`
      * whatever the caller sent. An omitted field falls back to its declared default, and an omitted
      * optional field with no default is stored as null. Supplying a computed, server-only, or read-only
-     * field is reported rather than quietly ignored, so a caller learns its payload was not honoured.
+     * field is reported rather than quietly ignored, so a caller learns its payload was not honoured. A
+     * supplied writable field must also satisfy both of its conditions over the complete prospective record.
      *
      * @param   EntityTypeDefinition  $definition      Published definition whose field rules apply.
      * @param   array<string, mixed>  $input           Caller-supplied values keyed by field handle; an
@@ -88,6 +86,7 @@ final readonly class RecordRuleValidator
         }
 
         $values = [];
+        $conditionedFields = [];
         foreach ($fields as $field) {
             $isIdentity = in_array($field->type, ['core.uuid', 'core.reference_identity'], true);
             if ($isIdentity) {
@@ -113,6 +112,9 @@ final readonly class RecordRuleValidator
                 continue;
             }
             $present = array_key_exists($field->handle, $input);
+            if ($present && ($field->visibilityCondition !== null || $field->editabilityCondition !== null)) {
+                $conditionedFields[] = $field;
+            }
             $raw = $present ? $input[$field->handle] : $field->default;
             if (!$present && $raw === null && !$field->required) {
                 $values[$field->handle] = null;
@@ -129,6 +131,13 @@ final readonly class RecordRuleValidator
             );
         }
         $this->compute($definition, $siteIdentifier, $recordKey, $values, $violations);
+        $conditionValues = RecordExpressionValues::from($values);
+        foreach ($conditionedFields as $field) {
+            $violation = $this->inputConditionViolation($field, $conditionValues);
+            if ($violation !== null) {
+                $violations[] = $violation;
+            }
+        }
         $this->validate($definition, $values, $violations);
         $this->throwIfInvalid($violations);
 
@@ -141,8 +150,8 @@ final readonly class RecordRuleValidator
      * Only the handles present in `$patch` count as the caller's doing; every other value is carried over
      * from `$current` and still re-judged, because a formula or a cross-field invariant may depend on
      * what moved. An identity or immutable-after-create field may appear in the patch, but only when it
-     * repeats the value already stored. A field guarded by an editability condition is rejected unless
-     * that condition reads true over the record as it stands *before* the patch is applied.
+     * repeats the value already stored. A field guarded by a visibility or editability condition is rejected
+     * unless both conditions read true over the record as it stands *before* the patch is applied.
      *
      * @param   EntityTypeDefinition  $definition      Published definition whose field rules apply.
      * @param   array<string, mixed>  $current         Values the stored record holds, already normalized.
@@ -174,6 +183,7 @@ final readonly class RecordRuleValidator
         $violations = [];
         $fields = $this->fields($definition);
         $values = $current;
+        $conditionValues = RecordExpressionValues::from($current);
         foreach ($patch as $handle => $raw) {
             $field = $fields[$handle] ?? null;
             if ($field === null) {
@@ -201,24 +211,10 @@ final readonly class RecordRuleValidator
                 );
                 continue;
             }
-            if ($field->editabilityCondition !== null) {
-                try {
-                    if ($field->editabilityCondition->evaluate($this->formulaValues($current)) !== true) {
-                        $violations[] = new ValidationViolation(
-                            $handle,
-                            'not_editable',
-                            'The field editability condition rejected this change.',
-                        );
-                        continue;
-                    }
-                } catch (InvalidArgumentException) {
-                    $violations[] = new ValidationViolation(
-                        $handle,
-                        'condition_failed',
-                        'The field editability condition could not be evaluated.',
-                    );
-                    continue;
-                }
+            $conditionViolation = $this->inputConditionViolation($field, $conditionValues);
+            if ($conditionViolation !== null) {
+                $violations[] = $conditionViolation;
+                continue;
             }
             $this->normalizeField(
                 $field,
@@ -374,6 +370,80 @@ final readonly class RecordRuleValidator
     }
 
     /**
+     * Enforce both conditional gates attached to one caller-supplied field.
+     *
+     * Visibility is checked first because a value the current surface must not reveal must not be accepted as
+     * input either. Evaluation is fail-closed: an unavailable or invalid dependency becomes a generic condition
+     * failure rather than letting the submitted value pass.
+     *
+     * @param   FieldDefinition                      $field   Submitted field whose conditions apply.
+     * @param   array<string, bool|int|string|null>  $values  Complete scalar condition context.
+     *
+     * @return  ?ValidationViolation  First rejected condition, or null when both permit the input.
+     *
+     * @since   2.0.0
+     */
+    private function inputConditionViolation(FieldDefinition $field, array $values): ?ValidationViolation
+    {
+        $visibility = $this->conditionViolation(
+            $field,
+            $field->visibilityCondition,
+            $values,
+            'not_visible',
+            'The field visibility condition rejected this input.',
+            'The field visibility condition could not be evaluated.',
+        );
+        if ($visibility !== null) {
+            return $visibility;
+        }
+
+        return $this->conditionViolation(
+            $field,
+            $field->editabilityCondition,
+            $values,
+            'not_editable',
+            'The field editability condition rejected this input.',
+            'The field editability condition could not be evaluated.',
+        );
+    }
+
+    /**
+     * Evaluate one optional input condition and turn its fail-closed result into a field violation.
+     *
+     * @param   FieldDefinition                      $field            Field the condition protects.
+     * @param   ?Expression                          $condition        Validated condition, or null for no gate.
+     * @param   array<string, bool|int|string|null>  $values           Complete scalar condition context.
+     * @param   string                               $rejectedCode     Stable code used when the result is false.
+     * @param   string                               $rejectedMessage  Operator-facing false-result message.
+     * @param   string                               $failureMessage   Operator-facing evaluation-failure message.
+     *
+     * @return  ?ValidationViolation  Rejection or evaluation failure, or null when the condition permits input.
+     *
+     * @since   2.0.0
+     */
+    private function conditionViolation(
+        FieldDefinition $field,
+        ?Expression $condition,
+        array $values,
+        string $rejectedCode,
+        string $rejectedMessage,
+        string $failureMessage,
+    ): ?ValidationViolation {
+        if ($condition === null) {
+            return null;
+        }
+        try {
+            if ($condition->evaluate($values) !== true) {
+                return new ValidationViolation($field->handle, $rejectedCode, $rejectedMessage);
+            }
+        } catch (InvalidArgumentException) {
+            return new ValidationViolation($field->handle, 'condition_failed', $failureMessage);
+        }
+
+        return null;
+    }
+
+    /**
      * Run one raw value through the codec, recording either the normalized result or a type breach.
      *
      * A null is stored as null without reaching the codec, which leaves it to the required and nullable
@@ -465,7 +535,7 @@ final readonly class RecordRuleValidator
                     }
                 }
                 try {
-                    $raw = $field->formula?->evaluate($this->formulaValues($values));
+                    $raw = $field->formula?->evaluate(RecordExpressionValues::from($values));
                     $values[$handle] = $this->codec->normalize(
                         $field,
                         $raw,
@@ -563,7 +633,7 @@ final readonly class RecordRuleValidator
     ): void {
         foreach ($definition->recordInvariants() as $invariant) {
             try {
-                $satisfied = $invariant->isSatisfied($this->formulaValues($values));
+                $satisfied = $invariant->isSatisfied(RecordExpressionValues::from($values));
             } catch (InvalidArgumentException $exception) {
                 $violations[] = new ValidationViolation(
                     $invariant->handle,
@@ -792,38 +862,6 @@ final readonly class RecordRuleValidator
                 throw new InvalidArgumentException('A validator list contains an invalid value.');
             }
             $result[] = $value;
-        }
-
-        return $result;
-    }
-
-    /**
-     * Flatten a record's values into the scalar map an expression can be evaluated against.
-     *
-     * Each domain value becomes the spelling a formula reads — an exact decimal its canonical literal, a
-     * date-time an ISO-8601 string with offset, a zoned date-time its UTC instant — while a composite
-     * such as money or a quantity, and anything else with no scalar spelling, collapses to null, so a
-     * formula naming one sees a missing value rather than an object it cannot compute over.
-     *
-     * @param   array<string, mixed>  $values  Normalized record values keyed by field handle.
-     *
-     * @return  array<string, bool|float|int|string|null>  The same handles carrying scalar-only values,
-     *          in the shape `Expression::evaluate()` and `RecordInvariantDefinition::isSatisfied()` read.
-     *
-     * @since   2.0.0
-     */
-    private function formulaValues(array $values): array
-    {
-        $result = [];
-        foreach ($values as $handle => $value) {
-            $result[$handle] = match (true) {
-                $value instanceof ExactDecimal => $value->value(),
-                $value instanceof DateTimeImmutable => $value->format('Y-m-d\TH:i:s.uP'),
-                $value instanceof ZonedDateTimeValue => $value->instant->format('Y-m-d\TH:i:s.u\Z'),
-                $value instanceof MoneyValue, $value instanceof QuantityValue => null,
-                is_scalar($value), $value === null => $value,
-                default => null,
-            };
         }
 
         return $result;

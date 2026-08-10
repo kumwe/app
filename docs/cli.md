@@ -60,6 +60,71 @@ concrete command is authorized. A CLI flag cannot select an organization or work
 membership. Commands that expose business records must use the same record and field policy plan as HTTP, MCP,
 workers, and the portal.
 
+## Generated business records
+
+`business-record` prints a stable JSON success or error envelope and exposes no organization-selection flag.
+Discovery/schema, list/get, lifecycle, actions, relations/reorder, history, approvals, bounded reports/exports, and
+operation status all use the shared generated-business catalog, query decoder, exact-value projector, and
+transactional record service.
+
+| Action | Required action-specific options |
+|---|---|
+| `entities` | none |
+| `schema` | `--definition` |
+| `list`, `report`, `export` | `--definition`, optional `--query-file` |
+| `get` | `--definition`, `--record`, optional `--query-file` |
+| `create` | `--definition`, `--values-file`, `--operation-id`, optional `--record` |
+| `update` | `--definition`, `--record`, `--expected-version`, `--values-file`, `--operation-id` |
+| `archive`, `restore`, `delete` | definition, record, expected version, operation ID |
+| `action`, `request-action` | definition, record, expected version, action, operation ID, optional input file |
+| `relate`, `unrelate`, `reorder` | definition, record, version, relation input, operation ID |
+| `history` | definition, record, optional bounded query file |
+| `approvals`, `approval` | optional limit, or exact `--approval-request` |
+| `operation` | `--operation-id` |
+
+Every invocation also requires `--site` and `--token-file`. Mutation operation IDs are stable safe identifiers and
+must be reused only for an identical retry. Existing-record mutations require the positive version last read.
+Values, action input, query documents, target values, and reorder lists are accepted only from absolute,
+owner-only, regular, non-symlinked files capped at 2 MiB; this avoids leaking PII or secrets through process lists.
+For `get`, the query file uses the same bounded projection object as the other generated surfaces; for example,
+`{"projection":{"fields":["name"],"includes":["members"]},"include_archived":false}`. At most 64 fields and
+four declared relationships may be requested. Browse-only filters, sorting, pagination, and aggregates are rejected.
+`request-action` creates the same exact maker-checker request as the browser, REST, and MCP facades, including
+typed custom-action input validation. `approvals` and `approval` inspect only canonical `business_record` requests
+whose active definition still declares the bound high-impact action for CLI. Unrelated approval families,
+malformed bindings, stale actions, and exact denied details are omitted without enumeration. Checker visibility
+still comes from approval authority and does not require the maker's action-execution grant. The CLI deliberately
+exposes no approval vote: a decision still requires the browser's fresh, session-bound
+step-up proof. The predecessor approval binding includes the authenticated surface, and proof consumption accepts
+only administrator or portal sessions, so a CLI-originated high-impact request also cannot be consumed by CLI.
+Supplying `--approval-request` re-proves the exact binding and fails closed under that boundary; complete the
+high-impact request, decision, and execution through one browser surface. Ordinary non-high-impact actions remain
+fully executable and idempotent through CLI.
+
+```bash
+php bin/kumwe business-record list \
+  --site=corporate \
+  --token-file=/run/secrets/kumwe-cli-token \
+  --definition=acme.sales_order \
+  --query-file=/run/kumwe/query.json
+
+php bin/kumwe business-record update \
+  --site=corporate \
+  --token-file=/run/secrets/kumwe-cli-token \
+  --definition=acme.sales_order \
+  --record=SO-00042 \
+  --expected-version=7 \
+  --operation-id=sales-order-42-update-0008 \
+  --values-file=/run/kumwe/order-values.json
+```
+
+Success is `{"ok":true,"data":...,"meta":{"action":"...","surface":"cli"}}`. Failures have a stable
+redacted `error.code` and non-zero status: 64 usage, 65 malformed data, 66 missing/denied, 69 unavailable, 73
+conflict/version, 75 in progress, 77 authorization, 78 configuration, and 1 for an unexpected generic failure.
+Exact decimals remain strings; internal keys, redaction markers, policy details, arbitrary exception messages,
+secret values, and protected file paths never appear. See
+[Generated business surfaces](architecture/generated-business-surfaces.md).
+
 ## Content
 
 The `content` command prints JSON and calls the same content service as the administrator, API, and MCP:

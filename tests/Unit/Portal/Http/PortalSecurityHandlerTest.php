@@ -24,6 +24,7 @@ use Kumwe\CMS\Portal\Contribution\PortalTemplateRegistry;
 use Kumwe\CMS\Portal\Contribution\PortalWorkspaceRegistry;
 use Kumwe\CMS\Portal\Domain\PortalContext;
 use Kumwe\CMS\Portal\Http\Handler\PortalSecurityHandler;
+use Kumwe\CMS\Portal\Presentation\PortalNavigationVisibility;
 use Kumwe\CMS\Portal\Presentation\PortalRenderer;
 use Laminas\Diactoros\ServerRequest;
 use Laminas\Diactoros\Uri;
@@ -98,6 +99,7 @@ final class PortalSecurityHandlerTest extends TestCase
             ]), ['strict_variables' => true]),
             new PortalNavigationRegistry($workspaces, $capabilities, new AuthorizationPolicyRegistry()),
             new PortalTemplateRegistry(),
+            $this->createStub(PortalNavigationVisibility::class),
         );
     }
 

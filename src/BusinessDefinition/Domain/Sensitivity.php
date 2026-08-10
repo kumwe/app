@@ -8,9 +8,9 @@ namespace Kumwe\CMS\BusinessDefinition\Domain;
  * Handling class a business field declares, and with it whether the runtime ever emits its values.
  *
  * The two upper levels are enforced and the three lower ones are declarative. A field at `Restricted` or
- * `Secret` comes back as `['redacted' => true]` from the record read path and from revision snapshots,
+ * `Secret` is omitted from the record read path and from revision snapshots,
  * is refused as a search, filter, sort, or report target by the query compiler, cannot be declared
- * sortable at all, and is marked redacted in the audit metadata listing which fields a write changed.
+ * sortable at all, and is omitted from the audit metadata listing which fields a write changed.
  * `Public`, `Internal`, and `Confidential` classify the data for the people running the installation
  * without narrowing anything the runtime returns. Fields default to `Internal`, an encrypted
  * `core.secret` field must declare `Secret`, and changing a published field's class is reported as a
@@ -45,14 +45,14 @@ enum Sensitivity: string
     case Confidential = 'confidential';
 
     /**
-     * The first enforced level: values are redacted on read and the field cannot be queried against.
+     * The first enforced level: values are omitted on read and the field cannot be queried against.
      *
      * @since  2.0.0
      */
     case Restricted = 'restricted';
 
     /**
-     * Credential-grade data, redacted exactly as `Restricted` is and required of encrypted secret fields.
+     * Credential-grade data, omitted exactly as `Restricted` is and required of encrypted secret fields.
      *
      * @since  2.0.0
      */

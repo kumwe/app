@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Kumwe\CMS\BusinessSchema\Infrastructure\Persistence;
 
+use Doctrine\DBAL\ArrayParameterType;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Types\Types;
 use JsonException;
@@ -11,6 +12,7 @@ use Kumwe\CMS\BusinessSchema\Application\BusinessSchemaConflict;
 use Kumwe\CMS\BusinessSchema\Application\BusinessSchemaInstallationRepository;
 use Kumwe\CMS\BusinessSchema\Domain\SchemaInstallation;
 use Kumwe\CMS\Infrastructure\Persistence\TableNames;
+use Ramsey\Uuid\Uuid;
 use RuntimeException;
 
 /**
@@ -73,6 +75,51 @@ final readonly class DoctrineBusinessSchemaInstallationRepository implements Bus
         }
 
         return $this->map($row);
+    }
+
+    /**
+     * Read installation rows in bounded driver-safe batches.
+     *
+     * @param   list<string>  $definitionIds  Unique canonical definition UUIDs, at most 4096.
+     *
+     * @return  array<string, SchemaInstallation>  Revalidated rows keyed by definition UUID.
+     *
+     * @throws  \InvalidArgumentException  When the request is malformed, duplicated, or over its bound.
+     * @throws  RuntimeException  When storage returns a duplicate or malformed installation.
+     *
+     * @since   2.0.0
+     */
+    public function findBatch(array $definitionIds): array
+    {
+        if (!array_is_list($definitionIds) || count($definitionIds) > 4096) {
+            throw new \InvalidArgumentException('A schema-installation batch is malformed or unbounded.');
+        }
+        $seen = [];
+        foreach ($definitionIds as $definitionId) {
+            if (!is_string($definitionId) || !Uuid::isValid($definitionId) || isset($seen[$definitionId])) {
+                throw new \InvalidArgumentException('A schema-installation batch contains an invalid identity.');
+            }
+            $seen[$definitionId] = true;
+        }
+        $installations = [];
+        foreach (array_chunk($definitionIds, 500) as $chunk) {
+            if ($chunk === []) {
+                continue;
+            }
+            $rows = $this->database->fetchAllAssociative(sprintf(
+                'SELECT * FROM %s WHERE definition_id IN (?)',
+                $this->tables->quoted('business_schema_installations'),
+            ), [$chunk], [ArrayParameterType::STRING]);
+            foreach ($rows as $row) {
+                $installation = $this->map($row);
+                if (isset($installations[$installation->definitionId])) {
+                    throw new RuntimeException('A schema-installation batch returned a duplicate identity.');
+                }
+                $installations[$installation->definitionId] = $installation;
+            }
+        }
+
+        return $installations;
     }
 
     /**

@@ -684,9 +684,8 @@ final readonly class McpMutationGuard
     /**
      * Encode request arguments in a stable form so identical arguments always hash identically.
      *
-     * Top-level keys are sorted before encoding, so a client that serialises its arguments in a
-     * different order on a retry still matches its own earlier attempt instead of being told the
-     * identifier was reused with different input. Nested maps are left in the order they arrived.
+     * Every object-shaped map is key-sorted recursively while list order is retained, so semantically
+     * identical nested arguments hash alike across clients without treating an ordered list as a set.
      *
      * @param   array<string, mixed>  $input  Request arguments as the tool handler collected them.
      *
@@ -698,7 +697,34 @@ final readonly class McpMutationGuard
      */
     private function canonicalJson(array $input): string
     {
-        ksort($input, SORT_STRING);
-        return json_encode($input, JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
+        return json_encode(
+            $this->canonicalValue($input),
+            JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR,
+        );
+    }
+
+    /**
+     * Recursively order map keys while preserving list order and scalar types.
+     *
+     * @param   mixed  $value  Decoded MCP argument value.
+     *
+     * @return  mixed  Canonical array structure or the original scalar.
+     *
+     * @since   2.0.0
+     */
+    private function canonicalValue(mixed $value): mixed
+    {
+        if (!is_array($value)) {
+            return $value;
+        }
+        if (array_is_list($value)) {
+            return array_map($this->canonicalValue(...), $value);
+        }
+        ksort($value, SORT_STRING);
+        foreach ($value as $key => $item) {
+            $value[$key] = $this->canonicalValue($item);
+        }
+
+        return $value;
     }
 }

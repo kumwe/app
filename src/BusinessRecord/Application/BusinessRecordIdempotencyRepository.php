@@ -63,7 +63,7 @@ interface BusinessRecordIdempotencyRepository
      * completion of the same claim fails rather than overwriting a stored result.
      *
      * @param   string                $id              UUID of the entry claimed by `begin()`.
-     * @param   RecordMutationResult  $result          Outcome to hand back on a later replay.
+     * @param   array<string, mixed>  $result          Outcome to hand back on a later replay.
      * @param   string                $resultChecksum  Digest of that result, re-proved before storing.
      * @param   DateTimeImmutable     $completedAt     Instant the mutation finished.
      *
@@ -76,7 +76,7 @@ interface BusinessRecordIdempotencyRepository
      */
     public function complete(
         string $id,
-        RecordMutationResult $result,
+        array $result,
         string $resultChecksum,
         DateTimeImmutable $completedAt,
     ): void;

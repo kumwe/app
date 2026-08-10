@@ -63,6 +63,24 @@ final class ExtensionContributionBoundaryTest extends TestCase
         self::assertSame(1, substr_count($container, 'new ExtensionContributionRegistrySet('));
     }
 
+    /**
+     * Trusted custom handlers receive the canonical record boundary without privileged infrastructure.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testRuntimeAllowlistExposesCanonicalBusinessServiceOnly(): void
+    {
+        $container = $this->contents('src/Kernel/ContainerFactory.php');
+        $allowlist = $this->runtimeAllowlist($container);
+
+        self::assertStringContainsString('BusinessRecordService::class =>', $allowlist);
+        self::assertStringNotContainsString('Connection::class =>', $allowlist);
+        self::assertStringNotContainsString('Repository::class =>', $allowlist);
+        self::assertStringNotContainsString('Container::class =>', $allowlist);
+    }
+
     public function testRecoveryCompositionCannotLoadExtensionCodeOrExtensionContributions(): void
     {
         $container = $this->contents('src/Kernel/ContainerFactory.php');

@@ -22,6 +22,18 @@ use JsonException;
 final class CommandInput
 {
     /**
+     * Largest protected input document accepted from disk.
+     *
+     * The console is not covered by the HTTP body limiter, so file-backed payloads need their own fixed
+     * ceiling before they are read or decoded. Two mebibytes matches the default HTTP request bound while
+     * leaving ordinary record batches and query documents ample room.
+     *
+     * @var    int
+     * @since  2.0.0
+     */
+    private const MAX_PROTECTED_FILE_BYTES = 2_097_152;
+
+    /**
      * Parse a raw argument list into an option map keyed by option name.
      *
      * Options are strict `--name=value` pairs with a lowercase name. The value may be empty, so
@@ -93,10 +105,43 @@ final class CommandInput
     public static function positiveInteger(array $options, string $name): int
     {
         $value = self::required($options, $name);
-        if (preg_match('/^[1-9][0-9]*$/D', $value) !== 1) {
+        $integer = filter_var($value, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+        if (preg_match('/^[1-9][0-9]*$/D', $value) !== 1 || $integer === false) {
             throw new InvalidArgumentException(sprintf('The --%s option must be a positive integer.', $name));
         }
-        return (int) $value;
+
+        return $integer;
+    }
+
+    /**
+     * Read an option that must be a whole number from zero through a declared upper bound.
+     *
+     * Relationship positions legitimately begin at zero, unlike optimistic record versions. Decimal
+     * syntax is checked before conversion and `FILTER_VALIDATE_INT` catches platform overflow, so a huge
+     * digit string can never be silently saturated to `PHP_INT_MAX`.
+     *
+     * @param   array<string, string>  $options  Parsed option map to read from.
+     * @param   string                 $name     Option name without the leading `--`.
+     * @param   int                    $maximum  Largest accepted value, at least zero.
+     *
+     * @return  int  Validated integer between zero and the declared maximum inclusive.
+     *
+     * @throws  InvalidArgumentException  When the option is absent, not canonical decimal, overflows, or
+     *          falls outside the declared range.
+     *
+     * @since   2.0.0
+     */
+    public static function nonNegativeInteger(array $options, string $name, int $maximum = PHP_INT_MAX): int
+    {
+        $value = self::required($options, $name);
+        $integer = filter_var($value, FILTER_VALIDATE_INT, [
+            'options' => ['min_range' => 0, 'max_range' => $maximum],
+        ]);
+        if ($maximum < 0 || preg_match('/^(?:0|[1-9][0-9]*)$/D', $value) !== 1 || $integer === false) {
+            throw new InvalidArgumentException(sprintf('The --%s option is outside its non-negative bound.', $name));
+        }
+
+        return $integer;
     }
 
     /**
@@ -194,6 +239,80 @@ final class CommandInput
     }
 
     /**
+     * Decode an owner-protected JSON file whose top level must be an object.
+     *
+     * Record values and query documents may contain personal or commercially sensitive data, so they are
+     * never accepted inline as command arguments. The file is opened only after the same absolute-path,
+     * regular-file, non-symlink and owner-only checks used for credentials, and its size is bounded before
+     * JSON decoding. A first object-mode decode distinguishes `{}` from `[]`; the second produces the
+     * associative structure consumed by application commands.
+     *
+     * @param   string  $path  Absolute path to an owner-protected JSON document.
+     *
+     * @return  array<string, mixed>  Decoded object members, preserving exact string values.
+     *
+     * @throws  JsonException  When the document is malformed or nests deeper than 64 levels.
+     * @throws  InvalidArgumentException  When the path or file protection is unsafe, the document exceeds
+     *          the byte bound, or its top level is not an object.
+     * @throws  \LogicException  When an object-mode decode succeeded but the associative decode did not.
+     *
+     * @since   2.0.0
+     */
+    public static function protectedJsonObject(string $path): array
+    {
+        $encoded = self::protectedFileContents($path);
+        $object = json_decode($encoded, false, 64, JSON_THROW_ON_ERROR);
+        if (!$object instanceof \stdClass) {
+            throw new InvalidArgumentException('A protected JSON document must contain an object.');
+        }
+
+        $value = json_decode($encoded, true, 64, JSON_THROW_ON_ERROR);
+        if (!is_array($value)) {
+            throw new \LogicException('A validated JSON object did not decode to an associative array.');
+        }
+
+        /** @var array<string, mixed> $value */
+        return $value;
+    }
+
+    /**
+     * Decode an owner-protected JSON file whose top level is a bounded string list.
+     *
+     * Ordered relationship identities are carried this way rather than inline, keeping business identities
+     * out of the process table. An empty list is valid, every item must be a string, and more than one
+     * thousand entries is refused before a command object is assembled.
+     *
+     * @param   string  $path  Absolute path to an owner-protected JSON document.
+     *
+     * @return  list<string>  String values in their declared order.
+     *
+     * @throws  JsonException  When the document is malformed or nests deeper than 64 levels.
+     * @throws  InvalidArgumentException  When the file is unsafe, the top level is not a list, an item is
+     *          not a string, or the list exceeds one thousand entries.
+     *
+     * @since   2.0.0
+     */
+    public static function protectedJsonStringList(string $path): array
+    {
+        $encoded = self::protectedFileContents($path);
+        $decoded = json_decode($encoded, false, 64, JSON_THROW_ON_ERROR);
+        if (!is_array($decoded)) {
+            throw new InvalidArgumentException('A protected JSON document must contain a list.');
+        }
+        $values = json_decode($encoded, true, 64, JSON_THROW_ON_ERROR);
+        if (!is_array($values) || !array_is_list($values) || count($values) > 1000) {
+            throw new InvalidArgumentException('A protected JSON string list exceeds its declared bound.');
+        }
+        foreach ($values as $value) {
+            if (!is_string($value)) {
+                throw new InvalidArgumentException('A protected JSON list must contain only strings.');
+            }
+        }
+
+        return $values;
+    }
+
+    /**
      * Read a secret — an access token or a password — out of a file the operator has protected.
      *
      * Secrets are never accepted as arguments, where they would be visible in shell history and in the
@@ -213,23 +332,74 @@ final class CommandInput
      */
     public static function secretFile(string $path): string
     {
-        $permissions = $path === '' || !is_file($path) ? false : fileperms($path);
-        if (
-            !str_starts_with($path, DIRECTORY_SEPARATOR)
-            || !is_file($path)
-            || is_link($path)
-            || !is_readable($path)
-            || !is_int($permissions)
-            || ($permissions & 0o077) !== 0
-        ) {
-            throw new InvalidArgumentException(
-                'Secret files must be absolute, readable, non-symlinked, and mode 0600.',
-            );
-        }
-        $secret = trim((string) file_get_contents($path));
+        $secret = trim(self::protectedFileContents($path));
         if ($secret === '') {
             throw new InvalidArgumentException('The secret file is empty.');
         }
         return $secret;
+    }
+
+    /**
+     * Read one bounded owner-only file while proving the opened inode is the one that was inspected.
+     *
+     * A pre-open `lstat()` rejects a final-component symlink and unsafe mode. The file is then opened in
+     * binary read-only mode and compared by device and inode with `fstat()` before any bytes are trusted,
+     * closing the ordinary replace-between-check-and-open race. A second mode and size check covers a file
+     * changed around the open, and the stream read stops one byte beyond the ceiling so growth cannot turn a
+     * previously safe file into an unbounded allocation.
+     *
+     * @param   string  $path  Absolute path to the protected file.
+     *
+     * @return  string  File contents exactly as stored, never larger than the declared bound.
+     *
+     * @throws  InvalidArgumentException  When the path, file type, permissions, identity, readability or
+     *          size is unsafe.
+     *
+     * @since   2.0.0
+     */
+    private static function protectedFileContents(string $path): string
+    {
+        $before = $path === '' ? false : @lstat($path);
+        if (
+            !str_starts_with($path, DIRECTORY_SEPARATOR)
+            || !is_array($before)
+            || (($before['mode'] ?? 0) & 0o170000) !== 0o100000
+            || (($before['mode'] ?? 0) & 0o077) !== 0
+            || !isset($before['size'])
+            || !is_int($before['size'])
+            || $before['size'] > self::MAX_PROTECTED_FILE_BYTES
+        ) {
+            throw new InvalidArgumentException(
+                'Protected files must be absolute, owner-only, bounded, readable regular files, not symlinks.',
+            );
+        }
+
+        $stream = @fopen($path, 'rb');
+        if ($stream === false) {
+            throw new InvalidArgumentException('The protected file could not be read safely.');
+        }
+        try {
+            $opened = fstat($stream);
+            if (
+                !is_array($opened)
+                || ($opened['dev'] ?? null) !== ($before['dev'] ?? null)
+                || ($opened['ino'] ?? null) !== ($before['ino'] ?? null)
+                || (($opened['mode'] ?? 0) & 0o170000) !== 0o100000
+                || (($opened['mode'] ?? 0) & 0o077) !== 0
+                || !isset($opened['size'])
+                || !is_int($opened['size'])
+                || $opened['size'] > self::MAX_PROTECTED_FILE_BYTES
+            ) {
+                throw new InvalidArgumentException('The protected file changed while it was being opened.');
+            }
+            $contents = stream_get_contents($stream, self::MAX_PROTECTED_FILE_BYTES + 1);
+            if (!is_string($contents) || strlen($contents) > self::MAX_PROTECTED_FILE_BYTES) {
+                throw new InvalidArgumentException('The protected file exceeds its declared size bound.');
+            }
+
+            return $contents;
+        } finally {
+            fclose($stream);
+        }
     }
 }

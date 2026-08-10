@@ -67,6 +67,14 @@ final readonly class EntityTypeDefinition
     private array $recordInvariants;
 
     /**
+     * Business-record operations explicitly enabled for the authenticated portal surface.
+     *
+     * @var    list<PortalOperation>
+     * @since  2.0.0
+     */
+    private array $portalOperations;
+
+    /**
      * Declared intent carried inside the checksummed payload for consumers that read it back out.
      *
      * `SchemaEvolutionHints::fromDefinition()` is its only interpreter today: keys unrelated to schema
@@ -120,12 +128,15 @@ final readonly class EntityTypeDefinition
      * @param   bool                             $softDeleteEnabled      Whether deletion marks a record rather
      *          than removing it.
      * @param   list<RecordInvariantDefinition>  $recordInvariants       Cross-field rules, handles unique.
+     * @param   list<PortalOperation>            $portalOperations       Explicit portal operation allowlist;
+     *          empty denies every generated business-record operation.
      *
      * @throws  InvalidBusinessDefinition  When the id is not a UUID, the site, handle, or labels are malformed,
      *          the handle falls outside the owner's namespace, the version disagrees with the status, a
      *          collection is empty or past its ceiling, a handle is duplicated, no exposure surface is
-     *          declared, a view claims a surface the entity does not expose, the metadata is not canonically
-     *          encodable, or the internal graph is unsound.
+     *          declared, a portal operation is invalid or enabled without portal exposure, a view claims a
+     *          surface the entity does not expose, the metadata is not canonically encodable, or the internal
+     *          graph is unsound.
      *
      * @since   2.0.0
      */
@@ -154,6 +165,7 @@ final readonly class EntityTypeDefinition
         public bool $publicExposure = false,
         public bool $softDeleteEnabled = false,
         array $recordInvariants = [],
+        array $portalOperations = [],
     ) {
         if (!Uuid::isValid($id)) {
             throw new InvalidBusinessDefinition('A business entity definition ID must be a canonical UUID.');
@@ -203,8 +215,12 @@ final readonly class EntityTypeDefinition
             static fn (RecordInvariantDefinition $invariant): string => $invariant->handle,
             'record invariant',
         );
+        $this->portalOperations = self::normalizePortalOperations($portalOperations);
         if (!$administratorExposure && !$portalExposure && !$publicExposure) {
             throw new InvalidBusinessDefinition('A business entity requires at least one declared exposure surface.');
+        }
+        if (!$portalExposure && $this->portalOperations !== []) {
+            throw new InvalidBusinessDefinition('Portal operations require entity-level portal exposure.');
         }
         if (
             !$portalExposure && array_filter(
@@ -253,7 +269,7 @@ final readonly class EntityTypeDefinition
             'id', 'owner', 'site', 'handle', 'singular_label', 'plural_label', 'status', 'definition_version',
             'storage_mode', 'identity_strategy', 'scope', 'audit_enabled', 'revisions_enabled', 'fields',
             'relationships', 'views', 'actions', 'workflow', 'compatibility_metadata', 'administrator_exposure',
-            'portal_exposure', 'public_exposure', 'soft_delete_enabled', 'record_invariants',
+            'portal_exposure', 'public_exposure', 'soft_delete_enabled', 'record_invariants', 'portal_operations',
         ];
         if (array_diff(array_keys($document), $allowed) !== []) {
             throw new InvalidBusinessDefinition('A business entity definition contains an unknown property.');
@@ -328,6 +344,7 @@ final readonly class EntityTypeDefinition
             self::boolean($document, 'public_exposure'),
             self::boolean($document, 'soft_delete_enabled'),
             $recordInvariants,
+            self::portalOperationsFromDocument($document),
         );
     }
 
@@ -446,6 +463,35 @@ final readonly class EntityTypeDefinition
     }
 
     /**
+     * Business-record operations explicitly enabled for the authenticated portal surface.
+     *
+     * Entity-level portal exposure is only the outer surface switch. An operation absent from this list
+     * remains denied even when a portal view or action describes how it could be presented.
+     *
+     * @return  list<PortalOperation>  Operations in canonical backing-value order; empty denies all.
+     *
+     * @since   2.0.0
+     */
+    public function portalOperations(): array
+    {
+        return $this->portalOperations;
+    }
+
+    /**
+     * Decide whether one business-record operation was explicitly opted into the portal.
+     *
+     * @param   PortalOperation  $operation  Closed operation to test.
+     *
+     * @return  bool  True only when portal exposure is enabled and the exact operation is allowlisted.
+     *
+     * @since   2.0.0
+     */
+    public function allowsPortalOperation(PortalOperation $operation): bool
+    {
+        return $this->portalExposure && in_array($operation, $this->portalOperations, true);
+    }
+
+    /**
      * Declared intent the definition carries for consumers that read it back out of the payload.
      *
      * @return  array<string, mixed>  Exactly as declared; `SchemaEvolutionHints::fromDefinition()` is the only
@@ -505,6 +551,7 @@ final readonly class EntityTypeDefinition
             $this->publicExposure,
             $this->softDeleteEnabled,
             $this->recordInvariants,
+            $this->portalOperations,
         );
     }
 
@@ -555,16 +602,18 @@ final readonly class EntityTypeDefinition
             $this->publicExposure,
             $this->softDeleteEnabled,
             $this->recordInvariants,
+            $this->portalOperations,
         );
     }
 
     /**
      * Export the definition as the canonical document it is stored, compared, and checksummed as.
      *
-     * The exact shape is part of the persisted contract, which is why two members are written only when they
-     * carry meaning: `soft_delete_enabled` and `record_invariants` are left out when unset, so definitions
-     * published before those properties existed still serialize to the bytes their stored checksum was taken
-     * over. Everything else is always present, with nested definitions already exported in declaration order.
+     * The exact shape is part of the persisted contract, which is why three members are written only when they
+     * carry meaning: `soft_delete_enabled`, `record_invariants`, and `portal_operations` are left out when unset,
+     * so definitions published before those properties existed still serialize to the bytes their stored
+     * checksum was taken over. Everything else is always present, with nested definitions already exported in
+     * declaration order.
      *
      * @return  array<string, mixed>  Every property under its stored key, with enums written as their backing
      *          strings and `workflow` written as null when the entity binds none.
@@ -609,6 +658,12 @@ final readonly class EntityTypeDefinition
             $document['record_invariants'] = array_map(
                 static fn (RecordInvariantDefinition $invariant): array => $invariant->toArray(),
                 $this->recordInvariants,
+            );
+        }
+        if ($this->portalOperations !== []) {
+            $document['portal_operations'] = array_map(
+                static fn (PortalOperation $operation): string => $operation->value,
+                $this->portalOperations,
             );
         }
 
@@ -964,5 +1019,70 @@ final readonly class EntityTypeDefinition
             $result[] = $item;
         }
         return $result;
+    }
+
+    /**
+     * Decode the optional portal-operation allowlist from a canonical definition document.
+     *
+     * @param   array<string, mixed>  $document  Definition document being decoded.
+     *
+     * @return  list<PortalOperation>  Declared operations, validated and canonicalized by construction.
+     *
+     * @throws  InvalidBusinessDefinition  When the property is not a list, contains a non-string or unknown
+     *          operation, or repeats an operation.
+     *
+     * @since   2.0.0
+     */
+    private static function portalOperationsFromDocument(array $document): array
+    {
+        $values = $document['portal_operations'] ?? [];
+        if (!is_array($values) || !array_is_list($values)) {
+            throw new InvalidBusinessDefinition('Business entity property portal_operations must be a list.');
+        }
+        $operations = [];
+        foreach ($values as $value) {
+            if (!is_string($value)) {
+                throw new InvalidBusinessDefinition('A portal operation must be a string.');
+            }
+            $operations[] = PortalOperation::tryFrom($value)
+                ?? throw new InvalidBusinessDefinition('A portal operation is invalid.');
+        }
+
+        return $operations;
+    }
+
+    /**
+     * Validate and canonicalize an explicitly supplied portal-operation allowlist.
+     *
+     * @param   list<PortalOperation>  $operations  Operations supplied to construction.
+     *
+     * @return  list<PortalOperation>  The same operations sorted by their stable backing values.
+     *
+     * @throws  InvalidBusinessDefinition  When the collection is not a list, an item is not a
+     *          `PortalOperation`, or an operation is repeated.
+     *
+     * @since   2.0.0
+     */
+    private static function normalizePortalOperations(array $operations): array
+    {
+        if (!array_is_list($operations)) {
+            throw new InvalidBusinessDefinition('Portal operations must be a list.');
+        }
+        $seen = [];
+        foreach ($operations as $operation) {
+            if (!$operation instanceof PortalOperation) {
+                throw new InvalidBusinessDefinition('A portal operation must use the closed operation type.');
+            }
+            if (isset($seen[$operation->value])) {
+                throw new InvalidBusinessDefinition('Portal operation ' . $operation->value . ' is duplicated.');
+            }
+            $seen[$operation->value] = true;
+        }
+        usort(
+            $operations,
+            static fn (PortalOperation $left, PortalOperation $right): int => $left->value <=> $right->value,
+        );
+
+        return $operations;
     }
 }

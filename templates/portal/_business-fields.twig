@@ -1,0 +1,317 @@
+{% macro structured_node(node, input_id) %}
+  <div class="portal-business-structured-node portal-business-structured-node-{{ node.kind }}">
+    {% if node.fixed_kind %}
+      <input type="hidden" name="{{ node.kind_name }}" value="{{ node.kind }}">
+    {% else %}
+      <label for="{{ input_id }}-kind">Value type
+        <select id="{{ input_id }}-kind" name="{{ node.kind_name }}">
+          {% for option in node.kind_options %}
+            <option value="{{ option.value }}"{% if node.kind == option.value %} selected{% endif %}>
+              {{ option.label }}
+            </option>
+          {% endfor %}
+        </select>
+      </label>
+    {% endif %}
+
+    {% if node.kind in ['object', 'array'] %}
+      <label for="{{ input_id }}-count">{{ node.kind == 'object' ? 'Property count' : 'Row count' }}
+        <input
+          id="{{ input_id }}-count"
+          type="number"
+          name="{{ node.count_name }}"
+          value="{{ node.count }}"
+          min="0"
+          max="{{ node.max_count }}"
+          required
+        >
+      </label>
+      <div class="portal-business-structured-entries">
+        {% for entry in node.entries %}
+          <fieldset class="portal-business-structured-entry">
+            <legend>{{ node.kind == 'object' ? 'Property ' ~ loop.index : 'Row ' ~ loop.index }}</legend>
+            {% if node.kind == 'object' %}
+              <label for="{{ input_id }}-{{ loop.index0 }}-key">Key
+                <input
+                  id="{{ input_id }}-{{ loop.index0 }}-key"
+                  type="text"
+                  name="{{ entry.key_name }}"
+                  value="{{ entry.key }}"
+                  maxlength="191"
+                  required
+                >
+              </label>
+            {% endif %}
+            {{ _self.structured_node(entry.node, input_id ~ '-' ~ loop.index0 ~ '-value') }}
+          </fieldset>
+        {% else %}
+          <p>This structure has no {{ node.kind == 'object' ? 'properties' : 'rows' }}.</p>
+        {% endfor %}
+      </div>
+    {% elseif node.kind == 'boolean' %}
+      <label for="{{ input_id }}-value">Value
+        <select id="{{ input_id }}-value" name="{{ node.value_name }}">
+          <option value="1"{% if node.value == '1' %} selected{% endif %}>Yes</option>
+          <option value="0"{% if node.value == '0' %} selected{% endif %}>No</option>
+        </select>
+      </label>
+    {% elseif node.kind == 'null' %}
+      <p class="portal-field-help">This value is explicitly null.</p>
+    {% else %}
+      <label for="{{ input_id }}-value">Value
+        {% if node.kind == 'string' %}
+          <textarea
+            id="{{ input_id }}-value"
+            name="{{ node.value_name }}"
+            maxlength="65536"
+            rows="3"
+          >{{ node.value }}</textarea>
+        {% else %}
+          <input
+            id="{{ input_id }}-value"
+            type="number"
+            step="1"
+            name="{{ node.value_name }}"
+            value="{{ node.value }}"
+            required
+          >
+        {% endif %}
+      </label>
+    {% endif %}
+  </div>
+{% endmacro %}
+
+{% macro render(fields, definition, record, business_base_path, value_prefix = 'values') %}
+  <div class="portal-business-fields">
+    {% for field in fields %}
+      {% set input_id = 'portal-business-field-' ~ field.handle %}
+      {% set error_id = input_id ~ '-errors' %}
+      {% set help_id = input_id ~ '-help' %}
+      {% set has_help = field.description is not empty or field.help_text is not empty %}
+      {% set described_by = (has_help ? help_id : '') ~ (has_help and field.errors is not empty ? ' ' : '') ~ (field.errors is not empty ? error_id : '') %}
+      <div class="portal-business-field{% if field.errors is not empty %} portal-business-field-invalid{% endif %}">
+        {% if field.widget == 'output' %}
+          <span class="portal-business-field-label" id="{{ input_id }}-label">{{ field.label }}</span>
+          <output class="portal-business-field-output" aria-labelledby="{{ input_id }}-label"{% if has_help %} aria-describedby="{{ help_id }}"{% endif %}>
+            {{ field.display is not same as('') ? field.display : 'Not set' }}
+          </output>
+        {% elseif field.widget == 'checkbox' %}
+          <input type="hidden" name="{{ value_prefix }}[{{ field.handle }}]" value="0">
+          <label class="portal-business-checkbox" for="{{ input_id }}">
+            <input
+              id="{{ input_id }}"
+              type="checkbox"
+              name="{{ value_prefix }}[{{ field.handle }}]"
+              value="1"
+              {% if field.input_value %}checked{% endif %}
+              {% if field.errors is not empty %}aria-invalid="true"{% endif %}
+              {% if described_by is not empty %}aria-describedby="{{ described_by }}"{% endif %}
+            >
+            <span>{{ field.label }}{% if field.required %} <span aria-hidden="true">*</span>{% endif %}</span>
+          </label>
+        {% elseif field.widget in ['money', 'quantity', 'zoned_datetime'] %}
+          <fieldset
+            id="{{ input_id }}"
+            class="portal-business-composite"
+            {% if described_by is not empty %}aria-describedby="{{ described_by }}"{% endif %}
+          >
+            <legend>{{ field.label }}{% if field.required %} <span aria-hidden="true">*</span>{% endif %}</legend>
+            <div class="portal-business-columns">
+              {% if field.widget in ['money', 'quantity'] %}
+                {% set qualifier = field.widget == 'money' ? 'currency' : 'unit' %}
+                <label for="{{ input_id }}-amount">Amount
+                  <input
+                    id="{{ input_id }}-amount"
+                    type="text"
+                    inputmode="decimal"
+                    name="{{ value_prefix }}[{{ field.handle }}][amount]"
+                    value="{{ field.input_value is iterable ? field.input_value.amount|default('') : '' }}"
+                    pattern="-?[0-9]+(?:\.[0-9]+)?"
+                    {% if field.required %}required{% endif %}
+                    {% if field.errors is not empty %}aria-invalid="true"{% endif %}
+                  >
+                </label>
+                <label for="{{ input_id }}-qualifier">{{ qualifier|title }}
+                  <input
+                    id="{{ input_id }}-qualifier"
+                    type="text"
+                    name="{{ value_prefix }}[{{ field.handle }}][{{ qualifier }}]"
+                    value="{{ field.input_value is iterable ? field.input_value[qualifier]|default('') : '' }}"
+                    maxlength="32"
+                    {% if field.required %}required{% endif %}
+                    {% if field.errors is not empty %}aria-invalid="true"{% endif %}
+                  >
+                </label>
+              {% else %}
+                <label for="{{ input_id }}-instant">Instant (ISO 8601)
+                  <input
+                    id="{{ input_id }}-instant"
+                    type="text"
+                    name="{{ value_prefix }}[{{ field.handle }}][instant]"
+                    value="{{ field.input_value is iterable ? field.input_value.instant|default('') : '' }}"
+                    placeholder="2026-08-09T14:00:00+02:00"
+                    {% if field.required %}required{% endif %}
+                    {% if field.errors is not empty %}aria-invalid="true"{% endif %}
+                  >
+                </label>
+                <label for="{{ input_id }}-timezone">Time zone
+                  <input
+                    id="{{ input_id }}-timezone"
+                    type="text"
+                    name="{{ value_prefix }}[{{ field.handle }}][timezone]"
+                    value="{{ field.input_value is iterable ? field.input_value.timezone|default('') : '' }}"
+                    placeholder="Africa/Windhoek"
+                    maxlength="64"
+                    {% if field.required %}required{% endif %}
+                    {% if field.errors is not empty %}aria-invalid="true"{% endif %}
+                  >
+                </label>
+              {% endif %}
+            </div>
+          </fieldset>
+        {% else %}
+          {% if field.widget in ['json', 'collection'] %}
+            <span class="portal-business-field-label" id="{{ input_id }}-label">
+              {{ field.label }}{% if field.required %} <span aria-hidden="true">*</span>{% endif %}
+            </span>
+          {% else %}
+            <label for="{{ input_id }}">
+              {{ field.label }}{% if field.required %} <span aria-hidden="true">*</span>{% endif %}
+            </label>
+          {% endif %}
+          {% if field.widget == 'textarea' %}
+            <textarea
+              id="{{ input_id }}"
+              name="{{ value_prefix }}[{{ field.handle }}]"
+              {% if field.required %}required{% endif %}
+              {% if field.errors is not empty %}aria-invalid="true"{% endif %}
+              {% if described_by is not empty %}aria-describedby="{{ described_by }}"{% endif %}
+              {% if field.attributes.rows is defined %}rows="{{ field.attributes.rows }}"{% endif %}
+              {% if field.attributes.maxlength is defined %}maxlength="{{ field.attributes.maxlength }}"{% endif %}
+            >{{ field.input_value|default('') }}</textarea>
+          {% elseif field.widget == 'select' %}
+            <select
+              id="{{ input_id }}"
+              name="{{ value_prefix }}[{{ field.handle }}]"
+              {% if field.required %}required{% endif %}
+              {% if field.errors is not empty %}aria-invalid="true"{% endif %}
+              {% if described_by is not empty %}aria-describedby="{{ described_by }}"{% endif %}
+            >
+              {% if field.required and field.input_value is null %}
+                <option value="" selected disabled>Choose {{ field.label|lower }}</option>
+              {% elseif not field.required %}
+                <option value="">Not set</option>
+              {% endif %}
+              {% for option in field.options %}
+                <option value="{{ option.value }}"{% if field.input_value is same as(option.value) %} selected{% endif %}>
+                  {{ option.label }}
+                </option>
+              {% endfor %}
+            </select>
+          {% elseif field.widget in ['media_reference', 'entity_reference'] %}
+            <select
+              id="{{ input_id }}"
+              name="{{ value_prefix }}[{{ field.handle }}]"
+              {% if field.required %}required{% endif %}
+              {% if field.errors is not empty %}aria-invalid="true"{% endif %}
+              {% if described_by is not empty %}aria-describedby="{{ described_by }}"{% endif %}
+            >
+              {% if field.required and field.input_value is null %}
+                <option value="" selected disabled>Choose {{ field.label|lower }}</option>
+              {% elseif not field.required %}
+                <option value="">Not set</option>
+              {% endif %}
+              {% for option in field.options %}
+                <option value="{{ option.value }}"{% if field.input_value is same as(option.value) %} selected{% endif %}>
+                  {{ option.label }}
+                </option>
+              {% endfor %}
+            </select>
+            {% if field.choice_selected_label|default(null) and field.choice_label_name|default(null) %}
+              <input
+                type="hidden"
+                name="{{ field.choice_label_name }}"
+                value="{{ field.choice_selected_label }}"
+              >
+            {% endif %}
+            <p class="portal-field-help">
+              <a href="{{ business_base_path }}/{{ definition.handle|url_encode }}{% if record %}/{{ record.record_id|url_encode }}{% endif %}/choices/{{ field.choice_path }}?operation={{ field.choice_operation|url_encode }}">
+                Search and browse available {{ field.widget == 'media_reference' ? 'media' : 'records' }}
+              </a>
+            </p>
+          {% elseif field.widget in ['json', 'collection'] %}
+            {% if field.structured_managed_by_relationship|default(false) %}
+              <p class="portal-field-help">
+                Owned lines are edited through the relationship controls on the record detail page.
+              </p>
+            {% else %}
+              <div
+                id="{{ input_id }}"
+                class="portal-business-structured-editor"
+                aria-labelledby="{{ input_id }}-label"
+                {% if described_by is not empty %}aria-describedby="{{ described_by }}"{% endif %}
+              >
+                {{ _self.structured_node(field.structured, input_id) }}
+                <button
+                  class="portal-button secondary"
+                  type="submit"
+                  name="prepare_structure"
+                  value="1"
+                  formnovalidate
+                >Update rows and value types</button>
+                <p class="portal-field-help">
+                  Choose a bounded type for each value. The form submits native fields, never raw JSON.
+                </p>
+              </div>
+            {% endif %}
+          {% else %}
+            {% set type = {
+              'integer': 'number',
+              'date': 'date',
+              'email': 'email',
+              'url': 'url',
+              'phone': 'tel',
+              'secret': 'password'
+            }[field.widget]|default('text') %}
+            <input
+              id="{{ input_id }}"
+              type="{{ type }}"
+              name="{{ value_prefix }}[{{ field.handle }}]"
+              value="{{ field.input_value|default('') }}"
+              {% if field.widget == 'decimal' %}pattern="-?[0-9]+(?:\.[0-9]+)?"{% endif %}
+              {% if field.widget == 'time' %}inputmode="numeric" pattern="(?:[01][0-9]|2[0-3]):[0-5][0-9](?::[0-5][0-9](?:\.[0-9]{1,6})?)?" placeholder="13:14:15.123456"{% endif %}
+              {% if field.widget == 'datetime' %}placeholder="2026-08-09T14:00:00+02:00"{% endif %}
+              {% if field.widget in ['media_reference', 'entity_reference'] %}
+                autocomplete="off"
+              {% elseif field.widget == 'secret' %}
+                autocomplete="new-password"
+              {% elseif field.attributes.autocomplete is defined %}
+                autocomplete="{{ field.attributes.autocomplete }}"
+              {% endif %}
+              {% if field.required %}required{% endif %}
+              {% if field.errors is not empty %}aria-invalid="true"{% endif %}
+              {% if described_by is not empty %}aria-describedby="{{ described_by }}"{% endif %}
+              {% if field.attributes.maxlength is defined %}maxlength="{{ field.attributes.maxlength }}"{% endif %}
+              {% if field.attributes.minlength is defined %}minlength="{{ field.attributes.minlength }}"{% endif %}
+              {% if field.attributes.min is defined %}min="{{ field.attributes.min }}"{% endif %}
+              {% if field.attributes.max is defined %}max="{{ field.attributes.max }}"{% endif %}
+              {% if field.attributes.step is defined %}step="{{ field.attributes.step }}"{% endif %}
+              {% if field.attributes.inputmode is defined %}inputmode="{{ field.attributes.inputmode }}"{% endif %}
+            >
+          {% endif %}
+        {% endif %}
+
+        {% if has_help %}
+          <p class="portal-field-help" id="{{ help_id }}">
+            {{ field.description }}{% if field.description is not empty and field.help_text is not empty %} {% endif %}{{ field.help_text }}
+          </p>
+        {% endif %}
+        {% if field.errors is not empty %}
+          <ul class="portal-business-field-errors" id="{{ error_id }}">
+            {% for error in field.errors %}<li>{{ error }}</li>{% endfor %}
+          </ul>
+        {% endif %}
+      </div>
+    {% endfor %}
+  </div>
+{% endmacro %}

@@ -1,0 +1,406 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Kumwe\CMS\BusinessSurface\Delivery\Portal;
+
+use InvalidArgumentException;
+use Kumwe\CMS\Application\Authorization\ExecutionContext;
+use Kumwe\CMS\BusinessSurface\Application\BusinessSurface;
+use Kumwe\CMS\BusinessSurface\Application\GeneratedBusinessActionStepUp;
+use Kumwe\CMS\BusinessSurface\Application\GeneratedBusinessStepUpInputRejected;
+use Kumwe\CMS\BusinessSurface\Delivery\Browser\BusinessBrowserResult;
+use Kumwe\CMS\BusinessSurface\Delivery\Browser\GeneratedBusinessBrowserController;
+use Kumwe\CMS\BusinessSurface\Delivery\Browser\GeneratedBusinessConfirmationQuery;
+use Kumwe\CMS\Http\Middleware\TrustedProxyMiddleware;
+use Kumwe\CMS\Identity\Application\Administration\AuthenticationThrottled;
+use Kumwe\CMS\Identity\Application\StepUp\StepUpProvider;
+use Kumwe\CMS\Identity\Application\StepUp\StepUpRejected;
+use Kumwe\CMS\Identity\Domain\StepUp\StepUpVerification;
+use Kumwe\CMS\Portal\Application\PortalSession;
+use Kumwe\CMS\Portal\Http\Middleware\PortalSessionMiddleware;
+use Kumwe\CMS\Portal\Http\PortalRequest;
+use Kumwe\CMS\Portal\Presentation\PortalRenderer;
+use Laminas\Diactoros\Response\HtmlResponse;
+use Laminas\Diactoros\Response\RedirectResponse;
+use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\ServerRequestInterface;
+use Psr\Http\Server\RequestHandlerInterface;
+
+/**
+ * Thin opt-in portal adapter for the shared generated-business browser controller.
+ *
+ * @since  2.0.0
+ */
+final readonly class PortalBusinessSurfaceHandler implements RequestHandlerInterface
+{
+    /**
+     * Bind the adapter to shared dispatch and the isolated portal renderer.
+     *
+     * @param  GeneratedBusinessBrowserController  $business         Shared progressive-enhancement controller.
+     * @param  PortalRenderer                      $renderer         Isolated portal Twig renderer.
+     * @param  StepUpProvider                      $stepUp           Portal session MFA provider.
+     * @param  GeneratedBusinessActionStepUp       $actionStepUp     Exact-purpose proof coordinator.
+     * @param  bool                                $secureCookie     Whether rotated cookies require HTTPS.
+     * @param  int                                 $sessionLifetime  Portal cookie lifetime in seconds.
+     *
+     * @throws  InvalidArgumentException  When the configured session lifetime is invalid.
+     *
+     * @since  2.0.0
+     */
+    public function __construct(
+        private GeneratedBusinessBrowserController $business,
+        private PortalRenderer $renderer,
+        private StepUpProvider $stepUp,
+        private GeneratedBusinessActionStepUp $actionStepUp,
+        private bool $secureCookie,
+        private int $sessionLifetime,
+    ) {
+        if ($sessionLifetime < 300 || $sessionLifetime > 604_800) {
+            throw new InvalidArgumentException('The portal cookie lifetime is invalid.');
+        }
+    }
+
+    /**
+     * Decode trusted route attributes and render or redirect the shared portal outcome.
+     *
+     * @param   ServerRequestInterface  $request  Portal-authenticated, authorized and CSRF-checked request.
+     *
+     * @return  ResponseInterface  No-store HTML page or 303 redirect.
+     *
+     * @since   2.0.0
+     */
+    public function handle(ServerRequestInterface $request): ResponseInterface
+    {
+        $session = PortalRequest::session($request);
+        $context = PortalRequest::context($request);
+        $body = $this->body($request);
+        $purpose = $this->stepUpPurpose($request, $context, $body);
+        if ($purpose === null) {
+            return $this->response(
+                $session,
+                $this->dispatch($request, $context, $body),
+                $session->csrfToken,
+            );
+        }
+
+        try {
+            /** @var array{0: BusinessBrowserResult, 1: StepUpVerification} $outcome */
+            $outcome = $this->actionStepUp->execute(
+                $context,
+                $purpose,
+                $body,
+                $this->source($request),
+                $this->stepUp,
+                fn (ExecutionContext $stepped): BusinessBrowserResult => $this->dispatch(
+                    $request,
+                    $stepped,
+                    $body,
+                ),
+            );
+            [$result, $verification] = $outcome;
+        } catch (AuthenticationThrottled $exception) {
+            return $this->confirmationError(
+                $request,
+                $session,
+                $context,
+                $body,
+                $exception->getMessage(),
+                429,
+                ['Retry-After' => '900'],
+            );
+        } catch (StepUpRejected) {
+            return $this->confirmationError(
+                $request,
+                $session,
+                $context,
+                $body,
+                'The verification code is invalid, expired, or already used.',
+                403,
+            );
+        } catch (GeneratedBusinessStepUpInputRejected $exception) {
+            return $this->confirmationError(
+                $request,
+                $session,
+                $context,
+                $body,
+                $exception->getMessage(),
+                422,
+            );
+        }
+
+        return $this->response(
+            $session,
+            $result,
+            $verification->rotatedSession->csrfToken,
+            $verification->rotatedSession->cookieToken,
+        );
+    }
+
+    /**
+     * Dispatch one request after its final authentication context has been resolved.
+     *
+     * @param   ServerRequestInterface  $request  Routed portal request.
+     * @param   ExecutionContext        $context  Password or freshly stepped-up execution context.
+     * @param   array<string, mixed>    $body     Parsed nested form body.
+     *
+     * @return  BusinessBrowserResult  Shared generated-browser result.
+     *
+     * @since   2.0.0
+     */
+    private function dispatch(
+        ServerRequestInterface $request,
+        ExecutionContext $context,
+        array $body,
+    ): BusinessBrowserResult {
+        $operation = $request->getAttribute('operation');
+        $view = $request->getAttribute('view');
+        $related = $request->getAttribute('related');
+        $media = $request->getAttribute('media');
+        $ownedRelationship = $request->getAttribute('owned_relationship');
+        $ownedField = $request->getAttribute('owned_field');
+        $ownedKind = $request->getAttribute('owned_kind');
+        $businessRelationship = $request->getAttribute('business_relationship');
+        if ($businessRelationship !== null && strtoupper($request->getMethod()) === 'GET') {
+            return $this->business->relationship(
+                $context,
+                BusinessSurface::Portal,
+                $this->attribute($request, 'definition') ?? '',
+                $this->attribute($request, 'record') ?? '',
+                is_string($businessRelationship) ? $businessRelationship : '',
+                $request->getQueryParams(),
+            );
+        } elseif ($ownedRelationship !== null || $ownedField !== null || $ownedKind !== null) {
+            return $this->business->ownedLineChoices(
+                $context,
+                BusinessSurface::Portal,
+                '/portal/business',
+                $this->attribute($request, 'definition') ?? '',
+                $this->attribute($request, 'record') ?? '',
+                is_string($ownedRelationship) ? $ownedRelationship : '',
+                is_string($ownedField) ? $ownedField : '',
+                is_string($ownedKind) ? $ownedKind : '',
+                $request->getQueryParams(),
+            );
+        } elseif ($related !== null || $media !== null) {
+            return $this->business->choices(
+                $context,
+                BusinessSurface::Portal,
+                '/portal/business',
+                $this->attribute($request, 'definition') ?? '',
+                $this->attribute($request, 'record'),
+                is_string($related) ? $related : null,
+                is_string($media) ? $media : null,
+                $request->getQueryParams(),
+            );
+        } elseif ($view !== null) {
+            return $this->business->customView(
+                $context,
+                BusinessSurface::Portal,
+                $this->attribute($request, 'definition') ?? '',
+                is_string($view) ? $view : '',
+                $this->attribute($request, 'record'),
+                $request->getQueryParams(),
+            );
+        } elseif ($operation !== null) {
+            return $this->business->operationStatus($context, is_string($operation) ? $operation : '');
+        }
+
+        return $this->business->dispatch(
+            $context,
+            BusinessSurface::Portal,
+            '/portal/business',
+            $request->getMethod(),
+            $this->attribute($request, 'definition'),
+            $this->attribute($request, 'record'),
+            $request->getQueryParams(),
+            $body,
+        );
+    }
+
+    /**
+     * Render or redirect one shared result and optionally publish a rotated portal cookie.
+     *
+     * @param   PortalSession           $session      Original portal session used by layout projection.
+     * @param   BusinessBrowserResult   $result       Shared controller result.
+     * @param   string                  $csrf         CSRF token for the active or rotated session.
+     * @param   string|null             $cookieToken  Rotated opaque cookie token, when step-up succeeded.
+     * @param   array<string, string>   $headers      Additional response headers.
+     *
+     * @return  ResponseInterface  No-store HTML page or same-origin redirect.
+     *
+     * @since   2.0.0
+     */
+    private function response(
+        PortalSession $session,
+        BusinessBrowserResult $result,
+        string $csrf,
+        ?string $cookieToken = null,
+        array $headers = [],
+    ): ResponseInterface {
+        $headers = ['Cache-Control' => 'no-store', ...$headers];
+        if ($cookieToken !== null) {
+            $headers['Set-Cookie'] = $this->cookie($cookieToken);
+        }
+        if ($result->redirect !== null) {
+            return new RedirectResponse($result->redirect, $result->status, $headers);
+        }
+
+        return new HtmlResponse($this->renderer->render((string) $result->template, [
+            ...$result->data,
+            'csrf' => $csrf,
+            'business_base_path' => '/portal/business',
+            'active_navigation' => 'core.portal-business-records',
+        ], $session), $result->status, $headers);
+    }
+
+    /**
+     * Resolve whether this exact POST needs a fresh proof and return its server-owned purpose.
+     *
+     * @param   ServerRequestInterface  $request  Routed portal request.
+     * @param   ExecutionContext        $context  Password-authenticated portal context.
+     * @param   array<string, mixed>    $body     Parsed confirmation body.
+     *
+     * @return  string|null  Exact high-impact action purpose, or null for every other request.
+     *
+     * @throws  InvalidArgumentException  When an action route omits a required identifier.
+     *
+     * @since   2.0.0
+     */
+    private function stepUpPurpose(
+        ServerRequestInterface $request,
+        ExecutionContext $context,
+        array $body,
+    ): ?string {
+        if (strtoupper($request->getMethod()) !== 'POST' || ($body['operation'] ?? null) !== 'action') {
+            return null;
+        }
+        $definition = $this->attribute($request, 'definition');
+        $record = $this->attribute($request, 'record');
+        $action = $body['action'] ?? null;
+        if ($definition === null || $record === null || !is_string($action) || trim($action) === '') {
+            throw new InvalidArgumentException('A generated business action route is incomplete.');
+        }
+
+        return $this->business->actionStepUpPurpose(
+            $context,
+            BusinessSurface::Portal,
+            $definition,
+            $action,
+        );
+    }
+
+    /**
+     * Re-render the exact confirmation after a rejected or incomplete second-factor attempt.
+     *
+     * @param   ServerRequestInterface  $request  Routed portal request.
+     * @param   PortalSession           $session  Original live portal session.
+     * @param   ExecutionContext        $context  Original password-authenticated context.
+     * @param   array<string, mixed>    $body     Submitted action controls retained for correction.
+     * @param   string                  $message  Safe non-enumerating verification message.
+     * @param   int                     $status   Protected HTTP failure status.
+     * @param   array<string, string>   $headers  Optional throttle headers.
+     *
+     * @return  ResponseInterface  Accessible no-store confirmation response.
+     *
+     * @since   2.0.0
+     */
+    private function confirmationError(
+        ServerRequestInterface $request,
+        PortalSession $session,
+        ExecutionContext $context,
+        array $body,
+        string $message,
+        int $status,
+        array $headers = [],
+    ): ResponseInterface {
+        $result = $this->business->dispatch(
+            $context,
+            BusinessSurface::Portal,
+            '/portal/business',
+            'GET',
+            $this->attribute($request, 'definition'),
+            $this->attribute($request, 'record'),
+            GeneratedBusinessConfirmationQuery::retain($body),
+            [],
+        );
+        $result = new BusinessBrowserResult(
+            $result->template,
+            [...$result->data, 'error_summary' => $message],
+            status: $status,
+        );
+
+        return $this->response($session, $result, $session->csrfToken, headers: $headers);
+    }
+
+    /**
+     * Resolve the trusted client address used by the verification throttle.
+     *
+     * @param   ServerRequestInterface  $request  Request carrying the trusted-proxy result.
+     *
+     * @return  string  Trusted source or a stable unknown marker.
+     *
+     * @since   2.0.0
+     */
+    private function source(ServerRequestInterface $request): string
+    {
+        $source = $request->getAttribute(TrustedProxyMiddleware::ATTRIBUTE_CLIENT_ADDRESS, 'unknown');
+
+        return is_string($source) && $source !== '' ? $source : 'unknown';
+    }
+
+    /**
+     * Serialize the rotated host-only portal session cookie.
+     *
+     * @param   string  $token  New opaque portal cookie token.
+     *
+     * @return  string  Hardened portal-path cookie header.
+     *
+     * @since   2.0.0
+     */
+    private function cookie(string $token): string
+    {
+        return sprintf(
+            '%s=%s; Path=/portal; Max-Age=%d; HttpOnly; SameSite=Strict%s',
+            PortalSessionMiddleware::COOKIE_NAME,
+            $token,
+            $this->sessionLifetime,
+            $this->secureCookie ? '; Secure' : '',
+        );
+    }
+
+    /**
+     * Read one optional bounded route attribute.
+     *
+     * @param   ServerRequestInterface  $request  Routed request.
+     * @param   string                  $name     Attribute name.
+     *
+     * @return  string|null  Route value, or null when absent.
+     *
+     * @since   2.0.0
+     */
+    private function attribute(ServerRequestInterface $request, string $name): ?string
+    {
+        $value = $request->getAttribute($name);
+        return is_string($value) && $value !== '' && strlen($value) <= 191 ? $value : null;
+    }
+
+    /**
+     * Preserve nested parsed form values for the schema-authorized input mapper.
+     *
+     * @param   ServerRequestInterface  $request  Browser request.
+     *
+     * @return  array<string, mixed>  Parsed body object, empty for a non-object body.
+     *
+     * @since   2.0.0
+     */
+    private function body(ServerRequestInterface $request): array
+    {
+        $body = $request->getParsedBody();
+        if (!is_array($body) || array_is_list($body)) {
+            return [];
+        }
+
+        return $body;
+    }
+}

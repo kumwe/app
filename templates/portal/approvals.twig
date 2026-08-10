@@ -19,9 +19,9 @@
         <tbody>
         {% for approval in approvals %}
             <tr>
-                <th scope="row"><a href="/portal/approvals/{{ approval.id }}">{{ approval.id }}</a><br><small>{{ approval.status.value }}</small></th>
+                <th scope="row"><a href="/portal/approvals/{{ approval.id }}">{{ approval.id }}</a><br><small>{{ approval.status }}</small></th>
                 <td><code>{{ approval.action }}</code></td>
-                <td>{{ approval.resourceType }}<br><code>{{ approval.resourceId }}</code></td>
+                <td>{{ approval.resourceType }}, version {{ approval.resourceVersion }}</td>
                 <td>{{ approval.approvalCount }} of {{ approval.requiredQuorum }}</td>
                 <td><time datetime="{{ approval.expiresAt|date('c') }}">{{ approval.expiresAt|date('Y-m-d H:i T') }}</time></td>
             </tr>

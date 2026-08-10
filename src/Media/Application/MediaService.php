@@ -105,6 +105,31 @@ final readonly class MediaService
     }
 
     /**
+     * Return a bounded media-reference choice page without loading the complete library.
+     *
+     * @param   ExecutionContext  $context  Authenticated actor and exact site.
+     * @param   string            $query    Case-insensitive display-name substring, at most 200 bytes.
+     * @param   int               $limit    Most choices to return, from one to fifty.
+     *
+     * @return  list<MediaAsset>  Validated assets safe to identify in a generated selector.
+     *
+     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When `content.read` is refused.
+     * @throws  \InvalidArgumentException  When the query or limit is outside the selector bounds.
+     * @throws  \RuntimeException  When the configured storage cannot guarantee bounded choice work.
+     *
+     * @since   2.0.0
+     */
+    public function choices(ExecutionContext $context, string $query = '', int $limit = 50): array
+    {
+        $this->authorize($context, 'content.read');
+        if (!$this->storage instanceof BoundedMediaChoiceStorage) {
+            throw new \RuntimeException('Bounded media choices are unavailable for this storage backend.');
+        }
+
+        return $this->storage->choices($context->site(), $query, $limit, 4096);
+    }
+
+    /**
      * Add an uploaded file to the site's library and record the upload in the audit trail.
      *
      * The file is stored first and audited second. If the recorder rejects the event the stored asset

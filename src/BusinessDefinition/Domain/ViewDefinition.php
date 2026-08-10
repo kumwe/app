@@ -13,7 +13,9 @@ namespace Kumwe\CMS\BusinessDefinition\Domain;
  * kind, at least one delivery surface, and bounded, duplicate-free handle lists — while the owning
  * `EntityTypeDefinition` proves it against the entity: every handle must name a declared field, filters
  * must name filterable fields and sorts sortable ones, and a view may claim the portal or public surface
- * only where the entity exposes that surface too. The flags say where a view may be offered; they never
+ * only where the entity exposes that surface too. An optional owner-scoped handler/schema pair binds a
+ * custom application view to a separately declared signed contract; omitting both keeps the generated
+ * view behavior and its legacy canonical bytes. The flags say where a view may be offered; they never
  * grant permission on their own.
  *
  * @since  2.0.0
@@ -59,10 +61,12 @@ final readonly class ViewDefinition
      * @param   bool          $administrator  Whether the administrator surface may render the view.
      * @param   bool          $portal         Whether the portal surface may render the view.
      * @param   bool          $public         Whether the view may be rendered anonymously.
+     * @param   ?string       $handler        Owner-scoped custom handler reference, or null for generated behavior.
+     * @param   ?string       $schema         Owner-scoped signed schema reference paired with `$handler`.
      *
      * @throws  InvalidBusinessDefinition  When the handle or label is malformed, the kind is unsupported, no
      *          delivery surface is declared, the projection is empty, a list exceeds 128 entries or repeats a
-     *          handle, or a handle is not a bounded lowercase identifier.
+     *          handle, a handle is not a bounded lowercase identifier, or exactly one custom reference is set.
      *
      * @since   2.0.0
      */
@@ -76,6 +80,8 @@ final readonly class ViewDefinition
         public bool $administrator = true,
         public bool $portal = false,
         public bool $public = false,
+        public ?string $handler = null,
+        public ?string $schema = null,
     ) {
         if (preg_match('/^[a-z][a-z0-9_]{0,62}$/D', $handle) !== 1 || $label === '' || strlen($label) > 120) {
             throw new InvalidBusinessDefinition('A business view identity is invalid.');
@@ -85,6 +91,20 @@ final readonly class ViewDefinition
         }
         if (!$administrator && !$portal && !$public) {
             throw new InvalidBusinessDefinition('A business view must declare at least one delivery surface.');
+        }
+        if (($handler === null) !== ($schema === null)) {
+            throw new InvalidBusinessDefinition('A custom business view requires both handler and schema references.');
+        }
+        foreach ([$handler, $schema] as $reference) {
+            if (
+                $reference !== null
+                && (
+                    strlen($reference) > 191
+                    || preg_match('/^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)+$/D', $reference) !== 1
+                )
+            ) {
+                throw new InvalidBusinessDefinition('A custom business view reference is invalid.');
+            }
         }
         $this->fields = self::identifiers($fields, false);
         $this->filters = self::identifiers($filters, true);
@@ -111,6 +131,7 @@ final readonly class ViewDefinition
         if (
             array_diff(array_keys($document), [
             'handle', 'label', 'kind', 'fields', 'filters', 'sorts', 'administrator', 'portal', 'public',
+            'handler', 'schema',
             ]) !== []
         ) {
             throw new InvalidBusinessDefinition('A business view contains an unknown property.');
@@ -126,6 +147,8 @@ final readonly class ViewDefinition
             self::boolean($document, 'administrator', true),
             self::boolean($document, 'portal'),
             self::boolean($document, 'public'),
+            self::nullableString($document, 'handler'),
+            self::nullableString($document, 'schema'),
         );
     }
 
@@ -142,7 +165,7 @@ final readonly class ViewDefinition
      */
     public function toArray(): array
     {
-        return [
+        $result = [
             'handle' => $this->handle,
             'label' => $this->label,
             'kind' => $this->kind,
@@ -153,6 +176,33 @@ final readonly class ViewDefinition
             'portal' => $this->portal,
             'public' => $this->public,
         ];
+        if ($this->handler !== null && $this->schema !== null) {
+            $result['handler'] = $this->handler;
+            $result['schema'] = $this->schema;
+        }
+
+        return $result;
+    }
+
+    /**
+     * Read an optional non-blank text property without repairing malformed input.
+     *
+     * @param   array<string, mixed>  $document  Decoded view document being read.
+     * @param   string                $key       Optional canonical property name.
+     *
+     * @return  ?string  Trimmed value, or null when the property is absent or explicitly null.
+     *
+     * @throws  InvalidBusinessDefinition  When a present value is non-string or blank.
+     *
+     * @since   2.0.0
+     */
+    private static function nullableString(array $document, string $key): ?string
+    {
+        $value = $document[$key] ?? null;
+        if ($value !== null && (!is_string($value) || trim($value) === '')) {
+            throw new InvalidBusinessDefinition('Business view property ' . $key . ' must be null or a string.');
+        }
+        return is_string($value) ? trim($value) : null;
     }
 
     /**

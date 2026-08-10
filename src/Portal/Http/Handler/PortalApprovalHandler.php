@@ -8,9 +8,10 @@ use Kumwe\CMS\Application\Authorization\AuthenticatedSurface;
 use Kumwe\CMS\Application\Authorization\AuthenticationStrength;
 use Kumwe\CMS\Application\Authorization\AuthorizationDenied;
 use Kumwe\CMS\BusinessSecurity\Application\Approval\ApprovalDenied;
-use Kumwe\CMS\BusinessSecurity\Application\Approval\ApprovalQueryService;
 use Kumwe\CMS\BusinessSecurity\Application\Approval\ApprovalRequestView;
 use Kumwe\CMS\BusinessSecurity\Application\Approval\ApprovalService;
+use Kumwe\CMS\BusinessSecurity\Application\Approval\ApprovalVoteView;
+use Kumwe\CMS\BusinessSurface\Application\BusinessApprovalSurfaceService;
 use Kumwe\CMS\Http\Middleware\TrustedProxyMiddleware;
 use Kumwe\CMS\Identity\Application\Administration\AuthenticationThrottled;
 use Kumwe\CMS\Identity\Application\StepUp\AuthorizationStepUpProofAdapter;
@@ -39,7 +40,7 @@ final readonly class PortalApprovalHandler implements RequestHandlerInterface
     /**
      * Bind the approval delivery surface to scoped queries, mutations, and portal step-up.
      *
-     * @param   ApprovalQueryService             $queries          Scoped approval projections.
+     * @param   BusinessApprovalSurfaceService   $queries          Portal-safe live exposure gate.
      * @param   ApprovalService                  $approvals        Protected approval mutations.
      * @param   StepUpProvider                   $stepUp           Portal authenticator and recovery verifier.
      * @param   AuthorizationStepUpProofAdapter  $proofs           Proof adapter for authorization contexts.
@@ -53,7 +54,7 @@ final readonly class PortalApprovalHandler implements RequestHandlerInterface
      * @since   2.0.0
      */
     public function __construct(
-        private ApprovalQueryService $queries,
+        private BusinessApprovalSurfaceService $queries,
         private ApprovalService $approvals,
         private StepUpProvider $stepUp,
         private AuthorizationStepUpProofAdapter $proofs,
@@ -83,14 +84,14 @@ final readonly class PortalApprovalHandler implements RequestHandlerInterface
         if ($request->getMethod() === 'GET' && $request->getUri()->getPath() === '/portal/approvals') {
             $query = $request->getQueryParams();
             $notice = is_string($query['updated'] ?? null) ? 'The approval request was updated.' : '';
-            return $this->inbox($session, $this->queries->inbox($context), $notice);
+            return $this->inbox($session, $this->queries->portalInbox($context), $notice);
         }
 
         $requestId = $request->getAttribute('id');
         if (!is_string($requestId)) {
             return $this->notFound($session);
         }
-        $detail = $this->queries->detail($context, $requestId);
+        $detail = $this->queries->portalDetail($context, $requestId);
         if (!$detail instanceof ApprovalRequestView) {
             return $this->notFound($session);
         }
@@ -114,6 +115,10 @@ final readonly class PortalApprovalHandler implements RequestHandlerInterface
                 $request,
                 $requestId,
             ): StepUpVerification {
+                $fresh = $this->queries->portalDetail($context, $requestId);
+                if (!$fresh instanceof ApprovalRequestView || !$this->allowed($fresh, $decision)) {
+                    throw new ApprovalDenied();
+                }
                 $verification = $this->verify($session, $decision, $form, $request);
                 $mfa = $session->identity->principal->context(
                     $session->identity->context->site,
@@ -125,6 +130,10 @@ final readonly class PortalApprovalHandler implements RequestHandlerInterface
                     $verification->rotatedSession->sessionId,
                     $this->proofs->adapt($verification),
                 );
+                $fresh = $this->queries->portalDetail($context, $requestId);
+                if (!$fresh instanceof ApprovalRequestView || !$this->allowed($fresh, $decision)) {
+                    throw new ApprovalDenied();
+                }
                 if ($decision === 'approve') {
                     $this->approvals->approve($mfa, $requestId, $this->reason($form));
                 } elseif ($decision === 'reject') {
@@ -148,7 +157,7 @@ final readonly class PortalApprovalHandler implements RequestHandlerInterface
         } catch (\InvalidArgumentException $exception) {
             return $this->detail($session, $detail, '', $exception->getMessage(), 422);
         } catch (ApprovalDenied | AuthorizationDenied) {
-            $fresh = $this->queries->detail($context, $requestId);
+            $fresh = $this->queries->portalDetail($context, $requestId);
             return $fresh instanceof ApprovalRequestView
                 ? $this->detail(
                     $session,
@@ -180,7 +189,7 @@ final readonly class PortalApprovalHandler implements RequestHandlerInterface
     private function inbox(PortalSession $session, array $approvals, string $notice = ''): ResponseInterface
     {
         return new HtmlResponse($this->renderer->render('approvals', [
-            'approvals' => $approvals,
+            'approvals' => array_map(self::summary(...), $approvals),
             'notice' => $notice,
             'active_navigation' => 'core.portal-approvals',
         ], $session), 200, ['Cache-Control' => 'no-store']);
@@ -209,11 +218,63 @@ final readonly class PortalApprovalHandler implements RequestHandlerInterface
         array $headers = [],
     ): ResponseInterface {
         return new HtmlResponse($this->renderer->render('approval-detail', [
-            'approval' => $approval,
+            'approval' => self::detailProjection($approval),
             'notice' => $notice,
             'error' => $error,
             'active_navigation' => 'core.portal-approvals',
         ], $session), $status, ['Cache-Control' => 'no-store'] + $headers);
+    }
+
+    /**
+     * Project one approval for the portal without internal record, actor, digest, or rule evidence.
+     *
+     * @param   ApprovalRequestView  $approval  Scoped approval application projection.
+     *
+     * @return  array<string, mixed>  Minimal portal inbox document.
+     *
+     * @since   2.0.0
+     */
+    private static function summary(ApprovalRequestView $approval): array
+    {
+        return [
+            'id' => $approval->id,
+            'status' => $approval->status->value,
+            'action' => $approval->action,
+            'resourceType' => $approval->resourceType,
+            'resourceVersion' => $approval->resourceVersion,
+            'requiredQuorum' => $approval->requiredQuorum,
+            'approvalCount' => $approval->approvalCount,
+            'createdAt' => $approval->createdAt,
+            'expiresAt' => $approval->expiresAt,
+            'canApprove' => $approval->canApprove,
+            'canRevoke' => $approval->canRevoke,
+        ];
+    }
+
+    /**
+     * Add redacted decisions to the minimal portal approval document.
+     *
+     * Vote and approver identities are deliberately omitted; the decision, optional human reason, and
+     * timestamp are sufficient for a checker to understand current quorum without learning account IDs.
+     *
+     * @param   ApprovalRequestView  $approval  Scoped approval application projection.
+     *
+     * @return  array<string, mixed>  Minimal portal detail document.
+     *
+     * @since   2.0.0
+     */
+    private static function detailProjection(ApprovalRequestView $approval): array
+    {
+        return self::summary($approval) + [
+            'votes' => array_map(
+                static fn (ApprovalVoteView $vote): array => [
+                    'decision' => $vote->decision,
+                    'reason' => $vote->reason,
+                    'decidedAt' => $vote->decidedAt,
+                ],
+                $approval->votes,
+            ),
+        ];
     }
 
     /**

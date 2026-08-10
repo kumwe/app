@@ -11,9 +11,10 @@ namespace Kumwe\CMS\BusinessDefinition\Domain;
  * the runtime resolves them from the version a record is pinned to rather than from live configuration.
  * `BusinessRecordService` looks the action up by handle, demands `$capability`, evaluates `$condition`
  * against the record's current values, and then performs `$transition` on the entity's workflow — an
- * action naming no transition has nothing the runtime can execute. The surface flags decide only where
- * an action may be offered; they never grant permission on their own. This constructor is the single
- * validation point, so an action that exists is an action whose identity and guard are already sound.
+ * action naming no transition has nothing the generated runtime can execute. An optional owner-scoped
+ * handler/schema pair instead binds the action to a typed custom application handler and signed contract;
+ * it is mutually exclusive with a workflow transition. The surface flags decide only where an action may
+ * be offered; they never grant permission on their own. This constructor remains the validation point.
  *
  * @since  2.0.0
  */
@@ -32,10 +33,13 @@ final readonly class ActionDefinition
      * @param   bool         $highImpact     Marks the action consequential enough to warrant confirmation.
      * @param   ?Expression  $condition      Boolean precondition on the record; null leaves it unconditional.
      * @param   ?string      $transition     Workflow transition handle the action performs, or null for none.
+     * @param   ?string      $handler        Owner-scoped custom handler reference, or null for generated behavior.
+     * @param   ?string      $schema         Owner-scoped signed schema reference paired with `$handler`.
      *
      * @throws  InvalidBusinessDefinition  When the handle or label is malformed, the capability is not a dotted
      *          identifier, public execution is requested, neither the administrator nor the portal surface is
-     *          declared, the transition handle is malformed, or the condition does not produce boolean.
+     *          declared, the transition or custom references are malformed, both execution mechanisms are
+     *          declared, or the condition does not produce boolean.
      *
      * @since   2.0.0
      */
@@ -50,6 +54,8 @@ final readonly class ActionDefinition
         public bool $highImpact = false,
         public ?Expression $condition = null,
         public ?string $transition = null,
+        public ?string $handler = null,
+        public ?string $schema = null,
     ) {
         if (preg_match('/^[a-z][a-z0-9_]{0,62}$/D', $handle) !== 1 || $label === '' || strlen($label) > 120) {
             throw new InvalidBusinessDefinition('A business action identity is invalid.');
@@ -65,6 +71,25 @@ final readonly class ActionDefinition
         }
         if ($transition !== null && preg_match('/^[a-z][a-z0-9_]{0,62}$/D', $transition) !== 1) {
             throw new InvalidBusinessDefinition('A business action workflow transition is invalid.');
+        }
+        if (($handler === null) !== ($schema === null)) {
+            throw new InvalidBusinessDefinition(
+                'A custom business action requires both handler and schema references.',
+            );
+        }
+        if ($transition !== null && $handler !== null) {
+            throw new InvalidBusinessDefinition('A business action cannot declare a transition and custom handler.');
+        }
+        foreach ([$handler, $schema] as $reference) {
+            if (
+                $reference !== null
+                && (
+                    strlen($reference) > 191
+                    || preg_match('/^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)+$/D', $reference) !== 1
+                )
+            ) {
+                throw new InvalidBusinessDefinition('A custom business action reference is invalid.');
+            }
         }
         if ($condition !== null && $condition->type !== 'boolean') {
             throw new InvalidBusinessDefinition('A business action condition must produce boolean.');
@@ -91,7 +116,7 @@ final readonly class ActionDefinition
         if (
             array_diff(array_keys($document), [
             'handle', 'label', 'capability', 'bulk', 'administrator', 'portal', 'public', 'high_impact',
-            'condition', 'transition',
+            'condition', 'transition', 'handler', 'schema',
             ]) !== []
         ) {
             throw new InvalidBusinessDefinition('A business action contains an unknown property.');
@@ -113,6 +138,8 @@ final readonly class ActionDefinition
             self::boolean($document, 'high_impact'),
             is_array($condition) ? Expression::fromArray($condition) : null,
             self::nullableString($document, 'transition'),
+            self::nullableString($document, 'handler'),
+            self::nullableString($document, 'schema'),
         );
     }
 
@@ -129,7 +156,7 @@ final readonly class ActionDefinition
      */
     public function toArray(): array
     {
-        return [
+        $result = [
             'handle' => $this->handle,
             'label' => $this->label,
             'capability' => $this->capability,
@@ -141,6 +168,12 @@ final readonly class ActionDefinition
             'condition' => $this->condition?->toArray(),
             'transition' => $this->transition,
         ];
+        if ($this->handler !== null && $this->schema !== null) {
+            $result['handler'] = $this->handler;
+            $result['schema'] = $this->schema;
+        }
+
+        return $result;
     }
 
     /**

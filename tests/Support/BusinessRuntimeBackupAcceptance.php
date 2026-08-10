@@ -429,7 +429,7 @@ final class BusinessRuntimeBackupAcceptance
             || !$time instanceof DateTimeImmutable
             || !$instant instanceof DateTimeImmutable
             || !$zoned instanceof ZonedDateTimeValue
-            || ($view->values['credential'] ?? null) !== ['redacted' => true]
+            || array_key_exists('credential', $view->values)
         ) {
             throw new RuntimeException('The standalone backup fixture did not round-trip exact typed values.');
         }
@@ -501,9 +501,9 @@ final class BusinessRuntimeBackupAcceptance
         if (
             ($view->values['name'] ?? null) !== 'Backup acceptance record restored'
             || ($view->values['display_name'] ?? null) !== 'Backup acceptance record restored'
-            || ($view->values['credential'] ?? null) !== ['redacted' => true]
+            || array_key_exists('credential', $view->values)
         ) {
-            throw new RuntimeException('The restored typed update did not preserve computation and redaction.');
+            throw new RuntimeException('The restored typed update did not preserve computation and omission.');
         }
     }
 

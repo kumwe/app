@@ -1,0 +1,47 @@
+{% extends "layout.twig" %}
+
+{% block title %}Business records · Kumwe{% endblock %}
+{% block context_title %}Business records{% endblock %}
+{% block context_subtitle %}Definition-driven operational workspaces{% endblock %}
+
+{% block content %}
+  <kumwe-business-surface>
+    <header class="page-heading">
+      <div>
+        <p class="eyebrow">Generated workspaces</p>
+        <h1>Business records</h1>
+        <p>Open a published business definition to work with the records your current scope permits.</p>
+      </div>
+    </header>
+
+    {% if definitions is empty %}
+      <section class="empty-state" aria-labelledby="business-empty-title">
+        <div class="empty-state-content">
+          <span class="empty-state-icon" aria-hidden="true"><svg><use href="#kumwe-icon-models"></use></svg></span>
+          <h2 id="business-empty-title">No business workspaces are available</h2>
+          <p>Published definitions appear here only when their exposure and record policies allow discovery.</p>
+        </div>
+      </section>
+    {% else %}
+      <section class="business-workspace-grid" aria-label="Available business workspaces">
+        {% for definition in definitions %}
+          <article class="panel business-workspace-card">
+            <div>
+              <p class="eyebrow">{{ definition.scope|replace({'_': ' '}) }}</p>
+              <h2>{{ definition.plural_label }}</h2>
+              <p>{{ definition.singular_label }} records generated from definition version {{ definition.version }}.</p>
+            </div>
+            <dl class="business-workspace-facts">
+              <div><dt>Fields</dt><dd>{{ definition.fields|length }}</dd></div>
+              <div><dt>Views</dt><dd>{{ definition.views|length }}</dd></div>
+              <div><dt>Actions</dt><dd>{{ definition.actions|length }}</dd></div>
+            </dl>
+            <a class="button primary" href="{{ business_base_path }}/{{ definition.handle|url_encode }}">
+              Open {{ definition.plural_label }}
+            </a>
+          </article>
+        {% endfor %}
+      </section>
+    {% endif %}
+  </kumwe-business-surface>
+{% endblock %}

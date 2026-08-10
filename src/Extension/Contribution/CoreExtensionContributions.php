@@ -7,6 +7,9 @@ namespace Kumwe\CMS\Extension\Contribution;
 use Kumwe\CMS\Application\Authorization\ResourcePolicyTarget;
 use Kumwe\CMS\Application\Authorization\SystemIdentity;
 use Kumwe\CMS\BusinessDefinition\Domain\BuiltInFieldTypes;
+use Kumwe\CMS\BusinessSurface\Presentation\Field\CoreFieldPresenter;
+use Kumwe\CMS\BusinessSurface\Presentation\Field\FieldPresentationContext;
+use Kumwe\CMS\BusinessSurface\Presentation\Field\FieldPresentationContribution;
 use Kumwe\CMS\Portal\Contribution\PortalNavigationDefinition;
 use Kumwe\CMS\Portal\Contribution\PortalWorkspaceDefinition;
 
@@ -131,8 +134,13 @@ final class CoreExtensionContributions
      */
     public static function register(ExtensionContributionRegistrar $registrar): void
     {
+        $fieldPresenter = new CoreFieldPresenter();
         foreach (BuiltInFieldTypes::all() as $fieldType) {
             $registrar->fieldType($fieldType);
+            $registrar->fieldPresentation(
+                new FieldPresentationContribution($fieldType->id, FieldPresentationContext::cases()),
+                $fieldPresenter,
+            );
         }
         $policies = self::resourcePolicyDefinitions();
         foreach (self::capabilityDefinitionsFor($policies) as $definition) {
@@ -174,6 +182,17 @@ final class CoreExtensionContributions
             'portal.access',
             10,
             'home overview workspace',
+        ));
+        $registrar->portalNavigation(new PortalNavigationDefinition(
+            'core.portal-business-records',
+            'core.portal',
+            'Business records',
+            'Open your authorized business record workspaces.',
+            '/portal/business',
+            'briefcase',
+            'portal.access',
+            12,
+            'business records workspaces',
         ));
         $registrar->portalNavigation(new PortalNavigationDefinition(
             'core.portal-security',
@@ -632,6 +651,17 @@ final class CoreExtensionContributions
                 'content.read',
                 105,
                 'entities fields relationships views actions workflows schema',
+            ),
+            new AdministratorNavigationDefinition(
+                'core.business-records',
+                'core.workspace',
+                'Business workspaces',
+                'Work with generated operational records',
+                '/administrator/business',
+                'models',
+                'business.record.browse',
+                45,
+                'business records entities operations workflow relations',
             ),
             new AdministratorNavigationDefinition(
                 'core.business-schema-plans',

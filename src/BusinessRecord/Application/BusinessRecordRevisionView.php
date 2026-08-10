@@ -17,8 +17,8 @@ use Kumwe\CMS\BusinessSecurity\Application\FieldDisclosurePlan;
  *
  * A `BusinessRecordRevision` carries the record's whole snapshot exactly as it was stored, including
  * values the reader may not see and entity references held as internal record keys. This view is where
- * that is narrowed for release: `fromRevision()` replaces a withheld value with `['redacted' => true]`
- * instead of dropping its key, so a caller can tell withheld from never-set, and it redacts against the
+ * that is narrowed for release: `fromRevision()` omits withheld values and their change handles, and it
+ * applies disclosure against the
  * definition version the revision was written under rather than the installed one — which is what lets a
  * history page that spans a definition upgrade judge each entry by the rules in force when it was made.
  * `RecordHistoryResult` carries a page of these; nothing outside the history path should assemble one
@@ -29,11 +29,10 @@ use Kumwe\CMS\BusinessSecurity\Application\FieldDisclosurePlan;
 final readonly class BusinessRecordRevisionView
 {
     /**
-     * Field values as at this revision, keyed by field handle and already redacted for release.
+     * Field values as at this revision, keyed by field handle and already narrowed for release.
      *
-     * A withheld value is present as `['redacted' => true]`. Keys the definition does not describe pass
-     * through untouched, which is how the runtime relation evidence a relationship write records reaches
-     * a reader.
+     * Withheld handles are absent. Keys the definition does not describe pass through untouched, which is
+     * how the runtime relation evidence a relationship write records reaches a reader.
      *
      * @var    array<string, mixed>
      * @since  2.0.0
@@ -43,8 +42,8 @@ final readonly class BusinessRecordRevisionView
     /**
      * Field handles the mutation behind this revision touched, sorted and de-duplicated by the domain.
      *
-     * Handles are never redacted, so a restricted field appears here by name even though its value in
-     * `$snapshot` is withheld. Empty when no field value moved, as for an archive, restore or delete.
+     * A handle is present only when its snapshot value is disclosed. Empty when no disclosed field value
+     * moved, as for an archive, restore or delete.
      *
      * @var    list<string>
      * @since  2.0.0
@@ -52,15 +51,15 @@ final readonly class BusinessRecordRevisionView
     public array $changedFields;
 
     /**
-     * Capture one already-redacted projection of a revision.
+     * Capture one already-narrowed projection of a revision.
      *
      * The constructor withholds nothing of its own beyond re-indexing the changed-field list; it trusts
-     * that redaction has already been applied, which is why `fromRevision()` is the sanctioned way in.
+     * that omission has already been applied, which is why `fromRevision()` is the sanctioned way in.
      *
      * @param  string                $revisionId         UUID of this history entry.
      * @param  string                $definitionId       UUID of the entity type the record belongs to.
      * @param  int                   $definitionVersion  Definition version the revision was written
-     *         against, and the version its redaction was judged by.
+     *         against, and the version its disclosure was judged by.
      * @param  string                $recordKey          Internal storage UUID of the record, not its
      *         caller-facing identity.
      * @param  int                   $recordVersion      Optimistic version of the record this entry
@@ -69,7 +68,7 @@ final readonly class BusinessRecordRevisionView
      * @param  string                $operation          Lowercase name of the mutation, such as `create`,
      *         `update` or `relate.<relationship>`.
      * @param  array<string, mixed>  $snapshot           Field values as at this revision, keyed by handle
-     *         and already redacted.
+     *         with withheld handles already omitted.
      * @param  list<string>          $changedFields      Handles the mutation touched; re-indexed here so
      *         the stored list is contiguous from zero.
      * @param  string                $actorId            Identity credited with the mutation.
@@ -113,7 +112,7 @@ final readonly class BusinessRecordRevisionView
      * @param   ?FieldDisclosurePlan    $disclosure  Explicit audit-field allow-list, or null for the
      *          legacy definition-only projection.
      *
-     * @return  self  View over the redacted snapshot, carrying the revision's identity and the checksum
+     * @return  self  View over the disclosure-filtered snapshot, carrying the revision's identity and checksum
      *          re-derived from it.
      *
      * @throws  \InvalidArgumentException  When the revision cannot be canonicalised and encoded, so the
@@ -148,9 +147,13 @@ final readonly class BusinessRecordRevisionView
         }
         foreach ($snapshot as $handle => $_value) {
             if (isset($sensitive[$handle])) {
-                $snapshot[$handle] = ['redacted' => true];
+                unset($snapshot[$handle]);
             }
         }
+        $changedFields = array_values(array_filter(
+            $changedFields,
+            static fn (string $handle): bool => array_key_exists($handle, $snapshot),
+        ));
 
         $integrityChecksum = $disclosure === null ? $revision->checksum() : hash('sha256', json_encode(
             RecordValueGuard::canonical([
