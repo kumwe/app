@@ -20,36 +20,56 @@ use Ramsey\Uuid\Uuid;
  */
 abstract readonly class EventEnvelope
 {
-    /** @var int Largest canonical payload accepted by the default contract. @since 2.0.0 */
+    /**
+     * Maximum canonical payload size accepted by the default event contract.
+     *
+     * @var    int  Largest canonical payload accepted by the default contract.
+     * @since  2.0.0
+     */
     public const int MAX_PAYLOAD_BYTES = 65_536;
 
-    /** @var int Deepest payload nesting accepted. @since 2.0.0 */
+    /**
+     * Maximum nesting depth accepted by the default event contract.
+     *
+     * @var    int  Deepest payload nesting accepted.
+     * @since  2.0.0
+     */
     public const int MAX_PAYLOAD_DEPTH = 16;
 
-    /** @var int Most scalar and array members accepted across one payload. @since 2.0.0 */
+    /**
+     * Maximum number of members accepted across one event payload.
+     *
+     * @var    int  Most scalar and array members accepted across one payload.
+     * @since  2.0.0
+     */
     public const int MAX_PAYLOAD_NODES = 2_048;
 
-    /** @var array<string, mixed> Validated business payload. @since 2.0.0 */
+    /**
+     * Validated business payload protected by the envelope bounds.
+     *
+     * @var    array<string, mixed>  Validated business payload.
+     * @since  2.0.0
+     */
     private array $payload;
 
     /**
      * Build a complete event envelope.
      *
-     * @param   string                $eventType          Stable namespaced event contract identifier.
-     * @param   int                   $schemaVersion      Payload contract revision, starting at one.
-     * @param   string                $eventId            Canonical UUID identifying this fact across retries.
-     * @param   DateTimeImmutable     $occurredAt         Instant the authoritative mutation recorded the fact.
-     * @param   ?string               $actorId            Human actor identifier, null for a system action.
-     * @param   ?string               $systemIdentity     System identity, null for a human action.
-     * @param   string                $siteIdentifier     Site in which the fact occurred.
-     * @param   ?string               $organizationId     Owning organization, when the fact is organization scoped.
-     * @param   string                $aggregateType      Stable aggregate or entity type.
-     * @param   string                $aggregateId        Aggregate or entity identity.
-     * @param   int                   $aggregateVersion   Authoritative version after the mutation.
-     * @param   string                $correlationId      Identifier shared by the end-to-end operation.
-     * @param   string                $causationId        Event, command or request that directly caused this fact.
-     * @param   EventSensitivity      $sensitivity        Disclosure classification for the complete event.
-     * @param   array<string, mixed>  $payload            Bounded JSON object defined by the event schema.
+     * @param   string                $eventType         Stable namespaced event contract identifier.
+     * @param   int                   $schemaVersion     Payload contract revision, starting at one.
+     * @param   string                $eventId           Canonical UUID identifying this fact across retries.
+     * @param   DateTimeImmutable     $occurredAt        Instant the authoritative mutation recorded the fact.
+     * @param   ?string               $actorId           Human actor identifier, null for a system action.
+     * @param   ?string               $systemIdentity    System identity, null for a human action.
+     * @param   string                $siteIdentifier    Site in which the fact occurred.
+     * @param   ?string               $organizationId    Owning organization, when the fact is organization scoped.
+     * @param   string                $aggregateType     Stable aggregate or entity type.
+     * @param   string                $aggregateId       Aggregate or entity identity.
+     * @param   int                   $aggregateVersion  Authoritative version after the mutation.
+     * @param   string                $correlationId     Identifier shared by the end-to-end operation.
+     * @param   string                $causationId       Event, command or request that directly caused this fact.
+     * @param   EventSensitivity      $sensitivity       Disclosure classification for the complete event.
+     * @param   array<string, mixed>  $payload           Bounded JSON object defined by the event schema.
      *
      * @throws  InvalidArgumentException  When metadata or payload violates an event invariant.
      *
@@ -78,8 +98,10 @@ abstract readonly class EventEnvelope
         if ($schemaVersion < 1 || $schemaVersion > 65_535 || $aggregateVersion < 1) {
             throw new InvalidArgumentException('Event schema and aggregate versions must be positive.');
         }
-        if (!Uuid::isValid($eventId)) {
-            throw new InvalidArgumentException('An event ID must be a canonical UUID.');
+        if (!Uuid::isValid($eventId) || strtolower($eventId) !== $eventId
+            || Uuid::fromString($eventId)->toString() !== $eventId
+        ) {
+            throw new InvalidArgumentException('An event ID must be a canonical lowercase UUID.');
         }
         if (($actorId === null) === ($systemIdentity === null)) {
             throw new InvalidArgumentException('An event requires exactly one human or system identity.');
@@ -104,91 +126,181 @@ abstract readonly class EventEnvelope
         $this->payload = $payload;
     }
 
-    /** @return string Stable event contract identifier. @since 2.0.0 */
+    /**
+     * Return the versioned event type accepted by this contract.
+     *
+     * @return  string  Stable event contract identifier.
+     *
+     * @since   2.0.0
+     */
     final public function eventType(): string
     {
         return $this->eventType;
     }
 
-    /** @return int Payload contract revision. @since 2.0.0 */
+    /**
+     * Return the event payload schema version.
+     *
+     * @return  int  Payload contract revision.
+     *
+     * @since   2.0.0
+     */
     final public function schemaVersion(): int
     {
         return $this->schemaVersion;
     }
 
-    /** @return string Canonical event UUID. @since 2.0.0 */
+    /**
+     * Return the event ID carried by this event envelope.
+     *
+     * @return  string  Canonical event UUID.
+     *
+     * @since   2.0.0
+     */
     final public function eventId(): string
     {
         return $this->eventId;
     }
 
-    /** @return DateTimeImmutable Occurrence instant. @since 2.0.0 */
+    /**
+     * Return the occurred at carried by this event envelope.
+     *
+     * @return  DateTimeImmutable  Occurrence instant.
+     *
+     * @since   2.0.0
+     */
     final public function occurredAt(): DateTimeImmutable
     {
         return $this->occurredAt;
     }
 
-    /** @return ?string Human actor identity. @since 2.0.0 */
+    /**
+     * Return the actor ID carried by this event envelope.
+     *
+     * @return  ?string  Human actor identity.
+     *
+     * @since   2.0.0
+     */
     final public function actorId(): ?string
     {
         return $this->actorId;
     }
 
-    /** @return ?string System actor identity. @since 2.0.0 */
+    /**
+     * Return the system identity carried by this event envelope.
+     *
+     * @return  ?string  System actor identity.
+     *
+     * @since   2.0.0
+     */
     final public function systemIdentity(): ?string
     {
         return $this->systemIdentity;
     }
 
-    /** @return string Owning site identity. @since 2.0.0 */
+    /**
+     * Return the site identifier carried by this event envelope.
+     *
+     * @return  string  Owning site identity.
+     *
+     * @since   2.0.0
+     */
     final public function siteIdentifier(): string
     {
         return $this->siteIdentifier;
     }
 
-    /** @return ?string Owning organization identity. @since 2.0.0 */
+    /**
+     * Return the organization ID carried by this event envelope.
+     *
+     * @return  ?string  Owning organization identity.
+     *
+     * @since   2.0.0
+     */
     final public function organizationId(): ?string
     {
         return $this->organizationId;
     }
 
-    /** @return string Aggregate type. @since 2.0.0 */
+    /**
+     * Return the aggregate type carried by this event envelope.
+     *
+     * @return  string  Aggregate type.
+     *
+     * @since   2.0.0
+     */
     final public function aggregateType(): string
     {
         return $this->aggregateType;
     }
 
-    /** @return string Aggregate identity. @since 2.0.0 */
+    /**
+     * Return the aggregate ID carried by this event envelope.
+     *
+     * @return  string  Aggregate identity.
+     *
+     * @since   2.0.0
+     */
     final public function aggregateId(): string
     {
         return $this->aggregateId;
     }
 
-    /** @return int Aggregate version after the mutation. @since 2.0.0 */
+    /**
+     * Return the aggregate version carried by this event envelope.
+     *
+     * @return  int  Aggregate version after the mutation.
+     *
+     * @since   2.0.0
+     */
     final public function aggregateVersion(): int
     {
         return $this->aggregateVersion;
     }
 
-    /** @return string End-to-end correlation identity. @since 2.0.0 */
+    /**
+     * Derive the process correlation identifier from the event.
+     *
+     * @return  string  End-to-end correlation identity.
+     *
+     * @since   2.0.0
+     */
     final public function correlationId(): string
     {
         return $this->correlationId;
     }
 
-    /** @return string Direct cause identity. @since 2.0.0 */
+    /**
+     * Return the causation ID carried by this event envelope.
+     *
+     * @return  string  Direct cause identity.
+     *
+     * @since   2.0.0
+     */
     final public function causationId(): string
     {
         return $this->causationId;
     }
 
-    /** @return EventSensitivity Disclosure classification. @since 2.0.0 */
+    /**
+     * Return the sensitivity carried by this event envelope.
+     *
+     * @return  EventSensitivity  Disclosure classification.
+     *
+     * @since   2.0.0
+     */
     final public function sensitivity(): EventSensitivity
     {
         return $this->sensitivity;
     }
 
-    /** @return array<string, mixed> Validated payload object. @since 2.0.0 */
+    /**
+     * Return the validated payload.
+     *
+     * @return  array<string, mixed>  Validated payload object.
+     *
+     * @since   2.0.0
+     */
     final public function payload(): array
     {
         return $this->payload;
@@ -197,7 +309,7 @@ abstract readonly class EventEnvelope
     /**
      * Export the envelope into its durable transport representation.
      *
-     * @return  array<string, mixed> Complete metadata and payload.
+     * @return  array<string, mixed>  Complete metadata and payload.
      *
      * @since   2.0.0
      */
@@ -235,15 +347,36 @@ abstract readonly class EventEnvelope
      */
     final public static function fromArray(array $data): static
     {
+        IntegrationContractValidator::keys($data, [
+            'event_type',
+            'schema_version',
+            'event_id',
+            'occurred_at',
+            'actor_id',
+            'system_identity',
+            'site_identifier',
+            'organization_id',
+            'aggregate_type',
+            'aggregate_id',
+            'aggregate_version',
+            'correlation_id',
+            'causation_id',
+            'sensitivity',
+            'payload',
+        ], 'Stored event envelope');
         $payload = $data['payload'] ?? null;
         if (!is_array($payload)) {
             throw new InvalidArgumentException('A stored event payload must be an object.');
         }
 
         try {
-            $occurredAt = new DateTimeImmutable(self::string($data, 'occurred_at'));
+            $occurredAtValue = self::string($data, 'occurred_at');
+            $occurredAt = new DateTimeImmutable($occurredAtValue);
         } catch (\Exception $exception) {
             throw new InvalidArgumentException('A stored event occurrence time is invalid.', 0, $exception);
+        }
+        if ($occurredAt->format('Y-m-d\TH:i:s.uP') !== $occurredAtValue) {
+            throw new InvalidArgumentException('A stored event occurrence time is not canonical.');
         }
 
         return new static(
@@ -266,7 +399,16 @@ abstract readonly class EventEnvelope
         );
     }
 
-    /** @param array<string, mixed> $data @since 2.0.0 */
+    /**
+     * Read a required string from the supplied data.
+     *
+     * @param   array<string, mixed>  $data  Validated contribution data from which the named member is read.
+     * @param   string                $key   Array or row key whose value is being read.
+     *
+     * @return  string  Required string stored under the requested key.
+     *
+     * @since   2.0.0
+     */
     private static function string(array $data, string $key): string
     {
         $value = $data[$key] ?? null;
@@ -276,7 +418,16 @@ abstract readonly class EventEnvelope
         return $value;
     }
 
-    /** @param array<string, mixed> $data @since 2.0.0 */
+    /**
+     * Read an optional string from the supplied data.
+     *
+     * @param   array<string, mixed>  $data  Validated contribution data from which the named member is read.
+     * @param   string                $key   Array or row key whose value is being read.
+     *
+     * @return  ?string  String stored under the key, or null when the member is absent.
+     *
+     * @since   2.0.0
+     */
     private static function nullableString(array $data, string $key): ?string
     {
         $value = $data[$key] ?? null;
@@ -286,7 +437,16 @@ abstract readonly class EventEnvelope
         return $value;
     }
 
-    /** @param array<string, mixed> $data @since 2.0.0 */
+    /**
+     * Read and validate an integer value.
+     *
+     * @param   array<string, mixed>  $data  Validated contribution data from which the named member is read.
+     * @param   string                $key   Array or row key whose value is being read.
+     *
+     * @return  int  Integer stored under the requested key.
+     *
+     * @since   2.0.0
+     */
     private static function integer(array $data, string $key): int
     {
         $value = $data[$key] ?? null;
@@ -296,7 +456,16 @@ abstract readonly class EventEnvelope
         return (int) $value;
     }
 
-    /** @since 2.0.0 */
+    /**
+     * Validate identity before continuing.
+     *
+     * @param   string  $value  Candidate value being validated or normalized.
+     * @param   string  $label  Human-readable field name used in validation errors.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     private static function assertIdentity(string $value, string $label): void
     {
         if ($value === '' || strlen($value) > 191 || preg_match('/[\x00-\x1F\x7F]/D', $value) === 1) {
@@ -304,7 +473,17 @@ abstract readonly class EventEnvelope
         }
     }
 
-    /** @param array<mixed> $value @since 2.0.0 */
+    /**
+     * Count payload depth and members while enforcing the envelope bounds.
+     *
+     * @param   array<mixed>  $value  Candidate value being validated or normalized.
+     * @param   int           $depth  Current recursive depth used to enforce payload bounds.
+     * @param   int           $nodes  Running node count used to enforce payload bounds.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     private static function measurePayload(array $value, int $depth, int &$nodes): void
     {
         if ($depth > self::MAX_PAYLOAD_DEPTH) {

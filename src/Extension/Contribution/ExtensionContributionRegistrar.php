@@ -297,10 +297,26 @@ interface ExtensionContributionRegistrar
      */
     public function jobHandler(JobContributionDefinition $definition, JobHandler $handler): void;
 
-    /** @param QueueContributionDefinition $definition Logical queue limits. @return void @since 2.0.0 */
+    /**
+     * Register a logical queue with bounded leases, retries, concurrency, and retention.
+     *
+     * @param   QueueContributionDefinition  $definition  Logical queue limits.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     public function queue(QueueContributionDefinition $definition): void;
 
-    /** @param ScheduleContributionDefinition $definition Recurring owned job. @return void @since 2.0.0 */
+    /**
+     * Register a recurring schedule against its declared job and queue.
+     *
+     * @param   ScheduleContributionDefinition  $definition  Recurring owned job.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     public function schedule(ScheduleContributionDefinition $definition): void;
 
     /**
@@ -315,7 +331,15 @@ interface ExtensionContributionRegistrar
      */
     public function projection(ProjectionDefinition $definition, ProjectionBuilder $builder): void;
 
-    /** @param ReportDefinition $definition Safe permission-aware report. @return void @since 2.0.0 */
+    /**
+     * Register a policy-aware report definition for delivery surfaces.
+     *
+     * @param   ReportDefinition  $definition  Safe permission-aware report.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     public function report(ReportDefinition $definition): void;
 
     /**

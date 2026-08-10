@@ -324,6 +324,55 @@ final class OpenApiContractCompilerTest extends TestCase
     }
 
     /**
+     * Publish report execution and the complete durable export lifecycle as bounded deterministic operations.
+     *
+     * @since  2.0.0
+     */
+    public function testDeclaresBusinessReportAndExportDeliveryContracts(): void
+    {
+        $compiled = (new OpenApiContractCompiler())->compile($this->core(), [], str_repeat('4', 64));
+        /** @var array<string, mixed> $document */
+        $document = json_decode($compiled->json, true, 64, JSON_THROW_ON_ERROR);
+
+        self::assertSame(
+            'businessReportList',
+            $document['paths']['/api/v1/business/reports']['get']['operationId'],
+        );
+        self::assertSame(
+            'businessReportExecute',
+            $document['paths']['/api/v1/business/reports/{report}']['post']['operationId'],
+        );
+        $request = $document['paths']['/api/v1/business/reports/{report}/exports']['post'];
+        self::assertSame('businessReportExportRequest', $request['operationId']);
+        self::assertSame('Idempotency-Key', $request['parameters'][0]['name']);
+        self::assertArrayNotHasKey('If-Match', array_column($request['parameters'], null, 'name'));
+        self::assertSame(
+            'businessReportExportStatus',
+            $document['paths']['/api/v1/business/report-exports/{artifact}']['get']['operationId'],
+        );
+        $download = $document['paths']['/api/v1/business/report-exports/{artifact}/download']['get'];
+        self::assertSame('businessReportExportDownload', $download['operationId']);
+        self::assertSame(
+            'binary',
+            $download['responses']['200']['content']['text/csv']['schema']['format'],
+        );
+        self::assertFalse($document['components']['schemas']['GeneratedBusinessReportResult']['additionalProperties']);
+        self::assertSame(
+            1000,
+            $document['components']['schemas']['GeneratedBusinessReportResult']['properties']['rows']['maxItems'],
+        );
+        self::assertSame(
+            '#/components/schemas/GeneratedBusinessReportDrillDown',
+            $document['components']['schemas']['GeneratedBusinessReportResult']['properties']['drill_downs']
+                ['items']['items']['$ref'],
+        );
+        self::assertSame(
+            '^/api/v1/business/views/',
+            $document['components']['schemas']['GeneratedBusinessReportDrillDown']['properties']['url']['pattern'],
+        );
+    }
+
+    /**
      * Return the smallest valid checked-in core contract shape needed by the compiler.
      *
      * @return  array<string, mixed>  OpenAPI 3.1 core document.

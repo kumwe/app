@@ -19,14 +19,14 @@ final readonly class OutboxDispatcher
     /**
      * Assemble the at-least-once dispatch boundary.
      *
-     * @param   OutboxStore                    $outbox     Durable event queue.
-     * @param   EventContractRegistry          $contracts  Exact event contract catalog.
-     * @param   IntegrationEventTransport      $transport  One idempotent delivery adapter.
-     * @param   RetryPolicy                    $retries    Failure classification and backoff.
-     * @param   TrustedRuntimeGenerationGuard  $runtime    Runtime authority guard.
-     * @param   LoggerInterface                $logger     Structured observability sink.
+     * @param  OutboxStore                    $outbox     Durable event queue.
+     * @param  EventContractRegistry          $contracts  Exact event contract catalog.
+     * @param  IntegrationEventTransport      $transport  One idempotent delivery adapter.
+     * @param  RetryPolicy                    $retries    Failure classification and backoff.
+     * @param  TrustedRuntimeGenerationGuard  $runtime    Runtime authority guard.
+     * @param  LoggerInterface                $logger     Structured observability sink.
      *
-     * @since   2.0.0
+     * @since  2.0.0
      */
     public function __construct(
         private OutboxStore $outbox,
@@ -69,6 +69,15 @@ final readonly class OutboxDispatcher
                 'event_type' => $lease->event->eventType(),
                 'transport' => $this->transport->identifier(),
                 'attempt' => $lease->attempts,
+                'runtime_generation' => $lease->runtimeGeneration,
+            ]);
+        } catch (IntegrationDeliveryBackpressure $backpressure) {
+            $this->outbox->defer($lease, $backpressure->delaySeconds);
+            $this->logger->info('Integration event delivery deferred by queue backpressure.', [
+                'event_id' => $lease->event->eventId(),
+                'event_type' => $lease->event->eventType(),
+                'transport' => $this->transport->identifier(),
+                'delay_seconds' => $backpressure->delaySeconds,
                 'runtime_generation' => $lease->runtimeGeneration,
             ]);
         } catch (Throwable $failure) {

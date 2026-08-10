@@ -16,11 +16,11 @@ final readonly class QueueContributionDefinition implements IntegrationContract
     /**
      * Describe one queue's portable processing limits.
      *
-     * @param   string  $queueId           Namespaced logical queue identifier.
-     * @param   int     $leaseSeconds      Claim lease, between 5 seconds and one hour.
-     * @param   int     $maximumAttempts   Default delivery attempt budget.
-     * @param   int     $maximumInFlight   Per-process claim ceiling.
-     * @param   int     $retentionDays     Completed/dead evidence retention.
+     * @param   string  $queueId          Namespaced logical queue identifier.
+     * @param   int     $leaseSeconds     Claim lease, between 5 seconds and one hour.
+     * @param   int     $maximumAttempts  Default delivery attempt budget.
+     * @param   int     $maximumInFlight  Durable cross-process live-claim ceiling.
+     * @param   int     $retentionDays    Completed/dead evidence retention.
      *
      * @throws  InvalidArgumentException  When a queue limit is outside its portable bound.
      *
@@ -34,6 +34,7 @@ final readonly class QueueContributionDefinition implements IntegrationContract
         private int $retentionDays = 30,
     ) {
         IntegrationContractValidator::identifier($queueId, 'Queue');
+        IntegrationContractValidator::token($queueId, 'Queue', 64);
         if (
             $leaseSeconds < 5 || $leaseSeconds > 3600
             || $maximumAttempts < 1 || $maximumAttempts > 100
@@ -44,37 +45,73 @@ final readonly class QueueContributionDefinition implements IntegrationContract
         }
     }
 
-    /** @return string Namespaced queue identity. @since 2.0.0 */
+    /**
+     * Return the stable identifier for the queue contribution definition.
+     *
+     * @return  string  Namespaced queue identity.
+     *
+     * @since   2.0.0
+     */
     public function identifier(): string
     {
         return $this->queueId;
     }
 
-    /** @return int Claim lease in seconds. @since 2.0.0 */
+    /**
+     * Return the duration of each worker lease in seconds.
+     *
+     * @return  int  Claim lease in seconds.
+     *
+     * @since   2.0.0
+     */
     public function leaseSeconds(): int
     {
         return $this->leaseSeconds;
     }
 
-    /** @return int Default attempt budget. @since 2.0.0 */
+    /**
+     * Return the maximum number of delivery attempts.
+     *
+     * @return  int  Default attempt budget.
+     *
+     * @since   2.0.0
+     */
     public function maximumAttempts(): int
     {
         return $this->maximumAttempts;
     }
 
-    /** @return int Per-process claim ceiling. @since 2.0.0 */
+    /**
+     * Return the queue concurrency ceiling.
+     *
+     * @return  int  Durable cross-process live-claim ceiling.
+     *
+     * @since   2.0.0
+     */
     public function maximumInFlight(): int
     {
         return $this->maximumInFlight;
     }
 
-    /** @return int Evidence retention in days. @since 2.0.0 */
+    /**
+     * Return the number of days completed queue records are retained.
+     *
+     * @return  int  Evidence retention in days.
+     *
+     * @since   2.0.0
+     */
     public function retentionDays(): int
     {
         return $this->retentionDays;
     }
 
-    /** @return array<string, mixed> Canonical publication representation. @since 2.0.0 */
+    /**
+     * Serialize the queue contribution definition for durable storage or inspection.
+     *
+     * @return  array<string, mixed>  Canonical publication representation.
+     *
+     * @since   2.0.0
+     */
     public function toArray(): array
     {
         return [
@@ -86,7 +123,15 @@ final readonly class QueueContributionDefinition implements IntegrationContract
         ];
     }
 
-    /** @param array<string, mixed> $data @return self Validated queue declaration. @since 2.0.0 */
+    /**
+     * Reconstitute the queue contribution definition from validated array data.
+     *
+     * @param   array<string, mixed>  $data  Validated contribution data from which the named member is read.
+     *
+     * @return  self  Validated queue declaration.
+     *
+     * @since   2.0.0
+     */
     public static function fromArray(array $data): self
     {
         IntegrationContractValidator::keys($data, [

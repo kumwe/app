@@ -22,6 +22,7 @@ use Kumwe\CMS\Application\Authorization\SystemPrincipal;
 use Kumwe\CMS\Application\Automation\CronExpression;
 use Kumwe\CMS\Application\Automation\JobExecutionClass;
 use Kumwe\CMS\Application\Automation\JobExecutionScope;
+use Kumwe\CMS\Application\Automation\QueueRuntimePolicyCatalog;
 use Kumwe\CMS\Application\Automation\ScheduleOccurrenceKey;
 use Kumwe\CMS\Application\Automation\Scheduler;
 use Kumwe\CMS\BusinessIntegration\Application\ScheduleRuntimeSynchronizer;
@@ -51,15 +52,21 @@ final readonly class DoctrineScheduler implements Scheduler, ScheduleRepository
     /**
      * Wire the scheduler to its connection, clock and authorization collaborators.
      *
-     * @param  Connection                   $database         Connection the schedule, job and site tables live on.
-     * @param  TableNames                   $tables           Resolver for prefixed physical table names.
-     * @param  TransactionManager           $transactions     Runs a dispatch pass or a mutation as one unit.
-     * @param  ClockInterface               $clock            Supplies the instant a schedule is judged due against.
-     * @param  AuthorizationGateway         $authorization    Decides whether a caller may manage or dispatch.
-     * @param  ResourceSiteOwnership        $ownership        Resolves the site a site-local schedule belongs to.
-     * @param  ResourceSiteOwnershipWriter  $ownershipWriter  Writes and removes ownership beside the row itself.
-     * @param  SystemPrincipal              $system           Issues the per-site context a dispatch runs under.
-     * @param  JobExecutionScope            $jobScope         Classifies a job type as installation-wide or site-local.
+     * @param  Connection                    $database              Connection the schedule, job and site tables live
+     *         on.
+     * @param  TableNames                    $tables                Resolver for prefixed physical table names.
+     * @param  TransactionManager            $transactions          Runs a dispatch pass or a mutation as one unit.
+     * @param  ClockInterface                $clock                 Supplies the instant a schedule is judged due
+     *         against.
+     * @param  AuthorizationGateway          $authorization         Decides whether a caller may manage or dispatch.
+     * @param  ResourceSiteOwnership         $ownership             Resolves the site a site-local schedule belongs to.
+     * @param  ResourceSiteOwnershipWriter   $ownershipWriter       Writes and removes ownership beside the row itself.
+     * @param  SystemPrincipal               $system                Issues the per-site context a dispatch runs under.
+     * @param  JobExecutionScope             $jobScope              Classifies a job type as installation-wide or
+     *         site-local.
+     * @param  ?ScheduleRuntimeSynchronizer  $contributedSchedules  Optional reconciler for signed extension schedules.
+     * @param  ?QueueRuntimePolicyCatalog    $queuePolicies         Active contributed queue and job limits; null
+     *         preserves the established core scheduler behavior.
      *
      * @since  2.0.0
      */
@@ -74,6 +81,7 @@ final readonly class DoctrineScheduler implements Scheduler, ScheduleRepository
         private SystemPrincipal $system,
         private JobExecutionScope $jobScope,
         private ?ScheduleRuntimeSynchronizer $contributedSchedules = null,
+        private ?QueueRuntimePolicyCatalog $queuePolicies = null,
     ) {
     }
 
@@ -235,6 +243,7 @@ final readonly class DoctrineScheduler implements Scheduler, ScheduleRepository
         $this->assertQueue($queue);
         $id = Uuid::uuid7()->toString();
         $now = $this->clock->now();
+        $maximumAttempts = $this->queuePolicies?->maximumAttempts($queue, $jobType, 5) ?? 5;
         $this->transactions->transactional(function () use (
             $context,
             $id,
@@ -247,6 +256,7 @@ final readonly class DoctrineScheduler implements Scheduler, ScheduleRepository
             $payload,
             $firstRun,
             $now,
+            $maximumAttempts,
         ): void {
             $this->database->insert($this->tables->raw('schedules'), [
                 'id' => $id,
@@ -259,7 +269,7 @@ final readonly class DoctrineScheduler implements Scheduler, ScheduleRepository
                 'job_schema_version' => 1,
                 'payload' => $payload,
                 'priority' => 0,
-                'maximum_attempts' => 5,
+                'maximum_attempts' => $maximumAttempts,
                 'enabled' => true,
                 'next_run_at' => $firstRun < $now ? $now : $firstRun,
                 'last_run_at' => null,
@@ -476,12 +486,17 @@ final readonly class DoctrineScheduler implements Scheduler, ScheduleRepository
         $scheduledFor = $this->dateTime($row['next_run_at'] ?? null);
         $now = $this->clock->now();
         $jobId = Uuid::uuid7()->toString();
+        $queue = $this->requiredString($row, 'queue');
+        $jobType = $this->requiredString($row, 'job_type');
+        $maximumAttempts = $this->integer($row, 'maximum_attempts');
+        $maximumAttempts = $this->queuePolicies?->maximumAttempts($queue, $jobType, $maximumAttempts)
+            ?? $maximumAttempts;
 
         try {
             $this->database->insert($this->tables->raw('jobs'), [
                 'id' => $jobId,
-                'queue' => $this->requiredString($row, 'queue'),
-                'job_type' => $this->requiredString($row, 'job_type'),
+                'queue' => $queue,
+                'job_type' => $jobType,
                 'execution_scope' => $executionClass->value,
                 'schema_version' => $this->integer($row, 'job_schema_version'),
                 'payload' => $this->payload($row['payload'] ?? null),
@@ -489,7 +504,7 @@ final readonly class DoctrineScheduler implements Scheduler, ScheduleRepository
                 'status' => 'pending',
                 'available_at' => $now,
                 'attempts' => 0,
-                'maximum_attempts' => $this->integer($row, 'maximum_attempts'),
+                'maximum_attempts' => $maximumAttempts,
                 'schedule_id' => $id,
                 'scheduled_for' => $scheduledFor,
                 'occurrence_key' => (string) ScheduleOccurrenceKey::for($id, $scheduledFor),

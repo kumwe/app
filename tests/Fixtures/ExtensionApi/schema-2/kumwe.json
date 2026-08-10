@@ -1,0 +1,14 @@
+{
+  "schema": 2,
+  "name": "compatibility/schema-two",
+  "type": "component",
+  "version": "1.0.0",
+  "provider": "Compatibility\\SchemaTwo\\Provider",
+  "autoload": {"psr-4": {"Compatibility\\SchemaTwo\\": "src/"}},
+  "requires": {"kumwe": "^2.0.0", "php": "^8.5.0"},
+  "contributions": {
+    "version": 1,
+    "capabilities": [],
+    "administrator": {"workspaces": [], "navigation": [], "routes": [], "views": []}
+  }
+}

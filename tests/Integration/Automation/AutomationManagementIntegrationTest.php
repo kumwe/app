@@ -9,28 +9,238 @@ use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Types\Types;
 use Kumwe\CMS\Application\Automation\AutomationManagementService;
 use Kumwe\CMS\Application\Automation\Job\DoctrineJobQueue;
+use Kumwe\CMS\Application\Automation\Job\DoctrineQueueRuntimeOperations;
 use Kumwe\CMS\Application\Automation\Job\DoctrineScheduler;
+use Kumwe\CMS\Application\Automation\JobExecutionScope;
 use Kumwe\CMS\Application\Automation\JobQueue;
+use Kumwe\CMS\Application\Automation\QueueRuntimePolicy;
+use Kumwe\CMS\Application\Automation\QueueRuntimePolicyCatalog;
 use Kumwe\CMS\Application\Automation\Scheduler;
 use Kumwe\CMS\Application\Automation\Worker;
 use Kumwe\CMS\Application\Authorization\AuthorizationResource;
 use Kumwe\CMS\Application\Authorization\AuthorizationDenied;
 use Kumwe\CMS\Application\Authorization\AuthorizationResourceOwnershipUnknown;
+use Kumwe\CMS\Application\Authorization\AuthorizationGateway;
 use Kumwe\CMS\Application\Authorization\ExecutionContext;
 use Kumwe\CMS\Application\Authorization\ResourceSiteOwnership;
+use Kumwe\CMS\Application\Authorization\ResourceSiteOwnershipWriter;
+use Kumwe\CMS\Infrastructure\Persistence\TransactionManager;
 use Kumwe\CMS\Infrastructure\Persistence\TableNames;
 use Kumwe\CMS\Tests\Support\TestKernelFactory;
 use Kumwe\CMS\Shared\Infrastructure\Configuration\Environment;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
+use Psr\Clock\ClockInterface;
 use Ramsey\Uuid\Uuid;
 use RuntimeException;
 
 #[CoversClass(AutomationManagementService::class)]
 #[CoversClass(DoctrineJobQueue::class)]
+#[CoversClass(DoctrineQueueRuntimeOperations::class)]
 #[CoversClass(DoctrineScheduler::class)]
 final class AutomationManagementIntegrationTest extends TestCase
 {
+    public function testContributedQueuePolicyIsDurableBoundedAndRetainedOnConfiguredDatabase(): void
+    {
+        $container = TestKernelFactory::create(Environment::fromGlobals());
+        $database = $container->get(Connection::class);
+        $tables = $container->get(TableNames::class);
+        $transactions = $container->get(TransactionManager::class);
+        $clock = $container->get(ClockInterface::class);
+        $authorization = $container->get(AuthorizationGateway::class);
+        $ownership = $container->get(ResourceSiteOwnershipWriter::class);
+        $scope = $container->get(JobExecutionScope::class);
+        self::assertInstanceOf(Connection::class, $database);
+        self::assertInstanceOf(TableNames::class, $tables);
+        self::assertInstanceOf(TransactionManager::class, $transactions);
+        self::assertInstanceOf(ClockInterface::class, $clock);
+        self::assertInstanceOf(AuthorizationGateway::class, $authorization);
+        self::assertInstanceOf(ResourceSiteOwnershipWriter::class, $ownership);
+        self::assertInstanceOf(JobExecutionScope::class, $scope);
+
+        $queueName = 'policy-' . substr(Uuid::uuid7()->toString(), 0, 12);
+        $catalog = new ConfiguredQueuePolicyCatalog(new QueueRuntimePolicy(
+            $queueName,
+            30,
+            3,
+            1,
+            1,
+            19,
+        ), 4);
+        $queue = new DoctrineJobQueue(
+            $database,
+            $tables,
+            $transactions,
+            $clock,
+            'queue-policy-test',
+            $authorization,
+            $ownership,
+            $scope,
+            $catalog,
+        );
+        $administrator = TestKernelFactory::administratorContext($container);
+        $worker = TestKernelFactory::workerContext($container);
+        $now = new DateTimeImmutable('now');
+        $firstId = $queue->enqueue(
+            $administrator,
+            'system.sessions.purge',
+            [],
+            $now,
+            $queueName,
+            maximumAttempts: 9,
+        );
+        $secondId = $queue->enqueue(
+            $administrator,
+            'system.sessions.purge',
+            [],
+            $now,
+            $queueName,
+            maximumAttempts: 9,
+        );
+        self::assertSame(3, (int) $database->fetchOne(sprintf(
+            'SELECT maximum_attempts FROM %s WHERE id = ?',
+            $tables->quoted('jobs'),
+        ), [$firstId]));
+
+        try {
+            $queue->claim($worker, $queueName, 'policy-worker-invalid', 31);
+            self::fail('A worker exceeded the signed queue lease.');
+        } catch (\InvalidArgumentException $exception) {
+            self::assertStringContainsString('signed policy', $exception->getMessage());
+        }
+        $first = $queue->claim($worker, $queueName, 'policy-worker-one', 30);
+        self::assertNotNull($first);
+        self::assertNull($queue->claim($worker, $queueName, 'policy-worker-two', 30));
+        self::assertSame(19, (int) $database->fetchOne(sprintf(
+            'SELECT runtime_generation FROM %s WHERE queue_id = ?',
+            $tables->quoted('job_queue_runtime'),
+        ), [$queueName]));
+
+        $this->expireLease($database, $tables, $first->id);
+        $reclaimed = $queue->claim($worker, $queueName, 'policy-worker-two', 30);
+        self::assertNotNull($reclaimed);
+        self::assertSame($first->id, $reclaimed->id);
+        $queue->complete($worker, $reclaimed, 'policy-worker-two');
+
+        $deliveryEventId = Uuid::uuid7()->toString();
+        $deliveryToken = Uuid::uuid7()->toString();
+        $database->insert($tables->raw('integration_inbox'), [
+            'consumer_id' => 'acme.queue-capacity',
+            'event_id' => $deliveryEventId,
+            'queue' => $queueName,
+            'event_type' => 'acme.capacity.checked',
+            'schema_version' => 1,
+            'handler_version' => '1.0.0',
+            'site_identifier' => 'default',
+            'organization_id' => null,
+            'aggregate_type' => 'acme.capacity',
+            'aggregate_id' => 'capacity-1',
+            'aggregate_version' => 1,
+            'envelope' => ['private_detail' => 'discard-after-retention'],
+            'status' => 'reserved',
+            'attempts' => 1,
+            'maximum_attempts' => 3,
+            'available_at' => $now,
+            'lease_owner' => 'delivery-worker',
+            'lease_token' => $deliveryToken,
+            'lease_acquired_at' => $now,
+            'lease_expires_at' => $now->modify('+10 minutes'),
+            'runtime_generation' => '19',
+            'failure_classification' => null,
+            'exception_type' => null,
+            'error_message' => null,
+            'first_received_at' => $now,
+            'completed_at' => null,
+            'evidence_compacted_at' => null,
+            'updated_at' => $now,
+        ], [
+            'event_id' => Types::GUID,
+            'envelope' => Types::JSON,
+            'available_at' => Types::DATETIME_IMMUTABLE,
+            'lease_token' => Types::GUID,
+            'lease_acquired_at' => Types::DATETIME_IMMUTABLE,
+            'lease_expires_at' => Types::DATETIME_IMMUTABLE,
+            'first_received_at' => Types::DATETIME_IMMUTABLE,
+            'updated_at' => Types::DATETIME_IMMUTABLE,
+        ]);
+        self::assertNull($queue->claim($worker, $queueName, 'policy-worker-three', 30));
+
+        $old = new DateTimeImmutable('-2 days');
+        $database->update($tables->raw('integration_inbox'), [
+            'status' => 'completed',
+            'lease_owner' => null,
+            'lease_token' => null,
+            'lease_acquired_at' => null,
+            'lease_expires_at' => null,
+            'runtime_generation' => null,
+            'error_message' => 'discard-this-delivery-detail',
+            'completed_at' => $old,
+            'updated_at' => $old,
+        ], [
+            'consumer_id' => 'acme.queue-capacity',
+            'event_id' => $deliveryEventId,
+        ], [
+            'event_id' => Types::GUID,
+            'completed_at' => Types::DATETIME_IMMUTABLE,
+            'updated_at' => Types::DATETIME_IMMUTABLE,
+        ]);
+        $second = $queue->claim($worker, $queueName, 'policy-worker-three', 30);
+        self::assertNotNull($second);
+        self::assertSame($secondId, $second->id);
+        $queue->fail($worker, $second, 'policy-worker-three', new RuntimeException('terminal'), true);
+
+        foreach ([$firstId, $secondId] as $id) {
+            $database->update($tables->raw('jobs'), [
+                'completed_at' => $old,
+                'updated_at' => $old,
+            ], ['id' => $id], [
+                'completed_at' => Types::DATETIME_IMMUTABLE,
+                'updated_at' => Types::DATETIME_IMMUTABLE,
+            ]);
+        }
+        $operations = new DoctrineQueueRuntimeOperations(
+            $database,
+            $tables,
+            $transactions,
+            $clock,
+            $authorization,
+            $catalog,
+        );
+        $inventory = $operations->inventory($administrator);
+        self::assertCount(1, $inventory);
+        self::assertSame(0, $inventory[0]['in_flight']);
+        self::assertSame(0, $inventory[0]['job_in_flight']);
+        self::assertSame(0, $inventory[0]['delivery_in_flight']);
+        self::assertSame(2, $inventory[0]['terminal_jobs']);
+        self::assertSame(1, $inventory[0]['terminal_delivery_receipts']);
+        self::assertSame(3, $inventory[0]['terminal']);
+        self::assertSame(2, $inventory[0]['purge_eligible_jobs']);
+        self::assertSame(1, $inventory[0]['compact_eligible_delivery_receipts']);
+        self::assertSame(3, $inventory[0]['purge_eligible']);
+        self::assertSame(1, $operations->purge($administrator, $queueName, 1));
+        self::assertSame(1, $operations->purge($administrator, $queueName, 1));
+        self::assertSame(1, $operations->purge($administrator, $queueName, 1));
+        self::assertSame(0, $operations->purge($administrator, $queueName, 1));
+        self::assertSame(0, (int) $database->fetchOne(sprintf(
+            'SELECT COUNT(*) FROM %s WHERE id IN (?, ?)',
+            $tables->quoted('jobs'),
+        ), [$firstId, $secondId]));
+        self::assertSame(0, (int) $database->fetchOne(sprintf(
+            'SELECT COUNT(*) FROM %s WHERE resource_type = ? AND resource_id IN (?, ?)',
+            $tables->quoted('resource_site_ownership'),
+        ), ['job', $firstId, $secondId]));
+        $retainedReceipt = $database->fetchAssociative(sprintf(
+            'SELECT status, envelope, error_message, evidence_compacted_at FROM %s '
+            . 'WHERE consumer_id = ? AND event_id = ?',
+            $tables->quoted('integration_inbox'),
+        ), ['acme.queue-capacity', $deliveryEventId]);
+        self::assertIsArray($retainedReceipt);
+        self::assertSame('completed', $retainedReceipt['status']);
+        self::assertContains($retainedReceipt['envelope'], ['{}', []]);
+        self::assertNull($retainedReceipt['error_message']);
+        self::assertNotNull($retainedReceipt['evidence_compacted_at']);
+    }
+
     public function testScheduleAndJobManagementLifecycleOnConfiguredDatabase(): void
     {
         $container = TestKernelFactory::create(Environment::fromGlobals());
@@ -527,5 +737,29 @@ final class AutomationManagementIntegrationTest extends TestCase
         }
 
         self::fail(sprintf('Automation job %s was not returned by the management query.', $id));
+    }
+}
+
+final readonly class ConfiguredQueuePolicyCatalog implements QueueRuntimePolicyCatalog
+{
+    public function __construct(private QueueRuntimePolicy $policy, private int $handlerMaximum)
+    {
+    }
+
+    public function policy(string $queue): ?QueueRuntimePolicy
+    {
+        return $queue === $this->policy->queue ? $this->policy : null;
+    }
+
+    public function maximumAttempts(string $queue, string $jobType, int $requested): int
+    {
+        $maximum = min($requested, $this->handlerMaximum);
+
+        return $this->policy($queue) === null ? $maximum : min($maximum, $this->policy->maximumAttempts);
+    }
+
+    public function policies(): array
+    {
+        return [$this->policy];
     }
 }

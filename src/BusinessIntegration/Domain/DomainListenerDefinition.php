@@ -17,7 +17,12 @@ use InvalidArgumentException;
  */
 final readonly class DomainListenerDefinition implements IntegrationContract
 {
-    /** @var list<int> Exact schema revisions accepted by this listener. @since 2.0.0 */
+    /**
+     * Exact event schema versions accepted by the synchronous listener.
+     *
+     * @var    list<int>  Exact schema revisions accepted by this listener.
+     * @since  2.0.0
+     */
     private array $schemaVersions;
 
     /**
@@ -58,43 +63,89 @@ final readonly class DomainListenerDefinition implements IntegrationContract
         $this->schemaVersions = $schemaVersions;
     }
 
-    /** @return string Namespaced listener identity. @since 2.0.0 */
+    /**
+     * Return the stable identifier for the domain listener definition.
+     *
+     * @return  string  Namespaced listener identity.
+     *
+     * @since   2.0.0
+     */
     public function identifier(): string
     {
         return $this->listenerId;
     }
 
-    /** @return string Event type. @since 2.0.0 */
+    /**
+     * Return the versioned event type accepted by this contract.
+     *
+     * @return  string  Event type.
+     *
+     * @since   2.0.0
+     */
     public function eventType(): string
     {
         return $this->eventType;
     }
 
-    /** @return list<int> Accepted schema revisions. @since 2.0.0 */
+    /**
+     * Return the exact event schema versions accepted by this contribution.
+     *
+     * @return  list<int>  Accepted schema revisions.
+     *
+     * @since   2.0.0
+     */
     public function schemaVersions(): array
     {
         return $this->schemaVersions;
     }
 
-    /** @return string Executable revision. @since 2.0.0 */
+    /**
+     * Return the handler implementation version used for compatibility checks.
+     *
+     * @return  string  Executable revision.
+     *
+     * @since   2.0.0
+     */
     public function handlerVersion(): string
     {
         return $this->handlerVersion;
     }
 
-    /** @return int Deterministic dispatch priority. @since 2.0.0 */
+    /**
+     * Return the priority carried by this domain listener definition.
+     *
+     * @return  int  Deterministic dispatch priority.
+     *
+     * @since   2.0.0
+     */
     public function priority(): int
     {
         return $this->priority;
     }
 
-    /** @return EventSensitivity Disclosure ceiling. @since 2.0.0 */
+    /**
+     * Return the highest event sensitivity this contribution may receive.
+     *
+     * @return  EventSensitivity  Disclosure ceiling.
+     *
+     * @since   2.0.0
+     */
     public function sensitivityCeiling(): EventSensitivity
     {
         return $this->sensitivityCeiling;
     }
 
-    /** @return bool Whether this listener accepts the exact event contract revision. @since 2.0.0 */
+    /**
+     * Determine whether this contribution accepts the supplied event contract.
+     *
+     * @param   string            $eventType      Stable namespaced type of the event.
+     * @param   int               $schemaVersion  Exact payload schema version to test.
+     * @param   EventSensitivity  $sensitivity    Event sensitivity level to compare with the ceiling.
+     *
+     * @return  bool  Whether this listener accepts the exact event contract revision.
+     *
+     * @since   2.0.0
+     */
     public function accepts(string $eventType, int $schemaVersion, EventSensitivity $sensitivity): bool
     {
         return $this->eventType === $eventType
@@ -102,7 +153,13 @@ final readonly class DomainListenerDefinition implements IntegrationContract
             && $sensitivity->allowedBy($this->sensitivityCeiling);
     }
 
-    /** @return array<string, mixed> Canonical publication representation. @since 2.0.0 */
+    /**
+     * Serialize the domain listener definition for durable storage or inspection.
+     *
+     * @return  array<string, mixed>  Canonical publication representation.
+     *
+     * @since   2.0.0
+     */
     public function toArray(): array
     {
         return [

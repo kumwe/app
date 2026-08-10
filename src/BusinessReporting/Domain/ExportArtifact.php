@@ -17,38 +17,43 @@ use LogicException;
  */
 final readonly class ExportArtifact
 {
-    /** @var array<string, mixed> @since 2.0.0 */
+    /**
+     * Validated report parameters captured when the export was requested.
+     *
+     * @var    array<string, mixed>
+     * @since  2.0.0
+     */
     public array $parameters;
 
     /**
      * Reconstitute one fully validated export ledger entry.
      *
-     * @param   string                    $id                     Canonical artifact UUID.
-     * @param   string                    $reportIdentifier       Namespaced report contribution handle.
-     * @param   int                       $reportVersion          Immutable report version.
-     * @param   string                    $definitionChecksum     Exact report document checksum.
-     * @param   string                    $actorId                 Original accountable actor.
-     * @param   string                    $siteIdentifier          Original site scope.
-     * @param   ?string                   $organizationIdentifier Original organization scope.
-     * @param   ?string                   $workspaceIdentifier    Original workspace scope.
-     * @param   AuthenticatedSurface      $surface                Original delivery boundary.
-     * @param   string                    $authorityFingerprint   Original authority digest.
-     * @param   string                    $policySnapshot         Original record policy-plan digest.
-     * @param   array<string, mixed>      $parameters             Validated report parameters, stored privately.
-     * @param   string                    $parameterDigest        Canonical digest of parameters and scope.
-     * @param   ExportArtifactStatus      $status                 Durable lifecycle state.
-     * @param   DateTimeImmutable         $createdAt              Request instant.
-     * @param   DateTimeImmutable         $expiresAt              Last instant download is allowed.
-     * @param   ?DateTimeImmutable        $startedAt              Worker start instant.
-     * @param   ?DateTimeImmutable        $completedAt            Terminal instant.
-     * @param   string                    $filename               Safe attachment filename.
-     * @param   ?string                   $storageKey             Opaque private-store key after completion.
-     * @param   ?int                      $size                   Stored byte size after completion.
-     * @param   ?string                   $checksum               Stored-byte SHA-256 after completion.
-     * @param   ?int                      $rowCount               Exported row count after completion.
-     * @param   ?string                   $queryDigest            Executed policy-filtered query digest.
-     * @param   ?string                   $failureCode            Safe machine code after failure.
-     * @param   int                       $version                 Optimistic metadata version.
+     * @param   string                $id                      Canonical artifact UUID.
+     * @param   string                $reportIdentifier        Namespaced report contribution handle.
+     * @param   int                   $reportVersion           Immutable report version.
+     * @param   string                $definitionChecksum      Exact report document checksum.
+     * @param   string                $actorId                 Original accountable actor.
+     * @param   string                $siteIdentifier          Original site scope.
+     * @param   ?string               $organizationIdentifier  Original organization scope.
+     * @param   ?string               $workspaceIdentifier     Original workspace scope.
+     * @param   AuthenticatedSurface  $surface                 Original delivery boundary.
+     * @param   string                $authorityFingerprint    Original authority digest.
+     * @param   string                $policySnapshot          Original record policy-plan digest.
+     * @param   array<string, mixed>  $parameters              Validated report parameters, stored privately.
+     * @param   string                $parameterDigest         Canonical digest of parameters and scope.
+     * @param   ExportArtifactStatus  $status                  Durable lifecycle state.
+     * @param   DateTimeImmutable     $createdAt               Request instant.
+     * @param   DateTimeImmutable     $expiresAt               Last instant download is allowed.
+     * @param   ?DateTimeImmutable    $startedAt               Worker start instant.
+     * @param   ?DateTimeImmutable    $completedAt             Terminal instant.
+     * @param   string                $filename                Safe attachment filename.
+     * @param   ?string               $storageKey              Opaque private-store key after completion.
+     * @param   ?int                  $size                    Stored byte size after completion.
+     * @param   ?string               $checksum                Stored-byte SHA-256 after completion.
+     * @param   ?int                  $rowCount                Exported row count after completion.
+     * @param   ?string               $queryDigest             Executed policy-filtered query digest.
+     * @param   ?string               $failureCode             Safe machine code after failure.
+     * @param   int                   $version                 Optimistic metadata version.
      *
      * @throws  InvalidArgumentException  When metadata shape or lifecycle invariants are invalid.
      *
@@ -82,8 +87,8 @@ final readonly class ExportArtifact
         public ?string $failureCode,
         public int $version,
     ) {
-        if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/Di', $id) !== 1) {
-            throw new InvalidArgumentException('An export artifact id must be a canonical UUID.');
+        if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/D', $id) !== 1) {
+            throw new InvalidArgumentException('An export artifact id must be a canonical lowercase UUID.');
         }
         ReportDefinitionGuard::identifier($reportIdentifier, 'export report identifier');
         foreach ([$definitionChecksum, $authorityFingerprint, $policySnapshot, $parameterDigest] as $digest) {
@@ -117,7 +122,11 @@ final readonly class ExportArtifact
         if (($size !== null && $size < 1) || ($rowCount !== null && $rowCount < 0)) {
             throw new InvalidArgumentException('An export artifact size or row count is invalid.');
         }
-        if ($storageKey !== null && preg_match('/^[0-9a-f-]{36}\.csv$/D', $storageKey) !== 1) {
+        if ($storageKey !== null && preg_match(
+            '/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}'
+            . '\.[0-9a-f]{32}\.csv$/D',
+            $storageKey,
+        ) !== 1) {
             throw new InvalidArgumentException('An export artifact storage key is invalid.');
         }
         foreach ([$checksum, $queryDigest] as $digest) {
@@ -289,7 +298,9 @@ final readonly class ExportArtifact
             throw new InvalidArgumentException('An export artifact document has missing or unknown keys.');
         }
         try {
-            if (!is_array($document['parameters']) || array_is_list($document['parameters'])) {
+            if (!is_array($document['parameters'])
+                || ($document['parameters'] !== [] && array_is_list($document['parameters']))
+            ) {
                 throw new InvalidArgumentException('Export artifact parameters must form an object.');
             }
             /** @var array<string, mixed> $parameters */
@@ -330,7 +341,23 @@ final readonly class ExportArtifact
         }
     }
 
-    /** @since 2.0.0 */
+    /**
+     * Create a state-transitioned copy of the export artifact.
+     *
+     * @param   ExportArtifactStatus  $status       Durable state to record for the receipt.
+     * @param   ?DateTimeImmutable    $startedAt    Timestamp at which generation began, when started.
+     * @param   ?DateTimeImmutable    $completedAt  Timestamp at which processing completed, when applicable.
+     * @param   ?string               $storageKey   Confined storage key of completed export bytes.
+     * @param   ?int                  $size         Completed artifact size in bytes, when available.
+     * @param   ?string               $checksum     Content digest used to verify immutable bytes.
+     * @param   ?int                  $rowCount     Number of exported rows, when generation completed.
+     * @param   ?string               $queryDigest  Digest of the policy-filtered report query, when completed.
+     * @param   ?string               $failureCode  Stable sanitized rejection code, when generation failed.
+     *
+     * @return  self  Artifact carrying the requested immutable state transition.
+     *
+     * @since   2.0.0
+     */
     private function copy(
         ExportArtifactStatus $status,
         ?DateTimeImmutable $startedAt,
@@ -372,7 +399,16 @@ final readonly class ExportArtifact
         );
     }
 
-    /** @param array<string, mixed> $document @since 2.0.0 */
+    /**
+     * Read a required string from the supplied data.
+     *
+     * @param   array<string, mixed>  $document  Serialized document from which the named member is read.
+     * @param   string                $key       Array or row key whose value is being read.
+     *
+     * @return  string  Required string stored under the requested key.
+     *
+     * @since   2.0.0
+     */
     private static function string(array $document, string $key): string
     {
         if (!is_string($document[$key])) {
@@ -381,7 +417,16 @@ final readonly class ExportArtifact
         return $document[$key];
     }
 
-    /** @param array<string, mixed> $document @since 2.0.0 */
+    /**
+     * Read an optional string from the supplied data.
+     *
+     * @param   array<string, mixed>  $document  Serialized document from which the named member is read.
+     * @param   string                $key       Array or row key whose value is being read.
+     *
+     * @return  ?string  String stored under the key, or null when the member is absent.
+     *
+     * @since   2.0.0
+     */
     private static function nullableString(array $document, string $key): ?string
     {
         if ($document[$key] !== null && !is_string($document[$key])) {
@@ -390,7 +435,16 @@ final readonly class ExportArtifact
         return $document[$key];
     }
 
-    /** @param array<string, mixed> $document @since 2.0.0 */
+    /**
+     * Read and validate an integer value.
+     *
+     * @param   array<string, mixed>  $document  Serialized document from which the named member is read.
+     * @param   string                $key       Array or row key whose value is being read.
+     *
+     * @return  int  Integer stored under the requested key.
+     *
+     * @since   2.0.0
+     */
     private static function integer(array $document, string $key): int
     {
         if (!is_int($document[$key])) {
@@ -399,7 +453,16 @@ final readonly class ExportArtifact
         return $document[$key];
     }
 
-    /** @param array<string, mixed> $document @since 2.0.0 */
+    /**
+     * Read an optional integer from the supplied data.
+     *
+     * @param   array<string, mixed>  $document  Serialized document from which the named member is read.
+     * @param   string                $key       Array or row key whose value is being read.
+     *
+     * @return  ?int  Integer stored under the key, or null when the member is absent.
+     *
+     * @since   2.0.0
+     */
     private static function nullableInteger(array $document, string $key): ?int
     {
         if ($document[$key] !== null && !is_int($document[$key])) {
@@ -408,7 +471,16 @@ final readonly class ExportArtifact
         return $document[$key];
     }
 
-    /** @param array<string, mixed> $document @since 2.0.0 */
+    /**
+     * Read an immutable timestamp from the supplied row.
+     *
+     * @param   array<string, mixed>  $document  Serialized document from which the named member is read.
+     * @param   string                $key       Array or row key whose value is being read.
+     *
+     * @return  ?DateTimeImmutable  Timestamp stored under the requested key.
+     *
+     * @since   2.0.0
+     */
     private static function date(array $document, string $key): ?DateTimeImmutable
     {
         $value = self::nullableString($document, $key);

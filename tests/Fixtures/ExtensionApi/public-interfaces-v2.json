@@ -1,0 +1,127 @@
+{
+  "format": "kumwe-extension-public-interfaces-v2",
+  "interfaces": {
+    "Kumwe\\CMS\\Application\\Automation\\JobHandler": [
+      "handle(array $payload, Kumwe\\CMS\\Application\\Authorization\\ExecutionContext $context): void",
+      "type(): string"
+    ],
+    "Kumwe\\CMS\\BusinessIntegration\\Application\\DomainEventHandler": [
+      "definition(): Kumwe\\CMS\\BusinessIntegration\\Domain\\DomainListenerDefinition",
+      "handle(Kumwe\\CMS\\BusinessIntegration\\Domain\\DomainEvent $event): void"
+    ],
+    "Kumwe\\CMS\\BusinessIntegration\\Application\\IntegrationEventHandler": [
+      "definition(): Kumwe\\CMS\\BusinessIntegration\\Domain\\EventConsumerDefinition",
+      "handle(Kumwe\\CMS\\BusinessIntegration\\Domain\\IntegrationEvent $event, Kumwe\\CMS\\Application\\Authorization\\ExecutionContext $context): void"
+    ],
+    "Kumwe\\CMS\\BusinessIntegration\\Application\\IntegrationEventTransport": [
+      "identifier(): string",
+      "publish(Kumwe\\CMS\\BusinessIntegration\\Domain\\IntegrationEvent $event): void",
+      "sensitivityCeiling(): Kumwe\\CMS\\BusinessIntegration\\Domain\\EventSensitivity"
+    ],
+    "Kumwe\\CMS\\BusinessIntegration\\Domain\\IntegrationContract": [
+      "identifier(): string",
+      "toArray(): array"
+    ],
+    "Kumwe\\CMS\\BusinessReporting\\Application\\ProjectionBuilder": [
+      "apply(Kumwe\\CMS\\BusinessReporting\\Domain\\ProjectionDefinition $definition, Kumwe\\CMS\\BusinessReporting\\Application\\ProjectionEvent $event, Kumwe\\CMS\\BusinessReporting\\Application\\ProjectionWriter $writer): void",
+      "definition(): Kumwe\\CMS\\BusinessReporting\\Domain\\ProjectionDefinition"
+    ],
+    "Kumwe\\CMS\\BusinessReporting\\Application\\ProjectionWriter": [
+      "begin(Kumwe\\CMS\\BusinessReporting\\Domain\\ProjectionDefinition $definition): void",
+      "checkpoint(int $sequence, string $eventChecksum): void",
+      "commit(): string",
+      "put(array $key, array $values): void",
+      "remove(array $key): void",
+      "rollback(): void"
+    ],
+    "Kumwe\\CMS\\Extension\\Application\\ExtensionServiceProvider": [
+      "register(Kumwe\\CMS\\Extension\\Runtime\\ExtensionContainer $container): void"
+    ],
+    "Kumwe\\CMS\\Extension\\Application\\Migration\\ExtensionMigration": [
+      "down(Doctrine\\DBAL\\Connection $database, Kumwe\\CMS\\Extension\\Application\\Migration\\ExtensionTableNames $tables): void",
+      "id(): string",
+      "up(Doctrine\\DBAL\\Connection $database, Kumwe\\CMS\\Extension\\Application\\Migration\\ExtensionTableNames $tables): void"
+    ],
+    "Kumwe\\CMS\\Extension\\Contribution\\AdministratorRouteHandlerFactory": [
+      "create(Kumwe\\CMS\\Administrator\\Presentation\\AdministratorRenderer $renderer): Psr\\Http\\Server\\RequestHandlerInterface"
+    ],
+    "Kumwe\\CMS\\Extension\\Contribution\\ContributionDefinition": [
+      "identifier(): string",
+      "toArray(): array"
+    ],
+    "Kumwe\\CMS\\Extension\\Contribution\\ExtensionContributionProvider": [
+      "contribute(Kumwe\\CMS\\Extension\\Contribution\\ExtensionContributionRegistrar $contributions, Kumwe\\CMS\\Extension\\Runtime\\ExtensionContainer $container): void"
+    ],
+    "Kumwe\\CMS\\Extension\\Contribution\\ExtensionContributionRegistrar": [
+      "administratorNavigation(Kumwe\\CMS\\Extension\\Contribution\\AdministratorNavigationDefinition $definition): void",
+      "administratorRoute(Kumwe\\CMS\\Extension\\Contribution\\AdministratorRouteDefinition $definition, Kumwe\\CMS\\Extension\\Contribution\\AdministratorRouteHandlerFactory $factory): void",
+      "administratorView(Kumwe\\CMS\\Extension\\Contribution\\AdministratorViewDefinition $definition): void",
+      "administratorWorkspace(Kumwe\\CMS\\Extension\\Contribution\\AdministratorWorkspaceDefinition $definition): void",
+      "businessDefinition(Kumwe\\CMS\\BusinessDefinition\\Domain\\EntityTypeDefinition $definition): void",
+      "capability(Kumwe\\CMS\\Extension\\Contribution\\CapabilityDefinition $definition): void",
+      "customBusinessActionHandler(Kumwe\\CMS\\BusinessSurface\\Application\\Custom\\CustomBusinessActionContract $contract, Kumwe\\CMS\\BusinessSurface\\Application\\Custom\\CustomBusinessActionHandler $handler): void",
+      "customBusinessViewHandler(Kumwe\\CMS\\BusinessSurface\\Application\\Custom\\CustomBusinessViewContract $contract, Kumwe\\CMS\\BusinessSurface\\Application\\Custom\\CustomBusinessViewHandler $handler): void",
+      "domainListener(Kumwe\\CMS\\BusinessIntegration\\Domain\\DomainListenerDefinition $definition, Kumwe\\CMS\\BusinessIntegration\\Application\\DomainEventHandler $handler): void",
+      "eventConsumer(Kumwe\\CMS\\BusinessIntegration\\Domain\\EventConsumerDefinition $definition, Kumwe\\CMS\\BusinessIntegration\\Application\\IntegrationEventHandler $handler): void",
+      "eventSchema(Kumwe\\CMS\\BusinessIntegration\\Domain\\EventSchemaDefinition $definition): void",
+      "fieldPresentation(Kumwe\\CMS\\BusinessSurface\\Presentation\\Field\\FieldPresentationContribution $contribution, Kumwe\\CMS\\BusinessSurface\\Presentation\\Field\\FieldPresenter $presenter): void",
+      "fieldType(Kumwe\\CMS\\BusinessDefinition\\Domain\\FieldTypeDefinition $definition): void",
+      "jobHandler(Kumwe\\CMS\\BusinessIntegration\\Domain\\JobContributionDefinition $definition, Kumwe\\CMS\\Application\\Automation\\JobHandler $handler): void",
+      "portalNavigation(Kumwe\\CMS\\Portal\\Contribution\\PortalNavigationDefinition $definition): void",
+      "portalRoute(Kumwe\\CMS\\Portal\\Contribution\\PortalRouteDefinition $definition, Kumwe\\CMS\\Portal\\Contribution\\PortalRouteHandlerFactory $factory): void",
+      "portalTemplate(Kumwe\\CMS\\Portal\\Contribution\\PortalTemplateDefinition $definition): void",
+      "portalWorkspace(Kumwe\\CMS\\Portal\\Contribution\\PortalWorkspaceDefinition $definition): void",
+      "projection(Kumwe\\CMS\\BusinessReporting\\Domain\\ProjectionDefinition $definition, Kumwe\\CMS\\BusinessReporting\\Application\\ProjectionBuilder $builder): void",
+      "queue(Kumwe\\CMS\\BusinessIntegration\\Domain\\QueueContributionDefinition $definition): void",
+      "report(Kumwe\\CMS\\BusinessReporting\\Domain\\ReportDefinition $definition): void",
+      "resourcePolicy(Kumwe\\CMS\\Extension\\Contribution\\ResourcePolicyDefinition $definition): void",
+      "schedule(Kumwe\\CMS\\BusinessIntegration\\Domain\\ScheduleContributionDefinition $definition): void",
+      "webhook(Kumwe\\CMS\\BusinessIntegration\\Domain\\WebhookContributionDefinition $definition, Kumwe\\CMS\\BusinessIntegration\\Application\\IntegrationEventTransport $transport): void"
+    ],
+    "Kumwe\\CMS\\Extension\\Development\\LifecycleConformanceAdapter": [
+      "assertAuthorizationAndFieldPolicies(): void",
+      "assertBackupAndRestore(): void",
+      "assertCliAndMcp(): void",
+      "assertDatabaseMatrix(string $basePackage, string $upgradePackage): void",
+      "assertDefinitions(): void",
+      "assertJobsEventsAndReports(): void",
+      "assertPackageSafetyAndSigning(string $basePackage, string $upgradePackage): void",
+      "assertPortalAndAdministrator(): void",
+      "assertRestAndOpenApi(): void",
+      "assertRoutes(): void",
+      "assertSchemaPlan(string $basePackage, string $upgradePackage): void",
+      "disable(): void",
+      "install(string $basePackage): void",
+      "reactivate(): void",
+      "recover(): void",
+      "uninstall(): void",
+      "upgrade(string $upgradePackage): void"
+    ],
+    "Kumwe\\CMS\\Extension\\Runtime\\ExtensionContainer": [
+      "get(string $id): object",
+      "share(string $id, callable $factory): void"
+    ],
+    "Kumwe\\CMS\\Extension\\Runtime\\ExtensionRouteRegistrar": [
+      "route(string $path, Psr\\Http\\Server\\RequestHandlerInterface $handler, array $methods, string $name): void"
+    ],
+    "Kumwe\\CMS\\Extension\\Runtime\\RuntimeExtension": [
+      "boot(Kumwe\\CMS\\Extension\\Runtime\\ExtensionContainer $container): void",
+      "registerRoutes(Kumwe\\CMS\\Extension\\Runtime\\ExtensionRouteRegistrar $routes): void"
+    ],
+    "Kumwe\\CMS\\Portal\\Contribution\\PortalRouteHandlerFactory": [
+      "create(Kumwe\\CMS\\Portal\\Presentation\\PortalContributionRenderer $renderer): Psr\\Http\\Server\\RequestHandlerInterface"
+    ]
+  },
+  "enums": {
+    "Kumwe\\CMS\\BusinessIntegration\\Domain\\ConsumerIdempotency": {
+      "AGGREGATE_VERSION": "aggregate_version",
+      "EVENT_ID": "event_id"
+    },
+    "Kumwe\\CMS\\BusinessIntegration\\Domain\\EventSensitivity": {
+      "INTERNAL": "internal",
+      "PUBLIC": "public",
+      "RESTRICTED": "restricted",
+      "SECRET": "secret"
+    }
+  }
+}

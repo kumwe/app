@@ -59,6 +59,24 @@ final class EventContractTest extends TestCase
         );
     }
 
+    public function testStoredEnvelopeRejectsUnknownFields(): void
+    {
+        $stored = $this->event(['record_id' => 'record-7'])->toArray();
+        $stored['unexpected'] = true;
+
+        $this->expectException(InvalidArgumentException::class);
+        IntegrationEvent::fromArray($stored);
+    }
+
+    public function testStoredEnvelopeRejectsNonCanonicalTimestamps(): void
+    {
+        $stored = $this->event(['record_id' => 'record-7'])->toArray();
+        $stored['occurred_at'] = '2026-08-10 10:00:00 UTC';
+
+        $this->expectException(InvalidArgumentException::class);
+        IntegrationEvent::fromArray($stored);
+    }
+
     public function testRegistryEnforcesExactSchemaAndPayloadContract(): void
     {
         $schema = $this->schema();

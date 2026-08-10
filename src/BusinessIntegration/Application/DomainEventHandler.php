@@ -14,9 +14,23 @@ use Kumwe\CMS\BusinessIntegration\Domain\DomainListenerDefinition;
  */
 interface DomainEventHandler
 {
-    /** @return DomainListenerDefinition Trusted data-only listener contract. @since 2.0.0 */
+    /**
+     * Return the signed contribution definition implemented by this handler.
+     *
+     * @return  DomainListenerDefinition  Trusted data-only listener contract.
+     *
+     * @since   2.0.0
+     */
     public function definition(): DomainListenerDefinition;
 
-    /** @return void @since 2.0.0 */
+    /**
+     * Handle the transaction-local event before its authoritative mutation commits.
+     *
+     * @param   DomainEvent  $event  Versioned event being validated or processed.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     public function handle(DomainEvent $event): void;
 }

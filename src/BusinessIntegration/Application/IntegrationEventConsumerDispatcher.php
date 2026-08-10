@@ -6,8 +6,10 @@ namespace Kumwe\CMS\BusinessIntegration\Application;
 
 use InvalidArgumentException;
 use Kumwe\CMS\Application\Authorization\ExecutionContext;
+use Kumwe\CMS\Application\Automation\QueueRuntimePolicyCatalog;
 use Kumwe\CMS\Application\Automation\RetryPolicy;
 use Kumwe\CMS\BusinessIntegration\Domain\IntegrationEvent;
+use Kumwe\CMS\Infrastructure\Persistence\TransactionManager;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -21,20 +23,25 @@ final readonly class IntegrationEventConsumerDispatcher
     /**
      * Assemble durable consumer execution.
      *
-     * @param   InboxStore                     $inbox      Durable receipt and checkpoint ledger.
-     * @param   EventContractRegistry          $contracts  Exact event and consumer catalog.
-     * @param   RetryPolicy                    $retries    Failure classification and backoff.
-     * @param   TrustedRuntimeGenerationGuard  $runtime    Trusted-generation guard.
-     * @param   LoggerInterface                $logger     Structured observability sink.
+     * @param  InboxStore                     $inbox         Durable receipt and checkpoint ledger.
+     * @param  EventContractRegistry          $contracts     Exact event and consumer catalog.
+     * @param  RetryPolicy                    $retries       Failure classification and backoff.
+     * @param  TrustedRuntimeGenerationGuard  $runtime       Trusted-generation guard.
+     * @param  TransactionManager             $transactions  Atomic handler-effect and receipt settlement boundary.
+     * @param  LoggerInterface                $logger        Structured observability sink.
+     * @param  ?QueueRuntimePolicyCatalog     $policies      Active contributed queue limits; null preserves the
+     *         established delivery defaults for isolated core instances.
      *
-     * @since   2.0.0
+     * @since  2.0.0
      */
     public function __construct(
         private InboxStore $inbox,
         private EventContractRegistry $contracts,
         private RetryPolicy $retries,
         private TrustedRuntimeGenerationGuard $runtime,
+        private TransactionManager $transactions,
         private LoggerInterface $logger,
+        private ?QueueRuntimePolicyCatalog $policies = null,
     ) {
     }
 
@@ -46,7 +53,8 @@ final readonly class IntegrationEventConsumerDispatcher
      * @param   ExecutionContext         $context            Freshly authorised worker context.
      * @param   string                   $workerId           Process identity.
      * @param   string                   $runtimeGeneration  Exact generation that selected the handler.
-     * @param   int                      $leaseSeconds       Delivery lease duration.
+     * @param   ?int                     $leaseSeconds       Explicit delivery lease duration, or null to use the
+     *          queue policy/default.
      *
      * @return  InboxDisposition  Explicit deduplication, ordering or execution outcome.
      *
@@ -58,7 +66,7 @@ final readonly class IntegrationEventConsumerDispatcher
         ExecutionContext $context,
         string $workerId,
         string $runtimeGeneration,
-        int $leaseSeconds = 60,
+        ?int $leaseSeconds = null,
     ): InboxDisposition {
         $this->runtime->assertCurrent($runtimeGeneration);
         $this->contracts->assertEvent($event);
@@ -66,6 +74,7 @@ final readonly class IntegrationEventConsumerDispatcher
         if ($registered->toArray() !== $handler->definition()->toArray()) {
             throw new InvalidArgumentException('The executable consumer does not match its trusted declaration.');
         }
+        $leaseSeconds = $this->leaseSeconds($registered->queue(), $leaseSeconds);
         $result = $this->inbox->receive(
             $registered,
             $event,
@@ -78,9 +87,11 @@ final readonly class IntegrationEventConsumerDispatcher
         }
         $lease = $result->lease;
         try {
-            $this->runtime->assertCurrent($lease->runtimeGeneration);
-            $handler->handle($event, $context);
-            $this->inbox->complete($lease);
+            $this->transactions->transactional(function () use ($lease, $handler, $event, $context): void {
+                $this->runtime->assertCurrent($lease->runtimeGeneration);
+                $handler->handle($event, $context);
+                $this->inbox->complete($lease);
+            });
             $this->logger->info('Integration event consumer completed.', [
                 'consumer_id' => $registered->identifier(),
                 'event_id' => $event->eventId(),
@@ -88,7 +99,11 @@ final readonly class IntegrationEventConsumerDispatcher
                 'runtime_generation' => $lease->runtimeGeneration,
             ]);
         } catch (Throwable $failure) {
-            $decision = $this->retries->decide($failure, $lease->attempts, $registered->maximumAttempts());
+            $decision = $this->retries->decide(
+                $failure,
+                $lease->attempts,
+                $lease->consumer->maximumAttempts(),
+            );
             $this->inbox->fail($lease, $decision->classification, $failure, $decision->retryAt);
             $this->logger->warning('Integration event consumer failed.', [
                 'consumer_id' => $registered->identifier(),
@@ -101,5 +116,27 @@ final readonly class IntegrationEventConsumerDispatcher
             throw $failure;
         }
         return InboxDisposition::CLAIMED;
+    }
+
+    /**
+     * Resolve the signed queue lease without silently widening an explicit request.
+     *
+     * @param   string  $queue      Declared delivery queue.
+     * @param   ?int    $requested  Caller override, or null for the policy/default.
+     *
+     * @return  int  Effective lease duration.
+     *
+     * @throws  InvalidArgumentException  When an explicit lease exceeds the queue declaration.
+     *
+     * @since   2.0.0
+     */
+    private function leaseSeconds(string $queue, ?int $requested): int
+    {
+        $policy = $this->policies?->policy($queue);
+        if ($policy !== null && $requested !== null && $requested > $policy->leaseSeconds) {
+            throw new InvalidArgumentException('A contributed queue lease cannot exceed its signed policy.');
+        }
+
+        return $requested ?? $policy?->leaseSeconds ?? 60;
     }
 }

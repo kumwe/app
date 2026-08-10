@@ -11,6 +11,7 @@ use Kumwe\CMS\Application\Automation\Job\ScheduleRepository;
 use Kumwe\CMS\Application\Automation\JobHandler;
 use Kumwe\CMS\Application\Automation\JobHandlerRegistry;
 use Kumwe\CMS\Application\Automation\JobQueue;
+use Kumwe\CMS\Application\Automation\QueueRuntimeOperations;
 use Kumwe\CMS\Application\Authorization\ExecutionContext;
 use Kumwe\CMS\Audit\Application\AuditRecorder;
 use Kumwe\CMS\Audit\Domain\AuditEvent;
@@ -131,10 +132,42 @@ final class AutomationManagementServiceTest extends TestCase
         $service->cancelJob($this->context(), self::JOB);
     }
 
+    public function testListsAndPurgesContributedQueuePolicyThroughAuditedOperatorBoundary(): void
+    {
+        $runtime = $this->createMock(QueueRuntimeOperations::class);
+        $runtime->expects(self::once())->method('inventory')->willReturn([[
+            'queue' => 'acme.example.priority',
+            'in_flight' => 1,
+        ]]);
+        $runtime->expects(self::once())->method('purge')->with(
+            self::isInstanceOf(ExecutionContext::class),
+            'acme.example.priority',
+            25,
+        )->willReturn(3);
+        $audit = $this->createMock(AuditRecorder::class);
+        $audit->expects(self::once())->method('record')->with(self::callback(
+            static fn (AuditEvent $event): bool => $event->action() === 'automation.queue.retention.purge'
+                && $event->subjectId() === 'acme.example.priority'
+                && $event->metadata() === ['purged' => 3, 'limit' => 25],
+        ));
+        $service = $this->service(
+            $this->createStub(ScheduleRepository::class),
+            audit: $audit,
+            queueRuntime: $runtime,
+        );
+
+        self::assertSame([[
+            'queue' => 'acme.example.priority',
+            'in_flight' => 1,
+        ]], $service->queuePolicies($this->context()));
+        self::assertSame(3, $service->purgeQueue($this->context(), 'acme.example.priority', 25));
+    }
+
     private function service(
         ScheduleRepository $schedules,
         ?JobQueue $jobs = null,
         ?AuditRecorder $audit = null,
+        ?QueueRuntimeOperations $queueRuntime = null,
     ): AutomationManagementService {
         $transactions = $this->createStub(TransactionManager::class);
         $transactions->method('transactional')->willReturnCallback(
@@ -152,6 +185,7 @@ final class AutomationManagementServiceTest extends TestCase
             $clock,
             AuthorizationContext::gateway(),
             new \Kumwe\CMS\Application\Automation\JobExecutionScope(),
+            $queueRuntime,
         );
     }
 

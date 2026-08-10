@@ -189,31 +189,76 @@ final readonly class ManifestContributionSet
      */
     private array $customBusinessActions;
 
-    /** @var array<string, EventSchemaDefinition> Declared event schemas. @since 2.0.0 */
+    /**
+     * Manifest-declared event schemas keyed by stable identifier.
+     *
+     * @var    array<string, EventSchemaDefinition>  Declared event schemas.
+     * @since  2.0.0
+     */
     private array $eventSchemas;
 
-    /** @var array<string, DomainListenerDefinition> Declared synchronous listeners. @since 2.0.0 */
+    /**
+     * Manifest-declared domain listeners keyed by stable identifier.
+     *
+     * @var    array<string, DomainListenerDefinition>  Declared synchronous listeners.
+     * @since  2.0.0
+     */
     private array $domainListeners;
 
-    /** @var array<string, EventConsumerDefinition> Declared durable consumers. @since 2.0.0 */
+    /**
+     * Manifest-declared event consumers keyed by stable identifier.
+     *
+     * @var    array<string, EventConsumerDefinition>  Declared durable consumers.
+     * @since  2.0.0
+     */
     private array $eventConsumers;
 
-    /** @var array<string, JobContributionDefinition> Declared job handlers and payload schemas. @since 2.0.0 */
+    /**
+     * Manifest-declared jobs keyed by stable identifier.
+     *
+     * @var    array<string, JobContributionDefinition>  Declared job handlers and payload schemas.
+     * @since  2.0.0
+     */
     private array $jobs;
 
-    /** @var array<string, QueueContributionDefinition> Declared logical queues. @since 2.0.0 */
+    /**
+     * Manifest-declared queues keyed by stable identifier.
+     *
+     * @var    array<string, QueueContributionDefinition>  Declared logical queues.
+     * @since  2.0.0
+     */
     private array $queues;
 
-    /** @var array<string, ScheduleContributionDefinition> Declared recurring schedules. @since 2.0.0 */
+    /**
+     * Manifest-declared schedules keyed by stable identifier.
+     *
+     * @var    array<string, ScheduleContributionDefinition>  Declared recurring schedules.
+     * @since  2.0.0
+     */
     private array $schedules;
 
-    /** @var array<string, ProjectionDefinition> Declared rebuildable projections. @since 2.0.0 */
+    /**
+     * Manifest-declared projections keyed by stable identifier.
+     *
+     * @var    array<string, ProjectionDefinition>  Declared rebuildable projections.
+     * @since  2.0.0
+     */
     private array $projections;
 
-    /** @var array<string, ReportDefinition> Declared safe reports. @since 2.0.0 */
+    /**
+     * Manifest-declared reports keyed by stable identifier.
+     *
+     * @var    array<string, ReportDefinition>  Declared safe reports.
+     * @since  2.0.0
+     */
     private array $reports;
 
-    /** @var array<string, WebhookContributionDefinition> Declared outbound adapters. @since 2.0.0 */
+    /**
+     * Manifest-declared webhooks keyed by stable identifier.
+     *
+     * @var    array<string, WebhookContributionDefinition>  Declared outbound adapters.
+     * @since  2.0.0
+     */
     private array $webhooks;
 
     /**
@@ -239,16 +284,16 @@ final readonly class ManifestContributionSet
      * @param   iterable<CustomBusinessViewContract>         $customBusinessViews    Custom view handler contracts.
      * @param   iterable<CustomBusinessActionContract>       $customBusinessActions  Custom action handler contracts.
      * @param   iterable<FieldPresentationContribution>      $fieldPresentations     Safe presenter declarations.
-     * @param   iterable<EventSchemaDefinition>               $eventSchemas           Versioned event contracts.
-     * @param   iterable<DomainListenerDefinition>            $domainListeners        Synchronous listener contracts.
-     * @param   iterable<EventConsumerDefinition>             $eventConsumers         Durable consumer contracts.
-     * @param   iterable<JobContributionDefinition>           $jobs                   Job and payload contracts.
-     * @param   iterable<QueueContributionDefinition>         $queues                 Logical queue declarations.
-     * @param   iterable<ScheduleContributionDefinition>      $schedules              Recurring schedules.
-     * @param   iterable<ProjectionDefinition>                $projections            Rebuildable projections.
-     * @param   iterable<ReportDefinition>                    $reports                Safe report definitions.
-     * @param   iterable<WebhookContributionDefinition>       $webhooks               Outbound adapter declarations.
-     * @param   int                                           $spiVersion             Contribution SPI revision.
+     * @param   iterable<EventSchemaDefinition>              $eventSchemas           Versioned event contracts.
+     * @param   iterable<DomainListenerDefinition>           $domainListeners        Synchronous listener contracts.
+     * @param   iterable<EventConsumerDefinition>            $eventConsumers         Durable consumer contracts.
+     * @param   iterable<JobContributionDefinition>          $jobs                   Job and payload contracts.
+     * @param   iterable<QueueContributionDefinition>        $queues                 Logical queue declarations.
+     * @param   iterable<ScheduleContributionDefinition>     $schedules              Recurring schedules.
+     * @param   iterable<ProjectionDefinition>               $projections            Rebuildable projections.
+     * @param   iterable<ReportDefinition>                   $reports                Safe report definitions.
+     * @param   iterable<WebhookContributionDefinition>      $webhooks               Outbound adapter declarations.
+     * @param   int                                          $spiVersion             Contribution SPI revision.
      *
      * @throws  InvalidArgumentException  When an identifier is outside the owner's namespace or declared twice,
      *          when navigation or a route references something this set does not declare, or when a business
@@ -994,61 +1039,121 @@ final readonly class ManifestContributionSet
         return array_values($this->customBusinessActions);
     }
 
-    /** @return list<EventSchemaDefinition> Versioned event contracts in identifier order. @since 2.0.0 */
+    /**
+     * Return the event schemas carried by this manifest contribution set.
+     *
+     * @return  list<EventSchemaDefinition>  Versioned event contracts in identifier order.
+     *
+     * @since   2.0.0
+     */
     public function eventSchemas(): array
     {
         return array_values($this->eventSchemas);
     }
 
-    /** @return list<DomainListenerDefinition> Synchronous listener declarations. @since 2.0.0 */
+    /**
+     * Return the domain listeners carried by this manifest contribution set.
+     *
+     * @return  list<DomainListenerDefinition>  Synchronous listener declarations.
+     *
+     * @since   2.0.0
+     */
     public function domainListeners(): array
     {
         return array_values($this->domainListeners);
     }
 
-    /** @return list<EventConsumerDefinition> Durable consumer declarations. @since 2.0.0 */
+    /**
+     * Return the event consumers carried by this manifest contribution set.
+     *
+     * @return  list<EventConsumerDefinition>  Durable consumer declarations.
+     *
+     * @since   2.0.0
+     */
     public function eventConsumers(): array
     {
         return array_values($this->eventConsumers);
     }
 
-    /** @return list<JobContributionDefinition> Job handler and payload declarations. @since 2.0.0 */
+    /**
+     * Return the jobs carried by this manifest contribution set.
+     *
+     * @return  list<JobContributionDefinition>  Job handler and payload declarations.
+     *
+     * @since   2.0.0
+     */
     public function jobs(): array
     {
         return array_values($this->jobs);
     }
 
-    /** @return list<QueueContributionDefinition> Logical queue declarations. @since 2.0.0 */
+    /**
+     * Return the queues carried by this manifest contribution set.
+     *
+     * @return  list<QueueContributionDefinition>  Logical queue declarations.
+     *
+     * @since   2.0.0
+     */
     public function queues(): array
     {
         return array_values($this->queues);
     }
 
-    /** @return list<ScheduleContributionDefinition> Recurring schedule declarations. @since 2.0.0 */
+    /**
+     * Return the schedules carried by this manifest contribution set.
+     *
+     * @return  list<ScheduleContributionDefinition>  Recurring schedule declarations.
+     *
+     * @since   2.0.0
+     */
     public function schedules(): array
     {
         return array_values($this->schedules);
     }
 
-    /** @return list<ProjectionDefinition> Rebuildable projection declarations. @since 2.0.0 */
+    /**
+     * Return the projections carried by this manifest contribution set.
+     *
+     * @return  list<ProjectionDefinition>  Rebuildable projection declarations.
+     *
+     * @since   2.0.0
+     */
     public function projections(): array
     {
         return array_values($this->projections);
     }
 
-    /** @return list<ReportDefinition> Safe report declarations. @since 2.0.0 */
+    /**
+     * Return the reports carried by this manifest contribution set.
+     *
+     * @return  list<ReportDefinition>  Safe report declarations.
+     *
+     * @since   2.0.0
+     */
     public function reports(): array
     {
         return array_values($this->reports);
     }
 
-    /** @return list<WebhookContributionDefinition> Outbound adapter declarations. @since 2.0.0 */
+    /**
+     * Return the webhooks carried by this manifest contribution set.
+     *
+     * @return  list<WebhookContributionDefinition>  Outbound adapter declarations.
+     *
+     * @since   2.0.0
+     */
     public function webhooks(): array
     {
         return array_values($this->webhooks);
     }
 
-    /** @return int Contribution service-provider interface revision. @since 2.0.0 */
+    /**
+     * Return the SPI version carried by this manifest contribution set.
+     *
+     * @return  int  Contribution service-provider interface revision.
+     *
+     * @since   2.0.0
+     */
     public function spiVersion(): int
     {
         return $this->spiVersion;

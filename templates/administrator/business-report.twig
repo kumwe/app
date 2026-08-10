@@ -1,0 +1,48 @@
+{% extends "layout.twig" %}
+{% block title %}Business report · Kumwe{% endblock %}
+{% block context_title %}Business report{% endblock %}
+{% block content %}
+  <section class="panel">
+    <header class="panel-header"><div><h1>Business report</h1><p>Policy-filtered values only.</p></div></header>
+    {% if report_error %}
+      <div class="panel-body" role="alert"><h2>Report request not accepted</h2><p>{{ report_error }}</p></div>
+    {% endif %}
+    {% if reports is empty %}
+      <div class="panel-body"><p>No active reports are available to this administrator surface.</p></div>
+    {% else %}
+      {% for report in reports %}
+        <form method="post" action="{{ report.execute_url }}" class="panel-body" aria-label="Run {{ report.title }}">
+          <input type="hidden" name="_csrf" value="{{ administrator_session.csrfToken }}">
+          <h2>{{ report.title }}</h2>
+          <p><code>{{ report.id }}</code></p>
+          {% if report.parameters %}
+            <details><summary>Parameter contract</summary><ul>
+              {% for parameter in report.parameters %}
+                <li><code>{{ parameter.name }}</code> — {{ parameter.type }}{% if parameter.multiple %} list{% endif %}{% if parameter.required %}, required{% endif %}</li>
+              {% endfor %}
+            </ul></details>
+          {% endif %}
+          <label>Parameters as JSON object
+            <textarea name="parameters_json" rows="3" spellcheck="false">{}</textarea>
+          </label>
+          <div class="actions">
+            <button type="submit">Run report</button>
+            {% if report.can_export %}<button type="submit" formaction="{{ report.export_url }}">Queue CSV export</button>{% endif %}
+          </div>
+        </form>
+      {% endfor %}
+    {% endif %}
+    {% if report_result %}
+      <div class="table-wrap" tabindex="0" role="region" aria-label="Report results">
+        <table><thead><tr>{% for column in report_result.columns %}<th>{{ column.label }}</th>{% endfor %}{% if report_result.has_drill_downs %}<th>Details</th>{% endif %}</tr></thead>
+          <tbody>{% for row in report_result.rows %}{% set row_index = loop.index0 %}<tr>{% for column in report_result.columns %}<td>{{ attribute(row, column.alias)|default('') }}</td>{% endfor %}{% if report_result.has_drill_downs %}<td>{% for link in attribute(report_result.drill_downs, row_index) %}<a href="{{ link.url }}">Open details</a>{% if not loop.last %}<br>{% endif %}{% else %}<span aria-label="No detail view">—</span>{% endfor %}</td>{% endif %}</tr>{% else %}<tr><td colspan="{{ report_result.columns|length + (report_result.has_drill_downs ? 1 : 0) }}">No matching rows.</td></tr>{% endfor %}</tbody>
+        </table>
+      </div>
+    {% elseif export %}
+      <div class="panel-body"><h2>Export {{ export.status|replace({'_': ' '})|title }}</h2>
+        <dl><dt>Requested</dt><dd>{{ export.created_at }}</dd><dt>Rows</dt><dd>{{ export.row_count is null ? 'Pending' : export.row_count }}</dd><dt>Checksum</dt><dd>{{ export.checksum|default('Pending') }}</dd></dl>
+        <p><a href="/administrator/reports/exports/{{ export.id }}">Refresh status</a>{% if export.status == 'completed' %} · <a href="/administrator/reports/exports/{{ export.id }}/download">Download verified CSV</a>{% endif %}</p>
+      </div>
+    {% endif %}
+  </section>
+{% endblock %}

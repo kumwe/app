@@ -79,6 +79,7 @@ final readonly class KumweMcpHandlers
      * @param  BusinessDefinitionService     $definitions       Business entity definition drafts and versions.
      * @param  BusinessSchemaService         $schema            Schema plans and their approval and execution.
      * @param  BusinessMcpHandlers           $businessRecords   Bounded generated-business MCP delegate.
+     * @param  ReportMcpHandlers             $businessReports   Bounded report and export MCP delegate.
      * @param  McpMutationGuard              $mutations         Idempotency fence every write is run through.
      * @param  ClockInterface                $clock             Supplies the first-run instant a new schedule is
      *         anchored to.
@@ -106,6 +107,7 @@ final readonly class KumweMcpHandlers
         private BusinessDefinitionService $definitions,
         private BusinessSchemaService $schema,
         private BusinessMcpHandlers $businessRecords,
+        private ReportMcpHandlers $businessReports,
         private McpMutationGuard $mutations,
         private ClockInterface $clock,
         private AuthorizationGateway $authorization,
@@ -143,6 +145,7 @@ final readonly class KumweMcpHandlers
             $this->definitions,
             $this->schema,
             $this->businessRecords,
+            $this->businessReports,
             $this->mutations,
             $this->clock,
             $this->authorization,
@@ -215,6 +218,7 @@ final readonly class KumweMcpHandlers
             $this->definitions,
             $this->schema,
             $this->businessRecords,
+            $this->businessReports,
             $this->mutations,
             $this->clock,
             $this->authorization,
@@ -2933,6 +2937,108 @@ final readonly class KumweMcpHandlers
     private function schemaPlan(SchemaPlan $plan): array
     {
         return [...$plan->toArray(), 'checksum' => $plan->checksum()];
+    }
+
+    /**
+     * Execute one active contributed report through the shared policy-filtered report service.
+     *
+     * @param   string                $report      Namespaced active report identifier.
+     * @param   array<string, mixed>  $parameters  Typed values keyed by declared parameter name.
+     *
+     * @return  array<string, mixed>  Bounded omission-safe report result.
+     *
+     * @since   2.0.0
+     */
+    public function executeBusinessReport(string $report, array $parameters = []): array
+    {
+        $this->require('business.record.report');
+
+        return $this->businessReports->execute($this->context(), $report, $parameters);
+    }
+
+    /**
+     * List active contributed reports visible to the bound MCP credential.
+     *
+     * @return  array{items: list<array<string, mixed>>}  Safe typed report summaries.
+     *
+     * @since   2.0.0
+     */
+    public function listBusinessReports(): array
+    {
+        $this->require('business.record.report');
+
+        return $this->businessReports->list($this->context());
+    }
+
+    /**
+     * Idempotently create one durable report export under the caller's exact authority snapshot.
+     *
+     * @param   string                $operationId       Stable MCP idempotency identity.
+     * @param   string                $report            Namespaced active report identifier.
+     * @param   array<string, mixed>  $parameters        Typed values keyed by declared parameter name.
+     * @param   int                   $retentionSeconds  Artifact lifetime from one minute through seven days.
+     *
+     * @return  array<string, mixed>  Queued export lifecycle metadata or its replay.
+     *
+     * @since   2.0.0
+     */
+    public function requestBusinessReportExport(
+        string $operationId,
+        string $report,
+        array $parameters = [],
+        int $retentionSeconds = 86_400,
+    ): array {
+        $this->require('business.record.export');
+        $this->preauthorize(
+            $operationId,
+            'business.record.export',
+            AuthorizationResource::collection('business_report'),
+        );
+
+        return $this->mutations->run(
+            $this->context($operationId),
+            'business.report.export.request',
+            $operationId,
+            compact('report', 'parameters', 'retentionSeconds'),
+            fn (): array => $this->businessReports->requestExport(
+                $this->context($operationId),
+                $report,
+                $parameters,
+                $retentionSeconds,
+            ),
+        );
+    }
+
+    /**
+     * Read current authorized lifecycle metadata for one export.
+     *
+     * @param   string  $artifact  Export artifact UUID.
+     *
+     * @return  array<string, mixed>  Current safe export status.
+     *
+     * @since   2.0.0
+     */
+    public function businessReportExportStatus(string $artifact): array
+    {
+        $this->require('business.record.export');
+
+        return $this->businessReports->exportStatus($this->context(), $artifact);
+    }
+
+    /**
+     * Download one completed verified export within the MCP inline-size ceiling.
+     *
+     * @param   string  $artifact  Completed export artifact UUID.
+     *
+     * @return  array<string, mixed>  Base64 artifact bytes and checksum metadata.
+     *
+     * @since   2.0.0
+     */
+    public function downloadBusinessReportExport(string $artifact): array
+    {
+        $this->require('business.record.export');
+
+        return $this->businessReports->downloadExport($this->context(), $artifact);
     }
 
     /**

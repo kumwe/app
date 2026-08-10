@@ -1,0 +1,10 @@
+/vendor/
+/.phpunit.cache/
+/.phpunit.result.cache
+*.zip
+*.signature.json
+*.key
+*.p12
+*.pem
+*.pfx
+*.seed

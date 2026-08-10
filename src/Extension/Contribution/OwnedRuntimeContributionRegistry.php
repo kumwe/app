@@ -48,7 +48,11 @@ final class OwnedRuntimeContributionRegistry implements ContributionSurface
         if ($kind === '' || strlen($kind) > 80) {
             throw new InvalidArgumentException('A runtime contribution registry kind is required.');
         }
-        if ($implementationType !== null && !interface_exists($implementationType) && !class_exists($implementationType)) {
+        if (
+            $implementationType !== null
+            && !interface_exists($implementationType)
+            && !class_exists($implementationType)
+        ) {
             throw new InvalidArgumentException('A runtime contribution implementation contract must exist.');
         }
     }
@@ -56,9 +60,9 @@ final class OwnedRuntimeContributionRegistry implements ContributionSurface
     /**
      * Register one manifest-reconciled definition and its executable implementation.
      *
-     * @param   ContributionOwner        $owner           Contributor claiming the definition.
-     * @param   ContributionDefinition   $definition      Signed declaration accepted by the owner registrar.
-     * @param   ?object                  $implementation  Runtime object, required for executable surfaces.
+     * @param   ContributionOwner       $owner           Contributor claiming the definition.
+     * @param   ContributionDefinition  $definition      Signed declaration accepted by the owner registrar.
+     * @param   ?object                 $implementation  Runtime object, required for executable surfaces.
      *
      * @return  void
      *

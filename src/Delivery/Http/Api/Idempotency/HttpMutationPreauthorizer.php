@@ -9,6 +9,7 @@ use JsonException;
 use Kumwe\CMS\Application\Authorization\AuthorizationGateway;
 use Kumwe\CMS\Application\Authorization\AuthorizationResource;
 use Kumwe\CMS\Application\Authorization\ExecutionContext;
+use Kumwe\CMS\BusinessReporting\Domain\ReportDefinitionGuard;
 use Kumwe\CMS\Content\Application\ContentService;
 use Kumwe\CMS\Content\Application\ContentModelRepository;
 use Kumwe\CMS\Identity\Application\Administration\AccessControlRepository;
@@ -26,8 +27,8 @@ use Psr\Http\Message\ServerRequestInterface;
  * call this before they touch the ledger, so nobody learns about — or interferes with — a mutation they
  * may not perform. What lives here is the policy the route-level capability guard cannot express: method
  * and path are matched to the exact capability and the exact resource the mutation targets, down to the
- * content entry, the menu item, the role and the grant, with token issuance and rotation delegated to
- * the preauthorizers that own those rules. The closing line is the point of the class — an unrecognised
+ * content entry, contributed report, menu item, role and grant, with token issuance and rotation delegated
+ * to the preauthorizers that own those rules. The closing line is the point of the class — an unrecognised
  * route is refused, so mounting an idempotent endpoint without writing its policy here fails loudly
  * rather than running unguarded.
  *
@@ -80,8 +81,8 @@ final readonly class HttpMutationPreauthorizer
      * @return  void
      *
      * @throws  InvalidArgumentException  When the route carries no policy, the method and path are not a
-     *          supported content mutation, a path segment is not a usable resource identifier, the body is
-     *          not a JSON object, a required body field is missing or blank, or a named grant is gone.
+     *          supported content mutation, a report or other path segment is not a usable resource identifier,
+     *          the body is not a JSON object, a required body field is missing or blank, or a named grant is gone.
      * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not perform the
      *          mutation, or may not delegate a capability the request would hand on.
      * @throws  \Kumwe\CMS\Content\Application\ContentNotFound  When a transition names an entry the context
@@ -100,6 +101,27 @@ final readonly class HttpMutationPreauthorizer
 
         if ($method === 'POST' && $path === '/api/v1/content') {
             $this->assert($context, 'content.create', AuthorizationResource::collection('content'));
+            return;
+        }
+        if (
+            $method === 'POST'
+            && preg_match('#^/api/v1/business/reports/([^/]+)/exports$#D', $path, $match) === 1
+        ) {
+            $report = rawurldecode($match[1]);
+            try {
+                ReportDefinitionGuard::identifier($report, 'identifier');
+            } catch (InvalidArgumentException $exception) {
+                throw new InvalidReportExportRequest(
+                    'The business report export identifier is invalid.',
+                    0,
+                    $exception,
+                );
+            }
+            $this->assert(
+                $context,
+                'business.record.export',
+                AuthorizationResource::item('business_report', $report),
+            );
             return;
         }
         if (preg_match('#^/api/v1/content/([^/]+)(?:/(transition|restore))?$#D', $path, $match) === 1) {

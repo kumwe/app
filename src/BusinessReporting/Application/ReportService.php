@@ -9,10 +9,12 @@ use InvalidArgumentException;
 use Kumwe\CMS\Application\Authorization\AuthenticatedSurface;
 use Kumwe\CMS\Application\Authorization\AuthorizationGateway;
 use Kumwe\CMS\Application\Authorization\AuthorizationResource;
+use Kumwe\CMS\Application\Authorization\ExecutionContext;
 use Kumwe\CMS\BusinessDefinition\Domain\CanonicalDefinitionJson;
 use Kumwe\CMS\BusinessDefinition\Domain\DecimalValue;
 use Kumwe\CMS\BusinessRecord\Application\BusinessRecordRelationView;
 use Kumwe\CMS\BusinessRecord\Application\BusinessRecordView;
+use Kumwe\CMS\BusinessRecord\Application\Exception\InvalidBusinessRecordQuery;
 use Kumwe\CMS\BusinessRecord\Application\Query\BusinessRecordQueryPurpose;
 use Kumwe\CMS\BusinessRecord\Domain\ExactDecimal;
 use Kumwe\CMS\BusinessRecord\Query\BooleanFilter;
@@ -40,6 +42,7 @@ use Kumwe\CMS\BusinessReporting\Domain\ReportSortDefinition;
 use Kumwe\CMS\BusinessReporting\Domain\ReportSortDirection;
 use Kumwe\CMS\BusinessReporting\Domain\ReportValueType;
 use Kumwe\CMS\Identity\Domain\Capability;
+use Throwable;
 
 /**
  * Executes immutable reports exclusively over policy-filtered business-record browse pages.
@@ -55,10 +58,11 @@ final readonly class ReportService
     /**
      * Wire reporting to definitions, the policy-aware record seam and capability enforcement.
      *
-     * @param   ReportDefinitionRegistry  $reports            Active report contributions.
-     * @param   BusinessRecordReportReader $records           Canonical record browse adapter.
-     * @param   AuthorizationGateway      $authorization      Deny-by-default permission gateway.
-     * @param   int                       $maximumExportRows  Absolute expanded-row bound for one export.
+     * @param   ReportDefinitionRegistry    $reports            Active report contributions.
+     * @param   BusinessRecordReportReader  $records            Canonical record browse adapter.
+     * @param   AuthorizationGateway        $authorization      Deny-by-default permission gateway.
+     * @param   ReportScopeResolver         $scopes             Installed source-scope resolver.
+     * @param   int                         $maximumExportRows  Absolute expanded-row bound for one export.
      *
      * @throws  InvalidArgumentException  When the export bound is outside 1 to 100000.
      *
@@ -68,6 +72,7 @@ final readonly class ReportService
         private ReportDefinitionRegistry $reports,
         private BusinessRecordReportReader $records,
         private AuthorizationGateway $authorization,
+        private ReportScopeResolver $scopes,
         private int $maximumExportRows = 100_000,
     ) {
         if ($maximumExportRows < 1 || $maximumExportRows > 100_000) {
@@ -82,7 +87,7 @@ final readonly class ReportService
      *
      * @return  ReportExecutionResult  Fully bounded disclosure-safe result.
      *
-     * @throws  ReportUnavailable       When the report is absent or not exposed to the current surface.
+     * @throws  ReportUnavailable  When the report is absent or not exposed to the current surface.
      * @throws  ReportRowLimitExceeded  When the materialized row count passes its purpose-specific bound.
      *
      * @since   2.0.0
@@ -90,18 +95,15 @@ final readonly class ReportService
     public function execute(ReportExecutionRequest $request): ReportExecutionResult
     {
         $report = $this->reports->get($request->reportIdentifier);
-        $this->assertSurface($report, $request->context->surface());
-        $this->authorization->assertAllowed(
-            $request->context,
-            Capability::fromString($report->requiredCapability),
-            AuthorizationResource::collection('business_report'),
-        );
-        $this->authorization->assertAllowed(
-            $request->context,
-            Capability::fromString('business.record.' . $request->purpose->value),
-            AuthorizationResource::collection('business_report'),
-        );
+        if (!$this->isAvailable($request->context, $report, $request->purpose)) {
+            throw new ReportUnavailable('The report is unavailable.');
+        }
         $parameters = $this->bindParameters($report, $request->parameters);
+        $organizationIdentifier = $this->scopes->resolve(
+            $request->context,
+            $report,
+            $request->organizationIdentifier,
+        );
         $filter = $this->compileFilters($report, $parameters);
         [$fields, $includes] = $this->projection($report);
         $limit = $request->purpose === BusinessRecordQueryPurpose::Export
@@ -116,13 +118,17 @@ final readonly class ReportService
                 pageSize: 200,
                 projection: new RecordProjection($fields, $includes),
             );
-            $page = $this->records->browse(
-                $request->context,
-                $report->sourceDefinition,
-                $specification,
-                $request->organizationIdentifier,
-                $request->purpose,
-            );
+            try {
+                $page = $this->records->browse(
+                    $request->context,
+                    $report->sourceDefinition,
+                    $specification,
+                    $organizationIdentifier,
+                    $request->purpose,
+                );
+            } catch (InvalidBusinessRecordQuery $exception) {
+                throw new ReportUnavailable('The report is unavailable.', previous: $exception);
+            }
             foreach ($page->records as $record) {
                 foreach ($this->projectRecord($report, $record) as $row) {
                     $rows[] = $row;
@@ -134,6 +140,7 @@ final readonly class ReportService
             $after = $page->nextCursor;
         } while ($after instanceof RecordCursor);
 
+        $this->assertCompleteProjection($report, $rows);
         $rows = $this->materialize($report, $rows);
         if (count($rows) > $limit) {
             throw new ReportRowLimitExceeded('The report result exceeds its row limit.');
@@ -143,7 +150,7 @@ final readonly class ReportService
         $queryDigest = CanonicalDefinitionJson::checksum([
             'report_checksum' => $report->checksum(),
             'parameters' => $parameters,
-            'organization' => $request->organizationIdentifier,
+            'organization' => $organizationIdentifier,
             'purpose' => $request->purpose->value,
         ]);
 
@@ -154,10 +161,84 @@ final readonly class ReportService
             $labels,
             $types,
             $rows,
+            $report->drillDowns,
         );
     }
 
-    /** @param array<string, mixed> $supplied @return array<string, mixed> @since 2.0.0 */
+    /**
+     * List active reports that the current actor can actually execute on this surface and exact resource.
+     *
+     * @param   ExecutionContext            $context  Authenticated actor and current site or membership scope.
+     * @param   BusinessRecordQueryPurpose  $purpose  Report or export authority to evaluate.
+     *
+     * @return  list<ReportDefinition>  Authorized definitions in stable registry order.
+     *
+     * @since   2.0.0
+     */
+    public function available(
+        ExecutionContext $context,
+        BusinessRecordQueryPurpose $purpose = BusinessRecordQueryPurpose::Report,
+    ): array {
+        return array_values(array_filter(
+            $this->reports->all(),
+            fn (ReportDefinition $report): bool => $this->isAvailable($context, $report, $purpose),
+        ));
+    }
+
+    /**
+     * Evaluate one report with the same surface, custom-capability, and core-capability rules as execution.
+     *
+     * @param   ExecutionContext            $context  Authenticated actor and current site or membership scope.
+     * @param   ReportDefinition            $report   Active immutable report definition.
+     * @param   BusinessRecordQueryPurpose  $purpose  Report or export authority to evaluate.
+     *
+     * @return  bool  True only when both audited authorization decisions permit the exact report item.
+     *
+     * @since   2.0.0
+     */
+    public function isAvailable(
+        ExecutionContext $context,
+        ReportDefinition $report,
+        BusinessRecordQueryPurpose $purpose = BusinessRecordQueryPurpose::Report,
+    ): bool {
+        if (!$this->surfaceAvailable($report, $context->surface())) {
+            return false;
+        }
+        $resource = AuthorizationResource::item('business_report', $report->identifier());
+        if (!$this->authorization->decide(
+            $context,
+            Capability::fromString($report->requiredCapability),
+            $resource,
+        )->allowed) {
+            return false;
+        }
+
+        if (!$this->authorization->decide(
+            $context,
+            Capability::fromString('business.record.' . $purpose->value),
+            $resource,
+        )->allowed) {
+            return false;
+        }
+        try {
+            $this->scopes->resolve($context, $report, $context->organization()?->identifier());
+        } catch (Throwable) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Bind and validate caller-supplied report parameters.
+     *
+     * @param   ReportDefinition      $report    Signed report definition governing query behavior.
+     * @param   array<string, mixed>  $supplied  Caller-provided values keyed by report parameter identifier.
+     *
+     * @return  array<string, mixed>
+     *
+     * @since   2.0.0
+     */
     private function bindParameters(ReportDefinition $report, array $supplied): array
     {
         $declared = [];
@@ -180,7 +261,16 @@ final readonly class ReportService
         return $bound;
     }
 
-    /** @param array<string, mixed> $parameters @since 2.0.0 */
+    /**
+     * Compile declared report filters into business-record filters.
+     *
+     * @param   ReportDefinition      $report      Signed report definition governing query behavior.
+     * @param   array<string, mixed>  $parameters  Validated parameter values used to compile report filters.
+     *
+     * @return  ?RecordFilter  Combined predicate, or null when the report declares no filters.
+     *
+     * @since   2.0.0
+     */
     private function compileFilters(ReportDefinition $report, array $parameters): ?RecordFilter
     {
         $filters = [];
@@ -206,7 +296,17 @@ final readonly class ReportService
         return count($filters) === 1 ? $filters[0] : new BooleanFilter(BooleanOperator::All, $filters);
     }
 
-    /** @since 2.0.0 */
+    /**
+     * Compile one declared report filter into a safe query predicate.
+     *
+     * @param   ReportFilterDefinition  $definition  Signed contribution definition governing the operation.
+     * @param   string                  $field       Declared field path targeted by the predicate.
+     * @param   mixed                   $value       Candidate value being validated or normalized.
+     *
+     * @return  RecordFilter  Business-record predicate compiled from the declared filter.
+     *
+     * @since   2.0.0
+     */
     private function compileFilter(ReportFilterDefinition $definition, string $field, mixed $value): RecordFilter
     {
         return match ($definition->operator) {
@@ -234,7 +334,15 @@ final readonly class ReportService
         };
     }
 
-    /** @return array{0: ?string, 1: string} @since 2.0.0 */
+    /**
+     * Split a declared one-hop field path into its components.
+     *
+     * @param   string  $path  Declared one-hop field path to split and validate.
+     *
+     * @return  array{0: ?string, 1: string}
+     *
+     * @since   2.0.0
+     */
     private function splitPath(string $path): array
     {
         $parts = explode('.', $path, 2);
@@ -242,7 +350,15 @@ final readonly class ReportService
         return count($parts) === 1 ? [null, $parts[0]] : [$parts[0], $parts[1]];
     }
 
-    /** @return array{0: list<string>, 1: list<string>} @since 2.0.0 */
+    /**
+     * Compile the report column projection for policy-safe record access.
+     *
+     * @param   ReportDefinition  $report  Signed report definition governing query behavior.
+     *
+     * @return  array{0: list<string>, 1: list<string>}
+     *
+     * @since   2.0.0
+     */
     private function projection(ReportDefinition $report): array
     {
         $fields = [];
@@ -259,7 +375,16 @@ final readonly class ReportService
         return [array_values(array_unique($fields)), array_values(array_unique($includes))];
     }
 
-    /** @return list<array<string, bool|int|string|null>> @since 2.0.0 */
+    /**
+     * Project one policy-filtered business record into report cells.
+     *
+     * @param   ReportDefinition    $report  Signed report definition governing query behavior.
+     * @param   BusinessRecordView  $record  Policy-filtered business record being projected.
+     *
+     * @return  list<array<string, bool|int|string|null>>
+     *
+     * @since   2.0.0
+     */
     private function projectRecord(ReportDefinition $report, BusinessRecordView $record): array
     {
         $root = [];
@@ -300,7 +425,48 @@ final readonly class ReportService
         return $rows;
     }
 
-    /** @return bool|int|string|null @since 2.0.0 */
+    /**
+     * Refuse a partially disclosed projection before grouping, formulas, labels, or ordering can expose it.
+     *
+     * @param   ReportDefinition                           $report  Signed definition naming every required source.
+     * @param   list<array<string, bool|int|string|null>>  $rows    Policy-filtered rows before materialization.
+     *
+     * @return  void
+     *
+     * @throws  ReportUnavailable  When policy or conditional visibility omitted any requested source value.
+     *
+     * @since   2.0.0
+     */
+    private function assertCompleteProjection(ReportDefinition $report, array $rows): void
+    {
+        if ($rows === []) {
+            foreach ($report->columns as $column) {
+                if (str_contains($column->sourcePath, '.')) {
+                    throw new ReportUnavailable('The report is unavailable.');
+                }
+            }
+
+            return;
+        }
+        foreach ($rows as $row) {
+            foreach ($report->columns as $column) {
+                if (!array_key_exists($column->alias, $row)) {
+                    throw new ReportUnavailable('The report is unavailable.');
+                }
+            }
+        }
+    }
+
+    /**
+     * Normalize one projected value for its declared report column.
+     *
+     * @param   mixed                   $value   Candidate value being validated or normalized.
+     * @param   ReportColumnDefinition  $column  Column definition controlling value normalization.
+     *
+     * @return  bool|int|string|null
+     *
+     * @since   2.0.0
+     */
     private function cell(mixed $value, ReportColumnDefinition $column): bool|int|string|null
     {
         if ($value instanceof ExactDecimal) {
@@ -321,9 +487,14 @@ final readonly class ReportService
     }
 
     /**
-     * @param  list<array<string, bool|int|string|null>> $rows
-     * @return list<array<string, bool|int|string|null>>
-     * @since  2.0.0
+     * Materialize report groups, aggregates, and formula rows.
+     *
+     * @param   ReportDefinition                           $report  Signed report definition governing query behavior.
+     * @param   list<array<string, bool|int|string|null>>  $rows    Policy-filtered report rows being transformed.
+     *
+     * @return  list<array<string, bool|int|string|null>>
+     *
+     * @since   2.0.0
      */
     private function materialize(ReportDefinition $report, array $rows): array
     {
@@ -355,9 +526,14 @@ final readonly class ReportService
     }
 
     /**
-     * @param  list<array<string, bool|int|string|null>> $rows
-     * @return list<array<string, bool|int|string|null>>
-     * @since  2.0.0
+     * Group report rows by the declared grouping fields.
+     *
+     * @param   ReportDefinition                           $report  Signed report definition governing query behavior.
+     * @param   list<array<string, bool|int|string|null>>  $rows    Policy-filtered report rows being transformed.
+     *
+     * @return  list<array<string, bool|int|string|null>>
+     *
+     * @since   2.0.0
      */
     private function group(ReportDefinition $report, array $rows): array
     {
@@ -392,7 +568,16 @@ final readonly class ReportService
         return $result;
     }
 
-    /** @param list<array<string, bool|int|string|null>> $rows @return int|string|null @since 2.0.0 */
+    /**
+     * Calculate one declared aggregate across the supplied rows.
+     *
+     * @param   ReportAggregateDefinition                  $aggregate  Aggregate definition to calculate.
+     * @param   list<array<string, bool|int|string|null>>  $rows       Policy-filtered report rows being transformed.
+     *
+     * @return  int|string|null
+     *
+     * @since   2.0.0
+     */
     private function aggregate(ReportAggregateDefinition $aggregate, array $rows): int|string|null
     {
         if ($aggregate->function === ReportAggregateFunction::Count) {
@@ -439,9 +624,14 @@ final readonly class ReportService
     }
 
     /**
-     * @param  list<array<string, bool|int|string|null>> $rows
-     * @return void
-     * @since  2.0.0
+     * Sort report rows by the declared stable ordering.
+     *
+     * @param   ReportDefinition                           $report  Signed report definition governing query behavior.
+     * @param   list<array<string, bool|int|string|null>>  $rows    Policy-filtered report rows being transformed.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
      */
     private function sort(ReportDefinition $report, array &$rows): void
     {
@@ -466,9 +656,15 @@ final readonly class ReportService
     }
 
     /**
-     * @param array<string, bool|int|string|null> $left
-     * @param array<string, bool|int|string|null> $right
-     * @since 2.0.0
+     * Compare two rows using the declared report sort rules.
+     *
+     * @param   array<string, bool|int|string|null>  $left   Left row in the deterministic comparison.
+     * @param   array<string, bool|int|string|null>  $right  Right row in the deterministic comparison.
+     * @param   ReportSortDefinition                 $sort   Sort definition supplying field and direction.
+     *
+     * @return  int  Negative, zero, or positive ordering result for the declared sort.
+     *
+     * @since   2.0.0
      */
     private function compareSort(array $left, array $right, ReportSortDefinition $sort): int
     {
@@ -486,7 +682,16 @@ final readonly class ReportService
         return $sort->direction === ReportSortDirection::Ascending ? $comparison : -$comparison;
     }
 
-    /** @since 2.0.0 */
+    /**
+     * Compare two normalized report values deterministically.
+     *
+     * @param   bool|int|string  $left   Left normalized value or row in the deterministic comparison.
+     * @param   bool|int|string  $right  Right normalized value or row in the deterministic comparison.
+     *
+     * @return  int  Negative, zero, or positive ordering result.
+     *
+     * @since   2.0.0
+     */
     private function compare(bool|int|string $left, bool|int|string $right): int
     {
         if ((is_int($left) || $this->decimal($left)) && (is_int($right) || $this->decimal($right))) {
@@ -496,13 +701,29 @@ final readonly class ReportService
         return (string) $left <=> (string) $right;
     }
 
-    /** @since 2.0.0 */
+    /**
+     * Normalize a value into its decimal comparison representation.
+     *
+     * @param   bool|int|string  $value  Candidate value being validated or normalized.
+     *
+     * @return  bool  Whether the value is a canonical decimal string.
+     *
+     * @since   2.0.0
+     */
     private function decimal(bool|int|string $value): bool
     {
         return is_string($value) && preg_match('/^-?(?:0|[1-9][0-9]*)(?:\.[0-9]+)?$/D', $value) === 1;
     }
 
-    /** @return array<string, string> @since 2.0.0 */
+    /**
+     * Return output labels keyed by report column identifier.
+     *
+     * @param   ReportDefinition  $report  Signed report definition governing query behavior.
+     *
+     * @return  array<string, string>
+     *
+     * @since   2.0.0
+     */
     private function labels(ReportDefinition $report): array
     {
         $labels = [];
@@ -525,7 +746,15 @@ final readonly class ReportService
         return $labels;
     }
 
-    /** @return array<string, ReportValueType> @since 2.0.0 */
+    /**
+     * Return output value types keyed by report column identifier.
+     *
+     * @param   ReportDefinition  $report  Signed report definition governing query behavior.
+     *
+     * @return  array<string, ReportValueType>
+     *
+     * @since   2.0.0
+     */
     private function types(ReportDefinition $report): array
     {
         $types = [];
@@ -543,7 +772,7 @@ final readonly class ReportService
         foreach ($report->aggregates as $aggregate) {
             $types[$aggregate->alias] = match ($aggregate->function) {
                 ReportAggregateFunction::Count => ReportValueType::Integer,
-                ReportAggregateFunction::Average => ReportValueType::Decimal,
+                ReportAggregateFunction::Sum, ReportAggregateFunction::Average => ReportValueType::Decimal,
                 default => $columns[$aggregate->columnAlias]
                     ?? throw new ReportUnavailable('A report aggregate source type is unavailable.'),
             };
@@ -555,18 +784,34 @@ final readonly class ReportService
         return $types;
     }
 
-    /** @since 2.0.0 */
-    private function assertSurface(ReportDefinition $report, AuthenticatedSurface $surface): void
+    /**
+     * Test the definition's signed delivery-surface exposure without performing an authorization decision.
+     *
+     * @param   ReportDefinition      $report   Active immutable report definition.
+     * @param   AuthenticatedSurface  $surface  Delivery surface requesting discovery or execution.
+     *
+     * @return  bool  Whether the definition exposes itself to this surface.
+     *
+     * @since   2.0.0
+     */
+    private function surfaceAvailable(ReportDefinition $report, AuthenticatedSurface $surface): bool
     {
-        if (($surface === AuthenticatedSurface::Administrator && !$report->administratorVisible)
+        return !(
+            ($surface === AuthenticatedSurface::Administrator && !$report->administratorVisible)
             || ($surface === AuthenticatedSurface::Portal && !$report->portalVisible)
             || $surface === AuthenticatedSurface::Recovery
-        ) {
-            throw new ReportUnavailable('The report is unavailable.');
-        }
+        );
     }
 
-    /** @since 2.0.0 */
+    /**
+     * Normalize a scalar report value into bounded text.
+     *
+     * @param   mixed  $value  Candidate value being validated or normalized.
+     *
+     * @return  string  Bounded textual representation safe for report output.
+     *
+     * @since   2.0.0
+     */
     private function text(mixed $value): string
     {
         if (!is_string($value)) {
@@ -576,7 +821,15 @@ final readonly class ReportService
         return $value;
     }
 
-    /** @return non-empty-list<mixed> @since 2.0.0 */
+    /**
+     * Normalize a report value into a deterministic string set.
+     *
+     * @param   mixed  $value  Candidate value being validated or normalized.
+     *
+     * @return  non-empty-list<mixed>
+     *
+     * @since   2.0.0
+     */
     private function set(mixed $value): array
     {
         if (!is_array($value) || !array_is_list($value) || $value === []) {

@@ -32,15 +32,20 @@ final class JobExecutionScope
         'system.idempotency.purge' => SystemIdentity::InstallationMaintenance,
     ];
 
-    /** @var array<string, SystemIdentity> Trusted active global job declarations. @since 2.0.0 */
+    /**
+     * Job types permitted to execute without a site scope.
+     *
+     * @var    array<string, SystemIdentity>  Trusted active global job declarations.
+     * @since  2.0.0
+     */
     private array $installationGlobal;
 
     /**
      * Compile extension-owned installation-wide jobs into the same execution-scope authority table.
      *
-     * @param iterable<JobContributionDefinition> $contributedJobs Active signed job definitions.
+     * @param  iterable<JobContributionDefinition>  $contributedJobs  Active signed job definitions.
      *
-     * @since 2.0.0
+     * @since  2.0.0
      */
     public function __construct(iterable $contributedJobs = [])
     {
@@ -50,9 +55,11 @@ final class JobExecutionScope
     /**
      * Replace extension classifications after the signed contribution phase completes.
      *
-     * @param iterable<JobContributionDefinition> $contributedJobs Complete active declaration set.
+     * @param   iterable<JobContributionDefinition>  $contributedJobs  Complete active declaration set.
      *
-     * @since 2.0.0
+     * @return  void
+     *
+     * @since   2.0.0
      */
     public function replace(iterable $contributedJobs): void
     {

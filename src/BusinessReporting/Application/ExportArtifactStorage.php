@@ -12,9 +12,12 @@ namespace Kumwe\CMS\BusinessReporting\Application;
 interface ExportArtifactStorage
 {
     /**
-     * Atomically store chunks under an artifact-owned key without overwriting.
+     * Atomically store chunks under a fresh attempt-owned key without overwriting.
      *
-     * @param   string            $artifactId  Canonical artifact UUID.
+     * Every invocation must return a different unguessable key, including concurrent invocations for the
+     * same artifact. This fences cleanup to bytes owned by the calling generation attempt.
+     *
+     * @param   string            $artifactId  Canonical artifact UUID that owns the generation attempt.
      * @param   iterable<string>  $chunks      Ordered CSV byte chunks.
      *
      * @return  StoredExportArtifact  Stored key, size and checksum.

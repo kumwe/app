@@ -45,6 +45,7 @@ use Kumwe\CMS\Infrastructure\Mcp\BusinessMcpHandlers;
 use Kumwe\CMS\Infrastructure\Mcp\KumweMcpHandlers;
 use Kumwe\CMS\Infrastructure\Mcp\McpCapabilityCatalog;
 use Kumwe\CMS\Infrastructure\Mcp\McpMutationGuard;
+use Kumwe\CMS\Infrastructure\Mcp\ReportMcpHandlers;
 use Kumwe\CMS\Infrastructure\Persistence\TransactionManager;
 use Kumwe\CMS\Navigation\Application\NavigationService;
 use Kumwe\CMS\Site\Application\SiteSettings;
@@ -263,6 +264,7 @@ final class AdapterAuthorizationParityTest extends TestCase
             $this->withoutConstructor(BusinessDefinitionService::class),
             $this->withoutConstructor(BusinessSchemaService::class),
             $this->withoutConstructor(BusinessMcpHandlers::class),
+            $this->withoutConstructor(ReportMcpHandlers::class),
             $this->withoutConstructor(McpMutationGuard::class),
             $this->clock(),
             AuthorizationContext::gateway(),

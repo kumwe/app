@@ -9,6 +9,7 @@ use Kumwe\CMS\BusinessDefinition\Domain\CanonicalDefinitionJson;
 use Kumwe\CMS\BusinessReporting\Application\ExportArtifactRepository;
 use Kumwe\CMS\BusinessReporting\Application\ExportVersionConflict;
 use Kumwe\CMS\BusinessReporting\Domain\ExportArtifact;
+use Kumwe\CMS\Infrastructure\Persistence\TransactionManager;
 use RuntimeException;
 
 /**
@@ -21,14 +22,17 @@ final readonly class FilesystemExportArtifactRepository implements ExportArtifac
     /**
      * Prepare a private absolute metadata directory.
      *
-     * @param   string  $directory  Absolute non-public storage directory.
+     * @param   string              $directory     Absolute non-public storage directory.
+     * @param   TransactionManager  $transactions  Database transaction whose rollback removes a new version.
      *
      * @throws  RuntimeException  When the directory is unsafe or cannot be made private.
      *
      * @since   2.0.0
      */
-    public function __construct(private string $directory)
-    {
+    public function __construct(
+        private string $directory,
+        private TransactionManager $transactions,
+    ) {
         if (!str_starts_with($directory, DIRECTORY_SEPARATOR)) {
             throw new RuntimeException('The export metadata directory must be absolute.');
         }
@@ -81,8 +85,8 @@ final readonly class FilesystemExportArtifactRepository implements ExportArtifac
     /**
      * Append the next metadata version after an optimistic check.
      *
-     * @param   ExportArtifact  $artifact        New immutable state.
-     * @param   int             $expectedVersion Previously read version.
+     * @param   ExportArtifact  $artifact         New immutable state.
+     * @param   int             $expectedVersion  Previously read version.
      *
      * @return  void
      *
@@ -103,7 +107,15 @@ final readonly class FilesystemExportArtifactRepository implements ExportArtifac
         });
     }
 
-    /** @return ?ExportArtifact @since 2.0.0 */
+    /**
+     * Load export metadata without acquiring a repository lock.
+     *
+     * @param   string  $id  Stable identifier of the durable record being addressed.
+     *
+     * @return  ?ExportArtifact
+     *
+     * @since   2.0.0
+     */
     private function findUnlocked(string $id): ?ExportArtifact
     {
         $this->assertId($id);
@@ -139,7 +151,15 @@ final readonly class FilesystemExportArtifactRepository implements ExportArtifac
         return null;
     }
 
-    /** @since 2.0.0 */
+    /**
+     * Append the supplied item to durable storage.
+     *
+     * @param   ExportArtifact  $artifact  Immutable export artifact being transitioned.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     private function append(ExportArtifact $artifact): void
     {
         $path = $this->path($artifact->id, $artifact->version);
@@ -168,9 +188,29 @@ final readonly class FilesystemExportArtifactRepository implements ExportArtifac
         }
         @unlink($temporary);
         chmod($path, 0600);
+        $this->transactions->afterRollback(static function () use ($path): void {
+            if (!file_exists($path) && !is_link($path)) {
+                return;
+            }
+            if (is_link($path) || !is_file($path) || !unlink($path)) {
+                throw new RuntimeException('A rolled-back export metadata version could not be removed safely.');
+            }
+        });
     }
 
-    /** @template T @param callable(): T $operation @return T @since 2.0.0 */
+    /**
+     * Execute the callback while holding the artifact lock.
+     *
+     * @template T
+     *
+     * @param   string         $id         Stable identifier of the durable record being addressed.
+     * @param   callable(): T  $operation  Repository operation executed while the artifact lock is held.
+     * @param   int            $mode       Filesystem lock mode required by the repository operation.
+     *
+     * @return  T
+     *
+     * @since   2.0.0
+     */
     private function locked(string $id, callable $operation, int $mode = LOCK_EX): mixed
     {
         $this->assertId($id);
@@ -194,21 +234,47 @@ final readonly class FilesystemExportArtifactRepository implements ExportArtifac
         }
     }
 
-    /** @since 2.0.0 */
+    /**
+     * Resolve the confined filesystem path for the supplied identifier.
+     *
+     * @param   string  $id       Stable identifier of the durable record being addressed.
+     * @param   int     $version  Exact schema or optimistic-lock version to test.
+     *
+     * @return  string  Confined absolute path for the requested export artifact.
+     *
+     * @since   2.0.0
+     */
     private function path(string $id, int $version): string
     {
         return $this->directory . DIRECTORY_SEPARATOR . strtolower($id) . '.v' . $version . '.json';
     }
 
-    /** @since 2.0.0 */
+    /**
+     * Validate an export artifact identifier before path resolution.
+     *
+     * @param   string  $id  Stable identifier of the durable record being addressed.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     private function assertId(string $id): void
     {
-        if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/Di', $id) !== 1) {
+        if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/D', $id) !== 1) {
             throw new RuntimeException('An export metadata id is invalid.');
         }
     }
 
-    /** @param resource $stream @since 2.0.0 */
+    /**
+     * Write bytes completely to an already opened artifact stream.
+     *
+     * @param   resource  $stream  Opened artifact stream that receives all bytes.
+     * @param   string    $bytes   Complete artifact bytes to write.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     private function write(mixed $stream, string $bytes): void
     {
         while ($bytes !== '') {

@@ -28,11 +28,11 @@ final readonly class BusinessRecordMutationEventPublisher
     /**
      * Bind event publication to the active contracts, listeners, and transactional outbox.
      *
-     * @param   EventContractRegistry               $contracts     Exact trusted event contracts.
-     * @param   ExtensionContributionRegistrySet    $contributions Live owner-bound listener registry.
-     * @param   OutboxStore                         $outbox         Transactional durable event store.
+     * @param  EventContractRegistry             $contracts      Exact trusted event contracts.
+     * @param  ExtensionContributionRegistrySet  $contributions  Live owner-bound listener registry.
+     * @param  OutboxStore                       $outbox         Transactional durable event store.
      *
-     * @since   2.0.0
+     * @since  2.0.0
      */
     public function __construct(
         private EventContractRegistry $contracts,
@@ -44,14 +44,14 @@ final readonly class BusinessRecordMutationEventPublisher
     /**
      * Dispatch and durably append one record mutation fact.
      *
-     * @param   ExecutionContext  $context             Authoritative actor, site, organization, and trace.
-     * @param   string            $definitionId        Stable aggregate/entity type identifier.
-     * @param   int               $definitionVersion   Definition revision used for the write.
-     * @param   string            $recordKey           Internal aggregate identity, never a protected value.
-     * @param   int               $recordVersion       Aggregate version after the write.
-     * @param   string            $operation           Stable mutation operation.
-     * @param   list<string>      $disclosedFields     Non-sensitive changed field handles only.
-     * @param   DateTimeImmutable $occurredAt          Same instant used by the record trail.
+     * @param   ExecutionContext   $context            Authoritative actor, site, organization, and trace.
+     * @param   string             $definitionId       Stable aggregate/entity type identifier.
+     * @param   int                $definitionVersion  Definition revision used for the write.
+     * @param   string             $recordKey          Internal aggregate identity, never a protected value.
+     * @param   int                $recordVersion      Aggregate version after the write.
+     * @param   string             $operation          Stable mutation operation.
+     * @param   list<string>       $disclosedFields    Non-sensitive changed field handles only.
+     * @param   DateTimeImmutable  $occurredAt         Same instant used by the record trail.
      *
      * @return  string  Durable event UUID, preserved by every retry and replay.
      *

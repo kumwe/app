@@ -16,7 +16,15 @@ use LogicException;
  */
 final readonly class ValidatedContributedJobHandler implements JobHandler
 {
-    /** @since 2.0.0 */
+    /**
+     * Create the validated contributed job handler.
+     *
+     * @param  JobContributionDefinition  $definition  Signed contribution definition governing the operation.
+     * @param  JobHandler                 $handler     Runtime handler bound to the signed contribution.
+     * @param  PayloadSchemaValidator     $payloads    Bounded payload-schema validator for contributed data.
+     *
+     * @since  2.0.0
+     */
     public function __construct(
         private JobContributionDefinition $definition,
         private JobHandler $handler,
@@ -28,13 +36,28 @@ final readonly class ValidatedContributedJobHandler implements JobHandler
         $this->payloads->assertSchema($definition->payloadSchema());
     }
 
-    /** @inheritDoc */
+    /**
+     * Return the contributed job type implemented by the wrapped handler.
+     *
+     * @return  string  Signed contributed job type implemented by the wrapped handler.
+     *
+     * @since   2.0.0
+     */
     public function type(): string
     {
         return $this->definition->identifier();
     }
 
-    /** @inheritDoc */
+    /**
+     * Process the supplied item under its authenticated execution context.
+     *
+     * @param   array<string, mixed>  $payload  Decoded job payload validated against the signed contribution schema.
+     * @param   ExecutionContext      $context  Authenticated execution context for authorization and audit.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     public function handle(array $payload, ExecutionContext $context): void
     {
         $this->payloads->assertPayload($this->definition->payloadSchema(), $payload);

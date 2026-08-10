@@ -1160,6 +1160,78 @@ final class McpCapabilityCatalog
                 $object,
                 ['operationId', 'id']
             ),
+            $this->tool(
+                'kumwe_business_report_list',
+                'List business reports',
+                'List active contributed reports visible to this credential.',
+                'listBusinessReports',
+                'business.record.report',
+                true,
+                false,
+                true,
+                [],
+                $this->reportCollectionOutput(),
+            ),
+            $this->tool(
+                'kumwe_business_report_execute',
+                'Execute business report',
+                'Execute one active policy-filtered contributed report with bounded parameters.',
+                'executeBusinessReport',
+                'business.record.report',
+                true,
+                false,
+                true,
+                [
+                    'report' => $this->reportIdentifier(),
+                    'parameters' => $this->reportParameters(),
+                ],
+                $this->reportResultOutput(),
+                ['report'],
+            ),
+            $this->tool(
+                'kumwe_business_report_export_request',
+                'Request business report export',
+                'Idempotently queue one policy-bound CSV report export.',
+                'requestBusinessReportExport',
+                'business.record.export',
+                false,
+                false,
+                true,
+                [
+                    'operationId' => $this->operationId(),
+                    'report' => $this->reportIdentifier(),
+                    'parameters' => $this->reportParameters(),
+                    'retentionSeconds' => ['type' => 'integer', 'minimum' => 60, 'maximum' => 604_800],
+                ],
+                $this->reportExportOutput(),
+                ['operationId', 'report'],
+            ),
+            $this->tool(
+                'kumwe_business_report_export_status',
+                'Read business report export status',
+                'Read current policy-bound export lifecycle metadata.',
+                'businessReportExportStatus',
+                'business.record.export',
+                true,
+                false,
+                true,
+                ['artifact' => ['type' => 'string', 'format' => 'uuid']],
+                $this->reportExportOutput(),
+                ['artifact'],
+            ),
+            $this->tool(
+                'kumwe_business_report_export_download',
+                'Download business report export',
+                'Download a verified completed CSV export up to one megabyte as base64.',
+                'downloadBusinessReportExport',
+                'business.record.export',
+                true,
+                false,
+                true,
+                ['artifact' => ['type' => 'string', 'format' => 'uuid']],
+                $this->reportDownloadOutput(),
+                ['artifact'],
+            ),
         ];
     }
 
@@ -1299,6 +1371,182 @@ final class McpCapabilityCatalog
             'required' => $required,
             'additionalProperties' => false,
         ];
+    }
+
+    /**
+     * Describe a bounded namespaced report identifier.
+     *
+     * @return  array<string, mixed>  JSON Schema for report identifiers.
+     *
+     * @since   2.0.0
+     */
+    private function reportIdentifier(): array
+    {
+        return [
+            'type' => 'string',
+            'minLength' => 3,
+            'maxLength' => 191,
+            'pattern' => '^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)+$',
+        ];
+    }
+
+    /**
+     * Describe the closed scalar or scalar-list parameter object reports accept.
+     *
+     * @return  array<string, mixed>  Bounded report parameter JSON Schema.
+     *
+     * @since   2.0.0
+     */
+    private function reportParameters(): array
+    {
+        return [
+            'type' => 'object',
+            'maxProperties' => 32,
+            'propertyNames' => ['pattern' => '^[a-z][a-z0-9_]{0,62}$'],
+            'additionalProperties' => [
+                'oneOf' => [
+                    ['type' => 'string', 'maxLength' => 4096],
+                    ['type' => 'integer'],
+                    ['type' => 'boolean'],
+                    ['type' => 'array', 'minItems' => 1, 'maxItems' => 100, 'items' => [
+                        'oneOf' => [
+                            ['type' => 'string', 'maxLength' => 4096],
+                            ['type' => 'integer'],
+                            ['type' => 'boolean'],
+                        ],
+                    ]],
+                ],
+            ],
+        ];
+    }
+
+    /**
+     * Describe a synchronous report result with scalar rows and typed columns.
+     *
+     * @return  array<string, mixed>  Closed bounded report result JSON Schema.
+     *
+     * @since   2.0.0
+     */
+    private function reportResultOutput(): array
+    {
+        $scalar = ['oneOf' => [
+            ['type' => 'string', 'maxLength' => 65_536],
+            ['type' => 'integer'],
+            ['type' => 'boolean'],
+            ['type' => 'null'],
+        ]];
+
+        return $this->closedObject([
+            'report' => $this->reportIdentifier(),
+            'definition_checksum' => ['type' => 'string', 'pattern' => '^[a-f0-9]{64}$'],
+            'query_digest' => ['type' => 'string', 'pattern' => '^[a-f0-9]{64}$'],
+            'columns' => ['type' => 'array', 'maxItems' => 96, 'items' => $this->closedObject([
+                'alias' => ['type' => 'string', 'pattern' => '^[a-z][a-z0-9_]{0,62}$'],
+                'label' => ['type' => 'string', 'maxLength' => 191],
+                'type' => [
+                    'type' => 'string',
+                    'enum' => ['string', 'integer', 'decimal', 'boolean', 'date', 'date_time', 'identifier'],
+                ],
+            ], ['alias', 'label', 'type'])],
+            'rows' => ['type' => 'array', 'maxItems' => 1000, 'items' => [
+                'type' => 'object', 'maxProperties' => 96, 'additionalProperties' => $scalar,
+            ]],
+            'row_count' => ['type' => 'integer', 'minimum' => 0, 'maximum' => 1000],
+        ], ['report', 'definition_checksum', 'query_digest', 'columns', 'rows', 'row_count']);
+    }
+
+    /**
+     * Describe the active report discovery collection.
+     *
+     * @return  array<string, mixed>  Closed bounded report collection JSON Schema.
+     *
+     * @since   2.0.0
+     */
+    private function reportCollectionOutput(): array
+    {
+        $parameter = $this->closedObject([
+            'name' => ['type' => 'string', 'pattern' => '^[a-z][a-z0-9_]{0,62}$'],
+            'type' => [
+                'type' => 'string',
+                'enum' => ['string', 'integer', 'decimal', 'boolean', 'date', 'date_time', 'identifier'],
+            ],
+            'required' => ['type' => 'boolean'],
+            'multiple' => ['type' => 'boolean'],
+            'default' => [
+                'oneOf' => [
+                    ['type' => 'string', 'maxLength' => 4096],
+                    ['type' => 'integer'],
+                    ['type' => 'boolean'],
+                    ['type' => 'array', 'maxItems' => 100, 'items' => [
+                        'oneOf' => [
+                            ['type' => 'string', 'maxLength' => 4096],
+                            ['type' => 'integer'],
+                            ['type' => 'boolean'],
+                        ],
+                    ]],
+                    ['type' => 'null'],
+                ],
+            ],
+        ], ['name', 'type', 'required', 'multiple', 'default']);
+        $report = $this->closedObject([
+            'id' => $this->reportIdentifier(),
+            'title' => ['type' => 'string', 'maxLength' => 191],
+            'parameters' => ['type' => 'array', 'maxItems' => 32, 'items' => $parameter],
+        ], ['id', 'title', 'parameters']);
+
+        return $this->closedObject([
+            'items' => ['type' => 'array', 'maxItems' => 256, 'items' => $report],
+        ], ['items']);
+    }
+
+    /**
+     * Describe omission-safe queued export lifecycle metadata.
+     *
+     * @return  array<string, mixed>  Closed export status JSON Schema.
+     *
+     * @since   2.0.0
+     */
+    private function reportExportOutput(): array
+    {
+        $nullableDate = ['type' => ['string', 'null'], 'format' => 'date-time'];
+        $nullableDigest = ['type' => ['string', 'null'], 'pattern' => '^[a-f0-9]{64}$'];
+
+        return $this->closedObject([
+            'id' => ['type' => 'string', 'format' => 'uuid'],
+            'report' => $this->reportIdentifier(),
+            'status' => ['type' => 'string', 'enum' => ['queued', 'running', 'completed', 'failed']],
+            'created_at' => ['type' => 'string', 'format' => 'date-time'],
+            'expires_at' => ['type' => 'string', 'format' => 'date-time'],
+            'started_at' => $nullableDate,
+            'completed_at' => $nullableDate,
+            'filename' => ['type' => ['string', 'null'], 'maxLength' => 127],
+            'size' => ['type' => ['integer', 'null'], 'minimum' => 1],
+            'row_count' => ['type' => ['integer', 'null'], 'minimum' => 0],
+            'checksum' => $nullableDigest,
+            'failure_code' => ['type' => ['string', 'null'], 'maxLength' => 63],
+            'version' => ['type' => 'integer', 'minimum' => 1, 'maximum' => 16],
+        ], [
+            'id', 'report', 'status', 'created_at', 'expires_at', 'started_at', 'completed_at',
+            'filename', 'size', 'row_count', 'checksum', 'failure_code', 'version',
+        ]);
+    }
+
+    /**
+     * Describe the one-megabyte verified base64 download result.
+     *
+     * @return  array<string, mixed>  Closed bounded MCP download JSON Schema.
+     *
+     * @since   2.0.0
+     */
+    private function reportDownloadOutput(): array
+    {
+        return $this->closedObject([
+            'filename' => ['type' => 'string', 'maxLength' => 127],
+            'size' => ['type' => 'integer', 'minimum' => 1, 'maximum' => 1_048_576],
+            'checksum' => ['type' => 'string', 'pattern' => '^[a-f0-9]{64}$'],
+            'encoding' => ['type' => 'string', 'const' => 'base64'],
+            'content' => ['type' => 'string', 'maxLength' => 1_398_104, 'contentEncoding' => 'base64'],
+        ], ['filename', 'size', 'checksum', 'encoding', 'content']);
     }
 
     /**

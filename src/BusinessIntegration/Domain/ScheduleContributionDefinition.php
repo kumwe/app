@@ -15,7 +15,12 @@ use Kumwe\CMS\Application\Automation\CronExpression;
  */
 final readonly class ScheduleContributionDefinition implements IntegrationContract
 {
-    /** @var array<string, mixed> Validated job arguments. @since 2.0.0 */
+    /**
+     * Validated job payload submitted by each recurring execution.
+     *
+     * @var    array<string, mixed>  Validated job arguments.
+     * @since  2.0.0
+     */
     private array $payload;
 
     /**
@@ -60,55 +65,109 @@ final readonly class ScheduleContributionDefinition implements IntegrationContra
         $this->payload = $payload;
     }
 
-    /** @return string Schedule identity. @since 2.0.0 */
+    /**
+     * Return the stable identifier for the schedule contribution definition.
+     *
+     * @return  string  Schedule identity.
+     *
+     * @since   2.0.0
+     */
     public function identifier(): string
     {
         return $this->scheduleId;
     }
 
-    /** @return string Contributed job type. @since 2.0.0 */
+    /**
+     * Return the job type carried by this schedule contribution definition.
+     *
+     * @return  string  Contributed job type.
+     *
+     * @since   2.0.0
+     */
     public function jobType(): string
     {
         return $this->jobType;
     }
 
-    /** @return string Five-field recurrence. @since 2.0.0 */
+    /**
+     * Return the cron expression carried by this schedule contribution definition.
+     *
+     * @return  string  Five-field recurrence.
+     *
+     * @since   2.0.0
+     */
     public function cronExpression(): string
     {
         return $this->cronExpression;
     }
 
-    /** @return string IANA timezone. @since 2.0.0 */
+    /**
+     * Return the timezone carried by this schedule contribution definition.
+     *
+     * @return  string  IANA timezone.
+     *
+     * @since   2.0.0
+     */
     public function timezone(): string
     {
         return $this->timezone;
     }
 
-    /** @return array<string, mixed> Validated job arguments. @since 2.0.0 */
+    /**
+     * Return the validated payload.
+     *
+     * @return  array<string, mixed>  Validated job arguments.
+     *
+     * @since   2.0.0
+     */
     public function payload(): array
     {
         return $this->payload;
     }
 
-    /** @return string Logical queue. @since 2.0.0 */
+    /**
+     * Return the declared durable queue identifier.
+     *
+     * @return  string  Logical queue.
+     *
+     * @since   2.0.0
+     */
     public function queue(): string
     {
         return $this->queue;
     }
 
-    /** @return ?string Explicit site, null only for installation-wide jobs. @since 2.0.0 */
+    /**
+     * Return the site identifier carried by this schedule contribution definition.
+     *
+     * @return  ?string  Explicit site, null only for installation-wide jobs.
+     *
+     * @since   2.0.0
+     */
     public function siteIdentifier(): ?string
     {
         return $this->siteIdentifier;
     }
 
-    /** @return bool Whether occurrences are initially enabled. @since 2.0.0 */
+    /**
+     * Return the enabled carried by this schedule contribution definition.
+     *
+     * @return  bool  Whether occurrences are initially enabled.
+     *
+     * @since   2.0.0
+     */
     public function enabled(): bool
     {
         return $this->enabled;
     }
 
-    /** @return array<string, mixed> Canonical publication representation. @since 2.0.0 */
+    /**
+     * Serialize the schedule contribution definition for durable storage or inspection.
+     *
+     * @return  array<string, mixed>  Canonical publication representation.
+     *
+     * @since   2.0.0
+     */
     public function toArray(): array
     {
         return [

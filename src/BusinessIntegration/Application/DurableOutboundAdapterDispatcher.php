@@ -4,8 +4,11 @@ declare(strict_types=1);
 
 namespace Kumwe\CMS\BusinessIntegration\Application;
 
+use InvalidArgumentException;
 use Kumwe\CMS\Application\Automation\PermanentFailure;
+use Kumwe\CMS\Application\Automation\QueueRuntimePolicyCatalog;
 use Kumwe\CMS\Application\Automation\RetryPolicy;
+use Kumwe\CMS\BusinessIntegration\Domain\ConsumerIdempotency;
 use Kumwe\CMS\BusinessIntegration\Domain\EventConsumerDefinition;
 use Kumwe\CMS\BusinessIntegration\Domain\IntegrationEvent;
 use Kumwe\CMS\BusinessIntegration\Domain\WebhookContributionDefinition;
@@ -20,20 +23,45 @@ use Throwable;
  */
 final readonly class DurableOutboundAdapterDispatcher
 {
-    /** @since 2.0.0 */
+    /**
+     * Create the durable outbound adapter dispatcher.
+     *
+     * @param  InboxStore                     $inbox      Durable receipt ledger used for idempotent delivery.
+     * @param  EventContractRegistry          $contracts  Event contract registry used to validate every delivery.
+     * @param  RetryPolicy                    $retries    Retry policy used to classify delivery failures.
+     * @param  TrustedRuntimeGenerationGuard  $runtime    Trusted active extension runtime.
+     * @param  LoggerInterface                $logger     Structured logger used for delivery observability.
+     * @param  ?QueueRuntimePolicyCatalog     $policies   Active contributed queue limits; null preserves core
+     *         defaults for isolated instances.
+     *
+     * @since  2.0.0
+     */
     public function __construct(
         private InboxStore $inbox,
         private EventContractRegistry $contracts,
         private RetryPolicy $retries,
         private TrustedRuntimeGenerationGuard $runtime,
         private LoggerInterface $logger,
+        private ?QueueRuntimePolicyCatalog $policies = null,
     ) {
     }
 
     /**
      * Deliver once under a fenced receipt; repeat calls return without repeating a completed effect.
      *
-     * @since 2.0.0
+     * @param   WebhookContributionDefinition  $definition         Signed contribution definition governing the
+     *          operation.
+     * @param   IntegrationEventTransport      $adapter            Declared outbound transport that performs the
+     *          delivery.
+     * @param   IntegrationEvent               $event              Versioned event being validated or processed.
+     * @param   string                         $workerId           Stable identity of the claiming worker.
+     * @param   string                         $runtimeGeneration  Trusted runtime generation that owns the lease.
+     * @param   ?int                           $leaseSeconds       Explicit delivery lease, or null for the queue
+     *          policy/default.
+     *
+     * @return  InboxDisposition  Durable receipt disposition after the delivery attempt.
+     *
+     * @since   2.0.0
      */
     public function dispatch(
         WebhookContributionDefinition $definition,
@@ -41,32 +69,13 @@ final readonly class DurableOutboundAdapterDispatcher
         IntegrationEvent $event,
         string $workerId,
         string $runtimeGeneration,
-        int $leaseSeconds = 60,
+        ?int $leaseSeconds = null,
     ): InboxDisposition {
         $this->runtime->assertCurrent($runtimeGeneration);
         $this->contracts->assertEvent($event);
-        if (!$definition->accepts($event->eventType(), $event->schemaVersion())) {
-            $receipt = new EventConsumerDefinition(
-                $definition->identifier(),
-                $event->eventType(),
-                $definition->schemaVersions(),
-                $definition->handlerVersion(),
-                $definition->queue(),
-                false,
-                $definition->idempotency(),
-                $definition->maximumAttempts(),
-                $definition->sensitivityCeiling(),
-            );
-            return $this->inbox->receive(
-                $receipt,
-                $event,
-                $workerId,
-                $runtimeGeneration,
-                $leaseSeconds,
-            )->disposition;
-        }
-        if (!$event->sensitivity()->allowedBy($definition->sensitivityCeiling())) {
-            throw new PermanentFailure('The outbound adapter sensitivity ceiling rejects this event.');
+        $leaseSeconds = $this->leaseSeconds($definition->queue(), $leaseSeconds);
+        if (!in_array($event->eventType(), $definition->eventTypes(), true)) {
+            throw new PermanentFailure('The outbound adapter does not declare this event type.');
         }
         if ($adapter->identifier() !== $definition->identifier()) {
             throw new PermanentFailure('The outbound adapter does not match its trusted declaration.');
@@ -78,14 +87,19 @@ final readonly class DurableOutboundAdapterDispatcher
             $definition->schemaVersions(),
             $definition->handlerVersion(),
             $definition->queue(),
-            false,
+            $definition->idempotency() === ConsumerIdempotency::AGGREGATE_VERSION,
             $definition->idempotency(),
             $definition->maximumAttempts(),
             $definition->sensitivityCeiling(),
         );
         $result = $this->inbox->receive($receipt, $event, $workerId, $runtimeGeneration, $leaseSeconds);
         if ($result->lease === null) {
-            if (in_array($result->disposition, [InboxDisposition::DUPLICATE], true)) {
+            if (in_array($result->disposition, [
+                InboxDisposition::DUPLICATE,
+                InboxDisposition::BUSY,
+                InboxDisposition::REORDERED,
+                InboxDisposition::UNAVAILABLE,
+            ], true)) {
                 return $result->disposition;
             }
             if ($result->disposition === InboxDisposition::POISON) {
@@ -108,7 +122,7 @@ final readonly class DurableOutboundAdapterDispatcher
             $decision = $this->retries->decide(
                 $failure,
                 $result->lease->attempts,
-                $definition->maximumAttempts(),
+                $result->lease->consumer->maximumAttempts(),
             );
             $this->inbox->fail(
                 $result->lease,
@@ -120,5 +134,27 @@ final readonly class DurableOutboundAdapterDispatcher
         }
 
         return InboxDisposition::CLAIMED;
+    }
+
+    /**
+     * Resolve the signed queue lease without silently widening an explicit request.
+     *
+     * @param   string  $queue      Declared outbound-delivery queue.
+     * @param   ?int    $requested  Caller override, or null for the policy/default.
+     *
+     * @return  int  Effective lease duration.
+     *
+     * @throws  InvalidArgumentException  When an explicit lease exceeds the queue declaration.
+     *
+     * @since   2.0.0
+     */
+    private function leaseSeconds(string $queue, ?int $requested): int
+    {
+        $policy = $this->policies?->policy($queue);
+        if ($policy !== null && $requested !== null && $requested > $policy->leaseSeconds) {
+            throw new InvalidArgumentException('A contributed queue lease cannot exceed its signed policy.');
+        }
+
+        return $requested ?? $policy?->leaseSeconds ?? 60;
     }
 }

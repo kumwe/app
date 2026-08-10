@@ -20,7 +20,8 @@ interface ProjectionEventSource
      * @param   int                   $afterSequence  Last fully applied sequence, zero at the start.
      * @param   int                   $limit          Maximum events requested from the source.
      *
-     * @return  list<ProjectionEvent>  Events strictly ascending by sequence, with no gaps or duplicates.
+     * @return  list<ProjectionEvent>  Events strictly ascending without duplicates; unrelated global sequences may
+     *          create gaps.
      *
      * @since   2.0.0
      */

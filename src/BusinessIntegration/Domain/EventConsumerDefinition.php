@@ -13,21 +13,26 @@ use InvalidArgumentException;
  */
 final readonly class EventConsumerDefinition implements IntegrationContract
 {
-    /** @var list<int> Accepted event schema versions. @since 2.0.0 */
+    /**
+     * Exact event schema versions accepted by the consumer.
+     *
+     * @var    list<int>  Accepted event schema versions.
+     * @since  2.0.0
+     */
     private array $schemaVersions;
 
     /**
      * Declare one durable idempotent consumer.
      *
-     * @param   string            $consumerId          Globally unique namespaced consumer identity.
-     * @param   string            $eventType           Event contract consumed.
-     * @param   list<int>         $schemaVersions      Explicitly accepted schema revisions.
-     * @param   string            $handlerVersion      Immutable executable handler revision.
-     * @param   string            $queue               Logical delivery queue.
-     * @param   bool              $aggregateOrdered    Whether aggregate versions are processed in order.
-     * @param   ConsumerIdempotency $idempotency       Durable duplicate-key contract.
-     * @param   int               $maximumAttempts     Attempt budget before poison quarantine.
-     * @param   EventSensitivity  $sensitivityCeiling  Most sensitive message accepted by this consumer.
+     * @param   string               $consumerId          Globally unique namespaced consumer identity.
+     * @param   string               $eventType           Event contract consumed.
+     * @param   list<int>            $schemaVersions      Explicitly accepted schema revisions.
+     * @param   string               $handlerVersion      Immutable executable handler revision.
+     * @param   string               $queue               Logical delivery queue.
+     * @param   bool                 $aggregateOrdered    Whether aggregate versions are processed in order.
+     * @param   ConsumerIdempotency  $idempotency         Durable duplicate-key contract.
+     * @param   int                  $maximumAttempts     Attempt budget before poison quarantine.
+     * @param   EventSensitivity     $sensitivityCeiling  Most sensitive message accepted by this consumer.
      *
      * @throws  InvalidArgumentException  When a declaration value is invalid.
      *
@@ -64,67 +69,135 @@ final readonly class EventConsumerDefinition implements IntegrationContract
         $this->schemaVersions = $schemaVersions;
     }
 
-    /** @return string Consumer identity. @since 2.0.0 */
+    /**
+     * Return the stable identifier for the event consumer definition.
+     *
+     * @return  string  Consumer identity.
+     *
+     * @since   2.0.0
+     */
     public function identifier(): string
     {
         return $this->consumerId;
     }
 
-    /** @return string Event type. @since 2.0.0 */
+    /**
+     * Return the versioned event type accepted by this contract.
+     *
+     * @return  string  Event type.
+     *
+     * @since   2.0.0
+     */
     public function eventType(): string
     {
         return $this->eventType;
     }
 
-    /** @return list<int> Accepted schema versions. @since 2.0.0 */
+    /**
+     * Return the exact event schema versions accepted by this contribution.
+     *
+     * @return  list<int>  Accepted schema versions.
+     *
+     * @since   2.0.0
+     */
     public function schemaVersions(): array
     {
         return $this->schemaVersions;
     }
 
-    /** @return string Handler revision. @since 2.0.0 */
+    /**
+     * Return the handler implementation version used for compatibility checks.
+     *
+     * @return  string  Handler revision.
+     *
+     * @since   2.0.0
+     */
     public function handlerVersion(): string
     {
         return $this->handlerVersion;
     }
 
-    /** @return string Delivery queue. @since 2.0.0 */
+    /**
+     * Return the declared durable queue identifier.
+     *
+     * @return  string  Delivery queue.
+     *
+     * @since   2.0.0
+     */
     public function queue(): string
     {
         return $this->queue;
     }
 
-    /** @return bool Whether aggregate sequence is enforced. @since 2.0.0 */
+    /**
+     * Determine whether delivery must preserve aggregate version order.
+     *
+     * @return  bool  Whether aggregate sequence is enforced.
+     *
+     * @since   2.0.0
+     */
     public function aggregateOrdered(): bool
     {
         return $this->aggregateOrdered;
     }
 
-    /** @return ConsumerIdempotency Durable duplicate-key contract. @since 2.0.0 */
+    /**
+     * Return the idempotency strategy required by this consumer.
+     *
+     * @return  ConsumerIdempotency  Durable duplicate-key contract.
+     *
+     * @since   2.0.0
+     */
     public function idempotency(): ConsumerIdempotency
     {
         return $this->idempotency;
     }
 
-    /** @return int Attempt budget. @since 2.0.0 */
+    /**
+     * Return the maximum number of delivery attempts.
+     *
+     * @return  int  Attempt budget.
+     *
+     * @since   2.0.0
+     */
     public function maximumAttempts(): int
     {
         return $this->maximumAttempts;
     }
 
-    /** @return EventSensitivity Consumer disclosure ceiling. @since 2.0.0 */
+    /**
+     * Return the highest event sensitivity this contribution may receive.
+     *
+     * @return  EventSensitivity  Consumer disclosure ceiling.
+     *
+     * @since   2.0.0
+     */
     public function sensitivityCeiling(): EventSensitivity
     {
         return $this->sensitivityCeiling;
     }
 
-    /** @return bool Whether this exact schema revision is accepted. @since 2.0.0 */
+    /**
+     * Determine whether the consumer accepts the supplied schema version.
+     *
+     * @param   int  $version  Exact schema or optimistic-lock version to test.
+     *
+     * @return  bool  Whether this exact schema revision is accepted.
+     *
+     * @since   2.0.0
+     */
     public function acceptsVersion(int $version): bool
     {
         return in_array($version, $this->schemaVersions, true);
     }
 
-    /** @return array<string, mixed> Canonical publication representation. @since 2.0.0 */
+    /**
+     * Serialize the event consumer definition for durable storage or inspection.
+     *
+     * @return  array<string, mixed>  Canonical publication representation.
+     *
+     * @since   2.0.0
+     */
     public function toArray(): array
     {
         return [

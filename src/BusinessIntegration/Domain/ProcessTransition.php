@@ -13,18 +13,28 @@ use InvalidArgumentException;
  */
 final readonly class ProcessTransition
 {
-    /** @var array<string, mixed> Replacement process state. @since 2.0.0 */
+    /**
+     * Next process-manager state produced by the transition.
+     *
+     * @var    array<string, mixed>  Replacement process state.
+     * @since  2.0.0
+     */
     private array $state;
 
-    /** @var list<ProcessWorkItem> Requested timers, commands and compensations. @since 2.0.0 */
+    /**
+     * Durable work emitted atomically with the state transition.
+     *
+     * @var    list<ProcessWorkItem>  Requested timers, commands and compensations.
+     * @since  2.0.0
+     */
     private array $work;
 
     /**
      * Capture one deterministic process decision.
      *
-     * @param   array<string, mixed>      $state   Replacement state object.
-     * @param   ProcessStatus             $status  Resulting lifecycle.
-     * @param   iterable<ProcessWorkItem> $work    Durable effects requested with the transition.
+     * @param   array<string, mixed>       $state   Replacement state object.
+     * @param   ProcessStatus              $status  Resulting lifecycle.
+     * @param   iterable<ProcessWorkItem>  $work    Durable effects requested with the transition.
      *
      * @throws  InvalidArgumentException  When work identifiers repeat.
      *
@@ -44,19 +54,37 @@ final readonly class ProcessTransition
         $this->work = array_values($items);
     }
 
-    /** @return array<string, mixed> Replacement process state. @since 2.0.0 */
+    /**
+     * Return the state carried by this process transition.
+     *
+     * @return  array<string, mixed>  Replacement process state.
+     *
+     * @since   2.0.0
+     */
     public function state(): array
     {
         return $this->state;
     }
 
-    /** @return ProcessStatus Resulting lifecycle state. @since 2.0.0 */
+    /**
+     * Return the status carried by this process transition.
+     *
+     * @return  ProcessStatus  Resulting lifecycle state.
+     *
+     * @since   2.0.0
+     */
     public function status(): ProcessStatus
     {
         return $this->status;
     }
 
-    /** @return list<ProcessWorkItem> Durable requested effects. @since 2.0.0 */
+    /**
+     * Return operator-visible work for the requested process.
+     *
+     * @return  list<ProcessWorkItem>  Durable requested effects.
+     *
+     * @since   2.0.0
+     */
     public function work(): array
     {
         return $this->work;

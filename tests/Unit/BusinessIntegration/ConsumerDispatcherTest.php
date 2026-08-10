@@ -10,6 +10,8 @@ use Kumwe\CMS\Application\Authorization\SiteContext;
 use Kumwe\CMS\Application\Authorization\SystemIdentity;
 use Kumwe\CMS\Application\Automation\FailureClassification;
 use Kumwe\CMS\Application\Automation\JitterSource;
+use Kumwe\CMS\Application\Automation\QueueRuntimePolicy;
+use Kumwe\CMS\Application\Automation\QueueRuntimePolicyCatalog;
 use Kumwe\CMS\Application\Automation\RetryPolicy;
 use Kumwe\CMS\BusinessIntegration\Application\EventContractRegistry;
 use Kumwe\CMS\BusinessIntegration\Application\InboxClaimResult;
@@ -23,6 +25,7 @@ use Kumwe\CMS\BusinessIntegration\Domain\EventConsumerDefinition;
 use Kumwe\CMS\BusinessIntegration\Domain\EventSchemaDefinition;
 use Kumwe\CMS\BusinessIntegration\Domain\EventSensitivity;
 use Kumwe\CMS\BusinessIntegration\Domain\IntegrationEvent;
+use Kumwe\CMS\Infrastructure\Persistence\TransactionManager;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 use Psr\Clock\ClockInterface;
@@ -34,6 +37,93 @@ use Throwable;
 #[CoversClass(IntegrationEventConsumerDispatcher::class)]
 final class ConsumerDispatcherTest extends TestCase
 {
+    public function testContributedQueueLeaseIsTheDeliveryDefaultAndCannotBeWidened(): void
+    {
+        $clock = new DispatcherTestClock();
+        $definition = new EventConsumerDefinition(
+            'acme.policy-consumer',
+            'business.record.changed',
+            [1],
+            '1.0.0',
+            'integration.default',
+            false,
+        );
+        $event = new IntegrationEvent(
+            'business.record.changed',
+            1,
+            Uuid::uuid7()->toString(),
+            $clock->now(),
+            null,
+            'worker',
+            'default',
+            null,
+            'business.record',
+            'record-8',
+            1,
+            'correlation-2',
+            'request-2',
+            EventSensitivity::INTERNAL,
+            ['record_id' => 'record-8'],
+        );
+        $registry = new EventContractRegistry([new EventSchemaDefinition(
+            'business.record.changed',
+            1,
+            EventSensitivity::INTERNAL,
+            [
+                'type' => 'object',
+                'required' => ['record_id'],
+                'properties' => ['record_id' => ['type' => 'string']],
+                'additionalProperties' => false,
+            ],
+        )], [$definition]);
+        $inbox = $this->createMock(InboxStore::class);
+        $inbox->expects(self::once())->method('receive')->with(
+            $definition,
+            $event,
+            'consumer-worker-1',
+            '7',
+            30,
+        )->willReturn(new InboxClaimResult(InboxDisposition::DUPLICATE));
+        $transactions = $this->createStub(TransactionManager::class);
+        $dispatcher = new IntegrationEventConsumerDispatcher(
+            $inbox,
+            $registry,
+            new RetryPolicy($clock, new ZeroJitter()),
+            new AlwaysCurrentRuntime(),
+            $transactions,
+            new NullLogger(),
+            new ConsumerDispatcherQueueCatalog(new QueueRuntimePolicy(
+                'integration.default',
+                30,
+                3,
+                2,
+                14,
+                7,
+            )),
+        );
+        $handler = new SuccessfulIntegrationHandler($definition);
+        $context = ExecutionContext::issueSystem(
+            new \stdClass(),
+            SystemIdentity::Worker,
+            SiteContext::default(),
+            'consumer-test',
+        );
+
+        self::assertSame(InboxDisposition::DUPLICATE, $dispatcher->consume(
+            $event,
+            $handler,
+            $context,
+            'consumer-worker-1',
+            '7',
+        ));
+        try {
+            $dispatcher->consume($event, $handler, $context, 'consumer-worker-1', '7', 31);
+            self::fail('An explicit consumer lease exceeded its signed queue policy.');
+        } catch (\InvalidArgumentException $exception) {
+            self::assertStringContainsString('signed policy', $exception->getMessage());
+        }
+    }
+
     public function testHandlerFailureIsRecordedAndRethrownForTransportRedelivery(): void
     {
         $clock = new DispatcherTestClock();
@@ -74,11 +164,16 @@ final class ConsumerDispatcherTest extends TestCase
             ),
         ], [$definition]);
         $inbox = new RecordingInboxStore($definition, $event);
+        $transactions = $this->createStub(TransactionManager::class);
+        $transactions->method('transactional')->willReturnCallback(
+            static fn (callable $operation): mixed => $operation(),
+        );
         $dispatcher = new IntegrationEventConsumerDispatcher(
             $inbox,
             $registry,
             new RetryPolicy($clock, new ZeroJitter()),
             new AlwaysCurrentRuntime(),
+            $transactions,
             new NullLogger(),
         );
         $handler = new FailingIntegrationHandler($definition);
@@ -167,6 +262,22 @@ final readonly class FailingIntegrationHandler implements IntegrationEventHandle
     }
 }
 
+final readonly class SuccessfulIntegrationHandler implements IntegrationEventHandler
+{
+    public function __construct(private EventConsumerDefinition $definition)
+    {
+    }
+
+    public function definition(): EventConsumerDefinition
+    {
+        return $this->definition;
+    }
+
+    public function handle(IntegrationEvent $event, ExecutionContext $context): void
+    {
+    }
+}
+
 final readonly class AlwaysCurrentRuntime implements TrustedRuntimeGenerationGuard
 {
     public function assertCurrent(string $generation): void
@@ -187,5 +298,27 @@ final readonly class ZeroJitter implements JitterSource
     public function between(int $minimum, int $maximum): int
     {
         return $minimum;
+    }
+}
+
+final readonly class ConsumerDispatcherQueueCatalog implements QueueRuntimePolicyCatalog
+{
+    public function __construct(private QueueRuntimePolicy $policy)
+    {
+    }
+
+    public function policy(string $queue): ?QueueRuntimePolicy
+    {
+        return $queue === $this->policy->queue ? $this->policy : null;
+    }
+
+    public function maximumAttempts(string $queue, string $jobType, int $requested): int
+    {
+        return $this->policy($queue) === null ? $requested : min($requested, $this->policy->maximumAttempts);
+    }
+
+    public function policies(): array
+    {
+        return [$this->policy];
     }
 }

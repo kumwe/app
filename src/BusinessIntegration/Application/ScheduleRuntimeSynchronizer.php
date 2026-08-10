@@ -11,6 +11,12 @@ namespace Kumwe\CMS\BusinessIntegration\Application;
  */
 interface ScheduleRuntimeSynchronizer
 {
-    /** @return bool True when the migrated persistence schema was synchronized. @since 2.0.0 */
+    /**
+     * Reconcile active signed schedules with durable scheduler rows.
+     *
+     * @return  bool  True when the migrated persistence schema was synchronized.
+     *
+     * @since   2.0.0
+     */
     public function synchronize(): bool;
 }

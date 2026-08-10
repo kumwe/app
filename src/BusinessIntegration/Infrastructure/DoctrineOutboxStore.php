@@ -13,6 +13,7 @@ use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use Doctrine\DBAL\Types\Types;
 use InvalidArgumentException;
 use JsonException;
+use Kumwe\CMS\Application\Automation\CanonicalJson;
 use Kumwe\CMS\Application\Automation\FailureClassification;
 use Kumwe\CMS\BusinessIntegration\Application\EventContractRegistry;
 use Kumwe\CMS\BusinessIntegration\Application\OutboxLease;
@@ -66,9 +67,9 @@ final readonly class DoctrineOutboxStore implements OutboxStore
     /**
      * Insert a validated event on the caller's active authoritative transaction.
      *
-     * @param   IntegrationEvent   $event             Durable fact.
-     * @param   int                $maximumAttempts   Dispatch attempt budget.
-     * @param   ?DateTimeImmutable $availableAt       Earliest dispatch time; defaults to now.
+     * @param   IntegrationEvent    $event            Durable fact.
+     * @param   int                 $maximumAttempts  Dispatch attempt budget.
+     * @param   ?DateTimeImmutable  $availableAt      Earliest dispatch time; defaults to now.
      *
      * @return  void
      *
@@ -124,6 +125,48 @@ final readonly class DoctrineOutboxStore implements OutboxStore
             'created_at' => Types::DATETIME_IMMUTABLE,
             'updated_at' => Types::DATETIME_IMMUTABLE,
         ]);
+        $journalHead = $this->database->fetchOne(sprintf(
+            'SELECT last_sequence FROM %s WHERE singleton_id = 1%s',
+            $this->tables->quoted('business_projection_event_head'),
+            $this->journalLockClause(),
+        ));
+        if (
+            (!is_int($journalHead) || $journalHead < 0)
+            && (!is_string($journalHead) || preg_match('/^[0-9]+$/D', $journalHead) !== 1)
+        ) {
+            throw new RuntimeException('The projection source journal head is unavailable.');
+        }
+        $envelope = $event->toArray();
+        $this->database->insert($this->tables->raw('business_projection_source_events'), [
+            'event_id' => $event->eventId(),
+            'event_type' => $event->eventType(),
+            'schema_version' => $event->schemaVersion(),
+            'sensitivity' => $event->sensitivity()->value,
+            'envelope' => $envelope,
+            'event_checksum' => CanonicalJson::digest($envelope),
+            'recorded_at' => $now,
+        ], [
+            'event_id' => Types::GUID,
+            'schema_version' => Types::INTEGER,
+            'envelope' => Types::JSON,
+            'recorded_at' => Types::DATETIME_IMMUTABLE,
+        ]);
+        $sequence = $this->database->fetchOne(sprintf(
+            'SELECT source_sequence FROM %s WHERE event_id = ?',
+            $this->tables->quoted('business_projection_source_events'),
+        ), [$event->eventId()], [Types::GUID]);
+        if (!is_int($sequence) && (!is_string($sequence) || preg_match('/^[1-9][0-9]*$/D', $sequence) !== 1)) {
+            throw new RuntimeException('The projection source journal did not assign an event sequence.');
+        }
+        $sequence = (int) $sequence;
+        $updatedHead = $this->database->executeStatement(sprintf(
+            'UPDATE %s SET last_sequence = ? WHERE singleton_id = 1 AND last_sequence = ?',
+            $this->tables->quoted('business_projection_event_head'),
+        ), [$sequence, (int) $journalHead], [Types::BIGINT, Types::BIGINT]);
+        $this->assertOne(
+            $updatedHead,
+            'The projection source journal head lost its serialization fence.',
+        );
     }
 
     /**
@@ -194,7 +237,16 @@ final readonly class DoctrineOutboxStore implements OutboxStore
         });
     }
 
-    /** @inheritDoc */
+    /**
+     * Renew the supplied durable-processing lease.
+     *
+     * @param   OutboxLease  $lease         Fenced lease proving ownership of the durable item.
+     * @param   int          $leaseSeconds  Number of seconds before the worker lease expires.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     public function renew(OutboxLease $lease, int $leaseSeconds): void
     {
         if ($leaseSeconds < 5 || $leaseSeconds > 3_600) {
@@ -215,7 +267,15 @@ final readonly class DoctrineOutboxStore implements OutboxStore
         ]));
     }
 
-    /** @inheritDoc */
+    /**
+     * Mark the supplied durable-processing lease complete.
+     *
+     * @param   OutboxLease  $lease  Fenced lease proving ownership of the durable item.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     public function complete(OutboxLease $lease): void
     {
         $now = $this->clock->now();
@@ -235,7 +295,62 @@ final readonly class DoctrineOutboxStore implements OutboxStore
         ]));
     }
 
-    /** @inheritDoc */
+    /**
+     * Release a fenced outbox claim after downstream queue backpressure.
+     *
+     * The claim increment is reversed in the same fenced update, so a saturated contributed queue cannot
+     * eventually quarantine an otherwise valid event merely by remaining busy. The delay is bounded to
+     * prevent either a hot loop or an unobservable long deferral.
+     *
+     * @param   OutboxLease  $lease         Active fenced outbox claim.
+     * @param   int          $delaySeconds  Delay from one to 300 seconds.
+     *
+     * @return  void
+     *
+     * @throws  InvalidArgumentException  When the delay is outside the operational bound.
+     *
+     * @since   2.0.0
+     */
+    public function defer(OutboxLease $lease, int $delaySeconds = 5): void
+    {
+        if ($delaySeconds < 1 || $delaySeconds > 300) {
+            throw new InvalidArgumentException('An outbox backpressure delay must be between 1 and 300 seconds.');
+        }
+        $now = $this->clock->now();
+        $this->assertOne($this->database->executeStatement(sprintf(
+            "UPDATE %s SET status = 'pending', available_at = ?, attempts = attempts - 1, "
+            . 'lease_owner = NULL, lease_token = NULL, lease_acquired_at = NULL, lease_expires_at = NULL, '
+            . 'runtime_generation = NULL, updated_at = ? WHERE event_id = ? AND attempts = ? '
+            . "AND status = 'reserved' AND lease_owner = ? AND lease_token = ? "
+            . 'AND runtime_generation = ? AND lease_expires_at > ?',
+            $this->tables->quoted('integration_outbox'),
+        ), [
+            $now->add(new DateInterval(sprintf('PT%dS', $delaySeconds))),
+            $now,
+            $lease->event->eventId(),
+            $lease->attempts,
+            $lease->workerId,
+            $lease->leaseToken,
+            $lease->runtimeGeneration,
+            $now,
+        ], [
+            Types::DATETIME_IMMUTABLE, Types::DATETIME_IMMUTABLE, Types::GUID, Types::SMALLINT,
+            Types::STRING, Types::GUID, Types::STRING, Types::DATETIME_IMMUTABLE,
+        ]));
+    }
+
+    /**
+     * Record a failed durable delivery and its retry decision.
+     *
+     * @param   OutboxLease            $lease           Fenced lease proving ownership of the durable item.
+     * @param   FailureClassification  $classification  Failure class controlling retry or quarantine behavior.
+     * @param   Throwable              $failure         Failure whose retry classification is being recorded.
+     * @param   ?DateTimeImmutable     $retryAt         Next eligible attempt timestamp, or null for quarantine.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     public function fail(
         OutboxLease $lease,
         FailureClassification $classification,
@@ -266,7 +381,17 @@ final readonly class DoctrineOutboxStore implements OutboxStore
         ]));
     }
 
-    /** @inheritDoc */
+    /**
+     * Make an operator-authorized event eligible for replay.
+     *
+     * @param   string              $eventId      Immutable identifier of the event to replay.
+     * @param   string              $operatorId   Authenticated operator authorizing the replay.
+     * @param   ?DateTimeImmutable  $availableAt  Earliest timestamp at which the event may be claimed.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     public function replay(string $eventId, string $operatorId, ?DateTimeImmutable $availableAt = null): void
     {
         if (!Uuid::isValid($eventId)) {
@@ -289,7 +414,16 @@ final readonly class DoctrineOutboxStore implements OutboxStore
         ]));
     }
 
-    /** @inheritDoc */
+    /**
+     * Purge an operator-bounded batch of expired records.
+     *
+     * @param   DateTimeImmutable  $now    Authoritative timestamp for the state transition.
+     * @param   int                $limit  Maximum number of records the operation may return or change.
+     *
+     * @return  int  Number of expired outbox records deleted.
+     *
+     * @since   2.0.0
+     */
     public function purgeExpired(DateTimeImmutable $now, int $limit = 1_000): int
     {
         if ($limit < 1 || $limit > 10_000) {
@@ -311,7 +445,15 @@ final readonly class DoctrineOutboxStore implements OutboxStore
         });
     }
 
-    /** @inheritDoc */
+    /**
+     * Return the most recent operator-visible records.
+     *
+     * @param   int  $limit  Maximum number of records the operation may return or change.
+     *
+     * @return  list<array<string, mixed>>  Operator-visible rows in deterministic order.
+     *
+     * @since   2.0.0
+     */
     public function recent(int $limit = 100): array
     {
         if ($limit < 1 || $limit > 1_000) {
@@ -328,7 +470,15 @@ final readonly class DoctrineOutboxStore implements OutboxStore
         ), [$limit], [Types::INTEGER]);
     }
 
-    /** @since 2.0.0 */
+    /**
+     * Quarantine eligible records that exhausted their attempt budget.
+     *
+     * @param   DateTimeImmutable  $now  Authoritative timestamp for the state transition.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     private function buryExhausted(DateTimeImmutable $now): void
     {
         $this->database->executeStatement(sprintf(
@@ -346,7 +496,15 @@ final readonly class DoctrineOutboxStore implements OutboxStore
         ], [Types::STRING, Types::STRING, Types::STRING, Types::DATETIME_IMMUTABLE, Types::DATETIME_IMMUTABLE]);
     }
 
-    /** @param array<string, mixed> $row @since 2.0.0 */
+    /**
+     * Reconstitute the versioned integration event from its durable row.
+     *
+     * @param   array<string, mixed>  $row  Durable database row being reconstituted.
+     *
+     * @return  IntegrationEvent  Versioned integration event reconstituted from the durable row.
+     *
+     * @since   2.0.0
+     */
     private function event(array $row): IntegrationEvent
     {
         $envelope = $row['envelope'] ?? null;
@@ -366,7 +524,16 @@ final readonly class DoctrineOutboxStore implements OutboxStore
         return $event;
     }
 
-    /** @param array<string, mixed> $row @since 2.0.0 */
+    /**
+     * Read a required non-empty string from the supplied row.
+     *
+     * @param   array<string, mixed>  $row  Durable database row being reconstituted.
+     * @param   string                $key  Array or row key whose value is being read.
+     *
+     * @return  string  Non-empty string stored under the requested key.
+     *
+     * @since   2.0.0
+     */
     private function requiredString(array $row, string $key): string
     {
         $value = $row[$key] ?? null;
@@ -376,7 +543,16 @@ final readonly class DoctrineOutboxStore implements OutboxStore
         return $value;
     }
 
-    /** @param array<string, mixed> $row @since 2.0.0 */
+    /**
+     * Read and validate an integer value.
+     *
+     * @param   array<string, mixed>  $row  Durable database row being reconstituted.
+     * @param   string                $key  Array or row key whose value is being read.
+     *
+     * @return  int  Integer stored under the requested key.
+     *
+     * @since   2.0.0
+     */
     private function integer(array $row, string $key): int
     {
         $value = $row[$key] ?? null;
@@ -386,7 +562,13 @@ final readonly class DoctrineOutboxStore implements OutboxStore
         return (int) $value;
     }
 
-    /** @since 2.0.0 */
+    /**
+     * Return the database-specific row-locking clause.
+     *
+     * @return  string  Driver-specific SQL suffix used to fence concurrent claims.
+     *
+     * @since   2.0.0
+     */
     private function lockClause(): string
     {
         $platform = $this->database->getDatabasePlatform();
@@ -395,7 +577,36 @@ final readonly class DoctrineOutboxStore implements OutboxStore
             : '';
     }
 
-    /** @since 2.0.0 */
+    /**
+     * Return the blocking database-specific row lock used to serialize journal sequence allocation.
+     *
+     * Unlike work claiming, journal allocation must never skip the locked singleton: waiting ensures
+     * source sequence order is also authoritative transaction commit order.
+     *
+     * @return  string  Driver-specific blocking row-lock suffix.
+     *
+     * @since   2.0.0
+     */
+    private function journalLockClause(): string
+    {
+        $platform = $this->database->getDatabasePlatform();
+
+        return $platform instanceof PostgreSQLPlatform || $platform instanceof AbstractMySQLPlatform
+            ? ' FOR UPDATE'
+            : '';
+    }
+
+    /**
+     * Validate worker identity, runtime generation, and lease bounds.
+     *
+     * @param   string  $worker      Stable identity of the claiming worker.
+     * @param   string  $generation  Trusted runtime generation that owns the lease.
+     * @param   int     $seconds     Requested lease duration in seconds.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     private function assertLeaseInput(string $worker, string $generation, int $seconds): void
     {
         if (
@@ -408,11 +619,23 @@ final readonly class DoctrineOutboxStore implements OutboxStore
         }
     }
 
-    /** @since 2.0.0 */
-    private function assertOne(int|string $affected): void
+    /**
+     * Require exactly one row to have been changed by a fenced update.
+     *
+     * @param   int|string  $affected  Number of rows changed by the fenced statement.
+     * @param   string      $message   Safe failure message.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    private function assertOne(
+        int|string $affected,
+        string $message = 'The worker no longer owns the active outbox lease.',
+    ): void
     {
         if ((string) $affected !== '1') {
-            throw new RuntimeException('The worker no longer owns the active outbox lease.');
+            throw new RuntimeException($message);
         }
     }
 }

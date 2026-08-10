@@ -14,7 +14,12 @@ use Kumwe\CMS\BusinessReporting\Domain\ReportDefinition;
  */
 final readonly class ReportDefinitionRegistry
 {
-    /** @var array<string, ReportDefinition> @since 2.0.0 */
+    /**
+     * Active report definitions keyed by their stable identifiers.
+     *
+     * @var    array<string, ReportDefinition>
+     * @since  2.0.0
+     */
     private array $reports;
 
     /**

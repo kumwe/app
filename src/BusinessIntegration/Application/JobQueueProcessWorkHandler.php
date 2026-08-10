@@ -20,11 +20,11 @@ final readonly class JobQueueProcessWorkHandler implements ProcessWorkHandler
     /**
      * Configure a queue destination for process effects.
      *
-     * @param   JobQueue        $jobs   Existing durable job queue.
-     * @param   ClockInterface  $clock  Immediate availability clock.
-     * @param   string          $queue  Destination queue.
+     * @param  JobQueue        $jobs   Existing durable job queue.
+     * @param  ClockInterface  $clock  Immediate availability clock.
+     * @param  string          $queue  Destination queue.
      *
-     * @since   2.0.0
+     * @since  2.0.0
      */
     public function __construct(
         private JobQueue $jobs,
@@ -34,13 +34,31 @@ final readonly class JobQueueProcessWorkHandler implements ProcessWorkHandler
         IntegrationContractValidator::token($queue, 'Process job queue', 64);
     }
 
-    /** @inheritDoc */
+    /**
+     * Determine whether this handler supports the supplied work kind and name.
+     *
+     * @param   ProcessWorkKind  $kind  Process-work kind proposed for dispatch.
+     * @param   string           $name  Stable contribution or option name being addressed.
+     *
+     * @return  bool  Whether this handler owns the supplied work kind and name.
+     *
+     * @since   2.0.0
+     */
     public function supports(ProcessWorkKind $kind, string $name): bool
     {
         return in_array($kind, ProcessWorkKind::cases(), true);
     }
 
-    /** @inheritDoc */
+    /**
+     * Process the supplied item under its authenticated execution context.
+     *
+     * @param   ProcessWorkLease  $lease    Fenced lease proving ownership of the durable item.
+     * @param   ExecutionContext  $context  Authenticated execution context for authorization and audit.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     public function handle(ProcessWorkLease $lease, ExecutionContext $context): void
     {
         $this->jobs->enqueue(
@@ -49,6 +67,8 @@ final readonly class JobQueueProcessWorkHandler implements ProcessWorkHandler
             [
                 'process_id' => $lease->processId,
                 'process_version' => $lease->processVersion,
+                'site_identifier' => $lease->siteIdentifier,
+                'organization_id' => $lease->organizationId,
                 'work_id' => $lease->work->id(),
                 'work_kind' => $lease->work->kind()->value,
                 'payload' => $lease->work->payload(),

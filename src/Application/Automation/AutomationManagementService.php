@@ -38,14 +38,16 @@ final readonly class AutomationManagementService
     /**
      * Wire the collaborators every automation read and mutation depends on.
      *
-     * @param  ScheduleRepository    $schedules      Store of schedule definitions; filters rows per actor.
-     * @param  JobQueue              $jobs           Queue the job listing is read from and retried against.
-     * @param  JobHandlerRegistry    $handlers       Registered job types a new schedule may name.
-     * @param  TransactionManager    $transactions   Boundary committing each change with its audit event.
-     * @param  AuditRecorder         $audit          Sink every mutation's audit event is written to.
-     * @param  ClockInterface        $clock          Source of the instant stamped on those audit events.
-     * @param  AuthorizationGateway  $authorization  Decides the collection-wide `automation.manage` attempts.
-     * @param  JobExecutionScope     $jobScope       Says which job types act installation-wide, not per site.
+     * @param  ScheduleRepository       $schedules      Store of schedule definitions; filters rows per actor.
+     * @param  JobQueue                 $jobs           Queue the job listing is read from and retried against.
+     * @param  JobHandlerRegistry       $handlers       Registered job types a new schedule may name.
+     * @param  TransactionManager       $transactions   Boundary committing each change with its audit event.
+     * @param  AuditRecorder            $audit          Sink every mutation's audit event is written to.
+     * @param  ClockInterface           $clock          Source of the instant stamped on those audit events.
+     * @param  AuthorizationGateway     $authorization  Decides the collection-wide `automation.manage` attempts.
+     * @param  JobExecutionScope        $jobScope       Says which job types act installation-wide, not per site.
+     * @param  ?QueueRuntimeOperations  $queueRuntime   Active contributed queue inventory and retention operations;
+     *         null keeps isolated core-only service instances backward compatible.
      *
      * @since  2.0.0
      */
@@ -58,6 +60,7 @@ final readonly class AutomationManagementService
         private ClockInterface $clock,
         private AuthorizationGateway $authorization,
         private JobExecutionScope $jobScope,
+        private ?QueueRuntimeOperations $queueRuntime = null,
     ) {
     }
 
@@ -120,6 +123,58 @@ final readonly class AutomationManagementService
     public function jobs(ExecutionContext $context, int $limit = 100): array
     {
         return $this->jobs->all($context, $limit);
+    }
+
+    /**
+     * List active contributed queue policies with durable load and retention counters.
+     *
+     * @param   ExecutionContext  $context  Authenticated automation operator.
+     *
+     * @return  list<array<string, mixed>>  Active queue runtime inventory; empty for core-only instances.
+     *
+     * @since   2.0.0
+     */
+    public function queuePolicies(ExecutionContext $context): array
+    {
+        return $this->queueRuntime?->inventory($context) ?? [];
+    }
+
+    /**
+     * Purge one bounded batch of terminal queue evidence past the signed retention cutoff.
+     *
+     * Evidence disposal and its audit event share the automation transaction. Queue runtime storage locks
+     * selected rows before deleting terminal jobs or compacting terminal inbox detail, so concurrent work
+     * cannot race the operation and a compacted delivery cannot lose its duplicate tombstone.
+     *
+     * @param   ExecutionContext  $context  Authenticated automation operator.
+     * @param   string            $queue    Active contributed queue identifier.
+     * @param   int               $limit    Maximum terminal records deleted or compacted, 1 to 1000.
+     *
+     * @return  int  Terminal job deletions plus inbox receipt compactions.
+     *
+     * @throws  \LogicException  When the service was constructed without queue runtime operations.
+     *
+     * @since   2.0.0
+     */
+    public function purgeQueue(ExecutionContext $context, string $queue, int $limit = 100): int
+    {
+        if ($this->queueRuntime === null) {
+            throw new \LogicException('Contributed queue runtime operations are unavailable.');
+        }
+        $actorId = $context->actorId();
+
+        return $this->transactions->transactional(function () use ($context, $queue, $limit, $actorId): int {
+            $purged = $this->queueRuntime->purge($context, $queue, $limit);
+            $this->record(
+                $actorId,
+                'automation.queue.retention.purge',
+                'queue',
+                $queue,
+                ['purged' => $purged, 'limit' => $limit],
+            );
+
+            return $purged;
+        });
     }
 
     /**

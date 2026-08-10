@@ -113,8 +113,8 @@ final readonly class PersistentIdempotencyMiddleware implements MiddlewareInterf
      * @param   RequestHandlerInterface  $handler  Rest of the pipeline, which performs the mutation.
      *
      * @return  ResponseInterface  The handler's response on a first run; on a repeat, either the stored
-     *          response marked `Idempotency-Replayed: true`, or a problem document reporting a reused key,
-     *          a changed authorization context, or an attempt still in flight.
+     *          response marked `Idempotency-Replayed: true`, or a problem document reporting a malformed
+     *          report-export identifier, reused key, changed authorization context, or attempt still in flight.
      *
      * @throws  RuntimeException  When the request reaches this middleware without a validated key, an
      *          authenticated principal or a context bound to that principal; when the record cannot be
@@ -150,7 +150,17 @@ final readonly class PersistentIdempotencyMiddleware implements MiddlewareInterf
         }
 
         // Replay is an authorization-sensitive read and must never precede exact use-case authorization.
-        $this->preauthorization->authorize($request, $context);
+        try {
+            $this->preauthorization->authorize($request, $context);
+        } catch (InvalidReportExportRequest) {
+            return $this->problems->create(
+                422,
+                'Invalid business report export request',
+                'The business report export identifier is invalid.',
+                'urn:kumwe:problem:invalid-business-report-export',
+                (string) $request->getUri(),
+            )->withHeader('Cache-Control', 'no-store');
+        }
         $subject = $principal->subject();
         $authorizationFingerprint = $context->authorizationFingerprint();
         $operation = strtoupper($request->getMethod()) . ' ' . $request->getUri()->getPath();

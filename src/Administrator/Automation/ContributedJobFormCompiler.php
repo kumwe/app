@@ -40,9 +40,15 @@ final readonly class ContributedJobFormCompiler
     }
 
     /**
-     * @return list<AutomationJobField> Primitive payload fields in schema order.
+     * Compile safe administrator form fields from the contributed job schema.
      *
-     * @throws InvalidArgumentException When a schema cannot be rendered without a raw escape hatch.
+     * @param   JobContributionDefinition  $job  Signed job contract referenced by the contributed schedule.
+     *
+     * @return  list<AutomationJobField>  Primitive payload fields in schema order.
+     *
+     * @throws  InvalidArgumentException  When a schema cannot be rendered without a raw escape hatch.
+     *
+     * @since   2.0.0
      */
     private function fields(JobContributionDefinition $job): array
     {
@@ -53,7 +59,9 @@ final readonly class ContributedJobFormCompiler
         $properties = $schema['properties'] ?? [];
         $required = $schema['required'] ?? [];
         if (!is_array($properties) || array_is_list($properties) || !is_array($required) || !array_is_list($required)) {
-            throw new InvalidArgumentException('A contributed job payload schema has invalid properties or requirements.');
+            throw new InvalidArgumentException(
+                'A contributed job payload schema has invalid properties or requirements.',
+            );
         }
         $requiredMap = [];
         foreach ($required as $key) {
@@ -70,7 +78,9 @@ final readonly class ContributedJobFormCompiler
             }
             $type = $property['type'] ?? null;
             if (!is_string($type) || !in_array($type, ['string', 'integer', 'boolean'], true)) {
-                throw new InvalidArgumentException('Contributed job forms support string, integer, and boolean fields.');
+                throw new InvalidArgumentException(
+                    'Contributed job forms support string, integer, and boolean fields.',
+                );
             }
             $title = $property['title'] ?? $this->label($key);
             $help = $property['description'] ?? '';
@@ -145,7 +155,15 @@ final readonly class ContributedJobFormCompiler
         return $fields;
     }
 
-    /** @return string Human-readable caption derived from one namespaced identifier. */
+    /**
+     * Derive a human-readable label from a stable identifier.
+     *
+     * @param   string  $identifier  Stable namespaced identifier to render or persist.
+     *
+     * @return  string  Human-readable caption derived from one namespaced identifier.
+     *
+     * @since   2.0.0
+     */
     private function label(string $identifier): string
     {
         $parts = explode('.', $identifier);

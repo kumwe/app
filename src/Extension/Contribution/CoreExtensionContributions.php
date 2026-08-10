@@ -217,6 +217,17 @@ final class CoreExtensionContributions
             'business records workspaces',
         ));
         $registrar->portalNavigation(new PortalNavigationDefinition(
+            'core.portal-business-reports',
+            'core.portal',
+            'Business reports',
+            'Run authorized reports and retrieve verified exports.',
+            '/portal/reports',
+            'models',
+            'portal.access',
+            13,
+            'business reports exports csv analytics',
+        ));
+        $registrar->portalNavigation(new PortalNavigationDefinition(
             'core.portal-security',
             'core.portal',
             'Account security',
@@ -686,6 +697,17 @@ final class CoreExtensionContributions
                 'business.record.browse',
                 45,
                 'business records entities operations workflow relations',
+            ),
+            new AdministratorNavigationDefinition(
+                'core.business-reports',
+                'core.workspace',
+                'Business reports',
+                'Run policy-filtered reports and retrieve verified exports',
+                '/administrator/reports',
+                'models',
+                'business.record.report',
+                46,
+                'business reports exports csv analytics',
             ),
             new AdministratorNavigationDefinition(
                 'core.business-schema-plans',

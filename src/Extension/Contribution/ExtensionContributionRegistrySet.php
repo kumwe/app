@@ -174,31 +174,76 @@ final readonly class ExtensionContributionRegistrySet
      */
     private CustomBusinessActionHandlerRegistry $customBusinessActionHandlers;
 
-    /** @var OwnedRuntimeContributionRegistry Versioned event schema declarations. @since 2.0.0 */
+    /**
+     * Owner-bound runtime registry for event schemas.
+     *
+     * @var    OwnedRuntimeContributionRegistry  Versioned event schema declarations.
+     * @since  2.0.0
+     */
     private OwnedRuntimeContributionRegistry $eventSchemas;
 
-    /** @var OwnedRuntimeContributionRegistry Synchronous domain listeners. @since 2.0.0 */
+    /**
+     * Owner-bound runtime registry for domain listeners.
+     *
+     * @var    OwnedRuntimeContributionRegistry  Synchronous domain listeners.
+     * @since  2.0.0
+     */
     private OwnedRuntimeContributionRegistry $domainListeners;
 
-    /** @var OwnedRuntimeContributionRegistry Durable integration consumers. @since 2.0.0 */
+    /**
+     * Owner-bound runtime registry for event consumers.
+     *
+     * @var    OwnedRuntimeContributionRegistry  Durable integration consumers.
+     * @since  2.0.0
+     */
     private OwnedRuntimeContributionRegistry $eventConsumers;
 
-    /** @var OwnedRuntimeContributionRegistry Contributed job handlers. @since 2.0.0 */
+    /**
+     * Owner-bound runtime registry for jobs.
+     *
+     * @var    OwnedRuntimeContributionRegistry  Contributed job handlers.
+     * @since  2.0.0
+     */
     private OwnedRuntimeContributionRegistry $jobs;
 
-    /** @var OwnedRuntimeContributionRegistry Logical queue declarations. @since 2.0.0 */
+    /**
+     * Owner-bound runtime registry for queues.
+     *
+     * @var    OwnedRuntimeContributionRegistry  Logical queue declarations.
+     * @since  2.0.0
+     */
     private OwnedRuntimeContributionRegistry $queues;
 
-    /** @var OwnedRuntimeContributionRegistry Recurring schedule declarations. @since 2.0.0 */
+    /**
+     * Owner-bound runtime registry for schedules.
+     *
+     * @var    OwnedRuntimeContributionRegistry  Recurring schedule declarations.
+     * @since  2.0.0
+     */
     private OwnedRuntimeContributionRegistry $schedules;
 
-    /** @var OwnedRuntimeContributionRegistry Rebuildable projection builders. @since 2.0.0 */
+    /**
+     * Owner-bound runtime registry for projections.
+     *
+     * @var    OwnedRuntimeContributionRegistry  Rebuildable projection builders.
+     * @since  2.0.0
+     */
     private OwnedRuntimeContributionRegistry $projections;
 
-    /** @var OwnedRuntimeContributionRegistry Safe report definitions. @since 2.0.0 */
+    /**
+     * Owner-bound runtime registry for reports.
+     *
+     * @var    OwnedRuntimeContributionRegistry  Safe report definitions.
+     * @since  2.0.0
+     */
     private OwnedRuntimeContributionRegistry $reports;
 
-    /** @var OwnedRuntimeContributionRegistry Durable outbound adapters. @since 2.0.0 */
+    /**
+     * Owner-bound runtime registry for webhooks.
+     *
+     * @var    OwnedRuntimeContributionRegistry  Durable outbound adapters.
+     * @since  2.0.0
+     */
     private OwnedRuntimeContributionRegistry $webhooks;
 
     /**
@@ -552,55 +597,109 @@ final readonly class ExtensionContributionRegistrySet
         return $this->customBusinessActionHandlers;
     }
 
-    /** @return OwnedRuntimeContributionRegistry Active event schemas. @since 2.0.0 */
+    /**
+     * Return the event schemas carried by this extension contribution registry set.
+     *
+     * @return  OwnedRuntimeContributionRegistry  Active event schemas.
+     *
+     * @since   2.0.0
+     */
     public function eventSchemas(): OwnedRuntimeContributionRegistry
     {
         return $this->eventSchemas;
     }
 
-    /** @return OwnedRuntimeContributionRegistry Active synchronous domain listeners. @since 2.0.0 */
+    /**
+     * Return the domain listeners carried by this extension contribution registry set.
+     *
+     * @return  OwnedRuntimeContributionRegistry  Active synchronous domain listeners.
+     *
+     * @since   2.0.0
+     */
     public function domainListeners(): OwnedRuntimeContributionRegistry
     {
         return $this->domainListeners;
     }
 
-    /** @return OwnedRuntimeContributionRegistry Active durable event consumers. @since 2.0.0 */
+    /**
+     * Return the event consumers carried by this extension contribution registry set.
+     *
+     * @return  OwnedRuntimeContributionRegistry  Active durable event consumers.
+     *
+     * @since   2.0.0
+     */
     public function eventConsumers(): OwnedRuntimeContributionRegistry
     {
         return $this->eventConsumers;
     }
 
-    /** @return OwnedRuntimeContributionRegistry Active contributed job handlers. @since 2.0.0 */
+    /**
+     * Return the jobs carried by this extension contribution registry set.
+     *
+     * @return  OwnedRuntimeContributionRegistry  Active contributed job handlers.
+     *
+     * @since   2.0.0
+     */
     public function jobs(): OwnedRuntimeContributionRegistry
     {
         return $this->jobs;
     }
 
-    /** @return OwnedRuntimeContributionRegistry Active logical queues. @since 2.0.0 */
+    /**
+     * Return the queues carried by this extension contribution registry set.
+     *
+     * @return  OwnedRuntimeContributionRegistry  Active logical queues.
+     *
+     * @since   2.0.0
+     */
     public function queues(): OwnedRuntimeContributionRegistry
     {
         return $this->queues;
     }
 
-    /** @return OwnedRuntimeContributionRegistry Active recurring schedule declarations. @since 2.0.0 */
+    /**
+     * Return the schedules carried by this extension contribution registry set.
+     *
+     * @return  OwnedRuntimeContributionRegistry  Active recurring schedule declarations.
+     *
+     * @since   2.0.0
+     */
     public function schedules(): OwnedRuntimeContributionRegistry
     {
         return $this->schedules;
     }
 
-    /** @return OwnedRuntimeContributionRegistry Active rebuildable projection builders. @since 2.0.0 */
+    /**
+     * Return the projections carried by this extension contribution registry set.
+     *
+     * @return  OwnedRuntimeContributionRegistry  Active rebuildable projection builders.
+     *
+     * @since   2.0.0
+     */
     public function projections(): OwnedRuntimeContributionRegistry
     {
         return $this->projections;
     }
 
-    /** @return OwnedRuntimeContributionRegistry Active safe report definitions. @since 2.0.0 */
+    /**
+     * Return the reports carried by this extension contribution registry set.
+     *
+     * @return  OwnedRuntimeContributionRegistry  Active safe report definitions.
+     *
+     * @since   2.0.0
+     */
     public function reports(): OwnedRuntimeContributionRegistry
     {
         return $this->reports;
     }
 
-    /** @return OwnedRuntimeContributionRegistry Active outbound adapters. @since 2.0.0 */
+    /**
+     * Return the webhooks carried by this extension contribution registry set.
+     *
+     * @return  OwnedRuntimeContributionRegistry  Active outbound adapters.
+     *
+     * @since   2.0.0
+     */
     public function webhooks(): OwnedRuntimeContributionRegistry
     {
         return $this->webhooks;
@@ -711,10 +810,10 @@ final readonly class ExtensionContributionRegistrySet
     /**
      * Require every subscribed event type to have at least one active schema revision.
      *
-     * @param   EventContractRegistry          $catalog     Validated catalog used for exact lookups.
-     * @param   list<EventSchemaDefinition>    $schemas     Active schemas inspected by event type.
-     * @param   mixed                          $eventTypes  Candidate non-empty event type list.
-     * @param   string                         $kind        Contribution kind named in a stable failure.
+     * @param   EventContractRegistry        $catalog     Validated catalog used for exact lookups.
+     * @param   list<EventSchemaDefinition>  $schemas     Active schemas inspected by event type.
+     * @param   mixed                        $eventTypes  Candidate non-empty event type list.
+     * @param   string                       $kind        Contribution kind named in a stable failure.
      *
      * @return  void
      *

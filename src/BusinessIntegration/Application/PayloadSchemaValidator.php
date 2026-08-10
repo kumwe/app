@@ -17,7 +17,12 @@ use InvalidArgumentException;
  */
 final class PayloadSchemaValidator
 {
-    /** @var list<string> Closed schema-key vocabulary. @since 2.0.0 */
+    /**
+     * Schema keywords accepted by the bounded payload validator.
+     *
+     * @var    list<string>  Closed schema-key vocabulary.
+     * @since  2.0.0
+     */
     private const array KEYS = [
         'type', 'properties', 'required', 'additionalProperties', 'items', 'enum',
         'minLength', 'maxLength', 'minimum', 'maximum', 'minItems', 'maxItems', 'pattern',
@@ -56,7 +61,16 @@ final class PayloadSchemaValidator
         $this->validateValue($schema, $payload, '$');
     }
 
-    /** @param array<string, mixed> $schema @since 2.0.0 */
+    /**
+     * Validate a bounded contribution payload schema recursively.
+     *
+     * @param   array<string, mixed>  $schema  Bounded schema object being checked recursively.
+     * @param   int                   $depth   Current recursive depth used to enforce payload bounds.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     private function validateSchema(array $schema, int $depth): void
     {
         if ($depth > 16) {
@@ -122,7 +136,17 @@ final class PayloadSchemaValidator
         }
     }
 
-    /** @param array<string, mixed> $schema @since 2.0.0 */
+    /**
+     * Validate a payload value against the declared schema recursively.
+     *
+     * @param   array<string, mixed>  $schema  Bounded schema object being checked recursively.
+     * @param   mixed                 $value   Candidate value being validated or normalized.
+     * @param   string                $path    Declared one-hop field path to split and validate.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     private function validateValue(array $schema, mixed $value, string $path): void
     {
         $type = $schema['type'] ?? null;
@@ -174,14 +198,22 @@ final class PayloadSchemaValidator
             : [];
         foreach (($schema['required'] ?? []) as $required) {
             if (is_string($required) && !array_key_exists($required, $value)) {
-                throw new InvalidArgumentException(sprintf('Payload object %s lacks required property %s.', $path, $required));
+                throw new InvalidArgumentException(sprintf(
+                    'Payload object %s lacks required property %s.',
+                    $path,
+                    $required,
+                ));
             }
         }
         foreach ($value as $name => $item) {
             $child = $properties[$name] ?? null;
             if (!is_array($child)) {
                 if (($schema['additionalProperties'] ?? true) === false) {
-                    throw new InvalidArgumentException(sprintf('Payload object %s has unknown property %s.', $path, $name));
+                    throw new InvalidArgumentException(sprintf(
+                        'Payload object %s has unknown property %s.',
+                        $path,
+                        $name,
+                    ));
                 }
                 continue;
             }
@@ -189,7 +221,16 @@ final class PayloadSchemaValidator
         }
     }
 
-    /** @since 2.0.0 */
+    /**
+     * Determine whether a value matches the declared schema type.
+     *
+     * @param   string  $type   Declared schema type to compare.
+     * @param   mixed   $value  Candidate value being validated or normalized.
+     *
+     * @return  bool  Whether the candidate value matches the declared schema type.
+     *
+     * @since   2.0.0
+     */
     private function matchesType(string $type, mixed $value): bool
     {
         return match ($type) {

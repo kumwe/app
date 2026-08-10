@@ -420,4 +420,35 @@ final class McpCapabilityCatalogTest extends TestCase
         self::assertArrayNotHasKey('runtime_binding', $output['properties']);
         self::assertArrayNotHasKey('policy_binding', $output['properties']);
     }
+
+    /** @since 2.0.0 */
+    public function testBusinessReportToolsCoverExecutionAndTheBoundedExportLifecycle(): void
+    {
+        $tools = [];
+        foreach ((new McpCapabilityCatalog())->tools() as $tool) {
+            if (str_starts_with($tool['name'], 'kumwe_business_report_')) {
+                $tools[$tool['name']] = $tool;
+            }
+        }
+
+        self::assertSame([
+            'kumwe_business_report_list',
+            'kumwe_business_report_execute',
+            'kumwe_business_report_export_request',
+            'kumwe_business_report_export_status',
+            'kumwe_business_report_export_download',
+        ], array_keys($tools));
+        $request = $tools['kumwe_business_report_export_request'];
+        self::assertFalse($request['readOnly']);
+        self::assertTrue($request['idempotent']);
+        self::assertContains('operationId', $request['inputSchema']['required']);
+        self::assertSame(32, $request['inputSchema']['properties']['parameters']['maxProperties']);
+        self::assertFalse($request['inputSchema']['additionalProperties']);
+
+        $download = $tools['kumwe_business_report_export_download']['outputSchema'];
+        self::assertFalse($download['additionalProperties']);
+        self::assertSame(1_048_576, $download['properties']['size']['maximum']);
+        self::assertSame('base64', $download['properties']['encoding']['const']);
+        self::assertSame('business.record.export', $tools['kumwe_business_report_export_status']['capability']);
+    }
 }

@@ -18,9 +18,9 @@ final readonly class OutboxLease
     /**
      * Capture the durable event and proof of its active reservation.
      *
-     * @param   IntegrationEvent  $event             Reserved event.
-     * @param   int               $attempts          Claims including this attempt.
-     * @param   int               $maximumAttempts   Total attempt budget.
+     * @param   IntegrationEvent  $event              Reserved event.
+     * @param   int               $attempts           Claims including this attempt.
+     * @param   int               $maximumAttempts    Total attempt budget.
      * @param   string            $workerId           Lease owner.
      * @param   string            $leaseToken         Unforgeable fencing token.
      * @param   string            $runtimeGeneration  Exact trusted generation selecting the dispatcher.

@@ -33,6 +33,7 @@ final readonly class ExportService
      * Wire export metadata, queueing, authorization, storage and audit boundaries.
      *
      * @param  ReportDefinitionRegistry      $reports        Active report contributions.
+     * @param  ReportScopeResolver           $scopes         Installed report source-scope resolver.
      * @param  ExportArtifactRepository      $artifacts      Durable immutable metadata versions.
      * @param  ExportArtifactStorage         $storage        Private verified byte store.
      * @param  ExportJobDispatcher           $jobs           Durable internal queue producer.
@@ -46,6 +47,7 @@ final readonly class ExportService
      */
     public function __construct(
         private ReportDefinitionRegistry $reports,
+        private ReportScopeResolver $scopes,
         private ExportArtifactRepository $artifacts,
         private ExportArtifactStorage $storage,
         private ExportJobDispatcher $jobs,
@@ -69,7 +71,7 @@ final readonly class ExportService
      * @return  ExportArtifact  Queued immutable artifact metadata.
      *
      * @throws  InvalidArgumentException  When retention or parameters are invalid.
-     * @throws  Throwable                 When persistence or durable dispatch fails.
+     * @throws  Throwable  When persistence or durable dispatch fails.
      *
      * @since   2.0.0
      */
@@ -90,10 +92,11 @@ final readonly class ExportService
         $this->assertSurface($report, $context->surface());
         $this->authorize($context, $report);
         $parameters = $this->bindParameters($report, $parameters);
+        $recordOrganization = $this->scopes->resolve($context, $report, $organizationIdentifier);
         $policy = $this->policies->snapshot(
             $context,
             $report,
-            $organizationIdentifier,
+            $recordOrganization,
             BusinessRecordQueryPurpose::Export,
         );
         $now = $this->clock->now();
@@ -102,7 +105,7 @@ final readonly class ExportService
         $parameterDigest = CanonicalDefinitionJson::checksum([
             'report_checksum' => $report->checksum(),
             'parameters' => $parameters,
-            'organization' => $organization,
+            'organization' => $recordOrganization,
             'workspace' => $workspace,
         ]);
         $id = Uuid::uuid7()->toString();
@@ -138,23 +141,8 @@ final readonly class ExportService
         $this->transactions->transactional(function () use ($artifact, $context, $now): void {
             $this->artifacts->add($artifact);
             $this->audit($context, $artifact, 'business.report.export.request', 'success', $now);
-        });
-        try {
             $this->jobs->dispatch($context, $artifact->id);
-        } catch (Throwable $exception) {
-            $failed = $artifact->fail($this->clock->now(), 'dispatch_failed');
-            $this->transactions->transactional(function () use ($artifact, $failed, $context): void {
-                $this->artifacts->save($failed, $artifact->version);
-                $this->audit(
-                    $context,
-                    $failed,
-                    'business.report.export.dispatch',
-                    'failure',
-                    $failed->completedAt ?? $this->clock->now(),
-                );
-            });
-            throw $exception;
-        }
+        });
 
         return $artifact;
     }
@@ -213,7 +201,16 @@ final readonly class ExportService
         return new ExportDownload($stream, $artifact->filename, $artifact->size, $artifact->checksum);
     }
 
-    /** @since 2.0.0 */
+    /**
+     * Require the supplied execution context to remain current and authorized.
+     *
+     * @param   ExecutionContext  $context   Authenticated execution context for authorization and audit.
+     * @param   ExportArtifact    $artifact  Immutable export artifact being transitioned.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     private function assertCurrent(ExecutionContext $context, ExportArtifact $artifact): void
     {
         if ($artifact->expiresAt <= $this->clock->now()
@@ -235,10 +232,15 @@ final readonly class ExportService
                 throw new ExportArtifactUnavailable('The export artifact is unavailable.');
             }
             $this->authorize($context, $report);
-            $policy = $this->policies->snapshot(
+            $recordOrganization = $this->scopes->resolve(
                 $context,
                 $report,
                 $artifact->organizationIdentifier,
+            );
+            $policy = $this->policies->snapshot(
+                $context,
+                $report,
+                $recordOrganization,
                 BusinessRecordQueryPurpose::Export,
             );
             if (!hash_equals($artifact->policySnapshot, $policy)) {
@@ -251,23 +253,42 @@ final readonly class ExportService
         }
     }
 
-    /** @since 2.0.0 */
+    /**
+     * Authorize the current principal for the report and export capabilities inferred from the definition.
+     *
+     * @param   ExecutionContext  $context  Authenticated execution context for authorization and audit.
+     * @param   ReportDefinition  $report   Signed report definition governing query behavior.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     private function authorize(ExecutionContext $context, ReportDefinition $report): void
     {
-        $resource = AuthorizationResource::collection('business_report');
-        $this->authorization->assertAllowed(
+        $resource = AuthorizationResource::item('business_report', $report->identifier());
+        if (!$this->authorization->decide(
             $context,
             Capability::fromString($report->requiredCapability),
             $resource,
-        );
-        $this->authorization->assertAllowed(
+        )->allowed || !$this->authorization->decide(
             $context,
             Capability::fromString('business.record.export'),
             $resource,
-        );
+        )->allowed) {
+            throw new ReportUnavailable('The report is unavailable.');
+        }
     }
 
-    /** @param array<string, mixed> $supplied @return array<string, mixed> @since 2.0.0 */
+    /**
+     * Bind and validate caller-supplied report parameters.
+     *
+     * @param   ReportDefinition      $report    Signed report definition governing query behavior.
+     * @param   array<string, mixed>  $supplied  Caller-provided values keyed by report parameter identifier.
+     *
+     * @return  array<string, mixed>
+     *
+     * @since   2.0.0
+     */
     private function bindParameters(ReportDefinition $report, array $supplied): array
     {
         $declared = [];
@@ -290,7 +311,16 @@ final readonly class ExportService
         return $bound;
     }
 
-    /** @since 2.0.0 */
+    /**
+     * Require the report to be available on the requested delivery surface.
+     *
+     * @param   ReportDefinition      $report   Signed report definition governing query behavior.
+     * @param   AuthenticatedSurface  $surface  Delivery surface requesting report execution.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     private function assertSurface(ReportDefinition $report, AuthenticatedSurface $surface): void
     {
         if (($surface === AuthenticatedSurface::Administrator && !$report->administratorVisible)
@@ -301,7 +331,19 @@ final readonly class ExportService
         }
     }
 
-    /** @since 2.0.0 */
+    /**
+     * Append an immutable audit record for the export operation.
+     *
+     * @param   ExecutionContext    $context   Authenticated execution context for authorization and audit.
+     * @param   ExportArtifact      $artifact  Immutable export artifact being transitioned.
+     * @param   string              $action    Stable audited action name.
+     * @param   string              $outcome   Stable audited result classification.
+     * @param   \DateTimeImmutable  $now       Authoritative timestamp for the state transition.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     private function audit(
         ExecutionContext $context,
         ExportArtifact $artifact,

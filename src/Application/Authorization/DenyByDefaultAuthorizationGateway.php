@@ -114,7 +114,10 @@ final readonly class DenyByDefaultAuthorizationGateway implements AuthorizationG
      * resource the scope could name. A scope naming a concrete resource must additionally be owned by
      * that same site. Organization and workspace grants enter the ceiling only after the context's exact
      * membership snapshot is revalidated; a global or site grant remains sufficient independently.
-     * System identities never delegate: they carry no grants to draw a ceiling from.
+     * An installation administrator holding global `extensions.manage` may explicitly bootstrap the
+     * first grant of an active, human-delegatable extension capability. That narrow exception is needed
+     * because an owner-new capability has no possible holder before its first grant; it never applies to
+     * core or system-only actions. System identities never delegate: they carry no grants to draw a ceiling from.
      *
      * @param   ExecutionContext  $context  Caller identity, site and provenance the work runs under.
      * @param   Capability        $action   Capability the caller wants to grant onward.
@@ -166,15 +169,29 @@ final readonly class DenyByDefaultAuthorizationGateway implements AuthorizationG
             $this->deny($context, $action, $resource, $decision);
         }
 
+        $withinEffectiveAuthority = $principal?->allows($action, $requested) ?? false;
+        $definition = $this->policies->capability($action);
+        $extensionBootstrap = $definition !== null
+            && $definition->owner !== 'core'
+            && $principal?->allows(
+                Capability::fromString('extensions.manage'),
+                [GrantScope::global()],
+            ) === true;
         $allowed = $context->hasProvenance($this->provenance)
             && $this->policies->supportsDelegation($action, $scope)
             && $siteMatches
             && $principal !== null
-            && $principal->allows($action, $requested);
+            && ($withinEffectiveAuthority || $extensionBootstrap);
         $decision = new AuthorizationDecision(
             $allowed,
-            'core.delegation-ceiling.v1',
-            $allowed ? 'delegation_within_effective_authority' : 'delegation_exceeds_effective_authority',
+            $extensionBootstrap && !$withinEffectiveAuthority
+                ? 'core.extension-delegation-bootstrap.v1'
+                : 'core.delegation-ceiling.v1',
+            $allowed
+                ? ($withinEffectiveAuthority
+                    ? 'delegation_within_effective_authority'
+                    : 'trusted_extension_capability_bootstrap')
+                : 'delegation_exceeds_effective_authority',
         );
         $this->record($context, $action, $resource, $decision);
 
@@ -380,9 +397,13 @@ final readonly class DenyByDefaultAuthorizationGateway implements AuthorizationG
      */
     private function siteFor(ExecutionContext $context, AuthorizationResource $resource): SiteContext
     {
-        // Collections are created/listed within the caller's site. Queues are configured
-        // transport partitions shared by sites; durable jobs carry the actual ownership.
-        if ($resource->identifier() === '*' || $resource->type() === 'queue') {
+        // Collections are created/listed within the caller's site. Queues are configured transport
+        // partitions shared by sites, while contributed report definitions are immutable runtime
+        // declarations resolved inside the caller's active site; their durable jobs and artifacts carry
+        // their own recorded ownership.
+        if ($resource->identifier() === '*'
+            || in_array($resource->type(), ['business_report', 'queue'], true)
+        ) {
             return $context->site();
         }
 

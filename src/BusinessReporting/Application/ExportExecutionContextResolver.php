@@ -17,8 +17,8 @@ interface ExportExecutionContextResolver
     /**
      * Resolve a fresh context matching artifact actor, site, organization and workspace.
      *
-     * @param   ExportArtifact   $artifact       Stored request and authority coordinates.
-     * @param   ExecutionContext $workerContext  Narrow system context that claimed the queue job.
+     * @param   ExportArtifact    $artifact       Stored request and authority coordinates.
+     * @param   ExecutionContext  $workerContext  Narrow system context that claimed the queue job.
      *
      * @return  ExecutionContext  Fresh original-actor context, never the broad worker identity.
      *

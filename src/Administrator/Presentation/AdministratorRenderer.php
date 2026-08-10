@@ -148,6 +148,7 @@ final readonly class AdministratorRenderer
             'business-index', 'business-list', 'business-detail', 'business-form',
             'business-history', 'business-confirm', 'business-bulk-confirm',
             'business-status' => 'core.business-records',
+            'business-report' => 'core.business-reports',
             'navigation' => 'core.navigation',
             'access-control' => 'core.access',
             'business-security' => 'core.business-security',

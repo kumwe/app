@@ -15,9 +15,24 @@ use Kumwe\CMS\BusinessIntegration\Domain\IntegrationEvent;
  */
 interface IntegrationEventHandler
 {
-    /** @return EventConsumerDefinition Data-only contract matched to this executable handler. @since 2.0.0 */
+    /**
+     * Return the signed contribution definition implemented by this handler.
+     *
+     * @return  EventConsumerDefinition  Data-only contract matched to this executable handler.
+     *
+     * @since   2.0.0
+     */
     public function definition(): EventConsumerDefinition;
 
-    /** @return void @since 2.0.0 */
+    /**
+     * Process the supplied item under its authenticated execution context.
+     *
+     * @param   IntegrationEvent  $event    Versioned event being validated or processed.
+     * @param   ExecutionContext  $context  Authenticated execution context for authorization and audit.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     public function handle(IntegrationEvent $event, ExecutionContext $context): void;
 }

@@ -36,12 +36,12 @@ final readonly class DoctrineProcessManagerStore implements ProcessManagerStore
     /**
      * Bind process state and work to the shared transaction boundary.
      *
-     * @param   Connection          $database      Application connection.
-     * @param   TableNames          $tables        Physical table-name compiler.
-     * @param   TransactionManager  $transactions  Atomic state/work and settlement boundary.
-     * @param   ClockInterface      $clock         Lease and lifecycle clock.
+     * @param  Connection          $database      Application connection.
+     * @param  TableNames          $tables        Physical table-name compiler.
+     * @param  TransactionManager  $transactions  Atomic state/work and settlement boundary.
+     * @param  ClockInterface      $clock         Lease and lifecycle clock.
      *
-     * @since   2.0.0
+     * @since  2.0.0
      */
     public function __construct(
         private Connection $database,
@@ -51,7 +51,16 @@ final readonly class DoctrineProcessManagerStore implements ProcessManagerStore
     ) {
     }
 
-    /** @inheritDoc */
+    /**
+     * Persist a new process instance and its initial work.
+     *
+     * @param   ProcessInstance             $process  Current process instance being read or transitioned.
+     * @param   iterable<array-key, mixed>  $work     Process work emitted by the transition.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     public function create(ProcessInstance $process, iterable $work = []): void
     {
         if ($process->version() !== 1) {
@@ -69,7 +78,15 @@ final readonly class DoctrineProcessManagerStore implements ProcessManagerStore
         });
     }
 
-    /** @inheritDoc */
+    /**
+     * Load the requested durable record when it exists.
+     *
+     * @param   string  $processId  Stable identifier of the process instance.
+     *
+     * @return  ?ProcessInstance  Requested process instance, or null when it does not exist.
+     *
+     * @since   2.0.0
+     */
     public function load(string $processId): ?ProcessInstance
     {
         if (!Uuid::isValid($processId)) {
@@ -82,17 +99,40 @@ final readonly class DoctrineProcessManagerStore implements ProcessManagerStore
         return $row === false ? null : $this->process($row);
     }
 
-    /** @inheritDoc */
-    public function findByCorrelation(string $processType, string $correlationId): ?ProcessInstance
-    {
+    /**
+     * Find the process instance matching the supplied correlation key.
+     *
+     * @param   string  $processType     Stable process-manager type used to scope correlation.
+     * @param   string  $siteIdentifier  Owning site that isolates the correlation namespace.
+     * @param   string  $correlationId   Stable correlation key joining related process events.
+     *
+     * @return  ?ProcessInstance  Matching process instance, or null when the correlation is new.
+     *
+     * @since   2.0.0
+     */
+    public function findByCorrelation(
+        string $processType,
+        string $siteIdentifier,
+        string $correlationId,
+    ): ?ProcessInstance {
         $row = $this->database->fetchAssociative(sprintf(
-            'SELECT * FROM %s WHERE process_type = ? AND correlation_id = ?',
+            'SELECT * FROM %s WHERE process_type = ? AND site_identifier = ? AND correlation_id = ?',
             $this->tables->quoted('business_process_instances'),
-        ), [$processType, $correlationId]);
+        ), [$processType, $siteIdentifier, $correlationId]);
         return $row === false ? null : $this->process($row);
     }
 
-    /** @inheritDoc */
+    /**
+     * Persist the supplied state with optimistic concurrency protection.
+     *
+     * @param   ProcessInstance             $process          Current process instance being read or transitioned.
+     * @param   int                         $expectedVersion  Version required for optimistic concurrency.
+     * @param   iterable<array-key, mixed>  $work             Process work emitted by the transition.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     public function save(ProcessInstance $process, int $expectedVersion, iterable $work = []): void
     {
         if ($expectedVersion < 1 || $process->version() !== $expectedVersion + 1) {
@@ -119,7 +159,17 @@ final readonly class DoctrineProcessManagerStore implements ProcessManagerStore
         });
     }
 
-    /** @inheritDoc */
+    /**
+     * Claim the next eligible process work item for the named worker.
+     *
+     * @param   string  $workerId           Stable identity of the claiming worker.
+     * @param   string  $runtimeGeneration  Trusted runtime generation that owns the lease.
+     * @param   int     $leaseSeconds       Number of seconds before the worker lease expires.
+     *
+     * @return  ?ProcessWorkLease  Fenced work lease, or null when no work is eligible.
+     *
+     * @since   2.0.0
+     */
     public function claimWork(string $workerId, string $runtimeGeneration, int $leaseSeconds): ?ProcessWorkLease
     {
         $this->assertClaimInput($workerId, $runtimeGeneration, $leaseSeconds);
@@ -131,7 +181,9 @@ final readonly class DoctrineProcessManagerStore implements ProcessManagerStore
             $now = $this->clock->now();
             $this->buryExhausted($now);
             $row = $this->database->fetchAssociative(sprintf(
-                'SELECT w.* FROM %s w INNER JOIN %s p ON p.process_id = w.process_id '
+                'SELECT w.*, p.site_identifier AS process_site_identifier, '
+                . 'p.organization_id AS process_organization_id FROM %s w '
+                . 'INNER JOIN %s p ON p.process_id = w.process_id '
                 . "WHERE (p.status = 'running' OR w.work_kind = 'compensation') "
                 . 'AND w.attempts < w.maximum_attempts AND ('
                 . "(w.status = 'pending' AND w.due_at <= ?) OR "
@@ -165,6 +217,8 @@ final readonly class DoctrineProcessManagerStore implements ProcessManagerStore
             return new ProcessWorkLease(
                 $this->requiredString($row, 'process_id'),
                 $this->integer($row, 'process_version'),
+                $this->requiredString($row, 'process_site_identifier'),
+                $this->nullableString($row, 'process_organization_id'),
                 $this->workItem($row),
                 $this->integer($row, 'attempts') + 1,
                 $workerId,
@@ -174,7 +228,16 @@ final readonly class DoctrineProcessManagerStore implements ProcessManagerStore
         });
     }
 
-    /** @inheritDoc */
+    /**
+     * Renew the supplied process-work lease.
+     *
+     * @param   ProcessWorkLease  $lease         Fenced lease proving ownership of the durable item.
+     * @param   int               $leaseSeconds  Number of seconds before the worker lease expires.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     public function renewWork(ProcessWorkLease $lease, int $leaseSeconds): void
     {
         if ($leaseSeconds < 5 || $leaseSeconds > 3_600) {
@@ -195,7 +258,15 @@ final readonly class DoctrineProcessManagerStore implements ProcessManagerStore
         ]));
     }
 
-    /** @inheritDoc */
+    /**
+     * Mark the supplied process-work lease complete.
+     *
+     * @param   ProcessWorkLease  $lease  Fenced lease proving ownership of the durable item.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     public function completeWork(ProcessWorkLease $lease): void
     {
         $now = $this->clock->now();
@@ -215,7 +286,18 @@ final readonly class DoctrineProcessManagerStore implements ProcessManagerStore
         ]));
     }
 
-    /** @inheritDoc */
+    /**
+     * Record failed process work and its retry decision.
+     *
+     * @param   ProcessWorkLease       $lease           Fenced lease proving ownership of the durable item.
+     * @param   FailureClassification  $classification  Failure class controlling retry or quarantine behavior.
+     * @param   Throwable              $failure         Failure whose retry classification is being recorded.
+     * @param   ?DateTimeImmutable     $retryAt         Next eligible attempt timestamp, or null for quarantine.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     public function failWork(
         ProcessWorkLease $lease,
         FailureClassification $classification,
@@ -244,7 +326,15 @@ final readonly class DoctrineProcessManagerStore implements ProcessManagerStore
         ]));
     }
 
-    /** @inheritDoc */
+    /**
+     * Return the most recent operator-visible records.
+     *
+     * @param   int  $limit  Maximum number of records the operation may return or change.
+     *
+     * @return  list<array<string, mixed>>  Operator-visible rows in deterministic order.
+     *
+     * @since   2.0.0
+     */
     public function recent(int $limit = 100): array
     {
         $this->assertLimit($limit);
@@ -256,7 +346,16 @@ final readonly class DoctrineProcessManagerStore implements ProcessManagerStore
         ), [$limit], [Types::INTEGER]);
     }
 
-    /** @inheritDoc */
+    /**
+     * Return operator-visible work for the requested process.
+     *
+     * @param   string  $processId  Stable identifier of the process instance.
+     * @param   int     $limit      Maximum number of records the operation may return or change.
+     *
+     * @return  list<array<string, mixed>>  Operator-visible rows in deterministic order.
+     *
+     * @since   2.0.0
+     */
     public function work(string $processId, int $limit = 100): array
     {
         if (!Uuid::isValid($processId)) {
@@ -272,7 +371,15 @@ final readonly class DoctrineProcessManagerStore implements ProcessManagerStore
         ), [$processId, $limit], [Types::GUID, Types::INTEGER]);
     }
 
-    /** @return array<string, mixed> @since 2.0.0 */
+    /**
+     * Serialize a process instance into persistence columns.
+     *
+     * @param   ProcessInstance  $process  Current process instance being read or transitioned.
+     *
+     * @return  array<string, mixed>
+     *
+     * @since   2.0.0
+     */
     private function processRow(ProcessInstance $process): array
     {
         return [
@@ -295,7 +402,16 @@ final readonly class DoctrineProcessManagerStore implements ProcessManagerStore
         ];
     }
 
-    /** @param iterable<ProcessWorkItem> $work @since 2.0.0 */
+    /**
+     * Persist all pending work for the supplied process transition.
+     *
+     * @param   ProcessInstance            $process  Current process instance being read or transitioned.
+     * @param   iterable<ProcessWorkItem>  $work     Process work emitted by the transition.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     private function insertWork(ProcessInstance $process, iterable $work): void
     {
         foreach ($work as $item) {
@@ -334,7 +450,15 @@ final readonly class DoctrineProcessManagerStore implements ProcessManagerStore
         }
     }
 
-    /** @param array<string, mixed> $row @since 2.0.0 */
+    /**
+     * Reconstitute a process instance from its durable row.
+     *
+     * @param   array<string, mixed>  $row  Durable database row being reconstituted.
+     *
+     * @return  ProcessInstance  Process instance reconstituted from the durable row.
+     *
+     * @since   2.0.0
+     */
     private function process(array $row): ProcessInstance
     {
         $state = $this->jsonObject($row, 'state');
@@ -358,7 +482,15 @@ final readonly class DoctrineProcessManagerStore implements ProcessManagerStore
         );
     }
 
-    /** @param array<string, mixed> $row @since 2.0.0 */
+    /**
+     * Reconstitute a process work item from its durable row.
+     *
+     * @param   array<string, mixed>  $row  Durable database row being reconstituted.
+     *
+     * @return  ProcessWorkItem  Process work item reconstituted from the durable row.
+     *
+     * @since   2.0.0
+     */
     private function workItem(array $row): ProcessWorkItem
     {
         $kind = ProcessWorkKind::tryFrom($this->requiredString($row, 'work_kind'))
@@ -373,7 +505,16 @@ final readonly class DoctrineProcessManagerStore implements ProcessManagerStore
         );
     }
 
-    /** @param array<string, mixed> $row @return array<string, mixed> @since 2.0.0 */
+    /**
+     * Decode an object-shaped JSON value from the supplied row.
+     *
+     * @param   array<string, mixed>  $row  Durable database row being reconstituted.
+     * @param   string                $key  Array or row key whose value is being read.
+     *
+     * @return  array<string, mixed>
+     *
+     * @since   2.0.0
+     */
     private function jsonObject(array $row, string $key): array
     {
         $value = $row[$key] ?? null;
@@ -391,7 +532,16 @@ final readonly class DoctrineProcessManagerStore implements ProcessManagerStore
         return $value;
     }
 
-    /** @param array<string, mixed> $row @since 2.0.0 */
+    /**
+     * Read a required non-empty string from the supplied row.
+     *
+     * @param   array<string, mixed>  $row  Durable database row being reconstituted.
+     * @param   string                $key  Array or row key whose value is being read.
+     *
+     * @return  string  Non-empty string stored under the requested key.
+     *
+     * @since   2.0.0
+     */
     private function requiredString(array $row, string $key): string
     {
         $value = $row[$key] ?? null;
@@ -401,7 +551,16 @@ final readonly class DoctrineProcessManagerStore implements ProcessManagerStore
         return $value;
     }
 
-    /** @param array<string, mixed> $row @since 2.0.0 */
+    /**
+     * Read an optional string from the supplied data.
+     *
+     * @param   array<string, mixed>  $row  Durable database row being reconstituted.
+     * @param   string                $key  Array or row key whose value is being read.
+     *
+     * @return  ?string  String stored under the key, or null when the member is absent.
+     *
+     * @since   2.0.0
+     */
     private function nullableString(array $row, string $key): ?string
     {
         $value = $row[$key] ?? null;
@@ -411,7 +570,16 @@ final readonly class DoctrineProcessManagerStore implements ProcessManagerStore
         return $value;
     }
 
-    /** @param array<string, mixed> $row @since 2.0.0 */
+    /**
+     * Read and validate an integer value.
+     *
+     * @param   array<string, mixed>  $row  Durable database row being reconstituted.
+     * @param   string                $key  Array or row key whose value is being read.
+     *
+     * @return  int  Integer stored under the requested key.
+     *
+     * @since   2.0.0
+     */
     private function integer(array $row, string $key): int
     {
         $value = $row[$key] ?? null;
@@ -421,7 +589,16 @@ final readonly class DoctrineProcessManagerStore implements ProcessManagerStore
         return (int) $value;
     }
 
-    /** @param array<string, mixed> $row @since 2.0.0 */
+    /**
+     * Read an immutable timestamp from the supplied row.
+     *
+     * @param   array<string, mixed>  $row  Durable database row being reconstituted.
+     * @param   string                $key  Array or row key whose value is being read.
+     *
+     * @return  DateTimeImmutable  Timestamp stored under the requested key.
+     *
+     * @since   2.0.0
+     */
     private function date(array $row, string $key): DateTimeImmutable
     {
         $value = $row[$key] ?? null;
@@ -434,7 +611,15 @@ final readonly class DoctrineProcessManagerStore implements ProcessManagerStore
         throw new RuntimeException(sprintf('Process field "%s" is not a date.', $key));
     }
 
-    /** @since 2.0.0 */
+    /**
+     * Quarantine eligible records that exhausted their attempt budget.
+     *
+     * @param   DateTimeImmutable  $now  Authoritative timestamp for the state transition.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     private function buryExhausted(DateTimeImmutable $now): void
     {
         $this->database->executeStatement(sprintf(
@@ -452,7 +637,15 @@ final readonly class DoctrineProcessManagerStore implements ProcessManagerStore
         ], [Types::STRING, Types::STRING, Types::STRING, Types::DATETIME_IMMUTABLE, Types::DATETIME_IMMUTABLE]);
     }
 
-    /** @since 2.0.0 */
+    /**
+     * Return the database-specific row-locking clause.
+     *
+     * @param   bool  $skipLocked  Whether rows held by another worker should be skipped.
+     *
+     * @return  string  Driver-specific SQL suffix used to fence concurrent claims.
+     *
+     * @since   2.0.0
+     */
     private function lockClause(bool $skipLocked): string
     {
         $platform = $this->database->getDatabasePlatform();
@@ -462,7 +655,17 @@ final readonly class DoctrineProcessManagerStore implements ProcessManagerStore
         return $skipLocked ? ' FOR UPDATE SKIP LOCKED' : ' FOR UPDATE';
     }
 
-    /** @since 2.0.0 */
+    /**
+     * Validate worker identity, runtime generation, and lease bounds.
+     *
+     * @param   string  $worker      Stable identity of the claiming worker.
+     * @param   string  $generation  Trusted runtime generation that owns the lease.
+     * @param   int     $seconds     Requested lease duration in seconds.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     private function assertClaimInput(string $worker, string $generation, int $seconds): void
     {
         if (
@@ -475,7 +678,15 @@ final readonly class DoctrineProcessManagerStore implements ProcessManagerStore
         }
     }
 
-    /** @since 2.0.0 */
+    /**
+     * Require an operator query limit within the supported bounds.
+     *
+     * @param   int  $limit  Maximum number of records the operation may return or change.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     private function assertLimit(int $limit): void
     {
         if ($limit < 1 || $limit > 1_000) {
@@ -483,7 +694,15 @@ final readonly class DoctrineProcessManagerStore implements ProcessManagerStore
         }
     }
 
-    /** @since 2.0.0 */
+    /**
+     * Require exactly one row to have been changed by a fenced update.
+     *
+     * @param   int|string  $affected  Number of rows changed by the fenced statement.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     private function assertOne(int|string $affected): void
     {
         if ((string) $affected !== '1') {

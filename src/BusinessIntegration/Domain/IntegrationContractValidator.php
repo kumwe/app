@@ -37,7 +37,16 @@ final class IntegrationContractValidator
         }
     }
 
-    /** @param array<string, mixed> $data @since 2.0.0 */
+    /**
+     * Read a required string from the supplied data.
+     *
+     * @param   array<string, mixed>  $data  Validated contribution data from which the named member is read.
+     * @param   string                $key   Array or row key whose value is being read.
+     *
+     * @return  string  Required string stored under the requested key.
+     *
+     * @since   2.0.0
+     */
     public static function string(array $data, string $key): string
     {
         $value = $data[$key] ?? null;
@@ -47,7 +56,16 @@ final class IntegrationContractValidator
         return $value;
     }
 
-    /** @param array<string, mixed> $data @since 2.0.0 */
+    /**
+     * Read and validate an integer value.
+     *
+     * @param   array<string, mixed>  $data  Validated contribution data from which the named member is read.
+     * @param   string                $key   Array or row key whose value is being read.
+     *
+     * @return  int  Integer stored under the requested key.
+     *
+     * @since   2.0.0
+     */
     public static function integer(array $data, string $key): int
     {
         $value = $data[$key] ?? null;
@@ -57,7 +75,16 @@ final class IntegrationContractValidator
         return $value;
     }
 
-    /** @param array<string, mixed> $data @since 2.0.0 */
+    /**
+     * Read and validate a boolean value.
+     *
+     * @param   array<string, mixed>  $data  Validated contribution data from which the named member is read.
+     * @param   string                $key   Array or row key whose value is being read.
+     *
+     * @return  bool  Boolean stored under the requested key.
+     *
+     * @since   2.0.0
+     */
     public static function boolean(array $data, string $key): bool
     {
         $value = $data[$key] ?? null;
@@ -67,7 +94,16 @@ final class IntegrationContractValidator
         return $value;
     }
 
-    /** @return array<string, mixed> @param array<string, mixed> $data @since 2.0.0 */
+    /**
+     * Read an object-valued field from the supplied contract.
+     *
+     * @param   array<string, mixed>  $data  Validated contribution data from which the named member is read.
+     * @param   string                $key   Array or row key whose value is being read.
+     *
+     * @return  array<string, mixed>
+     *
+     * @since   2.0.0
+     */
     public static function objectField(array $data, string $key): array
     {
         $value = $data[$key] ?? null;
@@ -77,7 +113,16 @@ final class IntegrationContractValidator
         return $value;
     }
 
-    /** @return list<mixed> @param array<string, mixed> $data @since 2.0.0 */
+    /**
+     * Read a list-valued field from the supplied contract.
+     *
+     * @param   array<string, mixed>  $data  Validated contribution data from which the named member is read.
+     * @param   string                $key   Array or row key whose value is being read.
+     *
+     * @return  list<mixed>
+     *
+     * @since   2.0.0
+     */
     public static function listField(array $data, string $key): array
     {
         $value = $data[$key] ?? null;

@@ -17,6 +17,7 @@ use Kumwe\CMS\Infrastructure\Mcp\BusinessMcpHandlers;
 use Kumwe\CMS\Infrastructure\Mcp\KumweMcpHandlers;
 use Kumwe\CMS\Infrastructure\Mcp\McpCapabilityCatalog;
 use Kumwe\CMS\Infrastructure\Mcp\McpMutationGuard;
+use Kumwe\CMS\Infrastructure\Mcp\ReportMcpHandlers;
 use Kumwe\CMS\Infrastructure\Time\SystemClock;
 use Kumwe\CMS\Navigation\Application\NavigationService;
 use Kumwe\CMS\Site\Infrastructure\Persistence\DoctrineSiteSettings;
@@ -39,6 +40,7 @@ final class McpHandlersFixture
             self::withoutConstructor(BusinessDefinitionService::class),
             self::withoutConstructor(BusinessSchemaService::class),
             self::withoutConstructor(BusinessMcpHandlers::class),
+            self::withoutConstructor(ReportMcpHandlers::class),
             self::withoutConstructor(McpMutationGuard::class),
             new SystemClock(),
             AuthorizationContext::gateway(),
