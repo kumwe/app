@@ -63,6 +63,7 @@ final class LiveExportExecutionContextResolverTest extends TestCase
         $principal = $resolved->principal();
 
         self::assertNotNull($principal);
+        self::assertNotSame($request->authorizationFingerprint(), $resolved->authorizationFingerprint());
         self::assertSame($request->approvalFingerprint(), $resolved->approvalFingerprint());
         self::assertSame(AuthenticatedSurface::Cli, $resolved->surface());
         self::assertTrue($principal->hasCapability(Capability::fromString('business.record.export')));
