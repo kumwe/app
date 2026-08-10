@@ -96,7 +96,8 @@ final readonly class ExportArtifact
                 throw new InvalidArgumentException('An export artifact digest is invalid.');
             }
         }
-        if ($reportVersion < 1 || $version < 1 || $version > 16 || $expiresAt <= $createdAt
+        if (
+            $reportVersion < 1 || $version < 1 || $version > 16 || $expiresAt <= $createdAt
             || strlen($actorId) > 191 || strlen($siteIdentifier) > 191
             || preg_match('/[\x00-\x1f]/', $actorId . $siteIdentifier) === 1
             || preg_match('/^[A-Za-z0-9][A-Za-z0-9._-]{0,126}\.csv$/D', $filename) !== 1
@@ -108,7 +109,8 @@ final readonly class ExportArtifact
             throw new InvalidArgumentException('An export artifact has too many report parameters.');
         }
         $terminal = $status === ExportArtifactStatus::Completed || $status === ExportArtifactStatus::Failed;
-        if (($status === ExportArtifactStatus::Queued) !== ($startedAt === null)
+        if (
+            ($status === ExportArtifactStatus::Queued) !== ($startedAt === null)
             || $terminal !== ($completedAt !== null)
             || ($status === ExportArtifactStatus::Completed) !== ($storageKey !== null)
             || ($status === ExportArtifactStatus::Completed) !== ($size !== null)
@@ -122,11 +124,13 @@ final readonly class ExportArtifact
         if (($size !== null && $size < 1) || ($rowCount !== null && $rowCount < 0)) {
             throw new InvalidArgumentException('An export artifact size or row count is invalid.');
         }
-        if ($storageKey !== null && preg_match(
-            '/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}'
-            . '\.[0-9a-f]{32}\.csv$/D',
-            $storageKey,
-        ) !== 1) {
+        if (
+            $storageKey !== null && preg_match(
+                '/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}'
+                . '\.[0-9a-f]{32}\.csv$/D',
+                $storageKey,
+            ) !== 1
+        ) {
             throw new InvalidArgumentException('An export artifact storage key is invalid.');
         }
         foreach ([$checksum, $queryDigest] as $digest) {
@@ -298,7 +302,8 @@ final readonly class ExportArtifact
             throw new InvalidArgumentException('An export artifact document has missing or unknown keys.');
         }
         try {
-            if (!is_array($document['parameters'])
+            if (
+                !is_array($document['parameters'])
                 || ($document['parameters'] !== [] && array_is_list($document['parameters']))
             ) {
                 throw new InvalidArgumentException('Export artifact parameters must form an object.');
@@ -333,7 +338,7 @@ final readonly class ExportArtifact
                 self::nullableString($document, 'failure_code'),
                 self::integer($document, 'version'),
             );
-        } catch (\ValueError|\TypeError|\Exception $exception) {
+        } catch (\ValueError | \TypeError | \Exception $exception) {
             if ($exception instanceof InvalidArgumentException) {
                 throw $exception;
             }

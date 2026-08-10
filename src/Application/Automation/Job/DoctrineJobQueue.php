@@ -920,10 +920,12 @@ final readonly class DoctrineJobQueue implements JobQueue
      */
     private function ensureQueueRuntime(QueueRuntimePolicy $policy): void
     {
-        if ($this->database->fetchOne(sprintf(
-            'SELECT queue_id FROM %s WHERE queue_id = ?',
-            $this->tables->quoted('job_queue_runtime'),
-        ), [$policy->queue]) !== false) {
+        if (
+            $this->database->fetchOne(sprintf(
+                'SELECT queue_id FROM %s WHERE queue_id = ?',
+                $this->tables->quoted('job_queue_runtime'),
+            ), [$policy->queue]) !== false
+        ) {
             return;
         }
         $now = $this->clock->now();

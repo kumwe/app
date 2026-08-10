@@ -146,7 +146,8 @@ final readonly class ReportMcpHandlers
         }
         $bytes = stream_get_contents($download->stream, self::MAX_INLINE_DOWNLOAD_BYTES + 1);
         fclose($download->stream);
-        if (!is_string($bytes) || strlen($bytes) !== $download->size
+        if (
+            !is_string($bytes) || strlen($bytes) !== $download->size
             || !hash_equals($download->checksum, hash('sha256', $bytes))
         ) {
             throw new RuntimeException('The export could not be verified for MCP download.');

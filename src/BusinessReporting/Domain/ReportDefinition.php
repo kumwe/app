@@ -170,16 +170,20 @@ final readonly class ReportDefinition implements ContributionDefinition
             if ($aggregate->columnAlias !== null) {
                 self::assertReference($columnAliases, $aggregate->columnAlias, 'aggregate');
                 $type = $columnTypes[$aggregate->columnAlias];
-                if (in_array($aggregate->function, [
+                if (
+                    in_array($aggregate->function, [
                     ReportAggregateFunction::Sum,
                     ReportAggregateFunction::Average,
-                ], true) && !in_array($type, [ReportValueType::Integer, ReportValueType::Decimal], true)) {
+                    ], true) && !in_array($type, [ReportValueType::Integer, ReportValueType::Decimal], true)
+                ) {
                     throw new InvalidArgumentException('A numeric report aggregate requires a numeric column.');
                 }
-                if (in_array($aggregate->function, [
+                if (
+                    in_array($aggregate->function, [
                     ReportAggregateFunction::Minimum,
                     ReportAggregateFunction::Maximum,
-                ], true) && $type === ReportValueType::Boolean) {
+                    ], true) && $type === ReportValueType::Boolean
+                ) {
                     throw new InvalidArgumentException('A boolean report column cannot be ordered for an aggregate.');
                 }
             }
@@ -347,14 +351,18 @@ final readonly class ReportDefinition implements ContributionDefinition
                 array_map(static function (array $item): ReportParameterDefinition {
                     self::keys($item, ['name', 'type', 'required', 'multiple', 'default']);
                     return new ReportParameterDefinition(
-                        self::string($item, 'name'), ReportValueType::from(self::string($item, 'type')),
-                        self::boolean($item, 'required'), self::boolean($item, 'multiple'), $item['default'],
+                        self::string($item, 'name'),
+                        ReportValueType::from(self::string($item, 'type')),
+                        self::boolean($item, 'required'),
+                        self::boolean($item, 'multiple'),
+                        $item['default'],
                     );
                 }, $parameters),
                 array_map(static function (array $item): ReportFilterDefinition {
                     self::keys($item, ['field', 'operator', 'parameter', 'quantifier']);
                     return new ReportFilterDefinition(
-                        self::string($item, 'field'), ReportFilterOperator::from(self::string($item, 'operator')),
+                        self::string($item, 'field'),
+                        ReportFilterOperator::from(self::string($item, 'operator')),
                         self::nullableString($item, 'parameter'),
                         ReportRelationQuantifier::from(self::string($item, 'quantifier')),
                     );
@@ -362,7 +370,9 @@ final readonly class ReportDefinition implements ContributionDefinition
                 array_map(static function (array $item): ReportColumnDefinition {
                     self::keys($item, ['alias', 'label', 'source', 'type']);
                     return new ReportColumnDefinition(
-                        self::string($item, 'alias'), self::string($item, 'label'), self::string($item, 'source'),
+                        self::string($item, 'alias'),
+                        self::string($item, 'label'),
+                        self::string($item, 'source'),
                         ReportValueType::from(self::string($item, 'type')),
                     );
                 }, $columns),
@@ -373,14 +383,16 @@ final readonly class ReportDefinition implements ContributionDefinition
                 array_map(static function (array $item): ReportAggregateDefinition {
                     self::keys($item, ['alias', 'function', 'column']);
                     return new ReportAggregateDefinition(
-                        self::string($item, 'alias'), ReportAggregateFunction::from(self::string($item, 'function')),
+                        self::string($item, 'alias'),
+                        ReportAggregateFunction::from(self::string($item, 'function')),
                         self::nullableString($item, 'column'),
                     );
                 }, $aggregates),
                 array_map(static function (array $item): ReportFormulaDefinition {
                     self::keys($item, ['alias', 'label', 'type', 'expression']);
                     return new ReportFormulaDefinition(
-                        self::string($item, 'alias'), self::string($item, 'label'),
+                        self::string($item, 'alias'),
+                        self::string($item, 'label'),
                         ReportValueType::from(self::string($item, 'type')),
                         Expression::fromArray(self::object($item, 'expression')),
                     );
@@ -388,21 +400,24 @@ final readonly class ReportDefinition implements ContributionDefinition
                 array_map(static function (array $item): ReportSortDefinition {
                     self::keys($item, ['output', 'direction', 'nulls_last']);
                     return new ReportSortDefinition(
-                        self::string($item, 'output'), ReportSortDirection::from(self::string($item, 'direction')),
+                        self::string($item, 'output'),
+                        ReportSortDirection::from(self::string($item, 'direction')),
                         self::boolean($item, 'nulls_last'),
                     );
                 }, $sorts),
                 array_map(static function (array $item): ReportDrillDownDefinition {
                     self::keys($item, ['record', 'definition', 'view']);
                     return new ReportDrillDownDefinition(
-                        self::string($item, 'record'), self::string($item, 'definition'), self::string($item, 'view'),
+                        self::string($item, 'record'),
+                        self::string($item, 'definition'),
+                        self::string($item, 'view'),
                     );
                 }, $drillDowns),
                 self::integer($document, 'synchronous_row_cap'),
                 self::boolean($document, 'administrator_visible'),
                 self::boolean($document, 'portal_visible'),
             );
-        } catch (\ValueError|\TypeError $exception) {
+        } catch (\ValueError | \TypeError $exception) {
             throw new InvalidArgumentException('A report definition document has an invalid value.', 0, $exception);
         }
     }

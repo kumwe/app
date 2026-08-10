@@ -170,7 +170,8 @@ final readonly class ReportCommand implements Command
      */
     private function writeDownload(string $path, mixed $source, int $size, string $checksum): void
     {
-        if ((!str_starts_with($path, '/') && preg_match('/^[A-Za-z]:[\\\\\/]/D', $path) !== 1)
+        if (
+            (!str_starts_with($path, '/') && preg_match('/^[A-Za-z]:[\\\\\/]/D', $path) !== 1)
             || basename($path) === '' || is_link($path) || file_exists($path)
         ) {
             throw new InvalidArgumentException('The report output file must be a new absolute path.');

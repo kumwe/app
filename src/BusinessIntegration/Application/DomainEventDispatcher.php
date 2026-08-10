@@ -60,11 +60,13 @@ final readonly class DomainEventDispatcher
     {
         $this->contracts->assertEvent($event);
         foreach ($this->handlers as $handler) {
-            if ($handler->definition()->accepts(
-                $event->eventType(),
-                $event->schemaVersion(),
-                $event->sensitivity(),
-            )) {
+            if (
+                $handler->definition()->accepts(
+                    $event->eventType(),
+                    $event->schemaVersion(),
+                    $event->sensitivity(),
+                )
+            ) {
                 $handler->handle($event);
             }
         }

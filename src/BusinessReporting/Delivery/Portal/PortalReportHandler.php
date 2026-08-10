@@ -104,9 +104,9 @@ final readonly class PortalReportHandler implements RequestHandlerInterface
             } elseif ($operation !== 'index') {
                 throw new InvalidArgumentException('The portal report route operation is invalid.');
             }
-        } catch (ExportArtifactUnavailable|ReportUnavailable) {
+        } catch (ExportArtifactUnavailable | ReportUnavailable) {
             return new EmptyResponse(404, ['Cache-Control' => 'no-store']);
-        } catch (InvalidArgumentException|ReportRowLimitExceeded) {
+        } catch (InvalidArgumentException | ReportRowLimitExceeded) {
             $data['report_error'] = 'The report request could not be accepted. Review the parameters or use a '
                 . 'queued export for large results, then try again.';
             $status = 422;

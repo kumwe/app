@@ -175,7 +175,8 @@ final readonly class DoctrineExportArtifactRepository implements ExportArtifactR
     {
         $document = $row['document'] ?? null;
         $checksum = $row['document_checksum'] ?? null;
-        if (!is_string($document) || strlen($document) > 1_048_576 || !is_string($checksum)
+        if (
+            !is_string($document) || strlen($document) > 1_048_576 || !is_string($checksum)
             || preg_match('/^[0-9a-f]{64}$/D', $checksum) !== 1
             || !hash_equals($checksum, hash('sha256', $document))
         ) {
@@ -192,7 +193,8 @@ final readonly class DoctrineExportArtifactRepository implements ExportArtifactR
         /** @var array<string, mixed> $decoded */
         $artifact = ExportArtifact::fromArray($decoded);
         $version = $row['version'] ?? null;
-        if ((!is_int($version) && !is_string($version))
+        if (
+            (!is_int($version) && !is_string($version))
             || $artifact->id !== $requestedId
             || $artifact->version !== (int) $version
             || $artifact->status->value !== ($row['status'] ?? null)

@@ -46,7 +46,8 @@ final readonly class ProjectionEvent
         public DateTimeImmutable $occurredAt,
         array $payload,
     ) {
-        if ($sequence < 1 || $schemaVersion < 1
+        if (
+            $sequence < 1 || $schemaVersion < 1
             || preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/D', $id) !== 1
         ) {
             throw new InvalidArgumentException('A projection event identity or version is invalid.');

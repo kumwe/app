@@ -58,7 +58,8 @@ final readonly class BusinessRecordReportScopeResolver implements ReportScopeRes
             true,
         );
         $authenticatedOrganization = $context->organization()?->identifier();
-        if (($assertedOrganization !== null && $assertedOrganization !== $authenticatedOrganization)
+        if (
+            ($assertedOrganization !== null && $assertedOrganization !== $authenticatedOrganization)
             || ($organizationScoped && $authenticatedOrganization === null)
         ) {
             throw new InvalidArgumentException('The report scope does not match authenticated membership.');

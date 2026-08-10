@@ -94,12 +94,14 @@ final readonly class DurableOutboundAdapterDispatcher
         );
         $result = $this->inbox->receive($receipt, $event, $workerId, $runtimeGeneration, $leaseSeconds);
         if ($result->lease === null) {
-            if (in_array($result->disposition, [
+            if (
+                in_array($result->disposition, [
                 InboxDisposition::DUPLICATE,
                 InboxDisposition::BUSY,
                 InboxDisposition::REORDERED,
                 InboxDisposition::UNAVAILABLE,
-            ], true)) {
+                ], true)
+            ) {
                 return $result->disposition;
             }
             if ($result->disposition === InboxDisposition::POISON) {

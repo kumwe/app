@@ -298,7 +298,10 @@ final class ExtensionDevelopmentSdkTest extends TestCase
     {
         $source = $this->temporary . '/component';
         (new ComponentScaffolder())->scaffold(new ScaffoldRequest(
-            'acme/signed-component', 'Acme\\SignedComponent', $source, 'Signed Component',
+            'acme/signed-component',
+            'Acme\\SignedComponent',
+            $source,
+            'Signed Component',
         ));
         $inspector = $this->inspector();
         $archive = (new DeterministicPackageBuilder($inspector))
@@ -407,7 +410,10 @@ final class ExtensionDevelopmentSdkTest extends TestCase
     {
         $source = $this->temporary . '/component';
         (new ComponentScaffolder())->scaffold(new ScaffoldRequest(
-            'acme/safe-component', 'Acme\\SafeComponent', $source, 'Safe Component',
+            'acme/safe-component',
+            'Acme\\SafeComponent',
+            $source,
+            'Safe Component',
         ));
         self::assertTrue(mkdir($source . '/.phpunit.cache', 0700));
         self::assertSame(13, file_put_contents($source . '/.phpunit.cache/results', "test-results\n", LOCK_EX));
@@ -433,7 +439,10 @@ final class ExtensionDevelopmentSdkTest extends TestCase
     {
         $source = $this->temporary . '/component';
         (new ComponentScaffolder())->scaffold(new ScaffoldRequest(
-            'acme/non-strict-component', 'Acme\\NonStrictComponent', $source, 'Non-strict Component',
+            'acme/non-strict-component',
+            'Acme\\NonStrictComponent',
+            $source,
+            'Non-strict Component',
         ));
         $path = $source . '/src/Application/OverviewService.php';
         $contents = file_get_contents($path);

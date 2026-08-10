@@ -81,9 +81,11 @@ final class PayloadSchemaValidator
             throw new InvalidArgumentException('A payload schema contains unsupported keywords.');
         }
         $type = $schema['type'] ?? null;
-        if ($type !== null && (!is_string($type) || !in_array($type, [
+        if (
+            $type !== null && (!is_string($type) || !in_array($type, [
             'object', 'array', 'string', 'integer', 'number', 'boolean', 'null',
-        ], true))) {
+            ], true))
+        ) {
             throw new InvalidArgumentException('A payload schema type is invalid.');
         }
         if (isset($schema['properties'])) {

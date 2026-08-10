@@ -86,8 +86,7 @@ final class QueueWorkCommandTest extends TestCase
         JobQueue $queue,
         array $handlers,
         ?QueueRuntimePolicyCatalog $policies = null,
-    ): QueueWorkCommand
-    {
+    ): QueueWorkCommand {
         $ownership = AuthorizationContext::ownership();
 
         return new QueueWorkCommand(

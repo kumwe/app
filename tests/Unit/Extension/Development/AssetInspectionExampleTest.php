@@ -128,8 +128,10 @@ final class AssetInspectionExampleTest extends TestCase
         self::assertSame(['draft', 'submitted', 'verified', 'closed'], $inspection->workflow?->states);
         self::assertSame(
             ['submit', 'verify', 'close'],
-            array_map(static fn (array $transition): string => $transition['handle'],
-                $inspection->workflow?->transitions ?? []),
+            array_map(
+                static fn (array $transition): string => $transition['handle'],
+                $inspection->workflow?->transitions ?? []
+            ),
         );
         self::assertSame(
             [PortalOperation::Browse, PortalOperation::Export, PortalOperation::Read, PortalOperation::Report],

@@ -213,7 +213,7 @@ final readonly class ProjectionDefinition implements IntegrationContract
                 $keyFields,
                 $batchSize,
             );
-        } catch (\ValueError|\TypeError $exception) {
+        } catch (\ValueError | \TypeError $exception) {
             throw new InvalidArgumentException('A projection definition document has an invalid value.', 0, $exception);
         }
     }

@@ -69,10 +69,12 @@ final readonly class ContributedScheduleSynchronizer implements ScheduleRuntimeS
     public function synchronize(): bool
     {
         $manager = $this->database->createSchemaManager();
-        if (!$manager->tablesExist([
+        if (
+            !$manager->tablesExist([
             $this->tables->raw('schedules'),
             $this->tables->raw('resource_site_ownership'),
-        ])) {
+            ])
+        ) {
             return false;
         }
         $scheduleTable = $manager->introspectTableByUnquotedName($this->tables->raw('schedules'));

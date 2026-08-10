@@ -142,7 +142,7 @@ final readonly class ReportApiHandler implements RequestHandlerInterface
                     'X-Content-Type-Options' => 'nosniff',
                 ]);
             }
-        } catch (ExportArtifactUnavailable|ReportUnavailable) {
+        } catch (ExportArtifactUnavailable | ReportUnavailable) {
             return new EmptyResponse(404, ['Cache-Control' => 'no-store']);
         } catch (ReportRowLimitExceeded) {
             return $this->problem(
@@ -210,7 +210,8 @@ final readonly class ReportApiHandler implements RequestHandlerInterface
                 throw new InvalidArgumentException('The report request body must be a JSON object.');
             }
         }
-        if (!is_array($body)
+        if (
+            !is_array($body)
             || ($body !== [] && array_is_list($body))
             || array_diff(array_keys($body), $allowed) !== []
         ) {

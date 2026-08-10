@@ -71,7 +71,8 @@ final readonly class ReportExecutionResult
         array $rows,
         array $drillDowns = [],
     ) {
-        if (preg_match('/^[0-9a-f]{64}$/D', $definitionChecksum) !== 1
+        if (
+            preg_match('/^[0-9a-f]{64}$/D', $definitionChecksum) !== 1
             || preg_match('/^[0-9a-f]{64}$/D', $queryDigest) !== 1
             || !array_is_list($rows)
         ) {
@@ -96,7 +97,8 @@ final readonly class ReportExecutionResult
         $normalizedRows = [];
         $outputs = array_fill_keys(array_keys($labels), true);
         foreach ($rows as $row) {
-            if (!is_array($row)
+            if (
+                !is_array($row)
                 || array_diff_key($row, $outputs) !== []
                 || array_diff_key($outputs, $row) !== []
             ) {

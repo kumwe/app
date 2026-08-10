@@ -66,7 +66,8 @@ final readonly class BusinessRecordExportPolicySnapshotProvider implements Expor
             true,
         );
         $authenticatedOrganization = $context->organization()?->identifier();
-        if (($organizationScoped && $authenticatedOrganization === null)
+        if (
+            ($organizationScoped && $authenticatedOrganization === null)
             || ($organizationScoped && $organizationIdentifier !== null
                 && $organizationIdentifier !== $authenticatedOrganization)
             || (!$organizationScoped && $organizationIdentifier !== null)

@@ -54,7 +54,8 @@ final readonly class GenerateReportExportHandler implements JobHandler
     public function handle(array $payload, ExecutionContext $context): void
     {
         $artifactId = $payload['artifact_id'] ?? null;
-        if (array_keys($payload) !== ['artifact_id'] || !is_string($artifactId)
+        if (
+            array_keys($payload) !== ['artifact_id'] || !is_string($artifactId)
             || preg_match(
                 '/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/Di',
                 $artifactId,
@@ -64,7 +65,7 @@ final readonly class GenerateReportExportHandler implements JobHandler
         }
         try {
             $this->exports->generate($artifactId, $context);
-        } catch (ExportGenerationRejected|InvalidArgumentException $exception) {
+        } catch (ExportGenerationRejected | InvalidArgumentException $exception) {
             throw new PermanentFailure($exception->getMessage(), 0, $exception);
         }
     }
