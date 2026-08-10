@@ -173,7 +173,11 @@ final readonly class CustomBusinessActionLedgerResult
             'originally_replayed',
             'data',
         ];
-        if (array_keys($document) !== $expectedKeys || ($document['kind'] ?? null) !== self::KIND) {
+        if (
+            count($document) !== count($expectedKeys)
+            || array_diff($expectedKeys, array_keys($document)) !== []
+            || ($document['kind'] ?? null) !== self::KIND
+        ) {
             throw new InvalidArgumentException('A custom business action ledger result is malformed.');
         }
         foreach (

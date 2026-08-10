@@ -90,6 +90,39 @@ final class CustomBusinessActionExecutorTest extends TestCase
     }
 
     /**
+     * Prove native JSON storage may reorder object keys without invalidating a complete tagged result.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testReconstructsACompleteCustomResultAfterJsonKeyReordering(): void
+    {
+        $stored = new CustomBusinessActionLedgerResult(
+            self::DEFINITION_ID,
+            2,
+            str_repeat('a', 64),
+            7,
+            str_repeat('b', 64),
+            'acme.editor.actions.recalculate',
+            'acme.editor.schemas.recalculate_v1',
+            '018f4f24-98d8-7ad4-8f3f-38c909178b70',
+            3,
+            null,
+            'recalculate',
+            false,
+            false,
+            ['status' => 'done'],
+        );
+        $document = $stored->toArray();
+        ksort($document, SORT_STRING);
+
+        $restored = CustomBusinessActionLedgerResult::fromArray($document);
+
+        self::assertSame($stored->toArray(), $restored->toArray());
+    }
+
+    /**
      * Prove one operation identity cannot replay a different contract input.
      *
      * @return  void

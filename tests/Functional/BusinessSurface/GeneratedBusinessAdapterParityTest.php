@@ -120,6 +120,7 @@ final class GeneratedBusinessAdapterParityTest extends TestCase
         $targetDocument['portal_operations'] = [
             PortalOperation::Browse->value,
             PortalOperation::Read->value,
+            PortalOperation::Relation->value,
         ];
         $target = NeutralBusinessFixture::install($container, $installer, $targetDocument);
         $targetRecords = [];
