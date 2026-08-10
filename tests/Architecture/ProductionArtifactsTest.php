@@ -228,6 +228,7 @@ final class ProductionArtifactsTest extends TestCase
         self::assertStringContainsString("apply_policy_profile\n    refresh_management_token", $driver);
         self::assertStringContainsString('$security->createOrganization(', $support);
         self::assertStringContainsString('$security->createMembership(', $support);
+        self::assertStringContainsString('use DateTimeImmutable;', $support);
     }
 
     public function testNativeInstallerPersistsIndependentRuntimeTrustAndStableIdentity(): void

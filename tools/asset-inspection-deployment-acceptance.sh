@@ -261,7 +261,15 @@ create_cli_record() {
                 --record="$2" \
                 --operation-id="$3" \
                 --values-file="$values_file"
-        ' sh "$definition" "$record" "$operation" | jq -e '.record_id != null' >/dev/null
+        ' sh "$definition" "$record" "$operation" \
+        | jq -e --arg record "$record" '
+            .ok == true
+            and .meta.action == "create"
+            and .meta.surface == "cli"
+            and .data.record_id == $record
+            and .data.version == 1
+            and .data.replayed == false
+        ' >/dev/null
 }
 
 api_request() {
@@ -463,7 +471,7 @@ jq -e '.format == "kumwe-asset-inspection-package-v1" and (.package_sha256 | tes
 
 if [[ "$mode" == grant ]]; then
     roles="$(app_token "$KUMWE_ACCEPTANCE_CLI_TOKEN_FILE" access roles)"
-    administrator_role="$(jq -er '[.items[] | select(.code == "administrator") | .id] \
+    administrator_role="$(jq -er '[.items[] | select(.code == "administrator") | .id]
         | select(length == 1) | .[0]' <<< "$roles")"
     delegated_capabilities=''
     for capability in \
