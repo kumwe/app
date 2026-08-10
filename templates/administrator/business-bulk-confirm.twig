@@ -25,7 +25,7 @@
       </div>
     </header>
 
-    {% if error_summary %}
+    {% if error_summary is defined and error_summary %}
       <section class="notice danger business-error-summary" role="alert" tabindex="-1">
         <div><h2>The bulk action input is invalid</h2><p>{{ error_summary }}</p></div>
       </section>

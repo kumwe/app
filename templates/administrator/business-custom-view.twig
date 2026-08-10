@@ -59,7 +59,7 @@
       </div>
     </header>
 
-    {% if error_summary %}
+    {% if error_summary is defined and error_summary %}
       <div class="notice error" role="alert" tabindex="-1">
         <h2>View input needs attention</h2><p>{{ error_summary }}</p>
       </div>

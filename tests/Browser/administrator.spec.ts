@@ -56,6 +56,18 @@ async function fillSession5OrderForm(page: Page, name: string): Promise<void> {
   await page.locator('[name="values[credential]"]').fill('browser-secret-value');
 }
 
+async function expectAdministratorRecordName(page: Page, value: string): Promise<void> {
+  const field = page.locator('.business-detail-fields > div').filter({
+    has: page.getByText('Name', { exact: true }),
+  });
+  await expect(field.locator('dd')).toHaveText(value);
+}
+
+async function expectAdministratorRecordRow(page: Page, value: string): Promise<void> {
+  await expect(page.locator('.business-record-table tbody tr').filter({ hasText: value }).first())
+    .toBeVisible();
+}
+
 async function ensureAnnouncementsActive(page: Page): Promise<void> {
   await page.goto('/administrator/extensions');
   const extension = page.locator('article').filter({ hasText: 'kumwe/announcements-example' }).first();
@@ -230,7 +242,11 @@ test.describe('authenticated administrator', () => {
     await expectAccessible(page);
     await expect(page).toHaveScreenshot('schema-plans.png', {
       fullPage: true,
-      mask: [page.locator('[data-visual-mask]')],
+      mask: [
+        page.locator('.schema-plan-catalog'),
+        page.locator('.schema-plan-layout > aside .count-badge'),
+        page.locator('.schema-plan-layout > .stack [data-visual-mask]'),
+      ],
       maskColor: '#d9e2e8',
     });
   });
@@ -476,7 +492,7 @@ test.describe('authenticated administrator', () => {
     const name = `Relationship order ${testInfo.project.name} ${Date.now()}`;
     await fillSession5OrderForm(page, name);
     await page.getByRole('button', { name: 'Create record' }).click();
-    await expect(page.getByText(name, { exact: true })).toBeVisible();
+    await expectAdministratorRecordName(page, name);
     await expect(page.getByText('Stored conditional note', { exact: true })).toBeVisible();
     await expect(page.getByText('browser-secret-value', { exact: true })).toHaveCount(0);
     const recordUrl = new URL(page.url()).pathname;
@@ -565,7 +581,7 @@ test.describe('authenticated administrator', () => {
       await expect(page).toHaveURL(new RegExp(
         `/administrator/business/${businessDefinitionHandle}/[^?]+\\?saved=1&completed_operation=`,
       ));
-      await expect(page.getByText(name, { exact: true })).toBeVisible();
+      await expectAdministratorRecordName(page, name);
       await expect(page.getByText('browser-secret-value', { exact: true })).toHaveCount(0);
       await page.getByRole('link', { name: 'View operation status' }).click();
       await expect(page.getByRole('heading', { level: 1, name: 'Operation status' })).toBeVisible();
@@ -576,14 +592,14 @@ test.describe('authenticated administrator', () => {
       await page.locator('[name="values[name]"]').fill(updatedName);
       await page.locator('[name="values[credential]"]').fill('browser-secret-updated');
       await page.getByRole('button', { name: 'Save changes' }).click();
-      await expect(page.getByText(updatedName, { exact: true })).toBeVisible();
+      await expectAdministratorRecordName(page, updatedName);
       await page.getByRole('link', { name: 'History', exact: true }).click();
       await expect(page.getByRole('heading', { level: 1, name: 'Record history' })).toBeVisible();
       await expect(page.getByText('update', { exact: true }).first()).toBeVisible();
       await page.goto(`/administrator/business/${businessDefinitionHandle}`);
       await page.getByLabel('Search records').fill(updatedName);
       await page.getByRole('button', { name: 'Apply', exact: true }).click();
-      await expect(page.getByText(updatedName, { exact: true })).toBeVisible();
+      await expectAdministratorRecordRow(page, updatedName);
       await page.getByRole('checkbox', { name: /Select record/ }).check();
       await page.getByLabel('Bulk operation').selectOption('archive');
       await page.getByRole('button', { name: 'Review bulk operation' }).click();
@@ -596,7 +612,7 @@ test.describe('authenticated administrator', () => {
       await page.getByLabel('Search records').fill(updatedName);
       await page.getByLabel('Include archived').check();
       await page.getByRole('button', { name: 'Apply', exact: true }).click();
-      await expect(page.getByText(updatedName, { exact: true })).toBeVisible();
+      await expectAdministratorRecordRow(page, updatedName);
       await page.getByRole('checkbox', { name: /Select record/ }).check();
       await page.getByLabel('Bulk operation').selectOption('restore');
       await page.getByRole('button', { name: 'Review bulk operation' }).click();

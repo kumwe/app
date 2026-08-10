@@ -48,9 +48,9 @@ main { width: 100%; min-width: 0; max-width: 76rem; padding: clamp(1.25rem, 4vw,
 .portal-table { width: 100%; border-collapse: collapse; background: var(--portal-panel); }
 .portal-table th, .portal-table td { padding: .75rem; border-bottom: 1px solid var(--portal-line); text-align: left; vertical-align: top; }
 .portal-details { display: grid; grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); gap: 1px; background: var(--portal-line); }
-.portal-details div { padding: .75rem; background: var(--portal-panel); }
+.portal-details div { min-width: 0; padding: .75rem; background: var(--portal-panel); }
 .portal-details dt { color: var(--portal-muted); font-weight: 700; }
-.portal-details dd { margin: .2rem 0 0; }
+.portal-details dd { margin: .2rem 0 0; overflow-wrap: anywhere; }
 .portal-digest { overflow-wrap: anywhere; }
 .portal-actions { display: flex; flex-wrap: wrap; gap: .75rem; }
 .portal-danger { background: #8b2525; }

@@ -6,6 +6,7 @@ namespace Kumwe\CMS\Tests\Unit\BusinessSecurity\Infrastructure\Persistence;
 
 use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use Kumwe\CMS\Application\Authorization\AuthenticationStrength;
 use Kumwe\CMS\Application\Authorization\ExecutionContext;
 use Kumwe\CMS\Application\Authorization\MembershipContext;
@@ -178,6 +179,18 @@ final class DoctrineApprovalRepositoryTest extends TestCase
             $createdAt->modify('+1 day'),
             $createdAt,
         );
+    }
+
+    public function testPostgreSqlLocksOnlyTheApprovalRowAcrossNullableScopeJoins(): void
+    {
+        $database = $this->database();
+        $database->method('getDatabasePlatform')->willReturn(new PostgreSQLPlatform());
+        $database->expects(self::once())->method('fetchAssociative')->with(
+            self::callback(static fn (string $sql): bool => str_ends_with($sql, 'FOR UPDATE OF a')),
+            [self::REQUEST],
+        )->willReturn(false);
+
+        self::assertNull($this->repository($database)->lock(self::REQUEST));
     }
 
     private function repository(Connection $database): DoctrineApprovalRepository

@@ -418,18 +418,24 @@ final class GeneratedBusinessDeliveryParityTest extends TestCase
     }
 
     /**
-     * Successful detail reads do not carry relationship validation errors.
+     * Successful generated surface reads do not carry validation errors.
      *
      * @return  void
      *
      * @since   2.0.0
      */
-    public function testDetailRelationshipErrorSummaryIsOptional(): void
+    public function testGeneratedSurfaceErrorSummariesAreOptional(): void
     {
         foreach (
             [
                 'templates/administrator/business-detail.twig',
+                'templates/administrator/business-confirm.twig',
+                'templates/administrator/business-bulk-confirm.twig',
+                'templates/administrator/business-custom-view.twig',
                 'templates/portal/business-detail.twig',
+                'templates/portal/business-confirm.twig',
+                'templates/portal/business-bulk-confirm.twig',
+                'templates/portal/business-custom-view.twig',
             ] as $path
         ) {
             $template = $this->contents($path);
