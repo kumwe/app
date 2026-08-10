@@ -11,6 +11,7 @@ The repository contains small, inspectable packages under [`examples/extensions`
 | Example | Demonstrates |
 |---|---|
 | [`announcements`](../examples/extensions/announcements) | Schema-3 shell, entity and safe field-presenter contributions, injected service, and portable migration |
+| [`asset-inspection`](../examples/extensions/asset-inspection) | Schema-4 neutral proof with related entities, workflow, policies, durable events/jobs, projection/report, administrator UI, and opt-in portal |
 | [`audit-listener`](../examples/extensions/audit-listener) | Plugin provider and Joomla Event listener registration |
 | [`minimal-template`](../examples/extensions/minimal-template) | Template override and packaged public asset |
 
@@ -95,13 +96,15 @@ Schema 2 is required for application-shell contributions. A minimal graphical co
 
 Identifiers use `vendor/name`; compatibility and dependency constraints use semantic versions. The manifest is installation input and part of the extension's compatibility contract. Do not infer registration by scanning PHP files.
 
-Schema-2 and schema-3 manifests reject unknown root, requirement, autoload, dependency, and contribution keys.
+Schema-2, schema-3, and schema-4 manifests reject unknown root, requirement, autoload, dependency, and contribution keys.
 Every contribution identifier must begin with the extension namespace (`acme/announcements` becomes
 `acme.announcements`). Lists are bounded, paths cannot traverse, route methods are restricted, and
 navigation/routes must reference capabilities, workspaces, and views owned by the same package. `permissions`,
 when present, must exactly match the deterministically ordered contributed capability identifiers. Schema 2 keeps
 its original business grammar (`field_types` and `definitions`); use schema 3 to declare safe field presentations
-and custom business handlers.
+and custom business handlers. Schema 4 retains those shapes and requires contribution SPI 2 for the closed
+`integration` section: event schemas/listeners/consumers, jobs/queues/schedules, projections/reports, and outbound
+adapters. See [Business integrations and extension SDK](business-integrations.md).
 
 ### Business-definition contributions
 
@@ -392,14 +395,17 @@ Test at least:
 - desktop/mobile graphical output, keyboard use, WCAG 2.2 AA checks, and stable screenshots;
 - template and asset output under the production security headers.
 
-The announcements example is the conformance reference. Its browser fixture packages and signs the real example, installs it disabled, activates it, grants the contributed capability to only the administrator role, and proves the graphical lifecycle without a core route or navigation entry.
+The asset-inspection example is the full integration conformance reference; announcements remains the compact
+schema-3 presentation fixture. Deployment acceptance builds and signs the asset example, installs it disabled,
+activates it, exercises durable work and graphical/machine surfaces, restarts processes, disables/reactivates it,
+and verifies backup/restore on every supported database engine.
 
 ## Upgrade and recovery notes
 
 The forward migration adds `extension_contribution_capabilities`, linking package-owned capability codes to installed extensions. Installation and upgrade synchronize only the current release's declared capabilities. Removing a capability on upgrade or uninstall removes dependent grants through existing foreign keys; extension-owned data tables are not dropped. Back up identity/grant data before intentionally removing a published capability.
 
 The signed runtime publication now carries `manifest_schema` and canonical contribution declarations. Older
-schema-1 publications remain readable through defaults, while schema-2 and schema-3 publications are compared with
+schema-1 publications remain readable through defaults, while schema-2, schema-3, and schema-4 publications are compared with
 the installed manifest before code loads. After deploying this change, run core migrations, materialize the current
 runtime generation, and replace long-lived processes. If materialization is stale or invalid, readiness remains
 closed; use the existing runtime repair operation. Recovery composition deliberately skips extension loading and

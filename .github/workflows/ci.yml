@@ -390,6 +390,7 @@ jobs:
           recovery_root="$RUNNER_TEMP/kumwe-recovery-${DB_DRIVER}"
           backup_root="$recovery_root/backups"
           source_media="$recovery_root/source/media"
+          source_private="$recovery_root/source/private"
           source_extensions="$recovery_root/source/extensions"
           source_extension_assets="$recovery_root/source/extension-assets"
           restore_root="$recovery_root/restored"
@@ -398,12 +399,18 @@ jobs:
           install -d -m 0700 \
             "$backup_root" \
             "$source_media" \
+            "$source_private" \
             "$source_extensions" \
             "$source_extension_assets" \
             "$restore_root"
           install -m 0600 /dev/null "$password_file"
           printf %s "$DB_PASSWORD" > "$password_file"
           printf 'acceptance-media' > "$source_media/probe.txt"
+          install -d -m 0700 \
+            "$source_private/report-exports" \
+            "$source_private/report-exports/objects"
+          printf 'acceptance-private-report' > "$source_private/report-exports/objects/probe.csv"
+          chmod 0600 "$source_private/report-exports/objects/probe.csv"
           printf 'acceptance-extension' > "$source_extensions/probe.txt"
           printf 'acceptance-extension-asset' > "$source_extension_assets/probe.css"
           php tests/Support/business-runtime-backup-acceptance.php seed > "$runtime_manifest"
@@ -434,6 +441,7 @@ jobs:
           export KUMWE_EXTENSIONS_DIR="$source_extensions"
           export KUMWE_EXTENSION_ASSETS_DIR="$source_extension_assets"
           export KUMWE_MEDIA_DIR="$source_media"
+          export KUMWE_PRIVATE_DIR="$source_private"
           export KUMWE_RELEASE=2.0.0
           backup_path="$(bash tools/backup.sh)"
 
@@ -447,10 +455,17 @@ jobs:
           export KUMWE_RESTORE_EXTENSIONS_DIR="$restore_root/extensions"
           export KUMWE_RESTORE_EXTENSION_ASSETS_DIR="$restore_root/extension-assets"
           export KUMWE_RESTORE_MEDIA_DIR="$restore_root/media"
+          export KUMWE_RESTORE_PRIVATE_DIR="$restore_root/private"
           bash tools/restore.sh "$backup_path"
           DB_NAME=kumwe_restore_test \
             php tests/Support/business-runtime-backup-acceptance.php verify "$runtime_manifest"
           cmp "$source_media/probe.txt" "$restore_root/media/probe.txt"
+          cmp \
+            "$source_private/report-exports/objects/probe.csv" \
+            "$restore_root/private/report-exports/objects/probe.csv"
+          test "$(stat --format='%a' "$restore_root/private/report-exports/objects/probe.csv")" = 600
+          test "$(stat --format='%a' "$restore_root/private/report-exports")" = 700
+          test "$(stat --format='%a' "$restore_root/private/report-exports/objects")" = 700
           cmp "$source_extensions/probe.txt" "$restore_root/extensions/probe.txt"
           cmp "$source_extension_assets/probe.css" "$restore_root/extension-assets/probe.css"
 

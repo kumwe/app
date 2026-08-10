@@ -78,6 +78,7 @@ final class ProductionArtifactsTest extends TestCase
             'extension-assets-data:/var/www/kumwe/public/assets/extensions',
             $compose,
         );
+        self::assertStringContainsString('private-data:/var/www/kumwe/storage/private', $compose);
         self::assertStringContainsString('profiles: [automation]', $compose);
     }
 
@@ -114,6 +115,11 @@ final class ProductionArtifactsTest extends TestCase
         self::assertStringContainsString('database_table_prefix | length <= 28', $verify);
         self::assertStringContainsString('product_major: 2', $backup);
         self::assertStringContainsString('extension-assets.tar.gz', $backup);
+        self::assertStringContainsString('KUMWE_PRIVATE_DIR', $backup);
+        self::assertStringContainsString('private.tar.gz', $backup);
+        self::assertStringContainsString('KUMWE_RESTORE_PRIVATE_DIR', $restore);
+        self::assertStringContainsString('private.tar.gz', $restore);
+        self::assertStringContainsString('private.tar.gz', $verify);
         self::assertStringContainsString('set -Eeuo pipefail', $verify);
         self::assertStringContainsString('Kumwe 1.x and unknown formats are refused', $verify);
     }
@@ -142,6 +148,46 @@ final class ProductionArtifactsTest extends TestCase
         self::assertStringContainsString('kumwe_content_create', $probe);
     }
 
+    /**
+     * Require the production database matrix to execute the signed proof package and clean restore.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testDeploymentAcceptanceExercisesTheCompleteSignedExtensionLifecycle(): void
+    {
+        $acceptance = $this->contents('.github/workflows/deployment-acceptance.yml');
+        $driver = $this->contents('tools/asset-inspection-deployment-acceptance.sh');
+
+        self::assertStringContainsString('tools/asset-inspection-deployment-acceptance.sh package', $acceptance);
+        self::assertStringContainsString('tools/asset-inspection-deployment-acceptance.sh grant', $acceptance);
+        self::assertStringContainsString('tools/asset-inspection-deployment-acceptance.sh exercise', $acceptance);
+        self::assertStringContainsString('asset-inspection-deployment-acceptance.php', $acceptance);
+        self::assertStringContainsString('extension:runtime:materialize', $acceptance);
+        self::assertStringContainsString('KUMWE_ACCEPTANCE_ASSET_MANIFEST', $acceptance);
+        self::assertStringContainsString('KUMWE_ACCEPTANCE_ASSET_STATE', $acceptance);
+        self::assertStringContainsString('storage/private/report-exports/objects', $acceptance);
+        self::assertStringContainsString('app web worker scheduler', $acceptance);
+
+        foreach (['extension:build', 'extension:inspect', 'extension:conformance', 'extension:sign'] as $command) {
+            self::assertStringContainsString($command, $driver);
+        }
+        foreach (['extension:install', 'extension:activate', 'extension:disable'] as $command) {
+            self::assertStringContainsString($command, $driver);
+        }
+        foreach (['business-record create', 'business-record relate', 'integration:work --once'] as $command) {
+            self::assertStringContainsString($command, $driver);
+        }
+        self::assertStringContainsString('access grant', $driver);
+        self::assertStringContainsString('integration:manage projection-rebuild', $driver);
+        self::assertStringContainsString('integration:manage projections', $driver);
+        self::assertStringContainsString('kumwe.asset-inspection-example.integration', $driver);
+        self::assertStringContainsString('business-report export', $driver);
+        self::assertStringContainsString('kumwe_business_report_execute', $driver);
+        self::assertStringContainsString('--force-recreate app web worker scheduler', $driver);
+    }
+
     public function testNativeInstallerPersistsIndependentRuntimeTrustAndStableIdentity(): void
     {
         $installer = $this->contents('bin/kumwe-install');
@@ -160,11 +206,11 @@ final class ProductionArtifactsTest extends TestCase
     public function testObservabilityContractIsPrivateByDefault(): void
     {
         /**
-         * @var array{
-         *     logging: array{destination: string},
-         *     health: array{expose_details: bool},
-         *     metrics: array{enabled: bool, public: bool}
-         * } $configuration
+         * @var    array{
+         *             logging: array{destination: string},
+         *             health: array{expose_details: bool},
+         *             metrics: array{enabled: bool, public: bool}
+         *         } $configuration
          */
         $configuration = require $this->root . '/config/observability.php';
 

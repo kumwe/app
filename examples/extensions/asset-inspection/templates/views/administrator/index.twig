@@ -1,0 +1,52 @@
+{% extends "layout.twig" %}
+{% block title %}Asset inspection example{% endblock %}
+{% block context_title %}Asset inspection example{% endblock %}
+{% block context_subtitle %}Neutral extensibility proof{% endblock %}
+{% block content %}
+  <div class="page-heading">
+    <div>
+      <p class="eyebrow">{{ surface_label }}</p>
+      <h1>{{ heading }}</h1>
+      <p>{{ notice }}</p>
+    </div>
+  </div>
+  <section class="panel stack" aria-labelledby="asset-proof-model-title">
+    <div>
+      <p class="eyebrow">Signed business model</p>
+      <h2 id="asset-proof-model-title">Five related entity types</h2>
+    </div>
+    <ul>
+      {% for entity in entities %}<li>{{ entity }}</li>{% endfor %}
+    </ul>
+    <p>Inspection owns ordered finding and measurement relationships, a four-state workflow, a stored risk-score formula, and a restricted internal note.</p>
+  </section>
+  <section class="panel stack" aria-labelledby="asset-proof-runtime-title">
+    <div>
+      <p class="eyebrow">Durable runtime</p>
+      <h2 id="asset-proof-runtime-title">Integration contributions</h2>
+    </div>
+    <ul>
+      {% for integration in integrations %}<li>{{ integration }}</li>{% endfor %}
+    </ul>
+    <dl>
+      <dt>Transaction-local inspection mutations observed</dt><dd>{{ activity.domain_events }}</dd>
+      <dt>Inbox-processed inspection mutations observed</dt><dd>{{ activity.integration_events }}</dd>
+      <dt>Latest scheduled-job digest</dt><dd><code>{{ activity.latest_job_digest ?? 'No job observed in this process' }}</code></dd>
+    </dl>
+    <p>These counters are bounded process-local diagnostics. Core outbox, inbox, schedule, job, and projection records are the durable evidence.</p>
+  </section>
+  <section class="panel stack" aria-labelledby="asset-proof-policy-title">
+    <div>
+      <p class="eyebrow">Policy proof for site {{ site_identifier }}</p>
+      <h2 id="asset-proof-policy-title">Row and field disclosure</h2>
+    </div>
+    {% for summary in summaries %}
+      <article class="stack">
+        <h3>{{ summary.reference }}</h3>
+        <p>Risk score: {{ summary.risk_score }}</p>
+        {% if summary.internal_note is defined %}<p>Restricted field: {{ summary.internal_note }}</p>{% endif %}
+      </article>
+    {% endfor %}
+    <p>Foreign-site and below-threshold rows were removed before rendering. Restricted-field disclosure: {{ restricted_disclosed ? 'profile-authorized' : 'withheld' }}.</p>
+  </section>
+{% endblock %}

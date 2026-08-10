@@ -66,6 +66,7 @@ x-kumwe-runtime: &kumwe-runtime
     - /var/www/kumwe/storage/tmp:rw,noexec,nosuid,nodev,size=64m,mode=700,uid=82,gid=82
   volumes:
     - media-data:/var/www/kumwe/storage/media
+    - private-data:/var/www/kumwe/storage/private
     - extensions-data:/var/www/kumwe/extensions
     - extension-assets-data:/var/www/kumwe/public/assets/extensions
   networks:
@@ -283,6 +284,7 @@ volumes:
   extension-assets-data:
   extensions-data:
   media-data:
+  private-data:
   database-mysql-data:
   database-postgres-data:
   redis-data:

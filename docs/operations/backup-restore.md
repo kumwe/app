@@ -3,17 +3,22 @@
 A complete Kumwe backup contains:
 
 - a database dump in the native supported format;
-- media, installed extension/template code, and published extension assets;
+- media, private application data (including immutable report-export objects), installed
+  extension/template code, and published extension assets;
 - a versioned manifest identifying release, database driver, database name, and table prefix;
 - exact SHA-256 checksums;
 - an optional Minisign signature over the checksum file.
 
 The database payload includes every generated business entity, junction, and ordered-line table together with
 business-schema installations, plans, step journals, fences, recovery evidence, record revisions, command
-idempotency outcomes, and audit rows. JSON control documents are canonical metadata or historical snapshots;
+idempotency outcomes, append-only report-export metadata, and audit rows. JSON control documents are canonical
+metadata or historical snapshots;
 authoritative business fields remain in their typed physical columns.
 
-Secrets, Redis data, application images, and signing private keys are never included. Redis is disposable coordination state; the relational database is authoritative.
+Secrets, Redis data, application images, and signing private keys are never included. Private application data is
+not a secrets directory: it contains durable, non-public runtime artifacts such as report-export objects. Their
+versioned ownership, policy snapshot, expiry, and checksum metadata live in the relational database. Redis is
+disposable coordination state; the relational database is authoritative.
 
 ## Supported formats
 
@@ -32,6 +37,7 @@ Stop writes, media changes, worker, and scheduler so the database and filesystem
 ```bash
 export KUMWE_BACKUP_DIR=/backup
 export KUMWE_MEDIA_DIR=/media
+export KUMWE_PRIVATE_DIR=/var/www/kumwe/storage/private
 export KUMWE_EXTENSIONS_DIR=/extensions
 export KUMWE_EXTENSION_ASSETS_DIR=/var/www/kumwe/public/assets/extensions
 export KUMWE_DB_DRIVER=mariadb
@@ -66,13 +72,14 @@ tools/restore-verify.sh /srv/kumwe/backups/kumwe-2.0.0-20260804T120000Z
 ```
 
 Verification checks the exact payload list and checksums, optional signature, supported manifest and database
-format, database archive readability, and traversal/link/special-file safety for media, extension code, and
-published assets. Run it immediately after creation, after transfer, before restore, and during scheduled drills.
+format, database archive readability, and traversal/link/special-file safety for media, private data, extension
+code, and published assets. Run it immediately after creation, after transfer, before restore, and during
+scheduled drills.
 
 ## Restore into clean targets
 
-Create an empty database using the same driver. Choose media, extension-code, and extension-asset paths that do
-not exist; their parent directories must already exist.
+Create an empty database using the same driver. Choose media, private-data, extension-code, and extension-asset
+paths that do not exist; their parent directories must already exist.
 
 Example MariaDB database creation:
 
@@ -102,13 +109,14 @@ export KUMWE_RESTORE_DB_USER=kumwe
 export KUMWE_RESTORE_DB_PASSWORD_FILE=/run/secrets/database-password
 export KUMWE_RESTORE_DB_TABLE_PREFIX=kumwe_
 export KUMWE_RESTORE_MEDIA_DIR=/srv/kumwe/restored/media
+export KUMWE_RESTORE_PRIVATE_DIR=/srv/kumwe/restored/private
 export KUMWE_RESTORE_EXTENSIONS_DIR=/srv/kumwe/restored/extensions
 export KUMWE_RESTORE_EXTENSION_ASSETS_DIR=/srv/kumwe/restored/extension-assets
 tools/restore.sh /srv/kumwe/backups/BACKUP
 ```
 
 `restore.sh` authenticates and verifies the backup, requires an empty database and absent filesystem targets,
-restores into staging, confirms the required migration, and then publishes all three filesystem directories. It
+restores into staging, confirms the required migration, and then publishes all four filesystem directories. It
 refuses to restore a MariaDB backup as MySQL or PostgreSQL, or any other driver mismatch.
 
 ## Recovery acceptance
@@ -121,12 +129,16 @@ junction and owned-line row, schema controls, revisions, idempotency outcomes, a
 records exact decimal, money, quantity, and microsecond temporal values plus hashes of the encrypted secret envelope;
 the fixture fails if secret plaintext appears in any inspected row or in the manifest. After an exact manifest match,
 the restored application executes and replays an optimistic typed update to prove that the clean target is writable.
+The drill also compares private-data bytes and verifies every completed report-export object against the checksum in
+its restored append-only database metadata. Keep report-export object files at mode `0600` and their parent
+directories at `0700` after moving a restore onto its final volume.
 
 Record the successful clean-target drill as schema recovery evidence with its source-schema checksum, backup
 manifest checksum, release, driver, client/server identity, verifier, and drill reference. Destructive or locking
 schema approval rejects absent, stale, mismatched, or untested evidence.
 
-Cut over only after application and business fixtures pass. Never restore over the active database or active media/extension directories.
+Cut over only after application and business fixtures pass. Never restore over the active database or active
+media/private-data/extension directories.
 
 CI performs backup, verification, empty-target restore, and file comparison for MariaDB, MySQL, and PostgreSQL. Operators must also run scheduled off-host drills and record recovery time, recovery point, exact client/server versions, and acceptance evidence.
 

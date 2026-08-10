@@ -1,0 +1,14 @@
+<section class="panel stack" aria-labelledby="inspection-example-status-title">
+  <p class="eyebrow">{{ surface_label }}</p>
+  <h1 id="inspection-example-status-title">{{ heading }}</h1>
+  <p>{{ notice }}</p>
+  <p>Site: <strong>{{ site_identifier }}</strong></p>
+  {% for summary in summaries %}
+    <article>
+      <h2>{{ summary.reference }}</h2>
+      <p>Risk score: {{ summary.risk_score }}</p>
+    </article>
+  {% endfor %}
+  <p>The portal is explicitly capability-gated and receives no restricted internal-note field.</p>
+  <p>Inbox-processed example mutations observed in this process: {{ activity.integration_events }}</p>
+</section>

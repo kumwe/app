@@ -39,13 +39,16 @@ require_value KUMWE_RESTORE_DB_PASSWORD_FILE
 require_value KUMWE_RESTORE_EXTENSION_ASSETS_DIR
 require_value KUMWE_RESTORE_EXTENSIONS_DIR
 require_value KUMWE_RESTORE_MEDIA_DIR
+require_value KUMWE_RESTORE_PRIVATE_DIR
 
 [[ "$KUMWE_RESTORE_EXTENSIONS_DIR" = /* ]] || fail 'KUMWE_RESTORE_EXTENSIONS_DIR must be absolute'
 [[ "$KUMWE_RESTORE_EXTENSION_ASSETS_DIR" = /* ]] || fail 'KUMWE_RESTORE_EXTENSION_ASSETS_DIR must be absolute'
 [[ "$KUMWE_RESTORE_MEDIA_DIR" = /* ]] || fail 'KUMWE_RESTORE_MEDIA_DIR must be absolute'
+[[ "$KUMWE_RESTORE_PRIVATE_DIR" = /* ]] || fail 'KUMWE_RESTORE_PRIVATE_DIR must be absolute'
 [[ ! -e "$KUMWE_RESTORE_EXTENSIONS_DIR" ]] || fail 'extensions target must not exist'
 [[ ! -e "$KUMWE_RESTORE_EXTENSION_ASSETS_DIR" ]] || fail 'extension assets target must not exist'
 [[ ! -e "$KUMWE_RESTORE_MEDIA_DIR" ]] || fail 'media target must not exist'
+[[ ! -e "$KUMWE_RESTORE_PRIVATE_DIR" ]] || fail 'private-data target must not exist'
 [[ -r "$KUMWE_RESTORE_DB_PASSWORD_FILE" ]] || fail 'database password file is not readable'
 
 case "$KUMWE_RESTORE_EXTENSIONS_DIR" in
@@ -56,6 +59,9 @@ case "$KUMWE_RESTORE_EXTENSION_ASSETS_DIR" in
 esac
 case "$KUMWE_RESTORE_MEDIA_DIR" in
     / | /home | /root | /workspace) fail 'refusing unsafe media target' ;;
+esac
+case "$KUMWE_RESTORE_PRIVATE_DIR" in
+    / | /home | /root | /workspace) fail 'refusing unsafe private-data target' ;;
 esac
 
 script_directory="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
@@ -77,11 +83,13 @@ migration_table="${table_prefix}schema_migrations"
 required_migration='20260808010000_business_transactional_runtime'
 
 media_parent="$(dirname -- "$KUMWE_RESTORE_MEDIA_DIR")"
+private_parent="$(dirname -- "$KUMWE_RESTORE_PRIVATE_DIR")"
 extensions_parent="$(dirname -- "$KUMWE_RESTORE_EXTENSIONS_DIR")"
 extension_assets_parent="$(dirname -- "$KUMWE_RESTORE_EXTENSION_ASSETS_DIR")"
-[[ -d "$media_parent" && -d "$extensions_parent" && -d "$extension_assets_parent" ]] \
+[[ -d "$media_parent" && -d "$private_parent" && -d "$extensions_parent" && -d "$extension_assets_parent" ]] \
     || fail 'restore target parent directories must exist'
 media_staging="${KUMWE_RESTORE_MEDIA_DIR}.partial.$$"
+private_staging="${KUMWE_RESTORE_PRIVATE_DIR}.partial.$$"
 extensions_staging="${KUMWE_RESTORE_EXTENSIONS_DIR}.partial.$$"
 extension_assets_staging="${KUMWE_RESTORE_EXTENSION_ASSETS_DIR}.partial.$$"
 
@@ -89,6 +97,10 @@ cleanup() {
     if [[ -d "$media_staging" ]]; then
         find "$media_staging" -depth -mindepth 1 -delete
         rmdir "$media_staging" 2>/dev/null || true
+    fi
+    if [[ -d "$private_staging" ]]; then
+        find "$private_staging" -depth -mindepth 1 -delete
+        rmdir "$private_staging" 2>/dev/null || true
     fi
     if [[ -d "$extensions_staging" ]]; then
         find "$extensions_staging" -depth -mindepth 1 -delete
@@ -101,9 +113,13 @@ cleanup() {
 }
 trap cleanup EXIT INT TERM
 
-install -d -m 0750 "$media_staging" "$extensions_staging" "$extension_assets_staging"
+install -d -m 0750 "$media_staging" "$private_staging" "$extensions_staging" "$extension_assets_staging"
 tar --extract --gzip --file="${backup_directory}/media.tar.gz" --directory="$media_staging" \
     --no-same-owner --no-same-permissions
+tar --extract --gzip --file="${backup_directory}/private.tar.gz" --directory="$private_staging" \
+    --no-same-owner --no-same-permissions
+find "$private_staging" -xdev -type d -exec chmod 0700 {} +
+find "$private_staging" -xdev -type f -exec chmod 0600 {} +
 tar --extract --gzip --file="${backup_directory}/extensions.tar.gz" --directory="$extensions_staging" \
     --no-same-owner --no-same-permissions
 tar --extract --gzip --file="${backup_directory}/extension-assets.tar.gz" \
@@ -158,6 +174,7 @@ fi
     || fail 'restored database is missing the required runtime migration'
 
 mv -- "$media_staging" "$KUMWE_RESTORE_MEDIA_DIR"
+mv -- "$private_staging" "$KUMWE_RESTORE_PRIVATE_DIR"
 mv -- "$extensions_staging" "$KUMWE_RESTORE_EXTENSIONS_DIR"
 mv -- "$extension_assets_staging" "$KUMWE_RESTORE_EXTENSION_ASSETS_DIR"
 trap - EXIT INT TERM

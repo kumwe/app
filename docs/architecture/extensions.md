@@ -28,8 +28,9 @@ services, the runtime runs a separate typed contribution phase with a registrar 
 extension identifier. The registrar reconciles concrete capability, administrator workspace/navigation, route,
 view, and business definitions against the inspected strict manifest before boot or route compilation. Schema 2
 retains the original contribution grammar; schema 3 adds signed field-presentation declarations and custom
-business handler contracts. The registrar closes after that phase; delivery handlers and templates cannot mutate
-registries.
+business handler contracts. Schema 4 adds contribution SPI 2 and signed durable events/consumers, jobs, schedules,
+queues, projections, reports, and outbound adapters. The registrar closes after that phase; delivery handlers and
+templates cannot mutate registries.
 
 Custom business views and actions use the same phase. The signed manifest publishes owner-scoped handler and schema
 references plus closed input/result contracts; the provider supplies a typed application handler, never a raw
@@ -69,6 +70,13 @@ Runtime extensions attach typed Joomla Event listeners during boot and may retai
 
 Event names and payload objects are public extension API. Document whether listeners may stop propagation, whether failure aborts the transaction, and whether delivery occurs before or after commit. Side effects that may be slow or retried should enqueue a versioned job or consume an outbox event rather than execute during the web transaction.
 
+Schema-4 synchronous domain listeners run inside the authoritative transaction and abort it on failure. The same
+transaction appends the versioned integration envelope to the database outbox. Later delivery is leased and
+at-least-once; every consumer/outbound adapter therefore owns an inbox identity and declares event-ID or
+aggregate-version idempotency. Trusted runtime generation fences claims and settlement, so a stale worker cannot
+complete work through an implementation that is no longer published. See
+[Business integrations and extension SDK](../business-integrations.md).
+
 ## Persistence
 
 Extensions use Doctrine DBAL or an ORM contained behind their own repository interfaces. They must use the configured database connection and pass MariaDB, MySQL, and PostgreSQL compatibility tests. Core tables are not an extension API. An extension owns its tables, migration history, cleanup policy, and downgrade compatibility.
@@ -79,7 +87,8 @@ Kumwe treats extension manifests, the contribution SPI version, typed definition
 events, service IDs explicitly documented for extensions, capability names, API schemas, and migration contracts
 as versioned interfaces. Schema-1 packages continue to load but cannot opt into typed shell contributions without
 a schema-2 manifest; contributed field presenters and custom business handlers require schema 3 so schema 2
-remains a closed, unchanged grammar.
+remains a closed, unchanged grammar. Durable integration contributions require schema 4/SPI 2; schemas 1 through 3
+retain their existing bytes and behavior.
 Internal controller classes, registry implementations, template implementation details, and raw database tables
 are not stable APIs.
 

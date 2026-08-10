@@ -48,6 +48,24 @@ cursor drift, cross-site/organization denial, oversized/chunked bodies, deep/wid
 choices, action/approval/history bindings, caller-bound status, and adapter dependency parity. See
 [Generated business surfaces](architecture/generated-business-surfaces.md).
 
+For a manifest-schema-4 or integration change, additionally build a fresh scaffold and the asset-inspection proof
+twice, require identical package checksums, run static plus lifecycle conformance, and exercise the event/report
+tests and deployment matrix:
+
+```bash
+php bin/kumwe extension:scaffold acme/conformance \
+  --namespace='Acme\Conformance' --target=/absolute/tmp/conformance \
+  --label='Conformance component' --version=1.0.0
+php bin/kumwe extension:build /absolute/tmp/conformance --output=/absolute/tmp/conformance.zip
+php bin/kumwe extension:conformance /absolute/tmp/conformance.zip
+composer test -- tests/Unit/BusinessIntegration tests/Integration/BusinessIntegration
+composer test -- tests/Unit/BusinessReporting tests/Integration/BusinessReporting
+```
+
+Compatibility fixtures in `tests/Fixtures/ExtensionApi` are immutable released inputs. Add a new schema/SPI fixture
+for a new revision; never rewrite an older fixture to make a breaking parser change pass. See
+[Business integrations and extension SDK](business-integrations.md#required-conformance-evidence).
+
 Frontend dependencies are locked in `package-lock.json`. Production serves the committed hashed files under `public/assets/build`; rebuilding them must leave that directory unchanged. Browser tests run Chromium at desktop and mobile viewports, scan rendered pages against WCAG 2.2 AA rules, and compare screenshots under `tests/Browser/screenshots`.
 
 The dedicated development-Compose acceptance workflow repeats the documented fresh installation on port 9900. It verifies the Compose-injected base URL, the host-port mapping, HTTP readiness, administrator and public CSS/JavaScript delivery, the database-seeded example homepage and menu, and readiness again after the 30-second runtime-marker lifetime. Changes to development startup, ports, routing, assets, or runtime materialization must keep this executable regression green.
@@ -84,10 +102,14 @@ Pull-request CI must do more than run PHPUnit. For each supported database it:
 4. creates an owner through the CLI;
 5. starts nginx, PHP-FPM, worker, and scheduler;
 6. waits for liveness and readiness;
-7. exercises administrator login/CSRF/capabilities, public rendering, REST authentication/idempotency/concurrency, MCP initialization, queue work, and scheduling;
+7. exercises administrator login/CSRF/capabilities, public rendering, REST authentication/idempotency/concurrency,
+   MCP initialization, the signed asset-inspection component, outbox/inbox work, contributed jobs, reports/exports,
+   queue work, and scheduling;
 8. restarts application processes and proves durable state remains available;
 9. scans source and the exact runtime images and publishes test evidence.
-10. runs browser, responsive, accessibility, and visual-regression tests against a migrated installation.
+10. runs browser, responsive, accessibility, and visual-regression tests against a migrated installation;
+11. disables/reactivates the proof component and verifies its owned data, event receipts, export metadata, checksums,
+    and audit evidence after clean-target backup/restore on MariaDB, MySQL, and PostgreSQL.
 
 Artifact tests separately install the Composer project and release ZIP into empty directories, apply configuration, migrate, start the application, and run the same acceptance probe. A release tag may publish images or archives only after these tests succeed.
 
