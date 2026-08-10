@@ -157,6 +157,6 @@ final readonly class DurableOutboundAdapterDispatcher
             throw new InvalidArgumentException('A contributed queue lease cannot exceed its signed policy.');
         }
 
-        return $requested ?? $policy?->leaseSeconds ?? 60;
+        return $requested ?? $policy->leaseSeconds ?? 60;
     }
 }

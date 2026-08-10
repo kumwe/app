@@ -538,7 +538,7 @@ final readonly class BusinessSecurityAdministrationService
             throw new SelfEscalationDenied();
         }
         $document = $predicate->toArray();
-        $checksum = CanonicalDefinitionJson::checksum(['predicate' => $document, 'fields' => $rules]);
+        $checksum = CanonicalDefinitionJson::checksum(['ast' => $document, 'fields' => $rules]);
         $id = Uuid::uuid7()->toString();
 
         return $this->mutate(

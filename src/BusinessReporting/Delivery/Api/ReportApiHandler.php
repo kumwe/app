@@ -21,6 +21,7 @@ use Laminas\Diactoros\Response\JsonResponse;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Message\StreamFactoryInterface;
+use Psr\Http\Message\StreamInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 
 /**
@@ -190,7 +191,7 @@ final readonly class ReportApiHandler implements RequestHandlerInterface
                 $remaining = self::MAX_JSON_BODY_BYTES - strlen($encoded) + 1;
                 $chunk = $source->read(min(8192, $remaining));
                 if ($chunk === '') {
-                    if (!$source->eof()) {
+                    if (!$this->streamAtEnd($source)) {
                         throw new InvalidArgumentException('The report request body could not be read.');
                     }
                     break;
@@ -220,6 +221,20 @@ final readonly class ReportApiHandler implements RequestHandlerInterface
 
         /** @var array<string, mixed> $body */
         return $body;
+    }
+
+    /**
+     * Recheck stream exhaustion after a read may have advanced its end-of-file state.
+     *
+     * @param   StreamInterface  $stream  Request stream whose current state is inspected.
+     *
+     * @return  bool  Whether the stream is now exhausted.
+     *
+     * @since   2.0.0
+     */
+    private function streamAtEnd(StreamInterface $stream): bool
+    {
+        return $stream->eof();
     }
 
     /**

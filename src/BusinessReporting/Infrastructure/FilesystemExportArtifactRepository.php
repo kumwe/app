@@ -204,9 +204,9 @@ final readonly class FilesystemExportArtifactRepository implements ExportArtifac
      *
      * @template T
      *
-     * @param   string         $id         Stable identifier of the durable record being addressed.
-     * @param   callable(): T  $operation  Repository operation executed while the artifact lock is held.
-     * @param   int            $mode       Filesystem lock mode required by the repository operation.
+     * @param   string           $id         Stable identifier of the durable record being addressed.
+     * @param   callable(): T    $operation  Repository operation executed while the artifact lock is held.
+     * @param   LOCK_SH|LOCK_EX  $mode       Filesystem lock mode required by the repository operation.
      *
      * @return  T
      *

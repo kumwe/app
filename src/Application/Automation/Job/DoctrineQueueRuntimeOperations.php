@@ -242,10 +242,10 @@ final readonly class DoctrineQueueRuntimeOperations implements QueueRuntimeOpera
     /**
      * Count queue rows matching a fixed internal predicate.
      *
-     * @param   string            $queue       Queue identifier.
-     * @param   string            $predicate   Internal SQL predicate containing placeholders only.
-     * @param   list<mixed>       $parameters  Predicate parameters following the queue parameter.
-     * @param   list<int|string>  $types       DBAL types for predicate parameters.
+     * @param   string        $queue       Queue identifier.
+     * @param   string        $predicate   Internal SQL predicate containing placeholders only.
+     * @param   list<mixed>   $parameters  Predicate parameters following the queue parameter.
+     * @param   list<string>  $types       DBAL types for predicate parameters.
      *
      * @return  int  Matching durable rows.
      *
@@ -257,20 +257,20 @@ final readonly class DoctrineQueueRuntimeOperations implements QueueRuntimeOpera
         array $parameters = [],
         array $types = [],
     ): int {
-        return (int) $this->database->fetchOne(sprintf(
+        return $this->databaseCount($this->database->fetchOne(sprintf(
             'SELECT COUNT(*) FROM %s WHERE queue = ? AND %s',
             $this->tables->quoted('jobs'),
             $predicate,
-        ), [$queue, ...$parameters], [Types::STRING, ...$types]);
+        ), [$queue, ...$parameters], [Types::STRING, ...$types]));
     }
 
     /**
      * Count delivery receipts matching a fixed internal predicate.
      *
-     * @param   string            $queue       Queue identifier.
-     * @param   string            $predicate   Internal SQL predicate containing placeholders only.
-     * @param   list<mixed>       $parameters  Predicate parameters following the queue parameter.
-     * @param   list<int|string>  $types       DBAL types for predicate parameters.
+     * @param   string        $queue       Queue identifier.
+     * @param   string        $predicate   Internal SQL predicate containing placeholders only.
+     * @param   list<mixed>   $parameters  Predicate parameters following the queue parameter.
+     * @param   list<string>  $types       DBAL types for predicate parameters.
      *
      * @return  int  Matching durable receipts.
      *
@@ -282,11 +282,35 @@ final readonly class DoctrineQueueRuntimeOperations implements QueueRuntimeOpera
         array $parameters = [],
         array $types = [],
     ): int {
-        return (int) $this->database->fetchOne(sprintf(
+        return $this->databaseCount($this->database->fetchOne(sprintf(
             'SELECT COUNT(*) FROM %s WHERE queue = ? AND %s',
             $this->tables->quoted('integration_inbox'),
             $predicate,
-        ), [$queue, ...$parameters], [Types::STRING, ...$types]);
+        ), [$queue, ...$parameters], [Types::STRING, ...$types]));
+    }
+
+    /**
+     * Normalize a DBAL aggregate count without accepting another scalar representation.
+     *
+     * @param   mixed  $value  Raw aggregate value returned by the active database driver.
+     *
+     * @return  int  Non-negative row count.
+     *
+     * @throws  RuntimeException  When the driver did not return an integer or decimal integer string.
+     *
+     * @since   2.0.0
+     */
+    private function databaseCount(mixed $value): int
+    {
+        if (is_int($value)) {
+            if ($value >= 0) {
+                return $value;
+            }
+        } elseif (is_string($value) && preg_match('/^[0-9]+$/D', $value) === 1) {
+            return (int) $value;
+        }
+
+        throw new RuntimeException('A queue runtime count is invalid.');
     }
 
     /**

@@ -96,14 +96,17 @@ final class PayloadSchemaValidator
                 if (!is_string($name) || !is_array($child) || ($child !== [] && array_is_list($child))) {
                     throw new InvalidArgumentException('A schema property declaration is invalid.');
                 }
+                /** @var array<string, mixed> $child */
                 $this->validateSchema($child, $depth + 1);
             }
         }
         if (isset($schema['items'])) {
-            if (!is_array($schema['items']) || ($schema['items'] !== [] && array_is_list($schema['items']))) {
+            $items = $schema['items'];
+            if (!is_array($items) || ($items !== [] && array_is_list($items))) {
                 throw new InvalidArgumentException('Schema items must be an object.');
             }
-            $this->validateSchema($schema['items'], $depth + 1);
+            /** @var array<string, mixed> $items */
+            $this->validateSchema($items, $depth + 1);
         }
         if (isset($schema['required'])) {
             if (!is_array($schema['required']) || !array_is_list($schema['required'])) {
@@ -155,8 +158,14 @@ final class PayloadSchemaValidator
         if (is_string($type) && !$this->matchesType($type, $value)) {
             throw new InvalidArgumentException(sprintf('Payload value %s must be %s.', $path, $type));
         }
-        if (isset($schema['enum']) && !in_array($value, $schema['enum'], true)) {
-            throw new InvalidArgumentException(sprintf('Payload value %s is outside its enum.', $path));
+        $enum = $schema['enum'] ?? null;
+        if ($enum !== null) {
+            if (!is_array($enum) || !array_is_list($enum)) {
+                throw new InvalidArgumentException('Schema enum must be a list.');
+            }
+            if (!in_array($value, $enum, true)) {
+                throw new InvalidArgumentException(sprintf('Payload value %s is outside its enum.', $path));
+            }
         }
         if (is_string($value)) {
             $length = mb_strlen($value);
@@ -166,8 +175,17 @@ final class PayloadSchemaValidator
             if (isset($schema['maxLength']) && $length > $schema['maxLength']) {
                 throw new InvalidArgumentException(sprintf('Payload string %s is too long.', $path));
             }
-            if (isset($schema['pattern']) && preg_match($schema['pattern'], $value) !== 1) {
-                throw new InvalidArgumentException(sprintf('Payload string %s does not match its pattern.', $path));
+            $pattern = $schema['pattern'] ?? null;
+            if ($pattern !== null) {
+                if (!is_string($pattern)) {
+                    throw new InvalidArgumentException('Schema pattern must be a valid delimited regular expression.');
+                }
+                if (preg_match($pattern, $value) !== 1) {
+                    throw new InvalidArgumentException(sprintf(
+                        'Payload string %s does not match its pattern.',
+                        $path,
+                    ));
+                }
             }
         }
         if (is_int($value) || is_float($value)) {
@@ -188,17 +206,28 @@ final class PayloadSchemaValidator
             if (isset($schema['maxItems']) && count($value) > $schema['maxItems']) {
                 throw new InvalidArgumentException(sprintf('Payload array %s has too many items.', $path));
             }
-            if (isset($schema['items']) && is_array($schema['items'])) {
+            $items = $schema['items'] ?? null;
+            if ($items !== null) {
+                if (!is_array($items) || ($items !== [] && array_is_list($items))) {
+                    throw new InvalidArgumentException('Schema items must be an object.');
+                }
+                /** @var array<string, mixed> $items */
                 foreach ($value as $index => $item) {
-                    $this->validateValue($schema['items'], $item, sprintf('%s[%d]', $path, $index));
+                    $this->validateValue($items, $item, sprintf('%s[%d]', $path, $index));
                 }
             }
             return;
         }
-        $properties = isset($schema['properties']) && is_array($schema['properties'])
-            ? $schema['properties']
-            : [];
-        foreach (($schema['required'] ?? []) as $required) {
+        $properties = $schema['properties'] ?? [];
+        if (!is_array($properties) || ($properties !== [] && array_is_list($properties))) {
+            throw new InvalidArgumentException('Schema properties must be an object.');
+        }
+        /** @var array<string, mixed> $properties */
+        $requiredFields = $schema['required'] ?? [];
+        if (!is_array($requiredFields) || !array_is_list($requiredFields)) {
+            throw new InvalidArgumentException('Schema required must be a list.');
+        }
+        foreach ($requiredFields as $required) {
             if (is_string($required) && !array_key_exists($required, $value)) {
                 throw new InvalidArgumentException(sprintf(
                     'Payload object %s lacks required property %s.',
@@ -219,6 +248,10 @@ final class PayloadSchemaValidator
                 }
                 continue;
             }
+            if ($child !== [] && array_is_list($child)) {
+                throw new InvalidArgumentException('A schema property declaration is invalid.');
+            }
+            /** @var array<string, mixed> $child */
             $this->validateValue($child, $item, $path . '.' . $name);
         }
     }

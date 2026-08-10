@@ -102,7 +102,6 @@ final readonly class ProtectedSigningKeyReader
             $secret = sodium_crypto_sign_secretkey($keyPair);
             sodium_memzero($keyPair);
 
-            /** @var non-empty-string $secret */
             return $secret;
         }
         if (strlen($key) !== SODIUM_CRYPTO_SIGN_SECRETKEYBYTES) {
@@ -110,7 +109,6 @@ final readonly class ProtectedSigningKeyReader
             throw new InvalidArgumentException('The signing key must contain a 32-byte seed or 64-byte secret key.');
         }
 
-        /** @var non-empty-string $key */
         return $key;
     }
 

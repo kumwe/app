@@ -366,9 +366,10 @@ abstract readonly class EventEnvelope
             'payload',
         ], 'Stored event envelope');
         $payload = $data['payload'] ?? null;
-        if (!is_array($payload)) {
+        if (!is_array($payload) || ($payload !== [] && array_is_list($payload))) {
             throw new InvalidArgumentException('A stored event payload must be an object.');
         }
+        /** @var array<string, mixed> $payload */
 
         try {
             $occurredAtValue = self::string($data, 'occurred_at');

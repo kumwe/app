@@ -464,7 +464,7 @@ final class DoctrineProjectionStore implements ProjectionEventSource, Projection
      *
      * @param   ProjectionDefinition  $definition  Exact projection source contract.
      *
-     * @return  array{0: string, 1: list<mixed>, 2: list<int|string>}  SQL, parameters and DBAL types.
+     * @return  array{0: string, 1: list<mixed>, 2: list<string>}  SQL, parameters and DBAL types.
      *
      * @since   2.0.0
      */
@@ -671,7 +671,7 @@ final class DoctrineProjectionStore implements ProjectionEventSource, Projection
         if ($value === false) {
             throw new RuntimeException('The projection source journal head is unavailable.');
         }
-        if ((string) $value === '0') {
+        if ($value === 0 || $value === '0') {
             return 0;
         }
 

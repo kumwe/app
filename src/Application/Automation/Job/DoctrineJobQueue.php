@@ -981,15 +981,15 @@ final readonly class DoctrineJobQueue implements JobQueue
         ], ['queue_id' => $policy->queue], [
             'updated_at' => Types::DATETIME_IMMUTABLE,
         ]);
-        $inFlight = (int) $this->database->fetchOne(sprintf(
+        $inFlight = $this->databaseCount($this->database->fetchOne(sprintf(
             "SELECT COUNT(*) FROM %s WHERE queue = ? AND status = 'reserved' AND lease_expires_at > ?",
             $this->tables->quoted('jobs'),
-        ), [$policy->queue, $now], [Types::STRING, Types::DATETIME_IMMUTABLE]);
+        ), [$policy->queue, $now], [Types::STRING, Types::DATETIME_IMMUTABLE]));
 
-        $inFlight += (int) $this->database->fetchOne(sprintf(
+        $inFlight += $this->databaseCount($this->database->fetchOne(sprintf(
             "SELECT COUNT(*) FROM %s WHERE queue = ? AND status = 'reserved' AND lease_expires_at > ?",
             $this->tables->quoted('integration_inbox'),
-        ), [$policy->queue, $now], [Types::STRING, Types::DATETIME_IMMUTABLE]);
+        ), [$policy->queue, $now], [Types::STRING, Types::DATETIME_IMMUTABLE]));
 
         return $inFlight < $policy->maximumInFlight;
     }
@@ -1034,6 +1034,30 @@ final readonly class DoctrineJobQueue implements JobQueue
             throw new RuntimeException(sprintf('Queued job field %s is not an integer.', $field));
         }
         return (int) $value;
+    }
+
+    /**
+     * Normalize a DBAL aggregate count without accepting another scalar representation.
+     *
+     * @param   mixed  $value  Raw aggregate value returned by the active database driver.
+     *
+     * @return  int  Non-negative row count.
+     *
+     * @throws  RuntimeException  When the driver did not return an integer or decimal integer string.
+     *
+     * @since   2.0.0
+     */
+    private function databaseCount(mixed $value): int
+    {
+        if (is_int($value)) {
+            if ($value >= 0) {
+                return $value;
+            }
+        } elseif (is_string($value) && preg_match('/^[0-9]+$/D', $value) === 1) {
+            return (int) $value;
+        }
+
+        throw new RuntimeException('A queued work count is invalid.');
     }
 
     /**

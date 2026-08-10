@@ -127,22 +127,41 @@ final readonly class StaticConformanceRunner
     private function checkMetadata(ZipArchive $zip, int $index, string $path, array &$violations): bool
     {
         $stat = $zip->statIndex($index, ZipArchive::FL_UNCHANGED);
-        $operatingSystem = 0;
-        $attributes = 0;
+        $externalAttributes = $this->externalAttributes($zip, $index);
         $valid = is_array($stat)
             && ($stat['name'] ?? null) === $path
             && ($stat['comp_method'] ?? null) === ZipArchive::CM_STORE
             && ($stat['mtime'] ?? null) === self::ZIP_EPOCH
-            && $zip->getExternalAttributesIndex($index, $operatingSystem, $attributes)
-            && $operatingSystem === ZipArchive::OPSYS_UNIX
-            && is_int($attributes)
-            && (($attributes >> 16) & 0xFFFF) === 0100644
+            && $externalAttributes !== null
+            && $externalAttributes['operating_system'] === ZipArchive::OPSYS_UNIX
+            && (($externalAttributes['attributes'] >> 16) & 0xFFFF) === 0100644
             && !str_ends_with($path, '/');
         if (!$valid) {
             $violations[] = sprintf('Archive metadata for %s is not deterministic.', $path);
         }
 
         return $valid;
+    }
+
+    /**
+     * Read external attributes through the mutation-based ZipArchive API.
+     *
+     * @param   ZipArchive  $zip    Open inspected package.
+     * @param   int         $index  Central-directory index.
+     *
+     * @return  ?array{operating_system: int, attributes: int}  Attributes, or null when unavailable.
+     *
+     * @since   2.0.0
+     */
+    private function externalAttributes(ZipArchive $zip, int $index): ?array
+    {
+        $operatingSystem = 0;
+        $attributes = 0;
+        if (!$zip->getExternalAttributesIndex($index, $operatingSystem, $attributes)) {
+            return null;
+        }
+
+        return ['operating_system' => $operatingSystem, 'attributes' => $attributes];
     }
 
     /**
@@ -182,24 +201,12 @@ final readonly class StaticConformanceRunner
                 $violations[] = sprintf('Manifest reference asset %s is missing.', $asset);
             }
         }
-        $contributions = $inspection->manifest->contributions()->toArray();
-        $administrator = $contributions['administrator'] ?? [];
-        $administrator = is_array($administrator) ? $administrator : [];
-        $views = $administrator['views'] ?? [];
-        $views = is_array($views) ? $views : [];
-        foreach ($views as $view) {
-            if (is_array($view) && is_string($view['template'] ?? null)) {
-                $this->requirePath('templates/views/administrator/' . $view['template'], $paths, $violations);
-            }
+        $contributions = $inspection->manifest->contributions();
+        foreach ($contributions->views() as $view) {
+            $this->requirePath('templates/views/administrator/' . $view->template, $paths, $violations);
         }
-        $portal = $contributions['portal'] ?? [];
-        $portal = is_array($portal) ? $portal : [];
-        $templates = $portal['templates'] ?? [];
-        $templates = is_array($templates) ? $templates : [];
-        foreach ($templates as $template) {
-            if (is_array($template) && is_string($template['template'] ?? null)) {
-                $this->requirePath('templates/views/portal/' . $template['template'], $paths, $violations);
-            }
+        foreach ($contributions->portalTemplates() as $template) {
+            $this->requirePath('templates/views/portal/' . $template->template, $paths, $violations);
         }
     }
 

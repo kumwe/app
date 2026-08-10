@@ -556,7 +556,7 @@ try {
         '019bc200-0000-7000-8000-000000000003',
     );
     $policyChecksum = CanonicalDefinitionJson::checksum([
-        'predicate' => $predicate,
+        'ast' => $predicate,
         'fields' => $fieldRules,
     ]);
     $policyAt = new DateTimeImmutable('2026-08-10T00:00:00+00:00');

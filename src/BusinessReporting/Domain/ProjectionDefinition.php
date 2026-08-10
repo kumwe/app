@@ -98,7 +98,7 @@ final readonly class ProjectionDefinition implements IntegrationContract
         }
         $this->sources = array_values($sources);
         $this->fields = array_values($fields);
-        $this->keyFields = array_values($keyFields);
+        $this->keyFields = $keyFields;
     }
 
     /**
@@ -177,40 +177,55 @@ final readonly class ProjectionDefinition implements IntegrationContract
             throw new InvalidArgumentException('A projection definition document shape is invalid.');
         }
         try {
+            $parsedSources = array_map(static function (mixed $item): ProjectionSourceDefinition {
+                $item = self::object($item, 'source');
+                self::keys($item, ['event_type', 'schema_versions']);
+                $eventType = $item['event_type'] ?? null;
+                $versions = $item['schema_versions'] ?? null;
+                if (!is_string($eventType) || !is_array($versions) || !array_is_list($versions) || $versions === []) {
+                    throw new InvalidArgumentException('A projection source document is invalid.');
+                }
+                $parsedVersions = [];
+                foreach ($versions as $schemaVersion) {
+                    if (!is_int($schemaVersion)) {
+                        throw new InvalidArgumentException('A projection schema-version document is invalid.');
+                    }
+                    $parsedVersions[] = $schemaVersion;
+                }
+
+                return new ProjectionSourceDefinition($eventType, $parsedVersions);
+            }, $sources);
+            $parsedFields = array_map(static function (mixed $item): ProjectionFieldDefinition {
+                $item = self::object($item, 'field');
+                self::keys($item, ['name', 'type', 'nullable']);
+                $name = $item['name'] ?? null;
+                $type = $item['type'] ?? null;
+                $nullable = $item['nullable'] ?? null;
+                if (!is_string($name) || !is_string($type) || !is_bool($nullable)) {
+                    throw new InvalidArgumentException('A projection field document is invalid.');
+                }
+
+                return new ProjectionFieldDefinition($name, ReportValueType::from($type), $nullable);
+            }, $fields);
+            $parsedKeyFields = [];
+            foreach ($keyFields as $keyField) {
+                if (!is_string($keyField)) {
+                    throw new InvalidArgumentException('A projection key-field document is invalid.');
+                }
+                $parsedKeyFields[] = $keyField;
+            }
+            if ($parsedSources === [] || $parsedFields === [] || $parsedKeyFields === []) {
+                throw new InvalidArgumentException('A projection definition requires sources, fields, and key fields.');
+            }
+
             return new self(
                 $id,
                 $version,
                 $handlerVersion,
                 EventSensitivity::from($sensitivity),
-                array_map(static function (mixed $item): ProjectionSourceDefinition {
-                    if (!is_array($item) || !is_string($item['event_type'] ?? null)) {
-                        throw new InvalidArgumentException('A projection source document is invalid.');
-                    }
-                    self::keys($item, ['event_type', 'schema_versions']);
-                    $versions = $item['schema_versions'] ?? null;
-                    if (!is_array($versions) || !array_is_list($versions)) {
-                        throw new InvalidArgumentException('A projection schema-version document is invalid.');
-                    }
-
-                    /** @var list<int> $versions */
-                    return new ProjectionSourceDefinition($item['event_type'], $versions);
-                }, $sources),
-                array_map(static function (mixed $item): ProjectionFieldDefinition {
-                    if (
-                        !is_array($item) || !is_string($item['name'] ?? null)
-                        || !is_string($item['type'] ?? null) || !is_bool($item['nullable'] ?? null)
-                    ) {
-                        throw new InvalidArgumentException('A projection field document is invalid.');
-                    }
-                    self::keys($item, ['name', 'type', 'nullable']);
-
-                    return new ProjectionFieldDefinition(
-                        $item['name'],
-                        ReportValueType::from($item['type']),
-                        $item['nullable'],
-                    );
-                }, $fields),
-                $keyFields,
+                $parsedSources,
+                $parsedFields,
+                $parsedKeyFields,
                 $batchSize,
             );
         } catch (\ValueError | \TypeError $exception) {
@@ -250,5 +265,31 @@ final readonly class ProjectionDefinition implements IntegrationContract
         if ($actual !== $expected) {
             throw new InvalidArgumentException('A projection definition has missing or unknown keys.');
         }
+    }
+
+    /**
+     * Normalize one decoded JSON object while rejecting integer keys and list-shaped values.
+     *
+     * @param   mixed   $value  Candidate decoded object.
+     * @param   string  $label  Stable member label used in validation errors.
+     *
+     * @return  array<string, mixed>  Validated object members.
+     *
+     * @since   2.0.0
+     */
+    private static function object(mixed $value, string $label): array
+    {
+        if (!is_array($value) || array_is_list($value)) {
+            throw new InvalidArgumentException(sprintf('A projection %s document is invalid.', $label));
+        }
+        $object = [];
+        foreach ($value as $key => $member) {
+            if (!is_string($key)) {
+                throw new InvalidArgumentException(sprintf('A projection %s document is invalid.', $label));
+            }
+            $object[$key] = $member;
+        }
+
+        return $object;
     }
 }

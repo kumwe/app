@@ -54,8 +54,8 @@ final readonly class DoctrineProcessManagerStore implements ProcessManagerStore
     /**
      * Persist a new process instance and its initial work.
      *
-     * @param   ProcessInstance             $process  Current process instance being read or transitioned.
-     * @param   iterable<array-key, mixed>  $work     Process work emitted by the transition.
+     * @param   ProcessInstance            $process  Current process instance being read or transitioned.
+     * @param   iterable<ProcessWorkItem>  $work     Process work emitted by the transition.
      *
      * @return  void
      *
@@ -125,9 +125,9 @@ final readonly class DoctrineProcessManagerStore implements ProcessManagerStore
     /**
      * Persist the supplied state with optimistic concurrency protection.
      *
-     * @param   ProcessInstance             $process          Current process instance being read or transitioned.
-     * @param   int                         $expectedVersion  Version required for optimistic concurrency.
-     * @param   iterable<array-key, mixed>  $work             Process work emitted by the transition.
+     * @param   ProcessInstance            $process          Current process instance being read or transitioned.
+     * @param   int                        $expectedVersion  Version required for optimistic concurrency.
+     * @param   iterable<ProcessWorkItem>  $work             Process work emitted by the transition.
      *
      * @return  void
      *

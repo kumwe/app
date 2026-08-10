@@ -18,6 +18,7 @@ use Kumwe\CMS\Application\Authorization\ResourcePolicyTarget;
 use Kumwe\CMS\Application\Authorization\SiteContext;
 use Kumwe\CMS\Application\Authorization\StepUpProof;
 use Kumwe\CMS\Audit\Application\AuditRecorder;
+use Kumwe\CMS\BusinessDefinition\Domain\CanonicalDefinitionJson;
 use Kumwe\CMS\BusinessSecurity\Application\Administration\BusinessSecurityAdministrationRepository;
 use Kumwe\CMS\BusinessSecurity\Application\Administration\BusinessSecurityAdministrationService;
 use Kumwe\CMS\BusinessSecurity\Application\Administration\BusinessSecurityScopeDenied;
@@ -153,6 +154,20 @@ final class BusinessSecurityAdministrationServiceTest extends TestCase
     {
         $now = new DateTimeImmutable('2026-08-09T10:00:00+00:00');
         $context = $this->multiFactorContext('business.security.resource_policy.create', $now);
+        $predicate = [
+            'type' => 'comparison',
+            'field' => 'owner_id',
+            'operator' => 'not_equal',
+            'value_type' => 'string',
+            'value' => self::TARGET,
+        ];
+        $rules = array_fill_keys(array_map(
+            static fn (FieldAccessUsage $usage): string => $usage->value,
+            FieldAccessUsage::cases(),
+        ), []);
+        $rules['detail'] = ['owner_id'];
+        $rules['actions'] = ['approve'];
+        $checksum = CanonicalDefinitionJson::checksum(['ast' => $predicate, 'fields' => $rules]);
         $repository = $this->createMock(BusinessSecurityAdministrationRepository::class);
         $repository->method('definitionFieldTypes')->willReturn(['owner_id' => 'string']);
         $repository->method('definitionActions')->willReturn(['approve']);
@@ -164,22 +179,9 @@ final class BusinessSecurityAdministrationServiceTest extends TestCase
             'deny',
             null,
             self::DEFINITION,
-            [
-                'type' => 'comparison',
-                'field' => 'owner_id',
-                'operator' => 'not_equal',
-                'value_type' => 'string',
-                'value' => self::TARGET,
-            ],
-            self::callback(static fn (array $rules): bool => $rules['detail'] === ['owner_id']
-                && $rules['actions'] === ['approve']
-                && $rules['create'] === []
-                && $rules['mcp'] === []
-                && $rules['relation'] === []
-                && $rules['include'] === []
-                && $rules['public_reference'] === []
-                && count($rules) === count(FieldAccessUsage::cases()) + 1),
-            self::matchesRegularExpression('/^[0-9a-f]{64}$/D'),
+            $predicate,
+            $rules,
+            $checksum,
             10,
             self::ACTOR,
             SiteContext::DEFAULT,
@@ -472,10 +474,10 @@ final class BusinessSecurityAdministrationServiceTest extends TestCase
     /**
      * Build a proof-bearing administrator context with optional extra effective capabilities.
      *
-     * @param   string             $purpose  Exact purpose bound into the proof.
-     * @param   DateTimeImmutable  $now  Trusted test instant.
-     * @param   list<string>       $capabilities  Additional effective capabilities for the actor.
-     * @param   ?MembershipContext $membership  Optional server-resolved organization scope.
+     * @param   string              $purpose       Exact purpose bound into the proof.
+     * @param   DateTimeImmutable   $now           Trusted test instant.
+     * @param   list<string>        $capabilities  Additional effective capabilities for the actor.
+     * @param   ?MembershipContext  $membership    Optional server-resolved organization scope.
      *
      * @return  ExecutionContext  Multi-factor administrator execution context.
      *
