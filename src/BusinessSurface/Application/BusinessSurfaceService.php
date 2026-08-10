@@ -623,10 +623,12 @@ final readonly class BusinessSurfaceService implements BusinessHistoryUseCase, B
             throw new InvalidArgumentException('Media choices require a create or update field context.');
         }
         $metadata = $this->metadata($context, $surface, $definition, $operation);
-        foreach (self::objectDocuments(
-            $metadata['fields'] ?? null,
-            'Generated business field metadata is invalid.',
-        ) as $candidate) {
+        foreach (
+            self::objectDocuments(
+                $metadata['fields'] ?? null,
+                'Generated business field metadata is invalid.',
+            ) as $candidate
+        ) {
             if (($candidate['handle'] ?? null) === $field && ($candidate['type'] ?? null) === 'core.media_reference') {
                 return [
                     'items' => array_map(
@@ -681,6 +683,7 @@ final readonly class BusinessSurfaceService implements BusinessHistoryUseCase, B
         }
         unset($relationship);
         $metadata['relationships'] = $relationships;
+        $includes = [];
         $view = $this->records->read(new ReadRecordQuery(
             $context,
             $definition,
@@ -1808,10 +1811,12 @@ final readonly class BusinessSurfaceService implements BusinessHistoryUseCase, B
         array $errors = [],
     ): array {
         $allowed = [];
-        foreach (self::objectDocuments(
-            $metadata['fields'] ?? null,
-            'Generated business field metadata is invalid.',
-        ) as $fieldMetadata) {
+        foreach (
+            self::objectDocuments(
+                $metadata['fields'] ?? null,
+                'Generated business field metadata is invalid.',
+            ) as $fieldMetadata
+        ) {
             $handle = $fieldMetadata['handle'] ?? null;
             if (!is_string($handle)) {
                 throw new InvalidArgumentException('Generated business field metadata is invalid.');

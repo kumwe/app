@@ -18,6 +18,7 @@ use Kumwe\CMS\BusinessSurface\Application\BusinessOperationStatusService;
 use Kumwe\CMS\BusinessSurface\Application\BusinessSurface;
 use Kumwe\CMS\BusinessSurface\Application\BusinessSurfaceOperation;
 use Kumwe\CMS\BusinessSurface\Application\BusinessSurfaceService;
+use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessHandlerFailed;
 use Ramsey\Uuid\Uuid;
 
 /**
@@ -472,7 +473,7 @@ final readonly class GeneratedBusinessBrowserController
                 ? $this->objectValue($candidateData, 'A custom view result is malformed.')
                 : null;
             $projection = $data === null ? null : $this->customViews->present($data);
-        } catch (InvalidArgumentException) {
+        } catch (InvalidArgumentException | CustomBusinessHandlerFailed) {
             return $this->customViewError(
                 $metadata,
                 $record,

@@ -44,7 +44,7 @@ main { width: 100%; min-width: 0; max-width: 76rem; padding: clamp(1.25rem, 4vw,
 .portal-security-form { display: grid; gap: .65rem; }
 .portal-secret, .portal-uri { user-select: all; }
 .portal-recovery-codes { columns: 2 18rem; }
-.portal-table-wrap { max-width: 100%; overflow-x: auto; }
+.portal-table-wrap { width: 100%; min-width: 0; max-width: 100%; overflow-x: auto; }
 .portal-table { width: 100%; border-collapse: collapse; background: var(--portal-panel); }
 .portal-table th, .portal-table td { padding: .75rem; border-bottom: 1px solid var(--portal-line); text-align: left; vertical-align: top; }
 .portal-details { display: grid; grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); gap: 1px; background: var(--portal-line); }
@@ -82,7 +82,7 @@ main { width: 100%; min-width: 0; max-width: 76rem; padding: clamp(1.25rem, 4vw,
 .portal-business-table tbody th code, .portal-business-table tbody th small { display: block; }
 .portal-business-table tbody th small { color: var(--portal-muted); }
 .portal-pagination { margin-top: 1rem; }
-.portal-business-bulk-form { display: grid; }
+.portal-business-bulk-form { display: grid; min-width: 0; grid-template-columns: minmax(0, 1fr); }
 .portal-business-bulk-controls { display: flex; flex-wrap: wrap; align-items: end; gap: .65rem; padding: 1rem; border-top: 1px solid var(--portal-line); background: var(--portal-paper); }
 .portal-business-bulk-controls label { min-width: min(100%, 18rem); }
 .portal-business-bulk-controls > span { width: 100%; color: var(--portal-muted); font-size: .85rem; }
