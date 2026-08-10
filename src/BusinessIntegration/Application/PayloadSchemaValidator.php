@@ -211,9 +211,15 @@ final class PayloadSchemaValidator
                 if (!is_array($items) || ($items !== [] && array_is_list($items))) {
                     throw new InvalidArgumentException('Schema items must be an object.');
                 }
-                /** @var array<string, mixed> $items */
+                $itemSchema = [];
+                foreach ($items as $key => $member) {
+                    if (!is_string($key)) {
+                        throw new InvalidArgumentException('Schema items must be an object.');
+                    }
+                    $itemSchema[$key] = $member;
+                }
                 foreach ($value as $index => $item) {
-                    $this->validateValue($items, $item, sprintf('%s[%d]', $path, $index));
+                    $this->validateValue($itemSchema, $item, sprintf('%s[%d]', $path, $index));
                 }
             }
             return;
