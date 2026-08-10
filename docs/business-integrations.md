@@ -306,10 +306,13 @@ quotes according to RFC 4180 behavior, and neutralizes leading spreadsheet formu
 auto-escape the already disclosed values.
 
 Queued exports bind report checksum, canonical parameters, owner, site/organization, requester, capability/policy
-snapshot, authority approval fingerprint, creation/expiry, and version. Generation reconstructs a fresh execution
-context and rechecks live authority plus the immutable snapshot before querying. Artifact content and metadata are
-private, append-only, checksummed, audited, and immutable after readiness. Status and download require the original
-authorized owner/context and reject expiry or checksum mismatch. Do not email or publish an artifact path.
+snapshot, authority approval fingerprint, the requesting credential's exact effective scoped-grant rows,
+creation/expiry, and version. Generation reloads the actor and restricts that live principal to the captured rows
+before rechecking authority and policy. A grant added after the request is therefore unavailable to the export; a
+captured grant that was removed, a changed security epoch, or a changed record-policy snapshot fails closed.
+Artifact content and metadata are private, append-only, checksummed, audited, and immutable after readiness. Status
+and download require the original authorized owner/context and reject expiry or checksum mismatch. Do not email or
+publish an artifact path.
 
 Run a supervised worker for the built-in export queue in every deployment that enables report exports:
 

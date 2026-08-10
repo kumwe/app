@@ -154,6 +154,18 @@ final class ExportServiceTransactionTest extends TestCase
         $context = AuthorizationContext::human(['acme.reports.read', 'business.record.export']);
 
         $created = $service->request($context, 'acme.open_items');
+        self::assertSame([
+            [
+                'capability' => 'acme.reports.read',
+                'scope_type' => 'global',
+                'scope_identifier' => null,
+            ],
+            [
+                'capability' => 'business.record.export',
+                'scope_type' => 'global',
+                'scope_identifier' => null,
+            ],
+        ], $created->authorityGrantRows);
         self::assertSame($created, $service->status($context, $created->id));
         $nested = $transactions->transactional(
             static fn (): ExportArtifact => $service->status($context, $created->id),
@@ -465,7 +477,7 @@ final class ExportTransactionProbe implements TransactionManager
     public ?Throwable $outerCommitFailure = null;
 
     /**
-     * @var list<array{commit: list<callable(): void>, rollback: list<callable(): void>}>
+     * @var    list<array{commit: list<callable(): void>, rollback: list<callable(): void>}>
      */
     private array $frames = [];
 

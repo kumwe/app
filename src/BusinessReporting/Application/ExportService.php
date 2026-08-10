@@ -18,6 +18,8 @@ use Kumwe\CMS\BusinessRecord\Application\Query\BusinessRecordQueryPurpose;
 use Kumwe\CMS\BusinessReporting\Domain\ExportArtifact;
 use Kumwe\CMS\BusinessReporting\Domain\ExportArtifactStatus;
 use Kumwe\CMS\BusinessReporting\Domain\ReportDefinition;
+use Kumwe\CMS\Identity\Application\Authentication\AuthenticatedPrincipal;
+use Kumwe\CMS\Identity\Application\Authentication\PrincipalGrant;
 use Kumwe\CMS\Identity\Domain\Capability;
 use Kumwe\CMS\Infrastructure\Persistence\TransactionManager;
 use Psr\Clock\ClockInterface;
@@ -88,9 +90,11 @@ final readonly class ExportService
             throw new InvalidArgumentException('Export retention must be between one minute and seven days.');
         }
         $report = $this->reports->get($reportIdentifier);
-        if ($context->principal() === null) {
+        $principal = $context->principal();
+        if ($principal === null) {
             throw new InvalidArgumentException('A report export must have an accountable human actor.');
         }
+        $authorityGrantRows = self::authorityGrantRows($principal);
         $this->assertSurface($report, $context->surface());
         $this->authorize($context, $report);
         $parameters = $this->bindParameters($report, $parameters);
@@ -100,6 +104,7 @@ final readonly class ExportService
             $parameters,
             $organizationIdentifier,
             $retentionSeconds,
+            $authorityGrantRows,
         ): ExportArtifact {
             $recordOrganization = $this->scopes->resolve($context, $report, $organizationIdentifier);
             $policy = $this->policies->snapshot(
@@ -146,6 +151,7 @@ final readonly class ExportService
                 null,
                 null,
                 1,
+                authorityGrantRows: $authorityGrantRows,
             );
             $this->artifacts->add($artifact);
             $this->audit($context, $artifact, 'business.report.export.request', 'success', $now);
@@ -153,6 +159,27 @@ final readonly class ExportService
 
             return $artifact;
         });
+    }
+
+    /**
+     * Serialize the requesting credential's exact effective scoped-grant ceiling.
+     *
+     * @param   AuthenticatedPrincipal  $principal  Accountable human principal requesting the export.
+     *
+     * @return  list<array{capability: string, scope_type: string, scope_identifier: ?string}>
+     *          Canonically ordered grant rows suitable for the private artifact ledger.
+     *
+     * @since   2.0.0
+     */
+    private static function authorityGrantRows(AuthenticatedPrincipal $principal): array
+    {
+        return array_map(static function (PrincipalGrant $grant): array {
+            return [
+                'capability' => $grant->capability()->value(),
+                'scope_type' => $grant->scope()->type(),
+                'scope_identifier' => $grant->scope()->identifier(),
+            ];
+        }, $principal->grants());
     }
 
     /**
