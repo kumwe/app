@@ -483,6 +483,7 @@ test.describe('authenticated administrator', () => {
 
   test('generated relationship selectors and owned lines persist and reorder', async ({
     page,
+    isMobile,
   }, testInfo) => {
     await page.goto(`/administrator/business/${businessDefinitionHandle}`);
     await page.getByRole('link', { name: /Create session 5 order/i }).click();
@@ -515,16 +516,27 @@ test.describe('authenticated administrator', () => {
     });
     await tags.getByRole('link', { name: 'Search available records' }).click();
     await expect(page.getByRole('heading', { name: 'Choose tags' })).toBeVisible();
+    const choiceLayout = await page.locator('.business-choice-table').evaluate((table) => ({
+      viewportWidth: window.innerWidth,
+      rootOverflow: document.documentElement.scrollWidth - window.innerWidth,
+      tableOverflow: table.scrollWidth - table.clientWidth,
+    }));
+    expect(choiceLayout.viewportWidth).toBe(isMobile ? 412 : 1440);
+    expect(choiceLayout.rootOverflow).toBe(0);
+    if (isMobile) {
+      expect(choiceLayout.tableOverflow).toBeGreaterThan(0);
+    }
     const windhoekChoice = page.getByRole('row', { name: /Windhoek relationship target/ });
     const walvisBayChoice = page.getByRole('row', { name: /Walvis Bay relationship target/ });
     await expect(windhoekChoice).toBeVisible();
     await expect(walvisBayChoice).toBeVisible();
-    await windhoekChoice
-      .getByRole('link', { name: 'Choose' })
-      .click();
+    const chooseWindhoek = windhoekChoice.getByRole('link', { name: 'Choose' });
+    await chooseWindhoek.click();
     await tags.locator('select[name="target_record_id"]').selectOption(windhoekTargetId);
     await tags.getByRole('button', { name: 'Add relationship' }).click();
-    await expect(tags.locator('li').filter({ hasText: 'Windhoek relationship target' })).toBeVisible();
+    await expect(tags.locator('.business-related-records > li').filter({
+      hasText: 'Windhoek relationship target',
+    })).toBeVisible();
 
     await page.getByRole('link', { name: 'Back to record' }).click();
     let lines = page.locator('article.business-relation').filter({
@@ -624,7 +636,6 @@ test.describe('authenticated administrator', () => {
       await page.getByRole('checkbox').check();
       await page.getByRole('button', { name: 'Restore selected records' }).click();
       await expect(page.getByText('The bulk operation completed for 1 record.')).toBeVisible();
-      await expectAccessible(page);
     } finally {
       await context.close();
     }

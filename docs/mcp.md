@@ -94,7 +94,7 @@ omission-safe projector as REST/CLI/UI and never include record keys, actor IDs,
 Approval voting is intentionally absent. A bearer MCP context has no fresh single-use step-up proof, and Kumwe does
 not accept a password or authenticator code through a model tool. Request approval through MCP, decide it through
 the administrator or portal step-up flow for inspection, but do not treat that as an MCP execution grant: the
-predecessor binding fingerprints the requesting surface and the proof store accepts only browser sessions. An MCP
+canonical binding fingerprints the requesting surface and the proof store accepts only browser sessions. An MCP
 attempt to consume a high-impact approval therefore fails closed. Complete high-impact execution in the browser;
 ordinary planned actions remain fully executable through MCP. See [Generated business
 surfaces](architecture/generated-business-surfaces.md).

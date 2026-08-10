@@ -163,10 +163,10 @@ actor/scope, authorization context and approval-request identity, policy and run
 generations, record version, operation, and canonical redacted payload digest. Execution locks and re-resolves the
 bindings. The MCP mutation guard adds credential-bound transport replay; it does not replace record idempotency.
 MCP accepts no password and cannot synthesize step-up proof, so approval voting stays on a real step-up surface.
-The Session-4 approval fingerprint also includes the authenticated surface and its proof consumer admits only
+The canonical approval fingerprint also includes the authenticated surface and its proof consumer admits only
 administrator or portal sessions. Consequently API, CLI, and MCP can create and inspect an exact request but cannot
 consume a high-impact binding; those surfaces fail closed and the browser owns the complete approve-and-execute
-path. Relaxing that rule would weaken the predecessor replay and session boundary and is deliberately not done here.
+path. Relaxing that rule would weaken the canonical replay and session boundary and is deliberately not done here.
 
 ## Extension-specific views and actions
 

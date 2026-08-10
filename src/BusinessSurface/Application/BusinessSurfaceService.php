@@ -25,6 +25,7 @@ use Kumwe\CMS\BusinessRecord\Application\Command\RestoreRecordCommand;
 use Kumwe\CMS\BusinessRecord\Application\Command\UnrelateRecordsCommand;
 use Kumwe\CMS\BusinessRecord\Application\Command\UpdateRecordCommand;
 use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordDefinitionUnavailable;
+use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordNotFound;
 use Kumwe\CMS\BusinessRecord\Application\Query\BrowseRecordsQuery;
 use Kumwe\CMS\BusinessRecord\Application\Query\BrowseOwnedLineFieldChoicesQuery;
 use Kumwe\CMS\BusinessRecord\Application\Query\BrowseRelatedRecordsQuery;
@@ -658,6 +659,8 @@ final readonly class BusinessSurfaceService implements BusinessHistoryUseCase, B
      *
      * @return  array<string, mixed>  Safe definition, record and semantic fields.
      *
+     * @throws  BusinessRecordNotFound  When the record or its surface definition cannot be addressed.
+     *
      * @since   2.0.0
      */
     public function read(
@@ -668,45 +671,49 @@ final readonly class BusinessSurfaceService implements BusinessHistoryUseCase, B
         bool $archived = false,
         bool $deleted = false,
     ): array {
-        $metadata = $this->catalog->definition(
-            $context,
-            $surface,
-            $definition,
-            BusinessSurfaceOperation::Read,
-        );
-        $relationships = self::objectDocuments(
-            $metadata['relationships'] ?? null,
-            'Generated business relationship metadata is invalid.',
-        );
-        foreach ($relationships as &$relationship) {
-            $relationship['loaded'] = false;
-        }
-        unset($relationship);
-        $metadata['relationships'] = $relationships;
-        $includes = [];
-        $view = $this->records->read(new ReadRecordQuery(
-            $context,
-            $definition,
-            $record,
-            $this->organization($context, $metadata),
-            projection: $this->metadataHandles($metadata, 'fields'),
-            includeArchived: $archived,
-            includeDeleted: $deleted,
-            includes: $includes,
-        ));
-        $resolved = $this->definitions->pinned($context, $definition, $view->definitionVersion);
+        try {
+            $metadata = $this->catalog->definition(
+                $context,
+                $surface,
+                $definition,
+                BusinessSurfaceOperation::Read,
+            );
+            $relationships = self::objectDocuments(
+                $metadata['relationships'] ?? null,
+                'Generated business relationship metadata is invalid.',
+            );
+            foreach ($relationships as &$relationship) {
+                $relationship['loaded'] = false;
+            }
+            unset($relationship);
+            $metadata['relationships'] = $relationships;
+            $includes = [];
+            $view = $this->records->read(new ReadRecordQuery(
+                $context,
+                $definition,
+                $record,
+                $this->organization($context, $metadata),
+                projection: $this->metadataHandles($metadata, 'fields'),
+                includeArchived: $archived,
+                includeDeleted: $deleted,
+                includes: $includes,
+            ));
+            $resolved = $this->definitions->pinned($context, $definition, $view->definitionVersion);
 
-        return [
-            'definition' => $metadata,
-            'available_operations' => $this->availableOperations($context, $surface, $definition),
-            'record' => $this->metadataRecord($this->projector->record($view), $metadata),
-            'fields' => $this->present(
-                $resolved->definition,
-                $metadata,
-                FieldPresentationContext::Detail,
-                $view->values,
-            ),
-        ];
+            return [
+                'definition' => $metadata,
+                'available_operations' => $this->availableOperations($context, $surface, $definition),
+                'record' => $this->metadataRecord($this->projector->record($view), $metadata),
+                'fields' => $this->present(
+                    $resolved->definition,
+                    $metadata,
+                    FieldPresentationContext::Detail,
+                    $view->values,
+                ),
+            ];
+        } catch (BusinessRecordDefinitionUnavailable) {
+            throw new BusinessRecordNotFound();
+        }
     }
 
     /**

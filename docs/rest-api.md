@@ -71,7 +71,7 @@ require a checker to inherit the maker's action-execution grant. Output omits re
 payload, and binding digest identities. Bearer REST cannot manufacture the fresh session-bound step-up proof
 required to approve, reject, or revoke; use the
 administrator or portal decision flow. A bearer-originated request cannot later be consumed by REST either: the
-predecessor binding includes the authenticated surface and proof consumption accepts only administrator or portal
+canonical binding includes the authenticated surface and proof consumption accepts only administrator or portal
 sessions. Supplying an approved request ID therefore re-proves the binding and fails closed; complete high-impact
 execution through one browser surface. A typed custom action still carries the same contract-validated `input`
 object into approval and attempted execution; changing it invalidates the binding, and reusing the operation key

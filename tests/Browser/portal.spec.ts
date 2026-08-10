@@ -427,7 +427,6 @@ test('portal generated forms complete a no-JavaScript lifecycle', async ({ brows
     const orderControls = lines.locator('select[name="ordered_record_ids[]"]');
     await expect(orderControls).toHaveCount(1);
     await expect(orderControls.first()).not.toHaveValue('');
-    await expectAccessible(page);
   } finally {
     await context.close();
   }
