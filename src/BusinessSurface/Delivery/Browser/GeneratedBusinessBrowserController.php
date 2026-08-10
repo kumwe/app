@@ -2178,7 +2178,7 @@ final readonly class GeneratedBusinessBrowserController
             }
         }
 
-        return array_values($values);
+        return $values;
     }
 
     /**
