@@ -160,6 +160,9 @@ final readonly class StaticConformanceRunner
         if (!$zip->getExternalAttributesIndex($index, $operatingSystem, $attributes)) {
             return null;
         }
+        if (!is_int($operatingSystem) || !is_int($attributes)) {
+            return null;
+        }
 
         return ['operating_system' => $operatingSystem, 'attributes' => $attributes];
     }
