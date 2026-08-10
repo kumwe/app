@@ -39,16 +39,16 @@ final readonly class AdministratorBusinessSurfaceHandler implements RequestHandl
     /**
      * Bind the adapter to shared dispatch and the protected administrator renderer.
      *
-     * @param  GeneratedBusinessBrowserController  $business         Shared progressive-enhancement controller.
-     * @param  AdministratorRenderer               $renderer         Protected core Twig renderer.
-     * @param  AdministratorStepUpProvider         $stepUp           Administrator MFA provider.
-     * @param  GeneratedBusinessActionStepUp       $actionStepUp     Exact-purpose proof coordinator.
-     * @param  bool                                $secureCookie     Whether rotated cookies require HTTPS.
-     * @param  int                                 $sessionLifetime  Administrator cookie lifetime in seconds.
+     * @param   GeneratedBusinessBrowserController  $business         Shared progressive-enhancement controller.
+     * @param   AdministratorRenderer               $renderer         Protected core Twig renderer.
+     * @param   AdministratorStepUpProvider         $stepUp           Administrator MFA provider.
+     * @param   GeneratedBusinessActionStepUp       $actionStepUp     Exact-purpose proof coordinator.
+     * @param   bool                                $secureCookie     Whether rotated cookies require HTTPS.
+     * @param   int                                 $sessionLifetime  Administrator cookie lifetime in seconds.
      *
      * @throws  InvalidArgumentException  When the configured session lifetime is invalid.
      *
-     * @since  2.0.0
+     * @since   2.0.0
      */
     public function __construct(
         private GeneratedBusinessBrowserController $business,

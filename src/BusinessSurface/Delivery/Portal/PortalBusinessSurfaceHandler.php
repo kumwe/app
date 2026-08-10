@@ -40,16 +40,16 @@ final readonly class PortalBusinessSurfaceHandler implements RequestHandlerInter
     /**
      * Bind the adapter to shared dispatch and the isolated portal renderer.
      *
-     * @param  GeneratedBusinessBrowserController  $business         Shared progressive-enhancement controller.
-     * @param  PortalRenderer                      $renderer         Isolated portal Twig renderer.
-     * @param  StepUpProvider                      $stepUp           Portal session MFA provider.
-     * @param  GeneratedBusinessActionStepUp       $actionStepUp     Exact-purpose proof coordinator.
-     * @param  bool                                $secureCookie     Whether rotated cookies require HTTPS.
-     * @param  int                                 $sessionLifetime  Portal cookie lifetime in seconds.
+     * @param   GeneratedBusinessBrowserController  $business         Shared progressive-enhancement controller.
+     * @param   PortalRenderer                      $renderer         Isolated portal Twig renderer.
+     * @param   StepUpProvider                      $stepUp           Portal session MFA provider.
+     * @param   GeneratedBusinessActionStepUp       $actionStepUp     Exact-purpose proof coordinator.
+     * @param   bool                                $secureCookie     Whether rotated cookies require HTTPS.
+     * @param   int                                 $sessionLifetime  Portal cookie lifetime in seconds.
      *
      * @throws  InvalidArgumentException  When the configured session lifetime is invalid.
      *
-     * @since  2.0.0
+     * @since   2.0.0
      */
     public function __construct(
         private GeneratedBusinessBrowserController $business,
@@ -250,11 +250,11 @@ final readonly class PortalBusinessSurfaceHandler implements RequestHandlerInter
     /**
      * Render or redirect one shared result and optionally publish a rotated portal cookie.
      *
-     * @param   PortalSession           $session      Original portal session used by layout projection.
-     * @param   BusinessBrowserResult   $result       Shared controller result.
-     * @param   string                  $csrf         CSRF token for the active or rotated session.
-     * @param   string|null             $cookieToken  Rotated opaque cookie token, when step-up succeeded.
-     * @param   array<string, string>   $headers      Additional response headers.
+     * @param   PortalSession          $session      Original portal session used by layout projection.
+     * @param   BusinessBrowserResult  $result       Shared controller result.
+     * @param   string                 $csrf         CSRF token for the active or rotated session.
+     * @param   string|null            $cookieToken  Rotated opaque cookie token, when step-up succeeded.
+     * @param   array<string, string>  $headers      Additional response headers.
      *
      * @return  ResponseInterface  No-store HTML page or same-origin redirect.
      *

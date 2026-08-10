@@ -22,9 +22,9 @@ interface BusinessRecordAccessOperationCatalogPlanner extends BusinessRecordAcce
     /**
      * Resolve plans for several capabilities from one bounded active-definition snapshot.
      *
-     * @param   ExecutionContext  $context     Actor and exact authenticated scope.
-     * @param   list<string>      $operations  Unique dotted business-record capabilities, capped at 32.
-     * @param   list<array{resolved: ResolvedBusinessDefinition, scope: RecordScope, requested: bool}> $resources
+     * @param ExecutionContext $context Actor and exact authenticated scope.
+     * @param list<string> $operations Unique dotted business-record capabilities, capped at 32.
+     * @param   list<array{resolved: ResolvedBusinessDefinition, scope: RecordScope, requested: bool}>  $resources
      *          Active definitions, scopes, and whether each needs a top-level catalog plan.
      *
      * @return  array<string, array<string, BusinessRecordAccessPlan>>  Plans by capability and definition UUID.

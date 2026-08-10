@@ -20,9 +20,9 @@ interface BusinessApprovalExposureCatalog
     /**
      * Return request identities whose active definition/action tuple is exposed on the exact surface.
      *
-     * @param   ExecutionContext  $context   Authenticated actor, site, and membership.
-     * @param   BusinessSurface   $surface   Generated adapter requesting approval presentation.
-     * @param   list<array{request_id: string, definition_id: string, action: string}> $requests
+     * @param ExecutionContext $context Authenticated actor, site, and membership.
+     * @param BusinessSurface $surface Generated adapter requesting approval presentation.
+     * @param   list<array{request_id: string, definition_id: string, action: string}>  $requests
      *          Canonical business-record approval bindings, bounded to one hundred entries.
      *
      * @return  array<string, true>  Exposed request UUIDs keyed to true.

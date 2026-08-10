@@ -36,10 +36,10 @@ final readonly class GeneratedBusinessBrowserController
     /**
      * Configure the shared controller.
      *
-     * @param  BusinessSurfaceService          $business    Generated-business application facade.
-     * @param  BusinessFormInputMapper         $forms       Schema-authorized nested input mapper.
-     * @param  BusinessOperationStatusService  $operations  Caller-bound operation-status lookup.
-     * @param  BusinessCustomViewPresenter     $customViews Safe generic custom-result projector.
+     * @param  BusinessSurfaceService          $business     Generated-business application facade.
+     * @param  BusinessFormInputMapper         $forms        Schema-authorized nested input mapper.
+     * @param  BusinessOperationStatusService  $operations   Caller-bound operation-status lookup.
+     * @param  BusinessCustomViewPresenter     $customViews  Safe generic custom-result projector.
      *
      * @since  2.0.0
      */
@@ -1167,7 +1167,7 @@ final readonly class GeneratedBusinessBrowserController
      * @param   string                    $definition  Source definition UUID or handle.
      * @param   BusinessSurfaceOperation  $operation   Validated bulk operation.
      * @param   string|null               $action      Optional action handle.
-     * @param   array<string, mixed>       $input       Submitted native schema controls.
+     * @param   array<string, mixed>      $input       Submitted native schema controls.
      *
      * @return  array<string, mixed>  Typed input applied identically to every selected record.
      *
@@ -1341,13 +1341,13 @@ final readonly class GeneratedBusinessBrowserController
      * update value came from the policy-filtered form model; a selector return is bounded and its target is
      * revalidated at the application mutation boundary. Every actual browse remains on a fixed selector route.
      *
-     * @param   ExecutionContext      $context     Authenticated actor and scope.
-     * @param   BusinessSurface       $surface     Administrator or portal boundary.
-     * @param   string                $definition  Source definition UUID or handle.
-     * @param   ?string               $record      Source record for update choices.
-     * @param   array<string, mixed>  $model       Generated create or update form model.
-     * @param   array<string, mixed>  $query       Optional selector return values.
-     * @param   ?array<string, mixed> $structured  Optional retained graphical structure controls.
+     * @param   ExecutionContext       $context     Authenticated actor and scope.
+     * @param   BusinessSurface        $surface     Administrator or portal boundary.
+     * @param   string                 $definition  Source definition UUID or handle.
+     * @param   ?string                $record      Source record for update choices.
+     * @param   array<string, mixed>   $model       Generated create or update form model.
+     * @param   array<string, mixed>   $query       Optional selector return values.
+     * @param   ?array<string, mixed>  $structured  Optional retained graphical structure controls.
      *
      * @return  array<string, mixed>  Form model carrying closed selector options.
      *
@@ -1454,12 +1454,12 @@ final readonly class GeneratedBusinessBrowserController
     /**
      * Attach source-bound selectors and graphical structured controls to an owned-target form.
      *
-     * @param   array<string, mixed>  $owned         Safe owned-line form returned by the shared facade.
-     * @param   string                $relationship  Source relationship handle.
+     * @param array<string, mixed> $owned Safe owned-line form returned by the shared facade.
+     * @param string $relationship Source relationship handle.
      * @param   array{handle: string, value: string, label: string, relationship: ?string}|null  $selected
      *          Optional choice returned from the fixed owned-line selector.
-     * @param   array<string, mixed>  $structured    Retained graphical structured controls.
-     * @param   array<string, mixed>  $labels        Retained disclosed labels by reference field handle.
+     * @param array<string, mixed> $structured Retained graphical structured controls.
+     * @param array<string, mixed> $labels Retained disclosed labels by reference field handle.
      *
      * @return  array<string, mixed>  Owned-line form ready for core Twig rendering.
      *
@@ -1656,17 +1656,17 @@ final readonly class GeneratedBusinessBrowserController
      * at which point one owned-line form may be loaded; ordinary target browsing remains on its fixed choice
      * route and contributes only the returned selected option to this native POST form.
      *
-     * @param   ExecutionContext      $context     Authenticated actor and scope.
-     * @param   BusinessSurface       $surface     Administrator or portal boundary.
-     * @param   string                $definition  Source definition UUID or handle.
-     * @param   string                $record      Source record identity.
-     * @param   array<string, mixed>  $model       Generated record detail model.
-     * @param   array<string, mixed>  $query       Optional selector return values.
-     * @param   ?string               $ownedLine   Owned relationship retaining a failed submission.
-     * @param   array<string, mixed>  $retained    Retained owned-target values.
-     * @param   array<string, list<string>>  $errors     Owned-target validation errors.
-     * @param   array<string, mixed>         $structured Retained owned-target structured controls.
-     * @param   array<string, mixed>         $labels     Retained disclosed reference labels.
+     * @param   ExecutionContext             $context     Authenticated actor and scope.
+     * @param   BusinessSurface              $surface     Administrator or portal boundary.
+     * @param   string                       $definition  Source definition UUID or handle.
+     * @param   string                       $record      Source record identity.
+     * @param   array<string, mixed>         $model       Generated record detail model.
+     * @param   array<string, mixed>         $query       Optional selector return values.
+     * @param   ?string                      $ownedLine   Owned relationship retaining a failed submission.
+     * @param   array<string, mixed>         $retained    Retained owned-target values.
+     * @param   array<string, list<string>>  $errors      Owned-target validation errors.
+     * @param   array<string, mixed>         $structured  Retained owned-target structured controls.
+     * @param   array<string, mixed>         $labels      Retained disclosed reference labels.
      *
      * @return  array<string, mixed>  Detail model carrying selector choices per relationship.
      *

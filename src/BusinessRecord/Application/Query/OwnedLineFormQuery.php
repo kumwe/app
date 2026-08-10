@@ -17,13 +17,13 @@ final readonly class OwnedLineFormQuery
     /**
      * Bind the form request to an exact existing source record and authenticated organization assertion.
      *
-     * @param   ExecutionContext  $context                 Authenticated actor and scope.
-     * @param   string            $definitionIdentifier    Source definition UUID or handle.
-     * @param   string            $sourceRecordId          Existing source public identity.
-     * @param   string            $relationship            Owned-line relationship handle.
-     * @param   ?string           $organizationIdentifier  Authenticated organization assertion.
+     * @param  ExecutionContext  $context                 Authenticated actor and scope.
+     * @param  string            $definitionIdentifier    Source definition UUID or handle.
+     * @param  string            $sourceRecordId          Existing source public identity.
+     * @param  string            $relationship            Owned-line relationship handle.
+     * @param  ?string           $organizationIdentifier  Authenticated organization assertion.
      *
-     * @since   2.0.0
+     * @since  2.0.0
      */
     public function __construct(
         public ExecutionContext $context,

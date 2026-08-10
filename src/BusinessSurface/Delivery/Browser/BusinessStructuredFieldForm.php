@@ -61,11 +61,11 @@ final readonly class BusinessStructuredFieldForm
     /**
      * Capture one recursive semantic model and optional typed value.
      *
-     * @param   array<string, mixed>  $model      Core-owned recursive editor model.
-     * @param   mixed                 $value      Decoded value, null before final submission.
-     * @param   bool                  $submitted  Whether the value was decoded for a save.
+     * @param  array<string, mixed>  $model      Core-owned recursive editor model.
+     * @param  mixed                 $value      Decoded value, null before final submission.
+     * @param  bool                  $submitted  Whether the value was decoded for a save.
      *
-     * @since   2.0.0
+     * @since  2.0.0
      */
     private function __construct(
         public array $model,
@@ -77,12 +77,12 @@ final readonly class BusinessStructuredFieldForm
     /**
      * Build an object or list editor from retained controls or a normalized initial value.
      *
-     * @param   string  $rootKind  Fixed root kind, `object` or `array`.
-     * @param   string  $name      Native nested input name for this field.
-     * @param   mixed   $input     Retained structured control document, or null on the first render.
-     * @param   mixed   $initial   Normalized existing or retained application value.
-     * @param   int     $maximum   Signed root property or item maximum.
-     * @param   bool    $submitted Whether to decode the final typed value.
+     * @param   string  $rootKind   Fixed root kind, `object` or `array`.
+     * @param   string  $name       Native nested input name for this field.
+     * @param   mixed   $input      Retained structured control document, or null on the first render.
+     * @param   mixed   $initial    Normalized existing or retained application value.
+     * @param   int     $maximum    Signed root property or item maximum.
+     * @param   bool    $submitted  Whether to decode the final typed value.
      *
      * @return  self  Recursive editor model and optional typed result.
      *

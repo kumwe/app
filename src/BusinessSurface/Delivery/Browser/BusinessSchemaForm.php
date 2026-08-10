@@ -17,14 +17,14 @@ use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessSchema;
  * or POST round trip to add rows without exposing JSON authoring or accepting arbitrary field names.
  *
  * @phpstan-type FormBase array{
- *     kind: string,
- *     label: string,
- *     description: string,
- *     name: string,
- *     required: bool,
- *     nullable: bool,
- *     path_token: string
- * }
+ *             kind: string,
+ *             label: string,
+ *             description: string,
+ *             name: string,
+ *             required: bool,
+ *             nullable: bool,
+ *             path_token: string
+ *         }
  *
  * @since  2.0.0
  */
@@ -41,11 +41,11 @@ final readonly class BusinessSchemaForm
     /**
      * Capture one recursive form model and optional typed result.
      *
-     * @param   list<array<string, mixed>>  $fields  Root object property controls.
-     * @param   array<string, mixed>        $value   Typed object, empty until submitted.
-     * @param   bool                        $submitted Whether typed validation was requested.
+     * @param  list<array<string, mixed>>  $fields     Root object property controls.
+     * @param  array<string, mixed>        $value      Typed object, empty until submitted.
+     * @param  bool                        $submitted  Whether typed validation was requested.
      *
-     * @since   2.0.0
+     * @since  2.0.0
      */
     private function __construct(
         public array $fields,

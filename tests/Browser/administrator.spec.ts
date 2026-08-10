@@ -399,11 +399,18 @@ test.describe('authenticated administrator', () => {
 
   test('generated business list, detail and confirmations remain progressively enhanced', async ({
     page,
+    isMobile,
   }, testInfo) => {
     await page.goto(`/administrator/business/${businessDefinitionHandle}`);
     await expect(page.locator('.business-record-table tbody tr').first()).toBeVisible();
     await expect(page.getByRole('link', { name: 'Report', exact: true })).toBeVisible();
     await expect(page.getByRole('link', { name: 'Export', exact: true })).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBe(0);
+    if (isMobile) {
+      expect(await page.locator('.business-table-wrap').evaluate((table) =>
+        table.scrollHeight - table.clientHeight,
+      )).toBe(0);
+    }
     await expect(page).toHaveScreenshot('administrator-generated-business-list.png', {
       fullPage: true,
       mask: [page.locator('.business-record-table tbody')],
@@ -614,8 +621,14 @@ test.describe('authenticated administrator', () => {
     const workspace = page.locator('.navigation-group').filter({
       has: page.getByRole('heading', { name: 'Announcements', exact: true }),
     });
-    await expect(workspace.getByRole('link', { name: 'Announcements' })).toBeVisible();
-    await workspace.getByRole('link', { name: 'Announcements' }).click();
+    const announcements = workspace.getByRole('link', { name: 'Announcements' });
+    await expect(announcements).toBeVisible();
+    if (isMobile) {
+      await announcements.focus();
+      await announcements.press('Enter');
+    } else {
+      await announcements.click();
+    }
     await expect(page).toHaveURL(/\/administrator\/extensions\/kumwe\/announcements-example$/);
     await expect(page.getByRole('heading', { level: 1, name: 'Announcements' })).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Component announcements' })).toBeVisible();

@@ -418,6 +418,30 @@ final class GeneratedBusinessDeliveryParityTest extends TestCase
     }
 
     /**
+     * Successful detail reads do not carry relationship validation errors.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testDetailRelationshipErrorSummaryIsOptional(): void
+    {
+        foreach (
+            [
+                'templates/administrator/business-detail.twig',
+                'templates/portal/business-detail.twig',
+            ] as $path
+        ) {
+            $template = $this->contents($path);
+            self::assertStringContainsString(
+                '{% if error_summary is defined and error_summary %}',
+                $template,
+                $path,
+            );
+        }
+    }
+
+    /**
      * Portal navigation must appear only after request-scoped shared catalog discovery succeeds.
      *
      * @return  void

@@ -30,8 +30,8 @@ final readonly class GeneratedBusinessPortalNavigationVisibility implements Port
     /**
      * Bind request visibility to the canonical portal context and policy-filtered surface catalog.
      *
-     * @param  BusinessSurfaceCatalog          $catalog   Shared definition exposure and policy boundary.
-     * @param  PortalExecutionContextFactory   $contexts  Portal provenance-owning context factory.
+     * @param  BusinessSurfaceCatalog         $catalog   Shared definition exposure and policy boundary.
+     * @param  PortalExecutionContextFactory  $contexts  Portal provenance-owning context factory.
      *
      * @since  2.0.0
      */

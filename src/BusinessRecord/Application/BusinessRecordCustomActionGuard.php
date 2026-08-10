@@ -23,7 +23,7 @@ interface BusinessRecordCustomActionGuard
      * The caller already owns the surrounding transaction, idempotency claim, and exclusive definition
      * fence. Any failure aborts that transaction, including approval consumption, before a handler can run.
      *
-     * @param   ExecuteRecordActionCommand         $command     Validated custom action attempt.
+     * @param   ExecuteRecordActionCommand        $command     Validated custom action attempt.
      * @param   BusinessRecordMutationGeneration  $generation  Exclusive installed-definition generation.
      *
      * @return  void
