@@ -10,6 +10,7 @@ This section records the boundaries that must remain stable as Kumwe grows. It i
 - [Delivery surfaces and authorization](delivery.md)
 - [Generated business surfaces](generated-business-surfaces.md)
 - [Extension and event model](extensions.md)
+- [Business integrations and extension SDK](../business-integrations.md)
 - [Business definitions](../business-definitions.md)
 - [Growth paths](growth.md)
 

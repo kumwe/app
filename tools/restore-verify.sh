@@ -29,7 +29,7 @@ case "$backup_directory" in
     / | /home | /root | /workspace) fail "refusing unsafe backup directory '$backup_directory'" ;;
 esac
 
-for required_file in checksums.sha256 database.dump extension-assets.tar.gz extensions.tar.gz manifest.json media.tar.gz; do
+for required_file in checksums.sha256 database.dump extension-assets.tar.gz extensions.tar.gz manifest.json media.tar.gz private.tar.gz; do
     [[ -f "${backup_directory}/${required_file}" ]] || fail "missing required file '$required_file'"
     [[ ! -L "${backup_directory}/${required_file}" ]] || fail "required file '$required_file' is a symbolic link"
 done
@@ -39,7 +39,7 @@ if find "$backup_directory" -xdev -type l -print -quit | grep -q .; then
 fi
 
 actual_checksum_files="$({ awk '{print $2}' "${backup_directory}/checksums.sha256" || true; } | sort)"
-expected_checksum_files="$(printf '%s\n' database.dump extension-assets.tar.gz extensions.tar.gz manifest.json media.tar.gz | sort)"
+expected_checksum_files="$(printf '%s\n' database.dump extension-assets.tar.gz extensions.tar.gz manifest.json media.tar.gz private.tar.gz | sort)"
 [[ "$actual_checksum_files" == "$expected_checksum_files" ]] \
     || fail 'checksum manifest contains an unexpected or missing path'
 
@@ -60,7 +60,7 @@ jq -e '
     )
     and (.database_table_prefix | length <= 28)
     and (.database_table_prefix | test("^[a-z][a-z0-9]*(_[a-z0-9]+)*_$"))
-    and .contents == ["database.dump", "extension-assets.tar.gz", "extensions.tar.gz", "media.tar.gz"]
+    and .contents == ["database.dump", "extension-assets.tar.gz", "extensions.tar.gz", "media.tar.gz", "private.tar.gz"]
 ' "${backup_directory}/manifest.json" >/dev/null \
     || fail 'manifest is not a supported Kumwe 2.x backup; Kumwe 1.x and unknown formats are refused'
 
@@ -96,7 +96,7 @@ else
     fi
 fi
 
-for archive in media extensions extension-assets; do
+for archive in media private extensions extension-assets; do
     if ! archive_listing="$(tar --list --gzip --file="${backup_directory}/${archive}.tar.gz")"; then
         fail "${archive} archive cannot be read"
     fi

@@ -17,8 +17,15 @@ Collect and alert on:
 - database connections, locks, slow queries, storage, replication, and backup age;
 - Redis availability, authentication failures, memory, eviction, persistence, and command latency;
 - queue depth and oldest age, retries, failed jobs, expired leases, heartbeat freshness, and scheduler lag;
+- integration outbox pending age, dispatch latency, retries, terminal failures, expired leases, replays, and
+  retention backlog;
+- integration inbox unavailable, reordered, duplicate, and poison outcomes, checkpoint gaps, pending age, and
+  consumer handler/runtime generation;
+- long-running process age and status, overdue timer/command/compensation work, and cancellation/version conflicts;
+- projection lag, active/rebuild generation and checksum, report row-cap/authorization refusals, export queue age,
+  artifact expiry, generation/download failures, and checksum mismatches;
 - administrator authentication failures, token failures, permission denials, and rate-limit decisions;
-- extension activation failures and runtime-map generation;
+- extension activation/reconciliation failures, runtime-map generation, and stale web/worker/scheduler exits;
 - last successful backup verification and clean-target restore drill.
 
 Define engine-specific database dashboards for MariaDB, MySQL, or PostgreSQL while keeping the application-level service objectives the same.
@@ -27,7 +34,15 @@ Define engine-specific database dashboards for MariaDB, MySQL, or PostgreSQL whi
 
 Kumwe writes structured application logs to `php://stderr` through Monolog. Collect container or process logs off-host with retention, integrity controls, and restricted access. Correlate events with the request identifier and deployed release.
 
-Never log request bodies by default. Credentials, authorization headers, cookies, passwords, secrets, session identifiers, plaintext tokens, and extension signing material must be redacted. `config/observability.php` records the safe-context and forbidden-label policy.
+Never log request or event bodies by default. Credentials, authorization headers, cookies, passwords, secrets,
+session identifiers, plaintext tokens, extension signing material, report parameters, export contents, and sensitive
+business fields must be redacted. Correlation, event, process, and artifact IDs belong in structured fields, not
+high-cardinality metric labels. `config/observability.php` records the safe-context and forbidden-label policy.
+
+Durable database rows and audit records are authoritative for event/job/process/export recovery. Redis is
+coordination state. Do not report a queue as healthy merely because Redis responds, and do not mutate outbox,
+inbox, checkpoints, process work, export metadata, or runtime generations from a monitoring tool. See
+[Business integrations and extension SDK](../business-integrations.md#monitoring-and-failure-recovery).
 
 ## Audit records
 

@@ -88,6 +88,7 @@ $archive = tempnam(sys_get_temp_dir(), 'kumwe-browser-announcements-');
 if (!is_string($archive)) {
     throw new RuntimeException('The browser fixture package cannot be allocated.');
 }
+$assetArchive = null;
 
 try {
     $zip = new ZipArchive();
@@ -137,6 +138,75 @@ try {
     $manager->activate('kumwe/announcements-example', $context);
     $trust->synchronizeRuntimeMaterialization();
 
+    $assetArchive = tempnam(sys_get_temp_dir(), 'kumwe-browser-asset-inspection-');
+    if (!is_string($assetArchive)) {
+        throw new RuntimeException('The browser report fixture package cannot be allocated.');
+    }
+    $assetRoot = dirname(__DIR__, 2) . '/examples/extensions/asset-inspection';
+    $zip = new ZipArchive();
+    if ($zip->open($assetArchive, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
+        throw new RuntimeException('The browser report fixture package cannot be opened.');
+    }
+    $iterator = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($assetRoot));
+    try {
+        foreach ($iterator as $file) {
+            if (!$file instanceof SplFileInfo || !$file->isFile()) {
+                continue;
+            }
+            $contents = file_get_contents($file->getPathname());
+            $relative = substr($file->getPathname(), strlen($assetRoot) + 1);
+            if (!is_string($contents) || !$zip->addFromString($relative, $contents)) {
+                throw new RuntimeException('The browser report fixture package cannot include an example file.');
+            }
+        }
+    } finally {
+        $zip->close();
+    }
+    $assetBytes = file_get_contents($assetArchive);
+    if (!is_string($assetBytes)) {
+        throw new RuntimeException('The browser report fixture package cannot be signed.');
+    }
+    $assetChecksum = PackageChecksum::calculate($assetBytes);
+    $assetKeyPair = sodium_crypto_sign_keypair();
+    $assetPublicKey = sodium_crypto_sign_publickey($assetKeyPair);
+    $assetSecretKey = sodium_crypto_sign_secretkey($assetKeyPair);
+    $assetKeyId = 'browser.asset-inspection.v1';
+    $trust->add(
+        $context,
+        $assetKeyId,
+        base64_encode($assetPublicKey),
+        'kumwe',
+        'asset-inspection-example',
+        new DateTimeImmutable('+1 year'),
+    );
+    $manager->install(
+        $assetArchive,
+        $context,
+        $assetKeyId,
+        base64_encode(sodium_crypto_sign_detached((string) $assetChecksum, $assetSecretKey)),
+    );
+    $manager->activate('kumwe/asset-inspection-example', $context);
+    $trust->synchronizeRuntimeMaterialization();
+
+    $assetManifestJson = file_get_contents($assetRoot . '/kumwe.json');
+    if (!is_string($assetManifestJson)) {
+        throw new RuntimeException('The browser report fixture manifest is unavailable.');
+    }
+    $assetManifest = json_decode($assetManifestJson, true, 512, JSON_THROW_ON_ERROR);
+    if (!is_array($assetManifest)) {
+        throw new RuntimeException('The browser report fixture manifest is invalid.');
+    }
+    $assetDefinitions = $assetManifest['contributions']['business']['definitions'] ?? null;
+    if (!is_array($assetDefinitions) || !array_is_list($assetDefinitions)) {
+        throw new RuntimeException('The browser report fixture definitions are unavailable.');
+    }
+    foreach ($assetDefinitions as $assetDefinition) {
+        if (!is_array($assetDefinition)) {
+            throw new RuntimeException('A browser report fixture definition is invalid.');
+        }
+        NeutralBusinessFixture::install($container, $context, $assetDefinition);
+    }
+
     $administratorRole = null;
     foreach ($repository->roles() as $role) {
         if (($role['code'] ?? null) === 'administrator' && is_string($role['id'] ?? null)) {
@@ -147,17 +217,25 @@ try {
     if (!is_string($administratorRole)) {
         throw new RuntimeException('The browser fixture administrator role is unavailable.');
     }
-    $grantId = Uuid::uuid7()->toString();
-    $repository->grant(
-        $grantId,
-        $administratorRole,
-        'kumwe.announcements-example.manage',
-        'global',
-        null,
-        $context->actorId(),
-        new DateTimeImmutable(),
-    );
-    $ownership->record(AuthorizationResource::item('grant', $grantId), SiteContext::default());
+    foreach (
+        [
+            'kumwe.announcements-example.manage',
+            'kumwe.asset-inspection-example.manage',
+            'kumwe.asset-inspection-example.view',
+        ] as $capability
+    ) {
+        $grantId = Uuid::uuid7()->toString();
+        $repository->grant(
+            $grantId,
+            $administratorRole,
+            $capability,
+            'global',
+            null,
+            $context->actorId(),
+            new DateTimeImmutable(),
+        );
+        $ownership->record(AuthorizationResource::item('grant', $grantId), SiteContext::default());
+    }
 
     $limitedUser = $access->createUser(
         $context,
@@ -178,6 +256,17 @@ try {
     );
     $portalRole = $access->createRole($context, 'browser-portal', 'Browser Portal Member');
     $access->grant($context, $portalRole, 'portal.access', 'site', 'default');
+    $portalReportGrant = Uuid::uuid7()->toString();
+    $repository->grant(
+        $portalReportGrant,
+        $portalRole,
+        'kumwe.asset-inspection-example.view',
+        'site',
+        'default',
+        $context->actorId(),
+        new DateTimeImmutable(),
+    );
+    $ownership->record(AuthorizationResource::item('grant', $portalReportGrant), SiteContext::default());
     $security = new DoctrineBusinessSecurityAdministrationRepository($database, $tables, $ownership);
     $organizationId = Uuid::uuid7()->toString();
     $workspaceId = Uuid::uuid7()->toString();
@@ -394,6 +483,21 @@ try {
     if (!$businessRecords instanceof BusinessRecordService) {
         throw new RuntimeException('The generated-business browser fixture service is unavailable.');
     }
+    $assetInspectionId = '019bc210-0000-7000-8000-000000000101';
+    $businessRecords->create(new CreateRecordCommand(
+        $context,
+        'kumwe.asset-inspection-example.inspection',
+        [
+            'id' => $assetInspectionId,
+            'reference' => 'BROWSER-INSPECT-001',
+            'inspection_date' => '2026-08-10',
+            'raw_score' => 82,
+            'adjustment' => -3,
+            'internal_note' => 'Browser report restricted note',
+        ],
+        NeutralBusinessFixture::idempotencyKey('browser-asset-inspection'),
+        recordId: $assetInspectionId,
+    ));
     foreach (
         [
             ['019b40d9-8dd0-7ca2-a0db-9eae6a150521', 'Windhoek relationship target'],
@@ -446,5 +550,8 @@ try {
 } finally {
     if (is_file($archive)) {
         unlink($archive);
+    }
+    if (is_string($assetArchive) && is_file($assetArchive)) {
+        unlink($assetArchive);
     }
 }

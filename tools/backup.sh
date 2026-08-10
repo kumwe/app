@@ -42,6 +42,7 @@ require_value KUMWE_DB_PASSWORD_FILE
 require_value KUMWE_EXTENSION_ASSETS_DIR
 require_value KUMWE_EXTENSIONS_DIR
 require_value KUMWE_MEDIA_DIR
+require_value KUMWE_PRIVATE_DIR
 require_value KUMWE_RELEASE
 
 [[ "$KUMWE_RELEASE" =~ ^2\.[0-9]+\.[0-9]+([+-][0-9A-Za-z.-]+)?$ ]] \
@@ -56,12 +57,14 @@ table_prefix="${KUMWE_DB_TABLE_PREFIX:-kumwe_}"
     || fail 'set KUMWE_BACKUP_CONSISTENCY=quiesced after writes and media changes have been stopped'
 [[ -d "$KUMWE_BACKUP_DIR" ]] || fail 'KUMWE_BACKUP_DIR must be an existing directory'
 [[ -d "$KUMWE_MEDIA_DIR" ]] || fail 'KUMWE_MEDIA_DIR must be an existing directory'
+[[ -d "$KUMWE_PRIVATE_DIR" ]] || fail 'KUMWE_PRIVATE_DIR must be an existing directory'
 [[ -d "$KUMWE_EXTENSIONS_DIR" ]] || fail 'KUMWE_EXTENSIONS_DIR must be an existing directory'
 [[ -d "$KUMWE_EXTENSION_ASSETS_DIR" ]] || fail 'KUMWE_EXTENSION_ASSETS_DIR must be an existing directory'
 [[ -r "$KUMWE_DB_PASSWORD_FILE" ]] || fail 'KUMWE_DB_PASSWORD_FILE is not readable'
 
 backup_root="$(cd -- "$KUMWE_BACKUP_DIR" && pwd -P)"
 media_root="$(cd -- "$KUMWE_MEDIA_DIR" && pwd -P)"
+private_root="$(cd -- "$KUMWE_PRIVATE_DIR" && pwd -P)"
 extensions_root="$(cd -- "$KUMWE_EXTENSIONS_DIR" && pwd -P)"
 extension_assets_root="$(cd -- "$KUMWE_EXTENSION_ASSETS_DIR" && pwd -P)"
 
@@ -70,6 +73,9 @@ case "$backup_root" in
 esac
 case "$media_root" in
     / | /home | /root | /workspace) fail "refusing unsafe media root '$media_root'" ;;
+esac
+case "$private_root" in
+    / | /home | /root | /workspace) fail "refusing unsafe private-data root '$private_root'" ;;
 esac
 case "$extensions_root" in
     / | /home | /root | /workspace) fail "refusing unsafe extensions root '$extensions_root'" ;;
@@ -81,6 +87,9 @@ esac
 if find "$media_root" -xdev \( -type l -o \( ! -type f -a ! -type d \) \) -print -quit | grep -q .; then
     fail 'media tree contains a symbolic link or unsupported file type'
 fi
+if find "$private_root" -xdev \( -type l -o \( ! -type f -a ! -type d \) \) -print -quit | grep -q .; then
+    fail 'private-data tree contains a symbolic link or unsupported file type'
+fi
 if find "$extensions_root" -xdev \( -type l -o \( ! -type f -a ! -type d \) \) -print -quit | grep -q .; then
     fail 'extensions tree contains a symbolic link or unsupported file type'
 fi
@@ -90,8 +99,8 @@ fi
 
 while IFS= read -r -d '' source_path; do
     [[ "$source_path" != *$'\n'* && "$source_path" != *$'\r'* ]] \
-        || fail 'media or extension tree contains a filename with a line break'
-done < <(find "$media_root" "$extensions_root" "$extension_assets_root" -xdev -print0)
+        || fail 'media, private-data, or extension tree contains a filename with a line break'
+done < <(find "$media_root" "$private_root" "$extensions_root" "$extension_assets_root" -xdev -print0)
 
 database_password="$(<"$KUMWE_DB_PASSWORD_FILE")"
 [[ -n "$database_password" ]] || fail 'database password file is empty'
@@ -187,12 +196,13 @@ fi
 unset database_password
 
 tar --create --gzip --one-file-system --file="${staging_directory}/media.tar.gz" --directory="$media_root" .
+tar --create --gzip --one-file-system --file="${staging_directory}/private.tar.gz" --directory="$private_root" .
 tar --create --gzip --one-file-system --file="${staging_directory}/extensions.tar.gz" \
     --directory="$extensions_root" .
 tar --create --gzip --one-file-system --file="${staging_directory}/extension-assets.tar.gz" \
     --directory="$extension_assets_root" .
 
-for archive in media extensions extension-assets; do
+for archive in media private extensions extension-assets; do
     if tar --list --verbose --gzip --file="${staging_directory}/${archive}.tar.gz" \
         | awk 'substr($1, 1, 1) !~ /^[-d]$/ { found = 1 } END { exit found ? 0 : 1 }'; then
         fail "created ${archive} archive contains a symbolic link or unsupported file type"
@@ -216,12 +226,12 @@ jq -n \
         database_driver: $database_driver,
         database_format: $database_format,
         database_table_prefix: $database_table_prefix,
-        contents: ["database.dump", "extension-assets.tar.gz", "extensions.tar.gz", "media.tar.gz"]
+        contents: ["database.dump", "extension-assets.tar.gz", "extensions.tar.gz", "media.tar.gz", "private.tar.gz"]
     }' > "${staging_directory}/manifest.json"
 
 (
     cd -- "$staging_directory"
-    sha256sum database.dump extension-assets.tar.gz extensions.tar.gz manifest.json media.tar.gz > checksums.sha256
+    sha256sum database.dump extension-assets.tar.gz extensions.tar.gz manifest.json media.tar.gz private.tar.gz > checksums.sha256
 )
 
 if [[ -n "${KUMWE_BACKUP_SIGNING_SECRET_KEY_FILE:-}" ]]; then

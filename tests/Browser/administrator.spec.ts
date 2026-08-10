@@ -6,6 +6,7 @@ const administratorPassword = process.env.KUMWE_BROWSER_ADMIN_PASSWORD ?? 'brows
 const limitedEmail = process.env.KUMWE_BROWSER_LIMITED_EMAIL ?? 'browser-limited@kumwe.test';
 const limitedPassword = process.env.KUMWE_BROWSER_LIMITED_PASSWORD ?? 'browser limited password';
 const businessDefinitionHandle = 'site.default.session5_order';
+const assetInspectionReport = 'kumwe.asset-inspection-example.inspection-summary';
 const windhoekOrderId = '019b40d9-8dd0-7ca2-a0db-9eae6a150511';
 const windhoekTargetId = '019b40d9-8dd0-7ca2-a0db-9eae6a150521';
 
@@ -24,6 +25,44 @@ async function expectStylesLoaded(page: Page): Promise<void> {
   );
   expect(failedStylesheets).toEqual([]);
   expect(await page.locator('link[rel="stylesheet"]').count()).toBeGreaterThan(0);
+}
+
+/** Keep legacy comparisons scoped to their original shell; Session 6 has dedicated real screenshots. */
+async function preservePreSession6VisualSnapshot(page: Page): Promise<void> {
+  await page.locator('.administrator-navigation').evaluate((navigation) => {
+    const session6Paths = [
+      '/administrator/reports',
+      '/administrator/extensions/kumwe/asset-inspection-example',
+    ];
+
+    for (const link of navigation.querySelectorAll<HTMLAnchorElement>('a[href]')) {
+      const href = link.getAttribute('href') ?? '';
+      if (!session6Paths.some((path) => href === path || href.startsWith(`${path}/`))) {
+        continue;
+      }
+
+      const section = link.closest('section');
+      if (section !== null && section.querySelectorAll('a[href]').length === 1) {
+        section.remove();
+      } else {
+        link.closest('li')?.remove();
+      }
+    }
+  });
+  await page
+    .locator('a[href^="/administrator/business/kumwe.asset-inspection-example."]')
+    .evaluateAll((links) => {
+      for (const link of links) {
+        link.closest('.business-workspace-card')?.remove();
+      }
+    });
+  await page.locator('select[name="definition_id"] option').evaluateAll((options) => {
+    for (const option of options) {
+      if (option.textContent?.includes('kumwe.asset-inspection-example.') === true) {
+        option.remove();
+      }
+    }
+  });
 }
 
 async function signIn(
@@ -240,6 +279,7 @@ test.describe('authenticated administrator', () => {
     expect(await missingCsrf.text()).toContain('security token is invalid');
     await expectStylesLoaded(page);
     await expectAccessible(page);
+    await preservePreSession6VisualSnapshot(page);
     await expect(page).toHaveScreenshot('schema-plans.png', {
       fullPage: true,
       mask: [
@@ -399,14 +439,71 @@ test.describe('authenticated administrator', () => {
     await page.goto('/administrator/business');
     await expect(page.getByRole('heading', { level: 1, name: 'Business records' })).toBeVisible();
     await expect(page.getByRole('link', { name: /Open session 5 orders/i })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Open Example inspections' })).toBeVisible();
     await expectStylesLoaded(page);
     await expectAccessible(page);
     expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBe(0);
+    await preservePreSession6VisualSnapshot(page);
     await expect(page).toHaveScreenshot('administrator-generated-business-workspace.png', {
       fullPage: true,
     });
     await page.screenshot({
       path: testInfo.outputPath('business-workspaces.png'),
+      fullPage: true,
+      animations: 'disabled',
+      caret: 'hide',
+    });
+  });
+
+  test('reports execute graphically and expose queued export status', async ({ page }, testInfo) => {
+    await page.goto('/administrator/reports');
+    await expect(page.getByRole('heading', { level: 1, name: 'Business report' })).toBeVisible();
+    await expect(page.locator('a[href="/administrator/reports"]')).toHaveAttribute(
+      'aria-current',
+      'page',
+    );
+    await expect(page.getByRole('link', { name: 'Asset inspection example', exact: true }))
+      .toBeVisible();
+    const report = page.locator(`form[action="/administrator/reports/${assetInspectionReport}"]`);
+    await expect(report.getByRole('heading', { name: 'Asset inspection example summary' }))
+      .toBeVisible();
+    await expect(report.getByText(assetInspectionReport, { exact: true })).toBeVisible();
+    await report.getByLabel('Parameters as JSON object').fill('{"minimum_score":70}');
+    await report.getByRole('button', { name: 'Run report', exact: true }).click();
+
+    const results = page.getByRole('region', { name: 'Report results' });
+    await expect(results).toBeVisible();
+    await expect(results.getByRole('columnheader', { name: 'Reference' })).toBeVisible();
+    await expect(results.getByRole('columnheader', { name: 'Risk score' })).toBeVisible();
+    const accepted = results.getByRole('row').filter({ hasText: 'BROWSER-INSPECT-001' });
+    await expect(accepted).toBeVisible();
+    await expect(accepted).toContainText('79');
+    await expect(page.getByText('Browser report restricted note', { exact: true })).toHaveCount(0);
+    await expectStylesLoaded(page);
+    await expectAccessible(page);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBe(0);
+    await page.screenshot({
+      path: testInfo.outputPath('administrator-report-results.png'),
+      fullPage: true,
+      animations: 'disabled',
+      caret: 'hide',
+    });
+
+    await report.getByRole('button', { name: 'Queue CSV export', exact: true }).click();
+    await expect(page.getByRole('heading', { name: 'Export Queued' })).toBeVisible();
+    await expect(page.locator('dl')).toContainText('Rows');
+    await expect(page.locator('dl')).toContainText('Pending');
+    const status = page.getByRole('link', { name: 'Refresh status' });
+    await expect(status).toHaveAttribute(
+      'href',
+      /^\/administrator\/reports\/exports\/[0-9a-f-]{36}$/u,
+    );
+    await expect(page.getByRole('link', { name: 'Download verified CSV' })).toHaveCount(0);
+    await status.click();
+    await expect(page.getByRole('heading', { name: 'Export Queued' })).toBeVisible();
+    await expectAccessible(page);
+    await page.screenshot({
+      path: testInfo.outputPath('administrator-export-status.png'),
       fullPage: true,
       animations: 'disabled',
       caret: 'hide',
@@ -430,6 +527,7 @@ test.describe('authenticated administrator', () => {
         table.scrollHeight - table.clientHeight,
       )).toBe(0);
     }
+    await preservePreSession6VisualSnapshot(page);
     await expect(page).toHaveScreenshot('administrator-generated-business-list.png', {
       fullPage: true,
       mask: [page.locator('.business-record-table tbody')],
@@ -451,6 +549,7 @@ test.describe('authenticated administrator', () => {
     );
     await expect(page.getByRole('heading', { name: 'Record details' })).toBeVisible();
     await expectAccessible(page);
+    await preservePreSession6VisualSnapshot(page);
     await expect(page).toHaveScreenshot('administrator-generated-business-detail.png', {
       fullPage: true,
       mask: [page.locator('time')],
@@ -470,6 +569,7 @@ test.describe('authenticated administrator', () => {
     await page.getByRole('checkbox').check();
     await expect(confirm).toBeEnabled();
     await expectAccessible(page);
+    await preservePreSession6VisualSnapshot(page);
     await expect(page).toHaveScreenshot('administrator-generated-business-confirmation.png', {
       fullPage: true,
     });
@@ -487,6 +587,7 @@ test.describe('authenticated administrator', () => {
   }, testInfo) => {
     await page.goto(`/administrator/business/${businessDefinitionHandle}`);
     await page.getByRole('link', { name: /Create session 5 order/i }).click();
+    await preservePreSession6VisualSnapshot(page);
     await expect(page).toHaveScreenshot('administrator-generated-business-form.png', {
       fullPage: true,
     });

@@ -173,7 +173,10 @@ RUN set -eux; \
         storage/sessions \
         storage/tmp \
         public/assets/extensions \
-        extensions
+        extensions; \
+    install -d -m 0700 -o www-data -g www-data \
+        storage/private \
+        storage/private/report-exports
 
 FROM php-base AS runtime
 

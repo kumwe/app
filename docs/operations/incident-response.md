@@ -20,6 +20,8 @@
   services so rotated values take effect.
 - If an extension is implicated, disable it through the audited extension
   lifecycle rather than deleting files in a running container.
+- Stop affected integration-consumer and scheduler pools before replay investigation, but preserve outbox/inbox,
+  aggregate checkpoints, process work, projection generations, export metadata, leases, and package/runtime files.
 - Suspend affected organization/workspace memberships, increment the subject security epoch, and revoke portal
   and administrator sessions plus all API/CLI/MCP token families. Do not wait for credential expiry.
 - Disable the affected contribution owner so its capabilities, resource policies, portal routes, navigation, and
@@ -35,6 +37,15 @@ Restore into an isolated environment, verify backup authenticity and integrity,
 apply only supported 2.x migrations, and validate readiness plus application
 smoke tests. Reopen traffic gradually and monitor authentication failures, audit
 events, 5xx responses, job failures and database activity.
+
+For an unavailable/reordered/poison event, preserve the original envelope and event ID. Restore an exact compatible
+consumer or locate the missing aggregate version before using an audited replay path. Verify any external side
+effect by its event idempotency key first. A completed receipt remains final; a poison receipt is claimable with a
+reset bounded attempt budget only after a different signed handler version is active. Never clear a
+receipt/checkpoint or edit attempts/status with SQL. If an
+export's live authority or immutable policy snapshot no longer matches, create a new authorized export instead of
+altering the artifact. The detailed decision tree is in
+[Business integrations and extension SDK](../business-integrations.md#monitoring-and-failure-recovery).
 
 Re-enroll TOTP credentials if the encryption key or enrollment secret may have been exposed; invalidate every
 recovery code and session associated with the old credential. Rebuild memberships and security policies through

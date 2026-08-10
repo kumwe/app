@@ -4,6 +4,12 @@ Kumwe stores jobs, attempts, leases, failed jobs, worker heartbeats, schedules, 
 
 Multiple workers safely claim work with database row locks. Transient failures use bounded exponential delay; permanent or exhausted failures remain available for inspection. Redis backs login rate limits and provides shared ephemeral cache/lock primitives, but it does not replace the durable queue.
 
+For an active contributed queue, the signed lease, retry, cross-process in-flight, and terminal-row retention limits
+are runtime policy for jobs and integration-event deliveries. A durable per-queue lock serializes every claim and
+counts live job reservations plus inbox leases across replicas. Consumer/webhook and queue retry limits are
+intersected, and normal delivery backpressure defers the outbox without consuming an attempt. Undeclared core
+queues continue to use the established defaults.
+
 ## Manage automation in the administrator
 
 Users with `automation.manage` can open **Automation** to create schedules, select a registered job type, set cron/timezone/queue/first run and a JSON payload, enable or disable schedules, delete schedules, inspect recent jobs, retry dead jobs, and cancel pending jobs. Every mutation is CSRF-protected and audited.
@@ -26,6 +32,7 @@ All routes require `automation.manage`, an exact site-bound bearer token, and `K
 
 ```bash
 php bin/kumwe queue:work --queue=default --sleep-ms=1000
+php bin/kumwe queue:work --queue=exports --sleep-ms=1000
 php bin/kumwe schedule:run --loop
 ```
 
@@ -50,7 +57,15 @@ php bin/kumwe automation create \
   --payload='{}'
 php bin/kumwe automation schedules --site=corporate --token-file=/run/secrets/kumwe-automation-token
 php bin/kumwe automation jobs --site=corporate --token-file=/run/secrets/kumwe-automation-token
+php bin/kumwe automation queues --site=corporate --token-file=/run/secrets/kumwe-automation-token
+php bin/kumwe automation purge-queue --queue=acme.example.priority --limit=100 \
+  --site=corporate --token-file=/run/secrets/kumwe-automation-token
 ```
+
+`automation queues` exposes job/delivery pending and in-flight breakdowns, their shared in-flight total, terminal
+and retention-eligible counts, and the loaded runtime generation. `purge-queue` deletes retained terminal jobs and
+their failure/ownership evidence; for terminal inbox deliveries it compacts payload and error detail but preserves
+the receipt identity and status as a permanent duplicate tombstone.
 
 Cron expressions use minute, hour, day of month, month, and day of week. Lists, ranges, and steps are supported. Occurrences are calculated in the configured IANA timezone and stored in UTC. A unique occurrence key prevents duplicate dispatch by competing schedulers.
 
@@ -60,7 +75,8 @@ Built-in job types include `system.sessions.purge`, `extensions.runtime.rebuild`
 
 ## Operating rules
 
-- Run at least one worker and one scheduler for production features that depend on background work.
+- Run at least one worker for every active queue and one scheduler for production features that depend on background
+  work. Report exports use the built-in `exports` queue; extensions declare their own queue names.
 - Scale workers by queue after measuring queue age and execution time.
 - Restart long-running processes after deploying code or activating extensions.
 - Do not retry permanent validation or authorization failures.

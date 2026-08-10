@@ -202,7 +202,7 @@ jobs:
   production-deployment:
     name: Production / ${{ matrix.database.name }}
     runs-on: ubuntu-24.04
-    timeout-minutes: 35
+    timeout-minutes: 90
     strategy:
       fail-fast: false
       matrix:
@@ -403,7 +403,7 @@ jobs:
                 --site=default \
                 --email=administrator@kumwe.test \
                 --name=deployment-cli-management \
-                --capabilities=automation.manage,content.read,content.create,content.update,content.submit,content.review,content.publish,users.manage \
+                --capabilities=administrator.access,automation.manage,business.record.action,business.record.browse,business.record.create,business.record.export,business.record.read,business.record.relate,business.record.report,business.record.update,business.schema.approve,business.schema.execute,business.schema.plan,business.schema.read,business.security.manage,business.step_up.manage,content.read,content.create,content.update,content.submit,content.review,content.publish,extensions.manage,users.manage \
                 --audience=kumwe-cli \
                 --purpose=management \
                 --password-file="$password_file"
@@ -461,7 +461,12 @@ jobs:
           [[ "$read_token" =~ ^[A-Za-z0-9_-]{32,}$ ]]
           mcp_token="$(sed -n '2p' <<< "$mcp_token_output")"
           [[ "$mcp_token" =~ ^[A-Za-z0-9_-]{32,}$ ]]
+          management_token_file="$RUNNER_TEMP/kumwe-management-token-${{ matrix.database.driver }}"
+          umask 077
+          printf %s "$management_token" > "$management_token_file"
+          chmod 0600 "$management_token_file"
           echo "KUMWE_ACCEPTANCE_CLI_TOKEN=$management_token" >> "$GITHUB_ENV"
+          echo "KUMWE_ACCEPTANCE_CLI_TOKEN_FILE=$management_token_file" >> "$GITHUB_ENV"
           unset management_token
           state_file="$RUNNER_TEMP/kumwe-probe-state-${{ matrix.database.driver }}.json"
           KUMWE_PROBE_BASE_URL=http://127.0.0.1:18080 \
@@ -476,6 +481,36 @@ jobs:
             bash tools/deployment-probe.sh
           echo "KUMWE_ACCEPTANCE_API_TOKEN=$full_token" >> "$GITHUB_ENV"
           echo "KUMWE_ACCEPTANCE_PROBE_STATE=$state_file" >> "$GITHUB_ENV"
+
+      - name: Build, inspect, conform, sign, install and activate the asset-inspection package
+        shell: bash
+        run: |
+          set -euo pipefail
+          acceptance_work_root="$RUNNER_TEMP/kumwe-asset-inspection-${{ matrix.database.driver }}"
+          install -d -m 0700 "$acceptance_work_root"
+          echo "KUMWE_ACCEPTANCE_WORK_ROOT=$acceptance_work_root" >> "$GITHUB_ENV"
+          export KUMWE_ACCEPTANCE_WORK_ROOT="$acceptance_work_root"
+          bash tools/asset-inspection-deployment-acceptance.sh package
+
+      - name: Delegate active extension capabilities through the production access boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash tools/asset-inspection-deployment-acceptance.sh grant
+          echo "KUMWE_ACCEPTANCE_CLI_TOKEN=$(<"$KUMWE_ACCEPTANCE_CLI_TOKEN_FILE")" >> "$GITHUB_ENV"
+
+      - name: Exercise asset-inspection records, integrations, reporting and lifecycle
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash tools/asset-inspection-deployment-acceptance.sh exercise
+          asset_state="$KUMWE_ACCEPTANCE_WORK_ROOT/asset-inspection-state.json"
+          asset_manifest="$KUMWE_ACCEPTANCE_WORK_ROOT/asset-inspection-source-manifest.json"
+          test -s "$asset_state"
+          test -s "$asset_manifest"
+          echo "KUMWE_ACCEPTANCE_CLI_TOKEN=$(<"$KUMWE_ACCEPTANCE_CLI_TOKEN_FILE")" >> "$GITHUB_ENV"
+          echo "KUMWE_ACCEPTANCE_ASSET_STATE=$asset_state" >> "$GITHUB_ENV"
+          echo "KUMWE_ACCEPTANCE_ASSET_MANIFEST=$asset_manifest" >> "$GITHUB_ENV"
 
       - name: Exercise Redis and durable automation
         shell: bash
@@ -515,8 +550,10 @@ jobs:
           set -euo pipefail
           page_slug="$(jq -er '.page_slug' "$KUMWE_ACCEPTANCE_PROBE_STATE")"
           api_content_id="$(jq -er '.api_content_id' "$KUMWE_ACCEPTANCE_PROBE_STATE")"
-          docker compose --file compose.production.yaml restart app web
-          docker compose --file compose.production.yaml up --detach --wait app web
+          docker compose --file compose.production.yaml --profile automation \
+            restart app web worker scheduler
+          docker compose --file compose.production.yaml --profile automation \
+            up --detach --wait app web worker scheduler
           curl --fail --silent --show-error --retry 20 --retry-connrefused \
             "http://127.0.0.1:18080/$page_slug" >/dev/null
           curl --fail --silent --show-error --retry 20 --retry-connrefused \
@@ -540,6 +577,7 @@ jobs:
           recovery_root="$RUNNER_TEMP/kumwe-production-recovery-$DATABASE_DRIVER"
           backup_root="$recovery_root/backups"
           source_media="$recovery_root/source/media"
+          source_private="$recovery_root/source/private"
           source_extensions="$recovery_root/source/extensions"
           source_extension_assets="$recovery_root/source/extension-assets"
           restore_root="$recovery_root/restored"
@@ -551,10 +589,8 @@ jobs:
           }
           trap cleanup_recovery EXIT
           install -d -m 0700 \
-            "$backup_root" "$source_media" "$source_extensions" "$source_extension_assets" "$restore_root"
-          printf 'production-media' > "$source_media/probe.txt"
-          printf 'production-extension' > "$source_extensions/probe.txt"
-          printf 'production-extension-asset' > "$source_extension_assets/probe.css"
+            "$backup_root" "$source_media" "$source_private" "$source_extensions" \
+            "$source_extension_assets" "$restore_root"
 
           if [[ "$DATABASE_DRIVER" == pgsql ]]; then
             database_health='pg_isready -U kumwe -d kumwe_restore'
@@ -595,6 +631,10 @@ jobs:
             --format '{{(index .NetworkSettings.Networks "kumwe_backend").IPAddress}}' \
             kumwe-database-1)"
           [[ -n "$source_host" ]]
+          docker compose --file compose.production.yaml exec -T app sh -euc '
+            umask 077
+            printf %s deployment-acceptance-media > storage/media/deployment-acceptance.txt
+          '
           docker compose --file compose.production.yaml --profile automation \
             stop web app worker scheduler
           docker compose --file compose.production.yaml run \
@@ -605,6 +645,14 @@ jobs:
             php tests/Support/business-runtime-backup-acceptance.php seed \
             > "$runtime_manifest"
           test -s "$runtime_manifest"
+          docker cp kumwe-app-1:/var/www/kumwe/storage/media/. "$source_media/"
+          docker cp kumwe-app-1:/var/www/kumwe/storage/private/. "$source_private/"
+          docker cp kumwe-app-1:/var/www/kumwe/extensions/. "$source_extensions/"
+          docker cp kumwe-app-1:/var/www/kumwe/public/assets/extensions/. "$source_extension_assets/"
+          test -f "$source_media/deployment-acceptance.txt"
+          test -n "$(find "$source_private/report-exports/objects" -type f -print -quit)"
+          test -n "$(find "$source_extensions" -type f -print -quit)"
+          test -n "$(find "$source_extension_assets" -type f -print -quit)"
 
           export KUMWE_BACKUP_CONSISTENCY=quiesced
           export KUMWE_BACKUP_DIR="$backup_root"
@@ -618,6 +666,7 @@ jobs:
           export KUMWE_EXTENSIONS_DIR="$source_extensions"
           export KUMWE_EXTENSION_ASSETS_DIR="$source_extension_assets"
           export KUMWE_MEDIA_DIR="$source_media"
+          export KUMWE_PRIVATE_DIR="$source_private"
           export KUMWE_RELEASE=2.0.0
           backup_path="$(bash tools/backup.sh)"
 
@@ -631,7 +680,19 @@ jobs:
           export KUMWE_RESTORE_EXTENSIONS_DIR="$restore_root/extensions"
           export KUMWE_RESTORE_EXTENSION_ASSETS_DIR="$restore_root/extension-assets"
           export KUMWE_RESTORE_MEDIA_DIR="$restore_root/media"
+          export KUMWE_RESTORE_PRIVATE_DIR="$restore_root/private"
           bash tools/restore.sh "$backup_path"
+          sudo chown -R 82:82 \
+            "$restore_root/extensions" \
+            "$restore_root/extension-assets" \
+            "$restore_root/media" \
+            "$restore_root/private"
+          while IFS= read -r -d '' export_file; do
+            test "$(stat --format='%a' "$export_file")" = 600
+          done < <(find "$restore_root/private/report-exports" -type f -print0)
+          while IFS= read -r -d '' export_directory; do
+            test "$(stat --format='%a' "$export_directory")" = 700
+          done < <(find "$restore_root/private/report-exports" -type d -print0)
           docker run --rm \
             --network kumwe_backend \
             --user 0:0 \
@@ -649,6 +710,12 @@ jobs:
             --tmpfs /var/www/kumwe/storage/tmp:rw,noexec,nosuid,nodev,size=64m,mode=700,uid=82,gid=82 \
             --volume "$GITHUB_WORKSPACE/tests/Support:/var/www/kumwe/tests/Support:ro" \
             --volume "$runtime_manifest:/run/business-runtime-source.json:ro" \
+            --volume "$KUMWE_ACCEPTANCE_ASSET_MANIFEST:/run/asset-inspection-source.json:ro" \
+            --volume "$KUMWE_ACCEPTANCE_ASSET_STATE:/run/asset-inspection-state.json:ro" \
+            --volume "$restore_root/extensions:/var/www/kumwe/extensions:ro" \
+            --volume "$restore_root/extension-assets:/var/www/kumwe/public/assets/extensions:ro" \
+            --volume "$restore_root/media:/var/www/kumwe/storage/media:ro" \
+            --volume "$restore_root/private:/var/www/kumwe/storage/private" \
             --volume "$KUMWE_APP_SECRET_FILE:/run/secrets/app_secret:ro" \
             --volume "$KUMWE_RUNTIME_SIGNING_KEY_FILE:/run/secrets/runtime_signing_key:ro" \
             --volume "$KUMWE_RUNTIME_PREVIOUS_KEYS_FILE:/run/secrets/runtime_previous_keys:ro" \
@@ -680,12 +747,29 @@ jobs:
             --env REDIS_HOST=redis \
             --env REDIS_PORT=6379 \
             --env REDIS_PASSWORD_FILE=/run/secrets/redis_password \
+            --env KUMWE_ACCEPTANCE_ADMIN_EMAIL=administrator@kumwe.test \
+            --env "KUMWE_ACCEPTANCE_ADMIN_PASSWORD=$(<"$KUMWE_ACCEPTANCE_ADMIN_PASSWORD_FILE")" \
             kumwe-app:acceptance \
-            php tests/Support/business-runtime-backup-acceptance.php \
-              verify /run/business-runtime-source.json
-          cmp "$source_media/probe.txt" "$restore_root/media/probe.txt"
-          cmp "$source_extensions/probe.txt" "$restore_root/extensions/probe.txt"
-          cmp "$source_extension_assets/probe.css" "$restore_root/extension-assets/probe.css"
+            sh -euc '
+              php bin/kumwe extension:runtime:materialize
+              php tests/Support/business-runtime-backup-acceptance.php \
+                verify /run/business-runtime-source.json
+              php tests/Support/asset-inspection-deployment-acceptance.php \
+                verify /run/asset-inspection-source.json /run/asset-inspection-state.json
+            '
+          tree_checksum_manifest() {
+            local root="$1"
+            (
+              cd "$root"
+              find . -type f -print0 | sort --zero-terminated \
+                | xargs --null --no-run-if-empty sha256sum
+            )
+          }
+          for tree in media private extensions extension-assets; do
+            tree_checksum_manifest "$recovery_root/source/$tree" > "$recovery_root/source-$tree.sha256"
+            tree_checksum_manifest "$restore_root/$tree" > "$recovery_root/restored-$tree.sha256"
+            cmp "$recovery_root/source-$tree.sha256" "$recovery_root/restored-$tree.sha256"
+          done
 
       - name: Capture deployment diagnostics
         if: failure()

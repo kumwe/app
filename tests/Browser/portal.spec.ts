@@ -7,6 +7,7 @@ const portalEmail = process.env.KUMWE_BROWSER_PORTAL_EMAIL
 const portalPassword = process.env.KUMWE_BROWSER_PORTAL_PASSWORD
   ?? 'browser portal password';
 const businessDefinitionHandle = 'site.default.session5_order';
+const assetInspectionReport = 'kumwe.asset-inspection-example.inspection-summary';
 
 function base32Bytes(secret: string): Uint8Array {
   const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
@@ -82,6 +83,30 @@ async function expectStylesLoaded(page: Page): Promise<void> {
   );
   expect(failedStylesheets).toEqual([]);
   expect(await page.locator('link[rel="stylesheet"]').count()).toBeGreaterThan(0);
+}
+
+/** Keep legacy comparisons scoped to their original shell; Session 6 has dedicated real screenshots. */
+async function preservePreSession6VisualSnapshot(page: Page): Promise<void> {
+  await page.locator('.portal-navigation').evaluate((navigation) => {
+    const session6Paths = [
+      '/portal/reports',
+      '/portal/extensions/kumwe/asset-inspection-example',
+    ];
+
+    for (const link of navigation.querySelectorAll<HTMLAnchorElement>('a[href]')) {
+      const href = link.getAttribute('href') ?? '';
+      if (!session6Paths.some((path) => href === path || href.startsWith(`${path}/`))) {
+        continue;
+      }
+
+      const section = link.closest('section');
+      if (section !== null && section.querySelectorAll('a[href]').length === 1) {
+        section.remove();
+      } else {
+        link.closest('li')?.remove();
+      }
+    }
+  });
 }
 
 async function signIn(
@@ -260,6 +285,7 @@ test('opt-in business workspaces use the portal shell on desktop and mobile', as
   await expectStylesLoaded(page);
   await expectAccessible(page);
   expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBe(0);
+  await preservePreSession6VisualSnapshot(page);
   await expect(page).toHaveScreenshot('portal-generated-business-list.png', {
     fullPage: true,
     mask: [page.locator('.portal-business-table tbody tr')],
@@ -277,10 +303,57 @@ test('opt-in business workspaces use the portal shell on desktop and mobile', as
   await expect(page.getByRole('heading', { name: 'Record details' })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBe(0);
   await expectAccessible(page);
+  await preservePreSession6VisualSnapshot(page);
   await expect(page).toHaveScreenshot('portal-generated-business-detail.png', {
     fullPage: true,
     mask: [page.locator('time')],
     maskColor: '#d9e2e8',
+  });
+});
+
+test('opt-in portal reports execute and expose queued export status', async ({ page }, testInfo) => {
+  await signIn(page);
+  await page.goto('/portal/reports');
+  await expect(page.getByRole('heading', { level: 1, name: 'Business report' })).toBeVisible();
+  await expect(page.locator('a[href="/portal/reports"]')).toHaveAttribute('aria-current', 'page');
+  await expect(page.getByRole('link', { name: 'Inspection status' })).toBeVisible();
+  const report = page.locator(`form[action="/portal/reports/${assetInspectionReport}"]`);
+  await expect(report.getByRole('heading', { name: 'Asset inspection example summary' })).toBeVisible();
+  await report.getByLabel('Parameters as JSON object').fill('{"minimum_score":70}');
+  await report.getByRole('button', { name: 'Run report', exact: true }).click();
+
+  const results = page.getByRole('region', { name: 'Report results' });
+  await expect(results).toBeVisible();
+  await expect(results.getByRole('columnheader', { name: 'Reference' })).toBeVisible();
+  await expect(results.getByRole('columnheader', { name: 'Risk score' })).toBeVisible();
+  const accepted = results.getByRole('row').filter({ hasText: 'BROWSER-INSPECT-001' });
+  await expect(accepted).toBeVisible();
+  await expect(accepted).toContainText('79');
+  await expect(page.getByText('Browser report restricted note', { exact: true })).toHaveCount(0);
+  await expectStylesLoaded(page);
+  await expectAccessible(page);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBe(0);
+  await page.screenshot({
+    path: testInfo.outputPath('portal-report-results.png'),
+    fullPage: true,
+    animations: 'disabled',
+    caret: 'hide',
+  });
+
+  await report.getByRole('button', { name: 'Queue CSV export', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Export Queued' })).toBeVisible();
+  await expect(page.getByText(/Rows: pending\./u)).toBeVisible();
+  const status = page.getByRole('link', { name: 'Refresh status' });
+  await expect(status).toHaveAttribute('href', /^\/portal\/reports\/exports\/[0-9a-f-]{36}$/u);
+  await expect(page.getByRole('link', { name: 'Download verified CSV' })).toHaveCount(0);
+  await status.click();
+  await expect(page.getByRole('heading', { name: 'Export Queued' })).toBeVisible();
+  await expectAccessible(page);
+  await page.screenshot({
+    path: testInfo.outputPath('portal-export-status.png'),
+    fullPage: true,
+    animations: 'disabled',
+    caret: 'hide',
   });
 });
 

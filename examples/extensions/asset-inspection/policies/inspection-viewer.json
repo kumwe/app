@@ -1,0 +1,82 @@
+{
+  "format": "kumwe-asset-inspection-policy-profile-v1",
+  "definition_id": "019bc200-0000-7000-8000-000000000003",
+  "row_policy": {
+    "schema": {
+      "risk_score": "integer"
+    },
+    "allows": [
+      {
+        "type": "comparison",
+        "field": "risk_score",
+        "operator": "greater_than_or_equal",
+        "value_type": "integer",
+        "value": 70
+      }
+    ],
+    "denies": []
+  },
+  "field_policy": {
+    "create": [],
+    "update": [],
+    "detail": ["id", "inspection_date", "reference", "risk_score"],
+    "list": ["id", "inspection_date", "reference", "risk_score"],
+    "filter": ["inspection_date", "reference", "risk_score"],
+    "search": ["reference"],
+    "sort": ["inspection_date", "reference", "risk_score"],
+    "aggregate": ["risk_score"],
+    "report": ["id", "inspection_date", "reference", "risk_score"],
+    "export": ["id", "inspection_date", "reference", "risk_score"],
+    "audit": ["id", "inspection_date", "reference", "risk_score"],
+    "mcp": ["id", "inspection_date", "reference", "risk_score"],
+    "relation": ["id", "reference"],
+    "include": ["id", "inspection_date", "reference", "risk_score"],
+    "public_reference": ["id", "reference"]
+  },
+  "policy_requests": [
+    {
+      "policy_code": "kumwe.asset-inspection-example.viewer.browse",
+      "operation": "business.record.browse",
+      "effect": "allow",
+      "predicate_type": "comparison",
+      "field": "risk_score",
+      "operator": "greater_than_or_equal",
+      "value_type": "integer",
+      "value": "70",
+      "priority": 100
+    },
+    {
+      "policy_code": "kumwe.asset-inspection-example.viewer.export",
+      "operation": "business.record.export",
+      "effect": "allow",
+      "predicate_type": "comparison",
+      "field": "risk_score",
+      "operator": "greater_than_or_equal",
+      "value_type": "integer",
+      "value": "70",
+      "priority": 100
+    },
+    {
+      "policy_code": "kumwe.asset-inspection-example.viewer.read",
+      "operation": "business.record.read",
+      "effect": "allow",
+      "predicate_type": "comparison",
+      "field": "risk_score",
+      "operator": "greater_than_or_equal",
+      "value_type": "integer",
+      "value": "70",
+      "priority": 100
+    },
+    {
+      "policy_code": "kumwe.asset-inspection-example.viewer.report",
+      "operation": "business.record.report",
+      "effect": "allow",
+      "predicate_type": "comparison",
+      "field": "risk_score",
+      "operator": "greater_than_or_equal",
+      "value_type": "integer",
+      "value": "70",
+      "priority": 100
+    }
+  ]
+}

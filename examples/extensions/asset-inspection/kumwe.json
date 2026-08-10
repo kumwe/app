@@ -1,0 +1,434 @@
+{
+  "schema": 4,
+  "name": "kumwe/asset-inspection-example",
+  "type": "component",
+  "version": "2.0.0",
+  "provider": "KumweExample\\AssetInspection\\Provider",
+  "autoload": {"psr-4": {"KumweExample\\AssetInspection\\": "src/"}},
+  "requires": {"kumwe": "^2.0.0", "php": "^8.5.0"},
+  "dependencies": [],
+  "migrations": [],
+  "configuration": {"type": "object", "properties": {}},
+  "permissions": [
+    "kumwe.asset-inspection-example.manage",
+    "kumwe.asset-inspection-example.view"
+  ],
+  "routes": [],
+  "events": [],
+  "assets": ["policies/inspection-viewer.json"],
+  "contributions": {
+    "version": 2,
+    "capabilities": [
+      {
+        "id": "kumwe.asset-inspection-example.manage",
+        "label": "Manage asset inspection example",
+        "description": "Manage the neutral asset-inspection proof component and its workflow actions.",
+        "allowed_scopes": ["global", "site"],
+        "delegatable": true,
+        "high_impact": true,
+        "lifecycle": "active",
+        "version": 1
+      },
+      {
+        "id": "kumwe.asset-inspection-example.view",
+        "label": "View asset inspection example",
+        "description": "View policy-filtered asset-inspection example summaries and reports.",
+        "allowed_scopes": ["global", "site"],
+        "delegatable": true,
+        "high_impact": false,
+        "lifecycle": "active",
+        "version": 1
+      }
+    ],
+    "resource_policies": [
+      {
+        "id": "kumwe.asset-inspection-example.manager-surfaces",
+        "capability": "kumwe.asset-inspection-example.manage",
+        "resources": [
+          {"type": "administrator_session", "identifiers": []},
+          {"type": "business_record", "identifiers": []}
+        ],
+        "installation_global": false,
+        "system_identities": [],
+        "lifecycle": "active",
+        "version": 1
+      },
+      {
+        "id": "kumwe.asset-inspection-example.viewer-surfaces",
+        "capability": "kumwe.asset-inspection-example.view",
+        "resources": [
+          {"type": "administrator_session", "identifiers": []},
+          {"type": "business_report", "identifiers": ["kumwe.asset-inspection-example.inspection-summary"]},
+          {"type": "portal_session", "identifiers": []}
+        ],
+        "installation_global": false,
+        "system_identities": [],
+        "lifecycle": "active",
+        "version": 1
+      }
+    ],
+    "administrator": {
+      "workspaces": [{
+        "id": "kumwe.asset-inspection-example.workspace",
+        "label": "Asset inspection example",
+        "description": "Neutral extensibility proof; this is not an ERP module.",
+        "priority": 220
+      }],
+      "navigation": [{
+        "id": "kumwe.asset-inspection-example.navigation",
+        "workspace": "kumwe.asset-inspection-example.workspace",
+        "label": "Asset inspection example",
+        "description": "Open the graphical asset-inspection proof dashboard.",
+        "path": "/",
+        "icon": "extensions",
+        "capability": "kumwe.asset-inspection-example.manage",
+        "priority": 10,
+        "keywords": "asset inspection example extensibility events jobs reports"
+      }],
+      "routes": [{
+        "name": "kumwe.asset-inspection-example.administrator.index",
+        "path": "/",
+        "methods": ["GET"],
+        "capability": "kumwe.asset-inspection-example.manage",
+        "view": "kumwe.asset-inspection-example.administrator.index"
+      }],
+      "views": [{
+        "name": "kumwe.asset-inspection-example.administrator.index",
+        "template": "index.twig"
+      }]
+    },
+    "portal": {
+      "workspaces": [{
+        "id": "kumwe.asset-inspection-example.portal.workspace",
+        "label": "Inspection status",
+        "description": "Opt-in, read-only example inspection status.",
+        "priority": 220
+      }],
+      "navigation": [{
+        "id": "kumwe.asset-inspection-example.portal.navigation",
+        "workspace": "kumwe.asset-inspection-example.portal.workspace",
+        "label": "Inspection status",
+        "description": "Open the policy-filtered inspection status example.",
+        "path": "/status/",
+        "icon": "status",
+        "capability": "kumwe.asset-inspection-example.view",
+        "priority": 10,
+        "keywords": "inspection status example"
+      }],
+      "routes": [{
+        "name": "kumwe.asset-inspection-example.portal.status",
+        "path": "/status/",
+        "methods": ["GET"],
+        "capability": "kumwe.asset-inspection-example.view",
+        "template": "kumwe.asset-inspection-example.portal.status"
+      }],
+      "templates": [{
+        "name": "kumwe.asset-inspection-example.portal.status",
+        "template": "status.twig"
+      }]
+    },
+    "business": {
+      "field_types": [],
+      "field_presentations": [],
+      "view_handlers": [],
+      "action_handlers": [],
+      "definitions": [
+        {
+          "id": "019bc200-0000-7000-8000-000000000001",
+          "owner": {"type": "extension", "identifier": "kumwe/asset-inspection-example"},
+          "site": "default",
+          "handle": "kumwe.asset-inspection-example.location",
+          "singular_label": "Example location",
+          "plural_label": "Example locations",
+          "status": "published",
+          "definition_version": 1,
+          "storage_mode": "relational",
+          "identity_strategy": "uuid",
+          "scope": "site",
+          "audit_enabled": true,
+          "revisions_enabled": true,
+          "fields": [
+            {"handle":"id","label":"ID","type":"core.uuid","required":true,"nullable":false,"length":null,"unique":true,"indexed":true,"immutable_after_create":true,"filterable":false,"sortable":false,"reportable":true,"exportable":true,"order":0},
+            {"handle":"name","label":"Name","type":"core.text","required":true,"nullable":false,"length":120,"unique":true,"indexed":true,"filterable":true,"sortable":true,"reportable":true,"exportable":true,"order":10},
+            {"handle":"zone","label":"Zone","type":"core.text","required":false,"nullable":true,"length":80,"unique":false,"indexed":true,"filterable":true,"sortable":true,"reportable":true,"exportable":true,"order":20}
+          ],
+          "relationships": [{"handle":"assets","label":"Assets","kind":"one_to_many","target":"kumwe.asset-inspection-example.asset","inverse":"location","required":false,"unique":false,"ordered":true,"on_delete":"restrict"}],
+          "views": [
+            {"handle":"list","label":"Location list","kind":"list","fields":["name","zone"],"filters":["name","zone"],"sorts":["name"],"administrator":true,"portal":false,"public":false},
+            {"handle":"detail","label":"Location detail","kind":"detail","fields":["name","zone"],"filters":[],"sorts":[],"administrator":true,"portal":false,"public":false},
+            {"handle":"form","label":"Location form","kind":"form","fields":["name","zone"],"filters":[],"sorts":[],"administrator":true,"portal":false,"public":false}
+          ],
+          "actions": [],
+          "workflow": null,
+          "administrator_exposure": true,
+          "portal_exposure": false,
+          "public_exposure": false
+        },
+        {
+          "id": "019bc200-0000-7000-8000-000000000002",
+          "owner": {"type": "extension", "identifier": "kumwe/asset-inspection-example"},
+          "site": "default",
+          "handle": "kumwe.asset-inspection-example.asset",
+          "singular_label": "Example asset",
+          "plural_label": "Example assets",
+          "status": "published",
+          "definition_version": 1,
+          "storage_mode": "relational",
+          "identity_strategy": "uuid",
+          "scope": "site",
+          "audit_enabled": true,
+          "revisions_enabled": true,
+          "fields": [
+            {"handle":"id","label":"ID","type":"core.uuid","required":true,"nullable":false,"length":null,"unique":true,"indexed":true,"immutable_after_create":true,"filterable":false,"sortable":false,"reportable":true,"exportable":true,"order":0},
+            {"handle":"asset_tag","label":"Asset tag","type":"core.text","required":true,"nullable":false,"length":80,"unique":true,"indexed":true,"filterable":true,"sortable":true,"reportable":true,"exportable":true,"order":10},
+            {"handle":"name","label":"Name","type":"core.text","required":true,"nullable":false,"length":191,"unique":false,"indexed":true,"filterable":true,"sortable":true,"reportable":true,"exportable":true,"order":20},
+            {"handle":"active","label":"Active","type":"core.boolean","required":true,"nullable":false,"default":true,"length":null,"unique":false,"indexed":true,"filterable":true,"sortable":true,"reportable":true,"exportable":true,"order":30}
+          ],
+          "relationships": [
+            {"handle":"location","label":"Location","kind":"many_to_one","target":"kumwe.asset-inspection-example.location","inverse":"assets","required":false,"unique":false,"ordered":false,"on_delete":"restrict"},
+            {"handle":"inspections","label":"Inspections","kind":"one_to_many","target":"kumwe.asset-inspection-example.inspection","inverse":"asset","required":false,"unique":false,"ordered":true,"on_delete":"restrict"}
+          ],
+          "views": [
+            {"handle":"list","label":"Asset list","kind":"list","fields":["asset_tag","name","active"],"filters":["asset_tag","name","active"],"sorts":["asset_tag","name"],"administrator":true,"portal":false,"public":false},
+            {"handle":"detail","label":"Asset detail","kind":"detail","fields":["asset_tag","name","active"],"filters":[],"sorts":[],"administrator":true,"portal":false,"public":false},
+            {"handle":"form","label":"Asset form","kind":"form","fields":["asset_tag","name","active"],"filters":[],"sorts":[],"administrator":true,"portal":false,"public":false}
+          ],
+          "actions": [],
+          "workflow": null,
+          "administrator_exposure": true,
+          "portal_exposure": false,
+          "public_exposure": false
+        },
+        {
+          "id": "019bc200-0000-7000-8000-000000000003",
+          "owner": {"type": "extension", "identifier": "kumwe/asset-inspection-example"},
+          "site": "default",
+          "handle": "kumwe.asset-inspection-example.inspection",
+          "singular_label": "Example inspection",
+          "plural_label": "Example inspections",
+          "status": "published",
+          "definition_version": 1,
+          "storage_mode": "relational",
+          "identity_strategy": "uuid",
+          "scope": "site",
+          "audit_enabled": true,
+          "revisions_enabled": true,
+          "fields": [
+            {"handle":"id","label":"ID","type":"core.uuid","required":true,"nullable":false,"length":null,"unique":true,"indexed":true,"immutable_after_create":true,"filterable":false,"sortable":false,"reportable":true,"exportable":true,"order":0},
+            {"handle":"reference","label":"Reference","type":"core.text","required":true,"nullable":false,"length":80,"unique":true,"indexed":true,"filterable":true,"sortable":true,"reportable":true,"exportable":true,"order":10},
+            {"handle":"inspection_date","label":"Inspection date","type":"core.date","required":true,"nullable":false,"length":null,"unique":false,"indexed":true,"filterable":true,"sortable":true,"reportable":true,"exportable":true,"order":20},
+            {"handle":"raw_score","label":"Raw score","type":"core.integer","required":true,"nullable":false,"default":0,"length":null,"validators":[{"rule":"min","value":"0"},{"rule":"max","value":"100"}],"unique":false,"indexed":true,"filterable":true,"sortable":true,"reportable":true,"exportable":true,"order":30},
+            {"handle":"adjustment","label":"Adjustment","type":"core.integer","required":true,"nullable":false,"default":0,"length":null,"validators":[{"rule":"min","value":"-20"},{"rule":"max","value":"20"}],"unique":false,"indexed":false,"filterable":false,"sortable":false,"reportable":false,"exportable":false,"order":40},
+            {
+              "handle":"risk_score","label":"Risk score","type":"core.integer","required":false,"nullable":true,"length":null,
+              "unique":false,"indexed":true,"server_only":true,"computed":true,"read_only":true,
+              "create_visible":false,"update_visible":false,"filterable":true,"sortable":true,"reportable":true,"exportable":true,"order":50,
+              "formula":{"op":"add","type":"integer","args":[{"op":"field","type":"integer","field":"raw_score"},{"op":"field","type":"integer","field":"adjustment"}]},
+              "computation_mode":"stored"
+            },
+            {
+              "handle":"internal_note","label":"Restricted internal note","type":"core.rich_text","required":false,"nullable":true,"length":10000,
+              "unique":false,"indexed":false,"filterable":false,"sortable":false,"reportable":false,"exportable":false,"sensitivity":"restricted","order":60,
+              "visibility_condition":{"op":"gte","type":"boolean","args":[{"op":"field","type":"integer","field":"raw_score"},{"op":"literal","type":"integer","value":70}]},
+              "editability_condition":{"op":"gte","type":"boolean","args":[{"op":"field","type":"integer","field":"raw_score"},{"op":"literal","type":"integer","value":70}]}
+            }
+          ],
+          "relationships": [
+            {"handle":"asset","label":"Asset","kind":"many_to_one","target":"kumwe.asset-inspection-example.asset","inverse":"inspections","required":false,"unique":false,"ordered":false,"on_delete":"restrict"},
+            {"handle":"findings","label":"Ordered findings","kind":"one_to_many","target":"kumwe.asset-inspection-example.finding","inverse":"inspection","required":false,"unique":false,"ordered":true,"on_delete":"restrict"},
+            {"handle":"measurements","label":"Ordered measurements","kind":"one_to_many","target":"kumwe.asset-inspection-example.measurement","inverse":"inspection","required":false,"unique":false,"ordered":true,"on_delete":"restrict"}
+          ],
+          "views": [
+            {"handle":"list","label":"Inspection list","kind":"list","fields":["reference","inspection_date","risk_score"],"filters":["reference","inspection_date","risk_score"],"sorts":["inspection_date","risk_score"],"administrator":true,"portal":true,"public":false},
+            {"handle":"detail","label":"Inspection detail","kind":"detail","fields":["reference","inspection_date","risk_score"],"filters":[],"sorts":[],"administrator":true,"portal":true,"public":false},
+            {"handle":"restricted_detail","label":"Restricted inspection detail","kind":"detail","fields":["reference","inspection_date","risk_score","internal_note"],"filters":[],"sorts":[],"administrator":true,"portal":false,"public":false},
+            {"handle":"form","label":"Inspection form","kind":"form","fields":["reference","inspection_date","raw_score","adjustment","risk_score","internal_note"],"filters":[],"sorts":[],"administrator":true,"portal":false,"public":false}
+          ],
+          "actions": [
+            {"handle":"submit","label":"Submit inspection","capability":"kumwe.asset-inspection-example.manage","bulk":false,"administrator":true,"portal":false,"public":false,"high_impact":true,"condition":null,"transition":"submit"},
+            {"handle":"verify","label":"Verify inspection","capability":"kumwe.asset-inspection-example.manage","bulk":false,"administrator":true,"portal":false,"public":false,"high_impact":true,"condition":null,"transition":"verify"},
+            {"handle":"close","label":"Close inspection","capability":"kumwe.asset-inspection-example.manage","bulk":false,"administrator":true,"portal":false,"public":false,"high_impact":true,"condition":null,"transition":"close"}
+          ],
+          "workflow": {
+            "initial_state": "draft",
+            "states": ["draft","submitted","verified","closed"],
+            "transitions": [
+              {"handle":"submit","from":"draft","to":"submitted","capability":"kumwe.asset-inspection-example.manage"},
+              {"handle":"verify","from":"submitted","to":"verified","capability":"kumwe.asset-inspection-example.manage"},
+              {"handle":"close","from":"verified","to":"closed","capability":"kumwe.asset-inspection-example.manage"}
+            ]
+          },
+          "record_invariants": [{
+            "handle":"risk_score_non_negative",
+            "message":"The computed risk score cannot be negative.",
+            "condition":{"op":"gte","type":"boolean","args":[{"op":"field","type":"integer","field":"risk_score"},{"op":"literal","type":"integer","value":0}]}
+          }],
+          "portal_operations": ["browse","export","read","report"],
+          "administrator_exposure": true,
+          "portal_exposure": true,
+          "public_exposure": false
+        },
+        {
+          "id": "019bc200-0000-7000-8000-000000000004",
+          "owner": {"type": "extension", "identifier": "kumwe/asset-inspection-example"},
+          "site": "default",
+          "handle": "kumwe.asset-inspection-example.finding",
+          "singular_label": "Example finding",
+          "plural_label": "Example findings",
+          "status": "published",
+          "definition_version": 1,
+          "storage_mode": "relational",
+          "identity_strategy": "uuid",
+          "scope": "site",
+          "audit_enabled": true,
+          "revisions_enabled": true,
+          "fields": [
+            {"handle":"id","label":"ID","type":"core.uuid","required":true,"nullable":false,"length":null,"unique":true,"indexed":true,"immutable_after_create":true,"filterable":false,"sortable":false,"reportable":true,"exportable":true,"order":0},
+            {"handle":"summary","label":"Summary","type":"core.text","required":true,"nullable":false,"length":191,"unique":false,"indexed":true,"filterable":true,"sortable":true,"reportable":true,"exportable":true,"order":10},
+            {"handle":"severity","label":"Severity","type":"core.text","required":true,"nullable":false,"length":20,"validators":[{"rule":"one_of","value":["low","medium","high","critical"]}],"unique":false,"indexed":true,"filterable":true,"sortable":true,"reportable":true,"exportable":true,"order":20},
+            {"handle":"remediation","label":"Remediation","type":"core.rich_text","required":false,"nullable":true,"length":10000,"unique":false,"indexed":false,"filterable":false,"sortable":false,"reportable":false,"exportable":false,"order":30}
+          ],
+          "relationships": [{"handle":"inspection","label":"Inspection","kind":"many_to_one","target":"kumwe.asset-inspection-example.inspection","inverse":"findings","required":false,"unique":false,"ordered":false,"on_delete":"restrict"}],
+          "views": [
+            {"handle":"list","label":"Finding list","kind":"list","fields":["summary","severity"],"filters":["summary","severity"],"sorts":["severity","summary"],"administrator":true,"portal":false,"public":false},
+            {"handle":"detail","label":"Finding detail","kind":"detail","fields":["summary","severity","remediation"],"filters":[],"sorts":[],"administrator":true,"portal":false,"public":false},
+            {"handle":"form","label":"Finding form","kind":"form","fields":["summary","severity","remediation"],"filters":[],"sorts":[],"administrator":true,"portal":false,"public":false}
+          ],
+          "actions": [],
+          "workflow": null,
+          "administrator_exposure": true,
+          "portal_exposure": false,
+          "public_exposure": false
+        },
+        {
+          "id": "019bc200-0000-7000-8000-000000000005",
+          "owner": {"type": "extension", "identifier": "kumwe/asset-inspection-example"},
+          "site": "default",
+          "handle": "kumwe.asset-inspection-example.measurement",
+          "singular_label": "Example measurement",
+          "plural_label": "Example measurements",
+          "status": "published",
+          "definition_version": 1,
+          "storage_mode": "relational",
+          "identity_strategy": "uuid",
+          "scope": "site",
+          "audit_enabled": true,
+          "revisions_enabled": true,
+          "fields": [
+            {"handle":"id","label":"ID","type":"core.uuid","required":true,"nullable":false,"length":null,"unique":true,"indexed":true,"immutable_after_create":true,"filterable":false,"sortable":false,"reportable":true,"exportable":true,"order":0},
+            {"handle":"metric","label":"Metric","type":"core.text","required":true,"nullable":false,"length":120,"unique":false,"indexed":true,"filterable":true,"sortable":true,"reportable":true,"exportable":true,"order":10},
+            {"handle":"value","label":"Value","type":"core.decimal","required":true,"nullable":false,"length":null,"precision":18,"scale":4,"unique":false,"indexed":true,"filterable":true,"sortable":true,"reportable":true,"exportable":true,"order":20},
+            {"handle":"unit","label":"Unit","type":"core.text","required":true,"nullable":false,"length":32,"unique":false,"indexed":true,"filterable":true,"sortable":true,"reportable":true,"exportable":true,"order":30},
+            {"handle":"acceptable","label":"Acceptable","type":"core.boolean","required":true,"nullable":false,"default":true,"length":null,"unique":false,"indexed":true,"filterable":true,"sortable":true,"reportable":true,"exportable":true,"order":40}
+          ],
+          "relationships": [{"handle":"inspection","label":"Inspection","kind":"many_to_one","target":"kumwe.asset-inspection-example.inspection","inverse":"measurements","required":false,"unique":false,"ordered":false,"on_delete":"restrict"}],
+          "views": [
+            {"handle":"list","label":"Measurement list","kind":"list","fields":["metric","value","unit","acceptable"],"filters":["metric","acceptable"],"sorts":["metric"],"administrator":true,"portal":false,"public":false},
+            {"handle":"detail","label":"Measurement detail","kind":"detail","fields":["metric","value","unit","acceptable"],"filters":[],"sorts":[],"administrator":true,"portal":false,"public":false},
+            {"handle":"form","label":"Measurement form","kind":"form","fields":["metric","value","unit","acceptable"],"filters":[],"sorts":[],"administrator":true,"portal":false,"public":false}
+          ],
+          "actions": [],
+          "workflow": null,
+          "administrator_exposure": true,
+          "portal_exposure": false,
+          "public_exposure": false
+        }
+      ]
+    },
+    "integration": {
+      "event_schemas": [],
+      "domain_listeners": [{
+        "listener_id": "kumwe.asset-inspection-example.inspection-mutation-validator",
+        "event_type": "core.business_record.mutated",
+        "schema_versions": [1],
+        "handler_version": "1.0.0",
+        "priority": 100,
+        "sensitivity_ceiling": "internal"
+      }],
+      "consumers": [{
+        "consumer_id": "kumwe.asset-inspection-example.inspection-mutation-indexer",
+        "event_type": "core.business_record.mutated",
+        "schema_versions": [1],
+        "handler_version": "1.0.0",
+        "queue": "kumwe.asset-inspection-example.integration",
+        "aggregate_ordered": true,
+        "idempotency": "aggregate_version",
+        "maximum_attempts": 8,
+        "sensitivity_ceiling": "internal"
+      }],
+      "jobs": [{
+        "job_type": "kumwe.asset-inspection-example.review-overdue",
+        "schema_version": 1,
+        "handler_version": "1.0.0",
+        "payload_schema": {
+          "type": "object",
+          "properties": {
+            "site_identifier": {"type": "string", "minLength": 1, "maxLength": 191, "pattern": "/^[a-z0-9][a-z0-9._-]*$/D"},
+            "minimum_age_days": {"type": "integer", "minimum": 1, "maximum": 365}
+          },
+          "required": ["site_identifier", "minimum_age_days"],
+          "additionalProperties": false
+        },
+        "queue": "kumwe.asset-inspection-example.integration",
+        "maximum_attempts": 5,
+        "installation_wide": false
+      }],
+      "queues": [{
+        "queue_id": "kumwe.asset-inspection-example.integration",
+        "lease_seconds": 60,
+        "maximum_attempts": 3,
+        "maximum_in_flight": 8,
+        "retention_days": 30
+      }],
+      "schedules": [{
+        "schedule_id": "kumwe.asset-inspection-example.review-overdue-daily",
+        "job_type": "kumwe.asset-inspection-example.review-overdue",
+        "cron_expression": "15 2 * * *",
+        "timezone": "UTC",
+        "payload": {"site_identifier": "default", "minimum_age_days": 7},
+        "queue": "kumwe.asset-inspection-example.integration",
+        "site_identifier": "default",
+        "enabled": true
+      }],
+      "projections": [{
+        "identifier": "kumwe.asset-inspection-example.inspection-activity",
+        "version": 1,
+        "handler_version": "1.0.0",
+        "rebuildable": true,
+        "sensitivity_ceiling": "internal",
+        "sources": [{"event_type": "core.business_record.mutated", "schema_versions": [1]}],
+        "fields": [
+          {"name": "definition_id", "type": "identifier", "nullable": false},
+          {"name": "definition_version", "type": "integer", "nullable": false},
+          {"name": "last_operation", "type": "string", "nullable": false}
+        ],
+        "key_fields": ["definition_id"],
+        "rebuild_batch_size": 200
+      }],
+      "reports": [{
+        "identifier": "kumwe.asset-inspection-example.inspection-summary",
+        "version": 1,
+        "title": "Asset inspection example summary",
+        "source_definition": "kumwe.asset-inspection-example.inspection",
+        "required_capability": "kumwe.asset-inspection-example.view",
+        "administrator_visible": true,
+        "portal_visible": true,
+        "parameters": [{"name":"minimum_score","type":"integer","required":false,"multiple":false,"default":0}],
+        "filters": [{"field":"risk_score","operator":"gte","parameter":"minimum_score","quantifier":"any"}],
+        "columns": [
+          {"alias":"inspection_id","label":"Inspection ID","source":"id","type":"identifier"},
+          {"alias":"reference","label":"Reference","source":"reference","type":"string"},
+          {"alias":"inspection_date","label":"Inspection date","source":"inspection_date","type":"date"},
+          {"alias":"risk_score","label":"Risk score","source":"risk_score","type":"integer"}
+        ],
+        "groups": [],
+        "aggregates": [],
+        "formulas": [],
+        "sorts": [{"output":"risk_score","direction":"desc","nulls_last":true}],
+        "drill_downs": [],
+        "synchronous_row_cap": 200
+      }],
+      "webhooks": []
+    }
+  }
+}

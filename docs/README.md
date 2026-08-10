@@ -26,6 +26,8 @@ Use this index to install, operate, administer, integrate, extend, or evolve Kum
 - [REST API](rest-api.md): authentication, content, navigation, identity, optimistic concurrency, and retry safety.
 - [MCP](mcp.md): stdio and Streamable HTTP transports, capabilities, tools, resources, and safe writes.
 - [Extensions](extensions.md): manifests, providers, events, migrations, dependencies, signatures, lifecycle, and tests.
+- [Business integrations and extension SDK](business-integrations.md): schema-4 events, inbox/outbox, automation,
+  reports, projections, compatibility, conformance, and recovery.
 - [OpenAPI contract](../api/openapi/kumwe-v1.json): machine-readable REST v1 schema.
 
 ## Operate production
