@@ -193,13 +193,15 @@ final class ProductionArtifactsTest extends TestCase
         }
         $schemaLoop = substr($driver, $schemaLoopStart, $schemaLoopEnd - $schemaLoopStart);
         $schemaCursor = 0;
-        foreach ([
+        foreach (
+            [
             '019bc200-0000-7000-8000-000000000001',
             '019bc200-0000-7000-8000-000000000002',
             '019bc200-0000-7000-8000-000000000004',
             '019bc200-0000-7000-8000-000000000005',
             '019bc200-0000-7000-8000-000000000003',
-        ] as $definitionId) {
+            ] as $definitionId
+        ) {
             $definitionPosition = strpos($schemaLoop, $definitionId, $schemaCursor);
             if ($definitionPosition === false) {
                 self::fail('The deployment schema-install order is not dependency-safe.');
