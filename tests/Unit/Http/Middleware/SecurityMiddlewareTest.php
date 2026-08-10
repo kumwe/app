@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Kumwe\CMS\Tests\Unit\Http\Middleware;
 
+use InvalidArgumentException;
 use Kumwe\CMS\Application\Security\HighImpactAuthenticationRequired;
 use Kumwe\CMS\Http\Middleware\BodyLimitMiddleware;
 use Kumwe\CMS\Http\Middleware\ProblemDetailsMiddleware;
@@ -50,6 +51,40 @@ final class SecurityMiddlewareTest extends TestCase
         );
 
         self::assertSame(400, $response->getStatusCode());
+    }
+
+    /**
+     * Proves trusted-host validation cannot mask downstream validation failures.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testTrustedHostDoesNotMaskDownstreamValidationFailures(): void
+    {
+        $handler = new class implements RequestHandlerInterface {
+            /**
+             * Simulate a downstream application validation failure.
+             *
+             * @param   ServerRequestInterface  $request  Trusted request passed by the middleware.
+             *
+             * @return  ResponseInterface  This handler always throws before returning a response.
+             *
+             * @since   2.0.0
+             */
+            public function handle(ServerRequestInterface $request): ResponseInterface
+            {
+                throw new InvalidArgumentException('downstream validation failed');
+            }
+        };
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('downstream validation failed');
+
+        (new TrustedHostMiddleware(new TrustedHostMatcher(['kumwe.test'])))->process(
+            $this->request()->withHeader('Host', 'kumwe.test'),
+            $handler,
+        );
     }
 
     public function testOversizedBodyIsRejected(): void

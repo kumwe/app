@@ -9,6 +9,7 @@ use Kumwe\CMS\Administrator\Http\AdministratorRequest;
 use Kumwe\CMS\Administrator\Http\Middleware\AdministratorSessionMiddleware;
 use Kumwe\CMS\Administrator\Presentation\AdministratorRenderer;
 use Kumwe\CMS\Application\Authorization\ExecutionContext;
+use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordDefinitionUnavailable;
 use Kumwe\CMS\BusinessSurface\Application\BusinessSurface;
 use Kumwe\CMS\BusinessSurface\Application\GeneratedBusinessActionStepUp;
 use Kumwe\CMS\BusinessSurface\Application\GeneratedBusinessStepUpInputRejected;
@@ -21,6 +22,7 @@ use Kumwe\CMS\Identity\Application\StepUp\AdministratorStepUpProvider;
 use Kumwe\CMS\Identity\Application\StepUp\StepUpRejected;
 use Kumwe\CMS\Identity\Domain\StepUp\StepUpVerification;
 use Laminas\Diactoros\Response\HtmlResponse;
+use Laminas\Diactoros\Response\JsonResponse;
 use Laminas\Diactoros\Response\RedirectResponse;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -70,6 +72,31 @@ final readonly class AdministratorBusinessSurfaceHandler implements RequestHandl
      * @since   2.0.0
      */
     public function handle(ServerRequestInterface $request): ResponseInterface
+    {
+        try {
+            return $this->availableResponse($request);
+        } catch (BusinessRecordDefinitionUnavailable) {
+            return new JsonResponse([
+                'type' => 'urn:kumwe:problem:authorization-denied',
+                'title' => 'Forbidden',
+                'status' => 403,
+                'detail' => 'The authenticated identity is not authorized for this operation.',
+            ], 403, ['Content-Type' => 'application/problem+json', 'Cache-Control' => 'no-store']);
+        }
+    }
+
+    /**
+     * Resolve one generated surface whose definition is available to the authenticated identity.
+     *
+     * @param   ServerRequestInterface  $request  Authenticated administrator request.
+     *
+     * @return  ResponseInterface  Generated page, redirect, or step-up validation response.
+     *
+     * @throws  BusinessRecordDefinitionUnavailable  When the definition is absent or intentionally hidden.
+     *
+     * @since   2.0.0
+     */
+    private function availableResponse(ServerRequestInterface $request): ResponseInterface
     {
         $session = AdministratorRequest::session($request);
         $context = AdministratorRequest::context($request);
@@ -151,6 +178,7 @@ final readonly class AdministratorBusinessSurfaceHandler implements RequestHandl
         $ownedField = $request->getAttribute('owned_field');
         $ownedKind = $request->getAttribute('owned_kind');
         $businessRelationship = $request->getAttribute('business_relationship');
+        $query = $this->query($request);
         if ($businessRelationship !== null && strtoupper($request->getMethod()) === 'GET') {
             return $this->business->relationship(
                 $context,
@@ -158,7 +186,7 @@ final readonly class AdministratorBusinessSurfaceHandler implements RequestHandl
                 $this->attribute($request, 'definition') ?? '',
                 $this->attribute($request, 'record') ?? '',
                 is_string($businessRelationship) ? $businessRelationship : '',
-                $request->getQueryParams(),
+                $query,
             );
         } elseif ($ownedRelationship !== null || $ownedField !== null || $ownedKind !== null) {
             return $this->business->ownedLineChoices(
@@ -170,7 +198,7 @@ final readonly class AdministratorBusinessSurfaceHandler implements RequestHandl
                 is_string($ownedRelationship) ? $ownedRelationship : '',
                 is_string($ownedField) ? $ownedField : '',
                 is_string($ownedKind) ? $ownedKind : '',
-                $request->getQueryParams(),
+                $query,
             );
         } elseif ($related !== null || $media !== null) {
             return $this->business->choices(
@@ -181,7 +209,7 @@ final readonly class AdministratorBusinessSurfaceHandler implements RequestHandl
                 $this->attribute($request, 'record'),
                 is_string($related) ? $related : null,
                 is_string($media) ? $media : null,
-                $request->getQueryParams(),
+                $query,
             );
         } elseif ($view !== null) {
             return $this->business->customView(
@@ -190,7 +218,7 @@ final readonly class AdministratorBusinessSurfaceHandler implements RequestHandl
                 $this->attribute($request, 'definition') ?? '',
                 is_string($view) ? $view : '',
                 $this->attribute($request, 'record'),
-                $request->getQueryParams(),
+                $query,
             );
         } elseif ($operation !== null) {
             return $this->business->operationStatus($context, is_string($operation) ? $operation : '');
@@ -203,7 +231,7 @@ final readonly class AdministratorBusinessSurfaceHandler implements RequestHandl
             $request->getMethod(),
             $this->attribute($request, 'definition'),
             $this->attribute($request, 'record'),
-            $request->getQueryParams(),
+            $query,
             $body,
         );
     }
@@ -228,12 +256,19 @@ final readonly class AdministratorBusinessSurfaceHandler implements RequestHandl
         ?string $cookieToken = null,
         array $headers = [],
     ): ResponseInterface {
-        $headers = ['Cache-Control' => 'no-store', ...$headers];
+        /** @var array<non-empty-string, array<string>|string> $responseHeaders */
+        $responseHeaders = ['Cache-Control' => 'no-store'];
+        foreach ($headers as $name => $value) {
+            if ($name === '') {
+                throw new InvalidArgumentException('A generated business response header name is invalid.');
+            }
+            $responseHeaders[$name] = $value;
+        }
         if ($cookieToken !== null) {
-            $headers['Set-Cookie'] = $this->cookie($cookieToken);
+            $responseHeaders['Set-Cookie'] = $this->cookie($cookieToken);
         }
         if ($result->redirect !== null) {
-            return new RedirectResponse($result->redirect, $result->status, $headers);
+            return new RedirectResponse($result->redirect, $result->status, $responseHeaders);
         }
 
         return new HtmlResponse($this->renderer->render((string) $result->template, [
@@ -242,7 +277,7 @@ final readonly class AdministratorBusinessSurfaceHandler implements RequestHandl
             'capabilities' => AdministratorRequest::capabilityMap($request),
             'business_base_path' => '/administrator/business',
             'active_navigation' => 'core.business-records',
-        ]), $result->status, $headers);
+        ]), $result->status, $responseHeaders);
     }
 
     /**
@@ -395,6 +430,41 @@ final readonly class AdministratorBusinessSurfaceHandler implements RequestHandl
             return [];
         }
 
-        return $body;
+        return $this->stringKeyed($body);
+    }
+
+    /**
+     * Preserve string-keyed query controls and discard numeric transport entries.
+     *
+     * @param   ServerRequestInterface  $request  Browser request.
+     *
+     * @return  array<string, mixed>  Decoded query object.
+     *
+     * @since   2.0.0
+     */
+    private function query(ServerRequestInterface $request): array
+    {
+        return $this->stringKeyed($request->getQueryParams());
+    }
+
+    /**
+     * Narrow a PSR transport array to the object shape used by the shared controller.
+     *
+     * @param   array<mixed>  $values  Parsed transport values.
+     *
+     * @return  array<string, mixed>  String-keyed members.
+     *
+     * @since   2.0.0
+     */
+    private function stringKeyed(array $values): array
+    {
+        $object = [];
+        foreach ($values as $key => $value) {
+            if (is_string($key)) {
+                $object[$key] = $value;
+            }
+        }
+
+        return $object;
     }
 }

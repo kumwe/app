@@ -125,10 +125,12 @@ final readonly class BusinessCustomViewRequest
         $searchable = [];
         $projection = self::stringList($view['fields'] ?? null);
         foreach ($fields as $field) {
+            $uses = $field['uses'] ?? null;
             if (
                 is_string($field['handle'] ?? null)
                 && in_array($field['handle'], $projection, true)
-                && ($field['uses']['search'] ?? false) === true
+                && is_array($uses)
+                && ($uses['search'] ?? false) === true
             ) {
                 $searchable[] = $field['handle'];
             }
@@ -156,7 +158,15 @@ final readonly class BusinessCustomViewRequest
         if (!is_array($value) || ($value !== [] && array_is_list($value))) {
             throw new InvalidArgumentException('A custom business browser object control is malformed.');
         }
-        return $value;
+        $object = [];
+        foreach ($value as $member => $item) {
+            if (!is_string($member)) {
+                throw new InvalidArgumentException('A custom business browser object control is malformed.');
+            }
+            $object[$member] = $item;
+        }
+
+        return $object;
     }
 
     /**
@@ -194,14 +204,16 @@ final readonly class BusinessCustomViewRequest
         if (!is_array($value) || !array_is_list($value) || count($value) > 128) {
             throw new InvalidArgumentException('A custom business browser field list is invalid or unbounded.');
         }
+        $items = [];
         foreach ($value as $item) {
             if (!is_string($item) || preg_match('/^[a-z][a-z0-9_]{0,62}$/D', $item) !== 1) {
                 throw new InvalidArgumentException('A custom business browser field list is invalid.');
             }
+            $items[] = $item;
         }
-        if (count($value) !== count(array_unique($value))) {
+        if (count($items) !== count(array_unique($items))) {
             throw new InvalidArgumentException('A custom business browser field list contains duplicates.');
         }
-        return $value;
+        return $items;
     }
 }

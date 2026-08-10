@@ -2384,7 +2384,7 @@ final readonly class KumweMcpHandlers
         string $action,
         array $input = [],
     ): array {
-        return $this->businessRecords->requestAction(
+        $result = $this->businessRecords->requestAction(
             $this->businessMutationContext($operationId, 'request_action'),
             $operationId,
             $plan,
@@ -2394,6 +2394,15 @@ final readonly class KumweMcpHandlers
             $action,
             $input,
         );
+        $requestId = $result['approval_request_id'] ?? null;
+        if (
+            array_keys($result) !== ['approval_request_id']
+            || ($requestId !== null && !is_string($requestId))
+        ) {
+            throw new InvalidArgumentException('The business-record approval result is invalid.');
+        }
+
+        return ['approval_request_id' => $requestId];
     }
 
     /**

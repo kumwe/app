@@ -72,6 +72,7 @@ final readonly class BusinessBrowserQuery
             if (!is_array($document) || array_is_list($document)) {
                 throw new InvalidArgumentException('A generated business query must be a JSON object.');
             }
+            $document = self::object($document, 'A generated business query must be a JSON object.');
 
             return new self($document, self::state($document));
         }
@@ -95,7 +96,7 @@ final readonly class BusinessBrowserQuery
         $seenFields = [];
         foreach ($filterMaps as $kind => $filterMap) {
             foreach ($filterMap as $field => $value) {
-                self::field($field);
+                $field = self::field($field);
                 if (isset($seenFields[$field])) {
                     throw new InvalidArgumentException('A graphical business filter field is duplicated.');
                 }
@@ -144,17 +145,18 @@ final readonly class BusinessBrowserQuery
         if (!is_array($searchFields) || !array_is_list($searchFields) || count($searchFields) > 16) {
             throw new InvalidArgumentException('A graphical business search field list is invalid or unbounded.');
         }
+        $validatedSearchFields = [];
         foreach ($searchFields as $field) {
-            self::field($field);
+            $validatedSearchFields[] = self::field($field);
         }
-        if (count($searchFields) !== count(array_unique($searchFields))) {
+        if (count($validatedSearchFields) !== count(array_unique($validatedSearchFields))) {
             throw new InvalidArgumentException('A graphical business search field list contains duplicates.');
         }
         if ($searchTerm !== null) {
-            if ($searchFields === []) {
+            if ($validatedSearchFields === []) {
                 throw new InvalidArgumentException('A graphical business search requires at least one field.');
             }
-            $document['search'] = ['term' => $searchTerm, 'fields' => $searchFields];
+            $document['search'] = ['term' => $searchTerm, 'fields' => $validatedSearchFields];
         }
 
         foreach (['include_archived', 'include_deleted'] as $key) {
@@ -182,7 +184,7 @@ final readonly class BusinessBrowserQuery
             'sort_field' => $sortField,
             'sort_direction' => $sortDirection,
             'search_term' => $searchTerm,
-            'search_fields' => $searchTerm === null ? [] : $searchFields,
+            'search_fields' => $searchTerm === null ? [] : $validatedSearchFields,
             'page_size' => $document['page_size'] ?? 50,
             'include_archived' => $document['include_archived'] ?? false,
             'include_deleted' => $document['include_deleted'] ?? false,
@@ -315,15 +317,40 @@ final readonly class BusinessBrowserQuery
      *
      * @param   mixed  $field  Candidate handle.
      *
-     * @return  void
+     * @return  string  Validated field handle.
      *
      * @since   2.0.0
      */
-    private static function field(mixed $field): void
+    private static function field(mixed $field): string
     {
         if (!is_string($field) || preg_match('/^[a-z][a-z0-9_]{0,62}$/D', $field) !== 1) {
             throw new InvalidArgumentException('A graphical business query field is invalid.');
         }
+
+        return $field;
+    }
+
+    /**
+     * Narrow one decoded JSON object to string keys without coercing numeric members.
+     *
+     * @param   array<mixed>  $value    Decoded candidate object.
+     * @param   string        $message  Safe validation message.
+     *
+     * @return  array<string, mixed>  String-keyed object.
+     *
+     * @since   2.0.0
+     */
+    private static function object(array $value, string $message): array
+    {
+        $object = [];
+        foreach ($value as $key => $member) {
+            if (!is_string($key)) {
+                throw new InvalidArgumentException($message);
+            }
+            $object[$key] = $member;
+        }
+
+        return $object;
     }
 
     /**

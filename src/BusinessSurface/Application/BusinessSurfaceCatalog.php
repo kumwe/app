@@ -13,6 +13,7 @@ use Kumwe\CMS\BusinessDefinition\Domain\ActionDefinition;
 use Kumwe\CMS\BusinessDefinition\Domain\EntityTypeDefinition;
 use Kumwe\CMS\BusinessDefinition\Domain\FieldDefinition;
 use Kumwe\CMS\BusinessDefinition\Domain\FieldTypeDefinition;
+use Kumwe\CMS\BusinessDefinition\Domain\InvalidBusinessDefinition;
 use Kumwe\CMS\BusinessDefinition\Domain\PortalOperation;
 use Kumwe\CMS\BusinessDefinition\Domain\ScopeMode;
 use Kumwe\CMS\BusinessDefinition\Domain\ViewDefinition;
@@ -49,13 +50,13 @@ final readonly class BusinessSurfaceCatalog implements BusinessApprovalExposureC
     /**
      * Build the shared generated-surface catalog.
      *
-     * @param  BusinessRecordDefinitionResolver  $definitions    Resolves trusted active installations.
-     * @param  BusinessRecordAccessController    $access         Produces canonical row and field policy plans.
-     * @param  FieldTypeDefinitionResolver       $fieldTypes     Resolves immutable logical field families.
-     * @param  AuthorizationGateway              $authorization  Enforces the operation capability first.
-     * @param  TransactionManager                $transactions   Holds definition and policy generations stable.
-     * @param  RuntimeMaterializationState       $runtime        Trusted extension generation this process serves.
-     * @param  ?CustomBusinessSurfaceDispatcher $customBusiness Active custom contracts, or null to fail closed.
+     * @param  BusinessRecordDefinitionResolver  $definitions     Resolves trusted active installations.
+     * @param  BusinessRecordAccessController    $access          Produces canonical row and field policy plans.
+     * @param  FieldTypeDefinitionResolver       $fieldTypes      Resolves immutable logical field families.
+     * @param  AuthorizationGateway              $authorization   Enforces the operation capability first.
+     * @param  TransactionManager                $transactions    Holds definition and policy generations stable.
+     * @param  RuntimeMaterializationState       $runtime         Trusted extension generation this process serves.
+     * @param  ?CustomBusinessSurfaceDispatcher  $customBusiness  Active custom contracts, or null to fail closed.
      *
      * @since  2.0.0
      */
@@ -136,7 +137,11 @@ final readonly class BusinessSurfaceCatalog implements BusinessApprovalExposureC
                 if (!$plan instanceof BusinessRecordAccessPlan || !$this->mayExposeRows($plan)) {
                     continue;
                 }
-                $items[] = $this->document($resolved, $surface, $operation, $plan, $targets);
+                try {
+                    $items[] = $this->document($resolved, $surface, $operation, $plan, $targets);
+                } catch (InvalidBusinessDefinition) {
+                    continue;
+                }
             }
 
             usort(
@@ -222,7 +227,11 @@ final readonly class BusinessSurfaceCatalog implements BusinessApprovalExposureC
                 throw new BusinessRecordDefinitionUnavailable();
             }
 
-            return $this->document($target, $surface, $operation, $plan, $targets);
+            try {
+                return $this->document($target, $surface, $operation, $plan, $targets);
+            } catch (InvalidBusinessDefinition) {
+                throw new BusinessRecordDefinitionUnavailable();
+            }
         });
     }
 
@@ -305,7 +314,11 @@ final readonly class BusinessSurfaceCatalog implements BusinessApprovalExposureC
                 if (!($plan instanceof BusinessRecordAccessPlan) || !$this->mayExposeRows($plan)) {
                     continue;
                 }
-                $this->document($target, $surface, $operation, $plan, $targets);
+                try {
+                    $this->document($target, $surface, $operation, $plan, $targets);
+                } catch (InvalidBusinessDefinition) {
+                    continue;
+                }
                 $available[$operation->value] = true;
             }
 
@@ -322,9 +335,9 @@ final readonly class BusinessSurfaceCatalog implements BusinessApprovalExposureC
      * duties. The returned ceiling proves only that the exact active definition and action are still offered
      * on the authenticated surface, including the portal's explicit approval operation opt-in.
      *
-     * @param   ExecutionContext  $context   Authenticated actor, site, and membership.
-     * @param   BusinessSurface   $surface   Generated adapter presenting the approval.
-     * @param   list<array{request_id: string, definition_id: string, action: string}> $requests
+     * @param ExecutionContext $context Authenticated actor, site, and membership.
+     * @param BusinessSurface $surface Generated adapter presenting the approval.
+     * @param   list<array{request_id: string, definition_id: string, action: string}>  $requests
      *          Canonical business-record approval bindings, bounded to one hundred entries.
      *
      * @return  array<string, true>  Exposed request UUIDs keyed to true.
@@ -412,12 +425,12 @@ final readonly class BusinessSurfaceCatalog implements BusinessApprovalExposureC
     /**
      * Plan every distinct capability with the strongest batching port an access adapter provides.
      *
-     * @param   ExecutionContext          $context      Authenticated actor and exact scope.
-     * @param   list<BusinessSurfaceOperation> $operations  Surface-exposed operations to evaluate.
-     * @param   list<array{resolved: ResolvedBusinessDefinition, scope: RecordScope, requested: bool}> $resources
+     * @param ExecutionContext $context Authenticated actor and exact scope.
+     * @param list<BusinessSurfaceOperation> $operations Surface-exposed operations to evaluate.
+     * @param   list<array{resolved: ResolvedBusinessDefinition, scope: RecordScope, requested: bool}>  $resources
      *          Active definition snapshot with one requested target.
-     * @param   ResolvedBusinessDefinition $target       Requested active definition.
-     * @param   RecordScope                $targetScope  Exact authenticated target scope.
+     * @param ResolvedBusinessDefinition $target Requested active definition.
+     * @param RecordScope $targetScope Exact authenticated target scope.
      *
      * @return  array<string, BusinessRecordAccessPlan>  Target plans keyed by dotted capability.
      *
@@ -493,11 +506,11 @@ final readonly class BusinessSurfaceCatalog implements BusinessApprovalExposureC
     /**
      * Describe one definition through the resolved field-policy plan.
      *
-     * @param   ResolvedBusinessDefinition  $resolved   Trusted definition and active installation.
-     * @param   BusinessSurface             $surface    Adapter receiving the result.
-     * @param   BusinessSurfaceOperation    $operation  Operation whose policy was planned.
-     * @param   BusinessRecordAccessPlan    $plan       Canonical field, action and relation decision.
-     * @param   array<string, EntityTypeDefinition>  $targets  Active definitions keyed by declared handle.
+     * @param   ResolvedBusinessDefinition           $resolved   Trusted definition and active installation.
+     * @param   BusinessSurface                      $surface    Adapter receiving the result.
+     * @param   BusinessSurfaceOperation             $operation  Operation whose policy was planned.
+     * @param   BusinessRecordAccessPlan             $plan       Canonical field, action and relation decision.
+     * @param   array<string, EntityTypeDefinition>  $targets    Active definitions keyed by declared handle.
      *
      * @return  array<string, mixed>  Safe entity metadata and JSON Schema fragments.
      *
@@ -659,11 +672,11 @@ final readonly class BusinessSurfaceCatalog implements BusinessApprovalExposureC
      * Administrator exposure continues to control navigation only; authenticated API, CLI, and MCP
      * boundaries retain their existing capability-and-policy exposure model.
      *
-     * @param   string                                  $targetHandle  Declared target definition handle.
-     * @param   BusinessSurface                         $surface       Adapter receiving the metadata.
-     * @param   BusinessSurfaceOperation                $operation     Source operation being described.
-     * @param   BusinessRecordAccessPlan                $access        Exact nested target policy plan.
-     * @param   array<string, EntityTypeDefinition>     $targets       Active definitions by handle.
+     * @param   string                               $targetHandle  Declared target definition handle.
+     * @param   BusinessSurface                      $surface       Adapter receiving the metadata.
+     * @param   BusinessSurfaceOperation             $operation     Source operation being described.
+     * @param   BusinessRecordAccessPlan             $access        Exact nested target policy plan.
+     * @param   array<string, EntityTypeDefinition>  $targets       Active definitions by handle.
      *
      * @return  bool  True only when target identity and surface exposure both remain available.
      *

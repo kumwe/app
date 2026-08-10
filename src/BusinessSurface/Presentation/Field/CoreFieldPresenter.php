@@ -122,13 +122,13 @@ final readonly class CoreFieldPresenter implements FieldPresenter
         }
         if ($type === 'core.money' && ($value instanceof MoneyValue || is_array($value))) {
             $money = $value instanceof MoneyValue ? $value->toArray() : $value;
-            return $this->exact((string) ($money['amount'] ?? ''), $locale)
-                . ' ' . (string) ($money['currency'] ?? '');
+            return $this->exact($this->text($money['amount'] ?? ''), $locale)
+                . ' ' . $this->text($money['currency'] ?? '');
         }
         if ($type === 'core.quantity' && ($value instanceof QuantityValue || is_array($value))) {
             $quantity = $value instanceof QuantityValue ? $value->toArray() : $value;
-            return $this->exact((string) ($quantity['amount'] ?? ''), $locale)
-                . ' ' . (string) ($quantity['unit'] ?? '');
+            return $this->exact($this->text($quantity['amount'] ?? ''), $locale)
+                . ' ' . $this->text($quantity['unit'] ?? '');
         }
         if ($type === 'core.zoned_datetime' && $value instanceof ZonedDateTimeValue) {
             return $value->toArray()['instant'] . ' · ' . $value->timezone;
@@ -207,13 +207,40 @@ final readonly class CoreFieldPresenter implements FieldPresenter
         if ($request->field->type !== 'core.enum') {
             return [];
         }
+        $declared = $request->field->configuration['options'] ?? [];
+        if (!is_array($declared) || !array_is_list($declared)) {
+            throw new \InvalidArgumentException('A generated enum field has invalid presentation options.');
+        }
         $options = [];
-        foreach ($request->field->configuration['options'] ?? [] as $option) {
-            $value = (string) $option;
+        foreach ($declared as $option) {
+            if (!is_string($option)) {
+                throw new \InvalidArgumentException('A generated enum field has invalid presentation options.');
+            }
+            $value = $option;
             $options[] = ['value' => $value, 'label' => ucfirst(str_replace('_', ' ', $value))];
         }
 
         return $options;
+    }
+
+    /**
+     * Read one normalized composite string member without casting arbitrary values.
+     *
+     * @param   mixed  $value  Money or quantity member.
+     *
+     * @return  string  Exact normalized text.
+     *
+     * @throws  \InvalidArgumentException  When a composite member is not a normalized scalar.
+     *
+     * @since   2.0.0
+     */
+    private function text(mixed $value): string
+    {
+        if (is_string($value)) {
+            return $value;
+        }
+
+        throw new \InvalidArgumentException('A generated composite field value is malformed.');
     }
 
     /**

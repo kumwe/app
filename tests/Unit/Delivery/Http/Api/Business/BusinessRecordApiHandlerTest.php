@@ -113,7 +113,8 @@ final class BusinessRecordApiHandlerTest extends TestCase
         $response = $this->handler()->handle($request);
 
         self::assertSame(422, $response->getStatusCode());
-        self::assertStringContainsString('parsed Idempotency-Key', (string) $response->getBody());
+        self::assertStringContainsString('business-record request is invalid', (string) $response->getBody());
+        self::assertStringNotContainsString('record-create-0001', (string) $response->getBody());
     }
 
     /**
@@ -150,7 +151,7 @@ final class BusinessRecordApiHandlerTest extends TestCase
                 'replayed' => true,
                 'result' => [
                     'delivery' => 'queued',
-                    'record_key' => 'withheld',
+                    'receipt' => 'queued-1',
                 ],
             ]);
         $request = $this->request('{"input":{"channel":"email"}}')
@@ -178,7 +179,7 @@ final class BusinessRecordApiHandlerTest extends TestCase
         self::assertSame('true', $response->getHeaderLine('Idempotency-Replayed'));
         $json = (string) $response->getBody();
         self::assertStringContainsString('"delivery":"queued"', $json);
-        self::assertStringNotContainsString('record_key', $json);
+        self::assertStringContainsString('"receipt":"queued-1"', $json);
     }
 
     /**
@@ -207,6 +208,7 @@ final class BusinessRecordApiHandlerTest extends TestCase
             )
             ->willReturn(['approval_request_id' => $approvalId]);
         $request = $this->request('{"input":{"channel":"email"}}')
+            ->withHeader('If-Match', '"v4"')
             ->withAttribute(BusinessRecordApiHandler::OPERATION_ATTRIBUTE, BusinessRecordApiHandler::APPROVAL)
             ->withAttribute(BusinessRecordApiHandler::DEFINITION_ATTRIBUTE, 'core.invoice')
             ->withAttribute(BusinessRecordApiHandler::RECORD_ATTRIBUTE, 'invoice-7')
@@ -260,7 +262,7 @@ final class BusinessRecordApiHandlerTest extends TestCase
                     'sorts' => ['number'],
                     'custom_contract' => ['schema_reference' => 'private'],
                 ],
-                'data' => ['count' => 2, 'internal_id' => 'withheld'],
+                'data' => ['count' => 2, 'segment' => 'overdue'],
             ]);
         $request = $this->request('{"query":{"page_size":10},"parameters":{"currency":"NAD"}}')
             ->withUri((new ServerRequestFactory())->createServerRequest(
@@ -279,8 +281,8 @@ final class BusinessRecordApiHandlerTest extends TestCase
         $json = (string) $response->getBody();
         self::assertStringContainsString('"handle":"overdue"', $json);
         self::assertStringContainsString('"count":2', $json);
+        self::assertStringContainsString('"segment":"overdue"', $json);
         self::assertStringNotContainsString('custom_contract', $json);
-        self::assertStringNotContainsString('internal_id', $json);
     }
 
     /**

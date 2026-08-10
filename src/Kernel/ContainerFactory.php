@@ -1429,10 +1429,7 @@ final class ContainerFactory
         if ($coreOpenApiJson === false) {
             throw new RuntimeException('The checked-in core OpenAPI contract cannot be read.');
         }
-        $coreOpenApi = json_decode($coreOpenApiJson, true, 512, JSON_THROW_ON_ERROR);
-        if (!is_array($coreOpenApi) || array_is_list($coreOpenApi)) {
-            throw new RuntimeException('The checked-in core OpenAPI contract is not an object.');
-        }
+        $coreOpenApi = self::decodeOpenApiObject($coreOpenApiJson);
         $componentClaims = new OpenApiComponentClaimAdmission($coreOpenApi);
         $container->share(OpenApiComponentClaimAdmission::class, $componentClaims, true);
         $container->share(BusinessDefinitionContractAdmission::class, $componentClaims, true);
@@ -1906,6 +1903,7 @@ final class ContainerFactory
             Container $container,
         ): BusinessOperationStatusService => new BusinessOperationStatusService(
             self::service($container, BusinessOperationStatusRepository::class),
+            self::service($container, TransactionManager::class),
             self::service($container, BusinessRecordDefinitionResolver::class),
             self::service($container, BusinessRecordAccessController::class),
             self::service($container, RecordFingerprint::class),
@@ -1963,10 +1961,7 @@ final class ContainerFactory
             if ($json === false) {
                 throw new RuntimeException('The checked-in core OpenAPI contract cannot be read.');
             }
-            $contract = json_decode($json, true, 512, JSON_THROW_ON_ERROR);
-            if (!is_array($contract) || array_is_list($contract)) {
-                throw new RuntimeException('The checked-in core OpenAPI contract is not an object.');
-            }
+            $contract = self::decodeOpenApiObject($json);
 
             return new OpenApiContractService(
                 $contract,
@@ -4144,6 +4139,33 @@ final class ContainerFactory
             BearerAuthenticationMiddleware::OPTION_TOKEN_AUDIENCE => 'kumwe-http',
             BearerAuthenticationMiddleware::OPTION_TOKEN_PURPOSE => 'api',
         ]);
+    }
+
+    /**
+     * Decode the checked-in OpenAPI document and prove its root is a string-keyed JSON object.
+     *
+     * @param   string  $json  Checked-in OpenAPI JSON bytes.
+     *
+     * @return  array<string, mixed>  Decoded contract root.
+     *
+     * @throws  RuntimeException  When the decoded contract root is not a JSON object.
+     *
+     * @since   2.0.0
+     */
+    private static function decodeOpenApiObject(string $json): array
+    {
+        $contract = json_decode($json, true, 512, JSON_THROW_ON_ERROR);
+        if (!is_array($contract) || array_is_list($contract)) {
+            throw new RuntimeException('The checked-in core OpenAPI contract is not an object.');
+        }
+        foreach (array_keys($contract) as $key) {
+            if (!is_string($key)) {
+                throw new RuntimeException('The checked-in core OpenAPI contract is not an object.');
+            }
+        }
+        /** @var array<string, mixed> $contract */
+
+        return $contract;
     }
 
     /**

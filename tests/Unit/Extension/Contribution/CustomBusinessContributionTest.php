@@ -170,6 +170,7 @@ final class CustomBusinessContributionTest extends TestCase
                 );
                 self::fail('An unsafe custom business contribution manifest was accepted.');
             } catch (InvalidArgumentException) {
+                self::addToAssertionCount(1);
             }
         }
     }

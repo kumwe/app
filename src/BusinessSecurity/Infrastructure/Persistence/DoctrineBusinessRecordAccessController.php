@@ -99,8 +99,8 @@ final readonly class DoctrineBusinessRecordAccessController implements
     /**
      * Resolve an active generated catalog from one policy snapshot and one batched policy read.
      *
-     * @param   ExecutionContext  $context    Actor and exact authenticated scope.
-     * @param   string            $operation  Dotted business-record operation identifier.
+     * @param ExecutionContext $context Actor and exact authenticated scope.
+     * @param string $operation Dotted business-record operation identifier.
      * @param   list<array{resolved: ResolvedBusinessDefinition, scope: RecordScope, requested: bool}>  $resources
      *          Bounded active definitions, scopes, and top-level plan selections.
      *
@@ -166,9 +166,9 @@ final readonly class DoctrineBusinessRecordAccessController implements
     /**
      * Resolve several generated operations from one membership, policy-generation, and policy-row snapshot.
      *
-     * @param   ExecutionContext  $context     Actor and exact authenticated scope.
-     * @param   list<string>      $operations  Unique dotted business-record capabilities, capped at 32.
-     * @param   list<array{resolved: ResolvedBusinessDefinition, scope: RecordScope, requested: bool}> $resources
+     * @param ExecutionContext $context Actor and exact authenticated scope.
+     * @param list<string> $operations Unique dotted business-record capabilities, capped at 32.
+     * @param   list<array{resolved: ResolvedBusinessDefinition, scope: RecordScope, requested: bool}>  $resources
      *          Bounded active definitions, scopes, and top-level plan selections.
      *
      * @return  array<string, array<string, BusinessRecordAccessPlan>>  Plans by capability and definition UUID.
@@ -290,14 +290,14 @@ final readonly class DoctrineBusinessRecordAccessController implements
     }
 
     /**
-     * Resolve one plan and a single bounded layer of related-target plans.
+     * Resolve one plan and at most two bounded layers of related-target plans.
      *
-     * @param   ExecutionContext            $context    Actor and exact authenticated scope.
-     * @param   string                      $operation  Business operation.
-     * @param   ResolvedBusinessDefinition  $resolved   Pinned entity definition.
-     * @param   RecordScope                 $scope      Exact repository scope.
-     * @param   int                         $depth      Current related-resource depth.
-     * @param   array<string, list<array<string, mixed>>>|null  $catalogRows  Batched policies by UUID.
+     * @param ExecutionContext $context Actor and exact authenticated scope.
+     * @param   string                                          $operation           Business operation.
+     * @param   ResolvedBusinessDefinition                      $resolved            Pinned entity definition.
+     * @param   RecordScope                                     $scope               Exact repository scope.
+     * @param   int                                             $depth               Current related-resource depth.
+     * @param   array<string, list<array<string, mixed>>>|null  $catalogRows         Batched policies by UUID.
      * @param   array<string, ResolvedBusinessDefinition>|null  $catalogDefinitions  Active targets by handle.
      *
      * @return  BusinessRecordAccessPlan  Immutable compiled authorization input.
@@ -418,8 +418,15 @@ final readonly class DoctrineBusinessRecordAccessController implements
             ));
         }
         $actions = array_values(array_diff(array_unique($actions), array_unique($actionDenies)));
-        $related = $depth < 1
-            ? $this->related($context, $operation, $resolved, $catalogRows, $catalogDefinitions)
+        $related = $depth < 2
+            ? $this->related(
+                $context,
+                $operation,
+                $resolved,
+                $depth + 1,
+                $catalogRows,
+                $catalogDefinitions,
+            )
             : [];
 
         return new BusinessRecordAccessPlan(
@@ -607,10 +614,11 @@ final readonly class DoctrineBusinessRecordAccessController implements
     /**
      * Resolve relationship and entity-reference targets under the same authenticated scope.
      *
-     * @param   ExecutionContext            $context    Actor and exact authenticated scope.
-     * @param   string                      $operation  Parent operation inherited by every target plan.
-     * @param   ResolvedBusinessDefinition  $resolved   Source definition declaring the target handles.
-     * @param   array<string, list<array<string, mixed>>>|null  $catalogRows  Batched policies by UUID.
+     * @param ExecutionContext $context Actor and exact authenticated scope.
+     * @param string $operation Parent operation inherited by every target plan.
+     * @param ResolvedBusinessDefinition $resolved Source definition declaring the target handles.
+     * @param int $depth Depth assigned to each directly related target.
+     * @param   array<string, list<array<string, mixed>>>|null  $catalogRows         Batched policies by UUID.
      * @param   array<string, ResolvedBusinessDefinition>|null  $catalogDefinitions  Active targets by handle.
      *
      * @return  array<string, BusinessRecordAccessPlan>  Target plans keyed by source handle.
@@ -621,6 +629,7 @@ final readonly class DoctrineBusinessRecordAccessController implements
         ExecutionContext $context,
         string $operation,
         ResolvedBusinessDefinition $resolved,
+        int $depth,
         ?array $catalogRows = null,
         ?array $catalogDefinitions = null,
     ): array {
@@ -674,7 +683,7 @@ final readonly class DoctrineBusinessRecordAccessController implements
                 $operation,
                 $target,
                 $targetScope,
-                1,
+                $depth,
                 $catalogRows,
                 $catalogDefinitions,
             );

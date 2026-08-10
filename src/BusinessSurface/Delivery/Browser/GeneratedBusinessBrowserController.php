@@ -9,6 +9,7 @@ use JsonException;
 use Kumwe\CMS\Application\Authorization\ExecutionContext;
 use Kumwe\CMS\Application\Automation\IdempotencyKey;
 use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordDefinitionUnavailable;
+use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordNotFound;
 use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordValidationFailed;
 use Kumwe\CMS\BusinessRecord\Application\Query\BusinessRecordQueryPurpose;
 use Kumwe\CMS\BusinessSurface\Application\BusinessFormInputMapper;
@@ -399,7 +400,11 @@ final readonly class GeneratedBusinessBrowserController
         array $query,
     ): BusinessBrowserResult {
         $metadata = $this->business->customViewMetadata($context, $surface, $definition, $view, $record);
-        $kind = $metadata['view']['kind'] ?? null;
+        $viewMetadata = $this->metadataObject(
+            $metadata['view'] ?? null,
+            'A generated custom view is unavailable.',
+        );
+        $kind = $viewMetadata['kind'] ?? null;
         if (
             !is_string($kind)
             || ($record === null && in_array($kind, ['detail', 'history', 'relation'], true))
@@ -407,14 +412,21 @@ final readonly class GeneratedBusinessBrowserController
         ) {
             throw new BusinessRecordDefinitionUnavailable();
         }
-        $fields = $metadata['definition']['fields'] ?? null;
-        $schema = $metadata['parameter_schema'] ?? null;
-        if (!is_array($fields) || !array_is_list($fields) || !is_array($schema) || array_is_list($schema)) {
-            throw new BusinessRecordDefinitionUnavailable();
-        }
+        $definitionMetadata = $this->metadataObject(
+            $metadata['definition'] ?? null,
+            'A generated custom view definition is unavailable.',
+        );
+        $fields = $this->metadataList(
+            $definitionMetadata['fields'] ?? null,
+            'A generated custom view field list is unavailable.',
+        );
+        $schema = $this->metadataObject(
+            $metadata['parameter_schema'] ?? null,
+            'A generated custom view schema is unavailable.',
+        );
 
         try {
-            $request = BusinessCustomViewRequest::fromQuery($query, $metadata['view'], $fields, $schema);
+            $request = BusinessCustomViewRequest::fromQuery($query, $viewMetadata, $fields, $schema);
         } catch (InvalidArgumentException $exception) {
             $retainedQuery = $query;
             unset($retainedQuery['run']);
@@ -422,12 +434,12 @@ final readonly class GeneratedBusinessBrowserController
             try {
                 $retained = BusinessCustomViewRequest::fromQuery(
                     $retainedQuery,
-                    $metadata['view'],
+                    $viewMetadata,
                     $fields,
                     $schema,
                 );
             } catch (InvalidArgumentException) {
-                $retained = BusinessCustomViewRequest::fromQuery([], $metadata['view'], $fields, $schema);
+                $retained = BusinessCustomViewRequest::fromQuery([], $viewMetadata, $fields, $schema);
             }
 
             return $this->customViewError($metadata, $record, $retained, $exception->getMessage());
@@ -455,8 +467,9 @@ final readonly class GeneratedBusinessBrowserController
                 $request->parameters,
                 $record,
             );
-            $data = is_array($result['data'] ?? null) && !array_is_list($result['data'])
-                ? $result['data']
+            $candidateData = $result['data'] ?? null;
+            $data = is_array($candidateData) && !array_is_list($candidateData)
+                ? $this->objectValue($candidateData, 'A custom view result is malformed.')
                 : null;
             $projection = $data === null ? null : $this->customViews->present($data);
         } catch (InvalidArgumentException) {
@@ -738,7 +751,11 @@ final readonly class GeneratedBusinessBrowserController
         try {
             if ($operation === 'create') {
                 $model = $this->business->form($context, $surface, $definition);
-                $values = $this->mapFormValues($form, $model['fields']);
+                $fields = $this->metadataList(
+                    $model['fields'] ?? null,
+                    'A generated business form field list is unavailable.',
+                );
+                $values = $this->mapFormValues($form, $fields);
                 $result = $this->business->create(
                     $context,
                     $surface,
@@ -749,7 +766,7 @@ final readonly class GeneratedBusinessBrowserController
                 );
                 return BusinessBrowserResult::redirect(
                     $this->completedTarget(
-                        $target . '/' . rawurlencode((string) $result['record_id']),
+                        $target . '/' . rawurlencode($this->required($result, 'record_id')),
                         $operationId,
                     ),
                 );
@@ -985,7 +1002,11 @@ final readonly class GeneratedBusinessBrowserController
         array $form,
     ): array {
         $model = $this->business->form($context, $surface, $definition, $record);
-        $values = $this->mapFormValues($form, $model['fields']);
+        $fields = $this->metadataList(
+            $model['fields'] ?? null,
+            'A generated business form field list is unavailable.',
+        );
+        $values = $this->mapFormValues($form, $fields);
 
         return $this->business->update(
             $context,
@@ -1027,16 +1048,16 @@ final readonly class GeneratedBusinessBrowserController
                 $record,
                 $relationship,
             );
-        } catch (BusinessRecordDefinitionUnavailable) {
+        } catch (BusinessRecordDefinitionUnavailable | BusinessRecordNotFound) {
             if ($this->nestedObject($form, 'target_values') !== []) {
                 throw new InvalidArgumentException('An existing-record relationship cannot submit target values.');
             }
             return [$this->required($form, 'target_record_id'), []];
         }
-        $fields = $owned['fields'] ?? null;
-        if (!is_array($fields) || !array_is_list($fields)) {
-            throw new BusinessRecordDefinitionUnavailable();
-        }
+        $fields = $this->metadataList(
+            $owned['fields'] ?? null,
+            'An owned-line field list is unavailable.',
+        );
         $values = $this->decodeStructuredValues(
             $this->nestedObject($form, 'target_values'),
             $this->nestedObject($form, 'target_structured'),
@@ -1221,9 +1242,18 @@ final readonly class GeneratedBusinessBrowserController
         bool $submitted,
     ): BusinessSchemaForm {
         $candidate = $this->actionMetadata($model, $action);
-        $schema = $candidate['custom_contract']['command_schema'] ?? self::emptyObjectSchema();
-        if (!is_array($schema) || array_is_list($schema)) {
-            throw new BusinessRecordDefinitionUnavailable();
+        $contract = $candidate['custom_contract'] ?? null;
+        if ($contract === null) {
+            $schema = self::emptyObjectSchema();
+        } else {
+            $contract = $this->metadataObject(
+                $contract,
+                'A generated custom action contract is unavailable.',
+            );
+            $schema = $this->metadataObject(
+                $contract['command_schema'] ?? null,
+                'A generated custom action command schema is unavailable.',
+            );
         }
 
         return BusinessSchemaForm::fromInput(
@@ -1250,12 +1280,16 @@ final readonly class GeneratedBusinessBrowserController
      */
     private function actionMetadata(array $model, string $action): array
     {
-        $actions = $model['definition']['actions'] ?? [];
-        if (!is_array($actions) || !array_is_list($actions)) {
-            throw new BusinessRecordDefinitionUnavailable();
-        }
+        $definition = $this->metadataObject(
+            $model['definition'] ?? null,
+            'A generated action definition is unavailable.',
+        );
+        $actions = $this->metadataList(
+            $definition['actions'] ?? null,
+            'A generated action list is unavailable.',
+        );
         foreach ($actions as $candidate) {
-            if (is_array($candidate) && ($candidate['handle'] ?? null) === $action) {
+            if (($candidate['handle'] ?? null) === $action) {
                 return $candidate;
             }
         }
@@ -1328,10 +1362,10 @@ final readonly class GeneratedBusinessBrowserController
         ?array $structured = null,
     ): array {
         $operation = $record === null ? BusinessSurfaceOperation::Create : BusinessSurfaceOperation::Update;
-        $fields = $model['fields'] ?? [];
-        if (!is_array($fields) || !array_is_list($fields)) {
-            throw new InvalidArgumentException('A generated business form field list is invalid.');
-        }
+        $fields = $this->metadataList(
+            $model['fields'] ?? null,
+            'A generated business form field list is invalid.',
+        );
         $selected = $this->selectedChoice($query);
         foreach ($fields as &$field) {
             $widget = $field['widget'] ?? null;
@@ -1374,10 +1408,10 @@ final readonly class GeneratedBusinessBrowserController
      */
     private function structuredFields(array $model, ?array $structured): array
     {
-        $fields = $model['fields'] ?? null;
-        if (!is_array($fields) || !array_is_list($fields)) {
-            throw new InvalidArgumentException('A generated business structured field list is invalid.');
-        }
+        $fields = $this->metadataList(
+            $model['fields'] ?? null,
+            'A generated business structured field list is invalid.',
+        );
         $controls = $structured ?? [];
         $allowed = [];
         foreach ($fields as &$field) {
@@ -1437,10 +1471,10 @@ final readonly class GeneratedBusinessBrowserController
         array $structured,
         array $labels,
     ): array {
-        $fields = $owned['fields'] ?? null;
-        if (!is_array($fields) || !array_is_list($fields)) {
-            throw new BusinessRecordDefinitionUnavailable();
-        }
+        $fields = $this->metadataList(
+            $owned['fields'] ?? null,
+            'An owned-line form field list is unavailable.',
+        );
         $allowedStructured = [];
         $allowedLabels = [];
         foreach ($fields as &$field) {
@@ -1650,10 +1684,18 @@ final readonly class GeneratedBusinessBrowserController
         array $structured = [],
         array $labels = [],
     ): array {
-        $relationships = $model['definition']['relationships'] ?? [];
-        if (!is_array($relationships) || !array_is_list($relationships)) {
-            throw new InvalidArgumentException('A generated relationship metadata list is invalid.');
-        }
+        $definitionMetadata = $this->metadataObject(
+            $model['definition'] ?? null,
+            'A generated relationship definition is invalid.',
+        );
+        $relationships = $this->metadataList(
+            $definitionMetadata['relationships'] ?? null,
+            'A generated relationship metadata list is invalid.',
+        );
+        $availableOperations = $this->objectValue(
+            $model['available_operations'] ?? [],
+            'A generated relationship operation map is invalid.',
+        );
         $selected = $this->selectedChoice($query);
         $focus = $ownedLine ?? ($model['relationship_focus'] ?? null);
         if ($focus !== null && !is_string($focus)) {
@@ -1670,7 +1712,7 @@ final readonly class GeneratedBusinessBrowserController
             if ($focus !== $handle) {
                 continue;
             }
-            if (!isset($model['available_operations']['relation'])) {
+            if (!isset($availableOperations['relation'])) {
                 continue;
             }
             if (($relationship['kind'] ?? null) === 'owned_line_collection') {
@@ -1710,7 +1752,8 @@ final readonly class GeneratedBusinessBrowserController
             }
         }
         unset($relationship);
-        $model['definition']['relationships'] = $relationships;
+        $definitionMetadata['relationships'] = $relationships;
+        $model['definition'] = $definitionMetadata;
 
         return $model;
     }
@@ -1983,7 +2026,7 @@ final readonly class GeneratedBusinessBrowserController
         if (!is_array($values) || ($values !== [] && array_is_list($values))) {
             throw new InvalidArgumentException('Generated business form values must be a nested object.');
         }
-        return $values;
+        return $this->objectValue($values, 'Generated business form values must be a nested object.');
     }
 
     /**
@@ -2004,7 +2047,7 @@ final readonly class GeneratedBusinessBrowserController
         if (!is_array($value) || ($value !== [] && array_is_list($value))) {
             throw new InvalidArgumentException('A generated business nested object is malformed.');
         }
-        return $value;
+        return $this->objectValue($value, 'A generated business nested object is malformed.');
     }
 
     /**
@@ -2107,18 +2150,105 @@ final readonly class GeneratedBusinessBrowserController
     private function stringList(array $form, string $key): array
     {
         $value = $form[$key] ?? null;
-        $values = is_array($value) && array_is_list($value)
-            ? $value
-            : (is_string($value) ? array_filter(array_map('trim', explode(',', $value))) : []);
+        $values = [];
+        if (is_array($value) && array_is_list($value)) {
+            foreach ($value as $item) {
+                if (!is_string($item)) {
+                    throw new InvalidArgumentException(
+                        'A generated business identity list contains an invalid value.',
+                    );
+                }
+                $values[] = $item;
+            }
+        } elseif (is_string($value)) {
+            foreach (explode(',', $value) as $item) {
+                $item = trim($item);
+                if ($item !== '') {
+                    $values[] = $item;
+                }
+            }
+        }
         if ($values === [] || count($values) > 1000 || count($values) !== count(array_unique($values))) {
             throw new InvalidArgumentException('A generated business identity list is invalid or unbounded.');
         }
         foreach ($values as $item) {
-            if (!is_string($item) || $item === '' || strlen($item) > 191) {
+            if ($item === '' || strlen($item) > 191) {
                 throw new InvalidArgumentException('A generated business identity list contains an invalid value.');
             }
         }
 
         return array_values($values);
+    }
+
+    /**
+     * Narrow one trusted facade metadata object or fail closed.
+     *
+     * @param   mixed   $value    Candidate metadata object.
+     * @param   string  $message  Safe failure description.
+     *
+     * @return  array<string, mixed>  String-keyed metadata.
+     *
+     * @throws  BusinessRecordDefinitionUnavailable  When the facade result is malformed.
+     *
+     * @since   2.0.0
+     */
+    private function metadataObject(mixed $value, string $message): array
+    {
+        try {
+            return $this->objectValue($value, $message);
+        } catch (InvalidArgumentException) {
+            throw new BusinessRecordDefinitionUnavailable();
+        }
+    }
+
+    /**
+     * Narrow one trusted facade metadata list or fail closed.
+     *
+     * @param   mixed   $value    Candidate metadata list.
+     * @param   string  $message  Safe failure description.
+     *
+     * @return  list<array<string, mixed>>  Validated metadata objects.
+     *
+     * @throws  BusinessRecordDefinitionUnavailable  When the facade result is malformed.
+     *
+     * @since   2.0.0
+     */
+    private function metadataList(mixed $value, string $message): array
+    {
+        if (!is_array($value) || !array_is_list($value)) {
+            throw new BusinessRecordDefinitionUnavailable();
+        }
+        $items = [];
+        foreach ($value as $item) {
+            $items[] = $this->metadataObject($item, $message);
+        }
+
+        return $items;
+    }
+
+    /**
+     * Validate one decoded browser object without coercing numeric keys.
+     *
+     * @param   mixed   $value    Candidate object.
+     * @param   string  $message  Safe validation failure.
+     *
+     * @return  array<string, mixed>  String-keyed object.
+     *
+     * @since   2.0.0
+     */
+    private function objectValue(mixed $value, string $message): array
+    {
+        if (!is_array($value) || ($value !== [] && array_is_list($value))) {
+            throw new InvalidArgumentException($message);
+        }
+        $object = [];
+        foreach ($value as $key => $member) {
+            if (!is_string($key)) {
+                throw new InvalidArgumentException($message);
+            }
+            $object[$key] = $member;
+        }
+
+        return $object;
     }
 }

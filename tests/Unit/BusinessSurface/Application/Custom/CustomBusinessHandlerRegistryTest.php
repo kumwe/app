@@ -422,6 +422,7 @@ final class CustomBusinessHandlerRegistryTest extends TestCase
                 new CustomBusinessSchema($schema);
                 self::fail('An unknown, inexact, open, or unbounded schema was accepted.');
             } catch (InvalidArgumentException) {
+                self::addToAssertionCount(1);
             }
         }
     }

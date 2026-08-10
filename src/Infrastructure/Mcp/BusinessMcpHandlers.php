@@ -734,7 +734,9 @@ final readonly class BusinessMcpHandlers
         ExecutionContext $context,
         string $operationId,
     ): array {
-        return $this->operations->get($context, self::operationId($operationId));
+        $operationId = self::operationId($operationId);
+
+        return $this->operations->get($context, $operationId);
     }
 
     /**
@@ -778,9 +780,9 @@ final readonly class BusinessMcpHandlers
         array $input,
         callable $mutation,
     ): array {
-        /** @var TResult $result */
         $plannedInput = ['operation_id' => $operationId, ...$input];
         $executed = false;
+        /** @var TResult $result */
         $result = $this->mutations->run(
             $context,
             self::guardOperation($operation),

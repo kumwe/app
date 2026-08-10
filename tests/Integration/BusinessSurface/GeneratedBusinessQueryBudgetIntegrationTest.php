@@ -19,7 +19,7 @@ use Kumwe\CMS\Application\Authorization\AuthenticationStrength;
 use Kumwe\CMS\Application\Authorization\ExecutionContext;
 use Kumwe\CMS\Application\Authorization\SiteContext;
 use Kumwe\CMS\BusinessDefinition\Application\BusinessDefinitionRepository;
-use Kumwe\CMS\BusinessDefinition\Application\FieldTypeDefinitionResolver;
+use Kumwe\CMS\BusinessDefinition\Application\FieldTypeRegistry;
 use Kumwe\CMS\BusinessDefinition\Infrastructure\Persistence\DoctrineBusinessDefinitionRepository;
 use Kumwe\CMS\BusinessDefinition\Domain\EntityTypeDefinition;
 use Kumwe\CMS\BusinessRecord\Application\BusinessRecordDefinitionResolver;
@@ -552,7 +552,7 @@ final class GeneratedBusinessQueryBudgetIntegrationTest extends TestCase
         return new BusinessSurfaceCatalog(
             $resolver,
             $access,
-            $this->service($container, FieldTypeDefinitionResolver::class),
+            $this->service($container, FieldTypeRegistry::class),
             $this->service($container, AuthorizationGateway::class),
             new DoctrineTransactionManager($connection),
             $this->service($container, RuntimeMaterializationState::class),

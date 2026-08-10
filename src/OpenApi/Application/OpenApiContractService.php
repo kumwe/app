@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Kumwe\CMS\OpenApi\Application;
 
+use InvalidArgumentException;
 use Kumwe\CMS\Application\Authorization\ExecutionContext;
 use Kumwe\CMS\BusinessSurface\Application\BusinessSurface;
 use Kumwe\CMS\BusinessSurface\Application\BusinessSurfaceCatalog;
@@ -76,6 +77,7 @@ final readonly class OpenApiContractService implements OpenApiContractProvider
      */
     private function current(ExecutionContext $context): CompiledOpenApiContract
     {
+        /** @var array<string, array<string, mixed>> $merged */
         $merged = [];
         foreach (
             [
@@ -91,7 +93,7 @@ final readonly class OpenApiContractService implements OpenApiContractProvider
             ] as $operation
         ) {
             foreach ($this->catalog->definitions($context, BusinessSurface::Api, $operation) as $definition) {
-                $handle = $definition['handle'];
+                $handle = $this->metadataHandle($definition, 'definition');
                 $merged[$handle] = isset($merged[$handle])
                     ? $this->merge($merged[$handle], $definition)
                     : $definition;
@@ -155,23 +157,43 @@ final readonly class OpenApiContractService implements OpenApiContractProvider
      */
     private function merge(array $left, array $right): array
     {
+        if (
+            $this->metadataHandle($left, 'definition')
+            !== $this->metadataHandle($right, 'definition')
+        ) {
+            throw new InvalidArgumentException('OpenAPI metadata from different definitions cannot be merged.');
+        }
+        /** @var array<string, array<string, mixed>> $fields */
         $fields = [];
-        foreach (array_merge($left['fields'], $right['fields']) as $field) {
-            $handle = $field['handle'];
+        $fieldItems = [
+            ...$this->metadataItems($left, 'fields', 256),
+            ...$this->metadataItems($right, 'fields', 256),
+        ];
+        foreach ($fieldItems as $field) {
+            $handle = $this->metadataHandle($field, 'field');
+            $uses = $this->booleanFlags($field, 'uses');
             if (isset($fields[$handle])) {
-                foreach ($field['uses'] as $use => $allowed) {
-                    $fields[$handle]['uses'][$use] = ($fields[$handle]['uses'][$use] ?? false) || $allowed;
+                $mergedUses = $this->booleanFlags($fields[$handle], 'uses');
+                foreach ($uses as $use => $allowed) {
+                    $mergedUses[$use] = ($mergedUses[$use] ?? false) || $allowed;
                 }
+                $fields[$handle]['uses'] = $mergedUses;
                 continue;
             }
+            $field['uses'] = $uses;
             $fields[$handle] = $field;
         }
         ksort($fields, SORT_STRING);
         $left['fields'] = array_values($fields);
         foreach (['views', 'actions', 'relationships'] as $collection) {
+            /** @var array<string, array<string, mixed>> $items */
             $items = [];
-            foreach (array_merge($left[$collection], $right[$collection]) as $item) {
-                $items[$item['handle']] = $item;
+            $collectionItems = [
+                ...$this->metadataItems($left, $collection, 128),
+                ...$this->metadataItems($right, $collection, 128),
+            ];
+            foreach ($collectionItems as $item) {
+                $items[$this->metadataHandle($item, $collection)] = $item;
             }
             ksort($items, SORT_STRING);
             $left[$collection] = array_values($items);
@@ -179,5 +201,116 @@ final readonly class OpenApiContractService implements OpenApiContractProvider
         $left['operation'] = 'multi';
 
         return $left;
+    }
+
+    /**
+     * Read a required bounded handle from one catalog metadata object.
+     *
+     * @param   array<string, mixed>  $item     Definition, field, view, action, or relationship metadata.
+     * @param   string                $context  Stable object label for validation failures.
+     *
+     * @return  string  Valid non-empty metadata handle.
+     *
+     * @throws  InvalidArgumentException  When the handle is absent or unsafe for keyed merging.
+     *
+     * @since   2.0.0
+     */
+    private function metadataHandle(array $item, string $context): string
+    {
+        $handle = $item['handle'] ?? null;
+        if (!is_string($handle) || $handle === '' || strlen($handle) > 191) {
+            throw new InvalidArgumentException('OpenAPI ' . $context . ' metadata has an invalid handle.');
+        }
+
+        return $handle;
+    }
+
+    /**
+     * Read a bounded list of string-keyed catalog metadata objects.
+     *
+     * @param   array<string, mixed>  $document  Definition metadata carrying the list.
+     * @param   string                $member    Required collection member.
+     * @param   int                   $maximum   Maximum accepted item count.
+     *
+     * @return  list<array<string, mixed>>  Validated metadata objects in catalog order.
+     *
+     * @throws  InvalidArgumentException  When the collection is absent, malformed, or unbounded.
+     *
+     * @since   2.0.0
+     */
+    private function metadataItems(array $document, string $member, int $maximum): array
+    {
+        $items = $document[$member] ?? null;
+        if (!is_array($items) || !array_is_list($items) || count($items) > $maximum) {
+            throw new InvalidArgumentException('OpenAPI definition metadata has an invalid ' . $member . ' list.');
+        }
+        $validated = [];
+        foreach ($items as $item) {
+            $validated[] = $this->objectArray(
+                $item,
+                'OpenAPI definition metadata contains an invalid ' . $member . ' item.',
+            );
+        }
+
+        return $validated;
+    }
+
+    /**
+     * Read a bounded boolean flag map from one field metadata object.
+     *
+     * @param   array<string, mixed>  $field   Field metadata carrying the flag map.
+     * @param   string                $member  Required flag-map member.
+     *
+     * @return  array<string, bool>  Validated use flags.
+     *
+     * @throws  InvalidArgumentException  When a flag name or value is malformed or unbounded.
+     *
+     * @since   2.0.0
+     */
+    private function booleanFlags(array $field, string $member): array
+    {
+        $flags = $this->objectArray(
+            $field[$member] ?? null,
+            'OpenAPI field metadata has an invalid use map.',
+        );
+        if (count($flags) > 32) {
+            throw new InvalidArgumentException('OpenAPI field metadata has an invalid use map.');
+        }
+        $validated = [];
+        foreach ($flags as $use => $allowed) {
+            if ($use === '' || strlen($use) > 63 || !is_bool($allowed)) {
+                throw new InvalidArgumentException('OpenAPI field metadata has an invalid use map.');
+            }
+            $validated[$use] = $allowed;
+        }
+
+        return $validated;
+    }
+
+    /**
+     * Narrow a catalog value to the JSON-object representation required for deterministic keyed merging.
+     *
+     * @param   mixed   $value    Candidate catalog value.
+     * @param   string  $message  Stable validation failure detail.
+     *
+     * @return  array<string, mixed>  Validated string-keyed object.
+     *
+     * @throws  InvalidArgumentException  When the value is not a string-keyed object.
+     *
+     * @since   2.0.0
+     */
+    private function objectArray(mixed $value, string $message): array
+    {
+        if (!is_array($value)) {
+            throw new InvalidArgumentException($message);
+        }
+        foreach (array_keys($value) as $key) {
+            if (!is_string($key)) {
+                throw new InvalidArgumentException($message);
+            }
+        }
+        /** @var array<string, mixed> $value */
+
+        return $value;
     }
 }

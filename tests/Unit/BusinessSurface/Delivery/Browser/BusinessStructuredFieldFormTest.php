@@ -130,6 +130,7 @@ final class BusinessStructuredFieldFormTest extends TestCase
                 );
                 self::fail('An ambiguous or unbounded structured control document was accepted.');
             } catch (InvalidArgumentException) {
+                self::addToAssertionCount(1);
             }
         }
     }
@@ -160,6 +161,7 @@ final class BusinessStructuredFieldFormTest extends TestCase
                 );
                 self::fail('A structured initial value with the wrong root type was accepted.');
             } catch (InvalidArgumentException) {
+                self::addToAssertionCount(1);
             }
         }
     }

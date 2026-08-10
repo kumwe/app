@@ -16,6 +16,16 @@ use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessSchema;
  * Array row counts and optional structured-value presence use opaque path tokens, allowing a native GET
  * or POST round trip to add rows without exposing JSON authoring or accepting arbitrary field names.
  *
+ * @phpstan-type FormBase array{
+ *     kind: string,
+ *     label: string,
+ *     description: string,
+ *     name: string,
+ *     required: bool,
+ *     nullable: bool,
+ *     path_token: string
+ * }
+ *
  * @since  2.0.0
  */
 final readonly class BusinessSchemaForm
@@ -76,7 +86,9 @@ final readonly class BusinessSchemaForm
         if ($raw !== [] && array_is_list($raw)) {
             throw new InvalidArgumentException('A generated schema form root must be an object.');
         }
+        /** @var array<string, true> $usedCounts */
         $usedCounts = [];
+        /** @var array<string, true> $usedPresence */
         $usedPresence = [];
         $nodes = 0;
         $result = self::node(
@@ -102,17 +114,23 @@ final readonly class BusinessSchemaForm
         if (array_diff(array_keys($presence), array_keys($usedPresence)) !== []) {
             throw new InvalidArgumentException('A generated schema form contains an unknown presence control.');
         }
-        $value = $result['value'];
-        if ($submitted && (!is_array($value) || array_is_list($value))) {
-            throw new InvalidArgumentException('A generated schema form produced an invalid root object.');
-        }
+        $root = $result['model'];
+        $fields = self::objectList(
+            $root['children'] ?? null,
+            'A generated schema form produced an invalid root field list.',
+        );
+        $value = [];
         if ($submitted) {
+            $value = self::objectValue(
+                $result['value'],
+                'A generated schema form produced an invalid root object.',
+            );
             CustomBusinessSchema::fromArray($schema)->assertValid($value, 'browser form');
         }
 
         return new self(
-            $result['model']['children'],
-            $submitted ? $value : [],
+            $fields,
+            $value,
             $submitted,
         );
     }
@@ -225,7 +243,7 @@ final readonly class BusinessSchemaForm
     /**
      * Build one closed object fieldset and recurse through declared properties.
      *
-     * @param   array<string, mixed>  $base          Common semantic model members.
+     * @param   FormBase              $base          Common semantic model members.
      * @param   array<string, mixed>  $schema        Object schema.
      * @param   list<string|int>      $path          Current path.
      * @param   bool                  $required      Whether the parent requires this object.
@@ -257,17 +275,17 @@ final readonly class BusinessSchemaForm
         if ($raw !== null && (!is_array($raw) || ($raw !== [] && array_is_list($raw)))) {
             throw new InvalidArgumentException('A generated schema object field is malformed.');
         }
-        $rawObject = is_array($raw) ? $raw : [];
-        $properties = $schema['properties'] ?? [];
-        $requiredProperties = $schema['required'] ?? [];
-        if (
-            !is_array($properties)
-            || ($properties !== [] && array_is_list($properties))
-            || !is_array($requiredProperties)
-            || !array_is_list($requiredProperties)
-        ) {
-            throw new InvalidArgumentException('A generated schema object contract is malformed.');
-        }
+        $rawObject = $raw === null
+            ? []
+            : self::objectValue($raw, 'A generated schema object field is malformed.');
+        $properties = self::objectValue(
+            $schema['properties'] ?? [],
+            'A generated schema object contract is malformed.',
+        );
+        $requiredProperties = self::stringList(
+            $schema['required'] ?? [],
+            'A generated schema object contract is malformed.',
+        );
         if (array_diff(array_keys($rawObject), array_keys($properties)) !== []) {
             throw new InvalidArgumentException('A generated schema object contains an undeclared property.');
         }
@@ -279,7 +297,7 @@ final readonly class BusinessSchemaForm
                 throw new InvalidArgumentException('A generated schema object property is malformed.');
             }
             $child = self::node(
-                $property,
+                self::objectValue($property, 'A generated schema object property is malformed.'),
                 ucfirst(str_replace('_', ' ', $handle)),
                 $base['name'] . '[' . $handle . ']',
                 [...$path, $handle],
@@ -292,7 +310,7 @@ final readonly class BusinessSchemaForm
                 $nodes,
                 $submitted && $included,
             );
-            $children[] = $child['model'];
+            $children[] = [...$child['model'], 'handle' => $handle];
             if ($submitted && $included && $child['included']) {
                 $value[$handle] = $child['value'];
             }
@@ -311,7 +329,7 @@ final readonly class BusinessSchemaForm
     /**
      * Build one bounded array fieldset with a native row-count control.
      *
-     * @param   array<string, mixed>  $base          Common semantic model members.
+     * @param   FormBase              $base          Common semantic model members.
      * @param   array<string, mixed>  $schema        Array schema.
      * @param   list<string|int>      $path          Current path.
      * @param   bool                  $required      Whether the parent requires this array.
@@ -350,6 +368,7 @@ final readonly class BusinessSchemaForm
         if (!is_int($maximum) || $maximum < 0 || $maximum > 200 || !is_array($items) || array_is_list($items)) {
             throw new InvalidArgumentException('A generated schema array contract is malformed.');
         }
+        $items = self::objectValue($items, 'A generated schema array contract is malformed.');
         $token = $base['path_token'];
         $usedCounts[$token] = true;
         $requested = self::count($counts[$token] ?? null, $minimum, $maximum);
@@ -398,7 +417,7 @@ final readonly class BusinessSchemaForm
     /**
      * Build one scalar input and optionally coerce its exact submitted value.
      *
-     * @param   array<string, mixed>  $base       Common semantic model members.
+     * @param   FormBase              $base       Common semantic model members.
      * @param   array<string, mixed>  $schema     Scalar schema.
      * @param   string                $type       Primary scalar type.
      * @param   mixed                 $raw        Native scalar input.
@@ -468,7 +487,7 @@ final readonly class BusinessSchemaForm
     /**
      * Build one exact enum selector and optionally decode its chosen token.
      *
-     * @param   array<string, mixed>  $base       Common semantic model members.
+     * @param   FormBase              $base       Common semantic model members.
      * @param   array<string, mixed>  $schema     Enum schema.
      * @param   mixed                 $raw        Native option token.
      * @param   bool                  $required   Whether absence is invalid.
@@ -525,7 +544,7 @@ final readonly class BusinessSchemaForm
     /**
      * Build one server-owned constant value with optional presence control.
      *
-     * @param   array<string, mixed>  $base          Common semantic model members.
+     * @param   FormBase              $base          Common semantic model members.
      * @param   mixed                 $value         Exact declared constant.
      * @param   bool                  $required      Whether the parent requires the property.
      * @param   array<string, mixed>  $presence      Structured presence controls.
@@ -561,7 +580,7 @@ final readonly class BusinessSchemaForm
     /**
      * Determine whether a structured or constant property is included.
      *
-     * @param   array<string, mixed>  $base          Common semantic model members.
+     * @param   FormBase              $base          Common semantic model members.
      * @param   bool                  $required      Whether the parent requires the property.
      * @param   array<string, mixed>  $presence      Submitted presence controls.
      * @param   array<string, true>   $usedPresence  Reached presence tokens.
@@ -814,6 +833,81 @@ final readonly class BusinessSchemaForm
     private static function pathToken(array $path): string
     {
         return $path === [] ? 'root' : 'p' . substr(hash('sha256', json_encode($path, JSON_THROW_ON_ERROR)), 0, 24);
+    }
+
+    /**
+     * Validate and narrow one decoded object without coercing numeric keys.
+     *
+     * @param   mixed   $value    Candidate object.
+     * @param   string  $message  Safe validation failure.
+     *
+     * @return  array<string, mixed>  String-keyed object.
+     *
+     * @since   2.0.0
+     */
+    private static function objectValue(mixed $value, string $message): array
+    {
+        if (!is_array($value) || ($value !== [] && array_is_list($value))) {
+            throw new InvalidArgumentException($message);
+        }
+        $object = [];
+        foreach ($value as $key => $member) {
+            if (!is_string($key)) {
+                throw new InvalidArgumentException($message);
+            }
+            $object[$key] = $member;
+        }
+
+        return $object;
+    }
+
+    /**
+     * Validate and narrow one list of decoded objects.
+     *
+     * @param   mixed   $value    Candidate list.
+     * @param   string  $message  Safe validation failure.
+     *
+     * @return  list<array<string, mixed>>  Validated object list.
+     *
+     * @since   2.0.0
+     */
+    private static function objectList(mixed $value, string $message): array
+    {
+        if (!is_array($value) || !array_is_list($value)) {
+            throw new InvalidArgumentException($message);
+        }
+        $items = [];
+        foreach ($value as $item) {
+            $items[] = self::objectValue($item, $message);
+        }
+
+        return $items;
+    }
+
+    /**
+     * Validate and narrow one list of strings.
+     *
+     * @param   mixed   $value    Candidate list.
+     * @param   string  $message  Safe validation failure.
+     *
+     * @return  list<string>  Validated string list.
+     *
+     * @since   2.0.0
+     */
+    private static function stringList(mixed $value, string $message): array
+    {
+        if (!is_array($value) || !array_is_list($value)) {
+            throw new InvalidArgumentException($message);
+        }
+        $items = [];
+        foreach ($value as $item) {
+            if (!is_string($item)) {
+                throw new InvalidArgumentException($message);
+            }
+            $items[] = $item;
+        }
+
+        return $items;
     }
 
     /**

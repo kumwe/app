@@ -19,6 +19,7 @@ use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessActionLedgerResul
 use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessSchema;
 use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessSurfaceDispatcher;
 use Kumwe\CMS\Extension\Runtime\RuntimeMaterializationState;
+use Kumwe\CMS\Infrastructure\Persistence\TransactionManager;
 use Psr\Clock\ClockInterface;
 use Ramsey\Uuid\Uuid;
 
@@ -33,6 +34,7 @@ final readonly class BusinessOperationStatusService
      * Configure caller-bound status validation and safe result projection.
      *
      * @param  BusinessOperationStatusRepository  $operations    Scoped verified ledger lookup.
+     * @param  TransactionManager                 $transactions  Holds the status proof snapshot stable.
      * @param  BusinessRecordDefinitionResolver   $definitions   Trusted active definition resolver.
      * @param  BusinessRecordAccessController     $access        Canonical record-policy planner.
      * @param  RecordFingerprint                  $fingerprints  Keyed authorization digest service.
@@ -46,6 +48,7 @@ final readonly class BusinessOperationStatusService
      */
     public function __construct(
         private BusinessOperationStatusRepository $operations,
+        private TransactionManager $transactions,
         private BusinessRecordDefinitionResolver $definitions,
         private BusinessRecordAccessController $access,
         private RecordFingerprint $fingerprints,
@@ -116,6 +119,32 @@ final readonly class BusinessOperationStatusService
         string $operationId,
         bool $includeDefinitionReference = false,
     ): array {
+        return $this->transactions->transactional(fn (): array => $this->resolveInTransaction(
+            $context,
+            $operationId,
+            $includeDefinitionReference,
+        ));
+    }
+
+    /**
+     * Re-prove one operation while its ledger, definition and policy generations share a transaction.
+     *
+     * @param   ExecutionContext  $context                     Authenticated actor and exact membership.
+     * @param   string            $operationId                 Caller-supplied operation identity.
+     * @param   bool              $includeDefinitionReference  Whether to add the active definition handle.
+     *
+     * @return  array<string, mixed>  Safe status projection.
+     *
+     * @throws  BusinessOperationNotFound  When any availability or binding proof fails.
+     * @throws  InvalidArgumentException  When the operation identifier is malformed.
+     *
+     * @since   2.0.0
+     */
+    private function resolveInTransaction(
+        ExecutionContext $context,
+        string $operationId,
+        bool $includeDefinitionReference,
+    ): array {
         if (preg_match('/^[A-Za-z0-9][A-Za-z0-9._:-]{7,127}$/D', $operationId) !== 1) {
             throw new InvalidArgumentException('A business operation identity is invalid.');
         }
@@ -133,7 +162,12 @@ final readonly class BusinessOperationStatusService
             $result = $approvalResult === null && $customResult === null
                 ? RecordMutationResult::fromArray($storedResult)
                 : null;
-            $definitionId = $approvalResult['definition_id'] ?? $customResult?->definitionId ?? $result?->definitionId;
+            $definitionId = match (true) {
+                $approvalResult !== null => $approvalResult['definition_id'],
+                $customResult !== null => $customResult->definitionId,
+                $result !== null => $result->definitionId,
+                default => null,
+            };
             if (!is_string($definitionId)) {
                 throw new BusinessOperationNotFound();
             }
@@ -201,9 +235,6 @@ final readonly class BusinessOperationStatusService
             },
         ];
         if ($includeDefinitionReference) {
-            if ($definitionReference === null) {
-                throw new BusinessOperationNotFound();
-            }
             $status['definition_reference'] = $definitionReference;
         }
 
@@ -216,9 +247,9 @@ final readonly class BusinessOperationStatusService
      * @param   ExecutionContext                  $context     Current authenticated actor and surface.
      * @param   BusinessSurface                   $surface     Authenticated generated delivery boundary.
      * @param   string                            $operation   Stored ledger operation identity.
-     * @param   EntityTypeDefinition              $definition Current active installed definition.
-     * @param   BusinessRecordAccessPlan          $plan       Current action policy decision.
-     * @param   CustomBusinessActionLedgerResult  $result     Strictly parsed tagged stored result.
+     * @param   EntityTypeDefinition              $definition  Current active installed definition.
+     * @param   BusinessRecordAccessPlan          $plan        Current action policy decision.
+     * @param   CustomBusinessActionLedgerResult  $result      Strictly parsed tagged stored result.
      *
      * @return  void
      *
@@ -267,12 +298,18 @@ final readonly class BusinessOperationStatusService
             $definition->id,
             BusinessSurfaceOperation::Action,
         );
-        if (
-            !array_any(
-                $metadata['actions'],
-                static fn (array $action): bool => ($action['handle'] ?? null) === $result->action,
-            )
-        ) {
+        $actions = $metadata['actions'] ?? null;
+        if (!is_array($actions) || !array_is_list($actions)) {
+            throw new BusinessOperationNotFound();
+        }
+        $available = false;
+        foreach ($actions as $action) {
+            if (is_array($action) && ($action['handle'] ?? null) === $result->action) {
+                $available = true;
+                break;
+            }
+        }
+        if (!$available) {
             throw new BusinessOperationNotFound();
         }
         $schemas = $this->custom->actionContractSchemas($definition, $result->action)

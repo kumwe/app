@@ -39,10 +39,14 @@ final readonly class OpenApiComponentClaimAdmission implements BusinessDefinitio
         if (($coreContract['openapi'] ?? null) !== '3.1.0') {
             throw new InvalidArgumentException('The contract admission document must use OpenAPI 3.1.0.');
         }
-        $schemas = $coreContract['components']['schemas'] ?? null;
+        $components = $coreContract['components'] ?? null;
+        if (!is_array($components) || ($components !== [] && array_is_list($components))) {
+            throw new InvalidArgumentException('The contract admission component registry is invalid.');
+        }
+        $schemas = $components['schemas'] ?? null;
         $generated = $coreContract['x-kumwe-generated-components'] ?? [];
         if (
-            !is_array($schemas) || array_is_list($schemas)
+            !is_array($schemas) || ($schemas !== [] && array_is_list($schemas))
             || !is_array($generated) || !array_is_list($generated) || count($generated) > 1024
         ) {
             throw new InvalidArgumentException('The contract admission component registry is invalid.');

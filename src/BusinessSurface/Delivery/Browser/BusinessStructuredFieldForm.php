@@ -111,6 +111,10 @@ final readonly class BusinessStructuredFieldForm
         if (!is_array($controls) || array_is_list($controls)) {
             throw new InvalidArgumentException('A generated structured field control document is malformed.');
         }
+        $controls = self::objectValue(
+            $controls,
+            'A generated structured field control document is malformed.',
+        );
         $nodes = 0;
         $result = self::node($controls, $name, $rootKind, $maximum, 0, $nodes, $submitted);
 
@@ -188,8 +192,11 @@ final readonly class BusinessStructuredFieldForm
         bool $submitted,
     ): array {
         self::keys($input, ['kind', 'count', 'entries']);
-        $entries = $input['entries'] ?? [];
-        if (!is_array($entries) || !array_is_list($entries) || count($entries) > $maximum) {
+        $entries = self::objectList(
+            $input['entries'] ?? [],
+            'A generated structured field member list is malformed or unbounded.',
+        );
+        if (count($entries) > $maximum) {
             throw new InvalidArgumentException('A generated structured field member list is malformed or unbounded.');
         }
         $count = self::count($input['count'] ?? count($entries), $maximum);
@@ -203,11 +210,8 @@ final readonly class BusinessStructuredFieldForm
         $value = [];
         $seen = [];
         foreach ($entries as $index => $entry) {
-            if (!is_array($entry) || array_is_list($entry)) {
-                throw new InvalidArgumentException('A generated structured field member is malformed.');
-            }
             self::keys($entry, $kind === 'object' ? ['key', 'node'] : ['node']);
-            $key = null;
+            $key = '';
             if ($kind === 'object') {
                 $key = self::key($entry['key'] ?? null, $submitted);
                 if ($submitted && isset($seen[$key])) {
@@ -221,6 +225,7 @@ final readonly class BusinessStructuredFieldForm
             if (!is_array($child) || array_is_list($child)) {
                 throw new InvalidArgumentException('A generated structured field child node is malformed.');
             }
+            $child = self::objectValue($child, 'A generated structured field child node is malformed.');
             $childName = $name . '[entries][' . $index . '][node]';
             $result = self::node(
                 $child,
@@ -233,7 +238,7 @@ final readonly class BusinessStructuredFieldForm
             );
             $models[] = [
                 'index' => $index,
-                'key' => $key ?? (is_string($entry['key'] ?? null) ? $entry['key'] : ''),
+                'key' => $kind === 'object' ? $key : '',
                 'key_name' => $name . '[entries][' . $index . '][key]',
                 'node' => $result['model'],
             ];
@@ -286,10 +291,11 @@ final readonly class BusinessStructuredFieldForm
         if ($kind !== 'null' && !is_string($raw)) {
             throw new InvalidArgumentException('A generated structured scalar control is malformed.');
         }
+        $rawValue = is_string($raw) ? $raw : '';
         $value = match ($kind) {
-            'string' => self::string((string) $raw),
-            'integer' => self::integer((string) $raw, $submitted),
-            'boolean' => self::boolean((string) $raw, $submitted),
+            'string' => self::string($rawValue),
+            'integer' => self::integer($rawValue, $submitted),
+            'boolean' => self::boolean($rawValue, $submitted),
             'null' => null,
             default => throw new InvalidArgumentException('A generated structured scalar kind is unsupported.'),
         };
@@ -300,7 +306,7 @@ final readonly class BusinessStructuredFieldForm
                 'fixed_kind' => $fixed,
                 'kind_name' => $name . '[kind]',
                 'value_name' => $name . '[value]',
-                'value' => $kind === 'boolean' && is_bool($value) ? ($value ? '1' : '0') : (string) $raw,
+                'value' => $kind === 'boolean' && is_bool($value) ? ($value ? '1' : '0') : $rawValue,
                 'kind_options' => self::kindOptions(),
             ],
             'value' => $value,
@@ -356,13 +362,69 @@ final readonly class BusinessStructuredFieldForm
             return ['kind' => $kind, 'count' => count($entries), 'entries' => $entries];
         }
 
-        return match ($kind) {
-            'string' => ['kind' => $kind, 'value' => $value],
-            'integer' => ['kind' => $kind, 'value' => (string) $value],
-            'boolean' => ['kind' => $kind, 'value' => $value ? '1' : '0'],
-            'null' => ['kind' => $kind],
-            default => throw new InvalidArgumentException('A generated structured initial value kind is invalid.'),
-        };
+        if ($kind === 'string' && is_string($value)) {
+            return ['kind' => $kind, 'value' => $value];
+        }
+        if ($kind === 'integer' && is_int($value)) {
+            return ['kind' => $kind, 'value' => (string) $value];
+        }
+        if ($kind === 'boolean' && is_bool($value)) {
+            return ['kind' => $kind, 'value' => $value ? '1' : '0'];
+        }
+        if ($kind === 'null' && $value === null) {
+            return ['kind' => $kind];
+        }
+
+        throw new InvalidArgumentException('A generated structured initial value kind is invalid.');
+    }
+
+    /**
+     * Validate and narrow one decoded structured-control object.
+     *
+     * @param   mixed   $value    Candidate object.
+     * @param   string  $message  Safe validation failure.
+     *
+     * @return  array<string, mixed>  String-keyed object.
+     *
+     * @since   2.0.0
+     */
+    private static function objectValue(mixed $value, string $message): array
+    {
+        if (!is_array($value) || ($value !== [] && array_is_list($value))) {
+            throw new InvalidArgumentException($message);
+        }
+        $object = [];
+        foreach ($value as $key => $member) {
+            if (!is_string($key)) {
+                throw new InvalidArgumentException($message);
+            }
+            $object[$key] = $member;
+        }
+
+        return $object;
+    }
+
+    /**
+     * Validate and narrow one list of structured-control objects.
+     *
+     * @param   mixed   $value    Candidate list.
+     * @param   string  $message  Safe validation failure.
+     *
+     * @return  list<array<string, mixed>>  Validated object list.
+     *
+     * @since   2.0.0
+     */
+    private static function objectList(mixed $value, string $message): array
+    {
+        if (!is_array($value) || !array_is_list($value)) {
+            throw new InvalidArgumentException($message);
+        }
+        $items = [];
+        foreach ($value as $item) {
+            $items[] = self::objectValue($item, $message);
+        }
+
+        return $items;
     }
 
     /**

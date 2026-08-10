@@ -71,7 +71,7 @@ final readonly class BusinessSurfaceService implements BusinessHistoryUseCase, B
      * @param  BusinessRecordQueryFactory        $queries         Shared bounded query grammar compiler.
      * @param  BusinessRecordProjector           $projector       Shared omission-safe result projector.
      * @param  CustomBusinessSurfaceDispatcher   $customBusiness  Signed custom view and action dispatcher.
-     * @param  CustomBusinessActionExecutor       $customActions   Durable guarded custom-action executor.
+     * @param  CustomBusinessActionExecutor      $customActions   Durable guarded custom-action executor.
      * @param  FieldPresentationRegistry         $presentations   Owner-aware safe field presenter registry.
      * @param  MediaService                      $media           Authorized bounded media-choice service.
      * @param  TransactionManager                $transactions    Atomic boundary for bounded bulk mutations.
@@ -176,12 +176,18 @@ final readonly class BusinessSurfaceService implements BusinessHistoryUseCase, B
      * record policy and active owner-aware contract checks before returning safe declarative metadata.
      * Executable handler and schema references never leave the application boundary.
      *
-     * @param   ExecutionContext       $context     Authenticated actor.
-     * @param   BusinessSurface        $surface     Exact delivery boundary.
-     * @param   string                 $definition  Definition UUID or handle.
-     * @param   string                 $view        Custom view handle declared inside the definition.
-     * @param   ?string                $record      Public record identity for detail-like views.
-     * @return  array<string, mixed>  Safe definition, view, operations and closed parameter schema.
+     * @param   ExecutionContext  $context     Authenticated actor.
+     * @param   BusinessSurface   $surface     Exact delivery boundary.
+     * @param   string            $definition  Definition UUID or handle.
+     * @param   string            $view        Custom view handle declared inside the definition.
+     * @param   ?string           $record      Public record identity for detail-like views.
+     *
+     * @return  array{
+     *              definition: array<string, mixed>,
+     *              available_operations: array<string, true>,
+     *              view: array<string, mixed>,
+     *              parameter_schema: array<string, mixed>
+     *          }  Safe definition, view, operations and closed parameter schema.
      *
      * @throws  BusinessRecordDefinitionUnavailable  When the view is absent, denied, unexposed, or inactive.
      *
@@ -218,7 +224,12 @@ final readonly class BusinessSurfaceService implements BusinessHistoryUseCase, B
      * @param   EntityTypeDefinition      $entity      Resolved active entity definition.
      * @param   BusinessSurfaceOperation  $operation   View-kind operation derived by the dispatcher.
      *
-     * @return  array<string, mixed>  Safe definition, view, operations and closed parameter schema.
+     * @return  array{
+     *              definition: array<string, mixed>,
+     *              available_operations: array<string, true>,
+     *              view: array<string, mixed>,
+     *              parameter_schema: array<string, mixed>
+     *          }  Safe definition, view, operations and closed parameter schema.
      *
      * @throws  BusinessRecordDefinitionUnavailable  When the view is absent, denied, unexposed, or inactive.
      *
@@ -278,25 +289,26 @@ final readonly class BusinessSurfaceService implements BusinessHistoryUseCase, B
             $purpose,
         ));
         $projected = $this->projector->browse($result);
-        $items = $projected['items'] ?? null;
-        if (!is_array($items) || !array_is_list($items)) {
-            throw new InvalidArgumentException('A projected business-record page is invalid.');
-        }
+        $items = self::objectDocuments(
+            $projected['items'] ?? null,
+            'A projected business-record page is invalid.',
+        );
         foreach ($items as $index => $item) {
-            if (!is_array($item)) {
-                throw new InvalidArgumentException('A projected business-record item is invalid.');
-            }
-            $projected['items'][$index] = $this->metadataRecord($item, $metadata);
+            $items[$index] = $this->metadataRecord($item, $metadata);
         }
         $resolved = $this->definitions->forCreate($context, $definition);
         foreach ($result->records as $index => $record) {
-            $projected['items'][$index]['fields'] = $this->present(
+            if (!isset($items[$index])) {
+                throw new InvalidArgumentException('A projected business-record page is inconsistent.');
+            }
+            $items[$index]['fields'] = $this->present(
                 $resolved->definition,
                 $metadata,
                 FieldPresentationContext::List,
                 $record->values,
             );
         }
+        $projected['items'] = $items;
 
         return [
             'definition' => $metadata,
@@ -312,13 +324,13 @@ final readonly class BusinessSurfaceService implements BusinessHistoryUseCase, B
      * browse. The record service applies the source access plan's nested target policy; this facade then sends
      * only disclosed values through the registered `relation` presenters and derives a bounded server label.
      *
-     * @param   ExecutionContext      $context     Authenticated actor.
-     * @param   BusinessSurface       $surface     Exact delivery boundary.
-     * @param   string                $definition  Source definition UUID or handle.
-     * @param   string                $related     Relationship or entity-reference field handle.
-     * @param   ?string               $record      Source identity for update/relationship choices.
-     * @param   BusinessSurfaceOperation  $operation  Create, update, or relationship selector context.
-     * @param   array<string, mixed>  $query       Bounded target filter, search, sort and cursor document.
+     * @param   ExecutionContext          $context     Authenticated actor.
+     * @param   BusinessSurface           $surface     Exact delivery boundary.
+     * @param   string                    $definition  Source definition UUID or handle.
+     * @param   string                    $related     Relationship or entity-reference field handle.
+     * @param   ?string                   $record      Source identity for update/relationship choices.
+     * @param   BusinessSurfaceOperation  $operation   Create, update, or relationship selector context.
+     * @param   array<string, mixed>      $query       Bounded target filter, search, sort and cursor document.
      *
      * @return  array{items: list<array<string, mixed>>, next_cursor: ?string,
      *          search_fields: list<array{handle: string, label: string}>}  Safe selector choices and controls.
@@ -611,7 +623,10 @@ final readonly class BusinessSurfaceService implements BusinessHistoryUseCase, B
             throw new InvalidArgumentException('Media choices require a create or update field context.');
         }
         $metadata = $this->metadata($context, $surface, $definition, $operation);
-        foreach ($metadata['fields'] as $candidate) {
+        foreach (self::objectDocuments(
+            $metadata['fields'] ?? null,
+            'Generated business field metadata is invalid.',
+        ) as $candidate) {
             if (($candidate['handle'] ?? null) === $field && ($candidate['type'] ?? null) === 'core.media_reference') {
                 return [
                     'items' => array_map(
@@ -657,11 +672,15 @@ final readonly class BusinessSurfaceService implements BusinessHistoryUseCase, B
             $definition,
             BusinessSurfaceOperation::Read,
         );
-        $includes = [];
-        foreach ($metadata['relationships'] as &$relationship) {
-            $relationship['loaded'] = in_array($relationship['handle'], $includes, true);
+        $relationships = self::objectDocuments(
+            $metadata['relationships'] ?? null,
+            'Generated business relationship metadata is invalid.',
+        );
+        foreach ($relationships as &$relationship) {
+            $relationship['loaded'] = false;
         }
         unset($relationship);
+        $metadata['relationships'] = $relationships;
         $view = $this->records->read(new ReadRecordQuery(
             $context,
             $definition,
@@ -737,22 +756,28 @@ final readonly class BusinessSurfaceService implements BusinessHistoryUseCase, B
         $recordModel = $this->metadataRecord($this->projector->record($view), $metadata);
         $target = $visible['target'] ?? null;
         $included = $view->includes[$relationship] ?? null;
-        $projectedIncluded = $recordModel['includes'][$relationship] ?? null;
+        $recordIncludes = self::objectDocument(
+            $recordModel['includes'] ?? null,
+            'A generated relationship projection is invalid.',
+        );
+        $projectedIncluded = self::objectDocuments(
+            $recordIncludes[$relationship] ?? null,
+            'A generated relationship projection is invalid.',
+        );
         if (
             !is_string($target)
             || !is_array($included)
             || !array_is_list($included)
-            || !is_array($projectedIncluded)
-            || !array_is_list($projectedIncluded)
         ) {
             throw new InvalidArgumentException('A generated relationship projection is invalid.');
         }
-        $recordModel['includes'][$relationship] = $this->presentIncludedRecords(
+        $recordIncludes[$relationship] = $this->presentIncludedRecords(
             $context,
             $target,
             $included,
             $projectedIncluded,
         );
+        $recordModel['includes'] = $recordIncludes;
 
         return [
             'definition' => $metadata,
@@ -1106,9 +1131,15 @@ final readonly class BusinessSurfaceService implements BusinessHistoryUseCase, B
         $metadata = $this->metadata($context, $surface, $definition, BusinessSurfaceOperation::Action);
         $resolved = $this->metadataItem($metadata, 'actions', $action);
 
-        return ($resolved['high_impact'] ?? null) === true
-            ? 'business.record.action:' . (string) $resolved['handle']
-            : null;
+        if (($resolved['high_impact'] ?? null) !== true) {
+            return null;
+        }
+        $handle = $resolved['handle'] ?? null;
+        if (!is_string($handle)) {
+            throw new BusinessRecordDefinitionUnavailable();
+        }
+
+        return 'business.record.action:' . $handle;
     }
 
     /**
@@ -1575,7 +1606,7 @@ final readonly class BusinessSurfaceService implements BusinessHistoryUseCase, B
      * preventing raw portal JSON from reopening a target whose definition-level exposure was denied.
      *
      * @param   RecordQuerySpecification  $specification  Already bounded transport-neutral query.
-     * @param   array<string, mixed>       $metadata       Exact policy- and surface-filtered definition.
+     * @param   array<string, mixed>      $metadata       Exact policy- and surface-filtered definition.
      *
      * @return  RecordQuerySpecification  Equivalent query with a surface-safe projection.
      *
@@ -1742,7 +1773,11 @@ final readonly class BusinessSurfaceService implements BusinessHistoryUseCase, B
      */
     private function organization(ExecutionContext $context, array $metadata): ?string
     {
-        $scope = ScopeMode::tryFrom((string) ($metadata['scope'] ?? ''))
+        $scopeValue = $metadata['scope'] ?? null;
+        if (!is_string($scopeValue)) {
+            throw new InvalidArgumentException('Business-surface scope metadata is invalid.');
+        }
+        $scope = ScopeMode::tryFrom($scopeValue)
             ?? throw new InvalidArgumentException('Business-surface scope metadata is invalid.');
         if (!in_array($scope, [ScopeMode::Organization, ScopeMode::SiteOrganization], true)) {
             return null;
@@ -1773,8 +1808,15 @@ final readonly class BusinessSurfaceService implements BusinessHistoryUseCase, B
         array $errors = [],
     ): array {
         $allowed = [];
-        foreach ($metadata['fields'] as $fieldMetadata) {
-            $allowed[$fieldMetadata['handle']] = $fieldMetadata;
+        foreach (self::objectDocuments(
+            $metadata['fields'] ?? null,
+            'Generated business field metadata is invalid.',
+        ) as $fieldMetadata) {
+            $handle = $fieldMetadata['handle'] ?? null;
+            if (!is_string($handle)) {
+                throw new InvalidArgumentException('Generated business field metadata is invalid.');
+            }
+            $allowed[$handle] = $fieldMetadata;
         }
         $presented = [];
         foreach ($definition->fields() as $field) {
@@ -1857,10 +1899,10 @@ final readonly class BusinessSurfaceService implements BusinessHistoryUseCase, B
      * already-disclosed value then passes through its registered relation presenter, so templates can offer
      * graphical order controls without exposing a free-text public-identity authoring surface.
      *
-     * @param   ExecutionContext                 $context    Authenticated site and actor.
-     * @param   string                           $target     Declared target definition handle.
-     * @param   list<BusinessRecordRelationView> $records    Disclosure-filtered included rows.
-     * @param   list<array<string, mixed>>       $projected  Transport projections matching those rows.
+     * @param   ExecutionContext                  $context    Authenticated site and actor.
+     * @param   string                            $target     Declared target definition handle.
+     * @param   list<BusinessRecordRelationView>  $records    Disclosure-filtered included rows.
+     * @param   list<array<string, mixed>>        $projected  Transport projections matching those rows.
      *
      * @return  list<array<string, mixed>>  Rows carrying a bounded label and relation-context fields.
      *
@@ -1928,6 +1970,58 @@ final readonly class BusinessSurfaceService implements BusinessHistoryUseCase, B
         }
 
         return rtrim($truncated) . '...';
+    }
+
+    /**
+     * Prove one internal projection or catalog member is a string-keyed object.
+     *
+     * @param   mixed   $value    Candidate object value.
+     * @param   string  $message  Stable exception message for a malformed trusted document.
+     *
+     * @return  array<string, mixed>  Validated object document.
+     *
+     * @throws  InvalidArgumentException  When the value is not an object map.
+     *
+     * @since   2.0.0
+     */
+    private static function objectDocument(mixed $value, string $message): array
+    {
+        if (!is_array($value) || ($value !== [] && array_is_list($value))) {
+            throw new InvalidArgumentException($message);
+        }
+        foreach (array_keys($value) as $key) {
+            if (!is_string($key)) {
+                throw new InvalidArgumentException($message);
+            }
+        }
+
+        /** @var array<string, mixed> $value */
+        return $value;
+    }
+
+    /**
+     * Prove one internal projection or catalog collection is a list of object documents.
+     *
+     * @param   mixed   $value    Candidate list value.
+     * @param   string  $message  Stable exception message for a malformed trusted collection.
+     *
+     * @return  list<array<string, mixed>>  Validated object documents.
+     *
+     * @throws  InvalidArgumentException  When the value is not a list of object maps.
+     *
+     * @since   2.0.0
+     */
+    private static function objectDocuments(mixed $value, string $message): array
+    {
+        if (!is_array($value) || !array_is_list($value)) {
+            throw new InvalidArgumentException($message);
+        }
+        $documents = [];
+        foreach ($value as $document) {
+            $documents[] = self::objectDocument($document, $message);
+        }
+
+        return $documents;
     }
 
     /**

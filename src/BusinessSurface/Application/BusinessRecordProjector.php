@@ -167,9 +167,9 @@ final readonly class BusinessRecordProjector
     /**
      * Convert every disclosed value in a field-value map.
      *
-     * @param   array<string, mixed>  $values  Disclosure-filtered values.
+     * @param   array<array-key, mixed>  $values  Disclosure-filtered object or nested list values.
      *
-     * @return  array<string, mixed>  Exact disclosed values in their original map or list shape.
+     * @return  array<array-key, mixed>  Exact disclosed values in their original map or list shape.
      *
      * @since   2.0.0
      */

@@ -106,7 +106,7 @@ final class BusinessRecordConsolePresenterTest extends TestCase
             self::DEFINITION,
             1,
             self::INTERNAL_RECORD_ID,
-            self::DEFINITION . ':' . self::INTERNAL_RECORD_ID,
+            'invoice-7',
             7,
             'default',
             'acme',
