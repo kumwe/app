@@ -7,15 +7,18 @@ namespace Kumwe\CMS\Tests\Unit\Extension\Contribution;
 use InvalidArgumentException;
 use Kumwe\CMS\Administrator\Navigation\AdministratorNavigationRegistry;
 use Kumwe\CMS\Administrator\Presentation\AdministratorRenderer;
+use Kumwe\CMS\Application\Automation\JobHandler;
 use Kumwe\CMS\Application\Authorization\AuthorizationDefinitionLifecycle;
 use Kumwe\CMS\Application\Authorization\AuthorizationPolicyRegistry;
 use Kumwe\CMS\Application\Authorization\AuthorizationResource;
 use Kumwe\CMS\Application\Authorization\CapabilityDefinition as AuthorizationCapabilityDefinition;
 use Kumwe\CMS\Application\Authorization\CapabilityDefinitionRegistry as AuthorizationCapabilityDefinitionRegistry;
+use Kumwe\CMS\Application\Authorization\ExecutionContext;
 use Kumwe\CMS\Application\Authorization\ResourcePolicyDefinition as AuthorizationResourcePolicyDefinition;
 use Kumwe\CMS\Application\Authorization\ResourcePolicyRegistry;
 use Kumwe\CMS\Application\Authorization\ResourcePolicyTarget;
 use Kumwe\CMS\Application\Authorization\SystemIdentity;
+use Kumwe\CMS\BusinessIntegration\Domain\JobContributionDefinition;
 use Kumwe\CMS\Extension\Contribution\AdministratorNavigationDefinition;
 use Kumwe\CMS\Extension\Contribution\AdministratorRouteDefinition;
 use Kumwe\CMS\Extension\Contribution\AdministratorRouteHandlerFactory;
@@ -67,6 +70,7 @@ use Psr\Http\Server\RequestHandlerInterface;
 #[UsesClass(AuthorizationDefinitionLifecycle::class)]
 #[UsesClass(AuthorizationPolicyRegistry::class)]
 #[UsesClass(AuthorizationResourcePolicyDefinition::class)]
+#[UsesClass(JobContributionDefinition::class)]
 #[UsesClass(ResourcePolicyRegistry::class)]
 #[UsesClass(ResourcePolicyTarget::class)]
 #[UsesClass(RuntimeCanonicalJson::class)]
@@ -425,6 +429,72 @@ final class ExtensionContributionRegistrySetTest extends TestCase
         $registrar->complete();
     }
 
+    public function testStrictReconciliationIgnoresObjectKeyOrderButRetainsValueAndListOrder(): void
+    {
+        $owner = ContributionOwner::extension('acme/editor');
+        $declared = new JobContributionDefinition(
+            'acme.editor.review',
+            1,
+            '1.0.0',
+            [
+                'additionalProperties' => false,
+                'properties' => [
+                    'minimum_age_days' => ['maximum' => 365, 'minimum' => 1, 'type' => 'integer'],
+                    'site_identifier' => ['maxLength' => 191, 'minLength' => 1, 'type' => 'string'],
+                ],
+                'required' => ['site_identifier', 'minimum_age_days'],
+                'type' => 'object',
+            ],
+            'default',
+            5,
+        );
+        $sourceOrderedSchema = [
+            'type' => 'object',
+            'properties' => [
+                'site_identifier' => ['type' => 'string', 'minLength' => 1, 'maxLength' => 191],
+                'minimum_age_days' => ['type' => 'integer', 'minimum' => 1, 'maximum' => 365],
+            ],
+            'required' => ['site_identifier', 'minimum_age_days'],
+            'additionalProperties' => false,
+        ];
+        $declarations = new ManifestContributionSet(owner: $owner, jobs: [$declared]);
+        $registrar = (new ExtensionContributionRegistrySet(withCore: false))->registrar($owner, $declarations);
+        $registrar->jobHandler(new JobContributionDefinition(
+            'acme.editor.review',
+            1,
+            '1.0.0',
+            $sourceOrderedSchema,
+            'default',
+            5,
+        ), $this->jobHandler());
+        $registrar->complete();
+
+        $driftedSchemas = [
+            array_replace_recursive($sourceOrderedSchema, [
+                'properties' => ['minimum_age_days' => ['minimum' => 2]],
+            ]),
+            array_replace($sourceOrderedSchema, [
+                'required' => ['minimum_age_days', 'site_identifier'],
+            ]),
+        ];
+        foreach ($driftedSchemas as $driftedSchema) {
+            $registrar = (new ExtensionContributionRegistrySet(withCore: false))->registrar($owner, $declarations);
+            try {
+                $registrar->jobHandler(new JobContributionDefinition(
+                    'acme.editor.review',
+                    1,
+                    '1.0.0',
+                    $driftedSchema,
+                    'default',
+                    5,
+                ), $this->jobHandler());
+                self::fail('Canonical reconciliation must still reject value and list-order drift.');
+            } catch (InvalidArgumentException $exception) {
+                self::assertStringContainsString('does not match', $exception->getMessage());
+            }
+        }
+    }
+
     public function testRejectsForeignOwnershipDuplicatesAndUnsafeRoutes(): void
     {
         $owner = ContributionOwner::extension('acme/editor');
@@ -531,6 +601,20 @@ final class ExtensionContributionRegistrySetTest extends TestCase
                         throw new \LogicException('The registry unit test does not execute routes.');
                     }
                 };
+            }
+        };
+    }
+
+    private function jobHandler(): JobHandler
+    {
+        return new class implements JobHandler {
+            public function type(): string
+            {
+                return 'acme.editor.review';
+            }
+
+            public function handle(array $payload, ExecutionContext $context): void
+            {
             }
         };
     }
