@@ -42,6 +42,7 @@ use Kumwe\CMS\Identity\Domain\StepUp\StepUpIntent;
 use Kumwe\CMS\Identity\Domain\UserStatus;
 use Kumwe\CMS\Infrastructure\Persistence\TableNames;
 use KumweExample\AssetInspection\Application\InspectionPolicyProfile;
+use KumweExample\AssetInspection\Definitions;
 use RuntimeException;
 use Throwable;
 
@@ -142,11 +143,16 @@ final class AssetInspectionDeploymentAcceptance
 
                 return 0;
             }
+            if ($mode === 'apply-seed-policy' && count($arguments) === 2) {
+                self::applySeedPolicy();
+
+                return 0;
+            }
 
             throw new RuntimeException(
                 'Usage: asset-inspection-deployment-acceptance.php '
                 . 'snapshot STATE|verify MANIFEST STATE|replay|lifecycle disabled|'
-                . 'generate-keypair SECRET PUBLIC|apply-policy',
+                . 'generate-keypair SECRET PUBLIC|apply-policy|apply-seed-policy',
             );
         } catch (Throwable $failure) {
             fwrite(STDERR, 'Asset-inspection deployment acceptance failed: ' . $failure->getMessage() . "\n");
@@ -217,10 +223,15 @@ final class AssetInspectionDeploymentAcceptance
             surface: AuthenticatedSurface::Administrator,
         ), 'kumwe-asset-inspection-policy-acceptance/2.0');
         $profile = InspectionPolicyProfile::fromPackage();
-        $requests = $profile->administrationRequests();
-        if ($profile->checksum() !== self::POLICY_PROFILE_CHECKSUM || count($requests) !== 4) {
+        $profileRequests = $profile->administrationRequests();
+        $seedRequests = self::seedPolicyRequests();
+        if ($profile->checksum() !== self::POLICY_PROFILE_CHECKSUM || count($profileRequests) !== 4) {
             throw new RuntimeException('The signed policy profile did not produce four closed requests.');
         }
+        if (count($seedRequests) !== 14) {
+            throw new RuntimeException('The acceptance seed policy set is incomplete.');
+        }
+        $requests = [...$profileRequests, ...array_slice($seedRequests, 0, 6)];
 
         $organization = self::environment('KUMWE_ACCEPTANCE_ORGANIZATION');
         $setup = $stepUp->beginEnrollment($principal->subject(), 'Kumwe', $email);
@@ -291,8 +302,8 @@ final class AssetInspectionDeploymentAcceptance
             $policyIds[] = self::createPolicy($security, $proofs, $principal, $verification, $request);
         }
 
-        if (count(array_unique($policyIds)) !== 4) {
-            throw new RuntimeException('Policy administration did not create four distinct rows.');
+        if (count(array_unique($policyIds)) !== 10) {
+            throw new RuntimeException('Primary policy administration did not create ten distinct rows.');
         }
         fwrite(STDOUT, CanonicalDefinitionJson::encode([
             'organization' => [
@@ -301,9 +312,263 @@ final class AssetInspectionDeploymentAcceptance
                 'membership_id' => $membershipId,
             ],
             'profile_checksum' => $profile->checksum(),
+            'profile_policy_ids' => array_slice($policyIds, 0, 4),
+            'seed_policy_ids' => array_slice($policyIds, 4),
             'policy_ids' => $policyIds,
-            'proofs' => ['enrollment', 'totp', 'recovery', 'recovery', 'recovery', 'recovery'],
+            'proofs' => ['enrollment' => 1, 'totp' => 1, 'recovery' => 10],
         ]) . "\n");
+    }
+
+    /**
+     * Apply the remaining site-scoped seed policies through a second separated MFA operator.
+     *
+     * The primary operator spends all ten recovery codes on the four signed viewer policies and the first
+     * six seed policies. A distinct principal with no business-record capability supplies the eight remaining
+     * one-time proofs, preserving the production self-escalation boundary instead of bypassing it for fixtures.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    private static function applySeedPolicy(): void
+    {
+        [$container, $administratorContext] = self::boot();
+        $identities = self::service($container, AdministratorIdentityGateway::class);
+        $access = self::service($container, AccessControlService::class);
+        $sessions = self::service($container, AdministratorSessionStore::class);
+        $stepUp = self::service($container, AdministratorStepUpProvider::class);
+        $proofs = self::service($container, AuthorizationStepUpProofAdapter::class);
+        $security = self::service($container, BusinessSecurityAdministrationService::class);
+        if (
+            !$identities instanceof AdministratorIdentityGateway
+            || !$access instanceof AccessControlService
+            || !$sessions instanceof AdministratorSessionStore
+            || !$stepUp instanceof AdministratorStepUpProvider
+            || !$proofs instanceof AuthorizationStepUpProofAdapter
+            || !$security instanceof BusinessSecurityAdministrationService
+        ) {
+            throw new RuntimeException('The production seed-policy services are unavailable.');
+        }
+
+        $email = self::environment('KUMWE_ACCEPTANCE_POLICY_EMAIL');
+        $password = self::environment('KUMWE_ACCEPTANCE_POLICY_PASSWORD');
+        $operator = $access->createUser(
+            $administratorContext,
+            $email,
+            'Asset inspection seed policy operator',
+            $password,
+            UserStatus::Active,
+        );
+        $role = $access->createRole(
+            $administratorContext,
+            'asset-inspection-seed-policy-operator',
+            'Asset inspection seed policy operator',
+        );
+        $access->grant($administratorContext, $role, 'administrator.access');
+        $access->grant($administratorContext, $role, 'business.security.manage');
+        $access->grant($administratorContext, $role, 'business.step_up.manage');
+        $access->assignRole($administratorContext, $operator, $role);
+        $principal = $identities->authenticate($email, $password, 'asset-inspection-seed-policy-acceptance');
+        if ($principal === null) {
+            throw new RuntimeException('The separated seed-policy operator could not be authenticated.');
+        }
+        $site = SiteContext::default();
+        $createdSession = $sessions->create($principal->context(
+            $site,
+            AuthenticationStrength::Password,
+            'asset-inspection-seed-policy-login',
+            surface: AuthenticatedSurface::Administrator,
+        ), 'kumwe-asset-inspection-seed-policy-acceptance/2.0');
+        $requests = array_slice(self::seedPolicyRequests(), 6);
+        if (count($requests) !== 8) {
+            throw new RuntimeException('The secondary seed policy set is incomplete.');
+        }
+
+        $setup = $stepUp->beginEnrollment($principal->subject(), 'Kumwe', $email);
+        $completion = $stepUp->confirmEnrollment(
+            self::stepUpIntent(
+                $principal,
+                $createdSession->session->id,
+                BusinessSecurityAdministrationService::stepUpPurpose('resource_policy.create'),
+            ),
+            $setup->enrollmentId,
+            self::totpCode($setup->secret, intdiv(time(), 30)),
+            'asset-inspection-seed-policy-acceptance',
+        );
+        if (count($completion->recoveryCodes) < 7) {
+            throw new RuntimeException('Seed policy acceptance did not receive enough recovery challenges.');
+        }
+
+        $verification = $completion->verification;
+        $policyIds = [];
+        foreach ($requests as $offset => $request) {
+            if ($offset > 0) {
+                $verification = $stepUp->recover(
+                    self::stepUpIntent(
+                        $principal,
+                        $verification->rotatedSession->sessionId,
+                        BusinessSecurityAdministrationService::stepUpPurpose('resource_policy.create'),
+                    ),
+                    $completion->recoveryCodes[$offset - 1],
+                    'asset-inspection-seed-policy-acceptance',
+                );
+            }
+            $policyIds[] = self::createPolicy($security, $proofs, $principal, $verification, $request);
+        }
+        if (count(array_unique($policyIds)) !== 8) {
+            throw new RuntimeException('Secondary policy administration did not create eight distinct rows.');
+        }
+        fwrite(STDOUT, CanonicalDefinitionJson::encode([
+            'seed_policy_ids' => $policyIds,
+            'policy_ids' => $policyIds,
+            'proofs' => ['enrollment' => 1, 'totp' => 0, 'recovery' => 7],
+        ]) . "\n");
+    }
+
+    /**
+     * Build the exact operator-owned policies needed to seed and verify the neutral example graph.
+     *
+     * Each row binds one operation to one definition. Create fields follow immutable definition ceilings;
+     * relation rows disclose a UUID only when the definition is a graph target; read rows expose only fields
+     * used by the restored graph. Inspection reads remain in the signed profile and its relate row repeats the
+     * same risk threshold.
+     *
+     * @return  list<array<string, mixed>>  Fourteen closed production administration requests.
+     *
+     * @since   2.0.0
+     */
+    private static function seedPolicyRequests(): array
+    {
+        $requests = [];
+        $seen = [];
+        foreach (Definitions::businessDefinitions() as $definition) {
+            if ((self::DEFINITIONS[$definition->id] ?? null) !== $definition->handle) {
+                throw new RuntimeException('A seed policy definition is outside the signed example graph.');
+            }
+            $prefix = 'kumwe.asset-inspection-example.';
+            if (!str_starts_with($definition->handle, $prefix)) {
+                throw new RuntimeException('A seed policy definition handle is malformed.');
+            }
+            $short = substr($definition->handle, strlen($prefix));
+            $createFields = [];
+            $readFields = [];
+            $identityAvailable = false;
+            foreach ($definition->fields() as $field) {
+                if (
+                    $field->createVisible
+                    && !$field->serverOnly
+                    && !$field->computed
+                    && $field->formula === null
+                ) {
+                    $createFields[] = $field->handle;
+                }
+                if (
+                    $field->readVisible
+                    && !in_array($field->sensitivity->value, ['restricted', 'secret'], true)
+                ) {
+                    $readFields[] = $field->handle;
+                }
+                if ($field->handle === 'id' && $field->type === 'core.uuid') {
+                    $identityAvailable = true;
+                }
+            }
+            if ($short === '' || $createFields === [] || $readFields === [] || !$identityAvailable) {
+                throw new RuntimeException('A seed policy definition has no safe field contract.');
+            }
+            $expectedCreate = match ($short) {
+                'location' => ['id', 'name', 'zone'],
+                'asset' => ['id', 'asset_tag', 'name', 'active'],
+                'inspection' => ['id', 'reference', 'inspection_date', 'raw_score', 'adjustment', 'internal_note'],
+                'finding' => ['id', 'summary', 'severity', 'remediation'],
+                'measurement' => ['id', 'metric', 'value', 'unit', 'acceptable'],
+                default => throw new RuntimeException('A seed policy definition handle is unknown.'),
+            };
+            $expectedRead = match ($short) {
+                'location' => ['id', 'name', 'zone'],
+                'asset' => ['id', 'asset_tag', 'name', 'active'],
+                'inspection' => ['id', 'reference', 'inspection_date', 'raw_score', 'adjustment', 'risk_score'],
+                'finding' => ['id', 'summary', 'severity', 'remediation'],
+                'measurement' => ['id', 'metric', 'value', 'unit', 'acceptable'],
+                default => throw new RuntimeException('A seed policy definition handle is unknown.'),
+            };
+            if ($createFields !== $expectedCreate || $readFields !== $expectedRead) {
+                throw new RuntimeException('A seed policy definition changed its immutable field ceilings.');
+            }
+            $seen[$definition->id] = true;
+            $requests[] = self::seedPolicyRequest(
+                $short . '.create',
+                'business.record.create',
+                $definition->id,
+                ['create' => $createFields, 'actions' => []],
+                false,
+            );
+            $requests[] = self::seedPolicyRequest(
+                $short . '.relate',
+                'business.record.relate',
+                $definition->id,
+                $short === 'location' ? ['actions' => []] : ['public_reference' => ['id'], 'actions' => []],
+                $definition->id === Definitions::INSPECTION_DEFINITION_ID,
+            );
+            if ($definition->id !== Definitions::INSPECTION_DEFINITION_ID) {
+                $readRules = ['detail' => $readFields, 'actions' => []];
+                if ($short !== 'location') {
+                    $readRules['include'] = $readFields;
+                    $readRules['public_reference'] = ['id'];
+                }
+                $requests[] = self::seedPolicyRequest(
+                    $short . '.read',
+                    'business.record.read',
+                    $definition->id,
+                    $readRules,
+                    false,
+                );
+            }
+        }
+        $seenIds = array_keys($seen);
+        $expectedIds = array_keys(self::DEFINITIONS);
+        sort($seenIds, SORT_STRING);
+        sort($expectedIds, SORT_STRING);
+        if ($seenIds !== $expectedIds || count($requests) !== 14) {
+            throw new RuntimeException('The seed policy graph is incomplete.');
+        }
+
+        return $requests;
+    }
+
+    /**
+     * Construct one exact allow request for the guarded Business Security service.
+     *
+     * @param   string                       $suffix               Unique policy-code suffix.
+     * @param   string                       $operation            Exact record capability.
+     * @param   string                       $definitionId         Stable definition UUID.
+     * @param   array<string, list<string>>  $fieldRules           Explicit per-usage field limits.
+     * @param   bool                         $inspectionThreshold  Whether to require risk score at least 70.
+     *
+     * @return  array<string, mixed>  Closed argument map accepted by `createResourcePolicy()`.
+     *
+     * @since   2.0.0
+     */
+    private static function seedPolicyRequest(
+        string $suffix,
+        string $operation,
+        string $definitionId,
+        array $fieldRules,
+        bool $inspectionThreshold,
+    ): array {
+        return [
+            'policyCode' => 'asset-inspection-acceptance.' . $suffix,
+            'operation' => $operation,
+            'effect' => 'allow',
+            'organizationId' => null,
+            'definitionId' => $definitionId,
+            'predicateType' => $inspectionThreshold ? 'comparison' : 'constant',
+            'field' => $inspectionThreshold ? 'risk_score' : null,
+            'operator' => $inspectionThreshold ? 'greater_than_or_equal' : null,
+            'valueType' => $inspectionThreshold ? 'integer' : null,
+            'value' => $inspectionThreshold ? '70' : 'true',
+            'fieldRules' => $fieldRules,
+            'priority' => 100,
+        ];
     }
 
     /**
@@ -385,22 +650,28 @@ final class AssetInspectionDeploymentAcceptance
         if (array_keys($request) !== $expectedKeys || !is_array($request['fieldRules'] ?? null)) {
             throw new RuntimeException('The policy field rules are malformed.');
         }
-        foreach (
-            [
-            'policyCode',
-            'operation',
-            'effect',
-            'definitionId',
-            'predicateType',
-            'field',
-            'operator',
-            'valueType',
-            'value',
-            ] as $key
-        ) {
+        foreach (['policyCode', 'operation', 'effect', 'definitionId', 'predicateType', 'value'] as $key) {
             if (!is_string($request[$key] ?? null) || $request[$key] === '') {
                 throw new RuntimeException('A signed policy request string is malformed.');
             }
+        }
+        if ($request['predicateType'] === 'constant') {
+            if (
+                $request['field'] !== null
+                || $request['operator'] !== null
+                || $request['valueType'] !== null
+                || $request['value'] !== 'true'
+            ) {
+                throw new RuntimeException('A constant policy predicate is malformed.');
+            }
+        } elseif ($request['predicateType'] === 'comparison') {
+            foreach (['field', 'operator', 'valueType'] as $key) {
+                if (!is_string($request[$key] ?? null) || $request[$key] === '') {
+                    throw new RuntimeException('A comparison policy predicate is malformed.');
+                }
+            }
+        } else {
+            throw new RuntimeException('A policy predicate discriminator is unavailable.');
         }
         if ($request['organizationId'] !== null || !is_int($request['priority'] ?? null)) {
             throw new RuntimeException('The policy scope or priority is malformed.');
@@ -1122,6 +1393,33 @@ final class AssetInspectionDeploymentAcceptance
         }
 
         return $value;
+    }
+
+    /**
+     * Read one required positive integer from a driver-neutral DBAL row.
+     *
+     * @param   array<string, mixed>  $row  Selected durable row.
+     * @param   string                $key  Required column name.
+     *
+     * @return  int  Validated positive integer.
+     *
+     * @since   2.0.0
+     */
+    private static function requiredRowInteger(array $row, string $key): int
+    {
+        $value = $row[$key] ?? null;
+        if (is_int($value)) {
+            $integer = $value;
+        } elseif (is_string($value) && preg_match('/^[1-9][0-9]*$/D', $value) === 1) {
+            $integer = filter_var($value, FILTER_VALIDATE_INT);
+        } else {
+            $integer = false;
+        }
+        if (!is_int($integer) || $integer < 1) {
+            throw new RuntimeException('A contributed schedule integer is malformed.');
+        }
+
+        return $integer;
     }
 
     /**

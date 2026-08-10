@@ -226,9 +226,20 @@ final class ProductionArtifactsTest extends TestCase
         self::assertStringContainsString("delegated_capabilities=\"\${delegated_capabilities", $driver);
         self::assertStringContainsString("        refresh_bootstrap_token\n", $driver);
         self::assertStringContainsString("apply_policy_profile\n    refresh_management_token", $driver);
+        self::assertStringContainsString('acceptance_php apply-seed-policy', $driver);
+        self::assertStringContainsString('asset-inspection-seed-policy-operator@kumwe.test', $driver);
+        self::assertStringContainsString('(.policy_ids | length == 10)', $driver);
+        self::assertStringContainsString('(.policy_ids | length == 8)', $driver);
         self::assertStringContainsString('$security->createOrganization(', $support);
         self::assertStringContainsString('$security->createMembership(', $support);
+        self::assertStringContainsString('private static function seedPolicyRequests(', $support);
+        self::assertStringContainsString("'business.record.create'", $support);
+        self::assertStringContainsString("'business.record.relate'", $support);
         self::assertStringContainsString('use DateTimeImmutable;', $support);
+        self::assertStringContainsString('private static function requiredRowInteger(', $support);
+        self::assertStringContainsString('asset_manifest_for_restore', $acceptance);
+        self::assertStringContainsString('sudo chown 82:82 "$asset_manifest_for_restore"', $acceptance);
+        self::assertStringContainsString("sudo bash -euo pipefail -c '\n              cd \"\$1\"", $acceptance);
     }
 
     public function testNativeInstallerPersistsIndependentRuntimeTrustAndStableIdentity(): void

@@ -24,11 +24,13 @@ use Kumwe\CMS\Extension\Domain\ExtensionManifest;
 use Kumwe\CMS\Extension\Domain\PackageSignature;
 use Kumwe\CMS\Extension\Infrastructure\Package\ZipArchiveReader;
 use Kumwe\CMS\Extension\Runtime\RestrictedExtensionContainer;
+use Kumwe\CMS\Tests\Support\AssetInspectionDeploymentAcceptance;
 use KumweExample\AssetInspection\Application\InspectionPolicyProfile;
 use KumweExample\AssetInspection\Definitions;
 use KumweExample\AssetInspection\Provider;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
+use ReflectionMethod;
 
 #[CoversClass(EntityTypeDefinition::class)]
 #[CoversClass(PayloadSchemaValidator::class)]
@@ -242,6 +244,89 @@ final class AssetInspectionExampleTest extends TestCase
 
         $this->expectException(InvalidArgumentException::class);
         InspectionPolicyProfile::fromJson($unsafe);
+    }
+
+    /**
+     * Prove deployment seeding uses exact, site-scoped, least-authority operation policies.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testDeploymentSeedPoliciesCloseTheExampleGraphWithoutWideningTheViewerProfile(): void
+    {
+        $method = new ReflectionMethod(AssetInspectionDeploymentAcceptance::class, 'seedPolicyRequests');
+        $requests = $method->invoke(null);
+        if (!is_array($requests) || !array_is_list($requests)) {
+            self::fail('The deployment seed-policy builder did not return a list.');
+        }
+        self::assertCount(14, $requests);
+
+        $byCode = [];
+        $operationCounts = [];
+        foreach ($requests as $request) {
+            if (!is_array($request) || array_is_list($request)) {
+                self::fail('A deployment seed-policy request is not an object.');
+            }
+            $code = $request['policyCode'] ?? null;
+            $operation = $request['operation'] ?? null;
+            self::assertIsString($code);
+            self::assertIsString($operation);
+            self::assertNull($request['organizationId'] ?? null);
+            self::assertSame(100, $request['priority'] ?? null);
+            $byCode[$code] = $request;
+            $operationCounts[$operation] = ($operationCounts[$operation] ?? 0) + 1;
+        }
+        self::assertSame([
+            'business.record.create' => 5,
+            'business.record.relate' => 5,
+            'business.record.read' => 4,
+        ], $operationCounts);
+        $createFields = [
+            'location' => ['id', 'name', 'zone'],
+            'asset' => ['id', 'asset_tag', 'name', 'active'],
+            'inspection' => ['id', 'reference', 'inspection_date', 'raw_score', 'adjustment', 'internal_note'],
+            'finding' => ['id', 'summary', 'severity', 'remediation'],
+            'measurement' => ['id', 'metric', 'value', 'unit', 'acceptable'],
+        ];
+        $readFields = $createFields;
+        unset($readFields['inspection']);
+        foreach ($createFields as $definition => $fields) {
+            $prefix = 'asset-inspection-acceptance.' . $definition;
+            self::assertSame(
+                ['create' => $fields, 'actions' => []],
+                $byCode[$prefix . '.create']['fieldRules'],
+            );
+            self::assertSame(
+                $definition === 'location'
+                    ? ['actions' => []]
+                    : ['public_reference' => ['id'], 'actions' => []],
+                $byCode[$prefix . '.relate']['fieldRules'],
+            );
+        }
+        foreach ($readFields as $definition => $fields) {
+            $rules = ['detail' => $fields, 'actions' => []];
+            if ($definition !== 'location') {
+                $rules['include'] = $fields;
+                $rules['public_reference'] = ['id'];
+            }
+            self::assertSame($rules, $byCode['asset-inspection-acceptance.' . $definition . '.read']['fieldRules']);
+        }
+        self::assertSame('comparison', $byCode['asset-inspection-acceptance.inspection.relate']['predicateType']);
+        self::assertSame('risk_score', $byCode['asset-inspection-acceptance.inspection.relate']['field']);
+        self::assertSame('70', $byCode['asset-inspection-acceptance.inspection.relate']['value']);
+        self::assertArrayNotHasKey('asset-inspection-acceptance.inspection.read', $byCode);
+
+        foreach ($byCode as $code => $request) {
+            if ($code === 'asset-inspection-acceptance.inspection.relate') {
+                continue;
+            }
+            self::assertSame('constant', $request['predicateType']);
+            self::assertNull($request['field']);
+            self::assertNull($request['operator']);
+            self::assertNull($request['valueType']);
+            self::assertSame('true', $request['value']);
+        }
     }
 
     /**

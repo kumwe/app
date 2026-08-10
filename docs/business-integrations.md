@@ -244,6 +244,12 @@ each request through `BusinessSecurityAdministrationService` using a live admini
 or recovery proof. The self-escalation guard rejects an allow policy when that policy operator also holds the
 business-record operation being granted.
 
+The neutral asset-inspection deployment proof keeps its four signed inspection viewer policies separate from
+operator-owned provisioning authority. Two distinct policy-only administrators use independent MFA enrollments to
+apply five create, five relation, and four additional read policies for the five-definition acceptance graph. The
+policies are site-scoped, definition- and operation-specific, expose only the fields needed by that operation, and
+do not give either policy administrator any business-record capability.
+
 Model row scope with typed predicates over declared fields and default denial. Give each usage an explicit field
 allowlist, including list, detail, filter, sort, aggregate, report, export, audit, MCP, relation, include, and public
 reference. A restricted field must be absent from every disallowed projection, not returned as `null`, masked text,

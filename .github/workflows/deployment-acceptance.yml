@@ -582,6 +582,8 @@ jobs:
           source_extension_assets="$recovery_root/source/extension-assets"
           restore_root="$recovery_root/restored"
           runtime_manifest="$recovery_root/business-runtime-source.json"
+          asset_manifest_for_restore="$recovery_root/asset-inspection-source.json"
+          asset_state_for_restore="$recovery_root/asset-inspection-state.json"
           restore_container="kumwe-restore-$DATABASE_DRIVER"
           database_password="$(<"$KUMWE_DB_PASSWORD_FILE")"
           cleanup_recovery() {
@@ -687,12 +689,16 @@ jobs:
             "$restore_root/extension-assets" \
             "$restore_root/media" \
             "$restore_root/private"
+          test -n "$(sudo find "$restore_root/private/report-exports" -type f -print -quit)"
           while IFS= read -r -d '' export_file; do
-            test "$(stat --format='%a' "$export_file")" = 600
-          done < <(find "$restore_root/private/report-exports" -type f -print0)
+            test "$(sudo stat --format='%a' "$export_file")" = 600
+          done < <(sudo find "$restore_root/private/report-exports" -type f -print0)
           while IFS= read -r -d '' export_directory; do
-            test "$(stat --format='%a' "$export_directory")" = 700
-          done < <(find "$restore_root/private/report-exports" -type d -print0)
+            test "$(sudo stat --format='%a' "$export_directory")" = 700
+          done < <(sudo find "$restore_root/private/report-exports" -type d -print0)
+          install -m 0400 "$KUMWE_ACCEPTANCE_ASSET_MANIFEST" "$asset_manifest_for_restore"
+          install -m 0400 "$KUMWE_ACCEPTANCE_ASSET_STATE" "$asset_state_for_restore"
+          sudo chown 82:82 "$asset_manifest_for_restore" "$asset_state_for_restore"
           docker run --rm \
             --network kumwe_backend \
             --user 0:0 \
@@ -710,8 +716,8 @@ jobs:
             --tmpfs /var/www/kumwe/storage/tmp:rw,noexec,nosuid,nodev,size=64m,mode=700,uid=82,gid=82 \
             --volume "$GITHUB_WORKSPACE/tests/Support:/var/www/kumwe/tests/Support:ro" \
             --volume "$runtime_manifest:/run/business-runtime-source.json:ro" \
-            --volume "$KUMWE_ACCEPTANCE_ASSET_MANIFEST:/run/asset-inspection-source.json:ro" \
-            --volume "$KUMWE_ACCEPTANCE_ASSET_STATE:/run/asset-inspection-state.json:ro" \
+            --volume "$asset_manifest_for_restore:/run/asset-inspection-source.json:ro" \
+            --volume "$asset_state_for_restore:/run/asset-inspection-state.json:ro" \
             --volume "$restore_root/extensions:/var/www/kumwe/extensions:ro" \
             --volume "$restore_root/extension-assets:/var/www/kumwe/public/assets/extensions:ro" \
             --volume "$restore_root/media:/var/www/kumwe/storage/media:ro" \
@@ -759,11 +765,11 @@ jobs:
             '
           tree_checksum_manifest() {
             local root="$1"
-            (
-              cd "$root"
+            sudo bash -euo pipefail -c '
+              cd "$1"
               find . -type f -print0 | sort --zero-terminated \
                 | xargs --null --no-run-if-empty sha256sum
-            )
+            ' bash "$root"
           }
           for tree in media private extensions extension-assets; do
             tree_checksum_manifest "$recovery_root/source/$tree" > "$recovery_root/source-$tree.sha256"
