@@ -195,14 +195,31 @@ issue_token() {
 
 install_schema() {
     local definition="$1"
-    local plan id checksum
+    local plan id checksum execution schema_checksum
     plan="$(app_token "$KUMWE_ACCEPTANCE_CLI_TOKEN_FILE" business-schema plan --definition="$definition")"
     id="$(jq -er '.id' <<< "$plan")"
     checksum="$(jq -er '.checksum | select(test("^[0-9a-f]{64}$"))' <<< "$plan")"
     app_token "$KUMWE_ACCEPTANCE_CLI_TOKEN_FILE" business-schema approve \
         --plan="$id" --expected-checksum="$checksum" >/dev/null
-    app_token "$KUMWE_ACCEPTANCE_CLI_TOKEN_FILE" business-schema execute --plan="$id" \
-        | jq -e '.status == "active"' >/dev/null
+    execution="$(app_token "$KUMWE_ACCEPTANCE_CLI_TOKEN_FILE" business-schema execute --plan="$id")"
+    jq -e --arg plan_id "$id" '
+        .plan_id == $plan_id
+        and ((.fence | type) == "number" and .fence >= 1)
+        and ((.completed_steps | type) == "number" and .completed_steps >= 1)
+        and .skipped_steps == 0
+        and (.schema_checksum | type == "string" and test("^[0-9a-f]{64}$"))
+        and (.completed_at | type == "string"
+            and test("^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\\.[0-9]{6}Z$"))
+        and .resumed == false
+    ' <<< "$execution" >/dev/null
+    schema_checksum="$(jq -er '.schema_checksum' <<< "$execution")"
+    app_token "$KUMWE_ACCEPTANCE_CLI_TOKEN_FILE" business-schema get --plan="$id" \
+        | jq -e --arg plan_id "$id" --arg schema_checksum "$schema_checksum" '
+            .id == $plan_id
+            and .status == "completed"
+            and .outcome.plan_id == $plan_id
+            and .outcome.schema_checksum == $schema_checksum
+        ' >/dev/null
 }
 
 create_cli_record() {
