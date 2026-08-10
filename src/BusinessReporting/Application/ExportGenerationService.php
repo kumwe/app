@@ -83,60 +83,118 @@ final readonly class ExportGenerationService
         ) {
             return;
         }
+        $attempt = $artifact;
+        $authorityRejected = false;
+        $attemptStarted = false;
         try {
-            $context = $this->contexts->resolve($artifact, $workerContext);
-            $artifact = $this->exports->status($context, $artifact->id);
-        } catch (Throwable $exception) {
-            $this->reject($artifact, 'authorization_changed');
-            throw new ExportGenerationRejected('The export authority or policy changed.', 0, $exception);
-        }
-        if ($artifact->status === ExportArtifactStatus::Queued) {
-            $running = $artifact->start($this->clock->now());
-            $this->transactions->transactional(function () use ($artifact, $running): void {
-                $this->artifacts->save($running, $artifact->version);
-                $this->audit($running, 'business.report.export.start', 'success', $running->startedAt);
-            });
-            $artifact = $running;
-        }
-        if ($artifact->status !== ExportArtifactStatus::Running) {
-            return;
-        }
-        try {
-            $result = $this->reports->execute(new ReportExecutionRequest(
-                $context,
-                $artifact->reportIdentifier,
-                $artifact->parameters,
-                $artifact->organizationIdentifier,
-                BusinessRecordQueryPurpose::Export,
-            ));
-            if (!hash_equals($artifact->definitionChecksum, $result->definitionChecksum)) {
-                throw new ExportGenerationRejected('The report definition changed during export.');
-            }
-            $this->publisher->publish(
+            $this->transactions->transactional(function () use (
                 $artifact,
-                $this->csv->encode($result),
-                $this->clock->now(),
-                count($result->rows),
-                $result->queryDigest,
-                function (ExportArtifact $completed): void {
-                    $this->audit(
-                        $completed,
-                        'business.report.export.complete',
-                        'success',
-                        $completed->completedAt,
-                    );
-                },
-            );
-        } catch (ReportRowLimitExceeded $exception) {
-            $this->reject($artifact, 'row_limit');
-            throw new ExportGenerationRejected('The export exceeds its configured row limit.', 0, $exception);
-        } catch (ExportGenerationRejected $exception) {
-            $this->reject($artifact, 'definition_changed');
-            throw $exception;
+                $workerContext,
+                &$attempt,
+                &$authorityRejected,
+                &$attemptStarted,
+            ): void {
+                try {
+                    $context = $this->contexts->resolve($artifact, $workerContext);
+                } catch (ExportGenerationRejected $exception) {
+                    $authorityRejected = true;
+                    throw $exception;
+                }
+                try {
+                    $current = $this->exports->status($context, $artifact->id);
+                } catch (ExportArtifactUnavailable $exception) {
+                    $authorityRejected = true;
+                    throw $exception;
+                }
+                $attempt = $current;
+                $active = match ($current->status) {
+                    ExportArtifactStatus::Completed, ExportArtifactStatus::Failed => null,
+                    ExportArtifactStatus::Queued => $this->startAttempt($current),
+                    ExportArtifactStatus::Running => $current,
+                };
+                if ($active === null) {
+                    return;
+                }
+                $attempt = $active;
+                $attemptStarted = true;
+                $result = $this->reports->execute(new ReportExecutionRequest(
+                    $context,
+                    $active->reportIdentifier,
+                    $active->parameters,
+                    $active->organizationIdentifier,
+                    BusinessRecordQueryPurpose::Export,
+                ));
+                if (!hash_equals($active->definitionChecksum, $result->definitionChecksum)) {
+                    throw new ExportGenerationRejected('The report definition changed during export.');
+                }
+                $this->publisher->publish(
+                    $active,
+                    $this->csv->encode($result),
+                    $this->clock->now(),
+                    count($result->rows),
+                    $result->queryDigest,
+                    function (ExportArtifact $completed): void {
+                        $this->audit(
+                            $completed,
+                            'business.report.export.complete',
+                            'success',
+                            $completed->completedAt,
+                        );
+                    },
+                );
+            });
         } catch (Throwable $exception) {
-            $this->audit($artifact, 'business.report.export.attempt', 'failure', $this->clock->now());
+            if ($authorityRejected) {
+                $this->reject($artifact, 'authorization_changed');
+                throw new ExportGenerationRejected('The export authority or policy changed.', 0, $exception);
+            }
+            if ($exception instanceof ReportRowLimitExceeded) {
+                $this->reject($artifact, 'row_limit');
+                throw new ExportGenerationRejected('The export exceeds its configured row limit.', 0, $exception);
+            }
+            if ($exception instanceof ExportGenerationRejected) {
+                $this->reject($artifact, 'definition_changed');
+                throw $exception;
+            }
+            if ($attemptStarted) {
+                $this->recordAttemptFailure($attempt);
+            }
             throw $exception;
         }
+    }
+
+    /**
+     * Persist the running state and its audit record inside the caller's policy-fenced transaction.
+     *
+     * @param   ExportArtifact  $artifact  Current queued metadata version.
+     *
+     * @return  ExportArtifact  Running immutable successor.
+     *
+     * @since   2.0.0
+     */
+    private function startAttempt(ExportArtifact $artifact): ExportArtifact
+    {
+        $running = $artifact->start($this->clock->now());
+        $this->artifacts->save($running, $artifact->version);
+        $this->audit($running, 'business.report.export.start', 'success', $running->startedAt);
+
+        return $running;
+    }
+
+    /**
+     * Persist transient-attempt evidence only after its policy-fenced transaction has rolled back.
+     *
+     * @param   ExportArtifact  $artifact  Running attempt whose outer transaction did not commit.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    private function recordAttemptFailure(ExportArtifact $artifact): void
+    {
+        $this->transactions->transactional(function () use ($artifact): void {
+            $this->audit($artifact, 'business.report.export.attempt', 'failure', $this->clock->now());
+        });
     }
 
     /**

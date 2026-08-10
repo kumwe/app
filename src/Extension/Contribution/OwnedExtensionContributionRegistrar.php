@@ -28,6 +28,7 @@ use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessViewContract;
 use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessViewHandler;
 use Kumwe\CMS\BusinessSurface\Presentation\Field\FieldPresentationContribution;
 use Kumwe\CMS\BusinessSurface\Presentation\Field\FieldPresenter;
+use Kumwe\CMS\Extension\Runtime\RuntimeCanonicalJson;
 use Kumwe\CMS\Portal\Contribution\PortalNavigationDefinition;
 use Kumwe\CMS\Portal\Contribution\PortalRouteDefinition;
 use Kumwe\CMS\Portal\Contribution\PortalRouteHandlerFactory;
@@ -55,8 +56,9 @@ final class OwnedExtensionContributionRegistrar implements ExtensionContribution
     /**
      * Array exports of the manifest declarations, keyed by contribution kind and then by identifier.
      *
-     * Comparison is on the exports rather than the objects, so a registration matches its declaration
-     * only when every declared field is identical.
+     * Comparison is on canonical JSON exports rather than the objects, so a registration matches its
+     * declaration only when every declared value and list position is identical; JSON object key order
+     * cannot create false drift after runtime-publication canonicalisation.
      *
      * @var    array<string, array<string, array<string, mixed>>>
      * @since  2.0.0
@@ -701,7 +703,11 @@ final class OwnedExtensionContributionRegistrar implements ExtensionContribution
                 $identifier,
             ));
         }
-        if ($this->strict && ($this->expected[$kind][$identifier] ?? null) !== $actual) {
+        if (
+            $this->strict
+            && RuntimeCanonicalJson::encode($this->expected[$kind][$identifier] ?? null)
+                !== RuntimeCanonicalJson::encode($actual)
+        ) {
             throw new InvalidArgumentException(sprintf(
                 'Provider %s contribution %s does not match its manifest declaration.',
                 $kind,

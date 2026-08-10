@@ -12,6 +12,8 @@ use Kumwe\CMS\Application\Authorization\ExecutionContext;
 use Kumwe\CMS\Audit\Application\AuditRecorder;
 use Kumwe\CMS\Audit\Domain\AuditEvent;
 use Kumwe\CMS\BusinessDefinition\Domain\CanonicalDefinitionJson;
+use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordDefinitionUnavailable;
+use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordSchemaUnavailable;
 use Kumwe\CMS\BusinessRecord\Application\Query\BusinessRecordQueryPurpose;
 use Kumwe\CMS\BusinessReporting\Domain\ExportArtifact;
 use Kumwe\CMS\BusinessReporting\Domain\ExportArtifactStatus;
@@ -92,59 +94,65 @@ final readonly class ExportService
         $this->assertSurface($report, $context->surface());
         $this->authorize($context, $report);
         $parameters = $this->bindParameters($report, $parameters);
-        $recordOrganization = $this->scopes->resolve($context, $report, $organizationIdentifier);
-        $policy = $this->policies->snapshot(
+        return $this->transactions->transactional(function () use (
             $context,
             $report,
-            $recordOrganization,
-            BusinessRecordQueryPurpose::Export,
-        );
-        $now = $this->clock->now();
-        $organization = $context->organization()?->identifier();
-        $workspace = $context->workspace()?->identifier();
-        $parameterDigest = CanonicalDefinitionJson::checksum([
-            'report_checksum' => $report->checksum(),
-            'parameters' => $parameters,
-            'organization' => $recordOrganization,
-            'workspace' => $workspace,
-        ]);
-        $id = Uuid::uuid7()->toString();
-        $filenameStem = substr(str_replace('.', '_', $report->identifier()), 0, 80);
-        $artifact = new ExportArtifact(
-            $id,
-            $report->identifier(),
-            $report->version,
-            $report->checksum(),
-            $context->actorId(),
-            $context->site()->identifier(),
-            $organization,
-            $workspace,
-            $context->surface(),
-            $context->approvalFingerprint(),
-            $policy,
             $parameters,
-            $parameterDigest,
-            ExportArtifactStatus::Queued,
-            $now,
-            $now->modify('+' . $retentionSeconds . ' seconds'),
-            null,
-            null,
-            $filenameStem . '-' . $now->format('Ymd-His') . '.csv',
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            1,
-        );
-        $this->transactions->transactional(function () use ($artifact, $context, $now): void {
+            $organizationIdentifier,
+            $retentionSeconds,
+        ): ExportArtifact {
+            $recordOrganization = $this->scopes->resolve($context, $report, $organizationIdentifier);
+            $policy = $this->policies->snapshot(
+                $context,
+                $report,
+                $recordOrganization,
+                BusinessRecordQueryPurpose::Export,
+            );
+            $now = $this->clock->now();
+            $organization = $context->organization()?->identifier();
+            $workspace = $context->workspace()?->identifier();
+            $parameterDigest = CanonicalDefinitionJson::checksum([
+                'report_checksum' => $report->checksum(),
+                'parameters' => $parameters,
+                'organization' => $recordOrganization,
+                'workspace' => $workspace,
+            ]);
+            $id = Uuid::uuid7()->toString();
+            $filenameStem = substr(str_replace('.', '_', $report->identifier()), 0, 80);
+            $artifact = new ExportArtifact(
+                $id,
+                $report->identifier(),
+                $report->version,
+                $report->checksum(),
+                $context->actorId(),
+                $context->site()->identifier(),
+                $organization,
+                $workspace,
+                $context->surface(),
+                $context->approvalFingerprint(),
+                $policy,
+                $parameters,
+                $parameterDigest,
+                ExportArtifactStatus::Queued,
+                $now,
+                $now->modify('+' . $retentionSeconds . ' seconds'),
+                null,
+                null,
+                $filenameStem . '-' . $now->format('Ymd-His') . '.csv',
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                1,
+            );
             $this->artifacts->add($artifact);
             $this->audit($context, $artifact, 'business.report.export.request', 'success', $now);
             $this->jobs->dispatch($context, $artifact->id);
-        });
 
-        return $artifact;
+            return $artifact;
+        });
     }
 
     /**
@@ -161,11 +169,15 @@ final readonly class ExportService
      */
     public function status(ExecutionContext $context, string $artifactId): ExportArtifact
     {
-        $artifact = $this->artifacts->find($artifactId)
-            ?? throw new ExportArtifactUnavailable('The export artifact is unavailable.');
-        $this->assertCurrent($context, $artifact);
+        $this->assertArtifactId($artifactId);
 
-        return $artifact;
+        return $this->transactions->transactional(function () use ($context, $artifactId): ExportArtifact {
+            $artifact = $this->artifacts->find($artifactId)
+                ?? throw new ExportArtifactUnavailable('The export artifact is unavailable.');
+            $this->assertCurrent($context, $artifact);
+
+            return $artifact;
+        });
     }
 
     /**
@@ -182,24 +194,62 @@ final readonly class ExportService
      */
     public function download(ExecutionContext $context, string $artifactId): ExportDownload
     {
-        $artifact = $this->status($context, $artifactId);
+        $this->assertArtifactId($artifactId);
+
+        return $this->transactions->transactional(function () use ($context, $artifactId): ExportDownload {
+            $artifact = $this->status($context, $artifactId);
+            if (
+                $artifact->status !== ExportArtifactStatus::Completed
+                || $artifact->storageKey === null || $artifact->size === null || $artifact->checksum === null
+            ) {
+                throw new ExportArtifactUnavailable('The export artifact is unavailable.');
+            }
+            $stored = new StoredExportArtifact($artifact->storageKey, $artifact->size, $artifact->checksum);
+            $stream = $this->storage->open($stored);
+            $this->transactions->afterRollback(static function () use ($stream): void {
+                if (is_resource($stream)) {
+                    fclose($stream);
+                }
+            });
+            $download = new ExportDownload(
+                $stream,
+                $artifact->filename,
+                $artifact->size,
+                $artifact->checksum,
+            );
+            $this->audit(
+                $context,
+                $artifact,
+                'business.report.export.download',
+                'success',
+                $this->clock->now(),
+            );
+
+            return $download;
+        });
+    }
+
+    /**
+     * Collapse malformed and unavailable artifact identifiers into the same non-enumerating refusal.
+     *
+     * @param   string  $artifactId  Candidate artifact UUID from an authenticated delivery surface.
+     *
+     * @return  void
+     *
+     * @throws  ExportArtifactUnavailable  When the identifier is not one canonical lowercase UUID.
+     *
+     * @since   2.0.0
+     */
+    private function assertArtifactId(string $artifactId): void
+    {
         if (
-            $artifact->status !== ExportArtifactStatus::Completed
-            || $artifact->storageKey === null || $artifact->size === null || $artifact->checksum === null
+            preg_match(
+                '/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/D',
+                $artifactId,
+            ) !== 1
         ) {
             throw new ExportArtifactUnavailable('The export artifact is unavailable.');
         }
-        $stored = new StoredExportArtifact($artifact->storageKey, $artifact->size, $artifact->checksum);
-        $stream = $this->storage->open($stored);
-        $this->audit(
-            $context,
-            $artifact,
-            'business.report.export.download',
-            'success',
-            $this->clock->now(),
-        );
-
-        return new ExportDownload($stream, $artifact->filename, $artifact->size, $artifact->checksum);
     }
 
     /**
@@ -251,7 +301,12 @@ final readonly class ExportService
             }
         } catch (ExportArtifactUnavailable $exception) {
             throw $exception;
-        } catch (Throwable $exception) {
+        } catch (
+            ReportUnavailable
+            | InvalidArgumentException
+            | BusinessRecordDefinitionUnavailable
+            | BusinessRecordSchemaUnavailable $exception
+        ) {
             throw new ExportArtifactUnavailable('The export artifact is unavailable.', 0, $exception);
         }
     }
