@@ -254,6 +254,9 @@ test('opt-in business workspaces use the portal shell on desktop and mobile', as
   await expect(page.locator('input[name="operation_id"]')).not.toHaveValue('');
   await expect(page.locator('input[name="confirmed"]')).toHaveValue('1');
   await page.goto(`/portal/business/${businessDefinitionHandle}`);
+  await page.getByLabel('Search records').fill('Windhoek order');
+  await page.getByRole('button', { name: 'Apply', exact: true }).click();
+  await expectPortalRecordRow(page, 'Windhoek order');
   await expectStylesLoaded(page);
   await expectAccessible(page);
   expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBe(0);
@@ -359,7 +362,7 @@ test('portal generated forms complete a no-JavaScript lifecycle', async ({ brows
     await page.getByRole('link', { name: 'View operation status' }).click();
     await expect(page.getByRole('heading', { level: 1, name: 'Operation status' })).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Operation completed' })).toBeVisible();
-    await page.getByRole('link', { name: 'Return to record' }).click();
+    await page.getByRole('link', { name: 'Return to record', exact: true }).click();
     await page.getByRole('link', { name: 'Edit', exact: true }).click();
     const updatedName = `${name} updated`;
     await page.locator('[name="values[name]"]').fill(updatedName);

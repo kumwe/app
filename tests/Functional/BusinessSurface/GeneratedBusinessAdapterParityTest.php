@@ -549,17 +549,23 @@ final class GeneratedBusinessAdapterParityTest extends TestCase
             ],
             $rows,
         );
-        $relatedTargets = $canonicalRelatedRows($apiRead['includes']['related_targets']);
+        $relatedTargets = $apiRead['includes']['related_targets'];
         foreach (
             [
                 $apiRelationRead['includes']['related_targets'],
                 $cliRead['includes']['related_targets'],
                 $mcpIncludedPage['items'][0]['includes']['related_targets'],
+            ] as $actual
+        ) {
+            self::assertSame($relatedTargets, $actual);
+        }
+        foreach (
+            [
                 $adminRelationRead->data['record']['includes']['related_targets'],
                 $portalRelationRead->data['record']['includes']['related_targets'],
             ] as $actual
         ) {
-            self::assertSame($relatedTargets, $canonicalRelatedRows($actual));
+            self::assertSame($canonicalRelatedRows($relatedTargets), $canonicalRelatedRows($actual));
         }
         foreach (
             [
@@ -611,13 +617,27 @@ final class GeneratedBusinessAdapterParityTest extends TestCase
             '--definition=' . $definition,
         ])['data'];
         $mcpMetadata = $mcp->inspect($contexts[BusinessSurface::Mcp->value], $definition)['definition'];
-        $metadataByAdapter = [
-            $cliMetadata,
-            $mcpMetadata,
-            $adminRead->data['definition'],
-            $portalRead->data['definition'],
+        foreach ([$cliMetadata, $mcpMetadata] as $actual) {
+            self::assertSame($apiMetadata, $actual);
+        }
+        $lazyRelationshipDefaults = [
+            'loaded' => false,
+            'owned_line_form' => null,
+            'choices' => [],
+            'choice_available' => false,
         ];
-        foreach ($metadataByAdapter as $actual) {
+        foreach ([$adminRead->data['definition'], $portalRead->data['definition']] as $actual) {
+            self::assertIsArray($actual);
+            self::assertIsArray($actual['relationships'] ?? null);
+            foreach ($actual['relationships'] as $position => $relationship) {
+                self::assertIsArray($relationship);
+                foreach ($lazyRelationshipDefaults as $key => $expected) {
+                    self::assertArrayHasKey($key, $relationship);
+                    self::assertSame($expected, $relationship[$key]);
+                    unset($relationship[$key]);
+                }
+                $actual['relationships'][$position] = $relationship;
+            }
             self::assertSame($apiMetadata, $actual);
         }
 
