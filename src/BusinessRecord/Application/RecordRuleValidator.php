@@ -570,8 +570,9 @@ final readonly class RecordRuleValidator
      *
      * A missing value is reported once — `required` when the field demands one, `not_nullable` when the
      * column will not hold null — and that field's own validator list is then skipped, since there is
-     * nothing to judge. A present value runs every validator it declares, so one field can contribute
-     * several breaches to the same pass.
+     * nothing to judge. A raw value that already failed type normalization is likewise skipped, preventing
+     * a second missing-value diagnosis. A present value runs every validator it declares, so one field can
+     * contribute several breaches to the same pass.
      *
      * @param   EntityTypeDefinition       $definition  Definition supplying the rules to apply.
      * @param   array<string, mixed>       $values      Normalized value set to judge, keyed by handle.
@@ -583,7 +584,16 @@ final readonly class RecordRuleValidator
      */
     private function validate(EntityTypeDefinition $definition, array $values, array &$violations): void
     {
+        $normalizationFailures = [];
+        foreach ($violations as $violation) {
+            if ($violation->code === 'invalid_type') {
+                $normalizationFailures[$violation->field] = true;
+            }
+        }
         foreach ($definition->fields() as $field) {
+            if (isset($normalizationFailures[$field->handle])) {
+                continue;
+            }
             $value = $values[$field->handle] ?? null;
             if ($field->required && $value === null) {
                 $violations[] = new ValidationViolation($field->handle, 'required', 'The field is required.');

@@ -1887,6 +1887,11 @@ final readonly class DoctrineBusinessRecordQueryCompiler
                 $physical[] = $column->physicalName;
             }
         }
+        if ($definition->identityStrategy === IdentityStrategy::Reference) {
+            foreach ($this->fieldColumns($definition, $table, $this->identityField($definition)) as $column) {
+                $physical[] = $column->physicalName;
+            }
+        }
         foreach ($projection as $handle) {
             $field = $this->field($definition, $handle);
             if (

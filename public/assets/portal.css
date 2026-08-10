@@ -32,7 +32,7 @@ textarea { width: 100%; min-height: 7rem; padding: .55rem .7rem; border: 1px sol
 .portal-navigation a { display: grid; padding: .65rem; border-radius: .35rem; text-decoration: none; }
 .portal-navigation a[aria-current="page"] { background: #dcece5; }
 .portal-navigation small { color: var(--portal-muted); }
-main { width: 100%; max-width: 76rem; padding: clamp(1.25rem, 4vw, 3rem); }
+main { width: 100%; min-width: 0; max-width: 76rem; padding: clamp(1.25rem, 4vw, 3rem); }
 .eyebrow { color: var(--portal-accent); font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
 .portal-login { width: min(100%, 30rem); margin: clamp(1rem, 8vh, 6rem) auto; padding: clamp(1.25rem, 4vw, 2.5rem); border: 1px solid var(--portal-line); border-radius: .75rem; background: var(--portal-panel); box-shadow: 0 1rem 3rem #10231d14; }
 .portal-login form { display: grid; gap: .55rem; }
@@ -44,7 +44,7 @@ main { width: 100%; max-width: 76rem; padding: clamp(1.25rem, 4vw, 3rem); }
 .portal-security-form { display: grid; gap: .65rem; }
 .portal-secret, .portal-uri { user-select: all; }
 .portal-recovery-codes { columns: 2 18rem; }
-.portal-table-wrap { overflow-x: auto; }
+.portal-table-wrap { max-width: 100%; overflow-x: auto; }
 .portal-table { width: 100%; border-collapse: collapse; background: var(--portal-panel); }
 .portal-table th, .portal-table td { padding: .75rem; border-bottom: 1px solid var(--portal-line); text-align: left; vertical-align: top; }
 .portal-details { display: grid; grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); gap: 1px; background: var(--portal-line); }
@@ -66,7 +66,7 @@ main { width: 100%; max-width: 76rem; padding: clamp(1.25rem, 4vw, 3rem); }
 .portal-business-heading h1 { margin-bottom: .35rem; }
 .portal-business-heading p:last-child { max-width: 48rem; margin-bottom: 0; color: var(--portal-muted); }
 .portal-business-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); gap: 1rem; }
-.portal-business-cards article, .portal-business-panel, .portal-business-empty { padding: 1rem; border: 1px solid var(--portal-line); border-radius: .6rem; background: var(--portal-panel); }
+.portal-business-cards article, .portal-business-panel, .portal-business-empty { min-width: 0; padding: 1rem; border: 1px solid var(--portal-line); border-radius: .6rem; background: var(--portal-panel); }
 .portal-business-cards article { display: grid; min-height: 13rem; align-content: space-between; }
 .portal-business-aggregates { display: grid; grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)); gap: .75rem; margin-bottom: 1rem; }
 .portal-business-aggregates article { display: grid; gap: .25rem; padding: .8rem; border: 1px solid var(--portal-line); border-radius: .5rem; background: var(--portal-panel); }

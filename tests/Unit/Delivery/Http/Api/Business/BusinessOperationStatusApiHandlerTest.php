@@ -422,6 +422,7 @@ final class BusinessOperationStatusApiHandlerTest extends TestCase
         return new BusinessOperationStatusApiHandler(
             new BusinessOperationStatusService(
                 $operations,
+                $transactions,
                 $definitions,
                 $access,
                 $fingerprints,

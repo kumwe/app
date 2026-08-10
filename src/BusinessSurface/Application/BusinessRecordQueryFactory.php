@@ -61,22 +61,16 @@ final readonly class BusinessRecordQueryFactory
         $sorts = $document['sorts'] ?? [];
         $projection = $document['projection'] ?? [];
 
-        if ($filter !== null && (!is_array($filter) || array_is_list($filter))) {
-            throw new InvalidArgumentException('A business-record filter must be an object.');
-        }
-        if ($search !== null && (!is_array($search) || array_is_list($search))) {
-            throw new InvalidArgumentException('A business-record search must be an object.');
-        }
         if (!is_array($sorts) || !array_is_list($sorts)) {
             throw new InvalidArgumentException('Business-record sorts must be a list.');
         }
-        if (!is_array($projection) || ($projection !== [] && array_is_list($projection))) {
-            throw new InvalidArgumentException('A business-record projection must be an object.');
-        }
+        $filter = $filter === null ? null : self::decodedObject($filter, 'filter');
+        $search = $search === null ? null : self::decodedObject($search, 'search');
+        $projection = self::decodedObject($projection, 'projection');
 
         return new RecordQuerySpecification(
-            is_array($filter) ? $this->filter($filter) : null,
-            is_array($search) ? $this->search($search) : null,
+            $filter === null ? null : $this->filter($filter),
+            $search === null ? null : $this->search($search),
             array_map($this->sort(...), $sorts),
             $this->cursor($document['after'] ?? null),
             self::integer($document, 'page_size', 50),
@@ -169,10 +163,14 @@ final readonly class BusinessRecordQueryFactory
     private function set(array $node): SetFilter
     {
         self::known($node, ['type', 'field', 'values', 'negated'], 'set filter');
+        $values = self::list($node, 'values');
+        if ($values === []) {
+            throw new InvalidArgumentException('A set filter requires at least one value.');
+        }
 
         return new SetFilter(
             self::string($node, 'field'),
-            self::list($node, 'values'),
+            $values,
             self::boolean($node, 'negated'),
         );
     }
@@ -206,6 +204,9 @@ final readonly class BusinessRecordQueryFactory
     {
         self::known($node, ['type', 'operator', 'children'], 'boolean filter');
         $children = self::objectList($node, 'children');
+        if ($children === []) {
+            throw new InvalidArgumentException('A boolean filter requires at least one child.');
+        }
 
         return new BooleanFilter(
             BooleanOperator::tryFrom(self::string($node, 'operator'))
@@ -248,10 +249,14 @@ final readonly class BusinessRecordQueryFactory
     private function search(array $document): RecordSearch
     {
         self::known($document, ['term', 'fields'], 'search');
+        $fields = self::stringList($document, 'fields');
+        if ($fields === []) {
+            throw new InvalidArgumentException('A business-record search requires at least one field.');
+        }
 
         return new RecordSearch(
             self::string($document, 'term'),
-            self::stringList($document, 'fields'),
+            $fields,
         );
     }
 
@@ -268,9 +273,7 @@ final readonly class BusinessRecordQueryFactory
      */
     private function sort(mixed $document): RecordSort
     {
-        if (!is_array($document) || array_is_list($document)) {
-            throw new InvalidArgumentException('A business-record sort must be an object.');
-        }
+        $document = self::decodedObject($document, 'sort');
         self::known($document, ['field', 'direction', 'nulls_last'], 'sort');
 
         return new RecordSort(
@@ -318,9 +321,7 @@ final readonly class BusinessRecordQueryFactory
      */
     private function aggregate(mixed $document): RecordAggregate
     {
-        if (!is_array($document) || array_is_list($document)) {
-            throw new InvalidArgumentException('A business-record aggregate must be an object.');
-        }
+        $document = self::decodedObject($document, 'aggregate');
         self::known($document, ['alias', 'function', 'field'], 'aggregate');
         $field = $document['field'] ?? null;
         if ($field !== null && !is_string($field)) {
@@ -521,12 +522,7 @@ final readonly class BusinessRecordQueryFactory
      */
     private static function object(array $document, string $key): array
     {
-        $value = $document[$key] ?? null;
-        if (!is_array($value) || array_is_list($value)) {
-            throw new InvalidArgumentException('Business-record query property ' . $key . ' must be an object.');
-        }
-
-        return $value;
+        return self::decodedObject($document[$key] ?? null, $key);
     }
 
     /**
@@ -544,15 +540,42 @@ final readonly class BusinessRecordQueryFactory
     private static function objectList(array $document, string $key): array
     {
         $values = self::list($document, $key);
+        $objects = [];
         foreach ($values as $value) {
-            if (!is_array($value) || array_is_list($value)) {
-                throw new InvalidArgumentException(
-                    'Business-record query property ' . $key . ' must contain only objects.',
-                );
+            $objects[] = self::decodedObject($value, $key . ' member');
+        }
+
+        return $objects;
+    }
+
+    /**
+     * Normalize one decoded JSON object and prove every PHP array key is textual.
+     *
+     * Empty JSON objects decode to an empty PHP array and therefore remain valid even though PHP also
+     * classifies that representation as a list. Non-empty lists and integer-keyed maps are rejected.
+     *
+     * @param   mixed   $value  Candidate decoded object.
+     * @param   string  $kind   Stable grammar name used in the validation failure.
+     *
+     * @return  array<string, mixed>  Validated object map.
+     *
+     * @throws  InvalidArgumentException  When the value is not an object map.
+     *
+     * @since   2.0.0
+     */
+    private static function decodedObject(mixed $value, string $kind): array
+    {
+        if (!is_array($value) || ($value !== [] && array_is_list($value))) {
+            throw new InvalidArgumentException('A business-record ' . $kind . ' must be an object.');
+        }
+        foreach (array_keys($value) as $key) {
+            if (!is_string($key)) {
+                throw new InvalidArgumentException('A business-record ' . $kind . ' must be an object.');
             }
         }
 
-        return $values;
+        /** @var array<string, mixed> $value */
+        return $value;
     }
 
     /**

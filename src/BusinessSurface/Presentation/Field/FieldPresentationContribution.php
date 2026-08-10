@@ -78,14 +78,19 @@ final readonly class FieldPresentationContribution
             throw new InvalidArgumentException('A field-presentation contribution is malformed.');
         }
 
-        return new self($fieldType, array_map(static function (mixed $context): FieldPresentationContext {
+        $mapped = array_map(static function (mixed $context): FieldPresentationContext {
             if (!is_string($context)) {
                 throw new InvalidArgumentException('A field-presentation context must be a string.');
             }
 
             return FieldPresentationContext::tryFrom($context)
                 ?? throw new InvalidArgumentException('A field-presentation context is unsupported.');
-        }, $contexts));
+        }, $contexts);
+        if ($mapped === []) {
+            throw new InvalidArgumentException('A field-presentation contribution requires bounded contexts.');
+        }
+
+        return new self($fieldType, $mapped);
     }
 
     /**

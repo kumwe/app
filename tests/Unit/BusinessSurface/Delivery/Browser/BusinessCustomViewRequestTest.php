@@ -71,6 +71,7 @@ final class BusinessCustomViewRequestTest extends TestCase
                 BusinessCustomViewRequest::fromQuery($query, self::view(), self::fields(), self::schema());
                 self::fail('An opaque or undeclared custom-view query was accepted.');
             } catch (InvalidArgumentException) {
+                self::addToAssertionCount(1);
             }
         }
     }

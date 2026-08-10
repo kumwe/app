@@ -53,11 +53,14 @@ final readonly class TrustedHostMiddleware implements MiddlewareInterface
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
         try {
-            if ($this->matcher->matches($request->getHeaderLine('Host'))) {
-                return $handler->handle($request);
-            }
+            $trusted = $this->matcher->matches($request->getHeaderLine('Host'));
         } catch (InvalidArgumentException) {
             // Malformed and untrusted hosts have the same externally visible result.
+            $trusted = false;
+        }
+
+        if ($trusted) {
+            return $handler->handle($request);
         }
 
         return new JsonResponse([

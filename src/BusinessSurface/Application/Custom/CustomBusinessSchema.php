@@ -94,14 +94,13 @@ final readonly class CustomBusinessSchema
         } catch (JsonException $exception) {
             throw new InvalidArgumentException('A custom business schema must be valid exact JSON.', 0, $exception);
         }
-        if (!is_array($decoded) || array_is_list($decoded)) {
-            throw new InvalidArgumentException('A custom business schema root must be an object.');
-        }
         if (strlen($encoded) > 262_144) {
             throw new InvalidArgumentException('A custom business schema exceeds 262144 bytes.');
         }
-        /** @var array<string, mixed> $decoded */
-        $this->schema = self::sortKeys($decoded);
+        $this->schema = self::sortObject(self::object(
+            $decoded,
+            'A custom business schema root must be an object.',
+        ));
     }
 
     /**
@@ -117,11 +116,7 @@ final readonly class CustomBusinessSchema
      */
     public static function fromArray(mixed $schema): self
     {
-        if (!is_array($schema) || array_is_list($schema)) {
-            throw new InvalidArgumentException('A custom business schema must be an object.');
-        }
-        /** @var array<string, mixed> $schema */
-        return new self($schema);
+        return new self(self::object($schema, 'A custom business schema must be an object.'));
     }
 
     /**
@@ -230,7 +225,10 @@ final readonly class CustomBusinessSchema
                     $path,
                 ));
             }
-            /** @var array<string, mixed> $items */
+            $items = self::object(
+                $items,
+                sprintf('Custom business schema %s arrays require an object item schema and maxItems.', $path),
+            );
             self::assertSchema($items, $path . '.items', $depth + 1, $nodes);
         } elseif (isset($schema['items']) || isset($schema['minItems']) || isset($schema['maxItems'])) {
             throw new InvalidArgumentException(sprintf('Custom business schema %s has array-only keywords.', $path));
@@ -276,21 +274,26 @@ final readonly class CustomBusinessSchema
             || !array_is_list($types)
             || $types === []
             || count($types) > 2
-            || count($types) !== count(array_unique($types))
         ) {
             throw new InvalidArgumentException(sprintf('Custom business schema %s type is invalid.', $path));
         }
+        $validated = [];
+        $seen = [];
         foreach ($types as $type) {
             if (!is_string($type) || !in_array($type, self::TYPES, true)) {
                 throw new InvalidArgumentException(sprintf('Custom business schema %s type is unsupported.', $path));
             }
+            if (isset($seen[$type])) {
+                throw new InvalidArgumentException(sprintf('Custom business schema %s type is invalid.', $path));
+            }
+            $validated[] = $type;
+            $seen[$type] = true;
         }
-        if (count($types) === 2 && !in_array('null', $types, true)) {
+        if (count($validated) === 2 && !in_array('null', $validated, true)) {
             throw new InvalidArgumentException(sprintf('Custom business schema %s type union is ambiguous.', $path));
         }
 
-        /** @var list<string> $types */
-        return $types;
+        return $validated;
     }
 
     /**
@@ -418,7 +421,10 @@ final readonly class CustomBusinessSchema
             ) {
                 throw new InvalidArgumentException(sprintf('Custom business schema %s has an unsafe property.', $path));
             }
-            /** @var array<string, mixed> $child */
+            $child = self::object(
+                $child,
+                sprintf('Custom business schema %s has an unsafe property.', $path),
+            );
             self::assertSchema($child, $path . '.properties.' . $name, $depth + 1, $nodes);
         }
         $required = $schema['required'] ?? [];
@@ -523,6 +529,53 @@ final readonly class CustomBusinessSchema
             $value[$key] = self::sortKeys($item);
         }
         return $value;
+    }
+
+    /**
+     * Recursively sort a known object schema while retaining its exact map type.
+     *
+     * @param   array<string, mixed>  $value  Validated schema object.
+     *
+     * @return  array<string, mixed>  Deterministically key-sorted schema object.
+     *
+     * @since   2.0.0
+     */
+    private static function sortObject(array $value): array
+    {
+        ksort($value, SORT_STRING);
+        foreach ($value as $key => $item) {
+            $value[$key] = self::sortKeys($item);
+        }
+
+        return $value;
+    }
+
+    /**
+     * Prove a decoded candidate is a string-keyed JSON object.
+     *
+     * @param   mixed   $value    Candidate object value.
+     * @param   string  $message  Stable validation failure message.
+     *
+     * @return  array<string, mixed>  Proven object map.
+     *
+     * @throws  InvalidArgumentException  When the value is not a string-keyed object.
+     *
+     * @since   2.0.0
+     */
+    private static function object(mixed $value, string $message): array
+    {
+        if (!is_array($value) || array_is_list($value)) {
+            throw new InvalidArgumentException($message);
+        }
+        $object = [];
+        foreach ($value as $key => $item) {
+            if (!is_string($key)) {
+                throw new InvalidArgumentException($message);
+            }
+            $object[$key] = $item;
+        }
+
+        return $object;
     }
 
     /**
@@ -655,7 +708,7 @@ final readonly class CustomBusinessSchema
         }
         $items = $schema['items'] ?? null;
         if (is_array($items)) {
-            /** @var array<string, mixed> $items */
+            $items = self::object($items, 'A validated custom business item schema must remain an object.');
             foreach ($value as $index => $item) {
                 $this->validateValue($items, $item, $path . '[' . $index . ']', $violations);
             }
@@ -665,10 +718,10 @@ final readonly class CustomBusinessSchema
     /**
      * Apply object bounds, required fields, closed-property behavior, and child schemas.
      *
-     * @param   array<string, mixed>  $schema      Object schema being evaluated.
-     * @param   array<string, mixed>  $value       Runtime object value.
-     * @param   string                $path        Path named in violations.
-     * @param   list<string>          $violations  Shared violation accumulator.
+     * @param   array<string, mixed>     $schema      Object schema being evaluated.
+     * @param   array<array-key, mixed>  $value       Runtime object value.
+     * @param   string                   $path        Path named in violations.
+     * @param   list<string>             $violations  Shared violation accumulator.
      *
      * @return  void
      *
@@ -691,8 +744,10 @@ final readonly class CustomBusinessSchema
         }
         foreach ($value as $name => $item) {
             if (is_string($name) && isset($properties[$name]) && is_array($properties[$name])) {
-                /** @var array<string, mixed> $child */
-                $child = $properties[$name];
+                $child = self::object(
+                    $properties[$name],
+                    'A validated custom business property schema must remain an object.',
+                );
                 $this->validateValue($child, $item, $path . '.' . $name, $violations);
             } else {
                 $violations[] = $path . '.' . (string) $name . ' is not allowed';

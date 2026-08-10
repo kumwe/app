@@ -6,6 +6,7 @@ namespace Kumwe\CMS\Tests\Integration\BusinessSurface;
 
 use Kumwe\CMS\BusinessRecord\Application\BusinessRecordService;
 use Kumwe\CMS\BusinessRecord\Application\Command\CreateRecordCommand;
+use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordDefinitionUnavailable;
 use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordVersionConflict;
 use Kumwe\CMS\BusinessRecord\Application\Query\ReadRecordQuery;
 use Kumwe\CMS\BusinessDefinition\Domain\DefinitionOwner;

@@ -55,7 +55,7 @@
             <div class="portal-business-section-heading">
                 <h2 id="portal-business-values-title">Record details</h2>
                 <span class="portal-business-status">
-                    {{ record.deleted_at ? 'Deleted' : (record.archived_at ? 'Archived' : record.workflow_state|default('Active'))|replace({'_': ' ')|title }}
+                    {{ record.deleted_at ? 'Deleted' : (record.archived_at ? 'Archived' : record.workflow_state|default('Active'))|replace({'_': ' '})|title }}
                 </span>
             </div>
             {% if fields is empty %}

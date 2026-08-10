@@ -744,55 +744,6 @@ final readonly class ManageBusinessRecordsCommand implements Command
     }
 
     /**
-     * Read an optional list of strings from a protected document.
-     *
-     * @param   array<string, mixed>  $document  Decoded document.
-     * @param   string                $key       Optional member name.
-     *
-     * @return  list<string>  Declared strings, or an empty list when absent.
-     *
-     * @throws  InvalidArgumentException  When the member is not a list of strings.
-     *
-     * @since   2.0.0
-     */
-    private static function stringList(array $document, string $key): array
-    {
-        $values = $document[$key] ?? [];
-        if (!is_array($values) || !array_is_list($values)) {
-            throw new InvalidArgumentException('A business-record document list is invalid.');
-        }
-        foreach ($values as $value) {
-            if (!is_string($value)) {
-                throw new InvalidArgumentException('A business-record document list must contain strings.');
-            }
-        }
-
-        return $values;
-    }
-
-    /**
-     * Read an optional strict boolean from a protected document.
-     *
-     * @param   array<string, mixed>  $document  Decoded document.
-     * @param   string                $key       Optional member name.
-     *
-     * @return  bool  Declared flag, or false when absent.
-     *
-     * @throws  InvalidArgumentException  When a present member is not boolean.
-     *
-     * @since   2.0.0
-     */
-    private static function boolean(array $document, string $key): bool
-    {
-        $value = $document[$key] ?? false;
-        if (!is_bool($value)) {
-            throw new InvalidArgumentException('A business-record document flag must be boolean.');
-        }
-
-        return $value;
-    }
-
-    /**
      * Read a positive bounded integer from a protected document without coercion.
      *
      * @param   array<string, mixed>  $document  Decoded document.

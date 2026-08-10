@@ -881,6 +881,7 @@ final class GeneratedBusinessAdapterParityTest extends TestCase
 
         return (new ServerRequestFactory())
             ->createServerRequest('POST', 'https://kumwe.test/api/v1/business/relation')
+            ->withHeader('If-Match', '"v' . $expectedVersion . '"')
             ->withBody((new StreamFactory())->createStream(json_encode($body, JSON_THROW_ON_ERROR)))
             ->withAttribute(BusinessRecordApiHandler::OPERATION_ATTRIBUTE, BusinessRecordApiHandler::RELATE)
             ->withAttribute(BusinessRecordApiHandler::DEFINITION_ATTRIBUTE, $definition)

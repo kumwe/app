@@ -67,9 +67,13 @@ final readonly class BodyLimitMiddleware implements MiddlewareInterface
         }
         $copy = new Stream('php://temp', 'wb+');
         $bytes = 0;
-        while (!$source->eof()) {
+        while (true) {
             $chunk = $source->read(min(8192, $this->maximumBytes - $bytes + 1));
-            if ($chunk === '' && !$source->eof()) {
+            if ($chunk === '') {
+                if ($source->eof()) {
+                    break;
+                }
+
                 return $this->tooLarge();
             }
             $bytes += strlen($chunk);
@@ -77,6 +81,9 @@ final readonly class BodyLimitMiddleware implements MiddlewareInterface
                 return $this->tooLarge();
             }
             $copy->write($chunk);
+            if ($source->eof()) {
+                break;
+            }
         }
         $copy->rewind();
 

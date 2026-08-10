@@ -348,8 +348,8 @@ final readonly class ManifestContributionSet
      * every list is capped at 128 entries, every scalar is type-checked, and each identifier is
      * asserted against the declaring package's namespace before the set is assembled.
      *
-     * @param   ExtensionIdentifier  $extension  Package the manifest belongs to, which owns everything in it.
-     * @param   array<mixed>         $data       The manifest's decoded `contributions` value.
+     * @param   ExtensionIdentifier  $extension       Package the manifest belongs to, which owns everything in it.
+     * @param   array<mixed>         $data            The manifest's decoded `contributions` value.
      * @param   int                  $manifestSchema  Manifest grammar: 2 for original typed contributions or
      *          3 for signed field presentations and custom business handlers.
      *
@@ -1087,7 +1087,8 @@ final readonly class ManifestContributionSet
         foreach ($required as $fieldType => $contexts) {
             $declared = [];
             $presentation = $this->fieldPresentations[$fieldType] ?? null;
-            foreach ($presentation?->contexts ?? [] as $context) {
+            $presentationContexts = $presentation === null ? [] : $presentation->contexts;
+            foreach ($presentationContexts as $context) {
                 $declared[$context->value] = true;
             }
             $missing = array_keys(array_diff_key($contexts, $declared));

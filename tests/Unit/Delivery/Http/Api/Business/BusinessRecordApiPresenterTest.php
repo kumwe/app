@@ -115,7 +115,7 @@ final class BusinessRecordApiPresenterTest extends TestCase
         self::assertStringNotContainsString(self::ACTOR, $encoded);
         self::assertStringNotContainsString(self::DEFINITION, $encoded);
         self::assertStringNotContainsString('organization', $encoded);
-        self::assertSame('2026-08-09T08:00:00.123456+00:00', $presented['created_at']);
+        self::assertSame('2026-08-09T08:00:00+00:00', $presented['created_at']);
     }
 
     /**

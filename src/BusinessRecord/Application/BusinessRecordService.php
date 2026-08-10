@@ -519,9 +519,11 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
             $targetGeneration->assertMatches($target);
             $targetScope = $this->scope($target, $query->context, $query->organizationIdentifier);
             $this->assertPortalTargetOperation($query->context, $target->definition, PortalOperation::Browse);
-            $this->assertRelatedTargetAccess($target->definition, $relatedAccess);
             if ($relationship !== null && $sourceScope->toArray() !== $targetScope->toArray()) {
                 throw new BusinessRecordNotFound();
+            }
+            if (!$this->relatedTargetAccessible($target->definition, $relatedAccess)) {
+                return new RelatedRecordBrowseResult($target->definition, new RecordBrowseResult([]));
             }
 
             return new RelatedRecordBrowseResult(
@@ -1031,7 +1033,7 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
      * definition fence in its outer transaction. Approval consumption therefore rolls back with a handler
      * failure, while the business-record layer remains independent of custom registries and result schemas.
      *
-     * @param   ExecuteRecordActionCommand         $command     Validated custom action attempt.
+     * @param   ExecuteRecordActionCommand        $command     Validated custom action attempt.
      * @param   BusinessRecordMutationGeneration  $generation  Installed generation held by the caller.
      *
      * @return  void
@@ -2599,14 +2601,14 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
      * or whose field declares no usable target is reported as a violation on that field rather than
      * aborting the pass, so every bad reference in a submission is reported at once.
      *
-     * @param   ExecutionContext      $context     Actor and site the resolution runs as.
-     * @param   EntityTypeDefinition  $definition  Definition whose fields are inspected for references.
-     * @param   RecordScope           $scope       Scope the source record belongs to, which every target
+     * @param   ExecutionContext          $context     Actor and site the resolution runs as.
+     * @param   EntityTypeDefinition      $definition  Definition whose fields are inspected for references.
+     * @param   RecordScope               $scope       Scope the source record belongs to, which every target
      *          must share.
-     * @param   BusinessRecordAccessPlan  $access  Source operation plan carrying each field's exact nested
+     * @param   BusinessRecordAccessPlan  $access      Source operation plan carrying each field's exact nested
      *          target row and field-disclosure decision.
-     * @param   array<string, mixed>  $values      Value set to rewrite, keyed by field handle.
-     * @param   list<string>          $handles     Handles this pass is allowed to touch; anything outside
+     * @param   array<string, mixed>      $values      Value set to rewrite, keyed by field handle.
+     * @param   list<string>              $handles     Handles this pass is allowed to touch; anything outside
      *          it is left exactly as it arrived.
      *
      * @return  array<string, mixed>  The same value set with each named reference replaced by the target's
@@ -2760,6 +2762,9 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
                 'field_access',
                 'One or more submitted fields are unavailable.',
             );
+        }
+        if ($visible === []) {
+            throw new InvalidArgumentException('A validation failure must retain at least one safe violation.');
         }
 
         return new BusinessRecordValidationFailed($visible);
@@ -3164,15 +3169,33 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
         EntityTypeDefinition $target,
         BusinessRecordAccessPlan $access,
     ): void {
-        if (
-            !hash_equals($target->id, $access->resourceIdentifier)
-            || !$access->fields->allows(
-                FieldAccessUsage::PublicReference,
-                $this->identityField($target)->handle,
-            )
-        ) {
+        if (!$this->relatedTargetAccessible($target, $access)) {
             throw new BusinessRecordNotFound();
         }
+    }
+
+    /**
+     * Decide whether one nested target plan may release the target's public identity.
+     *
+     * Selector reads use this predicate to return an indistinguishable empty page when target identity is
+     * withheld. Mutations wrap the same predicate with `assertRelatedTargetAccess()` and fail closed instead.
+     *
+     * @param   EntityTypeDefinition      $target  Declared target definition.
+     * @param   BusinessRecordAccessPlan  $access  Nested plan rooted at the source handle.
+     *
+     * @return  bool  True only for the exact target and its disclosed public identity field.
+     *
+     * @since   2.0.0
+     */
+    private function relatedTargetAccessible(
+        EntityTypeDefinition $target,
+        BusinessRecordAccessPlan $access,
+    ): bool {
+        return hash_equals($target->id, $access->resourceIdentifier)
+            && $access->fields->allows(
+                FieldAccessUsage::PublicReference,
+                $this->identityField($target)->handle,
+            );
     }
 
     /**
@@ -3341,8 +3364,8 @@ final readonly class BusinessRecordService implements BusinessRecordCustomAction
      * until a row-correlated visibility predicate can be compiled, offering it as a selector predicate would
      * let result membership disclose a value hidden on some rows. Declaration order is retained for stable UI.
      *
-     * @param   EntityTypeDefinition     $definition  Target definition being browsed.
-     * @param   BusinessRecordAccessPlan $access      Nested related-target authorization plan.
+     * @param   EntityTypeDefinition      $definition  Target definition being browsed.
+     * @param   BusinessRecordAccessPlan  $access      Nested related-target authorization plan.
      *
      * @return  list<array{handle: string, label: string}>  Bounded policy-safe search controls.
      *

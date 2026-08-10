@@ -273,9 +273,6 @@ final readonly class DoctrineBusinessDefinitionRepository implements BusinessDef
                 $types[] = Types::GUID;
                 $types[] = Types::INTEGER;
             }
-            if ($clauses === []) {
-                continue;
-            }
             $rows = $this->database->fetchAllAssociative(sprintf(
                 'SELECT v.* FROM %s v INNER JOIN %s h ON h.id = v.definition_id '
                 . 'WHERE h.site_identifier = ? AND (%s)',

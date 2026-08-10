@@ -1082,7 +1082,11 @@ final readonly class BusinessRecordApiHandler implements RequestHandlerInterface
      */
     private function organization(ExecutionContext $context, array $metadata): ?string
     {
-        $scope = ScopeMode::tryFrom((string) ($metadata['scope'] ?? ''))
+        $scopeValue = $metadata['scope'] ?? null;
+        if (!is_string($scopeValue)) {
+            throw new InvalidArgumentException('Business-surface scope metadata is invalid.');
+        }
+        $scope = ScopeMode::tryFrom($scopeValue)
             ?? throw new InvalidArgumentException('Business-surface scope metadata is invalid.');
         if (!in_array($scope, [ScopeMode::Organization, ScopeMode::SiteOrganization], true)) {
             return null;

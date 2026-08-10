@@ -271,12 +271,12 @@ final readonly class BusinessMutationPlanService
     /**
      * Verify the plan's exact caller, adapter, operation and input identity.
      *
-     * @param   array<string, mixed>  $document     Authenticated plan document.
-     * @param   ExecutionContext      $context      Current authenticated actor and membership.
-     * @param   BusinessSurface       $surface      Exact generated delivery surface.
-     * @param   string                $operation    Mutation being executed or replayed.
-     * @param   array<string, mixed>  $input        Canonical current mutation arguments.
-     * @param   bool                  $allowExpired Whether a completed guard replay may outlive execution expiry.
+     * @param   array<string, mixed>  $document      Authenticated plan document.
+     * @param   ExecutionContext      $context       Current authenticated actor and membership.
+     * @param   BusinessSurface       $surface       Exact generated delivery surface.
+     * @param   string                $operation     Mutation being executed or replayed.
+     * @param   array<string, mixed>  $input         Canonical current mutation arguments.
+     * @param   bool                  $allowExpired  Whether a completed guard replay may outlive execution expiry.
      *
      * @return  void
      *
@@ -293,6 +293,8 @@ final readonly class BusinessMutationPlanService
         bool $allowExpired,
     ): void {
         $now = $this->clock->now()->getTimestamp();
+        $contextBinding = $document['context_binding'] ?? null;
+        $inputBinding = $document['input_binding'] ?? null;
         if (
             $document['version'] !== 1
             || $document['surface'] !== $surface->value
@@ -300,8 +302,10 @@ final readonly class BusinessMutationPlanService
             || $document['operation_id'] !== $input['operation_id']
             || (!$allowExpired && $document['expires_at'] <= $now)
             || $document['issued_at'] > $now
-            || !hash_equals($document['context_binding'], $context->authorizationFingerprint())
-            || !hash_equals($document['input_binding'], $this->fingerprints->digest($input))
+            || !is_string($contextBinding)
+            || !is_string($inputBinding)
+            || !hash_equals($contextBinding, $context->authorizationFingerprint())
+            || !hash_equals($inputBinding, $this->fingerprints->digest($input))
         ) {
             throw self::invalid();
         }
@@ -310,11 +314,11 @@ final readonly class BusinessMutationPlanService
     /**
      * Resolve the current canonical definition, policy and optional source-record binding.
      *
-     * @param   ExecutionContext      $context    Current actor and scope.
-     * @param   BusinessSurface       $surface    Exact generated surface.
-     * @param   string                $operation  Closed mutation name.
-     * @param   array<string, mixed>  $input      Validated canonical mutation input.
-     * @param   bool                  $validateRecordVersion Whether to prove the current source version.
+     * @param   ExecutionContext      $context                Current actor and scope.
+     * @param   BusinessSurface       $surface                Exact generated surface.
+     * @param   string                $operation              Closed mutation name.
+     * @param   array<string, mixed>  $input                  Validated canonical mutation input.
+     * @param   bool                  $validateRecordVersion  Whether to prove the current source version.
      *
      * @return  array<string, mixed>  Definition, runtime, policy, record and approval binding.
      *
@@ -431,7 +435,6 @@ final readonly class BusinessMutationPlanService
                 'operation_id', 'definition', 'record', 'expected_version', 'action', 'input',
                 'approval_request_id',
             ],
-            default => [],
         };
         $keys = array_keys($input);
         sort($keys, SORT_STRING);
@@ -452,7 +455,7 @@ final readonly class BusinessMutationPlanService
             if (!is_array($input['values']) || ($input['record'] !== null && !is_string($input['record']))) {
                 throw self::invalid();
             }
-            RecordRequestGuard::values($input['values']);
+            $this->assertValues($input['values'], false);
             if (is_string($input['record'])) {
                 RecordRequestGuard::record($input['record']);
             }
@@ -490,6 +493,12 @@ final readonly class BusinessMutationPlanService
         if (!is_array($values) || ($values !== [] && array_is_list($values))) {
             throw self::invalid();
         }
+        foreach (array_keys($values) as $key) {
+            if (!is_string($key)) {
+                throw self::invalid();
+            }
+        }
+        /** @var array<string, mixed> $values */
         RecordRequestGuard::values($values, $allowEmpty);
 
         return null;
@@ -559,15 +568,17 @@ final readonly class BusinessMutationPlanService
         if (!is_string($input['relationship']) || !is_array($records) || !array_is_list($records)) {
             throw self::invalid();
         }
-        if (count($records) > 1000 || count(array_unique($records, SORT_STRING)) !== count($records)) {
+        if (count($records) > 1000) {
             throw self::invalid();
         }
         RecordRequestGuard::handle($input['relationship'], 'relationship');
+        $seen = [];
         foreach ($records as $record) {
-            if (!is_string($record)) {
+            if (!is_string($record) || isset($seen[$record])) {
                 throw self::invalid();
             }
             RecordRequestGuard::record($record);
+            $seen[$record] = true;
         }
 
         return null;
@@ -616,7 +627,11 @@ final readonly class BusinessMutationPlanService
         if (!in_array($operation, ['request_action', 'execute_action'], true)) {
             return false;
         }
-        foreach ($metadata['actions'] ?? [] as $action) {
+        $actions = $metadata['actions'] ?? null;
+        if (!is_array($actions) || !array_is_list($actions)) {
+            throw self::invalid();
+        }
+        foreach ($actions as $action) {
             if (is_array($action) && ($action['handle'] ?? null) === $input['action']) {
                 return ($action['high_impact'] ?? false) === true;
             }
@@ -732,6 +747,12 @@ final readonly class BusinessMutationPlanService
             if (!$object instanceof \stdClass || !is_array($document)) {
                 throw self::invalid();
             }
+            foreach (array_keys($document) as $key) {
+                if (!is_string($key)) {
+                    throw self::invalid();
+                }
+            }
+            /** @var array<string, mixed> $document */
             self::assertPlanDocument($document);
 
             return $document;

@@ -15,9 +15,11 @@ use Kumwe\CMS\BusinessDefinition\Application\FieldTypeDefinitionResolver;
 use Kumwe\CMS\BusinessDefinition\Domain\BuiltInFieldTypes;
 use Kumwe\CMS\BusinessDefinition\Domain\EntityTypeDefinition;
 use Kumwe\CMS\BusinessDefinition\Domain\FieldTypeDefinition;
+use Kumwe\CMS\BusinessDefinition\Domain\InvalidBusinessDefinition;
 use Kumwe\CMS\BusinessRecord\Application\BusinessRecordDefinitionResolver;
 use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordDefinitionUnavailable;
 use Kumwe\CMS\BusinessRecord\Application\ResolvedBusinessDefinition;
+use Kumwe\CMS\BusinessRecord\Domain\RecordScope;
 use Kumwe\CMS\BusinessSecurity\Application\BusinessRecordAccessController;
 use Kumwe\CMS\BusinessSecurity\Application\BusinessRecordAccessPlan;
 use Kumwe\CMS\BusinessSecurity\Application\FieldDisclosurePlan;
@@ -160,6 +162,92 @@ final class BusinessSurfaceCatalogTest extends TestCase
     }
 
     /**
+     * Proves one active definition with a withdrawn field-type provider cannot suppress healthy metadata.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testInactiveFieldTypeOmitsOnlyItsOwningDefinition(): void
+    {
+        $valid = $this->resolved($this->definition());
+        $orphanDocument = $this->definition();
+        $orphanDocument['id'] = '018f22e2-7c8b-7ab0-8f3a-88e8026bb703';
+        $orphanDocument['handle'] = 'site.default.catalog_orphan_test';
+        $orphanDocument['fields'][1]['type'] = 'tests.orphan.text';
+        $orphan = $this->resolved($orphanDocument);
+
+        $definitions = $this->createStub(BusinessRecordDefinitionResolver::class);
+        $definitions->method('activeInstalled')->willReturn([$valid, $orphan]);
+        $access = $this->createStub(BusinessRecordAccessController::class);
+        $access->method('plan')->willReturnCallback(static fn (
+            ExecutionContext $_context,
+            string $operation,
+            ResolvedBusinessDefinition $resolved,
+            RecordScope $_scope,
+        ): BusinessRecordAccessPlan => new BusinessRecordAccessPlan(
+            $resolved->definition->id,
+            $operation,
+            new RecordPolicySet(new RecordPolicySchema([]), [new RecordPolicyConstant(true)]),
+            new FieldDisclosurePlan(['detail' => ['name']]),
+            hash('sha256', $resolved->definition->id . ':' . $operation),
+        ));
+        $fieldTypes = $this->createStub(FieldTypeDefinitionResolver::class);
+        $fieldTypes->method('get')->willReturnCallback(
+            fn (string $identifier): FieldTypeDefinition => $identifier === 'tests.orphan.text'
+                ? throw new InvalidBusinessDefinition('The contributed field type is inactive.')
+                : $this->fieldType($identifier),
+        );
+        $authorization = $this->createStub(AuthorizationGateway::class);
+        $authorization->method('decide')->willReturnCallback(static fn (
+            ExecutionContext $_context,
+            Capability $capability,
+            AuthorizationResource $_resource,
+        ): AuthorizationDecision => new AuthorizationDecision(
+            $capability->value() === 'business.record.read',
+            'test',
+            $capability->value() === 'business.record.read' ? 'allowed' : 'denied',
+        ));
+        $transactions = $this->createStub(TransactionManager::class);
+        $transactions->method('transactional')->willReturnCallback(
+            static fn (callable $operation): mixed => $operation(),
+        );
+        $catalog = new BusinessSurfaceCatalog(
+            $definitions,
+            $access,
+            $fieldTypes,
+            $authorization,
+            $transactions,
+            RuntimeMaterializationState::unavailable('catalog-orphan-test'),
+        );
+        $context = $this->context(BusinessSurface::Api, ['business.record.read']);
+
+        self::assertSame(
+            ['site.default.catalog_authority_test'],
+            array_column(
+                $catalog->definitions($context, BusinessSurface::Api, BusinessSurfaceOperation::Read),
+                'handle',
+            ),
+        );
+        try {
+            $catalog->definition(
+                $context,
+                BusinessSurface::Api,
+                'site.default.catalog_orphan_test',
+                BusinessSurfaceOperation::Read,
+            );
+            self::fail('An inactive contributed field type must fail closed for its definition.');
+        } catch (BusinessRecordDefinitionUnavailable) {
+            self::assertTrue(true);
+        }
+        self::assertSame([], $catalog->operations(
+            $context,
+            BusinessSurface::Api,
+            'site.default.catalog_orphan_test',
+        ));
+    }
+
+    /**
      * Build a shared catalog around one exact access-plan decision.
      *
      * @param   BusinessRecordAccessPlan  $plan  Row and field authority returned for the requested operation.
@@ -170,11 +258,7 @@ final class BusinessSurfaceCatalogTest extends TestCase
      */
     private function catalog(BusinessRecordAccessPlan $plan): BusinessSurfaceCatalog
     {
-        $definition = EntityTypeDefinition::fromArray($this->definition());
-        $resolved = (new ReflectionClass(ResolvedBusinessDefinition::class))->newInstanceWithoutConstructor();
-        (new ReflectionClass(ResolvedBusinessDefinition::class))
-            ->getProperty('definition')
-            ->setValue($resolved, $definition);
+        $resolved = $this->resolved($this->definition());
         $definitions = $this->createStub(BusinessRecordDefinitionResolver::class);
         $definitions->method('activeInstalled')->willReturn([$resolved]);
         $access = $this->createStub(BusinessRecordAccessController::class);
@@ -207,6 +291,26 @@ final class BusinessSurfaceCatalogTest extends TestCase
             $transactions,
             RuntimeMaterializationState::unavailable('catalog-authority-test'),
         );
+    }
+
+    /**
+     * Reconstitute the definition-only portion needed by the catalog unit seam.
+     *
+     * @param   array<string, mixed>  $document  Valid entity definition document.
+     *
+     * @return  ResolvedBusinessDefinition  Reflection-backed catalog fixture.
+     *
+     * @since   2.0.0
+     */
+    private function resolved(array $document): ResolvedBusinessDefinition
+    {
+        $definition = EntityTypeDefinition::fromArray($document);
+        $resolved = (new ReflectionClass(ResolvedBusinessDefinition::class))->newInstanceWithoutConstructor();
+        (new ReflectionClass(ResolvedBusinessDefinition::class))
+            ->getProperty('definition')
+            ->setValue($resolved, $definition);
+
+        return $resolved;
     }
 
     /**

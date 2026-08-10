@@ -46,15 +46,18 @@ final readonly class OpenApiContractCompiler
         }
         $this->validateDefinitionInput($definitions);
         $core = $this->stripPriorGeneratedContract($core);
-        $paths = $core['paths'] ?? null;
-        $components = $core['components'] ?? null;
-        if (!is_array($paths) || array_is_list($paths) || !is_array($components) || array_is_list($components)) {
-            throw new InvalidArgumentException('The core OpenAPI paths or components are invalid.');
-        }
-        $schemas = $components['schemas'] ?? null;
-        if (!is_array($schemas) || array_is_list($schemas)) {
-            throw new InvalidArgumentException('The core OpenAPI schema registry is invalid.');
-        }
+        $paths = $this->objectArray(
+            $core['paths'] ?? null,
+            'The core OpenAPI paths or components are invalid.',
+        );
+        $components = $this->objectArray(
+            $core['components'] ?? null,
+            'The core OpenAPI paths or components are invalid.',
+        );
+        $schemas = $this->objectArray(
+            $components['schemas'] ?? null,
+            'The core OpenAPI schema registry is invalid.',
+        );
 
         $generatedSchemas = [];
         $readReferences = [];
@@ -193,25 +196,40 @@ final readonly class OpenApiContractCompiler
     private function stripPriorGeneratedContract(array $document): array
     {
         $generation = $document['x-kumwe-business-generation'] ?? null;
-        $components = $document['x-kumwe-generated-components'] ?? null;
+        $generatedComponents = $document['x-kumwe-generated-components'] ?? null;
         $priorPaths = $document['x-kumwe-generated-paths'] ?? null;
-        if ($generation === null && $components === null && $priorPaths === null) {
+        if ($generation === null && $generatedComponents === null && $priorPaths === null) {
             return $document;
         }
         if (
             !is_string($generation) || preg_match('/^[a-f0-9]{64}$/D', $generation) !== 1
-            || !is_array($components) || !array_is_list($components) || count($components) > 1024
+            || !is_array($generatedComponents) || !array_is_list($generatedComponents)
+            || count($generatedComponents) > 1024
             || ($priorPaths !== null && (!is_array($priorPaths) || !array_is_list($priorPaths)))
             || (is_array($priorPaths) && count($priorPaths) > 256)
         ) {
             throw new InvalidArgumentException('The prior generated OpenAPI markers are invalid.');
         }
-        foreach ($components as $component) {
+        $componentRegistry = $this->objectArray(
+            $document['components'] ?? null,
+            'The prior generated OpenAPI component registry is invalid.',
+        );
+        $schemas = $this->objectArray(
+            $componentRegistry['schemas'] ?? null,
+            'The prior generated OpenAPI component registry is invalid.',
+        );
+        foreach ($generatedComponents as $component) {
             if (!is_string($component) || preg_match('/^[A-Za-z][A-Za-z0-9_]{0,190}$/D', $component) !== 1) {
                 throw new InvalidArgumentException('A prior generated OpenAPI component marker is invalid.');
             }
-            unset($document['components']['schemas'][$component]);
+            unset($schemas[$component]);
         }
+        $componentRegistry['schemas'] = $schemas;
+        $document['components'] = $componentRegistry;
+        $paths = $this->objectArray(
+            $document['paths'] ?? null,
+            'The prior generated OpenAPI path registry is invalid.',
+        );
         if ($priorPaths === null) {
             $operationIds = [];
             foreach ($this->paths() as $pathItem) {
@@ -221,14 +239,14 @@ final readonly class OpenApiContractCompiler
                     }
                 }
             }
-            foreach ($document['paths'] ?? [] as $path => $pathItem) {
+            foreach ($paths as $path => $pathItem) {
                 if (!is_array($pathItem)) {
                     continue;
                 }
                 foreach ($pathItem as $member) {
                     $operationId = is_array($member) ? ($member['operationId'] ?? null) : null;
                     if (is_string($operationId) && isset($operationIds[$operationId])) {
-                        unset($document['paths'][$path]);
+                        unset($paths[$path]);
                         break;
                     }
                 }
@@ -239,8 +257,9 @@ final readonly class OpenApiContractCompiler
             if (!is_string($path) || strlen($path) > 512 || !str_starts_with($path, '/')) {
                 throw new InvalidArgumentException('A prior generated OpenAPI path marker is invalid.');
             }
-            unset($document['paths'][$path]);
+            unset($paths[$path]);
         }
+        $document['paths'] = $paths;
         unset(
             $document['x-kumwe-business-generation'],
             $document['x-kumwe-generated-components'],
@@ -1276,6 +1295,26 @@ final readonly class OpenApiContractCompiler
     }
 
     /**
+     * Read one compiler-owned schema property through the same object validation as external input.
+     *
+     * @param   array<string, mixed>  $properties  Query-schema property registry.
+     * @param   string                $member      Required schema member.
+     *
+     * @return  array<string, mixed>  Validated schema object.
+     *
+     * @throws  InvalidArgumentException  When a compiler-owned query schema is malformed.
+     *
+     * @since   2.0.0
+     */
+    private function schemaMember(array $properties, string $member): array
+    {
+        return $this->objectArray(
+            $properties[$member] ?? null,
+            'The generated OpenAPI query schema is invalid.',
+        );
+    }
+
+    /**
      * Declare every bounded generic REST path once.
      *
      * @return  array<string, array<string, mixed>>  Path items keyed by literal OpenAPI path.
@@ -1303,59 +1342,79 @@ final readonly class OpenApiContractCompiler
             'pattern' => '^[A-Za-z0-9][A-Za-z0-9._:-]{7,127}$',
         ]);
         $approval = $this->parameter('approval', 'path', true, ['type' => 'string', 'format' => 'uuid']);
-        $query = $this->querySchema()['properties'];
+        $queryDocument = $this->querySchema();
+        $query = $this->objectArray(
+            $queryDocument['properties'] ?? null,
+            'The generated OpenAPI query schema is invalid.',
+        );
         $browseParameters = [
-            $this->structuredQueryParameter('filter', $query['filter']),
-            $this->structuredQueryParameter('search', $query['search']),
-            $this->structuredQueryParameter('sorts', $query['sorts']),
-            $this->parameter('after', 'query', false, $query['after']),
-            $this->parameter('page_size', 'query', false, $query['page_size']),
-            $this->structuredQueryParameter('projection', $query['projection']),
-            $this->parameter('include_archived', 'query', false, $query['include_archived']),
-            $this->parameter('include_deleted', 'query', false, $query['include_deleted']),
+            $this->structuredQueryParameter('filter', $this->schemaMember($query, 'filter')),
+            $this->structuredQueryParameter('search', $this->schemaMember($query, 'search')),
+            $this->structuredQueryParameter('sorts', $this->schemaMember($query, 'sorts')),
+            $this->parameter('after', 'query', false, $this->schemaMember($query, 'after')),
+            $this->parameter('page_size', 'query', false, $this->schemaMember($query, 'page_size')),
+            $this->structuredQueryParameter('projection', $this->schemaMember($query, 'projection')),
+            $this->parameter(
+                'include_archived',
+                'query',
+                false,
+                $this->schemaMember($query, 'include_archived'),
+            ),
+            $this->parameter(
+                'include_deleted',
+                'query',
+                false,
+                $this->schemaMember($query, 'include_deleted'),
+            ),
         ];
         $readParameters = [
             $this->structuredQueryParameter('projection', $this->readProjectionSchema()),
-            $this->parameter('include_archived', 'query', false, $query['include_archived']),
-            $this->parameter('include_deleted', 'query', false, $query['include_deleted']),
+            $this->parameter(
+                'include_archived',
+                'query',
+                false,
+                $this->schemaMember($query, 'include_archived'),
+            ),
+            $this->parameter(
+                'include_deleted',
+                'query',
+                false,
+                $this->schemaMember($query, 'include_deleted'),
+            ),
         ];
         $historyParameters = [
             $this->parameter('limit', 'query', false, ['type' => 'integer', 'minimum' => 1, 'maximum' => 200]),
             $this->parameter('before_version', 'query', false, ['type' => 'integer', 'minimum' => 1]),
         ];
-        $customView = $this->operation(
+        $customView = $this->withOptionalRequestBody($this->operation(
             'businessRecordCustomView',
             'Execute a declared collection custom view',
             '200',
             'GeneratedBusinessCustomViewRequest',
             'GeneratedBusinessCustomViewResponse',
-        );
-        $customView['requestBody']['required'] = false;
-        $customRecordView = $this->operation(
+        ));
+        $customRecordView = $this->withOptionalRequestBody($this->operation(
             'businessRecordCustomRecordView',
             'Execute a declared record custom view',
             '200',
             'GeneratedBusinessCustomViewRequest',
             'GeneratedBusinessCustomViewResponse',
-        );
-        $customRecordView['requestBody']['required'] = false;
-        $actionOperation = $this->operation(
+        ));
+        $actionOperation = $this->withOptionalRequestBody($this->operation(
             'businessRecordAction',
             'Execute a declared business action',
             '200',
             'GeneratedBusinessAction',
             'GeneratedBusinessMutation',
-        );
-        $actionOperation['requestBody']['required'] = false;
-        $approvalOperation = $this->operation(
+        ));
+        $approvalOperation = $this->withOptionalRequestBody($this->operation(
             'businessRecordActionApproval',
             'Request exact action approval',
             '201',
             'GeneratedBusinessActionApproval',
             'GeneratedBusinessApproval',
-        );
-        $approvalOperation['requestBody']['required'] = false;
-        $approvalOperation['responses']['200'] = $approvalOperation['responses']['201'];
+        ));
+        $approvalOperation = $this->withResponseAlias($approvalOperation, '201', '200');
 
         return [
             '/api/v1/business/approvals' => [
@@ -1632,6 +1691,88 @@ final readonly class OpenApiContractCompiler
     }
 
     /**
+     * Make an operation's generated request body optional after proving its expected shape.
+     *
+     * @param   array<string, mixed>  $operation  Generated operation with a request body.
+     *
+     * @return  array<string, mixed>  Operation with an optional request body.
+     *
+     * @throws  InvalidArgumentException  When the compiler-owned request body is malformed.
+     *
+     * @since   2.0.0
+     */
+    private function withOptionalRequestBody(array $operation): array
+    {
+        $requestBody = $this->objectArray(
+            $operation['requestBody'] ?? null,
+            'A generated OpenAPI request body is invalid.',
+        );
+        $requestBody['required'] = false;
+        $operation['requestBody'] = $requestBody;
+
+        return $operation;
+    }
+
+    /**
+     * Add an identical response under another status after validating the response registry.
+     *
+     * @param   array<string, mixed>  $operation  Generated operation whose response is aliased.
+     * @param   string                $source     Existing response status.
+     * @param   string                $alias      Additional response status.
+     *
+     * @return  array<string, mixed>  Operation containing both response statuses.
+     *
+     * @throws  InvalidArgumentException  When the compiler-owned response registry is malformed.
+     *
+     * @since   2.0.0
+     */
+    private function withResponseAlias(array $operation, string $source, string $alias): array
+    {
+        $responses = $this->responseRegistry(
+            $operation['responses'] ?? null,
+            'A generated OpenAPI response registry is invalid.',
+        );
+        $response = $this->objectArray(
+            $responses[$source] ?? null,
+            'A generated OpenAPI response is invalid.',
+        );
+        $responses[$alias] = $response;
+        $operation['responses'] = $responses;
+
+        return $operation;
+    }
+
+    /**
+     * Validate an OpenAPI response registry while preserving PHP's numeric-string key coercion.
+     *
+     * HTTP status keys such as `201` become integer array keys in PHP even though JSON emits object-member
+     * names. This validator accepts exactly three-digit status keys and leaves their representation intact,
+     * which preserves the compiler's canonical bytes.
+     *
+     * @param   mixed   $value    Candidate response registry.
+     * @param   string  $message  Stable validation failure detail.
+     *
+     * @return  array<int|string, mixed>  Validated response registry.
+     *
+     * @throws  InvalidArgumentException  When the value is not a response registry.
+     *
+     * @since   2.0.0
+     */
+    private function responseRegistry(mixed $value, string $message): array
+    {
+        if (!is_array($value)) {
+            throw new InvalidArgumentException($message);
+        }
+        foreach (array_keys($value) as $status) {
+            if (preg_match('/^[1-5][0-9]{2}$/D', (string) $status) !== 1) {
+                throw new InvalidArgumentException($message);
+            }
+        }
+
+        return $value;
+    }
+
+    /**
      * Build a standard Problem Details response.
      *
      * @param   string  $description  Status-specific summary.
@@ -1670,6 +1811,37 @@ final readonly class OpenApiContractCompiler
     }
 
     /**
+     * Narrow a decoded or derived JSON object to a string-keyed PHP array.
+     *
+     * Empty JSON objects decode to an empty PHP array, so emptiness is accepted while any integer key is
+     * rejected. The explicit key proof lets callers safely traverse nested OpenAPI objects without trusting
+     * an unchecked PHPDoc cast.
+     *
+     * @param   mixed   $value    Candidate decoded object.
+     * @param   string  $message  Stable validation failure detail.
+     *
+     * @return  array<string, mixed>  Validated string-keyed object representation.
+     *
+     * @throws  InvalidArgumentException  When the value is not an object representation.
+     *
+     * @since   2.0.0
+     */
+    private function objectArray(mixed $value, string $message): array
+    {
+        if (!is_array($value)) {
+            throw new InvalidArgumentException($message);
+        }
+        foreach (array_keys($value) as $key) {
+            if (!is_string($key)) {
+                throw new InvalidArgumentException($message);
+            }
+        }
+        /** @var array<string, mixed> $value */
+
+        return $value;
+    }
+
+    /**
      * Prove operation identifiers are present and unique after assembly.
      *
      * @param   array<string, mixed>  $paths  Complete path registry.
@@ -1684,14 +1856,19 @@ final readonly class OpenApiContractCompiler
     {
         $seen = [];
         foreach ($paths as $path => $pathItem) {
-            if (!is_string($path) || !is_array($pathItem) || array_is_list($pathItem)) {
+            if (!is_string($path)) {
                 throw new InvalidArgumentException('An OpenAPI path item is invalid.');
             }
+            $pathItem = $this->objectArray($pathItem, 'An OpenAPI path item is invalid.');
             foreach (['get', 'put', 'post', 'patch', 'delete'] as $method) {
                 if (!isset($pathItem[$method])) {
                     continue;
                 }
-                $operationId = $pathItem[$method]['operationId'] ?? null;
+                $operation = $this->objectArray(
+                    $pathItem[$method],
+                    'An OpenAPI operation is invalid.',
+                );
+                $operationId = $operation['operationId'] ?? null;
                 if (!is_string($operationId) || $operationId === '' || isset($seen[$operationId])) {
                     throw new InvalidArgumentException('An OpenAPI operation identifier is missing or duplicated.');
                 }

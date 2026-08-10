@@ -129,6 +129,42 @@ final class RecordRuleValidatorTest extends TestCase
         }
     }
 
+    /**
+     * Proves a malformed required value is reported once instead of cascading into a missing-value error.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testInvalidTypeDoesNotAlsoReportTheRequiredRule(): void
+    {
+        $definition = EntityTypeDefinition::fromArray(NeutralBusinessFixture::backupDocument());
+        $input = NeutralBusinessFixture::recordValues();
+        $input['name'] = 42;
+
+        try {
+            self::rules()->create(
+                $definition,
+                $input,
+                'default',
+                NeutralBusinessFixture::RECORD_ID,
+                NeutralBusinessFixture::RECORD_ID,
+            );
+            self::fail('A malformed required value must be rejected.');
+        } catch (BusinessRecordValidationFailed $exception) {
+            self::assertSame(
+                ['invalid_type'],
+                array_values(array_map(
+                    static fn (ValidationViolation $violation): string => $violation->code,
+                    array_filter(
+                        $exception->violations,
+                        static fn (ValidationViolation $violation): bool => $violation->field === 'name',
+                    ),
+                )),
+            );
+        }
+    }
+
     public function testRepinRenormalizesStoredValuesRecomputesFormulasAndRejectsTargetViolations(): void
     {
         $definition = EntityTypeDefinition::fromArray(NeutralBusinessFixture::backupDocument());
