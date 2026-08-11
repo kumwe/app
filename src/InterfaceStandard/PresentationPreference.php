@@ -417,8 +417,8 @@ final readonly class PresentationPreference
         $hour = (int) $parts['hour'];
         $minute = (int) $parts['minute'];
         $second = (int) $parts['second'];
-        $zoneHour = isset($parts['zone_hour']) && $parts['zone_hour'] !== '' ? (int) $parts['zone_hour'] : 0;
-        $zoneMinute = isset($parts['zone_minute']) && $parts['zone_minute'] !== '' ? (int) $parts['zone_minute'] : 0;
+        $zoneHour = isset($parts['zone_hour']) ? (int) $parts['zone_hour'] : 0;
+        $zoneMinute = isset($parts['zone_minute']) ? (int) $parts['zone_minute'] : 0;
         if (
             !checkdate($month, $day, (int) substr($parts['date'], 0, 4))
             || $hour > 23

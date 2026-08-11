@@ -259,8 +259,8 @@ final class AdministratorNavigationRegistry implements ContributionSurface
      * @param   array{owner: ContributionOwner, definition: AdministratorNavigationDefinition}  $entry
      *          Stored pairing of contributor and declaration.
      *
-     * @return  array<string, int|string>  The declared fields, plus `owner`, the resolved `href` and the
-     *          workspace label as `group`.
+     * @return  array<string, int|string>  The declared fields, including an optional KIS surface, plus
+     *          `owner`, the resolved `href` and the workspace label as `group`.
      *
      * @throws  InvalidArgumentException  When the entry names a workspace that has since been withdrawn
      *          from the workspace registry.
@@ -276,7 +276,7 @@ final class AdministratorNavigationRegistry implements ContributionSurface
             ? $definition->path
             : '/administrator/extensions/' . $owner->identifier()
                 . ($definition->path === '/' ? '' : $definition->path);
-        return [
+        $item = [
             'id' => $definition->id,
             'owner' => $owner->identifier(),
             'workspace' => $definition->workspace,
@@ -289,6 +289,11 @@ final class AdministratorNavigationRegistry implements ContributionSurface
             'priority' => $definition->priority,
             'keywords' => $definition->keywords,
         ];
+        if ($definition->surface !== null) {
+            $item['surface'] = $definition->surface;
+        }
+
+        return $item;
     }
 
     /**

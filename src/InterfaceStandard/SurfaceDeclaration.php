@@ -441,6 +441,7 @@ final readonly class SurfaceDeclaration
         }
         self::assertListBounds($value, $key, $minimum, $maximum);
 
+        /** @var list<mixed> $value */
         return $value;
     }
 

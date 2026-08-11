@@ -300,7 +300,9 @@ final readonly class ExtensionContributionRegistrySet
         bool $withCore = true,
         ?AuthorizationPolicyRegistry $authorizationPolicies = null,
     ) {
-        $this->ownerNamespaces = new ArrayObject();
+        /** @var array<string, string> $ownerNamespaces */
+        $ownerNamespaces = [];
+        $this->ownerNamespaces = new ArrayObject($ownerNamespaces);
         $this->authorizationPolicies = $authorizationPolicies ?? new AuthorizationPolicyRegistry();
         $this->capabilities = new CapabilityDefinitionRegistry($this->authorizationPolicies);
         $this->resourcePolicies = new ResourcePolicyDefinitionRegistry($this->authorizationPolicies);

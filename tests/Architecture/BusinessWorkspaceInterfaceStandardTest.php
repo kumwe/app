@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace Kumwe\CMS\Tests\Architecture;
 
+use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\TestCase;
 
+#[CoversNothing]
 final class BusinessWorkspaceInterfaceStandardTest extends TestCase
 {
     private string $root;

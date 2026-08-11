@@ -302,7 +302,7 @@ final readonly class ThemePackageValidator
 
         if (
             preg_match('/<title\b[^>]*>(?<content>.*?)<\/title\s*>/is', $rendered, $title) !== 1
-            || trim(strip_tags(html_entity_decode((string) ($title['content'] ?? ''), ENT_QUOTES | ENT_HTML5))) === ''
+            || trim(strip_tags(html_entity_decode($title['content'], ENT_QUOTES | ENT_HTML5))) === ''
         ) {
             throw new InvalidArgumentException(sprintf(
                 'The site %s entry must render a non-empty document title.',
@@ -704,7 +704,7 @@ final readonly class ThemePackageValidator
             }
 
             if (preg_match('/^<\s*\/\s*(?<name>[A-Za-z][A-Za-z0-9:-]*)/D', $tag, $closingTag) === 1) {
-                $name = strtolower((string) $closingTag['name']);
+                $name = strtolower($closingTag['name']);
                 $match = null;
                 for ($index = count($stack) - 1; $index >= 0; --$index) {
                     if ($stack[$index]['name'] === $name) {
@@ -733,7 +733,7 @@ final readonly class ThemePackageValidator
                 continue;
             }
 
-            $name = strtolower((string) $openingTag['name']);
+            $name = strtolower($openingTag['name']);
             $attributes = preg_replace(
                 '/^<\s*' . preg_quote($name, '/') . '\b|\/?>$/i',
                 '',
@@ -756,8 +756,8 @@ final readonly class ThemePackageValidator
                     $offset = $length;
                     continue;
                 }
-                $closingSource = (string) $rawClosing[0][0];
-                $closingOffset = (int) $rawClosing[0][1];
+                $closingSource = $rawClosing[0][0];
+                $closingOffset = $rawClosing[0][1];
                 if (!$suppressed) {
                     $visible .= $tag;
                     if ($name === 'title') {
@@ -920,10 +920,8 @@ final readonly class ThemePackageValidator
         );
 
         foreach ($matches as $match) {
-            $content = $match['content'] ?? null;
-            $attributes = $match['attributes'] ?? null;
-            if (is_string($content) && is_string($attributes) && str_contains($content, $sentinel)) {
-                return ['attributes' => $attributes, 'content' => $content];
+            if (str_contains($match['content'], $sentinel)) {
+                return ['attributes' => $match['attributes'], 'content' => $match['content']];
             }
         }
 
@@ -953,11 +951,7 @@ final readonly class ThemePackageValidator
             return null;
         }
 
-        $attributes = $match['attributes'] ?? null;
-        $content = $match['content'] ?? null;
-        return is_string($attributes) && is_string($content)
-            ? ['attributes' => $attributes, 'content' => $content]
-            : null;
+        return ['attributes' => $match['attributes'], 'content' => $match['content']];
     }
 
     /**
@@ -982,7 +976,7 @@ final readonly class ThemePackageValidator
             return null;
         }
 
-        return is_string($match['attributes'] ?? null) ? $match['attributes'] : null;
+        return $match['attributes'];
     }
 
     /**
@@ -1007,10 +1001,7 @@ final readonly class ThemePackageValidator
         );
 
         foreach ($matches as $match) {
-            $source = $match['attributes'] ?? null;
-            if (!is_string($source)) {
-                continue;
-            }
+            $source = $match['attributes'];
             foreach ($attributes as $name => $value) {
                 $actual = $this->attribute($source, $name);
                 if ($actual === null || strcasecmp($actual, $value) !== 0) {
@@ -1048,8 +1039,7 @@ final readonly class ThemePackageValidator
             return null;
         }
 
-        $value = $match['value'] ?? null;
-        return is_string($value) ? html_entity_decode($value, ENT_QUOTES | ENT_HTML5, 'UTF-8') : null;
+        return html_entity_decode($match['value'], ENT_QUOTES | ENT_HTML5, 'UTF-8');
     }
 
     /**
@@ -1068,10 +1058,7 @@ final readonly class ThemePackageValidator
         preg_match_all('/<meta\b(?<attributes>[^>]*)>/i', $html, $matches, PREG_SET_ORDER);
 
         foreach ($matches as $match) {
-            $attributes = $match['attributes'] ?? null;
-            if (!is_string($attributes)) {
-                continue;
-            }
+            $attributes = $match['attributes'];
             $metaName = $this->attribute($attributes, 'name');
             if ($metaName !== null && strcasecmp($metaName, $name) === 0) {
                 return $this->attribute($attributes, 'content');

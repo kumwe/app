@@ -165,13 +165,17 @@ final class SurfaceDefinitionTest extends TestCase
         $cases[] = [ContributionOwner::core(), $icon];
         $cases[] = [ContributionOwner::extension('acme/orders'), self::coreDeclaration()];
 
+        $rejectedCases = 0;
         foreach ($cases as [$owner, $data]) {
             try {
                 SurfaceDefinition::fromArray($owner, $data);
                 self::fail('Unsafe KIS declaration metadata must be refused.');
             } catch (InvalidArgumentException) {
+                $rejectedCases++;
             }
         }
+
+        self::assertSame(count($cases), $rejectedCases);
     }
 
     /**
@@ -194,7 +198,7 @@ final class SurfaceDefinitionTest extends TestCase
             'Review a security operation.',
             SurfacePattern::CollectionWorkspace,
             [],
-            [],
+            [SurfaceState::Error],
             [new CustomizationPermission(CustomizationSlot::Layout, CustomizationScope::User)],
             [
                 new ResponsiveElement(
