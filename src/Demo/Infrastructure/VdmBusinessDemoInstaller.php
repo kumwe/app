@@ -113,11 +113,11 @@ final readonly class VdmBusinessDemoInstaller
     }
 
     /**
-     * Validate the complete projected business release against durable checkpoints without mutating state.
+     * Validate applied checkpoints and current definition-policy state without mutating either.
      *
      * This runs before the outer profile ledger accepts a candidate manifest and again immediately before
-     * installation. A rejected release therefore cannot poison rollback metadata, and no early definition
-     * publication can precede discovery of a later operation, definition, or policy conflict.
+     * installation. Applied operation conflicts and current definition or policy divergence are therefore
+     * rejected before this installer publishes a definition or writes a policy.
      *
      * @param   ExecutionContext      $context   Purpose-bound profile-installer context.
      * @param   array<string, mixed>  $manifest  Aggregate VDM source manifest.
@@ -878,7 +878,7 @@ final readonly class VdmBusinessDemoInstaller
                 $this->tables->quoted('resource_policies'),
             ), [$policyCode]);
             if ($existing !== false) {
-                $this->assertCurrentPolicy($context, $baseline, true);
+                $this->assertPolicyCheckpointAtInstallation($context, $baseline);
                 continue;
             }
             $created = true;
@@ -952,6 +952,49 @@ final readonly class VdmBusinessDemoInstaller
         }
 
         return $created;
+    }
+
+    /**
+     * Re-read and validate one existing policy checkpoint at the point where installation would skip it.
+     *
+     * Preflight is deliberately read-only and cannot prove provenance still exists when this later branch
+     * runs. Requiring the exact checkpoint here prevents a row inserted between those reads, or a row whose
+     * checkpoint was concurrently removed, from being adopted merely because its deterministic fields match.
+     *
+     * @param   ExecutionContext      $context  Profile installer context.
+     * @param   array<string, mixed>  $policy   Desired deterministic policy baseline.
+     *
+     * @return  void
+     *
+     * @throws  RuntimeException  When provenance is absent, belongs to another resource type, is corrupt,
+     *          or no longer agrees with the live policy row.
+     *
+     * @since   2.0.0
+     */
+    private function assertPolicyCheckpointAtInstallation(ExecutionContext $context, array $policy): void
+    {
+        $fixtureKey = $this->requiredString($policy, 'fixture_key');
+        $asset = $this->ledger->asset(
+            $context->site()->identifier(),
+            self::DATASET,
+            $fixtureKey,
+        );
+        if ($asset === null) {
+            $this->assertCurrentPolicy($context, $policy, false);
+            throw new RuntimeException(sprintf(
+                'VDM policy %s changed while its installer provenance was being verified.',
+                $this->requiredString($policy, 'policy_code'),
+            ));
+        }
+        if (($asset['resource_type'] ?? null) !== 'resource_policy') {
+            throw new RuntimeException(sprintf(
+                'VDM policy fixture %s reuses a checkpoint owned by another resource type.',
+                $fixtureKey,
+            ));
+        }
+
+        $this->assertPolicyAsset($fixtureKey, $policy, $asset);
+        $this->assertCurrentPolicy($context, $policy, true);
     }
 
     /**

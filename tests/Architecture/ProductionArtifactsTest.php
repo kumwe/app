@@ -124,6 +124,13 @@ final class ProductionArtifactsTest extends TestCase
         self::assertStringContainsString('Kumwe 1.x and unknown formats are refused', $verify);
     }
 
+    /**
+     * Proves CI deploys every supported database and both released distribution formats.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
     public function testCiDeploysEverySupportedDatabaseAndComposerDistribution(): void
     {
         $ci = $this->contents('.github/workflows/ci.yml');
