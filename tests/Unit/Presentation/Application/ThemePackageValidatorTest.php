@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\CMS\Tests\Unit\Presentation\Application;
 
 use InvalidArgumentException;
+use Kumwe\CMS\Extension\Domain\TemplateKisCompatibility;
 use Kumwe\CMS\Presentation\Application\ThemePackageValidator;
 use Kumwe\CMS\Presentation\ThemeSurface;
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -75,9 +76,53 @@ final class ThemePackageValidatorTest extends TestCase
         file_put_contents($this->root . '/theme/home.twig', '<article>Custom home</article>');
         file_put_contents($this->root . '/theme/page.twig', '{{ title|default("Custom page") }}');
 
-        $this->validator()->validate($this->root . '/theme', ThemeSurface::Site);
+        $this->validator()->validate($this->root . '/theme', ThemeSurface::Site, $this->compatibility());
 
         self::addToAssertionCount(1);
+    }
+
+    /**
+     * Proves activation fails closed when the signed declaration excludes a host KIS contract.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testUnsupportedKisCompatibilityIsRejectedBeforeTemplateCompilation(): void
+    {
+        $declarations = [
+            [
+                'contract' => 1,
+                'standard' => 'kis-2.0',
+                'components' => ['minimum' => '1.0.0', 'maximum' => '1.0.0'],
+                'tokens' => ['minimum' => '1.0.0', 'maximum' => '1.0.0'],
+            ],
+            [
+                'contract' => 1,
+                'standard' => 'kis-1.0',
+                'components' => ['minimum' => '2.0.0', 'maximum' => '2.1.0'],
+                'tokens' => ['minimum' => '1.0.0', 'maximum' => '1.0.0'],
+            ],
+            [
+                'contract' => 1,
+                'standard' => 'kis-1.0',
+                'components' => ['minimum' => '1.0.0', 'maximum' => '1.0.0'],
+                'tokens' => ['minimum' => '0.8.0', 'maximum' => '0.9.0'],
+            ],
+        ];
+
+        foreach ($declarations as $declaration) {
+            try {
+                $this->validator()->validate(
+                    $this->root . '/theme',
+                    ThemeSurface::Site,
+                    TemplateKisCompatibility::fromArray($declaration),
+                );
+                self::fail('An unsupported KIS compatibility declaration reached template compilation.');
+            } catch (InvalidArgumentException $exception) {
+                self::assertStringContainsString('template', strtolower($exception->getMessage()));
+            }
+        }
     }
 
     /**
@@ -93,7 +138,7 @@ final class ThemePackageValidatorTest extends TestCase
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('page.twig');
 
-        $this->validator()->validate($this->root . '/theme', ThemeSurface::Site);
+        $this->validator()->validate($this->root . '/theme', ThemeSurface::Site, $this->compatibility());
     }
 
     /**
@@ -109,7 +154,11 @@ final class ThemePackageValidatorTest extends TestCase
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('could not be compiled');
 
-        $this->validator()->validate($this->root . '/theme', ThemeSurface::Administrator);
+        $this->validator()->validate(
+            $this->root . '/theme',
+            ThemeSurface::Administrator,
+            $this->compatibility(),
+        );
     }
 
     /**
@@ -130,7 +179,11 @@ final class ThemePackageValidatorTest extends TestCase
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('responsive width=device-width viewport');
 
-        $this->validator()->validate($this->root . '/theme', ThemeSurface::Administrator);
+        $this->validator()->validate(
+            $this->root . '/theme',
+            ThemeSurface::Administrator,
+            $this->compatibility(),
+        );
     }
 
     /**
@@ -151,7 +204,11 @@ final class ThemePackageValidatorTest extends TestCase
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('content block inside a main landmark');
 
-        $this->validator()->validate($this->root . '/theme', ThemeSurface::Administrator);
+        $this->validator()->validate(
+            $this->root . '/theme',
+            ThemeSurface::Administrator,
+            $this->compatibility(),
+        );
     }
 
     /**
@@ -172,7 +229,11 @@ final class ThemePackageValidatorTest extends TestCase
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('title block inside the document title');
 
-        $this->validator()->validate($this->root . '/theme', ThemeSurface::Administrator);
+        $this->validator()->validate(
+            $this->root . '/theme',
+            ThemeSurface::Administrator,
+            $this->compatibility(),
+        );
     }
 
     /**
@@ -193,7 +254,11 @@ final class ThemePackageValidatorTest extends TestCase
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('link to its focusable main landmark');
 
-        $this->validator()->validate($this->root . '/theme', ThemeSurface::Administrator);
+        $this->validator()->validate(
+            $this->root . '/theme',
+            ThemeSurface::Administrator,
+            $this->compatibility(),
+        );
     }
 
     /**
@@ -215,7 +280,11 @@ final class ThemePackageValidatorTest extends TestCase
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('capability-filtered workspace navigation');
 
-        $this->validator()->validate($this->root . '/theme', ThemeSurface::Administrator);
+        $this->validator()->validate(
+            $this->root . '/theme',
+            ThemeSurface::Administrator,
+            $this->compatibility(),
+        );
     }
 
     /**
@@ -237,7 +306,11 @@ final class ThemePackageValidatorTest extends TestCase
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('host-supplied administrator module');
 
-        $this->validator()->validate($this->root . '/theme', ThemeSurface::Administrator);
+        $this->validator()->validate(
+            $this->root . '/theme',
+            ThemeSurface::Administrator,
+            $this->compatibility(),
+        );
     }
 
     /**
@@ -251,7 +324,11 @@ final class ThemePackageValidatorTest extends TestCase
     {
         file_put_contents($this->root . '/theme/layout.twig', $this->validAdministratorLayout());
 
-        $this->validator()->validate($this->root . '/theme', ThemeSurface::Administrator);
+        $this->validator()->validate(
+            $this->root . '/theme',
+            ThemeSurface::Administrator,
+            $this->compatibility(),
+        );
 
         self::addToAssertionCount(1);
     }
@@ -266,6 +343,23 @@ final class ThemePackageValidatorTest extends TestCase
     private function validator(): ThemePackageValidator
     {
         return new ThemePackageValidator($this->root . '/core');
+    }
+
+    /**
+     * Return a compatibility declaration accepting the KIS contracts supplied by the test host.
+     *
+     * @return  TemplateKisCompatibility  Closed version-one compatibility declaration.
+     *
+     * @since   2.0.0
+     */
+    private function compatibility(): TemplateKisCompatibility
+    {
+        return TemplateKisCompatibility::fromArray([
+            'contract' => 1,
+            'standard' => 'kis-1.0',
+            'components' => ['minimum' => '1.0.0', 'maximum' => '1.0.0'],
+            'tokens' => ['minimum' => '1.0.0', 'maximum' => '1.0.0'],
+        ]);
     }
 
     /**

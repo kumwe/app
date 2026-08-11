@@ -14,6 +14,51 @@ use PHPUnit\Framework\TestCase;
 #[CoversClass(ExtensionManifest::class)]
 final class ExtensionManifestTest extends TestCase
 {
+    /**
+     * Proves installable templates must carry the versioned KIS compatibility envelope.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testTemplateManifestRequiresKisCompatibility(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('versioned template compatibility object');
+
+        ExtensionManifest::fromJson(str_replace(
+            '"type": "plugin"',
+            '"type": "template"',
+            $this->manifestJson(),
+        ));
+    }
+
+    /**
+     * Proves the signed manifest exposes its validated KIS compatibility declaration.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testTemplateManifestParsesClosedKisCompatibility(): void
+    {
+        $data = json_decode($this->manifestJson(), true, 16, JSON_THROW_ON_ERROR);
+        self::assertIsArray($data);
+        $data['type'] = 'template';
+        $data['template'] = [
+            'contract' => 1,
+            'standard' => 'kis-1.0',
+            'components' => ['minimum' => '1.0.0', 'maximum' => '1.1.0'],
+            'tokens' => ['minimum' => '1.0.0', 'maximum' => '1.0.0'],
+        ];
+
+        $manifest = ExtensionManifest::fromJson(json_encode($data, JSON_THROW_ON_ERROR));
+        $compatibility = $manifest->templateCompatibility();
+
+        self::assertNotNull($compatibility);
+        self::assertSame('kis-1.0', $compatibility->standard());
+    }
+
     public function testParsesACompatibleManifestWithTypedDependencies(): void
     {
         $manifest = ExtensionManifest::fromJson($this->manifestJson());

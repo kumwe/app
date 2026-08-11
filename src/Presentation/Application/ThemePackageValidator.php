@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Kumwe\CMS\Presentation\Application;
 
 use InvalidArgumentException;
+use Kumwe\CMS\Extension\Domain\SemanticVersion;
+use Kumwe\CMS\Extension\Domain\TemplateKisCompatibility;
 use Kumwe\CMS\Presentation\ThemeSurface;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
@@ -28,6 +30,30 @@ use Twig\Loader\FilesystemLoader;
  */
 final readonly class ThemePackageValidator
 {
+    /**
+     * KIS major/minor standard implemented by this host.
+     *
+     * @var    string
+     * @since  2.0.0
+     */
+    private const KIS_STANDARD = 'kis-1.0';
+
+    /**
+     * Public KIS component contract implemented by the shared Twig component library.
+     *
+     * @var    string
+     * @since  2.0.0
+     */
+    private const KIS_COMPONENT_VERSION = '1.0.0';
+
+    /**
+     * Public KIS token contract implemented by the shared presentation properties.
+     *
+     * @var    string
+     * @since  2.0.0
+     */
+    private const KIS_TOKEN_VERSION = '1.0.0';
+
     /**
      * Unique text used to prove the candidate exposes the document-title block.
      *
@@ -113,8 +139,9 @@ final readonly class ThemePackageValidator
      * surface the layout is additionally rendered against KIS 1.0 sentinels, since a theme that compiles
      * can still discard navigation, assets, responsive metadata, or the keyboard recovery path.
      *
-     * @param   string        $themePath  Directory holding this surface's templates inside the package.
-     * @param   ThemeSurface  $surface    Surface the theme is being activated on.
+     * @param   string                    $themePath      Directory holding this surface's templates inside the package.
+     * @param   ThemeSurface              $surface        Surface the theme is being activated on.
+     * @param   TemplateKisCompatibility  $compatibility  Versioned KIS contract declared in the signed manifest.
      *
      * @return  void
      *
@@ -122,8 +149,13 @@ final readonly class ThemePackageValidator
      *
      * @since   2.0.0
      */
-    public function validate(string $themePath, ThemeSurface $surface): void
-    {
+    public function validate(
+        string $themePath,
+        ThemeSurface $surface,
+        TemplateKisCompatibility $compatibility,
+    ): void {
+        $this->validateCompatibility($compatibility);
+
         $resolved = realpath($themePath);
         if (!is_string($resolved) || !is_dir($resolved) || is_link($themePath)) {
             throw new InvalidArgumentException('The selected theme surface directory is invalid.');
@@ -173,6 +205,44 @@ final readonly class ThemePackageValidator
                 $surface->value,
                 $exception->getMessage(),
             ), 0, $exception);
+        }
+    }
+
+    /**
+     * Require the candidate manifest to admit every KIS contract supplied by this host.
+     *
+     * @param   TemplateKisCompatibility  $compatibility  Closed, versioned declaration from the package manifest.
+     *
+     * @return  void
+     *
+     * @throws  InvalidArgumentException  When the standard, component version, or token version is unsupported.
+     *
+     * @since   2.0.0
+     */
+    private function validateCompatibility(TemplateKisCompatibility $compatibility): void
+    {
+        if ($compatibility->standard() !== self::KIS_STANDARD) {
+            throw new InvalidArgumentException(sprintf(
+                'The template requires unsupported KIS standard %s; this host provides %s.',
+                $compatibility->standard(),
+                self::KIS_STANDARD,
+            ));
+        }
+
+        $components = SemanticVersion::fromString(self::KIS_COMPONENT_VERSION);
+        if (!$compatibility->supportsComponents($components)) {
+            throw new InvalidArgumentException(sprintf(
+                'The template does not support host KIS component contract %s.',
+                self::KIS_COMPONENT_VERSION,
+            ));
+        }
+
+        $tokens = SemanticVersion::fromString(self::KIS_TOKEN_VERSION);
+        if (!$compatibility->supportsTokens($tokens)) {
+            throw new InvalidArgumentException(sprintf(
+                'The template does not support host KIS token contract %s.',
+                self::KIS_TOKEN_VERSION,
+            ));
         }
     }
 

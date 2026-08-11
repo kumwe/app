@@ -775,7 +775,13 @@ final class DoctrineThemeManagerIntegrationTest extends TestCase
   "version": "1.0.0",
   "provider": "Acme\\Corporate\\Provider",
   "autoload": {"psr-4": {"Acme\\Corporate\\": "src/"}},
-  "requires": {"kumwe": "^2.0.0", "php": "^8.5.0"}
+  "requires": {"kumwe": "^2.0.0", "php": "^8.5.0"},
+  "template": {
+    "contract": 1,
+    "standard": "kis-1.0",
+    "components": {"minimum": "1.0.0", "maximum": "1.0.0"},
+    "tokens": {"minimum": "1.0.0", "maximum": "1.0.0"}
+  }
 }
 JSON;
         $this->database->insert($this->tables->raw('extensions'), [

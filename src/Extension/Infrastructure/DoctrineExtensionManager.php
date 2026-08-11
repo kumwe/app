@@ -789,7 +789,17 @@ final readonly class DoctrineExtensionManager
             }
             $this->assertThemeCapability($context, $surface);
             $this->themeActivationGuard->assertAllowed($surface, $context, $stepUpCredential);
-            $this->themeValidator->validate($this->themeSurfacePath($identifier, $surface), $surface);
+            $compatibility = $manifest->templateCompatibility();
+            if ($compatibility === null) {
+                throw new InvalidArgumentException(
+                    'Template activation requires a versioned KIS compatibility declaration.',
+                );
+            }
+            $this->themeValidator->validate(
+                $this->themeSurfacePath($identifier, $surface),
+                $surface,
+                $compatibility,
+            );
         } elseif ($surface !== null || $stepUpCredential !== null) {
             throw new InvalidArgumentException('Only template extensions may select a presentation surface.');
         }

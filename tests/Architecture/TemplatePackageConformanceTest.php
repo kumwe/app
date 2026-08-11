@@ -122,6 +122,10 @@ final class TemplatePackageConformanceTest extends TestCase
         ));
 
         self::assertSame(ExtensionType::Template, $manifest->type());
+        $compatibility = $manifest->templateCompatibility();
+        self::assertNotNull($compatibility);
+        self::assertSame(1, $compatibility->contract());
+        self::assertSame('kis-1.0', $compatibility->standard());
         self::assertFileExists($package . '/src/Provider.php');
         self::assertNotEmpty($manifest->assets());
         foreach ($manifest->assets() as $asset) {
@@ -134,6 +138,7 @@ final class TemplatePackageConformanceTest extends TestCase
         (new ThemePackageValidator($this->root . '/templates'))->validate(
             $package . '/templates/' . $surface->value,
             $surface,
+            $compatibility,
         );
         self::addToAssertionCount(1);
     }
