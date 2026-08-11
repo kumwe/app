@@ -349,7 +349,9 @@ jobs:
           REDIS_NAMESPACE: kumwe.ci.demo-docs
           KUMWE_SITE_CONTENT_PROFILE: documentation
           KUMWE_BUSINESS_DEMO: 'true'
+        shell: bash
         run: |
+          set -euo pipefail
           php tests/Support/install-parent-schema.php
           php bin/kumwe database:migrate
           php tests/Support/verify-demo-profile.php documentation-vdm
@@ -362,7 +364,9 @@ jobs:
           REDIS_NAMESPACE: kumwe.ci.demo-placeholder
           KUMWE_SITE_CONTENT_PROFILE: placeholder
           KUMWE_BUSINESS_DEMO: 'false'
+        shell: bash
         run: |
+          set -euo pipefail
           php tests/Support/install-parent-schema.php
           php bin/kumwe database:migrate
           php tests/Support/verify-demo-profile.php placeholder-none
