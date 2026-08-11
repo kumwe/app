@@ -16,8 +16,21 @@ $errors = [];
 $inventory = readJson($root . '/docs/interface-standard/programme/surface-inventory.json', $errors);
 $catalogue = readJson($root . '/docs/interface-standard/programme/actor-task-journeys.json', $errors);
 $ledger = readJson($root . '/docs/interface-standard/programme/phase-ledger.json', $errors);
+$findingsRegister = readJson($root . '/docs/interface-standard/programme/findings-register.json', $errors);
+$reportTemplate = readJson($root . '/docs/interface-standard/programme/verification-report-template.json', $errors);
+$reports = [];
+foreach (glob($root . '/docs/interface-standard/programme/reports/*.json') ?: [] as $reportPath) {
+    $reports[relativePath($reportPath, $root)] = readJson($reportPath, $errors);
+}
 
-if ($inventory === [] || $catalogue === [] || $ledger === []) {
+if (
+    $inventory === []
+    || $catalogue === []
+    || $ledger === []
+    || $findingsRegister === []
+    || $reportTemplate === []
+    || $reports === []
+) {
     report($errors);
 }
 
@@ -26,6 +39,7 @@ $actorIds = uniqueIds($catalogue['actors'] ?? null, 'actor', $errors);
 $taskIds = uniqueIds($catalogue['tasks'] ?? null, 'task', $errors);
 $journeyIds = uniqueIds($catalogue['journeys'] ?? null, 'journey', $errors);
 $findingIds = uniqueIds($inventory['findings'] ?? null, 'finding', $errors);
+$registeredFindingIds = uniqueIds($findingsRegister['findings'] ?? null, 'registered finding', $errors);
 $fixtureIds = uniqueIds($inventory['fixture_profiles'] ?? null, 'fixture', $errors);
 $navigationIds = uniqueIds($inventory['navigation_catalog'] ?? null, 'navigation', $errors);
 $templatePaths = uniqueValues($inventory['template_catalog'] ?? null, 'path', 'template path', $errors);
@@ -84,6 +98,7 @@ validateSurfaces(
 validateTemplates($root, $inventory, $surfaceIds, $errors);
 validateCoreRoutes($root, $inventory, $errors);
 validateNavigationSources($root, $inventory, $errors);
+validateCoreSurfaceDeclarations($root, $inventory, $errors);
 validateExtensionManifests($root, $inventory, $errors);
 validateGeneratedInstances($root, $inventory, $errors);
 validateLedger(
@@ -95,6 +110,47 @@ validateLedger(
     $workItems,
     $errors,
 );
+$findingEvidenceIds = validateFindingsRegister(
+    $root,
+    $findingsRegister,
+    $inventory,
+    $surfaceIds,
+    $ownerIds,
+    $phaseNumbers,
+    $workItems,
+    $errors,
+);
+$templateCheckIds = validateVerificationReport(
+    $root,
+    $reportTemplate,
+    'verification report template',
+    true,
+    $surfaceIds,
+    $journeyIds,
+    $ownerIds,
+    $phaseNumbers,
+    $workItems,
+    $registeredFindingIds,
+    $findingEvidenceIds,
+    $errors,
+);
+foreach ($reports as $reportPath => $report) {
+    $reportCheckIds = validateVerificationReport(
+        $root,
+        $report,
+        'verification report ' . $reportPath,
+        false,
+        $surfaceIds,
+        $journeyIds,
+        $ownerIds,
+        $phaseNumbers,
+        $workItems,
+        $registeredFindingIds,
+        $findingEvidenceIds,
+        $errors,
+    );
+    compareSets($reportCheckIds, $templateCheckIds, 'report check', 'verification report template', $errors);
+}
 
 if ($errors !== []) {
     report($errors);
@@ -102,7 +158,7 @@ if ($errors !== []) {
 
 printf(
     "KIS programme verified: %d surfaces, %d templates, %d navigation entries, %d generated instances, "
-    . "%d actors, %d tasks, %d journeys, %d work items.\n",
+    . "%d actors, %d tasks, %d journeys, %d work items, %d findings, %d verification reports.\n",
     count($surfaceIds),
     count($templatePaths),
     count($navigationIds),
@@ -111,6 +167,8 @@ printf(
     count($taskIds),
     count($journeyIds),
     count($workItems),
+    count($findingsRegister['findings'] ?? []),
+    count($reports),
 );
 
 /**
@@ -214,6 +272,33 @@ function uniqueValues(mixed $records, string $field, string $label, array &$erro
             $errors[] = sprintf('%s %s is duplicated.', ucfirst($label), $record[$field]);
         }
         $result[$record[$field]] = true;
+    }
+    return $result;
+}
+
+/**
+ * Build and validate a unique lookup from a list of non-empty strings.
+ *
+ * @param   mixed         $values  Candidate string list.
+ * @param   string        $label   Value kind used in diagnostics.
+ * @param   list<string>  $errors  Accumulated validation failures.
+ *
+ * @return  array<string, true>  Unique string lookup.
+ *
+ * @since   2.0.0
+ */
+function stringLookup(mixed $values, string $label, array &$errors): array
+{
+    $result = [];
+    foreach (expectList($values, $label . ' vocabulary', $errors) as $value) {
+        if (!is_string($value) || $value === '') {
+            $errors[] = sprintf('Every %s vocabulary value must be a non-empty string.', $label);
+            continue;
+        }
+        if (isset($result[$value])) {
+            $errors[] = sprintf('%s vocabulary value %s is duplicated.', ucfirst($label), $value);
+        }
+        $result[$value] = true;
     }
     return $result;
 }
@@ -517,6 +602,78 @@ function validateNavigationSources(string $root, array $inventory, array &$error
 }
 
 /**
+ * Compare literal typed core KIS surface identifiers and capabilities with the programme inventory.
+ *
+ * @param   string                $root       Repository root.
+ * @param   array<string, mixed>  $inventory  Surface inventory.
+ * @param   list<string>          $errors     Accumulated validation failures.
+ *
+ * @return  void
+ *
+ * @since   2.0.0
+ */
+function validateCoreSurfaceDeclarations(string $root, array $inventory, array &$errors): void
+{
+    $path = $root . '/src/Extension/Contribution/CoreExtensionContributions.php';
+    $source = file_get_contents($path);
+    if ($source === false) {
+        $errors[] = 'Core interface-surface contribution source is unreadable.';
+        return;
+    }
+    $declarationCount = substr_count($source, 'SurfaceDefinition::fromArray(');
+    preg_match_all(
+        "/SurfaceDefinition::fromArray\\(" . preg_quote('$owner', '/')
+        . ",\\s*\\[\\s*'surface'\\s*=>\\s*'([^']+)'"
+        . "[\\s\\S]*?'capabilities'\\s*=>\\s*\\[([^\\]]*)\\]/",
+        $source,
+        $matches,
+        PREG_SET_ORDER,
+    );
+    if (count($matches) !== $declarationCount) {
+        $errors[] = 'Every literal core SurfaceDefinition must declare one literal surface and capabilities list.';
+    }
+    $actual = [];
+    foreach ($matches as $match) {
+        $surfaceId = $match[1];
+        if (isset($actual[$surfaceId])) {
+            $errors[] = sprintf('Core typed surface %s is declared more than once.', $surfaceId);
+            continue;
+        }
+        preg_match_all("/'([^']+)'/", $match[2], $capabilityMatches);
+        $capabilities = array_values(array_unique($capabilityMatches[1] ?? []));
+        sort($capabilities, SORT_STRING);
+        $actual[$surfaceId] = $capabilities;
+    }
+    $inventoryById = [];
+    foreach ($inventory['surfaces'] ?? [] as $surface) {
+        if (is_array($surface) && is_string($surface['id'] ?? null)) {
+            $inventoryById[$surface['id']] = $surface;
+        }
+    }
+    foreach ($actual as $surfaceId => $capabilities) {
+        $surface = $inventoryById[$surfaceId] ?? null;
+        if (!is_array($surface)) {
+            $errors[] = sprintf('Core typed surface %s is absent from the surface inventory.', $surfaceId);
+            continue;
+        }
+        $inventoryCapabilities = expectList(
+            $surface['capabilities'] ?? null,
+            'surface ' . $surfaceId . ' capabilities',
+            $errors,
+        );
+        sort($inventoryCapabilities, SORT_STRING);
+        if ($inventoryCapabilities !== $capabilities) {
+            $errors[] = sprintf(
+                'Core typed surface %s capabilities %s do not match inventory capabilities %s.',
+                $surfaceId,
+                printable($capabilities),
+                printable($inventoryCapabilities),
+            );
+        }
+    }
+}
+
+/**
  * Verify each shipped extension route and navigation declaration has a programme disposition.
  *
  * @param   string                $root       Repository root.
@@ -687,6 +844,555 @@ function validateLedger(
             requireAcceptedEvidence($gate['evidence_ids'] ?? [], $acceptedEvidence, 'gate ' . $id, $errors);
         }
     }
+}
+
+/**
+ * Validate the deduplicated findings register and return its embedded evidence identifiers.
+ *
+ * @param   string                                  $root          Repository root.
+ * @param   array<string, mixed>                    $register      Findings register.
+ * @param   array<string, mixed>                    $inventory     Surface inventory.
+ * @param   array<string, true>                     $surfaceIds    Known surfaces.
+ * @param   array<string, true>                     $ownerIds      Known accountable roles.
+ * @param   array<int, true>                        $phaseNumbers  Known phases.
+ * @param   array<string, array<string, mixed>>     $workItems     Known work items.
+ * @param   list<string>                            $errors        Accumulated validation failures.
+ *
+ * @return  array<string, true>  Unique embedded finding-evidence identifiers.
+ *
+ * @since   2.0.0
+ */
+function validateFindingsRegister(
+    string $root,
+    array $register,
+    array $inventory,
+    array $surfaceIds,
+    array $ownerIds,
+    array $phaseNumbers,
+    array $workItems,
+    array &$errors,
+): array {
+    if (($register['schema_version'] ?? null) !== 1) {
+        $errors[] = 'The findings register schema_version must be 1.';
+    }
+    $categories = stringLookup($register['category_vocabulary'] ?? null, 'finding category', $errors);
+    $statuses = stringLookup($register['status_vocabulary'] ?? null, 'finding status', $errors);
+    $dispositions = stringLookup($register['disposition_vocabulary'] ?? null, 'finding disposition', $errors);
+    $evidenceKinds = stringLookup($register['evidence_kind_vocabulary'] ?? null, 'finding evidence kind', $errors);
+    $evidenceStatuses = stringLookup(
+        $register['evidence_status_vocabulary'] ?? null,
+        'finding evidence status',
+        $errors,
+    );
+    $records = expectList($register['findings'] ?? null, 'registered findings', $errors);
+    $recordsById = [];
+    $fingerprints = [];
+    $evidenceIds = [];
+    foreach ($records as $finding) {
+        if (!is_array($finding) || !is_string($finding['id'] ?? null) || $finding['id'] === '') {
+            $errors[] = 'Every registered finding requires a non-empty ID.';
+            continue;
+        }
+        $id = $finding['id'];
+        $recordsById[$id] = $finding;
+        foreach (
+            [
+                'fingerprint', 'category', 'summary', 'severity', 'status', 'disposition', 'owner_role',
+                'detected_at', 'reproduction', 'suggested_correction', 'confidence',
+            ] as $field
+        ) {
+            if (!is_string($finding[$field] ?? null) || $finding[$field] === '') {
+                $errors[] = sprintf('Finding %s requires a non-empty %s.', $id, $field);
+            }
+        }
+        $fingerprint = $finding['fingerprint'] ?? null;
+        if (is_string($fingerprint)) {
+            if (isset($fingerprints[$fingerprint])) {
+                $errors[] = sprintf('Finding fingerprint %s is duplicated.', $fingerprint);
+            }
+            $fingerprints[$fingerprint] = true;
+        }
+        if (!isset($categories[$finding['category'] ?? ''])) {
+            $errors[] = sprintf('Finding %s has an unknown category.', $id);
+        }
+        if (!isset($statuses[$finding['status'] ?? ''])) {
+            $errors[] = sprintf('Finding %s has an unknown status.', $id);
+        }
+        if (!isset($dispositions[$finding['disposition'] ?? ''])) {
+            $errors[] = sprintf('Finding %s has an unknown disposition.', $id);
+        }
+        if (!in_array($finding['severity'] ?? null, ['P0', 'P1', 'P2', 'P3'], true)) {
+            $errors[] = sprintf('Finding %s has an unknown severity.', $id);
+        }
+        if (!isset($ownerIds[$finding['owner_role'] ?? ''])) {
+            $errors[] = sprintf('Finding %s has an unknown owner role.', $id);
+        }
+        if (!is_string($finding['detected_at'] ?? null) || !isUtcTimestamp($finding['detected_at'])) {
+            $errors[] = sprintf('Finding %s detected_at must be a UTC ISO-8601 timestamp.', $id);
+        }
+        validatePhaseReferences($finding['phase_numbers'] ?? null, $phaseNumbers, 'finding ' . $id, $errors);
+        validateReferences($finding['surface_ids'] ?? null, $surfaceIds, 'surface', 'finding ' . $id, $errors);
+        validateReferences($finding['work_item_ids'] ?? null, $workItems, 'work item', 'finding ' . $id, $errors);
+        $hasBlockedEvidence = false;
+        $hasObservedSource = false;
+        foreach (expectList($finding['evidence'] ?? null, 'finding ' . $id . ' evidence', $errors) as $evidence) {
+            if (!is_array($evidence) || !is_string($evidence['id'] ?? null) || $evidence['id'] === '') {
+                $errors[] = sprintf('Finding %s has evidence without an ID.', $id);
+                continue;
+            }
+            $evidenceId = $evidence['id'];
+            if (isset($evidenceIds[$evidenceId])) {
+                $errors[] = sprintf('Finding evidence ID %s is duplicated.', $evidenceId);
+            }
+            $evidenceIds[$evidenceId] = true;
+            foreach (['kind', 'status', 'source_revision', 'method', 'result'] as $field) {
+                if (!is_string($evidence[$field] ?? null) || $evidence[$field] === '') {
+                    $errors[] = sprintf('Finding evidence %s requires a non-empty %s.', $evidenceId, $field);
+                }
+            }
+            if (!isset($evidenceKinds[$evidence['kind'] ?? ''])) {
+                $errors[] = sprintf('Finding evidence %s has an unknown kind.', $evidenceId);
+            }
+            if (!isset($evidenceStatuses[$evidence['status'] ?? ''])) {
+                $errors[] = sprintf('Finding evidence %s has an unknown status.', $evidenceId);
+            }
+            if (!isCommitRevision($evidence['source_revision'] ?? null)) {
+                $errors[] = sprintf('Finding evidence %s requires a 40-character source revision.', $evidenceId);
+            }
+            foreach (expectList($evidence['artifact_paths'] ?? null, 'evidence artifact paths', $errors) as $path) {
+                requireFile($root, $path, 'finding evidence artifact', $errors);
+            }
+            if (($evidence['status'] ?? null) === 'blocked') {
+                $hasBlockedEvidence = true;
+            }
+            if (($evidence['kind'] ?? null) === 'source' && ($evidence['status'] ?? null) === 'observed') {
+                $hasObservedSource = true;
+            }
+        }
+        if (($finding['category'] ?? null) === 'environment_limitation') {
+            if (
+                ($finding['disposition'] ?? null) !== 'environment_blocked'
+                || ($finding['status'] ?? null) !== 'open'
+                || ($finding['surface_ids'] ?? null) !== []
+                || !$hasBlockedEvidence
+            ) {
+                $errors[] = sprintf('Environment finding %s must remain open, blocked, surface-neutral evidence.', $id);
+            }
+        }
+        if (($finding['disposition'] ?? null) === 'fixed_pending_verification') {
+            if (($finding['status'] ?? null) !== 'in_review' || !$hasObservedSource || !$hasBlockedEvidence) {
+                $errors[] = sprintf(
+                    'Finding %s fixed_pending_verification requires in_review, observed source, and blocked evidence.',
+                    $id,
+                );
+            }
+        }
+    }
+    foreach ($recordsById as $id => $finding) {
+        validateReferences(
+            $finding['related_finding_ids'] ?? null,
+            $recordsById,
+            'finding',
+            'finding ' . $id,
+            $errors,
+        );
+        $duplicateOf = $finding['duplicate_of'] ?? null;
+        if (($finding['disposition'] ?? null) === 'duplicate') {
+            if (!is_string($duplicateOf) || !isset($recordsById[$duplicateOf]) || $duplicateOf === $id) {
+                $errors[] = sprintf('Duplicate finding %s must reference another registered finding.', $id);
+            }
+        } elseif ($duplicateOf !== null) {
+            $errors[] = sprintf('Non-duplicate finding %s must have a null duplicate_of.', $id);
+        }
+        $history = expectList($finding['status_history'] ?? null, 'finding ' . $id . ' status_history', $errors);
+        $last = $history === [] ? null : $history[array_key_last($history)];
+        if (!is_array($last) || ($last['to'] ?? null) !== ($finding['status'] ?? null)) {
+            $errors[] = sprintf('Finding %s status does not match its latest history entry.', $id);
+        }
+        foreach ($history as $entry) {
+            if (!is_array($entry) || !is_string($entry['at'] ?? null) || !isUtcTimestamp($entry['at'])) {
+                $errors[] = sprintf('Finding %s history requires UTC timestamps.', $id);
+                continue;
+            }
+            validateReferences(
+                $entry['evidence_ids'] ?? null,
+                $evidenceIds,
+                'finding evidence',
+                'finding ' . $id . ' history',
+                $errors,
+            );
+        }
+        foreach ($finding['evidence'] ?? [] as $evidence) {
+            if (is_array($evidence)) {
+                validateReferences(
+                    $evidence['blocker_finding_ids'] ?? null,
+                    $recordsById,
+                    'finding',
+                    'evidence ' . ($evidence['id'] ?? 'unknown'),
+                    $errors,
+                );
+            }
+        }
+    }
+    $inventoryFindings = [];
+    foreach ($inventory['findings'] ?? [] as $finding) {
+        if (is_array($finding) && is_string($finding['id'] ?? null)) {
+            $inventoryFindings[$finding['id']] = $finding;
+        }
+    }
+    foreach ($inventoryFindings as $id => $finding) {
+        $registered = $recordsById[$id] ?? null;
+        if (!is_array($registered)) {
+            $errors[] = sprintf('Inventory finding %s is absent from the findings register.', $id);
+            continue;
+        }
+        foreach (['severity', 'owner_role'] as $field) {
+            if (($registered[$field] ?? null) !== ($finding[$field] ?? null)) {
+                $errors[] = sprintf('Registered finding %s %s does not match the surface inventory.', $id, $field);
+            }
+        }
+        if (canonical($registered['surface_ids'] ?? []) !== canonical($finding['surface_ids'] ?? [])) {
+            $errors[] = sprintf('Registered finding %s surfaces do not match the surface inventory.', $id);
+        }
+        if (!in_array($finding['target_phase'] ?? null, $registered['phase_numbers'] ?? [], true)) {
+            $errors[] = sprintf('Registered finding %s does not retain its inventory target phase.', $id);
+        }
+    }
+    foreach ($recordsById as $id => $finding) {
+        if (($finding['category'] ?? null) !== 'environment_limitation' && !isset($inventoryFindings[$id])) {
+            $errors[] = sprintf('Product finding %s is absent from the surface inventory.', $id);
+        }
+    }
+    return $evidenceIds;
+}
+
+/**
+ * Validate one report/template against programme references and return its canonical check IDs.
+ *
+ * @param   string                                  $root                Repository root.
+ * @param   array<string, mixed>                    $report              Verification report or template.
+ * @param   string                                  $label               Diagnostic label.
+ * @param   bool                                    $template            Whether placeholders are permitted.
+ * @param   array<string, true>                     $surfaceIds          Known surfaces.
+ * @param   array<string, true>                     $journeyIds          Known journeys.
+ * @param   array<string, true>                     $ownerIds            Known accountable roles.
+ * @param   array<int, true>                        $phaseNumbers        Known phases.
+ * @param   array<string, array<string, mixed>>     $workItems           Known work items.
+ * @param   array<string, true>                     $findingIds          Registered findings.
+ * @param   array<string, true>                     $findingEvidenceIds  Registered finding evidence.
+ * @param   list<string>                            $errors              Accumulated validation failures.
+ *
+ * @return  array<string, true>  Check identifiers declared by this report.
+ *
+ * @since   2.0.0
+ */
+function validateVerificationReport(
+    string $root,
+    array $report,
+    string $label,
+    bool $template,
+    array $surfaceIds,
+    array $journeyIds,
+    array $ownerIds,
+    array $phaseNumbers,
+    array $workItems,
+    array $findingIds,
+    array $findingEvidenceIds,
+    array &$errors,
+): array {
+    if (($report['schema_version'] ?? null) !== 1 || ($report['template_version'] ?? null) !== 1) {
+        $errors[] = sprintf('%s schema_version and template_version must both be 1.', ucfirst($label));
+    }
+    foreach (
+        ['report_id', 'report_kind', 'state', 'overall_status', 'branch', 'base_revision', 'source_revision', 'prepared_at']
+        as $field
+    ) {
+        if (!is_string($report[$field] ?? null) || $report[$field] === '') {
+            $errors[] = sprintf('%s requires a non-empty %s.', ucfirst($label), $field);
+        }
+    }
+    if ($template && ($report['report_kind'] ?? null) !== 'template') {
+        $errors[] = 'The verification report template must use report_kind template.';
+    }
+    if (!$template && !in_array($report['report_kind'] ?? null, ['pull_request', 'phase_checkpoint'], true)) {
+        $errors[] = sprintf('%s has an unsupported report_kind.', ucfirst($label));
+    }
+    if (!in_array($report['state'] ?? null, ['draft', 'in_review', 'accepted', 'superseded'], true)) {
+        $errors[] = sprintf('%s has an unsupported state.', ucfirst($label));
+    }
+    if (!in_array($report['overall_status'] ?? null, ['not_run', 'passed', 'blocked', 'failed'], true)) {
+        $errors[] = sprintf('%s has an unsupported overall_status.', ucfirst($label));
+    }
+    if (!$template) {
+        if (!isCommitRevision($report['base_revision'] ?? null) || !isCommitRevision($report['source_revision'] ?? null)) {
+            $errors[] = sprintf('%s requires 40-character base and source revisions.', ucfirst($label));
+        }
+        if (!isUtcTimestamp($report['prepared_at'] ?? null)) {
+            $errors[] = sprintf('%s prepared_at must be a UTC ISO-8601 timestamp.', ucfirst($label));
+        }
+        if (containsPlaceholder($report)) {
+            $errors[] = sprintf('%s contains an unresolved template placeholder.', ucfirst($label));
+        }
+    }
+    if (!isset($ownerIds[$report['prepared_by_role'] ?? ''])) {
+        $errors[] = sprintf('%s has an unknown prepared_by_role.', ucfirst($label));
+    }
+    $scope = $report['scope'] ?? null;
+    if (!is_array($scope)) {
+        $errors[] = sprintf('%s requires a scope object.', ucfirst($label));
+        $scope = [];
+    }
+    validatePhaseReferences($scope['phase_numbers'] ?? null, $phaseNumbers, $label . ' scope', $errors);
+    validateReferences($scope['work_item_ids'] ?? null, $workItems, 'work item', $label . ' scope', $errors);
+    $scopePhases = [];
+    foreach ($scope['phase_numbers'] ?? [] as $phaseNumber) {
+        if (is_int($phaseNumber) && isset($phaseNumbers[$phaseNumber])) {
+            $scopePhases[$phaseNumber] = true;
+        }
+    }
+    $scopeWorkItems = [];
+    foreach ($scope['work_item_ids'] ?? [] as $workItemId) {
+        if (is_string($workItemId) && isset($workItems[$workItemId])) {
+            if (isset($scopeWorkItems[$workItemId])) {
+                $errors[] = sprintf('%s scope repeats work item %s.', ucfirst($label), $workItemId);
+            }
+            $scopeWorkItems[$workItemId] = true;
+        }
+    }
+    if (!$template && ($report['report_kind'] ?? null) === 'phase_checkpoint') {
+        $expectedWorkItems = [];
+        foreach (array_keys($workItems) as $workItemId) {
+            if (preg_match('/^P(\d+)-/', $workItemId, $phaseMatch) === 1 && isset($scopePhases[(int) $phaseMatch[1]])) {
+                $expectedWorkItems[$workItemId] = true;
+            }
+        }
+        compareSets(
+            $expectedWorkItems,
+            $scopeWorkItems,
+            'phase checkpoint work item',
+            'verification report scope',
+            $errors,
+        );
+    }
+    validateReferences($scope['surface_ids'] ?? null, $surfaceIds, 'surface', $label . ' scope', $errors);
+    validateReferences($scope['journey_ids'] ?? null, $journeyIds, 'journey', $label . ' scope', $errors);
+    foreach (expectList($scope['changed_paths'] ?? null, $label . ' changed_paths', $errors) as $path) {
+        if (!$template) {
+            requirePath($root, $path, $label . ' changed path', $errors);
+        }
+    }
+    foreach (expectList($scope['included_revisions'] ?? null, $label . ' included revisions', $errors) as $revision) {
+        if (!$template && !isCommitRevision($revision)) {
+            $errors[] = sprintf('%s has an invalid included revision %s.', ucfirst($label), printable($revision));
+        }
+    }
+    if (!is_bool($scope['working_tree_included'] ?? null)) {
+        $errors[] = sprintf('%s scope requires a working_tree_included boolean.', ucfirst($label));
+    }
+    $kis = $report['kis'] ?? null;
+    if (!is_array($kis) || !is_string($kis['version'] ?? null) || $kis['version'] === '') {
+        $errors[] = sprintf('%s requires KIS version metadata.', ucfirst($label));
+        $kis = [];
+    }
+    foreach (expectList($kis['normative_document_paths'] ?? null, $label . ' KIS documents', $errors) as $path) {
+        if (!$template) {
+            requireFile($root, $path, $label . ' KIS document', $errors);
+        }
+    }
+    foreach (['decision_ids', 'deviation_ids'] as $field) {
+        expectList($kis[$field] ?? null, $label . ' ' . $field, $errors);
+    }
+    $behavior = $report['behavior_changes'] ?? null;
+    if (!is_array($behavior)) {
+        $errors[] = sprintf('%s requires behavior_changes.', ucfirst($label));
+        $behavior = [];
+    }
+    foreach (['routes', 'capabilities', 'fields', 'actions', 'payloads', 'states'] as $field) {
+        expectList($behavior[$field] ?? null, $label . ' behavior ' . $field, $errors);
+    }
+    if (!is_string($behavior['notes'] ?? null) || $behavior['notes'] === '') {
+        $errors[] = sprintf('%s requires behavior-change notes.', ucfirst($label));
+    }
+    $parity = $report['parity'] ?? null;
+    if (!is_array($parity) || !in_array(
+        $parity['status'] ?? null,
+        ['not_run', 'passed', 'blocked', 'failed', 'not_applicable'],
+        true,
+    )) {
+        $errors[] = sprintf('%s has invalid parity status.', ucfirst($label));
+        $parity = [];
+    }
+    foreach (expectList($parity['manifest_paths'] ?? null, $label . ' parity manifests', $errors) as $path) {
+        if (!$template) {
+            requireFile($root, $path, $label . ' parity manifest', $errors);
+        }
+    }
+    $checks = uniqueIds($report['check_matrix'] ?? null, $label . ' check', $errors);
+    $hasBlockedCheck = false;
+    $hasIncompleteRequiredCheck = false;
+    $checkedWorkItems = [];
+    foreach (expectList($report['check_matrix'] ?? null, $label . ' check matrix', $errors) as $check) {
+        if (!is_array($check) || !is_string($check['id'] ?? null)) {
+            continue;
+        }
+        $id = $check['id'];
+        foreach (['category', 'requirement', 'applicability', 'status', 'command', 'environment', 'result_summary'] as $field) {
+            if (!is_string($check[$field] ?? null) || $check[$field] === '') {
+                $errors[] = sprintf('%s check %s requires a non-empty %s.', ucfirst($label), $id, $field);
+            }
+        }
+        if (!in_array($check['applicability'] ?? null, ['required', 'conditional', 'not_applicable'], true)) {
+            $errors[] = sprintf('%s check %s has invalid applicability.', ucfirst($label), $id);
+        }
+        if (!in_array($check['status'] ?? null, ['not_run', 'passed', 'blocked', 'failed', 'not_applicable'], true)) {
+            $errors[] = sprintf('%s check %s has invalid status.', ucfirst($label), $id);
+        }
+        validatePhaseReferences($check['phase_numbers'] ?? null, $phaseNumbers, $label . ' check ' . $id, $errors);
+        validateReferences(
+            $check['work_item_ids'] ?? null,
+            $workItems,
+            'work item',
+            $label . ' check ' . $id,
+            $errors,
+        );
+        foreach ($check['work_item_ids'] ?? [] as $workItemId) {
+            if (is_string($workItemId)) {
+                $checkedWorkItems[$workItemId] = true;
+            }
+        }
+        validateReferences(
+            $check['blocker_finding_ids'] ?? null,
+            $findingIds,
+            'finding',
+            $label . ' check ' . $id,
+            $errors,
+        );
+        validateReferences(
+            $check['evidence_ids'] ?? null,
+            $findingEvidenceIds,
+            'finding evidence',
+            $label . ' check ' . $id,
+            $errors,
+        );
+        foreach (expectList($check['artifact_paths'] ?? null, $label . ' check artifact paths', $errors) as $path) {
+            if (!$template) {
+                requireFile($root, $path, $label . ' check artifact', $errors);
+            }
+        }
+        if (($check['status'] ?? null) === 'blocked') {
+            $hasBlockedCheck = true;
+            if (($check['blocker_finding_ids'] ?? []) === []) {
+                $errors[] = sprintf('%s blocked check %s requires a blocker finding.', ucfirst($label), $id);
+            }
+        }
+        if (
+            ($check['applicability'] ?? null) === 'required'
+            && !in_array($check['status'] ?? null, ['passed', 'not_applicable'], true)
+        ) {
+            $hasIncompleteRequiredCheck = true;
+        }
+        if ($template && ($check['status'] ?? null) !== 'not_run') {
+            $errors[] = sprintf('Verification template check %s must start not_run.', $id);
+        }
+    }
+    if (!$template && ($report['overall_status'] ?? null) === 'passed' && $hasIncompleteRequiredCheck) {
+        $errors[] = sprintf('%s cannot pass while a required check is incomplete.', ucfirst($label));
+    }
+    if (!$template && ($report['overall_status'] ?? null) === 'blocked' && !$hasBlockedCheck) {
+        $errors[] = sprintf('%s is blocked without a blocked check.', ucfirst($label));
+    }
+    if (!$template) {
+        foreach (array_diff_key($scopeWorkItems, $checkedWorkItems) as $workItemId => $_present) {
+            $errors[] = sprintf('%s scope work item %s is absent from the check matrix.', ucfirst($label), $workItemId);
+        }
+    }
+    $impact = $report['impact'] ?? null;
+    if (!is_array($impact)) {
+        $errors[] = sprintf('%s requires an impact object.', ucfirst($label));
+        $impact = [];
+    }
+    foreach (['security', 'accessibility', 'customization', 'templates', 'extensions', 'database', 'deployment'] as $kind) {
+        $entry = $impact[$kind] ?? null;
+        if (
+            !is_array($entry)
+            || !in_array($entry['status'] ?? null, ['not_evaluated', 'unaffected', 'affected', 'blocked'], true)
+            || !is_string($entry['summary'] ?? null)
+            || $entry['summary'] === ''
+        ) {
+            $errors[] = sprintf('%s requires a valid %s impact disposition.', ucfirst($label), $kind);
+        }
+    }
+    $reportFindings = $report['findings'] ?? null;
+    if (!is_array($reportFindings)) {
+        $errors[] = sprintf('%s requires a findings object.', ucfirst($label));
+        $reportFindings = [];
+    }
+    if (($reportFindings['register_path'] ?? null) !== 'docs/interface-standard/programme/findings-register.json') {
+        $errors[] = sprintf('%s must reference the canonical findings register.', ucfirst($label));
+    }
+    foreach (['finding_ids', 'new_finding_ids', 'resolved_finding_ids'] as $field) {
+        validateReferences(
+            $reportFindings[$field] ?? null,
+            $findingIds,
+            'finding',
+            $label . ' ' . $field,
+            $errors,
+        );
+    }
+    $recovery = $report['recovery'] ?? null;
+    if (
+        !is_array($recovery)
+        || !is_bool($recovery['required'] ?? null)
+        || !is_bool($recovery['verified'] ?? null)
+        || !is_string($recovery['strategy'] ?? null)
+        || $recovery['strategy'] === ''
+        || !is_string($recovery['command_or_procedure'] ?? null)
+        || $recovery['command_or_procedure'] === ''
+    ) {
+        $errors[] = sprintf('%s requires a complete recovery disposition.', ucfirst($label));
+        $recovery = [];
+    }
+    foreach (expectList($recovery['artifact_paths'] ?? null, $label . ' recovery artifacts', $errors) as $path) {
+        if (!$template) {
+            requireFile($root, $path, $label . ' recovery artifact', $errors);
+        }
+    }
+    foreach (expectList($report['residual_risks'] ?? null, $label . ' residual risks', $errors) as $risk) {
+        if (
+            !is_array($risk)
+            || !in_array($risk['severity'] ?? null, ['P0', 'P1', 'P2', 'P3'], true)
+            || !is_string($risk['summary'] ?? null)
+            || $risk['summary'] === ''
+            || !isset($ownerIds[$risk['owner_role'] ?? ''])
+        ) {
+            $errors[] = sprintf('%s has an invalid residual risk.', ucfirst($label));
+            continue;
+        }
+        validateReferences($risk['finding_ids'] ?? null, $findingIds, 'finding', $label . ' residual risk', $errors);
+    }
+    $signoff = $report['signoff'] ?? null;
+    if (!is_array($signoff)) {
+        $errors[] = sprintf('%s requires signoff metadata.', ucfirst($label));
+        $signoff = [];
+    }
+    if (!in_array($signoff['merge_recommendation'] ?? null, ['hold', 'conditional', 'merge'], true)) {
+        $errors[] = sprintf('%s has an invalid merge recommendation.', ucfirst($label));
+    }
+    validateReferences(
+        $signoff['reviewer_roles'] ?? null,
+        $ownerIds,
+        'owner role',
+        $label . ' signoff',
+        $errors,
+    );
+    if (
+        !$template
+        && ($signoff['merge_recommendation'] ?? null) === 'merge'
+        && ($report['overall_status'] ?? null) !== 'passed'
+    ) {
+        $errors[] = sprintf('%s cannot recommend merge unless overall_status is passed.', ucfirst($label));
+    }
+    return $checks;
 }
 
 /**
@@ -961,6 +1667,87 @@ function decodePhpString(string $literal): string
 }
 
 /**
+ * Validate a list of integer phase references.
+ *
+ * @param   mixed              $references  Candidate phase-number list.
+ * @param   array<int, true>   $known       Known phase-number lookup.
+ * @param   string             $owner       Referencing record label.
+ * @param   list<string>       $errors      Accumulated validation failures.
+ *
+ * @return  void
+ *
+ * @since   2.0.0
+ */
+function validatePhaseReferences(mixed $references, array $known, string $owner, array &$errors): void
+{
+    $seen = [];
+    foreach (expectList($references, $owner . ' phase references', $errors) as $reference) {
+        if (!is_int($reference) || !isset($known[$reference])) {
+            $errors[] = sprintf('%s references unknown phase %s.', ucfirst($owner), printable($reference));
+            continue;
+        }
+        if (isset($seen[$reference])) {
+            $errors[] = sprintf('%s repeats phase %d.', ucfirst($owner), $reference);
+        }
+        $seen[$reference] = true;
+    }
+}
+
+/**
+ * Determine whether a value is a complete lowercase Git object identifier.
+ *
+ * @param   mixed  $value  Candidate revision.
+ *
+ * @return  bool  True for a 40-character hexadecimal revision.
+ *
+ * @since   2.0.0
+ */
+function isCommitRevision(mixed $value): bool
+{
+    return is_string($value) && preg_match('/^[0-9a-f]{40}$/D', $value) === 1;
+}
+
+/**
+ * Determine whether a value is a normalized UTC timestamp.
+ *
+ * @param   mixed  $value  Candidate timestamp.
+ *
+ * @return  bool  True for second-precision UTC ISO-8601 text.
+ *
+ * @since   2.0.0
+ */
+function isUtcTimestamp(mixed $value): bool
+{
+    return is_string($value)
+        && preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/D', $value) === 1;
+}
+
+/**
+ * Recursively identify unresolved angle-bracket placeholders in a completed report.
+ *
+ * @param   mixed  $value  Report value to inspect.
+ *
+ * @return  bool  True when a string contains an unresolved template marker.
+ *
+ * @since   2.0.0
+ */
+function containsPlaceholder(mixed $value): bool
+{
+    if (is_string($value)) {
+        return preg_match('/<[^<>]+>/', $value) === 1;
+    }
+    if (!is_array($value)) {
+        return false;
+    }
+    foreach ($value as $item) {
+        if (containsPlaceholder($item)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+/**
  * Require one repository-relative file to exist.
  *
  * @param   string        $root    Repository root.
@@ -976,6 +1763,25 @@ function requireFile(string $root, mixed $path, string $label, array &$errors): 
 {
     if (!is_string($path) || $path === '' || !is_file($root . '/' . $path)) {
         $errors[] = sprintf('%s file %s does not exist.', ucfirst($label), printable($path));
+    }
+}
+
+/**
+ * Require one repository-relative file or directory to exist.
+ *
+ * @param   string        $root    Repository root.
+ * @param   mixed         $path    Candidate relative path.
+ * @param   string        $label   Diagnostic label.
+ * @param   list<string>  $errors  Accumulated validation failures.
+ *
+ * @return  void
+ *
+ * @since   2.0.0
+ */
+function requirePath(string $root, mixed $path, string $label, array &$errors): void
+{
+    if (!is_string($path) || $path === '' || !file_exists($root . '/' . $path)) {
+        $errors[] = sprintf('%s %s does not exist.', ucfirst($label), printable($path));
     }
 }
 

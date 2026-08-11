@@ -14,11 +14,12 @@ final class InterfaceProgrammeVerifierTest extends TestCase
 {
     #[RunInSeparateProcess]
     #[PreserveGlobalState(false)]
-    public function testProgrammeRecordsMatchGraphicalSources(): void
+    public function testProgrammeRecordsReportsAndFindingsMatchGraphicalSources(): void
     {
         $this->expectOutputRegex(
             '/KIS programme verified: \d+ surfaces, \d+ templates, \d+ navigation entries, '
-            . '\d+ generated instances, \d+ actors, \d+ tasks, \d+ journeys, \d+ work items\./',
+            . '\d+ generated instances, \d+ actors, \d+ tasks, \d+ journeys, \d+ work items, '
+            . '\d+ findings, \d+ verification reports\./',
         );
 
         require dirname(__DIR__, 3) . '/tools/verify-interface-programme.php';
