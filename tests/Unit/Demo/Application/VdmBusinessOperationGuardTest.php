@@ -169,6 +169,25 @@ final class VdmBusinessOperationGuardTest extends TestCase
     }
 
     /**
+     * Reject a decoded checkpoint request whose object keys cannot be reproduced canonically.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testCheckpointRequestKeysMustBeStrings(): void
+    {
+        $document = $this->document();
+        $asset = $this->asset('record.one', 'business_record', $document['records'][0]);
+        $asset['last_applied_state']['request'][0] = 'invalid';
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('fixture record.one has no canonical stored request');
+
+        (new VdmBusinessOperationGuard())->validate($document, [$asset]);
+    }
+
+    /**
      * Reject fixture-key collisions across operation kinds instead of allowing one checkpoint to mask another.
      *
      * @return  void

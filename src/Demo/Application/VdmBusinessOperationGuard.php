@@ -342,6 +342,16 @@ final readonly class VdmBusinessOperationGuard
                 $fixtureKey,
             ));
         }
+        $normalizedRequest = [];
+        foreach ($storedRequest as $field => $value) {
+            if (!is_string($field)) {
+                throw new RuntimeException(sprintf(
+                    'VDM business operation fixture %s has no canonical stored request.',
+                    $fixtureKey,
+                ));
+            }
+            $normalizedRequest[$field] = $value;
+        }
 
         $storedChecksum = $asset['last_applied_checksum'] ?? null;
         if (!is_string($storedChecksum) || preg_match('/^[a-f0-9]{64}$/D', $storedChecksum) !== 1) {
@@ -350,7 +360,7 @@ final readonly class VdmBusinessOperationGuard
                 $fixtureKey,
             ));
         }
-        $storedCanonical = $this->canonicalRequest($fixtureKey, $storedRequest, 'stored request');
+        $storedCanonical = $this->canonicalRequest($fixtureKey, $normalizedRequest, 'stored request');
         $requestChecksum = hash('sha256', $storedCanonical);
         if (!hash_equals($storedChecksum, $requestChecksum)) {
             throw new RuntimeException(sprintf(

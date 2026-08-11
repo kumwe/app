@@ -6,7 +6,7 @@ namespace Kumwe\CMS\Tests\Integration\Persistence;
 
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Platforms\AbstractMySQLPlatform;
-use Doctrine\DBAL\Schema\Name;
+use Doctrine\DBAL\Schema\Name\UnqualifiedName;
 use Doctrine\DBAL\Schema\PrimaryKeyConstraint;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\ContentModelIdentifierCollationMigration;
 use Kumwe\CMS\Infrastructure\Persistence\TableNames;
@@ -89,11 +89,17 @@ final class ContentModelIdentifierCollationMigrationIntegrationTest extends Test
             self::assertInstanceOf(PrimaryKeyConstraint::class, $contentTypePrimary);
             self::assertSame(
                 ['workflow_id', 'version'],
-                array_map(static fn (Name $name): string => $name->toString(), $workflowPrimary->getColumnNames()),
+                array_map(
+                    static fn (UnqualifiedName $name): string => $name->getIdentifier()->getValue(),
+                    $workflowPrimary->getColumnNames(),
+                ),
             );
             self::assertSame(
                 ['content_type_id', 'version'],
-                array_map(static fn (Name $name): string => $name->toString(), $contentTypePrimary->getColumnNames()),
+                array_map(
+                    static fn (UnqualifiedName $name): string => $name->getIdentifier()->getValue(),
+                    $contentTypePrimary->getColumnNames(),
+                ),
             );
 
             self::assertSame('1', (string) $database->fetchOne(sprintf(
