@@ -1,0 +1,33 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Kumwe\CMS\Tests\Architecture;
+
+use PHPUnit\Framework\Attributes\CoversNothing;
+use PHPUnit\Framework\TestCase;
+
+require_once dirname(__DIR__, 2) . '/tools/verify-business-workspace-parity.php';
+
+#[CoversNothing]
+/**
+ * Keeps the Phase 2 administrator workspace migration bound to its pre-KIS behavior contract.
+ *
+ * @since  2.0.0
+ */
+final class BusinessWorkspaceParityManifestTest extends TestCase
+{
+    /**
+     * Routes, capabilities, inputs, actions, payloads, safeguards, and no-JS guarantees stay in parity.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testBusinessWorkspaceParityManifestMatchesProductionSources(): void
+    {
+        $violations = (new \BusinessWorkspaceParityVerifier(dirname(__DIR__, 2)))->violations();
+
+        self::assertSame([], $violations, implode(PHP_EOL, $violations));
+    }
+}

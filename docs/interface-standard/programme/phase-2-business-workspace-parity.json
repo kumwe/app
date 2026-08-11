@@ -1,0 +1,1222 @@
+{
+  "format": "kumwe-kis-interface-parity-v1",
+  "manifest_version": 1,
+  "phase": 2,
+  "baseline": {
+    "label": "Pre-KIS Business Definitions and Schema Plans",
+    "commit": "7f176fb2ced9082f0b1edfdf03ab78258812994d"
+  },
+  "target": {
+    "label": "KIS 1.0 Business Definitions and Schema Plans",
+    "commit": "5e8935f",
+    "standard": "kis-1.0"
+  },
+  "route_registry": "src/Kernel/ContainerFactory.php",
+  "surfaces": [
+    {
+      "id": "core.administrator.business-definitions",
+      "template": "templates/administrator/business-definitions.twig",
+      "read_handler": "src/BusinessDefinition/Delivery/Administrator/BusinessDefinitionsHandler.php",
+      "browser_test": "tests/Browser/administrator.spec.ts",
+      "routes": [
+        {
+          "id": "definition.read",
+          "old": {
+            "method": "GET",
+            "path": "/administrator/business-definitions",
+            "name": "administrator.business-definitions",
+            "handler": "BusinessDefinitionsHandler",
+            "handler_file": "src/BusinessDefinition/Delivery/Administrator/BusinessDefinitionsHandler.php",
+            "capability": "content.read",
+            "csrf": false
+          },
+          "new": {
+            "method": "GET",
+            "path": "/administrator/business-definitions",
+            "name": "administrator.business-definitions",
+            "handler": "BusinessDefinitionsHandler",
+            "handler_file": "src/BusinessDefinition/Delivery/Administrator/BusinessDefinitionsHandler.php",
+            "capability": "content.read",
+            "csrf": false
+          }
+        },
+        {
+          "id": "definition.mutate",
+          "old": {
+            "method": "POST",
+            "path": "/administrator/business-definitions",
+            "name": "administrator.business-definitions.update",
+            "handler": "BusinessDefinitionsHandler",
+            "handler_file": "src/BusinessDefinition/Delivery/Administrator/BusinessDefinitionsHandler.php",
+            "capability": "content.update",
+            "csrf": true
+          },
+          "new": {
+            "method": "POST",
+            "path": "/administrator/business-definitions",
+            "name": "administrator.business-definitions.update",
+            "handler": "BusinessDefinitionsHandler",
+            "handler_file": "src/BusinessDefinition/Delivery/Administrator/BusinessDefinitionsHandler.php",
+            "capability": "content.update",
+            "csrf": true
+          }
+        }
+      ],
+      "capabilities": [
+        {
+          "id": "definition.read",
+          "old": {
+            "code": "content.read",
+            "scope": "business_definition collection or resolved item",
+            "evidence": [
+              {
+                "path": "src/BusinessDefinition/Application/BusinessDefinitionService.php",
+                "contains": "$this->authorize($context, 'content.read'"
+              }
+            ]
+          },
+          "new": {
+            "code": "content.read",
+            "scope": "business_definition collection or resolved item",
+            "evidence": [
+              {
+                "path": "src/BusinessDefinition/Application/BusinessDefinitionService.php",
+                "contains": "$this->authorize($context, 'content.read'"
+              }
+            ]
+          }
+        },
+        {
+          "id": "definition.update",
+          "old": {
+            "code": "content.update",
+            "scope": "business_definition collection or resolved site-owned item",
+            "evidence": [
+              {
+                "path": "src/BusinessDefinition/Application/BusinessDefinitionService.php",
+                "contains": "$this->authorize($context, 'content.update'"
+              },
+              {
+                "path": "templates/administrator/business-definitions.twig",
+                "contains": "capabilities['content.update'] is defined"
+              }
+            ]
+          },
+          "new": {
+            "code": "content.update",
+            "scope": "business_definition collection or resolved site-owned item",
+            "evidence": [
+              {
+                "path": "src/BusinessDefinition/Application/BusinessDefinitionService.php",
+                "contains": "$this->authorize($context, 'content.update'"
+              },
+              {
+                "path": "templates/administrator/business-definitions.twig",
+                "contains": "capabilities['content.update'] is defined"
+              }
+            ]
+          }
+        }
+      ],
+      "field_visibility": [
+        {
+          "id": "catalog",
+          "old": {
+            "actors": ["reader", "editor", "package-reader"],
+            "conditions": ["content.read"],
+            "template_markers": ["Definition catalog", "catalog|length"]
+          },
+          "new": {
+            "actors": ["reader", "editor", "package-reader"],
+            "conditions": ["content.read"],
+            "template_markers": ["Definition catalog", "catalog|length"]
+          }
+        },
+        {
+          "id": "identity",
+          "old": {
+            "actors": ["reader", "editor", "package-reader"],
+            "conditions": ["definition selected or new editor"],
+            "template_markers": ["Stable handle", "Identity strategy", "Singular label", "Plural label", "Scope"]
+          },
+          "new": {
+            "actors": ["reader", "editor", "package-reader"],
+            "conditions": ["definition selected or new editor"],
+            "template_markers": ["Stable handle", "Identity strategy", "Singular label", "Plural label", "Scope"]
+          }
+        },
+        {
+          "id": "field-contract",
+          "old": {
+            "actors": ["reader", "editor", "package-reader"],
+            "conditions": ["definition selected or new editor"],
+            "template_markers": ["Focused field editor", "data-rows=\"field\"", "data-template=\"field\""]
+          },
+          "new": {
+            "actors": ["reader", "editor", "package-reader"],
+            "conditions": ["definition selected or new editor"],
+            "template_markers": ["Focused field editor", "data-rows=\"field\"", "data-template=\"field\""]
+          }
+        },
+        {
+          "id": "relationships",
+          "old": {
+            "actors": ["reader", "editor", "package-reader"],
+            "conditions": ["definition selected"],
+            "template_markers": ["Relationships", "data-rows=\"relationship\""]
+          },
+          "new": {
+            "actors": ["reader", "editor", "package-reader"],
+            "conditions": ["definition selected"],
+            "template_markers": ["Relationships", "data-rows=\"relationship\""]
+          }
+        },
+        {
+          "id": "views-actions",
+          "old": {
+            "actors": ["reader", "editor", "package-reader"],
+            "conditions": ["definition selected"],
+            "template_markers": ["Views and actions", "data-rows=\"view\"", "data-rows=\"action\""]
+          },
+          "new": {
+            "actors": ["reader", "editor", "package-reader"],
+            "conditions": ["definition selected"],
+            "template_markers": ["Views and actions", "data-rows=\"view\"", "data-rows=\"action\""]
+          }
+        },
+        {
+          "id": "workflow",
+          "old": {
+            "actors": ["reader", "editor", "package-reader"],
+            "conditions": ["definition selected"],
+            "template_markers": ["Workflow binding", "workflow_enabled", "data-rows=\"transition\""]
+          },
+          "new": {
+            "actors": ["reader", "editor", "package-reader"],
+            "conditions": ["definition selected"],
+            "template_markers": ["Workflow binding", "workflow_enabled", "data-rows=\"transition\""]
+          }
+        },
+        {
+          "id": "publication",
+          "old": {
+            "actors": ["editor"],
+            "conditions": ["site-owned draft", "content.update"],
+            "template_markers": ["Compatibility plan", "Draft checksum", "Confirm behavior/data changes"]
+          },
+          "new": {
+            "actors": ["editor"],
+            "conditions": ["site-owned draft", "content.update"],
+            "template_markers": ["Compatibility plan", "Draft checksum", "Confirm behavior/data changes"]
+          }
+        },
+        {
+          "id": "history",
+          "old": {
+            "actors": ["reader", "editor", "package-reader"],
+            "conditions": ["definition selected"],
+            "template_markers": ["Version history", "Immutable ledger"]
+          },
+          "new": {
+            "actors": ["reader", "editor", "package-reader"],
+            "conditions": ["definition selected"],
+            "template_markers": ["Version history", "Immutable ledger"]
+          }
+        },
+        {
+          "id": "package-read-only",
+          "old": {
+            "actors": ["package-reader", "editor"],
+            "conditions": ["owner.type is not site"],
+            "template_markers": ["Package owned.", "read-only here"]
+          },
+          "new": {
+            "actors": ["package-reader", "editor"],
+            "conditions": ["owner.type is not site"],
+            "template_markers": ["Package owned.", "read-only here"]
+          }
+        },
+        {
+          "id": "permission-reduced-read-only",
+          "old": {
+            "actors": ["reader"],
+            "conditions": ["content.read", "without content.update"],
+            "template_markers": ["Read-only access.", "require the content-update capability"]
+          },
+          "new": {
+            "actors": ["reader"],
+            "conditions": ["content.read", "without content.update"],
+            "template_markers": ["Read-only access.", "require the content-update capability"]
+          }
+        }
+      ],
+      "actions": [
+        {
+          "id": "definition.inspect",
+          "old": {
+            "route": "definition.read",
+            "payload": null,
+            "handler_file": "src/BusinessDefinition/Delivery/Administrator/BusinessDefinitionsHandler.php",
+            "service_calls": ["->catalog(", "->draft(", "->published(", "->history(", "->previewDraft("],
+            "ui_markers": ["@kis/master-detail.twig", "Definition catalog"],
+            "capabilities": ["content.read"],
+            "conditions": ["reachable definition or empty state"],
+            "response": "200 no-store HTML"
+          },
+          "new": {
+            "route": "definition.read",
+            "payload": null,
+            "handler_file": "src/BusinessDefinition/Delivery/Administrator/BusinessDefinitionsHandler.php",
+            "service_calls": ["->catalog(", "->draft(", "->published(", "->history(", "->previewDraft("],
+            "ui_markers": ["@kis/master-detail.twig", "Definition catalog"],
+            "capabilities": ["content.read"],
+            "conditions": ["reachable definition or empty state"],
+            "response": "200 no-store HTML"
+          }
+        },
+        {
+          "id": "definition.export",
+          "old": {
+            "route": "definition.read",
+            "payload": "definition.export",
+            "handler_file": "src/BusinessDefinition/Delivery/Administrator/BusinessDefinitionsHandler.php",
+            "service_calls": ["->draft(", "->published("],
+            "ui_markers": ["?export="],
+            "capabilities": ["content.read"],
+            "conditions": ["definition selected"],
+            "response": "200 no-store JSON attachment with ETag"
+          },
+          "new": {
+            "route": "definition.read",
+            "payload": "definition.export",
+            "handler_file": "src/BusinessDefinition/Delivery/Administrator/BusinessDefinitionsHandler.php",
+            "service_calls": ["->draft(", "->published("],
+            "ui_markers": ["?export="],
+            "capabilities": ["content.read"],
+            "conditions": ["definition selected"],
+            "response": "200 no-store JSON attachment with ETag"
+          }
+        },
+        {
+          "id": "definition.import",
+          "old": {
+            "route": "definition.mutate",
+            "payload": "definition.import",
+            "handler_file": "src/BusinessDefinition/Delivery/Administrator/BusinessDefinitionsHandler.php",
+            "service_calls": ["->importJson("],
+            "ui_markers": ["name=\"action\" value=\"import\""],
+            "capabilities": ["content.update"],
+            "conditions": ["content.update", "JSON upload no larger than 1 MiB"],
+            "response": "303 selected definition and bounded return_tab"
+          },
+          "new": {
+            "route": "definition.mutate",
+            "payload": "definition.import",
+            "handler_file": "src/BusinessDefinition/Delivery/Administrator/BusinessDefinitionsHandler.php",
+            "service_calls": ["->importJson("],
+            "ui_markers": ["name=\"action\" value=\"import\""],
+            "capabilities": ["content.update"],
+            "conditions": ["content.update", "JSON upload no larger than 1 MiB"],
+            "response": "303 selected definition and bounded return_tab"
+          }
+        },
+        {
+          "id": "definition.save",
+          "old": {
+            "route": "definition.mutate",
+            "payload": "definition.save",
+            "handler_file": "src/BusinessDefinition/Delivery/Administrator/BusinessDefinitionsHandler.php",
+            "service_calls": ["->saveDraft(", "$this->mapper->definition("],
+            "ui_markers": ["name=\"action\" value=\"save\"", "Save and validate draft"],
+            "capabilities": ["content.update"],
+            "conditions": ["site-owned definition", "expected revision or new definition"],
+            "response": "303 selected definition and bounded return_tab"
+          },
+          "new": {
+            "route": "definition.mutate",
+            "payload": "definition.save",
+            "handler_file": "src/BusinessDefinition/Delivery/Administrator/BusinessDefinitionsHandler.php",
+            "service_calls": ["->saveDraft(", "$this->mapper->definition("],
+            "ui_markers": ["name=\"action\" value=\"save\"", "Save and validate draft"],
+            "capabilities": ["content.update"],
+            "conditions": ["site-owned definition", "expected revision or new definition"],
+            "response": "303 selected definition and bounded return_tab"
+          }
+        },
+        {
+          "id": "definition.validate",
+          "old": {
+            "route": "definition.mutate",
+            "payload": "definition.identifier-action",
+            "handler_file": "src/BusinessDefinition/Delivery/Administrator/BusinessDefinitionsHandler.php",
+            "service_calls": ["->validateDraft("],
+            "ui_markers": ["name=\"action\" value=\"validate\""],
+            "capabilities": ["content.update"],
+            "conditions": ["site-owned draft"],
+            "response": "303 publication tab"
+          },
+          "new": {
+            "route": "definition.mutate",
+            "payload": "definition.identifier-action",
+            "handler_file": "src/BusinessDefinition/Delivery/Administrator/BusinessDefinitionsHandler.php",
+            "service_calls": ["->validateDraft("],
+            "ui_markers": ["name=\"action\" value=\"validate\""],
+            "capabilities": ["content.update"],
+            "conditions": ["site-owned draft"],
+            "response": "303 publication tab"
+          }
+        },
+        {
+          "id": "definition.compare",
+          "old": {
+            "route": "definition.mutate",
+            "payload": "definition.identifier-action",
+            "handler_file": "src/BusinessDefinition/Delivery/Administrator/BusinessDefinitionsHandler.php",
+            "service_calls": ["->compareDraft("],
+            "ui_markers": ["name=\"action\" value=\"compare\""],
+            "capabilities": ["content.update"],
+            "conditions": ["site-owned draft"],
+            "response": "303 publication tab"
+          },
+          "new": {
+            "route": "definition.mutate",
+            "payload": "definition.identifier-action",
+            "handler_file": "src/BusinessDefinition/Delivery/Administrator/BusinessDefinitionsHandler.php",
+            "service_calls": ["->compareDraft("],
+            "ui_markers": ["name=\"action\" value=\"compare\""],
+            "capabilities": ["content.update"],
+            "conditions": ["site-owned draft"],
+            "response": "303 publication tab"
+          }
+        },
+        {
+          "id": "definition.publish",
+          "old": {
+            "route": "definition.mutate",
+            "payload": "definition.publish",
+            "handler_file": "src/BusinessDefinition/Delivery/Administrator/BusinessDefinitionsHandler.php",
+            "service_calls": ["->publish("],
+            "ui_markers": ["name=\"action\" value=\"publish\"", "Publish version"],
+            "capabilities": ["content.update"],
+            "conditions": ["site-owned draft", "exact draft revision", "confirmation when compatibility requires it"],
+            "response": "303 publication tab"
+          },
+          "new": {
+            "route": "definition.mutate",
+            "payload": "definition.publish",
+            "handler_file": "src/BusinessDefinition/Delivery/Administrator/BusinessDefinitionsHandler.php",
+            "service_calls": ["->publish("],
+            "ui_markers": ["name=\"action\" value=\"publish\"", "Publish version"],
+            "capabilities": ["content.update"],
+            "conditions": ["site-owned draft", "exact draft revision", "confirmation when compatibility requires it"],
+            "response": "303 publication tab"
+          }
+        },
+        {
+          "id": "definition.supersede",
+          "old": {
+            "route": "definition.mutate",
+            "payload": "definition.version-action",
+            "handler_file": "src/BusinessDefinition/Delivery/Administrator/BusinessDefinitionsHandler.php",
+            "service_calls": ["->supersede("],
+            "ui_markers": ["['supersede','deprecate','reject']"],
+            "capabilities": ["content.update"],
+            "conditions": ["site-owned immutable version"],
+            "response": "303 history tab"
+          },
+          "new": {
+            "route": "definition.mutate",
+            "payload": "definition.version-action",
+            "handler_file": "src/BusinessDefinition/Delivery/Administrator/BusinessDefinitionsHandler.php",
+            "service_calls": ["->supersede("],
+            "ui_markers": ["['supersede','deprecate','reject']"],
+            "capabilities": ["content.update"],
+            "conditions": ["site-owned immutable version"],
+            "response": "303 history tab"
+          }
+        },
+        {
+          "id": "definition.deprecate",
+          "old": {
+            "route": "definition.mutate",
+            "payload": "definition.version-action",
+            "handler_file": "src/BusinessDefinition/Delivery/Administrator/BusinessDefinitionsHandler.php",
+            "service_calls": ["->deprecate("],
+            "ui_markers": ["['supersede','deprecate','reject']"],
+            "capabilities": ["content.update"],
+            "conditions": ["site-owned immutable version"],
+            "response": "303 history tab"
+          },
+          "new": {
+            "route": "definition.mutate",
+            "payload": "definition.version-action",
+            "handler_file": "src/BusinessDefinition/Delivery/Administrator/BusinessDefinitionsHandler.php",
+            "service_calls": ["->deprecate("],
+            "ui_markers": ["['supersede','deprecate','reject']"],
+            "capabilities": ["content.update"],
+            "conditions": ["site-owned immutable version"],
+            "response": "303 history tab"
+          }
+        },
+        {
+          "id": "definition.reject",
+          "old": {
+            "route": "definition.mutate",
+            "payload": "definition.version-action",
+            "handler_file": "src/BusinessDefinition/Delivery/Administrator/BusinessDefinitionsHandler.php",
+            "service_calls": ["->reject("],
+            "ui_markers": ["['supersede','deprecate','reject']"],
+            "capabilities": ["content.update"],
+            "conditions": ["site-owned immutable version"],
+            "response": "303 history tab"
+          },
+          "new": {
+            "route": "definition.mutate",
+            "payload": "definition.version-action",
+            "handler_file": "src/BusinessDefinition/Delivery/Administrator/BusinessDefinitionsHandler.php",
+            "service_calls": ["->reject("],
+            "ui_markers": ["['supersede','deprecate','reject']"],
+            "capabilities": ["content.update"],
+            "conditions": ["site-owned immutable version"],
+            "response": "303 history tab"
+          }
+        }
+      ],
+      "payloads": [
+        {
+          "id": "definition.export",
+          "old": {
+            "transport": "query",
+            "fields": ["export"],
+            "evidence": [{"path": "src/BusinessDefinition/Delivery/Administrator/BusinessDefinitionsHandler.php", "contains": "$query['export']"}]
+          },
+          "new": {
+            "transport": "query",
+            "fields": ["export"],
+            "evidence": [{"path": "src/BusinessDefinition/Delivery/Administrator/BusinessDefinitionsHandler.php", "contains": "$query['export']"}]
+          }
+        },
+        {
+          "id": "definition.import",
+          "old": {
+            "transport": "form",
+            "encoding": "multipart/form-data",
+            "fields": ["_csrf", "action", "return_tab", "definition_file", "revision"],
+            "evidence": [
+              {"path": "src/BusinessDefinition/Delivery/Administrator/BusinessDefinitionsHandler.php", "contains": "'import' => $this->definitions->importJson("},
+              {"path": "src/BusinessDefinition/Delivery/Administrator/BusinessDefinitionsHandler.php", "contains": "$request->getUploadedFiles()['definition_file']"}
+            ]
+          },
+          "new": {
+            "transport": "form",
+            "encoding": "multipart/form-data",
+            "fields": ["_csrf", "action", "return_tab", "definition_file", "revision"],
+            "evidence": [
+              {"path": "src/BusinessDefinition/Delivery/Administrator/BusinessDefinitionsHandler.php", "contains": "'import' => $this->definitions->importJson("},
+              {"path": "src/BusinessDefinition/Delivery/Administrator/BusinessDefinitionsHandler.php", "contains": "$request->getUploadedFiles()['definition_file']"}
+            ]
+          }
+        },
+        {
+          "id": "definition.save",
+          "old": {
+            "transport": "form",
+            "encoding": "application/x-www-form-urlencoded",
+            "fields": [
+              "_csrf", "action", "return_tab", "id", "revision", "handle", "identity_strategy",
+              "singular_label", "plural_label", "scope", "administrator_hidden", "portal_exposure",
+              "public_exposure", "soft_delete_enabled", "audit_disabled", "revisions_disabled",
+              "workflow_enabled", "workflow_states", "workflow_initial_state"
+            ],
+            "indexed_groups": [
+              {
+                "pattern": "field_{index}_{member}",
+                "limit": 256,
+                "members": [
+                  "configuration_preserved", "validators_preserved", "handle", "label", "type", "group",
+                  "description", "help", "length", "precision", "scale", "default", "sensitivity", "order",
+                  "placements", "normalizers", "options", "currency", "unit", "target", "max_bytes",
+                  "validator", "validator_value", "required", "unique", "indexed", "immutable", "server_only",
+                  "read_only", "searchable", "filterable", "sortable", "reportable", "exportable", "localized",
+                  "computed", "stored", "hide_create", "hide_update", "hide_read", "formula_preserved",
+                  "formula_type", "formula_left", "formula_operator", "formula_right", "formula_scale",
+                  "visibility_preserved", "visibility_field", "visibility_type", "visibility_operator",
+                  "visibility_value", "editability_preserved", "editability_field", "editability_type",
+                  "editability_operator", "editability_value"
+                ]
+              },
+              {
+                "pattern": "relationship_{index}_{member}",
+                "limit": 128,
+                "members": ["handle", "label", "kind", "target", "inverse", "delete", "required", "unique", "ordered"]
+              },
+              {
+                "pattern": "view_{index}_{member}",
+                "limit": 64,
+                "members": ["handle", "label", "kind", "fields", "filters", "sorts", "administrator_hidden", "portal", "public"]
+              },
+              {
+                "pattern": "action_{index}_{member}",
+                "limit": 64,
+                "members": [
+                  "condition_preserved", "handle", "label", "capability", "transition", "condition_field",
+                  "condition_type", "condition_operator", "condition_value", "bulk", "portal", "high_impact"
+                ]
+              },
+              {
+                "pattern": "transition_{index}_{member}",
+                "limit": 128,
+                "members": ["handle", "from", "to", "capability"]
+              }
+            ],
+            "evidence": [
+              {"path": "src/BusinessDefinition/Delivery/Administrator/BusinessDefinitionsHandler.php", "contains": "$this->mapper->definition($form, $context->site())"},
+              {"path": "src/BusinessDefinition/Administrator/BusinessDefinitionFormMapper.php", "contains": "for ($index = 0; $index < 256; ++$index)"},
+              {"path": "src/BusinessDefinition/Administrator/BusinessDefinitionFormMapper.php", "contains": "for ($index = 0; $index < 128; ++$index)"},
+              {"path": "src/BusinessDefinition/Administrator/BusinessDefinitionFormMapper.php", "contains": "for ($index = 0; $index < 64; ++$index)"}
+            ]
+          },
+          "new": {
+            "transport": "form",
+            "encoding": "application/x-www-form-urlencoded",
+            "fields": [
+              "_csrf", "action", "return_tab", "id", "revision", "handle", "identity_strategy",
+              "singular_label", "plural_label", "scope", "administrator_hidden", "portal_exposure",
+              "public_exposure", "soft_delete_enabled", "audit_disabled", "revisions_disabled",
+              "workflow_enabled", "workflow_states", "workflow_initial_state"
+            ],
+            "indexed_groups": [
+              {
+                "pattern": "field_{index}_{member}",
+                "limit": 256,
+                "members": [
+                  "configuration_preserved", "validators_preserved", "handle", "label", "type", "group",
+                  "description", "help", "length", "precision", "scale", "default", "sensitivity", "order",
+                  "placements", "normalizers", "options", "currency", "unit", "target", "max_bytes",
+                  "validator", "validator_value", "required", "unique", "indexed", "immutable", "server_only",
+                  "read_only", "searchable", "filterable", "sortable", "reportable", "exportable", "localized",
+                  "computed", "stored", "hide_create", "hide_update", "hide_read", "formula_preserved",
+                  "formula_type", "formula_left", "formula_operator", "formula_right", "formula_scale",
+                  "visibility_preserved", "visibility_field", "visibility_type", "visibility_operator",
+                  "visibility_value", "editability_preserved", "editability_field", "editability_type",
+                  "editability_operator", "editability_value"
+                ]
+              },
+              {
+                "pattern": "relationship_{index}_{member}",
+                "limit": 128,
+                "members": ["handle", "label", "kind", "target", "inverse", "delete", "required", "unique", "ordered"]
+              },
+              {
+                "pattern": "view_{index}_{member}",
+                "limit": 64,
+                "members": ["handle", "label", "kind", "fields", "filters", "sorts", "administrator_hidden", "portal", "public"]
+              },
+              {
+                "pattern": "action_{index}_{member}",
+                "limit": 64,
+                "members": [
+                  "condition_preserved", "handle", "label", "capability", "transition", "condition_field",
+                  "condition_type", "condition_operator", "condition_value", "bulk", "portal", "high_impact"
+                ]
+              },
+              {
+                "pattern": "transition_{index}_{member}",
+                "limit": 128,
+                "members": ["handle", "from", "to", "capability"]
+              }
+            ],
+            "evidence": [
+              {"path": "src/BusinessDefinition/Delivery/Administrator/BusinessDefinitionsHandler.php", "contains": "$this->mapper->definition($form, $context->site())"},
+              {"path": "src/BusinessDefinition/Administrator/BusinessDefinitionFormMapper.php", "contains": "for ($index = 0; $index < 256; ++$index)"},
+              {"path": "src/BusinessDefinition/Administrator/BusinessDefinitionFormMapper.php", "contains": "for ($index = 0; $index < 128; ++$index)"},
+              {"path": "src/BusinessDefinition/Administrator/BusinessDefinitionFormMapper.php", "contains": "for ($index = 0; $index < 64; ++$index)"}
+            ]
+          }
+        },
+        {
+          "id": "definition.identifier-action",
+          "old": {
+            "transport": "form",
+            "encoding": "application/x-www-form-urlencoded",
+            "fields": ["_csrf", "action", "return_tab", "id"],
+            "evidence": [{"path": "src/BusinessDefinition/Delivery/Administrator/BusinessDefinitionsHandler.php", "contains": "$identifier = trim($form['id'] ?? '')"}]
+          },
+          "new": {
+            "transport": "form",
+            "encoding": "application/x-www-form-urlencoded",
+            "fields": ["_csrf", "action", "return_tab", "id"],
+            "evidence": [{"path": "src/BusinessDefinition/Delivery/Administrator/BusinessDefinitionsHandler.php", "contains": "$identifier = trim($form['id'] ?? '')"}]
+          }
+        },
+        {
+          "id": "definition.publish",
+          "old": {
+            "transport": "form",
+            "encoding": "application/x-www-form-urlencoded",
+            "fields": ["_csrf", "action", "return_tab", "id", "revision", "confirmed"],
+            "evidence": [
+              {"path": "src/BusinessDefinition/Delivery/Administrator/BusinessDefinitionsHandler.php", "contains": "AdministratorRequest::positiveInteger($form, 'revision')"},
+              {"path": "src/BusinessDefinition/Delivery/Administrator/BusinessDefinitionsHandler.php", "contains": "($form['confirmed'] ?? '') === '1'"}
+            ]
+          },
+          "new": {
+            "transport": "form",
+            "encoding": "application/x-www-form-urlencoded",
+            "fields": ["_csrf", "action", "return_tab", "id", "revision", "confirmed"],
+            "evidence": [
+              {"path": "src/BusinessDefinition/Delivery/Administrator/BusinessDefinitionsHandler.php", "contains": "AdministratorRequest::positiveInteger($form, 'revision')"},
+              {"path": "src/BusinessDefinition/Delivery/Administrator/BusinessDefinitionsHandler.php", "contains": "($form['confirmed'] ?? '') === '1'"}
+            ]
+          }
+        },
+        {
+          "id": "definition.version-action",
+          "old": {
+            "transport": "form",
+            "encoding": "application/x-www-form-urlencoded",
+            "fields": ["_csrf", "action", "return_tab", "id", "version"],
+            "evidence": [{"path": "src/BusinessDefinition/Delivery/Administrator/BusinessDefinitionsHandler.php", "contains": "AdministratorRequest::positiveInteger($form, 'version')"}]
+          },
+          "new": {
+            "transport": "form",
+            "encoding": "application/x-www-form-urlencoded",
+            "fields": ["_csrf", "action", "return_tab", "id", "version"],
+            "evidence": [{"path": "src/BusinessDefinition/Delivery/Administrator/BusinessDefinitionsHandler.php", "contains": "AdministratorRequest::positiveInteger($form, 'version')"}]
+          }
+        }
+      ],
+      "input_inventory": [
+        {
+          "id": "rendered-input-names",
+          "old": [
+            "_csrf", "action", "action_{index}_bulk", "action_{index}_capability",
+            "action_{index}_condition_field", "action_{index}_condition_operator",
+            "action_{index}_condition_preserved", "action_{index}_condition_type",
+            "action_{index}_condition_value", "action_{index}_handle", "action_{index}_high_impact",
+            "action_{index}_label", "action_{index}_portal", "action_{index}_transition",
+            "administrator_hidden", "audit_disabled", "confirmed", "definition_file", "field_{index}_computed",
+            "field_{index}_configuration_preserved", "field_{index}_currency", "field_{index}_default",
+            "field_{index}_description", "field_{index}_editability_field", "field_{index}_editability_operator",
+            "field_{index}_editability_preserved", "field_{index}_editability_type",
+            "field_{index}_editability_value", "field_{index}_exportable", "field_{index}_filterable",
+            "field_{index}_formula_left", "field_{index}_formula_operator", "field_{index}_formula_preserved",
+            "field_{index}_formula_right", "field_{index}_formula_scale", "field_{index}_formula_type",
+            "field_{index}_group", "field_{index}_handle", "field_{index}_help", "field_{index}_hide_create",
+            "field_{index}_hide_read", "field_{index}_hide_update", "field_{index}_immutable",
+            "field_{index}_indexed", "field_{index}_label", "field_{index}_length", "field_{index}_localized",
+            "field_{index}_max_bytes", "field_{index}_normalizers", "field_{index}_options", "field_{index}_order",
+            "field_{index}_placements", "field_{index}_precision", "field_{index}_read_only",
+            "field_{index}_reportable", "field_{index}_required", "field_{index}_scale",
+            "field_{index}_searchable", "field_{index}_sensitivity", "field_{index}_server_only",
+            "field_{index}_sortable", "field_{index}_stored", "field_{index}_target", "field_{index}_type",
+            "field_{index}_unique", "field_{index}_unit", "field_{index}_validator",
+            "field_{index}_validator_value", "field_{index}_validators_preserved",
+            "field_{index}_visibility_field", "field_{index}_visibility_operator",
+            "field_{index}_visibility_preserved", "field_{index}_visibility_type",
+            "field_{index}_visibility_value", "handle", "id", "identity_strategy", "plural_label",
+            "portal_exposure", "public_exposure", "relationship_{index}_delete", "relationship_{index}_handle",
+            "relationship_{index}_inverse", "relationship_{index}_kind", "relationship_{index}_label",
+            "relationship_{index}_ordered", "relationship_{index}_required", "relationship_{index}_target",
+            "relationship_{index}_unique", "return_tab", "revision", "revisions_disabled", "scope",
+            "singular_label", "soft_delete_enabled", "transition_{index}_capability", "transition_{index}_from",
+            "transition_{index}_handle", "transition_{index}_to", "version",
+            "view_{index}_administrator_hidden", "view_{index}_fields", "view_{index}_filters",
+            "view_{index}_handle", "view_{index}_kind", "view_{index}_label", "view_{index}_portal",
+            "view_{index}_public", "view_{index}_sorts", "workflow_enabled", "workflow_initial_state",
+            "workflow_states"
+          ],
+          "new": [
+            "_csrf", "action", "action_{index}_bulk", "action_{index}_capability",
+            "action_{index}_condition_field", "action_{index}_condition_operator",
+            "action_{index}_condition_preserved", "action_{index}_condition_type",
+            "action_{index}_condition_value", "action_{index}_handle", "action_{index}_high_impact",
+            "action_{index}_label", "action_{index}_portal", "action_{index}_transition",
+            "administrator_hidden", "audit_disabled", "confirmed", "definition_file", "field_{index}_computed",
+            "field_{index}_configuration_preserved", "field_{index}_currency", "field_{index}_default",
+            "field_{index}_description", "field_{index}_editability_field", "field_{index}_editability_operator",
+            "field_{index}_editability_preserved", "field_{index}_editability_type",
+            "field_{index}_editability_value", "field_{index}_exportable", "field_{index}_filterable",
+            "field_{index}_formula_left", "field_{index}_formula_operator", "field_{index}_formula_preserved",
+            "field_{index}_formula_right", "field_{index}_formula_scale", "field_{index}_formula_type",
+            "field_{index}_group", "field_{index}_handle", "field_{index}_help", "field_{index}_hide_create",
+            "field_{index}_hide_read", "field_{index}_hide_update", "field_{index}_immutable",
+            "field_{index}_indexed", "field_{index}_label", "field_{index}_length", "field_{index}_localized",
+            "field_{index}_max_bytes", "field_{index}_normalizers", "field_{index}_options", "field_{index}_order",
+            "field_{index}_placements", "field_{index}_precision", "field_{index}_read_only",
+            "field_{index}_reportable", "field_{index}_required", "field_{index}_scale",
+            "field_{index}_searchable", "field_{index}_sensitivity", "field_{index}_server_only",
+            "field_{index}_sortable", "field_{index}_stored", "field_{index}_target", "field_{index}_type",
+            "field_{index}_unique", "field_{index}_unit", "field_{index}_validator",
+            "field_{index}_validator_value", "field_{index}_validators_preserved",
+            "field_{index}_visibility_field", "field_{index}_visibility_operator",
+            "field_{index}_visibility_preserved", "field_{index}_visibility_type",
+            "field_{index}_visibility_value", "handle", "id", "identity_strategy", "plural_label",
+            "portal_exposure", "public_exposure", "relationship_{index}_delete", "relationship_{index}_handle",
+            "relationship_{index}_inverse", "relationship_{index}_kind", "relationship_{index}_label",
+            "relationship_{index}_ordered", "relationship_{index}_required", "relationship_{index}_target",
+            "relationship_{index}_unique", "return_tab", "revision", "revisions_disabled", "scope",
+            "singular_label", "soft_delete_enabled", "transition_{index}_capability", "transition_{index}_from",
+            "transition_{index}_handle", "transition_{index}_to", "version",
+            "view_{index}_administrator_hidden", "view_{index}_fields", "view_{index}_filters",
+            "view_{index}_handle", "view_{index}_kind", "view_{index}_label", "view_{index}_portal",
+            "view_{index}_public", "view_{index}_sorts", "workflow_enabled", "workflow_initial_state",
+            "workflow_states"
+          ]
+        }
+      ],
+      "invariants": [
+        {
+          "id": "application-authorization",
+          "old": {
+            "guarantee": "Template visibility is an affordance; BusinessDefinitionService remains authoritative.",
+            "evidence": [
+              {"path": "src/BusinessDefinition/Application/BusinessDefinitionService.php", "contains": "$this->authorization->assertAllowed("}
+            ]
+          },
+          "new": {
+            "guarantee": "Template visibility is an affordance; BusinessDefinitionService remains authoritative.",
+            "evidence": [
+              {"path": "src/BusinessDefinition/Application/BusinessDefinitionService.php", "contains": "$this->authorization->assertAllowed("}
+            ]
+          }
+        },
+        {
+          "id": "csrf",
+          "old": {
+            "guarantee": "Every mutation crosses AdministratorCsrfMiddleware and posts _csrf.",
+            "evidence": [
+              {"path": "src/Kernel/ContainerFactory.php", "contains": "[AdministratorCsrfMiddleware::class, BusinessDefinitionsHandler::class]"},
+              {"path": "templates/administrator/business-definitions.twig", "contains": "name=\"_csrf\" value=\"{{ csrf }}\""}
+            ]
+          },
+          "new": {
+            "guarantee": "Every mutation crosses AdministratorCsrfMiddleware and posts _csrf.",
+            "evidence": [
+              {"path": "src/Kernel/ContainerFactory.php", "contains": "[AdministratorCsrfMiddleware::class, BusinessDefinitionsHandler::class]"},
+              {"path": "templates/administrator/business-definitions.twig", "contains": "name=\"_csrf\" value=\"{{ csrf }}\""}
+            ]
+          }
+        },
+        {
+          "id": "optimistic-concurrency",
+          "old": {
+            "guarantee": "Draft saves and imports preserve the claimed revision; publication requires the exact positive revision.",
+            "evidence": [
+              {"path": "src/BusinessDefinition/Delivery/Administrator/BusinessDefinitionsHandler.php", "contains": "$this->revision($form)"},
+              {"path": "src/BusinessDefinition/Delivery/Administrator/BusinessDefinitionsHandler.php", "contains": "AdministratorRequest::positiveInteger($form, 'revision')"}
+            ]
+          },
+          "new": {
+            "guarantee": "Draft saves and imports preserve the claimed revision; publication requires the exact positive revision.",
+            "evidence": [
+              {"path": "src/BusinessDefinition/Delivery/Administrator/BusinessDefinitionsHandler.php", "contains": "$this->revision($form)"},
+              {"path": "src/BusinessDefinition/Delivery/Administrator/BusinessDefinitionsHandler.php", "contains": "AdministratorRequest::positiveInteger($form, 'revision')"}
+            ]
+          }
+        },
+        {
+          "id": "strict-bounded-mapping",
+          "old": {
+            "guarantee": "The graphical payload is rebuilt by BusinessDefinitionFormMapper; preserved JSON cannot bypass domain construction.",
+            "evidence": [
+              {"path": "src/BusinessDefinition/Administrator/BusinessDefinitionFormMapper.php", "contains": "return EntityTypeDefinition::fromArray(["},
+              {"path": "src/BusinessDefinition/Administrator/BusinessDefinitionFormMapper.php", "contains": "preservedExpression("}
+            ]
+          },
+          "new": {
+            "guarantee": "The graphical payload is rebuilt by BusinessDefinitionFormMapper; preserved JSON cannot bypass domain construction.",
+            "evidence": [
+              {"path": "src/BusinessDefinition/Administrator/BusinessDefinitionFormMapper.php", "contains": "return EntityTypeDefinition::fromArray(["},
+              {"path": "src/BusinessDefinition/Administrator/BusinessDefinitionFormMapper.php", "contains": "preservedExpression("}
+            ]
+          }
+        },
+        {
+          "id": "package-ownership",
+          "old": {
+            "guarantee": "Package-owned definitions remain inspectable/exportable but cannot be site-edited or retired.",
+            "evidence": [
+              {"path": "templates/administrator/business-definitions.twig", "contains": "definition.owner.type != 'site'"},
+              {"path": "src/BusinessDefinition/Application/BusinessDefinitionService.php", "contains": "if ($entry->owner->type !== DefinitionOwnerType::Site)"}
+            ]
+          },
+          "new": {
+            "guarantee": "Package-owned definitions remain inspectable/exportable but cannot be site-edited or retired.",
+            "evidence": [
+              {"path": "templates/administrator/business-definitions.twig", "contains": "definition.owner.type != 'site'"},
+              {"path": "src/BusinessDefinition/Application/BusinessDefinitionService.php", "contains": "if ($entry->owner->type !== DefinitionOwnerType::Site)"}
+            ]
+          }
+        },
+        {
+          "id": "compatibility-confirmation",
+          "old": {
+            "guarantee": "Publication re-analyzes compatibility and refuses behavior/data change without explicit confirmation.",
+            "evidence": [
+              {"path": "src/BusinessDefinition/Application/BusinessDefinitionService.php", "contains": "This compatibility plan changes behavior or data and requires explicit confirmation."}
+            ]
+          },
+          "new": {
+            "guarantee": "Publication re-analyzes compatibility and refuses behavior/data change without explicit confirmation.",
+            "evidence": [
+              {"path": "src/BusinessDefinition/Application/BusinessDefinitionService.php", "contains": "This compatibility plan changes behavior or data and requires explicit confirmation."}
+            ]
+          }
+        },
+        {
+          "id": "transactional-audit",
+          "old": {
+            "guarantee": "Definition mutation, ownership, publication observers, and success audit commit atomically; failures are audited.",
+            "evidence": [
+              {"path": "src/BusinessDefinition/Application/BusinessDefinitionService.php", "contains": "$this->transactions->transactional("},
+              {"path": "src/BusinessDefinition/Application/BusinessDefinitionService.php", "contains": "$this->auditFailure("}
+            ]
+          },
+          "new": {
+            "guarantee": "Definition mutation, ownership, publication observers, and success audit commit atomically; failures are audited.",
+            "evidence": [
+              {"path": "src/BusinessDefinition/Application/BusinessDefinitionService.php", "contains": "$this->transactions->transactional("},
+              {"path": "src/BusinessDefinition/Application/BusinessDefinitionService.php", "contains": "$this->auditFailure("}
+            ]
+          }
+        },
+        {
+          "id": "post-redirect-get",
+          "old": {
+            "guarantee": "Mutations answer 303 and restore only a bounded contextual tab.",
+            "evidence": [
+              {"path": "src/BusinessDefinition/Delivery/Administrator/BusinessDefinitionsHandler.php", "contains": "new RedirectResponse("},
+              {"path": "src/BusinessDefinition/Delivery/Administrator/BusinessDefinitionsHandler.php", "contains": "private function activeTab("}
+            ]
+          },
+          "new": {
+            "guarantee": "Mutations answer 303 and restore only a bounded contextual tab.",
+            "evidence": [
+              {"path": "src/BusinessDefinition/Delivery/Administrator/BusinessDefinitionsHandler.php", "contains": "new RedirectResponse("},
+              {"path": "src/BusinessDefinition/Delivery/Administrator/BusinessDefinitionsHandler.php", "contains": "private function activeTab("}
+            ]
+          }
+        }
+      ],
+      "no_javascript": [
+        {
+          "id": "server-panels-stacked",
+          "old": {
+            "guarantee": "Every task panel is rendered in document order and is hidden only after enhancement.",
+            "evidence": [
+              {"path": "templates/administrator/business-definitions.twig", "contains": "@kis/tab-panel.twig"},
+              {"path": "tests/Browser/administrator.spec.ts", "contains": "javaScriptEnabled: false"}
+            ],
+            "forbidden": [
+              {"path": "templates/administrator/business-definitions.twig", "contains": "hidden data-kis-tab-panel"},
+              {"path": "templates/administrator/business-definitions.twig", "contains": "style=\"display: none"}
+            ]
+          },
+          "new": {
+            "guarantee": "Every task panel is rendered in document order and is hidden only after enhancement.",
+            "evidence": [
+              {"path": "templates/administrator/business-definitions.twig", "contains": "@kis/tab-panel.twig"},
+              {"path": "tests/Browser/administrator.spec.ts", "contains": "javaScriptEnabled: false"}
+            ],
+            "forbidden": [
+              {"path": "templates/administrator/business-definitions.twig", "contains": "hidden data-kis-tab-panel"},
+              {"path": "templates/administrator/business-definitions.twig", "contains": "style=\"display: none"}
+            ]
+          }
+        },
+        {
+          "id": "url-addressable-tabs",
+          "old": {
+            "guarantee": "Task links are real URLs and preserve definition/new context.",
+            "evidence": [
+              {"path": "src/BusinessDefinition/Delivery/Administrator/BusinessDefinitionsHandler.php", "contains": "'href' => '/administrator/business-definitions?'"},
+              {"path": "templates/administrator/business-definitions.twig", "contains": "data-kis-tab-parameter=\"tab\""}
+            ]
+          },
+          "new": {
+            "guarantee": "Task links are real URLs and preserve definition/new context.",
+            "evidence": [
+              {"path": "src/BusinessDefinition/Delivery/Administrator/BusinessDefinitionsHandler.php", "contains": "'href' => '/administrator/business-definitions?'"},
+              {"path": "templates/administrator/business-definitions.twig", "contains": "data-kis-tab-parameter=\"tab\""}
+            ]
+          }
+        },
+        {
+          "id": "native-form-completion",
+          "old": {
+            "guarantee": "Save, validation, comparison, publication, history actions, import, and export need no client script.",
+            "evidence": [
+              {"path": "templates/administrator/business-definitions.twig", "contains": "<form method=\"post\""},
+              {"path": "tests/Browser/administrator.spec.ts", "contains": "for (const panel of await page.locator('[data-kis-tab-panel]').all())"}
+            ]
+          },
+          "new": {
+            "guarantee": "Save, validation, comparison, publication, history actions, import, and export need no client script.",
+            "evidence": [
+              {"path": "templates/administrator/business-definitions.twig", "contains": "<form method=\"post\""},
+              {"path": "tests/Browser/administrator.spec.ts", "contains": "for (const panel of await page.locator('[data-kis-tab-panel]').all())"}
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "core.administrator.schema-plans",
+      "template": "templates/administrator/business-schema-plans.twig",
+      "read_handler": "src/BusinessSchema/Delivery/Administrator/BusinessSchemaPlansHandler.php",
+      "browser_test": "tests/Browser/administrator.spec.ts",
+      "routes": [
+        {
+          "id": "schema.read",
+          "old": {"method": "GET", "path": "/administrator/business-schema-plans", "name": "administrator.business-schema-plans", "handler": "BusinessSchemaPlansHandler", "handler_file": "src/BusinessSchema/Delivery/Administrator/BusinessSchemaPlansHandler.php", "capability": "business.schema.read", "csrf": false},
+          "new": {"method": "GET", "path": "/administrator/business-schema-plans", "name": "administrator.business-schema-plans", "handler": "BusinessSchemaPlansHandler", "handler_file": "src/BusinessSchema/Delivery/Administrator/BusinessSchemaPlansHandler.php", "capability": "business.schema.read", "csrf": false}
+        },
+        {
+          "id": "schema.plan",
+          "old": {"method": "POST", "path": "/administrator/business-schema-plans/plan", "name": "administrator.business-schema-plans.plan", "handler": "CreateBusinessSchemaPlanHandler", "handler_file": "src/BusinessSchema/Delivery/Administrator/CreateBusinessSchemaPlanHandler.php", "capability": "business.schema.plan", "csrf": true},
+          "new": {"method": "POST", "path": "/administrator/business-schema-plans/plan", "name": "administrator.business-schema-plans.plan", "handler": "CreateBusinessSchemaPlanHandler", "handler_file": "src/BusinessSchema/Delivery/Administrator/CreateBusinessSchemaPlanHandler.php", "capability": "business.schema.plan", "csrf": true}
+        },
+        {
+          "id": "schema.approve",
+          "old": {"method": "POST", "path": "/administrator/business-schema-plans/{id}/approve", "name": "administrator.business-schema-plans.approve", "handler": "ApproveBusinessSchemaPlanHandler", "handler_file": "src/BusinessSchema/Delivery/Administrator/ApproveBusinessSchemaPlanHandler.php", "capability": "business.schema.approve", "csrf": true},
+          "new": {"method": "POST", "path": "/administrator/business-schema-plans/{id}/approve", "name": "administrator.business-schema-plans.approve", "handler": "ApproveBusinessSchemaPlanHandler", "handler_file": "src/BusinessSchema/Delivery/Administrator/ApproveBusinessSchemaPlanHandler.php", "capability": "business.schema.approve", "csrf": true}
+        },
+        {
+          "id": "schema.execute",
+          "old": {"method": "POST", "path": "/administrator/business-schema-plans/{id}/execute", "name": "administrator.business-schema-plans.execute", "handler": "ExecuteBusinessSchemaPlanHandler", "handler_file": "src/BusinessSchema/Delivery/Administrator/ExecuteBusinessSchemaPlanHandler.php", "capability": "business.schema.execute", "csrf": true},
+          "new": {"method": "POST", "path": "/administrator/business-schema-plans/{id}/execute", "name": "administrator.business-schema-plans.execute", "handler": "ExecuteBusinessSchemaPlanHandler", "handler_file": "src/BusinessSchema/Delivery/Administrator/ExecuteBusinessSchemaPlanHandler.php", "capability": "business.schema.execute", "csrf": true}
+        },
+        {
+          "id": "schema.evidence",
+          "old": {"method": "POST", "path": "/administrator/business-schema-plans/recovery-evidence", "name": "administrator.business-schema-plans.recovery-evidence", "handler": "RecordBusinessSchemaRecoveryEvidenceHandler", "handler_file": "src/BusinessSchema/Delivery/Administrator/RecordBusinessSchemaRecoveryEvidenceHandler.php", "capability": "business.schema.recover", "csrf": true},
+          "new": {"method": "POST", "path": "/administrator/business-schema-plans/recovery-evidence", "name": "administrator.business-schema-plans.recovery-evidence", "handler": "RecordBusinessSchemaRecoveryEvidenceHandler", "handler_file": "src/BusinessSchema/Delivery/Administrator/RecordBusinessSchemaRecoveryEvidenceHandler.php", "capability": "business.schema.recover", "csrf": true}
+        },
+        {
+          "id": "schema.recover",
+          "old": {"method": "POST", "path": "/administrator/business-schema-plans/{id}/recover", "name": "administrator.business-schema-plans.recover", "handler": "RecoverBusinessSchemaPlanHandler", "handler_file": "src/BusinessSchema/Delivery/Administrator/RecoverBusinessSchemaPlanHandler.php", "capability": "business.schema.recover", "csrf": true},
+          "new": {"method": "POST", "path": "/administrator/business-schema-plans/{id}/recover", "name": "administrator.business-schema-plans.recover", "handler": "RecoverBusinessSchemaPlanHandler", "handler_file": "src/BusinessSchema/Delivery/Administrator/RecoverBusinessSchemaPlanHandler.php", "capability": "business.schema.recover", "csrf": true}
+        },
+        {
+          "id": "schema.purge",
+          "old": {"method": "POST", "path": "/administrator/business-schema-plans/purge", "name": "administrator.business-schema-plans.purge", "handler": "CreateBusinessSchemaPurgePlanHandler", "handler_file": "src/BusinessSchema/Delivery/Administrator/CreateBusinessSchemaPurgePlanHandler.php", "capability": "business.schema.destructive", "csrf": true},
+          "new": {"method": "POST", "path": "/administrator/business-schema-plans/purge", "name": "administrator.business-schema-plans.purge", "handler": "CreateBusinessSchemaPurgePlanHandler", "handler_file": "src/BusinessSchema/Delivery/Administrator/CreateBusinessSchemaPurgePlanHandler.php", "capability": "business.schema.destructive", "csrf": true}
+        }
+      ],
+      "capabilities": [
+        {
+          "id": "schema.read",
+          "old": {"code": "business.schema.read", "scope": "site schema collections and items", "evidence": [{"path": "src/BusinessSchema/Application/BusinessSchemaService.php", "contains": "$this->authorize($context, 'business.schema.read')"}]},
+          "new": {"code": "business.schema.read", "scope": "site schema collections and items", "evidence": [{"path": "src/BusinessSchema/Application/BusinessSchemaService.php", "contains": "$this->authorize($context, 'business.schema.read')"}]}
+        },
+        {
+          "id": "schema.plan",
+          "old": {"code": "business.schema.plan", "scope": "schema plan collection", "evidence": [{"path": "templates/administrator/business-schema-plans.twig", "contains": "capabilities['business.schema.plan'] is defined"}]},
+          "new": {"code": "business.schema.plan", "scope": "schema plan collection", "evidence": [{"path": "templates/administrator/business-schema-plans.twig", "contains": "capabilities['business.schema.plan'] is defined"}]}
+        },
+        {
+          "id": "schema.approve",
+          "old": {"code": "business.schema.approve", "scope": "schema plan collection", "evidence": [{"path": "src/BusinessSchema/Application/BusinessSchemaService.php", "contains": "$this->authorize($context, 'business.schema.approve')"}, {"path": "templates/administrator/business-schema-plans.twig", "contains": "capabilities['business.schema.approve'] is defined"}]},
+          "new": {"code": "business.schema.approve", "scope": "schema plan collection", "evidence": [{"path": "src/BusinessSchema/Application/BusinessSchemaService.php", "contains": "$this->authorize($context, 'business.schema.approve')"}, {"path": "templates/administrator/business-schema-plans.twig", "contains": "capabilities['business.schema.approve'] is defined"}]}
+        },
+        {
+          "id": "schema.execute",
+          "old": {"code": "business.schema.execute", "scope": "schema plan collection", "evidence": [{"path": "templates/administrator/business-schema-plans.twig", "contains": "capabilities['business.schema.execute'] is defined"}]},
+          "new": {"code": "business.schema.execute", "scope": "schema plan collection", "evidence": [{"path": "templates/administrator/business-schema-plans.twig", "contains": "capabilities['business.schema.execute'] is defined"}]}
+        },
+        {
+          "id": "schema.recover",
+          "old": {"code": "business.schema.recover", "scope": "schema plan and recovery-evidence collections", "evidence": [{"path": "src/BusinessSchema/Application/BusinessSchemaService.php", "contains": "$this->authorize($context, 'business.schema.recover')"}, {"path": "templates/administrator/business-schema-plans.twig", "contains": "capabilities['business.schema.recover'] is defined"}]},
+          "new": {"code": "business.schema.recover", "scope": "schema plan and recovery-evidence collections", "evidence": [{"path": "src/BusinessSchema/Application/BusinessSchemaService.php", "contains": "$this->authorize($context, 'business.schema.recover')"}, {"path": "templates/administrator/business-schema-plans.twig", "contains": "capabilities['business.schema.recover'] is defined"}]}
+        },
+        {
+          "id": "schema.destructive",
+          "old": {"code": "business.schema.destructive", "scope": "destructive plan creation and destructive approval", "evidence": [{"path": "src/BusinessSchema/Application/BusinessSchemaService.php", "contains": "$this->authorize($context, 'business.schema.destructive')"}, {"path": "templates/administrator/business-schema-plans.twig", "contains": "capabilities['business.schema.destructive'] is defined"}]},
+          "new": {"code": "business.schema.destructive", "scope": "destructive plan creation and destructive approval", "evidence": [{"path": "src/BusinessSchema/Application/BusinessSchemaService.php", "contains": "$this->authorize($context, 'business.schema.destructive')"}, {"path": "templates/administrator/business-schema-plans.twig", "contains": "capabilities['business.schema.destructive'] is defined"}]}
+        }
+      ],
+      "field_visibility": [
+        {
+          "id": "catalog-summary",
+          "old": {"actors": ["schema-reader"], "conditions": ["business.schema.read"], "template_markers": ["Persisted plans", "Immutable comparison", "Plan checksum", "Physical checksum"]},
+          "new": {"actors": ["schema-reader"], "conditions": ["business.schema.read"], "template_markers": ["Persisted plans", "Immutable comparison", "Plan checksum", "Physical checksum"]}
+        },
+        {
+          "id": "operations",
+          "old": {"actors": ["schema-reader"], "conditions": ["plan selected"], "template_markers": ["Generated operations", "schema-operations-table", "recovery_implication"]},
+          "new": {"actors": ["schema-reader"], "conditions": ["plan selected"], "template_markers": ["Generated operations", "schema-operations-table", "recovery_implication"]}
+        },
+        {
+          "id": "approval",
+          "old": {"actors": ["schema-reader", "approver"], "conditions": ["pending_approval"], "template_markers": ["Approve exact plan", "expected_checksum", "recovery_evidence_id"]},
+          "new": {"actors": ["schema-reader", "approver"], "conditions": ["pending_approval"], "template_markers": ["Approve exact plan", "expected_checksum", "recovery_evidence_id"]}
+        },
+        {
+          "id": "execution",
+          "old": {"actors": ["schema-reader", "executor"], "conditions": ["approved", "business.schema.execute"], "template_markers": ["Execute approved plan", "Execution gate"]},
+          "new": {"actors": ["schema-reader", "executor"], "conditions": ["approved", "business.schema.execute"], "template_markers": ["Execute approved plan", "Execution gate"]}
+        },
+        {
+          "id": "recovery",
+          "old": {"actors": ["schema-reader", "recovery-operator"], "conditions": ["failed or recovery_required", "business.schema.recover"], "template_markers": ["Resume or reconcile execution", "Start recovery"]},
+          "new": {"actors": ["schema-reader", "recovery-operator"], "conditions": ["failed or recovery_required", "business.schema.recover"], "template_markers": ["Resume or reconcile execution", "Start recovery"]}
+        },
+        {
+          "id": "recovery-evidence",
+          "old": {"actors": ["recovery-operator", "approver"], "conditions": ["plan requires recovery evidence", "evidence absent or unqualified"], "template_markers": ["Record tested backup and restore evidence", "clean_target_restore", "record_revision_audit_checksums_verified"]},
+          "new": {"actors": ["recovery-operator", "approver"], "conditions": ["plan requires recovery evidence", "evidence absent or unqualified"], "template_markers": ["Record tested backup and restore evidence", "clean_target_restore", "record_revision_audit_checksums_verified"]}
+        },
+        {
+          "id": "history",
+          "old": {"actors": ["schema-reader"], "conditions": ["plan selected"], "template_markers": ["Durable journal", "Execution status", "before_schema_checksum"]},
+          "new": {"actors": ["schema-reader"], "conditions": ["plan selected"], "template_markers": ["Durable journal", "Execution status", "before_schema_checksum"]}
+        },
+        {
+          "id": "installed-schema-purge",
+          "old": {"actors": ["schema-reader", "destructive-operator"], "conditions": ["installation exists", "business.schema.destructive for purge form"], "template_markers": ["Current physical schema", "Prepare explicit data purge"]},
+          "new": {"actors": ["schema-reader", "destructive-operator"], "conditions": ["installation exists", "business.schema.destructive for purge form"], "template_markers": ["Current physical schema", "Prepare explicit data purge"]}
+        }
+      ],
+      "actions": [
+        {
+          "id": "schema.inspect",
+          "old": {"route": "schema.read", "payload": null, "handler_file": "src/BusinessSchema/Delivery/Administrator/BusinessSchemaPlansHandler.php", "service_calls": ["->plans(", "->plan(", "->steps(", "->installation(", "->recoveryEvidence(", "->definitions("], "ui_markers": ["@kis/master-detail.twig", "Schema plan tasks"], "capabilities": ["business.schema.read"], "conditions": ["selected newest plan or explicit plan"], "response": "200 no-store HTML"},
+          "new": {"route": "schema.read", "payload": null, "handler_file": "src/BusinessSchema/Delivery/Administrator/BusinessSchemaPlansHandler.php", "service_calls": ["->plans(", "->plan(", "->steps(", "->installation(", "->recoveryEvidence(", "->definitions("], "ui_markers": ["@kis/master-detail.twig", "Schema plan tasks"], "capabilities": ["business.schema.read"], "conditions": ["selected newest plan or explicit plan"], "response": "200 no-store HTML"}
+        },
+        {
+          "id": "schema.plan",
+          "old": {"route": "schema.plan", "payload": "schema.plan", "handler_file": "src/BusinessSchema/Delivery/Administrator/CreateBusinessSchemaPlanHandler.php", "service_calls": ["->createPlan("], "ui_markers": ["action=\"/administrator/business-schema-plans/plan\""], "capabilities": ["business.schema.plan"], "conditions": ["published definition"], "response": "303 summary tab"},
+          "new": {"route": "schema.plan", "payload": "schema.plan", "handler_file": "src/BusinessSchema/Delivery/Administrator/CreateBusinessSchemaPlanHandler.php", "service_calls": ["->createPlan("], "ui_markers": ["action=\"/administrator/business-schema-plans/plan\""], "capabilities": ["business.schema.plan"], "conditions": ["published definition"], "response": "303 summary tab"}
+        },
+        {
+          "id": "schema.approve",
+          "old": {"route": "schema.approve", "payload": "schema.approve", "handler_file": "src/BusinessSchema/Delivery/Administrator/ApproveBusinessSchemaPlanHandler.php", "service_calls": ["->plan(", "->approve(", "$this->credentials->assertCurrentPassword("], "ui_markers": ["/approve\" method=\"post\"", "Approve unchanged plan"], "capabilities": ["business.schema.approve"], "conditional_capabilities": [{"code": "business.schema.destructive", "when": "risk is destructive"}], "conditions": ["pending_approval", "high-impact checksum and password", "qualifying recovery evidence when required"], "response": "303 approval tab"},
+          "new": {"route": "schema.approve", "payload": "schema.approve", "handler_file": "src/BusinessSchema/Delivery/Administrator/ApproveBusinessSchemaPlanHandler.php", "service_calls": ["->plan(", "->approve(", "$this->credentials->assertCurrentPassword("], "ui_markers": ["/approve\" method=\"post\"", "Approve unchanged plan"], "capabilities": ["business.schema.approve"], "conditional_capabilities": [{"code": "business.schema.destructive", "when": "risk is destructive"}], "conditions": ["pending_approval", "high-impact checksum and password", "qualifying recovery evidence when required"], "response": "303 approval tab"}
+        },
+        {
+          "id": "schema.execute",
+          "old": {"route": "schema.execute", "payload": "schema.execute-recover", "handler_file": "src/BusinessSchema/Delivery/Administrator/ExecuteBusinessSchemaPlanHandler.php", "service_calls": ["->execute("], "ui_markers": ["/execute\" method=\"post\"", "Execute approved plan"], "capabilities": ["business.schema.execute"], "conditional_capabilities": [{"code": "business.schema.destructive", "when": "executor evaluates a destructive plan"}], "conditions": ["approved"], "response": "303 execution tab"},
+          "new": {"route": "schema.execute", "payload": "schema.execute-recover", "handler_file": "src/BusinessSchema/Delivery/Administrator/ExecuteBusinessSchemaPlanHandler.php", "service_calls": ["->execute("], "ui_markers": ["/execute\" method=\"post\"", "Execute approved plan"], "capabilities": ["business.schema.execute"], "conditional_capabilities": [{"code": "business.schema.destructive", "when": "executor evaluates a destructive plan"}], "conditions": ["approved"], "response": "303 execution tab"}
+        },
+        {
+          "id": "schema.record-evidence",
+          "old": {"route": "schema.evidence", "payload": "schema.evidence", "handler_file": "src/BusinessSchema/Delivery/Administrator/RecordBusinessSchemaRecoveryEvidenceHandler.php", "service_calls": ["->recordRecoveryEvidence(", "$this->credentials->assertCurrentPassword("], "ui_markers": ["action=\"/administrator/business-schema-plans/recovery-evidence\"", "Record recovery evidence"], "capabilities": ["business.schema.recover"], "conditions": ["installed source schema", "all four clean-target proofs", "current-password step-up"], "response": "303 with evidence id and active tab"},
+          "new": {"route": "schema.evidence", "payload": "schema.evidence", "handler_file": "src/BusinessSchema/Delivery/Administrator/RecordBusinessSchemaRecoveryEvidenceHandler.php", "service_calls": ["->recordRecoveryEvidence(", "$this->credentials->assertCurrentPassword("], "ui_markers": ["action=\"/administrator/business-schema-plans/recovery-evidence\"", "Record recovery evidence"], "capabilities": ["business.schema.recover"], "conditions": ["installed source schema", "all four clean-target proofs", "current-password step-up"], "response": "303 with evidence id and active tab"}
+        },
+        {
+          "id": "schema.recover",
+          "old": {"route": "schema.recover", "payload": "schema.execute-recover", "handler_file": "src/BusinessSchema/Delivery/Administrator/RecoverBusinessSchemaPlanHandler.php", "service_calls": ["->recover("], "ui_markers": ["/recover\" method=\"post\"", "Start recovery"], "capabilities": ["business.schema.recover"], "conditions": ["failed or recovery_required", "durable journal remains valid"], "response": "303 recovery tab"},
+          "new": {"route": "schema.recover", "payload": "schema.execute-recover", "handler_file": "src/BusinessSchema/Delivery/Administrator/RecoverBusinessSchemaPlanHandler.php", "service_calls": ["->recover("], "ui_markers": ["/recover\" method=\"post\"", "Start recovery"], "capabilities": ["business.schema.recover"], "conditions": ["failed or recovery_required", "durable journal remains valid"], "response": "303 recovery tab"}
+        },
+        {
+          "id": "schema.purge",
+          "old": {"route": "schema.purge", "payload": "schema.purge", "handler_file": "src/BusinessSchema/Delivery/Administrator/CreateBusinessSchemaPurgePlanHandler.php", "service_calls": ["->createPurgePlan(", "$this->credentials->assertCurrentPassword("], "ui_markers": ["action=\"/administrator/business-schema-plans/purge\"", "Create purge plan"], "capabilities": ["business.schema.destructive"], "conditions": ["installation exists", "typed exact definition id", "current-password step-up"], "response": "303 recovery tab"},
+          "new": {"route": "schema.purge", "payload": "schema.purge", "handler_file": "src/BusinessSchema/Delivery/Administrator/CreateBusinessSchemaPurgePlanHandler.php", "service_calls": ["->createPurgePlan(", "$this->credentials->assertCurrentPassword("], "ui_markers": ["action=\"/administrator/business-schema-plans/purge\"", "Create purge plan"], "capabilities": ["business.schema.destructive"], "conditions": ["installation exists", "typed exact definition id", "current-password step-up"], "response": "303 recovery tab"}
+        }
+      ],
+      "payloads": [
+        {
+          "id": "schema.plan",
+          "old": {"transport": "form", "encoding": "application/x-www-form-urlencoded", "fields": ["_csrf", "return_tab", "definition_id"], "evidence": [{"path": "src/BusinessSchema/Delivery/Administrator/CreateBusinessSchemaPlanHandler.php", "contains": "AdministratorRequest::required($form, 'definition_id')"}]},
+          "new": {"transport": "form", "encoding": "application/x-www-form-urlencoded", "fields": ["_csrf", "return_tab", "definition_id"], "evidence": [{"path": "src/BusinessSchema/Delivery/Administrator/CreateBusinessSchemaPlanHandler.php", "contains": "AdministratorRequest::required($form, 'definition_id')"}]}
+        },
+        {
+          "id": "schema.approve",
+          "old": {"transport": "form", "encoding": "application/x-www-form-urlencoded", "fields": ["_csrf", "return_tab", "expected_checksum", "recovery_evidence_id", "confirmation", "current_password"], "conditional": ["recovery_evidence_id", "confirmation", "current_password"], "evidence": [{"path": "src/BusinessSchema/Delivery/Administrator/ApproveBusinessSchemaPlanHandler.php", "contains": "AdministratorRequest::required($form, 'expected_checksum')"}, {"path": "src/BusinessSchema/Delivery/Administrator/ApproveBusinessSchemaPlanHandler.php", "contains": "BusinessSchemaAdministratorRequest::optional($form, 'recovery_evidence_id')"}, {"path": "src/BusinessSchema/Delivery/Administrator/ApproveBusinessSchemaPlanHandler.php", "contains": "BusinessSchemaAdministratorRequest::optional($form, 'current_password')"}]},
+          "new": {"transport": "form", "encoding": "application/x-www-form-urlencoded", "fields": ["_csrf", "return_tab", "expected_checksum", "recovery_evidence_id", "confirmation", "current_password"], "conditional": ["recovery_evidence_id", "confirmation", "current_password"], "evidence": [{"path": "src/BusinessSchema/Delivery/Administrator/ApproveBusinessSchemaPlanHandler.php", "contains": "AdministratorRequest::required($form, 'expected_checksum')"}, {"path": "src/BusinessSchema/Delivery/Administrator/ApproveBusinessSchemaPlanHandler.php", "contains": "BusinessSchemaAdministratorRequest::optional($form, 'recovery_evidence_id')"}, {"path": "src/BusinessSchema/Delivery/Administrator/ApproveBusinessSchemaPlanHandler.php", "contains": "BusinessSchemaAdministratorRequest::optional($form, 'current_password')"}]}
+        },
+        {
+          "id": "schema.execute-recover",
+          "old": {"transport": "form", "encoding": "application/x-www-form-urlencoded", "fields": ["_csrf", "return_tab"], "evidence": [{"path": "src/BusinessSchema/Delivery/Administrator/ExecuteBusinessSchemaPlanHandler.php", "contains": "BusinessSchemaAdministratorRequest::activeTab($form['return_tab'] ?? null, 'execution')"}, {"path": "src/BusinessSchema/Delivery/Administrator/RecoverBusinessSchemaPlanHandler.php", "contains": "BusinessSchemaAdministratorRequest::activeTab($form['return_tab'] ?? null, 'recovery')"}]},
+          "new": {"transport": "form", "encoding": "application/x-www-form-urlencoded", "fields": ["_csrf", "return_tab"], "evidence": [{"path": "src/BusinessSchema/Delivery/Administrator/ExecuteBusinessSchemaPlanHandler.php", "contains": "BusinessSchemaAdministratorRequest::activeTab($form['return_tab'] ?? null, 'execution')"}, {"path": "src/BusinessSchema/Delivery/Administrator/RecoverBusinessSchemaPlanHandler.php", "contains": "BusinessSchemaAdministratorRequest::activeTab($form['return_tab'] ?? null, 'recovery')"}]}
+        },
+        {
+          "id": "schema.evidence",
+          "old": {"transport": "form", "encoding": "application/x-www-form-urlencoded", "fields": ["_csrf", "return_tab", "plan_id", "backup_manifest_checksum", "backup_created_at", "verified_at", "drill_reference", "restore_target_reference", "client_version", "current_password", "clean_target_restore", "blueprint_checksum_verified", "typed_command_verified", "record_revision_audit_checksums_verified"], "evidence": [{"path": "src/BusinessSchema/Delivery/Administrator/RecordBusinessSchemaRecoveryEvidenceHandler.php", "contains": "AdministratorRequest::required($form, 'plan_id')"}, {"path": "src/BusinessSchema/Delivery/Administrator/RecordBusinessSchemaRecoveryEvidenceHandler.php", "contains": "BusinessSchemaAdministratorRequest::date($form, 'backup_created_at')"}, {"path": "src/BusinessSchema/Delivery/Administrator/RecordBusinessSchemaRecoveryEvidenceHandler.php", "contains": "'record_revision_audit_checksums_verified'"}]},
+          "new": {"transport": "form", "encoding": "application/x-www-form-urlencoded", "fields": ["_csrf", "return_tab", "plan_id", "backup_manifest_checksum", "backup_created_at", "verified_at", "drill_reference", "restore_target_reference", "client_version", "current_password", "clean_target_restore", "blueprint_checksum_verified", "typed_command_verified", "record_revision_audit_checksums_verified"], "evidence": [{"path": "src/BusinessSchema/Delivery/Administrator/RecordBusinessSchemaRecoveryEvidenceHandler.php", "contains": "AdministratorRequest::required($form, 'plan_id')"}, {"path": "src/BusinessSchema/Delivery/Administrator/RecordBusinessSchemaRecoveryEvidenceHandler.php", "contains": "BusinessSchemaAdministratorRequest::date($form, 'backup_created_at')"}, {"path": "src/BusinessSchema/Delivery/Administrator/RecordBusinessSchemaRecoveryEvidenceHandler.php", "contains": "'record_revision_audit_checksums_verified'"}]}
+        },
+        {
+          "id": "schema.purge",
+          "old": {"transport": "form", "encoding": "application/x-www-form-urlencoded", "fields": ["_csrf", "return_tab", "definition_id", "confirmation", "current_password"], "evidence": [{"path": "src/BusinessSchema/Delivery/Administrator/CreateBusinessSchemaPurgePlanHandler.php", "contains": "AdministratorRequest::required($form, 'definition_id')"}, {"path": "src/BusinessSchema/Delivery/Administrator/CreateBusinessSchemaPurgePlanHandler.php", "contains": "AdministratorRequest::required($form, 'confirmation')"}, {"path": "src/BusinessSchema/Delivery/Administrator/CreateBusinessSchemaPurgePlanHandler.php", "contains": "BusinessSchemaAdministratorRequest::optional($form, 'current_password')"}]},
+          "new": {"transport": "form", "encoding": "application/x-www-form-urlencoded", "fields": ["_csrf", "return_tab", "definition_id", "confirmation", "current_password"], "evidence": [{"path": "src/BusinessSchema/Delivery/Administrator/CreateBusinessSchemaPurgePlanHandler.php", "contains": "AdministratorRequest::required($form, 'definition_id')"}, {"path": "src/BusinessSchema/Delivery/Administrator/CreateBusinessSchemaPurgePlanHandler.php", "contains": "AdministratorRequest::required($form, 'confirmation')"}, {"path": "src/BusinessSchema/Delivery/Administrator/CreateBusinessSchemaPurgePlanHandler.php", "contains": "BusinessSchemaAdministratorRequest::optional($form, 'current_password')"}]}
+        }
+      ],
+      "input_inventory": [
+        {
+          "id": "rendered-input-names",
+          "old": ["_csrf", "backup_created_at", "backup_manifest_checksum", "blueprint_checksum_verified", "clean_target_restore", "client_version", "confirmation", "current_password", "definition_id", "drill_reference", "expected_checksum", "plan_id", "record_revision_audit_checksums_verified", "recovery_evidence_id", "restore_target_reference", "return_tab", "typed_command_verified", "verified_at"],
+          "new": ["_csrf", "backup_created_at", "backup_manifest_checksum", "blueprint_checksum_verified", "clean_target_restore", "client_version", "confirmation", "current_password", "definition_id", "drill_reference", "expected_checksum", "plan_id", "record_revision_audit_checksums_verified", "recovery_evidence_id", "restore_target_reference", "return_tab", "typed_command_verified", "verified_at"]
+        }
+      ],
+      "invariants": [
+        {
+          "id": "application-authorization",
+          "old": {"guarantee": "Route capability checks are repeated by BusinessSchemaService or the executor; hidden controls never grant authority.", "evidence": [{"path": "src/BusinessSchema/Application/BusinessSchemaService.php", "contains": "$this->authorization->assertAllowed("}]},
+          "new": {"guarantee": "Route capability checks are repeated by BusinessSchemaService or the executor; hidden controls never grant authority.", "evidence": [{"path": "src/BusinessSchema/Application/BusinessSchemaService.php", "contains": "$this->authorization->assertAllowed("}]}
+        },
+        {
+          "id": "csrf",
+          "old": {"guarantee": "Every schema mutation route crosses AdministratorCsrfMiddleware and every form posts _csrf.", "evidence": [{"path": "src/Kernel/ContainerFactory.php", "contains": "[AdministratorCsrfMiddleware::class, ApproveBusinessSchemaPlanHandler::class]"}, {"path": "templates/administrator/business-schema-plans.twig", "contains": "name=\"_csrf\" value=\"{{ csrf }}\""}]},
+          "new": {"guarantee": "Every schema mutation route crosses AdministratorCsrfMiddleware and every form posts _csrf.", "evidence": [{"path": "src/Kernel/ContainerFactory.php", "contains": "[AdministratorCsrfMiddleware::class, ApproveBusinessSchemaPlanHandler::class]"}, {"path": "templates/administrator/business-schema-plans.twig", "contains": "name=\"_csrf\" value=\"{{ csrf }}\""}]}
+        },
+        {
+          "id": "separated-stages",
+          "old": {"guarantee": "Planning, approval, execution, evidence, recovery, and purge remain separate routes and capabilities.", "evidence": [{"path": "src/Kernel/ContainerFactory.php", "contains": "administrator.business-schema-plans.approve"}, {"path": "src/Kernel/ContainerFactory.php", "contains": "administrator.business-schema-plans.execute"}, {"path": "src/Kernel/ContainerFactory.php", "contains": "administrator.business-schema-plans.recover"}]},
+          "new": {"guarantee": "Planning, approval, execution, evidence, recovery, and purge remain separate routes and capabilities.", "evidence": [{"path": "src/Kernel/ContainerFactory.php", "contains": "administrator.business-schema-plans.approve"}, {"path": "src/Kernel/ContainerFactory.php", "contains": "administrator.business-schema-plans.execute"}, {"path": "src/Kernel/ContainerFactory.php", "contains": "administrator.business-schema-plans.recover"}]}
+        },
+        {
+          "id": "checksum-bound-approval",
+          "old": {"guarantee": "Approval re-reads the plan, requires its expected checksum, and uses constant-time comparison.", "evidence": [{"path": "src/BusinessSchema/Delivery/Administrator/ApproveBusinessSchemaPlanHandler.php", "contains": "hash_equals($plan->checksum(), $confirmation)"}, {"path": "src/BusinessSchema/Application/BusinessSchemaService.php", "contains": "hash_equals($plan->checksum(), $expectedChecksum)"}]},
+          "new": {"guarantee": "Approval re-reads the plan, requires its expected checksum, and uses constant-time comparison.", "evidence": [{"path": "src/BusinessSchema/Delivery/Administrator/ApproveBusinessSchemaPlanHandler.php", "contains": "hash_equals($plan->checksum(), $confirmation)"}, {"path": "src/BusinessSchema/Application/BusinessSchemaService.php", "contains": "hash_equals($plan->checksum(), $expectedChecksum)"}]}
+        },
+        {
+          "id": "step-up-boundaries",
+          "old": {"guarantee": "High-impact approval, evidence recording, and purge planning require current-password step-up at the action boundary.", "evidence": [{"path": "src/BusinessSchema/Delivery/Administrator/ApproveBusinessSchemaPlanHandler.php", "contains": "$this->credentials->assertCurrentPassword("}, {"path": "src/BusinessSchema/Delivery/Administrator/RecordBusinessSchemaRecoveryEvidenceHandler.php", "contains": "$this->credentials->assertCurrentPassword("}, {"path": "src/BusinessSchema/Delivery/Administrator/CreateBusinessSchemaPurgePlanHandler.php", "contains": "$this->credentials->assertCurrentPassword("}]},
+          "new": {"guarantee": "High-impact approval, evidence recording, and purge planning require current-password step-up at the action boundary.", "evidence": [{"path": "src/BusinessSchema/Delivery/Administrator/ApproveBusinessSchemaPlanHandler.php", "contains": "$this->credentials->assertCurrentPassword("}, {"path": "src/BusinessSchema/Delivery/Administrator/RecordBusinessSchemaRecoveryEvidenceHandler.php", "contains": "$this->credentials->assertCurrentPassword("}, {"path": "src/BusinessSchema/Delivery/Administrator/CreateBusinessSchemaPurgePlanHandler.php", "contains": "$this->credentials->assertCurrentPassword("}]}
+        },
+        {
+          "id": "destructive-capability",
+          "old": {"guarantee": "Destructive planning is separately routed and destructive approval is re-authorized by the service.", "evidence": [{"path": "src/BusinessSchema/Application/BusinessSchemaService.php", "contains": "if ($plan->risk === SchemaRisk::Destructive)"}, {"path": "src/BusinessSchema/Application/BusinessSchemaService.php", "contains": "$this->authorize($context, 'business.schema.destructive')"}]},
+          "new": {"guarantee": "Destructive planning is separately routed and destructive approval is re-authorized by the service.", "evidence": [{"path": "src/BusinessSchema/Application/BusinessSchemaService.php", "contains": "if ($plan->risk === SchemaRisk::Destructive)"}, {"path": "src/BusinessSchema/Application/BusinessSchemaService.php", "contains": "$this->authorize($context, 'business.schema.destructive')"}]}
+        },
+        {
+          "id": "trusted-recovery-evidence",
+          "old": {"guarantee": "Recovery evidence is source-checksum, site, engine, server-version, release, actor, proof, and freshness bound.", "evidence": [{"path": "src/BusinessSchema/Application/BusinessSchemaService.php", "contains": "$this->assertTrustedEvidence($context, $evidence, false)"}, {"path": "src/BusinessSchema/Application/BusinessSchemaService.php", "contains": "new DateInterval('P7D')"}, {"path": "src/BusinessSchema/Delivery/Administrator/RecordBusinessSchemaRecoveryEvidenceHandler.php", "contains": "record_revision_audit_checksums_verified"}]},
+          "new": {"guarantee": "Recovery evidence is source-checksum, site, engine, server-version, release, actor, proof, and freshness bound.", "evidence": [{"path": "src/BusinessSchema/Application/BusinessSchemaService.php", "contains": "$this->assertTrustedEvidence($context, $evidence, false)"}, {"path": "src/BusinessSchema/Application/BusinessSchemaService.php", "contains": "new DateInterval('P7D')"}, {"path": "src/BusinessSchema/Delivery/Administrator/RecordBusinessSchemaRecoveryEvidenceHandler.php", "contains": "record_revision_audit_checksums_verified"}]}
+        },
+        {
+          "id": "journal-fence-lock",
+          "old": {"guarantee": "Execution and recovery stay behind the physical executor's lock, fence, journal, and checksum postconditions.", "evidence": [{"path": "src/BusinessSchema/Application/BusinessSchemaService.php", "contains": "$this->executor->execute($context, $planId)"}, {"path": "src/BusinessSchema/Application/BusinessSchemaService.php", "contains": "$this->executor->recover($context, $planId)"}]},
+          "new": {"guarantee": "Execution and recovery stay behind the physical executor's lock, fence, journal, and checksum postconditions.", "evidence": [{"path": "src/BusinessSchema/Application/BusinessSchemaService.php", "contains": "$this->executor->execute($context, $planId)"}, {"path": "src/BusinessSchema/Application/BusinessSchemaService.php", "contains": "$this->executor->recover($context, $planId)"}]}
+        },
+        {
+          "id": "transactional-audit",
+          "old": {"guarantee": "Approval and evidence writes commit with their audit records in one transaction.", "evidence": [{"path": "src/BusinessSchema/Application/BusinessSchemaService.php", "contains": "$this->transactions->transactional("}, {"path": "src/BusinessSchema/Application/BusinessSchemaService.php", "contains": "business.schema.recovery_evidence.record"}]},
+          "new": {"guarantee": "Approval and evidence writes commit with their audit records in one transaction.", "evidence": [{"path": "src/BusinessSchema/Application/BusinessSchemaService.php", "contains": "$this->transactions->transactional("}, {"path": "src/BusinessSchema/Application/BusinessSchemaService.php", "contains": "business.schema.recovery_evidence.record"}]}
+        },
+        {
+          "id": "post-redirect-get",
+          "old": {"guarantee": "Every schema mutation answers 303 with a selected plan, fixed notice key, and bounded contextual tab.", "evidence": [{"path": "src/BusinessSchema/Delivery/Administrator/BusinessSchemaAdministratorRequest.php", "contains": "public static function redirect("}, {"path": "src/BusinessSchema/Delivery/Administrator/BusinessSchemaAdministratorRequest.php", "contains": "public static function activeTab("}]},
+          "new": {"guarantee": "Every schema mutation answers 303 with a selected plan, fixed notice key, and bounded contextual tab.", "evidence": [{"path": "src/BusinessSchema/Delivery/Administrator/BusinessSchemaAdministratorRequest.php", "contains": "public static function redirect("}, {"path": "src/BusinessSchema/Delivery/Administrator/BusinessSchemaAdministratorRequest.php", "contains": "public static function activeTab("}]}
+        }
+      ],
+      "no_javascript": [
+        {
+          "id": "server-panels-stacked",
+          "old": {"guarantee": "All six plan task panels render before enhancement and remain visible without JavaScript.", "evidence": [{"path": "templates/administrator/business-schema-plans.twig", "contains": "@kis/tab-panel.twig"}, {"path": "tests/Browser/administrator.spec.ts", "contains": "await expect(page.locator('[data-kis-tab-panel]')).toHaveCount(6)"}, {"path": "tests/Browser/administrator.spec.ts", "contains": "javaScriptEnabled: false"}], "forbidden": [{"path": "templates/administrator/business-schema-plans.twig", "contains": "hidden data-kis-tab-panel"}, {"path": "templates/administrator/business-schema-plans.twig", "contains": "style=\"display: none"}]},
+          "new": {"guarantee": "All six plan task panels render before enhancement and remain visible without JavaScript.", "evidence": [{"path": "templates/administrator/business-schema-plans.twig", "contains": "@kis/tab-panel.twig"}, {"path": "tests/Browser/administrator.spec.ts", "contains": "await expect(page.locator('[data-kis-tab-panel]')).toHaveCount(6)"}, {"path": "tests/Browser/administrator.spec.ts", "contains": "javaScriptEnabled: false"}], "forbidden": [{"path": "templates/administrator/business-schema-plans.twig", "contains": "hidden data-kis-tab-panel"}, {"path": "templates/administrator/business-schema-plans.twig", "contains": "style=\"display: none"}]}
+        },
+        {
+          "id": "url-addressable-tabs",
+          "old": {"guarantee": "Summary, operations, approval, execution, recovery, and history are bounded real links preserving plan/evidence context.", "evidence": [{"path": "src/BusinessSchema/Delivery/Administrator/BusinessSchemaPlansHandler.php", "contains": "'href' => '/administrator/business-schema-plans?'"}, {"path": "src/BusinessSchema/Delivery/Administrator/BusinessSchemaAdministratorRequest.php", "contains": "public const TABS = ['summary', 'operations', 'approval', 'execution', 'recovery', 'history']"}]},
+          "new": {"guarantee": "Summary, operations, approval, execution, recovery, and history are bounded real links preserving plan/evidence context.", "evidence": [{"path": "src/BusinessSchema/Delivery/Administrator/BusinessSchemaPlansHandler.php", "contains": "'href' => '/administrator/business-schema-plans?'"}, {"path": "src/BusinessSchema/Delivery/Administrator/BusinessSchemaAdministratorRequest.php", "contains": "public const TABS = ['summary', 'operations', 'approval', 'execution', 'recovery', 'history']"}]}
+        },
+        {
+          "id": "native-form-completion",
+          "old": {"guarantee": "Plan, approval, execution, evidence, recovery, and purge forms submit with native HTML and server redirects.", "evidence": [{"path": "templates/administrator/business-schema-plans.twig", "contains": "method=\"post\""}, {"path": "tests/Browser/administrator.spec.ts", "contains": "for (const panel of await page.locator('[data-kis-tab-panel]').all())"}]},
+          "new": {"guarantee": "Plan, approval, execution, evidence, recovery, and purge forms submit with native HTML and server redirects.", "evidence": [{"path": "templates/administrator/business-schema-plans.twig", "contains": "method=\"post\""}, {"path": "tests/Browser/administrator.spec.ts", "contains": "for (const panel of await page.locator('[data-kis-tab-panel]').all())"}]}
+        }
+      ]
+    }
+  ]
+}
