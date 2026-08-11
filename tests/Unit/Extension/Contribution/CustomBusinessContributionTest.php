@@ -5,7 +5,11 @@ declare(strict_types=1);
 namespace Kumwe\CMS\Tests\Unit\Extension\Contribution;
 
 use InvalidArgumentException;
+use Kumwe\CMS\BusinessDefinition\Application\FieldTypeRegistry;
+use Kumwe\CMS\BusinessDefinition\Domain\CanonicalDefinitionJson;
+use Kumwe\CMS\BusinessDefinition\Domain\DefinitionOwner;
 use Kumwe\CMS\BusinessDefinition\Domain\EntityTypeDefinition;
+use Kumwe\CMS\BusinessDefinition\Domain\FieldTypeDefinition;
 use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessActionCommand;
 use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessActionContract;
 use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessActionHandler;
@@ -61,18 +65,24 @@ final class CustomBusinessContributionTest extends TestCase
         $registrar->customBusinessActionHandler($declared->customBusinessActions()[0], self::actionHandler());
         $registrar->complete();
 
+        $inventory = $registries->inventory($owner);
         self::assertSame(
             $roundTrip,
             ManifestContributionSet::fromManifest($extension, $roundTrip)->toArray(),
         );
         self::assertSame(
+            $declared->businessDefinitions()[0]->toArray(),
+            $inventory['business']['definitions'][0],
+        );
+        self::assertSame(
             'acme.editor.views.summary',
-            $registries->inventory($owner)['business']['view_handlers'][0]['handler'],
+            $inventory['business']['view_handlers'][0]['handler'],
         );
         self::assertSame(
             'acme.editor.actions.recalculate',
-            $registries->inventory($owner)['business']['action_handlers'][0]['handler'],
+            $inventory['business']['action_handlers'][0]['handler'],
         );
+        self::assertJson(CanonicalDefinitionJson::encode($inventory));
         self::assertNotNull($registries->customBusinessViewHandlers()->contract(
             $declared->businessDefinitions()[0]->owner,
             'acme.editor.views.summary',
@@ -88,6 +98,33 @@ final class CustomBusinessContributionTest extends TestCase
             'acme.editor.views.summary',
             'acme.editor.schemas.summary_v1',
         ));
+    }
+
+    /**
+     * Proves field-type inventory exports canonical documents rather than leaking domain objects.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testFieldTypeInventoryExportsCanonicalDocuments(): void
+    {
+        $owner = ContributionOwner::extension('acme/editor');
+        $definitionOwner = DefinitionOwner::extension('acme/editor');
+        $definition = new FieldTypeDefinition(
+            'acme.editor.reference',
+            'Editor reference',
+            'A stable reference owned by the editor extension.',
+            'reference',
+            'guid',
+        );
+        $registry = new FieldTypeRegistry(withCore: false);
+        $registry->register($definitionOwner, $definition);
+
+        $inventory = BusinessContributionSurface::forFieldTypes($registry)->ownedBy($owner);
+
+        self::assertSame([$definition->toArray()], $inventory);
+        self::assertJson(CanonicalDefinitionJson::encode($inventory));
     }
 
     /**
