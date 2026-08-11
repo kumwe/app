@@ -306,7 +306,7 @@ final readonly class ManifestContributionSet
      * @param   iterable<ReportDefinition>                   $reports                Safe report definitions.
      * @param   iterable<WebhookContributionDefinition>      $webhooks               Outbound adapter declarations.
      * @param   int                                          $spiVersion             Contribution SPI revision.
-     * @param   iterable<SurfaceDefinition>                   $interfaceSurfaces      KIS semantic surfaces.
+     * @param   iterable<SurfaceDefinition>                  $interfaceSurfaces      KIS semantic surfaces.
      *
      * @throws  InvalidArgumentException  When an identifier is outside the owner's namespace or declared twice,
      *          navigation or a route references something this set does not declare, a business definition

@@ -37,20 +37,20 @@ final readonly class AdministratorNavigationDefinition implements ContributionDe
     /**
      * Validate a contributed menu entry and normalize its capability.
      *
-     * @param   string  $id           Dot-separated identifier of the entry, which its contributing
+     * @param   string   $id           Dot-separated identifier of the entry, which its contributing
      *          extension must own.
-     * @param   string  $workspace    Dot-separated identifier of the workspace the entry is grouped under.
-     * @param   string  $label        Menu text, 1 to 80 characters.
-     * @param   string  $description  Sentence shown with the label, 1 to 255 characters.
-     * @param   string  $path         Absolute path of lowercase segments; an extension's entry is later
+     * @param   string   $workspace    Dot-separated identifier of the workspace the entry is grouped under.
+     * @param   string   $label        Menu text, 1 to 80 characters.
+     * @param   string   $description  Sentence shown with the label, 1 to 255 characters.
+     * @param   string   $path         Absolute path of lowercase segments; an extension's entry is later
      *          re-rooted under its own `/administrator/extensions/...` prefix.
-     * @param   string  $icon         Lowercase icon name the administrator theme resolves.
-     * @param   string  $capability   Capability required to see the entry, stored normalized in
+     * @param   string   $icon         Lowercase icon name the administrator theme resolves.
+     * @param   string   $capability   Capability required to see the entry, stored normalized in
      *          `$this->capability`.
-     * @param   int     $priority     Sort weight within the workspace, 0 to 100000, lower shown first.
-     * @param   string  $keywords     Extra search terms, up to 500 characters; empty when the label and
+     * @param   int      $priority     Sort weight within the workspace, 0 to 100000, lower shown first.
+     * @param   string   $keywords     Extra search terms, up to 500 characters; empty when the label and
      *          description already carry them.
-     * @param   ?string $surface      Stable KIS surface identifier, or null for a legacy pre-KIS package.
+     * @param   ?string  $surface      Stable KIS surface identifier, or null for a legacy pre-KIS package.
      *
      * @throws  InvalidArgumentException  When the entry or workspace identifier is not dotted lowercase,
      *          the capability is not a valid capability name, the label, description,

@@ -95,8 +95,8 @@ final readonly class SurfaceConformanceValidator
     /**
      * Enforce separation between the human actor and the shell or template delivery area.
      *
-     * @param   SurfaceDeclaration               $declaration  Candidate under evaluation.
-     * @param   list<ConformanceDiagnostic>      $diagnostics  Accumulated findings.
+     * @param   SurfaceDeclaration           $declaration  Candidate under evaluation.
+     * @param   list<ConformanceDiagnostic>  $diagnostics  Accumulated findings.
      *
      * @return  void
      *

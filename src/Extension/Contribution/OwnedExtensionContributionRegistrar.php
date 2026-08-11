@@ -338,7 +338,7 @@ final class OwnedExtensionContributionRegistrar implements ExtensionContribution
      * @return  void
      *
      * @throws  InvalidArgumentException  When ownership, manifest equality, or uniqueness fails.
-     * @throws  \LogicException             When the contribution phase has already closed.
+     * @throws  \LogicException  When the contribution phase has already closed.
      *
      * @since   2.0.0
      */
