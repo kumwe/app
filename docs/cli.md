@@ -42,12 +42,15 @@ The content selector accepts only `documentation`, `placeholder`, or `blank`; th
 boolean. `documentation` plus `true` is the default. Use `blank` plus `false` before migrating a new database for an
 empty start.
 
-The first reconciliation persists each selection. Every later invocation, including production's one-shot `migrate`
-service, must receive the same values. A different value fails instead of switching profiles. Restore the original
-configuration and rerun the command after an accidental mismatch. Released manifest versions are safe to reconcile
-again: an untouched fixture can advance, while a resource changed through Kumwe remains preserved. Profiles carry no
-credentials; create administrators, ordinary users, tokens, and passwords through their dedicated commands and
-interfaces.
+Each dataset's choice is frozen independently when its first reconciliation passes validation and begins. Once
+recorded, a later failure does not release it. Every later invocation, including production's one-shot `migrate`
+service, must receive the same value for that dataset. A different value fails instead of switching profiles. Restore
+the original configuration and rerun the command after an accidental mismatch. Released site-content manifests
+reconcile repeatably: untouched fixtures may advance or retire, while customized fixtures remain untouched. VDM
+definitions may advance only while untouched. Operators may edit runtime records normally; applied VDM manifest
+create, relation, action, archive, and policy checkpoints are immutable, and later manifests may append new operations
+but may not rewrite or remove an applied fixture. Profiles carry no credentials; create administrators, ordinary users,
+tokens, and passwords through their dedicated commands and interfaces.
 
 Migrations use a database-session advisory lock plus a compatibility row. During an upgrade from a build that only
 used the expiring row lock, stop every older application, worker, and scheduler before migrating. If an older process

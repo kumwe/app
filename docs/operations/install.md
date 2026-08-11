@@ -54,12 +54,15 @@ export KUMWE_BUSINESS_DEMO=false
 bootstrap: no option creates a user, password, token, or secret. Create every production identity explicitly, as in
 step 3 below.
 
-The first successful profile reconciliation freezes both independent choices in the database. Keep them stable in
-the service environment for every subsequent migration. A mismatch is refused so an upgrade cannot silently switch
-datasets. To recover from an accidental configuration change, restore the original values and rerun the migration;
+Each dataset's choice is frozen independently when its first reconciliation passes validation and begins. Once
+recorded, a later failure does not release it. Keep each recorded value stable in the service environment for every
+subsequent migration. A mismatch is refused so an upgrade cannot silently switch datasets. To recover from an
+accidental configuration change, restore the original values and rerun the migration;
 customize installed examples through the normal administrator and business services instead of changing selectors.
-On later releases, only fixtures still matching Kumwe's last-applied checksum are advanced. Operator changes are
-preserved.
+On later releases, untouched site-content fixtures may advance or retire while operator changes remain untouched. VDM
+definitions may advance only while untouched. Operators may edit runtime records normally; applied VDM manifest
+create, relation, action, archive, and policy checkpoints are immutable, and later manifests may append new operations
+but may not rewrite or remove an applied fixture.
 
 ### 2. Validate and start
 

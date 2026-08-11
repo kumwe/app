@@ -20,9 +20,10 @@ use Throwable;
  *
  * The profile installer is repeatable application work rather than a schema migration. This store is its
  * restart boundary: the selected profile is frozen per dataset, each generated resource is mapped back to
- * a stable fixture key, and the canonical state last written by Kumwe is retained so a later release can
- * distinguish an untouched sample from an operator's customization. A session advisory lock surrounds a
- * full installation pass, including service calls that open their own transactions.
+ * a stable fixture key, and the canonical state last written by Kumwe supports the reconciliation policy
+ * chosen by that dataset. Content and VDM definitions use it to detect customization; applied business
+ * operations and policies use it as an immutable append-only checkpoint. A session advisory lock surrounds
+ * a full installation pass, including service calls that open their own transactions.
  *
  * @since  2.0.0
  */
@@ -331,7 +332,8 @@ final readonly class DoctrineDemoProfileLedger implements DemoProfileLedger
      * @param   string                $fixtureKey    Stable manifest fixture key.
      * @param   string                $resourceType  Closed resource noun used for diagnostics.
      * @param   string                $resourceId    Actual UUID or stable identifier returned by the service.
-     * @param   string                $checksum      Canonical checksum of `$state`.
+     * @param   string                $checksum      Canonical fixture baseline checksum; mutable resources
+     *          fingerprint `$state`, while immutable operations fingerprint `$state['request']`.
      * @param   int                   $version       Resource version observed after reconciliation.
      * @param   array<string, mixed>  $state         Canonical, non-secret authored state last applied.
      *

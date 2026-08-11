@@ -255,6 +255,7 @@ use Kumwe\CMS\Content\Infrastructure\Persistence\DoctrineContentRepository;
 use Kumwe\CMS\Demo\Application\DemoProfileLedger;
 use Kumwe\CMS\Demo\Application\DemoProfileReconciler;
 use Kumwe\CMS\Demo\Application\VdmBusinessManifestProjector;
+use Kumwe\CMS\Demo\Application\VdmBusinessOperationGuard;
 use Kumwe\CMS\Demo\Infrastructure\DemoContentProfileInstaller;
 use Kumwe\CMS\Demo\Infrastructure\DemoProfileInstaller;
 use Kumwe\CMS\Demo\Infrastructure\FilesystemDemoManifestCatalog;
@@ -4385,6 +4386,7 @@ final class ContainerFactory
             self::service($container, BusinessSchemaService::class),
             self::service($container, BusinessRecordService::class),
             new VdmBusinessManifestProjector(),
+            new VdmBusinessOperationGuard(),
             self::service($container, DemoProfileLedger::class),
             self::service($container, Connection::class),
             self::service($container, TableNames::class),
