@@ -45,7 +45,7 @@ final readonly class PortalWorkspaceDefinition implements ContributionDefinition
     }
 
     /**
-     * Enforce the shared two-to-eight-segment contribution grammar.
+     * Enforce the bounded extension-compatible contribution grammar, including legacy internal dots.
      *
      * @param   string  $identifier  Candidate dotted identifier.
      * @param   string  $kind        Contribution kind named in a rejection.
@@ -58,7 +58,10 @@ final readonly class PortalWorkspaceDefinition implements ContributionDefinition
      */
     public static function assertIdentifier(string $identifier, string $kind): void
     {
-        if (preg_match('/^[a-z][a-z0-9-]*(?:\.[a-z][a-z0-9-]*){1,7}$/D', $identifier) !== 1) {
+        if (
+            strlen($identifier) > 191
+            || preg_match('/^[a-z0-9][a-z0-9._-]*\.[a-z0-9._-]*[a-z0-9]$/D', $identifier) !== 1
+        ) {
             throw new InvalidArgumentException(sprintf('A contributed portal %s identifier is invalid.', $kind));
         }
     }

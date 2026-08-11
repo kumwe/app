@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Kumwe\CMS\Extension\Contribution;
 
+use ArrayObject;
 use Kumwe\CMS\Administrator\Navigation\AdministratorNavigationRegistry;
 use Kumwe\CMS\Application\Authorization\AuthorizationPolicyRegistry;
 use Kumwe\CMS\BusinessDefinition\Application\BusinessDefinitionContributionRegistry;
@@ -46,6 +47,18 @@ use Kumwe\CMS\Portal\Contribution\PortalWorkspaceRegistry;
  */
 final readonly class ExtensionContributionRegistrySet
 {
+    /**
+     * Active owner identifiers keyed by their legacy dotted contribution namespace.
+     *
+     * The object wrapper permits lifecycle mutation inside this readonly composition root. Equal or
+     * prefix-overlapping namespaces are refused before a provider can publish any definition, closing
+     * the ambiguity created by replacing the package's slash with a dot.
+     *
+     * @var    ArrayObject<string, string>
+     * @since  2.0.0
+     */
+    private ArrayObject $ownerNamespaces;
+
     /**
      * Canonical operational authorization registry populated by capability and policy contributions.
      *
@@ -287,6 +300,7 @@ final readonly class ExtensionContributionRegistrySet
         bool $withCore = true,
         ?AuthorizationPolicyRegistry $authorizationPolicies = null,
     ) {
+        $this->ownerNamespaces = new ArrayObject();
         $this->authorizationPolicies = $authorizationPolicies ?? new AuthorizationPolicyRegistry();
         $this->capabilities = new CapabilityDefinitionRegistry($this->authorizationPolicies);
         $this->resourcePolicies = new ResourcePolicyDefinitionRegistry($this->authorizationPolicies);
@@ -406,7 +420,46 @@ final readonly class ExtensionContributionRegistrySet
         if ($declared->owner->identifier() !== $owner->identifier()) {
             throw new \InvalidArgumentException('Contribution declarations do not belong to this provider.');
         }
+        $this->claimOwnerNamespace($owner);
         return new OwnedExtensionContributionRegistrar($owner, $declared, $this, $strict);
+    }
+
+    /**
+     * Reserve one unambiguous namespace for the duration of its owner's active contribution lifecycle.
+     *
+     * Dot-bearing `vendor/name` identifiers can map to the same legacy dotted namespace, and one
+     * namespace can otherwise sit beneath another owner's prefix. Either condition would make the
+     * string-prefix ownership test ambiguous, so the second distinct owner fails before registration.
+     * Reopening a phase for the same owner remains supported.
+     *
+     * @param   ContributionOwner  $owner  Owner whose provider is opening a contribution phase.
+     *
+     * @return  void
+     *
+     * @throws  \InvalidArgumentException  When another active owner has an equal or overlapping namespace.
+     *
+     * @since   2.0.0
+     */
+    private function claimOwnerNamespace(ContributionOwner $owner): void
+    {
+        $namespace = $owner->namespace();
+        foreach ($this->ownerNamespaces as $claimedNamespace => $claimedOwner) {
+            if ($claimedOwner === $owner->identifier()) {
+                continue;
+            }
+            if (
+                $namespace === $claimedNamespace
+                || str_starts_with($namespace, $claimedNamespace . '.')
+                || str_starts_with($claimedNamespace, $namespace . '.')
+            ) {
+                throw new \InvalidArgumentException(sprintf(
+                    'Extension contribution namespace %s conflicts with active owner %s.',
+                    $namespace,
+                    $claimedOwner,
+                ));
+            }
+        }
+        $this->ownerNamespaces[$namespace] = $owner->identifier();
     }
 
     /**
@@ -900,6 +953,10 @@ final readonly class ExtensionContributionRegistrySet
     {
         foreach (array_reverse($this->surfaces) as $surface) {
             $surface->remove($owner);
+        }
+        $namespace = $owner->namespace();
+        if (($this->ownerNamespaces[$namespace] ?? null) === $owner->identifier()) {
+            unset($this->ownerNamespaces[$namespace]);
         }
     }
 }

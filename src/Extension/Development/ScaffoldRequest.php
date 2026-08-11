@@ -63,11 +63,6 @@ final readonly class ScaffoldRequest
         string $version = '1.0.0',
     ) {
         $this->identifier = ExtensionIdentifier::fromString($identifier);
-        if (preg_match('#^[a-z][a-z0-9-]{0,62}/[a-z][a-z0-9-]{0,62}$#D', $this->identifier->value()) !== 1) {
-            throw new InvalidArgumentException(
-                'A scaffolded component identifier must map safely to owned contribution identifiers.',
-            );
-        }
         $this->version = SemanticVersion::fromString($version);
         if (
             strlen($phpNamespace) > 255

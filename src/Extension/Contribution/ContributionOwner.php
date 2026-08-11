@@ -21,6 +21,28 @@ use Kumwe\CMS\Extension\Domain\ExtensionIdentifier;
 final readonly class ContributionOwner
 {
     /**
+     * Contribution kinds whose identifiers use the shared graphical dotted grammar.
+     *
+     * Other typed integration identifiers retain their own established suffix syntax, including
+     * version markers such as `@1` and capability separators such as `:`.
+     *
+     * @var    list<string>
+     * @since  2.0.0
+     */
+    private const GRAPHICAL_KINDS = [
+        'interface surface',
+        'workspace',
+        'navigation',
+        'route',
+        'view',
+        'template',
+        'portal workspace',
+        'portal navigation',
+        'portal route',
+        'portal template',
+    ];
+
+    /**
      * Identifier of the one owner that is the CMS itself rather than an installed package.
      *
      * @var    string
@@ -127,14 +149,24 @@ final readonly class ContributionOwner
      */
     public function assertOwns(string $identifier, string $kind): void
     {
+        $requiresGraphicalSuffix = in_array($kind, self::GRAPHICAL_KINDS, true);
         if ($this->identifier === self::CORE) {
-            if ($kind !== 'capability' && !str_starts_with($identifier, self::CORE . '.')) {
+            if (
+                $kind !== 'capability'
+                && (
+                    !str_starts_with($identifier, self::CORE . '.')
+                    || ($requiresGraphicalSuffix && !self::hasSafeOwnedSuffix($identifier, self::CORE))
+                )
+            ) {
                 throw new InvalidArgumentException(sprintf('Core %s identifiers must use the core namespace.', $kind));
             }
             return;
         }
 
-        if (!str_starts_with($identifier, $this->namespace() . '.')) {
+        if (
+            !str_starts_with($identifier, $this->namespace() . '.')
+            || ($requiresGraphicalSuffix && !self::hasSafeOwnedSuffix($identifier, $this->namespace()))
+        ) {
             throw new InvalidArgumentException(sprintf(
                 'Extension %s cannot claim %s identifier %s.',
                 $this->identifier,
@@ -142,5 +174,26 @@ final readonly class ContributionOwner
                 $identifier,
             ));
         }
+    }
+
+    /**
+     * Require non-empty graphical segments after the exact owner namespace boundary.
+     *
+     * Repeated or trailing dots inside an extension package segment are retained in `namespace()` for
+     * compatibility with already-valid package identifiers. Only that exact owner prefix may contain
+     * them; the contribution-specific suffix remains unambiguous and cannot start, end, or repeat a dot.
+     *
+     * @param   string  $identifier  Complete contribution identifier under evaluation.
+     * @param   string  $namespace   Exact dotted namespace reserved by the expected owner.
+     *
+     * @return  bool  True when the identifier has a non-empty, unambiguous suffix.
+     *
+     * @since   2.0.0
+     */
+    private static function hasSafeOwnedSuffix(string $identifier, string $namespace): bool
+    {
+        $suffix = substr($identifier, strlen($namespace) + 1);
+
+        return preg_match('/^[a-z0-9][a-z0-9_-]*(?:\.[a-z0-9][a-z0-9_-]*)*$/D', $suffix) === 1;
     }
 }

@@ -21,7 +21,7 @@
     "icon"
   ],
   "properties": {
-    "surface": {"$ref": "#/$defs/dottedName"},
+    "surface": {"$ref": "#/$defs/surfaceIdentifier"},
     "standard": {"const": "kis-1.0"},
     "area": {"enum": ["administrator", "portal", "public", "template"]},
     "actor": {"enum": ["administrator", "portal", "public"]},
@@ -116,7 +116,45 @@
             ]
           },
           "scope": {"enum": ["site", "administrator", "role-workspace", "user"]}
-        }
+        },
+        "allOf": [
+          {
+            "if": {"properties": {"slot": {"const": "columns"}}, "required": ["slot"]},
+            "then": {"properties": {"scope": {"enum": ["administrator", "role-workspace", "user"]}}}
+          },
+          {
+            "if": {"properties": {"slot": {"const": "density"}}, "required": ["slot"]},
+            "then": {"properties": {"scope": {"enum": ["site", "administrator", "role-workspace", "user"]}}}
+          },
+          {
+            "if": {"properties": {"slot": {"const": "saved-views"}}, "required": ["slot"]},
+            "then": {"properties": {"scope": {"enum": ["administrator", "role-workspace", "user"]}}}
+          },
+          {
+            "if": {"properties": {"slot": {"const": "layout"}}, "required": ["slot"]},
+            "then": {"properties": {"scope": {"enum": ["site", "administrator"]}}}
+          },
+          {
+            "if": {"properties": {"slot": {"const": "theme-mode"}}, "required": ["slot"]},
+            "then": {"properties": {"scope": {"enum": ["site", "user"]}}}
+          },
+          {
+            "if": {"properties": {"slot": {"const": "dashboard-cards"}}, "required": ["slot"]},
+            "then": {"properties": {"scope": {"enum": ["administrator", "role-workspace", "user"]}}}
+          },
+          {
+            "if": {"properties": {"slot": {"const": "landing-workspace"}}, "required": ["slot"]},
+            "then": {"properties": {"scope": {"enum": ["administrator", "role-workspace", "user"]}}}
+          },
+          {
+            "if": {"properties": {"slot": {"const": "navigation-shortcuts"}}, "required": ["slot"]},
+            "then": {"properties": {"scope": {"enum": ["role-workspace", "user"]}}}
+          },
+          {
+            "if": {"properties": {"slot": {"const": "labels-help"}}, "required": ["slot"]},
+            "then": {"properties": {"scope": {"const": "administrator"}}}
+          }
+        ]
       }
     },
     "responsive": {
@@ -124,6 +162,8 @@
       "minItems": 1,
       "maxItems": 64,
       "uniqueItems": true,
+      "$comment": "x-kumwe-uniqueBy is the repository semantic keyword that rejects repeated responsive element identities even when priority or collapse fields differ.",
+      "x-kumwe-uniqueBy": "element",
       "items": {
         "type": "object",
         "additionalProperties": false,
@@ -149,6 +189,18 @@
     }
   },
   "allOf": [
+    {
+      "if": {"properties": {"area": {"const": "administrator"}}, "required": ["area"]},
+      "then": {"properties": {"actor": {"enum": ["administrator", "public"]}}}
+    },
+    {
+      "if": {"properties": {"area": {"const": "portal"}}, "required": ["area"]},
+      "then": {"properties": {"actor": {"enum": ["portal", "public"]}}}
+    },
+    {
+      "if": {"properties": {"area": {"const": "public"}}, "required": ["area"]},
+      "then": {"properties": {"actor": {"const": "public"}}}
+    },
     {
       "if": {"properties": {"actor": {"const": "public"}}, "required": ["actor"]},
       "then": {"properties": {"capabilities": {"maxItems": 0}}},
@@ -242,10 +294,10 @@
     }
   ],
   "$defs": {
-    "dottedName": {
+    "surfaceIdentifier": {
       "type": "string",
       "maxLength": 191,
-      "pattern": "^[a-z][a-z0-9]*(?:-?[a-z0-9]+)*(?:\\.[a-z][a-z0-9]*(?:-?[a-z0-9]+)*)+$"
+      "pattern": "^[a-z0-9][a-z0-9._-]*\\.[a-z0-9._-]*[a-z0-9]$"
     },
     "semanticName": {
       "type": "string",

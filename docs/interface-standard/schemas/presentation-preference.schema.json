@@ -4,6 +4,8 @@
   "title": "Kumwe Interface Standard 1.0 presentation preference",
   "description": "Portable, optimistic-versioned and auditable value for one customization slot explicitly allowed by a conformant surface.",
   "type": "object",
+  "$comment": "x-kumwe-ownedSurface is the repository semantic keyword that checks the exact owner namespace and a non-ambiguous contribution suffix.",
+  "x-kumwe-ownedSurface": {"owner": "owner", "surface": "surface"},
   "additionalProperties": false,
   "required": [
     "schema",
@@ -21,11 +23,11 @@
   "properties": {
     "schema": {"const": 1},
     "standard": {"const": "kis-1.0"},
-    "surface": {"$ref": "#/$defs/dottedName"},
+    "surface": {"$ref": "#/$defs/surfaceIdentifier"},
     "owner": {
       "type": "string",
-      "maxLength": 191,
-      "pattern": "^(?:core|[a-z][a-z0-9-]*/[a-z][a-z0-9-]*)$"
+      "maxLength": 127,
+      "pattern": "^(?:core|[a-z0-9][a-z0-9._-]{0,62}/[a-z0-9][a-z0-9._-]{0,62})$"
     },
     "scope": {"enum": ["site", "administrator", "role-workspace", "user"]},
     "scope_id": {
@@ -152,10 +154,13 @@
       "maxLength": 191,
       "pattern": "^[^<>{}\\u0000-\\u001f\\u007f]+$"
     },
-    "dottedName": {
+    "surfaceIdentifier": {
       "type": "string",
       "maxLength": 191,
-      "pattern": "^[a-z][a-z0-9]*(?:-?[a-z0-9]+)*(?:\\.[a-z][a-z0-9]*(?:-?[a-z0-9]+)*)+$"
+      "pattern": "^[a-z0-9][a-z0-9._-]*\\.[a-z0-9._-]*[a-z0-9]$"
+    },
+    "dottedName": {
+      "$ref": "#/$defs/surfaceIdentifier"
     },
     "semanticName": {
       "type": "string",

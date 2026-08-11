@@ -76,6 +76,55 @@ use Psr\Http\Server\RequestHandlerInterface;
 #[UsesClass(RuntimeCanonicalJson::class)]
 final class ExtensionContributionRegistrySetTest extends TestCase
 {
+    /**
+     * Distinct active owners cannot share or nest the same legacy dotted contribution namespace.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAmbiguousOwnerNamespacesFailBeforeRegistrationAndReleaseOnRemoval(): void
+    {
+        $registries = new ExtensionContributionRegistrySet(withCore: false);
+        $first = ContributionOwner::extension('a.b/c');
+        $colliding = ContributionOwner::extension('a/b.c');
+        $registries->registrar($first, new ManifestContributionSet($first), false);
+
+        try {
+            $registries->registrar($colliding, new ManifestContributionSet($colliding), false);
+            self::fail('Two active owners must not share the same dotted contribution namespace.');
+        } catch (InvalidArgumentException $exception) {
+            self::assertStringContainsString('conflicts with active owner a.b/c', $exception->getMessage());
+        }
+
+        $registries->remove($first);
+
+        self::assertInstanceOf(
+            OwnedExtensionContributionRegistrar::class,
+            $registries->registrar($colliding, new ManifestContributionSet($colliding), false),
+        );
+    }
+
+    /**
+     * Core composition retains established versioned integration identifiers outside the GUI grammar.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testCoreCompositionRetainsVersionedEventSchemaIdentifiers(): void
+    {
+        $registries = new ExtensionContributionRegistrySet();
+        $eventSchemas = $registries->inventory(ContributionOwner::core())['integration']['event_schemas'] ?? null;
+        self::assertIsArray($eventSchemas);
+        self::assertSame('core.business_record.mutated', $eventSchemas[0]['event_type'] ?? null);
+        self::assertSame(1, $eventSchemas[0]['schema_version'] ?? null);
+
+        ContributionOwner::core()->assertOwns('core.business_record.mutated@1', 'event schema');
+        self::addToAssertionCount(1);
+    }
+
+
     public function testContributionChecksumsBindCanonicalDefinitionMetadataToItsOwner(): void
     {
         $owner = ContributionOwner::extension('acme/editor');

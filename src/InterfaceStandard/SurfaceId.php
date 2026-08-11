@@ -36,9 +36,12 @@ final readonly class SurfaceId implements Stringable
     /**
      * Validate an owner-namespaced semantic surface identifier.
      *
-     * Each dotted segment starts with a letter and may contain lowercase letters, digits, or single
-     * hyphens. This admits core identifiers and the dotted form of `vendor/name` extension owners
-     * without allowing paths, traversal, markup, or executable fragments.
+     * The value starts and ends with a lowercase letter or digit, contains at least one dot, and may
+     * otherwise contain lowercase letters, digits, dots, underscores, or hyphens. Internal repeated
+     * dots remain representable because the canonical extension grammar has historically admitted
+     * them inside `vendor/name` segments. The owner boundary is enforced separately by
+     * `ContributionOwner::assertOwns()`, so lexical compatibility does not let a contribution claim
+     * another owner's namespace.
      *
      * @param   string  $value  Identifier exactly as declared by core or an extension manifest.
      *
@@ -53,7 +56,7 @@ final readonly class SurfaceId implements Stringable
         if (
             $value === ''
             || strlen($value) > self::MAX_LENGTH
-            || preg_match('/^[a-z][a-z0-9]*(?:-?[a-z0-9]+)*(?:\.[a-z][a-z0-9]*(?:-?[a-z0-9]+)*)+$/D', $value)
+            || preg_match('/^[a-z0-9][a-z0-9._-]*\.[a-z0-9._-]*[a-z0-9]$/D', $value)
                 !== 1
         ) {
             throw new InvalidArgumentException('A KIS surface identifier must be a lowercase dotted name.');
