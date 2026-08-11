@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\CMS\Tests\Unit\Presentation\Application;
 
 use InvalidArgumentException;
+use Kumwe\CMS\Extension\Domain\ExtensionManifest;
 use Kumwe\CMS\Extension\Domain\TemplateKisCompatibility;
 use Kumwe\CMS\Presentation\Application\ThemePackageValidator;
 use Kumwe\CMS\Presentation\ThemeSurface;
@@ -126,19 +127,23 @@ final class ThemePackageValidatorTest extends TestCase
     }
 
     /**
-     * Proves a site theme cannot activate without both public entry views.
+     * Proves schema-one compatibility preserves activation checks rather than bypassing validation.
      *
      * @return  void
      *
      * @since   2.0.0
      */
-    public function testMissingRequiredEntryIsRejected(): void
+    public function testLegacySchemaOneCompatibilityStillRequiresEverySiteEntry(): void
     {
         file_put_contents($this->root . '/theme/home.twig', 'home');
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('page.twig');
 
-        $this->validator()->validate($this->root . '/theme', ThemeSurface::Site, $this->compatibility());
+        $this->validator()->validate(
+            $this->root . '/theme',
+            ThemeSurface::Site,
+            $this->legacyCompatibility(),
+        );
     }
 
     /**
@@ -360,6 +365,32 @@ final class ThemePackageValidatorTest extends TestCase
             'components' => ['minimum' => '1.0.0', 'maximum' => '1.0.0'],
             'tokens' => ['minimum' => '1.0.0', 'maximum' => '1.0.0'],
         ]);
+    }
+
+    /**
+     * Parse the exact compatibility default carried forward for schema-one template manifests.
+     *
+     * @return  TemplateKisCompatibility  Legacy default passed through the activation validator.
+     *
+     * @since   2.0.0
+     */
+    private function legacyCompatibility(): TemplateKisCompatibility
+    {
+        $manifest = ExtensionManifest::fromJson(<<<'JSON'
+{
+  "schema": 1,
+  "name": "acme/legacy-template",
+  "type": "template",
+  "version": "1.0.0",
+  "provider": "Acme\\LegacyTemplate\\Provider",
+  "autoload": {"psr-4": {"Acme\\LegacyTemplate\\": "src/"}},
+  "requires": {"kumwe": "^2.0.0", "php": "^8.5.0"}
+}
+JSON);
+        $compatibility = $manifest->templateCompatibility();
+        self::assertNotNull($compatibility);
+
+        return $compatibility;
     }
 
     /**

@@ -15,22 +15,48 @@ use PHPUnit\Framework\TestCase;
 final class ExtensionManifestTest extends TestCase
 {
     /**
-     * Proves installable templates must carry the versioned KIS compatibility envelope.
+     * Proves historical schema-one templates receive the conservative exact KIS 1.0 default.
      *
      * @return  void
      *
      * @since   2.0.0
      */
-    public function testTemplateManifestRequiresKisCompatibility(): void
+    public function testSchemaOneTemplateReceivesExactLegacyKisCompatibility(): void
     {
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('versioned template compatibility object');
-
-        ExtensionManifest::fromJson(str_replace(
+        $manifest = ExtensionManifest::fromJson(str_replace(
             '"type": "plugin"',
             '"type": "template"',
             $this->manifestJson(),
         ));
+        $compatibility = $manifest->templateCompatibility();
+
+        self::assertNotNull($compatibility);
+        self::assertSame('kis-1.0', $compatibility->standard());
+        self::assertTrue($compatibility->supportsComponents(SemanticVersion::fromString('1.0.0')));
+        self::assertFalse($compatibility->supportsComponents(SemanticVersion::fromString('1.0.1')));
+        self::assertTrue($compatibility->supportsTokens(SemanticVersion::fromString('1.0.0')));
+        self::assertFalse($compatibility->supportsTokens(SemanticVersion::fromString('0.9.9')));
+    }
+
+    /**
+     * Proves strict manifest revisions cannot rely on the schema-one compatibility default.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testStrictTemplateManifestRequiresExplicitKisCompatibility(): void
+    {
+        $data = json_decode($this->manifestJson(), true, 16, JSON_THROW_ON_ERROR);
+        self::assertIsArray($data);
+        $data['schema'] = 2;
+        $data['type'] = 'template';
+        $data['contributions'] = ['version' => 1, 'capabilities' => [], 'administrator' => []];
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('versioned template compatibility object');
+
+        ExtensionManifest::fromJson(json_encode($data, JSON_THROW_ON_ERROR));
     }
 
     /**

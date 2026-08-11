@@ -20,6 +20,25 @@ use PHPUnit\Framework\TestCase;
 final class TemplateKisCompatibilityTest extends TestCase
 {
     /**
+     * Proves the legacy constructor is an exact compatibility point rather than an unbounded range.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testLegacyKisOneCompatibilityIsExact(): void
+    {
+        $compatibility = TemplateKisCompatibility::legacyKisOne();
+
+        self::assertSame(1, $compatibility->contract());
+        self::assertSame('kis-1.0', $compatibility->standard());
+        self::assertTrue($compatibility->supportsComponents(SemanticVersion::fromString('1.0.0')));
+        self::assertFalse($compatibility->supportsComponents(SemanticVersion::fromString('1.0.1')));
+        self::assertTrue($compatibility->supportsTokens(SemanticVersion::fromString('1.0.0')));
+        self::assertFalse($compatibility->supportsTokens(SemanticVersion::fromString('0.9.9')));
+    }
+
+    /**
      * Proves a well-formed declaration preserves independent component and token ranges.
      *
      * @return  void
