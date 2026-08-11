@@ -10,10 +10,11 @@ use Kumwe\CMS\Extension\Domain\TemplateKisCompatibility;
 use Kumwe\CMS\Presentation\Application\ThemePackageValidator;
 use Kumwe\CMS\Presentation\ThemeSurface;
 use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Verifies theme activation rejects broken packages and protected administrator-shell omissions.
+ * Verifies theme activation rejects broken packages and protected public or administrator shell omissions.
  *
  * @since  2.0.0
  */
@@ -66,7 +67,7 @@ final class ThemePackageValidatorTest extends TestCase
     }
 
     /**
-     * Proves site themes retain complete markup authority rather than inheriting administrator KIS rules.
+     * Proves both complete site entries may customize markup inside the minimal public-shell boundary.
      *
      * @return  void
      *
@@ -74,12 +75,116 @@ final class ThemePackageValidatorTest extends TestCase
      */
     public function testValidSiteContractRemainsFullyOverridable(): void
     {
-        file_put_contents($this->root . '/theme/home.twig', '<article>Custom home</article>');
-        file_put_contents($this->root . '/theme/page.twig', '{{ title|default("Custom page") }}');
+        $this->writeValidSiteTheme();
 
         $this->validator()->validate($this->root . '/theme', ThemeSurface::Site, $this->compatibility());
 
         self::addToAssertionCount(1);
+    }
+
+    /**
+     * Proves every public entry is rendered and must preserve host module delivery independently.
+     *
+     * @param   string  $entry  Site entry name selected by the data provider.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    #[DataProvider('siteEntries')]
+    public function testEverySiteEntryRequiresTheProtectedPublicShell(string $entry): void
+    {
+        $this->writeValidSiteTheme();
+        $source = $entry === 'home.twig'
+            ? $this->validSiteDocument('Invalid entry')
+            : $this->validSitePageDocument();
+        $invalid = str_replace(
+            '{% for module in site_assets.modules %}'
+            . '<script type="module" src="{{ module }}"></script>{% endfor %}',
+            '',
+            $source,
+        );
+        file_put_contents($this->root . '/theme/' . $entry, $invalid);
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('site ' . $entry . ' entry');
+        $this->expectExceptionMessage('host-supplied site module');
+
+        $this->validator()->validate($this->root . '/theme', ThemeSurface::Site, $this->compatibility());
+    }
+
+    /**
+     * Proves the public contract enforces document, asset, keyboard, and navigation invariants.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    #[DataProvider('siteInvariantMutations')]
+    public function testSiteEntryRejectsEveryProtectedInvariantCategory(
+        string $search,
+        string $replacement,
+        string $message,
+    ): void
+    {
+        $valid = $this->validSiteDocument('Contract probe');
+        file_put_contents($this->root . '/theme/home.twig', str_replace($search, $replacement, $valid));
+        file_put_contents($this->root . '/theme/page.twig', $this->validSitePageDocument());
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage($message);
+
+        $this->validator()->validate($this->root . '/theme', ThemeSurface::Site, $this->compatibility());
+    }
+
+    /**
+     * Proves a page cannot move presentation-ready entry content outside the first main landmark.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testSitePageRequiresPresentedEntryInsideMainLandmark(): void
+    {
+        $this->writeValidSiteTheme();
+        $page = str_replace(
+            '<h1>{{ entry.title }}</h1><div>{{ entry.body_html|raw }}</div>',
+            'Static decoration',
+            $this->validSitePageDocument(),
+        );
+        $page = str_replace(
+            '</main>',
+            '</main><aside><h1>{{ entry.title }}</h1><div>{{ entry.body_html|raw }}</div></aside>',
+            $page,
+        );
+        file_put_contents($this->root . '/theme/page.twig', $page);
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('page.twig entry must render its presentation-ready content');
+
+        $this->validator()->validate($this->root . '/theme', ThemeSurface::Site, $this->compatibility());
+    }
+
+    /**
+     * Proves the first main landmark must retain both the presented page title and trusted body.
+     *
+     * @param   string  $omitted  Twig fragment to remove from the otherwise conforming page entry.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    #[DataProvider('presentedPageValues')]
+    public function testSitePageRequiresEveryPresentedValueInsideMain(string $omitted): void
+    {
+        $this->writeValidSiteTheme();
+        file_put_contents(
+            $this->root . '/theme/page.twig',
+            str_replace($omitted, '', $this->validSitePageDocument()),
+        );
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('page.twig entry must render its presentation-ready content');
+
+        $this->validator()->validate($this->root . '/theme', ThemeSurface::Site, $this->compatibility());
     }
 
     /**
@@ -391,6 +496,141 @@ JSON);
         self::assertNotNull($compatibility);
 
         return $compatibility;
+    }
+
+    /**
+     * Supply both independently rendered public entry names.
+     *
+     * @return  array<string, array{string}>  Entry cases keyed for readable PHPUnit output.
+     *
+     * @since   2.0.0
+     */
+    public static function siteEntries(): array
+    {
+        return [
+            'fallback home' => ['home.twig'],
+            'published page' => ['page.twig'],
+        ];
+    }
+
+    /**
+     * Supply one source mutation for every protected public-shell invariant category.
+     *
+     * @return  array<string, array{string, string, string}>  Search, replacement, and failure fragment.
+     *
+     * @since   2.0.0
+     */
+    public static function siteInvariantMutations(): array
+    {
+        return [
+            'doctype' => ['<!doctype html>', '', 'HTML doctype'],
+            'language' => ['<html lang="en">', '<html>', 'document language'],
+            'encoding' => ['<meta charset="utf-8">', '', 'UTF-8'],
+            'viewport' => [
+                '<meta name="viewport" content="width=device-width, initial-scale=1">',
+                '',
+                'responsive width=device-width viewport',
+            ],
+            'title' => ['<title>{{ site_name }}</title>', '<title></title>', 'document title'],
+            'stylesheet' => [
+                '{% for stylesheet in site_assets.stylesheets %}'
+                . '<link rel="stylesheet" href="{{ stylesheet }}">{% endfor %}',
+                '',
+                'host-supplied site stylesheet',
+            ],
+            'main content' => ['Contract probe', '', 'presentation-ready content'],
+            'skip target' => ['href="#site-content"', 'href="#missing"', 'matching skip target'],
+            'navigation label' => [
+                'aria-label="Main navigation"',
+                '',
+                'labelled host-supplied navigation',
+            ],
+            'current navigation' => [
+                ' aria-current="page"',
+                '',
+                'current host navigation destination and state',
+            ],
+        ];
+    }
+
+    /**
+     * Supply each presentation-ready value a public page must keep inside its first main landmark.
+     *
+     * @return  array<string, array{string}>  Twig fragments keyed by the value their removal simulates.
+     *
+     * @since   2.0.0
+     */
+    public static function presentedPageValues(): array
+    {
+        return [
+            'entry title' => ['<h1>{{ entry.title }}</h1>'],
+            'trusted body' => ['<div>{{ entry.body_html|raw }}</div>'],
+        ];
+    }
+
+    /**
+     * Write two independently complete and visually customizable site entries.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    private function writeValidSiteTheme(): void
+    {
+        file_put_contents($this->root . '/theme/home.twig', $this->validSiteDocument('Custom home'));
+        file_put_contents($this->root . '/theme/page.twig', $this->validSitePageDocument());
+    }
+
+    /**
+     * Return a complete page entry that renders both prepared title and trusted body inside main.
+     *
+     * @return  string  Standalone page Twig entry satisfying the protected public KIS shell.
+     *
+     * @since   2.0.0
+     */
+    private function validSitePageDocument(): string
+    {
+        return $this->validSiteDocument(
+            '<h1>{{ entry.title }}</h1><div>{{ entry.body_html|raw }}</div>',
+        );
+    }
+
+    /**
+     * Return a complete site document satisfying the protected public KIS shell.
+     *
+     * @param   string  $content  Theme-owned main content proving entry customization remains free.
+     *
+     * @return  string  Standalone Twig entry with host asset, navigation, and recovery outlets.
+     *
+     * @since   2.0.0
+     */
+    private function validSiteDocument(string $content): string
+    {
+        return <<<'TWIG'
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ site_name }}</title>
+  {% for stylesheet in site_assets.stylesheets %}<link rel="stylesheet" href="{{ stylesheet }}">{% endfor %}
+  {% for module in site_assets.modules %}<script type="module" src="{{ module }}"></script>{% endfor %}
+</head>
+<body>
+  <a href="#site-content">Skip to content</a>
+  <nav aria-label="Main navigation">
+    {% for item in navigation %}
+      <a href="{{ item.href }}"{% if current_path == item.href %} aria-current="page"{% endif %}>{{ item.title }}</a>
+    {% endfor %}
+  </nav>
+  <main id="site-content">
+TWIG
+            . $content
+            . <<<'TWIG'
+</main>
+</body>
+</html>
+TWIG;
     }
 
     /**

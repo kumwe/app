@@ -23,8 +23,9 @@ use Twig\Loader\FilesystemLoader;
  * registry write: it insists the surface's entry templates are ordinary files rather than symlinks that
  * could reach outside the package, compiles every Twig file the package ships against the same loader
  * chain the renderer will use, and renders administrator layouts against synthetic host data to prove
- * the protected KIS 1.0 shell contract. Site markup remains wholly theme-owned. Every failure is
- * reported as an `InvalidArgumentException`, which `DoctrineExtensionManager` lets abort activation.
+ * protected KIS 1.0 shell contracts. Site markup remains theme-owned inside a minimal public document,
+ * asset, navigation, and keyboard-recovery boundary. Every failure is reported as an
+ * `InvalidArgumentException`, which `DoctrineExtensionManager` lets abort activation.
  *
  * @since  2.0.0
  */
@@ -69,6 +70,14 @@ final readonly class ThemePackageValidator
      * @since  2.0.0
      */
     private const CONTENT_SENTINEL = 'KUMWE_KIS_CONTENT_SENTINEL';
+
+    /**
+     * Unique rich-text value used to prove a public page keeps the presented body inside its main landmark.
+     *
+     * @var    string
+     * @since  2.0.0
+     */
+    private const BODY_SENTINEL = 'KUMWE_KIS_BODY_SENTINEL';
 
     /**
      * Unique workspace label used to prove the shell consumes capability-filtered navigation data.
@@ -119,6 +128,14 @@ final readonly class ThemePackageValidator
     private const NAVIGATION_HREF = '/administrator/kis-validator';
 
     /**
+     * Stable public destination rendered as the current site navigation item during validation.
+     *
+     * @var    string
+     * @since  2.0.0
+     */
+    private const SITE_NAVIGATION_HREF = '/kis-validator';
+
+    /**
      * Bind the validator to the core template tree candidate themes inherit from.
      *
      * @param  string  $coreTemplateRoot  Directory holding the per-surface built-in template trees.
@@ -135,9 +152,9 @@ final readonly class ThemePackageValidator
      * The candidate directory is registered both anonymously and under a surface namespace, with the
      * core tree behind it, so a package that overrides only some templates still resolves. Twig errors
      * are re-thrown as `InvalidArgumentException` carrying the underlying message, so the caller has one
-     * failure type to handle and the operator still sees which template broke. On the administrator
-     * surface the layout is additionally rendered against KIS 1.0 sentinels, since a theme that compiles
-     * can still discard navigation, assets, responsive metadata, or the keyboard recovery path.
+     * failure type to handle and the operator still sees which template broke. Both site entries and the
+     * administrator layout are additionally rendered against KIS 1.0 sentinels, since a theme that
+     * compiles can still discard navigation, assets, responsive metadata, or the keyboard recovery path.
      *
      * @param   string                    $themePath      Directory holding this surface's templates inside the package.
      * @param   ThemeSurface              $surface        Surface the theme is being activated on.
@@ -193,7 +210,9 @@ final readonly class ThemePackageValidator
             foreach ($templates as $template) {
                 $twig->load($template);
             }
-            if ($surface === ThemeSurface::Administrator) {
+            if ($surface === ThemeSurface::Site) {
+                $this->validateSiteShell($twig);
+            } else {
                 $this->validateAdministratorShell($twig);
             }
         } catch (Throwable $exception) {
@@ -206,6 +225,199 @@ final readonly class ThemePackageValidator
                 $exception->getMessage(),
             ), 0, $exception);
         }
+    }
+
+    /**
+     * Render both public entries and verify the protected KIS 1.0 site-shell boundary.
+     *
+     * The template owns its complete visual composition and may use any DOM nesting outside these
+     * recovery-critical semantics. Synthetic host data proves each entry independently retains a valid
+     * document, host assets, a matching skip target, and server-rendered current navigation.
+     *
+     * @param   Environment  $twig  Candidate environment with theme, core, and KIS namespaces registered.
+     *
+     * @return  void
+     *
+     * @throws  InvalidArgumentException  When either public entry omits a protected KIS 1.0 invariant.
+     *
+     * @since   2.0.0
+     */
+    private function validateSiteShell(Environment $twig): void
+    {
+        foreach (['home.twig', 'page.twig'] as $entry) {
+            $rendered = $twig->render($entry, $this->siteShellData());
+            $this->validateSiteDocument($rendered, $entry);
+        }
+    }
+
+    /**
+     * Verify one rendered site entry retains the minimal public-shell invariants.
+     *
+     * @param   string  $rendered  Complete rendered HTML emitted by the candidate entry.
+     * @param   string  $entry     Package-relative entry name used in actionable failures.
+     *
+     * @return  void
+     *
+     * @throws  InvalidArgumentException  When a protected document, asset, navigation, or skip invariant is absent.
+     *
+     * @since   2.0.0
+     */
+    private function validateSiteDocument(string $rendered, string $entry): void
+    {
+        if (preg_match('/\A\s*<!doctype\s+html\s*>/i', $rendered) !== 1) {
+            throw new InvalidArgumentException(sprintf(
+                'The site %s entry must render the HTML doctype required by KIS 1.0.',
+                $entry,
+            ));
+        }
+
+        $htmlAttributes = $this->firstOpeningTagAttributes($rendered, 'html');
+        if ($htmlAttributes === null || trim((string) $this->attribute($htmlAttributes, 'lang')) === '') {
+            throw new InvalidArgumentException(sprintf(
+                'The site %s entry must declare a non-empty document language for KIS 1.0.',
+                $entry,
+            ));
+        }
+
+        if (!$this->hasTagAttributes($rendered, 'meta', ['charset' => 'utf-8'])) {
+            throw new InvalidArgumentException(sprintf(
+                'The site %s entry must declare UTF-8 document encoding for KIS 1.0.',
+                $entry,
+            ));
+        }
+
+        $viewport = $this->metaContent($rendered, 'viewport');
+        if (
+            $viewport === null
+            || preg_match('/(?:^|,)\s*width\s*=\s*device-width(?:\s*,|$)/i', $viewport) !== 1
+            || preg_match('/(?:^|,)\s*initial-scale\s*=\s*1(?:\.0+)?(?:\s*,|$)/i', $viewport) !== 1
+        ) {
+            throw new InvalidArgumentException(sprintf(
+                'The site %s entry must declare a responsive width=device-width viewport for KIS 1.0.',
+                $entry,
+            ));
+        }
+
+        if (preg_match('/<title\b[^>]*>(?<content>.*?)<\/title\s*>/is', $rendered, $title) !== 1
+            || trim(strip_tags(html_entity_decode((string) ($title['content'] ?? ''), ENT_QUOTES | ENT_HTML5))) === ''
+        ) {
+            throw new InvalidArgumentException(sprintf(
+                'The site %s entry must render a non-empty document title.',
+                $entry,
+            ));
+        }
+
+        if (!$this->hasTagAttributes($rendered, 'link', [
+            'rel' => 'stylesheet',
+            'href' => self::STYLESHEET_SENTINEL,
+        ])) {
+            throw new InvalidArgumentException(sprintf(
+                'The site %s entry must render every host-supplied site stylesheet.',
+                $entry,
+            ));
+        }
+
+        if (!$this->hasTagAttributes($rendered, 'script', [
+            'type' => 'module',
+            'src' => self::MODULE_SENTINEL,
+        ])) {
+            throw new InvalidArgumentException(sprintf(
+                'The site %s entry must render every host-supplied site module.',
+                $entry,
+            ));
+        }
+
+        $main = $this->firstElement($rendered, 'main');
+        if (
+            $main === null
+            || ($entry === 'home.twig' && trim(strip_tags($main['content'])) === '')
+            || (
+                $entry === 'page.twig'
+                && (
+                    !str_contains($main['content'], self::CONTENT_SENTINEL)
+                    || !str_contains($main['content'], self::BODY_SENTINEL)
+                )
+            )
+        ) {
+            throw new InvalidArgumentException(sprintf(
+                'The site %s entry must render its presentation-ready content inside the main landmark.',
+                $entry,
+            ));
+        }
+        $mainId = $this->attribute($main['attributes'], 'id');
+        if ($mainId === null || trim($mainId) === '') {
+            throw new InvalidArgumentException(sprintf(
+                'The site %s entry must render a main landmark with a stable skip target.',
+                $entry,
+            ));
+        }
+        if (!$this->hasTagAttributes($rendered, 'a', ['href' => '#' . $mainId])) {
+            throw new InvalidArgumentException(sprintf(
+                'The site %s entry must link to its main landmark with a matching skip target.',
+                $entry,
+            ));
+        }
+
+        $navigation = $this->elementContaining($rendered, 'nav', self::NAVIGATION_SENTINEL);
+        if (
+            $navigation === null
+            || (
+                trim((string) $this->attribute($navigation['attributes'], 'aria-label')) === ''
+                && trim((string) $this->attribute($navigation['attributes'], 'aria-labelledby')) === ''
+            )
+        ) {
+            throw new InvalidArgumentException(sprintf(
+                'The site %s entry must render labelled host-supplied navigation.',
+                $entry,
+            ));
+        }
+
+        $current = $this->elementContaining($navigation['content'], 'a', self::NAVIGATION_SENTINEL);
+        if (
+            $current === null
+            || $this->attribute($current['attributes'], 'href') !== self::SITE_NAVIGATION_HREF
+            || strtolower((string) $this->attribute($current['attributes'], 'aria-current')) !== 'page'
+        ) {
+            throw new InvalidArgumentException(sprintf(
+                'The site %s entry must preserve the current host navigation destination and state.',
+                $entry,
+            ));
+        }
+    }
+
+    /**
+     * Build the protected public data used to render both site entries during activation.
+     *
+     * @return  array<string, mixed>  Site settings, one current navigation item, host assets, and a page entry.
+     *
+     * @since   2.0.0
+     */
+    private function siteShellData(): array
+    {
+        return [
+            'site_name' => self::TITLE_SENTINEL,
+            'site_logo' => '',
+            'canonical_url' => self::SITE_NAVIGATION_HREF,
+            'current_path' => self::SITE_NAVIGATION_HREF,
+            'navigation' => [[
+                'title' => self::NAVIGATION_SENTINEL,
+                'href' => self::SITE_NAVIGATION_HREF,
+                'children' => [],
+            ]],
+            'site_assets' => [
+                'stylesheets' => [self::STYLESHEET_SENTINEL],
+                'modules' => [self::MODULE_SENTINEL],
+            ],
+            'presentation' => SitePresentation::from(SitePresentation::defaults())->toView(),
+            'entry' => [
+                'id' => '00000000-0000-7000-8000-000000000001',
+                'title' => self::CONTENT_SENTINEL,
+                'slug' => 'kis-validator',
+                'data' => [],
+                'body_html' => '<p>' . self::BODY_SENTINEL . '</p>',
+                'version' => 1,
+            ],
+        ];
     }
 
     /**
@@ -438,6 +650,34 @@ final readonly class ThemePackageValidator
         }
 
         return null;
+    }
+
+    /**
+     * Return the first complete element of a requested type.
+     *
+     * @param   string  $html     Rendered HTML to inspect.
+     * @param   string  $element  Safe, validator-owned HTML element name.
+     *
+     * @return  ?array{attributes: string, content: string}  First match, or null when no element exists.
+     *
+     * @since   2.0.0
+     */
+    private function firstElement(string $html, string $element): ?array
+    {
+        if (preg_match(
+            '/<' . preg_quote($element, '/') . '\b(?<attributes>[^>]*)>(?<content>.*?)<\/'
+            . preg_quote($element, '/') . '\s*>/is',
+            $html,
+            $match,
+        ) !== 1) {
+            return null;
+        }
+
+        $attributes = $match['attributes'] ?? null;
+        $content = $match['content'] ?? null;
+        return is_string($attributes) && is_string($content)
+            ? ['attributes' => $attributes, 'content' => $content]
+            : null;
     }
 
     /**

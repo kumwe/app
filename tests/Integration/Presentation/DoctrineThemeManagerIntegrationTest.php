@@ -228,8 +228,7 @@ final class DoctrineThemeManagerIntegrationTest extends TestCase
 
     public function testAuditFailureRollsBackDoctrineBeforeRuntimePublication(): void
     {
-        file_put_contents($this->themePath() . '/home.twig', 'home');
-        file_put_contents($this->themePath() . '/page.twig', 'page');
+        $this->writeValidSiteTheme();
         $manager = $this->manager(new FailingAuditRecorder());
 
         try {
@@ -249,8 +248,7 @@ final class DoctrineThemeManagerIntegrationTest extends TestCase
 
     public function testCommittedActivationSurvivesLocalMaterializationFailure(): void
     {
-        file_put_contents($this->themePath() . '/home.twig', 'home');
-        file_put_contents($this->themePath() . '/page.twig', 'page');
+        $this->writeValidSiteTheme();
         unlink($this->map);
         self::assertTrue(mkdir($this->map));
 
@@ -274,8 +272,7 @@ final class DoctrineThemeManagerIntegrationTest extends TestCase
 
     public function testActivationAndDisablePublishDurableGenerations(): void
     {
-        file_put_contents($this->themePath() . '/home.twig', 'home');
-        file_put_contents($this->themePath() . '/page.twig', 'page');
+        $this->writeValidSiteTheme();
         $manager = $this->manager(new RecordingAuditRecorder());
         $manager->activate(
             'acme/corporate',
@@ -305,8 +302,7 @@ final class DoctrineThemeManagerIntegrationTest extends TestCase
 
     public function testUninstallRetainsRuntimeUntilReplicaConvergence(): void
     {
-        file_put_contents($this->themePath() . '/home.twig', 'home');
-        file_put_contents($this->themePath() . '/page.twig', 'page');
+        $this->writeValidSiteTheme();
         $manager = $this->manager(new RecordingAuditRecorder());
         $manager->activate(
             'acme/corporate',
@@ -537,8 +533,7 @@ final class DoctrineThemeManagerIntegrationTest extends TestCase
 
     public function testCapabilityRevocationAtMutationBoundaryRollsBackRegistry(): void
     {
-        file_put_contents($this->themePath() . '/home.twig', 'home');
-        file_put_contents($this->themePath() . '/page.twig', 'page');
+        $this->writeValidSiteTheme();
         $manager = $this->manager(new RecordingAuditRecorder(), new RevokedThemeAuthorizer());
         $this->expectException(InsufficientCapability::class);
 
@@ -556,8 +551,7 @@ final class DoctrineThemeManagerIntegrationTest extends TestCase
 
     public function testExecutionContextActorIsTheOnlyMutationIdentity(): void
     {
-        file_put_contents($this->themePath() . '/home.twig', 'home');
-        file_put_contents($this->themePath() . '/page.twig', 'page');
+        $this->writeValidSiteTheme();
         $result = $this->manager(new RecordingAuditRecorder())->activate(
             'acme/corporate',
             self::context(
@@ -573,8 +567,7 @@ final class DoctrineThemeManagerIntegrationTest extends TestCase
 
     public function testDisablingOneSiteThemeRetainsAssignmentsForOtherSites(): void
     {
-        file_put_contents($this->themePath() . '/home.twig', 'home');
-        file_put_contents($this->themePath() . '/page.twig', 'page');
+        $this->writeValidSiteTheme();
         $manager = $this->manager(new RecordingAuditRecorder());
         $manager->activate(
             'acme/corporate',
@@ -604,8 +597,7 @@ final class DoctrineThemeManagerIntegrationTest extends TestCase
 
     public function testDirectThemeMutationWithoutAuthorityIsDenied(): void
     {
-        file_put_contents($this->themePath() . '/home.twig', 'home');
-        file_put_contents($this->themePath() . '/page.twig', 'page');
+        $this->writeValidSiteTheme();
         $this->expectException(InsufficientCapability::class);
 
         try {
@@ -622,8 +614,7 @@ final class DoctrineThemeManagerIntegrationTest extends TestCase
 
     public function testExpiredRegistryHolderIsFencedByTheNewerLease(): void
     {
-        file_put_contents($this->themePath() . '/home.twig', 'home');
-        file_put_contents($this->themePath() . '/page.twig', 'page');
+        $this->writeValidSiteTheme();
         $this->database->executeStatement(sprintf(
             'UPDATE %s SET fence = 2 WHERE singleton_key = 1',
             $this->tables->quoted('extension_registry_fence'),
@@ -833,6 +824,29 @@ JSON;
     private function themePath(): string
     {
         return $this->root . '/extensions/acme/corporate/1.0.0/templates/site';
+    }
+
+    /**
+     * Install the shipped conforming site entries and their protected navigation dependency.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    private function writeValidSiteTheme(): void
+    {
+        $repository = dirname(__DIR__, 3);
+        foreach (['layout.twig', 'home.twig', 'page.twig'] as $template) {
+            $source = file_get_contents(
+                $repository . '/examples/extensions/minimal-template/templates/site/' . $template,
+            );
+            self::assertIsString($source);
+            file_put_contents($this->themePath() . '/' . $template, $source);
+        }
+
+        $navigation = file_get_contents($repository . '/templates/site/_navigation.twig');
+        self::assertIsString($navigation);
+        file_put_contents($this->root . '/core/site/_navigation.twig', $navigation);
     }
 
     private function administratorThemePath(): string
