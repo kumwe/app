@@ -11,6 +11,11 @@
 
 declare(strict_types=1);
 
+// Focused unit tests load the validation functions without running the repository-wide command.
+if (defined('KUMWE_INTERFACE_PROGRAMME_LIBRARY_ONLY')) {
+    return;
+}
+
 $root = dirname(__DIR__);
 $errors = [];
 $inventory = readJson($root . '/docs/interface-standard/programme/surface-inventory.json', $errors);
@@ -101,15 +106,6 @@ validateNavigationSources($root, $inventory, $errors);
 validateCoreSurfaceDeclarations($root, $inventory, $errors);
 validateExtensionManifests($root, $inventory, $errors);
 validateGeneratedInstances($root, $inventory, $errors);
-validateLedger(
-    $ledger,
-    $surfaceIds,
-    $ownerIds,
-    $evidenceIds,
-    $gateIds,
-    $workItems,
-    $errors,
-);
 $findingEvidenceIds = validateFindingsRegister(
     $root,
     $findingsRegister,
@@ -119,6 +115,18 @@ $findingEvidenceIds = validateFindingsRegister(
     $phaseNumbers,
     $workItems,
     $errors,
+);
+$blockingFindings = normalizeBlockingFindings($findingsRegister['findings'] ?? null, $errors);
+validateLedger(
+    $root,
+    $ledger,
+    $surfaceIds,
+    $ownerIds,
+    $evidenceIds,
+    $gateIds,
+    $workItems,
+    $errors,
+    $blockingFindings,
 );
 $templateCheckIds = validateVerificationReport(
     $root,
@@ -422,7 +430,12 @@ function validateSurfaces(
         if (!is_array($target) || !is_int($target['phase'] ?? null) || !isset($phaseNumbers[$target['phase']])) {
             $errors[] = sprintf('Surface %s has no valid target phase.', $id);
         }
-        foreach (expectList($surface['handler_sources'] ?? null, 'surface ' . $id . ' handler_sources', $errors) as $path) {
+        $handlerSources = expectList(
+            $surface['handler_sources'] ?? null,
+            'surface ' . $id . ' handler_sources',
+            $errors,
+        );
+        foreach ($handlerSources as $path) {
             requireFile($root, $path, 'handler for ' . $id, $errors);
         }
         foreach (expectList($surface['templates'] ?? null, 'surface ' . $id . ' templates', $errors) as $path) {
@@ -741,7 +754,11 @@ function validateGeneratedInstances(string $root, array $inventory, array &$erro
 {
     $expected = [];
     foreach ($inventory['generated_instances'] ?? [] as $instance) {
-        if (!is_array($instance) || !is_string($instance['source'] ?? null) || !is_string($instance['handle'] ?? null)) {
+        if (
+            !is_array($instance)
+            || !is_string($instance['source'] ?? null)
+            || !is_string($instance['handle'] ?? null)
+        ) {
             $errors[] = 'Every generated instance requires source and handle.';
             continue;
         }
@@ -768,8 +785,54 @@ function validateGeneratedInstances(string $root, array $inventory, array &$erro
 }
 
 /**
+ * Normalize unresolved P0/P1 findings for deterministic completion checks.
+ *
+ * Resolved and superseded findings remain in the authoritative register for history, but do not block a
+ * completion decision.
+ *
+ * @param   mixed         $records  Candidate findings-register records.
+ * @param   list<string>  $errors   Accumulated validation failures.
+ *
+ * @return  array<string, array<string, mixed>>  Blocking findings keyed by stable ID.
+ *
+ * @since   2.0.0
+ */
+function normalizeBlockingFindings(mixed $records, array &$errors): array
+{
+    $result = [];
+    foreach (expectList($records, 'findings for completion', $errors) as $finding) {
+        if (
+            !is_array($finding)
+            || !is_string($finding['id'] ?? null)
+            || !in_array($finding['severity'] ?? null, ['P0', 'P1'], true)
+            || in_array($finding['status'] ?? null, ['resolved', 'superseded'], true)
+        ) {
+            continue;
+        }
+        $phaseNumbers = [];
+        foreach ($finding['phase_numbers'] ?? [] as $phaseNumber) {
+            if (is_int($phaseNumber)) {
+                $phaseNumbers[$phaseNumber] = true;
+            }
+        }
+        $workItemIds = [];
+        foreach ($finding['work_item_ids'] ?? [] as $workItemId) {
+            if (is_string($workItemId)) {
+                $workItemIds[$workItemId] = true;
+            }
+        }
+        $result[$finding['id']] = [
+            'phase_numbers' => $phaseNumbers,
+            'work_item_ids' => $workItemIds,
+        ];
+    }
+    return $result;
+}
+
+/**
  * Validate work items, gates, evidence, ownership, history and completion rules.
  *
+ * @param   string                              $root         Repository root.
  * @param   array<string, mixed>                $ledger       Programme ledger.
  * @param   array<string, true>                 $surfaceIds   Known surfaces.
  * @param   array<string, true>                 $ownerIds     Known owner roles.
@@ -777,12 +840,14 @@ function validateGeneratedInstances(string $root, array $inventory, array &$erro
  * @param   array<string, true>                 $gateIds      Known gates.
  * @param   array<string, array<string, mixed>> $workItems    Work items keyed by ID.
  * @param   list<string>                        $errors       Accumulated validation failures.
+ * @param   array<string, array<string, mixed>> $findings     Normalized unresolved P0/P1 findings.
  *
  * @return  void
  *
  * @since   2.0.0
  */
 function validateLedger(
+    string $root,
     array $ledger,
     array $surfaceIds,
     array $ownerIds,
@@ -790,41 +855,180 @@ function validateLedger(
     array $gateIds,
     array $workItems,
     array &$errors,
+    array $findings = [],
 ): void {
     $statuses = array_fill_keys(expectList($ledger['status_vocabulary'] ?? null, 'status vocabulary', $errors), true);
-    $acceptedEvidence = [];
-    foreach ($ledger['evidence_records'] ?? [] as $evidence) {
-        if (is_array($evidence) && is_string($evidence['id'] ?? null) && ($evidence['status'] ?? null) === 'accepted') {
-            $acceptedEvidence[$evidence['id']] = true;
+    $evidenceRules = $ledger['evidence_rules'] ?? null;
+    if (!is_array($evidenceRules) || array_is_list($evidenceRules)) {
+        $errors[] = 'Evidence rules must be an object.';
+        $evidenceRules = [];
+    }
+    $evidenceTypes = stringLookup($evidenceRules['types'] ?? null, 'evidence type', $errors);
+    $evidenceStatuses = stringLookup($evidenceRules['statuses'] ?? null, 'evidence status', $errors);
+    $requiredEvidenceFields = stringLookup(
+        $evidenceRules['required_fields'] ?? null,
+        'required evidence field',
+        $errors,
+    );
+    $mandatoryEvidenceFields = [
+        'id', 'type', 'status', 'producer_role', 'source_revision', 'environment', 'method', 'result',
+        'artifact_paths', 'supports',
+    ];
+    foreach ($mandatoryEvidenceFields as $field) {
+        if (!isset($requiredEvidenceFields[$field])) {
+            $errors[] = sprintf('Evidence rules must require field %s.', $field);
         }
     }
+    $acceptedStatus = $evidenceRules['accepted_status'] ?? null;
+    if (!is_string($acceptedStatus) || $acceptedStatus === '') {
+        $errors[] = 'Evidence rules accepted_status must be a non-empty string.';
+        $acceptedStatus = 'accepted';
+    }
+    if (!isset($evidenceStatuses[$acceptedStatus])) {
+        $errors[] = 'Evidence rules accepted_status must belong to the evidence status vocabulary.';
+    }
+
+    $acceptedEvidence = [];
+    $acceptedEvidenceByType = [];
+    $acceptedEvidenceTypes = [];
+    $evidenceSupports = [];
+    $evidenceSupersedes = [];
     $allTargets = $gateIds + array_fill_keys(array_keys($workItems), true);
-    foreach ($ledger['evidence_records'] ?? [] as $evidence) {
-        if (!is_array($evidence) || !is_string($evidence['id'] ?? null)) {
+    $evidenceRecords = expectList($ledger['evidence_records'] ?? null, 'evidence records', $errors);
+    foreach ($evidenceRecords as $evidence) {
+        if (!is_array($evidence) || !is_string($evidence['id'] ?? null) || $evidence['id'] === '') {
             continue;
         }
-        validateReferences($evidence['supports'] ?? null, $allTargets, 'work item or gate', 'evidence ' . $evidence['id'], $errors);
+        $evidenceId = $evidence['id'];
+        foreach (array_keys($requiredEvidenceFields) as $field) {
+            if (!array_key_exists($field, $evidence)) {
+                $errors[] = sprintf('Evidence %s is missing required field %s.', $evidenceId, $field);
+            }
+        }
+        $type = $evidence['type'] ?? null;
+        if (!is_string($type) || !isset($evidenceTypes[$type])) {
+            $errors[] = sprintf('Evidence %s has an unknown type.', $evidenceId);
+        }
+        $status = $evidence['status'] ?? null;
+        if (!is_string($status) || !isset($evidenceStatuses[$status])) {
+            $errors[] = sprintf(
+                'Evidence %s has unknown status %s.',
+                $evidenceId,
+                printable($status),
+            );
+        }
         if (!isset($ownerIds[$evidence['producer_role'] ?? ''])) {
-            $errors[] = sprintf('Evidence %s has an unknown producer role.', $evidence['id']);
+            $errors[] = sprintf('Evidence %s has an unknown producer role.', $evidenceId);
+        }
+        if (!isCommitRevision($evidence['source_revision'] ?? null)) {
+            $errors[] = sprintf('Evidence %s requires a 40-character source revision.', $evidenceId);
+        }
+        foreach (['environment', 'method', 'result'] as $field) {
+            if (!is_string($evidence[$field] ?? null) || trim($evidence[$field]) === '') {
+                $errors[] = sprintf('Evidence %s requires a non-empty %s.', $evidenceId, $field);
+            }
+        }
+        $artifactPaths = expectList(
+            $evidence['artifact_paths'] ?? null,
+            'evidence ' . $evidenceId . ' artifact_paths',
+            $errors,
+        );
+        if ($artifactPaths === []) {
+            $errors[] = sprintf('Evidence %s requires at least one artifact path.', $evidenceId);
+        }
+        foreach ($artifactPaths as $path) {
+            requireFile($root, $path, 'evidence artifact', $errors);
+        }
+        $supports = expectList($evidence['supports'] ?? null, 'evidence ' . $evidenceId . ' supports', $errors);
+        if ($supports === []) {
+            $errors[] = sprintf('Evidence %s must support at least one work item or gate.', $evidenceId);
+        }
+        validateReferences($supports, $allTargets, 'work item or gate', 'evidence ' . $evidenceId, $errors);
+        foreach ($supports as $target) {
+            if (is_string($target) && isset($allTargets[$target])) {
+                $evidenceSupports[$evidenceId][$target] = true;
+            }
+        }
+        $supersedes = $evidence['supersedes'] ?? null;
+        if ($supersedes !== null) {
+            if (!is_string($supersedes) || !isset($evidenceIds[$supersedes]) || $supersedes === $evidenceId) {
+                $errors[] = sprintf('Evidence %s has an invalid supersedes reference.', $evidenceId);
+            } else {
+                $evidenceSupersedes[$evidenceId] = $supersedes;
+            }
+        }
+        if ($status === $acceptedStatus && is_string($type) && isset($evidenceTypes[$type])) {
+            $acceptedEvidence[$evidenceId] = true;
+            $acceptedEvidenceByType[$type][$evidenceId] = true;
+            $acceptedEvidenceTypes[$evidenceId] = $type;
         }
     }
+    $supersededBy = [];
+    foreach ($evidenceSupersedes as $evidenceId => $supersededId) {
+        $visited = [$evidenceId => true];
+        $cursor = $supersededId;
+        while (isset($evidenceSupersedes[$cursor])) {
+            if (isset($visited[$cursor])) {
+                $errors[] = sprintf('Evidence %s has a cyclic supersedes chain.', $evidenceId);
+                break;
+            }
+            $visited[$cursor] = true;
+            $cursor = $evidenceSupersedes[$cursor];
+        }
+        if (!isset($acceptedEvidence[$evidenceId])) {
+            continue;
+        }
+        if (isset($supersededBy[$supersededId])) {
+            $errors[] = sprintf(
+                'Accepted evidence %s is superseded by multiple records.',
+                $supersededId,
+            );
+        }
+        $supersededBy[$supersededId] = $evidenceId;
+    }
+    foreach ($supersededBy as $supersededId => $evidenceId) {
+        unset($acceptedEvidence[$supersededId]);
+        $supersededType = $acceptedEvidenceTypes[$supersededId] ?? null;
+        if (is_string($supersededType)) {
+            unset($acceptedEvidenceByType[$supersededType][$supersededId]);
+        }
+    }
+
+    $governedWaivers = [];
     foreach ($workItems as $id => $item) {
-        validateStatusRecord($item, 'work item ' . $id, $statuses, $errors);
+        validateStatusRecord($item, 'work item ' . $id, $statuses, $evidenceIds, $errors);
         validateOwnerRecord($item, 'work item ' . $id, $ownerIds, $errors);
         validateReferences($item['surface_ids'] ?? null, $surfaceIds, 'surface', 'work item ' . $id, $errors);
         validateReferences($item['evidence_ids'] ?? null, $evidenceIds, 'evidence', 'work item ' . $id, $errors);
-        foreach (expectList($item['prerequisites'] ?? null, 'work item ' . $id . ' prerequisites', $errors) as $required) {
+        validateEvidenceTypeRequirements(
+            $item['evidence_required'] ?? null,
+            $evidenceTypes,
+            'work item ' . $id,
+            $errors,
+        );
+        $prerequisites = expectList(
+            $item['prerequisites'] ?? null,
+            'work item ' . $id . ' prerequisites',
+            $errors,
+        );
+        foreach ($prerequisites as $required) {
             if (!is_string($required) || (!isset($workItems[$required]) && !isset($gateIds[$required]))) {
                 $errors[] = sprintf('Work item %s has unknown prerequisite %s.', $id, printable($required));
             }
         }
-        if (($item['status'] ?? null) === 'complete') {
-            requireAcceptedEvidence($item['evidence_ids'] ?? [], $acceptedEvidence, 'work item ' . $id, $errors);
-        }
         if (($item['status'] ?? null) === 'waived') {
-            if (!in_array($item['severity'] ?? null, ['P2', 'P3'], true) || !is_array($item['waiver'] ?? null)) {
-                $errors[] = sprintf('Waived work item %s requires P2/P3 severity and a waiver record.', $id);
-            }
+            $governedWaivers[$id] = validateGovernedWaiver(
+                $item,
+                $id,
+                $statuses,
+                $ownerIds,
+                $acceptedEvidence,
+                $evidenceSupports,
+                $errors,
+            );
+        }
+        if (($item['status'] ?? null) === 'superseded') {
+            validateSupersededRecord($item, $id, $workItems, 'work item', $statuses, $errors);
         }
     }
     foreach ($ledger['gates'] ?? [] as $gate) {
@@ -832,16 +1036,526 @@ function validateLedger(
             continue;
         }
         $id = $gate['id'];
-        validateStatusRecord($gate, 'gate ' . $id, $statuses, $errors);
+        validateStatusRecord($gate, 'gate ' . $id, $statuses, $evidenceIds, $errors);
         validateOwnerRecord($gate, 'gate ' . $id, $ownerIds, $errors);
         validateReferences($gate['evidence_ids'] ?? null, $evidenceIds, 'evidence', 'gate ' . $id, $errors);
+        validateEvidenceTypeRequirements(
+            $gate['required_evidence_types'] ?? null,
+            $evidenceTypes,
+            'gate ' . $id,
+            $errors,
+        );
         foreach (expectList($gate['prerequisites'] ?? null, 'gate ' . $id . ' prerequisites', $errors) as $required) {
             if (!is_string($required) || !isset($gateIds[$required])) {
                 $errors[] = sprintf('Gate %s has unknown prerequisite %s.', $id, printable($required));
             }
         }
+        if (($gate['status'] ?? null) === 'waived') {
+            $errors[] = sprintf('Gate %s cannot be waived.', $id);
+        }
+        if (($gate['status'] ?? null) === 'superseded') {
+            validateSupersededRecord($gate, $id, $ledger['gates'] ?? [], 'gate', $statuses, $errors);
+        }
+    }
+
+    $gatesById = [];
+    foreach ($ledger['gates'] ?? [] as $gate) {
+        if (is_array($gate) && is_string($gate['id'] ?? null)) {
+            $gatesById[$gate['id']] = $gate;
+        }
+    }
+    $gateScopes = [];
+    foreach ($ledger['phases'] ?? [] as $phase) {
+        if (!is_array($phase) || !is_int($phase['number'] ?? null)) {
+            continue;
+        }
+        $phaseWorkItems = [];
+        foreach ($phase['work_items'] ?? [] as $item) {
+            if (is_array($item) && is_string($item['id'] ?? null)) {
+                $phaseWorkItems[$item['id']] = true;
+            }
+        }
+        foreach ($phase['exit_gates'] ?? [] as $gateId) {
+            if (!is_string($gateId) || !isset($gateIds[$gateId])) {
+                continue;
+            }
+            $gateScopes[$gateId]['phase_numbers'][$phase['number']] = true;
+            $gateScopes[$gateId]['work_item_ids'] = ($gateScopes[$gateId]['work_item_ids'] ?? []) + $phaseWorkItems;
+        }
+    }
+    foreach ($ledger['phases'] ?? [] as $phase) {
+        if (!is_array($phase) || !is_int($phase['number'] ?? null)) {
+            continue;
+        }
+        $phaseNumber = $phase['number'];
+        $phaseStatus = $phase['status'] ?? null;
+        if (!is_string($phaseStatus) || !isset($statuses[$phaseStatus])) {
+            $errors[] = sprintf('Phase %d has an unknown status.', $phaseNumber);
+        }
+        validateReferences(
+            $phase['entry_gates'] ?? null,
+            $gateIds,
+            'gate',
+            'phase ' . $phaseNumber . ' entry',
+            $errors,
+        );
+        validateReferences(
+            $phase['exit_gates'] ?? null,
+            $gateIds,
+            'gate',
+            'phase ' . $phaseNumber . ' exit',
+            $errors,
+        );
+        if ($phaseStatus !== 'complete') {
+            continue;
+        }
+        foreach ($phase['work_items'] ?? [] as $item) {
+            $workItemId = is_array($item) ? ($item['id'] ?? null) : null;
+            if (
+                is_string($workItemId)
+                && !prerequisiteSatisfiesCompletion(
+                    $workItemId,
+                    $workItems,
+                    $gatesById,
+                    $governedWaivers,
+                    $statuses,
+                    [],
+                )
+            ) {
+                $errors[] = sprintf('Complete phase %d has incomplete work item %s.', $phaseNumber, $workItemId);
+            }
+        }
+        foreach ($phase['exit_gates'] ?? [] as $gateId) {
+            if (is_string($gateId) && ($gatesById[$gateId]['status'] ?? null) !== 'complete') {
+                $errors[] = sprintf('Complete phase %d has incomplete exit gate %s.', $phaseNumber, $gateId);
+            }
+        }
+    }
+    foreach ($workItems as $id => $item) {
+        if (($item['status'] ?? null) !== 'complete') {
+            continue;
+        }
+        requireAcceptedEvidence($item['evidence_ids'] ?? [], $acceptedEvidence, 'work item ' . $id, $errors);
+        requireAcceptedEvidenceTypes(
+            $item['evidence_ids'] ?? [],
+            $item['evidence_required'] ?? [],
+            $acceptedEvidenceByType,
+            $evidenceSupports,
+            $id,
+            'work item ' . $id,
+            $errors,
+        );
+        requireCompletePrerequisites(
+            $item['prerequisites'] ?? [],
+            $workItems,
+            $gatesById,
+            $governedWaivers,
+            $statuses,
+            'work item ' . $id,
+            $errors,
+        );
+        requireNoBlockingFindingsForWorkItem($id, $findings, $errors);
+    }
+    foreach ($gatesById as $id => $gate) {
         if (($gate['status'] ?? null) === 'complete') {
             requireAcceptedEvidence($gate['evidence_ids'] ?? [], $acceptedEvidence, 'gate ' . $id, $errors);
+            requireAcceptedEvidenceTypes(
+                $gate['evidence_ids'] ?? [],
+                $gate['required_evidence_types'] ?? [],
+                $acceptedEvidenceByType,
+                $evidenceSupports,
+                $id,
+                'gate ' . $id,
+                $errors,
+            );
+            requireCompletePrerequisites(
+                $gate['prerequisites'] ?? [],
+                [],
+                $gatesById,
+                [],
+                $statuses,
+                'gate ' . $id,
+                $errors,
+            );
+            requireNoBlockingFindingsForGate(
+                $id,
+                $gateScopes[$id] ?? ['phase_numbers' => [], 'work_item_ids' => []],
+                $findings,
+                $errors,
+            );
+        }
+    }
+}
+
+/**
+ * Validate one work item or gate's required evidence-type list.
+ *
+ * @param   mixed                $requirements  Candidate evidence-type list.
+ * @param   array<string, true>  $knownTypes    Evidence-type vocabulary.
+ * @param   string               $label         Work item or gate label.
+ * @param   list<string>         $errors        Accumulated validation failures.
+ *
+ * @return  array<string, true>  Valid, unique required types.
+ *
+ * @since   2.0.0
+ */
+function validateEvidenceTypeRequirements(
+    mixed $requirements,
+    array $knownTypes,
+    string $label,
+    array &$errors,
+): array {
+    $result = [];
+    foreach (expectList($requirements, $label . ' evidence type requirements', $errors) as $type) {
+        if (!is_string($type) || !isset($knownTypes[$type])) {
+            $errors[] = sprintf('%s requires unknown evidence type %s.', ucfirst($label), printable($type));
+            continue;
+        }
+        if (isset($result[$type])) {
+            $errors[] = sprintf('%s repeats required evidence type %s.', ucfirst($label), $type);
+        }
+        $result[$type] = true;
+    }
+    return $result;
+}
+
+/**
+ * Validate the governance record that permits a P2/P3 work item to be waived.
+ *
+ * @param   array<string, mixed>                 $item                Waived work item.
+ * @param   string                               $id                  Work item identifier.
+ * @param   array<string, true>                  $statuses            Ledger status vocabulary.
+ * @param   array<string, true>                  $ownerIds            Known accountable roles.
+ * @param   array<string, true>                  $acceptedEvidence    Accepted evidence IDs.
+ * @param   array<string, array<string, true>>   $evidenceSupports    Targets declared by evidence ID.
+ * @param   list<string>                         $errors              Accumulated validation failures.
+ *
+ * @return  bool  True only when the waiver can satisfy a completed item's prerequisite.
+ *
+ * @since   2.0.0
+ */
+function validateGovernedWaiver(
+    array $item,
+    string $id,
+    array $statuses,
+    array $ownerIds,
+    array $acceptedEvidence,
+    array $evidenceSupports,
+    array &$errors,
+): bool {
+    $valid = true;
+    if (!isset($statuses['waived']) || !in_array($item['severity'] ?? null, ['P2', 'P3'], true)) {
+        $errors[] = sprintf('Waived work item %s requires a waivable P2/P3 severity.', $id);
+        $valid = false;
+    }
+    $waiver = $item['waiver'] ?? null;
+    if (!is_array($waiver) || array_is_list($waiver)) {
+        $errors[] = sprintf('Waived work item %s requires a waiver record.', $id);
+        return false;
+    }
+    foreach (['finding_id', 'rationale', 'compensating_control'] as $field) {
+        if (!is_string($waiver[$field] ?? null) || trim($waiver[$field]) === '') {
+            $errors[] = sprintf('Waiver for work item %s requires a non-empty %s.', $id, $field);
+            $valid = false;
+        }
+    }
+    if (!is_string($waiver['owner_role'] ?? null) || !isset($ownerIds[$waiver['owner_role']])) {
+        $errors[] = sprintf('Waiver for work item %s has an unknown owner role.', $id);
+        $valid = false;
+    }
+    $hasExpiry = isUtcTimestamp($waiver['expires_at'] ?? null);
+    $hasTargetPhase = is_int($waiver['target_phase'] ?? null)
+        && $waiver['target_phase'] >= 0
+        && $waiver['target_phase'] <= 6;
+    if (!$hasExpiry && !$hasTargetPhase) {
+        $errors[] = sprintf('Waiver for work item %s requires a UTC expiry or Phase 0-6 target.', $id);
+        $valid = false;
+    }
+    $waiverEvidence = expectList($waiver['evidence_ids'] ?? null, 'waiver for work item ' . $id . ' evidence', $errors);
+    if ($waiverEvidence === []) {
+        $errors[] = sprintf('Waiver for work item %s requires accepted compensating evidence.', $id);
+        $valid = false;
+    }
+    foreach ($waiverEvidence as $evidenceId) {
+        if (!is_string($evidenceId) || !isset($acceptedEvidence[$evidenceId])) {
+            $errors[] = sprintf(
+                'Waiver for work item %s references unaccepted evidence %s.',
+                $id,
+                printable($evidenceId),
+            );
+            $valid = false;
+            continue;
+        }
+        if (!isset($evidenceSupports[$evidenceId][$id])) {
+            $errors[] = sprintf('Waiver evidence %s does not support work item %s.', $evidenceId, $id);
+            $valid = false;
+        }
+    }
+    return $valid;
+}
+
+/**
+ * Validate an explicit, acyclic replacement chain for a superseded work item or gate.
+ *
+ * @param   array<string, mixed>  $record    Superseded record.
+ * @param   string                $id        Superseded identifier.
+ * @param   array<mixed>          $records   Records of the same kind.
+ * @param   string                $kind      `work item` or `gate`.
+ * @param   array<string, true>   $statuses  Ledger status vocabulary.
+ * @param   list<string>          $errors    Accumulated validation failures.
+ *
+ * @return  void
+ *
+ * @since   2.0.0
+ */
+function validateSupersededRecord(
+    array $record,
+    string $id,
+    array $records,
+    string $kind,
+    array $statuses,
+    array &$errors,
+): void {
+    if (!isset($statuses['superseded'])) {
+        $errors[] = sprintf('Superseded %s %s is not supported by the status vocabulary.', $kind, $id);
+        return;
+    }
+    $byId = [];
+    foreach ($records as $candidateId => $candidate) {
+        if (!is_array($candidate)) {
+            continue;
+        }
+        $candidateId = is_string($candidateId) ? $candidateId : ($candidate['id'] ?? null);
+        if (is_string($candidateId) && $candidateId !== '') {
+            $byId[$candidateId] = $candidate;
+        }
+    }
+    $replacement = $record['superseded_by'] ?? null;
+    if (!is_string($replacement) || !isset($byId[$replacement]) || $replacement === $id) {
+        $errors[] = sprintf('Superseded %s %s requires a different known superseded_by record.', $kind, $id);
+        return;
+    }
+    $visited = [$id => true];
+    while (isset($byId[$replacement]) && ($byId[$replacement]['status'] ?? null) === 'superseded') {
+        if (isset($visited[$replacement])) {
+            $errors[] = sprintf('Superseded %s %s has a cyclic replacement chain.', $kind, $id);
+            return;
+        }
+        $visited[$replacement] = true;
+        $replacement = $byId[$replacement]['superseded_by'] ?? null;
+        if (!is_string($replacement) || !isset($byId[$replacement])) {
+            $errors[] = sprintf('Superseded %s %s has an unresolved replacement chain.', $kind, $id);
+            return;
+        }
+    }
+}
+
+/**
+ * Require accepted evidence of every declared type, with reciprocal target support.
+ *
+ * @param   mixed                                      $references              Evidence IDs on the record.
+ * @param   mixed                                      $requirements            Required evidence types.
+ * @param   array<string, array<string, true>>         $acceptedEvidenceByType  Accepted evidence IDs by type.
+ * @param   array<string, array<string, true>>         $evidenceSupports        Targets declared by evidence ID.
+ * @param   string                                     $targetId                Work item or gate identifier.
+ * @param   string                                     $label                   Work item or gate label.
+ * @param   list<string>                               $errors                  Accumulated validation failures.
+ *
+ * @return  void
+ *
+ * @since   2.0.0
+ */
+function requireAcceptedEvidenceTypes(
+    mixed $references,
+    mixed $requirements,
+    array $acceptedEvidenceByType,
+    array $evidenceSupports,
+    string $targetId,
+    string $label,
+    array &$errors,
+): void {
+    $references = expectList($references, $label . ' evidence', $errors);
+    foreach ($references as $evidenceId) {
+        if (
+            is_string($evidenceId)
+            && isset($evidenceSupports[$evidenceId])
+            && !isset($evidenceSupports[$evidenceId][$targetId])
+        ) {
+            $errors[] = sprintf(
+                'Completed %s evidence %s does not declare support for %s.',
+                $label,
+                $evidenceId,
+                $targetId,
+            );
+        }
+    }
+    foreach (expectList($requirements, $label . ' evidence requirements', $errors) as $type) {
+        if (!is_string($type)) {
+            continue;
+        }
+        $covered = false;
+        foreach ($references as $evidenceId) {
+            if (
+                is_string($evidenceId)
+                && isset($acceptedEvidenceByType[$type][$evidenceId])
+                && isset($evidenceSupports[$evidenceId][$targetId])
+            ) {
+                $covered = true;
+                break;
+            }
+        }
+        if (!$covered) {
+            $errors[] = sprintf('Completed %s lacks accepted %s evidence.', $label, $type);
+        }
+    }
+}
+
+/**
+ * Require all prerequisites of a completed record to be complete or explicitly governed replacements.
+ *
+ * @param   mixed                                  $references        Prerequisite IDs.
+ * @param   array<string, array<string, mixed>>     $workItems        Work-item lookup.
+ * @param   array<string, array<string, mixed>>     $gates            Gate lookup.
+ * @param   array<string, bool>                     $governedWaivers  Valid work-item waiver lookup.
+ * @param   array<string, true>                     $statuses          Ledger status vocabulary.
+ * @param   string                                  $label             Completed record label.
+ * @param   list<string>                            $errors            Accumulated validation failures.
+ *
+ * @return  void
+ *
+ * @since   2.0.0
+ */
+function requireCompletePrerequisites(
+    mixed $references,
+    array $workItems,
+    array $gates,
+    array $governedWaivers,
+    array $statuses,
+    string $label,
+    array &$errors,
+): void {
+    foreach (expectList($references, $label . ' prerequisites', $errors) as $prerequisiteId) {
+        if (!is_string($prerequisiteId)) {
+            continue;
+        }
+        if (!prerequisiteSatisfiesCompletion(
+            $prerequisiteId,
+            $workItems,
+            $gates,
+            $governedWaivers,
+            $statuses,
+            [],
+        )) {
+            $errors[] = sprintf('Completed %s has incomplete prerequisite %s.', $label, $prerequisiteId);
+        }
+    }
+}
+
+/**
+ * Resolve one prerequisite through governed waiver or supersession records.
+ *
+ * @param   string                                 $id                 Prerequisite identifier.
+ * @param   array<string, array<string, mixed>>    $workItems          Work-item lookup.
+ * @param   array<string, array<string, mixed>>    $gates              Gate lookup.
+ * @param   array<string, bool>                    $governedWaivers    Valid work-item waiver lookup.
+ * @param   array<string, true>                    $statuses            Ledger status vocabulary.
+ * @param   array<string, true>                    $visited             Supersession-cycle guard.
+ *
+ * @return  bool  True when the prerequisite is complete or an explicitly governed equivalent.
+ *
+ * @since   2.0.0
+ */
+function prerequisiteSatisfiesCompletion(
+    string $id,
+    array $workItems,
+    array $gates,
+    array $governedWaivers,
+    array $statuses,
+    array $visited,
+): bool {
+    if (isset($visited[$id])) {
+        return false;
+    }
+    $visited[$id] = true;
+    $isWorkItem = isset($workItems[$id]);
+    $record = $workItems[$id] ?? $gates[$id] ?? null;
+    if (!is_array($record)) {
+        return false;
+    }
+    $status = $record['status'] ?? null;
+    if ($status === 'complete') {
+        return true;
+    }
+    if ($status === 'waived') {
+        return $isWorkItem && isset($statuses['waived']) && ($governedWaivers[$id] ?? false);
+    }
+    if ($status !== 'superseded' || !isset($statuses['superseded'])) {
+        return false;
+    }
+    $replacement = $record['superseded_by'] ?? null;
+    return is_string($replacement) && prerequisiteSatisfiesCompletion(
+        $replacement,
+        $workItems,
+        $gates,
+        $governedWaivers,
+        $statuses,
+        $visited,
+    );
+}
+
+/**
+ * Reject completion while a linked P0/P1 finding remains unresolved.
+ *
+ * @param   string                               $workItemId  Completed work-item identifier.
+ * @param   array<string, array<string, mixed>>  $findings    Normalized blocking findings.
+ * @param   list<string>                         $errors      Accumulated validation failures.
+ *
+ * @return  void
+ *
+ * @since   2.0.0
+ */
+function requireNoBlockingFindingsForWorkItem(string $workItemId, array $findings, array &$errors): void
+{
+    foreach ($findings as $findingId => $finding) {
+        if (isset($finding['work_item_ids'][$workItemId])) {
+            $errors[] = sprintf(
+                'Completed work item %s is blocked by unresolved finding %s.',
+                $workItemId,
+                $findingId,
+            );
+        }
+    }
+}
+
+/**
+ * Reject gate completion while a P0/P1 finding applies to its exit phase or work items.
+ *
+ * @param   string                               $gateId    Completed gate identifier.
+ * @param   array<string, mixed>                 $scope     Exit phases and their work-item IDs.
+ * @param   array<string, array<string, mixed>>  $findings  Normalized blocking findings.
+ * @param   list<string>                         $errors    Accumulated validation failures.
+ *
+ * @return  void
+ *
+ * @since   2.0.0
+ */
+function requireNoBlockingFindingsForGate(
+    string $gateId,
+    array $scope,
+    array $findings,
+    array &$errors,
+): void {
+    foreach ($findings as $findingId => $finding) {
+        $phaseMatch = array_intersect_key(
+            $finding['phase_numbers'] ?? [],
+            $scope['phase_numbers'] ?? [],
+        ) !== [];
+        $workItemMatch = array_intersect_key(
+            $finding['work_item_ids'] ?? [],
+            $scope['work_item_ids'] ?? [],
+        ) !== [];
+        if ($phaseMatch || $workItemMatch) {
+            $errors[] = sprintf('Completed gate %s is blocked by unresolved finding %s.', $gateId, $findingId);
         }
     }
 }
@@ -1104,7 +1818,10 @@ function validateVerificationReport(
         $errors[] = sprintf('%s schema_version and template_version must both be 1.', ucfirst($label));
     }
     foreach (
-        ['report_id', 'report_kind', 'state', 'overall_status', 'branch', 'base_revision', 'source_revision', 'prepared_at']
+        [
+            'report_id', 'report_kind', 'state', 'overall_status', 'branch', 'base_revision', 'source_revision',
+            'prepared_at',
+        ]
         as $field
     ) {
         if (!is_string($report[$field] ?? null) || $report[$field] === '') {
@@ -1124,7 +1841,10 @@ function validateVerificationReport(
         $errors[] = sprintf('%s has an unsupported overall_status.', ucfirst($label));
     }
     if (!$template) {
-        if (!isCommitRevision($report['base_revision'] ?? null) || !isCommitRevision($report['source_revision'] ?? null)) {
+        if (
+            !isCommitRevision($report['base_revision'] ?? null)
+            || !isCommitRevision($report['source_revision'] ?? null)
+        ) {
             $errors[] = sprintf('%s requires 40-character base and source revisions.', ucfirst($label));
         }
         if (!isUtcTimestamp($report['prepared_at'] ?? null)) {
@@ -1236,7 +1956,10 @@ function validateVerificationReport(
             continue;
         }
         $id = $check['id'];
-        foreach (['category', 'requirement', 'applicability', 'status', 'command', 'environment', 'result_summary'] as $field) {
+        $requiredCheckFields = [
+            'category', 'requirement', 'applicability', 'status', 'command', 'environment', 'result_summary',
+        ];
+        foreach ($requiredCheckFields as $field) {
             if (!is_string($check[$field] ?? null) || $check[$field] === '') {
                 $errors[] = sprintf('%s check %s requires a non-empty %s.', ucfirst($label), $id, $field);
             }
@@ -1311,7 +2034,10 @@ function validateVerificationReport(
         $errors[] = sprintf('%s requires an impact object.', ucfirst($label));
         $impact = [];
     }
-    foreach (['security', 'accessibility', 'customization', 'templates', 'extensions', 'database', 'deployment'] as $kind) {
+    $parityKinds = [
+        'security', 'accessibility', 'customization', 'templates', 'extensions', 'database', 'deployment',
+    ];
+    foreach ($parityKinds as $kind) {
         $entry = $impact[$kind] ?? null;
         if (
             !is_array($entry)
@@ -1401,19 +2127,86 @@ function validateVerificationReport(
  * @param   array<string, mixed>  $record    Work item or gate.
  * @param   string                $label     Diagnostic label.
  * @param   array<string, true>   $statuses  Allowed status lookup.
+ * @param   array<string, true>   $evidence  Known evidence lookup.
  * @param   list<string>          $errors    Accumulated validation failures.
  *
  * @return  void
  *
  * @since   2.0.0
  */
-function validateStatusRecord(array $record, string $label, array $statuses, array &$errors): void
-{
+function validateStatusRecord(
+    array $record,
+    string $label,
+    array $statuses,
+    array $evidence,
+    array &$errors,
+): void {
     $status = $record['status'] ?? null;
     if (!is_string($status) || !isset($statuses[$status])) {
         $errors[] = sprintf('%s has an unknown status.', ucfirst($label));
     }
     $history = expectList($record['status_history'] ?? null, $label . ' status_history', $errors);
+    $previousTo = null;
+    foreach ($history as $index => $entry) {
+        if (!is_array($entry) || array_is_list($entry)) {
+            $errors[] = sprintf('%s history entry %d must be an object.', ucfirst($label), $index + 1);
+            continue;
+        }
+        foreach (['from', 'to', 'reason', 'evidence_ids'] as $field) {
+            if (!array_key_exists($field, $entry)) {
+                $errors[] = sprintf(
+                    '%s history entry %d is missing required field %s.',
+                    ucfirst($label),
+                    $index + 1,
+                    $field,
+                );
+            }
+        }
+        $hasDate = array_key_exists('date', $entry);
+        $hasTimestamp = array_key_exists('at', $entry);
+        if (
+            $hasDate === $hasTimestamp
+            || ($hasDate && !isDate($entry['date']))
+            || ($hasTimestamp && !isUtcTimestamp($entry['at']))
+        ) {
+            $errors[] = sprintf(
+                '%s history entry %d requires exactly one valid date or UTC timestamp.',
+                ucfirst($label),
+                $index + 1,
+            );
+        }
+        $from = $entry['from'] ?? null;
+        $to = $entry['to'] ?? null;
+        if ($from !== null && (!is_string($from) || !isset($statuses[$from]))) {
+            $errors[] = sprintf('%s history entry %d has an unknown from status.', ucfirst($label), $index + 1);
+        }
+        if (!is_string($to) || !isset($statuses[$to])) {
+            $errors[] = sprintf('%s history entry %d has an unknown to status.', ucfirst($label), $index + 1);
+        }
+        if (
+            $index === 0
+            && (($from === null && $to !== 'planned') || ($from !== null && $from !== 'planned'))
+        ) {
+            $errors[] = sprintf('%s history must start with null to planned or from planned.', ucfirst($label));
+        }
+        if ($index > 0 && $from !== $previousTo) {
+            $errors[] = sprintf('%s history entry %d does not continue the prior status.', ucfirst($label), $index + 1);
+        }
+        if ($from !== null && $from === $to) {
+            $errors[] = sprintf('%s history entry %d is a no-op transition.', ucfirst($label), $index + 1);
+        }
+        if (!is_string($entry['reason'] ?? null) || trim($entry['reason']) === '') {
+            $errors[] = sprintf('%s history entry %d requires a reason.', ucfirst($label), $index + 1);
+        }
+        validateReferences(
+            $entry['evidence_ids'] ?? null,
+            $evidence,
+            'evidence',
+            $label . ' history entry ' . ($index + 1),
+            $errors,
+        );
+        $previousTo = is_string($to) ? $to : null;
+    }
     $last = $history === [] ? null : $history[array_key_last($history)];
     if (!is_array($last) || ($last['to'] ?? null) !== $status) {
         $errors[] = sprintf('%s status does not match its latest history entry.', ucfirst($label));
@@ -1642,7 +2435,12 @@ function compareSets(
     if ($compareValues) {
         foreach (array_intersect_key($actual, $declared) as $key => $value) {
             if ($value !== $declared[$key]) {
-                $errors[] = sprintf('%s %s does not match its %s metadata.', ucfirst($actualLabel), $key, $declaredLabel);
+                $errors[] = sprintf(
+                    '%s %s does not match its %s metadata.',
+                    ucfirst($actualLabel),
+                    $key,
+                    $declaredLabel,
+                );
             }
         }
     }
@@ -1705,6 +2503,23 @@ function validatePhaseReferences(mixed $references, array $known, string $owner,
 function isCommitRevision(mixed $value): bool
 {
     return is_string($value) && preg_match('/^[0-9a-f]{40}$/D', $value) === 1;
+}
+
+/**
+ * Determine whether a value is a valid calendar date.
+ *
+ * @param   mixed  $value  Candidate YYYY-MM-DD date.
+ *
+ * @return  bool  True for a real Gregorian calendar date.
+ *
+ * @since   2.0.0
+ */
+function isDate(mixed $value): bool
+{
+    if (!is_string($value) || preg_match('/^(\d{4})-(\d{2})-(\d{2})$/D', $value, $parts) !== 1) {
+        return false;
+    }
+    return checkdate((int) $parts[2], (int) $parts[3], (int) $parts[1]);
 }
 
 /**
