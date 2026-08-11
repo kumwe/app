@@ -105,6 +105,10 @@ jobs:
       REDIS_PORT: 6379
       REDIS_DATABASE: 0
       REDIS_NAMESPACE: kumwe.browser
+      # Browser snapshots exercise the suite's purpose-built content and business fixtures. The shipped
+      # documentation and VDM profiles have their own database-portable smoke coverage below.
+      KUMWE_SITE_CONTENT_PROFILE: placeholder
+      KUMWE_BUSINESS_DEMO: 'false'
       KUMWE_BROWSER_ADMIN_EMAIL: browser-administrator@kumwe.test
       KUMWE_BROWSER_ADMIN_PASSWORD: browser administrator password
       KUMWE_BROWSER_LIMITED_EMAIL: browser-limited@kumwe.test
@@ -310,6 +314,10 @@ jobs:
       REDIS_PORT: 6379
       REDIS_DATABASE: 0
       REDIS_NAMESPACE: kumwe.ci
+      # PHPUnit forces the same selection. Keeping the pre-test migration aligned prevents the suite from
+      # inheriting demo state while the isolated profile smoke passes below retain explicit demo coverage.
+      KUMWE_SITE_CONTENT_PROFILE: blank
+      KUMWE_BUSINESS_DEMO: 'false'
     steps:
       - name: Check out repository
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
@@ -334,6 +342,32 @@ jobs:
 
       - name: Upgrade parent schema to current
         run: php bin/kumwe database:migrate
+
+      - name: Smoke-test documentation and VDM profiles
+        env:
+          DB_TABLE_PREFIX: demo_docs_
+          REDIS_NAMESPACE: kumwe.ci.demo-docs
+          KUMWE_SITE_CONTENT_PROFILE: documentation
+          KUMWE_BUSINESS_DEMO: 'true'
+        run: |
+          php tests/Support/install-parent-schema.php
+          php bin/kumwe database:migrate
+          php tests/Support/verify-demo-profile.php documentation-vdm
+          php bin/kumwe database:migrate
+          php tests/Support/verify-demo-profile.php documentation-vdm
+
+      - name: Smoke-test placeholder profile without business examples
+        env:
+          DB_TABLE_PREFIX: demo_placeholder_
+          REDIS_NAMESPACE: kumwe.ci.demo-placeholder
+          KUMWE_SITE_CONTENT_PROFILE: placeholder
+          KUMWE_BUSINESS_DEMO: 'false'
+        run: |
+          php tests/Support/install-parent-schema.php
+          php bin/kumwe database:migrate
+          php tests/Support/verify-demo-profile.php placeholder-none
+          php bin/kumwe database:migrate
+          php tests/Support/verify-demo-profile.php placeholder-none
 
       - name: Run complete test suite
         if: matrix.database.coverage != 'true'

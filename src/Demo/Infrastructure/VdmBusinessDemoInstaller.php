@@ -746,7 +746,15 @@ final readonly class VdmBusinessDemoInstaller
             throw new RuntimeException(sprintf('The VDM demo %s is invalid.', $name));
         }
 
-        return $value;
+        $result = [];
+        foreach ($value as $key => $item) {
+            if (!is_string($key)) {
+                throw new RuntimeException(sprintf('The VDM demo %s has a non-string object key.', $name));
+            }
+            $result[$key] = $item;
+        }
+
+        return $result;
     }
 
     /**
