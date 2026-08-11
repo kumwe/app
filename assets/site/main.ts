@@ -8,6 +8,7 @@ import { setupValidationReveal } from '../interface-standard/reveal-validation';
 const toggle = document.querySelector<HTMLButtonElement>('[data-site-navigation-toggle]');
 const navigation = document.querySelector<HTMLElement>('[data-site-navigation]');
 if (toggle && navigation) {
+  document.documentElement.dataset.siteNavigationEnhanced = '';
   toggle.addEventListener('click', () => {
     const open = navigation.toggleAttribute('data-open');
     toggle.setAttribute('aria-expanded', String(open));
