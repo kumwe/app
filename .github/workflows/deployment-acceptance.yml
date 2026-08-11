@@ -411,6 +411,7 @@ jobs:
           unset administrator_password
           management_token="$(sed -n '2p' <<< "$management_token_output")"
           [[ "$management_token" =~ ^[A-Za-z0-9_-]{32,}$ ]]
+          echo "::add-mask::$management_token"
           full_token_output="$(docker compose --file compose.production.yaml exec -T \
             --env KUMWE_ACCEPTANCE_MANAGEMENT_TOKEN="$management_token" \
             app /usr/local/bin/kumwe-entrypoint sh -euc '
@@ -427,6 +428,7 @@ jobs:
             ')"
           full_token="$(sed -n '2p' <<< "$full_token_output")"
           [[ "$full_token" =~ ^[A-Za-z0-9_-]{32,}$ ]]
+          echo "::add-mask::$full_token"
           read_token_output="$(docker compose --file compose.production.yaml exec -T \
             --env KUMWE_ACCEPTANCE_MANAGEMENT_TOKEN="$management_token" \
             app /usr/local/bin/kumwe-entrypoint sh -euc '
@@ -459,8 +461,10 @@ jobs:
             ')"
           read_token="$(sed -n '2p' <<< "$read_token_output")"
           [[ "$read_token" =~ ^[A-Za-z0-9_-]{32,}$ ]]
+          echo "::add-mask::$read_token"
           mcp_token="$(sed -n '2p' <<< "$mcp_token_output")"
           [[ "$mcp_token" =~ ^[A-Za-z0-9_-]{32,}$ ]]
+          echo "::add-mask::$mcp_token"
           management_token_file="$RUNNER_TEMP/kumwe-management-token-${{ matrix.database.driver }}"
           umask 077
           printf %s "$management_token" > "$management_token_file"
@@ -479,7 +483,6 @@ jobs:
           KUMWE_PROBE_SITE=default \
           KUMWE_PROBE_STATE_FILE="$state_file" \
             bash tools/deployment-probe.sh
-          echo "KUMWE_ACCEPTANCE_API_TOKEN=$full_token" >> "$GITHUB_ENV"
           echo "KUMWE_ACCEPTANCE_PROBE_STATE=$state_file" >> "$GITHUB_ENV"
 
       - name: Build, inspect, conform, sign, install and activate the asset-inspection package
@@ -497,7 +500,10 @@ jobs:
         run: |
           set -euo pipefail
           bash tools/asset-inspection-deployment-acceptance.sh grant
-          echo "KUMWE_ACCEPTANCE_CLI_TOKEN=$(<"$KUMWE_ACCEPTANCE_CLI_TOKEN_FILE")" >> "$GITHUB_ENV"
+          refreshed_cli_token="$(<"$KUMWE_ACCEPTANCE_CLI_TOKEN_FILE")"
+          echo "::add-mask::$refreshed_cli_token"
+          echo "KUMWE_ACCEPTANCE_CLI_TOKEN=$refreshed_cli_token" >> "$GITHUB_ENV"
+          unset refreshed_cli_token
 
       - name: Exercise asset-inspection records, integrations, reporting and lifecycle
         shell: bash
@@ -508,9 +514,12 @@ jobs:
           asset_manifest="$KUMWE_ACCEPTANCE_WORK_ROOT/asset-inspection-source-manifest.json"
           test -s "$asset_state"
           test -s "$asset_manifest"
-          echo "KUMWE_ACCEPTANCE_CLI_TOKEN=$(<"$KUMWE_ACCEPTANCE_CLI_TOKEN_FILE")" >> "$GITHUB_ENV"
+          refreshed_cli_token="$(<"$KUMWE_ACCEPTANCE_CLI_TOKEN_FILE")"
+          echo "::add-mask::$refreshed_cli_token"
+          echo "KUMWE_ACCEPTANCE_CLI_TOKEN=$refreshed_cli_token" >> "$GITHUB_ENV"
           echo "KUMWE_ACCEPTANCE_ASSET_STATE=$asset_state" >> "$GITHUB_ENV"
           echo "KUMWE_ACCEPTANCE_ASSET_MANIFEST=$asset_manifest" >> "$GITHUB_ENV"
+          unset refreshed_cli_token
 
       - name: Exercise Redis and durable automation
         shell: bash
@@ -550,6 +559,33 @@ jobs:
           set -euo pipefail
           page_slug="$(jq -er '.page_slug' "$KUMWE_ACCEPTANCE_PROBE_STATE")"
           api_content_id="$(jq -er '.api_content_id' "$KUMWE_ACCEPTANCE_PROBE_STATE")"
+          # Delegated role changes invalidate older tokens; prove persistence with post-lifecycle authority.
+          administrator_password="$(<"$KUMWE_ACCEPTANCE_ADMIN_PASSWORD_FILE")"
+          persistence_token_output="$(docker compose --file compose.production.yaml exec -T \
+            --env KUMWE_ACCEPTANCE_ADMIN_PASSWORD="$administrator_password" \
+            app /usr/local/bin/kumwe-entrypoint sh -euc '
+              umask 077
+              password_file="$(mktemp)"
+              trap '\''rm -f "$password_file"'\'' EXIT
+              printf %s "$KUMWE_ACCEPTANCE_ADMIN_PASSWORD" > "$password_file"
+              php bin/kumwe token:create \
+                --site=default \
+                --email=administrator@kumwe.test \
+                --name=deployment-persistence \
+                --capabilities=content.read \
+                --audience=kumwe-http \
+                --purpose=api \
+                --password-file="$password_file"
+            ')"
+          unset administrator_password
+          persistence_api_token="$(sed -n '2p' <<< "$persistence_token_output")"
+          unset persistence_token_output
+          [[ "$persistence_api_token" =~ ^[A-Za-z0-9_-]{32,}$ ]]
+          echo "::add-mask::$persistence_api_token"
+          curl --fail --silent --show-error --retry 20 --retry-connrefused \
+            --header "Authorization: Bearer $persistence_api_token" \
+            --header "Kumwe-Site: default" \
+            "http://127.0.0.1:18080/api/v1/content/$api_content_id" >/dev/null
           docker compose --file compose.production.yaml --profile automation \
             restart app web worker scheduler
           docker compose --file compose.production.yaml --profile automation \
@@ -557,9 +593,10 @@ jobs:
           curl --fail --silent --show-error --retry 20 --retry-connrefused \
             "http://127.0.0.1:18080/$page_slug" >/dev/null
           curl --fail --silent --show-error --retry 20 --retry-connrefused \
-            --header "Authorization: Bearer $KUMWE_ACCEPTANCE_API_TOKEN" \
+            --header "Authorization: Bearer $persistence_api_token" \
             --header "Kumwe-Site: default" \
             "http://127.0.0.1:18080/api/v1/content/$api_content_id" >/dev/null
+          unset persistence_api_token
 
       - name: Install database recovery client
         uses: ./.github/actions/database-client

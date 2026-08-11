@@ -212,12 +212,89 @@ final class ProductionArtifactsTest extends TestCase
         self::assertStringContainsString('access grant', $driver);
         self::assertStringContainsString('integration:manage projection-rebuild', $driver);
         self::assertStringContainsString('integration:manage projections', $driver);
+        self::assertStringContainsString('integration:manage outbox --limit=1000', $driver);
+        self::assertStringContainsString('.status == "dispatched"', $driver);
+        self::assertStringContainsString('.status == "dead"', $driver);
         self::assertStringContainsString('kumwe.asset-inspection-example.integration', $driver);
         self::assertStringContainsString('business-report export', $driver);
         self::assertStringContainsString('kumwe_business_report_execute', $driver);
         self::assertStringContainsString('--force-recreate app web worker scheduler', $driver);
         self::assertStringContainsString('$database->quoteSingleIdentifier($table->physicalName)', $support);
         self::assertStringNotContainsString('$tables->quoted($table->physicalName)', $support);
+
+        $initialDrain = strpos($driver, "\ndrain_integrations\n");
+        $replay = strpos($driver, 'acceptance_php replay');
+        $lifecycleRefresh = strrpos(
+            $driver,
+            "refresh_management_token 'kumwe.asset-inspection-example.manage,kumwe.asset-inspection-example.view'",
+        );
+        $finalDrain = strpos(
+            $driver,
+            "\ndrain_integrations\n",
+            $initialDrain === false ? 0 : $initialDrain + 1,
+        );
+        $snapshot = strpos($driver, 'asset-inspection-deployment-acceptance.php snapshot');
+        if (
+            $initialDrain === false
+            || $replay === false
+            || $lifecycleRefresh === false
+            || $finalDrain === false
+            || $snapshot === false
+            || $initialDrain >= $replay
+            || $replay >= $lifecycleRefresh
+            || $lifecycleRefresh >= $finalDrain
+            || $finalDrain >= $snapshot
+        ) {
+            self::fail('The integration drain does not fence both event replay and the source snapshot.');
+        }
+
+        $persistenceToken = strpos($acceptance, '--name=deployment-persistence');
+        $persistenceTokenEnd = strpos(
+            $acceptance,
+            '--password-file="$password_file"',
+            $persistenceToken === false ? 0 : $persistenceToken,
+        );
+        $preRestartAuthorization = strpos(
+            $acceptance,
+            'Authorization: Bearer $persistence_api_token',
+            $persistenceToken === false ? 0 : $persistenceToken,
+        );
+        $persistenceMask = strpos(
+            $acceptance,
+            'echo "::add-mask::$persistence_api_token"',
+            $persistenceToken === false ? 0 : $persistenceToken,
+        );
+        $restart = strpos(
+            $acceptance,
+            'restart app web worker scheduler',
+            $preRestartAuthorization === false ? 0 : $preRestartAuthorization,
+        );
+        $postRestartAuthorization = strpos(
+            $acceptance,
+            'Authorization: Bearer $persistence_api_token',
+            $preRestartAuthorization === false ? 0 : $preRestartAuthorization + 1,
+        );
+        if (
+            $persistenceToken === false
+            || $persistenceTokenEnd === false
+            || $persistenceMask === false
+            || $preRestartAuthorization === false
+            || $restart === false
+            || $postRestartAuthorization === false
+            || $persistenceToken >= $preRestartAuthorization
+            || $persistenceTokenEnd >= $persistenceMask
+            || $persistenceMask >= $preRestartAuthorization
+            || $preRestartAuthorization >= $restart
+            || $restart >= $postRestartAuthorization
+        ) {
+            self::fail('The restart proof does not reuse one freshly issued persistence token.');
+        }
+        $persistenceIssue = substr($acceptance, $persistenceToken, $persistenceTokenEnd - $persistenceToken);
+        self::assertStringContainsString('--capabilities=content.read', $persistenceIssue);
+        self::assertStringContainsString('--audience=kumwe-http', $persistenceIssue);
+        self::assertStringContainsString('--purpose=api', $persistenceIssue);
+        self::assertStringNotContainsString('--organization=', $persistenceIssue);
+        self::assertStringNotContainsString('KUMWE_ACCEPTANCE_API_TOKEN', $acceptance);
     }
 
     /**
