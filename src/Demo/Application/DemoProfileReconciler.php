@@ -7,8 +7,9 @@ namespace Kumwe\CMS\Demo\Application;
 /**
  * Application boundary that converges the persisted installation-profile selections after migration.
  *
- * Delivery invokes this port without knowing whether manifests live on disk or how their fixture ownership
- * is recorded. Implementations must preserve the frozen selection and customized-resource guarantees.
+ * Delivery invokes this port without knowing whether manifests live on disk or how fixture ownership is
+ * recorded. Implementations preserve frozen selections, content and definition customizations, and
+ * append-only business operation and policy checkpoints according to each dataset's explicit contract.
  *
  * @since  2.0.0
  */

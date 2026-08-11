@@ -12,7 +12,7 @@ use Kumwe\CMS\Infrastructure\Persistence\TableNames;
 use RuntimeException;
 
 /**
- * Creates the durable provenance ledger for evolving built-in demonstration datasets.
+ * Creates the durable provenance ledger for versioned built-in demonstration datasets.
  *
  * The installation row records the one selected profile for each dataset and site. Asset rows bind
  * stable fixture keys to the resources the reconciler created, along with the exact fixture state it
@@ -139,9 +139,9 @@ final readonly class DemoProfileProvenanceMigration implements RepeatableMigrati
     /**
      * Declare the fixture-to-resource ownership and last-applied state ledger.
      *
-     * A fixture key is unique inside one site dataset regardless of selected profile. That lets the
-     * reconciler detect a selector change and retire or replace the resource previously owned by the
-     * same fixture slot without treating an operator-owned record as demo material.
+     * A fixture key is unique inside one site dataset. Frozen selector validation prevents profile
+     * replacement, while the stable slot lets each dataset enforce its own update, retirement, or
+     * append-only reconciliation policy without treating an operator-owned record as demo material.
      *
      * @return  Table  Portable asset-provenance declaration.
      *

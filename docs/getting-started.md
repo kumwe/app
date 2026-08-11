@@ -49,10 +49,13 @@ KUMWE_SITE_CONTENT_PROFILE=blank
 KUMWE_BUSINESS_DEMO=false
 ```
 
-Choose both values before the first `database:migrate`. Kumwe persists each choice during the first successful
-profile reconciliation and refuses a different environment value later. This prevents a configuration typo during
-an upgrade from replacing one installed profile with another. Versioned releases can add or correct fixtures, but
-only an example still matching its last Kumwe-applied state is updated; customized examples are preserved.
+Choose both values before the first `database:migrate`. Each dataset's choice is frozen independently when its first
+reconciliation passes validation and begins. Once recorded, a later failure does not release it; retry with the same
+value. A different recorded value is refused, preventing a configuration typo during an upgrade from replacing one
+installed profile with another. Versioned site-content releases can add or correct
+untouched fixtures while customized content remains unchanged. VDM releases may advance untouched definitions and
+append new manifest operations. Operators may edit runtime records normally; migration never rewrites or retires an
+applied VDM manifest create, relation, action, archive, or policy fixture.
 
 ## Start MariaDB, Redis, and Kumwe
 

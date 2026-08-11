@@ -40,7 +40,7 @@ Start from `.env.example` for development. Production Compose maps operator-faci
 | `APP_BASE_URL` | Canonical absolute URL | HTTPS URL |
 | `APP_PUBLIC_SITE` | Explicit site served by public content and theme routes | Canonical site identifier; defaults to `default` |
 | `KUMWE_SITE_CONTENT_PROFILE` | Initial managed content: `documentation`, `placeholder`, or `blank` | `documentation` |
-| `KUMWE_BUSINESS_DEMO` | Install and maintain the independent VDM business example | `true` or `false`; defaults to `true` |
+| `KUMWE_BUSINESS_DEMO` | Install the independent VDM business example | `true` or `false`; defaults to `true` |
 | `APP_TRUSTED_HOSTS` | Comma-separated accepted hostnames | Exact public hosts |
 | `APP_TRUSTED_PROXIES` | Comma-separated proxy address ranges | Only the actual proxy network |
 | `APP_MAX_BODY_BYTES` | Maximum parsed request body | Match proxy and PHP limits |
@@ -67,17 +67,19 @@ Start from `.env.example` for development. Production Compose maps operator-faci
 | `blank` | `true` | Empty managed site plus the VDM business workflow |
 | `blank` | `false` | Empty primary menu, no homepage content, and no VDM business records |
 
-Set these values before the first migration. On the first successful reconciliation, Kumwe persists the selection,
-manifest version, canonical manifest checksum, stable fixture-to-resource mapping, and last-applied state for each
-dataset. Later runs refuse a different selected profile instead of silently replacing installed data. Restore the
-original environment value if an upgrade reports selection drift; changing profiles in place is not a migration or
-recovery mechanism.
+Set these values before the first migration. Each dataset is validated independently. When its first reconciliation
+begins, Kumwe persists the selection, manifest version, and canonical manifest checksum; stable fixture-to-resource
+mappings and last-applied states are recorded as fixtures are applied. Once a selection is recorded, a later failure
+does not release it, and later runs refuse a different profile instead of silently replacing installed data. Restore
+the original environment value if an upgrade reports selection drift; changing profiles in place is not a migration
+or recovery mechanism.
 
-Released manifest versions reconcile repeatably. Kumwe updates or retires an owned fixture only when its current
-canonical state matches the state last applied by the previous profile version. An administrator edit marks that
-fixture as customized and future reconciliation preserves it while continuing with untouched examples. The
-business example contains fictional operational data and public VDM context, but no user, password, API token, or
-secret. Administrator and portal identities are always created explicitly through normal security workflows.
+Released site-content manifests reconcile repeatably: untouched fixtures may advance or retire, while administrator
+changes remain untouched. VDM definitions may advance only while untouched. Operators may edit runtime records
+normally; applied VDM manifest create, relation, action, archive, and policy checkpoints are immutable. A later
+manifest may append a new operation but may not rewrite or remove an applied fixture. The business example contains
+fictional operational data and public VDM context, but no user, password, API token, or secret. Administrator and
+portal identities are always created explicitly through normal security workflows.
 
 ### Development Compose HTTP binding
 

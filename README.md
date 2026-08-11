@@ -24,9 +24,13 @@ KUMWE_SITE_CONTENT_PROFILE=blank
 KUMWE_BUSINESS_DEMO=false
 ```
 
-Site content and business data are independent choices. The first successful profile reconciliation records each
-choice and later migration runs refuse configuration drift. Released profile revisions update only fixtures that
-still match Kumwe's last-applied state, so an administrator's customized example remains untouched.
+Site content and business data are independent choices. Each dataset's choice is frozen independently when its first
+reconciliation passes validation and begins. Once recorded, a later failure does not release it; retry with the same
+value. Later migration runs refuse configuration drift. Released site-content revisions may update or retire only
+fixtures that still match Kumwe's last-applied state, so administrator customizations remain untouched. VDM
+definitions may advance only while untouched. Operators may edit runtime records normally; applied VDM manifest
+create, relation, action, archive, and policy checkpoints are immutable, and later manifests may append new operations
+but may not rewrite or remove an applied fixture.
 
 The development server serves compiled browser assets through the dedicated router and continuously verifies the local extension runtime, so `/health/ready` remains meaningful after startup. To use another host port, change the single Compose setting in `.env` before starting the services:
 

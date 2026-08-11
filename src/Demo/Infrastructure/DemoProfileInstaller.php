@@ -129,6 +129,9 @@ final readonly class DemoProfileInstaller implements DemoProfileReconciler
         $loaded = $this->configuration->businessDemo ? $this->catalog->vdmBusiness() : $this->noBusinessManifest();
         $manifest = $loaded['manifest'];
         $manifestVersion = $this->manifestVersion($manifest);
+        if ($this->configuration->businessDemo) {
+            $this->business->preflight($context, $manifest);
+        }
         if (
             !$this->ledger->begin(
                 $context->site()->identifier(),

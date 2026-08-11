@@ -23,11 +23,13 @@ business behavior must also exercise fresh databases with:
 - `placeholder` content to prove the released compact example remains installable; and
 - `blank` plus `KUMWE_BUSINESS_DEMO=false` to prove a clean installation remains clean.
 
-Use a separate disposable Compose project or remove only a known test project's volumes between cases. Profile
-choices are deliberately persisted on first reconciliation, so reusing one database with different environment
-values must fail rather than masquerade as a successful profile-switch test. Re-run a completed migration with the
-same values to prove idempotence, and edit one installed fixture before applying the next manifest version to prove
-customization preservation.
+Use a separate disposable Compose project or remove only a known test project's volumes between cases. Each dataset's
+choice is deliberately persisted when its first reconciliation passes validation and begins. Reusing one database
+with a different recorded value must fail rather than masquerade as a successful profile-switch test. Re-run a
+completed migration with the same values to prove idempotence. For a higher site-content manifest, edit an installed
+page and menu item to prove customization preservation. For VDM, prove an untouched definition may advance, a
+customized definition is refused, new manifest operations may be appended, and changed or removed applied operations
+and policies fail closed.
 
 Individual checks:
 

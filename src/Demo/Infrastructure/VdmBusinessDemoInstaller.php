@@ -7,6 +7,7 @@ namespace Kumwe\CMS\Demo\Infrastructure;
 use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Types\Types;
+use JsonException;
 use Kumwe\CMS\Application\Authorization\ExecutionContext;
 use Kumwe\CMS\Application\Automation\IdempotencyKey;
 use Kumwe\CMS\Audit\Application\AuditRecorder;
@@ -28,6 +29,7 @@ use Kumwe\CMS\BusinessSchema\Domain\SchemaPlanStatus;
 use Kumwe\CMS\BusinessSecurity\Application\FieldAccessUsage;
 use Kumwe\CMS\Demo\Application\DemoProfileLedger;
 use Kumwe\CMS\Demo\Application\VdmBusinessManifestProjector;
+use Kumwe\CMS\Demo\Application\VdmBusinessOperationGuard;
 use Kumwe\CMS\Infrastructure\Persistence\TableNames;
 use Kumwe\CMS\Infrastructure\Persistence\TransactionManager;
 use Psr\Clock\ClockInterface;
@@ -85,6 +87,7 @@ final readonly class VdmBusinessDemoInstaller
      * @param  BusinessSchemaService         $schemas       Persisted plan, approval, and execution service.
      * @param  BusinessRecordService         $records       Transactional record application service.
      * @param  VdmBusinessManifestProjector  $projector     Pure default-template site projection.
+     * @param  VdmBusinessOperationGuard     $operations    Append-only operation checkpoint guard.
      * @param  DemoProfileLedger             $ledger        Stable profile provenance and restart state.
      * @param  Connection                    $database      Policy catalog connection.
      * @param  TableNames                    $tables        Validated physical table compiler.
@@ -99,6 +102,7 @@ final readonly class VdmBusinessDemoInstaller
         private BusinessSchemaService $schemas,
         private BusinessRecordService $records,
         private VdmBusinessManifestProjector $projector,
+        private VdmBusinessOperationGuard $operations,
         private DemoProfileLedger $ledger,
         private Connection $database,
         private TableNames $tables,
@@ -106,6 +110,34 @@ final readonly class VdmBusinessDemoInstaller
         private AuditRecorder $audit,
         private ClockInterface $clock,
     ) {
+    }
+
+    /**
+     * Validate the complete projected business release against durable checkpoints without mutating state.
+     *
+     * This runs before the outer profile ledger accepts a candidate manifest and again immediately before
+     * installation. A rejected release therefore cannot poison rollback metadata, and no early definition
+     * publication can precede discovery of a later operation, definition, or policy conflict.
+     *
+     * @param   ExecutionContext      $context   Purpose-bound profile-installer context.
+     * @param   array<string, mixed>  $manifest  Aggregate VDM source manifest.
+     *
+     * @return  void
+     *
+     * @throws  RuntimeException  When projected resources contradict their applied checkpoints or current
+     *          definition and policy state.
+     *
+     * @since   2.0.0
+     */
+    public function preflight(ExecutionContext $context, array $manifest): void
+    {
+        $manifest = $this->projector->forSite($manifest, $context->site());
+        $assets = $this->ledger->assets($context->site()->identifier(), self::DATASET);
+        $records = $this->requiredMap($manifest, 'records_document');
+        $operations = $this->operations->validate($records, $assets);
+        $documents = $this->requiredMap($manifest, 'definition_documents');
+        $order = $this->requiredList($manifest, 'installation_order', 64);
+        $this->preflightDefinitionsAndPolicies($context, $documents, $order, $operations, $assets);
     }
 
     /**
@@ -120,7 +152,13 @@ final readonly class VdmBusinessDemoInstaller
      */
     public function install(ExecutionContext $context, array $manifest): array
     {
+        $this->preflight($context, $manifest);
         $manifest = $this->projector->forSite($manifest, $context->site());
+        $records = $this->requiredMap($manifest, 'records_document');
+        $operations = $this->operations->validate(
+            $records,
+            $this->ledger->assets($context->site()->identifier(), self::DATASET),
+        );
         $documents = $this->requiredMap($manifest, 'definition_documents');
         $order = $this->requiredList($manifest, 'installation_order', 64);
         $installed = [];
@@ -147,18 +185,552 @@ final readonly class VdmBusinessDemoInstaller
             }
         });
 
-        $records = $this->requiredMap($manifest, 'records_document');
-        $versions = $this->createRecords($context, $this->requiredList($records, 'records', 512));
-        $this->relateRecords($context, $this->requiredList($records, 'relations', 1_024), $versions);
-        $this->executeActions($context, $this->requiredList($records, 'actions', 1_024), $versions);
-        $this->archiveRecords($context, $this->requiredList($records, 'archives', 512), $versions);
+        $versions = $this->createRecords($context, $operations['records']);
+        $this->relateRecords($context, $operations['relations'], $versions);
+        $this->executeActions($context, $operations['actions'], $versions);
+        $this->archiveRecords($context, $operations['archives'], $versions);
         $messages[] = sprintf('Reconciled %d VDM business records and their example workflows.', count($versions));
 
         return $messages;
     }
 
     /**
+     * Validate every desired definition and policy against all existing checkpoints and live resources.
+     *
+     * @param   ExecutionContext            $context    Profile installer context.
+     * @param   array<string, mixed>        $documents  Projected definition documents by fixture key.
+     * @param   list<mixed>                 $order      Bounded released definition order.
+     * @param   array{
+     *              records: list<array<string, mixed>>,
+     *              relations: list<array<string, mixed>>,
+     *              actions: list<array<string, mixed>>,
+     *              archives: list<array<string, mixed>>
+     *          }                     $operations  Validated record-operation declarations.
+     * @param   list<array<string, mixed>>  $assets     Complete VDM dataset checkpoint set.
+     *
+     * @return  void
+     *
+     * @throws  RuntimeException  When a fixture was removed, reused, corrupted, or diverged in live state.
+     *
+     * @since   2.0.0
+     */
+    private function preflightDefinitionsAndPolicies(
+        ExecutionContext $context,
+        array $documents,
+        array $order,
+        array $operations,
+        array $assets,
+    ): void {
+        /** @var array<string, EntityTypeDefinition> $definitions */
+        $definitions = [];
+        foreach ($order as $candidate) {
+            $entry = $this->map($candidate, 'definition installation entry');
+            $fixtureKey = $this->requiredString($entry, 'fixture_key');
+            if (isset($definitions[$fixtureKey])) {
+                throw new RuntimeException(sprintf('VDM definition fixture %s is duplicated.', $fixtureKey));
+            }
+            $document = $this->map($documents[$fixtureKey] ?? null, 'definition document');
+            $definitions[$fixtureKey] = EntityTypeDefinition::fromArray($document);
+        }
+        if (count($definitions) !== count($documents)) {
+            throw new RuntimeException('Every VDM definition document must appear exactly once in installation order.');
+        }
+        foreach ($documents as $fixtureKey => $document) {
+            if (!isset($definitions[$fixtureKey])) {
+                throw new RuntimeException(sprintf(
+                    'VDM definition document %s is absent from installation order.',
+                    $fixtureKey,
+                ));
+            }
+        }
+
+        /** @var array<string, array<string, mixed>> $assetsByFixture */
+        $assetsByFixture = [];
+        foreach ($assets as $offset => $asset) {
+            $fixtureKey = $this->requiredString($asset, 'fixture_key');
+            if (isset($assetsByFixture[$fixtureKey])) {
+                throw new RuntimeException(sprintf(
+                    'VDM asset fixture %s is duplicated at offset %d.',
+                    $fixtureKey,
+                    $offset,
+                ));
+            }
+            $assetsByFixture[$fixtureKey] = $asset;
+        }
+
+        /** @var array<string, array<string, mixed>> $policies */
+        $policies = [];
+        foreach ($definitions as $definition) {
+            foreach (self::RECORD_OPERATIONS as $operation) {
+                $policy = $this->policyBaseline($definition, $operation);
+                $fixtureKey = $this->requiredString($policy, 'fixture_key');
+                if (isset($policies[$fixtureKey])) {
+                    throw new RuntimeException(sprintf('VDM policy fixture %s is duplicated.', $fixtureKey));
+                }
+                $policies[$fixtureKey] = $policy;
+            }
+        }
+
+        $claims = [];
+        foreach (array_keys($definitions) as $fixtureKey) {
+            $claims[] = ['fixture_key' => $fixtureKey, 'resource_type' => 'business_definition'];
+        }
+        foreach (array_keys($policies) as $fixtureKey) {
+            $claims[] = ['fixture_key' => $fixtureKey, 'resource_type' => 'resource_policy'];
+        }
+        foreach (
+            [
+                'business_record' => $operations['records'],
+                'business_relation' => $operations['relations'],
+                'business_action' => $operations['actions'],
+                'business_archive' => $operations['archives'],
+            ] as $resourceType => $declarations
+        ) {
+            foreach ($declarations as $operation) {
+                $claims[] = [
+                    'fixture_key' => $this->requiredString($operation, 'fixture_key'),
+                    'resource_type' => $resourceType,
+                ];
+            }
+        }
+        $this->operations->validateFixtureOwnership($claims, $assets);
+
+        foreach ($assetsByFixture as $fixtureKey => $asset) {
+            $resourceType = $asset['resource_type'] ?? null;
+            if ($resourceType === 'business_definition') {
+                $definition = $definitions[$fixtureKey] ?? null;
+                if ($definition === null) {
+                    throw new RuntimeException(sprintf(
+                        'VDM definition fixture %s was removed while its applied checkpoint remains.',
+                        $fixtureKey,
+                    ));
+                }
+                $this->assertDefinitionAsset($fixtureKey, $definition, $asset);
+            } elseif ($resourceType === 'resource_policy') {
+                $policy = $policies[$fixtureKey] ?? null;
+                if ($policy === null) {
+                    throw new RuntimeException(sprintf(
+                        'VDM policy fixture %s was removed while its applied checkpoint remains.',
+                        $fixtureKey,
+                    ));
+                }
+                $this->assertPolicyAsset($fixtureKey, $policy, $asset);
+            }
+        }
+
+        foreach ($definitions as $fixtureKey => $definition) {
+            $asset = $assetsByFixture[$fixtureKey] ?? null;
+            if ($asset !== null && ($asset['resource_type'] ?? null) !== 'business_definition') {
+                throw new RuntimeException(sprintf(
+                    'VDM definition fixture %s reuses a checkpoint owned by another resource type.',
+                    $fixtureKey,
+                ));
+            }
+            $this->assertDefinitionRuntime($context, $definition, $asset);
+        }
+        foreach ($policies as $fixtureKey => $policy) {
+            $asset = $assetsByFixture[$fixtureKey] ?? null;
+            if ($asset !== null && ($asset['resource_type'] ?? null) !== 'resource_policy') {
+                throw new RuntimeException(sprintf(
+                    'VDM policy fixture %s reuses a checkpoint owned by another resource type.',
+                    $fixtureKey,
+                ));
+            }
+            $this->assertCurrentPolicy($context, $policy, $asset !== null);
+        }
+    }
+
+    /**
+     * Validate one definition checkpoint as an internally consistent mutable divergence baseline.
+     *
+     * @param   string                $fixtureKey  Stable definition fixture key.
+     * @param   EntityTypeDefinition  $desired     Projected released draft identity.
+     * @param   array<string, mixed>  $asset       Persisted definition checkpoint.
+     *
+     * @return  void
+     *
+     * @throws  RuntimeException  When identity, state, checksum, or version is corrupt.
+     *
+     * @since   2.0.0
+     */
+    private function assertDefinitionAsset(
+        string $fixtureKey,
+        EntityTypeDefinition $desired,
+        array $asset,
+    ): void {
+        $resourceId = $this->requiredString($asset, 'resource_id');
+        if ($resourceId !== $desired->id) {
+            throw new RuntimeException(sprintf('VDM definition fixture %s changed resource identity.', $fixtureKey));
+        }
+        $state = $this->map($asset['last_applied_state'] ?? null, 'definition checkpoint state');
+        $stored = EntityTypeDefinition::fromArray($state);
+        $checksum = $this->checksum($asset, $fixtureKey);
+        $version = $this->persistedPositiveInteger(
+            $asset['last_applied_version'] ?? null,
+            sprintf('VDM definition fixture %s version', $fixtureKey),
+        );
+        if (
+            !hash_equals($checksum, $stored->checksum())
+            || $version !== $stored->definitionVersion
+            || $stored->id !== $desired->id
+            || $stored->handle !== $desired->handle
+            || $stored->siteIdentifier !== $desired->siteIdentifier
+            || $stored->owner->toArray() !== $desired->owner->toArray()
+        ) {
+            throw new RuntimeException(sprintf(
+                'VDM definition fixture %s has an inconsistent applied checkpoint.',
+                $fixtureKey,
+            ));
+        }
+    }
+
+    /**
+     * Check current published and draft definitions in one read-only pass before any definition is changed.
+     *
+     * An exact uncheckpointed definition or draft is accepted as recoverable crash residue: definition
+     * publication commits through its application service before this installer can write its ledger asset.
+     * Deterministic identity, ownership, and complete checksums make that adoption exact rather than heuristic.
+     *
+     * @param   ExecutionContext       $context  Profile installer context.
+     * @param   EntityTypeDefinition   $desired  Projected released draft.
+     * @param   ?array<string, mixed>  $asset    Validated prior checkpoint, or null before first apply.
+     *
+     * @return  void
+     *
+     * @throws  RuntimeException  When current state disappeared or diverged from both desired and baseline.
+     *
+     * @since   2.0.0
+     */
+    private function assertDefinitionRuntime(
+        ExecutionContext $context,
+        EntityTypeDefinition $desired,
+        ?array $asset,
+    ): void {
+        try {
+            $published = $this->definitions->published($context, $desired->handle)->definition;
+            $desiredPublished = $desired->published($published->definitionVersion);
+            if (
+                !hash_equals($published->checksum(), $desiredPublished->checksum())
+                && ($asset === null || !hash_equals($this->checksum($asset, $desired->handle), $published->checksum()))
+            ) {
+                throw new RuntimeException(sprintf(
+                    'VDM definition %s was customized; refusing demo reconciliation.',
+                    $desired->handle,
+                ));
+            }
+        } catch (BusinessDefinitionNotFound) {
+            if ($asset !== null) {
+                throw new RuntimeException(sprintf(
+                    'VDM definition %s is missing while its applied checkpoint remains.',
+                    $desired->handle,
+                ));
+            }
+        }
+
+        try {
+            $draft = $this->definitions->draft($context, $desired->handle);
+            if (!hash_equals($desired->checksum(), $draft->definition->checksum())) {
+                throw new RuntimeException(sprintf(
+                    'VDM definition %s has a divergent draft; refusing demo reconciliation.',
+                    $desired->handle,
+                ));
+            }
+        } catch (BusinessDefinitionNotFound) {
+        }
+    }
+
+    /**
+     * Derive the deterministic database row and ledger checkpoint for one generated record policy.
+     *
+     * @param   EntityTypeDefinition  $definition  Projected definition whose fields establish disclosure.
+     * @param   string                $operation   Exact business-record capability and policy action.
+     *
+     * @return  array<string, mixed>  Complete desired policy baseline used by preflight and installation.
+     *
+     * @since   2.0.0
+     */
+    private function policyBaseline(EntityTypeDefinition $definition, string $operation): array
+    {
+        $predicate = ['type' => 'constant', 'value' => true];
+        $fields = $this->recordFieldRules($definition);
+        $policyCode = $this->policyCode($definition, $operation);
+        $fixtureKey = 'policy.' . substr(hash('sha256', $policyCode), 0, 32);
+        $id = Uuid::uuid5(
+            Uuid::NAMESPACE_URL,
+            'https://kumwe.dev/demo/vdm/policy/' . $policyCode,
+        )->toString();
+        $state = [
+            'policy_code' => $policyCode,
+            'definition_id' => $definition->id,
+            'operation' => $operation,
+        ];
+
+        return [
+            'fixture_key' => $fixtureKey,
+            'id' => $id,
+            'policy_code' => $policyCode,
+            'definition_id' => $definition->id,
+            'operation' => $operation,
+            'predicate' => $predicate,
+            'fields' => $fields,
+            'ast_checksum' => CanonicalDefinitionJson::checksum(['ast' => $predicate, 'fields' => $fields]),
+            'state' => $state,
+            'asset_checksum' => CanonicalDefinitionJson::checksum($state),
+        ];
+    }
+
+    /**
+     * Validate one generated policy checkpoint against its deterministic identity and state.
+     *
+     * @param   string                $fixtureKey  Stable policy fixture key.
+     * @param   array<string, mixed>  $policy      Desired policy baseline.
+     * @param   array<string, mixed>  $asset       Persisted policy checkpoint.
+     *
+     * @return  void
+     *
+     * @throws  RuntimeException  When resource identity, version, state, or checksum differs.
+     *
+     * @since   2.0.0
+     */
+    private function assertPolicyAsset(string $fixtureKey, array $policy, array $asset): void
+    {
+        $id = $this->requiredString($policy, 'id');
+        if ($this->requiredString($asset, 'resource_id') !== $id) {
+            throw new RuntimeException(sprintf('VDM policy fixture %s changed resource identity.', $fixtureKey));
+        }
+        $version = $this->persistedPositiveInteger(
+            $asset['last_applied_version'] ?? null,
+            sprintf('VDM policy fixture %s version', $fixtureKey),
+        );
+        $state = $this->map($asset['last_applied_state'] ?? null, 'policy checkpoint state');
+        $desiredState = $this->map($policy['state'] ?? null, 'desired policy checkpoint state');
+        $storedChecksum = $this->checksum($asset, $fixtureKey);
+        $desiredChecksum = $this->requiredString($policy, 'asset_checksum');
+        if (
+            $version !== 1
+            || CanonicalDefinitionJson::encode($state) !== CanonicalDefinitionJson::encode($desiredState)
+            || !hash_equals($storedChecksum, CanonicalDefinitionJson::checksum($state))
+            || !hash_equals($storedChecksum, $desiredChecksum)
+        ) {
+            throw new RuntimeException(sprintf(
+                'VDM policy fixture %s has an inconsistent applied checkpoint.',
+                $fixtureKey,
+            ));
+        }
+    }
+
+    /**
+     * Validate one current generated policy row and its site ownership before any definition mutation.
+     *
+     * @param   ExecutionContext      $context   Profile installer context.
+     * @param   array<string, mixed>  $policy    Desired policy baseline.
+     * @param   bool                  $hasAsset  Whether exact installer provenance is present.
+     *
+     * @return  void
+     *
+     * @throws  RuntimeException  When row, policy document, ownership, or provenance differs.
+     *
+     * @since   2.0.0
+     */
+    private function assertCurrentPolicy(ExecutionContext $context, array $policy, bool $hasAsset): void
+    {
+        $policyCode = $this->requiredString($policy, 'policy_code');
+        $row = $this->database->fetchAssociative(sprintf(
+            'SELECT id, policy_code, owner_kind, owner_identifier, capability_code, resource_type, action, '
+                . 'effect, scope_type, organization_id, entity_definition_id, canonical_ast, field_rules, '
+                . 'ast_checksum, policy_version, priority, status FROM %s WHERE policy_code = ?',
+            $this->tables->quoted('resource_policies'),
+        ), [$policyCode]);
+        if ($row === false) {
+            if ($hasAsset) {
+                throw new RuntimeException(sprintf(
+                    'VDM policy %s is missing while its applied checkpoint remains.',
+                    $policyCode,
+                ));
+            }
+
+            return;
+        }
+        if (!$hasAsset) {
+            throw new RuntimeException(sprintf(
+                'VDM policy %s exists without an installer provenance checkpoint.',
+                $policyCode,
+            ));
+        }
+
+        $operation = $this->requiredString($policy, 'operation');
+        $expected = [
+            'id' => $this->requiredString($policy, 'id'),
+            'policy_code' => $policyCode,
+            'owner_kind' => 'core',
+            'owner_identifier' => 'core',
+            'capability_code' => $operation,
+            'resource_type' => 'business_record',
+            'action' => $operation,
+            'effect' => 'allow',
+            'scope_type' => 'site',
+            'entity_definition_id' => $this->requiredString($policy, 'definition_id'),
+            'ast_checksum' => $this->requiredString($policy, 'ast_checksum'),
+            'status' => 'active',
+        ];
+        foreach ($expected as $field => $value) {
+            if (($row[$field] ?? null) !== $value) {
+                throw new RuntimeException(sprintf('VDM policy %s has diverged field %s.', $policyCode, $field));
+            }
+        }
+        if (($row['organization_id'] ?? null) !== null) {
+            throw new RuntimeException(sprintf('VDM policy %s has a divergent organization scope.', $policyCode));
+        }
+        if (
+            $this->persistedInteger($row['policy_version'] ?? null, 'policy version') !== 1
+            || $this->persistedInteger($row['priority'] ?? null, 'policy priority') !== -1_000
+        ) {
+            throw new RuntimeException(sprintf('VDM policy %s has divergent precedence metadata.', $policyCode));
+        }
+
+        $actualAst = $this->decodedMap($row['canonical_ast'] ?? null, 'policy canonical AST');
+        $actualFields = $this->decodedMap($row['field_rules'] ?? null, 'policy field rules');
+        $desiredAst = $this->map($policy['predicate'] ?? null, 'desired policy canonical AST');
+        $desiredFields = $this->map($policy['fields'] ?? null, 'desired policy field rules');
+        $actualChecksum = CanonicalDefinitionJson::checksum(['ast' => $actualAst, 'fields' => $actualFields]);
+        if (
+            CanonicalDefinitionJson::encode($actualAst) !== CanonicalDefinitionJson::encode($desiredAst)
+            || CanonicalDefinitionJson::encode($actualFields) !== CanonicalDefinitionJson::encode($desiredFields)
+            || !hash_equals($this->requiredString($row, 'ast_checksum'), $actualChecksum)
+        ) {
+            throw new RuntimeException(sprintf('VDM policy %s has divergent policy documents.', $policyCode));
+        }
+
+        $ownership = $this->database->fetchOne(sprintf(
+            'SELECT site_identifier FROM %s WHERE resource_type = ? AND resource_id = ?',
+            $this->tables->quoted('resource_site_ownership'),
+        ), ['resource_policy', $this->requiredString($policy, 'id')]);
+        if ($ownership !== $context->site()->identifier()) {
+            throw new RuntimeException(sprintf('VDM policy %s has divergent site ownership.', $policyCode));
+        }
+    }
+
+    /**
+     * Decode one JSON database value and require an object-shaped policy document.
+     *
+     * @param   mixed   $value  Native driver array or encoded JSON value.
+     * @param   string  $name   Diagnostic policy document name.
+     *
+     * @return  array<string, mixed>  Decoded object-shaped document.
+     *
+     * @throws  RuntimeException  When JSON is invalid or does not decode to an object.
+     *
+     * @since   2.0.0
+     */
+    private function decodedMap(mixed $value, string $name): array
+    {
+        if (is_string($value)) {
+            try {
+                $value = json_decode($value, true, 32, JSON_THROW_ON_ERROR);
+            } catch (JsonException $exception) {
+                throw new RuntimeException(sprintf('The VDM %s is invalid JSON.', $name), 0, $exception);
+            }
+        }
+
+        return $this->map($value, $name);
+    }
+
+    /**
+     * Require one canonical lowercase SHA-256 checkpoint checksum.
+     *
+     * @param   array<string, mixed>  $asset       Persisted checkpoint.
+     * @param   string                $fixtureKey  Fixture key used in diagnostics.
+     *
+     * @return  string  Validated checksum.
+     *
+     * @throws  RuntimeException  When the checksum is absent or malformed.
+     *
+     * @since   2.0.0
+     */
+    private function checksum(array $asset, string $fixtureKey): string
+    {
+        $checksum = $asset['last_applied_checksum'] ?? null;
+        if (!is_string($checksum) || preg_match('/^[a-f0-9]{64}$/D', $checksum) !== 1) {
+            throw new RuntimeException(sprintf('VDM fixture %s has an invalid checkpoint checksum.', $fixtureKey));
+        }
+
+        return $checksum;
+    }
+
+    /**
+     * Normalize one persisted integer without accepting fractions or loose numeric strings.
+     *
+     * @param   mixed   $value  Database-driver value.
+     * @param   string  $name   Diagnostic field name.
+     *
+     * @return  int  Exact integer value.
+     *
+     * @throws  RuntimeException  When the value is not an exact integer.
+     *
+     * @since   2.0.0
+     */
+    private function persistedInteger(mixed $value, string $name): int
+    {
+        $integer = $this->canonicalPersistedInteger($value);
+        if ($integer === null) {
+            throw new RuntimeException(sprintf('The VDM %s is invalid.', $name));
+        }
+
+        return $integer;
+    }
+
+    /**
+     * Normalize one persisted positive integer.
+     *
+     * @param   mixed   $value  Database-driver value.
+     * @param   string  $name   Diagnostic field name.
+     *
+     * @return  positive-int  Exact positive integer value.
+     *
+     * @throws  RuntimeException  When the value is not a positive integer.
+     *
+     * @since   2.0.0
+     */
+    private function persistedPositiveInteger(mixed $value, string $name): int
+    {
+        $integer = $this->canonicalPersistedInteger($value);
+        if ($integer === null || $integer < 1) {
+            throw new RuntimeException(sprintf('The VDM %s is invalid.', $name));
+        }
+
+        return $integer;
+    }
+
+    /**
+     * Normalize one canonical integer representation returned by a database driver.
+     *
+     * Native integers and plain base-ten strings are portable across PDO drivers. Booleans, floats,
+     * whitespace, leading zeroes, and explicit plus signs are rejected instead of being coerced.
+     *
+     * @param   mixed  $value  Candidate database-driver value.
+     *
+     * @return  ?int  Exact integer, or null when the representation is not canonical or overflows.
+     *
+     * @since   2.0.0
+     */
+    private function canonicalPersistedInteger(mixed $value): ?int
+    {
+        if (is_int($value)) {
+            return $value;
+        }
+        if (!is_string($value) || preg_match('/^(?:0|-?[1-9][0-9]*)$/D', $value) !== 1) {
+            return null;
+        }
+        $integer = filter_var($value, FILTER_VALIDATE_INT);
+
+        return is_int($integer) ? $integer : null;
+    }
+
+    /**
      * Import and publish one definition, updating it only while the prior demo version remains untouched.
+     *
+     * Exact published or draft bytes without a ledger asset resume the non-atomic service-to-ledger boundary.
+     * Any difference is treated as operator state and refused rather than adopted or overwritten.
      *
      * @param   ExecutionContext      $context     Profile installer context.
      * @param   string                $fixtureKey  Stable definition fixture key.
@@ -195,13 +767,17 @@ final readonly class VdmBusinessDemoInstaller
             }
         }
 
-        $expectedRevision = null;
         try {
             $draft = $this->definitions->draft($context, $draftDefinition->handle);
-            $expectedRevision = $draft->revision;
+            if (!hash_equals($draftDefinition->checksum(), $draft->definition->checksum())) {
+                throw new RuntimeException(sprintf(
+                    'VDM definition %s has a divergent draft; refusing to overwrite it during demo reconciliation.',
+                    $draftDefinition->handle,
+                ));
+            }
         } catch (BusinessDefinitionNotFound) {
+            $draft = $this->definitions->importDraft($context, $document);
         }
-        $draft = $this->definitions->importDraft($context, $document, $expectedRevision);
         $published = $this->definitions->publish($context, $draft->definition->id, $draft->revision, true)->definition;
         $this->recordDefinitionAsset($context, $fixtureKey, $published);
 
@@ -296,18 +872,13 @@ final readonly class VdmBusinessDemoInstaller
         $checksum = CanonicalDefinitionJson::checksum(['ast' => $predicate, 'fields' => $fields]);
         foreach (self::RECORD_OPERATIONS as $operation) {
             $policyCode = $this->policyCode($definition, $operation);
+            $baseline = $this->policyBaseline($definition, $operation);
             $existing = $this->database->fetchAssociative(sprintf(
                 'SELECT id, entity_definition_id, action, ast_checksum FROM %s WHERE policy_code = ?',
                 $this->tables->quoted('resource_policies'),
             ), [$policyCode]);
             if ($existing !== false) {
-                if (
-                    ($existing['entity_definition_id'] ?? null) !== $definition->id
-                    || ($existing['action'] ?? null) !== $operation
-                    || ($existing['ast_checksum'] ?? null) !== $checksum
-                ) {
-                    throw new RuntimeException(sprintf('VDM policy %s has diverged.', $policyCode));
-                }
+                $this->assertCurrentPolicy($context, $baseline, true);
                 continue;
             }
             $created = true;

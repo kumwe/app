@@ -106,7 +106,8 @@ interface DemoProfileLedger
      * @param   string                $fixtureKey    Stable fixture identity.
      * @param   string                $resourceType  Diagnostic resource noun.
      * @param   string                $resourceId    Actual service-issued resource identity.
-     * @param   string                $checksum      Canonical checksum of the applied state.
+     * @param   string                $checksum      Canonical fixture baseline checksum; mutable resources
+     *          fingerprint applied state, while immutable operations fingerprint their exact request.
      * @param   int                   $version       Resource version after application.
      * @param   array<string, mixed>  $state         Non-secret canonical applied state.
      *
