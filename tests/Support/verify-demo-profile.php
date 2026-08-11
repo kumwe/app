@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Doctrine\DBAL\Types\Types;
 use Kumwe\CMS\Infrastructure\Persistence\DoctrineConnectionFactory;
 use Kumwe\CMS\Infrastructure\Persistence\TableNames;
 use Kumwe\CMS\Kernel\Configuration\ConfigurationFactory;
@@ -72,16 +73,51 @@ if ($contentCount !== $expected['content']) {
     ));
 }
 
-$navigationCount = (int) $database->fetchOne(sprintf(
-    'SELECT COUNT(*) FROM %s i INNER JOIN %s m ON m.id = i.menu_id '
-        . 'INNER JOIN %s mo ON mo.resource_type = ? AND mo.resource_id = m.id '
-        . 'INNER JOIN %s io ON io.resource_type = ? AND io.resource_id = i.id '
-        . 'WHERE m.handle = ? AND mo.site_identifier = ? AND io.site_identifier = ?',
-    $tables->quoted('navigation_items'),
+$menuId = $database->fetchOne(sprintf(
+    'SELECT id FROM %s WHERE handle = ?',
     $tables->quoted('navigation_menus'),
+), ['main']);
+if (!is_string($menuId)) {
+    throw new RuntimeException('The primary navigation menu identifier is malformed.');
+}
+$menuOwnershipCount = (int) $database->fetchOne(sprintf(
+    'SELECT COUNT(*) FROM %s WHERE resource_type = ? AND resource_id = ? AND site_identifier = ?',
     $tables->quoted('resource_site_ownership'),
+), ['menu', $menuId, $configuration->publicSite]);
+if ($menuOwnershipCount !== 1) {
+    throw new RuntimeException('The primary navigation menu does not have exactly one site owner.');
+}
+
+$navigationRows = $database->fetchFirstColumn(sprintf(
+    'SELECT id FROM %s WHERE menu_id = ? ORDER BY id',
+    $tables->quoted('navigation_items'),
+), [$menuId], [Types::GUID]);
+$ownedNavigationRows = $database->fetchFirstColumn(sprintf(
+    'SELECT resource_id FROM %s WHERE resource_type = ? AND site_identifier = ? ORDER BY resource_id',
     $tables->quoted('resource_site_ownership'),
-), ['menu', 'menu_item', 'main', $configuration->publicSite, $configuration->publicSite]);
+), ['menu_item', $configuration->publicSite]);
+$navigationIds = [];
+foreach ($navigationRows as $navigationId) {
+    if (!is_string($navigationId)) {
+        throw new RuntimeException('A primary navigation item identifier is malformed.');
+    }
+    $navigationIds[] = $navigationId;
+}
+$ownedNavigationIds = [];
+foreach ($ownedNavigationRows as $navigationId) {
+    if (!is_string($navigationId)) {
+        throw new RuntimeException('A navigation ownership identifier is malformed.');
+    }
+    $ownedNavigationIds[] = $navigationId;
+}
+$ownedNavigationLookup = array_fill_keys($ownedNavigationIds, true);
+$navigationCount = 0;
+foreach ($navigationIds as $navigationId) {
+    $navigationCount += isset($ownedNavigationLookup[$navigationId]) ? 1 : 0;
+}
+if ($navigationCount !== count($navigationIds)) {
+    throw new RuntimeException('A primary navigation item is not owned by the configured site.');
+}
 if ($navigationCount !== $expected['navigation']) {
     throw new RuntimeException(sprintf(
         'The %s smoke contract expected %d primary navigation items, found %d.',
