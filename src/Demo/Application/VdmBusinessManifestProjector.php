@@ -187,8 +187,8 @@ final readonly class VdmBusinessManifestProjector
      * Add one unambiguous source identity to the projection map.
      *
      * @param   array<string, string>  &$replacements  Projection map under construction.
-     * @param   string                 $source         Exact source identity.
-     * @param   string                 $target         Site-owned target identity.
+     * @param   string  $source  Exact source identity.
+     * @param   string  $target  Site-owned target identity.
      *
      * @return  void
      *

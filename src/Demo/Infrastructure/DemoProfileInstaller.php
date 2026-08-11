@@ -30,12 +30,12 @@ final readonly class DemoProfileInstaller implements DemoProfileReconciler
     /**
      * Bind configuration, immutable manifests, handlers, ledger, and purpose-specific system authority.
      *
-     * @param  ApplicationConfiguration      $configuration  Validated process profile selectors.
-     * @param  FilesystemDemoManifestCatalog $catalog        Shipped immutable JSON manifests.
-     * @param  DemoContentProfileInstaller   $content        Managed site-content reconciler.
-     * @param  VdmBusinessDemoInstaller      $business       VDM business runtime reconciler.
-     * @param  DemoProfileLedger             $ledger         Durable selector and restart state.
-     * @param  SystemPrincipal               $system         Purpose-bound profile-installer authority.
+     * @param  ApplicationConfiguration       $configuration  Validated process profile selectors.
+     * @param  FilesystemDemoManifestCatalog  $catalog        Shipped immutable JSON manifests.
+     * @param  DemoContentProfileInstaller    $content        Managed site-content reconciler.
+     * @param  VdmBusinessDemoInstaller       $business       VDM business runtime reconciler.
+     * @param  DemoProfileLedger              $ledger         Durable selector and restart state.
+     * @param  SystemPrincipal                $system         Purpose-bound profile-installer authority.
      *
      * @since  2.0.0
      */
