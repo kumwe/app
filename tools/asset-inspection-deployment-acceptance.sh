@@ -379,14 +379,45 @@ reorder_api_records() {
 }
 
 drain_integrations() {
-    local iteration output
+    local example_definitions iteration inventory output
+    example_definitions='[
+        "019bc200-0000-7000-8000-000000000001",
+        "019bc200-0000-7000-8000-000000000002",
+        "019bc200-0000-7000-8000-000000000003",
+        "019bc200-0000-7000-8000-000000000004",
+        "019bc200-0000-7000-8000-000000000005"
+    ]'
     for iteration in $(seq 1 100); do
         output="$(app php bin/kumwe integration:work --once --stream=all --max-items=1000)"
-        if grep --fixed-strings --quiet 'processed 0 item batch(es)' <<< "$output"; then
+        if ! grep --fixed-strings --quiet 'processed 0 item batch(es)' <<< "$output"; then
+            continue
+        fi
+        # No runnable item may still mean ordered successors are delayed by durable backpressure.
+        inventory="$(app_token "$KUMWE_ACCEPTANCE_CLI_TOKEN_FILE" integration:manage outbox --limit=1000)"
+        if jq -e --argjson definitions "$example_definitions" '
+            [.items[] | select(.aggregate_type as $type | $definitions | index($type) != null)] as $example
+            | any($example[]; .status == "dead")
+        ' <<< "$inventory" >/dev/null; then
+            jq -c --argjson definitions "$example_definitions" '
+                [.items[] | select(.aggregate_type as $type | $definitions | index($type) != null)
+                    | {event_id, aggregate_type, aggregate_version, status, attempts}]
+            ' <<< "$inventory" >&2
+            fail 'an example integration event reached the dead-letter state'
+        fi
+        if jq -e --argjson definitions "$example_definitions" '
+            [.items[] | select(.aggregate_type as $type | $definitions | index($type) != null)] as $example
+            | ($example | length) > 0 and all($example[]; .status == "dispatched")
+        ' <<< "$inventory" >/dev/null; then
             return 0
         fi
+        sleep 1
     done
-    fail 'integration work did not drain within one hundred bounded passes'
+    inventory="$(app_token "$KUMWE_ACCEPTANCE_CLI_TOKEN_FILE" integration:manage outbox --limit=1000)"
+    jq -c --argjson definitions "$example_definitions" '
+        [.items[] | select(.aggregate_type as $type | $definitions | index($type) != null)
+            | {event_id, aggregate_type, aggregate_version, status, attempts}]
+    ' <<< "$inventory" >&2
+    fail 'integration work did not reach a terminal state within one hundred bounded passes'
 }
 
 assert_projection_evidence() {
@@ -752,6 +783,7 @@ app php bin/kumwe extension:runtime:materialize >/dev/null
 compose --profile automation up --detach --wait --force-recreate app web worker scheduler
 app php bin/kumwe schedule:run >/dev/null
 refresh_management_token 'kumwe.asset-inspection-example.manage,kumwe.asset-inspection-example.view'
+drain_integrations
 assert_projection_evidence
 
 package_sha="$(jq -er '.package_sha256' "$state_file")"
