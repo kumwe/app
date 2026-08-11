@@ -241,7 +241,9 @@ final readonly class ExtensionManifest
      * document is additionally closed to unknown keys at every level whose key set is known, which
      * turns a misspelled field into an install failure instead of a silently ignored declaration.
      * Schemas 2 through 4 also reconcile `permissions` with contributed capabilities: an absent list is
-     * filled in from them, and a present one must match them exactly, order included.
+     * filled in from them, and a present one must match them exactly, order included. Historical
+     * schema-one templates without a declaration receive the exact KIS 1.0 compatibility point;
+     * template manifests using a strict schema must declare their closed compatibility envelope.
      *
      * @param   string  $json  Raw manifest document read from the package root.
      *
@@ -385,21 +387,27 @@ final readonly class ExtensionManifest
         }
 
         $templateDeclaration = $data['template'] ?? null;
-        if (
-            $type === ExtensionType::Template
-            && (!is_array($templateDeclaration) || array_is_list($templateDeclaration))
-        ) {
+        if ($type === ExtensionType::Template && $templateDeclaration === null && $schema >= 2) {
             throw new InvalidArgumentException(
                 'A template extension must declare a versioned template compatibility object.',
             );
+        }
+        if (
+            $type === ExtensionType::Template
+            && $templateDeclaration !== null
+            && (!is_array($templateDeclaration) || array_is_list($templateDeclaration))
+        ) {
+            throw new InvalidArgumentException('The template compatibility declaration must be a JSON object.');
         }
         if ($type !== ExtensionType::Template && $templateDeclaration !== null) {
             throw new InvalidArgumentException('Only template extensions may declare template compatibility.');
         }
         /** @var ?array<string, mixed> $templateDeclaration */
-        $templateCompatibility = $templateDeclaration === null
-            ? null
-            : TemplateKisCompatibility::fromArray($templateDeclaration);
+        $templateCompatibility = match (true) {
+            $templateDeclaration !== null => TemplateKisCompatibility::fromArray($templateDeclaration),
+            $type === ExtensionType::Template && $schema === 1 => TemplateKisCompatibility::legacyKisOne(),
+            default => null,
+        };
 
         return new self(
             $identifier,

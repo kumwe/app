@@ -18,6 +18,27 @@ use InvalidArgumentException;
 final readonly class TemplateKisCompatibility
 {
     /**
+     * Supply the exact KIS 1.0 contract historical schema-one templates implicitly targeted.
+     *
+     * This narrow default preserves manifests accepted before the compatibility envelope existed. It
+     * does not create an open range: legacy packages are admitted only against the original KIS 1.0
+     * standard and the exact 1.0.0 component and token contracts.
+     *
+     * @return  self  Exact KIS 1.0 compatibility used only for undeclared schema-one templates.
+     *
+     * @since   2.0.0
+     */
+    public static function legacyKisOne(): self
+    {
+        return self::fromArray([
+            'contract' => 1,
+            'standard' => 'kis-1.0',
+            'components' => ['minimum' => '1.0.0', 'maximum' => '1.0.0'],
+            'tokens' => ['minimum' => '1.0.0', 'maximum' => '1.0.0'],
+        ]);
+    }
+
+    /**
      * Parse and validate a template's closed KIS compatibility object.
      *
      * @param   array<string, mixed>  $declaration  Value of the manifest's top-level `template` field.
