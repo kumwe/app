@@ -188,6 +188,60 @@ final class ThemePackageValidatorTest extends TestCase
     }
 
     /**
+     * Proves comments, templates, raw-text elements, and hidden carriers cannot prove page content.
+     *
+     * @param   string  $prefix  Carrier markup placed before the rendered title and body.
+     * @param   string  $suffix  Carrier markup placed after the rendered title and body.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    #[DataProvider('nonPresentationalCarriers')]
+    public function testNonPresentationalCarriersCannotProvePresentedPageContent(
+        string $prefix,
+        string $suffix,
+    ): void {
+        $this->writeValidSiteTheme();
+        $content = '<h1>{{ entry.title }}</h1><div>{{ entry.body_html|raw }}</div>';
+        $page = str_replace($content, 'Static' . $prefix . $content . $suffix, $this->validSitePageDocument());
+        file_put_contents($this->root . '/theme/page.twig', $page);
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('page.twig entry must render its presentation-ready content');
+
+        $this->validator()->validate($this->root . '/theme', ThemeSurface::Site, $this->compatibility());
+    }
+
+    /**
+     * Proves inert carriers cannot make hidden server navigation satisfy the public-shell contract.
+     *
+     * @param   string  $prefix  Carrier markup placed before the rendered navigation landmark.
+     * @param   string  $suffix  Carrier markup placed after the rendered navigation landmark.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    #[DataProvider('nonPresentationalCarriers')]
+    public function testNonPresentationalCarriersCannotProveSiteNavigation(
+        string $prefix,
+        string $suffix,
+    ): void {
+        $this->writeValidSiteTheme();
+        $home = str_replace(
+            '<nav aria-label="Main navigation">',
+            $prefix . '<nav aria-label="Main navigation">',
+            $this->validSiteDocument('Visible content'),
+        );
+        $home = str_replace('</nav>', '</nav>' . $suffix, $home);
+        file_put_contents($this->root . '/theme/home.twig', $home);
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('labelled host-supplied navigation');
+
+        $this->validator()->validate($this->root . '/theme', ThemeSurface::Site, $this->compatibility());
+    }
+
+    /**
      * Proves activation fails closed when the signed declaration excludes a host KIS contract.
      *
      * @return  void
@@ -539,6 +593,7 @@ JSON);
                 'host-supplied site stylesheet',
             ],
             'main content' => ['Contract probe', '', 'presentation-ready content'],
+            'programmatic focus' => [' tabindex="-1"', '', 'accept skip-link focus'],
             'skip target' => ['href="#site-content"', 'href="#missing"', 'matching skip target'],
             'navigation label' => [
                 'aria-label="Main navigation"',
@@ -565,6 +620,25 @@ JSON);
         return [
             'entry title' => ['<h1>{{ entry.title }}</h1>'],
             'trusted body' => ['<div>{{ entry.body_html|raw }}</div>'],
+        ];
+    }
+
+    /**
+     * Supply inert HTML carriers that must not contribute to the visible semantic proof.
+     *
+     * @return  array<string, array{string, string}>  Opening and closing carrier markup.
+     *
+     * @since   2.0.0
+     */
+    public static function nonPresentationalCarriers(): array
+    {
+        return [
+            'comment' => ['<!--', '-->'],
+            'template' => ['<template>', '</template>'],
+            'hidden' => ['<div hidden>', '</div>'],
+            'aria hidden' => ['<div aria-hidden="true">', '</div>'],
+            'inert' => ['<div inert>', '</div>'],
+            'raw text' => ['<textarea>', '</textarea>'],
         ];
     }
 
@@ -623,7 +697,7 @@ JSON);
       <a href="{{ item.href }}"{% if current_path == item.href %} aria-current="page"{% endif %}>{{ item.title }}</a>
     {% endfor %}
   </nav>
-  <main id="site-content">
+  <main id="site-content" tabindex="-1">
 TWIG
             . $content
             . <<<'TWIG'

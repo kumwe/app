@@ -26,7 +26,7 @@
       <nav class="site-navigation" aria-label="Main navigation" data-site-navigation>{{ navigation_tree.branch(navigation, current_path) }}</nav>
     {% endif %}
   </div></header>
-  <main class="site-main" id="site-content">{% block content %}{% endblock %}</main>
+  <main class="site-main" id="site-content" tabindex="-1">{% block content %}{% endblock %}</main>
   <footer class="site-footer"><div class="site-container"><span>{{ site_name }}</span><span>{{ presentation.footer_text|default('Powered by Kumwe CMS') }}</span></div></footer>
 </body>
 </html>
