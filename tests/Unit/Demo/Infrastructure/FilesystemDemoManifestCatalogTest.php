@@ -41,12 +41,22 @@ final class FilesystemDemoManifestCatalogTest extends TestCase
         self::assertCount(16, $content);
         self::assertCount(1, $menus);
 
+        $reservedSystemRoutes = [
+            'administrator',
+            'api',
+            'assets',
+            'health',
+            'mcp',
+            'media',
+            'pages',
+        ];
         $pages = [];
         $pageIds = [];
         foreach ($content as $candidate) {
             $page = $this->map($candidate, 'documentation page');
             $fixtureKey = $this->string($page, 'fixture_key');
             $resourceId = $this->string($page, 'resource_id');
+            self::assertNotContains($this->string($page, 'slug'), $reservedSystemRoutes);
             self::assertArrayNotHasKey($fixtureKey, $pages);
             self::assertArrayNotHasKey($resourceId, $pageIds);
             self::assertSame(3, $page['content_type_version'] ?? null);

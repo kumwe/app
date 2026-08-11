@@ -28,7 +28,12 @@ use RuntimeException;
  */
 final readonly class DemoContentProfileInstaller
 {
-    /** @var string Dataset key persisted independently from the VDM business example. @since 2.0.0 */
+    /**
+     * Dataset key persisted independently from the VDM business example.
+     *
+     * @var    string
+     * @since  2.0.0
+     */
     public const string DATASET = 'site-content';
 
     /**
@@ -645,7 +650,15 @@ final readonly class DemoContentProfileInstaller
         return null;
     }
 
-    /** @return array<string, array<string, mixed>> Page declarations by fixture key. @since 2.0.0 */
+    /**
+     * Index the bounded page declarations by their stable fixture keys.
+     *
+     * @param   array<string, mixed>  $manifest  Content manifest carrying the page list.
+     *
+     * @return  array<string, array<string, mixed>>  Validated page declarations by fixture key.
+     *
+     * @since   2.0.0
+     */
     private function pageIndex(array $manifest): array
     {
         $pages = $manifest['content'] ?? null;
@@ -667,7 +680,15 @@ final readonly class DemoContentProfileInstaller
         return $result;
     }
 
-    /** @return list<array<string, mixed>> Validated menu declarations. @since 2.0.0 */
+    /**
+     * Validate and return the bounded menu declarations in authored order.
+     *
+     * @param   array<string, mixed>  $manifest  Content manifest carrying the menu list.
+     *
+     * @return  list<array<string, mixed>>  Validated menu declarations.
+     *
+     * @since   2.0.0
+     */
     private function menus(array $manifest): array
     {
         $menus = $manifest['menus'] ?? null;
@@ -684,7 +705,15 @@ final readonly class DemoContentProfileInstaller
         return $menus;
     }
 
-    /** @return array<string, array<string, mixed>> Menu items by fixture key. @since 2.0.0 */
+    /**
+     * Index one menu's bounded item declarations by their stable fixture keys.
+     *
+     * @param   array<string, mixed>  $menu  Menu declaration carrying the item list.
+     *
+     * @return  array<string, array<string, mixed>>  Validated menu items by fixture key.
+     *
+     * @since   2.0.0
+     */
     private function itemIndex(array $menu): array
     {
         $items = $menu['items'] ?? null;
@@ -706,7 +735,16 @@ final readonly class DemoContentProfileInstaller
         return $result;
     }
 
-    /** @return ?array<string, mixed> Menu matching the fixture key, or null. @since 2.0.0 */
+    /**
+     * Find one manifest menu by its stable fixture key.
+     *
+     * @param   list<array<string, mixed>>  $menus       Validated menu declarations to search.
+     * @param   string                      $fixtureKey  Stable fixture identity to match.
+     *
+     * @return  ?array<string, mixed>  Matching menu declaration, or null when absent.
+     *
+     * @since   2.0.0
+     */
     private function menuByFixture(array $menus, string $fixtureKey): ?array
     {
         foreach ($menus as $menu) {
@@ -718,7 +756,15 @@ final readonly class DemoContentProfileInstaller
         return null;
     }
 
-    /** @return array<string, mixed> Canonical authored page state. @since 2.0.0 */
+    /**
+     * Reduce a manifest page declaration to the authored state used for divergence checks.
+     *
+     * @param   array<string, mixed>  $page  Validated manifest page declaration.
+     *
+     * @return  array<string, mixed>  Canonical authored page state.
+     *
+     * @since   2.0.0
+     */
     private function pageState(array $page): array
     {
         return [
@@ -729,7 +775,15 @@ final readonly class DemoContentProfileInstaller
         ];
     }
 
-    /** @return array<string, mixed> Canonical authored state of a stored page. @since 2.0.0 */
+    /**
+     * Project a stored content record into the same state used by the manifest.
+     *
+     * @param   ContentRecord  $record  Stored page and its current workflow state.
+     *
+     * @return  array<string, mixed>  Canonical authored state of the stored page.
+     *
+     * @since   2.0.0
+     */
     private function pageRecordState(ContentRecord $record): array
     {
         return [
@@ -763,7 +817,15 @@ final readonly class DemoContentProfileInstaller
         ];
     }
 
-    /** @return array<string, mixed> Canonical authored menu state. @since 2.0.0 */
+    /**
+     * Reduce a manifest menu declaration to its user-editable state.
+     *
+     * @param   array<string, mixed>  $menu  Validated manifest menu declaration.
+     *
+     * @return  array<string, mixed>  Canonical authored menu state.
+     *
+     * @since   2.0.0
+     */
     private function menuState(array $menu): array
     {
         return [
@@ -772,13 +834,31 @@ final readonly class DemoContentProfileInstaller
         ];
     }
 
-    /** @return array<string, mixed> Canonical authored state of a stored menu. @since 2.0.0 */
+    /**
+     * Project a stored menu into the same state used by the manifest.
+     *
+     * @param   MenuRecord  $menu  Stored menu with its current title and handle.
+     *
+     * @return  array<string, mixed>  Canonical authored state of the stored menu.
+     *
+     * @since   2.0.0
+     */
     private function menuRecordState(MenuRecord $menu): array
     {
         return ['handle' => $menu->handle, 'title' => $menu->title];
     }
 
-    /** @return array<string, mixed> Canonical resolved item state. @since 2.0.0 */
+    /**
+     * Resolve a manifest menu item to the identifiers and path persisted by navigation.
+     *
+     * @param   array<string, mixed>  $item       Validated menu-item declaration.
+     * @param   ?string               $parentId   Resolved parent item identity, or null for a root item.
+     * @param   ?string               $contentId  Resolved target content identity, or null for a URL item.
+     *
+     * @return  array<string, mixed>  Canonical resolved menu-item state.
+     *
+     * @since   2.0.0
+     */
     private function itemState(array $item, ?string $parentId, ?string $contentId): array
     {
         return [
@@ -793,7 +873,15 @@ final readonly class DemoContentProfileInstaller
         ];
     }
 
-    /** @return array<string, mixed> Canonical resolved state of a stored item. @since 2.0.0 */
+    /**
+     * Project a stored menu item into the resolved state used by the manifest.
+     *
+     * @param   MenuItemRecord  $item  Stored navigation item and resolved targets.
+     *
+     * @return  array<string, mixed>  Canonical resolved state of the stored item.
+     *
+     * @since   2.0.0
+     */
     private function itemRecordState(MenuItemRecord $item): array
     {
         return [
@@ -808,7 +896,16 @@ final readonly class DemoContentProfileInstaller
         ];
     }
 
-    /** @return array<string, mixed> Canonical public settings document with actual content IDs. @since 2.0.0 */
+    /**
+     * Resolve fixture references in the manifest's public-site settings.
+     *
+     * @param   array<string, mixed>  $settings  Authored settings declaration.
+     * @param   array<string, string> $pageIds   Installed content identities by fixture key.
+     *
+     * @return  array<string, mixed>  Canonical public settings with actual content identities.
+     *
+     * @since   2.0.0
+     */
     private function settingsState(array $settings, array $pageIds): array
     {
         $homepageFixture = $settings['homepage_content_fixture_key'] ?? null;
@@ -828,7 +925,15 @@ final readonly class DemoContentProfileInstaller
         ];
     }
 
-    /** @return string Stable fixture key. @since 2.0.0 */
+    /**
+     * Read and validate a stable fixture key from a resource declaration.
+     *
+     * @param   array<string, mixed>  $resource  Manifest resource carrying its fixture identity.
+     *
+     * @return  string  Stable bounded fixture key.
+     *
+     * @since   2.0.0
+     */
     private function fixtureKey(array $resource): string
     {
         $value = $this->requiredString($resource, 'fixture_key');
@@ -839,7 +944,16 @@ final readonly class DemoContentProfileInstaller
         return $value;
     }
 
-    /** @return string Required non-empty manifest string. @since 2.0.0 */
+    /**
+     * Read one required non-empty string from a manifest object.
+     *
+     * @param   array<string, mixed>  $document  Manifest object carrying the field.
+     * @param   string                $key       Required field name.
+     *
+     * @return  string  Validated non-empty field value.
+     *
+     * @since   2.0.0
+     */
     private function requiredString(array $document, string $key): string
     {
         $value = $document[$key] ?? null;
@@ -850,7 +964,16 @@ final readonly class DemoContentProfileInstaller
         return $value;
     }
 
-    /** @return ?string Nullable manifest string. @since 2.0.0 */
+    /**
+     * Read one optional nullable string from a manifest object.
+     *
+     * @param   array<string, mixed>  $document  Manifest object carrying the field.
+     * @param   string                $key       Optional field name.
+     *
+     * @return  ?string  Validated string, or null when the field is absent or explicitly null.
+     *
+     * @since   2.0.0
+     */
     private function nullableString(array $document, string $key): ?string
     {
         $value = $document[$key] ?? null;
@@ -861,7 +984,16 @@ final readonly class DemoContentProfileInstaller
         return $value;
     }
 
-    /** @return array<string, mixed> Required manifest object. @since 2.0.0 */
+    /**
+     * Read one required object-shaped value from a manifest object.
+     *
+     * @param   array<string, mixed>  $document  Manifest object carrying the nested object.
+     * @param   string                $key       Required field name.
+     *
+     * @return  array<string, mixed>  Validated object-shaped value.
+     *
+     * @since   2.0.0
+     */
     private function requiredMap(array $document, string $key): array
     {
         $value = $document[$key] ?? null;
@@ -872,7 +1004,17 @@ final readonly class DemoContentProfileInstaller
         return $value;
     }
 
-    /** @return int Required manifest integer at or above the supplied minimum. @since 2.0.0 */
+    /**
+     * Read one bounded integer from a manifest object.
+     *
+     * @param   array<string, mixed>  $document  Manifest object carrying the field.
+     * @param   string                $key       Required field name.
+     * @param   int                   $minimum   Smallest accepted value.
+     *
+     * @return  int  Validated integer at or above the supplied minimum.
+     *
+     * @since   2.0.0
+     */
     private function requiredInteger(array $document, string $key, int $minimum = 1): int
     {
         $value = $document[$key] ?? null;
@@ -883,7 +1025,16 @@ final readonly class DemoContentProfileInstaller
         return $value;
     }
 
-    /** @return bool Required manifest boolean. @since 2.0.0 */
+    /**
+     * Read one required boolean from a manifest object.
+     *
+     * @param   array<string, mixed>  $document  Manifest object carrying the field.
+     * @param   string                $key       Required field name.
+     *
+     * @return  bool  Validated boolean field value.
+     *
+     * @since   2.0.0
+     */
     private function requiredBoolean(array $document, string $key): bool
     {
         $value = $document[$key] ?? null;
