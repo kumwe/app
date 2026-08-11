@@ -81,16 +81,16 @@ final readonly class VdmBusinessDemoInstaller
     /**
      * Bind every canonical runtime and the narrow policy-bootstrap dependencies.
      *
-     * @param  BusinessDefinitionService       $definitions   Definition draft and publication service.
-     * @param  BusinessSchemaService           $schemas       Persisted plan, approval, and execution service.
-     * @param  BusinessRecordService           $records       Transactional record application service.
-     * @param  VdmBusinessManifestProjector     $projector     Pure default-template site projection.
-     * @param  DemoProfileLedger               $ledger        Stable profile provenance and restart state.
-     * @param  Connection                      $database      Policy catalog connection.
-     * @param  TableNames                      $tables        Validated physical table compiler.
-     * @param  TransactionManager              $transactions Policy, ownership, and audit transaction boundary.
-     * @param  AuditRecorder                   $audit         Durable policy-bootstrap audit sink.
-     * @param  ClockInterface                  $clock         Trusted timestamp source.
+     * @param  BusinessDefinitionService     $definitions   Definition draft and publication service.
+     * @param  BusinessSchemaService         $schemas       Persisted plan, approval, and execution service.
+     * @param  BusinessRecordService         $records       Transactional record application service.
+     * @param  VdmBusinessManifestProjector  $projector     Pure default-template site projection.
+     * @param  DemoProfileLedger             $ledger        Stable profile provenance and restart state.
+     * @param  Connection                    $database      Policy catalog connection.
+     * @param  TableNames                    $tables        Validated physical table compiler.
+     * @param  TransactionManager            $transactions  Policy, ownership, and audit transaction boundary.
+     * @param  AuditRecorder                 $audit         Durable policy-bootstrap audit sink.
+     * @param  ClockInterface                $clock         Trusted timestamp source.
      *
      * @since  2.0.0
      */
@@ -211,9 +211,9 @@ final readonly class VdmBusinessDemoInstaller
     /**
      * Persist the current published definition as the profile's immutable divergence baseline.
      *
-     * @param   ExecutionContext       $context     Profile installer context.
-     * @param   string                 $fixtureKey  Stable definition fixture key.
-     * @param   EntityTypeDefinition   $definition  Published definition.
+     * @param   ExecutionContext      $context     Profile installer context.
+     * @param   string                $fixtureKey  Stable definition fixture key.
+     * @param   EntityTypeDefinition  $definition  Published definition.
      *
      * @return  void
      *
@@ -438,8 +438,8 @@ final readonly class VdmBusinessDemoInstaller
     /**
      * Link all declared related records while advancing each source record's optimistic version.
      *
-     * @param   ExecutionContext     $context       Profile installer context.
-     * @param   list<mixed>          $declarations  Relationship declarations.
+     * @param   ExecutionContext  $context       Profile installer context.
+     * @param   list<mixed>       $declarations  Relationship declarations.
      * @param   array<string, int>   &$versions     Latest source versions by record ID.
      *
      * @return  void
@@ -497,8 +497,8 @@ final readonly class VdmBusinessDemoInstaller
     /**
      * Execute the manifest's workflow actions in sequence, reconstructing versions on replay.
      *
-     * @param   ExecutionContext    $context       Profile installer context.
-     * @param   list<mixed>         $declarations  Action declarations.
+     * @param   ExecutionContext  $context       Profile installer context.
+     * @param   list<mixed>       $declarations  Action declarations.
      * @param   array<string, int>  &$versions     Latest record versions by ID.
      *
      * @return  void
@@ -551,8 +551,8 @@ final readonly class VdmBusinessDemoInstaller
     /**
      * Archive the one historical sample after every workflow action has settled.
      *
-     * @param   ExecutionContext    $context       Profile installer context.
-     * @param   list<mixed>         $declarations  Archive declarations.
+     * @param   ExecutionContext  $context       Profile installer context.
+     * @param   list<mixed>       $declarations  Archive declarations.
      * @param   array<string, int>  &$versions     Latest record versions by ID.
      *
      * @return  void
@@ -604,12 +604,12 @@ final readonly class VdmBusinessDemoInstaller
     /**
      * Store one replayable operation checkpoint with its resulting source version.
      *
-     * @param   ExecutionContext              $context       Profile installer context.
-     * @param   string                        $fixtureKey    Stable operation fixture key.
-     * @param   string                        $resourceType  Diagnostic resource noun.
-     * @param   string                        $resourceId    Public record identity.
-     * @param   array<string, mixed>          $request       Canonical manifest request.
-     * @param   array<string, int|string|bool|null>  $result Mutation result.
+     * @param   ExecutionContext                     $context       Profile installer context.
+     * @param   string                               $fixtureKey    Stable operation fixture key.
+     * @param   string                               $resourceType  Diagnostic resource noun.
+     * @param   string                               $resourceId    Public record identity.
+     * @param   array<string, mixed>                 $request       Canonical manifest request.
+     * @param   array<string, int|string|bool|null>  $result        Mutation result.
      *
      * @return  void
      *
@@ -697,9 +697,9 @@ final readonly class VdmBusinessDemoInstaller
      * Add one field handle to an explicit usage only when its immutable metadata admits it.
      *
      * @param   array<string, list<string>>  &$allowed   Field rules under construction.
-     * @param   FieldAccessUsage             $usage      Exact disclosure context.
-     * @param   FieldDefinition              $field      Published field metadata.
-     * @param   bool                         $condition  Whether this usage is permitted.
+     * @param   FieldAccessUsage  $usage      Exact disclosure context.
+     * @param   FieldDefinition   $field      Published field metadata.
+     * @param   bool              $condition  Whether this usage is permitted.
      *
      * @return  void
      *

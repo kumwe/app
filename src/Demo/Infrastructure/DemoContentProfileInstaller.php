@@ -40,11 +40,11 @@ final readonly class DemoContentProfileInstaller
     /**
      * Bind the content reconciler to the public application services and its restart ledger.
      *
-     * @param  ContentService                   $content     Canonical page mutation service.
-     * @param  NavigationService                $navigation  Canonical menu-tree mutation service.
-     * @param  SiteSettings                     $settings    Canonical settings document service.
-     * @param  DemoProfileLedger                $ledger      Stable fixture mapping and divergence baseline.
-     * @param  TransactionManager               $transactions  Atomic service-mutation and provenance boundary.
+     * @param  ContentService      $content       Canonical page mutation service.
+     * @param  NavigationService   $navigation    Canonical menu-tree mutation service.
+     * @param  SiteSettings        $settings      Canonical settings document service.
+     * @param  DemoProfileLedger   $ledger        Stable fixture mapping and divergence baseline.
+     * @param  TransactionManager  $transactions  Atomic service-mutation and provenance boundary.
      *
      * @since  2.0.0
      */
@@ -226,9 +226,9 @@ final readonly class DemoContentProfileInstaller
     /**
      * Trash untouched pages removed by the selected profile while preserving every customized page.
      *
-     * @param   ExecutionContext                        $context        Profile installer context.
-     * @param   array<string, array<string, mixed>>     $target         Desired page index.
-     * @param   array<string, array<string, mixed>>     $baseline       Legacy sentinel page index.
+     * @param   ExecutionContext                     $context   Profile installer context.
+     * @param   array<string, array<string, mixed>>  $target    Desired page index.
+     * @param   array<string, array<string, mixed>>  $baseline  Legacy sentinel page index.
      * @param   list<string>                            &$messages      Operator diagnostics to append.
      *
      * @return  void
@@ -299,10 +299,10 @@ final readonly class DemoContentProfileInstaller
     /**
      * Reconcile one primary menu and all its items in parent-before-child manifest order.
      *
-     * @param   ExecutionContext       $context       Profile installer context.
-     * @param   array<string, mixed>   $menu          Desired menu declaration.
-     * @param   ?array<string, mixed>  $baseline      Legacy menu sentinel.
-     * @param   array<string, string>  $pageIds       Actual content IDs keyed by fixture key.
+     * @param   ExecutionContext       $context   Profile installer context.
+     * @param   array<string, mixed>   $menu      Desired menu declaration.
+     * @param   ?array<string, mixed>  $baseline  Legacy menu sentinel.
+     * @param   array<string, string>  $pageIds   Actual content IDs keyed by fixture key.
      * @param   list<string>           &$messages     Operator diagnostics to append.
      *
      * @return  void
@@ -394,14 +394,14 @@ final readonly class DemoContentProfileInstaller
     /**
      * Create or safely update one menu item after its parent and content target have been resolved.
      *
-     * @param   ExecutionContext                     $context       Profile installer context.
-     * @param   MenuRecord                           $menu          Parent menu.
-     * @param   string                               $fixtureKey    Stable item fixture key.
-     * @param   array<string, mixed>                 $item          Desired item declaration.
-     * @param   ?array<string, mixed>                $baseline      Legacy item sentinel.
-     * @param   array<string, string>                $pageIds       Actual content IDs by fixture.
-     * @param   array<string, string>                $itemIds       Actual parent IDs by fixture.
-     * @param   array<string, MenuItemRecord>        $currentItems  Current menu items by UUID.
+     * @param   ExecutionContext               $context       Profile installer context.
+     * @param   MenuRecord                     $menu          Parent menu.
+     * @param   string                         $fixtureKey    Stable item fixture key.
+     * @param   array<string, mixed>           $item          Desired item declaration.
+     * @param   ?array<string, mixed>          $baseline      Legacy item sentinel.
+     * @param   array<string, string>          $pageIds       Actual content IDs by fixture.
+     * @param   array<string, string>          $itemIds       Actual parent IDs by fixture.
+     * @param   array<string, MenuItemRecord>  $currentItems  Current menu items by UUID.
      *
      * @return  array{record: MenuItemRecord, preserved: bool}  Stored item and preservation outcome.
      *
@@ -501,10 +501,10 @@ final readonly class DemoContentProfileInstaller
     /**
      * Delete untouched items absent from the target, deepest descendants first.
      *
-     * @param   ExecutionContext                       $context       Profile installer context.
-     * @param   array<string, array<string, mixed>>    $target        Desired item index.
-     * @param   array<string, array<string, mixed>>    $baseline      Legacy sentinel item index.
-     * @param   array<string, MenuItemRecord>          $currentItems  Current items by UUID.
+     * @param   ExecutionContext                     $context       Profile installer context.
+     * @param   array<string, array<string, mixed>>  $target        Desired item index.
+     * @param   array<string, array<string, mixed>>  $baseline      Legacy sentinel item index.
+     * @param   array<string, MenuItemRecord>        $currentItems  Current items by UUID.
      * @param   list<string>                           &$messages     Operator diagnostics to append.
      *
      * @return  void
@@ -964,8 +964,8 @@ final readonly class DemoContentProfileInstaller
     /**
      * Resolve fixture references in the manifest's public-site settings.
      *
-     * @param   array<string, mixed>  $settings  Authored settings declaration.
-     * @param   array<string, string> $pageIds   Installed content identities by fixture key.
+     * @param   array<string, mixed>   $settings  Authored settings declaration.
+     * @param   array<string, string>  $pageIds   Installed content identities by fixture key.
      *
      * @return  array<string, mixed>  Canonical public settings with actual content identities.
      *

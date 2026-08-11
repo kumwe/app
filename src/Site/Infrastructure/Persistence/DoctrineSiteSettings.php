@@ -348,6 +348,8 @@ final readonly class DoctrineSiteSettings implements SiteSettings
      *
      * The value is bound as a JSON column and the timestamp as an immutable date, so Doctrine encodes
      * both and the row keeps the structure the setting actually has instead of a pre-encoded string.
+     * A PHP null is bound as the JSON text `null` so the non-nullable column receives the JSON literal
+     * rather than an SQL NULL parameter.
      *
      * @param   string   $key        Storage key of the setting, in its dotted `site.*` form.
      * @param   mixed    $value      Decoded value to store; Doctrine encodes it as JSON.
@@ -366,13 +368,15 @@ final readonly class DoctrineSiteSettings implements SiteSettings
             sprintf('SELECT setting_key FROM %s WHERE setting_key = ?', $this->tables->quoted('site_settings')),
             [$key],
         );
+        $storedValue = $value === null ? 'null' : $value;
+        $valueType = $value === null ? Types::STRING : Types::JSON;
         $values = [
-            'setting_value' => $value,
+            'setting_value' => $storedValue,
             'updated_by' => $updatedBy,
             'updated_at' => $this->clock->now(),
         ];
         $types = [
-            'setting_value' => Types::JSON,
+            'setting_value' => $valueType,
             'updated_by' => Types::GUID,
             'updated_at' => Types::DATETIME_IMMUTABLE,
         ];
@@ -386,8 +390,8 @@ final readonly class DoctrineSiteSettings implements SiteSettings
             'UPDATE %s SET setting_value = ?, updated_by = ?, updated_at = ?, version = version + 1 '
             . 'WHERE setting_key = ?',
             $this->tables->quoted('site_settings'),
-        ), [$value, $updatedBy, $this->clock->now(), $key], [
-            Types::JSON,
+        ), [$storedValue, $updatedBy, $this->clock->now(), $key], [
+            $valueType,
             Types::GUID,
             Types::DATETIME_IMMUTABLE,
             Types::STRING,

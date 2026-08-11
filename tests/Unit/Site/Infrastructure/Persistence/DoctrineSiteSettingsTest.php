@@ -69,12 +69,17 @@ final class DoctrineSiteSettingsTest extends TestCase
         );
         $database->expects(self::never())->method('insert');
         $storedKeys = [];
+        /** @var list<string> $storedTypes */
+        $storedTypes = [];
         $database->expects(self::exactly(7))->method('executeStatement')->with(
             self::callback(static fn (string $query): bool => $query
                 === 'UPDATE kumwe_site_settings SET setting_value = ?, updated_by = ?, updated_at = ?, '
                     . 'version = version + 1 WHERE setting_key = ?'),
             self::callback(static function (array $parameters) use (&$storedKeys): bool {
                 self::assertCount(4, $parameters);
+                if ($parameters[3] === 'site.homepage_content_id') {
+                    self::assertSame('null', $parameters[0]);
+                }
                 self::assertNull($parameters[1]);
                 self::assertInstanceOf(DateTimeImmutable::class, $parameters[2]);
                 self::assertIsString($parameters[3]);
@@ -82,7 +87,18 @@ final class DoctrineSiteSettingsTest extends TestCase
 
                 return true;
             }),
-            [Types::JSON, Types::GUID, Types::DATETIME_IMMUTABLE, Types::STRING],
+            self::callback(static function (array $types) use (&$storedTypes): bool {
+                $valueType = $types[0] ?? null;
+                self::assertIsString($valueType);
+                self::assertContains($valueType, [Types::JSON, Types::STRING]);
+                self::assertSame(
+                    [Types::GUID, Types::DATETIME_IMMUTABLE, Types::STRING],
+                    array_slice($types, 1),
+                );
+                $storedTypes[] = $valueType;
+
+                return true;
+            }),
         )->willReturn(1);
         $audit = $this->audit(SystemIdentity::ProfileInstaller->value);
 
@@ -95,6 +111,10 @@ final class DoctrineSiteSettingsTest extends TestCase
         );
 
         self::assertSame($this->settingKeys(), $storedKeys);
+        self::assertSame(
+            [Types::JSON, Types::STRING, Types::JSON, Types::JSON, Types::JSON, Types::JSON, Types::JSON],
+            $storedTypes,
+        );
     }
 
     /**
@@ -121,6 +141,8 @@ final class DoctrineSiteSettingsTest extends TestCase
         );
         $database->expects(self::never())->method('executeStatement');
         $storedKeys = [];
+        /** @var list<string> $storedTypes */
+        $storedTypes = [];
         $database->expects(self::exactly(7))->method('insert')->with(
             'kumwe_site_settings',
             self::callback(static function (array $values) use (&$storedKeys): bool {
@@ -128,15 +150,23 @@ final class DoctrineSiteSettingsTest extends TestCase
                 self::assertSame(1, $values['version'] ?? null);
                 self::assertInstanceOf(DateTimeImmutable::class, $values['updated_at'] ?? null);
                 self::assertIsString($values['setting_key'] ?? null);
+                if ($values['setting_key'] === 'site.homepage_content_id') {
+                    self::assertSame('null', $values['setting_value'] ?? null);
+                }
                 $storedKeys[] = $values['setting_key'];
 
                 return true;
             }),
-            [
-                'setting_value' => Types::JSON,
-                'updated_by' => Types::GUID,
-                'updated_at' => Types::DATETIME_IMMUTABLE,
-            ],
+            self::callback(static function (array $types) use (&$storedTypes): bool {
+                $valueType = $types['setting_value'] ?? null;
+                self::assertIsString($valueType);
+                self::assertContains($valueType, [Types::JSON, Types::STRING]);
+                self::assertSame(Types::GUID, $types['updated_by'] ?? null);
+                self::assertSame(Types::DATETIME_IMMUTABLE, $types['updated_at'] ?? null);
+                $storedTypes[] = $valueType;
+
+                return true;
+            }),
         )->willReturn(1);
         $audit = $this->audit(self::HUMAN_ID);
 
@@ -146,6 +176,10 @@ final class DoctrineSiteSettingsTest extends TestCase
         );
 
         self::assertSame($this->settingKeys(), $storedKeys);
+        self::assertSame(
+            [Types::JSON, Types::STRING, Types::JSON, Types::JSON, Types::JSON, Types::JSON, Types::JSON],
+            $storedTypes,
+        );
     }
 
     /**
