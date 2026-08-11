@@ -60,6 +60,7 @@ final class ManagementDeliveryTest extends TestCase
         ['GET', '/administrator/automation'],
         ['GET', '/administrator/content-models'],
         ['GET', '/administrator/media'],
+        ['GET', '/administrator/interface-standard'],
         ['GET', '/administrator/business-schema-plans'],
         ['POST', '/administrator/business-schema-plans/plan'],
         ['POST', '/administrator/business-schema-plans/018f22e2-7c8b-7ab0-8f3a-88e8026bb401/approve'],

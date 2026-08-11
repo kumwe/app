@@ -1,0 +1,12 @@
+<span class="kis-technical-value" data-kis-component="technical-value">
+  {% if label|default('') is not empty %}<span class="sr-only">{{ label }}: </span>{% endif %}
+  <code>{{ value }}</code>
+  {% if copy|default(true) %}
+    <button
+      class="link-button kis-copy-value"
+      type="button"
+      data-copy-value="{{ value }}"
+      aria-label="Copy {{ label|default('technical value') }}"
+    >Copy</button>
+  {% endif %}
+</span>

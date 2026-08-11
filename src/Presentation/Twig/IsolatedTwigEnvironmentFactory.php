@@ -99,6 +99,7 @@ final readonly class IsolatedTwigEnvironmentFactory
         $loader = new FilesystemLoader();
         $loader->addPath($this->coreTemplateRoot . '/administrator');
         $loader->addPath($this->coreTemplateRoot . '/administrator', 'core-admin');
+        $loader->addPath($this->coreTemplateRoot . '/interface-standard', 'kis');
 
         return new RecoveryAdministratorTwigEnvironment(
             $loader,
@@ -141,6 +142,7 @@ final readonly class IsolatedTwigEnvironmentFactory
 
         $loader->addPath($corePath);
         $loader->addPath($corePath, 'core-site');
+        $loader->addPath($this->coreTemplateRoot . '/interface-standard', 'kis');
 
         foreach ($this->active->extensionViewPaths($surface) as $identifier => $path) {
             $loader->addPath($path, self::extensionNamespace($identifier));
@@ -169,6 +171,7 @@ final readonly class IsolatedTwigEnvironmentFactory
         $core = new FilesystemLoader();
         $core->addPath($corePath);
         $core->addPath($corePath, 'core-admin');
+        $core->addPath($this->coreTemplateRoot . '/interface-standard', 'kis');
         foreach ($this->active->extensionViewPaths(ThemeSurface::Administrator) as $identifier => $path) {
             $core->addPath($path, self::extensionNamespace($identifier));
         }

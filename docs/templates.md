@@ -166,8 +166,74 @@ owners separate means changing a theme does not break extension behavior and cha
 does not require copying fixes into every package.
 
 Every contributed navigation item declares an owned capability and disappears from the navigation and
-command palette when its extension is inactive, untrusted, or unauthorized. A template renders the list
-it receives; it never constructs a parallel registry.
+command palette when its extension is inactive, untrusted, or unauthorized. Once a package declares
+`interface.surfaces`, every graphical GET route must have an area-matched surface with the same stable ID,
+and every navigation item must name that admitted surface. Route path and capability must agree with the
+navigation declaration. A template renders the list it receives; it never constructs a parallel registry.
+
+The manifest declaration and provider reconciliation are deliberately explicit:
+
+```json
+{
+  "administrator": {
+    "navigation": [{
+      "id": "acme.inspections.navigation",
+      "surface": "acme.inspections.administrator.catalog",
+      "path": "/inspections/",
+      "capability": "acme.inspections.view"
+    }],
+    "routes": [{
+      "name": "acme.inspections.administrator.catalog",
+      "path": "/inspections/",
+      "methods": ["GET"],
+      "capability": "acme.inspections.view",
+      "view": "acme.inspections.administrator.catalog"
+    }]
+  },
+  "interface": {
+    "surfaces": [{
+      "surface": "acme.inspections.administrator.catalog",
+      "standard": "kis-1.0"
+    }]
+  }
+}
+```
+
+The abbreviated surface above must contain every required field from
+[`surface-declaration.schema.json`](interface-standard/schemas/surface-declaration.schema.json). Provider
+code continues to accept the frozen `ExtensionContributionRegistrar`, then requires the additive feature
+only when its signed manifest publishes KIS surfaces:
+
+```php
+if (!$contributions instanceof InterfaceSurfaceRegistrar) {
+    throw new LogicException('The KIS surface registrar is unavailable.');
+}
+foreach ($declarations->interfaceSurfaces() as $surface) {
+    $contributions->interfaceSurface($surface);
+}
+```
+
+An installable package with `type: template` also declares the KIS contract it consumes in a closed
+top-level `template` object:
+
+```json
+{
+  "template": {
+    "contract": 1,
+    "standard": "kis-1.0",
+    "components": {"minimum": "1.0.0", "maximum": "1.0.0"},
+    "tokens": {"minimum": "1.0.0", "maximum": "1.0.0"}
+  }
+}
+```
+
+The bounds are inclusive semantic-version ranges. Missing, unknown, malformed, reversed, or unsupported
+standard/component/token declarations fail activation before Twig compilation, leaving the core recovery
+renderer available. The compatibility transition preserves an existing schema-1 template that has no
+declaration by assigning the exact host baseline (`kis-1.0`, component `1.0.0`, token `1.0.0`) while still
+running all activation checks; its next package release must publish the explicit object. Schemas 2 through
+4 never infer compatibility. See
+[Template authoring against KIS 1.0](interface-standard/template-authoring.md).
 
 ## Assets and presentation data
 

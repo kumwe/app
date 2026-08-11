@@ -11,6 +11,7 @@ export default defineConfig({
     rollupOptions: {
       input: {
         administrator: resolve(import.meta.dirname, 'assets/administrator/main.ts'),
+        portal: resolve(import.meta.dirname, 'assets/portal/main.ts'),
         site: resolve(import.meta.dirname, 'assets/site/main.ts'),
       },
       output: {

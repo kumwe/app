@@ -58,6 +58,47 @@ final class ExtensionPublicApiCompatibilityFixtureTest extends TestCase
     }
 
     /**
+     * Pin the additive KIS registrar independently from the frozen contribution SPI-two interface.
+     *
+     * Existing providers continue accepting `ExtensionContributionRegistrar`; providers that publish
+     * semantic surfaces explicitly feature-detect this one-method additive contract. Keeping its bytes
+     * separate prevents a KIS addition from rewriting the established SPI-two compatibility baseline.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAdditiveInterfaceSurfaceRegistrarRemainsSourceCompatible(): void
+    {
+        $path = dirname(__DIR__, 4) . '/tests/Fixtures/ExtensionApi/interface-surface-registrar-v1.json';
+        $json = file_get_contents($path);
+        self::assertIsString($json);
+        self::assertSame(
+            '4139eb2964055dc313e21ab08aab5d07967ef4dacf87373a6bcf9220dffe8a7c',
+            hash('sha256', $json),
+        );
+        $fixture = json_decode($json, true, 8, JSON_THROW_ON_ERROR);
+        self::assertIsArray($fixture);
+        self::assertSame('kumwe-interface-surface-registrar-v1', $fixture['format'] ?? null);
+        $interface = $fixture['interface'] ?? null;
+        self::assertIsString($interface);
+        self::assertTrue(interface_exists($interface));
+        $reflection = new ReflectionClass($interface);
+        $actual = [];
+        foreach ($reflection->getMethods(ReflectionMethod::IS_PUBLIC) as $method) {
+            if ($method->getDeclaringClass()->getName() === $interface) {
+                $actual[] = $this->signature($method);
+            }
+        }
+        sort($actual, SORT_STRING);
+        $expected = $fixture['methods'] ?? null;
+        self::assertIsArray($expected);
+        sort($expected, SORT_STRING);
+
+        self::assertSame($expected, $actual);
+    }
+
+    /**
      * Require stable enum names and backed values used in signed manifests and durable rows.
      *
      * @return  void

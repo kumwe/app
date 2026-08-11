@@ -10,6 +10,11 @@ import './components/rich-text';
 import './components/presentation-schemes';
 import './components/business-definition-editor';
 import './components/business-surface';
+import '../interface-standard/kis-tabs';
+import '../interface-standard/kis-master-detail';
+import '../interface-standard/kis-drawer';
+import { setupCopyValues } from '../interface-standard/copy-value';
+import { setupValidationReveal } from '../interface-standard/reveal-validation';
 
 document.documentElement.classList.add('js');
 
@@ -85,17 +90,6 @@ function setupSlugSuggestion(): void {
   });
 }
 
-function setupCopyButtons(): void {
-  document.querySelectorAll<HTMLButtonElement>('[data-copy-value]').forEach((button) => {
-    button.addEventListener('click', async () => {
-      await navigator.clipboard.writeText(button.dataset.copyValue ?? '');
-      const label = button.textContent;
-      button.textContent = 'Copied';
-      window.setTimeout(() => { button.textContent = label; }, 1600);
-    });
-  });
-}
-
 function setupNavigationTargets(): void {
   document.querySelectorAll<HTMLFormElement>('[data-navigation-target-form]').forEach((form) => {
     const type = form.querySelector<HTMLSelectElement>('[data-navigation-target-type]');
@@ -132,5 +126,6 @@ setupConfirmations();
 setupDismissibleNotices();
 setupContentTypeSelector();
 setupSlugSuggestion();
-setupCopyButtons();
+setupCopyValues();
+setupValidationReveal();
 setupNavigationTargets();

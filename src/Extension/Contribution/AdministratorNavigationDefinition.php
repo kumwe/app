@@ -49,6 +49,7 @@ final readonly class AdministratorNavigationDefinition implements ContributionDe
      * @param   int     $priority     Sort weight within the workspace, 0 to 100000, lower shown first.
      * @param   string  $keywords     Extra search terms, up to 500 characters; empty when the label and
      *          description already carry them.
+     * @param   ?string $surface      Stable KIS surface identifier, or null for a legacy pre-KIS package.
      *
      * @throws  InvalidArgumentException  When the entry or workspace identifier is not dotted lowercase,
      *          the capability is not a valid capability name, the label, description,
@@ -67,9 +68,13 @@ final readonly class AdministratorNavigationDefinition implements ContributionDe
         string $capability,
         public int $priority,
         public string $keywords = '',
+        public ?string $surface = null,
     ) {
         AdministratorWorkspaceDefinition::assertIdentifier($id, 'navigation');
         AdministratorWorkspaceDefinition::assertIdentifier($workspace, 'workspace');
+        if ($surface !== null) {
+            AdministratorWorkspaceDefinition::assertIdentifier($surface, 'interface surface');
+        }
         $this->capability = Capability::fromString($capability)->value();
         if (trim($label) === '' || mb_strlen($label) > 80) {
             throw new InvalidArgumentException('An administrator navigation label must contain 1 to 80 characters.');
@@ -114,7 +119,7 @@ final readonly class AdministratorNavigationDefinition implements ContributionDe
      */
     public function toArray(): array
     {
-        return [
+        $document = [
             'id' => $this->id,
             'workspace' => $this->workspace,
             'label' => $this->label,
@@ -125,5 +130,10 @@ final readonly class AdministratorNavigationDefinition implements ContributionDe
             'priority' => $this->priority,
             'keywords' => $this->keywords,
         ];
+        if ($this->surface !== null) {
+            $document['surface'] = $this->surface;
+        }
+
+        return $document;
     }
 }

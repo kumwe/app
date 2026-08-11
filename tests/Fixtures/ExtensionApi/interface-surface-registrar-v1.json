@@ -1,0 +1,7 @@
+{
+  "format": "kumwe-interface-surface-registrar-v1",
+  "interface": "Kumwe\\CMS\\Extension\\Contribution\\InterfaceSurfaceRegistrar",
+  "methods": [
+    "interfaceSurface(Kumwe\\CMS\\InterfaceStandard\\SurfaceDefinition $definition): void"
+  ]
+}

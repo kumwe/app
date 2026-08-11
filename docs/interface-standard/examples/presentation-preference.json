@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "standard": "kis-1.0",
+  "surface": "acme.inspections.administrator.catalog",
+  "owner": "acme/inspections",
+  "scope": "user",
+  "scope_id": "user:8d34f6d1",
+  "slot": "columns",
+  "value": ["reference", "status", "facility", "updated-at"],
+  "version": 3,
+  "updated_by": "user:8d34f6d1",
+  "updated_at": "2026-08-11T12:00:00Z"
+}

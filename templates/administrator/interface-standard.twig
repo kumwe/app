@@ -1,0 +1,193 @@
+{% extends "layout.twig" %}
+{% block title %}Kumwe Interface Standard · Kumwe{% endblock %}
+{% block context_title %}Interface standard{% endblock %}
+{% block content %}
+  {% embed '@kis/page-header.twig' with {
+    eyebrow: 'KIS 1.0 reference',
+    title: 'Kumwe Interface Standard',
+    purpose: 'Production components, interaction patterns and states used by core and extension surfaces.'
+  } only %}
+    {% block actions %}
+      <div class="page-actions"><a class="button" href="/administrator">Return to dashboard</a></div>
+    {% endblock %}
+  {% endembed %}
+
+  <div class="notice" role="status">
+    <span><strong>Reference implementation.</strong> These examples render through the same Twig, tokens and Lit controllers as operational workspaces.</span>
+  </div>
+
+  <kumwe-tabs data-kis-tab-parameter="tab">
+    {% include '@kis/tabs.twig' with {
+      id: 'kis-gallery',
+      label: 'Interface-standard examples',
+      tabs: gallery_tabs,
+      active: active_tab
+    } only %}
+
+    {% embed '@kis/tab-panel.twig' with {id: 'kis-gallery', tab: 'overview'} only %}
+      {% block content %}
+        <div class="metric-grid">
+          <article class="panel metric-card"><span class="metric-copy"><strong class="metric-value">1</strong><span class="metric-label">Current KIS version</span></span></article>
+          <article class="panel metric-card"><span class="metric-copy"><strong class="metric-value">4</strong><span class="metric-label">Contract layers</span></span></article>
+          <article class="panel metric-card"><span class="metric-copy"><strong class="metric-value">0</strong><span class="metric-label">Allowed policy shortcuts</span></span></article>
+          <article class="panel metric-card"><span class="metric-copy"><strong class="metric-value">AA</strong><span class="metric-label">WCAG target</span></span></article>
+        </div>
+        <section class="panel stack">
+          <h2>Technical values remain secondary</h2>
+          <p>Stable identifiers wrap safely and provide an explicit copy control.</p>
+          {% include '@kis/technical-value.twig' with {
+            label: 'Example definition handle',
+            value: 'site.default.long_operational_definition_handle_that_remains_inside_its_container',
+            copy: true
+          } only %}
+        </section>
+      {% endblock %}
+    {% endembed %}
+
+    {% embed '@kis/tab-panel.twig' with {id: 'kis-gallery', tab: 'collections'} only %}
+      {% block content %}
+        <div class="stack">
+          {% embed '@kis/resource-toolbar.twig' with {
+            label: 'Example resource discovery',
+            title: 'Inspection catalog',
+            summary: '3 representative resources'
+          } only %}
+            {% block filters %}
+              <label>Search<input type="search" value="Windhoek" aria-label="Search inspection catalog"></label>
+              <label>Status<select aria-label="Inspection status"><option>All active states</option><option>Draft</option><option>Approved</option></select></label>
+            {% endblock %}
+            {% block actions %}<button class="primary" type="button">Create inspection</button>{% endblock %}
+          {% endembed %}
+
+          {% embed '@kis/master-detail.twig' with {
+            id: 'kis-gallery-resources',
+            catalog_label: 'Example resources',
+            catalog_toggle_label: 'Browse example resources'
+          } only %}
+            {% block catalog %}
+              <div class="panel stack">
+                <div class="section-heading"><h2>Resources</h2><span class="count-badge">3</span></div>
+                <a class="definition-catalog-item active" href="#kis-gallery-resource-detail" aria-current="true"><strong>INS-001</strong><span>Ready for review</span></a>
+                <a class="definition-catalog-item" href="#kis-gallery-resource-detail"><strong>INS-002</strong><span>Draft</span></a>
+                <a class="definition-catalog-item" href="#kis-gallery-resource-detail"><strong>INS-003</strong><span>Approved</span></a>
+              </div>
+            {% endblock %}
+            {% block detail %}
+              <section id="kis-gallery-resource-detail" class="panel stack">
+                <p class="eyebrow">Selected resource</p>
+                <h2>INS-001 · Windhoek facility inspection</h2>
+                <p>The selected context remains visible while focused tasks change.</p>
+                <dl class="definition-metadata"><div><dt>Status</dt><dd>Ready for review</dd></div><div><dt>Owner</dt><dd>Operations</dd></div></dl>
+              </section>
+            {% endblock %}
+          {% endembed %}
+        </div>
+      {% endblock %}
+    {% endembed %}
+
+    {% embed '@kis/tab-panel.twig' with {id: 'kis-gallery', tab: 'forms'} only %}
+      {% block content %}
+        <div class="stack">
+          {% include '@kis/validation-summary.twig' with {
+            id: 'kis-gallery-form',
+            title: 'Review two example fields',
+            errors: [
+              {target: 'kis-example-reference', message: 'Enter a stable inspection reference.'},
+              {target: 'kis-example-date', message: 'Choose the inspection date.'}
+            ]
+          } only %}
+          {% embed '@kis/drawer.twig' with {
+            id: 'kis-gallery-drawer',
+            open_label: 'Open focused editor',
+            title: 'Create inspection',
+            purpose: 'A bounded task retains the collection context.',
+            primary: true
+          } only %}
+            {% block content %}
+              <form class="stack" action="/administrator/interface-standard?tab=forms" method="get">
+                <input type="hidden" name="tab" value="forms">
+                <label>Reference<input id="kis-example-reference" name="reference" value="INS-004" required></label>
+                <label>Inspection date<input id="kis-example-date" type="date" name="date" value="2026-08-11" required></label>
+                <div class="page-actions"><button class="primary" type="submit">Review inspection</button></div>
+              </form>
+            {% endblock %}
+          {% endembed %}
+        </div>
+      {% endblock %}
+    {% endembed %}
+
+    {% embed '@kis/tab-panel.twig' with {id: 'kis-gallery', tab: 'safety'} only %}
+      {% block content %}
+        <div class="admin-grid">
+          <section class="panel stack">
+            <p class="eyebrow">Review boundary</p>
+            <h2>Publish immutable definition</h2>
+            <p>Target, version, scope, impact and recovery consequence appear before confirmation.</p>
+            <dl class="definition-metadata"><div><dt>Target</dt><dd>site.default.inspection</dd></div><div><dt>Version</dt><dd>4</dd></div><div><dt>Impact</dt><dd>Additive schema plan required</dd></div></dl>
+            <button class="primary" type="button">Publish version 4</button>
+          </section>
+          <section class="panel stack schema-purge-control">
+            <p class="eyebrow">Danger zone</p>
+            <h2>Purge remains separate</h2>
+            <p>Destructive work never competes visually with the ordinary primary task.</p>
+            <button class="danger" type="button">Review purge consequences</button>
+          </section>
+        </div>
+        <section class="panel stack kis-state-reference" aria-labelledby="kis-state-reference-title">
+          <div>
+            <p class="eyebrow">Required reference matrix</p>
+            <h2 id="kis-state-reference-title">Representative operating states</h2>
+            <p>Every surface selects the states it supports and qualifies each one before release.</p>
+          </div>
+          <div class="kis-state-matrix">
+            {% for state in [
+              {id: 'empty', label: 'Empty', message: 'No resources exist yet.'},
+              {id: 'sparse', label: 'Sparse', message: 'One bounded resource remains legible.'},
+              {id: 'representative', label: 'Representative', message: 'Typical data proves the ordinary task.'},
+              {id: 'dense', label: 'Dense', message: 'High information density preserves hierarchy.'},
+              {id: 'extreme', label: 'Extreme', message: 'Long identifiers wrap without escape.'},
+              {id: 'error', label: 'Error', message: 'Validation and service failures retain a recovery path.'},
+              {id: 'permission-reduced', label: 'Permission reduced', message: 'Unavailable actions are absent.'},
+              {id: 'unchanged', label: 'Unchanged', message: 'The durable version and form values still agree.'},
+              {id: 'unsaved', label: 'Unsaved', message: 'Local changes are explicit before navigation.'},
+              {id: 'saving', label: 'Saving', message: 'Work is pending without blocking context.'},
+              {id: 'saved', label: 'Saved', message: 'Durable completion is announced.'},
+              {id: 'conflict', label: 'Conflict', message: 'Concurrent change requires resolution.'},
+              {id: 'failed', label: 'Failed', message: 'Failure retains input and recovery action.'}
+            ] %}
+              <article class="kis-state-card" data-kis-state="{{ state.id }}">
+                <strong>{{ state.label }}</strong><span>{{ state.message }}</span>
+              </article>
+            {% endfor %}
+          </div>
+        </section>
+        <div class="admin-grid">
+          <section class="panel stack" aria-labelledby="kis-empty-reference-title">
+            <div>
+              <p class="eyebrow">Empty-state primitive</p>
+              <h2 id="kis-empty-reference-title">Absence explains the next safe task</h2>
+            </div>
+            {% embed '@kis/empty-state.twig' with {
+              title: 'No inspections match this view',
+              message: 'Clear the current filters or create an inspection when policy allows it.'
+            } only %}
+              {% block action %}<a class="button" href="?tab=collections#kis-gallery-panel-collections">Return to the catalog</a>{% endblock %}
+            {% endembed %}
+          </section>
+          <section class="panel stack" data-kis-conflict-reference aria-labelledby="kis-conflict-reference-title">
+            <div>
+              <p class="eyebrow">Optimistic conflict</p>
+              <h2 id="kis-conflict-reference-title">Another actor saved a newer version</h2>
+              <p>Keep the submitted values visible while the actor chooses an explicit recovery path.</p>
+            </div>
+            <div class="page-actions">
+              <button class="primary" type="button">Compare changes</button>
+              <button type="button">Reload version 8</button>
+              <button type="button">Reapply my changes</button>
+            </div>
+          </section>
+        </div>
+      {% endblock %}
+    {% endembed %}
+  </kumwe-tabs>
+{% endblock %}

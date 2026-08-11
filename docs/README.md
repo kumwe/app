@@ -1,5 +1,9 @@
 # Kumwe documentation
 
+The [Kumwe Interface Standard 1.0](interface-standard/README.md) is the normative contract for all
+administrator, portal, generated, extension, and installable-template graphical surfaces. Its programme
+ledger records the bounded Phase 0–6 migration and qualification state.
+
 Use this index to install, operate, administer, integrate, extend, or evolve Kumwe.
 
 ## Install a site

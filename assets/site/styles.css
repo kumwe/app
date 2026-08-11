@@ -1,4 +1,6 @@
-@layer reset, tokens, base, layout, components;
+@import "../interface-standard/styles.css";
+
+@layer reset, tokens, base, layout, components, utilities, overrides;
 
 @layer tokens {
   :root {
@@ -18,6 +20,52 @@
     --site-radius: 1rem;
     --site-button-radius: .76rem;
     --site-font: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --kumwe-border: var(--site-border);
+    --kumwe-border-strong: color-mix(in srgb, var(--site-border), var(--site-ink) 22%);
+    --kumwe-surface: var(--site-surface);
+    --kumwe-surface-subtle: var(--site-canvas);
+    --kumwe-text: var(--site-ink);
+    --kumwe-text-muted: var(--site-muted);
+    --kumwe-text-subtle: var(--site-muted);
+    --kumwe-accent: var(--site-accent);
+    --kumwe-accent-strong: var(--site-accent-strong);
+    --kumwe-accent-soft: var(--site-accent-soft);
+    --kumwe-info: var(--site-accent-strong);
+    --kumwe-info-soft: var(--site-accent-soft);
+    --kumwe-warning: #8b5a00;
+    --kumwe-warning-soft: #fff2cf;
+    --kumwe-danger: #a12e40;
+    --kumwe-danger-strong: #812234;
+    --kumwe-danger-soft: #ffeaed;
+    --kumwe-success: var(--site-accent-strong);
+    --kumwe-success-soft: var(--site-accent-soft);
+    --kumwe-radius-sm: .45rem;
+    --kumwe-radius-md: .7rem;
+    --kumwe-radius-lg: var(--site-radius);
+    --kumwe-shadow-sm: 0 1px 3px rgb(7 24 45 / .09);
+    --kumwe-shadow-xl: 0 28px 80px rgb(7 24 45 / .25);
+    --kumwe-topbar-height: 5rem;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      color-scheme: dark;
+      --site-navy-950: #edf8fb;
+      --site-ink: #e8f1f6;
+      --site-muted: #adbecb;
+      --site-canvas: #091522;
+      --site-surface: #102032;
+      --site-border: #2b4154;
+      --site-accent: #6dd6ce;
+      --site-accent-strong: #8be5de;
+      --site-accent-soft: #173c3c;
+      --site-on-accent: #07182d;
+      --kumwe-warning: #f0be5a;
+      --kumwe-warning-soft: #3b301e;
+      --kumwe-danger: #ff8999;
+      --kumwe-danger-strong: #ffadba;
+      --kumwe-danger-soft: #49242d;
+    }
   }
 }
 
@@ -124,6 +172,17 @@
   body[data-button-style="outline"] .site-button { border-color: var(--site-accent); background: transparent; color: var(--site-accent-strong); box-shadow: none; }
   body[data-button-style="outline"] .site-button:hover { background: var(--site-accent-soft); }
   .empty-home-card { max-width: 37rem; margin-top: 2rem; padding: 1.2rem; border: 1px solid var(--site-border); border-radius: var(--site-radius); background: var(--site-surface); color: var(--site-muted); box-shadow: 0 1rem 2.8rem rgb(7 24 45 / .08); }
+  .button { display: inline-flex; min-height: 2.75rem; align-items: center; justify-content: center; padding: .6rem 1rem; border: 1px solid var(--site-accent); border-radius: var(--site-button-radius); color: var(--site-on-accent); background: var(--site-accent-strong); font-weight: 700; text-decoration: none; }
+  .button:not(.primary), .link-button { color: var(--site-accent-strong); background: var(--site-surface); }
+  .link-button { width: auto; padding: .25rem; border: 0; text-decoration: underline; }
+  .page-actions { display: flex; flex-wrap: wrap; gap: .8rem; }
+  .stack { display: grid; gap: 1rem; }
+  .panel { border: 1px solid var(--site-border); border-radius: var(--site-radius); background: var(--site-surface); }
+  .count-badge { display: inline-flex; padding: .25rem .45rem; border-radius: 999px; background: var(--site-accent-soft); }
+  .notice { margin-bottom: 1rem; padding: .85rem 1rem; border-left: .3rem solid var(--site-accent); background: var(--site-accent-soft); }
+  .notice.danger { border-color: var(--kumwe-danger); background: var(--kumwe-danger-soft); color: var(--kumwe-danger); }
+  .empty-state { display: grid; min-height: 12rem; place-items: center; padding: 2rem 1rem; border: 1px dashed var(--site-border); border-radius: var(--site-radius); text-align: center; }
+  .empty-state-content { max-width: 31rem; }
 
   @media (max-width: 62rem) {
     .managed-hero-grid { grid-template-columns: 1fr; }

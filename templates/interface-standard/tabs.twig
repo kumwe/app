@@ -1,0 +1,18 @@
+<nav class="kis-tabs" aria-label="{{ label }}" data-kis-component="tabs">
+  <div role="tablist" aria-label="{{ label }}">
+    {% for tab in tabs %}
+      <a
+        id="{{ id }}-tab-{{ tab.id }}"
+        role="tab"
+        href="{{ tab.href }}#{{ id }}-panel-{{ tab.id }}"
+        aria-controls="{{ id }}-panel-{{ tab.id }}"
+        aria-selected="{{ tab.id == active ? 'true' : 'false' }}"
+        data-kis-tab="{{ tab.id }}"
+        {% if tab.id != active %}tabindex="-1"{% endif %}
+      >
+        <span>{{ tab.label }}</span>
+        {% if tab.count|default(null) is not null %}<span class="count-badge">{{ tab.count }}</span>{% endif %}
+      </a>
+    {% endfor %}
+  </div>
+</nav>

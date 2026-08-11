@@ -5,7 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="color-scheme" content="light dark">
     <title>{% block title %}Kumwe Portal{% endblock %}</title>
-    <link rel="stylesheet" href="/assets/portal.css">
+    {% for stylesheet in portal_assets.stylesheets %}<link rel="stylesheet" href="{{ stylesheet }}">{% endfor %}
+    {% for module in portal_assets.modules %}<script type="module" src="{{ module }}"></script>{% endfor %}
 </head>
 <body>
 <a class="skip-link" href="#portal-main">Skip to main content</a>

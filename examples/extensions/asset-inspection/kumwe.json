@@ -83,7 +83,8 @@
         "icon": "extensions",
         "capability": "kumwe.asset-inspection-example.manage",
         "priority": 10,
-        "keywords": "asset inspection example extensibility events jobs reports"
+        "keywords": "asset inspection example extensibility events jobs reports",
+        "surface": "kumwe.asset-inspection-example.administrator.index"
       }],
       "routes": [{
         "name": "kumwe.asset-inspection-example.administrator.index",
@@ -113,7 +114,8 @@
         "icon": "status",
         "capability": "kumwe.asset-inspection-example.view",
         "priority": 10,
-        "keywords": "inspection status example"
+        "keywords": "inspection status example",
+        "surface": "kumwe.asset-inspection-example.portal.status"
       }],
       "routes": [{
         "name": "kumwe.asset-inspection-example.portal.status",
@@ -332,6 +334,51 @@
           "administrator_exposure": true,
           "portal_exposure": false,
           "public_exposure": false
+        }
+      ]
+    },
+    "interface": {
+      "surfaces": [
+        {
+          "surface": "kumwe.asset-inspection-example.administrator.index",
+          "standard": "kis-1.0",
+          "area": "administrator",
+          "actor": "administrator",
+          "intent": "diagnostics",
+          "resource": "asset-inspection-example",
+          "purpose": "Inspect the signed asset-inspection extension and its bounded runtime evidence.",
+          "pattern": "diagnostics-workspace",
+          "capabilities": ["kumwe.asset-inspection-example.manage"],
+          "states": ["default", "empty", "error", "permission-reduced"],
+          "customization": [
+            {"slot": "density", "scope": "user"}
+          ],
+          "responsive": [
+            {"element": "inspection-proof", "priority": "essential", "may_collapse": false},
+            {"element": "integration-evidence", "priority": "secondary", "may_collapse": true}
+          ],
+          "icon": "extensions"
+        },
+        {
+          "surface": "kumwe.asset-inspection-example.portal.status",
+          "standard": "kis-1.0",
+          "area": "portal",
+          "actor": "portal",
+          "intent": "monitor",
+          "resource": "asset-inspection-status",
+          "purpose": "Inspect the policy-filtered status of the asset-inspection example.",
+          "pattern": "status-workspace",
+          "capabilities": ["kumwe.asset-inspection-example.view"],
+          "states": ["default", "empty", "error", "permission-reduced", "read-only"],
+          "customization": [
+            {"slot": "density", "scope": "user"},
+            {"slot": "theme-mode", "scope": "user"}
+          ],
+          "responsive": [
+            {"element": "inspection-status", "priority": "essential", "may_collapse": false},
+            {"element": "technical-evidence", "priority": "secondary", "may_collapse": true}
+          ],
+          "icon": "status"
         }
       ]
     },

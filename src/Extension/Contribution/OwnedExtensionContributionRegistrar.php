@@ -29,6 +29,7 @@ use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessViewHandler;
 use Kumwe\CMS\BusinessSurface\Presentation\Field\FieldPresentationContribution;
 use Kumwe\CMS\BusinessSurface\Presentation\Field\FieldPresenter;
 use Kumwe\CMS\Extension\Runtime\RuntimeCanonicalJson;
+use Kumwe\CMS\InterfaceStandard\SurfaceDefinition;
 use Kumwe\CMS\Portal\Contribution\PortalNavigationDefinition;
 use Kumwe\CMS\Portal\Contribution\PortalRouteDefinition;
 use Kumwe\CMS\Portal\Contribution\PortalRouteHandlerFactory;
@@ -51,7 +52,7 @@ use Kumwe\CMS\Portal\Contribution\PortalWorkspaceDefinition;
  *
  * @since  2.0.0
  */
-final class OwnedExtensionContributionRegistrar implements ExtensionContributionRegistrar
+final class OwnedExtensionContributionRegistrar implements ExtensionContributionRegistrar, InterfaceSurfaceRegistrar
 {
     /**
      * Array exports of the manifest declarations, keyed by contribution kind and then by identifier.
@@ -116,6 +117,7 @@ final class OwnedExtensionContributionRegistrar implements ExtensionContribution
             'portal_navigation' => $this->index($declared->portalNavigation()),
             'portal_template' => $this->index($declared->portalTemplates()),
             'portal_route' => $this->index($declared->portalRoutes()),
+            'interface_surface' => $this->index($declared->interfaceSurfaces()),
             'field_type' => $this->businessIndex($declared->fieldTypes()),
             'field_presentation' => $this->fieldPresentationIndex($declared->fieldPresentations()),
             'business_definition' => $this->businessIndex($declared->businessDefinitions()),
@@ -326,6 +328,24 @@ final class OwnedExtensionContributionRegistrar implements ExtensionContribution
     {
         $this->accept('portal_route', $definition->name, $definition->toArray());
         $this->registries->portalRoutes()->register($this->owner, $definition, $factory);
+    }
+
+    /**
+     * Reconcile and publish one declarative KIS surface under this package owner.
+     *
+     * @param   SurfaceDefinition  $definition  Signed semantic declaration with no executable renderer.
+     *
+     * @return  void
+     *
+     * @throws  InvalidArgumentException  When ownership, manifest equality, or uniqueness fails.
+     * @throws  \LogicException             When the contribution phase has already closed.
+     *
+     * @since   2.0.0
+     */
+    public function interfaceSurface(SurfaceDefinition $definition): void
+    {
+        $this->accept('interface_surface', $definition->identifier(), $definition->toArray());
+        $this->registries->interfaceSurfaces()->register($this->owner, $definition);
     }
 
     /**

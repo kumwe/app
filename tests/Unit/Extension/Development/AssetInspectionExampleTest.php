@@ -118,6 +118,7 @@ final class AssetInspectionExampleTest extends TestCase
         self::assertSame(['policies/inspection-viewer.json'], $manifest->assets());
         self::assertCount(5, $contributions->businessDefinitions());
         self::assertCount(2, $contributions->capabilities());
+        self::assertCount(2, $contributions->interfaceSurfaces());
         self::assertCount(1, $contributions->portalRoutes());
 
         $inspection = self::inspection($contributions->businessDefinitions());
@@ -409,6 +410,7 @@ final class AssetInspectionExampleTest extends TestCase
         );
         $inventory = $registries->inventory($declarations->owner);
         self::assertCount(5, $inventory['business']['definitions']);
+        self::assertCount(2, $inventory['interface']['surfaces']);
         self::assertCount(1, $inventory['integration']['domain_listeners']);
         self::assertCount(1, $inventory['integration']['consumers']);
         self::assertCount(1, $inventory['integration']['jobs']);
