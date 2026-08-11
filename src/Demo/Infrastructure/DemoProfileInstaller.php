@@ -88,13 +88,15 @@ final readonly class DemoProfileInstaller implements DemoProfileReconciler
         $profile = $this->configuration->siteContentProfile;
         $loaded = $this->catalog->content($profile);
         $manifest = $loaded['manifest'];
-        if (!$this->ledger->begin(
-            $context->site()->identifier(),
-            DemoContentProfileInstaller::DATASET,
-            $profile,
-            $manifest['version'],
-            $loaded['checksum'],
-        )) {
+        if (
+            !$this->ledger->begin(
+                $context->site()->identifier(),
+                DemoContentProfileInstaller::DATASET,
+                $profile,
+                $manifest['version'],
+                $loaded['checksum'],
+            )
+        ) {
             return [];
         }
         try {
@@ -124,13 +126,15 @@ final readonly class DemoProfileInstaller implements DemoProfileReconciler
         $profile = $this->configuration->businessDemo ? 'vdm' : 'none';
         $loaded = $this->configuration->businessDemo ? $this->catalog->vdmBusiness() : $this->noBusinessManifest();
         $manifest = $loaded['manifest'];
-        if (!$this->ledger->begin(
-            $context->site()->identifier(),
-            VdmBusinessDemoInstaller::DATASET,
-            $profile,
-            $manifest['version'],
-            $loaded['checksum'],
-        )) {
+        if (
+            !$this->ledger->begin(
+                $context->site()->identifier(),
+                VdmBusinessDemoInstaller::DATASET,
+                $profile,
+                $manifest['version'],
+                $loaded['checksum'],
+            )
+        ) {
             return [];
         }
         try {

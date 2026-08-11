@@ -226,7 +226,7 @@
       "workflow_version": 1,
       "workflow_state_key": "published",
       "title": "Administrator tour",
-      "slug": "administrator",
+      "slug": "administrator-tour",
       "canonical_path": "/start-here/administrator",
       "data": {
         "eyebrow": "Administrator",
@@ -309,7 +309,7 @@
       "workflow_version": 1,
       "workflow_state_key": "published",
       "title": "Pages and publishing",
-      "slug": "pages",
+      "slug": "content-pages",
       "canonical_path": "/content/pages",
       "data": {
         "eyebrow": "Editorial workflow",

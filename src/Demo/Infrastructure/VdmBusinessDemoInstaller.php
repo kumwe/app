@@ -47,7 +47,12 @@ use RuntimeException;
  */
 final readonly class VdmBusinessDemoInstaller
 {
-    /** @var string Independent business-demo dataset key. @since 2.0.0 */
+    /**
+     * Independent business-demo dataset key.
+     *
+     * @var    string
+     * @since  2.0.0
+     */
     public const string DATASET = 'business-demo';
 
     /**
@@ -252,11 +257,13 @@ final readonly class VdmBusinessDemoInstaller
         }
         if ($plan->status === SchemaPlanStatus::Approved) {
             $this->schemas->execute($context, $plan->id);
-        } elseif (in_array($plan->status, [
+        } elseif (
+            in_array($plan->status, [
             SchemaPlanStatus::Executing,
             SchemaPlanStatus::Failed,
             SchemaPlanStatus::RecoveryRequired,
-        ], true)) {
+            ], true)
+        ) {
             $this->schemas->recover($context, $plan->id);
         }
         $installation = $this->schemas->installation($context, $definition->id);
@@ -690,7 +697,16 @@ final readonly class VdmBusinessDemoInstaller
         }
     }
 
-    /** @return string Stable bounded policy code for a definition and operation. @since 2.0.0 */
+    /**
+     * Derive the stable bounded policy code for one definition operation.
+     *
+     * @param   EntityTypeDefinition  $definition  Published definition that owns the policy.
+     * @param   string                $operation   Business-record capability represented by the policy.
+     *
+     * @return  string  Stable policy code unique to the definition and operation.
+     *
+     * @since   2.0.0
+     */
     private function policyCode(EntityTypeDefinition $definition, string $operation): string
     {
         return 'core.demo.vdm.'
@@ -699,13 +715,31 @@ final readonly class VdmBusinessDemoInstaller
             . substr($operation, strlen('business.record.'));
     }
 
-    /** @return array<string, mixed> Required manifest object. @since 2.0.0 */
+    /**
+     * Read one required object-shaped value from a manifest object.
+     *
+     * @param   array<string, mixed>  $document  Manifest object carrying the nested object.
+     * @param   string                $key       Required field name.
+     *
+     * @return  array<string, mixed>  Validated object-shaped value.
+     *
+     * @since   2.0.0
+     */
     private function requiredMap(array $document, string $key): array
     {
         return $this->map($document[$key] ?? null, sprintf('field %s', $key));
     }
 
-    /** @return array<string, mixed> Validated object value. @since 2.0.0 */
+    /**
+     * Require a decoded manifest value to be an object-shaped array.
+     *
+     * @param   mixed   $value  Candidate decoded value.
+     * @param   string  $name   Diagnostic noun identifying the value on failure.
+     *
+     * @return  array<string, mixed>  Validated object-shaped value.
+     *
+     * @since   2.0.0
+     */
     private function map(mixed $value, string $name): array
     {
         if (!is_array($value) || array_is_list($value)) {
@@ -715,13 +749,32 @@ final readonly class VdmBusinessDemoInstaller
         return $value;
     }
 
-    /** @return array<string, mixed> Optional manifest object, empty when absent. @since 2.0.0 */
+    /**
+     * Read one optional object-shaped value from a manifest object.
+     *
+     * @param   array<string, mixed>  $document  Manifest object carrying the optional nested object.
+     * @param   string                $key       Optional field name.
+     *
+     * @return  array<string, mixed>  Validated object, or an empty object when the field is absent.
+     *
+     * @since   2.0.0
+     */
     private function optionalMap(array $document, string $key): array
     {
         return array_key_exists($key, $document) ? $this->map($document[$key], sprintf('field %s', $key)) : [];
     }
 
-    /** @return list<mixed> Required bounded manifest list. @since 2.0.0 */
+    /**
+     * Read one required list while enforcing its declared fixture bound.
+     *
+     * @param   array<string, mixed>  $document  Manifest object carrying the list.
+     * @param   string                $key       Required field name.
+     * @param   int                   $maximum   Largest accepted item count.
+     *
+     * @return  list<mixed>  Validated bounded manifest list.
+     *
+     * @since   2.0.0
+     */
     private function requiredList(array $document, string $key, int $maximum): array
     {
         $value = $document[$key] ?? null;
@@ -732,7 +785,16 @@ final readonly class VdmBusinessDemoInstaller
         return $value;
     }
 
-    /** @return string Required non-empty manifest string. @since 2.0.0 */
+    /**
+     * Read one required non-empty string from a manifest object.
+     *
+     * @param   array<string, mixed>  $document  Manifest object carrying the field.
+     * @param   string                $key       Required field name.
+     *
+     * @return  string  Validated non-empty field value.
+     *
+     * @since   2.0.0
+     */
     private function requiredString(array $document, string $key): string
     {
         $value = $document[$key] ?? null;
@@ -743,7 +805,16 @@ final readonly class VdmBusinessDemoInstaller
         return $value;
     }
 
-    /** @return int Required positive manifest integer. @since 2.0.0 */
+    /**
+     * Read one required positive integer from a manifest object.
+     *
+     * @param   array<string, mixed>  $document  Manifest object carrying the field.
+     * @param   string                $key       Required field name.
+     *
+     * @return  int  Validated positive field value.
+     *
+     * @since   2.0.0
+     */
     private function requiredInteger(array $document, string $key): int
     {
         $value = $document[$key] ?? null;
@@ -754,7 +825,16 @@ final readonly class VdmBusinessDemoInstaller
         return $value;
     }
 
-    /** @return ?int Optional non-negative manifest integer. @since 2.0.0 */
+    /**
+     * Read one optional non-negative integer from a manifest object.
+     *
+     * @param   array<string, mixed>  $document  Manifest object carrying the field.
+     * @param   string                $key       Optional field name.
+     *
+     * @return  ?int  Validated non-negative value, or null when absent.
+     *
+     * @since   2.0.0
+     */
     private function optionalInteger(array $document, string $key): ?int
     {
         $value = $document[$key] ?? null;
