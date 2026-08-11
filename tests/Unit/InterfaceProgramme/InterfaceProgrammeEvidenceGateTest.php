@@ -200,6 +200,71 @@ final class InterfaceProgrammeEvidenceGateTest extends TestCase
     }
 
     /**
+     * Reject malformed finding history and resolution without terminal passed evidence.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testResolvedFindingRequiresGovernedHistoryAndVerification(): void
+    {
+        $finding = [
+            'status' => 'resolved',
+            'disposition' => 'planned',
+            'status_history' => [
+                [
+                    'at' => '2026-08-11T00:00:00Z',
+                    'from' => 'planned',
+                    'to' => 'open',
+                    'reason' => 'Malformed initial transition.',
+                    'evidence_ids' => [],
+                ],
+                [
+                    'at' => '2026-08-11T01:00:00Z',
+                    'from' => 'open',
+                    'to' => 'open',
+                    'reason' => 'No state change.',
+                    'evidence_ids' => [],
+                ],
+                [
+                    'at' => '2026-08-11T02:00:00Z',
+                    'from' => 'in_progress',
+                    'to' => 'resolved',
+                    'reason' => '',
+                    'evidence_ids' => ['EVID-FAILED'],
+                ],
+            ],
+        ];
+        $errors = [];
+
+        \validateFindingStatusHistory(
+            $finding,
+            'KIS-FINDING-TEST',
+            ['open' => true, 'in_progress' => true, 'in_review' => true, 'resolved' => true, 'superseded' => true],
+            ['EVID-FAILED' => true],
+            [],
+            $errors,
+        );
+
+        self::assertContains(
+            'Finding KIS-FINDING-TEST history entry 1 has an unknown from status.',
+            $errors,
+        );
+        self::assertContains('Finding KIS-FINDING-TEST history must start with null to open.', $errors);
+        self::assertContains('Finding KIS-FINDING-TEST history entry 2 is a no-op transition.', $errors);
+        self::assertContains(
+            'Finding KIS-FINDING-TEST history entry 3 does not continue the prior status.',
+            $errors,
+        );
+        self::assertContains('Finding KIS-FINDING-TEST history entry 3 requires a reason.', $errors);
+        self::assertContains('Resolved finding KIS-FINDING-TEST requires verified_fixed disposition.', $errors);
+        self::assertContains(
+            'Resolved finding KIS-FINDING-TEST requires passed evidence on its terminal transition.',
+            $errors,
+        );
+    }
+
+    /**
      * Enforce both evidence-type and prerequisite completion rules on gates.
      *
      * @return  void
@@ -373,9 +438,50 @@ final class InterfaceProgrammeEvidenceGateTest extends TestCase
                 'P0-002' => $superseded,
                 'P0-003' => $target,
             ],
+            [],
+            [],
+            [],
+            [
+                'FIND-P2-001' => [
+                    'severity' => 'P2',
+                    'phase_numbers' => [0 => true],
+                    'work_item_ids' => ['P0-001' => true],
+                ],
+            ],
         );
 
         self::assertSame([], $errors);
+    }
+
+    /**
+     * Reject a fabricated finding ID in an otherwise complete waiver record.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testGovernedWaiverRequiresAnAuthoritativeLinkedFinding(): void
+    {
+        $waived = $this->workItem('P0-001', 'waived', 'P2');
+        $waived['evidence_ids'] = ['EVID-WAIVER'];
+        $waived['waiver'] = [
+            'finding_id' => 'FABRICATED-FINDING',
+            'owner_role' => 'programme-owner',
+            'rationale' => 'This record is otherwise complete.',
+            'compensating_control' => 'The affected route remains disabled.',
+            'target_phase' => 3,
+            'evidence_ids' => ['EVID-WAIVER'],
+        ];
+
+        $errors = $this->validate(
+            [$this->evidence('EVID-WAIVER', 'review', ['P0-001'])],
+            ['P0-001' => $waived],
+        );
+
+        self::assertContains(
+            'Waiver for work item P0-001 references unknown finding FABRICATED-FINDING.',
+            $errors,
+        );
     }
 
     /**
@@ -415,6 +521,7 @@ final class InterfaceProgrammeEvidenceGateTest extends TestCase
      * @param   array<string, array<string, mixed>>     $gates      Gate lookup.
      * @param   array<string, array<string, mixed>>     $findings   Normalized blocking findings.
      * @param   list<array<string, mixed>>              $phases     Phase records for gate scope.
+     * @param   array<string, array<string, mixed>>     $registered Authoritative finding targets.
      *
      * @return  list<string>  Validation failures.
      *
@@ -426,6 +533,7 @@ final class InterfaceProgrammeEvidenceGateTest extends TestCase
         array $gates = [],
         array $findings = [],
         array $phases = [],
+        array $registered = [],
     ): array {
         $ledger = [
             'status_vocabulary' => [
@@ -461,6 +569,7 @@ final class InterfaceProgrammeEvidenceGateTest extends TestCase
             $workItems,
             $errors,
             $findings,
+            $registered,
         );
         return $errors;
     }
