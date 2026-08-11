@@ -23,7 +23,8 @@
   ],
   "evidence_rules": {
     "types": ["source", "test", "browser", "parity", "security", "decision", "review", "qualification"],
-    "required_fields": ["id", "type", "status", "producer_role", "source_revision", "method", "result", "artifact_paths", "supports"],
+    "statuses": ["accepted", "failed", "expired", "superseded"],
+    "required_fields": ["id", "type", "status", "producer_role", "source_revision", "environment", "method", "result", "artifact_paths", "supports"],
     "accepted_status": "accepted",
     "history_policy": "Evidence IDs are immutable; a correction appends a record with supersedes rather than replacing history.",
     "completion_policy": "Every evidence ID required by a completed work item or gate must exist and be accepted."
@@ -35,6 +36,7 @@
       "status": "accepted",
       "producer_role": "product-task-owner",
       "source_revision": "7f176fb2ced9082f0b1edfdf03ab78258812994d",
+      "environment": "Repository source and supplied graphical audit captures at the recorded base revision.",
       "method": "Repository and screenshot GUI audit",
       "result": "Confirmed portal guest grid, missing icon, Business Definitions component overflow and systemic information-architecture gaps.",
       "artifact_paths": ["docs/interface-standard/programme/surface-inventory.json"],
