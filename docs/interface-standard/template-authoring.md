@@ -70,9 +70,10 @@ Administrator `layout.twig` must retain:
 - one command/search trigger when the shell exposes that feature;
 - theme-independent recovery rendering on failure.
 
-Site entries must retain a main landmark, page title, canonical navigation behavior, responsive viewport,
-presentation-ready content, and safe optional states. Portal extension views extend the core portal layout
-and cannot shadow it.
+Site entries must retain a doctype and language, encoding and responsive viewport metadata, document title,
+host stylesheet/module outlets, a first main landmark containing presentation-ready content, a matching
+skip target, and labelled server-rendered navigation with its current state. Portal extension views extend
+the core portal layout and cannot shadow it.
 
 ## AI-ready design brief
 
@@ -97,8 +98,9 @@ recovery surface usable.
 ## Verification
 
 Static conformance and activation compile every Twig file, validate regular non-symlinked entry files,
-reject unsafe paths and assets, and prove the administrator shell landmarks and protected host asset
-outlets. The rendered qualification gate then exercises representative KIS fixtures in light/dark,
+reject unsafe paths and assets, render both site entries against protected synthetic data, and prove the
+site and administrator shell landmarks, navigation, presented content, and host asset outlets. The rendered
+qualification gate then exercises representative KIS fixtures in light/dark,
 compact/comfortable, desktop/mobile, keyboard, reduced-motion, high-contrast, long-label, and error states,
 including computed contrast and visible focus. Administrator activation remains a step-up protected
 operation. A failed themed render falls back to the immutable core administrator environment.
