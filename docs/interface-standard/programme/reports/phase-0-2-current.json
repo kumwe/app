@@ -7,93 +7,864 @@
   "overall_status": "blocked",
   "branch": "agent/kis-phase-0-2",
   "base_revision": "7f176fb2ced9082f0b1edfdf03ab78258812994d",
-  "source_revision": "beb8861d6d8a7ebcda49e708d28c740c2ced8c4a",
-  "prepared_at": "2026-08-11T20:07:02Z",
+  "source_revision": "8238bb09a0da6f50e7d07d246cf54a16e13b6b5b",
+  "prepared_at": "2026-08-11T21:38:15Z",
   "prepared_by_role": "quality-owner",
   "scope": {
-    "summary": "Committed Phase 0 defect/diagnostic controls, KIS Phase 1 contracts and template conformance, Phase 2 Business Definitions and Schema Plans migration, and the Phase 0-6 programme control plane.",
-    "phase_numbers": [0, 1, 2],
-    "work_item_ids": ["P0-001", "P0-002", "P0-003", "P0-004", "P0-005", "P0-006", "P0-007", "P0-008", "P0-009", "P1-001", "P1-002", "P1-003", "P1-004", "P1-005", "P1-006", "P1-007", "P1-008", "P1-009", "P1-010", "P1-011", "P1-012", "P2-001", "P2-002", "P2-003", "P2-004", "P2-005", "P2-006", "P2-007", "P2-008"],
-    "surface_ids": ["core.portal.login", "core.administrator.business-security", "core.administrator.business-definitions", "core.administrator.schema-plans", "core.interface-standard.gallery", "extension.administrator.route-family", "extension.portal.route-family", "core.public.home", "core.public.page"],
-    "journey_ids": ["journey.administrator-entry", "journey.definition-to-record", "journey.security-governance", "journey.portal-work", "journey.extension-lifecycle", "journey.presentation-customization"],
-    "changed_paths": ["public/assets/portal.css", "templates/portal/layout.twig", "templates/administrator/layout.twig", "tests/Browser/support/interface-diagnostics.ts", "src/InterfaceStandard", "src/Presentation/Application/ThemePackageValidator.php", "templates/administrator/business-definitions.twig", "templates/administrator/business-schema-plans.twig", "docs/interface-standard/programme"],
-    "included_revisions": ["bb726e90a90052e0693af0e686c72a7acc024531", "a2efa24b4c1ee67f1a22bb70dbce2dfa46eec56e", "9b522722508ba62b1895856ba00175b6bc31cad0", "8507e5ee8288d53c687c009cc5ce85a2a5aaa064", "5e8935f82f69ae5382745ef9d4ed8dad7f8ce268", "beb8861d6d8a7ebcda49e708d28c740c2ced8c4a"],
-    "working_tree_included": true,
-    "excluded_worktree_note": "Shared uncommitted Phase 1 gallery, contribution, asset, and documentation work was present during structural, policy, type, and isolated-build commands. Those passes must be rerun after the shared work is committed; runtime acceptance is not inferred from them."
+    "summary": "Phase-ordered implementation of Phase 0 diagnostics and governance, Phase 1 KIS 1.0 runtime/customization/template foundations, and Phase 2 Business Definitions and Schema Plans reference migrations.",
+    "phase_numbers": [
+      0,
+      1,
+      2
+    ],
+    "work_item_ids": [
+      "P0-001",
+      "P0-002",
+      "P0-003",
+      "P0-004",
+      "P0-005",
+      "P0-006",
+      "P0-007",
+      "P0-008",
+      "P0-009",
+      "P1-001",
+      "P1-002",
+      "P1-003",
+      "P1-004",
+      "P1-005",
+      "P1-006",
+      "P1-007",
+      "P1-008",
+      "P1-009",
+      "P1-010",
+      "P1-011",
+      "P1-012",
+      "P2-001",
+      "P2-002",
+      "P2-003",
+      "P2-004",
+      "P2-005",
+      "P2-006",
+      "P2-007",
+      "P2-008"
+    ],
+    "surface_ids": [
+      "core.portal.login",
+      "core.administrator.business-security",
+      "core.administrator.business-definitions",
+      "core.administrator.schema-plans",
+      "core.interface-standard.gallery",
+      "extension.administrator.route-family",
+      "extension.portal.route-family",
+      "core.public.home",
+      "core.public.page"
+    ],
+    "journey_ids": [
+      "journey.administrator-entry",
+      "journey.definition-to-record",
+      "journey.security-governance",
+      "journey.portal-work",
+      "journey.extension-lifecycle",
+      "journey.presentation-customization"
+    ],
+    "changed_paths": [
+      "assets/interface-standard",
+      "assets/portal",
+      "assets/site",
+      "public/assets/build",
+      "src/InterfaceStandard",
+      "src/Presentation/Application/Preference",
+      "src/Presentation/Infrastructure/Persistence",
+      "src/Infrastructure/Persistence/Migration/InterfacePresentationPreferenceMigration.php",
+      "src/Extension/Contribution",
+      "src/Presentation/Application/ThemePackageValidator.php",
+      "templates/interface-standard",
+      "templates/administrator/business-definitions.twig",
+      "templates/administrator/business-schema-plans.twig",
+      "examples/extensions/minimal-template",
+      "examples/extensions/minimal-administrator-template",
+      "docs/interface-standard/programme"
+    ],
+    "included_revisions": [
+      "05d2fab1bb4b37e50cce534c746ce5f88141bff3",
+      "42114708e795f69716c09047fcfb5873f6ee1853",
+      "d76eb7a2be7022aa31d30ab110f1a5e5c5a80eb9",
+      "858ce8a58f88685b18ce8d57eaf83475a54b6d01",
+      "d46c9753bd38c64bc6eba7c8e3c0a28ab86ff3e7",
+      "2a3f039981c36bac1662ce8cc4f74b9e10644934",
+      "aeedf11182020236bb26d1e426a9162835cf87fb",
+      "852ef82d6eadc9a0e9234b3fecc0d3d0ebc27bb6",
+      "e0e92c4bd492a4ffe43b6c679a440da04c6495b7",
+      "dbd8c1f42b4c8c6b898ca9662e4ccc9543262af2",
+      "ccd6f192e05497e398607a3686a7a89e47591b12",
+      "6136313b11279b7636400992ae2581377c8b822d",
+      "70c94362bd84a6e2de270ca635aa562f9cc40599",
+      "6bf34340334b28f2a43805ffd611e0a76828ffac",
+      "8916721e9516ff4ad6e339a45a6f1cf04cb65cd6",
+      "8505b1632202ff14131006440465bb7c735b440a",
+      "deff40121fad90a226e4b78bd52c651abda82806",
+      "43e78298b068a8159edd059e86a66ab73958579f",
+      "593706239a0267049aaecf0b8bc6ee4f505e4e85",
+      "cc00952587164dc2548974b1d074de009a30120d",
+      "fe3eda1217a0a6fc4344b910bd874260eb866b65",
+      "e4a942d71f0fe1460a71363324345cd70b01580b",
+      "8238bb09a0da6f50e7d07d246cf54a16e13b6b5b"
+    ],
+    "working_tree_included": false,
+    "excluded_worktree_note": "No uncommitted implementation source is included. The ledger and this checkpoint metadata are finalized in a separate documentation commit after the recorded source revision."
   },
   "kis": {
     "version": "kis-1.0",
-    "normative_document_paths": ["docs/interface-standard/README.md", "docs/interface-standard/conformance.md", "docs/interface-standard/customization.md", "docs/interface-standard/template-authoring.md"],
+    "normative_document_paths": [
+      "docs/interface-standard/README.md",
+      "docs/interface-standard/pattern-selection.md",
+      "docs/interface-standard/workspaces-navigation.md",
+      "docs/interface-standard/forms-subforms.md",
+      "docs/interface-standard/collections-tables.md",
+      "docs/interface-standard/actions-safety.md",
+      "docs/interface-standard/responsive-accessibility.md",
+      "docs/interface-standard/conformance.md",
+      "docs/interface-standard/customization.md",
+      "docs/interface-standard/presentation-preference-runtime.md",
+      "docs/interface-standard/template-authoring.md"
+    ],
     "decision_ids": [],
     "deviation_ids": []
   },
   "behavior_changes": {
-    "routes": ["Existing Phase 0-2 route paths are intended to remain stable; runtime route parity has not yet been executed."],
-    "capabilities": ["Existing capability declarations are intended to remain stable; positive and negative runtime matrices remain unexecuted."],
-    "fields": ["Business Definition and Schema Plan presentation was reorganized without an intended field removal; formal field parity remains pending."],
-    "actions": ["Business Definition task navigation and Schema Plan contextual actions were reorganized; formal action parity remains pending."],
-    "payloads": ["Handler request parsing changes intend to preserve application-service payloads; focused native PHP tests remain blocked."],
-    "states": ["Guest portal, dense/long Business Definition, Schema Plan approval/execution/recovery, template override, and permission-reduced states are in scope."],
-    "notes": "Source implementations and deterministic assertions exist, but this report does not promote any ledger item or gate because native PHP, Chromium, parity, security, and human review evidence is incomplete."
+    "routes": [
+      "Core graphical route registrations are source-bound as exact name, path, and method tuples; KIS surface and navigation bindings are explicit while legacy surfaces remain declared as legacy."
+    ],
+    "capabilities": [
+      "Typed surface capabilities and navigation capability bindings are checked against the programme inventory; runtime authorization remains the application-service boundary."
+    ],
+    "fields": [
+      "Business Definition fields use a focused, collapsible editor without removing source-bound field payload evidence; presentation preferences persist through typed, versioned scope records."
+    ],
+    "actions": [
+      "Business Definition and Schema Plan actions are reorganized into task-focused KIS workspaces with bounded URL tabs, preserved redirects, confirmations, and no-JavaScript form behavior."
+    ],
+    "payloads": [
+      "The Phase 2 parity manifest binds route, capability, field, action, payload, validation, error, and outcome evidence to production source; its dependency-free verifier passes."
+    ],
+    "states": [
+      "Guest/authenticated, empty/sparse/dense/error, permission-reduced/read-only, dirty/conflict, approval/execution/recovery, no-JavaScript, mobile, and installable-template states are represented in contracts or focused tests."
+    ],
+    "notes": "Source-bound structural, schema, parity, type, build, policy, and documentation checks pass. No work item or gate is marked complete because native Composer QA, Chromium execution, database/recovery qualification, security matrices, and accountable human review remain incomplete."
   },
   "parity": {
-    "status": "not_run",
-    "manifest_paths": ["docs/interface-standard/programme/phase-2-business-workspace-parity.json"],
-    "result_summary": "A pending parity manifest exists in the shared working tree but is excluded from the included revisions and has no accepted execution result. An exploratory PHP 8.5 WASM run found one unresolved source-evidence binding, so Phase 2 parity remains a blocking acceptance obligation."
+    "status": "blocked",
+    "manifest_paths": [
+      "docs/interface-standard/programme/phase-2-business-workspace-parity.json"
+    ],
+    "result_summary": "The committed Phase 2 manifest passes its dependency-free PHP 8.5 WASM source-binding verifier. Native PHPUnit/integration, Chromium task and visual execution, representative database, security-negative-path, and recovery evidence remain required before parity can be accepted."
   },
   "check_matrix": [
-    {"id": "CHANGESET-INTEGRITY", "category": "source", "requirement": "The bounded diff is intentional, whitespace-clean, and names every included revision.", "applicability": "required", "status": "passed", "command": "git diff --check 7f176fb2ced9082f0b1edfdf03ab78258812994d..beb8861d6d8a7ebcda49e708d28c740c2ced8c4a", "environment": "shared Linux workspace; committed revisions only", "result_summary": "Passed with no whitespace errors; all six included revisions are enumerated in scope.", "artifact_paths": [], "blocker_finding_ids": [], "evidence_ids": [], "phase_numbers": [0, 1, 2], "work_item_ids": ["P0-009"]},
-    {"id": "PROGRAMME-INVENTORY", "category": "programme", "requirement": "Programme records are internally coherent and match route, navigation, template, manifest, and generated-definition sources.", "applicability": "required", "status": "passed", "command": "Mount repository into @php-wasm/node PHP 8.5 and require tools/verify-interface-programme.php", "environment": "PHP 8.5 WASM with host repository mounted for verification; shared working tree present", "result_summary": "Passed: 42 surfaces, 71 templates, 23 navigation entries, 12 generated instances, 16 actors, 27 tasks, 13 journeys, 60 work items, 8 findings, and 1 verification report. This is structural coverage only and does not substitute for native Composer QA.", "artifact_paths": ["tools/verify-interface-programme.php", "docs/interface-standard/programme/surface-inventory.json", "docs/interface-standard/programme/actor-task-journeys.json", "docs/interface-standard/programme/phase-ledger.json", "docs/interface-standard/programme/findings-register.json", "docs/interface-standard/programme/verification-report-template.json", "docs/interface-standard/programme/reports/phase-0-2-current.json"], "blocker_finding_ids": [], "evidence_ids": ["EVID-ENV-0001-WASM"], "phase_numbers": [0, 1, 2], "work_item_ids": ["P0-001", "P0-002", "P0-009"]},
-    {"id": "ARCHITECTURE-POLICY", "category": "architecture", "requirement": "Repository architecture and dependency policies pass.", "applicability": "required", "status": "passed", "command": "bash tools/verify-policy.sh", "environment": "shared Linux workspace at source revision plus explicitly excluded shared worktree", "result_summary": "Passed: Kumwe architecture policy verified.", "artifact_paths": ["tools/verify-policy.sh"], "blocker_finding_ids": [], "evidence_ids": [], "phase_numbers": [0, 1, 2], "work_item_ids": ["P1-002", "P2-005", "P2-007"]},
-    {"id": "PHP-CODING-STANDARDS", "category": "php", "requirement": "PHP coding standards pass for all affected source and tests.", "applicability": "required", "status": "blocked", "command": "composer cs", "environment": "current shared workspace", "result_summary": "Not executed because native PHP, Composer, and vendor tools are unavailable; no coding-standard pass is claimed.", "artifact_paths": [], "blocker_finding_ids": ["KIS-ENV-0001"], "evidence_ids": ["EVID-ENV-0001"], "phase_numbers": [0, 1, 2], "work_item_ids": []},
-    {"id": "PHP-STATIC-ANALYSIS", "category": "php", "requirement": "Static analysis passes at the repository level.", "applicability": "required", "status": "blocked", "command": "composer analyse", "environment": "current shared workspace", "result_summary": "Not executed because native PHP, Composer, and vendor tools are unavailable; no PHPStan pass is claimed.", "artifact_paths": [], "blocker_finding_ids": ["KIS-ENV-0001"], "evidence_ids": ["EVID-ENV-0001"], "phase_numbers": [0, 1, 2], "work_item_ids": ["P1-002", "P2-005", "P2-007"]},
-    {"id": "PHP-UNIT", "category": "php", "requirement": "Affected unit and architecture tests pass before the complete test suite.", "applicability": "required", "status": "blocked", "command": "composer test:unit", "environment": "current shared workspace", "result_summary": "Unit and architecture test sources are committed, but vendor/bin/phpunit is absent and no native PHPUnit pass is claimed.", "artifact_paths": ["tests/Unit/InterfaceProgramme/InterfaceProgrammeVerifierTest.php", "tests/Architecture/BusinessWorkspaceInterfaceStandardTest.php", "tests/Unit/Extension/Contribution/ExtensionContributionRegistrySetTest.php"], "blocker_finding_ids": ["KIS-ENV-0001"], "evidence_ids": ["EVID-ENV-0001", "EVID-FIND-0002-TEST"], "phase_numbers": [0, 1, 2], "work_item_ids": ["P0-004", "P0-005", "P0-009", "P1-002", "P1-011", "P2-005", "P2-007"]},
-    {"id": "PHP-INTEGRATION-FUNCTIONAL", "category": "php", "requirement": "Affected integration and functional behavior passes with production adapters.", "applicability": "required", "status": "blocked", "command": "vendor/bin/phpunit --testsuite integration", "environment": "current shared workspace", "result_summary": "Not executed because native PHP and installed Composer dependencies are unavailable.", "artifact_paths": [], "blocker_finding_ids": ["KIS-ENV-0001"], "evidence_ids": ["EVID-ENV-0001"], "phase_numbers": [0, 1, 2], "work_item_ids": ["P1-011", "P1-012", "P2-005", "P2-007"]},
-    {"id": "OPENAPI-CONSISTENCY", "category": "contract", "requirement": "OpenAPI compilation remains reproducible when delivery contracts are affected.", "applicability": "required", "status": "blocked", "command": "composer openapi:check", "environment": "current shared workspace", "result_summary": "Not executed because native PHP and Composer are unavailable.", "artifact_paths": [], "blocker_finding_ids": ["KIS-ENV-0001"], "evidence_ids": ["EVID-ENV-0001"], "phase_numbers": [0, 1, 2], "work_item_ids": []},
-    {"id": "COMPOSER-QA", "category": "aggregate", "requirement": "The canonical PHP QA aggregate passes locally.", "applicability": "required", "status": "blocked", "command": "composer qa", "environment": "current shared workspace", "result_summary": "Not executed because native PHP, Composer, and vendor dependencies are unavailable. Individual WASM and shell checks do not constitute an aggregate QA pass.", "artifact_paths": ["composer.json"], "blocker_finding_ids": ["KIS-ENV-0001"], "evidence_ids": ["EVID-ENV-0001"], "phase_numbers": [0, 1, 2], "work_item_ids": ["P0-009"]},
-    {"id": "FRONTEND-TYPECHECK", "category": "frontend", "requirement": "TypeScript type checking passes.", "applicability": "required", "status": "passed", "command": "npm run check", "environment": "Node 24.14.0, npm 11.9.0, installed repository node_modules", "result_summary": "Passed with tsc --noEmit and no diagnostics.", "artifact_paths": [], "blocker_finding_ids": [], "evidence_ids": [], "phase_numbers": [0, 1, 2], "work_item_ids": ["P0-006", "P1-005", "P1-008"]},
-    {"id": "FRONTEND-BUILD", "category": "frontend", "requirement": "The production frontend bundle builds reproducibly.", "applicability": "required", "status": "passed", "command": "npm run build -- --outDir /tmp/kumwe-phase-0-2-build --emptyOutDir", "environment": "Node 24.14.0, Vite 8.2.0; isolated temporary output to preserve shared build artifacts", "result_summary": "Passed: 37 modules transformed and site/administrator CSS and JavaScript bundles emitted to an isolated temporary directory.", "artifact_paths": [], "blocker_finding_ids": [], "evidence_ids": [], "phase_numbers": [0, 1, 2], "work_item_ids": ["P1-003", "P1-005", "P1-006", "P1-008"]},
-    {"id": "BROWSER-BEHAVIOR", "category": "browser", "requirement": "Affected tasks complete in Chromium with positive, negative, and no-JavaScript coverage where applicable.", "applicability": "required", "status": "blocked", "command": "npm run test:browser", "environment": "current shared workspace", "result_summary": "Not executed: Chromium is absent and the native PHP application runtime cannot start. No browser task is claimed passed.", "artifact_paths": ["tests/Browser/portal.spec.ts", "tests/Browser/administrator.spec.ts"], "blocker_finding_ids": ["KIS-ENV-0001", "KIS-ENV-0002"], "evidence_ids": ["EVID-ENV-0001", "EVID-ENV-0002"], "phase_numbers": [0, 1, 2], "work_item_ids": ["P0-003", "P0-007", "P0-008", "P1-010", "P2-002", "P2-003", "P2-004", "P2-006", "P2-008"]},
-    {"id": "BROWSER-ACCESSIBILITY", "category": "accessibility", "requirement": "Axe, keyboard, focus, landmarks, names, zoom, motion, and touch obligations pass for affected states.", "applicability": "required", "status": "blocked", "command": "npm run test:browser -- tests/Browser/portal.spec.ts tests/Browser/administrator.spec.ts tests/Browser/interface-integrity.spec.ts", "environment": "current shared workspace", "result_summary": "Not executed because Chromium and the native application runtime are unavailable; no Axe, keyboard, focus, zoom, or touch pass is claimed.", "artifact_paths": ["tests/Browser/portal.spec.ts", "tests/Browser/administrator.spec.ts", "tests/Browser/interface-integrity.spec.ts"], "blocker_finding_ids": ["KIS-ENV-0001", "KIS-ENV-0002"], "evidence_ids": ["EVID-ENV-0001", "EVID-ENV-0002"], "phase_numbers": [0, 1, 2], "work_item_ids": ["P0-007", "P0-008", "P1-004", "P1-005", "P1-006", "P1-007", "P1-008", "P1-009", "P1-010", "P2-008"]},
-    {"id": "BROWSER-VISUAL-DIAGNOSTICS", "category": "visual", "requirement": "Viewport, theme, data, state, and input matrices have no unintended clipping, overflow, overlap, or missing assets.", "applicability": "required", "status": "blocked", "command": "npm run test:browser -- tests/Browser/interface-integrity.spec.ts tests/Browser/portal.spec.ts tests/Browser/administrator.spec.ts", "environment": "current shared workspace", "result_summary": "The reusable diagnostics and screenshot assertions exist but were not executed because Chromium and native PHP are unavailable; no baseline or no-overflow pass is claimed.", "artifact_paths": ["tests/Browser/support/interface-diagnostics.ts", "tests/Browser/interface-integrity.spec.ts", "tests/Browser/portal.spec.ts", "tests/Browser/administrator.spec.ts"], "blocker_finding_ids": ["KIS-ENV-0001", "KIS-ENV-0002"], "evidence_ids": ["EVID-FIND-0001-BROWSER", "EVID-FIND-0003-BROWSER", "EVID-FIND-0005-BROWSER"], "phase_numbers": [0, 1, 2], "work_item_ids": ["P0-003", "P0-006", "P0-007", "P0-008", "P1-003", "P1-010", "P2-008"]},
-    {"id": "MIGRATION-PARITY", "category": "parity", "requirement": "Old/new route, capability, field, action, payload, validation, error, and outcome parity is proved.", "applicability": "required", "status": "not_run", "command": "php tools/verify-business-workspace-parity.php followed by native/browser parity matrices", "environment": "pending artifact in shared working tree; supported native PHP, representative fixtures, and Chromium still required", "result_summary": "The pending manifest is not part of the included revisions and no accepted parity result exists. An exploratory PHP 8.5 WASM run found one unresolved definition-import source-evidence binding; Phase 2 parity remains open and the report stays blocked.", "artifact_paths": ["docs/interface-standard/programme/phase-2-business-workspace-parity.json"], "blocker_finding_ids": ["KIS-ENV-0001", "KIS-ENV-0002"], "evidence_ids": [], "phase_numbers": [2], "work_item_ids": ["P2-001", "P2-005", "P2-007", "P2-008"]},
-    {"id": "SECURITY-NEGATIVE-PATHS", "category": "security", "requirement": "Authorization, disclosure, CSRF, step-up, concurrency, approval, audit, and recovery negative paths pass.", "applicability": "required", "status": "not_run", "command": "Run focused Business Definition and Schema Plan authorization, CSRF, approval, execution, and recovery matrices", "environment": "requires supported native PHP topology and representative actors", "result_summary": "Source assertions exist, but the complete positive/negative actor and high-impact action matrix was not executed.", "artifact_paths": ["tests/Browser/administrator.spec.ts", "tests/Unit/BusinessSchema/Delivery/Administrator/BusinessSchemaAdministratorRequestTest.php"], "blocker_finding_ids": ["KIS-ENV-0001", "KIS-ENV-0002"], "evidence_ids": [], "phase_numbers": [2], "work_item_ids": ["P2-005", "P2-007"]},
-    {"id": "TEMPLATE-EXTENSION-CONFORMANCE", "category": "extensibility", "requirement": "Core and installed templates/extensions preserve typed KIS, customization, fallback, reset, and ownership contracts.", "applicability": "required", "status": "blocked", "command": "vendor/bin/phpunit tests/Unit/Presentation/Application/ThemePackageValidatorTest.php tests/Integration/Presentation/DoctrineThemeManagerIntegrationTest.php", "environment": "requires native PHP, installed Composer dependencies, and browser follow-up", "result_summary": "Template conformance source and fixtures are committed; native unit/integration and browser fallback/reset execution remains blocked and is not claimed passed.", "artifact_paths": ["src/Presentation/Application/ThemePackageValidator.php", "tests/Unit/Presentation/Application/ThemePackageValidatorTest.php", "tests/Integration/Presentation/DoctrineThemeManagerIntegrationTest.php", "examples/extensions/minimal-administrator-template/kumwe.json"], "blocker_finding_ids": ["KIS-ENV-0001", "KIS-ENV-0002"], "evidence_ids": [], "phase_numbers": [1, 2], "work_item_ids": ["P1-011", "P1-012"]},
-    {"id": "DATABASE-TOPOLOGY", "category": "qualification", "requirement": "Relevant production topology and database adapters render and mutate representative state consistently.", "applicability": "required", "status": "not_run", "command": "Run production-equivalent MariaDB/MySQL/PostgreSQL-relevant fixture and interface matrix", "environment": "not provisioned in the current workspace", "result_summary": "No database-neutral rendering or mutation qualification was run for Phase 0-2.", "artifact_paths": [], "blocker_finding_ids": [], "evidence_ids": [], "phase_numbers": [2], "work_item_ids": ["P2-005", "P2-007", "P2-008"]},
-    {"id": "RECOVERY-ROLLBACK", "category": "recovery", "requirement": "Rollback, template fallback/reset, and data recovery procedures are proportionate and verified.", "applicability": "required", "status": "not_run", "command": "Review reverse-commit rollback and execute template fallback/reset plus Schema Plan recovery scenarios", "environment": "requires supported native PHP production-equivalent topology", "result_summary": "A recovery strategy is documented below, but it has not been executed and is not accepted evidence.", "artifact_paths": ["docs/interface-standard/customization.md", "docs/interface-standard/template-authoring.md"], "blocker_finding_ids": ["KIS-ENV-0001"], "evidence_ids": [], "phase_numbers": [1, 2], "work_item_ids": ["P1-011", "P2-007"]},
-    {"id": "HUMAN-REVIEW", "category": "review", "requirement": "Accountable product, accessibility, security, KIS, and release roles review applicable evidence.", "applicability": "required", "status": "not_run", "command": "Review committed report, findings, browser bundle, parity manifest, security matrix, and recovery result", "environment": "pending accountable-role review", "result_summary": "No accountable acceptance is recorded. Ledger work-item and gate statuses intentionally remain unchanged by this report.", "artifact_paths": ["docs/interface-standard/programme/phase-ledger.json"], "blocker_finding_ids": [], "evidence_ids": [], "phase_numbers": [0, 1, 2], "work_item_ids": ["P0-001", "P0-002", "P1-001", "P1-010", "P2-008"]}
+    {
+      "id": "CHANGESET-INTEGRITY",
+      "category": "source",
+      "requirement": "The bounded diff is intentional, whitespace-clean, and names every included revision.",
+      "applicability": "required",
+      "status": "passed",
+      "command": "git diff --check 7f176fb2ced9082f0b1edfdf03ab78258812994d..8238bb09a0da6f50e7d07d246cf54a16e13b6b5b",
+      "environment": "shared Linux workspace; 23 committed Phase 0-2 source revisions",
+      "result_summary": "Passed with no whitespace errors; all 23 phase-ordered source revisions are enumerated in scope.",
+      "artifact_paths": [],
+      "blocker_finding_ids": [],
+      "evidence_ids": [],
+      "phase_numbers": [
+        0,
+        1,
+        2
+      ],
+      "work_item_ids": [
+        "P0-009"
+      ]
+    },
+    {
+      "id": "PROGRAMME-INVENTORY",
+      "category": "programme",
+      "requirement": "Programme records are internally coherent and match route, navigation, template, manifest, and generated-definition sources.",
+      "applicability": "required",
+      "status": "passed",
+      "command": "Mount repository into @php-wasm/node PHP 8.5 and require tools/verify-interface-programme.php",
+      "environment": "PHP 8.5 WASM with the final checkpoint tree mounted",
+      "result_summary": "Passed: 42 surfaces, 71 templates, 23 navigation entries, 12 generated instances, 16 actors, 27 tasks, 13 journeys, 60 work items, 8 findings, and 1 verification report. Exact core route tuples, runtime surface dispositions, navigation bindings, typed KIS declarations, evidence histories, waivers, revisions, and prerequisites are checked.",
+      "artifact_paths": [
+        "tools/verify-interface-programme.php",
+        "docs/interface-standard/programme/surface-inventory.json",
+        "docs/interface-standard/programme/actor-task-journeys.json",
+        "docs/interface-standard/programme/phase-ledger.json",
+        "docs/interface-standard/programme/findings-register.json",
+        "docs/interface-standard/programme/verification-report-template.json",
+        "docs/interface-standard/programme/reports/phase-0-2-current.json"
+      ],
+      "blocker_finding_ids": [],
+      "evidence_ids": [
+        "EVID-ENV-0001-WASM"
+      ],
+      "phase_numbers": [
+        0,
+        1,
+        2
+      ],
+      "work_item_ids": [
+        "P0-001",
+        "P0-002",
+        "P0-009"
+      ]
+    },
+    {
+      "id": "ARCHITECTURE-POLICY",
+      "category": "architecture",
+      "requirement": "Repository architecture and dependency policies pass.",
+      "applicability": "required",
+      "status": "passed",
+      "command": "bash tools/verify-policy.sh",
+      "environment": "shared Linux workspace at the final Phase 0-2 source revision",
+      "result_summary": "Passed: Kumwe architecture policy verified.",
+      "artifact_paths": [
+        "tools/verify-policy.sh"
+      ],
+      "blocker_finding_ids": [],
+      "evidence_ids": [],
+      "phase_numbers": [
+        0,
+        1,
+        2
+      ],
+      "work_item_ids": [
+        "P1-002",
+        "P2-005",
+        "P2-007"
+      ]
+    },
+    {
+      "id": "PHP-CODING-STANDARDS",
+      "category": "php",
+      "requirement": "PHP coding standards pass for all affected source and tests.",
+      "applicability": "required",
+      "status": "blocked",
+      "command": "composer cs",
+      "environment": "native PHP, Composer, and vendor tooling unavailable in the current workspace",
+      "result_summary": "Not executed because native PHP, Composer, and vendor tools are unavailable; parser and focused WASM checks do not constitute a PHPCS pass.",
+      "artifact_paths": [],
+      "blocker_finding_ids": [
+        "KIS-ENV-0001"
+      ],
+      "evidence_ids": [
+        "EVID-ENV-0001"
+      ],
+      "phase_numbers": [
+        0,
+        1,
+        2
+      ],
+      "work_item_ids": []
+    },
+    {
+      "id": "PHP-STATIC-ANALYSIS",
+      "category": "php",
+      "requirement": "Static analysis passes at the repository level.",
+      "applicability": "required",
+      "status": "blocked",
+      "command": "composer analyse",
+      "environment": "native PHP, Composer, and vendor tooling unavailable in the current workspace",
+      "result_summary": "Not executed because native PHP, Composer, and PHPStan are unavailable; no repository static-analysis pass is claimed.",
+      "artifact_paths": [],
+      "blocker_finding_ids": [
+        "KIS-ENV-0001"
+      ],
+      "evidence_ids": [
+        "EVID-ENV-0001"
+      ],
+      "phase_numbers": [
+        0,
+        1,
+        2
+      ],
+      "work_item_ids": [
+        "P1-002",
+        "P2-005",
+        "P2-007"
+      ]
+    },
+    {
+      "id": "PHP-UNIT",
+      "category": "php",
+      "requirement": "Affected unit and architecture tests pass before the complete test suite.",
+      "applicability": "required",
+      "status": "blocked",
+      "command": "composer test:unit",
+      "environment": "PHP 8.5 WASM supported focused implementation checks; native vendor PHPUnit is unavailable",
+      "result_summary": "All 1,448 PHP files parse and the docblock gate reports 0 violations across 1,050 classes. Focused WASM checks ran during implementation, but the canonical native PHPUnit suite is unavailable and no aggregate unit pass is claimed.",
+      "artifact_paths": [
+        "tests/Unit/InterfaceProgramme/InterfaceProgrammeEvidenceGateTest.php",
+        "tests/Unit/InterfaceStandard/SurfaceDefinitionTest.php",
+        "tests/Unit/InterfaceStandard/InterfaceStandardSchemaTest.php",
+        "tests/Unit/InterfaceStandard/SurfaceIdentifierParityTest.php",
+        "tests/Unit/InterfaceStandard/PresentationPreferenceManagerTest.php",
+        "tests/Unit/Presentation/Application/ThemePackageValidatorTest.php",
+        "tests/Architecture/BusinessWorkspaceParityManifestTest.php"
+      ],
+      "blocker_finding_ids": [
+        "KIS-ENV-0001"
+      ],
+      "evidence_ids": [
+        "EVID-ENV-0001",
+        "EVID-FIND-0002-TEST"
+      ],
+      "phase_numbers": [
+        0,
+        1,
+        2
+      ],
+      "work_item_ids": [
+        "P0-004",
+        "P0-005",
+        "P0-009",
+        "P1-002",
+        "P1-011",
+        "P2-005",
+        "P2-007"
+      ]
+    },
+    {
+      "id": "PHP-INTEGRATION-FUNCTIONAL",
+      "category": "php",
+      "requirement": "Affected integration and functional behavior passes with production adapters.",
+      "applicability": "required",
+      "status": "blocked",
+      "command": "vendor/bin/phpunit --testsuite integration",
+      "environment": "native PHP and installed Composer dependencies unavailable",
+      "result_summary": "Not executed in the canonical topology; production-adapter, migration, theme activation, and functional behavior remain acceptance blockers.",
+      "artifact_paths": [
+        "tests/Integration/InterfaceStandard/PresentationPreferencePersistenceIntegrationTest.php",
+        "tests/Integration/Presentation/DoctrineThemeManagerIntegrationTest.php"
+      ],
+      "blocker_finding_ids": [
+        "KIS-ENV-0001"
+      ],
+      "evidence_ids": [
+        "EVID-ENV-0001"
+      ],
+      "phase_numbers": [
+        0,
+        1,
+        2
+      ],
+      "work_item_ids": [
+        "P1-011",
+        "P1-012",
+        "P2-005",
+        "P2-007"
+      ]
+    },
+    {
+      "id": "OPENAPI-CONSISTENCY",
+      "category": "contract",
+      "requirement": "OpenAPI compilation remains reproducible when delivery contracts are affected.",
+      "applicability": "required",
+      "status": "blocked",
+      "command": "composer openapi:check",
+      "environment": "native PHP and Composer unavailable",
+      "result_summary": "Not executed because the canonical Composer OpenAPI command is unavailable.",
+      "artifact_paths": [],
+      "blocker_finding_ids": [
+        "KIS-ENV-0001"
+      ],
+      "evidence_ids": [
+        "EVID-ENV-0001"
+      ],
+      "phase_numbers": [
+        0,
+        1,
+        2
+      ],
+      "work_item_ids": []
+    },
+    {
+      "id": "COMPOSER-QA",
+      "category": "aggregate",
+      "requirement": "The canonical PHP QA aggregate passes locally.",
+      "applicability": "required",
+      "status": "blocked",
+      "command": "composer qa",
+      "environment": "native PHP, Composer, and vendor dependencies unavailable",
+      "result_summary": "Not executed. Individual PHP WASM, parser, schema, policy, and frontend checks do not constitute a canonical composer qa pass.",
+      "artifact_paths": [
+        "composer.json"
+      ],
+      "blocker_finding_ids": [
+        "KIS-ENV-0001"
+      ],
+      "evidence_ids": [
+        "EVID-ENV-0001"
+      ],
+      "phase_numbers": [
+        0,
+        1,
+        2
+      ],
+      "work_item_ids": [
+        "P0-009"
+      ]
+    },
+    {
+      "id": "FRONTEND-TYPECHECK",
+      "category": "frontend",
+      "requirement": "TypeScript type checking passes.",
+      "applicability": "required",
+      "status": "passed",
+      "command": "npm run check",
+      "environment": "Node 24.14.0, npm 11.9.0, installed repository node_modules",
+      "result_summary": "Passed: tsc --noEmit and KIS JSON Schema verification across 36 valid and 34 adversarial documents.",
+      "artifact_paths": [
+        "tools/verify-interface-schemas.mjs",
+        "docs/interface-standard/schemas/surface-declaration.schema.json",
+        "docs/interface-standard/schemas/presentation-preference.schema.json"
+      ],
+      "blocker_finding_ids": [],
+      "evidence_ids": [],
+      "phase_numbers": [
+        0,
+        1,
+        2
+      ],
+      "work_item_ids": [
+        "P0-006",
+        "P1-005",
+        "P1-008"
+      ]
+    },
+    {
+      "id": "FRONTEND-BUILD",
+      "category": "frontend",
+      "requirement": "The production frontend bundle builds reproducibly.",
+      "applicability": "required",
+      "status": "passed",
+      "command": "npm run build",
+      "environment": "Node 24.14.0, Vite 8.2.0; checked-in production asset directory",
+      "result_summary": "Passed: 41 modules transformed; administrator, portal, site, and shared validation bundles emitted and every manifest reference exists.",
+      "artifact_paths": [
+        "public/assets/build/.vite/manifest.json",
+        "public/assets/build/css/administrator-Cy-9rFV7.css",
+        "public/assets/build/css/portal-BsNK-E4w.css",
+        "public/assets/build/css/site-BaXh8oqc.css",
+        "public/assets/build/js/administrator-BddwmI0K.js",
+        "public/assets/build/js/portal-Bm64K-pz.js",
+        "public/assets/build/js/site-CK4HX-H8.js",
+        "public/assets/build/js/reveal-validation-DkoA-GGU.js"
+      ],
+      "blocker_finding_ids": [],
+      "evidence_ids": [],
+      "phase_numbers": [
+        0,
+        1,
+        2
+      ],
+      "work_item_ids": [
+        "P1-003",
+        "P1-005",
+        "P1-006",
+        "P1-008"
+      ]
+    },
+    {
+      "id": "BROWSER-BEHAVIOR",
+      "category": "browser",
+      "requirement": "Affected tasks complete in Chromium with positive, negative, and no-JavaScript coverage where applicable.",
+      "applicability": "required",
+      "status": "blocked",
+      "command": "npm run test:browser",
+      "environment": "Playwright discovery available; Chromium executable and native PHP application runtime unavailable",
+      "result_summary": "Discovery passed with 68 tests in 4 files across desktop and mobile projects. Tests were not executed, so no browser task, no-JavaScript, or redirect behavior is claimed passed.",
+      "artifact_paths": [
+        "tests/Browser/portal.spec.ts",
+        "tests/Browser/administrator.spec.ts",
+        "tests/Browser/interface-standard.spec.ts",
+        "tests/Browser/interface-integrity.spec.ts"
+      ],
+      "blocker_finding_ids": [
+        "KIS-ENV-0001",
+        "KIS-ENV-0002"
+      ],
+      "evidence_ids": [
+        "EVID-ENV-0001",
+        "EVID-ENV-0002"
+      ],
+      "phase_numbers": [
+        0,
+        1,
+        2
+      ],
+      "work_item_ids": [
+        "P0-003",
+        "P0-007",
+        "P0-008",
+        "P1-010",
+        "P2-002",
+        "P2-003",
+        "P2-004",
+        "P2-006",
+        "P2-008"
+      ]
+    },
+    {
+      "id": "BROWSER-ACCESSIBILITY",
+      "category": "accessibility",
+      "requirement": "Axe, keyboard, focus, landmarks, names, zoom, motion, and touch obligations pass for affected states.",
+      "applicability": "required",
+      "status": "blocked",
+      "command": "npm run test:browser -- tests/Browser/portal.spec.ts tests/Browser/administrator.spec.ts tests/Browser/interface-integrity.spec.ts",
+      "environment": "Chromium executable and native PHP application runtime unavailable",
+      "result_summary": "Accessibility assertions are discoverable, including keyboard recovery and cross-tab focus, but Axe, focus, zoom, motion, touch, and screen-level execution did not run.",
+      "artifact_paths": [
+        "tests/Browser/portal.spec.ts",
+        "tests/Browser/administrator.spec.ts",
+        "tests/Browser/interface-integrity.spec.ts"
+      ],
+      "blocker_finding_ids": [
+        "KIS-ENV-0001",
+        "KIS-ENV-0002"
+      ],
+      "evidence_ids": [
+        "EVID-ENV-0001",
+        "EVID-ENV-0002"
+      ],
+      "phase_numbers": [
+        0,
+        1,
+        2
+      ],
+      "work_item_ids": [
+        "P0-007",
+        "P0-008",
+        "P1-004",
+        "P1-005",
+        "P1-006",
+        "P1-007",
+        "P1-008",
+        "P1-009",
+        "P1-010",
+        "P2-008"
+      ]
+    },
+    {
+      "id": "BROWSER-VISUAL-DIAGNOSTICS",
+      "category": "visual",
+      "requirement": "Viewport, theme, data, state, and input matrices have no unintended clipping, overflow, overlap, or missing assets.",
+      "applicability": "required",
+      "status": "blocked",
+      "command": "npm run test:browser -- tests/Browser/interface-integrity.spec.ts tests/Browser/portal.spec.ts tests/Browser/administrator.spec.ts",
+      "environment": "Chromium executable and native PHP application runtime unavailable",
+      "result_summary": "Reusable component overflow/clipping/overlap diagnostics, a typed route matrix, and screenshot capture are committed and discoverable; no browser execution or accepted visual baseline is claimed.",
+      "artifact_paths": [
+        "tests/Browser/support/interface-diagnostics.ts",
+        "tests/Browser/support/interface-surface-manifest.ts",
+        "tests/Browser/interface-integrity.spec.ts",
+        "tests/Browser/interface-standard.spec.ts",
+        "tests/Browser/portal.spec.ts",
+        "tests/Browser/administrator.spec.ts"
+      ],
+      "blocker_finding_ids": [
+        "KIS-ENV-0001",
+        "KIS-ENV-0002"
+      ],
+      "evidence_ids": [
+        "EVID-FIND-0001-BROWSER",
+        "EVID-FIND-0003-BROWSER",
+        "EVID-FIND-0005-BROWSER"
+      ],
+      "phase_numbers": [
+        0,
+        1,
+        2
+      ],
+      "work_item_ids": [
+        "P0-003",
+        "P0-006",
+        "P0-007",
+        "P0-008",
+        "P1-003",
+        "P1-010",
+        "P2-008"
+      ]
+    },
+    {
+      "id": "MIGRATION-PARITY",
+      "category": "parity",
+      "requirement": "Old/new route, capability, field, action, payload, validation, error, and outcome parity is proved.",
+      "applicability": "required",
+      "status": "blocked",
+      "command": "Mount repository into @php-wasm/node PHP 8.5 and require tools/verify-business-workspace-parity.php; then run native/browser parity matrices",
+      "environment": "PHP 8.5 WASM source verification passed; native PHP, representative runtime fixtures, databases, and Chromium remain unavailable",
+      "result_summary": "The committed manifest passes exact source evidence binding, including repaired definition-import evidence. Runtime application-service, browser, database, security, and recovery acceptance remains open.",
+      "artifact_paths": [
+        "tools/verify-business-workspace-parity.php",
+        "docs/interface-standard/programme/phase-2-business-workspace-parity.json",
+        "tests/Architecture/BusinessWorkspaceParityManifestTest.php"
+      ],
+      "blocker_finding_ids": [
+        "KIS-ENV-0001",
+        "KIS-ENV-0002"
+      ],
+      "evidence_ids": [],
+      "phase_numbers": [
+        2
+      ],
+      "work_item_ids": [
+        "P2-001",
+        "P2-005",
+        "P2-007",
+        "P2-008"
+      ]
+    },
+    {
+      "id": "SECURITY-NEGATIVE-PATHS",
+      "category": "security",
+      "requirement": "Authorization, disclosure, CSRF, step-up, concurrency, approval, audit, and recovery negative paths pass.",
+      "applicability": "required",
+      "status": "not_run",
+      "command": "Run focused Business Definition and Schema Plan authorization, CSRF, approval, execution, and recovery matrices",
+      "environment": "requires supported native PHP topology, representative actors, and Chromium",
+      "result_summary": "Capability, CSRF, concurrency, approval, step-up, disclosure, audit, and recovery assertions exist in source, but the complete positive/negative runtime matrix was not executed.",
+      "artifact_paths": [
+        "tests/Browser/administrator.spec.ts",
+        "tests/Unit/BusinessSchema/Delivery/Administrator/BusinessSchemaAdministratorRequestTest.php"
+      ],
+      "blocker_finding_ids": [
+        "KIS-ENV-0001",
+        "KIS-ENV-0002"
+      ],
+      "evidence_ids": [],
+      "phase_numbers": [
+        2
+      ],
+      "work_item_ids": [
+        "P2-005",
+        "P2-007"
+      ]
+    },
+    {
+      "id": "TEMPLATE-EXTENSION-CONFORMANCE",
+      "category": "extensibility",
+      "requirement": "Core and installed templates/extensions preserve typed KIS, customization, fallback, reset, and ownership contracts.",
+      "applicability": "required",
+      "status": "blocked",
+      "command": "Run focused PHP 8.5 WASM conformance checks, then canonical native PHPUnit and browser activation/fallback/reset matrices",
+      "environment": "focused PHP 8.5 WASM checks available; native Composer dependencies and Chromium unavailable",
+      "result_summary": "Versioned KIS compatibility, schema-1 conservative compatibility, visible semantic administrator/site shell validation, synthetic page-content proof, examples, and negative fixtures are committed. Focused WASM checks passed during implementation, but canonical native integration and browser lifecycle qualification remain blocked.",
+      "artifact_paths": [
+        "src/Presentation/Application/ThemePackageValidator.php",
+        "src/Extension/Domain/TemplateKisCompatibility.php",
+        "tests/Unit/Presentation/Application/ThemePackageValidatorTest.php",
+        "tests/Integration/Presentation/DoctrineThemeManagerIntegrationTest.php",
+        "examples/extensions/minimal-administrator-template/kumwe.json",
+        "examples/extensions/minimal-template/kumwe.json"
+      ],
+      "blocker_finding_ids": [
+        "KIS-ENV-0001",
+        "KIS-ENV-0002"
+      ],
+      "evidence_ids": [],
+      "phase_numbers": [
+        1,
+        2
+      ],
+      "work_item_ids": [
+        "P1-011",
+        "P1-012"
+      ]
+    },
+    {
+      "id": "DATABASE-TOPOLOGY",
+      "category": "qualification",
+      "requirement": "Relevant production topology and database adapters render and mutate representative state consistently.",
+      "applicability": "required",
+      "status": "not_run",
+      "command": "Run production-equivalent MariaDB/MySQL/PostgreSQL-relevant fixture and interface matrix",
+      "environment": "no MariaDB, MySQL, or PostgreSQL production-equivalent topology provisioned",
+      "result_summary": "Presentation preference persistence, migrated workspace rendering, mutation, backup, and restore were not qualified across supported database topologies.",
+      "artifact_paths": [],
+      "blocker_finding_ids": [],
+      "evidence_ids": [],
+      "phase_numbers": [
+        2
+      ],
+      "work_item_ids": [
+        "P2-005",
+        "P2-007",
+        "P2-008"
+      ]
+    },
+    {
+      "id": "RECOVERY-ROLLBACK",
+      "category": "recovery",
+      "requirement": "Rollback, template fallback/reset, and data recovery procedures are proportionate and verified.",
+      "applicability": "required",
+      "status": "not_run",
+      "command": "Review reverse-commit rollback and execute template fallback/reset plus Schema Plan recovery scenarios",
+      "environment": "requires disposable production-equivalent native PHP and database topology",
+      "result_summary": "Rollback boundaries, protected template fallback/reset, preference reset/import, Schema Plan recovery, backup, and restore are documented but not executed or accepted.",
+      "artifact_paths": [
+        "docs/interface-standard/customization.md",
+        "docs/interface-standard/presentation-preference-runtime.md",
+        "docs/interface-standard/template-authoring.md"
+      ],
+      "blocker_finding_ids": [
+        "KIS-ENV-0001"
+      ],
+      "evidence_ids": [],
+      "phase_numbers": [
+        1,
+        2
+      ],
+      "work_item_ids": [
+        "P1-011",
+        "P2-007"
+      ]
+    },
+    {
+      "id": "HUMAN-REVIEW",
+      "category": "review",
+      "requirement": "Accountable product, accessibility, security, KIS, and release roles review applicable evidence.",
+      "applicability": "required",
+      "status": "not_run",
+      "command": "Review committed report, findings, browser bundle, parity manifest, security matrix, and recovery result",
+      "environment": "pending accountable-role review",
+      "result_summary": "No accountable acceptance is recorded. All Phase 0-2 work items and Gates A-D intentionally remain in review.",
+      "artifact_paths": [
+        "docs/interface-standard/programme/phase-ledger.json",
+        "docs/interface-standard/programme/reports/phase-0-2-current.json"
+      ],
+      "blocker_finding_ids": [],
+      "evidence_ids": [],
+      "phase_numbers": [
+        0,
+        1,
+        2
+      ],
+      "work_item_ids": [
+        "P0-001",
+        "P0-002",
+        "P1-001",
+        "P1-010",
+        "P2-008"
+      ]
+    }
   ],
   "impact": {
-    "security": {"status": "affected", "summary": "Security-sensitive Schema Plan and definition publication behavior changed presentation/request mapping; source safeguards exist but negative-path runtime evidence is pending."},
-    "accessibility": {"status": "affected", "summary": "Semantic KIS components and browser assertions were added, but Chromium-dependent keyboard, focus, Axe, zoom, and touch evidence remains blocked."},
-    "customization": {"status": "affected", "summary": "Typed customization scopes, schema validation, migration/reset policy, and safe template overrides were added; installed runtime fallback/reset evidence remains pending."},
-    "templates": {"status": "affected", "summary": "Site and administrator installable template examples and stricter conformance validation were added without intentionally removing supported override slots."},
-    "extensions": {"status": "affected", "summary": "Typed KIS surface contracts and owner-bound conformance affect extension authors; runtime contribution and compatibility verification remains incomplete."},
-    "database": {"status": "not_evaluated", "summary": "No supported database matrix was provisioned for this checkpoint."},
-    "deployment": {"status": "not_evaluated", "summary": "No production-topology deployment, backup, restore, or upgrade qualification was run."}
+    "security": {
+      "status": "affected",
+      "summary": "Schema Plan and definition publication presentation/request mapping changed; source safeguards and parity bindings exist, while native negative-path runtime evidence remains pending."
+    },
+    "accessibility": {
+      "status": "affected",
+      "summary": "Semantic KIS primitives, keyboard recovery, no-JavaScript behavior, focus management, and diagnostics are implemented; Chromium-dependent Axe, zoom, touch, and visual evidence remains blocked."
+    },
+    "customization": {
+      "status": "affected",
+      "summary": "Typed, versioned presentation preferences now persist with precedence, authorization, optimistic versioning, import/export, audit, fallback, and reset boundaries; runtime topology qualification remains pending."
+    },
+    "templates": {
+      "status": "affected",
+      "summary": "Site and administrator templates declare machine-readable KIS compatibility and pass bounded visible-semantic activation validation while retaining safe markup/theme customization and schema-1 compatibility."
+    },
+    "extensions": {
+      "status": "affected",
+      "summary": "Typed KIS surface contracts, exact owner namespace admission, collision protection, navigation bindings, schema/runtime parity, and scaffold rules affect extension authors; full install/upgrade/browser qualification remains pending."
+    },
+    "database": {
+      "status": "not_evaluated",
+      "summary": "A portable presentation-preference migration and repository are implemented, but no supported database matrix was provisioned."
+    },
+    "deployment": {
+      "status": "not_evaluated",
+      "summary": "No production-topology deployment, upgrade, backup, restore, or recovery qualification was run."
+    }
   },
   "findings": {
     "register_path": "docs/interface-standard/programme/findings-register.json",
-    "finding_ids": ["KIS-FINDING-0001", "KIS-FINDING-0002", "KIS-FINDING-0003", "KIS-FINDING-0004", "KIS-FINDING-0005", "KIS-FINDING-0006", "KIS-ENV-0001", "KIS-ENV-0002"],
-    "new_finding_ids": ["KIS-ENV-0001", "KIS-ENV-0002"],
+    "finding_ids": [
+      "KIS-FINDING-0001",
+      "KIS-FINDING-0002",
+      "KIS-FINDING-0003",
+      "KIS-FINDING-0004",
+      "KIS-FINDING-0005",
+      "KIS-FINDING-0006",
+      "KIS-ENV-0001",
+      "KIS-ENV-0002"
+    ],
+    "new_finding_ids": [
+      "KIS-ENV-0001",
+      "KIS-ENV-0002"
+    ],
     "resolved_finding_ids": []
   },
   "recovery": {
     "required": true,
-    "strategy": "Revert the six included implementation commits in reverse order for source rollback; retain data migrations and Schema Plan recovery behavior unless separately proved safe to reverse. Use the protected core template fallback and preference reset for incompatible installed templates.",
-    "command_or_procedure": "Create a disposable production-equivalent environment, exercise reverse-order reverts, activate invalid and prior-version templates, run reset/fallback, and execute Schema Plan recovery with audit evidence before acceptance.",
+    "strategy": "If qualification exposes a regression, revert the affected phase-scoped commits in reverse dependency order while retaining data migrations unless a tested reverse migration exists. Use protected core template fallback, version compatibility rejection, and presentation-preference reset/import recovery rather than bypassing the KIS shell.",
+    "command_or_procedure": "In a disposable production-equivalent environment, identify the first failing phase revision, exercise a bounded reverse-order revert, activate invalid and prior-version templates, test preference reset/import, and execute Schema Plan recovery plus backup/restore with audit evidence before acceptance.",
     "verified": false,
-    "artifact_paths": ["docs/interface-standard/customization.md", "docs/interface-standard/template-authoring.md"]
+    "artifact_paths": [
+      "docs/interface-standard/customization.md",
+      "docs/interface-standard/presentation-preference-runtime.md",
+      "docs/interface-standard/template-authoring.md",
+      "docs/interface-standard/programme/continuation-protocol.md"
+    ]
   },
   "residual_risks": [
-    {"severity": "P0", "summary": "The guest portal source fix is not browser-verified at required viewports.", "owner_role": "quality-owner", "finding_ids": ["KIS-FINDING-0001", "KIS-ENV-0002"]},
-    {"severity": "P1", "summary": "Business Definition and Schema Plan browser, accessibility, parity, security, and recovery matrices remain unexecuted.", "owner_role": "quality-owner", "finding_ids": ["KIS-FINDING-0003", "KIS-ENV-0001", "KIS-ENV-0002"]},
-    {"severity": "P1", "summary": "Template/extension fallback, reset, and compatibility are source-defined but not runtime-qualified.", "owner_role": "extension-contract-owner", "finding_ids": ["KIS-ENV-0001", "KIS-ENV-0002"]}
+    {
+      "severity": "P0",
+      "summary": "The guest portal correction and baseline matrix are source-tested but not Chromium-verified at required viewports.",
+      "owner_role": "quality-owner",
+      "finding_ids": [
+        "KIS-FINDING-0001",
+        "KIS-ENV-0002"
+      ]
+    },
+    {
+      "severity": "P1",
+      "summary": "Business Definition and Schema Plan browser, accessibility, security-negative-path, database, and recovery matrices remain unexecuted.",
+      "owner_role": "quality-owner",
+      "finding_ids": [
+        "KIS-FINDING-0003",
+        "KIS-FINDING-0005",
+        "KIS-ENV-0001",
+        "KIS-ENV-0002"
+      ]
+    },
+    {
+      "severity": "P1",
+      "summary": "Template/extension install, upgrade, fallback, reset, and compatibility are source-defined but not production-topology or browser-qualified.",
+      "owner_role": "extension-contract-owner",
+      "finding_ids": [
+        "KIS-ENV-0001",
+        "KIS-ENV-0002"
+      ]
+    },
+    {
+      "severity": "P1",
+      "summary": "Canonical Composer QA, native integration/static/coding-standard suites, supported databases, and accountable human acceptance remain unavailable.",
+      "owner_role": "release-owner",
+      "finding_ids": [
+        "KIS-ENV-0001"
+      ]
+    }
   ],
   "signoff": {
     "merge_recommendation": "hold",
     "decision": "pending",
-    "reviewer_roles": ["programme-owner", "kis-owner", "security-owner", "accessibility-owner", "extension-contract-owner", "quality-owner", "release-owner"],
-    "notes": "Re-run every blocked/not-run required check in the supported PHP 8.5 and Chromium topology, attach durable artifacts, disposition findings, and only then reconcile ledger evidence and statuses."
+    "reviewer_roles": [
+      "programme-owner",
+      "kis-owner",
+      "security-owner",
+      "accessibility-owner",
+      "extension-contract-owner",
+      "quality-owner",
+      "release-owner"
+    ],
+    "notes": "Phase 0-2 source implementation is ready for supported-environment qualification, not production acceptance. Run and attach every blocked/not-run native, browser, security, database, recovery, and human-review artifact before marking any work item or Gate A-D complete or beginning Phase 3."
   }
 }
