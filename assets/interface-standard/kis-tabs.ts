@@ -7,6 +7,10 @@ export class KumweTabs extends LitElement {
 
   private invalidActivationTimer: number | null = null;
 
+  private submissionRestoreTimer: number | null = null;
+
+  private revealedTab: string | null = null;
+
   protected override createRenderRoot(): HTMLElement | DocumentFragment { return this; }
 
   override connectedCallback(): void {
@@ -29,8 +33,11 @@ export class KumweTabs extends LitElement {
     window.removeEventListener('popstate', this.handleLocationChange);
     window.removeEventListener('hashchange', this.handleLocationChange);
     if (this.invalidActivationTimer !== null) window.clearTimeout(this.invalidActivationTimer);
+    if (this.submissionRestoreTimer !== null) window.clearTimeout(this.submissionRestoreTimer);
     this.invalidActivationTimer = null;
+    this.submissionRestoreTimer = null;
     this.pendingInvalid = null;
+    this.revealedTab = null;
     super.disconnectedCallback();
   }
 
@@ -88,12 +95,25 @@ export class KumweTabs extends LitElement {
     for (const panel of this.panels()) panel.hidden = false;
   }
 
+  private prepareForSubmission(): void {
+    if (this.submissionRestoreTimer !== null) window.clearTimeout(this.submissionRestoreTimer);
+    this.revealedTab = this.selectedTab();
+    this.revealAllPanels();
+    this.submissionRestoreTimer = window.setTimeout(() => {
+      const identifier = this.revealedTab;
+      this.submissionRestoreTimer = null;
+      this.revealedTab = null;
+      if (identifier === null || !this.isConnected || this.pendingInvalid !== null) return;
+      this.activate(identifier, false, false);
+    }, 0);
+  }
+
   private readonly handleClick = (event: MouseEvent): void => {
     const target = event.target;
     if (!(target instanceof Element)) return;
 
     if (!event.defaultPrevented && target.closest('button[type="submit"], input[type="submit"]')) {
-      this.revealAllPanels();
+      this.prepareForSubmission();
       return;
     }
 
@@ -135,6 +155,9 @@ export class KumweTabs extends LitElement {
     // Native constraint validation dispatches one non-bubbling event per invalid control before the
     // browser focuses the first failure. Keep every panel visible for that complete pass; switching on
     // each event would hide the first control before the user agent can focus it.
+    if (this.submissionRestoreTimer !== null) window.clearTimeout(this.submissionRestoreTimer);
+    this.submissionRestoreTimer = null;
+    this.revealedTab = null;
     this.revealAllPanels();
     if (this.pendingInvalid !== null) return;
     this.pendingInvalid = { panel: identifier, target };

@@ -140,7 +140,7 @@ test.describe('KIS server-rendered fallback', () => {
 test.describe('KIS cross-tab form validation', () => {
   test.beforeEach(async ({ page }) => signIn(page));
 
-  test('keeps the first invalid control focusable and respects a cancelled submit', async ({ page }) => {
+  test('keeps the first invalid control focusable and restores cancelled submissions', async ({ page }) => {
     await page.goto('/administrator/interface-standard?tab=overview');
     await page.evaluate(() => {
       const fixture = document.createElement('form');
@@ -176,5 +176,17 @@ test.describe('KIS cross-tab form validation', () => {
     await expect(page.getByRole('tab', { name: 'First' })).toHaveAttribute('aria-selected', 'true');
     await expect(firstPanel).toBeVisible();
     await expect(secondPanel).toBeHidden();
+
+    await page.getByRole('tab', { name: 'Second' }).click();
+    await page.evaluate(() => {
+      const fixture = document.querySelector<HTMLFormElement>('[data-testid="cross-tab-validation"]');
+      const button = fixture?.querySelector<HTMLButtonElement>('[data-testid="cross-tab-submit"]');
+      if (!fixture || !button) throw new Error('Cross-tab submission fixture is unavailable.');
+      button.formNoValidate = true;
+      fixture.addEventListener('submit', (event) => event.preventDefault(), { once: true });
+    });
+    await submit.click();
+    await expect(firstPanel).toBeHidden();
+    await expect(secondPanel).toBeVisible();
   });
 });
