@@ -152,8 +152,7 @@ final class BusinessSchemaAdministratorRequest
         string $notice,
         ?string $evidenceId = null,
         string $tab = 'summary',
-    ): RedirectResponse
-    {
+    ): RedirectResponse {
         $query = [
             'plan' => $planId,
             'notice' => $notice,

@@ -28,7 +28,8 @@ final class PresentationPreferenceRuntimeArchitectureTest extends TestCase
         $container = file_get_contents($root . '/src/Kernel/ContainerFactory.php');
         self::assertIsString($container);
 
-        foreach ([
+        foreach (
+            [
             'new InterfacePresentationPreferenceMigration(',
             'DoctrinePresentationPreferenceRepository::class',
             'PresentationPreferenceRepository::class',
@@ -36,7 +37,8 @@ final class PresentationPreferenceRuntimeArchitectureTest extends TestCase
             'PresentationPreferenceResolver::class',
             'PresentationPreferenceManager::class',
             'self::service($container, MembershipContextValidator::class)',
-        ] as $contract) {
+            ] as $contract
+        ) {
             self::assertStringContainsString($contract, $container);
         }
         self::assertStringContainsString('->interfaceSurfaces()', $container);

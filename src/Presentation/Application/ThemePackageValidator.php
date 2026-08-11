@@ -300,7 +300,8 @@ final readonly class ThemePackageValidator
             ));
         }
 
-        if (preg_match('/<title\b[^>]*>(?<content>.*?)<\/title\s*>/is', $rendered, $title) !== 1
+        if (
+            preg_match('/<title\b[^>]*>(?<content>.*?)<\/title\s*>/is', $rendered, $title) !== 1
             || trim(strip_tags(html_entity_decode((string) ($title['content'] ?? ''), ENT_QUOTES | ENT_HTML5))) === ''
         ) {
             throw new InvalidArgumentException(sprintf(
@@ -309,20 +310,24 @@ final readonly class ThemePackageValidator
             ));
         }
 
-        if (!$this->hasTagAttributes($rendered, 'link', [
+        if (
+            !$this->hasTagAttributes($rendered, 'link', [
             'rel' => 'stylesheet',
             'href' => self::STYLESHEET_SENTINEL,
-        ])) {
+            ])
+        ) {
             throw new InvalidArgumentException(sprintf(
                 'The site %s entry must render every host-supplied site stylesheet.',
                 $entry,
             ));
         }
 
-        if (!$this->hasTagAttributes($rendered, 'script', [
+        if (
+            !$this->hasTagAttributes($rendered, 'script', [
             'type' => 'module',
             'src' => self::MODULE_SENTINEL,
-        ])) {
+            ])
+        ) {
             throw new InvalidArgumentException(sprintf(
                 'The site %s entry must render every host-supplied site module.',
                 $entry,
@@ -552,28 +557,34 @@ final readonly class ThemePackageValidator
             );
         }
 
-        if (preg_match(
-            '/<title\b[^>]*>[^<]*' . preg_quote(self::TITLE_SENTINEL, '/') . '[^<]*<\/title\s*>/i',
-            $rendered,
-        ) !== 1) {
+        if (
+            preg_match(
+                '/<title\b[^>]*>[^<]*' . preg_quote(self::TITLE_SENTINEL, '/') . '[^<]*<\/title\s*>/i',
+                $rendered,
+            ) !== 1
+        ) {
             throw new InvalidArgumentException(
                 'The administrator layout must expose its title block inside the document title.',
             );
         }
 
-        if (!$this->hasTagAttributes($rendered, 'link', [
+        if (
+            !$this->hasTagAttributes($rendered, 'link', [
             'rel' => 'stylesheet',
             'href' => self::STYLESHEET_SENTINEL,
-        ])) {
+            ])
+        ) {
             throw new InvalidArgumentException(
                 'The administrator layout must render every host-supplied administrator stylesheet.',
             );
         }
 
-        if (!$this->hasTagAttributes($rendered, 'script', [
+        if (
+            !$this->hasTagAttributes($rendered, 'script', [
             'type' => 'module',
             'src' => self::MODULE_SENTINEL,
-        ])) {
+            ])
+        ) {
             throw new InvalidArgumentException(
                 'The administrator layout must render every host-supplied administrator module.',
             );
@@ -733,13 +744,15 @@ final readonly class ThemePackageValidator
 
             if (in_array($name, ['script', 'style', 'textarea', 'title', 'noscript'], true)) {
                 $rawClosing = [];
-                if (preg_match(
-                    '/<\/\s*' . preg_quote($name, '/') . '\s*>/i',
-                    $html,
-                    $rawClosing,
-                    PREG_OFFSET_CAPTURE,
-                    $end + 1,
-                ) !== 1) {
+                if (
+                    preg_match(
+                        '/<\/\s*' . preg_quote($name, '/') . '\s*>/i',
+                        $html,
+                        $rawClosing,
+                        PREG_OFFSET_CAPTURE,
+                        $end + 1,
+                    ) !== 1
+                ) {
                     $offset = $length;
                     continue;
                 }
@@ -929,12 +942,14 @@ final readonly class ThemePackageValidator
      */
     private function firstElement(string $html, string $element): ?array
     {
-        if (preg_match(
-            '/<' . preg_quote($element, '/') . '\b(?<attributes>[^>]*)>(?<content>.*?)<\/'
-            . preg_quote($element, '/') . '\s*>/is',
-            $html,
-            $match,
-        ) !== 1) {
+        if (
+            preg_match(
+                '/<' . preg_quote($element, '/') . '\b(?<attributes>[^>]*)>(?<content>.*?)<\/'
+                . preg_quote($element, '/') . '\s*>/is',
+                $html,
+                $match,
+            ) !== 1
+        ) {
             return null;
         }
 
@@ -957,11 +972,13 @@ final readonly class ThemePackageValidator
      */
     private function firstOpeningTagAttributes(string $html, string $element): ?string
     {
-        if (preg_match(
-            '/<' . preg_quote($element, '/') . '\b(?<attributes>[^>]*)>/i',
-            $html,
-            $match,
-        ) !== 1) {
+        if (
+            preg_match(
+                '/<' . preg_quote($element, '/') . '\b(?<attributes>[^>]*)>/i',
+                $html,
+                $match,
+            ) !== 1
+        ) {
             return null;
         }
 
@@ -1021,11 +1038,13 @@ final readonly class ThemePackageValidator
      */
     private function attribute(string $attributes, string $name): ?string
     {
-        if (preg_match(
-            '/(?:^|\s)' . preg_quote($name, '/') . '\s*=\s*(["\'])(?<value>.*?)\1/is',
-            $attributes,
-            $match,
-        ) !== 1) {
+        if (
+            preg_match(
+                '/(?:^|\s)' . preg_quote($name, '/') . '\s*=\s*(["\'])(?<value>.*?)\1/is',
+                $attributes,
+                $match,
+            ) !== 1
+        ) {
             return null;
         }
 

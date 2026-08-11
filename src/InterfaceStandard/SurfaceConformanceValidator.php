@@ -132,11 +132,13 @@ final readonly class SurfaceConformanceValidator
     private function validatePattern(SurfaceDeclaration $declaration, array &$diagnostics): void
     {
         $patterns = self::INTENT_PATTERNS[$declaration->intent->value] ?? [];
-        if (!in_array(
-            $declaration->pattern->value,
-            $patterns,
-            true,
-        )) {
+        if (
+            !in_array(
+                $declaration->pattern->value,
+                $patterns,
+                true,
+            )
+        ) {
             $diagnostics[] = self::error(
                 'kis.pattern.intent',
                 'pattern',
@@ -224,11 +226,13 @@ final readonly class SurfaceConformanceValidator
     {
         foreach ($declaration->customization as $index => $permission) {
             $scopes = self::CUSTOMIZATION_SCOPES[$permission->slot->value] ?? [];
-            if (!in_array(
-                $permission->scope->value,
-                $scopes,
-                true,
-            )) {
+            if (
+                !in_array(
+                    $permission->scope->value,
+                    $scopes,
+                    true,
+                )
+            ) {
                 $diagnostics[] = self::error(
                     'kis.customization.scope',
                     sprintf('customization[%d].scope', $index),

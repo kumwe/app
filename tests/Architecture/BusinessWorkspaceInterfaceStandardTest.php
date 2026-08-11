@@ -23,8 +23,15 @@ final class BusinessWorkspaceInterfaceStandardTest extends TestCase
         );
 
         foreach (
-            ['page-header', 'tabs', 'master-detail', 'resource-toolbar', 'tab-panel', 'technical-value', 'empty-state']
-            as $component
+            [
+                'page-header',
+                'tabs',
+                'master-detail',
+                'resource-toolbar',
+                'tab-panel',
+                'technical-value',
+                'empty-state',
+            ] as $component
         ) {
             self::assertStringContainsString("@kis/{$component}.twig", $template);
         }
@@ -46,8 +53,15 @@ final class BusinessWorkspaceInterfaceStandardTest extends TestCase
         );
 
         foreach (
-            ['page-header', 'tabs', 'master-detail', 'resource-toolbar', 'tab-panel', 'technical-value', 'empty-state']
-            as $component
+            [
+                'page-header',
+                'tabs',
+                'master-detail',
+                'resource-toolbar',
+                'tab-panel',
+                'technical-value',
+                'empty-state',
+            ] as $component
         ) {
             self::assertStringContainsString("@kis/{$component}.twig", $template);
         }

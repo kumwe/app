@@ -52,12 +52,14 @@ final class PresentationPreferenceResolverTest extends TestCase
             [],
             membership: AuthorizationContext::membership(workspace: 'workspace:operations'),
         );
-        foreach ([
+        foreach (
+            [
             [CustomizationScope::Site, 'default', 'comfortable'],
             [CustomizationScope::Administrator, null, 'compact'],
             [CustomizationScope::RoleWorkspace, 'workspace:operations', 'touch'],
             [CustomizationScope::User, $context->actorId(), 'comfortable'],
-        ] as $index => [$scope, $scopeId, $value]) {
+            ] as $index => [$scope, $scopeId, $value]
+        ) {
             $repository->seed(PresentationPreference::create(
                 $surface,
                 $owner,
