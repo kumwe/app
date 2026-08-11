@@ -252,7 +252,9 @@ use Kumwe\CMS\Content\Domain\JsonSchemaValidator;
 use Kumwe\CMS\Content\Domain\SchemaCompatibilityChecker;
 use Kumwe\CMS\Content\Infrastructure\Persistence\DoctrineContentModelRepository;
 use Kumwe\CMS\Content\Infrastructure\Persistence\DoctrineContentRepository;
+use Kumwe\CMS\Demo\Application\DemoProfileLedger;
 use Kumwe\CMS\Demo\Application\DemoProfileReconciler;
+use Kumwe\CMS\Demo\Application\VdmBusinessManifestProjector;
 use Kumwe\CMS\Demo\Infrastructure\DemoContentProfileInstaller;
 use Kumwe\CMS\Demo\Infrastructure\DemoProfileInstaller;
 use Kumwe\CMS\Demo\Infrastructure\FilesystemDemoManifestCatalog;
@@ -4366,13 +4368,15 @@ final class ContainerFactory
             self::service($container, TableNames::class),
             self::service($container, ClockInterface::class),
         ), true);
+        $container->alias(DemoProfileLedger::class, DoctrineDemoProfileLedger::class);
         $container->share(DemoContentProfileInstaller::class, static fn (
             Container $container,
         ): DemoContentProfileInstaller => new DemoContentProfileInstaller(
             self::service($container, ContentService::class),
             self::service($container, NavigationService::class),
             self::service($container, SiteSettings::class),
-            self::service($container, DoctrineDemoProfileLedger::class),
+            self::service($container, DemoProfileLedger::class),
+            self::service($container, TransactionManager::class),
         ), true);
         $container->share(VdmBusinessDemoInstaller::class, static fn (
             Container $container,
@@ -4380,7 +4384,8 @@ final class ContainerFactory
             self::service($container, BusinessDefinitionService::class),
             self::service($container, BusinessSchemaService::class),
             self::service($container, BusinessRecordService::class),
-            self::service($container, DoctrineDemoProfileLedger::class),
+            new VdmBusinessManifestProjector(),
+            self::service($container, DemoProfileLedger::class),
             self::service($container, Connection::class),
             self::service($container, TableNames::class),
             self::service($container, TransactionManager::class),
@@ -4394,7 +4399,7 @@ final class ContainerFactory
             self::service($container, FilesystemDemoManifestCatalog::class),
             self::service($container, DemoContentProfileInstaller::class),
             self::service($container, VdmBusinessDemoInstaller::class),
-            self::service($container, DoctrineDemoProfileLedger::class),
+            self::service($container, DemoProfileLedger::class),
             SystemPrincipal::issue($provenance, SystemIdentity::ProfileInstaller),
         ), true);
         $container->alias(DemoProfileReconciler::class, DemoProfileInstaller::class);

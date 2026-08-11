@@ -26,7 +26,8 @@ use Kumwe\CMS\BusinessSchema\Application\BusinessSchemaService;
 use Kumwe\CMS\BusinessSchema\Domain\SchemaInstallationStatus;
 use Kumwe\CMS\BusinessSchema\Domain\SchemaPlanStatus;
 use Kumwe\CMS\BusinessSecurity\Application\FieldAccessUsage;
-use Kumwe\CMS\Demo\Infrastructure\Persistence\DoctrineDemoProfileLedger;
+use Kumwe\CMS\Demo\Application\DemoProfileLedger;
+use Kumwe\CMS\Demo\Application\VdmBusinessManifestProjector;
 use Kumwe\CMS\Infrastructure\Persistence\TableNames;
 use Kumwe\CMS\Infrastructure\Persistence\TransactionManager;
 use Psr\Clock\ClockInterface;
@@ -83,7 +84,8 @@ final readonly class VdmBusinessDemoInstaller
      * @param  BusinessDefinitionService       $definitions   Definition draft and publication service.
      * @param  BusinessSchemaService           $schemas       Persisted plan, approval, and execution service.
      * @param  BusinessRecordService           $records       Transactional record application service.
-     * @param  DoctrineDemoProfileLedger       $ledger        Stable profile provenance and restart state.
+     * @param  VdmBusinessManifestProjector     $projector     Pure default-template site projection.
+     * @param  DemoProfileLedger               $ledger        Stable profile provenance and restart state.
      * @param  Connection                      $database      Policy catalog connection.
      * @param  TableNames                      $tables        Validated physical table compiler.
      * @param  TransactionManager              $transactions Policy, ownership, and audit transaction boundary.
@@ -96,7 +98,8 @@ final readonly class VdmBusinessDemoInstaller
         private BusinessDefinitionService $definitions,
         private BusinessSchemaService $schemas,
         private BusinessRecordService $records,
-        private DoctrineDemoProfileLedger $ledger,
+        private VdmBusinessManifestProjector $projector,
+        private DemoProfileLedger $ledger,
         private Connection $database,
         private TableNames $tables,
         private TransactionManager $transactions,
@@ -117,6 +120,7 @@ final readonly class VdmBusinessDemoInstaller
      */
     public function install(ExecutionContext $context, array $manifest): array
     {
+        $manifest = $this->projector->forSite($manifest, $context->site());
         $documents = $this->requiredMap($manifest, 'definition_documents');
         $order = $this->requiredList($manifest, 'installation_order', 64);
         $installed = [];
@@ -130,16 +134,18 @@ final readonly class VdmBusinessDemoInstaller
             $installed[$definition->handle] = $definition;
             $messages[] = sprintf('Prepared VDM business definition %s.', $definition->handle);
         }
-        $createdPolicies = false;
-        foreach ($installed as $definition) {
-            $createdPolicies = $this->installRecordPolicies($context, $definition) || $createdPolicies;
-        }
-        if ($createdPolicies) {
-            $this->database->executeStatement(sprintf(
-                'UPDATE %s SET policy_generation = policy_generation + 1 WHERE identifier = ?',
-                $this->tables->quoted('sites'),
-            ), [$context->site()->identifier()]);
-        }
+        $this->transactions->transactional(function () use ($context, $installed): void {
+            $createdPolicies = false;
+            foreach ($installed as $definition) {
+                $createdPolicies = $this->installRecordPolicies($context, $definition) || $createdPolicies;
+            }
+            if ($createdPolicies) {
+                $this->database->executeStatement(sprintf(
+                    'UPDATE %s SET policy_generation = policy_generation + 1 WHERE identifier = ?',
+                    $this->tables->quoted('sites'),
+                ), [$context->site()->identifier()]);
+            }
+        });
 
         $records = $this->requiredMap($manifest, 'records_document');
         $versions = $this->createRecords($context, $this->requiredList($records, 'records', 512));
@@ -400,22 +406,30 @@ final readonly class VdmBusinessDemoInstaller
                 $versions[$recordId] = $this->requiredInteger($state, 'version');
                 continue;
             }
-            $result = $this->records->create(new CreateRecordCommand(
+            $versions[$recordId] = $this->transactions->transactional(function () use (
                 $context,
-                $this->requiredString($record, 'definition'),
-                $this->requiredMap($record, 'values'),
-                IdempotencyKey::fromString($this->requiredString($record, 'idempotency_key')),
-                recordId: $recordId,
-            ));
-            $versions[$recordId] = $result->version;
-            $this->recordOperationAsset(
-                $context,
-                $fixtureKey,
-                'business_record',
-                $recordId,
                 $record,
-                $result->toArray(),
-            );
+                $fixtureKey,
+                $recordId,
+            ): int {
+                $result = $this->records->create(new CreateRecordCommand(
+                    $context,
+                    $this->requiredString($record, 'definition'),
+                    $this->requiredMap($record, 'values'),
+                    IdempotencyKey::fromString($this->requiredString($record, 'idempotency_key')),
+                    recordId: $recordId,
+                ));
+                $this->recordOperationAsset(
+                    $context,
+                    $fixtureKey,
+                    'business_record',
+                    $recordId,
+                    $record,
+                    $result->toArray(),
+                );
+
+                return $result->version;
+            });
         }
 
         return $versions;
@@ -448,26 +462,35 @@ final readonly class VdmBusinessDemoInstaller
                 'VDM relationship %s has no source version.',
                 $fixtureKey,
             ));
-            $result = $this->records->relate(new RelateRecordsCommand(
+            $versions[$source] = $this->transactions->transactional(function () use (
                 $context,
-                $this->requiredString($relation, 'definition'),
+                $relation,
                 $source,
                 $expectedVersion,
-                $this->requiredString($relation, 'relationship'),
-                $this->requiredString($relation, 'target_record_id'),
-                IdempotencyKey::fromString($this->requiredString($relation, 'idempotency_key')),
-                $this->optionalInteger($relation, 'position'),
-                targetValues: $this->optionalMap($relation, 'target_values'),
-            ));
-            $versions[$source] = $result->version;
-            $this->recordOperationAsset(
-                $context,
                 $fixtureKey,
-                'business_relation',
-                $source,
-                $relation,
-                $result->toArray(),
-            );
+            ): int {
+                $result = $this->records->relate(new RelateRecordsCommand(
+                    $context,
+                    $this->requiredString($relation, 'definition'),
+                    $source,
+                    $expectedVersion,
+                    $this->requiredString($relation, 'relationship'),
+                    $this->requiredString($relation, 'target_record_id'),
+                    IdempotencyKey::fromString($this->requiredString($relation, 'idempotency_key')),
+                    $this->optionalInteger($relation, 'position'),
+                    targetValues: $this->optionalMap($relation, 'target_values'),
+                ));
+                $this->recordOperationAsset(
+                    $context,
+                    $fixtureKey,
+                    'business_relation',
+                    $source,
+                    $relation,
+                    $result->toArray(),
+                );
+
+                return $result->version;
+            });
         }
     }
 
@@ -494,23 +517,34 @@ final readonly class VdmBusinessDemoInstaller
                 $versions[$recordId] = $this->requiredInteger($state, 'version');
                 continue;
             }
-            $result = $this->records->action(new ExecuteRecordActionCommand(
+            $expectedVersion = $versions[$recordId]
+                ?? throw new RuntimeException('A VDM action has no record version.');
+            $versions[$recordId] = $this->transactions->transactional(function () use (
                 $context,
-                $this->requiredString($action, 'definition'),
-                $recordId,
-                $versions[$recordId] ?? throw new RuntimeException('A VDM action has no record version.'),
-                $this->requiredString($action, 'action'),
-                IdempotencyKey::fromString($this->requiredString($action, 'idempotency_key')),
-            ));
-            $versions[$recordId] = $result->version;
-            $this->recordOperationAsset(
-                $context,
-                $fixtureKey,
-                'business_action',
-                $recordId,
                 $action,
-                $result->toArray(),
-            );
+                $recordId,
+                $expectedVersion,
+                $fixtureKey,
+            ): int {
+                $result = $this->records->action(new ExecuteRecordActionCommand(
+                    $context,
+                    $this->requiredString($action, 'definition'),
+                    $recordId,
+                    $expectedVersion,
+                    $this->requiredString($action, 'action'),
+                    IdempotencyKey::fromString($this->requiredString($action, 'idempotency_key')),
+                ));
+                $this->recordOperationAsset(
+                    $context,
+                    $fixtureKey,
+                    'business_action',
+                    $recordId,
+                    $action,
+                    $result->toArray(),
+                );
+
+                return $result->version;
+            });
         }
     }
 
@@ -537,22 +571,33 @@ final readonly class VdmBusinessDemoInstaller
                 $versions[$recordId] = $this->requiredInteger($state, 'version');
                 continue;
             }
-            $result = $this->records->archive(new ArchiveRecordCommand(
+            $expectedVersion = $versions[$recordId]
+                ?? throw new RuntimeException('A VDM archive has no record version.');
+            $versions[$recordId] = $this->transactions->transactional(function () use (
                 $context,
-                $this->requiredString($archive, 'definition'),
-                $recordId,
-                $versions[$recordId] ?? throw new RuntimeException('A VDM archive has no record version.'),
-                IdempotencyKey::fromString($this->requiredString($archive, 'idempotency_key')),
-            ));
-            $versions[$recordId] = $result->version;
-            $this->recordOperationAsset(
-                $context,
-                $fixtureKey,
-                'business_archive',
-                $recordId,
                 $archive,
-                $result->toArray(),
-            );
+                $recordId,
+                $expectedVersion,
+                $fixtureKey,
+            ): int {
+                $result = $this->records->archive(new ArchiveRecordCommand(
+                    $context,
+                    $this->requiredString($archive, 'definition'),
+                    $recordId,
+                    $expectedVersion,
+                    IdempotencyKey::fromString($this->requiredString($archive, 'idempotency_key')),
+                ));
+                $this->recordOperationAsset(
+                    $context,
+                    $fixtureKey,
+                    'business_archive',
+                    $recordId,
+                    $archive,
+                    $result->toArray(),
+                );
+
+                return $result->version;
+            });
         }
     }
 

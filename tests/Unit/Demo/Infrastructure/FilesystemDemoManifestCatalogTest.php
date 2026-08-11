@@ -36,7 +36,7 @@ final class FilesystemDemoManifestCatalogTest extends TestCase
 
         self::assertSame('kumwe.demo-content/v1', $manifest['format'] ?? null);
         self::assertSame('documentation', $manifest['profile'] ?? null);
-        self::assertSame(1, $manifest['version'] ?? null);
+        self::assertSame(2, $manifest['version'] ?? null);
         self::assertMatchesRegularExpression('/^[a-f0-9]{64}$/D', $loaded['checksum']);
         self::assertCount(16, $content);
         self::assertCount(1, $menus);
@@ -190,6 +190,7 @@ final class FilesystemDemoManifestCatalogTest extends TestCase
 
         self::assertSame('kumwe.demo-business-profile/v1', $manifest['format'] ?? null);
         self::assertSame('vdm', $manifest['profile'] ?? null);
+        self::assertSame(2, $manifest['version'] ?? null);
         self::assertMatchesRegularExpression('/^[a-f0-9]{64}$/D', $loaded['checksum']);
         self::assertCount(5, $order);
         self::assertSame(count($order), $expected['definition_count'] ?? null);

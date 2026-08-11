@@ -1,7 +1,7 @@
 {
   "format": "kumwe.demo-content/v1",
   "profile": "documentation",
-  "version": 1,
+  "version": 2,
   "site": {
     "fixture_key": "site.default",
     "resource_id": "default",

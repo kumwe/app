@@ -7,9 +7,9 @@ namespace Kumwe\CMS\Demo\Infrastructure;
 use Kumwe\CMS\Application\Authorization\SiteContext;
 use Kumwe\CMS\Application\Authorization\SystemPrincipal;
 use Kumwe\CMS\BusinessDefinition\Domain\CanonicalDefinitionJson;
+use Kumwe\CMS\Demo\Application\DemoProfileLedger;
 use Kumwe\CMS\Demo\Application\DemoProfileReconciler;
 use Kumwe\CMS\Demo\Infrastructure\FilesystemDemoManifestCatalog;
-use Kumwe\CMS\Demo\Infrastructure\Persistence\DoctrineDemoProfileLedger;
 use Kumwe\CMS\Kernel\Configuration\ApplicationConfiguration;
 use RuntimeException;
 use Throwable;
@@ -34,7 +34,7 @@ final readonly class DemoProfileInstaller implements DemoProfileReconciler
      * @param  FilesystemDemoManifestCatalog $catalog        Shipped immutable JSON manifests.
      * @param  DemoContentProfileInstaller   $content        Managed site-content reconciler.
      * @param  VdmBusinessDemoInstaller      $business       VDM business runtime reconciler.
-     * @param  DoctrineDemoProfileLedger     $ledger         Durable selector and restart state.
+     * @param  DemoProfileLedger             $ledger         Durable selector and restart state.
      * @param  SystemPrincipal               $system         Purpose-bound profile-installer authority.
      *
      * @since  2.0.0
@@ -44,7 +44,7 @@ final readonly class DemoProfileInstaller implements DemoProfileReconciler
         private FilesystemDemoManifestCatalog $catalog,
         private DemoContentProfileInstaller $content,
         private VdmBusinessDemoInstaller $business,
-        private DoctrineDemoProfileLedger $ledger,
+        private DemoProfileLedger $ledger,
         private SystemPrincipal $system,
     ) {
     }

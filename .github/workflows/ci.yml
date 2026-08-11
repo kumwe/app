@@ -355,8 +355,10 @@ jobs:
           php tests/Support/install-parent-schema.php
           php bin/kumwe database:migrate
           php tests/Support/verify-demo-profile.php documentation-vdm
+          php tests/Support/customize-demo-profile.php apply
           php bin/kumwe database:migrate
           php tests/Support/verify-demo-profile.php documentation-vdm
+          php tests/Support/customize-demo-profile.php verify
 
       - name: Smoke-test placeholder profile without business examples
         env:

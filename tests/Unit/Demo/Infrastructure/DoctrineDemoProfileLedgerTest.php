@@ -6,6 +6,7 @@ namespace Kumwe\CMS\Tests\Unit\Demo\Infrastructure;
 
 use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\Platforms\MySQL84Platform;
 use Kumwe\CMS\Demo\Infrastructure\Persistence\DoctrineDemoProfileLedger;
 use Kumwe\CMS\Infrastructure\Persistence\TableNames;
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -36,6 +37,45 @@ final class DoctrineDemoProfileLedgerTest extends TestCase
      * @since  2.0.0
      */
     private const string CHECKSUM_TWO = '2222222222222222222222222222222222222222222222222222222222222222';
+
+    /**
+     * Prove a maximum-length site still produces one database-scoped MySQL lock within 64 characters.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAdvisoryLockIdentityIsBoundedAndStable(): void
+    {
+        $database = $this->database();
+        $database->method('getDatabasePlatform')->willReturn(new MySQL84Platform());
+        $lockNames = [];
+        $database->method('fetchOne')->willReturnCallback(
+            static function (string $query, array $parameters = []) use (&$lockNames): int|string {
+                if ($query === 'SELECT DATABASE()') {
+                    return 'kumwe_customer_database';
+                }
+                if ($query === 'SELECT GET_LOCK(?, 0)' || $query === 'SELECT RELEASE_LOCK(?)') {
+                    $lockName = $parameters[0] ?? null;
+                    self::assertIsString($lockName);
+                    $lockNames[] = $lockName;
+
+                    return 1;
+                }
+
+                self::fail(sprintf('Unexpected advisory-lock query: %s', $query));
+            },
+        );
+
+        self::assertSame('completed', $this->ledger($database)->synchronized(
+            's' . str_repeat('x', 190),
+            static fn (): string => 'completed',
+        ));
+        self::assertCount(2, $lockNames);
+        self::assertSame($lockNames[0], $lockNames[1]);
+        self::assertStringStartsWith('kumwe:demo:', $lockNames[0]);
+        self::assertLessThanOrEqual(64, strlen($lockNames[0]));
+    }
 
     /**
      * Prove released bytes cannot change while retaining an already persisted manifest version.
