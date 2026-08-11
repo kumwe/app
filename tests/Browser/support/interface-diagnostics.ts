@@ -80,8 +80,7 @@ export async function collectInterfaceDiagnostics(
       '.panel',
       '.portal-security-panel',
       '.portal-business-panel',
-      '.business-definition-layout',
-      '.schema-plan-layout',
+      '.kis-master-detail-grid',
     ].join(',');
     const findings: InterfaceFinding[] = [];
 

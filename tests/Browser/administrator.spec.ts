@@ -252,6 +252,7 @@ test.describe('authenticated administrator', () => {
     const longFieldLabel = `Cross-border invoice reference ${'with controlled operational context '.repeat(2).trim()}`;
     for (let index = 0; index < 8; index += 1) {
       await page.getByRole('button', { name: 'Add field' }).click();
+      await expect(page.locator('details[data-row="field"][open]')).toHaveCount(1);
       const field = page.locator('[data-row="field"]').last();
       await field.getByLabel('Handle').fill(index === 0 ? 'reference' : `supporting_field_${index}`);
       await field.getByLabel('Label').fill(index === 0 ? longFieldLabel : `Supporting field ${index}`);
