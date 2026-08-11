@@ -509,6 +509,7 @@ final readonly class ThemePackageValidator
             ]],
             'csrf' => 'KUMWE_KIS_CSRF_SENTINEL',
         ]);
+        $rendered = $this->visibleSemanticHtml($rendered);
 
         if (preg_match('/\A\s*<!doctype\s+html\s*>/i', $rendered) !== 1) {
             throw new InvalidArgumentException(
@@ -628,14 +629,14 @@ final readonly class ThemePackageValidator
     }
 
     /**
-     * Reduce rendered markup to the visible semantic tree used by site conformance checks.
+     * Reduce rendered markup to the visible semantic tree used by shell conformance checks.
      *
      * The bounded scanner removes comments, template contents, raw-text contents, and elements hidden
      * by standard HTML accessibility/presentation attributes. It preserves visible opening tags and
      * attributes, including host script outlets, so the existing invariant checks operate on what a
      * visitor and accessibility tree can actually reach rather than attacker-controlled inert carriers.
      *
-     * @param   string  $html  Complete rendered candidate document.
+     * @param   string  $html  Complete rendered candidate shell document.
      *
      * @return  string  Normalized visible semantic markup with inert carrier content removed.
      *
@@ -647,7 +648,7 @@ final readonly class ThemePackageValidator
     private function visibleSemanticHtml(string $html): string
     {
         if (strlen($html) > 2_097_152) {
-            throw new InvalidArgumentException('A rendered site template cannot exceed two mebibytes.');
+            throw new InvalidArgumentException('A rendered theme template cannot exceed two mebibytes.');
         }
 
         $visible = '';
@@ -671,7 +672,7 @@ final readonly class ThemePackageValidator
             if (substr($html, $opening, 4) === '<!--') {
                 $closing = strpos($html, '-->', $opening + 4);
                 if ($closing === false) {
-                    throw new InvalidArgumentException('A rendered site template contains an unterminated comment.');
+                    throw new InvalidArgumentException('A rendered theme template contains an unterminated comment.');
                 }
                 $offset = $closing + 3;
                 continue;
@@ -679,7 +680,7 @@ final readonly class ThemePackageValidator
 
             $end = $this->htmlTagEnd($html, $opening);
             if ($end === null) {
-                throw new InvalidArgumentException('A rendered site template contains an unterminated HTML tag.');
+                throw new InvalidArgumentException('A rendered theme template contains an unterminated HTML tag.');
             }
             $tag = substr($html, $opening, $end - $opening + 1);
 

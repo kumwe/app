@@ -478,6 +478,42 @@ final class ThemePackageValidatorTest extends TestCase
     }
 
     /**
+     * Proves inert carriers cannot satisfy protected administrator shell evidence.
+     *
+     * @param   string  $target   Main, content, navigation, stylesheet, or module fragment to wrap.
+     * @param   string  $prefix   Inert carrier markup placed before the protected fragment.
+     * @param   string  $suffix   Inert carrier markup placed after the protected fragment.
+     * @param   string  $message  Expected invariant failure identifying the discarded evidence.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    #[DataProvider('administratorInertShellEvidence')]
+    public function testAdministratorShellRejectsInertEvidence(
+        string $target,
+        string $prefix,
+        string $suffix,
+        string $message,
+    ): void {
+        $layout = $this->wrapAdministratorFragment(
+            $this->validAdministratorLayout(),
+            $target,
+            $prefix,
+            $suffix,
+        );
+        file_put_contents($this->root . '/theme/layout.twig', $layout);
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage($message);
+
+        $this->validator()->validate(
+            $this->root . '/theme',
+            ThemeSurface::Administrator,
+            $this->compatibility(),
+        );
+    }
+
+    /**
      * Proves a complete KIS 1.0 administrator shell passes before activation.
      *
      * @return  void
@@ -643,6 +679,37 @@ JSON);
     }
 
     /**
+     * Supply comments, templates, and hidden wrappers across every protected administrator fragment.
+     *
+     * @return  array<string, array{string, string, string, string}>  Target, wrapper, and failure fragment.
+     *
+     * @since   2.0.0
+     */
+    public static function administratorInertShellEvidence(): array
+    {
+        $carriers = [
+            'comment' => ['<!--', '-->'],
+            'template' => ['<template>', '</template>'],
+            'hidden' => ['<div hidden>', '</div>'],
+        ];
+        $targets = [
+            'main' => 'content block inside a main landmark',
+            'content' => 'content block inside a main landmark',
+            'navigation' => 'capability-filtered workspace navigation',
+            'stylesheets' => 'host-supplied administrator stylesheet',
+            'modules' => 'host-supplied administrator module',
+        ];
+        $cases = [];
+        foreach ($targets as $target => $message) {
+            foreach ($carriers as $carrier => [$prefix, $suffix]) {
+                $cases[$target . ' in ' . $carrier] = [$target, $prefix, $suffix, $message];
+            }
+        }
+
+        return $cases;
+    }
+
+    /**
      * Write two independently complete and visually customizable site entries.
      *
      * @return  void
@@ -667,6 +734,49 @@ JSON);
         return $this->validSiteDocument(
             '<h1>{{ entry.title }}</h1><div>{{ entry.body_html|raw }}</div>',
         );
+    }
+
+    /**
+     * Wrap one protected administrator fixture fragment in inert carrier markup.
+     *
+     * @param   string  $layout  Complete valid administrator shell fixture.
+     * @param   string  $target  Fragment category selected by the data provider.
+     * @param   string  $prefix  Carrier opening markup.
+     * @param   string  $suffix  Carrier closing markup.
+     *
+     * @return  string  Mutated fixture whose only proof for the target is inert.
+     *
+     * @since   2.0.0
+     */
+    private function wrapAdministratorFragment(
+        string $layout,
+        string $target,
+        string $prefix,
+        string $suffix,
+    ): string {
+        if ($target === 'main' || $target === 'navigation') {
+            $element = $target === 'main' ? 'main' : 'nav';
+            $mutated = preg_replace(
+                '/(<' . $element . '\b.*?<\/' . $element . '>)/s',
+                $prefix . '$1' . $suffix,
+                $layout,
+                1,
+            );
+            self::assertIsString($mutated);
+
+            return $mutated;
+        }
+
+        $fragment = match ($target) {
+            'content' => '{% block content %}{% endblock %}',
+            'stylesheets' => '{% for stylesheet in administrator_assets.stylesheets %}'
+                . '<link rel="stylesheet" href="{{ stylesheet }}">{% endfor %}',
+            default => '{% for module in administrator_assets.modules %}'
+                . '<script type="module" src="{{ module }}"></script>{% endfor %}',
+        };
+        self::assertStringContainsString($fragment, $layout);
+
+        return str_replace($fragment, $prefix . $fragment . $suffix, $layout);
     }
 
     /**
