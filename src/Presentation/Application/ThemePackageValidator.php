@@ -264,6 +264,8 @@ final readonly class ThemePackageValidator
      */
     private function validateSiteDocument(string $rendered, string $entry): void
     {
+        $rendered = $this->visibleSemanticHtml($rendered);
+
         if (preg_match('/\A\s*<!doctype\s+html\s*>/i', $rendered) !== 1) {
             throw new InvalidArgumentException(sprintf(
                 'The site %s entry must render the HTML doctype required by KIS 1.0.',
@@ -348,6 +350,12 @@ final readonly class ThemePackageValidator
         if ($mainId === null || trim($mainId) === '') {
             throw new InvalidArgumentException(sprintf(
                 'The site %s entry must render a main landmark with a stable skip target.',
+                $entry,
+            ));
+        }
+        if ($this->attribute($main['attributes'], 'tabindex') !== '-1') {
+            throw new InvalidArgumentException(sprintf(
+                'The site %s entry main landmark must accept skip-link focus with tabindex="-1".',
                 $entry,
             ));
         }
@@ -617,6 +625,262 @@ final readonly class ThemePackageValidator
                 'The administrator layout must preserve the active navigation destination and current state.',
             );
         }
+    }
+
+    /**
+     * Reduce rendered markup to the visible semantic tree used by site conformance checks.
+     *
+     * The bounded scanner removes comments, template contents, raw-text contents, and elements hidden
+     * by standard HTML accessibility/presentation attributes. It preserves visible opening tags and
+     * attributes, including host script outlets, so the existing invariant checks operate on what a
+     * visitor and accessibility tree can actually reach rather than attacker-controlled inert carriers.
+     *
+     * @param   string  $html  Complete rendered candidate document.
+     *
+     * @return  string  Normalized visible semantic markup with inert carrier content removed.
+     *
+     * @throws  InvalidArgumentException  When rendered markup exceeds the validation budget or has an
+     *          unterminated comment or tag.
+     *
+     * @since   2.0.0
+     */
+    private function visibleSemanticHtml(string $html): string
+    {
+        if (strlen($html) > 2_097_152) {
+            throw new InvalidArgumentException('A rendered site template cannot exceed two mebibytes.');
+        }
+
+        $visible = '';
+        /** @var list<array{name: string, suppressed: bool}> $stack */
+        $stack = [];
+        $offset = 0;
+        $length = strlen($html);
+
+        while ($offset < $length) {
+            $opening = strpos($html, '<', $offset);
+            if ($opening === false) {
+                if (!$this->suppressed($stack)) {
+                    $visible .= substr($html, $offset);
+                }
+                break;
+            }
+            if ($opening > $offset && !$this->suppressed($stack)) {
+                $visible .= substr($html, $offset, $opening - $offset);
+            }
+
+            if (substr($html, $opening, 4) === '<!--') {
+                $closing = strpos($html, '-->', $opening + 4);
+                if ($closing === false) {
+                    throw new InvalidArgumentException('A rendered site template contains an unterminated comment.');
+                }
+                $offset = $closing + 3;
+                continue;
+            }
+
+            $end = $this->htmlTagEnd($html, $opening);
+            if ($end === null) {
+                throw new InvalidArgumentException('A rendered site template contains an unterminated HTML tag.');
+            }
+            $tag = substr($html, $opening, $end - $opening + 1);
+
+            if (preg_match('/^<!doctype\b/i', $tag) === 1) {
+                if (!$this->suppressed($stack)) {
+                    $visible .= $tag;
+                }
+                $offset = $end + 1;
+                continue;
+            }
+
+            if (preg_match('/^<\s*\/\s*(?<name>[A-Za-z][A-Za-z0-9:-]*)/D', $tag, $closingTag) === 1) {
+                $name = strtolower((string) $closingTag['name']);
+                $match = null;
+                for ($index = count($stack) - 1; $index >= 0; --$index) {
+                    if ($stack[$index]['name'] === $name) {
+                        $match = $index;
+                        break;
+                    }
+                }
+                if ($match === null) {
+                    if (!$this->suppressed($stack)) {
+                        $visible .= $tag;
+                    }
+                } else {
+                    $element = $stack[$match];
+                    $ancestors = array_slice($stack, 0, $match);
+                    $stack = $ancestors;
+                    if (!$element['suppressed'] && !$this->suppressed($ancestors)) {
+                        $visible .= $tag;
+                    }
+                }
+                $offset = $end + 1;
+                continue;
+            }
+
+            if (preg_match('/^<\s*(?<name>[A-Za-z][A-Za-z0-9:-]*)/D', $tag, $openingTag) !== 1) {
+                $offset = $end + 1;
+                continue;
+            }
+
+            $name = strtolower((string) $openingTag['name']);
+            $attributes = preg_replace(
+                '/^<\s*' . preg_quote($name, '/') . '\b|\/?>$/i',
+                '',
+                $tag,
+            );
+            $attributes = is_string($attributes) ? $attributes : '';
+            $suppressed = $this->suppressed($stack) || $this->nonPresentational($name, $attributes);
+
+            if (in_array($name, ['script', 'style', 'textarea', 'title', 'noscript'], true)) {
+                $rawClosing = [];
+                if (preg_match(
+                    '/<\/\s*' . preg_quote($name, '/') . '\s*>/i',
+                    $html,
+                    $rawClosing,
+                    PREG_OFFSET_CAPTURE,
+                    $end + 1,
+                ) !== 1) {
+                    $offset = $length;
+                    continue;
+                }
+                $closingSource = (string) $rawClosing[0][0];
+                $closingOffset = (int) $rawClosing[0][1];
+                if (!$suppressed) {
+                    $visible .= $tag;
+                    if ($name === 'title') {
+                        $visible .= htmlspecialchars(
+                            substr($html, $end + 1, $closingOffset - $end - 1),
+                            ENT_NOQUOTES | ENT_SUBSTITUTE | ENT_HTML5,
+                            'UTF-8',
+                        );
+                    }
+                    $visible .= $closingSource;
+                }
+                $offset = $closingOffset + strlen($closingSource);
+                continue;
+            }
+
+            if (!$suppressed) {
+                $visible .= $tag;
+            }
+            if (
+                preg_match('/\/\s*>$/D', $tag) !== 1
+                && !in_array($name, [
+                    'area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'link',
+                    'meta', 'param', 'source', 'track', 'wbr',
+                ], true)
+            ) {
+                $stack[] = ['name' => $name, 'suppressed' => $suppressed];
+            }
+            $offset = $end + 1;
+        }
+
+        return $visible;
+    }
+
+    /**
+     * Find the closing bracket of one HTML tag without treating a quoted bracket as structural.
+     *
+     * @param   string  $html     Rendered document being scanned.
+     * @param   int     $opening  Byte offset of the tag's opening bracket.
+     *
+     * @return  ?int  Byte offset of the structural closing bracket, or null when none exists.
+     *
+     * @since   2.0.0
+     */
+    private function htmlTagEnd(string $html, int $opening): ?int
+    {
+        $quote = null;
+        $length = strlen($html);
+        for ($offset = $opening + 1; $offset < $length; ++$offset) {
+            $character = $html[$offset];
+            if ($quote !== null) {
+                if ($character === $quote) {
+                    $quote = null;
+                }
+                continue;
+            }
+            if ($character === '"' || $character === "'") {
+                $quote = $character;
+                continue;
+            }
+            if ($character === '>') {
+                return $offset;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Report whether the current scanner position is inside a non-presentational ancestor.
+     *
+     * @param   list<array{name: string, suppressed: bool}>  $stack  Open element stack in document order.
+     *
+     * @return  bool  True when any open ancestor is suppressed from the visible semantic view.
+     *
+     * @since   2.0.0
+     */
+    private function suppressed(array $stack): bool
+    {
+        foreach ($stack as $element) {
+            if ($element['suppressed']) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Decide whether an element is an inert or hidden carrier rather than visible presentation.
+     *
+     * @param   string  $name        Lowercase HTML element name.
+     * @param   string  $attributes  Raw source attributes without angle brackets.
+     *
+     * @return  bool  True for templates and standard hidden, inert, or hidden-input declarations.
+     *
+     * @since   2.0.0
+     */
+    private function nonPresentational(string $name, string $attributes): bool
+    {
+        if ($name === 'template' || $this->booleanAttribute($attributes, 'hidden')) {
+            return true;
+        }
+        if ($this->booleanAttribute($attributes, 'inert')) {
+            return true;
+        }
+        if (strtolower((string) $this->attribute($attributes, 'aria-hidden')) === 'true') {
+            return true;
+        }
+        if ($name === 'input' && strtolower((string) $this->attribute($attributes, 'type')) === 'hidden') {
+            return true;
+        }
+
+        $style = $this->attribute($attributes, 'style');
+        return $style !== null && preg_match(
+            '/(?:^|;)\s*(?:display\s*:\s*none|visibility\s*:\s*hidden|'
+            . 'content-visibility\s*:\s*hidden|opacity\s*:\s*0(?:\.0+)?)'
+            . '(?:\s*!important)?\s*(?:;|$)/i',
+            $style,
+        ) === 1;
+    }
+
+    /**
+     * Detect a boolean HTML attribute whether it is bare or assigned a quoted value.
+     *
+     * @param   string  $attributes  Raw source attributes without angle brackets.
+     * @param   string  $name        Safe validator-owned attribute name.
+     *
+     * @return  bool  True when the boolean attribute is present as a distinct attribute.
+     *
+     * @since   2.0.0
+     */
+    private function booleanAttribute(string $attributes, string $name): bool
+    {
+        return preg_match(
+            '/(?:^|\s)' . preg_quote($name, '/') . '(?:\s*=\s*(?:"[^"]*"|\'[^\']*\'|[^\s]+))?(?=\s|$)/i',
+            trim($attributes),
+        ) === 1;
     }
 
     /**

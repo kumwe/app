@@ -71,9 +71,9 @@ Administrator `layout.twig` must retain:
 - theme-independent recovery rendering on failure.
 
 Site entries must retain a doctype and language, encoding and responsive viewport metadata, document title,
-host stylesheet/module outlets, a first main landmark containing presentation-ready content, a matching
-skip target, and labelled server-rendered navigation with its current state. Portal extension views extend
-the core portal layout and cannot shadow it.
+host stylesheet/module outlets, a focusable first main landmark containing visible presentation-ready
+content, a matching skip target, and labelled visible server-rendered navigation with its current state.
+Portal extension views extend the core portal layout and cannot shadow it.
 
 ## AI-ready design brief
 
