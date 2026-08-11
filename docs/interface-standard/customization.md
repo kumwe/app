@@ -54,6 +54,16 @@ URLs, selectors, arbitrary component names, or policy instructions. A reset remo
 reveals the next valid layer in the hierarchy. Import must revalidate the current surface permission, actor,
 owner, optimistic version and KIS compatibility before persistence.
 
+The stored owner is either `core` or the canonical extension identifier: two slash-separated segments of
+1–63 lowercase alphanumeric, dot, underscore, or hyphen characters, each beginning with a letter or digit.
+The associated owner-bound surface, landing workspace, and navigation shortcuts use the corresponding
+bounded dotted grammar shared by contribution routes and workspaces. Import then applies the exact owner
+namespace check; accepting the full extension identifier vocabulary never relaxes ownership.
+
+KIS-aware schema tooling registers `x-kumwe-ownedSurface` to repeat that exact owner-prefix and safe-suffix
+check during portable-document preflight. Standard JSON Schema consumers may treat the extension keyword as
+an annotation; the PHP import boundary always enforces it.
+
 The production type, precedence, persistence, authorization, audit, import/export, and reset boundaries are
 specified in [Presentation preference runtime](presentation-preference-runtime.md).
 

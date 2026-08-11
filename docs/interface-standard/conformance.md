@@ -32,6 +32,16 @@ documents. Providers feature-detect the additive `InterfaceSurfaceRegistrar` and
 typed definition through its owner-bound implementation; the frozen SPI-two registrar remains source
 compatible for existing providers.
 
+The portable schema and runtime share the same actor/area matrix and the complete slot/scope allowlist.
+Surface identifiers use a bounded lowercase dotted grammar that admits digit-led, underscored, and hyphenated
+extension namespaces. Internal repeated dots remain representable because released extension identifiers may
+contain them; the owner-bound registrar verifies the declaring owner's exact prefix and a non-ambiguous suffix.
+Distinct active owners with equal or prefix-overlapping legacy dotted namespaces fail before registration.
+Responsive entries also carry the repository semantic keyword `x-kumwe-uniqueBy: "element"`. JSON Schema's standard
+`uniqueItems` only rejects identical objects, so KIS-aware authoring tools must register this keyword (as
+`tools/verify-interface-schemas.mjs` does) or repeat the equivalent uniqueness check. The PHP trust boundary
+always rejects two entries naming the same semantic element, even when their other fields differ.
+
 ## Source and architecture gates
 
 The repository verifier cross-checks the programme inventory against current graphical routes, core and

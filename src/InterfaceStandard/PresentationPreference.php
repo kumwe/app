@@ -161,9 +161,14 @@ final readonly class PresentationPreference
             );
         }
 
+        $owner = ContributionOwner::fromString($data['owner']);
+        if ($owner->identifier() !== $data['owner']) {
+            throw new InvalidArgumentException('The KIS presentation preference owner must be canonical.');
+        }
+
         return self::create(
             SurfaceId::fromString($data['surface']),
-            ContributionOwner::fromString($data['owner']),
+            $owner,
             $scope,
             $scopeId,
             $slot,

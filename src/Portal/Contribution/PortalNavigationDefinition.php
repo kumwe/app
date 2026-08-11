@@ -7,6 +7,7 @@ namespace Kumwe\CMS\Portal\Contribution;
 use InvalidArgumentException;
 use Kumwe\CMS\Extension\Contribution\ContributionDefinition;
 use Kumwe\CMS\Identity\Domain\Capability;
+use Kumwe\CMS\InterfaceStandard\SurfaceId;
 
 /**
  * Capability-gated navigation declaration explicitly opted into the portal shell.
@@ -56,7 +57,7 @@ final readonly class PortalNavigationDefinition implements ContributionDefinitio
         PortalWorkspaceDefinition::assertIdentifier($id, 'navigation');
         PortalWorkspaceDefinition::assertIdentifier($workspace, 'workspace');
         if ($surface !== null) {
-            PortalWorkspaceDefinition::assertIdentifier($surface, 'interface surface');
+            SurfaceId::fromString($surface);
         }
         $this->capability = Capability::fromString($capability)->value();
         if (

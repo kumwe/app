@@ -6,6 +6,7 @@ namespace Kumwe\CMS\Extension\Contribution;
 
 use InvalidArgumentException;
 use Kumwe\CMS\Identity\Domain\Capability;
+use Kumwe\CMS\InterfaceStandard\SurfaceId;
 
 /**
  * One validated entry in the administrator menu, contributed by core or by an installed extension.
@@ -73,7 +74,7 @@ final readonly class AdministratorNavigationDefinition implements ContributionDe
         AdministratorWorkspaceDefinition::assertIdentifier($id, 'navigation');
         AdministratorWorkspaceDefinition::assertIdentifier($workspace, 'workspace');
         if ($surface !== null) {
-            AdministratorWorkspaceDefinition::assertIdentifier($surface, 'interface surface');
+            SurfaceId::fromString($surface);
         }
         $this->capability = Capability::fromString($capability)->value();
         if (trim($label) === '' || mb_strlen($label) > 80) {

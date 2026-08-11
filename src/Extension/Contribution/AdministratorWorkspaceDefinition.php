@@ -58,9 +58,12 @@ final readonly class AdministratorWorkspaceDefinition implements ContributionDef
     /**
      * Assert that a contributed administrator identifier has the shape every surface requires.
      *
-     * Two to eight lowercase, dot-separated segments. Shared by workspaces, navigation items,
-     * views, and routes so that one grammar governs all of them, and so that `ContributionOwner`
-     * can decide ownership with a namespace prefix test rather than a per-surface rule.
+     * A bounded lowercase identifier that starts and ends alphanumerically, includes at least one dot,
+     * and otherwise uses letters, digits, dots, underscores, or hyphens. Internal repeated dots stay
+     * representable for existing canonical package owners that contain them. This additive grammar
+     * preserves the dotted namespace of extension identifiers across workspaces, navigation items,
+     * views, routes, and KIS surfaces, while `ContributionOwner` still decides ownership with an exact
+     * namespace prefix test.
      *
      * @param   string  $identifier  Candidate identifier as declared.
      * @param   string  $kind        Contribution kind named in the failure message, such as `route`.
@@ -73,7 +76,10 @@ final readonly class AdministratorWorkspaceDefinition implements ContributionDef
      */
     public static function assertIdentifier(string $identifier, string $kind): void
     {
-        if (preg_match('/^[a-z][a-z0-9-]*(?:\.[a-z][a-z0-9-]*){1,7}$/D', $identifier) !== 1) {
+        if (
+            strlen($identifier) > 191
+            || preg_match('/^[a-z0-9][a-z0-9._-]*\.[a-z0-9._-]*[a-z0-9]$/D', $identifier) !== 1
+        ) {
             throw new InvalidArgumentException(sprintf('A contributed administrator %s identifier is invalid.', $kind));
         }
     }

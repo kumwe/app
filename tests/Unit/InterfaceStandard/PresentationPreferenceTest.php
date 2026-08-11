@@ -50,6 +50,77 @@ final class PresentationPreferenceTest extends TestCase
     }
 
     /**
+     * The portable owner and surface admit the canonical extension punctuation and digit-led namespace.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testPortableRecordAdmitsCanonicalExtensionOwnerGrammar(): void
+    {
+        $document = $this->document();
+        $document['owner'] = '9ac.me/2-orders_v1';
+        $document['surface'] = '9ac.me.2-orders_v1.administrator.settings';
+
+        $preference = PresentationPreference::fromArray($document);
+
+        self::assertSame($document, $preference->toArray());
+    }
+
+    /**
+     * Portable preferences preserve every legacy dotted namespace of a canonical extension owner.
+     *
+     * @param   string  $owner    Canonical portable owner identifier.
+     * @param   string  $surface  Exact owned surface using the legacy dotted namespace.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    #[DataProvider('legacyDottedPreferenceOwners')]
+    public function testPortableRecordAdmitsLegacyDottedOwnerNamespace(string $owner, string $surface): void
+    {
+        $document = $this->document();
+        $document['owner'] = $owner;
+        $document['surface'] = $surface;
+
+        self::assertSame($document, PresentationPreference::fromArray($document)->toArray());
+    }
+
+    /**
+     * Supply portable owner and surface pairs whose package dots survive the legacy namespace mapping.
+     *
+     * @return  iterable<string, array{string, string}>
+     *
+     * @since   2.0.0
+     */
+    public static function legacyDottedPreferenceOwners(): iterable
+    {
+        yield 'repeated vendor dot' => ['a../b', 'a...b.workspace'];
+        yield 'trailing vendor dot' => ['a./b', 'a..b.workspace'];
+        yield 'trailing package dot' => ['a/b.', 'a.b..workspace'];
+    }
+
+    /**
+     * Import rejects a non-canonical owner spelling instead of silently normalizing portable bytes.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testPortableRecordRejectsNonCanonicalOwnerSpelling(): void
+    {
+        $document = $this->document();
+        $document['owner'] = 'Acme/Editor';
+        $document['surface'] = 'acme.editor.administrator.settings';
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('owner must be canonical');
+
+        PresentationPreference::fromArray($document);
+    }
+
+    /**
      * Proves each schema slot accepts its canonical bounded representation.
      *
      * @param   CustomizationSlot   $slot   Slot under test.

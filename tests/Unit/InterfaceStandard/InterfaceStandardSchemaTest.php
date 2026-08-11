@@ -44,6 +44,10 @@ final class InterfaceStandardSchemaTest extends TestCase
         self::assertSame('https://json-schema.org/draft/2020-12/schema', $schema['$schema'] ?? null);
         self::assertSame('urn:kumwe:kis:1.0:surface-declaration', $schema['$id'] ?? null);
         self::assertSame(array_keys($example), $schema['required'] ?? null);
+        self::assertSame(
+            '^[a-z0-9][a-z0-9._-]*\\.[a-z0-9._-]*[a-z0-9]$',
+            $schema['$defs']['surfaceIdentifier']['pattern'] ?? null,
+        );
         self::assertSame(self::values(SurfaceArea::cases()), $properties['area']['enum'] ?? null);
         self::assertSame(self::values(SurfaceActor::cases()), $properties['actor']['enum'] ?? null);
         self::assertSame(self::values(SurfaceIntent::cases()), $properties['intent']['enum'] ?? null);
@@ -61,6 +65,45 @@ final class InterfaceStandardSchemaTest extends TestCase
             self::values(ResponsivePriority::cases()),
             $properties['responsive']['items']['properties']['priority']['enum'] ?? null,
         );
+        self::assertSame('element', $properties['responsive']['x-kumwe-uniqueBy'] ?? null);
+
+        $scopeRules = [];
+        foreach ($properties['customization']['items']['allOf'] ?? [] as $rule) {
+            self::assertIsArray($rule);
+            $slot = $rule['if']['properties']['slot']['const'] ?? null;
+            $scope = $rule['then']['properties']['scope'] ?? null;
+            self::assertIsString($slot);
+            self::assertIsArray($scope);
+            $scopeRules[$slot] = isset($scope['enum']) ? $scope['enum'] : [$scope['const'] ?? null];
+        }
+        self::assertSame([
+            'columns' => ['administrator', 'role-workspace', 'user'],
+            'density' => ['site', 'administrator', 'role-workspace', 'user'],
+            'saved-views' => ['administrator', 'role-workspace', 'user'],
+            'layout' => ['site', 'administrator'],
+            'theme-mode' => ['site', 'user'],
+            'dashboard-cards' => ['administrator', 'role-workspace', 'user'],
+            'landing-workspace' => ['administrator', 'role-workspace', 'user'],
+            'navigation-shortcuts' => ['role-workspace', 'user'],
+            'labels-help' => ['administrator'],
+        ], $scopeRules);
+
+        $areaActorRules = [];
+        foreach ($schema['allOf'] ?? [] as $rule) {
+            self::assertIsArray($rule);
+            $area = $rule['if']['properties']['area']['const'] ?? null;
+            if (!is_string($area)) {
+                continue;
+            }
+            $actor = $rule['then']['properties']['actor'] ?? null;
+            self::assertIsArray($actor);
+            $areaActorRules[$area] = isset($actor['enum']) ? $actor['enum'] : [$actor['const'] ?? null];
+        }
+        self::assertSame([
+            'administrator' => ['administrator', 'public'],
+            'portal' => ['portal', 'public'],
+            'public' => ['public'],
+        ], $areaActorRules);
 
         $definition = SurfaceDefinition::fromArray(
             ContributionOwner::extension('acme/inspections'),
@@ -84,9 +127,23 @@ final class InterfaceStandardSchemaTest extends TestCase
         self::assertIsArray($properties);
 
         self::assertSame('urn:kumwe:kis:1.0:presentation-preference', $schema['$id'] ?? null);
+        self::assertSame(
+            ['owner' => 'owner', 'surface' => 'surface'],
+            $schema['x-kumwe-ownedSurface'] ?? null,
+        );
         self::assertSame(self::values(CustomizationSlot::cases()), $properties['slot']['enum'] ?? null);
         self::assertSame(self::values(CustomizationScope::cases()), $properties['scope']['enum'] ?? null);
         self::assertSame(array_keys($example), $schema['required'] ?? null);
+        self::assertSame(127, $properties['owner']['maxLength'] ?? null);
+        self::assertSame(
+            '^(?:core|[a-z0-9][a-z0-9._-]{0,62}/[a-z0-9][a-z0-9._-]{0,62})$',
+            $properties['owner']['pattern'] ?? null,
+        );
+        self::assertSame(
+            '^[a-z0-9][a-z0-9._-]*\\.[a-z0-9._-]*[a-z0-9]$',
+            $schema['$defs']['surfaceIdentifier']['pattern'] ?? null,
+        );
+        self::assertSame('#/$defs/surfaceIdentifier', $schema['$defs']['dottedName']['$ref'] ?? null);
 
         $branches = $schema['oneOf'] ?? null;
         self::assertIsArray($branches);

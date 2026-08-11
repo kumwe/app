@@ -150,6 +150,26 @@ final class ExtensionDevelopmentSdkTest extends TestCase
     }
 
     /**
+     * Scaffold input preserves every canonical package character used by the shared contribution namespace.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testScaffoldRequestPreservesExtensionCompatibleContributionNamespace(): void
+    {
+        $request = new ScaffoldRequest(
+            'ac9.me/orders_v1',
+            'Acme\\Orders',
+            $this->temporary . '/extension-compatible',
+            'Orders',
+        );
+
+        self::assertSame('ac9.me/orders_v1', $request->identifier->value());
+        self::assertSame('ac9.me.orders_v1', $request->contributionNamespace());
+    }
+
+    /**
      * Load the generated executable contracts and prove they implement the current public SPI exactly.
      *
      * Static token parsing deliberately does not autoload extension code, so this in-process test closes

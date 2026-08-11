@@ -99,7 +99,12 @@ Identifiers use `vendor/name`; compatibility and dependency constraints use sema
 
 Schema-2, schema-3, and schema-4 manifests reject unknown root, requirement, autoload, dependency, and contribution keys.
 Every contribution identifier must begin with the extension namespace (`acme/announcements` becomes
-`acme.announcements`). Lists are bounded, paths cannot traverse, route methods are restricted, and
+`acme.announcements`). Graphical workspaces, navigation entries, routes, views, templates, and KIS surfaces
+share an additive 191-character lowercase grammar that starts and ends alphanumerically and otherwise admits
+dots, underscores, and hyphens. Internal repeated dots remain representable for package identifiers already
+admitted by the canonical extension grammar. The active contribution registry refuses distinct owners whose
+legacy dotted namespaces are equal or prefix-overlapping, and exact owner-prefix plus safe-suffix checks remain
+mandatory. Lists are bounded, paths cannot traverse, route methods are restricted, and
 navigation/routes must reference capabilities, workspaces, and views owned by the same package. `permissions`,
 when present, must exactly match the deterministically ordered contributed capability identifiers. Schema 2 keeps
 its original business grammar (`field_types` and `definitions`); use schema 3 to declare safe field presentations

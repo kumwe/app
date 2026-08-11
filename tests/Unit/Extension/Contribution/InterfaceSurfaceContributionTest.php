@@ -84,6 +84,43 @@ final class InterfaceSurfaceContributionTest extends TestCase
     }
 
     /**
+     * A dotted, underscored, hyphenated, and digit-bearing package namespace round-trips every GUI binding.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testExtensionCompatibleNamespaceRoundTripsGraphicalContributionBindings(): void
+    {
+        $json = json_encode(self::contributions(), JSON_THROW_ON_ERROR);
+        $document = json_decode(
+            str_replace('acme.inspections', 'ac9.me.pack_age-v1', $json),
+            true,
+            64,
+            JSON_THROW_ON_ERROR,
+        );
+        self::assertIsArray($document);
+
+        $set = ManifestContributionSet::fromManifest(
+            ExtensionIdentifier::fromString('ac9.me/pack_age-v1'),
+            $document,
+            4,
+        );
+
+        self::assertSame($document, $set->toArray());
+        self::assertSame(
+            'ac9.me.pack_age-v1.administrator.catalog',
+            $set->interfaceSurfaces()[0]->identifier(),
+        );
+        self::assertSame(
+            $set->interfaceSurfaces()[0]->identifier(),
+            $set->navigation()[0]->surface,
+        );
+        self::assertSame($set->interfaceSurfaces()[0]->identifier(), $set->routes()[0]->name);
+        self::assertSame('ac9.me.pack_age-v1.workspace', $set->workspaces()[0]->id);
+    }
+
+    /**
      * Refuse a semantic surface that names authority its package did not declare.
      *
      * @return  void
