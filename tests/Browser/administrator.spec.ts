@@ -191,6 +191,17 @@ test('database-backed public presentation is responsive and ready', async ({ pag
   });
 });
 
+test.describe('public presentation without JavaScript', () => {
+  test.use({ javaScriptEnabled: false });
+
+  test('keeps essential navigation visible at every supported viewport', async ({ page }) => {
+    await page.goto('/');
+    await expect(page.locator('nav[aria-label="Main navigation"]')).toBeVisible();
+    await expect(page.locator('nav[aria-label="Main navigation"]')).toContainText('Capabilities');
+    await expect(page.getByRole('button', { name: 'Open site navigation' })).toBeHidden();
+  });
+});
+
 test.describe('authenticated administrator', () => {
   test.beforeEach(async ({ page }) => signIn(page));
 

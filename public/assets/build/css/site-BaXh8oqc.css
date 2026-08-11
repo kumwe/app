@@ -315,9 +315,10 @@
     .managed-hero-grid, .managed-section-grid { grid-template-columns: 1fr; }
     .managed-hero-logo { order: -1; max-width: 24rem; margin-right: .75rem; }
     .managed-hero-logo::before { inset: 1rem -1rem -1rem 1rem; }
-    .site-navigation-toggle { display: inline-flex; }
-    .site-navigation { position: absolute; inset: 4.5rem 1rem auto; display: none; padding: .6rem; border: 1px solid var(--site-border); border-radius: .75rem; background: var(--site-surface); box-shadow: 0 18px 44px rgb(7 24 45 / .18); }
-    .site-navigation[data-open] { display: block; }
+    html[data-site-navigation-enhanced] .site-navigation-toggle { display: inline-flex; }
+    .site-navigation { position: static; display: block; padding: .6rem; border: 1px solid var(--site-border); border-radius: .75rem; background: var(--site-surface); }
+    html[data-site-navigation-enhanced] .site-navigation { position: absolute; inset: 4.5rem 1rem auto; display: none; box-shadow: 0 18px 44px rgb(7 24 45 / .18); }
+    html[data-site-navigation-enhanced] .site-navigation[data-open] { display: block; }
     .site-navigation ul, .site-navigation li ul { position: static; display: grid; padding-left: .7rem; border: 0; box-shadow: none; }
     .managed-actions { display: grid; }
     .site-button { width: 100%; }
