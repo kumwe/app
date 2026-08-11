@@ -26,6 +26,7 @@ use Kumwe\CMS\Extension\Runtime\RuntimePublicationKeyRing;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\ApplicationAuthorizationMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\AuthorizationRecoveryIntegrationMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\CoreSchemaMigration;
+use Kumwe\CMS\Infrastructure\Persistence\Migration\ContentModelIdentifierCollationMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\ContentModelRuntimeMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\DatabaseDrivenPresentationMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\DemoProfileProvenanceMigration;
@@ -60,6 +61,7 @@ use ZipArchive;
 #[CoversClass(DoctrineMigrationLock::class)]
 #[CoversClass(DoctrineMigrationRepository::class)]
 #[CoversClass(CoreSchemaMigration::class)]
+#[CoversClass(ContentModelIdentifierCollationMigration::class)]
 #[CoversClass(ContentModelRuntimeMigration::class)]
 #[CoversClass(DynamicSiteContentMigration::class)]
 #[CoversClass(DatabaseDrivenPresentationMigration::class)]
@@ -248,6 +250,10 @@ final class MigrationIntegrationTest extends TestCase
             'SELECT version FROM %s WHERE version = ?',
             $tables->quoted('schema_migrations'),
         ), [ContentModelRuntimeMigration::ID]));
+        self::assertSame(ContentModelIdentifierCollationMigration::ID, $database->fetchOne(sprintf(
+            'SELECT version FROM %s WHERE version = ?',
+            $tables->quoted('schema_migrations'),
+        ), [ContentModelIdentifierCollationMigration::ID]));
         self::assertSame(DynamicSiteContentMigration::ID, $database->fetchOne(sprintf(
             'SELECT version FROM %s WHERE version = ?',
             $tables->quoted('schema_migrations'),
