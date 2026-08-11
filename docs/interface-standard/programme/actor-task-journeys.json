@@ -1,0 +1,402 @@
+{
+  "schema_version": 1,
+  "standard": "kis-1.0",
+  "actors": [
+    {
+      "id": "public-visitor",
+      "label": "Public visitor",
+      "context": "Unauthenticated site presentation",
+      "goals": ["Find published information", "Follow understandable public navigation"],
+      "must_not_receive": ["Draft existence", "Administrator terminology", "Private business data"]
+    },
+    {
+      "id": "administrator-candidate",
+      "label": "Administrator candidate",
+      "context": "Unauthenticated administrator entry",
+      "goals": ["Understand the destination", "Sign in safely", "Recover from a clear failure"],
+      "must_not_receive": ["Protected navigation", "Account enumeration", "Portal session authority"]
+    },
+    {
+      "id": "content-operator",
+      "label": "Content operator",
+      "context": "Authenticated administrator with content capabilities",
+      "goals": ["Find content", "Create and edit content", "Manage media", "Understand publication state"],
+      "must_not_receive": ["Actions outside granted capabilities", "Hidden workflow transitions"]
+    },
+    {
+      "id": "structure-manager",
+      "label": "Structure manager",
+      "context": "Authenticated administrator responsible for models and public navigation",
+      "goals": ["Model content", "Manage menus", "Preserve public-route integrity"],
+      "must_not_receive": ["Unsafe target schemes", "Unvalidated template injection"]
+    },
+    {
+      "id": "business-modeler",
+      "label": "Business modeler",
+      "context": "Authenticated administrator responsible for entity definitions",
+      "goals": ["Define an entity", "Validate dependencies", "Publish a governed version", "Review history"],
+      "must_not_receive": ["Executable definitions", "Mutation of package-owned immutable versions"]
+    },
+    {
+      "id": "schema-operator",
+      "label": "Schema operator",
+      "context": "Authenticated administrator planning and executing relational changes",
+      "goals": ["Preview a plan", "Understand impact", "Execute approved work", "Recover safely"],
+      "must_not_receive": ["Unreviewed destructive execution", "Missing recovery consequence"]
+    },
+    {
+      "id": "schema-approver",
+      "label": "Schema approver",
+      "context": "Independent high-impact plan approver",
+      "goals": ["Review exact plan and version", "Approve or refuse with evidence"],
+      "must_not_receive": ["Stale or replayable approval", "Concealed destructive operations"]
+    },
+    {
+      "id": "business-operator",
+      "label": "Business operator",
+      "context": "Authenticated administrator operating policy-filtered business records",
+      "goals": ["Find authorized work", "Create and update records", "Relate records", "Progress workflows"],
+      "must_not_receive": ["Denied rows or fields", "Unbounded technical diagnostics by default"]
+    },
+    {
+      "id": "report-operator",
+      "label": "Report operator",
+      "context": "Authenticated administrator or portal member with report authority",
+      "goals": ["Discover a report", "Set parameters", "Understand results", "Retrieve an authorized export"],
+      "must_not_receive": ["Denied aggregates", "Expired or foreign exports", "Spreadsheet injection"]
+    },
+    {
+      "id": "security-administrator",
+      "label": "Security administrator",
+      "context": "Authenticated administrator governing users, scope, policies and credentials",
+      "goals": ["Manage identity", "Define authority boundaries", "Review approvals", "Investigate effective access"],
+      "must_not_receive": ["Ambiguous scope", "Unattributed high-impact action", "Secret disclosure"]
+    },
+    {
+      "id": "system-administrator",
+      "label": "System administrator",
+      "context": "Authenticated administrator responsible for configuration and platform lifecycle",
+      "goals": ["Manage extensions", "Configure the site", "Monitor automation", "Recover presentation"],
+      "must_not_receive": ["Untrusted executable contribution", "Unrecoverable template failure"]
+    },
+    {
+      "id": "portal-candidate",
+      "label": "Portal candidate",
+      "context": "Unauthenticated ordinary-user portal entry",
+      "goals": ["Recognize the portal", "Choose the correct workspace", "Sign in safely"],
+      "must_not_receive": ["Administrator shell", "Protected portal navigation", "Account enumeration"]
+    },
+    {
+      "id": "portal-member",
+      "label": "Portal member",
+      "context": "Authenticated, organization-scoped ordinary user",
+      "goals": ["Find permitted work", "Complete allowed actions", "Run allowed reports", "Manage account security"],
+      "must_not_receive": ["Administrator capabilities", "Other organization data", "Internal policy vocabulary"]
+    },
+    {
+      "id": "portal-approver",
+      "label": "Portal approver",
+      "context": "Authenticated portal member with scoped maker-checker authority",
+      "goals": ["Find pending decisions", "Review target and impact", "Approve, reject or revoke safely"],
+      "must_not_receive": ["Out-of-scope approvals", "Replayable decision controls"]
+    },
+    {
+      "id": "extension-operator",
+      "label": "Extension surface operator",
+      "context": "Authorized actor using a trusted extension-owned graphical contribution",
+      "goals": ["Discover the contribution", "Complete its declared task", "Retain core navigation context"],
+      "must_not_receive": ["Inactive or untrusted contribution", "Cross-extension template access"]
+    },
+    {
+      "id": "template-author",
+      "label": "Template author",
+      "context": "Developer producing an installable administrator, portal, or site template",
+      "goals": ["Apply brand and composition safely", "Pass KIS conformance", "Remain upgradeable and recoverable"],
+      "must_not_receive": ["Arbitrary runtime code slots", "Permission to remove mandatory safety semantics"]
+    }
+  ],
+  "tasks": [
+    {
+      "id": "task.public.read",
+      "label": "Read managed public content",
+      "actor_ids": ["public-visitor"],
+      "primary_outcome": "The visitor reaches the canonical published page and understands where to go next.",
+      "journey_ids": ["journey.public-content"]
+    },
+    {
+      "id": "task.auth.admin",
+      "label": "Sign in to the administrator",
+      "actor_ids": ["administrator-candidate"],
+      "primary_outcome": "A valid administrator obtains only an administrator session and reaches an intentional landing page.",
+      "journey_ids": ["journey.administrator-entry"]
+    },
+    {
+      "id": "task.admin.dashboard",
+      "label": "Orient in the administrator",
+      "actor_ids": ["content-operator", "business-operator", "security-administrator", "system-administrator"],
+      "primary_outcome": "The actor sees relevant activity and one clear route into current work.",
+      "journey_ids": ["journey.administrator-entry"]
+    },
+    {
+      "id": "task.content.browse",
+      "label": "Find and select content",
+      "actor_ids": ["content-operator"],
+      "primary_outcome": "The actor filters a collection and opens the intended content record.",
+      "journey_ids": ["journey.content-lifecycle"]
+    },
+    {
+      "id": "task.content.author",
+      "label": "Create, edit and publish content",
+      "actor_ids": ["content-operator"],
+      "primary_outcome": "A validated content record progresses through its authorized workflow without lost edits.",
+      "journey_ids": ["journey.content-lifecycle"]
+    },
+    {
+      "id": "task.media.manage",
+      "label": "Manage media",
+      "actor_ids": ["content-operator"],
+      "primary_outcome": "The actor uploads, identifies and safely removes an authorized media item.",
+      "journey_ids": ["journey.content-lifecycle"]
+    },
+    {
+      "id": "task.models.manage",
+      "label": "Manage content models",
+      "actor_ids": ["structure-manager"],
+      "primary_outcome": "The actor understands and changes fields, presentation and workflow as coherent concerns.",
+      "journey_ids": ["journey.site-structure"]
+    },
+    {
+      "id": "task.navigation.manage",
+      "label": "Manage public navigation",
+      "actor_ids": ["structure-manager"],
+      "primary_outcome": "The actor maintains a valid, understandable menu tree and canonical target paths.",
+      "journey_ids": ["journey.site-structure"]
+    },
+    {
+      "id": "task.definition.model",
+      "label": "Model and publish a business definition",
+      "actor_ids": ["business-modeler"],
+      "primary_outcome": "The actor can locate, inspect, edit, validate, publish and review one definition without losing context.",
+      "journey_ids": ["journey.definition-to-record"]
+    },
+    {
+      "id": "task.schema.control",
+      "label": "Plan, approve, execute and recover schema work",
+      "actor_ids": ["schema-operator", "schema-approver"],
+      "primary_outcome": "A version-bound plan advances only with the required approval and recovery evidence.",
+      "journey_ids": ["journey.definition-to-record"]
+    },
+    {
+      "id": "task.business.discover",
+      "label": "Discover an authorized business workspace",
+      "actor_ids": ["business-operator", "portal-member", "extension-operator"],
+      "primary_outcome": "The actor finds an allowed entity workspace without learning denied entity names or counts.",
+      "journey_ids": ["journey.business-record-lifecycle", "journey.portal-work"]
+    },
+    {
+      "id": "task.business.record",
+      "label": "Operate a business record",
+      "actor_ids": ["business-operator", "portal-member"],
+      "primary_outcome": "The actor browses, reads, creates, edits, reviews history and performs allowed actions consistently.",
+      "journey_ids": ["journey.business-record-lifecycle", "journey.portal-work"]
+    },
+    {
+      "id": "task.business.relationship",
+      "label": "Manage business relationships and choices",
+      "actor_ids": ["business-operator", "portal-member"],
+      "primary_outcome": "The actor selects only authorized related records and updates the intended relationship.",
+      "journey_ids": ["journey.business-record-lifecycle", "journey.portal-work"]
+    },
+    {
+      "id": "task.business.custom-view",
+      "label": "Use a contributed business view",
+      "actor_ids": ["business-operator", "portal-member", "extension-operator"],
+      "primary_outcome": "A typed contributed view appears in standard context and retains policy-filtered actions.",
+      "journey_ids": ["journey.business-record-lifecycle", "journey.extension-lifecycle"]
+    },
+    {
+      "id": "task.business.operation-monitor",
+      "label": "Monitor a long-running business operation",
+      "actor_ids": ["business-operator", "portal-member"],
+      "primary_outcome": "The actor understands status, last update, safe navigation and recovery or retry disposition.",
+      "journey_ids": ["journey.business-record-lifecycle", "journey.portal-work"]
+    },
+    {
+      "id": "task.report.run",
+      "label": "Run a report and retrieve an export",
+      "actor_ids": ["report-operator", "portal-member"],
+      "primary_outcome": "The actor selects a report, supplies parameters, understands results and retrieves only an authorized artifact.",
+      "journey_ids": ["journey.report-export", "journey.portal-work"]
+    },
+    {
+      "id": "task.identity.manage",
+      "label": "Manage users, roles, grants, assignments and tokens",
+      "actor_ids": ["security-administrator"],
+      "primary_outcome": "The actor changes one identity concern at a time with explicit scope, impact and audit attribution.",
+      "journey_ids": ["journey.portal-provisioning", "journey.security-governance"]
+    },
+    {
+      "id": "task.business.security",
+      "label": "Govern organizations, memberships, policy and approvals",
+      "actor_ids": ["security-administrator"],
+      "primary_outcome": "The actor can separate authority tasks, preserve scope and explain effective access.",
+      "journey_ids": ["journey.security-governance", "journey.portal-provisioning"]
+    },
+    {
+      "id": "task.extension.manage",
+      "label": "Install, inspect, activate, disable and recover an extension",
+      "actor_ids": ["system-administrator"],
+      "primary_outcome": "Only trusted active contributions execute and owned data survives lifecycle changes.",
+      "journey_ids": ["journey.extension-lifecycle"]
+    },
+    {
+      "id": "task.settings.manage",
+      "label": "Configure site and presentation settings",
+      "actor_ids": ["system-administrator"],
+      "primary_outcome": "The actor changes a coherent settings group with explicit dirty, validation and saved state.",
+      "journey_ids": ["journey.presentation-customization"]
+    },
+    {
+      "id": "task.automation.manage",
+      "label": "Manage jobs, schedules, runs and failures",
+      "actor_ids": ["system-administrator"],
+      "primary_outcome": "The actor can configure work and distinguish scheduled, running, failed and recoverable states.",
+      "journey_ids": ["journey.automation-operation"]
+    },
+    {
+      "id": "task.auth.portal",
+      "label": "Sign in to the portal",
+      "actor_ids": ["portal-candidate"],
+      "primary_outcome": "A valid scoped member reaches the portal without receiving administrator authority.",
+      "journey_ids": ["journey.portal-work"]
+    },
+    {
+      "id": "task.portal.home",
+      "label": "Orient in ordinary portal work",
+      "actor_ids": ["portal-member"],
+      "primary_outcome": "The member sees plain-language permitted work, approvals, reports and account destinations.",
+      "journey_ids": ["journey.portal-work"]
+    },
+    {
+      "id": "task.portal.security",
+      "label": "Manage portal account assurance",
+      "actor_ids": ["portal-member"],
+      "primary_outcome": "The member enrolls or uses step-up and recovery controls without exposing secrets after issuance.",
+      "journey_ids": ["journey.portal-work"]
+    },
+    {
+      "id": "task.approval.review",
+      "label": "Review and decide an approval",
+      "actor_ids": ["portal-approver", "security-administrator"],
+      "primary_outcome": "The approver understands scope and impact and submits a version-bound, non-replayable decision.",
+      "journey_ids": ["journey.security-governance", "journey.portal-work"]
+    },
+    {
+      "id": "task.extension.surface",
+      "label": "Use a trusted extension-owned surface",
+      "actor_ids": ["extension-operator"],
+      "primary_outcome": "The extension task uses the core shell, capability, trust, template isolation and KIS contract.",
+      "journey_ids": ["journey.extension-lifecycle"]
+    },
+    {
+      "id": "task.template.customize",
+      "label": "Build or activate a conforming installable template",
+      "actor_ids": ["template-author", "system-administrator"],
+      "primary_outcome": "Approved appearance and composition change globally while semantics, security, accessibility and recovery remain intact.",
+      "journey_ids": ["journey.presentation-customization"]
+    }
+  ],
+  "journeys": [
+    {
+      "id": "journey.public-content",
+      "label": "Discover and read managed public content",
+      "actor_ids": ["public-visitor"],
+      "surface_sequence": ["core.public.home", "core.public.page"],
+      "success": "The visitor follows managed navigation to a canonical published page at desktop or mobile width."
+    },
+    {
+      "id": "journey.administrator-entry",
+      "label": "Administrator entry and orientation",
+      "actor_ids": ["administrator-candidate", "content-operator", "business-operator", "security-administrator", "system-administrator"],
+      "surface_sequence": ["core.administrator.login", "core.administrator.dashboard"],
+      "success": "Authentication, session isolation, capability-filtered navigation and a clear next action are intact."
+    },
+    {
+      "id": "journey.content-lifecycle",
+      "label": "Create, publish and find managed content",
+      "actor_ids": ["content-operator"],
+      "surface_sequence": ["core.administrator.content-collection", "core.administrator.content-editor", "core.administrator.media", "core.public.page"],
+      "success": "The authorized actor creates valid content, uses media, progresses state and verifies canonical public output."
+    },
+    {
+      "id": "journey.site-structure",
+      "label": "Model content and connect it to public navigation",
+      "actor_ids": ["structure-manager", "content-operator"],
+      "surface_sequence": ["core.administrator.content-models", "core.administrator.navigation", "core.public.home", "core.public.page"],
+      "success": "Model and navigation changes remain valid, version-aware and understandable in public presentation."
+    },
+    {
+      "id": "journey.definition-to-record",
+      "label": "Define an entity and make its storage ready",
+      "actor_ids": ["business-modeler", "schema-operator", "schema-approver", "business-operator"],
+      "surface_sequence": ["core.administrator.business-definitions", "core.administrator.schema-plans", "core.administrator.generated-catalog", "core.administrator.generated-definition"],
+      "success": "A validated published definition receives an approved portable schema and an authorized generated workspace."
+    },
+    {
+      "id": "journey.business-record-lifecycle",
+      "label": "Operate, relate and review a business record",
+      "actor_ids": ["business-operator"],
+      "surface_sequence": ["core.administrator.generated-catalog", "core.administrator.generated-definition", "core.administrator.generated-record", "core.administrator.generated-relationship", "core.administrator.generated-operation"],
+      "success": "Browse, create, update, relation, action, history and long-running status preserve one policy and concurrency contract."
+    },
+    {
+      "id": "journey.report-export",
+      "label": "Run an authorized report and retrieve its export",
+      "actor_ids": ["report-operator"],
+      "surface_sequence": ["core.administrator.reports"],
+      "success": "Parameters, policy-filtered results, immutable export status and authorized download remain comprehensible."
+    },
+    {
+      "id": "journey.security-governance",
+      "label": "Establish scope, policy and maker-checker control",
+      "actor_ids": ["security-administrator", "portal-approver"],
+      "surface_sequence": ["core.administrator.access-control", "core.administrator.business-security", "core.portal.approvals"],
+      "success": "Identity, membership, policy, effective access and approval remain scoped, attributable and non-replayable."
+    },
+    {
+      "id": "journey.portal-provisioning",
+      "label": "Provision an ordinary portal member",
+      "actor_ids": ["security-administrator", "portal-candidate", "portal-member"],
+      "surface_sequence": ["core.administrator.access-control", "core.administrator.business-security", "core.portal.login", "core.portal.home"],
+      "success": "A deliberately provisioned member can sign in and sees exactly the authorized workspace without administrator access."
+    },
+    {
+      "id": "journey.portal-work",
+      "label": "Complete ordinary portal work",
+      "actor_ids": ["portal-candidate", "portal-member", "portal-approver"],
+      "surface_sequence": ["core.portal.login", "core.portal.home", "core.portal.generated-catalog", "core.portal.generated-definition", "core.portal.generated-record", "core.portal.reports", "core.portal.approvals", "core.portal.security"],
+      "success": "The member can discover work, operate allowed records, report, decide approvals and manage assurance using ordinary vocabulary."
+    },
+    {
+      "id": "journey.extension-lifecycle",
+      "label": "Install, use, disable and restore graphical contributions",
+      "actor_ids": ["system-administrator", "extension-operator", "portal-member"],
+      "surface_sequence": ["core.administrator.extensions", "extension.administrator.route-family", "example.announcements.administrator", "example.asset-inspection.administrator", "extension.portal.route-family", "example.asset-inspection.portal-status"],
+      "success": "Trusted contributions appear with correct navigation and policy, disappear on disable, recover on reactivation and retain owned data."
+    },
+    {
+      "id": "journey.automation-operation",
+      "label": "Configure and observe durable automation",
+      "actor_ids": ["system-administrator"],
+      "surface_sequence": ["core.administrator.automation"],
+      "success": "Jobs, schedules, runs and failures have distinct states and safe recovery controls."
+    },
+    {
+      "id": "journey.presentation-customization",
+      "label": "Install, customize, upgrade and reset presentation",
+      "actor_ids": ["template-author", "system-administrator"],
+      "surface_sequence": ["core.administrator.extensions", "core.administrator.settings", "core.administrator.dashboard", "core.portal.home", "core.public.page"],
+      "success": "An installed template changes approved tokens and slots, survives upgrade or falls back safely, and can be reset to KIS defaults."
+    }
+  ]
+}
