@@ -105,6 +105,11 @@ final readonly class ApproveBusinessSchemaPlanHandler implements RequestHandlerI
             BusinessSchemaAdministratorRequest::optional($form, 'recovery_evidence_id'),
         );
 
-        return BusinessSchemaAdministratorRequest::redirect($planId, 'approved');
+        return BusinessSchemaAdministratorRequest::redirect(
+            $planId,
+            'approved',
+            null,
+            BusinessSchemaAdministratorRequest::activeTab($form['return_tab'] ?? null, 'approval'),
+        );
     }
 }

@@ -21,33 +21,46 @@
     {% endif %}
   </div>
 {% endmacro %}
+{% import _self as schema %}
 {% block title %}Schema plans · Kumwe{% endblock %}
 {% block context_title %}Schema plans{% endblock %}
 {% block context_subtitle %}Inspect and control generated relational storage{% endblock %}
 {% block content %}
-  <header class="page-heading">
-    <div>
-      <p class="eyebrow">Structure</p>
-      <h1>Business schema plans</h1>
-      <p>Compare canonical definitions with installed relational storage, then approve and execute an immutable, checksummed plan.</p>
-    </div>
-  </header>
+  {% embed '@kis/page-header.twig' with {
+    eyebrow: 'Structure',
+    title: 'Business schema plans',
+    purpose: 'Compare canonical definitions with installed relational storage, then approve and execute an immutable, checksummed plan.'
+  } %}{% endembed %}
 
   {% if notice %}<div class="notice success" role="status"><span>{{ notice }}</span></div>{% endif %}
   <div class="notice" role="status">
     <span><strong>Physical changes are deliberate.</strong> Publishing a definition persists a plan only. Execution always remains a separate authorized operation.</span>
   </div>
 
-  <div class="schema-plan-layout">
-    <aside class="stack" aria-label="Schema plan controls">
+  <kumwe-tabs data-kis-tab-parameter="tab">
+    {% include '@kis/tabs.twig' with {
+      id: 'business-schema-workspace',
+      label: 'Schema plan tasks',
+      tabs: workspace_tabs,
+      active: active_tab
+    } only %}
+
+    {% embed '@kis/master-detail.twig' with {
+      id: 'business-schema-workspace',
+      catalog_label: 'Schema plan controls',
+      catalog_toggle_label: 'Browse schema plans'
+    } %}
+      {% block catalog %}
+    <aside class="stack">
       <section class="panel stack">
-        <div class="section-heading">
-          <div><p class="eyebrow">Plan catalog</p><h2>Persisted plans</h2></div>
-          <span class="count-badge">{{ plans|length }}</span>
-        </div>
+        {% embed '@kis/resource-toolbar.twig' with {
+          label: 'Persisted schema plan catalog',
+          title: 'Persisted plans',
+          summary: plans|length ~ ' immutable plans'
+        } %}{% endembed %}
         <nav class="schema-plan-catalog" aria-label="Persisted schema plans">
           {% for item in plans %}
-            <a class="definition-catalog-item{% if plan and plan.id == item.id %} active{% endif %}" href="/administrator/business-schema-plans?plan={{ item.id|url_encode }}">
+            <a class="definition-catalog-item{% if plan and plan.id == item.id %} active{% endif %}" href="/administrator/business-schema-plans?plan={{ item.id|url_encode }}&tab={{ active_tab|url_encode }}"{% if plan and plan.id == item.id %} aria-current="true"{% endif %}>
               <strong>Definition v{{ item.to_definition_version }}</strong>
               <span><span class="status status-{{ item.status|replace({'_':'-'}) }}">{{ item.status|replace({'_':' '}) }}</span> · {{ item.risk|replace({'_':' '}) }}</span>
               <small data-visual-mask>{{ item.id }}</small>
@@ -64,6 +77,7 @@
           {% if definitions %}
             <form action="/administrator/business-schema-plans/plan" method="post" class="stack compact-form">
               <input type="hidden" name="_csrf" value="{{ csrf }}">
+              <input type="hidden" name="return_tab" value="summary">
               <label>Published definition
                 <select name="definition_id" required>
                   {% for definition in definitions %}
@@ -80,13 +94,19 @@
         </section>
       {% endif %}
     </aside>
+      {% endblock %}
 
+      {% block detail %}
     <div class="stack">
       {% if not plan %}
-        <section class="empty-state">
-          <div class="empty-state-content"><h2>No schema plan selected</h2><p>Published definitions create inspectable plans without changing physical storage.</p></div>
-        </section>
+        {% for workspace_tab in workspace_tabs %}
+          {% embed '@kis/tab-panel.twig' with {id: 'business-schema-workspace', tab: workspace_tab.id} %}
+            {% block content %}{% embed '@kis/empty-state.twig' with {title: 'No schema plan selected', message: 'Published definitions create inspectable plans without changing physical storage.'} %}{% endembed %}{% endblock %}
+          {% endembed %}
+        {% endfor %}
       {% else %}
+        {% embed '@kis/tab-panel.twig' with {id: 'business-schema-workspace', tab: 'summary'} %}
+          {% block content %}
         <section class="panel stack schema-plan-summary">
           <div class="section-heading">
             <div><p class="eyebrow">Immutable comparison</p><h2>Definition version {{ plan.to_definition_version }}</h2></div>
@@ -96,9 +116,9 @@
             </div>
           </div>
           <dl class="definition-metadata schema-checksums">
-            <div><dt>Plan ID</dt><dd><code data-visual-mask>{{ plan.id }}</code></dd></div>
-            <div><dt>Definition</dt><dd><code data-visual-mask>{{ plan.definition_id }}</code> · {{ plan.from_definition_version ? 'v' ~ plan.from_definition_version : 'not installed' }} → v{{ plan.to_definition_version }}</dd></div>
-            <div><dt>Plan checksum</dt><dd><code data-visual-mask>{{ plan.plan_checksum }}</code></dd></div>
+            <div><dt>Plan ID</dt><dd data-visual-mask>{% include '@kis/technical-value.twig' with {label: 'Plan ID', value: plan.id} only %}</dd></div>
+            <div><dt>Definition</dt><dd data-visual-mask>{% include '@kis/technical-value.twig' with {label: 'Definition ID', value: plan.definition_id} only %} · {{ plan.from_definition_version ? 'v' ~ plan.from_definition_version : 'not installed' }} → v{{ plan.to_definition_version }}</dd></div>
+            <div><dt>Plan checksum</dt><dd data-visual-mask>{% include '@kis/technical-value.twig' with {label: 'Plan checksum', value: plan.plan_checksum} only %}</dd></div>
             <div><dt>Definition checksum</dt><dd><code data-visual-mask>{{ plan.from_definition_checksum|default('none') }}</code> → <code data-visual-mask>{{ plan.to_definition_checksum }}</code></dd></div>
             <div><dt>Physical checksum</dt><dd><code data-visual-mask>{{ plan.from_schema_checksum|default('none') }}</code> → <code data-visual-mask>{{ plan.target_schema_checksum }}</code></dd></div>
             <div><dt>Updated</dt><dd data-visual-mask>{{ plan.updated_at }}</dd></div>
@@ -117,7 +137,11 @@
             </div>
           {% endif %}
         </section>
+          {% endblock %}
+        {% endembed %}
 
+        {% embed '@kis/tab-panel.twig' with {id: 'business-schema-workspace', tab: 'operations', schema: schema} %}
+          {% block content %}
         <section class="panel stack">
           <div class="section-heading">
             <div><p class="eyebrow">Comparison</p><h2>Generated operations</h2><p class="field-help">Before and after states are compiled from validated metadata. Operations cannot be edited on this screen.</p></div>
@@ -132,7 +156,7 @@
                     <td>{{ operation.ordinal }}</td>
                     <td><strong>{{ operation.kind|replace({'_':' '}) }}</strong>{% if operation.requires_backfill %}<br><span class="tag">Backfill</span>{% endif %}</td>
                     <td><code data-visual-mask>{{ operation.table }}</code><br><span data-visual-mask>{{ operation.subject }}</span></td>
-                    <td class="schema-operation-comparison">{{ _self.operation_state('Before', operation.before) }}{{ _self.operation_state('After', operation.after) }}</td>
+                    <td class="schema-operation-comparison">{{ schema.operation_state('Before', operation.before) }}{{ schema.operation_state('After', operation.after) }}</td>
                     <td><span class="schema-risk schema-risk-{{ operation.risk }}">{{ operation.risk|replace({'_':' '}) }}</span></td>
                     <td>{{ operation.recovery_implication|replace({'_':' '}) }}</td>
                   </tr>
@@ -143,7 +167,11 @@
             </table>
           </div>
         </section>
+          {% endblock %}
+        {% endembed %}
 
+        {% embed '@kis/tab-panel.twig' with {id: 'business-schema-workspace', tab: 'approval'} %}
+          {% block content %}
         {% if plan.status == 'pending_approval' %}
           <section class="panel stack" aria-labelledby="schema-approval-heading">
             <div><p class="eyebrow">Authorization gate</p><h2 id="schema-approval-heading">Approve exact plan</h2></div>
@@ -169,6 +197,7 @@
                     <form action="/administrator/business-schema-plans/recovery-evidence" method="post" class="stack schema-evidence-form">
                       <input type="hidden" name="_csrf" value="{{ csrf }}">
                       <input type="hidden" name="plan_id" value="{{ plan.id }}">
+                      <input type="hidden" name="return_tab" value="approval">
                       <dl class="definition-metadata">
                         <div><dt>Database</dt><dd>{{ schema_environment.database_driver }} {{ schema_environment.database_server_version }}</dd></div>
                         <div><dt>Application release</dt><dd>{{ schema_environment.application_release }}</dd></div>
@@ -201,6 +230,7 @@
             {% if capabilities['business.schema.approve'] is defined %}
               <form action="/administrator/business-schema-plans/{{ plan.id|url_encode }}/approve" method="post" class="stack compact-form">
                 <input type="hidden" name="_csrf" value="{{ csrf }}">
+                <input type="hidden" name="return_tab" value="approval">
                 <input type="hidden" name="expected_checksum" value="{{ plan.plan_checksum }}">
                 {% if evidence and evidence_qualifies %}<input type="hidden" name="recovery_evidence_id" value="{{ evidence.id }}">{% endif %}
                 {% if plan.requires_high_impact %}
@@ -214,28 +244,62 @@
               </form>
             {% endif %}
           </section>
+        {% else %}
+          <section class="panel stack"><h2>Approval</h2><p>The plan is <strong>{{ plan.status|replace({'_':' '}) }}</strong>. Approval controls are shown only for a pending plan and only to an operator with the required capability.</p>{% if plan.approval %}<p>Its checksum-bound approval is recorded in the summary.</p>{% endif %}</section>
         {% endif %}
+          {% endblock %}
+        {% endembed %}
 
+        {% embed '@kis/tab-panel.twig' with {id: 'business-schema-workspace', tab: 'execution'} %}
+          {% block content %}
         {% if plan.status == 'approved' and capabilities['business.schema.execute'] is defined %}
           <section class="panel stack">
             <div><p class="eyebrow">Execution gate</p><h2>Execute approved plan</h2><p>The executor re-verifies definition, physical-schema and plan checksums, then journals every step under a fencing lock.</p></div>
             <form action="/administrator/business-schema-plans/{{ plan.id|url_encode }}/execute" method="post">
               <input type="hidden" name="_csrf" value="{{ csrf }}">
+              <input type="hidden" name="return_tab" value="execution">
               <button class="primary" type="submit" data-confirm="Execute this exact approved physical-schema plan?">Execute approved plan</button>
             </form>
           </section>
+        {% else %}
+          <section class="panel stack"><h2>Execution</h2><p>Execution becomes available only after an exact approval and only to an operator with the execution capability.</p></section>
         {% endif %}
+          {% endblock %}
+        {% endembed %}
 
+        {% embed '@kis/tab-panel.twig' with {id: 'business-schema-workspace', tab: 'recovery'} %}
+          {% block content %}
         {% if plan.status in ['failed', 'recovery_required'] and capabilities['business.schema.recover'] is defined %}
           <section class="panel stack">
             <div><p class="eyebrow">Recovery</p><h2>Resume or reconcile execution</h2><p>The executor uses the persisted fence, journal and observed checksums to resume safely or record compensation.</p></div>
             <form action="/administrator/business-schema-plans/{{ plan.id|url_encode }}/recover" method="post">
               <input type="hidden" name="_csrf" value="{{ csrf }}">
+              <input type="hidden" name="return_tab" value="recovery">
               <button type="submit" data-confirm="Recover this interrupted schema execution from its durable journal?">Start recovery</button>
             </form>
           </section>
+        {% else %}
+          <section class="panel stack"><h2>Recovery</h2><p>Journal recovery becomes available only for an interrupted plan and only to an authorized recovery operator. Recovery-evidence readiness remains visible at the approval gate.</p></section>
         {% endif %}
+        {% if installation and capabilities['business.schema.destructive'] is defined %}
+          <section class="panel stack schema-purge-control">
+            <div><p class="eyebrow">Destructive lifecycle</p><h2>Prepare explicit data purge</h2></div>
+            <form action="/administrator/business-schema-plans/purge" method="post" class="stack">
+              <input type="hidden" name="_csrf" value="{{ csrf }}">
+              <input type="hidden" name="return_tab" value="recovery">
+              <input type="hidden" name="definition_id" value="{{ installation.definition_id }}">
+              <div class="notice danger"><span><strong>Destructive lifecycle operation.</strong> A purge remains a separate checksummed plan and cannot be approved without tested recovery evidence.</span></div>
+              <label>Exact installed definition ID<small>Type <code data-visual-mask>{{ installation.definition_id }}</code></small><input name="confirmation" autocomplete="off" required></label>
+              <label>Current password<input type="password" name="current_password" autocomplete="current-password" required></label>
+              <button class="danger" type="submit" data-confirm="Create a destructive purge plan for this preserved business schema?">Create purge plan</button>
+            </form>
+          </section>
+        {% endif %}
+          {% endblock %}
+        {% endembed %}
 
+        {% embed '@kis/tab-panel.twig' with {id: 'business-schema-workspace', tab: 'history'} %}
+          {% block content %}
         {% if steps or plan.status in ['executing', 'completed', 'failed', 'recovery_required', 'compensated'] %}
           <section class="panel stack">
             <div class="section-heading"><div><p class="eyebrow">Durable journal</p><h2>Execution status</h2></div><span class="count-badge">{{ steps|length }}</span></div>
@@ -245,7 +309,11 @@
               {% else %}<tr><td colspan="6">Execution has not started.</td></tr>{% endfor %}
             </tbody></table></div>
           </section>
+        {% else %}
+          <section class="panel stack"><h2>Execution history</h2><p>The durable step journal will appear after execution begins.</p></section>
         {% endif %}
+          {% endblock %}
+        {% endembed %}
 
         {% if installation %}
           <section class="panel stack">
@@ -255,22 +323,11 @@
               {% for table in installation.blueprint.tables %}<tr><td><code>{{ table.logical_name }}</code></td><td><code data-visual-mask>{{ table.physical_name }}</code></td><td>{{ table.kind|replace({'_':' '}) }}</td><td>{{ table.columns|length }}</td><td>{{ table.indexes|length }}</td><td>{{ table.foreign_keys|length }}</td></tr>{% endfor %}
             </tbody></table></div>
 
-            {% if capabilities['business.schema.destructive'] is defined %}
-              <details class="advanced-definition schema-purge-control">
-                <summary>Prepare explicit data purge</summary>
-                <form action="/administrator/business-schema-plans/purge" method="post" class="stack">
-                  <input type="hidden" name="_csrf" value="{{ csrf }}">
-                  <input type="hidden" name="definition_id" value="{{ installation.definition_id }}">
-                  <div class="notice danger"><span><strong>Destructive lifecycle operation.</strong> A purge remains a separate checksummed plan and cannot be approved without tested recovery evidence.</span></div>
-                  <label>Exact installed definition ID<small>Type <code data-visual-mask>{{ installation.definition_id }}</code></small><input name="confirmation" autocomplete="off" required></label>
-                  <label>Current password<input type="password" name="current_password" autocomplete="current-password" required></label>
-                  <button class="danger" type="submit" data-confirm="Create a destructive purge plan for this preserved business schema?">Create purge plan</button>
-                </form>
-              </details>
-            {% endif %}
           </section>
         {% endif %}
       {% endif %}
     </div>
-  </div>
+      {% endblock %}
+    {% endembed %}
+  </kumwe-tabs>
 {% endblock %}

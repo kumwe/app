@@ -2,18 +2,40 @@
 {% block title %}Business definitions · Kumwe{% endblock %}
 {% block context_title %}Business definitions{% endblock %}
 {% block content %}
-  <header class="page-heading">
-    <div><p class="eyebrow">Structure</p><h1>Business definitions</h1><p>Model operational entities, relationships, views, actions and workflows before record storage is introduced.</p></div>
-    <div class="page-actions"><a class="button primary" href="/administrator/business-definitions?new=1">New definition</a></div>
-  </header>
+  {% embed '@kis/page-header.twig' with {
+    eyebrow: 'Structure',
+    title: 'Business definitions',
+    purpose: 'Model operational entities, relationships, views, actions and workflows before record storage is introduced.'
+  } %}
+    {% block actions %}
+      {% if capabilities['content.update'] is defined %}<div class="page-actions"><a class="button primary" href="/administrator/business-definitions?new=1&tab=identity">New definition</a></div>{% endif %}
+    {% endblock %}
+  {% endembed %}
 
   <div class="notice" role="status"><span><strong>Publication is immutable.</strong> Validation and compatibility analysis run before a canonical version, checksum and dependency graph are persisted.</span><button class="notice-dismiss" type="button" aria-label="Dismiss notice" data-dismiss-notice>×</button></div>
 
-  <div class="business-definition-layout">
-    <aside class="panel stack" aria-label="Definition catalog">
-      <div class="section-heading"><div><p class="eyebrow">Catalog</p><h2>Entities</h2></div><span class="count-badge">{{ catalog|length }}</span></div>
+  <kumwe-tabs data-kis-tab-parameter="tab">
+    {% include '@kis/tabs.twig' with {
+      id: 'business-definition-workspace',
+      label: 'Business definition tasks',
+      tabs: workspace_tabs,
+      active: active_tab
+    } only %}
+
+    {% embed '@kis/master-detail.twig' with {
+      id: 'business-definition-workspace',
+      catalog_label: 'Definition catalog',
+      catalog_toggle_label: 'Browse definitions'
+    } %}
+      {% block catalog %}
+    <aside class="panel stack">
+      {% embed '@kis/resource-toolbar.twig' with {
+        label: 'Definition catalog',
+        title: 'Entities',
+        summary: catalog|length ~ ' definitions'
+      } %}{% endembed %}
       {% for item in catalog %}
-        <a class="definition-catalog-item{% if selected == item.id or selected == item.handle %} active{% endif %}" href="/administrator/business-definitions?definition={{ item.id|url_encode }}">
+        <a class="definition-catalog-item{% if selected == item.id or selected == item.handle %} active{% endif %}" href="/administrator/business-definitions?definition={{ item.id|url_encode }}&tab={{ active_tab|url_encode }}"{% if selected == item.id or selected == item.handle %} aria-current="true"{% endif %}>
           <strong>{{ item.handle }}</strong><span>{{ item.status }}{% if item.published_version %} · v{{ item.published_version }}{% endif %}</span>
           <small>{{ item.owner.type }}:{{ item.owner.identifier }}{% if not item.owner_active %} · inactive{% endif %}</small>
         </a>
@@ -25,6 +47,7 @@
           <summary>Import strict definition</summary>
           <form method="post" enctype="multipart/form-data" class="stack compact-form">
             <input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="action" value="import">
+            <input type="hidden" name="return_tab" value="{{ active_tab }}">
             <label>Definition JSON file<input type="file" name="definition_file" accept="application/json,.json" required></label>
             <label>Expected draft revision<input type="number" name="revision" min="0" placeholder="Required when replacing an existing definition"></label>
             <p class="field-help">Imports use the same strict validation, ownership and optimistic-revision gates as the graphical editor.</p>
@@ -33,28 +56,49 @@
         </details>
       {% endif %}
     </aside>
+      {% endblock %}
 
-    <main class="stack">
+      {% block detail %}
+    <div class="stack">
       {% set is_package = definition and definition.owner.type != 'site' %}
       {% set fields = definition ? definition.fields : [{'handle':'id','label':'ID','type':'core.uuid','description':'Stable entity identity','required':true,'nullable':false,'default':null,'length':null,'precision':null,'scale':null,'configuration':{},'normalizers':[],'validators':[],'unique':true,'indexed':true,'immutable_after_create':true,'server_only':true,'computed':false,'read_only':true,'create_visible':false,'update_visible':false,'read_visible':true,'searchable':false,'filterable':true,'sortable':true,'reportable':false,'exportable':true,'sensitivity':'internal','localized':false,'help_text':'Generated automatically.','form_group':'identity','order':0,'placements':['detail','history'],'visibility_condition':null,'editability_condition':null,'formula':null}] %}
       {% if is_package %}
         <div class="notice warning" role="status"><span><strong>Package owned.</strong> This definition is read-only here and follows the owning extension lifecycle. Its publication history remains available while inactive or uninstalled.</span></div>
+      {% elseif definition and capabilities['content.update'] is not defined %}
+        <div class="notice warning" role="status"><span><strong>Read-only access.</strong> You can inspect and export this definition, but editing and lifecycle actions require the content-update capability.</span></div>
       {% endif %}
 
       {% if definition and (is_package or capabilities['content.update'] is not defined) %}
-        <section class="panel stack">
-          <div class="section-heading"><div><p class="eyebrow">Typed contract</p><h2>{{ definition.plural_label }}</h2><p>{{ definition.handle }}</p></div><a class="button" href="/administrator/business-definitions?export={{ definition.id|url_encode }}">Export JSON</a></div>
-          <dl class="definition-metadata"><div><dt>Storage</dt><dd>{{ definition.storage_mode }}</dd></div><div><dt>Identity</dt><dd>{{ definition.identity_strategy }}</dd></div><div><dt>Scope</dt><dd>{{ definition.scope }}</dd></div></dl>
-          <h3>Fields</h3><div class="table-wrap"><table><thead><tr><th>Field</th><th>Type</th><th>Required</th><th>Use</th></tr></thead><tbody>{% for field in definition.fields %}<tr><td><strong>{{ field.label }}</strong><br><code>{{ field.handle }}</code></td><td><code>{{ field.type }}</code></td><td>{{ field.required ? 'Yes' : 'No' }}</td><td>{{ field.placements|join(', ') }}</td></tr>{% endfor %}</tbody></table></div>
-          {% if definition.relationships %}<h3>Relationships</h3>{% for relation in definition.relationships %}<p><strong>{{ relation.label }}</strong> · {{ relation.kind }} → <code>{{ relation.target }}</code>{% if relation.inverse %} · inverse {{ relation.inverse }}{% endif %}</p>{% endfor %}{% endif %}
-          <p>{{ definition.views|length }} views · {{ definition.actions|length }} actions · {{ definition.workflow ? definition.workflow.states|length : 0 }} workflow states</p>
-        </section>
+        {% embed '@kis/tab-panel.twig' with {id: 'business-definition-workspace', tab: 'identity'} %}
+          {% block content %}<section class="panel stack">
+            <div class="section-heading"><div><p class="eyebrow">Typed contract</p><h2>{{ definition.plural_label }}</h2>{% include '@kis/technical-value.twig' with {label: 'Definition handle', value: definition.handle} only %}</div><a class="button" href="/administrator/business-definitions?export={{ definition.id|url_encode }}">Export JSON</a></div>
+            <dl class="definition-metadata"><div><dt>Storage</dt><dd>{{ definition.storage_mode }}</dd></div><div><dt>Identity</dt><dd>{{ definition.identity_strategy }}</dd></div><div><dt>Scope</dt><dd>{{ definition.scope }}</dd></div></dl>
+          </section>{% endblock %}
+        {% endembed %}
+        {% embed '@kis/tab-panel.twig' with {id: 'business-definition-workspace', tab: 'fields'} %}
+          {% block content %}<section class="panel stack"><div class="section-heading"><h2>Fields</h2><span class="count-badge">{{ definition.fields|length }}</span></div><div class="table-wrap" tabindex="0" role="region" aria-label="Definition fields"><table><thead><tr><th>Field</th><th>Type</th><th>Required</th><th>Use</th></tr></thead><tbody>{% for field in definition.fields %}<tr><td><strong>{{ field.label }}</strong><br><code>{{ field.handle }}</code></td><td><code>{{ field.type }}</code></td><td>{{ field.required ? 'Yes' : 'No' }}</td><td>{{ field.placements|join(', ') }}</td></tr>{% endfor %}</tbody></table></div></section>{% endblock %}
+        {% endembed %}
+        {% embed '@kis/tab-panel.twig' with {id: 'business-definition-workspace', tab: 'relationships'} %}
+          {% block content %}<section class="panel stack"><div class="section-heading"><h2>Relationships</h2><span class="count-badge">{{ definition.relationships|length }}</span></div>{% for relation in definition.relationships %}<p><strong>{{ relation.label }}</strong> · {{ relation.kind }} → <code>{{ relation.target }}</code>{% if relation.inverse %} · inverse {{ relation.inverse }}{% endif %}</p>{% else %}<p class="text-muted">No relationships are declared.</p>{% endfor %}</section>{% endblock %}
+        {% endembed %}
+        {% embed '@kis/tab-panel.twig' with {id: 'business-definition-workspace', tab: 'delivery'} %}
+          {% block content %}<section class="panel stack"><h2>Views and actions</h2><p>{{ definition.views|length }} views · {{ definition.actions|length }} actions</p></section>{% endblock %}
+        {% endembed %}
+        {% embed '@kis/tab-panel.twig' with {id: 'business-definition-workspace', tab: 'workflow'} %}
+          {% block content %}<section class="panel stack"><h2>Workflow</h2><p>{{ definition.workflow ? definition.workflow.states|length : 0 }} workflow states</p></section>{% endblock %}
+        {% endembed %}
+        {% embed '@kis/tab-panel.twig' with {id: 'business-definition-workspace', tab: 'publication'} %}
+          {% block content %}<section class="panel stack"><h2>Publication</h2><p>This package-owned or permission-reduced definition is read-only. Publication controls are available only to the owning lifecycle with the required capability.</p></section>{% endblock %}
+        {% endembed %}
       {% endif %}
 
       {% if not is_package and capabilities['content.update'] is defined %}
         <form method="post" class="stack" id="business-definition-form">
           <input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="action" value="save">
+          <input type="hidden" name="return_tab" value="{{ active_tab }}">
           <input type="hidden" name="id" value="{{ definition ? definition.id : '' }}"><input type="hidden" name="revision" value="{{ draft ? draft.revision : (definition ? 0 : '') }}">
+          {% embed '@kis/tab-panel.twig' with {id: 'business-definition-workspace', tab: 'identity'} %}
+            {% block content %}
           <section class="panel stack">
             <div class="section-heading"><div><p class="eyebrow">Identity</p><h2>{{ definition ? definition.singular_label : 'New business entity' }}</h2></div><div class="page-actions">{% if definition %}<a class="button" href="/administrator/business-definitions?export={{ definition.id|url_encode }}">Export JSON</a>{% endif %}{% if draft %}<span class="status-badge">Draft r{{ draft.revision }}</span>{% endif %}</div></div>
             <div class="two-column">
@@ -66,13 +110,17 @@
               <fieldset><legend>Exposure and policy</legend><label class="check"><input type="checkbox" name="administrator_hidden" value="1"{% if definition and not definition.administrator_exposure %} checked{% endif %}><span>Hide from administrator</span></label><label class="check"><input type="checkbox" name="portal_exposure" value="1"{% if definition and definition.portal_exposure %} checked{% endif %}><span>Portal</span></label><label class="check"><input type="checkbox" name="public_exposure" value="1"{% if definition and definition.public_exposure %} checked{% endif %}><span>Public read surface</span></label><label class="check"><input type="checkbox" name="soft_delete_enabled" value="1"{% if definition and definition.soft_delete_enabled|default(false) %} checked{% endif %}><span>Enable soft deletion and restore</span></label><label class="check"><input type="checkbox" name="audit_disabled" value="1"{% if definition and not definition.audit_enabled %} checked{% endif %}><span>Disable audit policy</span></label><label class="check"><input type="checkbox" name="revisions_disabled" value="1"{% if definition and not definition.revisions_enabled %} checked{% endif %}><span>Disable revision policy</span></label></fieldset>
             </div>
           </section>
+            {% endblock %}
+          {% endembed %}
 
           <kumwe-definition-editor class="stack">
+            {% embed '@kis/tab-panel.twig' with {id: 'business-definition-workspace', tab: 'fields'} %}
+              {% block content %}
             <section class="panel stack">
-              <div class="section-heading"><div><p class="eyebrow">Data contract</p><h2>Fields</h2><p class="field-help">Exact numeric types require precision and scale. Computed formulas use a bounded operator builder.</p></div><button type="button" data-add="field">Add field</button></div>
+              <div class="section-heading"><div><p class="eyebrow">Data contract</p><h2>Focused field editor</h2><p class="field-help">Choose one compact field row to edit. Exact numeric types require precision and scale; computed formulas use a bounded operator builder.</p></div><div class="page-actions"><span class="count-badge">{{ fields|length }}</span><button type="button" data-add="field">Add field</button></div></div>
               <div class="stack" data-rows="field">
                 {% for field in fields %}
-                  <details class="builder-row definition-row" data-row="field" open>
+                  <details class="builder-row definition-row" data-row="field"{% if loop.first %} open{% endif %}>
                     <input type="hidden" name="field_{{ loop.index0 }}_configuration_preserved" value="{{ field.configuration|json_encode }}">
                     <input type="hidden" name="field_{{ loop.index0 }}_validators_preserved" value="{{ field.validators|json_encode }}">
                     <summary><strong>{{ field.label }}</strong><span>{{ field.handle }} · {{ field.type }}</span></summary>
@@ -139,13 +187,21 @@
                 </details>
               </template>
             </section>
+              {% endblock %}
+            {% endembed %}
 
+            {% embed '@kis/tab-panel.twig' with {id: 'business-definition-workspace', tab: 'relationships'} %}
+              {% block content %}
             <section class="panel stack">
               <div class="section-heading"><div><p class="eyebrow">Entity graph</p><h2>Relationships</h2></div><button type="button" data-add="relationship">Add relationship</button></div>
               <div class="stack" data-rows="relationship">{% for relation in definition ? definition.relationships : [] %}<div class="builder-row definition-row-grid" data-row="relationship"><label>Handle<input name="relationship_{{ loop.index0 }}_handle" value="{{ relation.handle }}" required></label><label>Label<input name="relationship_{{ loop.index0 }}_label" value="{{ relation.label }}" required></label><label>Kind<select name="relationship_{{ loop.index0 }}_kind">{% for value in ['one_to_one','many_to_one','one_to_many','many_to_many','owned_line_collection'] %}<option value="{{ value }}"{% if relation.kind == value %} selected{% endif %}>{{ value }}</option>{% endfor %}</select></label><label>Target handle<input name="relationship_{{ loop.index0 }}_target" value="{{ relation.target }}" required></label><label>Inverse handle<input name="relationship_{{ loop.index0 }}_inverse" value="{{ relation.inverse }}"></label><label>On delete<select name="relationship_{{ loop.index0 }}_delete">{% for value in ['restrict','set_null','cascade'] %}<option value="{{ value }}"{% if relation.on_delete == value %} selected{% endif %}>{{ value }}</option>{% endfor %}</select></label><label class="check"><input type="checkbox" name="relationship_{{ loop.index0 }}_required" value="1"{% if relation.required %} checked{% endif %}><span>Required</span></label><label class="check"><input type="checkbox" name="relationship_{{ loop.index0 }}_unique" value="1"{% if relation.unique %} checked{% endif %}><span>Unique</span></label><label class="check"><input type="checkbox" name="relationship_{{ loop.index0 }}_ordered" value="1"{% if relation.ordered %} checked{% endif %}><span>Ordered</span></label><button class="remove-row" type="button" data-remove>Remove</button></div>{% endfor %}</div>
               <template data-template="relationship"><div class="builder-row definition-row-grid" data-row="relationship"><label>Handle<input name="relationship___INDEX___handle" required></label><label>Label<input name="relationship___INDEX___label" required></label><label>Kind<select name="relationship___INDEX___kind"><option value="many_to_one">Many to one</option><option value="one_to_many">One to many</option><option value="one_to_one">One to one</option><option value="many_to_many">Many to many</option><option value="owned_line_collection">Owned lines</option></select></label><label>Target handle<input name="relationship___INDEX___target" required></label><label>Inverse handle<input name="relationship___INDEX___inverse"></label><label>On delete<select name="relationship___INDEX___delete"><option value="restrict">Restrict</option><option value="set_null">Set null</option><option value="cascade">Cascade</option></select></label><label class="check"><input type="checkbox" name="relationship___INDEX___required" value="1"><span>Required</span></label><label class="check"><input type="checkbox" name="relationship___INDEX___unique" value="1"><span>Unique</span></label><label class="check"><input type="checkbox" name="relationship___INDEX___ordered" value="1"><span>Ordered</span></label><button class="remove-row" type="button" data-remove>Remove</button></div></template>
             </section>
+              {% endblock %}
+            {% endembed %}
 
+            {% embed '@kis/tab-panel.twig' with {id: 'business-definition-workspace', tab: 'delivery'} %}
+              {% block content %}
             <section class="panel stack">
               <div class="section-heading"><div><p class="eyebrow">Delivery</p><h2>Views and actions</h2></div><div class="page-actions"><button type="button" data-add="view">Add view</button><button type="button" data-add="action">Add action</button></div></div>
               <div class="stack" data-rows="view">{% for view in definition ? definition.views : [] %}<div class="builder-row definition-row-grid" data-row="view"><label>View handle<input name="view_{{ loop.index0 }}_handle" value="{{ view.handle }}" required></label><label>Label<input name="view_{{ loop.index0 }}_label" value="{{ view.label }}" required></label><label>Kind<select name="view_{{ loop.index0 }}_kind">{% for value in ['list','detail','form','history','relation'] %}<option value="{{ value }}"{% if view.kind == value %} selected{% endif %}>{{ value }}</option>{% endfor %}</select></label><label>Fields<input name="view_{{ loop.index0 }}_fields" value="{{ view.fields|join(', ') }}" required></label><label>Filters<input name="view_{{ loop.index0 }}_filters" value="{{ view.filters|join(', ') }}"></label><label>Sorts<input name="view_{{ loop.index0 }}_sorts" value="{{ view.sorts|join(', ') }}"></label><label class="check"><input type="checkbox" name="view_{{ loop.index0 }}_administrator_hidden" value="1"{% if not view.administrator %} checked{% endif %}><span>Hide from administrator</span></label><label class="check"><input type="checkbox" name="view_{{ loop.index0 }}_portal" value="1"{% if view.portal %} checked{% endif %}><span>Portal</span></label><label class="check"><input type="checkbox" name="view_{{ loop.index0 }}_public" value="1"{% if view.public %} checked{% endif %}><span>Public</span></label><button class="remove-row" type="button" data-remove>Remove</button></div>{% endfor %}</div>
@@ -153,7 +209,11 @@
               <div class="stack" data-rows="action">{% for action in definition ? definition.actions : [] %}<div class="builder-row definition-row-grid" data-row="action"><input type="hidden" name="action_{{ loop.index0 }}_condition_preserved" value="{{ action.condition ? action.condition|json_encode : '' }}"><label>Action handle<input name="action_{{ loop.index0 }}_handle" value="{{ action.handle }}" required></label><label>Label<input name="action_{{ loop.index0 }}_label" value="{{ action.label }}" required></label><label>Capability<input name="action_{{ loop.index0 }}_capability" value="{{ action.capability }}" required></label><label>Workflow transition<input name="action_{{ loop.index0 }}_transition" value="{{ action.transition }}"></label><label>Condition field<input name="action_{{ loop.index0 }}_condition_field"></label><label>Condition type<select name="action_{{ loop.index0 }}_condition_type">{% for value in ['string','integer','decimal','boolean','date','time','datetime'] %}<option value="{{ value }}">{{ value }}</option>{% endfor %}</select></label><label>Condition comparison<select name="action_{{ loop.index0 }}_condition_operator">{% for value in ['eq','ne','lt','lte','gt','gte','is_null'] %}<option value="{{ value }}">{{ value }}</option>{% endfor %}</select></label><label>Condition value<input name="action_{{ loop.index0 }}_condition_value"></label><label class="check"><input type="checkbox" name="action_{{ loop.index0 }}_bulk" value="1"{% if action.bulk %} checked{% endif %}><span>Bulk</span></label><label class="check"><input type="checkbox" name="action_{{ loop.index0 }}_portal" value="1"{% if action.portal %} checked{% endif %}><span>Portal</span></label><label class="check"><input type="checkbox" name="action_{{ loop.index0 }}_high_impact" value="1"{% if action.high_impact %} checked{% endif %}><span>High impact</span></label><button class="remove-row" type="button" data-remove>Remove</button></div>{% endfor %}</div>
               <template data-template="action"><div class="builder-row definition-row-grid" data-row="action"><label>Action handle<input name="action___INDEX___handle" required></label><label>Label<input name="action___INDEX___label" required></label><label>Capability<input name="action___INDEX___capability" value="content.update" required></label><label>Workflow transition<input name="action___INDEX___transition"></label><label>Condition field<input name="action___INDEX___condition_field"></label><label>Condition type<select name="action___INDEX___condition_type"><option value="string">string</option><option value="integer">integer</option><option value="decimal">decimal</option><option value="boolean">boolean</option></select></label><label>Comparison<select name="action___INDEX___condition_operator"><option value="eq">eq</option><option value="ne">ne</option><option value="is_null">is null</option></select></label><label>Condition value<input name="action___INDEX___condition_value"></label><label class="check"><input type="checkbox" name="action___INDEX___bulk" value="1"><span>Bulk</span></label><label class="check"><input type="checkbox" name="action___INDEX___portal" value="1"><span>Portal</span></label><label class="check"><input type="checkbox" name="action___INDEX___high_impact" value="1"><span>High impact</span></label><button class="remove-row" type="button" data-remove>Remove</button></div></template>
             </section>
+              {% endblock %}
+            {% endembed %}
 
+            {% embed '@kis/tab-panel.twig' with {id: 'business-definition-workspace', tab: 'workflow'} %}
+              {% block content %}
             <section class="panel stack">
               <div class="section-heading"><div><p class="eyebrow">Lifecycle</p><h2>Workflow binding</h2></div><label class="check"><input type="checkbox" name="workflow_enabled" value="1"{% if definition and definition.workflow %} checked{% endif %}><span>Enable workflow</span></label></div>
               <div class="two-column"><label>States<small>Comma separated stable handles</small><input name="workflow_states" value="{{ definition and definition.workflow ? definition.workflow.states|join(', ') : '' }}"></label><label>Initial state<input name="workflow_initial_state" value="{{ definition and definition.workflow ? definition.workflow.initial_state : '' }}"></label></div>
@@ -161,18 +221,38 @@
               <div class="stack" data-rows="transition">{% for transition in definition and definition.workflow ? definition.workflow.transitions : [] %}<div class="builder-row definition-row-grid" data-row="transition"><label>Handle<input name="transition_{{ loop.index0 }}_handle" value="{{ transition.handle }}" required></label><label>From<input name="transition_{{ loop.index0 }}_from" value="{{ transition.from }}" required></label><label>To<input name="transition_{{ loop.index0 }}_to" value="{{ transition.to }}" required></label><label>Capability<input name="transition_{{ loop.index0 }}_capability" value="{{ transition.capability }}" required></label><button class="remove-row" type="button" data-remove>Remove</button></div>{% endfor %}</div>
               <template data-template="transition"><div class="builder-row definition-row-grid" data-row="transition"><label>Handle<input name="transition___INDEX___handle" required></label><label>From<input name="transition___INDEX___from" required></label><label>To<input name="transition___INDEX___to" required></label><label>Capability<input name="transition___INDEX___capability" value="content.update" required></label><button class="remove-row" type="button" data-remove>Remove</button></div></template>
             </section>
+              {% endblock %}
+            {% endembed %}
           </kumwe-definition-editor>
           <div class="page-actions"><button class="primary" type="submit">Save and validate draft</button></div>
         </form>
       {% elseif not definition %}
-        <section class="panel empty-state"><h2>Create your first definition</h2><p>The graphical editor starts with a safe UUID identity field and requires no raw JSON.</p></section>
+        {% for empty_tab in ['identity', 'fields', 'relationships', 'delivery', 'workflow'] %}
+          {% embed '@kis/tab-panel.twig' with {id: 'business-definition-workspace', tab: empty_tab} %}
+            {% block content %}{% embed '@kis/empty-state.twig' with {title: 'No definition selected', message: 'Choose an existing definition. An authorized editor can create one with a safe UUID identity field and no raw JSON.'} %}{% endembed %}{% endblock %}
+          {% endembed %}
+        {% endfor %}
       {% endif %}
 
-      {% if draft and not is_package and capabilities['content.update'] is defined %}
-        <section class="panel stack"><div class="section-heading"><div><p class="eyebrow">Publication gate</p><h2>Compatibility plan</h2></div><span class="status-badge">{{ plan.destructive ? 'Destructive' : (plan.requires_confirmation ? 'Confirmation required' : 'Additive') }}</span></div><dl class="definition-metadata"><div><dt>Draft checksum</dt><dd><code>{{ draft.checksum }}</code></dd></div><div><dt>Next version</dt><dd>{{ plan.to_version }}</dd></div></dl>{% for change in plan.changes %}<p class="compatibility-change {{ change.classification }}"><strong>{{ change.path }}</strong> · {{ change.message }}</p>{% else %}<p>No compatibility changes were detected.</p>{% endfor %}<div class="page-actions"><form method="post"><input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="action" value="validate"><input type="hidden" name="id" value="{{ draft.definition.id }}"><button type="submit">Validate again</button></form><form method="post"><input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="action" value="compare"><input type="hidden" name="id" value="{{ draft.definition.id }}"><button type="submit">Audit comparison</button></form><form method="post"><input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="action" value="publish"><input type="hidden" name="id" value="{{ draft.definition.id }}"><input type="hidden" name="revision" value="{{ draft.revision }}"><label class="check"><input type="checkbox" name="confirmed" value="1"><span>Confirm behavior/data changes</span></label><button class="primary" type="submit" data-confirm="Publish this immutable definition version?">Publish version {{ plan.to_version }}</button></form></div></section>
+      {% if not (definition and (is_package or capabilities['content.update'] is not defined)) %}
+        {% embed '@kis/tab-panel.twig' with {id: 'business-definition-workspace', tab: 'publication'} %}
+          {% block content %}
+            {% if draft and not is_package and capabilities['content.update'] is defined %}
+              <section class="panel stack"><div class="section-heading"><div><p class="eyebrow">Publication gate</p><h2>Compatibility plan</h2></div><span class="status-badge">{{ plan.destructive ? 'Destructive' : (plan.requires_confirmation ? 'Confirmation required' : 'Additive') }}</span></div><dl class="definition-metadata"><div><dt>Draft checksum</dt><dd>{% include '@kis/technical-value.twig' with {label: 'Draft checksum', value: draft.checksum} only %}</dd></div><div><dt>Next version</dt><dd>{{ plan.to_version }}</dd></div></dl>{% for change in plan.changes %}<p class="compatibility-change {{ change.classification }}"><strong>{{ change.path }}</strong> · {{ change.message }}</p>{% else %}<p>No compatibility changes were detected.</p>{% endfor %}<div class="page-actions"><form method="post"><input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="action" value="validate"><input type="hidden" name="return_tab" value="publication"><input type="hidden" name="id" value="{{ draft.definition.id }}"><button type="submit">Validate again</button></form><form method="post"><input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="action" value="compare"><input type="hidden" name="return_tab" value="publication"><input type="hidden" name="id" value="{{ draft.definition.id }}"><button type="submit">Audit comparison</button></form><form method="post"><input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="action" value="publish"><input type="hidden" name="return_tab" value="publication"><input type="hidden" name="id" value="{{ draft.definition.id }}"><input type="hidden" name="revision" value="{{ draft.revision }}"><label class="check"><input type="checkbox" name="confirmed" value="1"><span>Confirm behavior/data changes</span></label><button class="primary" type="submit" data-confirm="Publish this immutable definition version?">Publish version {{ plan.to_version }}</button></form></div></section>
+            {% else %}
+              <section class="panel stack"><h2>Publication</h2><p>Save a valid draft to produce its checksum-bound compatibility plan and publication controls.</p></section>
+            {% endif %}
+          {% endblock %}
+        {% endembed %}
       {% endif %}
 
-      {% if history %}<section class="panel stack"><div class="section-heading"><div><p class="eyebrow">Immutable ledger</p><h2>Version history</h2></div><span class="count-badge">{{ history|length }}</span></div>{% for version in history %}<details class="history-row"><summary><strong>Version {{ version.version }}</strong><span>{{ version.status }} · {{ version.published_at }}</span></summary><dl class="definition-metadata"><div><dt>Checksum</dt><dd><code>{{ version.checksum }}</code></dd></div><div><dt>Published by</dt><dd>{{ version.published_by }}</dd></div></dl>{% if not is_package and capabilities['content.update'] is defined %}<div class="page-actions">{% for action in ['supersede','deprecate','reject'] %}<form method="post"><input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="action" value="{{ action }}"><input type="hidden" name="id" value="{{ definition.id }}"><input type="hidden" name="version" value="{{ version.version }}"><button type="submit" data-confirm="Mark version {{ version.version }} as {{ action }}?">{{ action|capitalize }}</button></form>{% endfor %}</div>{% endif %}</details>{% endfor %}</section>{% endif %}
-    </main>
-  </div>
+      {% embed '@kis/tab-panel.twig' with {id: 'business-definition-workspace', tab: 'history'} %}
+        {% block content %}
+          <section class="panel stack"><div class="section-heading"><div><p class="eyebrow">Immutable ledger</p><h2>Version history</h2></div><span class="count-badge">{{ history|length }}</span></div>{% for version in history %}<details class="history-row"><summary><strong>Version {{ version.version }}</strong><span>{{ version.status }} · {{ version.published_at }}</span></summary><dl class="definition-metadata"><div><dt>Checksum</dt><dd>{% include '@kis/technical-value.twig' with {label: 'Version checksum', value: version.checksum} only %}</dd></div><div><dt>Published by</dt><dd>{{ version.published_by }}</dd></div></dl>{% if not is_package and capabilities['content.update'] is defined %}<div class="page-actions">{% for action in ['supersede','deprecate','reject'] %}<form method="post"><input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="action" value="{{ action }}"><input type="hidden" name="return_tab" value="history"><input type="hidden" name="id" value="{{ definition.id }}"><input type="hidden" name="version" value="{{ version.version }}"><button type="submit" data-confirm="Mark version {{ version.version }} as {{ action }}?">{{ action|capitalize }}</button></form>{% endfor %}</div>{% endif %}</details>{% else %}<p class="text-muted">No immutable versions have been published.</p>{% endfor %}</section>
+        {% endblock %}
+      {% endembed %}
+    </div>
+      {% endblock %}
+    {% endembed %}
+  </kumwe-tabs>
 {% endblock %}

@@ -27,6 +27,14 @@ use Psr\Http\Message\ServerRequestInterface;
 final class BusinessSchemaAdministratorRequest
 {
     /**
+     * Stable contextual tasks accepted in schema-plan URLs and post-action returns.
+     *
+     * @var    list<string>
+     * @since  2.0.0
+     */
+    public const TABS = ['summary', 'operations', 'approval', 'execution', 'recovery', 'history'];
+
+    /**
      * Read the schema-plan identifier the router captured from the route path.
      *
      * @param   ServerRequestInterface  $request  Request the routing middleware has already matched.
@@ -100,6 +108,27 @@ final class BusinessSchemaAdministratorRequest
     }
 
     /**
+     * Resolve a query or form tab through the fixed schema-workspace vocabulary.
+     *
+     * @param   mixed   $candidate  Query-string or posted tab candidate.
+     * @param   string  $fallback   Known tab used when the candidate is absent or invalid.
+     *
+     * @return  string  A stable identifier from {@see self::TABS}.
+     *
+     * @since   2.0.0
+     */
+    public static function activeTab(mixed $candidate, string $fallback = 'summary'): string
+    {
+        if (!in_array($fallback, self::TABS, true)) {
+            $fallback = 'summary';
+        }
+
+        return is_string($candidate) && in_array($candidate, self::TABS, true)
+            ? $candidate
+            : $fallback;
+    }
+
+    /**
      * Build the redirect every schema-plan action finishes with: back to the plans screen, plan selected.
      *
      * Answering a POST with a redirect rather than a rendered page is what stops a refresh from
@@ -111,17 +140,24 @@ final class BusinessSchemaAdministratorRequest
      * @param   string   $notice      Notice key naming the outcome, such as `approved` or `executed`.
      * @param   ?string  $evidenceId  Recovery evidence to preselect; null leaves the screen to fall back
      *          to whatever evidence the plan is bound to.
+     * @param   string   $tab         Contextual task to restore after the action.
      *
      * @return  RedirectResponse  A 303 to `/administrator/business-schema-plans` carrying `plan`,
-     *          `notice`, and `evidence` when one was given.
+     *          `notice`, the bounded `tab`, and `evidence` when one was given.
      *
      * @since   2.0.0
      */
-    public static function redirect(string $planId, string $notice, ?string $evidenceId = null): RedirectResponse
+    public static function redirect(
+        string $planId,
+        string $notice,
+        ?string $evidenceId = null,
+        string $tab = 'summary',
+    ): RedirectResponse
     {
         $query = [
             'plan' => $planId,
             'notice' => $notice,
+            'tab' => self::activeTab($tab),
         ];
         if ($evidenceId !== null) {
             $query['evidence'] = $evidenceId;
