@@ -170,6 +170,13 @@ final class ProductionArtifactsTest extends TestCase
         self::assertStringContainsString('KUMWE_ACCEPTANCE_ASSET_STATE', $acceptance);
         self::assertStringContainsString('$source_private/report-exports/objects', $acceptance);
         self::assertStringContainsString('app web worker scheduler', $acceptance);
+        self::assertStringContainsString(
+            'exec -T app /usr/local/bin/kumwe-entrypoint sh -euc',
+            str_replace("\\\n            ", '', $acceptance),
+        );
+        self::assertStringNotContainsString('exec -T app sh -euc', $acceptance);
+        self::assertStringContainsString('stat -c %u "$media_fixture"', $acceptance);
+        self::assertStringContainsString('stat -c %a "$media_fixture"', $acceptance);
 
         foreach (['extension:build', 'extension:inspect', 'extension:conformance', 'extension:sign'] as $command) {
             self::assertStringContainsString($command, $driver);

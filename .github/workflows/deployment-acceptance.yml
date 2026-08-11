@@ -670,9 +670,13 @@ jobs:
             --format '{{(index .NetworkSettings.Networks "kumwe_backend").IPAddress}}' \
             kumwe-database-1)"
           [[ -n "$source_host" ]]
-          docker compose --file compose.production.yaml exec -T app sh -euc '
+          docker compose --file compose.production.yaml exec -T app \
+            /usr/local/bin/kumwe-entrypoint sh -euc '
             umask 077
-            printf %s deployment-acceptance-media > storage/media/deployment-acceptance.txt
+            media_fixture=storage/media/deployment-acceptance.txt
+            printf %s deployment-acceptance-media > "$media_fixture"
+            test "$(stat -c %u "$media_fixture")" = "$(id -u)"
+            test "$(stat -c %a "$media_fixture")" = 600
           '
           docker compose --file compose.production.yaml --profile automation \
             stop web app worker scheduler
