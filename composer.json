@@ -86,6 +86,7 @@
     "cs": "phpcs -q",
     "docs:api": "php tools/verify-docblocks.php src",
     "docs:format": "php tools/format-docblocks.php src",
+    "interface:programme": "php tools/verify-interface-programme.php",
     "openapi:compile": "php tools/compile-openapi.php",
     "openapi:check": "php tools/compile-openapi.php --check",
     "cs:fix": "phpcbf",
@@ -96,6 +97,7 @@
     "qa": [
       "@architecture:policy",
       "@docs:api",
+      "@interface:programme",
       "@openapi:check",
       "@cs",
       "@analyse",
