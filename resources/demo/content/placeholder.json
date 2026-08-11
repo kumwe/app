@@ -1,0 +1,213 @@
+{
+  "format": "kumwe.demo-content/v1",
+  "profile": "placeholder",
+  "version": 1,
+  "site": {
+    "fixture_key": "site.default",
+    "resource_id": "default",
+    "identifier": "default",
+    "name": "Default site",
+    "enabled": true
+  },
+  "settings": {
+    "fixture_key": "settings.default",
+    "resource_id": "default",
+    "site_fixture_key": "site.default",
+    "site_id": "default",
+    "site_name": "Kumwe",
+    "homepage_content_fixture_key": "page.home",
+    "homepage_content_id": "00000000-0000-7000-8000-000000001001",
+    "homepage_slug": "home",
+    "default_locale": "en",
+    "timezone": "UTC",
+    "search_indexing_enabled": true,
+    "presentation": {
+      "logo": "/media/00000000-0000-7000-8000-000000000901/kumwe-symbol.svg",
+      "footer_text": "Powered by Kumwe CMS",
+      "primary_menu": "main",
+      "active_scheme": "corporate",
+      "button_style": "solid",
+      "button_shape": "rounded",
+      "header_style": "glass",
+      "schemes": [
+        {
+          "handle": "corporate",
+          "name": "Corporate Navy & Teal",
+          "color_mode": "light",
+          "colors": {
+            "navy": "#07182d",
+            "ink": "#13233a",
+            "muted": "#5c6f84",
+            "canvas": "#f5f8fb",
+            "surface": "#ffffff",
+            "border": "#dce5ed",
+            "accent": "#0c9189",
+            "accent_strong": "#08726d",
+            "accent_soft": "#dff6f4",
+            "on_accent": "#ffffff"
+          }
+        },
+        {
+          "handle": "ocean",
+          "name": "Ocean Blue",
+          "color_mode": "light",
+          "colors": {
+            "navy": "#08152a",
+            "ink": "#172439",
+            "muted": "#647386",
+            "canvas": "#f7f9fc",
+            "surface": "#ffffff",
+            "border": "#d7e1e6",
+            "accent": "#0777af",
+            "accent_strong": "#056b9f",
+            "accent_soft": "#e2f3fb",
+            "on_accent": "#ffffff"
+          }
+        },
+        {
+          "handle": "graphite",
+          "name": "Graphite & Silver",
+          "color_mode": "light",
+          "colors": {
+            "navy": "#17202b",
+            "ink": "#202833",
+            "muted": "#66717f",
+            "canvas": "#f4f5f7",
+            "surface": "#ffffff",
+            "border": "#d8dde3",
+            "accent": "#3c526b",
+            "accent_strong": "#25394f",
+            "accent_soft": "#e8edf2",
+            "on_accent": "#ffffff"
+          }
+        }
+      ]
+    }
+  },
+  "content": [
+    {
+      "fixture_key": "page.home",
+      "resource_id": "00000000-0000-7000-8000-000000001001",
+      "site_fixture_key": "site.default",
+      "site_id": "default",
+      "content_type_id": "018f22e2-7c8b-7ab0-8f3a-88e8026bb402",
+      "content_type_version": 3,
+      "workflow_id": "018f22e2-7c8b-7ab0-8f3a-88e8026bb401",
+      "workflow_version": 1,
+      "workflow_state_key": "published",
+      "title": "Welcome to Kumwe",
+      "slug": "home",
+      "canonical_path": "/",
+      "data": {
+        "logo": "/media/00000000-0000-7000-8000-000000000902/kumwe-wordmark.svg",
+        "eyebrow": "Kumwe CMS 2.0",
+        "heading": "Content systems ready for what comes next.",
+        "summary": "A modern publishing foundation for structured content, governed workflows, browser delivery, APIs, automation, and AI-assisted operations.",
+        "primary_action": {
+          "label": "Open administrator",
+          "url": "/administrator"
+        },
+        "secondary_action": {
+          "label": "Explore the platform",
+          "url": "#capabilities"
+        },
+        "body": "Kumwe keeps editorial clarity and engineering discipline in one coherent system. This page, its logo, and every navigation item are real managed content that you can edit.",
+        "capabilities": {
+          "anchor": "capabilities",
+          "heading": "Structure once. Publish with confidence.",
+          "body": "- Graphical fields and reusable media\n- Governed publishing workflows and revisions\n- Extensible templates, APIs, CLI, MCP, workers, and database portability"
+        },
+        "platform": {
+          "anchor": "platform",
+          "heading": "One content core. Every delivery surface.",
+          "body": "The browser, REST API, command line, MCP tools, and background workers use the same application services, authorization rules, content records, and navigation model."
+        }
+      },
+      "publish_at": null,
+      "unpublish_at": null,
+      "version": 1,
+      "revision": {
+        "fixture_key": "page.home.revision.placeholder",
+        "resource_id": "00000000-0000-7000-8000-000000001002",
+        "revision_number": 1
+      }
+    }
+  ],
+  "menus": [
+    {
+      "fixture_key": "menu.main",
+      "resource_id": "00000000-0000-7000-8000-000000001101",
+      "site_fixture_key": "site.default",
+      "site_id": "default",
+      "handle": "main",
+      "title": "Main menu",
+      "version": 1,
+      "items": [
+        {
+          "fixture_key": "menu.main.home",
+          "resource_id": "00000000-0000-7000-8000-000000001102",
+          "parent_fixture_key": null,
+          "parent_id": null,
+          "title": "Home",
+          "slug": "home",
+          "path": "/home",
+          "canonical_path": "/",
+          "position": 0,
+          "version": 1,
+          "target_type": "content",
+          "content_fixture_key": "page.home",
+          "content_id": "00000000-0000-7000-8000-000000001001",
+          "target_url": null
+        },
+        {
+          "fixture_key": "menu.main.capabilities",
+          "resource_id": "00000000-0000-7000-8000-000000001103",
+          "parent_fixture_key": null,
+          "parent_id": null,
+          "title": "Capabilities",
+          "slug": "capabilities",
+          "path": "/capabilities",
+          "canonical_path": "/#capabilities",
+          "position": 1,
+          "version": 1,
+          "target_type": "anchor",
+          "content_fixture_key": "page.home",
+          "content_id": "00000000-0000-7000-8000-000000001001",
+          "target_url": "#capabilities"
+        },
+        {
+          "fixture_key": "menu.main.platform",
+          "resource_id": "00000000-0000-7000-8000-000000001104",
+          "parent_fixture_key": null,
+          "parent_id": null,
+          "title": "Platform",
+          "slug": "platform",
+          "path": "/platform",
+          "canonical_path": "/#platform",
+          "position": 2,
+          "version": 1,
+          "target_type": "anchor",
+          "content_fixture_key": "page.home",
+          "content_id": "00000000-0000-7000-8000-000000001001",
+          "target_url": "#platform"
+        },
+        {
+          "fixture_key": "menu.main.administrator",
+          "resource_id": "00000000-0000-7000-8000-000000001105",
+          "parent_fixture_key": null,
+          "parent_id": null,
+          "title": "Administrator",
+          "slug": "administrator-link",
+          "path": "/administrator-link",
+          "canonical_path": "/administrator",
+          "position": 3,
+          "version": 1,
+          "target_type": "url",
+          "content_fixture_key": null,
+          "content_id": null,
+          "target_url": "/administrator"
+        }
+      ]
+    }
+  ]
+}

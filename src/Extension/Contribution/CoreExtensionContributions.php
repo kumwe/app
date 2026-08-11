@@ -339,16 +339,16 @@ final class CoreExtensionContributions
             ]),
             self::policy('core.business.record.action', 'business.record.action', [
                 new ResourcePolicyTarget('business_record'),
-            ]),
+            ], systems: [SystemIdentity::ProfileInstaller]),
             self::policy('core.business.record.archive', 'business.record.archive', [
                 new ResourcePolicyTarget('business_record'),
-            ]),
+            ], systems: [SystemIdentity::ProfileInstaller]),
             self::policy('core.business.record.browse', 'business.record.browse', [
                 new ResourcePolicyTarget('business_record'),
-            ]),
+            ], systems: [SystemIdentity::ProfileInstaller]),
             self::policy('core.business.record.create', 'business.record.create', [
                 new ResourcePolicyTarget('business_record'),
-            ]),
+            ], systems: [SystemIdentity::ProfileInstaller]),
             self::policy('core.business.record.delete', 'business.record.delete', [
                 new ResourcePolicyTarget('business_record'),
             ]),
@@ -358,44 +358,44 @@ final class CoreExtensionContributions
             ]),
             self::policy('core.business.record.history', 'business.record.history', [
                 new ResourcePolicyTarget('business_record'),
-            ]),
+            ], systems: [SystemIdentity::ProfileInstaller]),
             self::policy('core.business.record.read', 'business.record.read', [
                 new ResourcePolicyTarget('business_record'),
-            ]),
+            ], systems: [SystemIdentity::ProfileInstaller]),
             self::policy('core.business.record.relate', 'business.record.relate', [
                 new ResourcePolicyTarget('business_record'),
-            ]),
+            ], systems: [SystemIdentity::ProfileInstaller]),
             self::policy('core.business.record.report', 'business.record.report', [
                 new ResourcePolicyTarget('business_record'),
                 new ResourcePolicyTarget('business_report'),
             ]),
             self::policy('core.business.record.restore', 'business.record.restore', [
                 new ResourcePolicyTarget('business_record'),
-            ]),
+            ], systems: [SystemIdentity::ProfileInstaller]),
             self::policy('core.business.record.transition', 'business.record.transition', [
                 new ResourcePolicyTarget('business_record'),
-            ]),
+            ], systems: [SystemIdentity::ProfileInstaller]),
             self::policy('core.business.record.update', 'business.record.update', [
                 new ResourcePolicyTarget('business_record'),
-            ]),
+            ], systems: [SystemIdentity::ProfileInstaller]),
             self::policy('core.business.schema.approve', 'business.schema.approve', [
                 new ResourcePolicyTarget('business_schema'),
-            ]),
+            ], systems: [SystemIdentity::ProfileInstaller]),
             self::policy('core.business.schema.destructive', 'business.schema.destructive', [
                 new ResourcePolicyTarget('business_schema'),
             ]),
             self::policy('core.business.schema.execute', 'business.schema.execute', [
                 new ResourcePolicyTarget('business_schema'),
-            ]),
+            ], systems: [SystemIdentity::ProfileInstaller]),
             self::policy('core.business.schema.plan', 'business.schema.plan', [
                 new ResourcePolicyTarget('business_schema'),
-            ]),
+            ], systems: [SystemIdentity::ProfileInstaller]),
             self::policy('core.business.schema.read', 'business.schema.read', [
                 new ResourcePolicyTarget('business_schema'),
-            ]),
+            ], systems: [SystemIdentity::ProfileInstaller]),
             self::policy('core.business.schema.recover', 'business.schema.recover', [
                 new ResourcePolicyTarget('business_schema'),
-            ]),
+            ], systems: [SystemIdentity::ProfileInstaller]),
             self::policy('core.business.security.manage', 'business.security.manage', [
                 new ResourcePolicyTarget('organization'),
                 new ResourcePolicyTarget('organization_membership'),
@@ -411,14 +411,21 @@ final class CoreExtensionContributions
             ]),
             self::policy('core.content.archive', 'content.archive', [new ResourcePolicyTarget('content')], systems: [
                 SystemIdentity::Worker,
+                SystemIdentity::ProfileInstaller,
             ]),
-            self::policy('core.content.create', 'content.create', [new ResourcePolicyTarget('content')]),
+            self::policy(
+                'core.content.create',
+                'content.create',
+                [new ResourcePolicyTarget('content')],
+                systems: [SystemIdentity::ProfileInstaller],
+            ),
             self::policy('core.content.delete', 'content.delete', [
                 new ResourcePolicyTarget('content'),
                 new ResourcePolicyTarget('media'),
-            ]),
+            ], systems: [SystemIdentity::ProfileInstaller]),
             self::policy('core.content.publish', 'content.publish', [new ResourcePolicyTarget('content')], systems: [
                 SystemIdentity::Worker,
+                SystemIdentity::ProfileInstaller,
             ]),
             self::policy('core.content.read', 'content.read', [
                 new ResourcePolicyTarget('business_definition'),
@@ -426,15 +433,17 @@ final class CoreExtensionContributions
                 new ResourcePolicyTarget('content_type'),
                 new ResourcePolicyTarget('media'),
                 new ResourcePolicyTarget('workflow'),
-            ], systems: [SystemIdentity::Worker]),
+            ], systems: [SystemIdentity::Worker, SystemIdentity::ProfileInstaller]),
             self::policy('core.content.restore', 'content.restore', [new ResourcePolicyTarget('content')], systems: [
                 SystemIdentity::Worker,
+                SystemIdentity::ProfileInstaller,
             ]),
             self::policy('core.content.review', 'content.review', [new ResourcePolicyTarget('content')], systems: [
                 SystemIdentity::Worker,
             ]),
             self::policy('core.content.submit', 'content.submit', [new ResourcePolicyTarget('content')], systems: [
                 SystemIdentity::Worker,
+                SystemIdentity::ProfileInstaller,
             ]),
             self::policy(
                 'core.content.unpublish',
@@ -448,7 +457,7 @@ final class CoreExtensionContributions
                 new ResourcePolicyTarget('content_type'),
                 new ResourcePolicyTarget('media'),
                 new ResourcePolicyTarget('workflow'),
-            ], systems: [SystemIdentity::Worker]),
+            ], systems: [SystemIdentity::Worker, SystemIdentity::ProfileInstaller]),
             self::policy('core.extensions.manage', 'extensions.manage', [
                 new ResourcePolicyTarget('extension'),
                 new ResourcePolicyTarget('extension_runtime_map'),
@@ -457,7 +466,7 @@ final class CoreExtensionContributions
             self::policy('core.navigation.manage', 'navigation.manage', [
                 new ResourcePolicyTarget('menu'),
                 new ResourcePolicyTarget('menu_item'),
-            ]),
+            ], systems: [SystemIdentity::ProfileInstaller]),
             self::policy(
                 'core.portal.access',
                 'portal.access',
@@ -467,7 +476,12 @@ final class CoreExtensionContributions
                     new ResourcePolicyTarget('workspace'),
                 ],
             ),
-            self::policy('core.settings.manage', 'settings.manage', [new ResourcePolicyTarget('site')]),
+            self::policy(
+                'core.settings.manage',
+                'settings.manage',
+                [new ResourcePolicyTarget('site')],
+                systems: [SystemIdentity::ProfileInstaller],
+            ),
             self::policy(
                 'core.system.migrate',
                 'system.migrate',

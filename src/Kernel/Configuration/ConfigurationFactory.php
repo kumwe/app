@@ -61,6 +61,8 @@ final class ConfigurationFactory
             debug: $environment->boolean('APP_DEBUG'),
             baseUrl: $environment->string('APP_BASE_URL'),
             publicSite: $environment->string('APP_PUBLIC_SITE', 'default'),
+            siteContentProfile: $environment->string('KUMWE_SITE_CONTENT_PROFILE', 'documentation'),
+            businessDemo: $environment->boolean('KUMWE_BUSINESS_DEMO', true),
             trustedHosts: $this->trustedHosts($environment),
             trustedProxies: $environment->commaSeparatedList('APP_TRUSTED_PROXIES'),
             maxBodyBytes: $environment->positiveInteger('APP_MAX_BODY_BYTES', 2_097_152),

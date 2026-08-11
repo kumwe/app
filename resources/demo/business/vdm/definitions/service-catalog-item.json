@@ -1,0 +1,251 @@
+{
+  "id": "019c7000-0000-7000-8000-000000000102",
+  "owner": {
+    "type": "site",
+    "identifier": "default"
+  },
+  "site": "default",
+  "handle": "site.default.vdm_service_catalog_item",
+  "singular_label": "Service catalog item",
+  "plural_label": "Service catalog items",
+  "status": "draft",
+  "definition_version": 0,
+  "storage_mode": "relational",
+  "identity_strategy": "uuid",
+  "scope": "site",
+  "audit_enabled": true,
+  "revisions_enabled": true,
+  "soft_delete_enabled": true,
+  "fields": [
+    {
+      "handle": "id",
+      "label": "ID",
+      "type": "core.uuid",
+      "required": true,
+      "nullable": false,
+      "unique": true,
+      "indexed": true,
+      "immutable_after_create": true,
+      "server_only": true,
+      "read_only": true,
+      "create_visible": false,
+      "update_visible": false,
+      "read_visible": true,
+      "sensitivity": "public",
+      "placements": [
+        "detail",
+        "history"
+      ]
+    },
+    {
+      "handle": "service_code",
+      "label": "Service code",
+      "type": "core.text",
+      "required": true,
+      "nullable": false,
+      "length": 32,
+      "normalizers": [
+        "trim",
+        "uppercase"
+      ],
+      "unique": true,
+      "indexed": true,
+      "immutable_after_create": true,
+      "searchable": true,
+      "filterable": true,
+      "sortable": true,
+      "reportable": true,
+      "exportable": true,
+      "sensitivity": "public",
+      "form_group": "identity",
+      "order": 10,
+      "placements": [
+        "detail",
+        "form",
+        "history",
+        "list",
+        "relation"
+      ]
+    },
+    {
+      "handle": "name",
+      "label": "Service name",
+      "type": "core.text",
+      "required": true,
+      "nullable": false,
+      "length": 160,
+      "normalizers": [
+        "trim",
+        "unicode_nfc"
+      ],
+      "unique": true,
+      "indexed": true,
+      "searchable": true,
+      "filterable": true,
+      "sortable": true,
+      "reportable": true,
+      "exportable": true,
+      "sensitivity": "public",
+      "form_group": "identity",
+      "order": 20,
+      "placements": [
+        "detail",
+        "form",
+        "history",
+        "list",
+        "relation"
+      ]
+    },
+    {
+      "handle": "category",
+      "label": "Category",
+      "type": "core.enum",
+      "required": true,
+      "nullable": false,
+      "configuration": {
+        "options": [
+          "advisory",
+          "application_development",
+          "automation_integration",
+          "joomla_engineering",
+          "managed_infrastructure",
+          "security_recovery"
+        ]
+      },
+      "filterable": true,
+      "sortable": true,
+      "reportable": true,
+      "exportable": true,
+      "sensitivity": "public",
+      "form_group": "commercial",
+      "order": 30,
+      "placements": [
+        "detail",
+        "form",
+        "list"
+      ]
+    },
+    {
+      "handle": "billing_unit",
+      "label": "Billing unit",
+      "type": "core.enum",
+      "required": true,
+      "nullable": false,
+      "configuration": {
+        "options": [
+          "fixed_project",
+          "hour",
+          "month"
+        ]
+      },
+      "filterable": true,
+      "sortable": true,
+      "reportable": true,
+      "exportable": true,
+      "sensitivity": "public",
+      "form_group": "commercial",
+      "order": 40,
+      "placements": [
+        "detail",
+        "form",
+        "list"
+      ]
+    },
+    {
+      "handle": "standard_rate",
+      "label": "Standard rate",
+      "type": "core.money",
+      "description": "Reference rate used when a client-specific agreement does not override it.",
+      "required": true,
+      "nullable": false,
+      "precision": 14,
+      "scale": 2,
+      "configuration": {
+        "currency": "NAD"
+      },
+      "reportable": true,
+      "exportable": true,
+      "sensitivity": "confidential",
+      "form_group": "commercial",
+      "order": 50,
+      "placements": [
+        "detail",
+        "form",
+        "list"
+      ]
+    },
+    {
+      "handle": "active",
+      "label": "Active",
+      "type": "core.boolean",
+      "required": true,
+      "nullable": false,
+      "default": true,
+      "filterable": true,
+      "sortable": true,
+      "reportable": true,
+      "exportable": true,
+      "sensitivity": "public",
+      "form_group": "availability",
+      "order": 60,
+      "placements": [
+        "detail",
+        "form",
+        "list"
+      ]
+    },
+    {
+      "handle": "summary",
+      "label": "Service summary",
+      "type": "core.rich_text",
+      "required": true,
+      "nullable": false,
+      "length": 8000,
+      "searchable": true,
+      "exportable": true,
+      "sensitivity": "public",
+      "form_group": "description",
+      "order": 70,
+      "placements": [
+        "detail",
+        "form"
+      ]
+    }
+  ],
+  "relationships": [],
+  "views": [
+    {
+      "handle": "catalog",
+      "label": "Service catalog",
+      "kind": "list",
+      "fields": [
+        "service_code",
+        "name",
+        "category",
+        "billing_unit",
+        "standard_rate",
+        "active"
+      ],
+      "filters": [
+        "category",
+        "billing_unit",
+        "active"
+      ],
+      "sorts": [
+        "service_code",
+        "name",
+        "category"
+      ],
+      "administrator": true,
+      "portal": false,
+      "public": false
+    }
+  ],
+  "actions": [],
+  "workflow": null,
+  "record_invariants": [],
+  "compatibility_metadata": {},
+  "administrator_exposure": true,
+  "portal_exposure": false,
+  "public_exposure": false
+}

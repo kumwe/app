@@ -31,5 +31,7 @@
     <php>
         <env name="APP_ENV" value="testing" force="true"/>
         <env name="APP_DEBUG" value="false" force="true"/>
+        <env name="KUMWE_SITE_CONTENT_PROFILE" value="blank" force="true"/>
+        <env name="KUMWE_BUSINESS_DEMO" value="false" force="true"/>
     </php>
 </phpunit>

@@ -1,0 +1,405 @@
+{
+  "id": "019c7000-0000-7000-8000-000000000103",
+  "owner": {
+    "type": "site",
+    "identifier": "default"
+  },
+  "site": "default",
+  "handle": "site.default.vdm_engagement",
+  "singular_label": "Client engagement",
+  "plural_label": "Client engagements",
+  "status": "draft",
+  "definition_version": 0,
+  "storage_mode": "relational",
+  "identity_strategy": "uuid",
+  "scope": "site",
+  "audit_enabled": true,
+  "revisions_enabled": true,
+  "soft_delete_enabled": true,
+  "fields": [
+    {
+      "handle": "id",
+      "label": "ID",
+      "type": "core.uuid",
+      "required": true,
+      "nullable": false,
+      "unique": true,
+      "indexed": true,
+      "immutable_after_create": true,
+      "server_only": true,
+      "read_only": true,
+      "create_visible": false,
+      "update_visible": false,
+      "read_visible": true,
+      "sensitivity": "public",
+      "placements": [
+        "detail",
+        "history"
+      ]
+    },
+    {
+      "handle": "reference",
+      "label": "Reference",
+      "type": "core.text",
+      "required": true,
+      "nullable": false,
+      "length": 40,
+      "normalizers": [
+        "trim",
+        "uppercase"
+      ],
+      "unique": true,
+      "indexed": true,
+      "immutable_after_create": true,
+      "searchable": true,
+      "filterable": true,
+      "sortable": true,
+      "reportable": true,
+      "exportable": true,
+      "sensitivity": "public",
+      "form_group": "identity",
+      "order": 10,
+      "placements": [
+        "detail",
+        "form",
+        "history",
+        "list",
+        "relation"
+      ]
+    },
+    {
+      "handle": "title",
+      "label": "Title",
+      "type": "core.text",
+      "required": true,
+      "nullable": false,
+      "length": 180,
+      "normalizers": [
+        "trim",
+        "unicode_nfc"
+      ],
+      "searchable": true,
+      "filterable": true,
+      "sortable": true,
+      "reportable": true,
+      "exportable": true,
+      "sensitivity": "public",
+      "form_group": "identity",
+      "order": 20,
+      "placements": [
+        "detail",
+        "form",
+        "history",
+        "list",
+        "relation"
+      ]
+    },
+    {
+      "handle": "engagement_type",
+      "label": "Engagement type",
+      "type": "core.enum",
+      "required": true,
+      "nullable": false,
+      "configuration": {
+        "options": [
+          "advisory",
+          "managed_service",
+          "project",
+          "retainer"
+        ]
+      },
+      "filterable": true,
+      "sortable": true,
+      "reportable": true,
+      "exportable": true,
+      "sensitivity": "public",
+      "form_group": "planning",
+      "order": 30,
+      "placements": [
+        "detail",
+        "form",
+        "list"
+      ]
+    },
+    {
+      "handle": "start_date",
+      "label": "Start date",
+      "type": "core.date",
+      "required": true,
+      "nullable": false,
+      "filterable": true,
+      "sortable": true,
+      "reportable": true,
+      "exportable": true,
+      "sensitivity": "public",
+      "form_group": "planning",
+      "order": 40,
+      "placements": [
+        "detail",
+        "form",
+        "list"
+      ]
+    },
+    {
+      "handle": "target_date",
+      "label": "Target date",
+      "type": "core.date",
+      "required": true,
+      "nullable": false,
+      "filterable": true,
+      "sortable": true,
+      "reportable": true,
+      "exportable": true,
+      "sensitivity": "public",
+      "form_group": "planning",
+      "order": 50,
+      "placements": [
+        "detail",
+        "form",
+        "list"
+      ]
+    },
+    {
+      "handle": "completed_on",
+      "label": "Completed on",
+      "type": "core.date",
+      "required": false,
+      "nullable": true,
+      "filterable": true,
+      "sortable": true,
+      "reportable": true,
+      "exportable": true,
+      "sensitivity": "public",
+      "form_group": "planning",
+      "order": 60,
+      "placements": [
+        "detail",
+        "form",
+        "list"
+      ]
+    },
+    {
+      "handle": "budget",
+      "label": "Budget",
+      "type": "core.money",
+      "required": true,
+      "nullable": false,
+      "precision": 16,
+      "scale": 2,
+      "configuration": {
+        "currency": "NAD"
+      },
+      "reportable": true,
+      "exportable": true,
+      "sensitivity": "confidential",
+      "form_group": "commercial",
+      "order": 70,
+      "placements": [
+        "detail",
+        "form",
+        "list"
+      ]
+    },
+    {
+      "handle": "monthly_retainer",
+      "label": "Monthly retainer",
+      "type": "core.money",
+      "required": false,
+      "nullable": true,
+      "precision": 16,
+      "scale": 2,
+      "configuration": {
+        "currency": "NAD"
+      },
+      "reportable": true,
+      "exportable": true,
+      "sensitivity": "confidential",
+      "form_group": "commercial",
+      "order": 80,
+      "placements": [
+        "detail",
+        "form"
+      ]
+    },
+    {
+      "handle": "summary",
+      "label": "Scope summary",
+      "type": "core.rich_text",
+      "required": true,
+      "nullable": false,
+      "length": 12000,
+      "searchable": true,
+      "exportable": true,
+      "sensitivity": "public",
+      "form_group": "scope",
+      "order": 90,
+      "placements": [
+        "detail",
+        "form"
+      ]
+    },
+    {
+      "handle": "delivery_notes",
+      "label": "Internal delivery notes",
+      "type": "core.rich_text",
+      "required": false,
+      "nullable": true,
+      "length": 12000,
+      "searchable": false,
+      "filterable": false,
+      "sortable": false,
+      "reportable": false,
+      "exportable": false,
+      "sensitivity": "restricted",
+      "form_group": "internal",
+      "order": 100,
+      "placements": [
+        "detail",
+        "form",
+        "history"
+      ]
+    }
+  ],
+  "relationships": [
+    {
+      "handle": "client",
+      "label": "Client account",
+      "kind": "many_to_one",
+      "target": "site.default.vdm_client_account",
+      "inverse": null,
+      "required": false,
+      "unique": false,
+      "ordered": false,
+      "on_delete": "set_null"
+    },
+    {
+      "handle": "services",
+      "label": "Included services",
+      "kind": "many_to_many",
+      "target": "site.default.vdm_service_catalog_item",
+      "inverse": null,
+      "required": false,
+      "unique": false,
+      "ordered": true,
+      "on_delete": "restrict"
+    }
+  ],
+  "views": [
+    {
+      "handle": "engagement_list",
+      "label": "Client engagements",
+      "kind": "list",
+      "fields": [
+        "reference",
+        "title",
+        "engagement_type",
+        "start_date",
+        "target_date",
+        "completed_on",
+        "budget"
+      ],
+      "filters": [
+        "engagement_type",
+        "start_date",
+        "target_date",
+        "completed_on"
+      ],
+      "sorts": [
+        "reference",
+        "title",
+        "start_date",
+        "target_date"
+      ],
+      "administrator": true,
+      "portal": true,
+      "public": false
+    }
+  ],
+  "actions": [
+    {
+      "handle": "activate",
+      "label": "Activate engagement",
+      "capability": "business.record.transition",
+      "administrator": true,
+      "portal": false,
+      "public": false,
+      "transition": "activate"
+    },
+    {
+      "handle": "pause",
+      "label": "Put on hold",
+      "capability": "business.record.transition",
+      "administrator": true,
+      "portal": false,
+      "public": false,
+      "transition": "pause"
+    },
+    {
+      "handle": "resume",
+      "label": "Resume engagement",
+      "capability": "business.record.transition",
+      "administrator": true,
+      "portal": false,
+      "public": false,
+      "transition": "resume"
+    },
+    {
+      "handle": "complete",
+      "label": "Complete engagement",
+      "capability": "business.record.transition",
+      "administrator": true,
+      "portal": false,
+      "public": false,
+      "transition": "complete"
+    }
+  ],
+  "workflow": {
+    "initial_state": "proposed",
+    "states": [
+      "proposed",
+      "active",
+      "on_hold",
+      "completed"
+    ],
+    "transitions": [
+      {
+        "handle": "activate",
+        "from": "proposed",
+        "to": "active",
+        "capability": "business.record.transition"
+      },
+      {
+        "handle": "pause",
+        "from": "active",
+        "to": "on_hold",
+        "capability": "business.record.transition"
+      },
+      {
+        "handle": "resume",
+        "from": "on_hold",
+        "to": "active",
+        "capability": "business.record.transition"
+      },
+      {
+        "handle": "complete",
+        "from": "active",
+        "to": "completed",
+        "capability": "business.record.transition"
+      }
+    ]
+  },
+  "record_invariants": [],
+  "compatibility_metadata": {},
+  "administrator_exposure": true,
+  "portal_exposure": true,
+  "portal_operations": [
+    "browse",
+    "export",
+    "history",
+    "read",
+    "relation",
+    "report",
+    "status"
+  ],
+  "public_exposure": false
+}

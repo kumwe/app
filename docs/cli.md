@@ -28,6 +28,27 @@ Commands return `0` on success and a non-zero status on invalid input, unavailab
 
 The owner command requires `--email`, `--name`, and an absolute `--password-file` whose group/other permission bits are clear.
 
+### Initial data during migration
+
+`database:migrate` applies schema changes first, then reconciles the configured site-content and business datasets:
+
+```bash
+KUMWE_SITE_CONTENT_PROFILE=documentation \
+KUMWE_BUSINESS_DEMO=true \
+php bin/kumwe database:migrate
+```
+
+The content selector accepts only `documentation`, `placeholder`, or `blank`; the business selector is an independent
+boolean. `documentation` plus `true` is the default. Use `blank` plus `false` before migrating a new database for an
+empty start.
+
+The first reconciliation persists each selection. Every later invocation, including production's one-shot `migrate`
+service, must receive the same values. A different value fails instead of switching profiles. Restore the original
+configuration and rerun the command after an accidental mismatch. Released manifest versions are safe to reconcile
+again: an untouched fixture can advance, while a resource changed through Kumwe remains preserved. Profiles carry no
+credentials; create administrators, ordinary users, tokens, and passwords through their dedicated commands and
+interfaces.
+
 Migrations use a database-session advisory lock plus a compatibility row. During an upgrade from a build that only
 used the expiring row lock, stop every older application, worker, and scheduler before migrating. If an older process
 crashed and its row has expired, read the exact `owner_token` from the `migration_locks` table and run:

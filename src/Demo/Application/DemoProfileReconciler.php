@@ -1,0 +1,25 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Kumwe\CMS\Demo\Application;
+
+/**
+ * Application boundary that converges the persisted installation-profile selections after migration.
+ *
+ * Delivery invokes this port without knowing whether manifests live on disk or how their fixture ownership
+ * is recorded. Implementations must preserve the frozen selection and customized-resource guarantees.
+ *
+ * @since  2.0.0
+ */
+interface DemoProfileReconciler
+{
+    /**
+     * Reconcile every configured demo dataset and return concise operator diagnostics.
+     *
+     * @return  list<string>  Messages describing work performed; empty when every manifest was current.
+     *
+     * @since   2.0.0
+     */
+    public function reconcile(): array;
+}

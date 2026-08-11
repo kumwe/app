@@ -8,6 +8,7 @@ use Kumwe\CMS\Application\Authorization\SiteContext;
 use Kumwe\CMS\Application\Authorization\SystemPrincipal;
 use Kumwe\CMS\Delivery\Console\Command;
 use Kumwe\CMS\Delivery\Console\Output;
+use Kumwe\CMS\Demo\Application\DemoProfileReconciler;
 use Kumwe\CMS\Extension\Runtime\ExtensionRuntimeMapCompiler;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\MigrationRunner;
 
@@ -31,6 +32,7 @@ final readonly class MigrateCommand implements Command
      * Wire the migration runner, the runtime publisher, and the authority both are called with.
      *
      * @param  MigrationRunner              $runner      Applies the forward-only migration plan.
+     * @param  DemoProfileReconciler        $profiles    Reconciles the frozen demo selections after schema work.
      * @param  ExtensionRuntimeMapCompiler  $extensions  Republishes and materializes the runtime map after.
      * @param  SystemPrincipal              $system      Mints the migration context each run authorizes with.
      *
@@ -38,6 +40,7 @@ final readonly class MigrateCommand implements Command
      */
     public function __construct(
         private MigrationRunner $runner,
+        private DemoProfileReconciler $profiles,
         private ExtensionRuntimeMapCompiler $extensions,
         private SystemPrincipal $system,
     ) {
@@ -98,6 +101,9 @@ final readonly class MigrateCommand implements Command
             foreach ($result->applied as $migration) {
                 $output->line(sprintf('Applied %s', $migration));
             }
+        }
+        foreach ($this->profiles->reconcile() as $line) {
+            $output->line($line);
         }
         $state = $this->extensions->reconcileAndMaterialize(true);
         $output->line(sprintf('Materialized extension runtime generation %d', $state->generation));

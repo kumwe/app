@@ -57,6 +57,10 @@ final class DevelopmentExperienceTest extends TestCase
                 'composer install --no-interaction --prefer-dist',
                 'docker compose up -d --wait --wait-timeout 180',
                 'http://127.0.0.1:9900/health/ready',
+                'KUMWE_SITE_CONTENT_PROFILE=documentation',
+                'KUMWE_BUSINESS_DEMO=true',
+                'Kumwe documentation',
+                'site.default.vdm_',
                 'kumwe-wordmark.svg',
                 'sleep 35',
             ] as $contract
@@ -70,21 +74,22 @@ final class DevelopmentExperienceTest extends TestCase
         );
     }
 
-    public function testFreshPresentationIsSeededManagedContent(): void
+    public function testFreshPresentationUsesTheManagedDocumentationProfile(): void
     {
-        $migration = $this->contents('src/Infrastructure/Persistence/Migration/DynamicSiteContentMigration.php');
+        $manifest = $this->contents('resources/demo/content/documentation.json');
         $template = $this->contents('templates/site/page.twig');
         $stylesheet = $this->contents('assets/site/styles.css');
 
         foreach (
             [
-                'Content systems',
-                'One content core. Every delivery surface.',
-                'site.homepage_content_id',
+                '"profile": "documentation"',
+                'Kumwe documentation',
+                'Build, publish, operate, and extend with Kumwe.',
+                'Business definitions',
                 'kumwe-wordmark.svg',
             ] as $contract
         ) {
-            self::assertStringContainsString($contract, $migration);
+            self::assertStringContainsString($contract, $manifest);
         }
 
         foreach (

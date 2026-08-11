@@ -252,6 +252,12 @@ use Kumwe\CMS\Content\Domain\JsonSchemaValidator;
 use Kumwe\CMS\Content\Domain\SchemaCompatibilityChecker;
 use Kumwe\CMS\Content\Infrastructure\Persistence\DoctrineContentModelRepository;
 use Kumwe\CMS\Content\Infrastructure\Persistence\DoctrineContentRepository;
+use Kumwe\CMS\Demo\Application\DemoProfileReconciler;
+use Kumwe\CMS\Demo\Infrastructure\DemoContentProfileInstaller;
+use Kumwe\CMS\Demo\Infrastructure\DemoProfileInstaller;
+use Kumwe\CMS\Demo\Infrastructure\FilesystemDemoManifestCatalog;
+use Kumwe\CMS\Demo\Infrastructure\Persistence\DoctrineDemoProfileLedger;
+use Kumwe\CMS\Demo\Infrastructure\VdmBusinessDemoInstaller;
 use Kumwe\CMS\Extension\Application\ExtensionManager;
 use Kumwe\CMS\Extension\Application\Install\ExtensionInstallReconciler;
 use Kumwe\CMS\Extension\Application\Migration\ExtensionMigrationRunner;
@@ -428,6 +434,7 @@ use Kumwe\CMS\Infrastructure\Persistence\Migration\BusinessTransactionalRuntimeM
 use Kumwe\CMS\Infrastructure\Persistence\Migration\CoreSchemaMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\ContentModelRuntimeMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\DatabaseDrivenPresentationMigration;
+use Kumwe\CMS\Infrastructure\Persistence\Migration\DemoProfileProvenanceMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\DynamicSiteContentMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\ExtensionContributionCatalogMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\IdempotencyLeaseNullabilityMigration;
@@ -1323,6 +1330,7 @@ final class ContainerFactory
                     new BusinessRecordIdempotencyRetentionMigration(self::service($container, TableNames::class)),
                     new BusinessSecurityPortalMigration(self::service($container, TableNames::class)),
                     new BusinessIntegrationSdkMigration(self::service($container, TableNames::class)),
+                    new DemoProfileProvenanceMigration(self::service($container, TableNames::class)),
                 ],
                 [
                     // Previously distributed builds used a DBAL-equivalent static-analysis rewrite, then
@@ -4349,10 +4357,52 @@ final class ContainerFactory
             self::service($container, JobExecutionScope::class),
             self::service($container, GlobalJobPrincipals::class),
         ), true);
+        $container->share(FilesystemDemoManifestCatalog::class, static fn (): FilesystemDemoManifestCatalog =>
+            new FilesystemDemoManifestCatalog(dirname(__DIR__, 2)), true);
+        $container->share(DoctrineDemoProfileLedger::class, static fn (
+            Container $container,
+        ): DoctrineDemoProfileLedger => new DoctrineDemoProfileLedger(
+            self::service($container, Connection::class),
+            self::service($container, TableNames::class),
+            self::service($container, ClockInterface::class),
+        ), true);
+        $container->share(DemoContentProfileInstaller::class, static fn (
+            Container $container,
+        ): DemoContentProfileInstaller => new DemoContentProfileInstaller(
+            self::service($container, ContentService::class),
+            self::service($container, NavigationService::class),
+            self::service($container, SiteSettings::class),
+            self::service($container, DoctrineDemoProfileLedger::class),
+        ), true);
+        $container->share(VdmBusinessDemoInstaller::class, static fn (
+            Container $container,
+        ): VdmBusinessDemoInstaller => new VdmBusinessDemoInstaller(
+            self::service($container, BusinessDefinitionService::class),
+            self::service($container, BusinessSchemaService::class),
+            self::service($container, BusinessRecordService::class),
+            self::service($container, DoctrineDemoProfileLedger::class),
+            self::service($container, Connection::class),
+            self::service($container, TableNames::class),
+            self::service($container, TransactionManager::class),
+            self::service($container, AuditRecorder::class),
+            self::service($container, ClockInterface::class),
+        ), true);
+        $container->share(DemoProfileInstaller::class, static fn (
+            Container $container,
+        ): DemoProfileInstaller => new DemoProfileInstaller(
+            self::service($container, ApplicationConfiguration::class),
+            self::service($container, FilesystemDemoManifestCatalog::class),
+            self::service($container, DemoContentProfileInstaller::class),
+            self::service($container, VdmBusinessDemoInstaller::class),
+            self::service($container, DoctrineDemoProfileLedger::class),
+            SystemPrincipal::issue($provenance, SystemIdentity::ProfileInstaller),
+        ), true);
+        $container->alias(DemoProfileReconciler::class, DemoProfileInstaller::class);
         $container->share(Output::class, static fn (): Output => StreamOutput::standard(), true);
         $container->share(MigrateCommand::class, static fn (Container $container): MigrateCommand =>
             new MigrateCommand(
                 self::service($container, MigrationRunner::class),
+                self::service($container, DemoProfileReconciler::class),
                 self::service($container, ExtensionRuntimeMapCompiler::class),
                 SystemPrincipal::issue($provenance, SystemIdentity::Migration),
             ), true);
