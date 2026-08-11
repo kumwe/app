@@ -1,12 +1,14 @@
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="stylesheet" href="/assets/extensions/kumwe/minimal-template-example/1.0.0/assets/site.css">
-  <title>{{ entry.title }}{% if site_name is defined %} · {{ site_name }}{% endif %}</title>
-</head>
-<body>
-  <main><h1>{{ entry.title }}</h1><div>{{ entry.data.body|default('')|nl2br }}</div></main>
-</body>
-</html>
+{% extends "layout.twig" %}
+{% block title %}{{ entry.title }} · {{ site_name|default('Kumwe') }}{% endblock %}
+{% block content %}
+  <article class="page-section">
+    <h1>{{ entry.title }}</h1>
+    {% if entry.body_html|default('') %}
+      <div class="article-body">{{ entry.body_html|raw }}</div>
+    {% elseif entry.data.body|default('') %}
+      <div class="article-body">{{ entry.data.body|nl2br }}</div>
+    {% else %}
+      <p>This page has no body content yet.</p>
+    {% endif %}
+  </article>
+{% endblock %}

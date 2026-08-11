@@ -1,82 +1,266 @@
 # Template development
 
-A template is an extension with `"type": "template"`. It uses the same compatibility, dependency, signing, installation, and provider rules as other extensions. Installation always leaves the package disabled. Public theme activation belongs to an explicit site; administrator activation is installation-wide. Each surface retains its built-in views as a safe fallback.
+An installable Kumwe template is an extension with `"type": "template"`. It uses the same bounded
+archive, compatibility, dependency, trust, signing, provider, installation, publication, disablement,
+and uninstall rules as every other extension. Installation always leaves the package disabled. Site
+activation belongs to one explicit site; administrator activation is installation-wide and requires
+current-password step-up. Each surface retains protected built-in views as its recovery fallback.
 
-## Package layout
+The current interface target is **Kumwe Interface Standard 1.0**, identified as `kis-1.0`. Read the
+[normative standard](interface-standard/README.md), the
+[customization boundary](interface-standard/customization.md), and the
+[template-author contract](interface-standard/template-authoring.md) before generating or reviewing a
+package. KIS is a semantic, responsive, accessibility, security, and conformance contract; it is not a
+requirement that every template look like Kumwe's built-in theme.
+
+Complete, installable reference packages are available at:
+
+- [`examples/extensions/minimal-template`](../examples/extensions/minimal-template) for a complete site
+  override; and
+- [`examples/extensions/minimal-administrator-template`](../examples/extensions/minimal-administrator-template)
+  for a KIS 1.0 administrator shell.
+
+## Surface authority and isolation
+
+| Surface | Template authority | Protected platform boundary |
+| --- | --- | --- |
+| Site | Complete `home.twig` and `page.twig` markup and package assets | Prepared content/navigation values, trusted-rich-text designation, CSP/security headers, extension lifecycle, and per-site assignment |
+| Administrator | `layout.twig` shell, package assets, and approved token values | Core and extension task views, capability-filtered navigation, KIS component semantics, CSRF, warnings, action safety, fallback rendering, and recovery |
+| Portal | No installable shell override in KIS 1.0 | Core guest/authenticated shell, identity, capability filtering, CSRF, and recovery; extension portal views use the contribution registry |
+
+A site theme is never present in the administrator loader. An administrator theme is never present in
+the site loader. Active extension views are isolated by surface and by an injective hexadecimal owner
+namespace. A template cannot use path tricks or an unnamespaced file to shadow another extension.
+
+The stable namespaces are:
+
+- `@core-site` and `@core-admin` for explicit built-in references;
+- `@site-theme` and `@admin-theme` for the selected theme's own entries;
+- `@kis` for public KIS Twig components; and
+- `@extension-<hex-encoded-identifier>` for one active extension's registered views.
+
+Administrator theme admission is deliberately restricted to `layout.twig`. Login and task templates
+continue to resolve from core or an explicitly namespaced extension. The emergency administrator
+renderer loads the protected core administrator tree and KIS components, but no active theme or extension
+view. A broken operator-installed package therefore cannot replace or disable recovery.
+
+## Package layouts
+
+A package may support one or both theme surfaces. It must provide every required entry for a surface it
+will activate on.
 
 ```text
 kumwe.json
 src/Provider.php
 templates/site/home.twig
 templates/site/page.twig
+templates/site/layout.twig                 # optional theme-owned partial/layout
 templates/administrator/layout.twig
-templates/views/site/widget.twig
-templates/views/administrator/widget.twig
-assets/
+assets/site.css
+assets/administrator.css
+README.md                                  # target surface, kis-1.0, modes, recovery, checks
 ```
 
-Only a theme selected for a surface is searched before that surface's built-in templates. A site theme is never present in the administrator Twig loader, and an administrator theme is never present in the site loader. Administrator activation, disablement, and uninstall require the operator's current password. An active theme must be disabled on every surface before its package can be upgraded.
+The manifest declares every published asset. Do not add a second web root or a build step required at
+runtime. The provider is a normal `ExtensionServiceProvider`; a presentation-only package may implement
+an empty `register()` method as the reference examples do.
 
-Site activation requires compile-valid `home.twig` and `page.twig` entries. Administrator activation requires a compile-valid `layout.twig`. That layout is the complete administrator-theme override contract: login views and controller-specific pages always resolve from core or an explicitly namespaced extension, while built-in pages extend the selected layout. The emergency renderer never loads the active administrator theme and always uses the protected built-in layout.
+## KIS 1.0 administrator shell contract
 
-Theme mutations require `themes.site.manage` or `themes.administrator.manage` for every affected site or surface. REST, CLI, and MCP bind public activation to the authenticated site. A theme assigned to other sites must be managed from each of those site contexts before disablement or uninstall. Administrator activation, disablement, and uninstall also accept the operator's current password for step-up. Idempotency records retain only whether step-up was supplied, never the password itself.
+Administrator activation compiles every packaged Twig file and renders a synthetic inherited page through
+the candidate `layout.twig`. Activation fails unless the rendered result proves all of these invariants:
 
-Stable namespaces are `@core-site`, `@core-admin`, `@site-theme`, and `@admin-theme`. Active extension views are isolated by both surface and an injective hexadecimal identifier namespace; `acme/tools` resolves as `@extension-61636d652f746f6f6c73`. Extension view files belong under `templates/views/site` or `templates/views/administrator` and cannot shadow unnamed core views.
+1. an HTML doctype, a non-empty document language, UTF-8 metadata, responsive
+   `width=device-width, initial-scale=1` viewport metadata, and advertised light/dark color schemes;
+2. an inherited `title` block inside the document `<title>`;
+3. an inherited `content` block inside a `<main>` landmark with a stable `id` and `tabindex="-1"`;
+4. a skip link whose fragment resolves to that focusable main landmark;
+5. a labelled navigation landmark that renders the host-supplied workspace groups and
+   capability-filtered navigation items;
+6. the host-supplied destination and `aria-current="page"` state for the active item; and
+7. every host-supplied administrator stylesheet and JavaScript module.
 
-The built-in administrator uses Twig-rendered semantic HTML as its no-JavaScript baseline. Vite compiles TypeScript and Lit interactive islands into committed, immutable assets, so production never runs Node or `npm install`. First-party custom elements use the `kumwe-*` prefix. A schema-2 provider declares administrator views in its manifest and registers the identical typed view, workspace, navigation, and guarded route definitions through its owner-bound contribution registrar. Registries are not extension services. Every navigation item declares an owned capability and disappears from navigation and the command palette when the signed-in user lacks it or the package is no longer active and trusted. Extensions must not patch the core layout, assume a single-page application, or depend on private bundle modules.
+These checks protect the operator's ability to orient, navigate, skip repetitive content, use KIS
+interactions, and recover. They do **not** prescribe sidebar position, visual brand, DOM nesting beyond
+the stated landmarks, typography, decoration, or package-scoped CSS. A theme may add contextual blocks,
+identity, a responsive navigation toggle, a search trigger, mode controls, and approved presentation
+variants while retaining the protected outlets.
 
-`site/page.twig` receives the public content record, including:
+The authenticated shell receives these platform-owned values:
 
-- `site_name` from browser-managed settings;
-- `site_logo` and the validated `presentation` view model, including the active design tokens and interaction treatments;
-- `entry.id`, `entry.title`, `entry.slug`, and workflow status;
-- structured `entry.data` fields;
-- publication, version, and timestamp values.
-- the recursively prepared `navigation` tree and `current_path` used by the built-in public shell.
+| Value | Contract |
+| --- | --- |
+| `administrator_navigation` | Already capability-filtered items; render `href`, `label`, workspace membership, and current state without adding hidden destinations |
+| `administrator_workspaces` | Visible workspace groups for the filtered items; empty groups are already removed |
+| `active_navigation` | Stable ID of the current item, or an empty string when none applies |
+| `administrator_assets.stylesheets` | Ordered host styles required by core and KIS task views |
+| `administrator_assets.modules` | Ordered host modules required by focused KIS enhancements |
+| `administrator_commands_json` | Safely encoded command-palette data derived from the same visible navigation |
+| `csrf` | Present for authenticated task views; its absence identifies a guest/login render |
 
-Example:
+Do not recompute permissions, inject unfiltered links, decode or rewrite command data, or hide required
+warnings and action boundaries. The shell may branch on `csrf is defined` to produce intentional guest
+and authenticated compositions. Essential reading, navigation, form submission, validation, and
+recovery must remain available without JavaScript.
 
-```twig
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{{ entry.title }} · {{ site_name|default('Kumwe') }}</title>
-</head>
-<body>
-  <main>
-    <h1>{{ entry.title }}</h1>
-    <div class="content">{{ entry.data.body|default('')|raw }}</div>
-  </main>
-</body>
-</html>
-```
+## Complete site override contract
 
-Twig auto-escapes normal output. Use `|raw` only for fields guaranteed to pass the site's trusted rich-text policy. Never render request values, extension configuration, or unsanitized editor HTML as raw markup.
+Site activation requires regular, non-symlinked, compile-valid `home.twig` and `page.twig` files. Unlike
+the administrator surface, Kumwe does not impose administrator-shell structure on their rendered HTML.
+The public views are a complete theme override and may use a shared package-owned layout, different
+navigation composition, or a purpose-built document structure.
+
+That authority does not move product policy into Twig. Site entries consume prepared values such as:
+
+- `site_name`, optional `site_logo`, and the validated `presentation` model;
+- `entry.id`, `entry.title`, `entry.slug`, `entry.data`, publication/version values, and the explicitly
+  trusted `entry.body_html` projection when available;
+- recursively prepared `navigation` and `current_path` values;
+- `canonical_url`; and
+- ordered `site_assets.stylesheets` and `site_assets.modules`.
+
+Use `|default` for optional values because Twig strict variables are enabled. Normal output is
+auto-escaped. Use `|raw` only for a projection whose presenter explicitly guarantees trusted sanitized
+rich text, such as `entry.body_html`; never apply it to request input, arbitrary extension configuration,
+or unsanitized `entry.data` values.
+
+## Tokens, components, and safe customization
+
+KIS has four implementation layers: semantic interaction declarations, pattern selection, shared
+components/tokens, and conformance/governance. A template participates at the presentation boundary; it
+does not replace the first two layers or weaken the fourth.
+
+An administrator template may:
+
+- set documented brand, type-role, density, spacing, surface, and mode properties within their bounds;
+- style KIS component classes and `data-kis-component` hooks through documented public properties;
+- compose the protected shell differently while preserving its validated outlets;
+- add package-scoped, deterministic assets; and
+- support light, dark, high-contrast, reduced-motion, compact, comfortable, responsive, and print modes.
+
+It must not:
+
+- copy and fork core task templates or KIS components into the theme;
+- replace extension-view namespaces, route handlers, CSRF fields, validation, review, or step-up behavior;
+- add arbitrary stored CSS/JavaScript/Twig/HTML injection;
+- depend on private hashed bundle classes or private JavaScript modules;
+- remove focus indicators, warnings, conflict state, audit meaning, recovery consequences, or mandatory
+  columns; or
+- expose a resource, field, action, label, count, or destination filtered by application policy.
+
+A change to a public KIS token updates every consumer of that token. A change to a shared `@kis`
+component updates core and extension views without changing the theme. A new interaction need belongs in
+the KIS proposal process, not in a theme-specific copy of application markup.
+
+## Extension view consumption
+
+Schema-2-or-newer extensions register administrator or portal views through their typed contribution
+provider. They extend the ordinary surface layout and consume public components through `@kis`; they do
+not patch a selected theme or assume its private classes. For example, an administrator extension view
+may extend `layout.twig` and embed `@kis/page-header.twig` or `@kis/validation-summary.twig` with escaped,
+presentation-ready values.
+
+The selected administrator theme supplies the shell around that view. The host supplies KIS component
+markup and behavior. The extension supplies its owned task data and typed actions. Keeping those three
+owners separate means changing a theme does not break extension behavior and changing a KIS component
+does not require copying fixes into every package.
+
+Every contributed navigation item declares an owned capability and disappears from the navigation and
+command palette when its extension is inactive, untrusted, or unauthorized. A template renders the list
+it receives; it never constructs a parallel registry.
 
 ## Assets and presentation data
 
-Use the versioned `/assets/extensions/{vendor}/{name}/{version}/...` path emitted for the installed package. Requests are authorized against the current extension release and signing-key state and use `no-store`, so a disabled, uninstalled, quarantined, or revoked release cannot leave publicly reachable bytes. Render navigation or extension-provided blocks through an injected service or prepared view model rather than reading application tables.
+Use the immutable package URL:
 
-Do not embed deployment URLs, database queries, secrets, permission decisions, or business rules in Twig. Put reusable behavior in an injected extension service and give the template a presentation-ready result.
+```text
+/assets/extensions/{vendor}/{name}/{version}/{manifest-declared-path}
+```
 
-The built-in layout emits the fixed `presentation.css_variables` property map as element-level CSS custom properties and exposes the selected scheme, button, and header treatments as data attributes. Custom templates may use these values or replace the visual system, but must never render editor-supplied property names or raw CSS. Global identity belongs to `presentation.logo`; page-specific artwork remains structured content.
+Asset requests are authorized against the installed release and signing-key state and use `no-store`.
+A disabled, removed, quarantined, or revoked release therefore cannot leave publicly reachable bytes.
+Keep fonts and other dependencies inside the signed package unless deployment policy explicitly permits
+an external origin. Do not embed credentials, environment-specific origins, database access, permission
+decisions, or business rules in Twig, CSS, or JavaScript.
 
-## Install and verify
+The built-in administrator is server rendered. Vite compiles the host's focused TypeScript/Lit
+enhancements into committed immutable assets; production does not run Node or `npm install`. Template
+packages consume the host asset outlets and may add their own bounded assets, but do not create a second
+client application.
+
+## Deterministic build and static conformance
+
+Build from a clean source directory, never from an installed runtime tree. The same inputs must produce
+byte-identical archives:
 
 ```bash
-php bin/kumwe extension:install /absolute/acme-site-template.zip
-php bin/kumwe extension:activate acme/site-template --surface=site \
+mkdir -p /tmp/kumwe-template-proof
+php bin/kumwe extension:build /absolute/path/to/template \
+  --output=/tmp/kumwe-template-proof/template-a.zip
+php bin/kumwe extension:build /absolute/path/to/template \
+  --output=/tmp/kumwe-template-proof/template-b.zip
+cmp /tmp/kumwe-template-proof/template-a.zip /tmp/kumwe-template-proof/template-b.zip
+sha256sum /tmp/kumwe-template-proof/template-a.zip /tmp/kumwe-template-proof/template-b.zip
+php bin/kumwe extension:conformance /tmp/kumwe-template-proof/template-a.zip
+```
+
+Static conformance verifies the strict manifest and provider contract, bounded archive paths, declared
+assets, compatibility, and package lifecycle rules. Theme activation performs the surface-specific Twig
+and KIS shell validation described above. Neither command replaces rendered responsive, accessibility,
+keyboard, security, and visual qualification.
+
+Production packages also require an enabled signing-key identifier and detached signature. Follow
+[`extensions.md`](extensions.md) for trust, signing, installation, upgrade, and lifecycle requirements.
+
+## Install, activate, and recover
+
+Install the package disabled:
+
+```bash
+php bin/kumwe extension:install /absolute/path/to/template.zip
+```
+
+Activate a site theme for the authenticated site context:
+
+```bash
+php bin/kumwe extension:activate vendor/site-template --surface=site \
   --token-file=/run/secrets/kumwe-extension-token
 ```
 
-Production installation also supplies an enabled signing-key identifier and detached signature. Activate administrator themes in the administrator application so current-password step-up authentication can be enforced. If a broken administrator theme cannot render, every failed themed render falls back to the non-overridable core environment, and an operator can atomically restore it with:
+Activate an administrator theme through the administrator application so current-password step-up is
+enforced. The selection and immutable signed runtime publication commit in one database transaction. A
+compile or KIS contract failure aborts before the selection changes. Replace long-running application
+replicas after lifecycle changes so each process materializes the new verified generation.
+
+If a later filesystem or runtime failure prevents the selected administrator theme from rendering, the
+request falls back to the protected core environment. An operator can atomically restore the core theme:
 
 ```bash
 php bin/kumwe theme:administrator:recover --confirm=restore-core-administrator
 ```
 
-Activation commits the selected surface and an immutable, signed runtime publication in one database transaction. Replace application replicas after lifecycle changes: each entrypoint materializes and verifies the database generation once before the process starts, and workers/schedulers drain if their loaded generation becomes stale. A failed local write leaves the durable publication pending for the next startup reconciliation.
+An active theme must be disabled on every assigned surface before upgrade or uninstall. Site assignments
+must be managed from each affected site context. Administrator activation, disablement, and uninstall
+remain step-up protected. Idempotency evidence records only whether step-up was supplied, never the
+password.
 
-Verify the homepage, a direct page URL, menus, empty/missing optional fields, error pages, keyboard navigation, contrast, responsive layouts, CSP/security headers, and asset caching. Test on PHP 8.5 with MariaDB, MySQL, and PostgreSQL when the provider has persistence behavior.
+## Rendered qualification matrix
+
+Before release, exercise the package with empty, sparse, representative, dense, long-label, validation,
+error, and permission-reduced fixtures. At minimum verify:
+
+- desktop, tablet, and mobile widths with no unintended document overflow, clipping, overlap, or
+  unlabelled table overflow;
+- light/dark, compact/comfortable, high-contrast, reduced-motion, print, and localization states;
+- visible focus, skip link, landmark and heading structure, keyboard navigation, drawer/dialog focus
+  return, and JavaScript-disabled completion of essential tasks;
+- homepage, direct page, navigation, missing optional data, login, logout, extension views, command
+  palette, error fallback, activation, restart, disablement, reactivation, and administrator recovery;
+- WCAG 2.2 A/AA checks, CSP/security headers, no console/request/asset failures, and deterministic
+  screenshots; and
+- PHP 8.5 plus MariaDB, MySQL, and PostgreSQL when the provider adds persistence behavior.
+
+The Playwright diagnostic evidence and completion policy are normative in
+[`interface-standard/conformance.md`](interface-standard/conformance.md). A package is complete only when
+it installs disabled, passes static and rendered conformance, activates on its declared surface, survives
+restart, resets/disables safely, and leaves the protected administrator recovery path usable.

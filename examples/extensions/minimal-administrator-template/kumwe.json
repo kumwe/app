@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "name": "kumwe/minimal-administrator-template-example",
+  "type": "template",
+  "version": "1.0.0",
+  "provider": "KumweExample\\MinimalAdministratorTemplate\\Provider",
+  "autoload": {"psr-4": {"KumweExample\\MinimalAdministratorTemplate\\": "src/"}},
+  "requires": {"kumwe": "^2.0.0", "php": "^8.5.0"},
+  "dependencies": [],
+  "migrations": [],
+  "configuration": {},
+  "permissions": [],
+  "routes": [],
+  "events": [],
+  "assets": ["assets/administrator.css"]
+}
