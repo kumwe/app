@@ -434,6 +434,7 @@ use Kumwe\CMS\Infrastructure\Persistence\Migration\BusinessIntegrationSdkMigrati
 use Kumwe\CMS\Infrastructure\Persistence\Migration\BusinessRecordIdempotencyRetentionMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\BusinessSecurityPortalMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\BusinessTransactionalRuntimeMigration;
+use Kumwe\CMS\Infrastructure\Persistence\Migration\ContentModelIdentifierCollationMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\CoreSchemaMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\ContentModelRuntimeMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\DatabaseDrivenPresentationMigration;
@@ -1334,6 +1335,7 @@ final class ContainerFactory
                     new BusinessSecurityPortalMigration(self::service($container, TableNames::class)),
                     new BusinessIntegrationSdkMigration(self::service($container, TableNames::class)),
                     new DemoProfileProvenanceMigration(self::service($container, TableNames::class)),
+                    new ContentModelIdentifierCollationMigration(self::service($container, TableNames::class)),
                 ],
                 [
                     // Previously distributed builds used a DBAL-equivalent static-analysis rewrite, then

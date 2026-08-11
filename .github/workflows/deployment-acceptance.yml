@@ -181,6 +181,24 @@ jobs:
           export APP_BASE_URL=https://127.0.0.1:18082
           export DB_NAME=kumwe_distribution_zip
           php bin/kumwe database:migrate
+          zip_collation_contract="$(docker exec '${{ job.services.database.id }}' \
+            mariadb --batch --skip-column-names --user=root --execute="
+              SELECT CONCAT(COUNT(*), ':', COUNT(collation_name), ':', COUNT(DISTINCT collation_name))
+              FROM (
+                SELECT default_collation_name AS collation_name
+                FROM information_schema.schemata
+                WHERE schema_name = 'kumwe_distribution_zip'
+                UNION ALL
+                SELECT collation_name
+                FROM information_schema.columns
+                WHERE table_schema = 'kumwe_distribution_zip'
+                  AND (
+                    (table_name = 'kumwe_content_entries' AND column_name = 'workflow_id')
+                    OR (table_name = 'kumwe_workflow_definition_versions' AND column_name = 'workflow_id')
+                  )
+              ) AS zip_collations
+            ")"
+          test "$zip_collation_contract" = '3:3:1'
           password_file="$RUNNER_TEMP/zip-administrator-password"
           install -m 0600 /dev/null "$password_file"
           openssl rand -base64 32 | tr -d '\n' > "$password_file"
