@@ -8,6 +8,8 @@ use Closure;
 use Kumwe\CMS\BusinessDefinition\Application\BusinessDefinitionContributionRegistry;
 use Kumwe\CMS\BusinessDefinition\Application\FieldTypeRegistry;
 use Kumwe\CMS\BusinessDefinition\Domain\DefinitionOwner;
+use Kumwe\CMS\BusinessDefinition\Domain\EntityTypeDefinition;
+use Kumwe\CMS\BusinessDefinition\Domain\FieldTypeDefinition;
 use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessActionContract;
 use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessActionHandlerRegistry;
 use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessViewContract;
@@ -29,8 +31,8 @@ final readonly class BusinessContributionSurface implements ContributionSurface
     /**
      * Bind the two operations a contribution surface owes to one business registry.
      *
-     * @param  Closure(DefinitionOwner): list<mixed>  $read    Lists that registry's entries for one owner.
-     * @param  Closure(DefinitionOwner): void         $delete  Withdraws that registry's entries for one owner.
+     * @param  Closure(DefinitionOwner): list<array<string, mixed>>  $read    Lists one owner's export documents.
+     * @param  Closure(DefinitionOwner): void                        $delete  Withdraws one owner's entries.
      *
      * @since  2.0.0
      */
@@ -50,7 +52,10 @@ final readonly class BusinessContributionSurface implements ContributionSurface
     public static function forFieldTypes(FieldTypeRegistry $registry): self
     {
         return new self(
-            static fn (DefinitionOwner $owner): array => $registry->ownedBy($owner),
+            static fn (DefinitionOwner $owner): array => array_map(
+                static fn (FieldTypeDefinition $definition): array => $definition->toArray(),
+                $registry->ownedBy($owner),
+            ),
             static function (DefinitionOwner $owner) use ($registry): void {
                 $registry->remove($owner);
             },
@@ -69,7 +74,10 @@ final readonly class BusinessContributionSurface implements ContributionSurface
     public static function forDefinitions(BusinessDefinitionContributionRegistry $registry): self
     {
         return new self(
-            static fn (DefinitionOwner $owner): array => $registry->ownedBy($owner),
+            static fn (DefinitionOwner $owner): array => array_map(
+                static fn (EntityTypeDefinition $definition): array => $definition->toArray(),
+                $registry->ownedBy($owner),
+            ),
             static function (DefinitionOwner $owner) use ($registry): void {
                 $registry->remove($owner);
             },
@@ -152,7 +160,7 @@ final readonly class BusinessContributionSurface implements ContributionSurface
      *
      * @param   ContributionOwner  $owner  Contributor asking, named in extension vocabulary.
      *
-     * @return  list<mixed>  Definition objects exactly as the wrapped registry returns them, not array exports.
+     * @return  list<array<string, mixed>>  Canonical declaration documents, never live domain or handler objects.
      *
      * @since   2.0.0
      */
