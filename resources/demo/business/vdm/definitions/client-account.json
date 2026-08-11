@@ -160,7 +160,7 @@
       "type": "core.email",
       "required": true,
       "nullable": false,
-      "length": 254,
+      "length": 191,
       "normalizers": [
         "trim",
         "lowercase"
