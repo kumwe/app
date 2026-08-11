@@ -449,6 +449,7 @@ use Kumwe\CMS\Infrastructure\Persistence\Migration\DoctrineMigrationRepository;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\DoctrineNonTransactionalMigrationRecovery;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\JobRecoveryMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\InstallationGlobalAutomationMigration;
+use Kumwe\CMS\Infrastructure\Persistence\Migration\InterfacePresentationPreferenceMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\NonTransactionalMigrationRecovery;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\SiteAutomationContextMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\TokenAndTrustLifecycleMigration;
@@ -491,11 +492,17 @@ use Kumwe\CMS\Media\Infrastructure\FilesystemMediaStorage;
 use Kumwe\CMS\Presentation\Application\ThemeActivationGuard;
 use Kumwe\CMS\Presentation\Application\ThemePackageValidator;
 use Kumwe\CMS\Presentation\Application\ThemeMutationAuthorizer;
+use Kumwe\CMS\Presentation\Application\Preference\PresentationPreferenceManager;
+use Kumwe\CMS\Presentation\Application\Preference\PresentationPreferencePolicy;
+use Kumwe\CMS\Presentation\Application\Preference\PresentationPreferenceRepository;
+use Kumwe\CMS\Presentation\Application\Preference\PresentationPreferenceResolver;
+use Kumwe\CMS\Presentation\Application\Preference\RegisteredPresentationPreferencePolicy;
 use Kumwe\CMS\Presentation\Infrastructure\DoctrineThemeActivationGuard;
 use Kumwe\CMS\Presentation\Infrastructure\DoctrineAdministratorThemeRecovery;
 use Kumwe\CMS\Presentation\Infrastructure\ConsoleAdministratorThemeRecovery;
 use Kumwe\CMS\Presentation\Application\AdministratorThemeRecovery;
 use Kumwe\CMS\Presentation\Infrastructure\DoctrineThemeMutationAuthorizer;
+use Kumwe\CMS\Presentation\Infrastructure\Persistence\DoctrinePresentationPreferenceRepository;
 use Kumwe\CMS\Presentation\Asset\ViteAssetManifest;
 use Kumwe\CMS\Presentation\ContentPresenter;
 use Kumwe\CMS\Presentation\SiteRenderer;
@@ -1337,6 +1344,7 @@ final class ContainerFactory
                     new BusinessIntegrationSdkMigration(self::service($container, TableNames::class)),
                     new DemoProfileProvenanceMigration(self::service($container, TableNames::class)),
                     new ContentModelIdentifierCollationMigration(self::service($container, TableNames::class)),
+                    new InterfacePresentationPreferenceMigration(self::service($container, TableNames::class)),
                 ],
                 [
                     // Previously distributed builds used a DBAL-equivalent static-analysis rewrite, then
@@ -1683,6 +1691,38 @@ final class ContainerFactory
             authorizationPolicies: self::service($container, AuthorizationPolicyRegistry::class),
         );
         $container->share(ExtensionContributionRegistrySet::class, $contributionRegistries, true);
+        $container->share(DoctrinePresentationPreferenceRepository::class, static fn (
+            Container $container,
+        ): DoctrinePresentationPreferenceRepository => new DoctrinePresentationPreferenceRepository(
+            self::service($container, Connection::class),
+            self::service($container, TableNames::class),
+        ), true);
+        $container->alias(
+            PresentationPreferenceRepository::class,
+            DoctrinePresentationPreferenceRepository::class,
+        );
+        $container->share(
+            PresentationPreferencePolicy::class,
+            new RegisteredPresentationPreferencePolicy($contributionRegistries->interfaceSurfaces()),
+            true,
+        );
+        $container->share(PresentationPreferenceResolver::class, static fn (
+            Container $container,
+        ): PresentationPreferenceResolver => new PresentationPreferenceResolver(
+            self::service($container, PresentationPreferenceRepository::class),
+            self::service($container, PresentationPreferencePolicy::class),
+        ), true);
+        $container->share(PresentationPreferenceManager::class, static fn (
+            Container $container,
+        ): PresentationPreferenceManager => new PresentationPreferenceManager(
+            self::service($container, PresentationPreferenceRepository::class),
+            self::service($container, PresentationPreferencePolicy::class),
+            self::service($container, AuthorizationGateway::class),
+            self::service($container, AuditRecorder::class),
+            self::service($container, ClockInterface::class),
+            self::service($container, TransactionManager::class),
+            self::service($container, MembershipContextValidator::class),
+        ), true);
         $eventContracts = $contributionRegistries->validateIntegrationContributions();
         $container->share(EventContractRegistry::class, $eventContracts, true);
         $container->share(OutboxStore::class, static fn (Container $container): OutboxStore =>
