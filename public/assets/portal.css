@@ -26,6 +26,8 @@ textarea { width: 100%; min-height: 7rem; padding: .55rem .7rem; border: 1px sol
 .portal-context { display: flex; flex-wrap: wrap; gap: .4rem; }
 .portal-context span { padding: .2rem .5rem; border: 1px solid #6f998f; border-radius: 999px; }
 .portal-shell { display: grid; grid-template-columns: minmax(13rem, 18rem) minmax(0, 1fr); min-height: calc(100vh - 4.5rem); }
+.portal-shell--guest { grid-template-columns: minmax(0, 1fr); }
+.portal-shell--guest main { max-width: none; }
 .portal-navigation { padding: 1.25rem; border-right: 1px solid var(--portal-line); background: var(--portal-panel); }
 .portal-navigation h2 { margin: 1rem 0 .35rem; color: var(--portal-muted); font-size: .78rem; letter-spacing: .08em; text-transform: uppercase; }
 .portal-navigation ul, .portal-cards ul { margin: 0; padding: 0; list-style: none; }

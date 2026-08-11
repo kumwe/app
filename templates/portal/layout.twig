@@ -23,7 +23,7 @@
         </form>
     {% endif %}
 </header>
-<div class="portal-shell">
+<div class="portal-shell{% if not portal_session %} portal-shell--guest{% endif %}">
     {% if portal_session %}
         <nav class="portal-navigation" aria-label="Portal navigation">
             {% for workspace in portal_workspaces %}
