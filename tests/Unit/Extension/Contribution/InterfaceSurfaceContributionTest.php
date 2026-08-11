@@ -74,6 +74,10 @@ final class InterfaceSurfaceContributionTest extends TestCase
             $surface->toArray(),
             $registries->inventory($owner)['interface']['surfaces'][0],
         );
+        self::assertSame(
+            $surface->identifier(),
+            $registries->navigation()->visible(['acme.inspections.view' => true])[0]['surface'] ?? null,
+        );
 
         $registries->remove($owner);
 
@@ -81,6 +85,7 @@ final class InterfaceSurfaceContributionTest extends TestCase
             $owner,
             'acme.inspections.administrator.catalog',
         ));
+        self::assertSame([], $registries->navigation()->visible(['acme.inspections.view' => true]));
     }
 
     /**

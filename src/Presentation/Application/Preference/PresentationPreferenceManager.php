@@ -223,6 +223,7 @@ final readonly class PresentationPreferenceManager
      *
      * @return  PresentationPreference  Persisted exact successor record.
      *
+     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not manage the layer.
      * @throws  InvalidArgumentException  When input or the existing record owner is invalid.
      * @throws  PresentationPreferenceVersionConflict  When the destination version changed.
      *

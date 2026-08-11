@@ -458,6 +458,7 @@ final class ExtensionContributionRegistrySetTest extends TestCase
         $visible = $registries->navigation()->visible(['acme.editor.manage' => true]);
         self::assertSame('acme.editor.navigation', $visible[0]['id']);
         self::assertSame('/administrator/extensions/acme/editor', $visible[0]['href']);
+        self::assertArrayNotHasKey('surface', $visible[0]);
         $inventory = $registries->inventory($declared->owner);
         self::assertSame('acme.editor.manage', $inventory['capabilities'][0]['id']);
         self::assertSame(

@@ -268,7 +268,7 @@ final class PresentationPreferenceResolverTest extends TestCase
             'standard' => 'kis-1.0',
             'area' => 'administrator',
             'actor' => 'administrator',
-            'intent' => 'configure',
+            'intent' => 'settings',
             'resource' => 'site-settings',
             'purpose' => 'Manage approved presentation settings for the current site.',
             'pattern' => 'settings-workspace',

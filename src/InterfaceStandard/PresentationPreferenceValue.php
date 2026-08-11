@@ -133,6 +133,15 @@ final readonly class PresentationPreferenceValue
         if (!is_array($value) || array_is_list($value)) {
             throw new InvalidArgumentException('A KIS saved-views preference must be an object.');
         }
+        foreach (array_keys($value) as $key) {
+            if (!is_string($key)) {
+                throw new InvalidArgumentException(
+                    'A KIS saved-views preference has unknown or missing fields.',
+                );
+            }
+        }
+
+        /** @var array<string, mixed> $value */
         self::assertExactKeys($value, ['name', 'page_size', 'sort'], 'saved-views');
         $name = $value['name'];
         $pageSize = $value['page_size'];
