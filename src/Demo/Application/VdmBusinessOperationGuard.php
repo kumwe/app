@@ -342,6 +342,7 @@ final readonly class VdmBusinessOperationGuard
                 $fixtureKey,
             ));
         }
+        /** @var array<string, mixed> $normalizedRequest */
         $normalizedRequest = [];
         foreach ($storedRequest as $field => $value) {
             if (!is_string($field)) {
