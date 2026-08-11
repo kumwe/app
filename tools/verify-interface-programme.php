@@ -397,7 +397,8 @@ function validateSurfaces(
     array &$errors,
 ): void {
     $required = [
-        'id', 'area', 'surface_type', 'owner', 'bounded_context', 'purpose', 'route_contracts',
+        'id', 'kis_runtime_disposition', 'area', 'surface_type', 'owner', 'bounded_context', 'purpose',
+        'route_contracts',
         'handler_sources', 'templates', 'navigation_ids', 'capabilities', 'actor_ids', 'primary_task_id',
         'secondary_task_ids', 'journey_ids', 'current_elements', 'fixture_profile_ids', 'coverage',
         'finding_ids', 'dependencies', 'target', 'test_disposition',
@@ -413,6 +414,16 @@ function validateSurfaces(
             if (!array_key_exists($field, $surface)) {
                 $errors[] = sprintf('Surface %s is missing %s.', $id, $field);
             }
+        }
+        $runtimeDisposition = $surface['kis_runtime_disposition'] ?? null;
+        if (!in_array($runtimeDisposition, ['declared', 'legacy'], true)) {
+            $errors[] = sprintf('Surface %s has an invalid KIS runtime disposition.', $id);
+        } elseif ($runtimeDisposition === 'declared') {
+            if (!is_array($surface['kis_contract'] ?? null) || array_is_list($surface['kis_contract'])) {
+                $errors[] = sprintf('Declared KIS surface %s requires a canonical kis_contract.', $id);
+            }
+        } elseif (array_key_exists('kis_contract', $surface)) {
+            $errors[] = sprintf('Legacy KIS surface %s cannot claim a canonical kis_contract.', $id);
         }
         validateReferences($surface['actor_ids'] ?? null, $actorIds, 'actor', 'surface ' . $id, $errors);
         validateReferences($surface['secondary_task_ids'] ?? null, $taskIds, 'task', 'surface ' . $id, $errors);
@@ -490,6 +501,9 @@ function validateSurfaces(
                 $errors[] = sprintf('Navigation %s requires a non-empty %s.', $id, $field);
             }
         }
+        if (!in_array($navigation['runtime_surface_binding'] ?? null, ['declared', 'legacy'], true)) {
+            $errors[] = sprintf('Navigation %s has an invalid runtime surface binding disposition.', $id);
+        }
         if (!isset($surfaceIds[$navigation['surface_id'] ?? ''])) {
             $errors[] = sprintf('Navigation %s references an unknown surface.', $id);
         }
@@ -538,7 +552,7 @@ function validateTemplates(string $root, array $inventory, array $surfaceIds, ar
 }
 
 /**
- * Compare graphical path literals in the composition root with inventoried source anchors.
+ * Compare registered core graphical routes with their exact inventoried contracts.
  *
  * @param   string                $root       Repository root.
  * @param   array<string, mixed>  $inventory  Surface inventory.
@@ -556,33 +570,23 @@ function validateCoreRoutes(string $root, array $inventory, array &$errors): voi
         $errors[] = 'ContainerFactory route source is unreadable.';
         return;
     }
-    $actual = [];
-    foreach (token_get_all($source) as $token) {
-        if (!is_array($token) || $token[0] !== T_CONSTANT_ENCAPSED_STRING) {
-            continue;
-        }
-        $value = decodePhpString($token[1]);
-        if (
-            str_starts_with($value, '/administrator')
-            || str_starts_with($value, '/portal')
-            || in_array($value, ['/', '/pages/{slug}', '/{path:.+}'], true)
-        ) {
-            $actual[$value] = true;
-        }
-    }
     $declared = [];
-    foreach ($inventory['surfaces'] as $surface) {
-        foreach ($surface['route_contracts'] as $route) {
+    foreach ($inventory['surfaces'] ?? [] as $surface) {
+        foreach ($surface['route_contracts'] ?? [] as $route) {
             if (is_string($route['source_anchor'] ?? null)) {
-                $declared[$route['source_anchor']] = true;
+                $declared[] = [
+                    'name' => $route['name'] ?? null,
+                    'path' => $route['path'] ?? null,
+                    'methods' => $route['methods'] ?? null,
+                ];
             }
         }
     }
-    compareSets($actual, $declared, 'core graphical route anchor', 'surface inventory', $errors);
+    validateCoreRouteContracts($source, $declared, $errors);
 }
 
 /**
- * Compare core and shipped-extension navigation declarations with the catalogue.
+ * Compare core navigation declarations, including KIS binding disposition, with the catalogue.
  *
  * @param   string                $root       Repository root.
  * @param   array<string, mixed>  $inventory  Surface inventory.
@@ -600,24 +604,17 @@ function validateNavigationSources(string $root, array $inventory, array &$error
         $errors[] = 'Core navigation contribution source is unreadable.';
         return;
     }
-    $actual = [];
-    foreach (['AdministratorNavigationDefinition', 'PortalNavigationDefinition'] as $class) {
-        preg_match_all('/new\s+' . $class . "\\(\\s*'([^']+)'/m", $source, $matches);
-        foreach ($matches[1] ?? [] as $id) {
-            $actual[$id] = true;
-        }
-    }
     $declared = [];
-    foreach ($inventory['navigation_catalog'] as $navigation) {
+    foreach ($inventory['navigation_catalog'] ?? [] as $navigation) {
         if (($navigation['source'] ?? null) === 'src/Extension/Contribution/CoreExtensionContributions.php') {
-            $declared[$navigation['id']] = true;
+            $declared[] = $navigation;
         }
     }
-    compareSets($actual, $declared, 'core navigation declaration', 'navigation catalogue', $errors);
+    validateCoreNavigationContracts($source, $declared, $errors);
 }
 
 /**
- * Compare literal typed core KIS surface identifiers and capabilities with the programme inventory.
+ * Compare every literal typed core KIS declaration with its complete canonical inventory contract.
  *
  * @param   string                $root       Repository root.
  * @param   array<string, mixed>  $inventory  Surface inventory.
@@ -635,57 +632,845 @@ function validateCoreSurfaceDeclarations(string $root, array $inventory, array &
         $errors[] = 'Core interface-surface contribution source is unreadable.';
         return;
     }
-    $declarationCount = substr_count($source, 'SurfaceDefinition::fromArray(');
-    preg_match_all(
-        "/SurfaceDefinition::fromArray\\(" . preg_quote('$owner', '/')
-        . ",\\s*\\[\\s*'surface'\\s*=>\\s*'([^']+)'"
-        . "[\\s\\S]*?'capabilities'\\s*=>\\s*\\[([^\\]]*)\\]/",
-        $source,
-        $matches,
-        PREG_SET_ORDER,
-    );
-    if (count($matches) !== $declarationCount) {
-        $errors[] = 'Every literal core SurfaceDefinition must declare one literal surface and capabilities list.';
-    }
-    $actual = [];
-    foreach ($matches as $match) {
-        $surfaceId = $match[1];
-        if (isset($actual[$surfaceId])) {
-            $errors[] = sprintf('Core typed surface %s is declared more than once.', $surfaceId);
+    validateCoreSurfaceContracts($source, $inventory['surfaces'] ?? [], $errors);
+}
+
+/**
+ * Compare one PHP source's registered graphical routes with exact inventory tuples.
+ *
+ * @param   string                       $source    PHP route-registration source.
+ * @param   list<array<string, mixed>>   $declared Inventory route contracts.
+ * @param   list<string>                 $errors   Accumulated validation failures.
+ *
+ * @return  void
+ *
+ * @since   2.0.0
+ */
+function validateCoreRouteContracts(string $source, array $declared, array &$errors): void
+{
+    $actualByName = [];
+    foreach (extractCoreGraphicalRoutes($source) as $route) {
+        $name = $route['name'];
+        if (isset($actualByName[$name])) {
+            $errors[] = sprintf('Core graphical route %s is registered more than once.', $name);
             continue;
         }
-        preg_match_all("/'([^']+)'/", $match[2], $capabilityMatches);
-        $capabilities = array_values(array_unique($capabilityMatches[1] ?? []));
-        sort($capabilities, SORT_STRING);
-        $actual[$surfaceId] = $capabilities;
+        $actualByName[$name] = $route;
     }
-    $inventoryById = [];
-    foreach ($inventory['surfaces'] ?? [] as $surface) {
-        if (is_array($surface) && is_string($surface['id'] ?? null)) {
-            $inventoryById[$surface['id']] = $surface;
-        }
-    }
-    foreach ($actual as $surfaceId => $capabilities) {
-        $surface = $inventoryById[$surfaceId] ?? null;
-        if (!is_array($surface)) {
-            $errors[] = sprintf('Core typed surface %s is absent from the surface inventory.', $surfaceId);
+    $declaredByName = [];
+    foreach ($declared as $route) {
+        $name = $route['name'] ?? null;
+        if (!is_string($name) || !is_string($route['path'] ?? null) || !is_array($route['methods'] ?? null)) {
+            $errors[] = 'A core graphical inventory route has an invalid exact contract.';
             continue;
         }
-        $inventoryCapabilities = expectList(
-            $surface['capabilities'] ?? null,
-            'surface ' . $surfaceId . ' capabilities',
-            $errors,
+        if (isset($declaredByName[$name])) {
+            $errors[] = sprintf('Core graphical inventory route %s is declared more than once.', $name);
+            continue;
+        }
+        $declaredByName[$name] = [
+            'name' => $name,
+            'path' => $route['path'],
+            'methods' => $route['methods'],
+        ];
+    }
+    foreach (array_diff_key($actualByName, $declaredByName) as $name => $_route) {
+        $errors[] = sprintf('Core graphical route %s is absent from the surface inventory.', $name);
+    }
+    foreach (array_diff_key($declaredByName, $actualByName) as $name => $_route) {
+        $errors[] = sprintf('Surface inventory route %s has no matching core graphical registration.', $name);
+    }
+    foreach (array_intersect_key($actualByName, $declaredByName) as $name => $route) {
+        if (canonical($route) !== canonical($declaredByName[$name])) {
+            $errors[] = sprintf('Core graphical route %s does not match its exact inventory path and methods.', $name);
+        }
+    }
+}
+
+/**
+ * Extract exact graphical route tuples from literal and literal-foreach application registrations.
+ *
+ * @param   string  $source  PHP route-registration source.
+ *
+ * @return  list<array{name: string, path: string, methods: list<string>}>  Source route tuples.
+ *
+ * @since   2.0.0
+ */
+function extractCoreGraphicalRoutes(string $source): array
+{
+    $tokens = token_get_all($source);
+    $contexts = literalForeachContexts($tokens);
+    $routes = [];
+    $excluded = [];
+    foreach ($contexts as $context) {
+        $excluded[] = [$context['start'], $context['end']];
+        $routes = array_merge(
+            $routes,
+            applicationRouteCalls($tokens, $context['start'], $context['end'], $context['variables']),
         );
-        sort($inventoryCapabilities, SORT_STRING);
-        if ($inventoryCapabilities !== $capabilities) {
-            $errors[] = sprintf(
-                'Core typed surface %s capabilities %s do not match inventory capabilities %s.',
-                $surfaceId,
-                printable($capabilities),
-                printable($inventoryCapabilities),
-            );
+    }
+    $routes = array_merge($routes, applicationRouteCalls($tokens, 0, count($tokens) - 1, [], $excluded));
+    return $routes;
+}
+
+/**
+ * Extract application route calls within one token range.
+ *
+ * @param   list<mixed>                                 $tokens     PHP tokens.
+ * @param   int                                         $start      Inclusive token offset.
+ * @param   int                                         $end        Inclusive token offset.
+ * @param   array<string, mixed>                        $variables  Literal loop variables.
+ * @param   list<array{0: int, 1: int}>                 $excluded   Ranges handled through loop expansion.
+ *
+ * @return  list<array{name: string, path: string, methods: list<string>}>  Source route tuples.
+ *
+ * @since   2.0.0
+ */
+function applicationRouteCalls(
+    array $tokens,
+    int $start,
+    int $end,
+    array $variables,
+    array $excluded = [],
+): array {
+    $routes = [];
+    for ($index = $start; $index <= $end; ++$index) {
+        foreach ($excluded as [$excludedStart, $excludedEnd]) {
+            if ($index >= $excludedStart && $index <= $excludedEnd) {
+                $index = $excludedEnd;
+                continue 2;
+            }
+        }
+        $token = $tokens[$index] ?? null;
+        if (!is_array($token) || $token[0] !== T_VARIABLE || $token[1] !== '$application') {
+            continue;
+        }
+        $operator = nextMeaningfulPhpToken($tokens, $index + 1);
+        $methodIndex = $operator === null ? null : nextMeaningfulPhpToken($tokens, $operator + 1);
+        $open = $methodIndex === null ? null : nextMeaningfulPhpToken($tokens, $methodIndex + 1);
+        $methodToken = $methodIndex === null ? null : ($tokens[$methodIndex] ?? null);
+        if (
+            $operator === null
+            || phpTokenText($tokens[$operator]) !== '->'
+            || !is_array($methodToken)
+            || $methodToken[0] !== T_STRING
+            || !in_array($methodToken[1], ['get', 'post', 'route'], true)
+            || $open === null
+            || phpTokenText($tokens[$open]) !== '('
+        ) {
+            continue;
+        }
+        $close = closingPhpToken($tokens, $open, '(', ')');
+        if ($close === null) {
+            continue;
+        }
+        $arguments = splitPhpArguments(array_slice($tokens, $open + 1, $close - $open - 1));
+        $path = evaluatePhpStringExpression($arguments[0] ?? [], $variables);
+        $nameArgument = $methodToken[1] === 'route' ? 3 : 2;
+        $name = evaluatePhpStringExpression($arguments[$nameArgument] ?? [], $variables);
+        if (!is_string($path) || !is_string($name) || !isCoreGraphicalPath($path)) {
+            $index = $close;
+            continue;
+        }
+        if ($methodToken[1] === 'route') {
+            $valid = false;
+            $methods = parsePhpLiteralValue($arguments[2] ?? [], $valid);
+            if (!$valid || !is_array($methods) || !array_is_list($methods)) {
+                $index = $close;
+                continue;
+            }
+        } else {
+            $methods = [$methodToken[1] === 'get' ? 'GET' : 'POST'];
+        }
+        if (!array_is_list($methods) || array_filter($methods, 'is_string') !== $methods) {
+            $index = $close;
+            continue;
+        }
+        $routes[] = ['name' => $name, 'path' => $path, 'methods' => $methods];
+        $index = $close;
+    }
+    return $routes;
+}
+
+/**
+ * Decide whether an application path belongs to the inventoried graphical interface.
+ *
+ * @param   string  $path  Registered route path.
+ *
+ * @return  bool  True for public, administrator, or portal graphical routes.
+ *
+ * @since   2.0.0
+ */
+function isCoreGraphicalPath(string $path): bool
+{
+    return str_starts_with($path, '/administrator')
+        || str_starts_with($path, '/portal')
+        || in_array($path, ['/', '/pages/{slug}', '/{path:.+}'], true);
+}
+
+/**
+ * Compare literal core navigation constructors with their exact catalogue bindings.
+ *
+ * @param   string                       $source    PHP contribution source.
+ * @param   list<array<string, mixed>>   $declared Navigation catalogue records.
+ * @param   list<string>                 $errors   Accumulated validation failures.
+ *
+ * @return  void
+ *
+ * @since   2.0.0
+ */
+function validateCoreNavigationContracts(string $source, array $declared, array &$errors): void
+{
+    $actualById = [];
+    foreach (extractCoreNavigationDeclarations($source, $errors) as $navigation) {
+        $id = $navigation['id'];
+        if (isset($actualById[$id])) {
+            $errors[] = sprintf('Core navigation declaration %s is repeated.', $id);
+            continue;
+        }
+        $actualById[$id] = $navigation;
+    }
+    $declaredById = [];
+    foreach ($declared as $navigation) {
+        $id = $navigation['id'] ?? null;
+        if (!is_string($id)) {
+            $errors[] = 'A core navigation catalogue record has no ID.';
+            continue;
+        }
+        $disposition = $navigation['runtime_surface_binding'] ?? null;
+        if (!in_array($disposition, ['declared', 'legacy'], true)) {
+            $errors[] = sprintf('Core navigation %s has no valid runtime surface binding disposition.', $id);
+            continue;
+        }
+        $declaredById[$id] = [
+            'id' => $id,
+            'area' => $navigation['area'] ?? null,
+            'path' => $navigation['path'] ?? null,
+            'icon' => $navigation['icon'] ?? null,
+            'capability' => $navigation['capability'] ?? null,
+            'surface' => $disposition === 'declared' ? ($navigation['surface_id'] ?? null) : null,
+        ];
+    }
+    foreach (array_diff_key($actualById, $declaredById) as $id => $_navigation) {
+        $errors[] = sprintf('Core navigation declaration %s is absent from the navigation catalogue.', $id);
+    }
+    foreach (array_diff_key($declaredById, $actualById) as $id => $_navigation) {
+        $errors[] = sprintf('Navigation catalogue entry %s has no matching core declaration.', $id);
+    }
+    foreach (array_intersect_key($actualById, $declaredById) as $id => $navigation) {
+        if (canonical($navigation) !== canonical($declaredById[$id])) {
+            $errors[] = sprintf('Core navigation declaration %s does not match its exact catalogue binding.', $id);
         }
     }
+}
+
+/**
+ * Extract core administrator and portal navigation constructor bindings.
+ *
+ * @param   string        $source  PHP contribution source.
+ * @param   list<string>  $errors  Accumulated validation failures.
+ *
+ * @return  list<array{id: string, area: string, path: string, icon: string, capability: string, surface: ?string}>
+ *          Literal source declarations.
+ *
+ * @since   2.0.0
+ */
+function extractCoreNavigationDeclarations(string $source, array &$errors): array
+{
+    $tokens = token_get_all($source);
+    $classes = [
+        'AdministratorNavigationDefinition' => 'administrator',
+        'PortalNavigationDefinition' => 'portal',
+    ];
+    $declarations = [];
+    foreach (literalConstructorCalls($tokens, array_keys($classes), $errors) as $call) {
+        $arguments = $call['arguments'];
+        if (
+            !is_string($arguments[0] ?? null)
+            || !is_string($arguments[4] ?? null)
+            || !is_string($arguments[5] ?? null)
+            || !is_string($arguments[6] ?? null)
+            || (array_key_exists(9, $arguments) && !is_string($arguments[9]) && $arguments[9] !== null)
+        ) {
+            $errors[] = sprintf('%s source declaration has an invalid binding shape.', $call['class']);
+            continue;
+        }
+        $declarations[] = [
+            'id' => $arguments[0],
+            'area' => $classes[$call['class']],
+            'path' => $arguments[4],
+            'icon' => $arguments[5],
+            'capability' => $arguments[6],
+            'surface' => $arguments[9] ?? null,
+        ];
+    }
+    return $declarations;
+}
+
+/**
+ * Compare literal core SurfaceDefinition documents with declared and legacy inventory dispositions.
+ *
+ * @param   string                       $source    PHP contribution source.
+ * @param   list<array<string, mixed>>   $surfaces Surface inventory records.
+ * @param   list<string>                 $errors   Accumulated validation failures.
+ *
+ * @return  void
+ *
+ * @since   2.0.0
+ */
+function validateCoreSurfaceContracts(string $source, array $surfaces, array &$errors): void
+{
+    $expected = [];
+    foreach ($surfaces as $surface) {
+        $id = $surface['id'] ?? null;
+        if (!is_string($id)) {
+            continue;
+        }
+        $disposition = $surface['kis_runtime_disposition'] ?? null;
+        if ($disposition === 'declared') {
+            if (!is_array($surface['kis_contract'] ?? null) || array_is_list($surface['kis_contract'])) {
+                $errors[] = sprintf('Declared KIS surface %s has no canonical kis_contract.', $id);
+                continue;
+            }
+            $expected[$id] = $surface['kis_contract'];
+        } elseif ($disposition === 'legacy' && array_key_exists('kis_contract', $surface)) {
+            $errors[] = sprintf('Legacy KIS surface %s carries a hidden typed contract.', $id);
+        }
+    }
+    $actual = extractCoreSurfaceDefinitions($source, $errors);
+    foreach (array_diff_key($actual, $expected) as $id => $_contract) {
+        $errors[] = sprintf('Core typed surface %s is not admitted by a declared inventory disposition.', $id);
+    }
+    foreach (array_diff_key($expected, $actual) as $id => $_contract) {
+        $errors[] = sprintf('Declared inventory surface %s has no matching core typed declaration.', $id);
+    }
+    foreach (array_intersect_key($actual, $expected) as $id => $contract) {
+        if (canonical($contract) !== canonical($expected[$id])) {
+            $errors[] = sprintf('Core typed surface %s does not match its complete canonical kis_contract.', $id);
+        }
+    }
+}
+
+/**
+ * Extract literal SurfaceDefinition::fromArray documents keyed by their stable surface identifier.
+ *
+ * @param   string        $source  PHP contribution source.
+ * @param   list<string>  $errors  Accumulated validation failures.
+ *
+ * @return  array<string, array<string, mixed>>  Canonical source contracts by surface ID.
+ *
+ * @since   2.0.0
+ */
+function extractCoreSurfaceDefinitions(string $source, array &$errors): array
+{
+    $tokens = token_get_all($source);
+    $definitions = [];
+    for ($index = 0, $count = count($tokens); $index < $count; ++$index) {
+        $token = $tokens[$index];
+        if (!is_array($token) || $token[0] !== T_STRING || $token[1] !== 'SurfaceDefinition') {
+            continue;
+        }
+        $operator = nextMeaningfulPhpToken($tokens, $index + 1);
+        $method = $operator === null ? null : nextMeaningfulPhpToken($tokens, $operator + 1);
+        $open = $method === null ? null : nextMeaningfulPhpToken($tokens, $method + 1);
+        if (
+            $operator === null
+            || phpTokenText($tokens[$operator]) !== '::'
+            || $method === null
+            || !is_array($tokens[$method])
+            || $tokens[$method][0] !== T_STRING
+            || $tokens[$method][1] !== 'fromArray'
+            || $open === null
+            || phpTokenText($tokens[$open]) !== '('
+        ) {
+            continue;
+        }
+        $close = closingPhpToken($tokens, $open, '(', ')');
+        if ($close === null) {
+            $errors[] = 'A core SurfaceDefinition call has no closing parenthesis.';
+            continue;
+        }
+        $arguments = splitPhpArguments(array_slice($tokens, $open + 1, $close - $open - 1));
+        $valid = false;
+        $document = parsePhpLiteralValue($arguments[1] ?? [], $valid);
+        if (!$valid || !is_array($document) || array_is_list($document) || !is_string($document['surface'] ?? null)) {
+            $errors[] = 'Every core SurfaceDefinition must use one complete literal declaration document.';
+            $index = $close;
+            continue;
+        }
+        $id = $document['surface'];
+        unset($document['surface']);
+        if (isset($definitions[$id])) {
+            $errors[] = sprintf('Core typed surface %s is declared more than once.', $id);
+        } else {
+            $definitions[$id] = $document;
+        }
+        $index = $close;
+    }
+    return $definitions;
+}
+
+/**
+ * Extract constructor calls whose arguments are entirely literal values.
+ *
+ * @param   list<mixed>          $tokens   PHP tokens.
+ * @param   list<string>         $classes  Short constructor class names to collect.
+ * @param   list<string>         $errors   Accumulated validation failures.
+ *
+ * @return  list<array{class: string, arguments: list<mixed>}>  Literal constructor calls.
+ *
+ * @since   2.0.0
+ */
+function literalConstructorCalls(array $tokens, array $classes, array &$errors): array
+{
+    $calls = [];
+    for ($index = 0, $count = count($tokens); $index < $count; ++$index) {
+        $token = $tokens[$index];
+        if (!is_array($token) || $token[0] !== T_NEW) {
+            continue;
+        }
+        $classIndex = nextMeaningfulPhpToken($tokens, $index + 1);
+        $classToken = $classIndex === null ? null : ($tokens[$classIndex] ?? null);
+        if (!is_array($classToken) || $classToken[0] !== T_STRING || !in_array($classToken[1], $classes, true)) {
+            continue;
+        }
+        $open = nextMeaningfulPhpToken($tokens, $classIndex + 1);
+        if ($open === null || phpTokenText($tokens[$open]) !== '(') {
+            $errors[] = sprintf('%s source declaration has no argument list.', $classToken[1]);
+            continue;
+        }
+        $close = closingPhpToken($tokens, $open, '(', ')');
+        if ($close === null) {
+            $errors[] = sprintf('%s source declaration has no closing parenthesis.', $classToken[1]);
+            continue;
+        }
+        $arguments = [];
+        $validCall = true;
+        foreach (splitPhpArguments(array_slice($tokens, $open + 1, $close - $open - 1)) as $argumentTokens) {
+            $valid = false;
+            $argument = parsePhpLiteralValue($argumentTokens, $valid);
+            if (!$valid) {
+                $validCall = false;
+                break;
+            }
+            $arguments[] = $argument;
+        }
+        if (!$validCall) {
+            $errors[] = sprintf('%s source declaration must use literal constructor bindings.', $classToken[1]);
+        } else {
+            $calls[] = ['class' => $classToken[1], 'arguments' => $arguments];
+        }
+        $index = $close;
+    }
+    return $calls;
+}
+
+/**
+ * Expand foreach statements over literal lists into token ranges and variable bindings.
+ *
+ * @param   list<mixed>  $tokens  PHP tokens.
+ *
+ * @return  list<array{start: int, end: int, variables: array<string, mixed>}>  Expanded loop contexts.
+ *
+ * @since   2.0.0
+ */
+function literalForeachContexts(array $tokens): array
+{
+    $contexts = [];
+    for ($index = 0, $count = count($tokens); $index < $count; ++$index) {
+        $token = $tokens[$index];
+        if (!is_array($token) || $token[0] !== T_FOREACH) {
+            continue;
+        }
+        $open = nextMeaningfulPhpToken($tokens, $index + 1);
+        if ($open === null || phpTokenText($tokens[$open]) !== '(') {
+            continue;
+        }
+        $close = closingPhpToken($tokens, $open, '(', ')');
+        if ($close === null) {
+            continue;
+        }
+        $inside = array_slice($tokens, $open + 1, $close - $open - 1);
+        $as = topLevelTokenIndex($inside, T_AS);
+        if ($as === null) {
+            continue;
+        }
+        $valid = false;
+        $iterable = parsePhpLiteralValue(array_slice($inside, 0, $as), $valid);
+        if (!$valid || !is_array($iterable) || !array_is_list($iterable)) {
+            continue;
+        }
+        $variables = foreachBindingVariables(array_slice($inside, $as + 1));
+        if ($variables === []) {
+            continue;
+        }
+        $bodyOpen = nextMeaningfulPhpToken($tokens, $close + 1);
+        if ($bodyOpen === null || phpTokenText($tokens[$bodyOpen]) !== '{') {
+            continue;
+        }
+        $bodyClose = closingPhpToken($tokens, $bodyOpen, '{', '}');
+        if ($bodyClose === null) {
+            continue;
+        }
+        foreach ($iterable as $item) {
+            $bindings = [];
+            if (count($variables) === 1) {
+                $bindings[$variables[0]] = $item;
+            } elseif (is_array($item) && array_is_list($item) && count($item) >= count($variables)) {
+                foreach ($variables as $offset => $variable) {
+                    $bindings[$variable] = $item[$offset];
+                }
+            } else {
+                continue;
+            }
+            $contexts[] = ['start' => $bodyOpen + 1, 'end' => $bodyClose - 1, 'variables' => $bindings];
+        }
+        $index = $bodyClose;
+    }
+    return $contexts;
+}
+
+/**
+ * Locate one token kind at the top level of a token slice.
+ *
+ * @param   list<mixed>  $tokens  PHP tokens.
+ * @param   int          $kind    Token identifier to locate.
+ *
+ * @return  ?int  Token offset, or null when absent.
+ *
+ * @since   2.0.0
+ */
+function topLevelTokenIndex(array $tokens, int $kind): ?int
+{
+    $depth = ['(' => 0, '[' => 0, '{' => 0];
+    foreach ($tokens as $index => $token) {
+        $text = phpTokenText($token);
+        if (isset($depth[$text])) {
+            ++$depth[$text];
+        } elseif ($text === ')') {
+            --$depth['('];
+        } elseif ($text === ']') {
+            --$depth['['];
+        } elseif ($text === '}') {
+            --$depth['{'];
+        } elseif (is_array($token) && $token[0] === $kind && max($depth) === 0) {
+            return $index;
+        }
+    }
+    return null;
+}
+
+/**
+ * Parse a scalar or list-destructuring foreach binding.
+ *
+ * @param   list<mixed>  $tokens  Binding tokens after the as keyword.
+ *
+ * @return  list<string>  Variable names including their dollar prefix.
+ *
+ * @since   2.0.0
+ */
+function foreachBindingVariables(array $tokens): array
+{
+    $tokens = meaningfulPhpTokens($tokens);
+    if (count($tokens) === 1 && is_array($tokens[0]) && $tokens[0][0] === T_VARIABLE) {
+        return [$tokens[0][1]];
+    }
+    if ($tokens === [] || phpTokenText($tokens[0]) !== '[' || phpTokenText($tokens[array_key_last($tokens)]) !== ']') {
+        return [];
+    }
+    $variables = [];
+    foreach (array_slice($tokens, 1, -1) as $token) {
+        if (is_array($token) && $token[0] === T_VARIABLE) {
+            $variables[] = $token[1];
+        } elseif (phpTokenText($token) !== ',') {
+            return [];
+        }
+    }
+    return $variables;
+}
+
+/**
+ * Split a token slice at top-level commas.
+ *
+ * @param   list<mixed>  $tokens  Argument-list tokens without their outer parentheses.
+ *
+ * @return  list<list<mixed>>  Argument token slices.
+ *
+ * @since   2.0.0
+ */
+function splitPhpArguments(array $tokens): array
+{
+    $arguments = [];
+    $current = [];
+    $depth = ['(' => 0, '[' => 0, '{' => 0];
+    foreach ($tokens as $token) {
+        $text = phpTokenText($token);
+        if ($text === ',' && max($depth) === 0) {
+            if (meaningfulPhpTokens($current) !== []) {
+                $arguments[] = $current;
+            }
+            $current = [];
+            continue;
+        }
+        $current[] = $token;
+        if (isset($depth[$text])) {
+            ++$depth[$text];
+        } elseif ($text === ')') {
+            --$depth['('];
+        } elseif ($text === ']') {
+            --$depth['['];
+        } elseif ($text === '}') {
+            --$depth['{'];
+        }
+    }
+    if (meaningfulPhpTokens($current) !== []) {
+        $arguments[] = $current;
+    }
+    return $arguments;
+}
+
+/**
+ * Parse one PHP literal composed only of scalars and nested short arrays.
+ *
+ * @param   list<mixed>  $tokens  Literal expression tokens.
+ * @param   bool         $valid   Set true only when the complete expression is supported.
+ *
+ * @return  mixed  Parsed literal value, or null when invalid.
+ *
+ * @since   2.0.0
+ */
+function parsePhpLiteralValue(array $tokens, bool &$valid): mixed
+{
+    $tokens = meaningfulPhpTokens($tokens);
+    $index = 0;
+    $valid = $tokens !== [];
+    $value = parsePhpLiteralNode($tokens, $index, $valid);
+    if (!$valid || $index !== count($tokens)) {
+        $valid = false;
+        return null;
+    }
+    return $value;
+}
+
+/**
+ * Parse one recursive PHP literal node.
+ *
+ * @param   list<mixed>  $tokens  Meaningful PHP tokens.
+ * @param   int          $index   Current token offset, advanced on success.
+ * @param   bool         $valid   Mutable parser validity.
+ *
+ * @return  mixed  Parsed scalar or array value.
+ *
+ * @since   2.0.0
+ */
+function parsePhpLiteralNode(array $tokens, int &$index, bool &$valid): mixed
+{
+    $token = $tokens[$index] ?? null;
+    if ($token === '[') {
+        ++$index;
+        $result = [];
+        while ($valid && ($tokens[$index] ?? null) !== ']') {
+            $first = parsePhpLiteralNode($tokens, $index, $valid);
+            if (!$valid) {
+                return null;
+            }
+            $next = $tokens[$index] ?? null;
+            if (is_array($next) && $next[0] === T_DOUBLE_ARROW) {
+                ++$index;
+                $value = parsePhpLiteralNode($tokens, $index, $valid);
+                if (!$valid || (!is_int($first) && !is_string($first))) {
+                    $valid = false;
+                    return null;
+                }
+                $result[$first] = $value;
+            } else {
+                $result[] = $first;
+            }
+            if (($tokens[$index] ?? null) === ',') {
+                ++$index;
+                if (($tokens[$index] ?? null) === ']') {
+                    break;
+                }
+            } elseif (($tokens[$index] ?? null) !== ']') {
+                $valid = false;
+                return null;
+            }
+        }
+        if (($tokens[$index] ?? null) !== ']') {
+            $valid = false;
+            return null;
+        }
+        ++$index;
+        return $result;
+    }
+    if (!is_array($token)) {
+        $valid = false;
+        return null;
+    }
+    ++$index;
+    if ($token[0] === T_CONSTANT_ENCAPSED_STRING) {
+        $value = decodePhpString($token[1]);
+        while (($tokens[$index] ?? null) === '.') {
+            $next = $tokens[$index + 1] ?? null;
+            if (!is_array($next) || $next[0] !== T_CONSTANT_ENCAPSED_STRING) {
+                $valid = false;
+                return null;
+            }
+            $value .= decodePhpString($next[1]);
+            $index += 2;
+        }
+        return $value;
+    }
+    if ($token[0] === T_LNUMBER) {
+        return (int) str_replace('_', '', $token[1]);
+    }
+    if ($token[0] === T_DNUMBER) {
+        return (float) str_replace('_', '', $token[1]);
+    }
+    if ($token[0] === T_STRING) {
+        return match (strtolower($token[1])) {
+            'true' => true,
+            'false' => false,
+            'null' => null,
+            default => invalidatePhpLiteral($valid),
+        };
+    }
+    $valid = false;
+    return null;
+}
+
+/**
+ * Mark a PHP literal parse invalid while yielding a null expression value.
+ *
+ * @param   bool  $valid  Mutable parser validity.
+ *
+ * @return  null
+ *
+ * @since   2.0.0
+ */
+function invalidatePhpLiteral(bool &$valid): null
+{
+    $valid = false;
+    return null;
+}
+
+/**
+ * Resolve a concatenated literal/foreach-variable PHP string expression.
+ *
+ * @param   list<mixed>            $tokens     Expression tokens.
+ * @param   array<string, mixed>   $variables  Literal values keyed by variable token text.
+ *
+ * @return  ?string  Resolved string, or null for a dynamic expression.
+ *
+ * @since   2.0.0
+ */
+function evaluatePhpStringExpression(array $tokens, array $variables): ?string
+{
+    $tokens = meaningfulPhpTokens($tokens);
+    if ($tokens === []) {
+        return null;
+    }
+    $value = '';
+    $expectValue = true;
+    foreach ($tokens as $token) {
+        if ($expectValue) {
+            if (is_array($token) && $token[0] === T_CONSTANT_ENCAPSED_STRING) {
+                $part = decodePhpString($token[1]);
+            } elseif (
+                is_array($token)
+                && $token[0] === T_VARIABLE
+                && is_string($variables[$token[1]] ?? null)
+            ) {
+                $part = $variables[$token[1]];
+            } else {
+                return null;
+            }
+            $value .= $part;
+        } elseif (phpTokenText($token) !== '.') {
+            return null;
+        }
+        $expectValue = !$expectValue;
+    }
+    return $expectValue ? null : $value;
+}
+
+/**
+ * Remove whitespace and comments from a PHP token slice.
+ *
+ * @param   list<mixed>  $tokens  Raw PHP tokens.
+ *
+ * @return  list<mixed>  Meaningful tokens with stable numeric keys.
+ *
+ * @since   2.0.0
+ */
+function meaningfulPhpTokens(array $tokens): array
+{
+    return array_values(array_filter(
+        $tokens,
+        static fn (mixed $token): bool => !is_array($token)
+            || !in_array($token[0], [T_WHITESPACE, T_COMMENT, T_DOC_COMMENT], true),
+    ));
+}
+
+/**
+ * Find the next non-whitespace, non-comment PHP token.
+ *
+ * @param   list<mixed>  $tokens  PHP tokens.
+ * @param   int          $start   First candidate offset.
+ *
+ * @return  ?int  Token offset, or null when none remains.
+ *
+ * @since   2.0.0
+ */
+function nextMeaningfulPhpToken(array $tokens, int $start): ?int
+{
+    for ($index = $start, $count = count($tokens); $index < $count; ++$index) {
+        $token = $tokens[$index];
+        if (!is_array($token) || !in_array($token[0], [T_WHITESPACE, T_COMMENT, T_DOC_COMMENT], true)) {
+            return $index;
+        }
+    }
+    return null;
+}
+
+/**
+ * Find a balanced closing punctuation token.
+ *
+ * @param   list<mixed>  $tokens  PHP tokens.
+ * @param   int          $open    Opening token offset.
+ * @param   string       $left    Opening punctuation.
+ * @param   string       $right   Closing punctuation.
+ *
+ * @return  ?int  Closing token offset, or null when unbalanced.
+ *
+ * @since   2.0.0
+ */
+function closingPhpToken(array $tokens, int $open, string $left, string $right): ?int
+{
+    $depth = 0;
+    for ($index = $open, $count = count($tokens); $index < $count; ++$index) {
+        $text = phpTokenText($tokens[$index]);
+        if ($text === $left) {
+            ++$depth;
+        } elseif ($text === $right && --$depth === 0) {
+            return $index;
+        }
+    }
+    return null;
+}
+
+/**
+ * Return one token's source text.
+ *
+ * @param   mixed  $token  PHP array token or punctuation string.
+ *
+ * @return  string  Token source text.
+ *
+ * @since   2.0.0
+ */
+function phpTokenText(mixed $token): string
+{
+    return is_array($token) ? $token[1] : (is_string($token) ? $token : '');
 }
 
 /**
@@ -882,6 +1667,7 @@ function normalizeBlockingFindings(mixed $records, array &$errors): array
  * @param   list<string>                        $errors       Accumulated validation failures.
  * @param   array<string, array<string, mixed>> $findings     Normalized unresolved P0/P1 findings.
  * @param   array<string, array<string, mixed>> $registered   Authoritative finding targets.
+ * @param   ?string                             $asOf         Injected UTC verification time for deterministic tests.
  *
  * @return  void
  *
@@ -898,8 +1684,28 @@ function validateLedger(
     array &$errors,
     array $findings = [],
     array $registered = [],
+    ?string $asOf = null,
 ): void {
+    $asOf ??= gmdate('Y-m-d\TH:i:s\Z');
+    if (!isUtcTimestamp($asOf)) {
+        $errors[] = 'Programme verification as-of time must be a UTC ISO-8601 timestamp.';
+        $asOf = gmdate('Y-m-d\TH:i:s\Z');
+    }
     $statuses = array_fill_keys(expectList($ledger['status_vocabulary'] ?? null, 'status vocabulary', $errors), true);
+    $currentFocus = [];
+    foreach (expectList($ledger['current_focus'] ?? [], 'current focus', $errors) as $phaseNumber) {
+        if (is_int($phaseNumber) && $phaseNumber >= 0 && $phaseNumber <= 6) {
+            $currentFocus[$phaseNumber] = true;
+        } else {
+            $errors[] = sprintf('Current focus contains invalid phase %s.', printable($phaseNumber));
+        }
+    }
+    $phaseStatuses = [];
+    foreach ($ledger['phases'] ?? [] as $phase) {
+        if (is_array($phase) && is_int($phase['number'] ?? null) && is_string($phase['status'] ?? null)) {
+            $phaseStatuses[$phase['number']] = $phase['status'];
+        }
+    }
     $evidenceRules = $ledger['evidence_rules'] ?? null;
     if (!is_array($evidenceRules) || array_is_list($evidenceRules)) {
         $errors[] = 'Evidence rules must be an object.';
@@ -962,8 +1768,18 @@ function validateLedger(
         if (!isset($ownerIds[$evidence['producer_role'] ?? ''])) {
             $errors[] = sprintf('Evidence %s has an unknown producer role.', $evidenceId);
         }
-        if (!isCommitRevision($evidence['source_revision'] ?? null)) {
+        $sourceRevision = $evidence['source_revision'] ?? null;
+        $sourceRevisionVerified = isCommitRevision($sourceRevision);
+        if (!$sourceRevisionVerified) {
             $errors[] = sprintf('Evidence %s requires a 40-character source revision.', $evidenceId);
+        }
+        if ($status === $acceptedStatus && $sourceRevisionVerified && !gitCommitExists($root, $sourceRevision)) {
+            $errors[] = sprintf(
+                'Accepted evidence %s source revision %s is not a verifiable repository commit.',
+                $evidenceId,
+                $sourceRevision,
+            );
+            $sourceRevisionVerified = false;
         }
         foreach (['environment', 'method', 'result'] as $field) {
             if (!is_string($evidence[$field] ?? null) || trim($evidence[$field]) === '') {
@@ -999,7 +1815,12 @@ function validateLedger(
                 $evidenceSupersedes[$evidenceId] = $supersedes;
             }
         }
-        if ($status === $acceptedStatus && is_string($type) && isset($evidenceTypes[$type])) {
+        if (
+            $status === $acceptedStatus
+            && $sourceRevisionVerified
+            && is_string($type)
+            && isset($evidenceTypes[$type])
+        ) {
             $acceptedEvidence[$evidenceId] = true;
             $acceptedEvidenceByType[$type][$evidenceId] = true;
             $acceptedEvidenceTypes[$evidenceId] = $type;
@@ -1067,6 +1888,9 @@ function validateLedger(
                 $acceptedEvidence,
                 $evidenceSupports,
                 $registered,
+                $asOf,
+                $currentFocus,
+                $phaseStatuses,
                 $errors,
             );
         }
@@ -1272,6 +2096,9 @@ function validateEvidenceTypeRequirements(
  * @param   array<string, true>                  $acceptedEvidence    Accepted evidence IDs.
  * @param   array<string, array<string, true>>   $evidenceSupports    Targets declared by evidence ID.
  * @param   array<string, array<string, mixed>>  $registeredFindings  Authoritative finding targets.
+ * @param   string                               $asOf                UTC verification time.
+ * @param   array<int, true>                     $currentFocus        Phases currently in active scope.
+ * @param   array<int, string>                   $phaseStatuses       Current phase statuses.
  * @param   list<string>                         $errors              Accumulated validation failures.
  *
  * @return  bool  True only when the waiver can satisfy a completed item's prerequisite.
@@ -1286,6 +2113,9 @@ function validateGovernedWaiver(
     array $acceptedEvidence,
     array $evidenceSupports,
     array $registeredFindings,
+    string $asOf,
+    array $currentFocus,
+    array $phaseStatuses,
     array &$errors,
 ): bool {
     $valid = true;
@@ -1331,13 +2161,36 @@ function validateGovernedWaiver(
         $errors[] = sprintf('Waiver for work item %s has an unknown owner role.', $id);
         $valid = false;
     }
-    $hasExpiry = isUtcTimestamp($waiver['expires_at'] ?? null);
-    $hasTargetPhase = is_int($waiver['target_phase'] ?? null)
+    $hasExpiryField = array_key_exists('expires_at', $waiver);
+    $hasTargetPhaseField = array_key_exists('target_phase', $waiver);
+    $hasExpiry = $hasExpiryField && isUtcTimestamp($waiver['expires_at']);
+    $hasTargetPhase = $hasTargetPhaseField
+        && is_int($waiver['target_phase'])
         && $waiver['target_phase'] >= 0
         && $waiver['target_phase'] <= 6;
-    if (!$hasExpiry && !$hasTargetPhase) {
+    if (!$hasExpiryField && !$hasTargetPhaseField) {
         $errors[] = sprintf('Waiver for work item %s requires a UTC expiry or Phase 0-6 target.', $id);
         $valid = false;
+    }
+    if ($hasExpiryField && !$hasExpiry) {
+        $errors[] = sprintf('Waiver for work item %s has an invalid UTC expiry.', $id);
+        $valid = false;
+    }
+    if ($hasExpiry && $waiver['expires_at'] <= $asOf) {
+        $errors[] = sprintf('Waiver for work item %s expired at %s.', $id, $waiver['expires_at']);
+        $valid = false;
+    }
+    if ($hasTargetPhaseField && !$hasTargetPhase) {
+        $errors[] = sprintf('Waiver for work item %s has an invalid target phase.', $id);
+        $valid = false;
+    }
+    if ($hasTargetPhase) {
+        $targetPhase = $waiver['target_phase'];
+        $highestFocus = $currentFocus === [] ? -1 : max(array_keys($currentFocus));
+        if ($targetPhase <= $highestFocus || ($phaseStatuses[$targetPhase] ?? null) !== 'planned') {
+            $errors[] = sprintf('Waiver for work item %s expired on entry to Phase %d.', $id, $targetPhase);
+            $valid = false;
+        }
     }
     $waiverEvidence = expectList($waiver['evidence_ids'] ?? null, 'waiver for work item ' . $id . ' evidence', $errors);
     if ($waiverEvidence === []) {
@@ -2658,6 +3511,207 @@ function isCommitRevision(mixed $value): bool
 }
 
 /**
+ * Determine whether an object identifier resolves to a commit in this repository.
+ *
+ * Native runtimes ask Git for the identifier's exact object type without invoking a shell. Sandboxed runtimes
+ * fall back to loose-object headers and non-delta pack entry types. A shallow clone can therefore accept
+ * only commits actually present at its boundary, while an export or unsupported packed representation
+ * fails closed instead of treating a syntactically valid hash, blob, tree, or tag as evidence.
+ *
+ * @param   string  $root      Repository root.
+ * @param   string  $revision  Full lowercase object identifier.
+ *
+ * @return  bool  True only when the object is locally verifiable.
+ *
+ * @since   2.0.0
+ */
+function gitCommitExists(string $root, string $revision): bool
+{
+    if (!isCommitRevision($revision)) {
+        return false;
+    }
+    $nativeResult = gitCatFileCommitExists($root, $revision);
+    if (is_bool($nativeResult)) {
+        return $nativeResult;
+    }
+    $gitMetadata = $root . '/.git';
+    if (is_dir($gitMetadata)) {
+        $gitDirectory = $gitMetadata;
+    } elseif (is_file($gitMetadata)) {
+        $pointer = trim((string) file_get_contents($gitMetadata));
+        if (!str_starts_with($pointer, 'gitdir: ')) {
+            return false;
+        }
+        $gitDirectory = substr($pointer, 8);
+        if (!str_starts_with($gitDirectory, '/')) {
+            $gitDirectory = $root . '/' . $gitDirectory;
+        }
+    } else {
+        return false;
+    }
+    $commonDirectory = $gitDirectory;
+    if (is_file($gitDirectory . '/commondir')) {
+        $commonDirectory = trim((string) file_get_contents($gitDirectory . '/commondir'));
+        if (!str_starts_with($commonDirectory, '/')) {
+            $commonDirectory = $gitDirectory . '/' . $commonDirectory;
+        }
+    }
+    $pending = [$commonDirectory . '/objects'];
+    $seen = [];
+    while ($pending !== []) {
+        $objectDirectory = array_pop($pending);
+        if (!is_string($objectDirectory) || isset($seen[$objectDirectory]) || !is_dir($objectDirectory)) {
+            continue;
+        }
+        $seen[$objectDirectory] = true;
+        $loosePath = $objectDirectory . '/' . substr($revision, 0, 2) . '/' . substr($revision, 2);
+        if (is_file($loosePath)) {
+            $compressed = file_get_contents($loosePath);
+            $decoded = is_string($compressed) ? @gzuncompress($compressed) : false;
+            if (is_string($decoded) && preg_match('/^commit \d+\x00/sD', $decoded) === 1) {
+                return true;
+            }
+        }
+        foreach (glob($objectDirectory . '/pack/*.idx') ?: [] as $indexPath) {
+            if (packedGitObjectType($indexPath, $revision) === 1) {
+                return true;
+            }
+        }
+        $alternates = @file($objectDirectory . '/info/alternates', FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+        foreach (is_array($alternates) ? $alternates : [] as $alternate) {
+            $pending[] = str_starts_with($alternate, '/') ? $alternate : $objectDirectory . '/' . $alternate;
+        }
+    }
+    return false;
+}
+
+/**
+ * Ask Git to verify a commit when process execution is available.
+ *
+ * @param   string  $root      Repository root.
+ * @param   string  $revision  Full lowercase object identifier.
+ *
+ * @return  ?bool  Verification result, or null when process execution is unavailable.
+ *
+ * @since   2.0.0
+ */
+function gitCatFileCommitExists(string $root, string $revision): ?bool
+{
+    if (!function_exists('proc_open')) {
+        return null;
+    }
+    $pipes = [];
+    $process = @proc_open(
+        ['git', '-C', $root, 'cat-file', '-t', $revision],
+        [0 => ['pipe', 'r'], 1 => ['pipe', 'w'], 2 => ['pipe', 'w']],
+        $pipes,
+    );
+    if (!is_resource($process)) {
+        return null;
+    }
+    fclose($pipes[0]);
+    $objectType = trim((string) stream_get_contents($pipes[1]));
+    $error = (string) stream_get_contents($pipes[2]);
+    fclose($pipes[1]);
+    fclose($pipes[2]);
+    $exitCode = proc_close($process);
+    if ($exitCode === 126 || $exitCode === 127 || str_contains($error, 'not found')) {
+        return null;
+    }
+    return $exitCode === 0 && $objectType === 'commit';
+}
+
+/**
+ * Resolve the non-delta object type recorded by one Git pack index and pack entry.
+ *
+ * @param   string  $path      Pack index path.
+ * @param   string  $revision  Full lowercase object identifier.
+ *
+ * @return  ?int  Git pack type number, or null when absent, delta-compressed, or unverifiable.
+ *
+ * @since   2.0.0
+ */
+function packedGitObjectType(string $path, string $revision): ?int
+{
+    $index = file_get_contents($path);
+    $needle = hex2bin($revision);
+    if (!is_string($index) || !is_string($needle)) {
+        return null;
+    }
+    $versioned = substr($index, 0, 4) === "\xfftOc";
+    if ($versioned) {
+        $version = unpack('Nversion', substr($index, 4, 4));
+        if (!is_array($version) || !in_array($version['version'] ?? null, [2, 3], true)) {
+            return null;
+        }
+        $fanoutOffset = 8;
+        $namesOffset = $fanoutOffset + 1024;
+        $stride = 20;
+    } else {
+        $fanoutOffset = 0;
+        $namesOffset = 1024 + 4;
+        $stride = 24;
+    }
+    $firstByte = ord($needle[0]);
+    $lower = $firstByte === 0 ? 0 : unpack('Ncount', substr($index, $fanoutOffset + (($firstByte - 1) * 4), 4));
+    $upper = unpack('Ncount', substr($index, $fanoutOffset + ($firstByte * 4), 4));
+    $low = is_array($lower) ? (int) $lower['count'] : 0;
+    $high = is_array($upper) ? (int) $upper['count'] - 1 : -1;
+    $match = null;
+    while ($low <= $high) {
+        $middle = intdiv($low + $high, 2);
+        $candidateOffset = $namesOffset + ($middle * $stride);
+        $candidate = substr($index, $candidateOffset, 20);
+        $comparison = strcmp($candidate, $needle);
+        if ($comparison === 0) {
+            $match = $middle;
+            break;
+        }
+        if ($comparison < 0) {
+            $low = $middle + 1;
+        } else {
+            $high = $middle - 1;
+        }
+    }
+    if (!is_int($match)) {
+        return null;
+    }
+    if ($versioned) {
+        $countValue = unpack('Ncount', substr($index, $fanoutOffset + (255 * 4), 4));
+        $count = is_array($countValue) ? (int) $countValue['count'] : 0;
+        $offsetTable = $namesOffset + ($count * 20) + ($count * 4);
+        $offsetValue = unpack('Noffset', substr($index, $offsetTable + ($match * 4), 4));
+        $offset = is_array($offsetValue) ? (int) $offsetValue['offset'] : -1;
+        if (($offset & 0x80000000) !== 0) {
+            $largeIndex = $offset & 0x7fffffff;
+            $largeTable = $offsetTable + ($count * 4);
+            $largeValue = unpack('Joffset', substr($index, $largeTable + ($largeIndex * 8), 8));
+            $offset = is_array($largeValue) ? (int) $largeValue['offset'] : -1;
+        }
+    } else {
+        $offsetValue = unpack('Noffset', substr($index, 1024 + ($match * 24), 4));
+        $offset = is_array($offsetValue) ? (int) $offsetValue['offset'] : -1;
+    }
+    if ($offset < 12) {
+        return null;
+    }
+    $pack = fopen(substr($path, 0, -4) . '.pack', 'rb');
+    if (!is_resource($pack) || fseek($pack, $offset) !== 0) {
+        if (is_resource($pack)) {
+            fclose($pack);
+        }
+        return null;
+    }
+    $header = fread($pack, 1);
+    fclose($pack);
+    if (!is_string($header) || strlen($header) !== 1) {
+        return null;
+    }
+    $type = (ord($header) >> 4) & 7;
+    return in_array($type, [1, 2, 3, 4], true) ? $type : null;
+}
+
+/**
  * Determine whether a value is a valid calendar date.
  *
  * @param   mixed  $value  Candidate YYYY-MM-DD date.
@@ -2685,8 +3739,16 @@ function isDate(mixed $value): bool
  */
 function isUtcTimestamp(mixed $value): bool
 {
-    return is_string($value)
-        && preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/D', $value) === 1;
+    if (
+        !is_string($value)
+        || preg_match('/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})Z$/D', $value, $parts) !== 1
+    ) {
+        return false;
+    }
+    return checkdate((int) $parts[2], (int) $parts[3], (int) $parts[1])
+        && (int) $parts[4] <= 23
+        && (int) $parts[5] <= 59
+        && (int) $parts[6] <= 59;
 }
 
 /**

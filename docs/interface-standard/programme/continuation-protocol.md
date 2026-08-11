@@ -12,6 +12,8 @@ Phase 3–6 chats resume from repository evidence instead of trusting a narrativ
    ledger with the repository before selecting implementation work.
 4. Inspect the current branch, recent commits, open changes, and the latest accepted evidence. Never assume
    a prior chat finished merely because a phase number appears in prose.
+   Confirm each accepted evidence revision resolves to a local commit. Treat shallow-history omissions and
+   exported trees as blocked verification, never as implicit acceptance.
 5. Select only ledger work items whose prerequisites are complete and whose status is `ready`,
    `in_progress`, or an explicitly resolved `blocked` state. Record the responsible implementation role.
 6. Reconfirm affected surfaces, actors, tasks, journeys, capabilities, security invariants, fixtures,
@@ -27,6 +29,10 @@ Phase 3–6 chats resume from repository evidence instead of trusting a narrativ
   decision explicitly changes one.
 - Add new routes, navigation, templates, generated exposures, fixtures, and extension/template slots to the
   inventory in the same commit as their source.
+- Change a surface or navigation runtime disposition from `legacy` to `declared` only in the same commit as
+  its real typed declaration. The literal `SurfaceDefinition` must exactly match `kis_contract`; each
+  KIS-migrated navigation item must bind that surface exactly. Keep unmigrated core and portal items
+  explicitly `legacy` with no runtime surface binding, and treat that absence as a migration blocker.
 - Turn accepted visual or AI-assisted findings into deterministic assertions where practical. AI review
   may classify evidence; it cannot be the only gate and does not rewrite production code autonomously.
 - Record newly found issues immediately with severity, surface, owner, reproduction, and target phase. Do
@@ -46,6 +52,9 @@ Phase 3–6 chats resume from repository evidence instead of trusting a narrativ
 4. Compare every affected surface against its pre-migration capability/field/action/payload manifest.
 5. Update each work item separately: `in_review` when runtime evidence exists but acceptance is outstanding;
    `complete` only after all evidence slots and blocking findings are resolved.
+   Evaluate waivers at the verifier's single UTC as-of instant. An `expires_at` equal to or before that
+   instant is expired; a `target_phase` is expired as soon as it enters `current_focus` or leaves `planned`.
+   If both bounds exist, honor the earlier boundary and move the item back to `ready` or `blocked`.
 6. Append a continuation entry naming the exact next ready work items, blockers, decisions, and evidence.
 7. Commit documentation, programme state, runtime change, and its tests coherently. Never amend historical
    evidence merely to make the current state appear clean.

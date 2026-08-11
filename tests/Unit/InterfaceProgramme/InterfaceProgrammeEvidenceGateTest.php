@@ -80,6 +80,220 @@ final class InterfaceProgrammeEvidenceGateTest extends TestCase
     }
 
     /**
+     * Reject a syntactically valid evidence revision that is absent from the Git object database.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAcceptedEvidenceRequiresARealRepositoryObject(): void
+    {
+        $evidence = $this->evidence('EVID-FAKE-REVISION', 'source', ['P0-001']);
+        $evidence['source_revision'] = str_repeat('f', 40);
+        $item = $this->workItem('P0-001', 'complete');
+        $item['evidence_ids'] = ['EVID-FAKE-REVISION'];
+
+        $errors = $this->validate([$evidence], ['P0-001' => $item]);
+
+        self::assertContains(
+            'Accepted evidence EVID-FAKE-REVISION source revision '
+                . str_repeat('f', 40) . ' is not a verifiable repository commit.',
+            $errors,
+        );
+        self::assertContains(
+            'Completed work item P0-001 references unaccepted evidence EVID-FAKE-REVISION.',
+            $errors,
+        );
+
+        $evidence = $this->evidence('EVID-BLOB-REVISION', 'source', ['P0-001']);
+        $evidence['source_revision'] = 'b03f4d342d36d97dbe0d902bdfc38dcd312f6fde';
+        $item['evidence_ids'] = ['EVID-BLOB-REVISION'];
+        $errors = $this->validate([$evidence], ['P0-001' => $item]);
+        self::assertContains(
+            'Accepted evidence EVID-BLOB-REVISION source revision '
+                . 'b03f4d342d36d97dbe0d902bdfc38dcd312f6fde is not a verifiable repository commit.',
+            $errors,
+        );
+
+        $temporaryRoot = sys_get_temp_dir() . '/kumwe-programme-tag-' . bin2hex(random_bytes(6));
+        $tagContent = "object 7f176fb2ced9082f0b1edfdf03ab78258812994d\n"
+            . "type commit\ntag verifier-fixture\n"
+            . "tagger Programme Verifier <verifier@example.invalid> 0 +0000\n\nFixture tag.\n";
+        $tagObject = 'tag ' . strlen($tagContent) . "\0" . $tagContent;
+        $tagHash = sha1($tagObject);
+        $objectDirectory = $temporaryRoot . '/.git/objects/' . substr($tagHash, 0, 2);
+        mkdir($objectDirectory, 0777, true);
+        file_put_contents($temporaryRoot . '/.git/HEAD', "ref: refs/heads/main\n");
+        file_put_contents($objectDirectory . '/' . substr($tagHash, 2), zlib_encode($tagObject, ZLIB_ENCODING_DEFLATE));
+        try {
+            self::assertSame(false, \gitCommitExists($temporaryRoot, $tagHash));
+        } finally {
+            unlink($objectDirectory . '/' . substr($tagHash, 2));
+            unlink($temporaryRoot . '/.git/HEAD');
+            rmdir($objectDirectory);
+            rmdir($temporaryRoot . '/.git/objects');
+            rmdir($temporaryRoot . '/.git');
+            rmdir($temporaryRoot);
+        }
+    }
+
+    /**
+     * Bind route names, paths, and methods without collapsing same-path GET and POST registrations.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testCoreRouteBindingPreservesExactSamePathContracts(): void
+    {
+        $source = <<<'PHP'
+<?php
+foreach ([['/administrator/widgets', 'administrator.widgets']] as [$path, $name]) {
+    $application->get($path, WidgetHandler::class, $name);
+    $application->post($path, WidgetHandler::class, $name . '.mutate');
+}
+PHP;
+        $declared = [
+            ['name' => 'administrator.widgets', 'path' => '/administrator/widgets', 'methods' => ['GET']],
+            ['name' => 'administrator.widgets.mutate', 'path' => '/administrator/widgets', 'methods' => ['POST']],
+        ];
+        $errors = [];
+        \validateCoreRouteContracts($source, $declared, $errors);
+        self::assertSame([], $errors);
+
+        $declared[1]['methods'] = ['GET'];
+        $errors = [];
+        \validateCoreRouteContracts($source, $declared, $errors);
+        self::assertContains(
+            'Core graphical route administrator.widgets.mutate does not match its exact inventory path and methods.',
+            $errors,
+        );
+    }
+
+    /**
+     * Keep legacy navigation null while enforcing exact typed bindings for migrated items.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testCoreNavigationBindingDistinguishesLegacyAndDeclaredItems(): void
+    {
+        $source = <<<'PHP'
+<?php
+new AdministratorNavigationDefinition(
+    'core.legacy', 'core.workspace', 'Legacy', 'Legacy item', '/administrator/legacy',
+    'content', 'content.read', 10, 'legacy'
+);
+new PortalNavigationDefinition(
+    'core.declared', 'core.portal', 'Declared', 'Declared item', '/portal/declared',
+    'home', 'portal.access', 20, 'declared', 'core.portal.declared'
+);
+PHP;
+        $declared = [
+            [
+                'id' => 'core.legacy',
+                'runtime_surface_binding' => 'legacy',
+                'area' => 'administrator',
+                'path' => '/administrator/legacy',
+                'icon' => 'content',
+                'capability' => 'content.read',
+                'surface_id' => 'core.administrator.legacy',
+            ],
+            [
+                'id' => 'core.declared',
+                'runtime_surface_binding' => 'declared',
+                'area' => 'portal',
+                'path' => '/portal/declared',
+                'icon' => 'home',
+                'capability' => 'portal.access',
+                'surface_id' => 'core.portal.declared',
+            ],
+        ];
+        $errors = [];
+        \validateCoreNavigationContracts($source, $declared, $errors);
+        self::assertSame([], $errors);
+
+        $declared[1]['runtime_surface_binding'] = 'legacy';
+        $errors = [];
+        \validateCoreNavigationContracts($source, $declared, $errors);
+        self::assertContains(
+            'Core navigation declaration core.declared does not match its exact catalogue binding.',
+            $errors,
+        );
+    }
+
+    /**
+     * Compare the complete literal typed-surface contract and reject hidden legacy declarations.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testCoreTypedSurfaceBindingUsesTheCompleteCanonicalContract(): void
+    {
+        $source = <<<'PHP'
+<?php
+SurfaceDefinition::fromArray($owner, [
+    'surface' => 'core.administrator.widgets',
+    'standard' => 'kis-1.0',
+    'area' => 'administrator',
+    'actor' => 'administrator',
+    'intent' => 'manage',
+    'resource' => 'widget',
+    'purpose' => 'Manage widgets.',
+    'pattern' => 'tabs',
+    'capabilities' => ['content.read'],
+    'states' => ['default', 'error'],
+    'customization' => [['slot' => 'density', 'scope' => 'user']],
+    'responsive' => [['element' => 'identity', 'priority' => 'essential', 'may_collapse' => false]],
+    'icon' => 'content',
+]);
+PHP;
+        $contract = [
+            'standard' => 'kis-1.0',
+            'area' => 'administrator',
+            'actor' => 'administrator',
+            'intent' => 'manage',
+            'resource' => 'widget',
+            'purpose' => 'Manage widgets.',
+            'pattern' => 'tabs',
+            'capabilities' => ['content.read'],
+            'states' => ['default', 'error'],
+            'customization' => [['slot' => 'density', 'scope' => 'user']],
+            'responsive' => [['element' => 'identity', 'priority' => 'essential', 'may_collapse' => false]],
+            'icon' => 'content',
+        ];
+        $surfaces = [
+            [
+                'id' => 'core.administrator.widgets',
+                'kis_runtime_disposition' => 'declared',
+                'kis_contract' => $contract,
+            ],
+            ['id' => 'core.administrator.legacy', 'kis_runtime_disposition' => 'legacy'],
+        ];
+        $errors = [];
+        \validateCoreSurfaceContracts($source, $surfaces, $errors);
+        self::assertSame([], $errors);
+
+        $surfaces[0]['kis_contract']['states'] = ['default'];
+        $errors = [];
+        \validateCoreSurfaceContracts($source, $surfaces, $errors);
+        self::assertContains(
+            'Core typed surface core.administrator.widgets does not match its complete canonical kis_contract.',
+            $errors,
+        );
+
+        $hidden = str_replace('core.administrator.widgets', 'core.administrator.legacy', $source);
+        $errors = [];
+        \validateCoreSurfaceContracts($hidden, $surfaces, $errors);
+        self::assertContains(
+            'Core typed surface core.administrator.legacy is not admitted by a declared inventory disposition.',
+            $errors,
+        );
+    }
+
+    /**
      * Require accepted evidence for every type declared by a completed work item.
      *
      * @return  void
@@ -440,7 +654,13 @@ final class InterfaceProgrammeEvidenceGateTest extends TestCase
             ],
             [],
             [],
-            [],
+            [[
+                'number' => 3,
+                'status' => 'planned',
+                'entry_gates' => [],
+                'exit_gates' => [],
+                'work_items' => [],
+            ]],
             [
                 'FIND-P2-001' => [
                     'severity' => 'P2',
@@ -451,6 +671,61 @@ final class InterfaceProgrammeEvidenceGateTest extends TestCase
         );
 
         self::assertSame([], $errors);
+    }
+
+    /**
+     * Reject time-expired waivers and target-phase waivers once that phase enters active scope.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testGovernedWaiverExpiresDeterministically(): void
+    {
+        $waived = $this->workItem('P2-001', 'waived', 'P2');
+        $waived['evidence_ids'] = ['EVID-WAIVER'];
+        $waived['waiver'] = [
+            'finding_id' => 'FIND-P2-001',
+            'owner_role' => 'programme-owner',
+            'rationale' => 'Temporary exception.',
+            'compensating_control' => 'The affected route remains disabled.',
+            'expires_at' => '2026-08-11T11:59:59Z',
+            'evidence_ids' => ['EVID-WAIVER'],
+        ];
+        $registered = [
+            'FIND-P2-001' => [
+                'severity' => 'P2',
+                'phase_numbers' => [2 => true],
+                'work_item_ids' => ['P2-001' => true],
+            ],
+        ];
+        $evidence = [$this->evidence('EVID-WAIVER', 'review', ['P2-001'])];
+
+        $errors = $this->validate($evidence, ['P2-001' => $waived], [], [], [], $registered);
+        self::assertContains('Waiver for work item P2-001 expired at 2026-08-11T11:59:59Z.', $errors);
+
+        $waived['waiver']['expires_at'] = '2026-99-99T99:99:99Z';
+        $errors = $this->validate($evidence, ['P2-001' => $waived], [], [], [], $registered);
+        self::assertContains('Waiver for work item P2-001 has an invalid UTC expiry.', $errors);
+
+        unset($waived['waiver']['expires_at']);
+        $waived['waiver']['target_phase'] = 2;
+        $errors = $this->validate(
+            $evidence,
+            ['P2-001' => $waived],
+            [],
+            [],
+            [[
+                'number' => 2,
+                'status' => 'planned',
+                'entry_gates' => [],
+                'exit_gates' => [],
+                'work_items' => [$waived],
+            ]],
+            $registered,
+            [0, 1, 2],
+        );
+        self::assertContains('Waiver for work item P2-001 expired on entry to Phase 2.', $errors);
     }
 
     /**
@@ -522,6 +797,8 @@ final class InterfaceProgrammeEvidenceGateTest extends TestCase
      * @param   array<string, array<string, mixed>>     $findings   Normalized blocking findings.
      * @param   list<array<string, mixed>>              $phases     Phase records for gate scope.
      * @param   array<string, array<string, mixed>>     $registered Authoritative finding targets.
+     * @param   list<int>                               $focus      Currently active phase numbers.
+     * @param   string                                  $asOf       Deterministic UTC verification time.
      *
      * @return  list<string>  Validation failures.
      *
@@ -534,6 +811,8 @@ final class InterfaceProgrammeEvidenceGateTest extends TestCase
         array $findings = [],
         array $phases = [],
         array $registered = [],
+        array $focus = [],
+        string $asOf = '2026-08-11T12:00:00Z',
     ): array {
         $ledger = [
             'status_vocabulary' => [
@@ -551,6 +830,7 @@ final class InterfaceProgrammeEvidenceGateTest extends TestCase
             'evidence_records' => $evidence,
             'gates' => array_values($gates),
             'phases' => $phases,
+            'current_focus' => $focus,
         ];
         $evidenceIds = [];
         foreach ($evidence as $record) {
@@ -570,6 +850,7 @@ final class InterfaceProgrammeEvidenceGateTest extends TestCase
             $errors,
             $findings,
             $registered,
+            $asOf,
         );
         return $errors;
     }
@@ -592,7 +873,7 @@ final class InterfaceProgrammeEvidenceGateTest extends TestCase
             'type' => $type,
             'status' => 'accepted',
             'producer_role' => 'programme-owner',
-            'source_revision' => str_repeat('a', 40),
+            'source_revision' => '7f176fb2ced9082f0b1edfdf03ab78258812994d',
             'environment' => 'Focused PHP unit-test fixture.',
             'method' => 'Focused verifier fixture',
             'result' => 'Accepted for the focused fixture.',
