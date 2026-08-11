@@ -55,14 +55,14 @@ final readonly class SurfaceDefinition implements ContributionDefinition
     /**
      * Parse and admit strict canonical metadata through one fail-closed boundary.
      *
-     * @param   ContributionOwner    $owner      Owner supplied by the current contribution phase.
-     * @param   array<string, mixed>  $data       Exact canonical KIS declaration document.
+     * @param   ContributionOwner             $owner      Owner supplied by the current contribution phase.
+     * @param   array<string, mixed>          $data       Exact canonical KIS declaration document.
      * @param   ?SurfaceConformanceValidator  $validator  Alternate deterministic validator, or null for KIS 1.0.
      *
      * @return  self  Admitted contribution definition.
      *
-     * @throws  InvalidArgumentException      When declaration keys, values, or ownership are unsafe.
-     * @throws  SurfaceConformanceViolation   When typed semantics do not conform to KIS.
+     * @throws  InvalidArgumentException  When declaration keys, values, or ownership are unsafe.
+     * @throws  SurfaceConformanceViolation  When typed semantics do not conform to KIS.
      *
      * @since   2.0.0
      */

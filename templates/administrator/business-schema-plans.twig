@@ -48,7 +48,8 @@
     {% embed '@kis/master-detail.twig' with {
       id: 'business-schema-workspace',
       catalog_label: 'Schema plan controls',
-      catalog_toggle_label: 'Browse schema plans'
+      catalog_toggle_label: 'Browse schema plans',
+      schema: schema
     } %}
       {% block catalog %}
     <aside class="stack">

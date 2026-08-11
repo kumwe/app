@@ -50,20 +50,20 @@ final readonly class SurfaceDeclaration
     /**
      * Build a locally safe typed declaration without yet admitting its cross-field semantics.
      *
-     * @param   ContributionOwner                   $owner          Core or extension identity that owns the surface.
-     * @param   SurfaceId                           $surface        Stable identifier inside the owner's namespace.
-     * @param   InterfaceStandardVersion            $standard       Exact KIS contract revision.
-     * @param   SurfaceArea                         $area           Shell or template delivery area.
-     * @param   SurfaceActor                        $actor          Human actor whose task the surface supports.
-     * @param   SurfaceIntent                       $intent         Semantic task independent of visual layout.
-     * @param   ResourceName                        $resource       Business resource the task operates on.
-     * @param   string                              $purpose        Plain-language primary task sentence.
-     * @param   SurfacePattern                      $pattern        Approved interaction composition selected.
-     * @param   list<Capability>                    $capabilities   Policy requirements applied before rendering.
-     * @param   list<SurfaceState>                  $states         Data and authorization states explicitly covered.
-     * @param   list<CustomizationPermission>       $customization  Whitelisted presentation choices and scopes.
-     * @param   list<ResponsiveElement>             $responsive     Semantic collapse and reflow priorities.
-     * @param   ?IconName                           $icon           Theme registry key, or null for no surface icon.
+     * @param   ContributionOwner              $owner          Core or extension identity that owns the surface.
+     * @param   SurfaceId                      $surface        Stable identifier inside the owner's namespace.
+     * @param   InterfaceStandardVersion       $standard       Exact KIS contract revision.
+     * @param   SurfaceArea                    $area           Shell or template delivery area.
+     * @param   SurfaceActor                   $actor          Human actor whose task the surface supports.
+     * @param   SurfaceIntent                  $intent         Semantic task independent of visual layout.
+     * @param   ResourceName                   $resource       Business resource the task operates on.
+     * @param   string                         $purpose        Plain-language primary task sentence.
+     * @param   SurfacePattern                 $pattern        Approved interaction composition selected.
+     * @param   list<Capability>               $capabilities   Policy requirements applied before rendering.
+     * @param   list<SurfaceState>             $states         Data and authorization states explicitly covered.
+     * @param   list<CustomizationPermission>  $customization  Whitelisted presentation choices and scopes.
+     * @param   list<ResponsiveElement>        $responsive     Semantic collapse and reflow priorities.
+     * @param   ?IconName                      $icon           Theme registry key, or null for no surface icon.
      *
      * @throws  InvalidArgumentException  When ownership, purpose, or collection uniqueness is invalid.
      *
@@ -133,7 +133,7 @@ final readonly class SurfaceDeclaration
      * or executable-shaped data is rejected before conformance admission; no unrecognized value is
      * preserved for a renderer to interpret later.
      *
-     * @param   ContributionOwner    $owner  Core or extension owner supplied by the existing contribution phase.
+     * @param   ContributionOwner     $owner  Core or extension owner supplied by the existing contribution phase.
      * @param   array<string, mixed>  $data   Exact canonical KIS declaration document.
      *
      * @return  self  Locally safe typed candidate ready for conformance validation.
@@ -422,7 +422,7 @@ final readonly class SurfaceDeclaration
     /**
      * Read a required list without accepting associative or scalar alternatives.
      *
-     * @param   array<string, mixed>  $data  Declaration document being parsed.
+     * @param   array<string, mixed>  $data     Declaration document being parsed.
      * @param   string                $key      Required top-level list key.
      * @param   int                   $minimum  Minimum number of entries.
      * @param   int                   $maximum  Maximum number of entries.
@@ -475,9 +475,9 @@ final readonly class SurfaceDeclaration
     /**
      * Reject missing or unknown keys at every declaration level.
      *
-     * @param   array<mixed, mixed>  $data     Candidate object.
-     * @param   list<string>         $expected Exact accepted key set.
-     * @param   string               $context  Object name used in the failure message.
+     * @param   array<mixed, mixed>  $data      Candidate object.
+     * @param   list<string>         $expected  Exact accepted key set.
+     * @param   string               $context   Object name used in the failure message.
      *
      * @return  void
      *

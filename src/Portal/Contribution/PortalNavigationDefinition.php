@@ -27,16 +27,16 @@ final readonly class PortalNavigationDefinition implements ContributionDefinitio
     /**
      * Validate one portal navigation item.
      *
-     * @param   string  $id           Owner-scoped dotted identifier.
-     * @param   string  $workspace    Owner-scoped workspace identifier.
-     * @param   string  $label        Visible text, 1 through 80 characters.
-     * @param   string  $description  Accessible explanation, 1 through 255 characters.
-     * @param   string  $path         Absolute safe path, later rooted for extensions.
-     * @param   string  $icon         Portable lowercase icon token.
-     * @param   string  $capability   Required capability owned by the same contributor.
-     * @param   int     $priority     Sort weight from 0 through 100000.
-     * @param   string  $keywords     Optional search text up to 500 characters.
-     * @param   ?string $surface      Stable KIS surface identifier, or null for a legacy pre-KIS package.
+     * @param   string   $id           Owner-scoped dotted identifier.
+     * @param   string   $workspace    Owner-scoped workspace identifier.
+     * @param   string   $label        Visible text, 1 through 80 characters.
+     * @param   string   $description  Accessible explanation, 1 through 255 characters.
+     * @param   string   $path         Absolute safe path, later rooted for extensions.
+     * @param   string   $icon         Portable lowercase icon token.
+     * @param   string   $capability   Required capability owned by the same contributor.
+     * @param   int      $priority     Sort weight from 0 through 100000.
+     * @param   string   $keywords     Optional search text up to 500 characters.
+     * @param   ?string  $surface      Stable KIS surface identifier, or null for a legacy pre-KIS package.
      *
      * @throws  InvalidArgumentException  When any field is unsafe or outside its bound.
      *

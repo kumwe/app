@@ -267,7 +267,7 @@ test.describe('authenticated administrator', () => {
     await expect(page.getByText(longFieldLabel, { exact: true })).toBeVisible();
     await page.getByRole('tab', { name: 'Publication' }).click();
     await expect(page.getByRole('heading', { name: 'Compatibility plan' })).toBeVisible();
-    await expect(page.getByText('Draft checksum')).toBeVisible();
+    await expect(page.getByRole('term', { name: 'Draft checksum' })).toBeVisible();
     await expectAccessible(page);
     await page.screenshot({
       path: testInfo.outputPath('business-definition-draft.png'),
