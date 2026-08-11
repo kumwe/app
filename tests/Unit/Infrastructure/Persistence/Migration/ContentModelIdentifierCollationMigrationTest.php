@@ -81,7 +81,10 @@ final class ContentModelIdentifierCollationMigrationTest extends TestCase
         self::assertStringContainsString('ALTER TABLE kumwe_workflow_definition_versions', $sql);
         self::assertStringContainsString('CHAR(36)', $sql);
         self::assertStringContainsString('CHARACTER SET utf8mb4', $sql);
-        self::assertStringContainsString('COLLATE utf8mb4_unicode_ci', $sql);
+        self::assertStringContainsString(
+            'COLLATE ' . $platform->quoteSingleIdentifier('utf8mb4_unicode_ci'),
+            $sql,
+        );
     }
 
     /**
