@@ -194,6 +194,7 @@ final readonly class DoctrineSiteSettings implements SiteSettings
     {
         $this->authorize($context);
         $actorId = $context->actorId();
+        $updatedBy = $context->principal()?->subject();
         $normalized = $this->validate(array_replace($this->current(), $settings));
         $homepageId = $normalized['homepage_content_id'];
         if (is_string($homepageId) && $this->content !== null) {
@@ -220,9 +221,9 @@ final readonly class DoctrineSiteSettings implements SiteSettings
             throw new InvalidArgumentException('The primary menu must be a managed menu for this site.');
         }
 
-        $this->transactions->transactional(function () use ($actorId, $normalized): void {
+        $this->transactions->transactional(function () use ($actorId, $normalized, $updatedBy): void {
             foreach (self::keyMap() as $storageKey => $publicKey) {
-                $this->upsert($storageKey, $normalized[$publicKey], $actorId);
+                $this->upsert($storageKey, $normalized[$publicKey], $updatedBy);
             }
 
             $this->audit->record(new AuditEvent(
@@ -348,9 +349,9 @@ final readonly class DoctrineSiteSettings implements SiteSettings
      * The value is bound as a JSON column and the timestamp as an immutable date, so Doctrine encodes
      * both and the row keeps the structure the setting actually has instead of a pre-encoded string.
      *
-     * @param   string  $key      Storage key of the setting, in its dotted `site.*` form.
-     * @param   mixed   $value    Decoded value to store; Doctrine encodes it as JSON.
-     * @param   string  $actorId  Identifier of the actor credited with the change.
+     * @param   string   $key        Storage key of the setting, in its dotted `site.*` form.
+     * @param   mixed    $value      Decoded value to store; Doctrine encodes it as JSON.
+     * @param   ?string  $updatedBy  Human subject UUID, or null when a system identity performed the write.
      *
      * @return  void
      *
@@ -358,7 +359,7 @@ final readonly class DoctrineSiteSettings implements SiteSettings
      *
      * @since   2.0.0
      */
-    private function upsert(string $key, mixed $value, string $actorId): void
+    private function upsert(string $key, mixed $value, ?string $updatedBy): void
     {
         $table = $this->tables->raw('site_settings');
         $exists = $this->database->fetchOne(
@@ -367,11 +368,12 @@ final readonly class DoctrineSiteSettings implements SiteSettings
         );
         $values = [
             'setting_value' => $value,
-            'updated_by' => $actorId,
+            'updated_by' => $updatedBy,
             'updated_at' => $this->clock->now(),
         ];
         $types = [
             'setting_value' => Types::JSON,
+            'updated_by' => Types::GUID,
             'updated_at' => Types::DATETIME_IMMUTABLE,
         ];
 
@@ -384,7 +386,7 @@ final readonly class DoctrineSiteSettings implements SiteSettings
             'UPDATE %s SET setting_value = ?, updated_by = ?, updated_at = ?, version = version + 1 '
             . 'WHERE setting_key = ?',
             $this->tables->quoted('site_settings'),
-        ), [$value, $actorId, $this->clock->now(), $key], [
+        ), [$value, $updatedBy, $this->clock->now(), $key], [
             Types::JSON,
             Types::GUID,
             Types::DATETIME_IMMUTABLE,

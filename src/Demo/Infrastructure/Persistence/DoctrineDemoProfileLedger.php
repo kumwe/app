@@ -9,6 +9,7 @@ use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Platforms\AbstractMySQLPlatform;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use Doctrine\DBAL\Types\Types;
+use Kumwe\CMS\Demo\Application\DemoProfileLedger;
 use Kumwe\CMS\Infrastructure\Persistence\TableNames;
 use Psr\Clock\ClockInterface;
 use RuntimeException;
@@ -25,7 +26,7 @@ use Throwable;
  *
  * @since  2.0.0
  */
-final readonly class DoctrineDemoProfileLedger
+final readonly class DoctrineDemoProfileLedger implements DemoProfileLedger
 {
     /**
      * Bind the ledger to the configured database, table namespace, and trusted clock.
@@ -61,12 +62,7 @@ final readonly class DoctrineDemoProfileLedger
      */
     public function synchronized(string $site, callable $operation): mixed
     {
-        $lockName = sprintf('kumwe:%s:demo-profiles:%s', $this->tables->raw('schema_migrations'), $site);
-        $mysql = $this->database->getDatabasePlatform() instanceof AbstractMySQLPlatform;
-        $postgres = $this->database->getDatabasePlatform() instanceof PostgreSQLPlatform;
-        if (!$mysql && !$postgres) {
-            throw new RuntimeException('The database has no supported demo-profile advisory lock.');
-        }
+        [$mysql, $lockName] = $this->advisoryIdentity($site);
         $acquired = $mysql
             ? $this->database->fetchOne('SELECT GET_LOCK(?, 0)', [$lockName])
             : $this->database->fetchOne('SELECT pg_try_advisory_lock(hashtextextended(?, 0))', [$lockName]);
@@ -97,6 +93,43 @@ final readonly class DoctrineDemoProfileLedger
                 }
             }
         }
+    }
+
+    /**
+     * Derive one database-scoped advisory identity within MySQL's 64-character name limit.
+     *
+     * The database name, physical migration ledger, and full site identifier are hashed together. Two
+     * installations sharing a server therefore do not block one another, while every replica aimed at
+     * the same database, prefix, and site resolves exactly the same bounded lock name.
+     *
+     * @param   string  $site  Site whose profile datasets share the lock.
+     *
+     * @return  array{0: bool, 1: string}  MySQL-family discriminator and bounded lock name.
+     *
+     * @throws  RuntimeException  When the platform is unsupported or cannot name its current database.
+     *
+     * @since   2.0.0
+     */
+    private function advisoryIdentity(string $site): array
+    {
+        $platform = $this->database->getDatabasePlatform();
+        if ($platform instanceof AbstractMySQLPlatform) {
+            $databaseIdentity = $this->database->fetchOne('SELECT DATABASE()');
+            $mysql = true;
+        } elseif ($platform instanceof PostgreSQLPlatform) {
+            $databaseIdentity = $this->database->fetchOne('SELECT current_database()');
+            $mysql = false;
+        } else {
+            throw new RuntimeException('The database has no supported demo-profile advisory lock.');
+        }
+        if (!is_string($databaseIdentity) || $databaseIdentity === '') {
+            throw new RuntimeException('The database identity for the demo-profile lock is unavailable.');
+        }
+
+        return [$mysql, 'kumwe:demo:' . substr(hash(
+            'sha256',
+            $databaseIdentity . "\0" . $this->tables->raw('schema_migrations') . "\0" . $site,
+        ), 0, 40)];
     }
 
     /**
@@ -401,11 +434,12 @@ final readonly class DoctrineDemoProfileLedger
      */
     private function integer(mixed $value, string $name): int
     {
-        if (!is_numeric($value) || (int) $value < 1) {
+        $integer = filter_var($value, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+        if (!is_int($integer)) {
             throw new RuntimeException(sprintf('The demo profile %s is invalid.', $name));
         }
 
-        return (int) $value;
+        return $integer;
     }
 
     /**

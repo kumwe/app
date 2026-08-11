@@ -9,11 +9,12 @@ use Kumwe\CMS\BusinessDefinition\Domain\CanonicalDefinitionJson;
 use Kumwe\CMS\Content\Application\ContentNotFound;
 use Kumwe\CMS\Content\Application\ContentRecord;
 use Kumwe\CMS\Content\Application\ContentService;
+use Kumwe\CMS\Demo\Application\DemoProfileLedger;
+use Kumwe\CMS\Infrastructure\Persistence\TransactionManager;
 use Kumwe\CMS\Navigation\Application\MenuItemRecord;
 use Kumwe\CMS\Navigation\Application\MenuRecord;
 use Kumwe\CMS\Navigation\Application\NavigationService;
 use Kumwe\CMS\Site\Application\SiteSettings;
-use Kumwe\CMS\Demo\Infrastructure\Persistence\DoctrineDemoProfileLedger;
 use RuntimeException;
 
 /**
@@ -42,7 +43,8 @@ final readonly class DemoContentProfileInstaller
      * @param  ContentService                   $content     Canonical page mutation service.
      * @param  NavigationService                $navigation  Canonical menu-tree mutation service.
      * @param  SiteSettings                     $settings    Canonical settings document service.
-     * @param  DoctrineDemoProfileLedger        $ledger      Stable fixture mapping and divergence baseline.
+     * @param  DemoProfileLedger                $ledger      Stable fixture mapping and divergence baseline.
+     * @param  TransactionManager               $transactions  Atomic service-mutation and provenance boundary.
      *
      * @since  2.0.0
      */
@@ -50,7 +52,8 @@ final readonly class DemoContentProfileInstaller
         private ContentService $content,
         private NavigationService $navigation,
         private SiteSettings $settings,
-        private DoctrineDemoProfileLedger $ledger,
+        private DemoProfileLedger $ledger,
+        private TransactionManager $transactions,
     ) {
     }
 
@@ -72,12 +75,11 @@ final readonly class DemoContentProfileInstaller
         $baselinePages = $this->pageIndex($placeholder);
         $pageIds = [];
         foreach ($pages as $fixtureKey => $page) {
-            $record = $this->reconcilePage($context, $fixtureKey, $page, $baselinePages[$fixtureKey] ?? null);
-            if ($record === null) {
+            $result = $this->reconcilePage($context, $fixtureKey, $page, $baselinePages[$fixtureKey] ?? null);
+            $pageIds[$fixtureKey] = $result['record']->entry->id();
+            if ($result['preserved']) {
                 $messages[] = sprintf('Preserved customized demo page %s.', $fixtureKey);
-                continue;
             }
-            $pageIds[$fixtureKey] = $record->entry->id();
         }
         $this->retirePages($context, $pages, $baselinePages, $messages);
 
@@ -108,7 +110,7 @@ final readonly class DemoContentProfileInstaller
      * @param   array<string, mixed>   $page        Desired page declaration.
      * @param   ?array<string, mixed>  $baseline    Legacy adoption sentinel for this fixture.
      *
-     * @return  ?ContentRecord  Reconciled record, or null when a customized record was preserved.
+     * @return  array{record: ContentRecord, preserved: bool}  Stored record and whether it was preserved.
      *
      * @since   2.0.0
      */
@@ -117,58 +119,71 @@ final readonly class DemoContentProfileInstaller
         string $fixtureKey,
         array $page,
         ?array $baseline,
-    ): ?ContentRecord {
-        $desired = $this->pageState($page);
-        $desiredChecksum = CanonicalDefinitionJson::checksum($desired);
-        $asset = $this->ledger->asset($context->site()->identifier(), self::DATASET, $fixtureKey);
-        $preferredId = $this->requiredString($page, 'resource_id');
-        $record = is_string($asset['resource_id'] ?? null)
-            ? $this->findPage($context, $asset['resource_id'], true)
-            : $this->content->publishedById($preferredId, $context->site());
-        if ($record === null) {
-            $record = $this->publishNewPage($context, $page);
-        } else {
-            if ($record->deletedAt !== null) {
-                $record = $this->content->restore($context, $record->entry->id(), $record->entry->version());
-            }
-            $current = $this->pageRecordState($record);
-            $currentChecksum = CanonicalDefinitionJson::checksum($current);
-            $baselineChecksum = $baseline === null
-                ? null
-                : CanonicalDefinitionJson::checksum($this->pageState($baseline));
-            $lastApplied = is_string($asset['last_applied_checksum'] ?? null)
-                ? $asset['last_applied_checksum']
-                : null;
-            if (
-                $currentChecksum !== $desiredChecksum
-                && $currentChecksum !== $lastApplied
-                && $currentChecksum !== $baselineChecksum
-            ) {
-                return null;
-            }
-            if ($currentChecksum !== $desiredChecksum) {
-                $record = $this->content->update(
-                    $context,
-                    $record->entry->id(),
-                    $record->entry->version(),
-                    $this->requiredString($page, 'title'),
+    ): array {
+        return $this->transactions->transactional(function () use (
+            $context,
+            $fixtureKey,
+            $page,
+            $baseline,
+        ): array {
+            $desired = $this->pageState($page);
+            $desiredChecksum = CanonicalDefinitionJson::checksum($desired);
+            $asset = $this->ledger->asset($context->site()->identifier(), self::DATASET, $fixtureKey);
+            $preferredId = $this->requiredString($page, 'resource_id');
+            $record = is_string($asset['resource_id'] ?? null)
+                ? $this->findPage($context, $asset['resource_id'], true)
+                : $this->content->publishedById($preferredId, $context->site());
+            if ($record === null) {
+                $record = $this->content->publishedBySlug(
                     $this->requiredString($page, 'slug'),
-                    $this->requiredMap($page, 'data'),
+                    $context->site(),
                 );
             }
-        }
-        $this->ledger->recordAsset(
-            $context->site()->identifier(),
-            self::DATASET,
-            $fixtureKey,
-            'content',
-            $record->entry->id(),
-            $desiredChecksum,
-            $record->entry->version(),
-            $desired,
-        );
+            if ($record === null) {
+                $record = $this->publishNewPage($context, $page);
+            } else {
+                if ($record->deletedAt !== null) {
+                    $record = $this->content->restore($context, $record->entry->id(), $record->entry->version());
+                }
+                $current = $this->pageRecordState($record);
+                $currentChecksum = CanonicalDefinitionJson::checksum($current);
+                $baselineChecksum = $baseline === null
+                    ? null
+                    : CanonicalDefinitionJson::checksum($this->pageState($baseline));
+                $lastApplied = is_string($asset['last_applied_checksum'] ?? null)
+                    ? $asset['last_applied_checksum']
+                    : null;
+                if (
+                    $currentChecksum !== $desiredChecksum
+                    && $currentChecksum !== $lastApplied
+                    && $currentChecksum !== $baselineChecksum
+                ) {
+                    return ['record' => $record, 'preserved' => true];
+                }
+                if ($currentChecksum !== $desiredChecksum) {
+                    $record = $this->content->update(
+                        $context,
+                        $record->entry->id(),
+                        $record->entry->version(),
+                        $this->requiredString($page, 'title'),
+                        $this->requiredString($page, 'slug'),
+                        $this->requiredMap($page, 'data'),
+                    );
+                }
+            }
+            $this->ledger->recordAsset(
+                $context->site()->identifier(),
+                self::DATASET,
+                $fixtureKey,
+                'content',
+                $record->entry->id(),
+                $desiredChecksum,
+                $record->entry->version(),
+                $desired,
+            );
 
-        return $record;
+            return ['record' => $record, 'preserved' => false];
+        });
     }
 
     /**
@@ -232,9 +247,12 @@ final readonly class DemoContentProfileInstaller
                 continue;
             }
             $fixtureKey = $asset['fixture_key'] ?? null;
-            $state = $asset['last_applied_state'] ?? null;
-            if (is_string($fixtureKey) && is_array($state) && !isset($candidates[$fixtureKey])) {
-                $candidates[$fixtureKey] = ['resource_id' => $asset['resource_id'], ...$state];
+            if (is_string($fixtureKey) && !isset($candidates[$fixtureKey])) {
+                $state = $this->map($asset['last_applied_state'] ?? null, 'stored page checkpoint');
+                $candidates[$fixtureKey] = [
+                    'resource_id' => $this->requiredString($asset, 'resource_id'),
+                    ...$state,
+                ];
             }
         }
         foreach (array_diff_key($candidates, $target) as $fixtureKey => $page) {
@@ -256,18 +274,24 @@ final readonly class DemoContentProfileInstaller
                 $messages[] = sprintf('Preserved customized demo page %s.', $fixtureKey);
                 continue;
             }
-            $record = $this->content->trash($context, $record->entry->id(), $record->entry->version());
-            $removed = ['removed' => true];
-            $this->ledger->recordAsset(
-                $context->site()->identifier(),
-                self::DATASET,
-                $fixtureKey,
-                'content',
-                $record->entry->id(),
-                CanonicalDefinitionJson::checksum($removed),
-                $record->entry->version(),
-                $removed,
-            );
+            $this->transactions->transactional(function () use ($context, $fixtureKey, $record): void {
+                $record = $this->content->trash(
+                    $context,
+                    $record->entry->id(),
+                    $record->entry->version(),
+                );
+                $removed = ['removed' => true];
+                $this->ledger->recordAsset(
+                    $context->site()->identifier(),
+                    self::DATASET,
+                    $fixtureKey,
+                    'content',
+                    $record->entry->id(),
+                    CanonicalDefinitionJson::checksum($removed),
+                    $record->entry->version(),
+                    $removed,
+                );
+            });
             $messages[] = sprintf('Removed untouched demo page %s.', $fixtureKey);
         }
     }
@@ -343,7 +367,7 @@ final readonly class DemoContentProfileInstaller
         $targetItems = $this->itemIndex($menu);
         $itemIds = [];
         foreach ($targetItems as $itemFixture => $item) {
-            $record = $this->reconcileItem(
+            $result = $this->reconcileItem(
                 $context,
                 $stored,
                 $itemFixture,
@@ -353,11 +377,10 @@ final readonly class DemoContentProfileInstaller
                 $itemIds,
                 $currentItems,
             );
-            if ($record === null) {
+            $itemIds[$itemFixture] = $result['record']->id;
+            if ($result['preserved']) {
                 $messages[] = sprintf('Preserved customized demo menu item %s.', $itemFixture);
-                continue;
             }
-            $itemIds[$itemFixture] = $record->id;
         }
         $this->retireMenuItems(
             $context,
@@ -380,7 +403,7 @@ final readonly class DemoContentProfileInstaller
      * @param   array<string, string>                $itemIds       Actual parent IDs by fixture.
      * @param   array<string, MenuItemRecord>        $currentItems  Current menu items by UUID.
      *
-     * @return  ?MenuItemRecord  Reconciled item, or null when a customization was preserved.
+     * @return  array{record: MenuItemRecord, preserved: bool}  Stored item and preservation outcome.
      *
      * @since   2.0.0
      */
@@ -393,52 +416,38 @@ final readonly class DemoContentProfileInstaller
         array $pageIds,
         array $itemIds,
         array $currentItems,
-    ): ?MenuItemRecord {
-        $parentFixture = $item['parent_fixture_key'] ?? null;
-        $parentId = is_string($parentFixture) ? ($itemIds[$parentFixture] ?? null) : null;
-        if (is_string($parentFixture) && $parentId === null) {
-            throw new RuntimeException(sprintf('Demo menu item %s has an unresolved parent.', $fixtureKey));
-        }
-        $contentFixture = $item['content_fixture_key'] ?? null;
-        $contentId = is_string($contentFixture) ? ($pageIds[$contentFixture] ?? null) : null;
-        if (is_string($contentFixture) && $contentId === null) {
-            throw new RuntimeException(sprintf('Demo menu item %s has an unresolved content target.', $fixtureKey));
-        }
-        $desired = $this->itemState($item, $parentId, $contentId);
-        $asset = $this->ledger->asset($context->site()->identifier(), self::DATASET, $fixtureKey);
-        $resourceId = is_string($asset['resource_id'] ?? null)
-            ? $asset['resource_id']
-            : $this->requiredString($item, 'resource_id');
-        $stored = $currentItems[$resourceId] ?? null;
-        if ($stored === null) {
-            $stored = $this->navigation->createItem(
-                $context,
-                $menu->id,
-                $parentId,
-                $this->requiredString($item, 'title'),
-                $this->requiredString($item, 'slug'),
-                $this->requiredInteger($item, 'position', 0),
-                $this->requiredString($item, 'target_type'),
-                $contentId,
-                $this->nullableString($item, 'target_url'),
-            );
-        } else {
-            $current = $this->itemRecordState($stored);
-            $baselineState = $baseline === null
-                ? null
-                : $this->itemState(
-                    $baseline,
-                    $this->nullableString($baseline, 'parent_id'),
-                    $this->nullableString($baseline, 'content_id'),
-                );
-            if (!$this->safeToChange($current, $desired, $asset, $baselineState)) {
-                return null;
+    ): array {
+        return $this->transactions->transactional(function () use (
+            $context,
+            $menu,
+            $fixtureKey,
+            $item,
+            $baseline,
+            $pageIds,
+            $itemIds,
+            $currentItems,
+        ): array {
+            $parentFixture = $item['parent_fixture_key'] ?? null;
+            $parentId = is_string($parentFixture) ? ($itemIds[$parentFixture] ?? null) : null;
+            if (is_string($parentFixture) && $parentId === null) {
+                throw new RuntimeException(sprintf('Demo menu item %s has an unresolved parent.', $fixtureKey));
             }
-            if ($current !== $desired) {
-                $stored = $this->navigation->updateItem(
+            $contentFixture = $item['content_fixture_key'] ?? null;
+            $contentId = is_string($contentFixture) ? ($pageIds[$contentFixture] ?? null) : null;
+            if (is_string($contentFixture) && $contentId === null) {
+                throw new RuntimeException(sprintf('Demo menu item %s has an unresolved content target.', $fixtureKey));
+            }
+            $desired = $this->itemState($item, $parentId, $contentId);
+            $asset = $this->ledger->asset($context->site()->identifier(), self::DATASET, $fixtureKey);
+            $resourceId = is_string($asset['resource_id'] ?? null)
+                ? $asset['resource_id']
+                : $this->requiredString($item, 'resource_id');
+            $stored = $currentItems[$resourceId]
+                ?? $this->menuItemByPath($currentItems, $this->requiredString($item, 'path'));
+            if ($stored === null) {
+                $stored = $this->navigation->createItem(
                     $context,
-                    $stored->id,
-                    $stored->version,
+                    $menu->id,
                     $parentId,
                     $this->requiredString($item, 'title'),
                     $this->requiredString($item, 'slug'),
@@ -447,20 +456,46 @@ final readonly class DemoContentProfileInstaller
                     $contentId,
                     $this->nullableString($item, 'target_url'),
                 );
+            } else {
+                $current = $this->itemRecordState($stored);
+                $baselineState = $baseline === null
+                    ? null
+                    : $this->itemState(
+                        $baseline,
+                        $this->nullableString($baseline, 'parent_id'),
+                        $this->nullableString($baseline, 'content_id'),
+                    );
+                if (!$this->safeToChange($current, $desired, $asset, $baselineState)) {
+                    return ['record' => $stored, 'preserved' => true];
+                }
+                if ($current !== $desired) {
+                    $stored = $this->navigation->updateItem(
+                        $context,
+                        $stored->id,
+                        $stored->version,
+                        $parentId,
+                        $this->requiredString($item, 'title'),
+                        $this->requiredString($item, 'slug'),
+                        $this->requiredInteger($item, 'position', 0),
+                        $this->requiredString($item, 'target_type'),
+                        $contentId,
+                        $this->nullableString($item, 'target_url'),
+                    );
+                }
             }
-        }
-        $this->ledger->recordAsset(
-            $context->site()->identifier(),
-            self::DATASET,
-            $fixtureKey,
-            'menu_item',
-            $stored->id,
-            CanonicalDefinitionJson::checksum($desired),
-            $stored->version,
-            $desired,
-        );
+            $this->ledger->recordAsset(
+                $context->site()->identifier(),
+                self::DATASET,
+                $fixtureKey,
+                'menu_item',
+                $stored->id,
+                CanonicalDefinitionJson::checksum($desired),
+                $stored->version,
+                $desired,
+            );
 
-        return $stored;
+            return ['record' => $stored, 'preserved' => false];
+        });
     }
 
     /**
@@ -489,14 +524,22 @@ final readonly class DemoContentProfileInstaller
                 continue;
             }
             $fixtureKey = $asset['fixture_key'] ?? null;
-            $state = $asset['last_applied_state'] ?? null;
-            if (is_string($fixtureKey) && is_array($state) && !isset($candidates[$fixtureKey])) {
-                $candidates[$fixtureKey] = ['resource_id' => $asset['resource_id'], ...$state];
+            if (is_string($fixtureKey) && !isset($candidates[$fixtureKey])) {
+                $state = $this->map($asset['last_applied_state'] ?? null, 'stored menu-item checkpoint');
+                $candidates[$fixtureKey] = [
+                    'resource_id' => $this->requiredString($asset, 'resource_id'),
+                    ...$state,
+                ];
             }
         }
         $obsolete = array_diff_key($candidates, $target);
-        uasort($obsolete, static fn (array $left, array $right): int => strlen((string) ($right['path'] ?? ''))
-            <=> strlen((string) ($left['path'] ?? '')));
+        uasort($obsolete, static function (array $left, array $right): int {
+            $leftPath = $left['path'] ?? null;
+            $rightPath = $right['path'] ?? null;
+
+            return strlen(is_string($rightPath) ? $rightPath : '')
+                <=> strlen(is_string($leftPath) ? $leftPath : '');
+        });
         foreach ($obsolete as $fixtureKey => $item) {
             $asset = $this->ledger->asset($context->site()->identifier(), self::DATASET, $fixtureKey);
             $resourceId = is_string($asset['resource_id'] ?? null)
@@ -516,18 +559,20 @@ final readonly class DemoContentProfileInstaller
                 $messages[] = sprintf('Preserved customized demo menu item %s.', $fixtureKey);
                 continue;
             }
-            $this->navigation->deleteItem($context, $stored->id, $stored->version);
-            $removed = ['removed' => true];
-            $this->ledger->recordAsset(
-                $context->site()->identifier(),
-                self::DATASET,
-                $fixtureKey,
-                'menu_item',
-                $stored->id,
-                CanonicalDefinitionJson::checksum($removed),
-                $stored->version,
-                $removed,
-            );
+            $this->transactions->transactional(function () use ($context, $fixtureKey, $stored): void {
+                $this->navigation->deleteItem($context, $stored->id, $stored->version);
+                $removed = ['removed' => true];
+                $this->ledger->recordAsset(
+                    $context->site()->identifier(),
+                    self::DATASET,
+                    $fixtureKey,
+                    'menu_item',
+                    $stored->id,
+                    CanonicalDefinitionJson::checksum($removed),
+                    $stored->version,
+                    $removed,
+                );
+            });
             $messages[] = sprintf('Removed untouched demo menu item %s.', $fixtureKey);
         }
     }
@@ -564,19 +609,21 @@ final readonly class DemoContentProfileInstaller
             $messages[] = 'Preserved customized site settings.';
             return;
         }
-        if ($current !== $desired) {
-            $this->settings->updateAll($context, $desired);
-        }
-        $this->ledger->recordAsset(
-            $context->site()->identifier(),
-            self::DATASET,
-            'settings.default',
-            'site_settings',
-            $context->site()->identifier(),
-            CanonicalDefinitionJson::checksum($desired),
-            1,
-            $desired,
-        );
+        $this->transactions->transactional(function () use ($context, $current, $desired): void {
+            if ($current !== $desired) {
+                $this->settings->updateAll($context, $desired);
+            }
+            $this->ledger->recordAsset(
+                $context->site()->identifier(),
+                self::DATASET,
+                'settings.default',
+                'site_settings',
+                $context->site()->identifier(),
+                CanonicalDefinitionJson::checksum($desired),
+                1,
+                $desired,
+            );
+        });
     }
 
     /**
@@ -651,6 +698,30 @@ final readonly class DemoContentProfileInstaller
     }
 
     /**
+     * Recover an item written before provenance by its menu-unique canonical path.
+     *
+     * This closes the restart window left by older installers that committed the navigation mutation
+     * before recording its service-minted UUID in the demo ledger.
+     *
+     * @param   array<string, MenuItemRecord>  $items  Current items keyed by UUID.
+     * @param   string                         $path   Exact canonical path declared by the fixture.
+     *
+     * @return  ?MenuItemRecord  Matching item or null when the fixture has not been written.
+     *
+     * @since   2.0.0
+     */
+    private function menuItemByPath(array $items, string $path): ?MenuItemRecord
+    {
+        foreach ($items as $item) {
+            if ($item->path === $path) {
+                return $item;
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * Index the bounded page declarations by their stable fixture keys.
      *
      * @param   array<string, mixed>  $manifest  Content manifest carrying the page list.
@@ -667,9 +738,7 @@ final readonly class DemoContentProfileInstaller
         }
         $result = [];
         foreach ($pages as $page) {
-            if (!is_array($page) || array_is_list($page)) {
-                throw new RuntimeException('A demo page declaration is invalid.');
-            }
+            $page = $this->map($page, 'page declaration');
             $fixtureKey = $this->fixtureKey($page);
             if (isset($result[$fixtureKey])) {
                 throw new RuntimeException(sprintf('Demo page fixture %s is duplicated.', $fixtureKey));
@@ -695,14 +764,12 @@ final readonly class DemoContentProfileInstaller
         if (!is_array($menus) || !array_is_list($menus) || count($menus) > 16) {
             throw new RuntimeException('A demo content manifest has an invalid menu list.');
         }
+        $result = [];
         foreach ($menus as $menu) {
-            if (!is_array($menu) || array_is_list($menu)) {
-                throw new RuntimeException('A demo menu declaration is invalid.');
-            }
+            $result[] = $this->map($menu, 'menu declaration');
         }
 
-        /** @var list<array<string, mixed>> $menus */
-        return $menus;
+        return $result;
     }
 
     /**
@@ -722,9 +789,7 @@ final readonly class DemoContentProfileInstaller
         }
         $result = [];
         foreach ($items as $item) {
-            if (!is_array($item) || array_is_list($item)) {
-                throw new RuntimeException('A demo menu item declaration is invalid.');
-            }
+            $item = $this->map($item, 'menu-item declaration');
             $fixtureKey = $this->fixtureKey($item);
             if (isset($result[$fixtureKey])) {
                 throw new RuntimeException(sprintf('Demo menu item fixture %s is duplicated.', $fixtureKey));
@@ -996,12 +1061,34 @@ final readonly class DemoContentProfileInstaller
      */
     private function requiredMap(array $document, string $key): array
     {
-        $value = $document[$key] ?? null;
+        return $this->map($document[$key] ?? null, sprintf('field %s', $key));
+    }
+
+    /**
+     * Require one decoded manifest value to be an object with string keys.
+     *
+     * @param   mixed   $value  Candidate decoded value.
+     * @param   string  $name   Diagnostic noun identifying the value on failure.
+     *
+     * @return  array<string, mixed>  Validated object-shaped value.
+     *
+     * @since   2.0.0
+     */
+    private function map(mixed $value, string $name): array
+    {
         if (!is_array($value) || array_is_list($value)) {
-            throw new RuntimeException(sprintf('Demo manifest field %s is invalid.', $key));
+            throw new RuntimeException(sprintf('The demo manifest %s is invalid.', $name));
         }
 
-        return $value;
+        $result = [];
+        foreach ($value as $key => $item) {
+            if (!is_string($key)) {
+                throw new RuntimeException(sprintf('The demo manifest %s has a non-string object key.', $name));
+            }
+            $result[$key] = $item;
+        }
+
+        return $result;
     }
 
     /**

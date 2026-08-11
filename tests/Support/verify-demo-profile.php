@@ -60,9 +60,9 @@ if ($profiles !== $expected['profiles']) {
 }
 
 $contentCount = (int) $database->fetchOne(sprintf(
-    'SELECT COUNT(*) FROM %s WHERE deleted_at IS NULL',
+    'SELECT COUNT(*) FROM %s WHERE site_identifier = ? AND deleted_at IS NULL',
     $tables->quoted('content_entries'),
-));
+), [$configuration->publicSite]);
 if ($contentCount !== $expected['content']) {
     throw new RuntimeException(sprintf(
         'The %s smoke contract expected %d live content entries, found %d.',
@@ -73,10 +73,15 @@ if ($contentCount !== $expected['content']) {
 }
 
 $navigationCount = (int) $database->fetchOne(sprintf(
-    'SELECT COUNT(*) FROM %s i INNER JOIN %s m ON m.id = i.menu_id WHERE m.handle = ?',
+    'SELECT COUNT(*) FROM %s i INNER JOIN %s m ON m.id = i.menu_id '
+        . 'INNER JOIN %s mo ON mo.resource_type = ? AND mo.resource_id = m.id '
+        . 'INNER JOIN %s io ON io.resource_type = ? AND io.resource_id = i.id '
+        . 'WHERE m.handle = ? AND mo.site_identifier = ? AND io.site_identifier = ?',
     $tables->quoted('navigation_items'),
     $tables->quoted('navigation_menus'),
-), ['main']);
+    $tables->quoted('resource_site_ownership'),
+    $tables->quoted('resource_site_ownership'),
+), ['menu', 'menu_item', 'main', $configuration->publicSite, $configuration->publicSite]);
 if ($navigationCount !== $expected['navigation']) {
     throw new RuntimeException(sprintf(
         'The %s smoke contract expected %d primary navigation items, found %d.',
@@ -87,11 +92,15 @@ if ($navigationCount !== $expected['navigation']) {
 }
 
 $businessAssets = [];
-foreach ($database->fetchAllAssociative(sprintf(
-    'SELECT resource_type, COUNT(*) AS asset_count FROM %s WHERE site_identifier = ? AND dataset_key = ? '
-        . 'GROUP BY resource_type ORDER BY resource_type',
-    $tables->quoted('demo_profile_assets'),
-), [$configuration->publicSite, 'business-demo']) as $asset) {
+$businessAssetRows = $database->fetchAllAssociative(
+    sprintf(
+        'SELECT resource_type, COUNT(*) AS asset_count FROM %s WHERE site_identifier = ? AND dataset_key = ? '
+            . 'GROUP BY resource_type ORDER BY resource_type',
+        $tables->quoted('demo_profile_assets'),
+    ),
+    [$configuration->publicSite, 'business-demo'],
+);
+foreach ($businessAssetRows as $asset) {
     $resourceType = $asset['resource_type'] ?? null;
     $count = $asset['asset_count'] ?? null;
     if (!is_string($resourceType) || !is_numeric($count)) {
@@ -106,22 +115,33 @@ if ($businessAssets !== $expected['business_assets']) {
     ));
 }
 
-$definitionCount = (int) $database->fetchOne(sprintf(
-    'SELECT COUNT(*) FROM %s WHERE site_identifier = ? AND handle LIKE ?',
+$definitionHandles = $database->fetchFirstColumn(sprintf(
+    'SELECT handle FROM %s WHERE site_identifier = ? AND owner_type = ? AND owner_identifier = ? ORDER BY handle',
     $tables->quoted('business_definitions'),
-), [$configuration->publicSite, 'site.default.vdm\_%']);
-$installationCount = (int) $database->fetchOne(sprintf(
-    'SELECT COUNT(*) FROM %s i INNER JOIN %s d ON d.id = i.definition_id '
-        . 'WHERE i.site_identifier = ? AND i.status = ? AND d.handle LIKE ?',
+), [$configuration->publicSite, 'site', $configuration->publicSite]);
+$installationHandles = $database->fetchFirstColumn(sprintf(
+    'SELECT d.handle FROM %s i INNER JOIN %s d ON d.id = i.definition_id '
+        . 'WHERE i.site_identifier = ? AND i.status = ? AND d.owner_type = ? AND d.owner_identifier = ? '
+        . 'ORDER BY d.handle',
     $tables->quoted('business_schema_installations'),
     $tables->quoted('business_definitions'),
-), [$configuration->publicSite, 'active', 'site.default.vdm\_%']);
-$expectedBusinessCount = $contract === 'documentation-vdm' ? 5 : 0;
-if ($definitionCount !== $expectedBusinessCount || $installationCount !== $expectedBusinessCount) {
+), [$configuration->publicSite, 'active', 'site', $configuration->publicSite]);
+foreach ([...$definitionHandles, ...$installationHandles] as $businessHandle) {
+    if (!is_string($businessHandle)) {
+        throw new RuntimeException('A VDM definition handle is malformed.');
+    }
+}
+$expectedBusinessHandles = $expected['business_assets'] !== [] ? [
+    sprintf('site.%s.vdm_client_account', $configuration->publicSite),
+    sprintf('site.%s.vdm_engagement', $configuration->publicSite),
+    sprintf('site.%s.vdm_service_catalog_item', $configuration->publicSite),
+    sprintf('site.%s.vdm_service_request', $configuration->publicSite),
+    sprintf('site.%s.vdm_work_entry', $configuration->publicSite),
+] : [];
+if ($definitionHandles !== $expectedBusinessHandles || $installationHandles !== $expectedBusinessHandles) {
     throw new RuntimeException(sprintf(
-        'The %s smoke contract expected %d published and installed VDM definitions.',
+        'The %s smoke contract has unexpected published or installed VDM definitions.',
         (string) $contract,
-        $expectedBusinessCount,
     ));
 }
 
