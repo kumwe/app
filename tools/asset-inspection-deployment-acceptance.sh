@@ -21,7 +21,7 @@ mode="$1"
 [[ "$mode" == package || "$mode" == grant || "$mode" == exercise ]] \
     || fail 'mode must be package, grant or exercise'
 
-for command in awk cmp curl date docker grep jq openssl sed seq sha256sum tr; do
+for command in awk cmp curl date docker grep jq openssl sed sha256sum tr; do
     require_command "$command"
 done
 for variable in \
@@ -378,8 +378,66 @@ reorder_api_records() {
     ' "$output" >/dev/null
 }
 
+integration_inventory() {
+    app_token "$KUMWE_ACCEPTANCE_CLI_TOKEN_FILE" integration:manage outbox --limit=1000
+}
+
+drain_current_outbox() {
+    local label="$1"
+    local inventory visible_items outstanding maximum_runtime output remaining
+    inventory="$(integration_inventory)"
+    visible_items="$(jq -er '.items | length' <<< "$inventory")"
+    (( visible_items < 1000 )) \
+        || fail "$label cannot establish a complete outbox inventory below the one-thousand-item limit"
+    if jq -e 'any(.items[]; .status == "dead")' <<< "$inventory" >/dev/null; then
+        jq -c '[.items[] | select(.status == "dead")
+            | {event_id, aggregate_type, aggregate_version, status, attempts}]' <<< "$inventory" >&2
+        fail "$label found a dead-letter integration event"
+    fi
+    outstanding="$(jq -er '[.items[] | select(.status == "pending" or .status == "reserved")] | length' \
+        <<< "$inventory")"
+    if (( outstanding == 0 )); then
+        output="$(app php bin/kumwe integration:work --once --stream=outbox --max-items=1)"
+        grep --fixed-strings --quiet 'processed 0 item batch(es)' <<< "$output" \
+            || fail "$label worker disagreed with its empty durable inventory"
+        return 0
+    fi
+
+    # One outbox-only loop receives exactly the durable work visible above. The runtime limit is derived
+    # from that immutable starting bound, so a stuck worker fails without turning a larger magic loop into
+    # an accidental success condition.
+    maximum_runtime="$((outstanding * 2 + 30))"
+    if ! output="$(app php bin/kumwe integration:work --stream=outbox \
+        --max-items="$outstanding" --max-runtime="$maximum_runtime")"; then
+        fail "$label worker failed before exhausting its inventory-derived bound"
+    fi
+    if ! grep --extended-regexp --quiet '^Integration worker processed [0-9]+ item batch\(es\)\.$' \
+        <<< "$output"; then
+        printf '%s\n' "$output" >&2
+        fail "$label worker returned an invalid completion acknowledgement"
+    fi
+
+    inventory="$(integration_inventory)"
+    if jq -e 'any(.items[]; .status == "dead")' <<< "$inventory" >/dev/null; then
+        jq -c '[.items[] | select(.status == "dead")
+            | {event_id, aggregate_type, aggregate_version, status, attempts}]' <<< "$inventory" >&2
+        fail "$label produced a dead-letter integration event"
+    fi
+    remaining="$(jq -er '[.items[] | select(.status == "pending" or .status == "reserved")] | length' \
+        <<< "$inventory")"
+    if (( remaining != 0 )); then
+        jq -c '[.items[] | select(.status == "pending" or .status == "reserved")
+            | {event_id, aggregate_type, aggregate_version, status, attempts}]' <<< "$inventory" >&2
+        fail "$label did not settle within its $outstanding-item inventory-derived bound"
+    fi
+}
+
+drain_existing_integrations() {
+    drain_current_outbox 'pre-existing integration work'
+}
+
 drain_integrations() {
-    local example_definitions iteration inventory output
+    local example_definitions inventory
     example_definitions='[
         "019bc200-0000-7000-8000-000000000001",
         "019bc200-0000-7000-8000-000000000002",
@@ -387,37 +445,18 @@ drain_integrations() {
         "019bc200-0000-7000-8000-000000000004",
         "019bc200-0000-7000-8000-000000000005"
     ]'
-    for iteration in $(seq 1 100); do
-        output="$(app php bin/kumwe integration:work --once --stream=all --max-items=1000)"
-        if ! grep --fixed-strings --quiet 'processed 0 item batch(es)' <<< "$output"; then
-            continue
-        fi
-        # No runnable item may still mean ordered successors are delayed by durable backpressure.
-        inventory="$(app_token "$KUMWE_ACCEPTANCE_CLI_TOKEN_FILE" integration:manage outbox --limit=1000)"
-        if jq -e --argjson definitions "$example_definitions" '
-            [.items[] | select(.aggregate_type as $type | $definitions | index($type) != null)] as $example
-            | any($example[]; .status == "dead")
-        ' <<< "$inventory" >/dev/null; then
-            jq -c --argjson definitions "$example_definitions" '
-                [.items[] | select(.aggregate_type as $type | $definitions | index($type) != null)
-                    | {event_id, aggregate_type, aggregate_version, status, attempts}]
-            ' <<< "$inventory" >&2
-            fail 'an example integration event reached the dead-letter state'
-        fi
-        if jq -e --argjson definitions "$example_definitions" '
-            [.items[] | select(.aggregate_type as $type | $definitions | index($type) != null)] as $example
-            | ($example | length) > 0 and all($example[]; .status == "dispatched")
-        ' <<< "$inventory" >/dev/null; then
-            return 0
-        fi
-        sleep 1
-    done
-    inventory="$(app_token "$KUMWE_ACCEPTANCE_CLI_TOKEN_FILE" integration:manage outbox --limit=1000)"
-    jq -c --argjson definitions "$example_definitions" '
-        [.items[] | select(.aggregate_type as $type | $definitions | index($type) != null)
-            | {event_id, aggregate_type, aggregate_version, status, attempts}]
-    ' <<< "$inventory" >&2
-    fail 'integration work did not reach a terminal state within one hundred bounded passes'
+    drain_current_outbox 'asset-inspection integration work'
+    inventory="$(integration_inventory)"
+    if ! jq -e --argjson definitions "$example_definitions" '
+        [.items[] | select(.aggregate_type as $type | $definitions | index($type) != null)] as $example
+        | ($example | length) > 0 and all($example[]; .status == "dispatched")
+    ' <<< "$inventory" >/dev/null; then
+        jq -c --argjson definitions "$example_definitions" '
+            [.items[] | select(.aggregate_type as $type | $definitions | index($type) != null)
+                | {event_id, aggregate_type, aggregate_version, status, attempts}]
+        ' <<< "$inventory" >&2
+        fail 'asset-inspection integration events did not all reach the dispatched state'
+    fi
 }
 
 assert_projection_evidence() {
@@ -484,6 +523,8 @@ exercise_mcp_report() {
 
 if [[ "$mode" == package ]]; then
     [[ ! -e "$state_file" ]] || fail "state output '$state_file' already exists"
+    compose --profile automation stop worker scheduler
+    drain_existing_integrations
     container_root=/var/www/kumwe/extensions/.asset-inspection-acceptance
     package_one="$container_root/asset-inspection-one.zip"
     package_two="$container_root/asset-inspection-two.zip"
@@ -577,6 +618,7 @@ if [[ "$mode" == grant ]]; then
     exit 0
 fi
 
+compose --profile automation stop worker scheduler
 common_record_capabilities='business.record.browse,business.record.read,business.record.create,business.record.update,business.record.action,business.record.relate,business.record.report,business.record.export,automation.manage,kumwe.asset-inspection-example.manage,kumwe.asset-inspection-example.view'
 issue_token "$cli_token_file" kumwe-cli management asset-inspection-cli "$common_record_capabilities"
 issue_token "$api_token_file" kumwe-http api asset-inspection-api "$common_record_capabilities"
@@ -676,7 +718,6 @@ umask 077
 jq --sort-keys . <<< "$projection_rebuild" > "$projection_evidence_file"
 chmod 0600 "$projection_evidence_file"
 assert_projection_evidence
-compose --profile automation stop worker scheduler
 acceptance_schedule_document="$(app_token "$cli_token_file" automation create \
     --name=asset-inspection-acceptance \
     --cron='* * * * *' \
@@ -783,6 +824,7 @@ app php bin/kumwe extension:runtime:materialize >/dev/null
 compose --profile automation up --detach --wait --force-recreate app web worker scheduler
 app php bin/kumwe schedule:run >/dev/null
 refresh_management_token 'kumwe.asset-inspection-example.manage,kumwe.asset-inspection-example.view'
+compose --profile automation stop worker scheduler
 drain_integrations
 assert_projection_evidence
 

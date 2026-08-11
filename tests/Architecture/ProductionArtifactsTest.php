@@ -138,6 +138,14 @@ final class ProductionArtifactsTest extends TestCase
         self::assertStringContainsString('php bin/kumwe database:migrate', $acceptance);
         self::assertStringContainsString('php bin/kumwe user:create-admin', $acceptance);
         self::assertStringContainsString('Composer and ZIP installation', $acceptance);
+        self::assertStringContainsString(
+            'CREATE DATABASE kumwe_distribution_zip CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;',
+            $acceptance,
+        );
+        self::assertStringContainsString("COUNT(collation_name), ':', COUNT(DISTINCT collation_name)", $acceptance);
+        self::assertStringContainsString("test \"\$zip_collation_contract\" = '3:3:1'", $acceptance);
+        self::assertStringContainsString("table_name = 'kumwe_content_entries'", $acceptance);
+        self::assertStringContainsString("table_name = 'kumwe_workflow_definition_versions'", $acceptance);
         self::assertStringContainsString('bash tools/deployment-probe.sh', $acceptance);
         self::assertStringContainsString('Restore a production backup into a clean database', $acceptance);
 
@@ -220,6 +228,13 @@ final class ProductionArtifactsTest extends TestCase
         self::assertStringContainsString('integration:manage projection-rebuild', $driver);
         self::assertStringContainsString('integration:manage projections', $driver);
         self::assertStringContainsString('integration:manage outbox --limit=1000', $driver);
+        self::assertStringContainsString("drain_current_outbox 'pre-existing integration work'", $driver);
+        self::assertStringContainsString("drain_current_outbox 'asset-inspection integration work'", $driver);
+        self::assertStringContainsString('--max-items="$outstanding"', $driver);
+        self::assertStringContainsString('maximum_runtime="$((outstanding * 2 + 30))"', $driver);
+        self::assertStringNotContainsString('seq 1 100', $driver);
+        self::assertStringNotContainsString('one hundred bounded passes', $driver);
+        self::assertStringNotContainsString('KUMWE_BUSINESS_DEMO=false', $acceptance);
         self::assertStringContainsString('.status == "dispatched"', $driver);
         self::assertStringContainsString('.status == "dead"', $driver);
         self::assertStringContainsString('kumwe.asset-inspection-example.integration', $driver);
@@ -229,11 +244,46 @@ final class ProductionArtifactsTest extends TestCase
         self::assertStringContainsString('$database->quoteSingleIdentifier($table->physicalName)', $support);
         self::assertStringNotContainsString('$tables->quoted($table->physicalName)', $support);
 
+        $boundedDrainStart = strpos($driver, "\ndrain_current_outbox() {");
+        $boundedDrainEnd = strpos(
+            $driver,
+            "\ndrain_existing_integrations() {",
+            $boundedDrainStart === false ? 0 : $boundedDrainStart,
+        );
+        if ($boundedDrainStart === false || $boundedDrainEnd === false) {
+            self::fail('The bounded deployment outbox drain is unavailable.');
+        }
+        $boundedDrain = substr($driver, $boundedDrainStart, $boundedDrainEnd - $boundedDrainStart);
+        self::assertStringContainsString('--stream=outbox', $boundedDrain);
+        self::assertStringContainsString('.status == "pending" or .status == "reserved"', $boundedDrain);
+        self::assertStringContainsString('.status == "dead"', $boundedDrain);
+        self::assertStringNotContainsString('purge', $boundedDrain);
+        self::assertStringNotContainsString('sleep ', $boundedDrain);
+
         $initialDrain = strpos($driver, "\ndrain_integrations\n");
+        $baselineStop = strpos($driver, "\n    compose --profile automation stop worker scheduler\n");
+        $baselineDrain = strpos($driver, "\n    drain_existing_integrations\n");
+        $packageBuild = strpos($driver, 'app php bin/kumwe extension:build');
+        $packageRestart = strpos($driver, '--force-recreate app web worker scheduler', $packageBuild);
+        $exerciseStop = strpos(
+            $driver,
+            "\ncompose --profile automation stop worker scheduler\n",
+            $packageRestart === false ? 0 : $packageRestart,
+        );
+        $firstExerciseToken = strpos(
+            $driver,
+            'issue_token "$cli_token_file"',
+            $exerciseStop === false ? 0 : $exerciseStop,
+        );
         $replay = strpos($driver, 'acceptance_php replay');
         $lifecycleRefresh = strrpos(
             $driver,
             "refresh_management_token 'kumwe.asset-inspection-example.manage,kumwe.asset-inspection-example.view'",
+        );
+        $lifecycleStop = strpos(
+            $driver,
+            "\ncompose --profile automation stop worker scheduler\n",
+            $lifecycleRefresh === false ? 0 : $lifecycleRefresh,
         );
         $finalDrain = strpos(
             $driver,
@@ -242,14 +292,28 @@ final class ProductionArtifactsTest extends TestCase
         );
         $snapshot = strpos($driver, 'asset-inspection-deployment-acceptance.php snapshot');
         if (
-            $initialDrain === false
+            $baselineStop === false
+            || $baselineDrain === false
+            || $packageBuild === false
+            || $packageRestart === false
+            || $exerciseStop === false
+            || $firstExerciseToken === false
+            || $initialDrain === false
             || $replay === false
             || $lifecycleRefresh === false
+            || $lifecycleStop === false
             || $finalDrain === false
             || $snapshot === false
+            || $baselineStop >= $baselineDrain
+            || $baselineDrain >= $packageBuild
+            || $packageBuild >= $packageRestart
+            || $packageRestart >= $exerciseStop
+            || $exerciseStop >= $firstExerciseToken
+            || $firstExerciseToken >= $initialDrain
             || $initialDrain >= $replay
             || $replay >= $lifecycleRefresh
-            || $lifecycleRefresh >= $finalDrain
+            || $lifecycleRefresh >= $lifecycleStop
+            || $lifecycleStop >= $finalDrain
             || $finalDrain >= $snapshot
         ) {
             self::fail('The integration drain does not fence both event replay and the source snapshot.');
