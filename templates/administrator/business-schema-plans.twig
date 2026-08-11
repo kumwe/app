@@ -21,11 +21,11 @@
     {% endif %}
   </div>
 {% endmacro %}
-{% import _self as schema %}
 {% block title %}Schema plans · Kumwe{% endblock %}
 {% block context_title %}Schema plans{% endblock %}
 {% block context_subtitle %}Inspect and control generated relational storage{% endblock %}
 {% block content %}
+  {% import _self as schema %}
   {% embed '@kis/page-header.twig' with {
     eyebrow: 'Structure',
     title: 'Business schema plans',
