@@ -343,9 +343,36 @@ jobs:
       - name: Upgrade parent schema to current
         run: php bin/kumwe database:migrate
 
+      - name: Create isolated demo-profile databases
+        shell: bash
+        run: |
+          set -euo pipefail
+          service='${{ job.services.database.id }}'
+          if [[ "$DB_DRIVER" == 'pgsql' ]]; then
+            docker exec "$service" psql --username=kumwe --dbname=postgres --set=ON_ERROR_STOP=1 \
+              --command='CREATE DATABASE kumwe_demo_docs OWNER kumwe'
+            docker exec "$service" psql --username=kumwe --dbname=postgres --set=ON_ERROR_STOP=1 \
+              --command='CREATE DATABASE kumwe_demo_placeholder OWNER kumwe'
+          elif [[ "$DB_DRIVER" == 'mariadb' ]]; then
+            docker exec "$service" mariadb --user=root --execute="
+              CREATE DATABASE kumwe_demo_docs CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+              CREATE DATABASE kumwe_demo_placeholder CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+              GRANT ALL ON kumwe_demo_docs.* TO 'kumwe'@'%';
+              GRANT ALL ON kumwe_demo_placeholder.* TO 'kumwe'@'%';
+            "
+          else
+            docker exec "$service" mysql --user=root --execute="
+              CREATE DATABASE kumwe_demo_docs CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+              CREATE DATABASE kumwe_demo_placeholder CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+              GRANT ALL ON kumwe_demo_docs.* TO 'kumwe'@'%';
+              GRANT ALL ON kumwe_demo_placeholder.* TO 'kumwe'@'%';
+            "
+          fi
+
       - name: Smoke-test documentation and VDM profiles
         env:
-          DB_TABLE_PREFIX: demo_docs_
+          DB_NAME: kumwe_demo_docs
+          DB_TABLE_PREFIX: kumwe_
           REDIS_NAMESPACE: kumwe.ci.demo-docs
           KUMWE_SITE_CONTENT_PROFILE: documentation
           KUMWE_BUSINESS_DEMO: 'true'
@@ -362,7 +389,8 @@ jobs:
 
       - name: Smoke-test placeholder profile without business examples
         env:
-          DB_TABLE_PREFIX: demo_placeholder_
+          DB_NAME: kumwe_demo_placeholder
+          DB_TABLE_PREFIX: kumwe_
           REDIS_NAMESPACE: kumwe.ci.demo-placeholder
           KUMWE_SITE_CONTENT_PROFILE: placeholder
           KUMWE_BUSINESS_DEMO: 'false'
