@@ -8,12 +8,20 @@ export class KumweDefinitionEditor extends LitElement {
   override connectedCallback(): void {
     super.connectedCallback();
     this.addEventListener('click', this.handleClick);
+    this.addEventListener('toggle', this.handleToggle, true);
   }
 
   override disconnectedCallback(): void {
     this.removeEventListener('click', this.handleClick);
+    this.removeEventListener('toggle', this.handleToggle, true);
     super.disconnectedCallback();
   }
+
+  private handleToggle = (event: Event): void => {
+    const target = event.target;
+    if (!(target instanceof HTMLDetailsElement) || !target.open || target.dataset.row !== 'field') return;
+    this.closeFieldRows(target);
+  };
 
   private handleClick = (event: Event): void => {
     const target = event.target;
@@ -29,12 +37,19 @@ export class KumweDefinitionEditor extends LitElement {
     const template = this.querySelector<HTMLTemplateElement>(`template[data-template="${kind}"]`);
     const rows = this.querySelector<HTMLElement>(`[data-rows="${kind}"]`);
     if (!template || !rows || rows.children.length >= this.limit(kind)) return;
+    if (kind === 'field') this.closeFieldRows();
     const index = this.nextIndex(kind);
     const wrapper = document.createElement('template');
     wrapper.innerHTML = template.innerHTML.replaceAll('__INDEX__', String(index));
     rows.append(wrapper.content.cloneNode(true));
     rows.lastElementChild?.querySelector<HTMLElement>('input, select, textarea')?.focus();
   };
+
+  private closeFieldRows(except?: HTMLDetailsElement): void {
+    for (const row of this.querySelectorAll<HTMLDetailsElement>('details[data-row="field"][open]')) {
+      if (row !== except) row.open = false;
+    }
+  }
 
   private nextIndex(kind: string): number {
     const names = Array.from(this.querySelectorAll<HTMLInputElement | HTMLSelectElement>(`[name^="${kind}_"]`))

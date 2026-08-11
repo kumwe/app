@@ -137,6 +137,15 @@
             </div>
           {% endif %}
         </section>
+        {% if installation %}
+          <section class="panel stack">
+            <div class="section-heading"><div><p class="eyebrow">Installed metadata</p><h2>Current physical schema</h2></div><span class="status status-{{ installation.status }}">{{ installation.status }}</span></div>
+            <dl class="definition-metadata"><div><dt>Installed version</dt><dd>v{{ installation.definition_version }}</dd></div><div><dt>Schema checksum</dt><dd><code data-visual-mask>{{ installation.schema_checksum }}</code></dd></div><div><dt>Owner</dt><dd>{{ installation.owner_identifier }}</dd></div></dl>
+            <div class="table-wrap" tabindex="0" role="region" aria-label="Schema plan target blueprint"><table><thead><tr><th>Logical table</th><th>Physical table</th><th>Kind</th><th>Columns</th><th>Indexes</th><th>Relations</th></tr></thead><tbody>
+              {% for table in installation.blueprint.tables %}<tr><td><code>{{ table.logical_name }}</code></td><td><code data-visual-mask>{{ table.physical_name }}</code></td><td>{{ table.kind|replace({'_':' '}) }}</td><td>{{ table.columns|length }}</td><td>{{ table.indexes|length }}</td><td>{{ table.foreign_keys|length }}</td></tr>{% endfor %}
+            </tbody></table></div>
+          </section>
+        {% endif %}
           {% endblock %}
         {% endembed %}
 
@@ -314,17 +323,6 @@
         {% endif %}
           {% endblock %}
         {% endembed %}
-
-        {% if installation %}
-          <section class="panel stack">
-            <div class="section-heading"><div><p class="eyebrow">Installed metadata</p><h2>Current physical schema</h2></div><span class="status status-{{ installation.status }}">{{ installation.status }}</span></div>
-            <dl class="definition-metadata"><div><dt>Installed version</dt><dd>v{{ installation.definition_version }}</dd></div><div><dt>Schema checksum</dt><dd><code data-visual-mask>{{ installation.schema_checksum }}</code></dd></div><div><dt>Owner</dt><dd>{{ installation.owner_identifier }}</dd></div></dl>
-            <div class="table-wrap" tabindex="0" role="region" aria-label="Schema plan target blueprint"><table><thead><tr><th>Logical table</th><th>Physical table</th><th>Kind</th><th>Columns</th><th>Indexes</th><th>Relations</th></tr></thead><tbody>
-              {% for table in installation.blueprint.tables %}<tr><td><code>{{ table.logical_name }}</code></td><td><code data-visual-mask>{{ table.physical_name }}</code></td><td>{{ table.kind|replace({'_':' '}) }}</td><td>{{ table.columns|length }}</td><td>{{ table.indexes|length }}</td><td>{{ table.foreign_keys|length }}</td></tr>{% endfor %}
-            </tbody></table></div>
-
-          </section>
-        {% endif %}
       {% endif %}
     </div>
       {% endblock %}

@@ -594,11 +594,18 @@ var KumweDefinitionEditor = class extends i {
 	connectedCallback() {
 		super.connectedCallback();
 		this.addEventListener("click", this.handleClick);
+		this.addEventListener("toggle", this.handleToggle, true);
 	}
 	disconnectedCallback() {
 		this.removeEventListener("click", this.handleClick);
+		this.removeEventListener("toggle", this.handleToggle, true);
 		super.disconnectedCallback();
 	}
+	handleToggle = (event) => {
+		const target = event.target;
+		if (!(target instanceof HTMLDetailsElement) || !target.open || target.dataset.row !== "field") return;
+		this.closeFieldRows(target);
+	};
 	handleClick = (event) => {
 		const target = event.target;
 		if (!(target instanceof HTMLElement)) return;
@@ -612,12 +619,16 @@ var KumweDefinitionEditor = class extends i {
 		const template = this.querySelector(`template[data-template="${kind}"]`);
 		const rows = this.querySelector(`[data-rows="${kind}"]`);
 		if (!template || !rows || rows.children.length >= this.limit(kind)) return;
+		if (kind === "field") this.closeFieldRows();
 		const index = this.nextIndex(kind);
 		const wrapper = document.createElement("template");
 		wrapper.innerHTML = template.innerHTML.replaceAll("__INDEX__", String(index));
 		rows.append(wrapper.content.cloneNode(true));
 		rows.lastElementChild?.querySelector("input, select, textarea")?.focus();
 	};
+	closeFieldRows(except) {
+		for (const row of this.querySelectorAll("details[data-row=\"field\"][open]")) if (row !== except) row.open = false;
+	}
 	nextIndex(kind) {
 		const names = Array.from(this.querySelectorAll(`[name^="${kind}_"]`)).map((input) => Number(input.name.match(new RegExp(`^${kind}_(\\d+)_`))?.[1] ?? -1));
 		return Math.max(-1, ...names) + 1;
