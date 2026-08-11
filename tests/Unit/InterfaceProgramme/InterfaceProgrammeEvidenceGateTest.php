@@ -7,11 +7,6 @@ namespace Kumwe\CMS\Tests\Unit\InterfaceProgramme;
 use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\TestCase;
 
-if (!defined('KUMWE_INTERFACE_PROGRAMME_LIBRARY_ONLY')) {
-    define('KUMWE_INTERFACE_PROGRAMME_LIBRARY_ONLY', true);
-}
-require_once dirname(__DIR__, 3) . '/tools/verify-interface-programme.php';
-
 /**
  * Exercise adversarial evidence and completion-gate programme records.
  *
@@ -20,6 +15,17 @@ require_once dirname(__DIR__, 3) . '/tools/verify-interface-programme.php';
 #[CoversNothing]
 final class InterfaceProgrammeEvidenceGateTest extends TestCase
 {
+    public static function setUpBeforeClass(): void
+    {
+        parent::setUpBeforeClass();
+
+        if (!defined('KUMWE_INTERFACE_PROGRAMME_LIBRARY_ONLY')) {
+            define('KUMWE_INTERFACE_PROGRAMME_LIBRARY_ONLY', true);
+        }
+
+        require_once dirname(__DIR__, 3) . '/tools/verify-interface-programme.php';
+    }
+
     /**
      * Reject evidence that omits a required field or violates the declared type and revision rules.
      *

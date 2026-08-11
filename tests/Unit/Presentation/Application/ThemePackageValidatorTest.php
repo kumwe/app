@@ -125,8 +125,7 @@ final class ThemePackageValidatorTest extends TestCase
         string $search,
         string $replacement,
         string $message,
-    ): void
-    {
+    ): void {
         $valid = $this->validSiteDocument('Contract probe');
         file_put_contents($this->root . '/theme/home.twig', str_replace($search, $replacement, $valid));
         file_put_contents($this->root . '/theme/page.twig', $this->validSitePageDocument());

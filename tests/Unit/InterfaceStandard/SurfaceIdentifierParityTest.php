@@ -107,7 +107,8 @@ final class SurfaceIdentifierParityTest extends TestCase
             $portalTemplate->name,
         );
 
-        foreach ([
+        foreach (
+            [
             $administratorWorkspace->id,
             $administratorNavigation->id,
             $administratorRoute->name,
@@ -116,7 +117,8 @@ final class SurfaceIdentifierParityTest extends TestCase
             $portalNavigation->id,
             $portalRoute->name,
             $portalTemplate->name,
-        ] as $identifier) {
+            ] as $identifier
+        ) {
             $owner->assertOwns($identifier, 'test contribution');
         }
         $owner->assertOwns(SurfaceId::fromString($administratorSurface)->value(), 'interface surface');
