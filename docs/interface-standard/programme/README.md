@@ -12,6 +12,9 @@ graphical delivery surface is brought into conformance without losing behaviour.
 | [`surface-inventory.json`](surface-inventory.json) | Every current graphical route, template, navigation entry, generated exposure, owner, task, finding, fixture, coverage disposition, KIS pattern, and target phase. |
 | [`actor-task-journeys.json`](actor-task-journeys.json) | Stable actor definitions, user tasks, and end-to-end journeys used to judge whether a migration preserves usable outcomes. |
 | [`phase-ledger.json`](phase-ledger.json) | Gates, owners, evidence, severity policy, phase checklists, status history, waivers, and continuation state through Phase 6. |
+| [`findings-register.json`](findings-register.json) | Deduplicated product, coverage, usability, and environment findings with current disposition, owner, severity, reproduction, evidence, blockers, and append-only history. |
+| [`verification-report-template.json`](verification-report-template.json) | Reusable per-PR report contract covering the canonical source, PHP, frontend, browser, parity, security, extensibility, topology, recovery, and review checks. |
+| [`reports/phase-0-2-current.json`](reports/phase-0-2-current.json) | Current Phase 0–2 checkpoint matrix, including checks that passed and checks honestly blocked or not run. |
 | [`governance.md`](governance.md) | Human-readable rules for ownership, findings, evidence, decisions, deviations, and completion. |
 | [`continuation-protocol.md`](continuation-protocol.md) | Exact start, execution, verification, and hand-off protocol for this chat and later Phase 3–6 chats. |
 
@@ -57,6 +60,10 @@ task depends on is a support surface and remains inventoried.
 10. Template and extension customization remains explicit, versioned, capability-filtered, accessible,
     recoverable, and resettable. A custom template may replace approved presentation slots, but it still
     owes the same task, semantic, safety, and conformance contracts.
+11. A finding fingerprint is unique. Duplicate observations reference the canonical finding; they never
+    inflate or erase scope. Environment limitations are findings, not passing evidence.
+12. Every migration PR copies the verification-report template, retains every canonical check row, and
+    records `blocked`, `not_run`, or `not_applicable` rather than inferring success from source presence.
 
 ## Verification
 
@@ -69,12 +76,26 @@ composer interface:programme
 
 The command is part of `composer qa`. It checks internal references and completion rules, then compares the
 inventory with `ContainerFactory`, core navigation contributions, every shipped extension manifest, all
-shipped demo business definitions, and every repository Twig template. A newly added source surface fails
-the check until it is deliberately classified and scheduled.
+shipped demo business definitions, every repository Twig template, typed core surface IDs/capabilities,
+the findings register, and every verification report. A newly added source surface or malformed report
+fails the check until it is deliberately classified and scheduled.
 
 The verifier proves inventory coverage and ledger consistency. It does not prove visual quality. Runtime
 browser, accessibility, responsive, security, parity, database, deployment, and recovery evidence remains
 required by the phase and gate records.
+
+## Per-PR verification reports
+
+Copy `verification-report-template.json` to `reports/<stable-report-id>.json` for every bounded migration
+PR. Replace every placeholder, retain all canonical check IDs, associate checks with affected phases and
+work items, and reference the canonical findings register for failures or blockers. A passed check names
+the exact command/review method, environment, result, and durable repository artifacts where applicable.
+
+The report's `source_revision` covers committed implementation only. Shared or unrelated working-tree
+changes are either excluded explicitly or reported as included; they are never silently swept into a pass.
+An unavailable PHP runtime, Composer dependency set, application topology, database, or browser executable
+is recorded as `blocked` or `not_run`. Alternative structural execution such as PHP WASM may prove its
+narrow check, but cannot be relabelled as native Composer, PHPUnit, browser, or production qualification.
 
 ## Status vocabulary
 

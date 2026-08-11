@@ -1,0 +1,222 @@
+{
+  "schema_version": 1,
+  "register_id": "KIS-FINDINGS",
+  "updated_at": "2026-08-11T19:55:51Z",
+  "authoritative_for": "Deduplication, current disposition, ownership, and verification state. Surface inventory finding rows retain discovery scope and target phase.",
+  "category_vocabulary": ["product_defect", "usability_risk", "coverage_gap", "environment_limitation"],
+  "status_vocabulary": ["open", "in_progress", "in_review", "resolved", "superseded"],
+  "disposition_vocabulary": ["planned", "implementation_in_progress", "fixed_pending_verification", "verified_fixed", "environment_blocked", "accepted_risk", "duplicate", "superseded"],
+  "evidence_kind_vocabulary": ["source", "test", "browser", "environment", "review"],
+  "evidence_status_vocabulary": ["observed", "passed", "failed", "blocked", "not_run"],
+  "findings": [
+    {
+      "id": "KIS-FINDING-0001",
+      "fingerprint": "core.portal.login|guest-shell|authenticated-grid-column-placement",
+      "category": "product_defect",
+      "summary": "The guest portal main region was auto-placed in the authenticated shell navigation column.",
+      "severity": "P0",
+      "status": "in_review",
+      "disposition": "fixed_pending_verification",
+      "owner_role": "implementation-owner",
+      "detected_at": "2026-08-11T00:00:00Z",
+      "phase_numbers": [0],
+      "surface_ids": ["core.portal.login"],
+      "work_item_ids": ["P0-003", "P0-007"],
+      "reproduction": "Open /portal/login without a portal session at desktop and mobile widths; inspect the shell grid and login-card centre point.",
+      "suggested_correction": "Use a guest-only one-column shell contract and verify centring and overflow at desktop and mobile widths.",
+      "confidence": "confirmed",
+      "duplicate_of": null,
+      "related_finding_ids": ["KIS-ENV-0001", "KIS-ENV-0002"],
+      "evidence": [
+        {"id": "EVID-FIND-0001-SOURCE", "kind": "source", "status": "observed", "source_revision": "bb726e90a90052e0693af0e686c72a7acc024531", "method": "git show bb726e9 -- public/assets/portal.css templates/portal/layout.twig", "result": "The committed source adds portal-shell--guest, a one-column guest grid, and an unbounded guest main region.", "artifact_paths": ["public/assets/portal.css", "templates/portal/layout.twig"], "blocker_finding_ids": []},
+        {"id": "EVID-FIND-0001-BROWSER", "kind": "browser", "status": "blocked", "source_revision": "beb8861d6d8a7ebcda49e708d28c740c2ced8c4a", "method": "npm run test:browser -- tests/Browser/portal.spec.ts", "result": "Not executed: the environment has neither the native PHP application runtime nor the Playwright Chromium executable. The fix is not recorded as browser-passed.", "artifact_paths": ["tests/Browser/portal.spec.ts"], "blocker_finding_ids": ["KIS-ENV-0001", "KIS-ENV-0002"]}
+      ],
+      "status_history": [
+        {"at": "2026-08-11T00:00:00Z", "from": null, "to": "open", "reason": "Confirmed from the supplied guest portal rendering.", "evidence_ids": []},
+        {"at": "2026-08-11T19:55:51Z", "from": "open", "to": "in_review", "reason": "Source correction and deterministic browser assertion are committed; browser execution remains blocked.", "evidence_ids": ["EVID-FIND-0001-SOURCE", "EVID-FIND-0001-BROWSER"]}
+      ]
+    },
+    {
+      "id": "KIS-FINDING-0002",
+      "fingerprint": "core.administrator.business-security|navigation|missing-security-sprite-symbol",
+      "category": "product_defect",
+      "summary": "The Business Security navigation contribution referenced an icon absent from the administrator sprite.",
+      "severity": "P1",
+      "status": "in_review",
+      "disposition": "fixed_pending_verification",
+      "owner_role": "implementation-owner",
+      "detected_at": "2026-08-11T00:00:00Z",
+      "phase_numbers": [0],
+      "surface_ids": ["core.administrator.business-security"],
+      "work_item_ids": ["P0-004", "P0-005"],
+      "reproduction": "Render core administrator navigation and resolve the security icon reference against protected sprite symbols.",
+      "suggested_correction": "Add the protected security symbol and fail deterministic registry coverage for every unresolved or duplicate icon.",
+      "confidence": "confirmed",
+      "duplicate_of": null,
+      "related_finding_ids": ["KIS-ENV-0001"],
+      "evidence": [
+        {"id": "EVID-FIND-0002-SOURCE", "kind": "source", "status": "observed", "source_revision": "bb726e90a90052e0693af0e686c72a7acc024531", "method": "git show bb726e9 -- templates/administrator/layout.twig", "result": "The protected administrator sprite now contains one kumwe-icon-security symbol.", "artifact_paths": ["templates/administrator/layout.twig"], "blocker_finding_ids": []},
+        {"id": "EVID-FIND-0002-TEST", "kind": "test", "status": "blocked", "source_revision": "a2efa24b4c1ee67f1a22bb70dbce2dfa46eec56e", "method": "vendor/bin/phpunit tests/Unit/Extension/Contribution/ExtensionContributionRegistrySetTest.php", "result": "The deterministic icon-registry assertion is committed but was not executed because native PHP and Composer dependencies are unavailable.", "artifact_paths": ["tests/Unit/Extension/Contribution/ExtensionContributionRegistrySetTest.php"], "blocker_finding_ids": ["KIS-ENV-0001"]}
+      ],
+      "status_history": [
+        {"at": "2026-08-11T00:00:00Z", "from": null, "to": "open", "reason": "Confirmed from the missing navigation glyph.", "evidence_ids": []},
+        {"at": "2026-08-11T19:55:51Z", "from": "open", "to": "in_review", "reason": "The symbol and regression assertion are committed; native PHPUnit execution remains blocked.", "evidence_ids": ["EVID-FIND-0002-SOURCE", "EVID-FIND-0002-TEST"]}
+      ]
+    },
+    {
+      "id": "KIS-FINDING-0003",
+      "fingerprint": "core.administrator.business-definitions|workspace-grid|nested-editor-clipping",
+      "category": "product_defect",
+      "summary": "The fixed shell, catalog, and nested editor grids exceeded usable content width and clipped definition controls.",
+      "severity": "P1",
+      "status": "in_review",
+      "disposition": "fixed_pending_verification",
+      "owner_role": "implementation-owner",
+      "detected_at": "2026-08-11T00:00:00Z",
+      "phase_numbers": [2],
+      "surface_ids": ["core.administrator.business-definitions"],
+      "work_item_ids": ["P2-002", "P2-003", "P2-004", "P2-008"],
+      "reproduction": "Open a populated definition at 1616 by 1031 and 1280 by 800, then inspect the workspace, editor, and interactive descendant bounds.",
+      "suggested_correction": "Use the KIS master-detail and task-navigation contracts with container-aware minimums and focused field work.",
+      "confidence": "confirmed",
+      "duplicate_of": null,
+      "related_finding_ids": ["KIS-FINDING-0005", "KIS-ENV-0001", "KIS-ENV-0002"],
+      "evidence": [
+        {"id": "EVID-FIND-0003-SOURCE", "kind": "source", "status": "observed", "source_revision": "5e8935f82f69ae5382745ef9d4ed8dad7f8ce268", "method": "git show --stat 5e8935f", "result": "Business Definitions and Schema Plans were migrated to KIS workspace patterns with focused source and browser assertions.", "artifact_paths": ["templates/administrator/business-definitions.twig", "tests/Browser/administrator.spec.ts", "tests/Architecture/BusinessWorkspaceInterfaceStandardTest.php"], "blocker_finding_ids": []},
+        {"id": "EVID-FIND-0003-BROWSER", "kind": "browser", "status": "blocked", "source_revision": "beb8861d6d8a7ebcda49e708d28c740c2ced8c4a", "method": "npm run test:browser -- tests/Browser/administrator.spec.ts", "result": "The required populated viewport/data matrix was not executed because the PHP application runtime and Chromium executable are unavailable.", "artifact_paths": ["tests/Browser/administrator.spec.ts"], "blocker_finding_ids": ["KIS-ENV-0001", "KIS-ENV-0002"]}
+      ],
+      "status_history": [
+        {"at": "2026-08-11T00:00:00Z", "from": null, "to": "open", "reason": "Confirmed from the supplied Business Definitions failure.", "evidence_ids": []},
+        {"at": "2026-08-11T19:55:51Z", "from": "open", "to": "in_review", "reason": "The KIS migration is committed; viewport and representative-data verification remains blocked.", "evidence_ids": ["EVID-FIND-0003-SOURCE", "EVID-FIND-0003-BROWSER"]}
+      ]
+    },
+    {
+      "id": "KIS-FINDING-0004",
+      "fingerprint": "security-administration|task-composition|competing-browse-authoring-actions",
+      "category": "usability_risk",
+      "summary": "Browse, create, edit, policy, approval, and credential tasks remain combined into overwhelming security pages.",
+      "severity": "P1",
+      "status": "open",
+      "disposition": "planned",
+      "owner_role": "product-task-owner",
+      "detected_at": "2026-08-11T00:00:00Z",
+      "phase_numbers": [3],
+      "surface_ids": ["core.administrator.business-security", "core.administrator.access-control"],
+      "work_item_ids": ["P3-002", "P3-003", "P3-004", "P3-005"],
+      "reproduction": "Count competing forms, tables, disclosures, headings, and primary actions in the first viewport and full page.",
+      "suggested_correction": "Split the security bounded context by task and retain visible scope and consequence at every action boundary.",
+      "confidence": "confirmed",
+      "duplicate_of": null,
+      "related_finding_ids": [],
+      "evidence": [
+        {"id": "EVID-FIND-0004-AUDIT", "kind": "review", "status": "observed", "source_revision": "7f176fb2ced9082f0b1edfdf03ab78258812994d", "method": "Kumwe GUI/UX audit task-composition review", "result": "The risk is accepted into Phase 3 scope and is not claimed fixed by Phase 0-2 work.", "artifact_paths": ["docs/interface-standard/programme/continuation-protocol.md"], "blocker_finding_ids": []}
+      ],
+      "status_history": [
+        {"at": "2026-08-11T00:00:00Z", "from": null, "to": "open", "reason": "Scheduled for the security and identity migration.", "evidence_ids": ["EVID-FIND-0004-AUDIT"]}
+      ]
+    },
+    {
+      "id": "KIS-FINDING-0005",
+      "fingerprint": "browser-diagnostics|component-bounds|document-overflow-false-negative",
+      "category": "coverage_gap",
+      "summary": "Document-level overflow checks could pass while individual components clipped, overlapped, or escaped containers.",
+      "severity": "P1",
+      "status": "in_review",
+      "disposition": "fixed_pending_verification",
+      "owner_role": "quality-owner",
+      "detected_at": "2026-08-11T00:00:00Z",
+      "phase_numbers": [0],
+      "surface_ids": ["core.administrator.business-definitions", "core.administrator.generated-definition", "core.portal.generated-definition"],
+      "work_item_ids": ["P0-006", "P0-008"],
+      "reproduction": "Compare document scrollWidth with affected component, scroll-container, and interactive descendant bounding boxes on dense fixtures.",
+      "suggested_correction": "Collect element-level bounds and fail for component overflow, ancestor clipping, viewport escape, and material interactive overlap.",
+      "confidence": "confirmed",
+      "duplicate_of": null,
+      "related_finding_ids": ["KIS-FINDING-0003", "KIS-ENV-0002"],
+      "evidence": [
+        {"id": "EVID-FIND-0005-SOURCE", "kind": "source", "status": "observed", "source_revision": "a2efa24b4c1ee67f1a22bb70dbce2dfa46eec56e", "method": "git show --stat a2efa24", "result": "Reusable clipping, overflow, viewport-escape, and control-overlap diagnostics plus a known-failure harness are committed.", "artifact_paths": ["tests/Browser/support/interface-diagnostics.ts", "tests/Browser/interface-integrity.spec.ts", "tests/Browser/support/interface-surface-manifest.ts"], "blocker_finding_ids": []},
+        {"id": "EVID-FIND-0005-BROWSER", "kind": "browser", "status": "blocked", "source_revision": "beb8861d6d8a7ebcda49e708d28c740c2ced8c4a", "method": "npm run test:browser -- tests/Browser/interface-integrity.spec.ts", "result": "The diagnostic self-test and route matrix were not executed because the Chromium executable is unavailable.", "artifact_paths": ["tests/Browser/interface-integrity.spec.ts"], "blocker_finding_ids": ["KIS-ENV-0002"]}
+      ],
+      "status_history": [
+        {"at": "2026-08-11T00:00:00Z", "from": null, "to": "open", "reason": "Confirmed by the supplied component failure and false document-level pass.", "evidence_ids": []},
+        {"at": "2026-08-11T19:55:51Z", "from": "open", "to": "in_review", "reason": "The reusable diagnostic is committed; Chromium execution remains blocked.", "evidence_ids": ["EVID-FIND-0005-SOURCE", "EVID-FIND-0005-BROWSER"]}
+      ]
+    },
+    {
+      "id": "KIS-FINDING-0006",
+      "fingerprint": "portal-provisioning|cross-surface-journey|ordinary-user-prerequisites",
+      "category": "usability_risk",
+      "summary": "The ordinary portal-user provisioning path and demonstration-data prerequisites are not discoverable as one journey.",
+      "severity": "P2",
+      "status": "open",
+      "disposition": "planned",
+      "owner_role": "product-task-owner",
+      "detected_at": "2026-08-11T00:00:00Z",
+      "phase_numbers": [3],
+      "surface_ids": ["core.administrator.access-control", "core.administrator.business-security", "core.portal.login"],
+      "work_item_ids": ["P3-006", "P3-007"],
+      "reproduction": "Provision and sign in a minimum-authority portal member starting from Users and Access without documentation search.",
+      "suggested_correction": "Make prerequisites and next steps explicit across provisioning, assignment, sign-in, and permitted-work discovery.",
+      "confidence": "confirmed",
+      "duplicate_of": null,
+      "related_finding_ids": [],
+      "evidence": [
+        {"id": "EVID-FIND-0006-AUDIT", "kind": "review", "status": "observed", "source_revision": "7f176fb2ced9082f0b1edfdf03ab78258812994d", "method": "Kumwe GUI/UX audit cross-surface journey review", "result": "The risk is scheduled for Phase 3 and remains open.", "artifact_paths": ["docs/interface-standard/programme/actor-task-journeys.json"], "blocker_finding_ids": []}
+      ],
+      "status_history": [
+        {"at": "2026-08-11T00:00:00Z", "from": null, "to": "open", "reason": "Scheduled for the security and identity migration.", "evidence_ids": ["EVID-FIND-0006-AUDIT"]}
+      ]
+    },
+    {
+      "id": "KIS-ENV-0001",
+      "fingerprint": "verification-environment|php-composer|native-runtime-unavailable",
+      "category": "environment_limitation",
+      "summary": "The current execution environment has no native PHP or Composer runtime and no installed vendor PHPUnit binary.",
+      "severity": "P1",
+      "status": "open",
+      "disposition": "environment_blocked",
+      "owner_role": "quality-owner",
+      "detected_at": "2026-08-11T19:55:51Z",
+      "phase_numbers": [0, 1, 2],
+      "surface_ids": [],
+      "work_item_ids": ["P0-003", "P0-004", "P0-005", "P0-009", "P1-002", "P1-011", "P1-012", "P2-005", "P2-007"],
+      "reproduction": "Run command -v php, command -v composer, and test -x vendor/bin/phpunit in the current workspace.",
+      "suggested_correction": "Re-run the canonical Composer and PHPUnit checks in the supported local PHP 8.5 development topology; attach durable results before acceptance.",
+      "confidence": "confirmed",
+      "duplicate_of": null,
+      "related_finding_ids": ["KIS-ENV-0002"],
+      "evidence": [
+        {"id": "EVID-ENV-0001", "kind": "environment", "status": "blocked", "source_revision": "beb8861d6d8a7ebcda49e708d28c740c2ced8c4a", "method": "command -v php; command -v composer; test -x vendor/bin/phpunit", "result": "No native php or composer command and no vendor PHPUnit executable were present. PHP unit, integration, static-analysis, coding-standard, OpenAPI, and aggregate QA results remain unexecuted.", "artifact_paths": [], "blocker_finding_ids": []},
+        {"id": "EVID-ENV-0001-WASM", "kind": "test", "status": "passed", "source_revision": "beb8861d6d8a7ebcda49e708d28c740c2ced8c4a", "method": "Mount the repository into @php-wasm/node PHP 8.5 and require tools/verify-interface-programme.php", "result": "Only the dependency-free programme verifier passed under PHP 8.5 WASM. This does not stand in for Composer QA or native application tests.", "artifact_paths": ["tools/verify-interface-programme.php"], "blocker_finding_ids": []}
+      ],
+      "status_history": [
+        {"at": "2026-08-11T19:55:51Z", "from": null, "to": "open", "reason": "Native PHP verification is unavailable and must not be inferred from WASM structural validation.", "evidence_ids": ["EVID-ENV-0001", "EVID-ENV-0001-WASM"]}
+      ]
+    },
+    {
+      "id": "KIS-ENV-0002",
+      "fingerprint": "verification-environment|playwright-chromium|executable-unavailable",
+      "category": "environment_limitation",
+      "summary": "Playwright is installed but its required Chromium executable is absent from the current execution environment.",
+      "severity": "P1",
+      "status": "open",
+      "disposition": "environment_blocked",
+      "owner_role": "quality-owner",
+      "detected_at": "2026-08-11T19:55:51Z",
+      "phase_numbers": [0, 1, 2],
+      "surface_ids": [],
+      "work_item_ids": ["P0-003", "P0-006", "P0-007", "P0-008", "P1-003", "P1-004", "P1-005", "P1-006", "P1-007", "P1-008", "P1-009", "P1-010", "P1-011", "P1-012", "P2-002", "P2-003", "P2-004", "P2-005", "P2-006", "P2-007", "P2-008"],
+      "reproduction": "Resolve chromium.executablePath() from @playwright/test and verify the returned file exists.",
+      "suggested_correction": "Install the pinned Playwright Chromium build in the supported browser-test environment, start the production-equivalent PHP application, and run the complete focused and matrix suites.",
+      "confidence": "confirmed",
+      "duplicate_of": null,
+      "related_finding_ids": ["KIS-ENV-0001"],
+      "evidence": [
+        {"id": "EVID-ENV-0002", "kind": "environment", "status": "blocked", "source_revision": "beb8861d6d8a7ebcda49e708d28c740c2ced8c4a", "method": "node --input-type=module -e to test fs.existsSync(chromium.executablePath())", "result": "The pinned Chromium 151 executable was not installed. No Playwright behavior, accessibility, screenshot, clipping, overflow, or overlap check is recorded as passed.", "artifact_paths": [], "blocker_finding_ids": []}
+      ],
+      "status_history": [
+        {"at": "2026-08-11T19:55:51Z", "from": null, "to": "open", "reason": "Chromium-dependent verification is blocked and must be rerun in a provisioned environment.", "evidence_ids": ["EVID-ENV-0002"]}
+      ]
+    }
+  ]
+}

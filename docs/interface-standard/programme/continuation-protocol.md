@@ -6,7 +6,8 @@ Phase 3–6 chats resume from repository evidence instead of trusting a narrativ
 ## Start of a session
 
 1. Read `AGENTS.md` and every document it requires.
-2. Read the current KIS normative documents and every file in this programme directory.
+2. Read the current KIS normative documents, the findings register, the latest verification report, and
+   every other file in this programme directory.
 3. Run `composer interface:programme` before changing source. If it fails, reconcile the inventory and
    ledger with the repository before selecting implementation work.
 4. Inspect the current branch, recent commits, open changes, and the latest accepted evidence. Never assume
@@ -39,14 +40,16 @@ Phase 3–6 chats resume from repository evidence instead of trusting a narrativ
 
 1. Run the narrowest affected tests, `composer interface:programme`, frontend checks/build, and all phase
    evidence commands that can run locally. Run the complete required suite before declaring a gate complete.
-2. Add evidence records with revision, environment, command/review method, result, and artifact paths.
-3. Compare every affected surface against its pre-migration capability/field/action/payload manifest.
-4. Update each work item separately: `in_review` when runtime evidence exists but acceptance is outstanding;
+2. Copy the verification-report template, retain every canonical check row, and record exact commands,
+   environments, results, artifacts, and finding blockers. Never convert unavailable execution into a pass.
+3. Add evidence records with revision, environment, command/review method, result, and artifact paths.
+4. Compare every affected surface against its pre-migration capability/field/action/payload manifest.
+5. Update each work item separately: `in_review` when runtime evidence exists but acceptance is outstanding;
    `complete` only after all evidence slots and blocking findings are resolved.
-5. Append a continuation entry naming the exact next ready work items, blockers, decisions, and evidence.
-6. Commit documentation, programme state, runtime change, and its tests coherently. Never amend historical
+6. Append a continuation entry naming the exact next ready work items, blockers, decisions, and evidence.
+7. Commit documentation, programme state, runtime change, and its tests coherently. Never amend historical
    evidence merely to make the current state appear clean.
-7. Push only after local iteration is complete; CI confirms the result and is not the primary test loop.
+8. Push only after local iteration is complete; CI confirms the result and is not the primary test loop.
 
 ## Phase checklists
 
@@ -122,6 +125,7 @@ The final hand-off for a session must name:
 - work-item IDs completed, in review, blocked, and next ready;
 - affected surface and journey IDs;
 - evidence IDs and exact commands run;
+- verification report ID, source revision, passed/blocked/not-run matrix, and excluded working-tree scope;
 - open findings and severities;
 - KIS decisions or deviations added;
 - migration, customization, extension, security, and recovery implications;

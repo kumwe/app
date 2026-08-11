@@ -1,0 +1,95 @@
+{
+  "schema_version": 1,
+  "template_version": 1,
+  "report_id": "<KIS-PR-YYYY-NNN>",
+  "report_kind": "template",
+  "state": "draft",
+  "overall_status": "not_run",
+  "branch": "<branch>",
+  "base_revision": "<40-character-base-commit>",
+  "source_revision": "<40-character-source-commit>",
+  "prepared_at": "<UTC-ISO-8601>",
+  "prepared_by_role": "implementation-owner",
+  "scope": {
+    "summary": "<bounded context and outcome>",
+    "phase_numbers": [],
+    "work_item_ids": [],
+    "surface_ids": [],
+    "journey_ids": [],
+    "changed_paths": [],
+    "included_revisions": [],
+    "working_tree_included": false,
+    "excluded_worktree_note": "<state whether unrelated or uncommitted work was excluded>"
+  },
+  "kis": {
+    "version": "1.0",
+    "normative_document_paths": [],
+    "decision_ids": [],
+    "deviation_ids": []
+  },
+  "behavior_changes": {
+    "routes": [],
+    "capabilities": [],
+    "fields": [],
+    "actions": [],
+    "payloads": [],
+    "states": [],
+    "notes": "<preserved, added, removed, or intentionally changed behavior>"
+  },
+  "parity": {
+    "status": "not_run",
+    "manifest_paths": [],
+    "result_summary": "<old/new route, capability, field, action, payload, and outcome result>"
+  },
+  "check_matrix": [
+    {"id": "CHANGESET-INTEGRITY", "category": "source", "requirement": "The bounded diff is intentional, whitespace-clean, and names every included revision.", "applicability": "required", "status": "not_run", "command": "<command-or-review-method>", "environment": "<environment>", "result_summary": "<result-or-reason-not-run>", "artifact_paths": [], "blocker_finding_ids": [], "evidence_ids": [], "phase_numbers": [], "work_item_ids": []},
+    {"id": "PROGRAMME-INVENTORY", "category": "programme", "requirement": "Programme records are internally coherent and match route, navigation, template, manifest, and generated-definition sources.", "applicability": "required", "status": "not_run", "command": "composer interface:programme", "environment": "<environment>", "result_summary": "<result-or-reason-not-run>", "artifact_paths": [], "blocker_finding_ids": [], "evidence_ids": [], "phase_numbers": [], "work_item_ids": []},
+    {"id": "ARCHITECTURE-POLICY", "category": "architecture", "requirement": "Repository architecture and dependency policies pass.", "applicability": "required", "status": "not_run", "command": "composer architecture:policy", "environment": "<environment>", "result_summary": "<result-or-reason-not-run>", "artifact_paths": [], "blocker_finding_ids": [], "evidence_ids": [], "phase_numbers": [], "work_item_ids": []},
+    {"id": "PHP-CODING-STANDARDS", "category": "php", "requirement": "PHP coding standards pass for all affected source and tests.", "applicability": "required", "status": "not_run", "command": "composer cs", "environment": "<environment>", "result_summary": "<result-or-reason-not-run>", "artifact_paths": [], "blocker_finding_ids": [], "evidence_ids": [], "phase_numbers": [], "work_item_ids": []},
+    {"id": "PHP-STATIC-ANALYSIS", "category": "php", "requirement": "Static analysis passes at the repository level.", "applicability": "required", "status": "not_run", "command": "composer analyse", "environment": "<environment>", "result_summary": "<result-or-reason-not-run>", "artifact_paths": [], "blocker_finding_ids": [], "evidence_ids": [], "phase_numbers": [], "work_item_ids": []},
+    {"id": "PHP-UNIT", "category": "php", "requirement": "Affected unit and architecture tests pass before the complete test suite.", "applicability": "required", "status": "not_run", "command": "composer test:unit", "environment": "<environment>", "result_summary": "<result-or-reason-not-run>", "artifact_paths": [], "blocker_finding_ids": [], "evidence_ids": [], "phase_numbers": [], "work_item_ids": []},
+    {"id": "PHP-INTEGRATION-FUNCTIONAL", "category": "php", "requirement": "Affected integration and functional behavior passes with production adapters.", "applicability": "conditional", "status": "not_run", "command": "<focused-integration-and-functional-commands>", "environment": "<environment>", "result_summary": "<result-or-reason-not-run>", "artifact_paths": [], "blocker_finding_ids": [], "evidence_ids": [], "phase_numbers": [], "work_item_ids": []},
+    {"id": "OPENAPI-CONSISTENCY", "category": "contract", "requirement": "OpenAPI compilation remains reproducible when delivery contracts are affected.", "applicability": "conditional", "status": "not_run", "command": "composer openapi:check", "environment": "<environment>", "result_summary": "<result-or-reason-not-run>", "artifact_paths": [], "blocker_finding_ids": [], "evidence_ids": [], "phase_numbers": [], "work_item_ids": []},
+    {"id": "COMPOSER-QA", "category": "aggregate", "requirement": "The canonical PHP QA aggregate passes locally.", "applicability": "required", "status": "not_run", "command": "composer qa", "environment": "<environment>", "result_summary": "<result-or-reason-not-run>", "artifact_paths": [], "blocker_finding_ids": [], "evidence_ids": [], "phase_numbers": [], "work_item_ids": []},
+    {"id": "FRONTEND-TYPECHECK", "category": "frontend", "requirement": "TypeScript type checking passes.", "applicability": "required", "status": "not_run", "command": "npm run check", "environment": "<environment>", "result_summary": "<result-or-reason-not-run>", "artifact_paths": [], "blocker_finding_ids": [], "evidence_ids": [], "phase_numbers": [], "work_item_ids": []},
+    {"id": "FRONTEND-BUILD", "category": "frontend", "requirement": "The production frontend bundle builds reproducibly.", "applicability": "required", "status": "not_run", "command": "npm run build", "environment": "<environment>", "result_summary": "<result-or-reason-not-run>", "artifact_paths": [], "blocker_finding_ids": [], "evidence_ids": [], "phase_numbers": [], "work_item_ids": []},
+    {"id": "BROWSER-BEHAVIOR", "category": "browser", "requirement": "Affected tasks complete in Chromium with positive, negative, and no-JavaScript coverage where applicable.", "applicability": "required", "status": "not_run", "command": "npm run test:browser", "environment": "<environment>", "result_summary": "<result-or-reason-not-run>", "artifact_paths": [], "blocker_finding_ids": [], "evidence_ids": [], "phase_numbers": [], "work_item_ids": []},
+    {"id": "BROWSER-ACCESSIBILITY", "category": "accessibility", "requirement": "Axe, keyboard, focus, landmarks, names, zoom, motion, and touch obligations pass for affected states.", "applicability": "required", "status": "not_run", "command": "<focused-browser-accessibility-command>", "environment": "<environment>", "result_summary": "<result-or-reason-not-run>", "artifact_paths": [], "blocker_finding_ids": [], "evidence_ids": [], "phase_numbers": [], "work_item_ids": []},
+    {"id": "BROWSER-VISUAL-DIAGNOSTICS", "category": "visual", "requirement": "Viewport, theme, data, state, and input matrices have no unintended clipping, overflow, overlap, or missing assets.", "applicability": "required", "status": "not_run", "command": "<focused-visual-and-diagnostic-command>", "environment": "<environment>", "result_summary": "<result-or-reason-not-run>", "artifact_paths": [], "blocker_finding_ids": [], "evidence_ids": [], "phase_numbers": [], "work_item_ids": []},
+    {"id": "MIGRATION-PARITY", "category": "parity", "requirement": "Old/new route, capability, field, action, payload, validation, error, and outcome parity is proved.", "applicability": "conditional", "status": "not_run", "command": "<parity-command-and-review-method>", "environment": "<environment>", "result_summary": "<result-or-reason-not-run>", "artifact_paths": [], "blocker_finding_ids": [], "evidence_ids": [], "phase_numbers": [], "work_item_ids": []},
+    {"id": "SECURITY-NEGATIVE-PATHS", "category": "security", "requirement": "Authorization, disclosure, CSRF, step-up, concurrency, approval, audit, and recovery negative paths pass.", "applicability": "conditional", "status": "not_run", "command": "<security-test-command-and-review-method>", "environment": "<environment>", "result_summary": "<result-or-reason-not-run>", "artifact_paths": [], "blocker_finding_ids": [], "evidence_ids": [], "phase_numbers": [], "work_item_ids": []},
+    {"id": "TEMPLATE-EXTENSION-CONFORMANCE", "category": "extensibility", "requirement": "Core and installed templates/extensions preserve typed KIS, customization, fallback, reset, and ownership contracts.", "applicability": "conditional", "status": "not_run", "command": "<template-and-extension-conformance-command>", "environment": "<environment>", "result_summary": "<result-or-reason-not-run>", "artifact_paths": [], "blocker_finding_ids": [], "evidence_ids": [], "phase_numbers": [], "work_item_ids": []},
+    {"id": "DATABASE-TOPOLOGY", "category": "qualification", "requirement": "Relevant production topology and database adapters render and mutate representative state consistently.", "applicability": "conditional", "status": "not_run", "command": "<deployment-and-database-matrix-command>", "environment": "<environment>", "result_summary": "<result-or-reason-not-run>", "artifact_paths": [], "blocker_finding_ids": [], "evidence_ids": [], "phase_numbers": [], "work_item_ids": []},
+    {"id": "RECOVERY-ROLLBACK", "category": "recovery", "requirement": "Rollback, template fallback/reset, and data recovery procedures are proportionate and verified.", "applicability": "conditional", "status": "not_run", "command": "<recovery-procedure-or-review-method>", "environment": "<environment>", "result_summary": "<result-or-reason-not-run>", "artifact_paths": [], "blocker_finding_ids": [], "evidence_ids": [], "phase_numbers": [], "work_item_ids": []},
+    {"id": "HUMAN-REVIEW", "category": "review", "requirement": "Accountable product, accessibility, security, KIS, and release roles review applicable evidence.", "applicability": "required", "status": "not_run", "command": "<review-method>", "environment": "<review-environment>", "result_summary": "<result-or-reason-not-run>", "artifact_paths": [], "blocker_finding_ids": [], "evidence_ids": [], "phase_numbers": [], "work_item_ids": []}
+  ],
+  "impact": {
+    "security": {"status": "not_evaluated", "summary": "<impact and safeguards>"},
+    "accessibility": {"status": "not_evaluated", "summary": "<impact and safeguards>"},
+    "customization": {"status": "not_evaluated", "summary": "<impact and compatibility>"},
+    "templates": {"status": "not_evaluated", "summary": "<impact and fallback>"},
+    "extensions": {"status": "not_evaluated", "summary": "<impact and ownership>"},
+    "database": {"status": "not_evaluated", "summary": "<impact and adapters>"},
+    "deployment": {"status": "not_evaluated", "summary": "<impact and topology>"}
+  },
+  "findings": {
+    "register_path": "docs/interface-standard/programme/findings-register.json",
+    "finding_ids": [],
+    "new_finding_ids": [],
+    "resolved_finding_ids": []
+  },
+  "recovery": {
+    "required": true,
+    "strategy": "<rollback, reset, fallback, or restore strategy>",
+    "command_or_procedure": "<verified procedure or reason verification remains pending>",
+    "verified": false,
+    "artifact_paths": []
+  },
+  "residual_risks": [],
+  "signoff": {
+    "merge_recommendation": "hold",
+    "decision": "pending",
+    "reviewer_roles": [],
+    "notes": "<acceptance, blockers, and next checks>"
+  }
+}
