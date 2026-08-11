@@ -13,7 +13,8 @@ The repository contains small, inspectable packages under [`examples/extensions`
 | [`announcements`](../examples/extensions/announcements) | Schema-3 shell, entity and safe field-presenter contributions, injected service, and portable migration |
 | [`asset-inspection`](../examples/extensions/asset-inspection) | Schema-4 neutral proof with related entities, workflow, policies, durable events/jobs, projection/report, administrator UI, and opt-in portal |
 | [`audit-listener`](../examples/extensions/audit-listener) | Plugin provider and Joomla Event listener registration |
-| [`minimal-template`](../examples/extensions/minimal-template) | Template override and packaged public asset |
+| [`minimal-template`](../examples/extensions/minimal-template) | Complete site-template override and packaged public asset |
+| [`minimal-administrator-template`](../examples/extensions/minimal-administrator-template) | Installable KIS 1.0 administrator-shell contract and token-safe styling |
 
 Build a ZIP with `kumwe.json` at its root, not with the example directory as an extra outer path. Treat examples as a starting contract, rename their namespace and identifier, and add behavior-specific tests before production use.
 

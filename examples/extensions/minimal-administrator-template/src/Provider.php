@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
-namespace KumweExample\MinimalTemplate;
+namespace KumweExample\MinimalAdministratorTemplate;
 
 use Kumwe\CMS\Extension\Application\ExtensionServiceProvider;
 use Kumwe\CMS\Extension\Runtime\ExtensionContainer;
 
 /**
- * Registers the minimal site template package without adding runtime services.
+ * Registers the minimal administrator template package without adding runtime services.
  *
- * Site templates receive presentation-ready state from Kumwe, so this reference package needs only the
- * standard provider required by the extension lifecycle.
+ * The package changes only the protected administrator shell and approved presentation layer. Core and
+ * extension views continue to own task markup, authorization, validation, and mutation behavior.
  *
  * @since  2.0.0
  */

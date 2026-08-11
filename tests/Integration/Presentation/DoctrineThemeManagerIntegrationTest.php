@@ -335,7 +335,7 @@ final class DoctrineThemeManagerIntegrationTest extends TestCase
     {
         file_put_contents(
             $this->administratorThemePath() . '/layout.twig',
-            '<title>{% block title %}{% endblock %}</title><main>{% block content %}{% endblock %}</main>',
+            $this->administratorThemeFixture(),
         );
         $manager = $this->manager(new RecordingAuditRecorder());
         $manager->activate(
@@ -385,7 +385,7 @@ final class DoctrineThemeManagerIntegrationTest extends TestCase
         $manager->activate('acme/plugin', self::context(), lease: $this->lease());
         file_put_contents(
             $this->administratorThemePath() . '/layout.twig',
-            '<title>{% block title %}{% endblock %}</title><main>{% block content %}{% endblock %}</main>',
+            $this->administratorThemeFixture(),
         );
         $manager->activate(
             'acme/corporate',
@@ -838,6 +838,24 @@ JSON;
     private function administratorThemePath(): string
     {
         return $this->root . '/extensions/acme/corporate/1.0.0/templates/administrator';
+    }
+
+    /**
+     * Read the shipped administrator-template shell used as the valid activation fixture.
+     *
+     * @return  string  Complete KIS 1.0 administrator layout.
+     *
+     * @since   2.0.0
+     */
+    private function administratorThemeFixture(): string
+    {
+        $layout = file_get_contents(
+            dirname(__DIR__, 3)
+            . '/examples/extensions/minimal-administrator-template/templates/administrator/layout.twig',
+        );
+        self::assertIsString($layout);
+
+        return $layout;
     }
 
     private function pluginArchive(string $version): string

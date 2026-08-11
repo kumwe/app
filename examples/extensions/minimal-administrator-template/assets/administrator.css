@@ -1,0 +1,61 @@
+@layer overrides {
+  .example-sidebar {
+    border-inline-end: 1px solid var(--kumwe-border);
+    background: var(--kumwe-surface-elevated);
+    color: var(--kumwe-text);
+  }
+
+  .example-sidebar .administrator-brand,
+  .example-sidebar .administrator-navigation a {
+    color: var(--kumwe-text);
+  }
+
+  .example-sidebar .administrator-navigation a:hover,
+  .example-sidebar .administrator-navigation a[aria-current="page"] {
+    background: var(--kumwe-accent-soft);
+    color: var(--kumwe-accent-strong);
+  }
+
+  .example-brand-mark {
+    display: grid;
+    width: 2.35rem;
+    height: 2.35rem;
+    flex: 0 0 2.35rem;
+    place-items: center;
+    border-radius: var(--kumwe-radius-md);
+    background: var(--kumwe-accent);
+    color: var(--kumwe-surface);
+    font-weight: 800;
+  }
+
+  .example-sidebar .brand-copy span,
+  .example-sidebar .navigation-group-title {
+    color: var(--kumwe-text-muted);
+  }
+
+  .example-navigation-mark {
+    width: .55rem;
+    height: .55rem;
+    flex: 0 0 .55rem;
+    border: 1px solid currentcolor;
+    border-radius: 50%;
+  }
+
+  .example-sidebar .administrator-navigation a[aria-current="page"] .example-navigation-mark {
+    background: currentcolor;
+  }
+
+  @media (max-width: 64rem) {
+    .example-administrator-shell .command-trigger { min-width: 0; }
+    .example-administrator-shell .command-trigger kbd { display: none; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .example-administrator-shell *,
+    .example-administrator-shell *::before,
+    .example-administrator-shell *::after {
+      scroll-behavior: auto !important;
+      transition-duration: .01ms !important;
+    }
+  }
+}
