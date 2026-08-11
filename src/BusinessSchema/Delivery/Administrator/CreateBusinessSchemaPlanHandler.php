@@ -70,6 +70,11 @@ final readonly class CreateBusinessSchemaPlanHandler implements RequestHandlerIn
             AdministratorRequest::required($form, 'definition_id'),
         );
 
-        return BusinessSchemaAdministratorRequest::redirect($plan->id, 'planned');
+        return BusinessSchemaAdministratorRequest::redirect(
+            $plan->id,
+            'planned',
+            null,
+            BusinessSchemaAdministratorRequest::activeTab($form['return_tab'] ?? null),
+        );
     }
 }

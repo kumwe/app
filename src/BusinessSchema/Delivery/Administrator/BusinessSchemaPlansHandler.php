@@ -36,6 +36,21 @@ use Psr\Http\Server\RequestHandlerInterface;
 final readonly class BusinessSchemaPlansHandler implements RequestHandlerInterface
 {
     /**
+     * Labels for the bounded schema-plan tasks rendered as contextual tabs.
+     *
+     * @var    array<string, string>
+     * @since  2.0.0
+     */
+    private const TABS = [
+        'summary' => 'Summary',
+        'operations' => 'Operations',
+        'approval' => 'Approval',
+        'execution' => 'Execution',
+        'recovery' => 'Recovery',
+        'history' => 'History',
+    ];
+
+    /**
      * Sentences shown for the `notice` key each schema action redirects with.
      *
      * The keys are the vocabulary the sibling handlers pass to
@@ -107,6 +122,7 @@ final readonly class BusinessSchemaPlansHandler implements RequestHandlerInterfa
         $plans = $this->schemas->plans($context);
         $capabilities = AdministratorRequest::capabilityMap($request);
         $query = $request->getQueryParams();
+        $activeTab = BusinessSchemaAdministratorRequest::activeTab($query['tab'] ?? null);
         $selected = is_string($query['plan'] ?? null) ? trim($query['plan']) : '';
         if ($selected === '' && $plans !== []) {
             $selected = $plans[0]->id;
@@ -157,7 +173,44 @@ final readonly class BusinessSchemaPlansHandler implements RequestHandlerInterfa
             ],
             'definitions' => $this->schemas->definitions($context),
             'notice' => $notice,
+            'active_tab' => $activeTab,
+            'workspace_tabs' => $this->tabs($selected, $evidenceId),
         ]), 200, ['Cache-Control' => 'no-store']);
+    }
+
+    /**
+     * Build task links while retaining the selected plan and recovery evidence context.
+     *
+     * @param   string  $planId      Selected plan identifier, or an empty string.
+     * @param   string  $evidenceId  Selected recovery evidence identifier, or an empty string.
+     *
+     * @return  list<array{id: string, label: string, href: string}>  KIS contextual-tab documents.
+     *
+     * @since   2.0.0
+     */
+    private function tabs(string $planId, string $evidenceId): array
+    {
+        $context = [];
+        if ($planId !== '') {
+            $context['plan'] = $planId;
+        }
+        if ($evidenceId !== '') {
+            $context['evidence'] = $evidenceId;
+        }
+
+        $tabs = [];
+        foreach (self::TABS as $identifier => $label) {
+            $tabs[] = [
+                'id' => $identifier,
+                'label' => $label,
+                'href' => '/administrator/business-schema-plans?' . http_build_query([
+                    ...$context,
+                    'tab' => $identifier,
+                ]),
+            ];
+        }
+
+        return $tabs;
     }
 
     /**

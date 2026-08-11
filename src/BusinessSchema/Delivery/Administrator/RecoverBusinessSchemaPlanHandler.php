@@ -60,9 +60,15 @@ final readonly class RecoverBusinessSchemaPlanHandler implements RequestHandlerI
      */
     public function handle(ServerRequestInterface $request): ResponseInterface
     {
+        $form = AdministratorRequest::form($request);
         $planId = BusinessSchemaAdministratorRequest::planId($request);
         $this->schemas->recover(AdministratorRequest::context($request), $planId);
 
-        return BusinessSchemaAdministratorRequest::redirect($planId, 'recovered');
+        return BusinessSchemaAdministratorRequest::redirect(
+            $planId,
+            'recovered',
+            null,
+            BusinessSchemaAdministratorRequest::activeTab($form['return_tab'] ?? null, 'recovery'),
+        );
     }
 }

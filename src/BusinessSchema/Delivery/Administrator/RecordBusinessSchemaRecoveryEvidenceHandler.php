@@ -129,6 +129,11 @@ final readonly class RecordBusinessSchemaRecoveryEvidenceHandler implements Requ
             ],
         ));
 
-        return BusinessSchemaAdministratorRequest::redirect($planId, 'evidence-recorded', $evidence->id);
+        return BusinessSchemaAdministratorRequest::redirect(
+            $planId,
+            'evidence-recorded',
+            $evidence->id,
+            BusinessSchemaAdministratorRequest::activeTab($form['return_tab'] ?? null, 'recovery'),
+        );
     }
 }

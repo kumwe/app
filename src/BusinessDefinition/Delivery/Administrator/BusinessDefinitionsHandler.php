@@ -36,6 +36,22 @@ use Psr\Http\Server\RequestHandlerInterface;
 final readonly class BusinessDefinitionsHandler implements RequestHandlerInterface
 {
     /**
+     * Bounded, URL-addressable tasks exposed by the definition workspace.
+     *
+     * @var    array<string, string>
+     * @since  2.0.0
+     */
+    private const TABS = [
+        'identity' => 'Identity',
+        'fields' => 'Fields',
+        'relationships' => 'Relationships',
+        'delivery' => 'Views and actions',
+        'workflow' => 'Workflow',
+        'publication' => 'Publication',
+        'history' => 'History',
+    ];
+
+    /**
      * Wire the screen to the application service and the collaborators that shape its two responses.
      *
      * @param  BusinessDefinitionService     $definitions  Service every form action is dispatched to.
@@ -56,9 +72,9 @@ final readonly class BusinessDefinitionsHandler implements RequestHandlerInterfa
     /**
      * Dispatch one administrator request: a form action, a JSON export, or the screen itself.
      *
-     * A POST runs its action and answers 303 back to the screen with the definition it acted on in the query
-     * string. A GET carrying `export` answers the canonical JSON for that definition — the draft when one
-     * exists, otherwise the published head — as an attachment tagged with the definition checksum. Otherwise
+     * A POST runs its action and answers 303 back to the screen with the definition and bounded contextual
+     * tab it acted on in the query string. A GET carrying `export` answers the canonical JSON — the draft
+     * when one exists, otherwise the published head — as an attachment tagged with the definition checksum. Otherwise
      * the screen renders, defaulting to the first catalog entry; a selection that has since disappeared falls
      * back to no selection rather than failing the whole page.
      *
@@ -77,6 +93,7 @@ final readonly class BusinessDefinitionsHandler implements RequestHandlerInterfa
         if (strtoupper($request->getMethod()) === 'POST') {
             $form = AdministratorRequest::form($request);
             $action = AdministratorRequest::required($form, 'action');
+            $activeTab = $this->activeTab($form['return_tab'] ?? null);
             $identifier = trim($form['id'] ?? '');
             if ($identifier === '') {
                 $identifier = trim($form['handle'] ?? '');
@@ -116,8 +133,15 @@ final readonly class BusinessDefinitionsHandler implements RequestHandlerInterfa
             if ($identifier === '' && $result instanceof DefinitionDraft) {
                 $identifier = $result->definition->id;
             }
-            $target = $identifier === '' ? '' : '?definition=' . rawurlencode($identifier);
-            return new RedirectResponse('/administrator/business-definitions' . $target, 303);
+            $target = ['tab' => $activeTab];
+            if ($identifier !== '') {
+                $target['definition'] = $identifier;
+            }
+
+            return new RedirectResponse(
+                '/administrator/business-definitions?' . http_build_query($target),
+                303,
+            );
         }
 
         $catalog = $this->definitions->catalog($context);
@@ -140,6 +164,7 @@ final readonly class BusinessDefinitionsHandler implements RequestHandlerInterfa
         }
         $selected = is_string($query['definition'] ?? null) ? trim($query['definition']) : '';
         $creating = ($query['new'] ?? null) === '1';
+        $activeTab = $this->activeTab($query['tab'] ?? null);
         if (!$creating && $selected === '' && $catalog !== []) {
             $selected = $catalog[0]->id;
         }
@@ -176,7 +201,62 @@ final readonly class BusinessDefinitionsHandler implements RequestHandlerInterfa
             'plan' => $plan?->toArray(),
             'field_types' => array_map(static fn ($type): array => $type->toArray(), $this->fieldTypes->all()),
             'site_namespace' => 'site.' . $context->site()->identifier() . '.',
+            'active_tab' => $activeTab,
+            'workspace_tabs' => $this->tabs($selected, $creating),
         ]), 200, ['Cache-Control' => 'no-store']);
+    }
+
+    /**
+     * Resolve a tab identifier through the workspace's fixed vocabulary.
+     *
+     * Unknown and non-string input falls back to identity. This prevents arbitrary query or form input
+     * becoming markup while keeping copied and stale links useful after the tab set evolves.
+     *
+     * @param   mixed  $candidate  Query-string or posted return-tab value.
+     *
+     * @return  string  A key from {@see self::TABS}.
+     *
+     * @since   2.0.0
+     */
+    private function activeTab(mixed $candidate): string
+    {
+        return is_string($candidate) && array_key_exists($candidate, self::TABS)
+            ? $candidate
+            : 'identity';
+    }
+
+    /**
+     * Build contextual tab links without losing the selected definition or new-definition state.
+     *
+     * @param   string  $selected  Selected definition identifier, or an empty string.
+     * @param   bool    $creating  Whether the editor is creating a definition.
+     *
+     * @return  list<array{id: string, label: string, href: string}>  Tabs ready for the KIS component.
+     *
+     * @since   2.0.0
+     */
+    private function tabs(string $selected, bool $creating): array
+    {
+        $context = [];
+        if ($creating) {
+            $context['new'] = '1';
+        } elseif ($selected !== '') {
+            $context['definition'] = $selected;
+        }
+
+        $tabs = [];
+        foreach (self::TABS as $identifier => $label) {
+            $tabs[] = [
+                'id' => $identifier,
+                'label' => $label,
+                'href' => '/administrator/business-definitions?' . http_build_query([
+                    ...$context,
+                    'tab' => $identifier,
+                ]),
+            ];
+        }
+
+        return $tabs;
     }
 
     /**

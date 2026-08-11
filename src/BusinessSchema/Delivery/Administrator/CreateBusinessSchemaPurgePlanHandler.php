@@ -83,6 +83,11 @@ final readonly class CreateBusinessSchemaPurgePlanHandler implements RequestHand
         );
         $plan = $this->schemas->createPurgePlan($context, $definitionId);
 
-        return BusinessSchemaAdministratorRequest::redirect($plan->id, 'purge-planned');
+        return BusinessSchemaAdministratorRequest::redirect(
+            $plan->id,
+            'purge-planned',
+            null,
+            BusinessSchemaAdministratorRequest::activeTab($form['return_tab'] ?? null, 'recovery'),
+        );
     }
 }

@@ -248,15 +248,23 @@ test.describe('authenticated administrator', () => {
     await page.locator('input[name="handle"]').fill(handle);
     await page.getByLabel('Singular label').fill('Browser invoice');
     await page.getByLabel('Plural label').fill('Browser invoices');
-    await page.getByRole('button', { name: 'Add field' }).click();
-    const field = page.locator('[data-row="field"]').last();
-    await field.getByLabel('Handle').fill('reference');
-    await field.getByLabel('Label').fill('Reference');
-    await field.locator('select').first().selectOption('core.text');
-    await field.getByLabel('Length').fill('120');
-    await field.getByText('Required', { exact: true }).click();
+    await page.getByRole('tab', { name: 'Fields' }).click();
+    const longFieldLabel = `Cross-border invoice reference ${'with controlled operational context '.repeat(2).trim()}`;
+    for (let index = 0; index < 8; index += 1) {
+      await page.getByRole('button', { name: 'Add field' }).click();
+      const field = page.locator('[data-row="field"]').last();
+      await field.getByLabel('Handle').fill(index === 0 ? 'reference' : `supporting_field_${index}`);
+      await field.getByLabel('Label').fill(index === 0 ? longFieldLabel : `Supporting field ${index}`);
+      await field.locator('select').first().selectOption('core.text');
+      await field.getByLabel('Length').fill('120');
+      if (index === 0) await field.getByText('Required', { exact: true }).click();
+    }
     await page.getByRole('button', { name: 'Save and validate draft' }).press('Enter');
-    await expect(page).toHaveURL(/\/administrator\/business-definitions\?definition=/);
+    await expect(page).toHaveURL(/\/administrator\/business-definitions\?tab=fields&definition=/);
+    await expect(page.locator('[data-row="field"]')).toHaveCount(9);
+    await expect(page.locator('details[data-row="field"][open]')).toHaveCount(1);
+    await expect(page.getByText(longFieldLabel, { exact: true })).toBeVisible();
+    await page.getByRole('tab', { name: 'Publication' }).click();
     await expect(page.getByRole('heading', { name: 'Compatibility plan' })).toBeVisible();
     await expect(page.getByText('Draft checksum')).toBeVisible();
     await expectAccessible(page);
@@ -268,17 +276,46 @@ test.describe('authenticated administrator', () => {
     });
     page.once('dialog', (dialog) => dialog.accept());
     await page.getByRole('button', { name: /Publish version 1/ }).press('Enter');
+    await expect(page).toHaveURL(/tab=publication/);
+    await page.getByRole('tab', { name: 'History' }).click();
     await expect(page.getByRole('heading', { name: 'Version history' })).toBeVisible();
     await expect(page.getByText('Version 1', { exact: true })).toBeVisible();
+    await expectAccessible(page);
+  });
+
+  test('definition workspace contains dense package contracts and permission-reduced actors', async ({
+    page,
+  }) => {
+    await page.goto(
+      '/administrator/business-definitions?definition=kumwe.asset-inspection-example.inspection&tab=fields',
+    );
+    await expect(page.getByText('Package owned.', { exact: false })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Fields' })).toBeVisible();
+    expect(await page.locator('[role="tabpanel"] table tbody tr').count()).toBeGreaterThanOrEqual(7);
+    await expect(page.getByText('Restricted internal note', { exact: true })).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true);
+
+    await page.context().clearCookies();
+    await signIn(page, limitedEmail, limitedPassword);
+    await page.goto(
+      '/administrator/business-definitions?definition=019b40d9-8dd0-7ca2-a0db-9eae6a150501&tab=identity',
+    );
+    await expect(page.getByRole('tab', { name: 'Identity' })).toHaveAttribute('aria-selected', 'true');
+    await expect(page.getByRole('link', { name: 'New definition' })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Save and validate draft' })).toHaveCount(0);
+    await expect(page.getByText('Read-only access.', { exact: true })).toBeVisible();
     await expectAccessible(page);
   });
 
   test('schema plans are inspectable, capability-gated and visually stable', async ({ page }) => {
     await page.goto('/administrator/business-schema-plans');
     await expect(page.getByRole('heading', { name: 'Business schema plans' })).toBeVisible();
+    await page.getByRole('tab', { name: 'Operations' }).click();
     await expect(page.getByRole('heading', { name: 'Generated operations' })).toBeVisible();
+    await page.getByRole('tab', { name: 'Summary' }).click();
     await expect(page.getByText('Plan checksum', { exact: true })).toBeVisible();
     await expect(page.getByText('Physical checksum', { exact: true })).toBeVisible();
+    await page.getByRole('tab', { name: 'Approval' }).click();
     await expect(page.getByRole('heading', { name: 'Approve exact plan' })).toBeVisible();
     await expect(page.getByRole('link', { name: 'Schema plans', exact: true })).toHaveAttribute(
       'aria-current',
@@ -298,8 +335,8 @@ test.describe('authenticated administrator', () => {
       fullPage: true,
       mask: [
         page.locator('.schema-plan-catalog'),
-        page.locator('.schema-plan-layout > aside .count-badge'),
-        page.locator('.schema-plan-layout > .stack [data-visual-mask]'),
+        page.locator('.kis-master-detail-catalog .count-badge'),
+        page.locator('[data-kis-detail] [data-visual-mask]'),
       ],
       maskColor: '#d9e2e8',
     });
@@ -699,6 +736,17 @@ test.describe('authenticated administrator', () => {
     const page = await context.newPage();
     try {
       await signIn(page);
+      await page.goto(
+        '/administrator/business-definitions?definition=kumwe.asset-inspection-example.inspection&tab=fields',
+      );
+      await expect(page.locator('html')).not.toHaveClass(/\bjs\b/);
+      await expect(page.locator('[data-kis-tab-panel]')).toHaveCount(7);
+      for (const panel of await page.locator('[data-kis-tab-panel]').all()) await expect(panel).toBeVisible();
+      await expect(page.getByRole('tab', { name: 'Fields' })).toHaveAttribute('href', /tab=fields/);
+      await page.goto('/administrator/business-schema-plans?tab=operations');
+      await expect(page.locator('[data-kis-tab-panel]')).toHaveCount(6);
+      for (const panel of await page.locator('[data-kis-tab-panel]').all()) await expect(panel).toBeVisible();
+
       await page.goto(`/administrator/business/${businessDefinitionHandle}`);
       await expect(page.locator('html')).not.toHaveClass(/\bjs\b/);
       await page.getByRole('link', { name: /Create session 5 order/i }).click();
