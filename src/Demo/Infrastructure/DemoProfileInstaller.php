@@ -11,6 +11,7 @@ use Kumwe\CMS\Demo\Application\DemoProfileReconciler;
 use Kumwe\CMS\Demo\Infrastructure\FilesystemDemoManifestCatalog;
 use Kumwe\CMS\Demo\Infrastructure\Persistence\DoctrineDemoProfileLedger;
 use Kumwe\CMS\Kernel\Configuration\ApplicationConfiguration;
+use RuntimeException;
 use Throwable;
 
 /**
@@ -88,12 +89,13 @@ final readonly class DemoProfileInstaller implements DemoProfileReconciler
         $profile = $this->configuration->siteContentProfile;
         $loaded = $this->catalog->content($profile);
         $manifest = $loaded['manifest'];
+        $manifestVersion = $this->manifestVersion($manifest);
         if (
             !$this->ledger->begin(
                 $context->site()->identifier(),
                 DemoContentProfileInstaller::DATASET,
                 $profile,
-                $manifest['version'],
+                $manifestVersion,
                 $loaded['checksum'],
             )
         ) {
@@ -126,12 +128,13 @@ final readonly class DemoProfileInstaller implements DemoProfileReconciler
         $profile = $this->configuration->businessDemo ? 'vdm' : 'none';
         $loaded = $this->configuration->businessDemo ? $this->catalog->vdmBusiness() : $this->noBusinessManifest();
         $manifest = $loaded['manifest'];
+        $manifestVersion = $this->manifestVersion($manifest);
         if (
             !$this->ledger->begin(
                 $context->site()->identifier(),
                 VdmBusinessDemoInstaller::DATASET,
                 $profile,
-                $manifest['version'],
+                $manifestVersion,
                 $loaded['checksum'],
             )
         ) {
@@ -167,5 +170,30 @@ final readonly class DemoProfileInstaller implements DemoProfileReconciler
         ];
 
         return ['manifest' => $manifest, 'checksum' => CanonicalDefinitionJson::checksum($manifest)];
+    }
+
+    /**
+     * Read the positive monotonic version declared by one validated manifest.
+     *
+     * The catalog validates decoded documents before returning them, but its generic manifest shape
+     * deliberately remains open. Narrow the version again at this orchestration boundary so corrupt or
+     * substituted catalog data can never reach the durable ledger as an untyped value.
+     *
+     * @param   array<string, mixed>  $manifest  Validated content or business manifest.
+     *
+     * @return  positive-int  Manifest version safe to persist and compare monotonically.
+     *
+     * @throws  RuntimeException  When the manifest does not declare a positive integer version.
+     *
+     * @since   2.0.0
+     */
+    private function manifestVersion(array $manifest): int
+    {
+        $version = $manifest['version'] ?? null;
+        if (!is_int($version) || $version < 1) {
+            throw new RuntimeException('A demo profile manifest has an invalid version.');
+        }
+
+        return $version;
     }
 }

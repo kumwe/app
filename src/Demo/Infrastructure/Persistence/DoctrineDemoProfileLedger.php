@@ -111,7 +111,7 @@ final readonly class DoctrineDemoProfileLedger
      * @return  bool  True when reconciliation must run; false when this exact manifest is complete.
      *
      * @throws  RuntimeException  When the stored selection differs, a release attempts a downgrade,
-     *          or the persisted checkpoint is malformed.
+     *          manifest bytes change without a version increment, or the persisted checkpoint is malformed.
      *
      * @since   2.0.0
      */
@@ -144,11 +144,15 @@ final readonly class DoctrineDemoProfileLedger
 
             return true;
         }
-        if (($row['selected_profile'] ?? null) !== $selectedProfile) {
+        $storedProfile = $row['selected_profile'] ?? null;
+        if (!is_string($storedProfile) || $storedProfile === '') {
+            throw new RuntimeException('The demo profile stored selection is invalid.');
+        }
+        if ($storedProfile !== $selectedProfile) {
             throw new RuntimeException(sprintf(
                 'Demo dataset %s is locked to profile %s; refusing requested profile %s.',
                 $dataset,
-                (string) ($row['selected_profile'] ?? 'unknown'),
+                $storedProfile,
                 $selectedProfile,
             ));
         }
@@ -156,9 +160,19 @@ final readonly class DoctrineDemoProfileLedger
         if ($manifestVersion < $storedVersion) {
             throw new RuntimeException(sprintf('Demo dataset %s cannot be downgraded.', $dataset));
         }
+        $storedChecksum = $row['manifest_checksum'] ?? null;
+        if (!is_string($storedChecksum) || preg_match('/^[a-f0-9]{64}$/D', $storedChecksum) !== 1) {
+            throw new RuntimeException('The demo profile manifest checksum is invalid.');
+        }
+        if ($storedVersion === $manifestVersion && $storedChecksum !== $manifestChecksum) {
+            throw new RuntimeException(sprintf(
+                'Demo dataset %s manifest version %d changed without a version increment.',
+                $dataset,
+                $manifestVersion,
+            ));
+        }
         if (
             $storedVersion === $manifestVersion
-            && ($row['manifest_checksum'] ?? null) === $manifestChecksum
             && ($row['status'] ?? null) === 'complete'
         ) {
             return false;

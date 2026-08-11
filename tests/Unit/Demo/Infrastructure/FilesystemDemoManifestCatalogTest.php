@@ -61,10 +61,17 @@ final class FilesystemDemoManifestCatalogTest extends TestCase
             self::assertArrayNotHasKey($resourceId, $pageIds);
             self::assertSame(3, $page['content_type_version'] ?? null);
             self::assertSame('published', $page['workflow_state_key'] ?? null);
-            foreach (
-                ['eyebrow', 'heading', 'summary', 'primary_action', 'secondary_action', 'body'] as $requiredField
-            ) {
-                self::assertArrayHasKey($requiredField, $this->map($page['data'] ?? null, 'page data'));
+            $data = $this->map($page['data'] ?? null, 'page data');
+            foreach (['eyebrow', 'heading', 'summary', 'body'] as $requiredField) {
+                self::assertArrayHasKey($requiredField, $data);
+            }
+            foreach (['primary_action', 'secondary_action'] as $optionalAction) {
+                if (!array_key_exists($optionalAction, $data)) {
+                    continue;
+                }
+                $action = $this->map($data[$optionalAction], sprintf('%s action', $optionalAction));
+                $this->string($action, 'label');
+                $this->string($action, 'url');
             }
             $pages[$fixtureKey] = $page;
             $pageIds[$resourceId] = true;
