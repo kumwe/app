@@ -116,6 +116,7 @@ $findingEvidenceIds = validateFindingsRegister(
     $workItems,
     $errors,
 );
+$registeredFindings = normalizeFindingReferences($findingsRegister['findings'] ?? null, $errors);
 $blockingFindings = normalizeBlockingFindings($findingsRegister['findings'] ?? null, $errors);
 validateLedger(
     $root,
@@ -127,6 +128,7 @@ validateLedger(
     $workItems,
     $errors,
     $blockingFindings,
+    $registeredFindings,
 );
 $templateCheckIds = validateVerificationReport(
     $root,
@@ -785,6 +787,44 @@ function validateGeneratedInstances(string $root, array $inventory, array &$erro
 }
 
 /**
+ * Normalize authoritative finding targets for governed waiver validation.
+ *
+ * @param   mixed         $records  Candidate findings-register records.
+ * @param   list<string>  $errors   Accumulated validation failures.
+ *
+ * @return  array<string, array<string, mixed>>  Finding metadata keyed by stable ID.
+ *
+ * @since   2.0.0
+ */
+function normalizeFindingReferences(mixed $records, array &$errors): array
+{
+    $result = [];
+    foreach (expectList($records, 'findings for waiver governance', $errors) as $finding) {
+        if (!is_array($finding) || !is_string($finding['id'] ?? null) || $finding['id'] === '') {
+            continue;
+        }
+        $phaseNumbers = [];
+        foreach ($finding['phase_numbers'] ?? [] as $phaseNumber) {
+            if (is_int($phaseNumber)) {
+                $phaseNumbers[$phaseNumber] = true;
+            }
+        }
+        $workItemIds = [];
+        foreach ($finding['work_item_ids'] ?? [] as $workItemId) {
+            if (is_string($workItemId)) {
+                $workItemIds[$workItemId] = true;
+            }
+        }
+        $result[$finding['id']] = [
+            'severity' => $finding['severity'] ?? null,
+            'phase_numbers' => $phaseNumbers,
+            'work_item_ids' => $workItemIds,
+        ];
+    }
+    return $result;
+}
+
+/**
  * Normalize unresolved P0/P1 findings for deterministic completion checks.
  *
  * Resolved and superseded findings remain in the authoritative register for history, but do not block a
@@ -841,6 +881,7 @@ function normalizeBlockingFindings(mixed $records, array &$errors): array
  * @param   array<string, array<string, mixed>> $workItems    Work items keyed by ID.
  * @param   list<string>                        $errors       Accumulated validation failures.
  * @param   array<string, array<string, mixed>> $findings     Normalized unresolved P0/P1 findings.
+ * @param   array<string, array<string, mixed>> $registered   Authoritative finding targets.
  *
  * @return  void
  *
@@ -856,6 +897,7 @@ function validateLedger(
     array $workItems,
     array &$errors,
     array $findings = [],
+    array $registered = [],
 ): void {
     $statuses = array_fill_keys(expectList($ledger['status_vocabulary'] ?? null, 'status vocabulary', $errors), true);
     $evidenceRules = $ledger['evidence_rules'] ?? null;
@@ -1024,6 +1066,7 @@ function validateLedger(
                 $ownerIds,
                 $acceptedEvidence,
                 $evidenceSupports,
+                $registered,
                 $errors,
             );
         }
@@ -1228,6 +1271,7 @@ function validateEvidenceTypeRequirements(
  * @param   array<string, true>                  $ownerIds            Known accountable roles.
  * @param   array<string, true>                  $acceptedEvidence    Accepted evidence IDs.
  * @param   array<string, array<string, true>>   $evidenceSupports    Targets declared by evidence ID.
+ * @param   array<string, array<string, mixed>>  $registeredFindings  Authoritative finding targets.
  * @param   list<string>                         $errors              Accumulated validation failures.
  *
  * @return  bool  True only when the waiver can satisfy a completed item's prerequisite.
@@ -1241,6 +1285,7 @@ function validateGovernedWaiver(
     array $ownerIds,
     array $acceptedEvidence,
     array $evidenceSupports,
+    array $registeredFindings,
     array &$errors,
 ): bool {
     $valid = true;
@@ -1253,9 +1298,32 @@ function validateGovernedWaiver(
         $errors[] = sprintf('Waived work item %s requires a waiver record.', $id);
         return false;
     }
-    foreach (['finding_id', 'rationale', 'compensating_control'] as $field) {
+    foreach (['rationale', 'compensating_control'] as $field) {
         if (!is_string($waiver[$field] ?? null) || trim($waiver[$field]) === '') {
             $errors[] = sprintf('Waiver for work item %s requires a non-empty %s.', $id, $field);
+            $valid = false;
+        }
+    }
+    $findingId = $waiver['finding_id'] ?? null;
+    $finding = is_string($findingId) ? ($registeredFindings[$findingId] ?? null) : null;
+    if (!is_string($findingId) || !is_array($finding)) {
+        $errors[] = sprintf('Waiver for work item %s references unknown finding %s.', $id, printable($findingId));
+        $valid = false;
+    } else {
+        if (!in_array($finding['severity'] ?? null, ['P2', 'P3'], true)) {
+            $errors[] = sprintf('Waiver for work item %s references non-waivable finding %s.', $id, $findingId);
+            $valid = false;
+        }
+        if (($finding['work_item_ids'] ?? []) !== [] && !isset($finding['work_item_ids'][$id])) {
+            $errors[] = sprintf('Waiver finding %s is not linked to work item %s.', $findingId, $id);
+            $valid = false;
+        }
+        if (
+            preg_match('/^P(\d+)-/', $id, $phaseMatch) === 1
+            && ($finding['phase_numbers'] ?? []) !== []
+            && !isset($finding['phase_numbers'][(int) $phaseMatch[1]])
+        ) {
+            $errors[] = sprintf('Waiver finding %s does not apply to Phase %d.', $findingId, (int) $phaseMatch[1]);
             $valid = false;
         }
     }
@@ -1602,6 +1670,8 @@ function validateFindingsRegister(
     $recordsById = [];
     $fingerprints = [];
     $evidenceIds = [];
+    $evidenceIdsByFinding = [];
+    $passedEvidenceByFinding = [];
     foreach ($records as $finding) {
         if (!is_array($finding) || !is_string($finding['id'] ?? null) || $finding['id'] === '') {
             $errors[] = 'Every registered finding requires a non-empty ID.';
@@ -1659,6 +1729,7 @@ function validateFindingsRegister(
                 $errors[] = sprintf('Finding evidence ID %s is duplicated.', $evidenceId);
             }
             $evidenceIds[$evidenceId] = true;
+            $evidenceIdsByFinding[$id][$evidenceId] = true;
             foreach (['kind', 'status', 'source_revision', 'method', 'result'] as $field) {
                 if (!is_string($evidence[$field] ?? null) || $evidence[$field] === '') {
                     $errors[] = sprintf('Finding evidence %s requires a non-empty %s.', $evidenceId, $field);
@@ -1681,6 +1752,9 @@ function validateFindingsRegister(
             }
             if (($evidence['kind'] ?? null) === 'source' && ($evidence['status'] ?? null) === 'observed') {
                 $hasObservedSource = true;
+            }
+            if (($evidence['status'] ?? null) === 'passed') {
+                $passedEvidenceByFinding[$id][$evidenceId] = true;
             }
         }
         if (($finding['category'] ?? null) === 'environment_limitation') {
@@ -1718,24 +1792,14 @@ function validateFindingsRegister(
         } elseif ($duplicateOf !== null) {
             $errors[] = sprintf('Non-duplicate finding %s must have a null duplicate_of.', $id);
         }
-        $history = expectList($finding['status_history'] ?? null, 'finding ' . $id . ' status_history', $errors);
-        $last = $history === [] ? null : $history[array_key_last($history)];
-        if (!is_array($last) || ($last['to'] ?? null) !== ($finding['status'] ?? null)) {
-            $errors[] = sprintf('Finding %s status does not match its latest history entry.', $id);
-        }
-        foreach ($history as $entry) {
-            if (!is_array($entry) || !is_string($entry['at'] ?? null) || !isUtcTimestamp($entry['at'])) {
-                $errors[] = sprintf('Finding %s history requires UTC timestamps.', $id);
-                continue;
-            }
-            validateReferences(
-                $entry['evidence_ids'] ?? null,
-                $evidenceIds,
-                'finding evidence',
-                'finding ' . $id . ' history',
-                $errors,
-            );
-        }
+        validateFindingStatusHistory(
+            $finding,
+            $id,
+            $statuses,
+            $evidenceIdsByFinding[$id] ?? [],
+            $passedEvidenceByFinding[$id] ?? [],
+            $errors,
+        );
         foreach ($finding['evidence'] ?? [] as $evidence) {
             if (is_array($evidence)) {
                 validateReferences(
@@ -1778,6 +1842,94 @@ function validateFindingsRegister(
         }
     }
     return $evidenceIds;
+}
+
+/**
+ * Validate an append-only finding status history and terminal resolution proof.
+ *
+ * @param   array<string, mixed>  $finding         Finding record.
+ * @param   string                $id              Stable finding identifier.
+ * @param   array<string, true>   $statuses        Finding status vocabulary.
+ * @param   array<string, true>   $evidenceIds     Evidence owned by this finding.
+ * @param   array<string, true>   $passedEvidence  Passed evidence owned by this finding.
+ * @param   list<string>          $errors          Accumulated validation failures.
+ *
+ * @return  void
+ *
+ * @since   2.0.0
+ */
+function validateFindingStatusHistory(
+    array $finding,
+    string $id,
+    array $statuses,
+    array $evidenceIds,
+    array $passedEvidence,
+    array &$errors,
+): void {
+    $history = expectList($finding['status_history'] ?? null, 'finding ' . $id . ' status_history', $errors);
+    $previousTo = null;
+    foreach ($history as $index => $entry) {
+        if (!is_array($entry) || array_is_list($entry)) {
+            $errors[] = sprintf('Finding %s history entry %d must be an object.', $id, $index + 1);
+            continue;
+        }
+        foreach (['at', 'from', 'to', 'reason', 'evidence_ids'] as $field) {
+            if (!array_key_exists($field, $entry)) {
+                $errors[] = sprintf('Finding %s history entry %d is missing %s.', $id, $index + 1, $field);
+            }
+        }
+        if (!isUtcTimestamp($entry['at'] ?? null)) {
+            $errors[] = sprintf('Finding %s history entry %d requires a UTC timestamp.', $id, $index + 1);
+        }
+        $from = $entry['from'] ?? null;
+        $to = $entry['to'] ?? null;
+        if ($from !== null && (!is_string($from) || !isset($statuses[$from]))) {
+            $errors[] = sprintf('Finding %s history entry %d has an unknown from status.', $id, $index + 1);
+        }
+        if (!is_string($to) || !isset($statuses[$to])) {
+            $errors[] = sprintf('Finding %s history entry %d has an unknown to status.', $id, $index + 1);
+        }
+        if ($index === 0 && ($from !== null || $to !== 'open')) {
+            $errors[] = sprintf('Finding %s history must start with null to open.', $id);
+        }
+        if ($index > 0 && $from !== $previousTo) {
+            $errors[] = sprintf('Finding %s history entry %d does not continue the prior status.', $id, $index + 1);
+        }
+        if ($from !== null && $from === $to) {
+            $errors[] = sprintf('Finding %s history entry %d is a no-op transition.', $id, $index + 1);
+        }
+        if (!is_string($entry['reason'] ?? null) || trim($entry['reason']) === '') {
+            $errors[] = sprintf('Finding %s history entry %d requires a reason.', $id, $index + 1);
+        }
+        validateReferences(
+            $entry['evidence_ids'] ?? null,
+            $evidenceIds,
+            'finding evidence',
+            'finding ' . $id . ' history entry ' . ($index + 1),
+            $errors,
+        );
+        $previousTo = is_string($to) ? $to : null;
+    }
+    $last = $history === [] ? null : $history[array_key_last($history)];
+    if (!is_array($last) || ($last['to'] ?? null) !== ($finding['status'] ?? null)) {
+        $errors[] = sprintf('Finding %s status does not match its latest history entry.', $id);
+    }
+    if (($finding['status'] ?? null) !== 'resolved') {
+        return;
+    }
+    if (($finding['disposition'] ?? null) !== 'verified_fixed') {
+        $errors[] = sprintf('Resolved finding %s requires verified_fixed disposition.', $id);
+    }
+    $hasTerminalPass = false;
+    foreach (is_array($last) ? ($last['evidence_ids'] ?? []) : [] as $evidenceId) {
+        if (is_string($evidenceId) && isset($passedEvidence[$evidenceId])) {
+            $hasTerminalPass = true;
+            break;
+        }
+    }
+    if (!$hasTerminalPass) {
+        $errors[] = sprintf('Resolved finding %s requires passed evidence on its terminal transition.', $id);
+    }
 }
 
 /**
