@@ -100,27 +100,36 @@ final readonly class ExtensionManifest
     private ManifestContributionSet $contributions;
 
     /**
+     * Versioned KIS contract required by a template package; absent for every other extension type.
+     *
+     * @var    ?TemplateKisCompatibility
+     * @since  2.0.0
+     */
+    private ?TemplateKisCompatibility $templateCompatibility;
+
+    /**
      * Validate and store everything a package declares about itself.
      *
      * Callers that already hold parsed values use this directly; anything starting from a document
      * should go through `fromJson`, which performs the schema-level checks this constructor does not.
      *
-     * @param   ExtensionIdentifier       $identifier          Identity the extension registers under.
-     * @param   ExtensionType             $type                Kind of extension the package installs as.
-     * @param   SemanticVersion           $version             Version this manifest describes.
-     * @param   string                    $serviceProvider     Fully qualified provider class the runtime instantiates.
-     * @param   VersionConstraint         $kumweCompatibility  Kumwe versions the extension declares support for.
-     * @param   VersionConstraint         $phpCompatibility    PHP versions the extension declares support for.
-     * @param   array<mixed>              $dependencies        `ExtensionDependency` list, at most 256, no repeats.
-     * @param   array<mixed>              $autoload            PSR-4 prefix to package-relative directory map.
-     * @param   array<mixed>              $migrations          Migration class names to run, in order.
-     * @param   array<mixed>              $configuration       Configuration object, stored as given.
-     * @param   array<mixed>              $permissions         Capability identifiers the extension declares.
-     * @param   array<mixed>              $routes              Route declaration objects, at most 256.
-     * @param   array<mixed>              $events              Event declaration objects, at most 256.
-     * @param   array<mixed>              $assets              Package-relative asset paths, at most 512.
-     * @param   ?ManifestContributionSet  $contributions       Strict contributions; null selects the legacy set.
-     * @param   int                       $schemaVersion       Manifest schema revision; 1 through 4 are supported.
+     * @param   ExtensionIdentifier        $identifier             Identity the extension registers under.
+     * @param   ExtensionType              $type                   Kind of extension the package installs as.
+     * @param   SemanticVersion            $version                Version this manifest describes.
+     * @param string $serviceProvider Fully qualified provider class the runtime instantiates.
+     * @param   VersionConstraint          $kumweCompatibility     Kumwe versions the extension declares support for.
+     * @param   VersionConstraint          $phpCompatibility       PHP versions the extension declares support for.
+     * @param   array<mixed>               $dependencies           `ExtensionDependency` list, at most 256, no repeats.
+     * @param   array<mixed>               $autoload               PSR-4 prefix to package-relative directory map.
+     * @param   array<mixed>               $migrations             Migration class names to run, in order.
+     * @param   array<mixed>               $configuration          Configuration object, stored as given.
+     * @param   array<mixed>               $permissions            Capability identifiers the extension declares.
+     * @param   array<mixed>               $routes                 Route declaration objects, at most 256.
+     * @param   array<mixed>               $events                 Event declaration objects, at most 256.
+     * @param   array<mixed>               $assets                 Package-relative asset paths, at most 512.
+     * @param   ?ManifestContributionSet   $contributions          Strict contributions; null selects the legacy set.
+     * @param   int                        $schemaVersion          Manifest schema revision; 1 through 4 are supported.
+     * @param   ?TemplateKisCompatibility  $templateCompatibility  Closed KIS compatibility contract for templates.
      *
      * @throws  InvalidArgumentException  When the schema is unsupported or any declared value fails its check.
      *
@@ -143,6 +152,7 @@ final readonly class ExtensionManifest
         array $assets = [],
         ?ManifestContributionSet $contributions = null,
         private int $schemaVersion = 1,
+        ?TemplateKisCompatibility $templateCompatibility = null,
     ) {
         if (!in_array($schemaVersion, [1, 2, 3, 4], true)) {
             throw new InvalidArgumentException('The extension manifest schema is unsupported.');
@@ -212,6 +222,15 @@ final readonly class ExtensionManifest
         $this->events = $this->objectList($events, 'events');
         $this->assets = $this->pathList($assets, 'assets');
         $this->contributions = $contributions ?? ManifestContributionSet::legacy($identifier, $this->permissions);
+        if ($type === ExtensionType::Template && $templateCompatibility === null) {
+            throw new InvalidArgumentException(
+                'A template extension must declare its versioned KIS compatibility contract.',
+            );
+        }
+        if ($type !== ExtensionType::Template && $templateCompatibility !== null) {
+            throw new InvalidArgumentException('Only template extensions may declare template compatibility.');
+        }
+        $this->templateCompatibility = $templateCompatibility;
     }
 
     /**
@@ -270,6 +289,7 @@ final readonly class ExtensionManifest
                 'events',
                 'assets',
                 'contributions',
+                'template',
             ], 'The extension manifest');
         }
 
@@ -364,6 +384,23 @@ final readonly class ExtensionManifest
             throw new InvalidArgumentException('The extension manifest type is not supported.', 0, $exception);
         }
 
+        $templateDeclaration = $data['template'] ?? null;
+        if (
+            $type === ExtensionType::Template
+            && (!is_array($templateDeclaration) || array_is_list($templateDeclaration))
+        ) {
+            throw new InvalidArgumentException(
+                'A template extension must declare a versioned template compatibility object.',
+            );
+        }
+        if ($type !== ExtensionType::Template && $templateDeclaration !== null) {
+            throw new InvalidArgumentException('Only template extensions may declare template compatibility.');
+        }
+        /** @var ?array<string, mixed> $templateDeclaration */
+        $templateCompatibility = $templateDeclaration === null
+            ? null
+            : TemplateKisCompatibility::fromArray($templateDeclaration);
+
         return new self(
             $identifier,
             $type,
@@ -383,6 +420,7 @@ final readonly class ExtensionManifest
             is_array($assets) ? $assets : throw new InvalidArgumentException('Assets must be a list.'),
             $contributions,
             $schema,
+            $templateCompatibility,
         );
     }
 
@@ -568,6 +606,18 @@ final readonly class ExtensionManifest
     public function contributions(): ManifestContributionSet
     {
         return $this->contributions;
+    }
+
+    /**
+     * Report the KIS component and token contract required by a template package.
+     *
+     * @return  ?TemplateKisCompatibility  Compatibility declaration for templates, null for other types.
+     *
+     * @since   2.0.0
+     */
+    public function templateCompatibility(): ?TemplateKisCompatibility
+    {
+        return $this->templateCompatibility;
     }
 
     /**

@@ -6,6 +6,12 @@
   "provider": "KumweExample\\MinimalAdministratorTemplate\\Provider",
   "autoload": {"psr-4": {"KumweExample\\MinimalAdministratorTemplate\\": "src/"}},
   "requires": {"kumwe": "^2.0.0", "php": "^8.5.0"},
+  "template": {
+    "contract": 1,
+    "standard": "kis-1.0",
+    "components": {"minimum": "1.0.0", "maximum": "1.0.0"},
+    "tokens": {"minimum": "1.0.0", "maximum": "1.0.0"}
+  },
   "dependencies": [],
   "migrations": [],
   "configuration": {},
