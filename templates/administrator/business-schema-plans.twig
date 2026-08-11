@@ -1,31 +1,8 @@
 {% extends "layout.twig" %}
-{% macro operation_state(label, state) %}
-  <div class="schema-operation-state">
-    <strong>{{ label }}</strong>
-    {% if not state %}
-      <span>Absent</span>
-    {% elseif state.doctrine_type is defined %}
-      <span><code>{{ state.doctrine_type }}</code> · {{ state.nullable ? 'nullable' : 'required' }}</span>
-      {% if state.options.length is defined %}<span>length {{ state.options.length }}</span>{% endif %}
-      {% if state.options.precision is defined %}<span>precision {{ state.options.precision }}, scale {{ state.options.scale }}</span>{% endif %}
-      {% if state.options.default is defined %}<span>default {{ state.options.default is iterable ? 'structured value' : state.options.default }}</span>{% endif %}
-    {% elseif state.kind is defined %}
-      <span>{{ state.kind|replace({'_':' '}) }} · {{ state.columns|length }} columns · {{ state.indexes|length }} indexes · {{ state.foreign_keys|length }} relations</span>
-    {% elseif state.local_columns is defined %}
-      <span><code data-visual-mask>{{ state.local_columns|join(', ') }}</code> → <code data-visual-mask>{{ state.foreign_table }} ({{ state.foreign_columns|join(', ') }})</code></span>
-      <span>delete {{ state.on_delete }}, update {{ state.on_update }}</span>
-    {% elseif state.columns is defined %}
-      <span><code data-visual-mask>{{ state.columns|join(', ') }}</code> · {{ state.unique ? 'unique' : 'non-unique' }}</span>
-    {% else %}
-      <span>Validated metadata recorded</span>
-    {% endif %}
-  </div>
-{% endmacro %}
 {% block title %}Schema plans · Kumwe{% endblock %}
 {% block context_title %}Schema plans{% endblock %}
 {% block context_subtitle %}Inspect and control generated relational storage{% endblock %}
 {% block content %}
-  {% import _self as schema %}
   {% embed '@kis/page-header.twig' with {
     eyebrow: 'Structure',
     title: 'Business schema plans',
@@ -48,8 +25,7 @@
     {% embed '@kis/master-detail.twig' with {
       id: 'business-schema-workspace',
       catalog_label: 'Schema plan controls',
-      catalog_toggle_label: 'Browse schema plans',
-      schema: schema
+      catalog_toggle_label: 'Browse schema plans'
     } %}
       {% block catalog %}
     <aside class="stack">
@@ -150,7 +126,7 @@
           {% endblock %}
         {% endembed %}
 
-        {% embed '@kis/tab-panel.twig' with {id: 'business-schema-workspace', tab: 'operations', schema: schema} %}
+        {% embed '@kis/tab-panel.twig' with {id: 'business-schema-workspace', tab: 'operations'} %}
           {% block content %}
         <section class="panel stack">
           <div class="section-heading">
@@ -166,7 +142,34 @@
                     <td>{{ operation.ordinal }}</td>
                     <td><strong>{{ operation.kind|replace({'_':' '}) }}</strong>{% if operation.requires_backfill %}<br><span class="tag">Backfill</span>{% endif %}</td>
                     <td><code data-visual-mask>{{ operation.table }}</code><br><span data-visual-mask>{{ operation.subject }}</span></td>
-                    <td class="schema-operation-comparison">{{ schema.operation_state('Before', operation.before) }}{{ schema.operation_state('After', operation.after) }}</td>
+                    <td class="schema-operation-comparison">
+                      {% for comparison in [
+                        {label: 'Before', state: operation.before},
+                        {label: 'After', state: operation.after}
+                      ] %}
+                        {% set state = comparison.state %}
+                        <div class="schema-operation-state">
+                          <strong>{{ comparison.label }}</strong>
+                          {% if not state %}
+                            <span>Absent</span>
+                          {% elseif state.doctrine_type is defined %}
+                            <span><code>{{ state.doctrine_type }}</code> · {{ state.nullable ? 'nullable' : 'required' }}</span>
+                            {% if state.options.length is defined %}<span>length {{ state.options.length }}</span>{% endif %}
+                            {% if state.options.precision is defined %}<span>precision {{ state.options.precision }}, scale {{ state.options.scale }}</span>{% endif %}
+                            {% if state.options.default is defined %}<span>default {{ state.options.default is iterable ? 'structured value' : state.options.default }}</span>{% endif %}
+                          {% elseif state.kind is defined %}
+                            <span>{{ state.kind|replace({'_':' '}) }} · {{ state.columns|length }} columns · {{ state.indexes|length }} indexes · {{ state.foreign_keys|length }} relations</span>
+                          {% elseif state.local_columns is defined %}
+                            <span><code data-visual-mask>{{ state.local_columns|join(', ') }}</code> → <code data-visual-mask>{{ state.foreign_table }} ({{ state.foreign_columns|join(', ') }})</code></span>
+                            <span>delete {{ state.on_delete }}, update {{ state.on_update }}</span>
+                          {% elseif state.columns is defined %}
+                            <span><code data-visual-mask>{{ state.columns|join(', ') }}</code> · {{ state.unique ? 'unique' : 'non-unique' }}</span>
+                          {% else %}
+                            <span>Validated metadata recorded</span>
+                          {% endif %}
+                        </div>
+                      {% endfor %}
+                    </td>
                     <td><span class="schema-risk schema-risk-{{ operation.risk }}">{{ operation.risk|replace({'_':' '}) }}</span></td>
                     <td>{{ operation.recovery_implication|replace({'_':' '}) }}</td>
                   </tr>

@@ -18,7 +18,7 @@ use Twig\Loader\FilesystemLoader;
 final class BusinessSchemaPlansTemplateTest extends TestCase
 {
     /**
-     * Render a selected plan whose operation comparison calls the template macro from a nested embed.
+     * Render a selected plan whose operation comparison is evaluated from a nested embed.
      *
      * @return  void
      *
