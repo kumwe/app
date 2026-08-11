@@ -34,6 +34,10 @@ final readonly class ApplicationConfiguration
      *          must use HTTPS in production.
      * @param   string                  $publicSite                    Site context anonymous front-end requests
      *          resolve to.
+     * @param   string                  $siteContentProfile            Built-in content dataset selected for a
+     *          newly installed site: documentation, placeholder, or blank.
+     * @param   bool                    $businessDemo                  Whether the built-in VDM business dataset is
+     *          installed and maintained alongside the selected site content.
      * @param   non-empty-list<string>  $trustedHosts                  Host names the application answers to; a
      *          request for any other host is refused.
      * @param   list<string>            $trustedProxies                Addresses or CIDR ranges whose forwarding
@@ -75,6 +79,8 @@ final readonly class ApplicationConfiguration
         public bool $debug,
         public string $baseUrl,
         public string $publicSite,
+        public string $siteContentProfile,
+        public bool $businessDemo,
         public array $trustedHosts,
         public array $trustedProxies,
         public int $maxBodyBytes,
@@ -100,6 +106,11 @@ final readonly class ApplicationConfiguration
             throw new InvalidArgumentException('Production APP_BASE_URL must use HTTPS.');
         }
         SiteContext::fromString($publicSite);
+        if (!in_array($siteContentProfile, ['documentation', 'placeholder', 'blank'], true)) {
+            throw new InvalidArgumentException(
+                'KUMWE_SITE_CONTENT_PROFILE must be documentation, placeholder, or blank.',
+            );
+        }
 
         if ($trustedHosts === []) {
             throw new InvalidArgumentException('At least one trusted host is required.');

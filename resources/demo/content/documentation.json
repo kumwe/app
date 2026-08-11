@@ -1,0 +1,1009 @@
+{
+  "format": "kumwe.demo-content/v1",
+  "profile": "documentation",
+  "version": 1,
+  "site": {
+    "fixture_key": "site.default",
+    "resource_id": "default",
+    "identifier": "default",
+    "name": "Default site",
+    "enabled": true
+  },
+  "settings": {
+    "fixture_key": "settings.default",
+    "resource_id": "default",
+    "site_fixture_key": "site.default",
+    "site_id": "default",
+    "site_name": "Kumwe",
+    "homepage_content_fixture_key": "page.home",
+    "homepage_content_id": "00000000-0000-7000-8000-000000001001",
+    "homepage_slug": "home",
+    "default_locale": "en",
+    "timezone": "UTC",
+    "search_indexing_enabled": true,
+    "presentation": {
+      "logo": "/media/00000000-0000-7000-8000-000000000901/kumwe-symbol.svg",
+      "footer_text": "Kumwe documentation",
+      "primary_menu": "main",
+      "active_scheme": "corporate",
+      "button_style": "solid",
+      "button_shape": "rounded",
+      "header_style": "glass",
+      "schemes": [
+        {
+          "handle": "corporate",
+          "name": "Corporate Navy & Teal",
+          "color_mode": "light",
+          "colors": {
+            "navy": "#07182d",
+            "ink": "#13233a",
+            "muted": "#5c6f84",
+            "canvas": "#f5f8fb",
+            "surface": "#ffffff",
+            "border": "#dce5ed",
+            "accent": "#0c9189",
+            "accent_strong": "#08726d",
+            "accent_soft": "#dff6f4",
+            "on_accent": "#ffffff"
+          }
+        },
+        {
+          "handle": "ocean",
+          "name": "Ocean Blue",
+          "color_mode": "light",
+          "colors": {
+            "navy": "#08152a",
+            "ink": "#172439",
+            "muted": "#647386",
+            "canvas": "#f7f9fc",
+            "surface": "#ffffff",
+            "border": "#d7e1e6",
+            "accent": "#0777af",
+            "accent_strong": "#056b9f",
+            "accent_soft": "#e2f3fb",
+            "on_accent": "#ffffff"
+          }
+        },
+        {
+          "handle": "graphite",
+          "name": "Graphite & Silver",
+          "color_mode": "light",
+          "colors": {
+            "navy": "#17202b",
+            "ink": "#202833",
+            "muted": "#66717f",
+            "canvas": "#f4f5f7",
+            "surface": "#ffffff",
+            "border": "#d8dde3",
+            "accent": "#3c526b",
+            "accent_strong": "#25394f",
+            "accent_soft": "#e8edf2",
+            "on_accent": "#ffffff"
+          }
+        }
+      ]
+    }
+  },
+  "content": [
+    {
+      "fixture_key": "page.home",
+      "resource_id": "00000000-0000-7000-8000-000000001001",
+      "site_fixture_key": "site.default",
+      "site_id": "default",
+      "content_type_id": "018f22e2-7c8b-7ab0-8f3a-88e8026bb402",
+      "content_type_version": 3,
+      "workflow_id": "018f22e2-7c8b-7ab0-8f3a-88e8026bb401",
+      "workflow_version": 1,
+      "workflow_state_key": "published",
+      "title": "Kumwe documentation",
+      "slug": "home",
+      "canonical_path": "/",
+      "data": {
+        "logo": "/media/00000000-0000-7000-8000-000000000902/kumwe-wordmark.svg",
+        "eyebrow": "Learn in the running system",
+        "heading": "Build, publish, operate, and extend with Kumwe.",
+        "summary": "This managed documentation site turns the installed application into a guided tour of the workflows that are available now.",
+        "primary_action": {
+          "label": "Start the tour",
+          "url": "/start-here"
+        },
+        "secondary_action": {
+          "label": "Open administrator",
+          "url": "/administrator"
+        },
+        "body": "Kumwe keeps content, business data, permissions, presentation, integrations, and operations behind shared application services. The pages in this site explain the practical route through each area and link to the screens where you can try it.\n\n## Choose a task\n- [Start with a safe first tour](/start-here)\n- [Create and publish managed content](/content)\n- [Model and run a business application](/business)\n- [Package extensions and integrations](/extend)\n- [Operate the complete runtime](/operate)\n\nThe examples are ordinary managed pages. Edit one, save a new version, change the menu, or choose a different homepage to see the same services that custom delivery adapters use.",
+        "capabilities": {
+          "anchor": "capabilities",
+          "heading": "Follow real workflows, not screenshots.",
+          "body": "Each guide ends in an observable result: a public page, a published model, a generated record surface, a bounded permission, a queued job, or operational evidence. Use the links in the guide, make one controlled change, and then verify it from another surface."
+        },
+        "platform": {
+          "anchor": "platform",
+          "heading": "One governed core across every surface.",
+          "body": "The administrator, portal, REST API, command line, MCP tools, workers, and extension routes share authorization, validation, audit, tenancy, and persistence rules. Learning one workflow therefore explains the behavior you should expect everywhere else."
+        }
+      },
+      "publish_at": null,
+      "unpublish_at": null,
+      "version": 3,
+      "revision": {
+        "fixture_key": "page.home.revision.documentation",
+        "resource_id": "00000000-0000-7000-8000-000000002900",
+        "revision_number": 3
+      }
+    },
+    {
+      "fixture_key": "page.start-here",
+      "resource_id": "00000000-0000-7000-8000-000000002001",
+      "site_fixture_key": "site.default",
+      "site_id": "default",
+      "content_type_id": "018f22e2-7c8b-7ab0-8f3a-88e8026bb402",
+      "content_type_version": 3,
+      "workflow_id": "018f22e2-7c8b-7ab0-8f3a-88e8026bb401",
+      "workflow_version": 1,
+      "workflow_state_key": "published",
+      "title": "Start here",
+      "slug": "start-here",
+      "canonical_path": "/start-here",
+      "data": {
+        "eyebrow": "First visit",
+        "heading": "Turn a running Kumwe installation into a known baseline.",
+        "summary": "Confirm health, sign in with the owner account, and complete one small publishing loop before configuring deeper business behavior.",
+        "primary_action": {
+          "label": "Installation guide",
+          "url": "/start-here/getting-started"
+        },
+        "secondary_action": {
+          "label": "Administrator tour",
+          "url": "/start-here/administrator"
+        },
+        "body": "## Recommended first loop\n- Confirm that the readiness endpoint reports success.\n- Sign in at the [administrator](/administrator) with the owner created during installation.\n- Open Content, edit a demonstration page, and save it.\n- Use its workflow transition to keep it published.\n- Open the public path and confirm the edited content and navigation.\n- Return to the dashboard and inspect recent activity.\n\nThis loop proves the web runtime, database, session, authorization, content revision, rendering, and public routing boundaries together. Keep the change small so a failure points to one boundary.",
+        "capabilities": {
+          "anchor": "baseline",
+          "heading": "Know what success looks like.",
+          "body": "A healthy first run has working readiness, administrator assets, a signed-in owner, editable pages, a nominated homepage, and a main menu. Business, portal, extension, and automation features can then be explored without confusing installation problems with configuration problems."
+        },
+        "platform": {
+          "anchor": "next",
+          "heading": "Continue by outcome.",
+          "body": "Use [Content](/content) when the goal is publishing, [Business applications](/business) when the goal is structured operations, [Extend Kumwe](/extend) for packages and integrations, or [Operate Kumwe](/operate) for deployment and recovery."
+        }
+      },
+      "publish_at": null,
+      "unpublish_at": null,
+      "version": 1,
+      "revision": {
+        "fixture_key": "page.start-here.revision.1",
+        "resource_id": "00000000-0000-7000-8000-000000003001",
+        "revision_number": 1
+      }
+    },
+    {
+      "fixture_key": "page.getting-started",
+      "resource_id": "00000000-0000-7000-8000-000000002002",
+      "site_fixture_key": "site.default",
+      "site_id": "default",
+      "content_type_id": "018f22e2-7c8b-7ab0-8f3a-88e8026bb402",
+      "content_type_version": 3,
+      "workflow_id": "018f22e2-7c8b-7ab0-8f3a-88e8026bb401",
+      "workflow_version": 1,
+      "workflow_state_key": "published",
+      "title": "Install and start Kumwe",
+      "slug": "getting-started",
+      "canonical_path": "/start-here/getting-started",
+      "data": {
+        "eyebrow": "Installation",
+        "heading": "Start the complete local runtime and create its owner.",
+        "summary": "Kumwe targets PHP 8.5 and supports MariaDB LTS, MySQL 8.4, and PostgreSQL 17 with Redis for runtime coordination.",
+        "primary_action": {
+          "label": "Open administrator",
+          "url": "/administrator"
+        },
+        "body": "## Before startup\n- Copy the example environment file and choose an unused local HTTP port.\n- Keep database credentials, application secrets, and the owner password outside source control.\n- Install the locked Composer and frontend dependencies through the documented development container.\n\n## Bring the installation online\n- Run the portable database migrations.\n- Create the first owner with the user management command.\n- Start the application, web, database, and Redis services.\n- Check both liveness and readiness before opening the user interface.\n\n## Verify the result\nThe public homepage should render managed database content, the administrator should load its committed assets, and the owner should be able to sign in. If one of those checks fails, inspect the service health and logs before changing content or permissions. The [administrator tour](/start-here/administrator) is the next step once this baseline passes.",
+        "platform": {
+          "anchor": "portability",
+          "heading": "Keep the database choice portable.",
+          "body": "Use the documented connection variables for the selected driver and run the same migrations and tests. Kumwe treats MariaDB, MySQL, and PostgreSQL as supported targets, so installation behavior must not depend on one database dialect."
+        }
+      },
+      "publish_at": null,
+      "unpublish_at": null,
+      "version": 1,
+      "revision": {
+        "fixture_key": "page.getting-started.revision.1",
+        "resource_id": "00000000-0000-7000-8000-000000003002",
+        "revision_number": 1
+      }
+    },
+    {
+      "fixture_key": "page.administrator-tour",
+      "resource_id": "00000000-0000-7000-8000-000000002003",
+      "site_fixture_key": "site.default",
+      "site_id": "default",
+      "content_type_id": "018f22e2-7c8b-7ab0-8f3a-88e8026bb402",
+      "content_type_version": 3,
+      "workflow_id": "018f22e2-7c8b-7ab0-8f3a-88e8026bb401",
+      "workflow_version": 1,
+      "workflow_state_key": "published",
+      "title": "Administrator tour",
+      "slug": "administrator",
+      "canonical_path": "/start-here/administrator",
+      "data": {
+        "eyebrow": "Administrator",
+        "heading": "Navigate by the task you are authorized to perform.",
+        "summary": "The administrator hides unavailable areas and applies the same capability checks used by API, CLI, MCP, and background operations.",
+        "primary_action": {
+          "label": "Open dashboard",
+          "url": "/administrator"
+        },
+        "body": "## Main work areas\n- Dashboard summarizes content, recent activity, extensions, and system state.\n- Content, Media, Navigation, and Settings shape the public site.\n- Content models define editorial fields and workflow states.\n- Business definitions and schema plans create transactional applications.\n- Business workspaces and Reports expose live records and governed projections.\n- Access and Business security manage capabilities, policies, membership, approvals, tokens, and stronger authentication.\n- Extensions and Automation manage installed contributions and durable background work.\n\nA missing navigation item usually means the signed-in actor lacks its capability. Do not work around that by editing tables. Grant the narrow role or scoped permission through Access, sign in again if the security epoch changed, and verify the intended screen appears.",
+        "capabilities": {
+          "anchor": "safe-tour",
+          "heading": "Use a reversible tour.",
+          "body": "Start by viewing lists, then edit one demonstration record with its displayed version. Avoid changing owner access, deleting extensions, or executing a schema plan until you have reviewed the confirmation screen and recovery path."
+        }
+      },
+      "publish_at": null,
+      "unpublish_at": null,
+      "version": 1,
+      "revision": {
+        "fixture_key": "page.administrator-tour.revision.1",
+        "resource_id": "00000000-0000-7000-8000-000000003003",
+        "revision_number": 1
+      }
+    },
+    {
+      "fixture_key": "page.content",
+      "resource_id": "00000000-0000-7000-8000-000000002004",
+      "site_fixture_key": "site.default",
+      "site_id": "default",
+      "content_type_id": "018f22e2-7c8b-7ab0-8f3a-88e8026bb402",
+      "content_type_version": 3,
+      "workflow_id": "018f22e2-7c8b-7ab0-8f3a-88e8026bb401",
+      "workflow_version": 1,
+      "workflow_state_key": "published",
+      "title": "Content",
+      "slug": "content",
+      "canonical_path": "/content",
+      "data": {
+        "eyebrow": "Public experience",
+        "heading": "Model content once and publish it through governed paths.",
+        "summary": "Pages, content types, workflows, media, navigation, and presentation settings form one editable public site rather than separate page-builder data.",
+        "primary_action": {
+          "label": "Pages and publishing",
+          "url": "/content/pages"
+        },
+        "secondary_action": {
+          "label": "Media and navigation",
+          "url": "/content/media-navigation"
+        },
+        "body": "Use [Pages and publishing](/content/pages) for day-to-day editorial work, [Content models and workflows](/content/models) when the fields or lifecycle must change, and [Media, navigation, and presentation](/content/media-navigation) when the public chrome and routes must change.\n\nAll three areas meet at a published content record. Its type pins validation, its workflow state decides public visibility, its menu item gives it a canonical route, and site settings may nominate it as the homepage.",
+        "capabilities": {
+          "anchor": "content-loop",
+          "heading": "A dependable editorial loop.",
+          "body": "Create a draft, fill the defined fields, save with the current version, transition through an allowed workflow action, and verify the public route. Each write creates audit evidence and a revision snapshot."
+        },
+        "platform": {
+          "anchor": "delivery",
+          "heading": "Managed content stays reusable.",
+          "body": "The site template receives presented content, while REST, CLI, and MCP receive structured records. Keep meaning in fields and the content body so another delivery surface can reuse it without scraping rendered HTML."
+        }
+      },
+      "publish_at": null,
+      "unpublish_at": null,
+      "version": 1,
+      "revision": {
+        "fixture_key": "page.content.revision.1",
+        "resource_id": "00000000-0000-7000-8000-000000003004",
+        "revision_number": 1
+      }
+    },
+    {
+      "fixture_key": "page.pages-publishing",
+      "resource_id": "00000000-0000-7000-8000-000000002005",
+      "site_fixture_key": "site.default",
+      "site_id": "default",
+      "content_type_id": "018f22e2-7c8b-7ab0-8f3a-88e8026bb402",
+      "content_type_version": 3,
+      "workflow_id": "018f22e2-7c8b-7ab0-8f3a-88e8026bb401",
+      "workflow_version": 1,
+      "workflow_state_key": "published",
+      "title": "Pages and publishing",
+      "slug": "pages",
+      "canonical_path": "/content/pages",
+      "data": {
+        "eyebrow": "Editorial workflow",
+        "heading": "Create, review, publish, revise, and retire managed content.",
+        "summary": "Every entry pins its content-type and workflow versions, carries an optimistic version, and records immutable revision snapshots.",
+        "primary_action": {
+          "label": "Manage content",
+          "url": "/administrator/content"
+        },
+        "body": "## Create a page\n- Open Content and choose New content.\n- Select Page or another published content type.\n- Enter a clear title, stable URL slug, and the fields shown by its schema.\n- Save the draft before adding it to navigation.\n\n## Publish safely\n- Use only a transition offered by the pinned workflow.\n- Confirm any publication window includes the current time.\n- Add the page to a menu or nominate it as the homepage when it is meant to be public.\n- Open its canonical path in a signed-out browser.\n\n## Revise or retire\nSave edits with the displayed version so concurrent changes cannot be silently overwritten. Each accepted edit records an immutable revision and an audit event. Trash or restore through the managed actions; references such as the homepage and navigation targets are protected from becoming broken pointers.",
+        "platform": {
+          "anchor": "rich-text",
+          "heading": "Use the supported rich-text vocabulary.",
+          "body": "Bodies accept plain paragraphs, second-level headings, bullet lists, bold text, and safe links. Store no raw HTML. Fragments, root-relative paths, and approved web or email links are rendered safely; unsafe targets remain visible as text."
+        }
+      },
+      "publish_at": null,
+      "unpublish_at": null,
+      "version": 1,
+      "revision": {
+        "fixture_key": "page.pages-publishing.revision.1",
+        "resource_id": "00000000-0000-7000-8000-000000003005",
+        "revision_number": 1
+      }
+    },
+    {
+      "fixture_key": "page.content-models",
+      "resource_id": "00000000-0000-7000-8000-000000002006",
+      "site_fixture_key": "site.default",
+      "site_id": "default",
+      "content_type_id": "018f22e2-7c8b-7ab0-8f3a-88e8026bb402",
+      "content_type_version": 3,
+      "workflow_id": "018f22e2-7c8b-7ab0-8f3a-88e8026bb401",
+      "workflow_version": 1,
+      "workflow_state_key": "published",
+      "title": "Content models and workflows",
+      "slug": "models",
+      "canonical_path": "/content/models",
+      "data": {
+        "eyebrow": "Editorial structure",
+        "heading": "Define fields and lifecycle rules before editors depend on them.",
+        "summary": "Published content types and workflows are immutable versions, so existing entries remain interpretable while a model evolves.",
+        "primary_action": {
+          "label": "Manage content models",
+          "url": "/administrator/content-models"
+        },
+        "body": "## Content types\nA content type has a stable handle, name, field schema, workflow reference, and published version. Use required fields only for information every editor can supply. Prefer structured fields for values another surface must filter or display consistently, and use rich text for narrative content.\n\n## Workflows\nA workflow defines states, the initial state, which states are public, and the transitions allowed between them. Name transitions as actions an editor understands. Keep review and publication authority separate where governance requires it.\n\n## Evolve without ambiguity\nDraft a new definition, validate it, and publish a new version rather than rewriting a version already used by content. Entries retain the type and workflow versions that validated them. Test old and new entries through the administrator and public renderer before making the new model the normal authoring choice.",
+        "capabilities": {
+          "anchor": "page-v3",
+          "heading": "This guide is Page v3 content.",
+          "body": "The demonstration pages use the current Page schema: optional hero identity, heading, summary, actions, a required rich-text body, and two optional anchored sections. Editing these fixtures therefore exercises the same model an operator sees."
+        }
+      },
+      "publish_at": null,
+      "unpublish_at": null,
+      "version": 1,
+      "revision": {
+        "fixture_key": "page.content-models.revision.1",
+        "resource_id": "00000000-0000-7000-8000-000000003006",
+        "revision_number": 1
+      }
+    },
+    {
+      "fixture_key": "page.media-navigation",
+      "resource_id": "00000000-0000-7000-8000-000000002007",
+      "site_fixture_key": "site.default",
+      "site_id": "default",
+      "content_type_id": "018f22e2-7c8b-7ab0-8f3a-88e8026bb402",
+      "content_type_version": 3,
+      "workflow_id": "018f22e2-7c8b-7ab0-8f3a-88e8026bb401",
+      "workflow_version": 1,
+      "workflow_state_key": "published",
+      "title": "Media, navigation, and presentation",
+      "slug": "media-navigation",
+      "canonical_path": "/content/media-navigation",
+      "data": {
+        "eyebrow": "Public site composition",
+        "heading": "Connect reusable assets, canonical routes, and validated presentation settings.",
+        "summary": "Media, menu targets, homepage selection, branding, and accessible color schemes stay independently manageable.",
+        "body": "## Media\nUpload supported images and documents through [Media](/administrator/media). Kumwe records identity, file metadata, checksum, and ownership, then serves the asset through a managed media URL. Choose an existing asset from a media-aware field instead of copying files into the public directory.\n\n## Navigation\nBuild menus in [Navigation](/administrator/navigation). A menu item targets managed content, an anchor on managed content, or a safe custom URL. Parent and position create the public hierarchy; content identity stays stable even when a slug or path changes. This documentation menu intentionally uses only one parent and one child level.\n\n## Settings and presentation\nUse [Site settings](/administrator/settings) to nominate a published Page as the homepage, choose the primary menu, set locale and timezone, control indexing, and configure presentation. Logos must use safe root-relative URLs. Button and header styles use fixed choices, and every color scheme must satisfy the complete palette and text-contrast rules.",
+        "capabilities": {
+          "anchor": "verification",
+          "heading": "Verify from a signed-out browser.",
+          "body": "After changing a menu, homepage, logo, or palette, open the public site without an administrator session. Check the root path, one nested route, keyboard navigation, mobile layout, readable contrast, and a missing optional image."
+        }
+      },
+      "publish_at": null,
+      "unpublish_at": null,
+      "version": 1,
+      "revision": {
+        "fixture_key": "page.media-navigation.revision.1",
+        "resource_id": "00000000-0000-7000-8000-000000003007",
+        "revision_number": 1
+      }
+    },
+    {
+      "fixture_key": "page.business",
+      "resource_id": "00000000-0000-7000-8000-000000002008",
+      "site_fixture_key": "site.default",
+      "site_id": "default",
+      "content_type_id": "018f22e2-7c8b-7ab0-8f3a-88e8026bb402",
+      "content_type_version": 3,
+      "workflow_id": "018f22e2-7c8b-7ab0-8f3a-88e8026bb401",
+      "workflow_version": 1,
+      "workflow_state_key": "published",
+      "title": "Business applications",
+      "slug": "business",
+      "canonical_path": "/business",
+      "data": {
+        "eyebrow": "Structured operations",
+        "heading": "Turn business definitions into governed transactional workspaces.",
+        "summary": "Kumwe compiles versioned definitions into portable storage, shared record services, generated surfaces, policies, approvals, reports, and integration events.",
+        "primary_action": {
+          "label": "Define the model",
+          "url": "/business/definitions"
+        },
+        "secondary_action": {
+          "label": "Run records",
+          "url": "/business/records"
+        },
+        "body": "A business application begins with a definition, not a generated screen. The definition states fields, relationships, exposure, actions, reports, and lifecycle. A reviewed schema plan materializes its physical storage. The runtime then exposes one policy-aware record boundary to the administrator, portal, REST, CLI, MCP, workers, and extensions.\n\nUse [Business definitions](/business/definitions) to model it, [Records and generated surfaces](/business/records) to run it, and [Security, approvals, and portal](/business/security) to bound who may see or change it.",
+        "capabilities": {
+          "anchor": "safe-order",
+          "heading": "Build in the safe order.",
+          "body": "Publish the definition, review the generated plan, capture required recovery evidence, approve and execute the plan, create a small record set, then add broader exposure and integration. Security policy should be tested before real data enters the system."
+        },
+        "platform": {
+          "anchor": "source-of-truth",
+          "heading": "Keep one source of truth.",
+          "body": "Generated screens are projections of the published definition and shared services. Do not patch a generated route or database table to add a business rule. Change the definition or application policy so all surfaces receive the same behavior."
+        }
+      },
+      "publish_at": null,
+      "unpublish_at": null,
+      "version": 1,
+      "revision": {
+        "fixture_key": "page.business.revision.1",
+        "resource_id": "00000000-0000-7000-8000-000000003008",
+        "revision_number": 1
+      }
+    },
+    {
+      "fixture_key": "page.business-definitions",
+      "resource_id": "00000000-0000-7000-8000-000000002009",
+      "site_fixture_key": "site.default",
+      "site_id": "default",
+      "content_type_id": "018f22e2-7c8b-7ab0-8f3a-88e8026bb402",
+      "content_type_version": 3,
+      "workflow_id": "018f22e2-7c8b-7ab0-8f3a-88e8026bb401",
+      "workflow_version": 1,
+      "workflow_state_key": "published",
+      "title": "Business definitions",
+      "slug": "definitions",
+      "canonical_path": "/business/definitions",
+      "data": {
+        "eyebrow": "Business model",
+        "heading": "Publish a complete, versioned contract for records and surfaces.",
+        "summary": "Definitions describe identity, fields, defaults, indexes, relationships, exposure, actions, approvals, reports, and extension ownership.",
+        "primary_action": {
+          "label": "Manage definitions",
+          "url": "/administrator/business-definitions"
+        },
+        "body": "## Draft the smallest useful model\n- Give the definition a stable lowercase handle and a clear singular and plural name.\n- Choose field types that match the business value, including money, quantities, dates, references, media, choices, and rich text.\n- Mark identity, required, searchable, sortable, filterable, and visible behavior deliberately.\n- Add relationships and ownership only when their lifecycle is understood.\n- Declare exposure and actions explicitly; omitted surfaces stay unavailable.\n\n## Validate and publish\nKumwe rejects unknown keys, invalid expressions, unsafe dependency cycles, incompatible relationship targets, and contracts that exceed bounded budgets. Publishing creates an immutable definition version and dependency graph. Later changes become a new draft and version.\n\n## Review extension contributions\nA signed manifest can contribute definitions, fields, actions, reports, events, jobs, and policies, but the package cannot silently grant itself operator authority. Inspect ownership and lifecycle behavior before activation.",
+        "platform": {
+          "anchor": "next-step",
+          "heading": "Materialize through a schema plan.",
+          "body": "After publication, move to [Records and generated surfaces](/business/records). Generate a plan, read every operation and risk, provide recovery evidence where required, then approve and execute it through the guarded plan lifecycle."
+        }
+      },
+      "publish_at": null,
+      "unpublish_at": null,
+      "version": 1,
+      "revision": {
+        "fixture_key": "page.business-definitions.revision.1",
+        "resource_id": "00000000-0000-7000-8000-000000003009",
+        "revision_number": 1
+      }
+    },
+    {
+      "fixture_key": "page.business-records",
+      "resource_id": "00000000-0000-7000-8000-000000002010",
+      "site_fixture_key": "site.default",
+      "site_id": "default",
+      "content_type_id": "018f22e2-7c8b-7ab0-8f3a-88e8026bb402",
+      "content_type_version": 3,
+      "workflow_id": "018f22e2-7c8b-7ab0-8f3a-88e8026bb401",
+      "workflow_version": 1,
+      "workflow_state_key": "published",
+      "title": "Records and generated surfaces",
+      "slug": "records",
+      "canonical_path": "/business/records",
+      "data": {
+        "eyebrow": "Transactional runtime",
+        "heading": "Apply a reviewed schema plan, then use the same record service everywhere.",
+        "summary": "Generated lists, forms, details, relationships, history, actions, reports, REST, CLI, and MCP all compile from one published definition.",
+        "primary_action": {
+          "label": "Review schema plans",
+          "url": "/administrator/business-schema-plans"
+        },
+        "secondary_action": {
+          "label": "Open business workspace",
+          "url": "/administrator/business"
+        },
+        "body": "## Materialize storage\nGenerate the schema plan for a published definition. Review its exact portable operations, risk classification, and recovery requirements. Capture recovery evidence, approve the expected plan version, execute it once, and inspect its durable result before creating records.\n\n## Work with records\nUse the generated workspace to create, list, filter, sort, view, relate, update, transition, and review history. Mutations carry the displayed record version; stale writes fail instead of replacing concurrent work. Collection queries have bounded page size, filter depth, relation fan-out, and include budgets.\n\n## Compare surfaces\nPerform one read in the administrator and compare it with REST, CLI, or MCP. Fields omitted by exposure or disclosure policy must stay omitted everywhere. Repeat a mutation with its idempotency key to confirm it replays the original outcome rather than writing twice.\n\nReports and exports use the same policy-safe query boundary and record enough metadata and checksums to make their result explainable.",
+        "capabilities": {
+          "anchor": "lifecycle",
+          "heading": "Disable before destructive lifecycle work.",
+          "body": "Definition disablement stops new runtime use without erasing data. Uninstall and purge require explicit checks, retention decisions, dependency handling, and recovery evidence. Never treat a generated table as disposable because its screen can be regenerated."
+        }
+      },
+      "publish_at": null,
+      "unpublish_at": null,
+      "version": 1,
+      "revision": {
+        "fixture_key": "page.business-records.revision.1",
+        "resource_id": "00000000-0000-7000-8000-000000003010",
+        "revision_number": 1
+      }
+    },
+    {
+      "fixture_key": "page.business-security",
+      "resource_id": "00000000-0000-7000-8000-000000002011",
+      "site_fixture_key": "site.default",
+      "site_id": "default",
+      "content_type_id": "018f22e2-7c8b-7ab0-8f3a-88e8026bb402",
+      "content_type_version": 3,
+      "workflow_id": "018f22e2-7c8b-7ab0-8f3a-88e8026bb401",
+      "workflow_version": 1,
+      "workflow_state_key": "published",
+      "title": "Security, approvals, and portal",
+      "slug": "security",
+      "canonical_path": "/business/security",
+      "data": {
+        "eyebrow": "Least privilege",
+        "heading": "Decide which rows, fields, actions, and scopes each actor may use.",
+        "summary": "Capabilities begin the decision; site ownership, organization and workspace membership, row policy, field disclosure, approvals, step-up proofs, and token scope finish it.",
+        "primary_action": {
+          "label": "Business security",
+          "url": "/administrator/business-security"
+        },
+        "secondary_action": {
+          "label": "Open portal",
+          "url": "/portal"
+        },
+        "body": "## Establish scope\nCreate only the organizations, workspaces, and memberships the workflow needs. Grant capabilities at the narrowest supported scope. A capability never bypasses site ownership, membership, record policy, or field disclosure.\n\n## Protect records and fields\nRow policies use a closed conditional language and default to denial when required context is missing. Field rules control display, detail, create, update, search, filter, sort, report, relation, and public-reference use independently. A hidden field must also be non-queryable where inference would disclose it.\n\n## Separate sensitive decisions\nBind selected operations to maker and checker approval rules. The requester cannot satisfy an independent approval requirement alone. Stronger operations consume a one-time step-up proof, and scoped tokens cannot exceed the issuing actor or delegated boundary.\n\n## Verify the ordinary-user portal\nThe portal creates its own authenticated context and exposes only trusted contributed routes and generated surfaces. Test permitted and forbidden organizations, workspaces, rows, fields, actions, approvals, and stale sessions. Administrator visibility is not evidence that portal policy is correct.",
+        "capabilities": {
+          "anchor": "evidence",
+          "heading": "Keep the decision reconstructable.",
+          "body": "Review audit events and authorization evidence after a sensitive test. The record should identify actor, scope, action, policy outcome, resource, version, approval or step-up use, and a sanitized failure reason without exposing secrets or raw request bodies."
+        }
+      },
+      "publish_at": null,
+      "unpublish_at": null,
+      "version": 1,
+      "revision": {
+        "fixture_key": "page.business-security.revision.1",
+        "resource_id": "00000000-0000-7000-8000-000000003011",
+        "revision_number": 1
+      }
+    },
+    {
+      "fixture_key": "page.extend",
+      "resource_id": "00000000-0000-7000-8000-000000002012",
+      "site_fixture_key": "site.default",
+      "site_id": "default",
+      "content_type_id": "018f22e2-7c8b-7ab0-8f3a-88e8026bb402",
+      "content_type_version": 3,
+      "workflow_id": "018f22e2-7c8b-7ab0-8f3a-88e8026bb401",
+      "workflow_version": 1,
+      "workflow_state_key": "published",
+      "title": "Extend Kumwe",
+      "slug": "extend",
+      "canonical_path": "/extend",
+      "data": {
+        "eyebrow": "Extension platform",
+        "heading": "Package new behavior without creating a second application pipeline.",
+        "summary": "Signed extension manifests contribute services, routes, business definitions, events, jobs, reports, policies, templates, assets, and migrations through stable registries.",
+        "primary_action": {
+          "label": "Extensions and templates",
+          "url": "/extend/extensions"
+        },
+        "secondary_action": {
+          "label": "Integrations and automation",
+          "url": "/extend/integrations"
+        },
+        "body": "Use an extension when behavior must be installed, versioned, verified, disabled, upgraded, and removed as a unit. Keep domain rules and application services independent of delivery. Register contributions through the provider and the supported extension APIs instead of locating the container from ordinary classes.\n\nUse [Extensions and templates](/extend/extensions) for package structure, lifecycle, routes, assets, and presentation. Use [Integrations and automation](/extend/integrations) for events, inbox delivery, jobs, schedules, process managers, reports, and projections.",
+        "capabilities": {
+          "anchor": "trust",
+          "heading": "Treat installable code as a trust boundary.",
+          "body": "Verify the package signature, checksums, manifest schema, compatibility, asset inventory, migration plan, capabilities, and ownership before activation. Contributions declare what a package requests; the site operator still decides what authority is granted."
+        },
+        "platform": {
+          "anchor": "lifecycle",
+          "heading": "Design the exit before the install.",
+          "body": "State what disablement stops, which data survives uninstall, when purge is allowed, how queued work drains, how migrations recover, and how a backup restores the extension-owned graph. Exercise those paths in conformance tests."
+        }
+      },
+      "publish_at": null,
+      "unpublish_at": null,
+      "version": 1,
+      "revision": {
+        "fixture_key": "page.extend.revision.1",
+        "resource_id": "00000000-0000-7000-8000-000000003012",
+        "revision_number": 1
+      }
+    },
+    {
+      "fixture_key": "page.extensions-templates",
+      "resource_id": "00000000-0000-7000-8000-000000002013",
+      "site_fixture_key": "site.default",
+      "site_id": "default",
+      "content_type_id": "018f22e2-7c8b-7ab0-8f3a-88e8026bb402",
+      "content_type_version": 3,
+      "workflow_id": "018f22e2-7c8b-7ab0-8f3a-88e8026bb401",
+      "workflow_version": 1,
+      "workflow_state_key": "published",
+      "title": "Extensions and templates",
+      "slug": "extensions",
+      "canonical_path": "/extend/extensions",
+      "data": {
+        "eyebrow": "Packages",
+        "heading": "Scaffold, build, verify, install, and recover a complete component.",
+        "summary": "Manifest schema 4 binds package identity, compatibility, checksums, services, contributions, assets, migrations, and lifecycle declarations.",
+        "primary_action": {
+          "label": "Manage extensions",
+          "url": "/administrator/extensions"
+        },
+        "body": "## Build the package\nStart from the complete-component scaffold and keep its namespace, package identifier, manifest, provider, tests, and documentation aligned. Declare only supported manifest keys. Inventory every runtime asset and migration, lock dependencies, and make the build reproducible.\n\n## Contribute behavior\nThe provider may register services while it has the container, but ordinary classes receive dependencies through constructors. Routes call application services. Business definitions, fields, actions, reports, events, jobs, schedules, policies, administrator links, portal routes, and settings use their typed contribution registries.\n\n## Manage lifecycle\nRun static and lifecycle conformance before install. Review the plan, install, activate, disable, reactivate, upgrade, uninstall, and restore from backup. Interrupted activation must leave the previous active runtime intact.\n\n## Templates\nA template package owns Twig files, declared assets, compatibility, and presentation behavior. It consumes already-presented data and must not bypass content, authorization, or settings services. Verify homepage, nested routes, missing optional fields, errors, responsive layouts, keyboard use, contrast, security headers, and caching.",
+        "capabilities": {
+          "anchor": "examples",
+          "heading": "Study the shipped proof components.",
+          "body": "The repository includes small extension and template examples designed for inspection and conformance. Use them to learn package shape and lifecycle boundaries, then replace example identifiers and behavior rather than copying authority assumptions."
+        }
+      },
+      "publish_at": null,
+      "unpublish_at": null,
+      "version": 1,
+      "revision": {
+        "fixture_key": "page.extensions-templates.revision.1",
+        "resource_id": "00000000-0000-7000-8000-000000003013",
+        "revision_number": 1
+      }
+    },
+    {
+      "fixture_key": "page.integrations-automation",
+      "resource_id": "00000000-0000-7000-8000-000000002014",
+      "site_fixture_key": "site.default",
+      "site_id": "default",
+      "content_type_id": "018f22e2-7c8b-7ab0-8f3a-88e8026bb402",
+      "content_type_version": 3,
+      "workflow_id": "018f22e2-7c8b-7ab0-8f3a-88e8026bb401",
+      "workflow_version": 1,
+      "workflow_state_key": "published",
+      "title": "Integrations and automation",
+      "slug": "integrations",
+      "canonical_path": "/extend/integrations",
+      "data": {
+        "eyebrow": "Durable work",
+        "heading": "Connect systems through versioned events, retry-safe delivery, jobs, and policy-safe reports.",
+        "summary": "Kumwe records integration intent durably so restarts, duplicate delivery, ordering, and terminal failure have explicit outcomes.",
+        "primary_action": {
+          "label": "Manage automation",
+          "url": "/administrator/automation"
+        },
+        "body": "## Events and delivery\nPublish versioned events through the shared transaction and outbox boundary. Consumers accept declared schema versions, persist inbox receipts, enforce idempotency, and classify retries. Partition keys preserve required ordering without serializing unrelated work. Terminal failures remain visible for operator action.\n\n## Jobs and schedules\nContributed job types declare their payload contract, retry behavior, capabilities, and owner. Schedules are durable records with timezone and misfire policy. Workers lease bounded batches and handlers remain safe to retry after a crash. Process managers persist their own state and correlate only the events they own.\n\n## Reports and projections\nReports compile against policy-filtered record sources. Field disclosure applies to columns, filters, grouping, aggregates, exports, and relationships. Projections record source event versions and checkpoints so they can rebuild deterministically.\n\n## Test operational behavior\nExercise duplicate events, key reuse, out-of-order delivery, retry exhaustion, lease expiry, disabled sites, removed extensions, schedule misfires, projection rebuild, and restart. Inspect administrator status and metrics rather than treating a quiet queue as proof of success.",
+        "capabilities": {
+          "anchor": "ownership",
+          "heading": "Make ownership explicit.",
+          "body": "Every contributed event, consumer, job, schedule, process manager, report, and projection belongs to a package and version. Disablement and uninstall must state how new work stops and what happens to pending or retained state."
+        }
+      },
+      "publish_at": null,
+      "unpublish_at": null,
+      "version": 1,
+      "revision": {
+        "fixture_key": "page.integrations-automation.revision.1",
+        "resource_id": "00000000-0000-7000-8000-000000003014",
+        "revision_number": 1
+      }
+    },
+    {
+      "fixture_key": "page.operate",
+      "resource_id": "00000000-0000-7000-8000-000000002015",
+      "site_fixture_key": "site.default",
+      "site_id": "default",
+      "content_type_id": "018f22e2-7c8b-7ab0-8f3a-88e8026bb402",
+      "content_type_version": 3,
+      "workflow_id": "018f22e2-7c8b-7ab0-8f3a-88e8026bb401",
+      "workflow_version": 1,
+      "workflow_state_key": "published",
+      "title": "Operate Kumwe",
+      "slug": "operate",
+      "canonical_path": "/operate",
+      "data": {
+        "eyebrow": "Interfaces and operations",
+        "heading": "Automate safely, observe the runtime, and prove recovery before release.",
+        "summary": "REST, CLI, and MCP call the same services; production adds health gates, workers, schedules, backups, verified artifacts, and portable database qualification.",
+        "primary_action": {
+          "label": "API index",
+          "url": "/api/v1"
+        },
+        "secondary_action": {
+          "label": "Readiness check",
+          "url": "/health/ready"
+        },
+        "body": "## Choose an interface\nREST uses bearer tokens, capability checks, bounded requests, idempotency keys for mutations, and optimistic versions with entity tags. The command line exposes installation, health, access, content, navigation, settings, business, extension, automation, and MCP transport tasks. MCP is available over streamable HTTP and local standard input with an explicit tool catalog, safe mutation previews, and the same authorization boundary.\n\n## Run production services\nApply migrations as a one-shot operation before starting web traffic. Run the application and web services plus worker and scheduler where automation is enabled. Keep secrets in deployment secret files, serve only the public root, terminate transport security at the approved boundary, and monitor liveness, readiness, queue age, failures, storage, database, Redis, and audit signals.\n\n## Back up and recover\nBack up the database together with media, extension state, runtime files, and metadata. Verify the backup, restore into empty targets, boot the restored site, and exercise public, administrator, business, integration, and extension paths. Repeat for every supported database family.\n\n## Qualify a release\nRun the complete quality and deployment gates, browser accessibility and responsive checks, fresh install and upgrade tests, extension conformance, security scans, backup and restore, and artifact verification. Identify a release by source revision, locked dependencies, checksums, image digests, software bill of materials, signatures, and provenance.",
+        "capabilities": {
+          "anchor": "failure",
+          "heading": "Prefer observable refusal to silent drift.",
+          "body": "Stale versions, denied policy, unsafe input, incompatible manifests, unavailable dependencies, and failed recovery evidence should produce bounded errors and durable operator evidence. Do not bypass a guard to make a demonstration pass."
+        },
+        "platform": {
+          "anchor": "next-run",
+          "heading": "Keep the demonstration as a regression surface.",
+          "body": "After an upgrade, revisit the homepage, one nested content route, one record workspace, one portal denial, one integration status, readiness, and a restored backup. These small checks reveal whether the documented paths still match the application."
+        }
+      },
+      "publish_at": null,
+      "unpublish_at": null,
+      "version": 1,
+      "revision": {
+        "fixture_key": "page.operate.revision.1",
+        "resource_id": "00000000-0000-7000-8000-000000003015",
+        "revision_number": 1
+      }
+    }
+  ],
+  "menus": [
+    {
+      "fixture_key": "menu.main",
+      "resource_id": "00000000-0000-7000-8000-000000001101",
+      "site_fixture_key": "site.default",
+      "site_id": "default",
+      "handle": "main",
+      "title": "Main menu",
+      "version": 1,
+      "items": [
+        {
+          "fixture_key": "menu.main.home",
+          "resource_id": "00000000-0000-7000-8000-000000001102",
+          "parent_fixture_key": null,
+          "parent_id": null,
+          "title": "Home",
+          "slug": "home",
+          "path": "/home",
+          "canonical_path": "/",
+          "position": 0,
+          "version": 1,
+          "target_type": "content",
+          "content_fixture_key": "page.home",
+          "content_id": "00000000-0000-7000-8000-000000001001",
+          "target_url": null
+        },
+        {
+          "fixture_key": "menu.main.start-here",
+          "resource_id": "00000000-0000-7000-8000-000000004001",
+          "parent_fixture_key": null,
+          "parent_id": null,
+          "title": "Start here",
+          "slug": "start-here",
+          "path": "/start-here",
+          "canonical_path": "/start-here",
+          "position": 1,
+          "version": 1,
+          "target_type": "content",
+          "content_fixture_key": "page.start-here",
+          "content_id": "00000000-0000-7000-8000-000000002001",
+          "target_url": null
+        },
+        {
+          "fixture_key": "menu.main.start-here.getting-started",
+          "resource_id": "00000000-0000-7000-8000-000000004002",
+          "parent_fixture_key": "menu.main.start-here",
+          "parent_id": "00000000-0000-7000-8000-000000004001",
+          "title": "Getting started",
+          "slug": "getting-started",
+          "path": "/start-here/getting-started",
+          "canonical_path": "/start-here/getting-started",
+          "position": 0,
+          "version": 1,
+          "target_type": "content",
+          "content_fixture_key": "page.getting-started",
+          "content_id": "00000000-0000-7000-8000-000000002002",
+          "target_url": null
+        },
+        {
+          "fixture_key": "menu.main.start-here.administrator",
+          "resource_id": "00000000-0000-7000-8000-000000004003",
+          "parent_fixture_key": "menu.main.start-here",
+          "parent_id": "00000000-0000-7000-8000-000000004001",
+          "title": "Administrator",
+          "slug": "administrator",
+          "path": "/start-here/administrator",
+          "canonical_path": "/start-here/administrator",
+          "position": 1,
+          "version": 1,
+          "target_type": "content",
+          "content_fixture_key": "page.administrator-tour",
+          "content_id": "00000000-0000-7000-8000-000000002003",
+          "target_url": null
+        },
+        {
+          "fixture_key": "menu.main.content",
+          "resource_id": "00000000-0000-7000-8000-000000004004",
+          "parent_fixture_key": null,
+          "parent_id": null,
+          "title": "Content",
+          "slug": "content",
+          "path": "/content",
+          "canonical_path": "/content",
+          "position": 2,
+          "version": 1,
+          "target_type": "content",
+          "content_fixture_key": "page.content",
+          "content_id": "00000000-0000-7000-8000-000000002004",
+          "target_url": null
+        },
+        {
+          "fixture_key": "menu.main.content.pages",
+          "resource_id": "00000000-0000-7000-8000-000000004005",
+          "parent_fixture_key": "menu.main.content",
+          "parent_id": "00000000-0000-7000-8000-000000004004",
+          "title": "Pages and publishing",
+          "slug": "pages",
+          "path": "/content/pages",
+          "canonical_path": "/content/pages",
+          "position": 0,
+          "version": 1,
+          "target_type": "content",
+          "content_fixture_key": "page.pages-publishing",
+          "content_id": "00000000-0000-7000-8000-000000002005",
+          "target_url": null
+        },
+        {
+          "fixture_key": "menu.main.content.models",
+          "resource_id": "00000000-0000-7000-8000-000000004006",
+          "parent_fixture_key": "menu.main.content",
+          "parent_id": "00000000-0000-7000-8000-000000004004",
+          "title": "Models and workflows",
+          "slug": "models",
+          "path": "/content/models",
+          "canonical_path": "/content/models",
+          "position": 1,
+          "version": 1,
+          "target_type": "content",
+          "content_fixture_key": "page.content-models",
+          "content_id": "00000000-0000-7000-8000-000000002006",
+          "target_url": null
+        },
+        {
+          "fixture_key": "menu.main.content.media-navigation",
+          "resource_id": "00000000-0000-7000-8000-000000004007",
+          "parent_fixture_key": "menu.main.content",
+          "parent_id": "00000000-0000-7000-8000-000000004004",
+          "title": "Media and navigation",
+          "slug": "media-navigation",
+          "path": "/content/media-navigation",
+          "canonical_path": "/content/media-navigation",
+          "position": 2,
+          "version": 1,
+          "target_type": "content",
+          "content_fixture_key": "page.media-navigation",
+          "content_id": "00000000-0000-7000-8000-000000002007",
+          "target_url": null
+        },
+        {
+          "fixture_key": "menu.main.business",
+          "resource_id": "00000000-0000-7000-8000-000000004008",
+          "parent_fixture_key": null,
+          "parent_id": null,
+          "title": "Business",
+          "slug": "business",
+          "path": "/business",
+          "canonical_path": "/business",
+          "position": 3,
+          "version": 1,
+          "target_type": "content",
+          "content_fixture_key": "page.business",
+          "content_id": "00000000-0000-7000-8000-000000002008",
+          "target_url": null
+        },
+        {
+          "fixture_key": "menu.main.business.definitions",
+          "resource_id": "00000000-0000-7000-8000-000000004009",
+          "parent_fixture_key": "menu.main.business",
+          "parent_id": "00000000-0000-7000-8000-000000004008",
+          "title": "Definitions",
+          "slug": "definitions",
+          "path": "/business/definitions",
+          "canonical_path": "/business/definitions",
+          "position": 0,
+          "version": 1,
+          "target_type": "content",
+          "content_fixture_key": "page.business-definitions",
+          "content_id": "00000000-0000-7000-8000-000000002009",
+          "target_url": null
+        },
+        {
+          "fixture_key": "menu.main.business.records",
+          "resource_id": "00000000-0000-7000-8000-000000004010",
+          "parent_fixture_key": "menu.main.business",
+          "parent_id": "00000000-0000-7000-8000-000000004008",
+          "title": "Records and surfaces",
+          "slug": "records",
+          "path": "/business/records",
+          "canonical_path": "/business/records",
+          "position": 1,
+          "version": 1,
+          "target_type": "content",
+          "content_fixture_key": "page.business-records",
+          "content_id": "00000000-0000-7000-8000-000000002010",
+          "target_url": null
+        },
+        {
+          "fixture_key": "menu.main.business.security",
+          "resource_id": "00000000-0000-7000-8000-000000004011",
+          "parent_fixture_key": "menu.main.business",
+          "parent_id": "00000000-0000-7000-8000-000000004008",
+          "title": "Security and portal",
+          "slug": "security",
+          "path": "/business/security",
+          "canonical_path": "/business/security",
+          "position": 2,
+          "version": 1,
+          "target_type": "content",
+          "content_fixture_key": "page.business-security",
+          "content_id": "00000000-0000-7000-8000-000000002011",
+          "target_url": null
+        },
+        {
+          "fixture_key": "menu.main.extend",
+          "resource_id": "00000000-0000-7000-8000-000000004012",
+          "parent_fixture_key": null,
+          "parent_id": null,
+          "title": "Extend",
+          "slug": "extend",
+          "path": "/extend",
+          "canonical_path": "/extend",
+          "position": 4,
+          "version": 1,
+          "target_type": "content",
+          "content_fixture_key": "page.extend",
+          "content_id": "00000000-0000-7000-8000-000000002012",
+          "target_url": null
+        },
+        {
+          "fixture_key": "menu.main.extend.extensions",
+          "resource_id": "00000000-0000-7000-8000-000000004013",
+          "parent_fixture_key": "menu.main.extend",
+          "parent_id": "00000000-0000-7000-8000-000000004012",
+          "title": "Extensions and templates",
+          "slug": "extensions",
+          "path": "/extend/extensions",
+          "canonical_path": "/extend/extensions",
+          "position": 0,
+          "version": 1,
+          "target_type": "content",
+          "content_fixture_key": "page.extensions-templates",
+          "content_id": "00000000-0000-7000-8000-000000002013",
+          "target_url": null
+        },
+        {
+          "fixture_key": "menu.main.extend.integrations",
+          "resource_id": "00000000-0000-7000-8000-000000004014",
+          "parent_fixture_key": "menu.main.extend",
+          "parent_id": "00000000-0000-7000-8000-000000004012",
+          "title": "Integrations and automation",
+          "slug": "integrations",
+          "path": "/extend/integrations",
+          "canonical_path": "/extend/integrations",
+          "position": 1,
+          "version": 1,
+          "target_type": "content",
+          "content_fixture_key": "page.integrations-automation",
+          "content_id": "00000000-0000-7000-8000-000000002014",
+          "target_url": null
+        },
+        {
+          "fixture_key": "menu.main.operate",
+          "resource_id": "00000000-0000-7000-8000-000000004015",
+          "parent_fixture_key": null,
+          "parent_id": null,
+          "title": "Operate",
+          "slug": "operate",
+          "path": "/operate",
+          "canonical_path": "/operate",
+          "position": 5,
+          "version": 1,
+          "target_type": "content",
+          "content_fixture_key": "page.operate",
+          "content_id": "00000000-0000-7000-8000-000000002015",
+          "target_url": null
+        }
+      ]
+    }
+  ]
+}

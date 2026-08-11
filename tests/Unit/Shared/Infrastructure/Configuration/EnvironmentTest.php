@@ -68,4 +68,41 @@ final class EnvironmentTest extends TestCase
             }
         }
     }
+
+    /**
+     * Proves every site and demo selector crosses the process/dotenv allow-list boundary.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testSiteAndDemoSelectorsAreReadFromDotenv(): void
+    {
+        $file = tempnam(sys_get_temp_dir(), 'kumwe-env-');
+        self::assertIsString($file);
+        self::assertNotFalse(file_put_contents(
+            $file,
+            "APP_PUBLIC_SITE=marketing\n"
+            . "KUMWE_SITE_CONTENT_PROFILE=placeholder\n"
+            . "KUMWE_BUSINESS_DEMO=false\n",
+        ));
+        $names = ['APP_PUBLIC_SITE', 'KUMWE_SITE_CONTENT_PROFILE', 'KUMWE_BUSINESS_DEMO'];
+        $originals = [];
+        foreach ($names as $name) {
+            $originals[$name] = getenv($name);
+            putenv($name);
+        }
+
+        try {
+            $environment = Environment::fromGlobals($file);
+            self::assertSame('marketing', $environment->string('APP_PUBLIC_SITE'));
+            self::assertSame('placeholder', $environment->string('KUMWE_SITE_CONTENT_PROFILE'));
+            self::assertFalse($environment->boolean('KUMWE_BUSINESS_DEMO', true));
+        } finally {
+            unlink($file);
+            foreach ($originals as $name => $value) {
+                putenv(is_string($value) ? $name . '=' . $value : $name);
+            }
+        }
+    }
 }

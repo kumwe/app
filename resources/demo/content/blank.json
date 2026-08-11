@@ -1,0 +1,100 @@
+{
+  "format": "kumwe.demo-content/v1",
+  "profile": "blank",
+  "version": 1,
+  "site": {
+    "fixture_key": "site.default",
+    "resource_id": "default",
+    "identifier": "default",
+    "name": "Default site",
+    "enabled": true
+  },
+  "settings": {
+    "fixture_key": "settings.default",
+    "resource_id": "default",
+    "site_fixture_key": "site.default",
+    "site_id": "default",
+    "site_name": "Kumwe",
+    "homepage_content_fixture_key": null,
+    "homepage_content_id": null,
+    "homepage_slug": "home",
+    "default_locale": "en",
+    "timezone": "UTC",
+    "search_indexing_enabled": true,
+    "presentation": {
+      "logo": "/media/00000000-0000-7000-8000-000000000901/kumwe-symbol.svg",
+      "footer_text": "Powered by Kumwe CMS",
+      "primary_menu": "main",
+      "active_scheme": "corporate",
+      "button_style": "solid",
+      "button_shape": "rounded",
+      "header_style": "glass",
+      "schemes": [
+        {
+          "handle": "corporate",
+          "name": "Corporate Navy & Teal",
+          "color_mode": "light",
+          "colors": {
+            "navy": "#07182d",
+            "ink": "#13233a",
+            "muted": "#5c6f84",
+            "canvas": "#f5f8fb",
+            "surface": "#ffffff",
+            "border": "#dce5ed",
+            "accent": "#0c9189",
+            "accent_strong": "#08726d",
+            "accent_soft": "#dff6f4",
+            "on_accent": "#ffffff"
+          }
+        },
+        {
+          "handle": "ocean",
+          "name": "Ocean Blue",
+          "color_mode": "light",
+          "colors": {
+            "navy": "#08152a",
+            "ink": "#172439",
+            "muted": "#647386",
+            "canvas": "#f7f9fc",
+            "surface": "#ffffff",
+            "border": "#d7e1e6",
+            "accent": "#0777af",
+            "accent_strong": "#056b9f",
+            "accent_soft": "#e2f3fb",
+            "on_accent": "#ffffff"
+          }
+        },
+        {
+          "handle": "graphite",
+          "name": "Graphite & Silver",
+          "color_mode": "light",
+          "colors": {
+            "navy": "#17202b",
+            "ink": "#202833",
+            "muted": "#66717f",
+            "canvas": "#f4f5f7",
+            "surface": "#ffffff",
+            "border": "#d8dde3",
+            "accent": "#3c526b",
+            "accent_strong": "#25394f",
+            "accent_soft": "#e8edf2",
+            "on_accent": "#ffffff"
+          }
+        }
+      ]
+    }
+  },
+  "content": [],
+  "menus": [
+    {
+      "fixture_key": "menu.main",
+      "resource_id": "00000000-0000-7000-8000-000000001101",
+      "site_fixture_key": "site.default",
+      "site_id": "default",
+      "handle": "main",
+      "title": "Main menu",
+      "version": 1,
+      "items": []
+    }
+  ]
+}

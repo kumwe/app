@@ -31,6 +31,8 @@ jobs:
           cp .env.example .env
           sed -i 's/^KUMWE_HTTP_PORT=8080$/KUMWE_HTTP_PORT=9900/' .env
           printf 'KUMWE_UID=%s\nKUMWE_GID=%s\n' "$(id -u)" "$(id -g)" >> .env
+          grep -Fxq 'KUMWE_SITE_CONTENT_PROFILE=documentation' .env
+          grep -Fxq 'KUMWE_BUSINESS_DEMO=true' .env
           docker compose config --quiet
 
       - name: Install locked dependencies through the documented container
@@ -48,7 +50,11 @@ jobs:
             = 'http://localhost:9900'
 
       - name: Migrate a fresh development database
-        run: docker compose run --rm app php bin/kumwe database:migrate
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker compose run --rm app php bin/kumwe database:migrate
+          docker compose run --rm app php bin/kumwe database:migrate
 
       - name: Start the documented development topology
         run: docker compose up -d --wait --wait-timeout 180
@@ -92,8 +98,101 @@ jobs:
           grep -Fq -- '.managed-hero-grid' "$evidence/site.css"
           test "$(wc -c < "$evidence/administrator.js")" -gt 1000
           grep -Fq "/assets/build/${administrator_css}" "$evidence/administrator-login.html"
-          grep -Fq 'Content systems' "$evidence/public-home.html"
+          grep -Fq 'Kumwe documentation' "$evidence/public-home.html"
+          grep -Fq 'Build, publish, operate, and extend with Kumwe.' "$evidence/public-home.html"
           grep -Fq 'kumwe-wordmark.svg' "$evidence/public-home.html"
+
+          demo_evidence="$(
+            docker compose exec -T app php <<'PHP'
+          <?php
+
+          declare(strict_types=1);
+
+          $driver = getenv('DB_DRIVER') === 'pgsql' ? 'pgsql' : 'mysql';
+          $dsn = $driver === 'pgsql'
+              ? sprintf(
+                  'pgsql:host=%s;port=%s;dbname=%s',
+                  getenv('DB_HOST'),
+                  getenv('DB_PORT'),
+                  getenv('DB_NAME'),
+              )
+              : sprintf(
+                  'mysql:host=%s;port=%s;dbname=%s;charset=utf8mb4',
+                  getenv('DB_HOST'),
+                  getenv('DB_PORT'),
+                  getenv('DB_NAME'),
+              );
+          $database = new PDO($dsn, (string) getenv('DB_USER'), (string) getenv('DB_PASSWORD'), [
+              PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+          ]);
+          $prefix = (string) getenv('DB_TABLE_PREFIX');
+          if (preg_match('/^[a-z][a-z0-9_]*$/D', $prefix) !== 1) {
+              throw new RuntimeException('The acceptance table prefix is invalid.');
+          }
+          $profileCount = (int) $database->query(sprintf(
+              "SELECT COUNT(*) FROM %sdemo_profile_installations WHERE status = 'complete'",
+              $prefix,
+          ))->fetchColumn();
+          $contentCount = (int) $database->query(sprintf(
+              'SELECT COUNT(*) FROM %scontent_entries WHERE deleted_at IS NULL',
+              $prefix,
+          ))->fetchColumn();
+          $menuItemCount = (int) $database->query(sprintf(
+              'SELECT COUNT(*) FROM %snavigation_items',
+              $prefix,
+          ))->fetchColumn();
+          $definitionCount = (int) $database->query(sprintf(
+              "SELECT COUNT(*) FROM %sbusiness_definitions WHERE handle LIKE 'site.default.vdm_%%'",
+              $prefix,
+          ))->fetchColumn();
+          $assets = $database->query(sprintf(
+              "SELECT resource_type, COUNT(*) FROM %sdemo_profile_assets "
+              . "WHERE dataset_key = 'business-demo' GROUP BY resource_type",
+              $prefix,
+          ))->fetchAll(PDO::FETCH_KEY_PAIR);
+          $installations = $database->query(sprintf(
+              'SELECT i.blueprint FROM %sbusiness_schema_installations i '
+              . 'INNER JOIN %sbusiness_definitions d ON d.id = i.definition_id '
+              . "WHERE d.handle LIKE 'site.default.vdm_%%' AND i.status = 'active'",
+              $prefix,
+              $prefix,
+          ))->fetchAll(PDO::FETCH_COLUMN);
+          $recordCount = 0;
+          foreach ($installations as $encodedBlueprint) {
+              $blueprint = json_decode((string) $encodedBlueprint, true, flags: JSON_THROW_ON_ERROR);
+              foreach ($blueprint['tables'] ?? [] as $table) {
+                  if (($table['logical_name'] ?? null) !== 'record') {
+                      continue;
+                  }
+                  $physicalName = $table['physical_name'] ?? null;
+                  if (!is_string($physicalName) || preg_match('/^[a-z][a-z0-9_]*$/D', $physicalName) !== 1) {
+                      throw new RuntimeException('The generated record table name is invalid.');
+                  }
+                  $recordCount += (int) $database->query(
+                      sprintf('SELECT COUNT(*) FROM %s', $physicalName),
+                  )->fetchColumn();
+              }
+          }
+          echo json_encode([
+              'profiles' => $profileCount,
+              'content' => $contentCount,
+              'menu_items' => $menuItemCount,
+              'definitions' => $definitionCount,
+              'records' => $recordCount,
+              'assets' => array_map(static fn (mixed $count): int => (int) $count, $assets),
+          ], JSON_THROW_ON_ERROR);
+          PHP
+          )"
+          test "$(jq -r '.profiles' <<<"$demo_evidence")" = '2'
+          test "$(jq -r '.content' <<<"$demo_evidence")" = '16'
+          test "$(jq -r '.menu_items' <<<"$demo_evidence")" = '16'
+          test "$(jq -r '.definitions' <<<"$demo_evidence")" = '5'
+          test "$(jq -r '.records' <<<"$demo_evidence")" = '30'
+          test "$(jq -r '.assets.business_definition' <<<"$demo_evidence")" = '5'
+          test "$(jq -r '.assets.business_record' <<<"$demo_evidence")" = '30'
+          test "$(jq -r '.assets.business_relation' <<<"$demo_evidence")" = '43'
+          test "$(jq -r '.assets.business_action' <<<"$demo_evidence")" = '29'
+          test "$(jq -r '.assets.business_archive' <<<"$demo_evidence")" = '1'
 
           # Readiness markers expire after 30 seconds. This proves that the
           # managed development watcher keeps readiness valid after startup.

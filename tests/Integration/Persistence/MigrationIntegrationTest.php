@@ -28,6 +28,7 @@ use Kumwe\CMS\Infrastructure\Persistence\Migration\AuthorizationRecoveryIntegrat
 use Kumwe\CMS\Infrastructure\Persistence\Migration\CoreSchemaMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\ContentModelRuntimeMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\DatabaseDrivenPresentationMigration;
+use Kumwe\CMS\Infrastructure\Persistence\Migration\DemoProfileProvenanceMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\DynamicSiteContentMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\ExtensionContributionCatalogMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\BusinessDefinitionCatalogMigration;
@@ -62,6 +63,7 @@ use ZipArchive;
 #[CoversClass(ContentModelRuntimeMigration::class)]
 #[CoversClass(DynamicSiteContentMigration::class)]
 #[CoversClass(DatabaseDrivenPresentationMigration::class)]
+#[CoversClass(DemoProfileProvenanceMigration::class)]
 #[CoversClass(ExtensionContributionCatalogMigration::class)]
 #[CoversClass(BusinessDefinitionCatalogMigration::class)]
 #[CoversClass(BusinessSecurityPortalMigration::class)]
@@ -254,6 +256,14 @@ final class MigrationIntegrationTest extends TestCase
             'SELECT version FROM %s WHERE version = ?',
             $tables->quoted('schema_migrations'),
         ), [DatabaseDrivenPresentationMigration::ID]));
+        self::assertTrue($schema->tablesExist([
+            $tables->raw('demo_profile_installations'),
+            $tables->raw('demo_profile_assets'),
+        ]));
+        self::assertSame('2', (string) $database->fetchOne(sprintf(
+            "SELECT COUNT(*) FROM %s WHERE site_identifier = ? AND status = 'complete'",
+            $tables->quoted('demo_profile_installations'),
+        ), [SiteContext::DEFAULT]));
         self::assertSame(ExtensionContributionCatalogMigration::ID, $database->fetchOne(sprintf(
             'SELECT version FROM %s WHERE version = ?',
             $tables->quoted('schema_migrations'),
@@ -425,17 +435,16 @@ final class MigrationIntegrationTest extends TestCase
         self::assertNotNull($workflow);
         self::assertSame('draft', $workflow->initialState());
         self::assertTrue($workflow->isPublic('published'));
-        $homepageId = $database->fetchOne(sprintf(
-            'SELECT id FROM %s WHERE site_identifier = ? AND slug = ?',
+        self::assertFalse($database->fetchOne(sprintf(
+            'SELECT id FROM %s WHERE site_identifier = ? AND slug = ? AND deleted_at IS NULL',
             $tables->quoted('content_entries'),
-        ), [SiteContext::DEFAULT, 'home']);
-        self::assertIsString($homepageId);
+        ), [SiteContext::DEFAULT, 'home']));
         $homepageSetting = $database->fetchOne(sprintf(
             'SELECT setting_value FROM %s WHERE setting_key = ?',
             $tables->quoted('site_settings'),
         ), ['site.homepage_content_id']);
         self::assertIsString($homepageSetting);
-        self::assertSame($homepageId, json_decode($homepageSetting, true, flags: JSON_THROW_ON_ERROR));
+        self::assertNull(json_decode($homepageSetting, true, flags: JSON_THROW_ON_ERROR));
         $presentationSetting = $database->fetchOne(sprintf(
             'SELECT setting_value FROM %s WHERE setting_key = ?',
             $tables->quoted('site_settings'),
@@ -449,27 +458,18 @@ final class MigrationIntegrationTest extends TestCase
             '/media/00000000-0000-7000-8000-000000000901/kumwe-symbol.svg',
             $presentation['logo'],
         );
-        $homepageData = $database->fetchAssociative(sprintf(
-            'SELECT data, content_type_version FROM %s WHERE id = ?',
-            $tables->quoted('content_entries'),
-        ), [$homepageId]);
-        self::assertIsArray($homepageData);
-        self::assertSame('3', (string) $homepageData['content_type_version']);
-        $homepageFields = json_decode((string) $homepageData['data'], true, flags: JSON_THROW_ON_ERROR);
-        self::assertIsArray($homepageFields);
-        self::assertArrayNotHasKey('brand_logo', $homepageFields);
-        self::assertSame('published', $database->fetchOne(sprintf(
-            'SELECT workflow_state_key FROM %s WHERE id = ?',
-            $tables->quoted('content_entries'),
-        ), [$homepageId]));
         self::assertSame('main', $database->fetchOne(sprintf(
             'SELECT handle FROM %s WHERE handle = ?',
             $tables->quoted('navigation_menus'),
         ), ['main']));
-        self::assertSame('4', (string) $database->fetchOne(sprintf(
+        self::assertSame('0', (string) $database->fetchOne(sprintf(
             'SELECT COUNT(*) FROM %s WHERE menu_id = ?',
             $tables->quoted('navigation_items'),
         ), ['00000000-0000-7000-8000-000000001101']));
+        self::assertSame('0', (string) $database->fetchOne(sprintf(
+            "SELECT COUNT(*) FROM %s WHERE handle LIKE 'site.default.vdm_%%'",
+            $tables->quoted('business_definitions'),
+        )));
     }
 
     public function testBusinessSecuritySiteForeignKeyUsesTheExistingMariaDbCollation(): void

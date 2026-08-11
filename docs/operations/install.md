@@ -34,11 +34,32 @@ export KUMWE_APP_SECRET_FILE=/srv/kumwe/secrets/app-secret
 export KUMWE_RUNTIME_SIGNING_KEY_FILE=/srv/kumwe/secrets/runtime-signing-key
 export KUMWE_DEPLOYMENT_ID=production-2-0-0
 export KUMWE_REPLICA_ID=cms-primary
+export KUMWE_SITE_CONTENT_PROFILE=documentation
+export KUMWE_BUSINESS_DEMO=true
 export KUMWE_DB_PASSWORD_FILE=/srv/kumwe/secrets/database-password
 export KUMWE_REDIS_PASSWORD_FILE=/srv/kumwe/secrets/redis-password
 ```
 
 Production change control should replace version tags with verified digests. To select MySQL or PostgreSQL, add the coherent variables from [Deployment](deploy.md#database-choice).
+
+The example above installs the default Kumwe documentation site and the separate VDM business demonstration. For a
+clean production database with no example pages or business records, set both values before the first migration:
+
+```bash
+export KUMWE_SITE_CONTENT_PROFILE=blank
+export KUMWE_BUSINESS_DEMO=false
+```
+
+`placeholder` remains available as the compact legacy site-content choice. Profile selection is not a credential
+bootstrap: no option creates a user, password, token, or secret. Create every production identity explicitly, as in
+step 3 below.
+
+The first successful profile reconciliation freezes both independent choices in the database. Keep them stable in
+the service environment for every subsequent migration. A mismatch is refused so an upgrade cannot silently switch
+datasets. To recover from an accidental configuration change, restore the original values and rerun the migration;
+customize installed examples through the normal administrator and business services instead of changing selectors.
+On later releases, only fixtures still matching Kumwe's last-applied checksum are advanced. Operator changes are
+preserved.
 
 ### 2. Validate and start
 
@@ -50,7 +71,9 @@ docker compose -f compose.production.yaml ps
 curl --fail --silent http://127.0.0.1:8080/health/ready
 ```
 
-The one-shot `migrate` service applies the portable Doctrine schema before `app` starts. Add `--profile automation` to run the worker and scheduler.
+The one-shot `migrate` service applies the portable Doctrine schema and reconciles the frozen initial-data profiles
+before `app` starts. The shared Compose environment passes both selectors to that service and every application
+process. Add `--profile automation` to run the worker and scheduler.
 
 ### 3. Create the owner
 
@@ -88,7 +111,10 @@ composer create-project \
   --prefer-dist
 ```
 
-The installer asks for the canonical HTTPS URL, MariaDB/MySQL/PostgreSQL connection, table prefix, Redis connection, and first administrator. It writes an owner-readable `.env`, runs `database:migrate`, and creates the owner through the public CLI.
+The installer asks for the canonical HTTPS URL, initial site-content and business-demo profiles,
+MariaDB/MySQL/PostgreSQL connection, table prefix, Redis connection, and first administrator. It writes an
+owner-readable `.env`, runs `database:migrate`, and creates the owner through the public CLI. It generates application
+secrets locally and never derives a known credential from the selected profile.
 
 For non-interactive automation, Composer installs files without guessing credentials. Run the installer in a protected terminal before serving the site:
 
@@ -137,6 +163,7 @@ Keep `.env`, media, extension packages, sessions, logs, and other persistent sta
 ## Complete installation checklist
 
 - `/health/live` and `/health/ready` succeed through the real proxy.
+- The persisted content/business profile selections match the deployment environment and the chosen fixtures are present or absent as intended.
 - The owner can sign in and a limited account is denied a forbidden route.
 - A page can complete the workflow and render publicly.
 - Menu, user/group, setting, extension, REST, MCP, worker, and scheduler smoke checks pass.

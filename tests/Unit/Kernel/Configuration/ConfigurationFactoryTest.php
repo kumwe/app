@@ -29,6 +29,8 @@ final class ConfigurationFactoryTest extends TestCase
         self::assertTrue($configuration->isProduction());
         self::assertSame(['kumwe.test'], $configuration->trustedHosts);
         self::assertSame('default', $configuration->publicSite);
+        self::assertSame('documentation', $configuration->siteContentProfile);
+        self::assertTrue($configuration->businessDemo);
         self::assertSame('kumwe_', $configuration->database->tablePrefix);
         self::assertSame('pgsql', $configuration->database->driver);
         self::assertSame('redis', $configuration->redis->host);
@@ -94,6 +96,47 @@ final class ConfigurationFactoryTest extends TestCase
         $values = $this->values();
         $values['APP_PUBLIC_SITE'] = 'Invalid Site';
         $this->expectException(InvalidArgumentException::class);
+
+        (new ConfigurationFactory())->create(new Environment($values));
+    }
+
+    /**
+     * Proves an operator may select either non-default content profile and omit the business dataset.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testExplicitDemoProfileSelectionIsPreserved(): void
+    {
+        $values = $this->values();
+        $values['KUMWE_SITE_CONTENT_PROFILE'] = 'placeholder';
+        $values['KUMWE_BUSINESS_DEMO'] = 'off';
+
+        $configuration = (new ConfigurationFactory())->create(new Environment($values));
+
+        self::assertSame('placeholder', $configuration->siteContentProfile);
+        self::assertFalse($configuration->businessDemo);
+
+        $values['KUMWE_SITE_CONTENT_PROFILE'] = 'blank';
+        $configuration = (new ConfigurationFactory())->create(new Environment($values));
+        self::assertSame('blank', $configuration->siteContentProfile);
+        self::assertFalse($configuration->businessDemo);
+    }
+
+    /**
+     * Proves an unknown site-content profile fails during bootstrap instead of silently seeding another dataset.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testUnknownSiteContentProfileIsRejected(): void
+    {
+        $values = $this->values();
+        $values['KUMWE_SITE_CONTENT_PROFILE'] = 'company-demo';
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('KUMWE_SITE_CONTENT_PROFILE');
 
         (new ConfigurationFactory())->create(new Environment($values));
     }

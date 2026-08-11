@@ -1,0 +1,348 @@
+{
+  "id": "019c7000-0000-7000-8000-000000000101",
+  "owner": {
+    "type": "site",
+    "identifier": "default"
+  },
+  "site": "default",
+  "handle": "site.default.vdm_client_account",
+  "singular_label": "Client account",
+  "plural_label": "Client accounts",
+  "status": "draft",
+  "definition_version": 0,
+  "storage_mode": "relational",
+  "identity_strategy": "uuid",
+  "scope": "site",
+  "audit_enabled": true,
+  "revisions_enabled": true,
+  "soft_delete_enabled": true,
+  "fields": [
+    {
+      "handle": "id",
+      "label": "ID",
+      "type": "core.uuid",
+      "required": true,
+      "nullable": false,
+      "unique": true,
+      "indexed": true,
+      "immutable_after_create": true,
+      "server_only": true,
+      "read_only": true,
+      "create_visible": false,
+      "update_visible": false,
+      "read_visible": true,
+      "filterable": true,
+      "sortable": true,
+      "exportable": true,
+      "sensitivity": "public",
+      "placements": [
+        "detail",
+        "history"
+      ]
+    },
+    {
+      "handle": "client_code",
+      "label": "Client code",
+      "type": "core.text",
+      "description": "Stable operator-facing account reference.",
+      "required": true,
+      "nullable": false,
+      "length": 32,
+      "normalizers": [
+        "trim",
+        "uppercase"
+      ],
+      "unique": true,
+      "indexed": true,
+      "immutable_after_create": true,
+      "searchable": true,
+      "filterable": true,
+      "sortable": true,
+      "reportable": true,
+      "exportable": true,
+      "sensitivity": "public",
+      "form_group": "identity",
+      "order": 10,
+      "placements": [
+        "detail",
+        "form",
+        "history",
+        "list",
+        "relation"
+      ]
+    },
+    {
+      "handle": "name",
+      "label": "Organization name",
+      "type": "core.text",
+      "required": true,
+      "nullable": false,
+      "length": 160,
+      "normalizers": [
+        "trim",
+        "unicode_nfc"
+      ],
+      "unique": true,
+      "indexed": true,
+      "searchable": true,
+      "filterable": true,
+      "sortable": true,
+      "reportable": true,
+      "exportable": true,
+      "sensitivity": "public",
+      "form_group": "identity",
+      "order": 20,
+      "placements": [
+        "detail",
+        "form",
+        "history",
+        "list",
+        "relation"
+      ]
+    },
+    {
+      "handle": "industry",
+      "label": "Industry",
+      "type": "core.enum",
+      "required": true,
+      "nullable": false,
+      "default": "technology",
+      "configuration": {
+        "options": [
+          "agriculture",
+          "education",
+          "healthcare",
+          "logistics",
+          "professional_services",
+          "technology"
+        ]
+      },
+      "filterable": true,
+      "sortable": true,
+      "reportable": true,
+      "exportable": true,
+      "sensitivity": "public",
+      "form_group": "profile",
+      "order": 30,
+      "placements": [
+        "detail",
+        "form",
+        "list"
+      ]
+    },
+    {
+      "handle": "city",
+      "label": "City",
+      "type": "core.text",
+      "required": true,
+      "nullable": false,
+      "length": 120,
+      "normalizers": [
+        "trim",
+        "unicode_nfc"
+      ],
+      "filterable": true,
+      "sortable": true,
+      "reportable": true,
+      "exportable": true,
+      "sensitivity": "public",
+      "form_group": "profile",
+      "order": 40,
+      "placements": [
+        "detail",
+        "form",
+        "list"
+      ]
+    },
+    {
+      "handle": "primary_email",
+      "label": "Primary email",
+      "type": "core.email",
+      "required": true,
+      "nullable": false,
+      "length": 254,
+      "normalizers": [
+        "trim",
+        "lowercase"
+      ],
+      "unique": true,
+      "exportable": false,
+      "sensitivity": "confidential",
+      "form_group": "contact",
+      "order": 50,
+      "placements": [
+        "detail",
+        "form"
+      ]
+    },
+    {
+      "handle": "phone",
+      "label": "Telephone",
+      "type": "core.phone",
+      "required": false,
+      "nullable": true,
+      "length": 64,
+      "normalizers": [
+        "trim"
+      ],
+      "exportable": false,
+      "sensitivity": "confidential",
+      "form_group": "contact",
+      "order": 60,
+      "placements": [
+        "detail",
+        "form"
+      ]
+    },
+    {
+      "handle": "website",
+      "label": "Website",
+      "type": "core.url",
+      "required": false,
+      "nullable": true,
+      "length": 500,
+      "exportable": true,
+      "sensitivity": "public",
+      "form_group": "contact",
+      "order": 70,
+      "placements": [
+        "detail",
+        "form"
+      ]
+    },
+    {
+      "handle": "contact_role",
+      "label": "Primary contact role",
+      "type": "core.text",
+      "required": true,
+      "nullable": false,
+      "length": 120,
+      "normalizers": [
+        "trim",
+        "unicode_nfc"
+      ],
+      "exportable": false,
+      "sensitivity": "confidential",
+      "form_group": "contact",
+      "order": 80,
+      "placements": [
+        "detail",
+        "form"
+      ]
+    },
+    {
+      "handle": "service_tier",
+      "label": "Service tier",
+      "type": "core.enum",
+      "required": true,
+      "nullable": false,
+      "default": "project",
+      "configuration": {
+        "options": [
+          "advisory",
+          "managed",
+          "project",
+          "retainer"
+        ]
+      },
+      "filterable": true,
+      "sortable": true,
+      "reportable": true,
+      "exportable": true,
+      "sensitivity": "public",
+      "form_group": "service",
+      "order": 90,
+      "placements": [
+        "detail",
+        "form",
+        "list"
+      ]
+    },
+    {
+      "handle": "active",
+      "label": "Active",
+      "type": "core.boolean",
+      "required": true,
+      "nullable": false,
+      "default": true,
+      "filterable": true,
+      "sortable": true,
+      "reportable": true,
+      "exportable": true,
+      "sensitivity": "public",
+      "form_group": "service",
+      "order": 100,
+      "placements": [
+        "detail",
+        "form",
+        "list"
+      ]
+    },
+    {
+      "handle": "notes",
+      "label": "Account notes",
+      "type": "core.rich_text",
+      "required": false,
+      "nullable": true,
+      "length": 8000,
+      "read_visible": true,
+      "searchable": false,
+      "filterable": false,
+      "sortable": false,
+      "reportable": false,
+      "exportable": false,
+      "sensitivity": "restricted",
+      "form_group": "internal",
+      "order": 110,
+      "placements": [
+        "detail",
+        "form",
+        "history"
+      ]
+    }
+  ],
+  "relationships": [],
+  "views": [
+    {
+      "handle": "account_list",
+      "label": "Client accounts",
+      "kind": "list",
+      "fields": [
+        "client_code",
+        "name",
+        "industry",
+        "city",
+        "service_tier",
+        "active"
+      ],
+      "filters": [
+        "industry",
+        "city",
+        "service_tier",
+        "active"
+      ],
+      "sorts": [
+        "client_code",
+        "name",
+        "city"
+      ],
+      "administrator": true,
+      "portal": true,
+      "public": false
+    }
+  ],
+  "actions": [],
+  "workflow": null,
+  "record_invariants": [],
+  "compatibility_metadata": {},
+  "administrator_exposure": true,
+  "portal_exposure": true,
+  "portal_operations": [
+    "browse",
+    "history",
+    "read",
+    "status",
+    "update"
+  ],
+  "public_exposure": false
+}

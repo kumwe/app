@@ -1,0 +1,389 @@
+{
+  "id": "019c7000-0000-7000-8000-000000000105",
+  "owner": {
+    "type": "site",
+    "identifier": "default"
+  },
+  "site": "default",
+  "handle": "site.default.vdm_work_entry",
+  "singular_label": "Work entry",
+  "plural_label": "Work entries",
+  "status": "draft",
+  "definition_version": 0,
+  "storage_mode": "relational",
+  "identity_strategy": "uuid",
+  "scope": "site",
+  "audit_enabled": true,
+  "revisions_enabled": true,
+  "soft_delete_enabled": true,
+  "fields": [
+    {
+      "handle": "id",
+      "label": "ID",
+      "type": "core.uuid",
+      "required": true,
+      "nullable": false,
+      "unique": true,
+      "indexed": true,
+      "immutable_after_create": true,
+      "server_only": true,
+      "read_only": true,
+      "create_visible": false,
+      "update_visible": false,
+      "read_visible": true,
+      "sensitivity": "public",
+      "placements": [
+        "detail",
+        "history"
+      ]
+    },
+    {
+      "handle": "entry_number",
+      "label": "Entry number",
+      "type": "core.text",
+      "required": true,
+      "nullable": false,
+      "length": 40,
+      "normalizers": [
+        "trim",
+        "uppercase"
+      ],
+      "unique": true,
+      "indexed": true,
+      "immutable_after_create": true,
+      "searchable": true,
+      "filterable": true,
+      "sortable": true,
+      "reportable": true,
+      "exportable": true,
+      "sensitivity": "public",
+      "form_group": "identity",
+      "order": 10,
+      "placements": [
+        "detail",
+        "form",
+        "history",
+        "list",
+        "relation"
+      ]
+    },
+    {
+      "handle": "work_date",
+      "label": "Work date",
+      "type": "core.date",
+      "required": true,
+      "nullable": false,
+      "filterable": true,
+      "sortable": true,
+      "reportable": true,
+      "exportable": true,
+      "sensitivity": "public",
+      "form_group": "work",
+      "order": 20,
+      "placements": [
+        "detail",
+        "form",
+        "list"
+      ]
+    },
+    {
+      "handle": "consultant_role",
+      "label": "Consultant role",
+      "type": "core.enum",
+      "description": "Fictional role label used instead of personal demo data.",
+      "required": true,
+      "nullable": false,
+      "configuration": {
+        "options": [
+          "application_engineer",
+          "architect",
+          "automation_engineer",
+          "security_advisor",
+          "systems_engineer"
+        ]
+      },
+      "filterable": true,
+      "sortable": true,
+      "reportable": true,
+      "exportable": true,
+      "sensitivity": "public",
+      "form_group": "work",
+      "order": 30,
+      "placements": [
+        "detail",
+        "form",
+        "list"
+      ]
+    },
+    {
+      "handle": "hours",
+      "label": "Hours",
+      "type": "core.quantity",
+      "required": true,
+      "nullable": false,
+      "precision": 10,
+      "scale": 2,
+      "configuration": {
+        "unit": "hour"
+      },
+      "reportable": true,
+      "exportable": true,
+      "sensitivity": "public",
+      "form_group": "commercial",
+      "order": 40,
+      "placements": [
+        "detail",
+        "form",
+        "list"
+      ]
+    },
+    {
+      "handle": "rate",
+      "label": "Hourly rate",
+      "type": "core.money",
+      "required": true,
+      "nullable": false,
+      "precision": 14,
+      "scale": 2,
+      "configuration": {
+        "currency": "NAD"
+      },
+      "reportable": true,
+      "exportable": true,
+      "sensitivity": "confidential",
+      "form_group": "commercial",
+      "order": 50,
+      "placements": [
+        "detail",
+        "form",
+        "list"
+      ]
+    },
+    {
+      "handle": "line_amount",
+      "label": "Line amount",
+      "type": "core.money",
+      "description": "Exact demo amount recorded without floating-point arithmetic.",
+      "required": true,
+      "nullable": false,
+      "precision": 16,
+      "scale": 2,
+      "configuration": {
+        "currency": "NAD"
+      },
+      "reportable": true,
+      "exportable": true,
+      "sensitivity": "confidential",
+      "form_group": "commercial",
+      "order": 60,
+      "placements": [
+        "detail",
+        "form",
+        "list"
+      ]
+    },
+    {
+      "handle": "billable",
+      "label": "Billable",
+      "type": "core.boolean",
+      "required": true,
+      "nullable": false,
+      "default": true,
+      "filterable": true,
+      "sortable": true,
+      "reportable": true,
+      "exportable": true,
+      "sensitivity": "public",
+      "form_group": "commercial",
+      "order": 70,
+      "placements": [
+        "detail",
+        "form",
+        "list"
+      ]
+    },
+    {
+      "handle": "summary",
+      "label": "Work summary",
+      "type": "core.rich_text",
+      "required": true,
+      "nullable": false,
+      "length": 8000,
+      "searchable": true,
+      "exportable": true,
+      "sensitivity": "public",
+      "form_group": "work",
+      "order": 80,
+      "placements": [
+        "detail",
+        "form"
+      ]
+    },
+    {
+      "handle": "private_note",
+      "label": "Private note",
+      "type": "core.rich_text",
+      "required": false,
+      "nullable": true,
+      "length": 4000,
+      "searchable": false,
+      "filterable": false,
+      "sortable": false,
+      "reportable": false,
+      "exportable": false,
+      "sensitivity": "restricted",
+      "form_group": "internal",
+      "order": 90,
+      "placements": [
+        "detail",
+        "form",
+        "history"
+      ]
+    }
+  ],
+  "relationships": [
+    {
+      "handle": "engagement",
+      "label": "Client engagement",
+      "kind": "many_to_one",
+      "target": "site.default.vdm_engagement",
+      "inverse": null,
+      "required": false,
+      "unique": false,
+      "ordered": false,
+      "on_delete": "set_null"
+    },
+    {
+      "handle": "service",
+      "label": "Service catalog item",
+      "kind": "many_to_one",
+      "target": "site.default.vdm_service_catalog_item",
+      "inverse": null,
+      "required": false,
+      "unique": false,
+      "ordered": false,
+      "on_delete": "set_null"
+    }
+  ],
+  "views": [
+    {
+      "handle": "work_log",
+      "label": "Work log",
+      "kind": "list",
+      "fields": [
+        "entry_number",
+        "work_date",
+        "consultant_role",
+        "hours",
+        "rate",
+        "line_amount",
+        "billable"
+      ],
+      "filters": [
+        "entry_number",
+        "work_date",
+        "consultant_role",
+        "billable"
+      ],
+      "sorts": [
+        "entry_number",
+        "work_date",
+        "consultant_role",
+        "billable"
+      ],
+      "administrator": true,
+      "portal": true,
+      "public": false
+    }
+  ],
+  "actions": [
+    {
+      "handle": "submit",
+      "label": "Submit for approval",
+      "capability": "business.record.transition",
+      "administrator": true,
+      "portal": true,
+      "public": false,
+      "transition": "submit"
+    },
+    {
+      "handle": "approve",
+      "label": "Approve entry",
+      "capability": "business.record.transition",
+      "administrator": true,
+      "portal": false,
+      "public": false,
+      "transition": "approve"
+    },
+    {
+      "handle": "reject",
+      "label": "Reject entry",
+      "capability": "business.record.transition",
+      "administrator": true,
+      "portal": false,
+      "public": false,
+      "transition": "reject"
+    },
+    {
+      "handle": "revise",
+      "label": "Revise entry",
+      "capability": "business.record.transition",
+      "administrator": true,
+      "portal": true,
+      "public": false,
+      "transition": "revise"
+    }
+  ],
+  "workflow": {
+    "initial_state": "draft",
+    "states": [
+      "draft",
+      "submitted",
+      "approved",
+      "rejected"
+    ],
+    "transitions": [
+      {
+        "handle": "submit",
+        "from": "draft",
+        "to": "submitted",
+        "capability": "business.record.transition"
+      },
+      {
+        "handle": "approve",
+        "from": "submitted",
+        "to": "approved",
+        "capability": "business.record.transition"
+      },
+      {
+        "handle": "reject",
+        "from": "submitted",
+        "to": "rejected",
+        "capability": "business.record.transition"
+      },
+      {
+        "handle": "revise",
+        "from": "rejected",
+        "to": "draft",
+        "capability": "business.record.transition"
+      }
+    ]
+  },
+  "record_invariants": [],
+  "compatibility_metadata": {},
+  "administrator_exposure": true,
+  "portal_exposure": true,
+  "portal_operations": [
+    "action",
+    "browse",
+    "create",
+    "export",
+    "history",
+    "read",
+    "relation",
+    "report",
+    "status",
+    "update"
+  ],
+  "public_exposure": false
+}

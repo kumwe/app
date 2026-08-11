@@ -67,6 +67,15 @@ $database = match ($driverChoice) {
 };
 
 [$driver, $defaultHost, $defaultPort, $defaultVersion] = $database;
+$siteContentProfile = strtolower(
+    prompt('Initial site content [documentation/placeholder/blank]', 'documentation'),
+);
+
+if (!in_array($siteContentProfile, ['documentation', 'placeholder', 'blank'], true)) {
+    fail('Initial site content must be documentation, placeholder or blank.');
+}
+
+$businessDemo = confirmation('Install the Vast Development Method business demonstration?', true);
 $databaseHost = prompt('Database host', $defaultHost);
 $databasePort = prompt('Database port', $defaultPort);
 $databaseName = prompt('Database name', 'kumwe');
@@ -97,6 +106,8 @@ $values = [
     'APP_TRUSTED_PROXIES' => '',
     'APP_MAX_BODY_BYTES' => '8388608',
     'APP_ADMIN_SESSION_SECONDS' => '28800',
+    'KUMWE_SITE_CONTENT_PROFILE' => $siteContentProfile,
+    'KUMWE_BUSINESS_DEMO' => $businessDemo ? 'true' : 'false',
     'KUMWE_RELEASE' => $packageRelease,
     'APP_SECRET' => base64_encode(random_bytes(48)),
     'EXTENSION_RUNTIME_SIGNING_KEY_ID' => 'runtime-v1',
@@ -133,6 +144,10 @@ if (file_put_contents($environmentFile, $contents, LOCK_EX) === false || !chmod(
 }
 
 fwrite(STDOUT, "\nConfiguration written to .env with owner-only permissions.\n");
+fwrite(
+    STDOUT,
+    "The initial content and business profile selections become fixed when migration first reconciles them.\n",
+);
 
 if (!confirmation('Connect to the database and install the schema now?', true)) {
     fwrite(STDOUT, "Run `php bin/kumwe database:migrate` after the database is available.\n");

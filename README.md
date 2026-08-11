@@ -16,6 +16,18 @@ docker compose up -d --wait
 curl --fail http://localhost:8080/health/ready
 ```
 
+The copied environment selects the documentation site and Vast Development Method (VDM) business demonstration by
+default. Choose the initial datasets before the first migration. For an empty installation, set:
+
+```dotenv
+KUMWE_SITE_CONTENT_PROFILE=blank
+KUMWE_BUSINESS_DEMO=false
+```
+
+Site content and business data are independent choices. The first successful profile reconciliation records each
+choice and later migration runs refuse configuration drift. Released profile revisions update only fixtures that
+still match Kumwe's last-applied state, so an administrator's customized example remains untouched.
+
 The development server serves compiled browser assets through the dedicated router and continuously verifies the local extension runtime, so `/health/ready` remains meaningful after startup. To use another host port, change the single Compose setting in `.env` before starting the services:
 
 ```dotenv
@@ -38,7 +50,10 @@ rm .admin-password
 
 Repeat the same command with a different email address whenever another full administrator is required. The host-authorized command reuses the canonical `administrator` role, restores any missing global administrator grants, and refuses an existing email without changing that account's password. Run all pending migrations first; the password file must be absolute inside the container, readable by the application user, and inaccessible to group and other users.
 
-Open <http://localhost:8080/administrator>. The [getting-started guide](docs/getting-started.md) continues through the editable example homepage, typed menu links, user groups, and site configuration. A clean database ships with real published example content, navigation, settings, and read-only Kumwe logo media; the public presentation is therefore managed data from the first request rather than a hardcoded demonstration.
+Open <http://localhost:8080/administrator>. The [getting-started guide](docs/getting-started.md) continues through the
+editable Kumwe documentation site, typed menu links, the VDM business workflow, user groups, and site configuration.
+A default database ships with published documentation, navigation, settings, realistic fictional business records,
+and read-only Kumwe logo media. These are managed records, not hardcoded screens or authentication credentials.
 
 ## Capabilities
 

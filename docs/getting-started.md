@@ -22,6 +22,38 @@ To use port `9900`, change only `KUMWE_HTTP_PORT=9900` before `docker compose up
 
 `APP_BASE_URL` remains the canonical URL setting for direct PHP execution and production mapping. Changing it by itself cannot change Docker's host-port publication.
 
+## Choose the initial example data
+
+`.env.example` starts a new database with two independent, versioned datasets:
+
+```dotenv
+KUMWE_SITE_CONTENT_PROFILE=documentation
+KUMWE_BUSINESS_DEMO=true
+```
+
+The site-content choices are:
+
+| Value | Initial managed site |
+|---|---|
+| `documentation` | Complete Kumwe learning site and navigation; the default |
+| `placeholder` | Original compact **Welcome to Kumwe** example |
+| `blank` | Empty primary menu and no homepage content |
+
+`KUMWE_BUSINESS_DEMO=true` adds the separate VDM client-delivery example: client accounts, service catalogue items,
+engagements, service requests, work entries, relationships, lifecycles, and an archived record. Every customer and
+transaction is fictional, and the dataset contains no login credentials or secrets. Set it to `false` independently
+of the site-content choice. A completely empty start therefore uses:
+
+```dotenv
+KUMWE_SITE_CONTENT_PROFILE=blank
+KUMWE_BUSINESS_DEMO=false
+```
+
+Choose both values before the first `database:migrate`. Kumwe persists each choice during the first successful
+profile reconciliation and refuses a different environment value later. This prevents a configuration typo during
+an upgrade from replacing one installed profile with another. Versioned releases can add or correct fixtures, but
+only an example still matching its last Kumwe-applied state is updated; customized examples are preserved.
+
 ## Start MariaDB, Redis, and Kumwe
 
 ```bash
@@ -78,11 +110,14 @@ docker compose run --rm app php bin/kumwe user:create-admin \
 rm .admin-password
 ```
 
-Visit <http://localhost:8080/administrator> and sign in. A clean installation already contains a published **Welcome to Kumwe** page, a `main` menu, site settings, and reusable Kumwe logo media. They are ordinary managed records: edit the example, replace it, or remove it after selecting another homepage.
+Visit <http://localhost:8080/administrator> and sign in. With the default profile, a clean installation contains a
+published Kumwe documentation site, a nested `main` menu, site settings, a VDM business example, and reusable Kumwe
+logo media. They are ordinary managed records: inspect their fields and permissions, edit an example, or create a
+new record alongside them.
 
 ## Build the first site
 
-1. Open **Content**, edit **Welcome to Kumwe**, and verify the change at `/`.
+1. Open **Content**, edit one of the installed documentation pages, and verify the change on the public site.
 2. Open **Content models** and review the graphical fields and workflow used by pages.
 3. Create an **About us** page with the generated fields and save it as a draft.
 4. Upload an image under **Media** and choose it from a media-enabled content field. The supplied SVG logos are reusable, read-only example assets.
@@ -94,6 +129,17 @@ Visit <http://localhost:8080/administrator> and sign in. A clean installation al
 10. Under **Users and access**, create an editor group, grant only the required content capabilities, and assign a test user.
 
 Publishing dates are optional. A published page is public only after `publish_at` and before `unpublish_at` when those values are present.
+
+## Explore the VDM business flow
+
+When `KUMWE_BUSINESS_DEMO=true`, open **Business definitions** to inspect the five related schemas, views, actions,
+workflow states, administrator exposure, and portal exposure. Then open **Business** and follow one fictional client
+from its service request and engagement to related work entries and catalogue services. The mix of initial, advanced,
+completed, and archived examples makes filtering, history, lifecycle controls, relations, and field policy behavior
+visible without first constructing a business model by hand.
+
+Create ordinary administrator and portal users explicitly and grant only the roles needed for the scenario you want
+to test. The demonstration never creates a shared password, API token, or known production credential.
 
 ## Useful commands
 

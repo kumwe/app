@@ -1,0 +1,645 @@
+{
+  "format": "kumwe.demo-business-records/v1",
+  "profile": "vdm",
+  "version": 1,
+  "site": "default",
+  "currency": "NAD",
+  "records": [
+    {
+      "fixture_key": "client.desert_bloom_foods",
+      "definition": "site.default.vdm_client_account",
+      "record_id": "019c7000-0000-7000-8000-000000001101",
+      "idempotency_key": "kumwe-demo-vdm-v1:create:client:desert-bloom",
+      "values": {
+        "client_code": "CLI-001",
+        "name": "Desert Bloom Foods",
+        "industry": "agriculture",
+        "city": "Windhoek",
+        "primary_email": "technology@desert-bloom.example",
+        "phone": "+264 61 000 1001",
+        "website": "https://desert-bloom.example",
+        "contact_role": "Technology operations lead",
+        "service_tier": "project",
+        "active": true,
+        "notes": "Demo account: coordinate releases around the fictional client's distribution calendar."
+      }
+    },
+    {
+      "fixture_key": "client.atlantic_survey_works",
+      "definition": "site.default.vdm_client_account",
+      "record_id": "019c7000-0000-7000-8000-000000001102",
+      "idempotency_key": "kumwe-demo-vdm-v1:create:client:atlantic-survey",
+      "values": {
+        "client_code": "CLI-002",
+        "name": "Atlantic Survey Works",
+        "industry": "professional_services",
+        "city": "Walvis Bay",
+        "primary_email": "systems@atlantic-survey.example",
+        "phone": "+264 64 000 1002",
+        "website": "https://atlantic-survey.example",
+        "contact_role": "Field systems coordinator",
+        "service_tier": "retainer",
+        "active": true,
+        "notes": "Demo account: field teams need resilient synchronization when connectivity is intermittent."
+      }
+    },
+    {
+      "fixture_key": "client.copper_ridge_logistics",
+      "definition": "site.default.vdm_client_account",
+      "record_id": "019c7000-0000-7000-8000-000000001103",
+      "idempotency_key": "kumwe-demo-vdm-v1:create:client:copper-ridge",
+      "values": {
+        "client_code": "CLI-003",
+        "name": "Copper Ridge Logistics",
+        "industry": "logistics",
+        "city": "Otjiwarongo",
+        "primary_email": "platform@copper-ridge.example",
+        "phone": "+264 67 000 1003",
+        "website": "https://copper-ridge.example",
+        "contact_role": "Platform operations manager",
+        "service_tier": "managed",
+        "active": true,
+        "notes": "Demo account: managed infrastructure includes a quarterly restore rehearsal."
+      }
+    },
+    {
+      "fixture_key": "client.namib_learning_collective",
+      "definition": "site.default.vdm_client_account",
+      "record_id": "019c7000-0000-7000-8000-000000001104",
+      "idempotency_key": "kumwe-demo-vdm-v1:create:client:namib-learning",
+      "values": {
+        "client_code": "CLI-004",
+        "name": "Namib Learning Collective",
+        "industry": "education",
+        "city": "Windhoek",
+        "primary_email": "digital@namib-learning.example",
+        "phone": "+264 61 000 1004",
+        "website": "https://namib-learning.example",
+        "contact_role": "Digital learning coordinator",
+        "service_tier": "project",
+        "active": true,
+        "notes": "Demo account: editor training is part of the fictional Joomla refresh handover."
+      }
+    },
+    {
+      "fixture_key": "client.kalahari_health_systems",
+      "definition": "site.default.vdm_client_account",
+      "record_id": "019c7000-0000-7000-8000-000000001105",
+      "idempotency_key": "kumwe-demo-vdm-v1:create:client:kalahari-health",
+      "values": {
+        "client_code": "CLI-005",
+        "name": "Kalahari Health Systems",
+        "industry": "healthcare",
+        "city": "Mariental",
+        "primary_email": "security@kalahari-health.example",
+        "phone": "+264 63 000 1005",
+        "website": "https://kalahari-health.example",
+        "contact_role": "Information security coordinator",
+        "service_tier": "advisory",
+        "active": true,
+        "notes": "Demo account only. No patient or other sensitive real-world data is present."
+      }
+    },
+    {
+      "fixture_key": "service.application_development",
+      "definition": "site.default.vdm_service_catalog_item",
+      "record_id": "019c7000-0000-7000-8000-000000001201",
+      "idempotency_key": "kumwe-demo-vdm-v1:create:service:application",
+      "values": {
+        "service_code": "SVC-APP",
+        "name": "Custom application development",
+        "category": "application_development",
+        "billing_unit": "hour",
+        "standard_rate": {"amount": "980.00", "currency": "NAD"},
+        "active": true,
+        "summary": "Design and build maintainable web applications around real operational workflows."
+      }
+    },
+    {
+      "fixture_key": "service.managed_infrastructure",
+      "definition": "site.default.vdm_service_catalog_item",
+      "record_id": "019c7000-0000-7000-8000-000000001202",
+      "idempotency_key": "kumwe-demo-vdm-v1:create:service:infrastructure",
+      "values": {
+        "service_code": "SVC-OPS",
+        "name": "Managed Linux and cloud infrastructure",
+        "category": "managed_infrastructure",
+        "billing_unit": "month",
+        "standard_rate": {"amount": "850.00", "currency": "NAD"},
+        "active": true,
+        "summary": "Operate Linux, hosting, containers, backups, monitoring, and cloud infrastructure."
+      }
+    },
+    {
+      "fixture_key": "service.devops_automation",
+      "definition": "site.default.vdm_service_catalog_item",
+      "record_id": "019c7000-0000-7000-8000-000000001203",
+      "idempotency_key": "kumwe-demo-vdm-v1:create:service:devops",
+      "values": {
+        "service_code": "SVC-DEVOPS",
+        "name": "DevOps automation and integration",
+        "category": "automation_integration",
+        "billing_unit": "hour",
+        "standard_rate": {"amount": "900.00", "currency": "NAD"},
+        "active": true,
+        "summary": "Automate repeatable delivery and connect systems through carefully bounded APIs."
+      }
+    },
+    {
+      "fixture_key": "service.joomla_engineering",
+      "definition": "site.default.vdm_service_catalog_item",
+      "record_id": "019c7000-0000-7000-8000-000000001204",
+      "idempotency_key": "kumwe-demo-vdm-v1:create:service:joomla",
+      "values": {
+        "service_code": "SVC-JOOMLA",
+        "name": "Joomla and JCB engineering",
+        "category": "joomla_engineering",
+        "billing_unit": "hour",
+        "standard_rate": {"amount": "820.00", "currency": "NAD"},
+        "active": true,
+        "summary": "Develop and maintain Joomla solutions, including work accelerated by Joomla Component Builder."
+      }
+    },
+    {
+      "fixture_key": "service.security_recovery",
+      "definition": "site.default.vdm_service_catalog_item",
+      "record_id": "019c7000-0000-7000-8000-000000001205",
+      "idempotency_key": "kumwe-demo-vdm-v1:create:service:security",
+      "values": {
+        "service_code": "SVC-SEC",
+        "name": "Security, backup, and recovery",
+        "category": "security_recovery",
+        "billing_unit": "hour",
+        "standard_rate": {"amount": "1050.00", "currency": "NAD"},
+        "active": true,
+        "summary": "Review access, harden services, and prove backups through documented recovery exercises."
+      }
+    },
+    {
+      "fixture_key": "service.technical_advisory",
+      "definition": "site.default.vdm_service_catalog_item",
+      "record_id": "019c7000-0000-7000-8000-000000001206",
+      "idempotency_key": "kumwe-demo-vdm-v1:create:service:advisory",
+      "values": {
+        "service_code": "SVC-ADV",
+        "name": "Technical advisory and architecture",
+        "category": "advisory",
+        "billing_unit": "hour",
+        "standard_rate": {"amount": "1200.00", "currency": "NAD"},
+        "active": true,
+        "summary": "Turn complex technology choices into an actionable, sustainable delivery plan."
+      }
+    },
+    {
+      "fixture_key": "engagement.desert_bloom_portal",
+      "definition": "site.default.vdm_engagement",
+      "record_id": "019c7000-0000-7000-8000-000000001301",
+      "idempotency_key": "kumwe-demo-vdm-v1:create:engagement:desert-portal",
+      "values": {
+        "reference": "ENG-2026-001",
+        "title": "Distribution ordering portal",
+        "engagement_type": "project",
+        "start_date": "2026-04-01",
+        "target_date": "2026-10-30",
+        "budget": {"amount": "480000.00", "currency": "NAD"},
+        "monthly_retainer": null,
+        "summary": "Build a reliable ordering portal and integrate it with the fictional distribution workflow.",
+        "delivery_notes": "Demo note: the October milestone includes operator training and a recovery rehearsal."
+      }
+    },
+    {
+      "fixture_key": "engagement.atlantic_field_sync",
+      "definition": "site.default.vdm_engagement",
+      "record_id": "019c7000-0000-7000-8000-000000001302",
+      "idempotency_key": "kumwe-demo-vdm-v1:create:engagement:atlantic-sync",
+      "values": {
+        "reference": "ENG-2026-002",
+        "title": "Field data synchronization",
+        "engagement_type": "retainer",
+        "start_date": "2026-05-15",
+        "target_date": "2026-11-15",
+        "budget": {"amount": "325000.00", "currency": "NAD"},
+        "monthly_retainer": {"amount": "28000.00", "currency": "NAD"},
+        "summary": "Create resilient data synchronization for fictional survey teams working with uneven connectivity.",
+        "delivery_notes": "Demo note: work is on hold while a sample export format is reviewed."
+      }
+    },
+    {
+      "fixture_key": "engagement.copper_ridge_platform",
+      "definition": "site.default.vdm_engagement",
+      "record_id": "019c7000-0000-7000-8000-000000001303",
+      "idempotency_key": "kumwe-demo-vdm-v1:create:engagement:copper-platform",
+      "values": {
+        "reference": "ENG-2026-003",
+        "title": "Managed operations platform",
+        "engagement_type": "managed_service",
+        "start_date": "2026-01-01",
+        "target_date": "2026-12-31",
+        "budget": {"amount": "240000.00", "currency": "NAD"},
+        "monthly_retainer": {"amount": "20000.00", "currency": "NAD"},
+        "summary": "Manage the fictional logistics platform, monitoring, backup, recovery, and routine upgrades.",
+        "delivery_notes": "Demo note: quarterly recovery evidence is attached to the operational review."
+      }
+    },
+    {
+      "fixture_key": "engagement.namib_learning_refresh",
+      "definition": "site.default.vdm_engagement",
+      "record_id": "019c7000-0000-7000-8000-000000001304",
+      "idempotency_key": "kumwe-demo-vdm-v1:create:engagement:learning-refresh",
+      "values": {
+        "reference": "ENG-2025-014",
+        "title": "Joomla learning portal refresh",
+        "engagement_type": "project",
+        "start_date": "2025-10-01",
+        "target_date": "2026-03-31",
+        "completed_on": "2026-03-25",
+        "budget": {"amount": "185000.00", "currency": "NAD"},
+        "monthly_retainer": null,
+        "summary": "Refresh the fictional learning portal, simplify editor workflows, and complete a documented handover.",
+        "delivery_notes": "Demo note: the close-out checklist and training session were completed."
+      }
+    },
+    {
+      "fixture_key": "engagement.kalahari_recovery_review",
+      "definition": "site.default.vdm_engagement",
+      "record_id": "019c7000-0000-7000-8000-000000001305",
+      "idempotency_key": "kumwe-demo-vdm-v1:create:engagement:recovery-review",
+      "values": {
+        "reference": "ENG-2026-005",
+        "title": "Recovery readiness review",
+        "engagement_type": "advisory",
+        "start_date": "2026-09-01",
+        "target_date": "2026-09-30",
+        "budget": {"amount": "68000.00", "currency": "NAD"},
+        "monthly_retainer": null,
+        "summary": "Review a fictional environment's backup, recovery, and access-control readiness without real sensitive data.",
+        "delivery_notes": "Demo note: the proposal is awaiting approval before work starts."
+      }
+    },
+    {
+      "fixture_key": "request.desert_alert_integration",
+      "definition": "site.default.vdm_service_request",
+      "record_id": "019c7000-0000-7000-8000-000000001401",
+      "idempotency_key": "kumwe-demo-vdm-v1:create:request:alert-integration",
+      "values": {
+        "request_number": "REQ-1001",
+        "subject": "Connect production alerts to the operations queue",
+        "category": "automation",
+        "priority": "high",
+        "channel": "portal",
+        "requested_by_role": "Technology operations lead",
+        "opened_at": "2026-08-03T07:20:00.000000Z",
+        "due_date": "2026-08-12",
+        "description": "Route actionable application alerts into one retry-safe operational workflow.",
+        "resolution_summary": "A bounded webhook adapter was configured in the demo scenario and its retry path was verified.",
+        "internal_notes": "Demo note: no external webhook or production endpoint is invoked by this fixture."
+      }
+    },
+    {
+      "fixture_key": "request.atlantic_staging",
+      "definition": "site.default.vdm_service_request",
+      "record_id": "019c7000-0000-7000-8000-000000001402",
+      "idempotency_key": "kumwe-demo-vdm-v1:create:request:staging",
+      "values": {
+        "request_number": "REQ-1002",
+        "subject": "Prepare an isolated staging environment",
+        "category": "hosting",
+        "priority": "normal",
+        "channel": "email",
+        "requested_by_role": "Field systems coordinator",
+        "opened_at": "2026-08-05T10:15:00.000000Z",
+        "due_date": "2026-08-18",
+        "description": "Prepare a safe environment for reviewing synchronization behavior with fictional data.",
+        "resolution_summary": null,
+        "internal_notes": "Demo note: schedule after the sample export review."
+      }
+    },
+    {
+      "fixture_key": "request.copper_restore_drill",
+      "definition": "site.default.vdm_service_request",
+      "record_id": "019c7000-0000-7000-8000-000000001403",
+      "idempotency_key": "kumwe-demo-vdm-v1:create:request:restore-drill",
+      "values": {
+        "request_number": "REQ-0997",
+        "subject": "Run the quarterly restore drill",
+        "category": "security",
+        "priority": "normal",
+        "channel": "monitoring",
+        "requested_by_role": "Platform operations manager",
+        "opened_at": "2026-07-20T06:45:00.000000Z",
+        "due_date": "2026-07-31",
+        "description": "Restore the fictional platform into an empty target and record the readiness result.",
+        "resolution_summary": "The demo restore completed and the fictional service acceptance checks passed.",
+        "internal_notes": "Demo note: retained as an archived example after closure."
+      }
+    },
+    {
+      "fixture_key": "request.learning_permissions",
+      "definition": "site.default.vdm_service_request",
+      "record_id": "019c7000-0000-7000-8000-000000001404",
+      "idempotency_key": "kumwe-demo-vdm-v1:create:request:editor-permissions",
+      "values": {
+        "request_number": "REQ-1004",
+        "subject": "Review editor permissions after handover",
+        "category": "application",
+        "priority": "low",
+        "channel": "portal",
+        "requested_by_role": "Digital learning coordinator",
+        "opened_at": "2026-08-07T09:00:00.000000Z",
+        "due_date": "2026-08-21",
+        "description": "Confirm that fictional editor roles can update learning content without reaching administrator-only settings.",
+        "resolution_summary": null,
+        "internal_notes": "Demo note: use this request to inspect field and action permissions."
+      }
+    },
+    {
+      "fixture_key": "request.kalahari_security_scope",
+      "definition": "site.default.vdm_service_request",
+      "record_id": "019c7000-0000-7000-8000-000000001405",
+      "idempotency_key": "kumwe-demo-vdm-v1:create:request:security-scope",
+      "values": {
+        "request_number": "REQ-1005",
+        "subject": "Confirm the recovery review scope",
+        "category": "advisory",
+        "priority": "normal",
+        "channel": "advisory",
+        "requested_by_role": "Information security coordinator",
+        "opened_at": "2026-08-10T12:30:00.000000Z",
+        "due_date": "2026-08-20",
+        "description": "Agree on a fictional, non-sensitive evidence set for the proposed recovery review.",
+        "resolution_summary": null,
+        "internal_notes": "Demo note: no credentials, patient data, or production topology belongs in the fixture."
+      }
+    },
+    {
+      "fixture_key": "request.desert_retry_policy",
+      "definition": "site.default.vdm_service_request",
+      "record_id": "019c7000-0000-7000-8000-000000001406",
+      "idempotency_key": "kumwe-demo-vdm-v1:create:request:retry-policy",
+      "values": {
+        "request_number": "REQ-1006",
+        "subject": "Document the integration retry policy",
+        "category": "automation",
+        "priority": "normal",
+        "channel": "portal",
+        "requested_by_role": "Technology operations lead",
+        "opened_at": "2026-08-09T08:10:00.000000Z",
+        "due_date": "2026-08-14",
+        "description": "Document how a failed fictional notification is retried without creating duplicate work.",
+        "resolution_summary": "The example now records an idempotency key and a bounded retry outcome.",
+        "internal_notes": "Demo note: the process remains entirely local."
+      }
+    },
+    {
+      "fixture_key": "work.desert_discovery",
+      "definition": "site.default.vdm_work_entry",
+      "record_id": "019c7000-0000-7000-8000-000000001501",
+      "idempotency_key": "kumwe-demo-vdm-v1:create:work:desert-discovery",
+      "values": {
+        "entry_number": "WE-0001",
+        "work_date": "2026-08-03",
+        "consultant_role": "application_engineer",
+        "hours": {"amount": "6.50", "unit": "hour"},
+        "rate": {"amount": "980.00", "currency": "NAD"},
+        "line_amount": {"amount": "6370.00", "currency": "NAD"},
+        "billable": true,
+        "summary": "Mapped the fictional ordering workflow and documented the portal integration boundaries.",
+        "private_note": "Demo note: approved after scope review."
+      }
+    },
+    {
+      "fixture_key": "work.desert_alert_automation",
+      "definition": "site.default.vdm_work_entry",
+      "record_id": "019c7000-0000-7000-8000-000000001502",
+      "idempotency_key": "kumwe-demo-vdm-v1:create:work:alert-automation",
+      "values": {
+        "entry_number": "WE-0002",
+        "work_date": "2026-08-04",
+        "consultant_role": "automation_engineer",
+        "hours": {"amount": "4.00", "unit": "hour"},
+        "rate": {"amount": "900.00", "currency": "NAD"},
+        "line_amount": {"amount": "3600.00", "currency": "NAD"},
+        "billable": true,
+        "summary": "Prepared the local alert routing example and verified its retry-safe behavior.",
+        "private_note": "Demo note: no external side effect was performed."
+      }
+    },
+    {
+      "fixture_key": "work.atlantic_architecture",
+      "definition": "site.default.vdm_work_entry",
+      "record_id": "019c7000-0000-7000-8000-000000001503",
+      "idempotency_key": "kumwe-demo-vdm-v1:create:work:atlantic-architecture",
+      "values": {
+        "entry_number": "WE-0003",
+        "work_date": "2026-08-05",
+        "consultant_role": "architect",
+        "hours": {"amount": "7.25", "unit": "hour"},
+        "rate": {"amount": "1200.00", "currency": "NAD"},
+        "line_amount": {"amount": "8700.00", "currency": "NAD"},
+        "billable": true,
+        "summary": "Reviewed conflict handling for the fictional field synchronization design.",
+        "private_note": "Demo note: submitted and awaiting review."
+      }
+    },
+    {
+      "fixture_key": "work.copper_monitoring",
+      "definition": "site.default.vdm_work_entry",
+      "record_id": "019c7000-0000-7000-8000-000000001504",
+      "idempotency_key": "kumwe-demo-vdm-v1:create:work:copper-monitoring",
+      "values": {
+        "entry_number": "WE-0004",
+        "work_date": "2026-08-06",
+        "consultant_role": "systems_engineer",
+        "hours": {"amount": "8.00", "unit": "hour"},
+        "rate": {"amount": "850.00", "currency": "NAD"},
+        "line_amount": {"amount": "6800.00", "currency": "NAD"},
+        "billable": true,
+        "summary": "Updated the fictional monitoring runbook and checked backup freshness evidence.",
+        "private_note": "Demo note: still in draft for the workflow example."
+      }
+    },
+    {
+      "fixture_key": "work.copper_restore_review",
+      "definition": "site.default.vdm_work_entry",
+      "record_id": "019c7000-0000-7000-8000-000000001505",
+      "idempotency_key": "kumwe-demo-vdm-v1:create:work:restore-review",
+      "values": {
+        "entry_number": "WE-0005",
+        "work_date": "2026-07-31",
+        "consultant_role": "security_advisor",
+        "hours": {"amount": "3.50", "unit": "hour"},
+        "rate": {"amount": "1050.00", "currency": "NAD"},
+        "line_amount": {"amount": "3675.00", "currency": "NAD"},
+        "billable": true,
+        "summary": "Reviewed the fictional restore evidence and recorded follow-up recommendations.",
+        "private_note": "Demo note: rejected once to demonstrate the revision path."
+      }
+    },
+    {
+      "fixture_key": "work.learning_editor_handover",
+      "definition": "site.default.vdm_work_entry",
+      "record_id": "019c7000-0000-7000-8000-000000001506",
+      "idempotency_key": "kumwe-demo-vdm-v1:create:work:editor-handover",
+      "values": {
+        "entry_number": "WE-0006",
+        "work_date": "2026-03-25",
+        "consultant_role": "application_engineer",
+        "hours": {"amount": "5.00", "unit": "hour"},
+        "rate": {"amount": "820.00", "currency": "NAD"},
+        "line_amount": {"amount": "4100.00", "currency": "NAD"},
+        "billable": true,
+        "summary": "Delivered the fictional editor handover and verified the content workflow.",
+        "private_note": "Demo note: approved close-out work."
+      }
+    },
+    {
+      "fixture_key": "work.desert_retry_documentation",
+      "definition": "site.default.vdm_work_entry",
+      "record_id": "019c7000-0000-7000-8000-000000001507",
+      "idempotency_key": "kumwe-demo-vdm-v1:create:work:retry-docs",
+      "values": {
+        "entry_number": "WE-0007",
+        "work_date": "2026-08-10",
+        "consultant_role": "automation_engineer",
+        "hours": {"amount": "2.50", "unit": "hour"},
+        "rate": {"amount": "900.00", "currency": "NAD"},
+        "line_amount": {"amount": "2250.00", "currency": "NAD"},
+        "billable": true,
+        "summary": "Documented the fictional integration's idempotency and bounded retry decisions.",
+        "private_note": "Demo note: submitted and awaiting approval."
+      }
+    },
+    {
+      "fixture_key": "work.kalahari_proposal",
+      "definition": "site.default.vdm_work_entry",
+      "record_id": "019c7000-0000-7000-8000-000000001508",
+      "idempotency_key": "kumwe-demo-vdm-v1:create:work:proposal",
+      "values": {
+        "entry_number": "WE-0008",
+        "work_date": "2026-08-11",
+        "consultant_role": "architect",
+        "hours": {"amount": "1.50", "unit": "hour"},
+        "rate": {"amount": "1200.00", "currency": "NAD"},
+        "line_amount": {"amount": "0.00", "currency": "NAD"},
+        "billable": false,
+        "summary": "Prepared the fictional recovery review proposal and an evidence checklist.",
+        "private_note": "Demo note: non-billable draft proposal work."
+      }
+    }
+  ],
+  "relations": [
+    {"fixture_key": "relation.engagement_001.client", "definition": "site.default.vdm_engagement", "source_record_id": "019c7000-0000-7000-8000-000000001301", "relationship": "client", "target_record_id": "019c7000-0000-7000-8000-000000001101", "idempotency_key": "kumwe-demo-vdm-v1:relate:eng001:client"},
+    {"fixture_key": "relation.engagement_001.service_app", "definition": "site.default.vdm_engagement", "source_record_id": "019c7000-0000-7000-8000-000000001301", "relationship": "services", "target_record_id": "019c7000-0000-7000-8000-000000001201", "position": 0, "idempotency_key": "kumwe-demo-vdm-v1:relate:eng001:app"},
+    {"fixture_key": "relation.engagement_001.service_devops", "definition": "site.default.vdm_engagement", "source_record_id": "019c7000-0000-7000-8000-000000001301", "relationship": "services", "target_record_id": "019c7000-0000-7000-8000-000000001203", "position": 1, "idempotency_key": "kumwe-demo-vdm-v1:relate:eng001:devops"},
+    {"fixture_key": "relation.engagement_002.client", "definition": "site.default.vdm_engagement", "source_record_id": "019c7000-0000-7000-8000-000000001302", "relationship": "client", "target_record_id": "019c7000-0000-7000-8000-000000001102", "idempotency_key": "kumwe-demo-vdm-v1:relate:eng002:client"},
+    {"fixture_key": "relation.engagement_002.service_app", "definition": "site.default.vdm_engagement", "source_record_id": "019c7000-0000-7000-8000-000000001302", "relationship": "services", "target_record_id": "019c7000-0000-7000-8000-000000001201", "position": 0, "idempotency_key": "kumwe-demo-vdm-v1:relate:eng002:app"},
+    {"fixture_key": "relation.engagement_002.service_advisory", "definition": "site.default.vdm_engagement", "source_record_id": "019c7000-0000-7000-8000-000000001302", "relationship": "services", "target_record_id": "019c7000-0000-7000-8000-000000001206", "position": 1, "idempotency_key": "kumwe-demo-vdm-v1:relate:eng002:advisory"},
+    {"fixture_key": "relation.engagement_003.client", "definition": "site.default.vdm_engagement", "source_record_id": "019c7000-0000-7000-8000-000000001303", "relationship": "client", "target_record_id": "019c7000-0000-7000-8000-000000001103", "idempotency_key": "kumwe-demo-vdm-v1:relate:eng003:client"},
+    {"fixture_key": "relation.engagement_003.service_ops", "definition": "site.default.vdm_engagement", "source_record_id": "019c7000-0000-7000-8000-000000001303", "relationship": "services", "target_record_id": "019c7000-0000-7000-8000-000000001202", "position": 0, "idempotency_key": "kumwe-demo-vdm-v1:relate:eng003:ops"},
+    {"fixture_key": "relation.engagement_003.service_security", "definition": "site.default.vdm_engagement", "source_record_id": "019c7000-0000-7000-8000-000000001303", "relationship": "services", "target_record_id": "019c7000-0000-7000-8000-000000001205", "position": 1, "idempotency_key": "kumwe-demo-vdm-v1:relate:eng003:security"},
+    {"fixture_key": "relation.engagement_004.client", "definition": "site.default.vdm_engagement", "source_record_id": "019c7000-0000-7000-8000-000000001304", "relationship": "client", "target_record_id": "019c7000-0000-7000-8000-000000001104", "idempotency_key": "kumwe-demo-vdm-v1:relate:eng004:client"},
+    {"fixture_key": "relation.engagement_004.service_joomla", "definition": "site.default.vdm_engagement", "source_record_id": "019c7000-0000-7000-8000-000000001304", "relationship": "services", "target_record_id": "019c7000-0000-7000-8000-000000001204", "position": 0, "idempotency_key": "kumwe-demo-vdm-v1:relate:eng004:joomla"},
+    {"fixture_key": "relation.engagement_004.service_ops", "definition": "site.default.vdm_engagement", "source_record_id": "019c7000-0000-7000-8000-000000001304", "relationship": "services", "target_record_id": "019c7000-0000-7000-8000-000000001202", "position": 1, "idempotency_key": "kumwe-demo-vdm-v1:relate:eng004:ops"},
+    {"fixture_key": "relation.engagement_005.client", "definition": "site.default.vdm_engagement", "source_record_id": "019c7000-0000-7000-8000-000000001305", "relationship": "client", "target_record_id": "019c7000-0000-7000-8000-000000001105", "idempotency_key": "kumwe-demo-vdm-v1:relate:eng005:client"},
+    {"fixture_key": "relation.engagement_005.service_security", "definition": "site.default.vdm_engagement", "source_record_id": "019c7000-0000-7000-8000-000000001305", "relationship": "services", "target_record_id": "019c7000-0000-7000-8000-000000001205", "position": 0, "idempotency_key": "kumwe-demo-vdm-v1:relate:eng005:security"},
+    {"fixture_key": "relation.engagement_005.service_advisory", "definition": "site.default.vdm_engagement", "source_record_id": "019c7000-0000-7000-8000-000000001305", "relationship": "services", "target_record_id": "019c7000-0000-7000-8000-000000001206", "position": 1, "idempotency_key": "kumwe-demo-vdm-v1:relate:eng005:advisory"},
+
+    {"fixture_key": "relation.request_1001.client", "definition": "site.default.vdm_service_request", "source_record_id": "019c7000-0000-7000-8000-000000001401", "relationship": "client", "target_record_id": "019c7000-0000-7000-8000-000000001101", "idempotency_key": "kumwe-demo-vdm-v1:relate:req1001:client"},
+    {"fixture_key": "relation.request_1001.engagement", "definition": "site.default.vdm_service_request", "source_record_id": "019c7000-0000-7000-8000-000000001401", "relationship": "engagement", "target_record_id": "019c7000-0000-7000-8000-000000001301", "idempotency_key": "kumwe-demo-vdm-v1:relate:req1001:engagement"},
+    {"fixture_key": "relation.request_1002.client", "definition": "site.default.vdm_service_request", "source_record_id": "019c7000-0000-7000-8000-000000001402", "relationship": "client", "target_record_id": "019c7000-0000-7000-8000-000000001102", "idempotency_key": "kumwe-demo-vdm-v1:relate:req1002:client"},
+    {"fixture_key": "relation.request_1002.engagement", "definition": "site.default.vdm_service_request", "source_record_id": "019c7000-0000-7000-8000-000000001402", "relationship": "engagement", "target_record_id": "019c7000-0000-7000-8000-000000001302", "idempotency_key": "kumwe-demo-vdm-v1:relate:req1002:engagement"},
+    {"fixture_key": "relation.request_0997.client", "definition": "site.default.vdm_service_request", "source_record_id": "019c7000-0000-7000-8000-000000001403", "relationship": "client", "target_record_id": "019c7000-0000-7000-8000-000000001103", "idempotency_key": "kumwe-demo-vdm-v1:relate:req0997:client"},
+    {"fixture_key": "relation.request_0997.engagement", "definition": "site.default.vdm_service_request", "source_record_id": "019c7000-0000-7000-8000-000000001403", "relationship": "engagement", "target_record_id": "019c7000-0000-7000-8000-000000001303", "idempotency_key": "kumwe-demo-vdm-v1:relate:req0997:engagement"},
+    {"fixture_key": "relation.request_1004.client", "definition": "site.default.vdm_service_request", "source_record_id": "019c7000-0000-7000-8000-000000001404", "relationship": "client", "target_record_id": "019c7000-0000-7000-8000-000000001104", "idempotency_key": "kumwe-demo-vdm-v1:relate:req1004:client"},
+    {"fixture_key": "relation.request_1004.engagement", "definition": "site.default.vdm_service_request", "source_record_id": "019c7000-0000-7000-8000-000000001404", "relationship": "engagement", "target_record_id": "019c7000-0000-7000-8000-000000001304", "idempotency_key": "kumwe-demo-vdm-v1:relate:req1004:engagement"},
+    {"fixture_key": "relation.request_1005.client", "definition": "site.default.vdm_service_request", "source_record_id": "019c7000-0000-7000-8000-000000001405", "relationship": "client", "target_record_id": "019c7000-0000-7000-8000-000000001105", "idempotency_key": "kumwe-demo-vdm-v1:relate:req1005:client"},
+    {"fixture_key": "relation.request_1005.engagement", "definition": "site.default.vdm_service_request", "source_record_id": "019c7000-0000-7000-8000-000000001405", "relationship": "engagement", "target_record_id": "019c7000-0000-7000-8000-000000001305", "idempotency_key": "kumwe-demo-vdm-v1:relate:req1005:engagement"},
+    {"fixture_key": "relation.request_1006.client", "definition": "site.default.vdm_service_request", "source_record_id": "019c7000-0000-7000-8000-000000001406", "relationship": "client", "target_record_id": "019c7000-0000-7000-8000-000000001101", "idempotency_key": "kumwe-demo-vdm-v1:relate:req1006:client"},
+    {"fixture_key": "relation.request_1006.engagement", "definition": "site.default.vdm_service_request", "source_record_id": "019c7000-0000-7000-8000-000000001406", "relationship": "engagement", "target_record_id": "019c7000-0000-7000-8000-000000001301", "idempotency_key": "kumwe-demo-vdm-v1:relate:req1006:engagement"},
+
+    {"fixture_key": "relation.work_0001.engagement", "definition": "site.default.vdm_work_entry", "source_record_id": "019c7000-0000-7000-8000-000000001501", "relationship": "engagement", "target_record_id": "019c7000-0000-7000-8000-000000001301", "idempotency_key": "kumwe-demo-vdm-v1:relate:we0001:engagement"},
+    {"fixture_key": "relation.work_0001.service", "definition": "site.default.vdm_work_entry", "source_record_id": "019c7000-0000-7000-8000-000000001501", "relationship": "service", "target_record_id": "019c7000-0000-7000-8000-000000001201", "idempotency_key": "kumwe-demo-vdm-v1:relate:we0001:service"},
+    {"fixture_key": "relation.work_0002.engagement", "definition": "site.default.vdm_work_entry", "source_record_id": "019c7000-0000-7000-8000-000000001502", "relationship": "engagement", "target_record_id": "019c7000-0000-7000-8000-000000001301", "idempotency_key": "kumwe-demo-vdm-v1:relate:we0002:engagement"},
+    {"fixture_key": "relation.work_0002.service", "definition": "site.default.vdm_work_entry", "source_record_id": "019c7000-0000-7000-8000-000000001502", "relationship": "service", "target_record_id": "019c7000-0000-7000-8000-000000001203", "idempotency_key": "kumwe-demo-vdm-v1:relate:we0002:service"},
+    {"fixture_key": "relation.work_0003.engagement", "definition": "site.default.vdm_work_entry", "source_record_id": "019c7000-0000-7000-8000-000000001503", "relationship": "engagement", "target_record_id": "019c7000-0000-7000-8000-000000001302", "idempotency_key": "kumwe-demo-vdm-v1:relate:we0003:engagement"},
+    {"fixture_key": "relation.work_0003.service", "definition": "site.default.vdm_work_entry", "source_record_id": "019c7000-0000-7000-8000-000000001503", "relationship": "service", "target_record_id": "019c7000-0000-7000-8000-000000001206", "idempotency_key": "kumwe-demo-vdm-v1:relate:we0003:service"},
+    {"fixture_key": "relation.work_0004.engagement", "definition": "site.default.vdm_work_entry", "source_record_id": "019c7000-0000-7000-8000-000000001504", "relationship": "engagement", "target_record_id": "019c7000-0000-7000-8000-000000001303", "idempotency_key": "kumwe-demo-vdm-v1:relate:we0004:engagement"},
+    {"fixture_key": "relation.work_0004.service", "definition": "site.default.vdm_work_entry", "source_record_id": "019c7000-0000-7000-8000-000000001504", "relationship": "service", "target_record_id": "019c7000-0000-7000-8000-000000001202", "idempotency_key": "kumwe-demo-vdm-v1:relate:we0004:service"},
+    {"fixture_key": "relation.work_0005.engagement", "definition": "site.default.vdm_work_entry", "source_record_id": "019c7000-0000-7000-8000-000000001505", "relationship": "engagement", "target_record_id": "019c7000-0000-7000-8000-000000001303", "idempotency_key": "kumwe-demo-vdm-v1:relate:we0005:engagement"},
+    {"fixture_key": "relation.work_0005.service", "definition": "site.default.vdm_work_entry", "source_record_id": "019c7000-0000-7000-8000-000000001505", "relationship": "service", "target_record_id": "019c7000-0000-7000-8000-000000001205", "idempotency_key": "kumwe-demo-vdm-v1:relate:we0005:service"},
+    {"fixture_key": "relation.work_0006.engagement", "definition": "site.default.vdm_work_entry", "source_record_id": "019c7000-0000-7000-8000-000000001506", "relationship": "engagement", "target_record_id": "019c7000-0000-7000-8000-000000001304", "idempotency_key": "kumwe-demo-vdm-v1:relate:we0006:engagement"},
+    {"fixture_key": "relation.work_0006.service", "definition": "site.default.vdm_work_entry", "source_record_id": "019c7000-0000-7000-8000-000000001506", "relationship": "service", "target_record_id": "019c7000-0000-7000-8000-000000001204", "idempotency_key": "kumwe-demo-vdm-v1:relate:we0006:service"},
+    {"fixture_key": "relation.work_0007.engagement", "definition": "site.default.vdm_work_entry", "source_record_id": "019c7000-0000-7000-8000-000000001507", "relationship": "engagement", "target_record_id": "019c7000-0000-7000-8000-000000001301", "idempotency_key": "kumwe-demo-vdm-v1:relate:we0007:engagement"},
+    {"fixture_key": "relation.work_0007.service", "definition": "site.default.vdm_work_entry", "source_record_id": "019c7000-0000-7000-8000-000000001507", "relationship": "service", "target_record_id": "019c7000-0000-7000-8000-000000001203", "idempotency_key": "kumwe-demo-vdm-v1:relate:we0007:service"},
+    {"fixture_key": "relation.work_0008.engagement", "definition": "site.default.vdm_work_entry", "source_record_id": "019c7000-0000-7000-8000-000000001508", "relationship": "engagement", "target_record_id": "019c7000-0000-7000-8000-000000001305", "idempotency_key": "kumwe-demo-vdm-v1:relate:we0008:engagement"},
+    {"fixture_key": "relation.work_0008.service", "definition": "site.default.vdm_work_entry", "source_record_id": "019c7000-0000-7000-8000-000000001508", "relationship": "service", "target_record_id": "019c7000-0000-7000-8000-000000001206", "idempotency_key": "kumwe-demo-vdm-v1:relate:we0008:service"}
+  ],
+  "actions": [
+    {"fixture_key": "action.engagement_001.activate", "definition": "site.default.vdm_engagement", "record_id": "019c7000-0000-7000-8000-000000001301", "action": "activate", "idempotency_key": "kumwe-demo-vdm-v1:action:eng001:activate"},
+    {"fixture_key": "action.engagement_002.activate", "definition": "site.default.vdm_engagement", "record_id": "019c7000-0000-7000-8000-000000001302", "action": "activate", "idempotency_key": "kumwe-demo-vdm-v1:action:eng002:activate"},
+    {"fixture_key": "action.engagement_002.pause", "definition": "site.default.vdm_engagement", "record_id": "019c7000-0000-7000-8000-000000001302", "action": "pause", "idempotency_key": "kumwe-demo-vdm-v1:action:eng002:pause"},
+    {"fixture_key": "action.engagement_003.activate", "definition": "site.default.vdm_engagement", "record_id": "019c7000-0000-7000-8000-000000001303", "action": "activate", "idempotency_key": "kumwe-demo-vdm-v1:action:eng003:activate"},
+    {"fixture_key": "action.engagement_004.activate", "definition": "site.default.vdm_engagement", "record_id": "019c7000-0000-7000-8000-000000001304", "action": "activate", "idempotency_key": "kumwe-demo-vdm-v1:action:eng004:activate"},
+    {"fixture_key": "action.engagement_004.complete", "definition": "site.default.vdm_engagement", "record_id": "019c7000-0000-7000-8000-000000001304", "action": "complete", "idempotency_key": "kumwe-demo-vdm-v1:action:eng004:complete"},
+
+    {"fixture_key": "action.request_1001.triage", "definition": "site.default.vdm_service_request", "record_id": "019c7000-0000-7000-8000-000000001401", "action": "triage", "idempotency_key": "kumwe-demo-vdm-v1:action:req1001:triage"},
+    {"fixture_key": "action.request_1001.schedule", "definition": "site.default.vdm_service_request", "record_id": "019c7000-0000-7000-8000-000000001401", "action": "schedule", "idempotency_key": "kumwe-demo-vdm-v1:action:req1001:schedule"},
+    {"fixture_key": "action.request_1001.resolve", "definition": "site.default.vdm_service_request", "record_id": "019c7000-0000-7000-8000-000000001401", "action": "resolve", "idempotency_key": "kumwe-demo-vdm-v1:action:req1001:resolve"},
+    {"fixture_key": "action.request_1002.triage", "definition": "site.default.vdm_service_request", "record_id": "019c7000-0000-7000-8000-000000001402", "action": "triage", "idempotency_key": "kumwe-demo-vdm-v1:action:req1002:triage"},
+    {"fixture_key": "action.request_1002.schedule", "definition": "site.default.vdm_service_request", "record_id": "019c7000-0000-7000-8000-000000001402", "action": "schedule", "idempotency_key": "kumwe-demo-vdm-v1:action:req1002:schedule"},
+    {"fixture_key": "action.request_0997.triage", "definition": "site.default.vdm_service_request", "record_id": "019c7000-0000-7000-8000-000000001403", "action": "triage", "idempotency_key": "kumwe-demo-vdm-v1:action:req0997:triage"},
+    {"fixture_key": "action.request_0997.schedule", "definition": "site.default.vdm_service_request", "record_id": "019c7000-0000-7000-8000-000000001403", "action": "schedule", "idempotency_key": "kumwe-demo-vdm-v1:action:req0997:schedule"},
+    {"fixture_key": "action.request_0997.resolve", "definition": "site.default.vdm_service_request", "record_id": "019c7000-0000-7000-8000-000000001403", "action": "resolve", "idempotency_key": "kumwe-demo-vdm-v1:action:req0997:resolve"},
+    {"fixture_key": "action.request_0997.close", "definition": "site.default.vdm_service_request", "record_id": "019c7000-0000-7000-8000-000000001403", "action": "close", "idempotency_key": "kumwe-demo-vdm-v1:action:req0997:close"},
+    {"fixture_key": "action.request_1004.triage", "definition": "site.default.vdm_service_request", "record_id": "019c7000-0000-7000-8000-000000001404", "action": "triage", "idempotency_key": "kumwe-demo-vdm-v1:action:req1004:triage"},
+    {"fixture_key": "action.request_1006.triage", "definition": "site.default.vdm_service_request", "record_id": "019c7000-0000-7000-8000-000000001406", "action": "triage", "idempotency_key": "kumwe-demo-vdm-v1:action:req1006:triage"},
+    {"fixture_key": "action.request_1006.schedule", "definition": "site.default.vdm_service_request", "record_id": "019c7000-0000-7000-8000-000000001406", "action": "schedule", "idempotency_key": "kumwe-demo-vdm-v1:action:req1006:schedule"},
+    {"fixture_key": "action.request_1006.resolve", "definition": "site.default.vdm_service_request", "record_id": "019c7000-0000-7000-8000-000000001406", "action": "resolve", "idempotency_key": "kumwe-demo-vdm-v1:action:req1006:resolve"},
+
+    {"fixture_key": "action.work_0001.submit", "definition": "site.default.vdm_work_entry", "record_id": "019c7000-0000-7000-8000-000000001501", "action": "submit", "idempotency_key": "kumwe-demo-vdm-v1:action:we0001:submit"},
+    {"fixture_key": "action.work_0001.approve", "definition": "site.default.vdm_work_entry", "record_id": "019c7000-0000-7000-8000-000000001501", "action": "approve", "idempotency_key": "kumwe-demo-vdm-v1:action:we0001:approve"},
+    {"fixture_key": "action.work_0002.submit", "definition": "site.default.vdm_work_entry", "record_id": "019c7000-0000-7000-8000-000000001502", "action": "submit", "idempotency_key": "kumwe-demo-vdm-v1:action:we0002:submit"},
+    {"fixture_key": "action.work_0002.approve", "definition": "site.default.vdm_work_entry", "record_id": "019c7000-0000-7000-8000-000000001502", "action": "approve", "idempotency_key": "kumwe-demo-vdm-v1:action:we0002:approve"},
+    {"fixture_key": "action.work_0003.submit", "definition": "site.default.vdm_work_entry", "record_id": "019c7000-0000-7000-8000-000000001503", "action": "submit", "idempotency_key": "kumwe-demo-vdm-v1:action:we0003:submit"},
+    {"fixture_key": "action.work_0005.submit", "definition": "site.default.vdm_work_entry", "record_id": "019c7000-0000-7000-8000-000000001505", "action": "submit", "idempotency_key": "kumwe-demo-vdm-v1:action:we0005:submit"},
+    {"fixture_key": "action.work_0005.reject", "definition": "site.default.vdm_work_entry", "record_id": "019c7000-0000-7000-8000-000000001505", "action": "reject", "idempotency_key": "kumwe-demo-vdm-v1:action:we0005:reject"},
+    {"fixture_key": "action.work_0006.submit", "definition": "site.default.vdm_work_entry", "record_id": "019c7000-0000-7000-8000-000000001506", "action": "submit", "idempotency_key": "kumwe-demo-vdm-v1:action:we0006:submit"},
+    {"fixture_key": "action.work_0006.approve", "definition": "site.default.vdm_work_entry", "record_id": "019c7000-0000-7000-8000-000000001506", "action": "approve", "idempotency_key": "kumwe-demo-vdm-v1:action:we0006:approve"},
+    {"fixture_key": "action.work_0007.submit", "definition": "site.default.vdm_work_entry", "record_id": "019c7000-0000-7000-8000-000000001507", "action": "submit", "idempotency_key": "kumwe-demo-vdm-v1:action:we0007:submit"}
+  ],
+  "archives": [
+    {
+      "fixture_key": "archive.request_0997",
+      "definition": "site.default.vdm_service_request",
+      "record_id": "019c7000-0000-7000-8000-000000001403",
+      "idempotency_key": "kumwe-demo-vdm-v1:archive:req0997"
+    }
+  ],
+  "expected": {
+    "record_count": 30,
+    "relation_count": 43,
+    "action_count": 29,
+    "archive_count": 1,
+    "workflow_states": {
+      "engagements": {
+        "proposed": 1,
+        "active": 2,
+        "on_hold": 1,
+        "completed": 1
+      },
+      "service_requests": {
+        "new": 1,
+        "triaged": 1,
+        "scheduled": 1,
+        "resolved": 2,
+        "closed": 1
+      },
+      "work_entries": {
+        "draft": 2,
+        "submitted": 2,
+        "approved": 3,
+        "rejected": 1
+      }
+    }
+  }
+}

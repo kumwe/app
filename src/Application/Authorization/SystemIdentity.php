@@ -70,6 +70,19 @@ enum SystemIdentity: string
     case Migration = 'system:migration';
 
     /**
+     * Installs the explicitly selected, versioned demonstration profiles after schema migration.
+     *
+     * This identity is intentionally separate from `Migration`: profile installation changes ordinary
+     * site content and selected business records, while schema migration owns only the platform schema.
+     * Its resource-policy bindings are limited to the canonical content, definition, business-schema,
+     * and record operations needed to apply an idempotent manifest; it receives no user-management,
+     * extension-management, destructive-schema, or secret-management authority.
+     *
+     * @since  2.0.0
+     */
+    case ProfileInstaller = 'system:profile-installer';
+
+    /**
      * Turns due schedules into queued jobs.
      *
      * Granted `system.scheduler.dispatch` alone: it decides that an occurrence is due and enqueues it,

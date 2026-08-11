@@ -16,6 +16,19 @@ npm run check
 npm run build
 ```
 
+Changes to demo manifests, reconciliation, migration startup, content/navigation/settings services, or generated
+business behavior must also exercise fresh databases with:
+
+- the default `documentation` plus VDM selection;
+- `placeholder` content to prove the released compact example remains installable; and
+- `blank` plus `KUMWE_BUSINESS_DEMO=false` to prove a clean installation remains clean.
+
+Use a separate disposable Compose project or remove only a known test project's volumes between cases. Profile
+choices are deliberately persisted on first reconciliation, so reusing one database with different environment
+values must fail rather than masquerade as a successful profile-switch test. Re-run a completed migration with the
+same values to prove idempotence, and edit one installed fixture before applying the next manifest version to prove
+customization preservation.
+
 Individual checks:
 
 ```bash
@@ -68,7 +81,11 @@ for a new revision; never rewrite an older fixture to make a breaking parser cha
 
 Frontend dependencies are locked in `package-lock.json`. Production serves the committed hashed files under `public/assets/build`; rebuilding them must leave that directory unchanged. Browser tests run Chromium at desktop and mobile viewports, scan rendered pages against WCAG 2.2 AA rules, and compare screenshots under `tests/Browser/screenshots`.
 
-The dedicated development-Compose acceptance workflow repeats the documented fresh installation on port 9900. It verifies the Compose-injected base URL, the host-port mapping, HTTP readiness, administrator and public CSS/JavaScript delivery, the database-seeded example homepage and menu, and readiness again after the 30-second runtime-marker lifetime. Changes to development startup, ports, routing, assets, or runtime materialization must keep this executable regression green.
+The dedicated development-Compose acceptance workflow repeats the documented fresh installation on port 9900. It
+verifies the Compose-injected base URL, the host-port mapping, HTTP readiness, administrator and public CSS/JavaScript
+delivery, the selected documentation/menu fixtures and VDM records, and readiness again after the 30-second
+runtime-marker lifetime. Changes to development startup, ports, routing, assets, profiles, or runtime materialization
+must keep this executable regression green.
 
 Run integration tests once for each database group in [Getting started](getting-started.md#choose-another-database). A change that passes only the default database is not portable.
 
