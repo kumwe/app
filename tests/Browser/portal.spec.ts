@@ -1,6 +1,7 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
 import { createHmac } from 'node:crypto';
+import { expectNoDocumentOverflow } from './support/interface-diagnostics';
 
 const portalEmail = process.env.KUMWE_BROWSER_PORTAL_EMAIL
   ?? 'browser-portal@kumwe.test';
@@ -152,11 +153,46 @@ async function expectPortalRecordRow(page: Page, value: string): Promise<void> {
     .toBeVisible();
 }
 
-test('portal login is accessible and visually bounded', async ({ page }, testInfo) => {
+test('portal login is accessible, centered and visually bounded', async ({ page }, testInfo) => {
   await page.goto('/portal/login');
   await expect(page.getByRole('heading', { name: 'Sign in to the portal' })).toBeVisible();
+  await expect(page.locator('.portal-shell')).toHaveClass(/\bportal-shell--guest\b/u);
+  await expect(page.locator('.portal-navigation')).toHaveCount(0);
   await expectStylesLoaded(page);
   await expectAccessible(page);
+  const visualContract = await page.evaluate(() => {
+    const shell = document.querySelector<HTMLElement>('.portal-shell');
+    const main = document.querySelector<HTMLElement>('#portal-main');
+    const login = document.querySelector<HTMLElement>('.portal-login');
+    if (shell === null || main === null || login === null) {
+      throw new Error('The guest portal visual contract is incomplete.');
+    }
+    const shellBounds = shell.getBoundingClientRect();
+    const mainBounds = main.getBoundingClientRect();
+    const loginBounds = login.getBoundingClientRect();
+
+    return {
+      shellColumns: getComputedStyle(shell).gridTemplateColumns.trim().split(/\s+/u).length,
+      shellWidth: Math.round(shellBounds.width),
+      mainWidth: Math.round(mainBounds.width),
+      cardWidth: Math.round(loginBounds.width),
+      cardCenterOffset: Math.round(
+        Math.abs((loginBounds.left + loginBounds.right) / 2 - window.innerWidth / 2) * 10,
+      ) / 10,
+      viewportWidth: window.innerWidth,
+    };
+  });
+  expect(visualContract.shellColumns).toBe(1);
+  expect(visualContract.shellWidth).toBe(visualContract.viewportWidth);
+  expect(visualContract.mainWidth).toBe(visualContract.viewportWidth);
+  expect(visualContract.cardWidth).toBeLessThanOrEqual(480);
+  expect(visualContract.cardWidth).toBeGreaterThanOrEqual(320);
+  expect(visualContract.cardCenterOffset).toBeLessThanOrEqual(1);
+  const diagnostics = await expectNoDocumentOverflow(page, {
+    root: '#portal-main',
+    detectControlOverlaps: true,
+  });
+  expect(diagnostics.findings.filter((finding) => finding.kind === 'control-overlap')).toEqual([]);
   const loginCookie = (await page.context().cookies())
     .find((cookie) => cookie.name === 'kumwe_portal_login_csrf');
   expect(loginCookie).toMatchObject({ path: '/portal/login', httpOnly: true, sameSite: 'Strict' });
