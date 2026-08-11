@@ -58,6 +58,20 @@ An evidence record states its producer, source revision, environment, command or
 artifact path, and the task or gate it supports. “Tests pass”, a screenshot without route/fixture metadata,
 or a document promising future behaviour is not evidence of runtime completion.
 
+Accepted evidence is revision-bound. Its 40-character `source_revision` must resolve to a commit object in
+the repository that runs the verifier. A shallow checkout can accept only locally present commits; an
+export without Git metadata, an omitted shallow-history object, a blob/tree/tag hash, or an unsupported
+packed representation is unverifiable and cannot satisfy completion. The record remains visible and must
+be re-collected or verified in a repository with the required commit history.
+
+Runtime KIS admission is explicit, not inferred from an inventory relationship. Every surface records
+`kis_runtime_disposition` as `declared` or `legacy`; only `declared` surfaces may have a literal core
+`SurfaceDefinition`, and that declaration must exactly match the inventory's canonical `kis_contract`.
+Every navigation record likewise declares `runtime_surface_binding`. A `declared` core item must bind its
+runtime `surface` to the inventoried surface ID, while a `legacy` item must retain a null runtime binding.
+Thus every KIS-migrated navigation item has a typed binding, while absence on unmigrated items remains
+visible and blocks completion of that item's migration rather than pretending it is already admitted.
+
 ## Gates
 
 The programme uses six gates:
@@ -100,7 +114,11 @@ named by the work item.
 
 P0 and P1 items cannot be waived. A P2/P3 waiver records the finding, accountable role, rationale,
 compensating control, expiry or future phase, and acceptance evidence. The verifier rejects a bare `waived`
-status. When a waiver expires, the item returns to `ready` or `blocked`; it never disappears.
+status. Verification evaluates an `expires_at` bound against one UTC as-of instant for the whole run; the
+bound is exclusive, so equality is expired. A `target_phase` bound expires when that phase first appears in
+`current_focus` or its status advances beyond `planned`. When both bounds exist, the first one reached wins.
+An expired waiver cannot satisfy a prerequisite or phase even before its status is corrected; the next
+ledger update returns the item to `ready` or `blocked`, preserving the waiver and transition history.
 
 ## History-preserving updates
 

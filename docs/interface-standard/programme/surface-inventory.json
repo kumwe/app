@@ -101,6 +101,7 @@
   "surfaces": [
     {
       "id": "core.public.home",
+      "kis_runtime_disposition": "legacy",
       "area": "public",
       "surface_type": "managed-home",
       "owner": "core",
@@ -127,6 +128,7 @@
     },
     {
       "id": "core.public.page",
+      "kis_runtime_disposition": "legacy",
       "area": "public",
       "surface_type": "managed-page",
       "owner": "core",
@@ -154,6 +156,7 @@
     },
     {
       "id": "core.administrator.login",
+      "kis_runtime_disposition": "legacy",
       "area": "administrator",
       "surface_type": "authentication",
       "owner": "core",
@@ -180,6 +183,7 @@
     },
     {
       "id": "core.administrator.dashboard",
+      "kis_runtime_disposition": "legacy",
       "area": "administrator",
       "surface_type": "dashboard",
       "owner": "core",
@@ -207,6 +211,7 @@
     },
     {
       "id": "core.administrator.content-collection",
+      "kis_runtime_disposition": "legacy",
       "area": "administrator",
       "surface_type": "collection",
       "owner": "core",
@@ -233,6 +238,7 @@
     },
     {
       "id": "core.administrator.content-editor",
+      "kis_runtime_disposition": "legacy",
       "area": "administrator",
       "surface_type": "form-workspace",
       "owner": "core",
@@ -265,6 +271,7 @@
     },
     {
       "id": "core.administrator.media",
+      "kis_runtime_disposition": "legacy",
       "area": "administrator",
       "surface_type": "collection-upload",
       "owner": "core",
@@ -293,6 +300,7 @@
     },
     {
       "id": "core.administrator.content-models",
+      "kis_runtime_disposition": "legacy",
       "area": "administrator",
       "surface_type": "master-detail",
       "owner": "core",
@@ -320,6 +328,7 @@
     },
     {
       "id": "core.administrator.navigation",
+      "kis_runtime_disposition": "legacy",
       "area": "administrator",
       "surface_type": "tree-editor",
       "owner": "core",
@@ -347,6 +356,7 @@
     },
     {
       "id": "core.administrator.business-definitions",
+      "kis_runtime_disposition": "legacy",
       "area": "administrator",
       "surface_type": "master-detail-authoring",
       "owner": "core",
@@ -374,6 +384,7 @@
     },
     {
       "id": "core.administrator.schema-plans",
+      "kis_runtime_disposition": "legacy",
       "area": "administrator",
       "surface_type": "high-impact-master-detail",
       "owner": "core",
@@ -406,13 +417,15 @@
     },
     {
       "id": "core.administrator.generated-catalog",
+      "kis_runtime_disposition": "legacy",
       "area": "generated",
       "surface_type": "workspace-catalog",
       "owner": "core-generator",
       "bounded_context": "business-surface",
       "purpose": "Discover authorized generated administrator entity workspaces.",
       "route_contracts": [
-        {"name": "administrator.business", "methods": ["GET"], "path": "/administrator/business", "source_anchor": "/administrator/business"}
+        {"name": "administrator.business", "methods": ["GET"], "path": "/administrator/business", "source_anchor": "/administrator/business"},
+        {"name": "administrator.business.mutate", "methods": ["POST"], "path": "/administrator/business", "source_anchor": "/administrator/business"}
       ],
       "handler_sources": ["src/BusinessSurface/Delivery/Administrator/AdministratorBusinessSurfaceHandler.php", "src/BusinessSurface/Delivery/Browser/GeneratedBusinessBrowserController.php"],
       "templates": ["templates/administrator/business-index.twig", "templates/administrator/layout.twig"],
@@ -432,6 +445,7 @@
     },
     {
       "id": "core.administrator.generated-definition",
+      "kis_runtime_disposition": "legacy",
       "area": "generated",
       "surface_type": "generated-collection-form",
       "owner": "core-generator",
@@ -459,6 +473,7 @@
     },
     {
       "id": "core.administrator.generated-record",
+      "kis_runtime_disposition": "legacy",
       "area": "generated",
       "surface_type": "generated-detail-form-history",
       "owner": "core-generator",
@@ -486,6 +501,7 @@
     },
     {
       "id": "core.administrator.generated-relationship",
+      "kis_runtime_disposition": "legacy",
       "area": "generated",
       "surface_type": "generated-child-collection",
       "owner": "core-generator",
@@ -513,6 +529,7 @@
     },
     {
       "id": "core.administrator.generated-choices",
+      "kis_runtime_disposition": "legacy",
       "area": "generated",
       "surface_type": "support-fragment",
       "owner": "core-generator",
@@ -543,6 +560,7 @@
     },
     {
       "id": "core.administrator.generated-custom-view",
+      "kis_runtime_disposition": "legacy",
       "area": "generated",
       "surface_type": "typed-contributed-view",
       "owner": "core-generator",
@@ -570,6 +588,7 @@
     },
     {
       "id": "core.administrator.generated-operation",
+      "kis_runtime_disposition": "legacy",
       "area": "generated",
       "surface_type": "operation-status",
       "owner": "core-generator",
@@ -596,6 +615,7 @@
     },
     {
       "id": "core.administrator.reports",
+      "kis_runtime_disposition": "legacy",
       "area": "administrator",
       "surface_type": "report-workspace",
       "owner": "core",
@@ -626,6 +646,7 @@
     },
     {
       "id": "core.administrator.access-control",
+      "kis_runtime_disposition": "legacy",
       "area": "administrator",
       "surface_type": "security-management",
       "owner": "core",
@@ -653,6 +674,7 @@
     },
     {
       "id": "core.administrator.business-security",
+      "kis_runtime_disposition": "legacy",
       "area": "administrator",
       "surface_type": "business-security-management",
       "owner": "core",
@@ -680,6 +702,7 @@
     },
     {
       "id": "core.administrator.extensions",
+      "kis_runtime_disposition": "legacy",
       "area": "administrator",
       "surface_type": "extension-lifecycle",
       "owner": "core",
@@ -708,6 +731,7 @@
     },
     {
       "id": "core.administrator.automation",
+      "kis_runtime_disposition": "legacy",
       "area": "administrator",
       "surface_type": "automation-management",
       "owner": "core",
@@ -735,6 +759,7 @@
     },
     {
       "id": "core.administrator.settings",
+      "kis_runtime_disposition": "legacy",
       "area": "administrator",
       "surface_type": "singleton-settings",
       "owner": "core",
@@ -762,6 +787,7 @@
     },
     {
       "id": "core.interface-standard.gallery",
+      "kis_runtime_disposition": "legacy",
       "area": "administrator",
       "surface_type": "reference-gallery",
       "owner": "core",
@@ -788,6 +814,7 @@
     },
     {
       "id": "core.portal.login",
+      "kis_runtime_disposition": "legacy",
       "area": "portal",
       "surface_type": "authentication",
       "owner": "core",
@@ -814,6 +841,7 @@
     },
     {
       "id": "core.portal.home",
+      "kis_runtime_disposition": "legacy",
       "area": "portal",
       "surface_type": "portal-dashboard",
       "owner": "core",
@@ -841,6 +869,7 @@
     },
     {
       "id": "core.portal.security",
+      "kis_runtime_disposition": "legacy",
       "area": "portal",
       "surface_type": "account-security",
       "owner": "core",
@@ -871,6 +900,7 @@
     },
     {
       "id": "core.portal.approvals",
+      "kis_runtime_disposition": "legacy",
       "area": "portal",
       "surface_type": "approval-workspace",
       "owner": "core",
@@ -901,13 +931,15 @@
     },
     {
       "id": "core.portal.generated-catalog",
+      "kis_runtime_disposition": "legacy",
       "area": "generated",
       "surface_type": "portal-workspace-catalog",
       "owner": "core-generator",
       "bounded_context": "business-surface",
       "purpose": "Discover explicitly portal-exposed, policy-authorized entity workspaces.",
       "route_contracts": [
-        {"name": "portal.business", "methods": ["GET"], "path": "/portal/business", "source_anchor": "/portal/business"}
+        {"name": "portal.business", "methods": ["GET"], "path": "/portal/business", "source_anchor": "/portal/business"},
+        {"name": "portal.business.mutate", "methods": ["POST"], "path": "/portal/business", "source_anchor": "/portal/business"}
       ],
       "handler_sources": ["src/BusinessSurface/Delivery/Portal/PortalBusinessSurfaceHandler.php", "src/BusinessSurface/Delivery/Browser/GeneratedBusinessBrowserController.php"],
       "templates": ["templates/portal/business-index.twig", "templates/portal/layout.twig"],
@@ -927,6 +959,7 @@
     },
     {
       "id": "core.portal.generated-definition",
+      "kis_runtime_disposition": "legacy",
       "area": "generated",
       "surface_type": "portal-generated-collection-form",
       "owner": "core-generator",
@@ -954,6 +987,7 @@
     },
     {
       "id": "core.portal.generated-record",
+      "kis_runtime_disposition": "legacy",
       "area": "generated",
       "surface_type": "portal-generated-detail-form-history",
       "owner": "core-generator",
@@ -981,6 +1015,7 @@
     },
     {
       "id": "core.portal.generated-relationship",
+      "kis_runtime_disposition": "legacy",
       "area": "generated",
       "surface_type": "portal-generated-child-collection",
       "owner": "core-generator",
@@ -1008,6 +1043,7 @@
     },
     {
       "id": "core.portal.generated-choices",
+      "kis_runtime_disposition": "legacy",
       "area": "generated",
       "surface_type": "portal-support-fragment",
       "owner": "core-generator",
@@ -1038,6 +1074,7 @@
     },
     {
       "id": "core.portal.generated-custom-view",
+      "kis_runtime_disposition": "legacy",
       "area": "generated",
       "surface_type": "portal-typed-contributed-view",
       "owner": "core-generator",
@@ -1065,6 +1102,7 @@
     },
     {
       "id": "core.portal.generated-operation",
+      "kis_runtime_disposition": "legacy",
       "area": "generated",
       "surface_type": "portal-operation-status",
       "owner": "core-generator",
@@ -1091,6 +1129,7 @@
     },
     {
       "id": "core.portal.reports",
+      "kis_runtime_disposition": "legacy",
       "area": "portal",
       "surface_type": "portal-report-workspace",
       "owner": "core",
@@ -1121,6 +1160,7 @@
     },
     {
       "id": "extension.administrator.route-family",
+      "kis_runtime_disposition": "legacy",
       "area": "extension",
       "surface_type": "administrator-contribution-contract",
       "owner": "extension-registry",
@@ -1147,6 +1187,7 @@
     },
     {
       "id": "extension.portal.route-family",
+      "kis_runtime_disposition": "legacy",
       "area": "extension",
       "surface_type": "portal-contribution-contract",
       "owner": "extension-registry",
@@ -1173,6 +1214,7 @@
     },
     {
       "id": "example.announcements.administrator",
+      "kis_runtime_disposition": "legacy",
       "area": "extension",
       "surface_type": "shipped-administrator-contribution",
       "owner": "kumwe/announcements-example",
@@ -1199,6 +1241,7 @@
     },
     {
       "id": "example.asset-inspection.administrator",
+      "kis_runtime_disposition": "legacy",
       "area": "extension",
       "surface_type": "shipped-administrator-contribution",
       "owner": "kumwe/asset-inspection-example",
@@ -1225,6 +1268,7 @@
     },
     {
       "id": "example.asset-inspection.portal-status",
+      "kis_runtime_disposition": "legacy",
       "area": "extension",
       "surface_type": "shipped-portal-contribution",
       "owner": "kumwe/asset-inspection-example",
@@ -1324,29 +1368,29 @@
     {"path": "examples/extensions/minimal-template/templates/site/page.twig", "kind": "installable-override", "surface_ids": ["core.public.page"]}
   ],
   "navigation_catalog": [
-    {"id": "core.dashboard", "area": "administrator", "path": "/administrator", "icon": "dashboard", "capability": "content.read", "surface_id": "core.administrator.dashboard", "source": "src/Extension/Contribution/CoreExtensionContributions.php"},
-    {"id": "core.content", "area": "administrator", "path": "/administrator/content", "icon": "content", "capability": "content.read", "surface_id": "core.administrator.content-collection", "source": "src/Extension/Contribution/CoreExtensionContributions.php"},
-    {"id": "core.create-content", "area": "administrator", "path": "/administrator/content/new", "icon": "plus", "capability": "content.create", "surface_id": "core.administrator.content-editor", "source": "src/Extension/Contribution/CoreExtensionContributions.php"},
-    {"id": "core.media", "area": "administrator", "path": "/administrator/media", "icon": "media", "capability": "content.read", "surface_id": "core.administrator.media", "source": "src/Extension/Contribution/CoreExtensionContributions.php"},
-    {"id": "core.models", "area": "administrator", "path": "/administrator/content-models", "icon": "models", "capability": "content.read", "surface_id": "core.administrator.content-models", "source": "src/Extension/Contribution/CoreExtensionContributions.php"},
-    {"id": "core.business-records", "area": "administrator", "path": "/administrator/business", "icon": "models", "capability": "business.record.browse", "surface_id": "core.administrator.generated-catalog", "source": "src/Extension/Contribution/CoreExtensionContributions.php"},
-    {"id": "core.business-reports", "area": "administrator", "path": "/administrator/reports", "icon": "models", "capability": "business.record.report", "surface_id": "core.administrator.reports", "source": "src/Extension/Contribution/CoreExtensionContributions.php"},
-    {"id": "core.business-definitions", "area": "administrator", "path": "/administrator/business-definitions", "icon": "models", "capability": "content.read", "surface_id": "core.administrator.business-definitions", "source": "src/Extension/Contribution/CoreExtensionContributions.php"},
-    {"id": "core.business-schema-plans", "area": "administrator", "path": "/administrator/business-schema-plans", "icon": "models", "capability": "business.schema.read", "surface_id": "core.administrator.schema-plans", "source": "src/Extension/Contribution/CoreExtensionContributions.php"},
-    {"id": "core.navigation", "area": "administrator", "path": "/administrator/navigation", "icon": "navigation", "capability": "navigation.manage", "surface_id": "core.administrator.navigation", "source": "src/Extension/Contribution/CoreExtensionContributions.php"},
-    {"id": "core.access", "area": "administrator", "path": "/administrator/access", "icon": "users", "capability": "users.manage", "surface_id": "core.administrator.access-control", "source": "src/Extension/Contribution/CoreExtensionContributions.php"},
-    {"id": "core.business-security", "area": "administrator", "path": "/administrator/business-security", "icon": "security", "capability": "business.security.manage", "surface_id": "core.administrator.business-security", "source": "src/Extension/Contribution/CoreExtensionContributions.php"},
-    {"id": "core.extensions", "area": "administrator", "path": "/administrator/extensions", "icon": "extensions", "capability": "extensions.manage", "surface_id": "core.administrator.extensions", "source": "src/Extension/Contribution/CoreExtensionContributions.php"},
-    {"id": "core.automation", "area": "administrator", "path": "/administrator/automation", "icon": "automation", "capability": "automation.manage", "surface_id": "core.administrator.automation", "source": "src/Extension/Contribution/CoreExtensionContributions.php"},
-    {"id": "core.settings", "area": "administrator", "path": "/administrator/settings", "icon": "settings", "capability": "settings.manage", "surface_id": "core.administrator.settings", "source": "src/Extension/Contribution/CoreExtensionContributions.php"},
-    {"id": "core.portal-home", "area": "portal", "path": "/portal", "icon": "home", "capability": "portal.access", "surface_id": "core.portal.home", "source": "src/Extension/Contribution/CoreExtensionContributions.php"},
-    {"id": "core.portal-business-records", "area": "portal", "path": "/portal/business", "icon": "briefcase", "capability": "portal.access", "surface_id": "core.portal.generated-catalog", "source": "src/Extension/Contribution/CoreExtensionContributions.php"},
-    {"id": "core.portal-business-reports", "area": "portal", "path": "/portal/reports", "icon": "models", "capability": "portal.access", "surface_id": "core.portal.reports", "source": "src/Extension/Contribution/CoreExtensionContributions.php"},
-    {"id": "core.portal-approvals", "area": "portal", "path": "/portal/approvals", "icon": "check-circle", "capability": "portal.access", "surface_id": "core.portal.approvals", "source": "src/Extension/Contribution/CoreExtensionContributions.php"},
-    {"id": "core.portal-security", "area": "portal", "path": "/portal/security", "icon": "shield", "capability": "portal.access", "surface_id": "core.portal.security", "source": "src/Extension/Contribution/CoreExtensionContributions.php"},
-    {"id": "kumwe.announcements-example.navigation", "area": "administrator", "path": "/administrator/extensions/kumwe/announcements-example", "icon": "extensions", "capability": "kumwe.announcements-example.manage", "surface_id": "example.announcements.administrator", "source": "examples/extensions/announcements/kumwe.json"},
-    {"id": "kumwe.asset-inspection-example.navigation", "area": "administrator", "path": "/administrator/extensions/kumwe/asset-inspection-example", "icon": "extensions", "capability": "kumwe.asset-inspection-example.manage", "surface_id": "example.asset-inspection.administrator", "source": "examples/extensions/asset-inspection/kumwe.json"},
-    {"id": "kumwe.asset-inspection-example.portal.navigation", "area": "portal", "path": "/portal/extensions/kumwe/asset-inspection-example/status/", "icon": "status", "capability": "kumwe.asset-inspection-example.view", "surface_id": "example.asset-inspection.portal-status", "source": "examples/extensions/asset-inspection/kumwe.json"}
+    {"id": "core.dashboard", "runtime_surface_binding": "legacy", "area": "administrator", "path": "/administrator", "icon": "dashboard", "capability": "content.read", "surface_id": "core.administrator.dashboard", "source": "src/Extension/Contribution/CoreExtensionContributions.php"},
+    {"id": "core.content", "runtime_surface_binding": "legacy", "area": "administrator", "path": "/administrator/content", "icon": "content", "capability": "content.read", "surface_id": "core.administrator.content-collection", "source": "src/Extension/Contribution/CoreExtensionContributions.php"},
+    {"id": "core.create-content", "runtime_surface_binding": "legacy", "area": "administrator", "path": "/administrator/content/new", "icon": "plus", "capability": "content.create", "surface_id": "core.administrator.content-editor", "source": "src/Extension/Contribution/CoreExtensionContributions.php"},
+    {"id": "core.media", "runtime_surface_binding": "legacy", "area": "administrator", "path": "/administrator/media", "icon": "media", "capability": "content.read", "surface_id": "core.administrator.media", "source": "src/Extension/Contribution/CoreExtensionContributions.php"},
+    {"id": "core.models", "runtime_surface_binding": "legacy", "area": "administrator", "path": "/administrator/content-models", "icon": "models", "capability": "content.read", "surface_id": "core.administrator.content-models", "source": "src/Extension/Contribution/CoreExtensionContributions.php"},
+    {"id": "core.business-records", "runtime_surface_binding": "legacy", "area": "administrator", "path": "/administrator/business", "icon": "models", "capability": "business.record.browse", "surface_id": "core.administrator.generated-catalog", "source": "src/Extension/Contribution/CoreExtensionContributions.php"},
+    {"id": "core.business-reports", "runtime_surface_binding": "legacy", "area": "administrator", "path": "/administrator/reports", "icon": "models", "capability": "business.record.report", "surface_id": "core.administrator.reports", "source": "src/Extension/Contribution/CoreExtensionContributions.php"},
+    {"id": "core.business-definitions", "runtime_surface_binding": "legacy", "area": "administrator", "path": "/administrator/business-definitions", "icon": "models", "capability": "content.read", "surface_id": "core.administrator.business-definitions", "source": "src/Extension/Contribution/CoreExtensionContributions.php"},
+    {"id": "core.business-schema-plans", "runtime_surface_binding": "legacy", "area": "administrator", "path": "/administrator/business-schema-plans", "icon": "models", "capability": "business.schema.read", "surface_id": "core.administrator.schema-plans", "source": "src/Extension/Contribution/CoreExtensionContributions.php"},
+    {"id": "core.navigation", "runtime_surface_binding": "legacy", "area": "administrator", "path": "/administrator/navigation", "icon": "navigation", "capability": "navigation.manage", "surface_id": "core.administrator.navigation", "source": "src/Extension/Contribution/CoreExtensionContributions.php"},
+    {"id": "core.access", "runtime_surface_binding": "legacy", "area": "administrator", "path": "/administrator/access", "icon": "users", "capability": "users.manage", "surface_id": "core.administrator.access-control", "source": "src/Extension/Contribution/CoreExtensionContributions.php"},
+    {"id": "core.business-security", "runtime_surface_binding": "legacy", "area": "administrator", "path": "/administrator/business-security", "icon": "security", "capability": "business.security.manage", "surface_id": "core.administrator.business-security", "source": "src/Extension/Contribution/CoreExtensionContributions.php"},
+    {"id": "core.extensions", "runtime_surface_binding": "legacy", "area": "administrator", "path": "/administrator/extensions", "icon": "extensions", "capability": "extensions.manage", "surface_id": "core.administrator.extensions", "source": "src/Extension/Contribution/CoreExtensionContributions.php"},
+    {"id": "core.automation", "runtime_surface_binding": "legacy", "area": "administrator", "path": "/administrator/automation", "icon": "automation", "capability": "automation.manage", "surface_id": "core.administrator.automation", "source": "src/Extension/Contribution/CoreExtensionContributions.php"},
+    {"id": "core.settings", "runtime_surface_binding": "legacy", "area": "administrator", "path": "/administrator/settings", "icon": "settings", "capability": "settings.manage", "surface_id": "core.administrator.settings", "source": "src/Extension/Contribution/CoreExtensionContributions.php"},
+    {"id": "core.portal-home", "runtime_surface_binding": "legacy", "area": "portal", "path": "/portal", "icon": "home", "capability": "portal.access", "surface_id": "core.portal.home", "source": "src/Extension/Contribution/CoreExtensionContributions.php"},
+    {"id": "core.portal-business-records", "runtime_surface_binding": "legacy", "area": "portal", "path": "/portal/business", "icon": "briefcase", "capability": "portal.access", "surface_id": "core.portal.generated-catalog", "source": "src/Extension/Contribution/CoreExtensionContributions.php"},
+    {"id": "core.portal-business-reports", "runtime_surface_binding": "legacy", "area": "portal", "path": "/portal/reports", "icon": "models", "capability": "portal.access", "surface_id": "core.portal.reports", "source": "src/Extension/Contribution/CoreExtensionContributions.php"},
+    {"id": "core.portal-approvals", "runtime_surface_binding": "legacy", "area": "portal", "path": "/portal/approvals", "icon": "check-circle", "capability": "portal.access", "surface_id": "core.portal.approvals", "source": "src/Extension/Contribution/CoreExtensionContributions.php"},
+    {"id": "core.portal-security", "runtime_surface_binding": "legacy", "area": "portal", "path": "/portal/security", "icon": "shield", "capability": "portal.access", "surface_id": "core.portal.security", "source": "src/Extension/Contribution/CoreExtensionContributions.php"},
+    {"id": "kumwe.announcements-example.navigation", "runtime_surface_binding": "legacy", "area": "administrator", "path": "/administrator/extensions/kumwe/announcements-example", "icon": "extensions", "capability": "kumwe.announcements-example.manage", "surface_id": "example.announcements.administrator", "source": "examples/extensions/announcements/kumwe.json"},
+    {"id": "kumwe.asset-inspection-example.navigation", "runtime_surface_binding": "legacy", "area": "administrator", "path": "/administrator/extensions/kumwe/asset-inspection-example", "icon": "extensions", "capability": "kumwe.asset-inspection-example.manage", "surface_id": "example.asset-inspection.administrator", "source": "examples/extensions/asset-inspection/kumwe.json"},
+    {"id": "kumwe.asset-inspection-example.portal.navigation", "runtime_surface_binding": "legacy", "area": "portal", "path": "/portal/extensions/kumwe/asset-inspection-example/status/", "icon": "status", "capability": "kumwe.asset-inspection-example.view", "surface_id": "example.asset-inspection.portal-status", "source": "examples/extensions/asset-inspection/kumwe.json"}
   ],
   "generated_instances": [
     {"source": "examples/extensions/announcements/kumwe.json", "handle": "kumwe.announcements-example.category", "owner": {"type": "extension", "identifier": "kumwe/announcements-example"}, "areas": ["administrator"], "views": [{"handle": "catalog", "kind": "list", "areas": ["administrator"]}]},
