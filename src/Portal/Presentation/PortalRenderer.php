@@ -8,6 +8,7 @@ use Kumwe\CMS\Extension\Contribution\ContributionOwner;
 use Kumwe\CMS\Portal\Application\PortalSession;
 use Kumwe\CMS\Portal\Contribution\PortalNavigationRegistry;
 use Kumwe\CMS\Portal\Contribution\PortalTemplateRegistry;
+use Kumwe\CMS\Presentation\Asset\ViteAssetManifest;
 use Kumwe\CMS\Presentation\Twig\IsolatedTwigEnvironmentFactory;
 use Twig\Environment;
 
@@ -28,6 +29,7 @@ final readonly class PortalRenderer
      * @param  PortalNavigationRegistry    $navigation  Capability and live-trust-filtered menu.
      * @param  PortalTemplateRegistry      $templates   Explicit portal template authority.
      * @param  PortalNavigationVisibility  $visibility  Request-session navigation predicate.
+     * @param  ?ViteAssetManifest          $assets      Built portal asset manifest, or null for fallbacks.
      *
      * @since  2.0.0
      */
@@ -36,6 +38,7 @@ final readonly class PortalRenderer
         private PortalNavigationRegistry $navigation,
         private PortalTemplateRegistry $templates,
         private PortalNavigationVisibility $visibility,
+        private ?ViteAssetManifest $assets = null,
     ) {
     }
 
@@ -118,14 +121,20 @@ final readonly class PortalRenderer
             ));
         }
 
-        return $data + [
-            'portal_session' => $session,
-            'portal_site' => $session?->identity->context->site->identifier(),
-            'portal_organization' => $session?->identity->context->membership?->organization()->identifier(),
-            'portal_workspace' => $session?->identity->context->membership?->workspace()?->identifier(),
-            'portal_navigation' => $navigation,
-            'portal_workspaces' => $this->navigation->visibleWorkspaces($capabilities, $navigation),
-            'active_navigation' => '',
-        ];
+        $assetEntry = ($this->assets ?? new ViteAssetManifest(''))->entry(
+            'assets/portal/main.ts',
+            '/assets/portal.css',
+        );
+
+        $data['portal_session'] = $session;
+        $data['portal_site'] = $session?->identity->context->site->identifier();
+        $data['portal_organization'] = $session?->identity->context->membership?->organization()->identifier();
+        $data['portal_workspace'] = $session?->identity->context->membership?->workspace()?->identifier();
+        $data['portal_navigation'] = $navigation;
+        $data['portal_workspaces'] = $this->navigation->visibleWorkspaces($capabilities, $navigation);
+        $data['portal_assets'] = $assetEntry->toArray();
+        $data['active_navigation'] ??= '';
+
+        return $data;
     }
 }

@@ -92,7 +92,8 @@ Installation records the component disabled. Use the normal authenticated extens
 then verify the following inventory before exercising records:
 
 - five owned business definitions and two owned capabilities;
-- one administrator route/view and one explicitly contributed portal route/template;
+- two KIS 1.0 surfaces, each bound to its administrator or portal navigation, graphical route, template,
+  and capability;
 - one core-event listener, one durable consumer, one queue, one job, one enabled schedule, one projection, and
   one report; and
 - no webhook destination, credential, secret field value, or remote schema in inventory.

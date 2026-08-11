@@ -12,6 +12,7 @@ use Kumwe\CMS\BusinessIntegration\Domain\EventSensitivity;
 use Kumwe\CMS\BusinessSurface\Presentation\Field\CoreFieldPresenter;
 use Kumwe\CMS\BusinessSurface\Presentation\Field\FieldPresentationContext;
 use Kumwe\CMS\BusinessSurface\Presentation\Field\FieldPresentationContribution;
+use Kumwe\CMS\InterfaceStandard\SurfaceDefinition;
 use Kumwe\CMS\Portal\Contribution\PortalNavigationDefinition;
 use Kumwe\CMS\Portal\Contribution\PortalWorkspaceDefinition;
 
@@ -136,6 +137,9 @@ final class CoreExtensionContributions
      */
     public static function register(ExtensionContributionRegistrar $registrar): void
     {
+        if (!$registrar instanceof InterfaceSurfaceRegistrar) {
+            throw new \LogicException('Core KIS surfaces require the additive interface-surface registrar.');
+        }
         $registrar->eventSchema(new EventSchemaDefinition(
             'core.business_record.mutated',
             1,
@@ -170,6 +174,9 @@ final class CoreExtensionContributions
         }
         foreach ($policies as $policy) {
             $registrar->resourcePolicy($policy);
+        }
+        foreach (self::interfaceSurfaces() as $surface) {
+            $registrar->interfaceSurface($surface);
         }
         foreach (
             [
@@ -615,6 +622,98 @@ final class CoreExtensionContributions
     }
 
     /**
+     * Declare the first KIS reference and vertical-slice surfaces through the shared contribution path.
+     *
+     * These declarations carry interaction semantics only. Routes, application authorization, fields,
+     * actions, and rendering remain in their existing bounded contexts and are filtered before Twig sees
+     * them. Later migrations add their own core declarations through this same list.
+     *
+     * @return  list<SurfaceDefinition>  Admitted core KIS declarations in stable programme order.
+     *
+     * @since   2.0.0
+     */
+    private static function interfaceSurfaces(): array
+    {
+        $owner = ContributionOwner::core();
+
+        return [
+            SurfaceDefinition::fromArray($owner, [
+                'surface' => 'core.interface-standard.gallery',
+                'standard' => 'kis-1.0',
+                'area' => 'administrator',
+                'actor' => 'administrator',
+                'intent' => 'diagnostics',
+                'resource' => 'interface-standard',
+                'purpose' => 'Inspect the production KIS components, patterns, and representative states.',
+                'pattern' => 'tabs',
+                'capabilities' => ['administrator.access'],
+                'states' => ['default', 'error', 'permission-reduced'],
+                'customization' => [
+                    ['slot' => 'density', 'scope' => 'user'],
+                ],
+                'responsive' => [
+                    ['element' => 'example-task', 'priority' => 'essential', 'may_collapse' => false],
+                    ['element' => 'technical-evidence', 'priority' => 'secondary', 'may_collapse' => true],
+                ],
+                'icon' => null,
+            ]),
+            SurfaceDefinition::fromArray($owner, [
+                'surface' => 'core.administrator.business-definitions',
+                'standard' => 'kis-1.0',
+                'area' => 'administrator',
+                'actor' => 'administrator',
+                'intent' => 'parent-child',
+                'resource' => 'business-definition',
+                'purpose' => 'Find, inspect, edit, validate, publish, and review a business definition.',
+                'pattern' => 'master-detail-workspace',
+                'capabilities' => ['content.read', 'content.update'],
+                'states' => ['default', 'empty', 'sparse', 'dense', 'error', 'permission-reduced', 'read-only'],
+                'customization' => [
+                    ['slot' => 'columns', 'scope' => 'user'],
+                    ['slot' => 'density', 'scope' => 'user'],
+                    ['slot' => 'layout', 'scope' => 'administrator'],
+                    ['slot' => 'labels-help', 'scope' => 'administrator'],
+                ],
+                'responsive' => [
+                    ['element' => 'definition-identity', 'priority' => 'essential', 'may_collapse' => false],
+                    ['element' => 'definition-state', 'priority' => 'essential', 'may_collapse' => false],
+                    ['element' => 'definition-owner', 'priority' => 'secondary', 'may_collapse' => true],
+                ],
+                'icon' => 'models',
+            ]),
+            SurfaceDefinition::fromArray($owner, [
+                'surface' => 'core.administrator.schema-plans',
+                'standard' => 'kis-1.0',
+                'area' => 'administrator',
+                'actor' => 'administrator',
+                'intent' => 'workflow',
+                'resource' => 'business-schema-plan',
+                'purpose' => 'Inspect, approve, execute, recover, and review a deterministic schema plan.',
+                'pattern' => 'tabs',
+                'capabilities' => [
+                    'business.schema.approve',
+                    'business.schema.destructive',
+                    'business.schema.execute',
+                    'business.schema.plan',
+                    'business.schema.read',
+                    'business.schema.recover',
+                ],
+                'states' => ['default', 'empty', 'sparse', 'dense', 'error', 'permission-reduced', 'read-only'],
+                'customization' => [
+                    ['slot' => 'density', 'scope' => 'user'],
+                    ['slot' => 'layout', 'scope' => 'administrator'],
+                ],
+                'responsive' => [
+                    ['element' => 'plan-identity', 'priority' => 'essential', 'may_collapse' => false],
+                    ['element' => 'plan-state', 'priority' => 'essential', 'may_collapse' => false],
+                    ['element' => 'plan-checksums', 'priority' => 'secondary', 'may_collapse' => true],
+                ],
+                'icon' => 'models',
+            ]),
+        ];
+    }
+
+    /**
      * Build the core administrator menu, each item bound to a core workspace and core capability.
      *
      * @return  list<AdministratorNavigationDefinition>  Declaration order; display order comes from priority.
@@ -700,6 +799,7 @@ final class CoreExtensionContributions
                 'content.read',
                 105,
                 'entities fields relationships views actions workflows schema',
+                'core.administrator.business-definitions',
             ),
             new AdministratorNavigationDefinition(
                 'core.business-records',
@@ -733,6 +833,7 @@ final class CoreExtensionContributions
                 'business.schema.read',
                 108,
                 'database schema plans execution recovery checksums',
+                'core.administrator.schema-plans',
             ),
             new AdministratorNavigationDefinition(
                 'core.access',

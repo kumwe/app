@@ -1,0 +1,24 @@
+{
+  "surface": "acme.inspections.administrator.catalog",
+  "standard": "kis-1.0",
+  "area": "administrator",
+  "actor": "administrator",
+  "intent": "collection",
+  "resource": "facility-inspection",
+  "purpose": "Find an inspection and continue its permitted operational task.",
+  "pattern": "master-detail-workspace",
+  "capabilities": ["acme.inspections.view"],
+  "states": ["default", "dense", "empty", "error", "permission-reduced", "read-only", "sparse"],
+  "customization": [
+    {"slot": "columns", "scope": "user"},
+    {"slot": "density", "scope": "user"},
+    {"slot": "layout", "scope": "administrator"},
+    {"slot": "saved-views", "scope": "user"}
+  ],
+  "responsive": [
+    {"element": "inspection-identity", "priority": "essential", "may_collapse": false},
+    {"element": "inspection-owner", "priority": "secondary", "may_collapse": true},
+    {"element": "inspection-status", "priority": "primary", "may_collapse": false}
+  ],
+  "icon": "inspections"
+}

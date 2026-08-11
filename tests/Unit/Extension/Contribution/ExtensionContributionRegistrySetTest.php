@@ -380,6 +380,16 @@ final class ExtensionContributionRegistrySetTest extends TestCase
                 'extensions.manage' => true,
             ]), 'label'),
         );
+
+        $definitionNavigation = $navigation->visible(['content.read' => true]);
+        $definition = array_values(array_filter(
+            $definitionNavigation,
+            static fn (array $item): bool => $item['id'] === 'core.business-definitions',
+        ));
+        self::assertSame('core.administrator.business-definitions', $definition[0]['surface'] ?? null);
+
+        $schemaNavigation = $navigation->visible(['business.schema.read' => true]);
+        self::assertSame('core.administrator.schema-plans', $schemaNavigation[0]['surface'] ?? null);
     }
 
     public function testReconcilesTypedDeclarationsAndFiltersNavigationByCapability(): void

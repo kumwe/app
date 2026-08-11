@@ -1,0 +1,21 @@
+<kumwe-master-detail
+  class="kis-master-detail"
+  data-kis-component="master-detail"
+  data-kis-master-detail="{{ id }}"
+>
+  <button
+    class="button kis-catalog-toggle"
+    type="button"
+    aria-controls="{{ id }}-catalog"
+    aria-expanded="false"
+    data-kis-catalog-toggle
+  >{{ catalog_toggle_label|default('Browse resources') }}</button>
+  <div class="kis-master-detail-grid">
+    <aside id="{{ id }}-catalog" class="kis-master-detail-catalog" aria-label="{{ catalog_label }}" data-kis-catalog>
+      {% block catalog %}{% endblock %}
+    </aside>
+    <div class="kis-master-detail-content" data-kis-detail>
+      {% block detail %}{% endblock %}
+    </div>
+  </div>
+</kumwe-master-detail>

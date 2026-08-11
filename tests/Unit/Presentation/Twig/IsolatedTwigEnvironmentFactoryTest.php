@@ -33,7 +33,8 @@ final class IsolatedTwigEnvironmentFactoryTest extends TestCase
         $this->root = sys_get_temp_dir() . '/kumwe-theme-test-' . bin2hex(random_bytes(8));
         foreach (
             [
-            '/core/site', '/core/administrator', '/site-theme', '/regional-theme', '/admin-theme',
+            '/core/site', '/core/administrator', '/core/interface-standard', '/site-theme',
+            '/regional-theme', '/admin-theme',
             '/extension/site', '/extension/administrator', '/extension/collision-a',
             '/extension/collision-b', '/cache',
             ] as $directory
@@ -42,6 +43,7 @@ final class IsolatedTwigEnvironmentFactoryTest extends TestCase
         }
 
         $this->template('/core/site/page.twig', 'core site');
+        $this->template('/core/interface-standard/example.twig', 'KIS component');
         $this->template('/core/administrator/page.twig', 'core administrator');
         $this->template('/core/administrator/layout.twig', 'core:{% block content %}{% endblock %}');
         $this->template(
@@ -73,12 +75,14 @@ final class IsolatedTwigEnvironmentFactoryTest extends TestCase
         self::assertSame('site theme', $site->render('page.twig'));
         self::assertSame('core site', $site->render('@core-site/page.twig'));
         self::assertSame('site extension', $site->render('@extension-61636d652f746f6f6c73/widget.twig'));
+        self::assertSame('KIS component', $site->render('@kis/example.twig'));
         self::assertSame('core administrator', $administrator->render('page.twig'));
         self::assertSame('core administrator', $administrator->render('@core-admin/page.twig'));
         self::assertSame(
             'administrator extension',
             $administrator->render('@extension-61636d652f746f6f6c73/widget.twig'),
         );
+        self::assertSame('KIS component', $administrator->render('@kis/example.twig'));
         self::assertSame('theme:page', $administrator->render('shell.twig'));
     }
 
@@ -109,6 +113,7 @@ final class IsolatedTwigEnvironmentFactoryTest extends TestCase
         );
 
         self::assertSame('core:page', $renderer->render('shell'));
+        self::assertSame('KIS component', $factory->recoveryAdministrator()->render('@kis/example.twig'));
     }
 
     public function testOnlyOneThemeCanBeLoadedPerSurface(): void

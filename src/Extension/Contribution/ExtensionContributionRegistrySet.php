@@ -135,6 +135,14 @@ final readonly class ExtensionContributionRegistrySet
     private PortalRouteRegistry $portalRoutes;
 
     /**
+     * Owner-bound registry of admitted KIS semantic interface declarations.
+     *
+     * @var    OwnedRuntimeContributionRegistry
+     * @since  2.0.0
+     */
+    private OwnedRuntimeContributionRegistry $interfaceSurfaces;
+
+    /**
      * The field types business definitions may build fields from, seeded by core rather than by itself.
      *
      * @var    FieldTypeRegistry
@@ -303,6 +311,7 @@ final readonly class ExtensionContributionRegistrySet
             $this->portalTemplates,
             $this->authorizationPolicies,
         );
+        $this->interfaceSurfaces = new OwnedRuntimeContributionRegistry('interface surface');
         $this->fieldTypes = new FieldTypeRegistry(false);
         $this->fieldPresentations = new FieldPresentationRegistry();
         $this->businessDefinitions = new BusinessDefinitionContributionRegistry(
@@ -337,6 +346,7 @@ final readonly class ExtensionContributionRegistrySet
             'portal.navigation' => $this->portalNavigation,
             'portal.templates' => $this->portalTemplates,
             'portal.routes' => $this->portalRoutes,
+            'interface.surfaces' => $this->interfaceSurfaces,
             'business.field_types' => BusinessContributionSurface::forFieldTypes($this->fieldTypes),
             'business.field_presentations' => BusinessContributionSurface::forFieldPresentations(
                 $this->fieldPresentations,
@@ -534,6 +544,18 @@ final readonly class ExtensionContributionRegistrySet
     public function portalRoutes(): PortalRouteRegistry
     {
         return $this->portalRoutes;
+    }
+
+    /**
+     * Return the active owner-bound KIS semantic surface declarations.
+     *
+     * @return  OwnedRuntimeContributionRegistry  Declarative surface registry with no executable payloads.
+     *
+     * @since   2.0.0
+     */
+    public function interfaceSurfaces(): OwnedRuntimeContributionRegistry
+    {
+        return $this->interfaceSurfaces;
     }
 
     /**

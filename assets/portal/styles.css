@@ -1,0 +1,59 @@
+@import "../../public/assets/portal.css";
+@import "../interface-standard/styles.css";
+
+:root {
+  --kumwe-border: var(--portal-line);
+  --kumwe-border-strong: color-mix(in srgb, var(--portal-line), var(--portal-ink) 22%);
+  --kumwe-surface: var(--portal-panel);
+  --kumwe-surface-subtle: var(--portal-paper);
+  --kumwe-text: var(--portal-ink);
+  --kumwe-text-muted: var(--portal-muted);
+  --kumwe-text-subtle: var(--portal-muted);
+  --kumwe-accent: var(--portal-accent);
+  --kumwe-accent-strong: var(--portal-accent);
+  --kumwe-accent-soft: color-mix(in srgb, var(--portal-accent), transparent 84%);
+  --kumwe-info: var(--portal-accent);
+  --kumwe-info-soft: color-mix(in srgb, var(--portal-accent), transparent 86%);
+  --kumwe-warning: #8b5a00;
+  --kumwe-warning-soft: #fff2cf;
+  --kumwe-danger: var(--portal-danger);
+  --kumwe-danger-strong: var(--portal-danger);
+  --kumwe-danger-soft: color-mix(in srgb, var(--portal-danger), transparent 86%);
+  --kumwe-success: var(--portal-accent);
+  --kumwe-success-soft: color-mix(in srgb, var(--portal-accent), transparent 86%);
+  --kumwe-radius-sm: .35rem;
+  --kumwe-radius-md: .5rem;
+  --kumwe-radius-lg: .75rem;
+  --kumwe-shadow-sm: 0 1px 3px rgb(16 35 29 / .1);
+  --kumwe-shadow-xl: 0 28px 80px rgb(5 17 12 / .28);
+  --kumwe-topbar-height: 4.5rem;
+}
+
+.button {
+  display: inline-flex;
+  min-height: 2.75rem;
+  align-items: center;
+  justify-content: center;
+  padding: .6rem 1rem;
+  border: 1px solid var(--portal-accent);
+  border-radius: .35rem;
+  color: white;
+  background: var(--portal-accent);
+  font-weight: 650;
+  text-decoration: none;
+}
+.button:not(.primary), .link-button { color: var(--portal-accent); background: var(--portal-panel); }
+.link-button { width: auto; padding: .25rem; border: 0; text-decoration: underline; }
+.page-actions { display: flex; flex-wrap: wrap; gap: .75rem; }
+.stack { display: grid; gap: 1rem; }
+.panel { border: 1px solid var(--portal-line); border-radius: .6rem; background: var(--portal-panel); }
+.eyebrow { color: var(--portal-accent); font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+.count-badge { display: inline-flex; padding: .25rem .45rem; border-radius: 999px; background: var(--kumwe-accent-soft); }
+.notice { margin-bottom: 1rem; padding: .75rem; border-left: .3rem solid var(--portal-accent); background: var(--kumwe-info-soft); }
+.notice.danger { border-color: var(--portal-danger); background: var(--kumwe-danger-soft); color: var(--portal-danger); }
+.empty-state { display: grid; min-height: 12rem; place-items: center; padding: 2rem 1rem; border: 1px dashed var(--portal-line); border-radius: .6rem; text-align: center; }
+.empty-state-content { max-width: 31rem; }
+
+@media (prefers-color-scheme: dark) {
+  :root { --kumwe-warning: #f0be5a; --kumwe-warning-soft: #3b301e; }
+}

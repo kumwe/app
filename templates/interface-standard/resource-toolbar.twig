@@ -1,0 +1,8 @@
+<section class="kis-resource-toolbar" aria-label="{{ label }}" data-kis-component="resource-toolbar">
+  <div class="kis-resource-toolbar-summary">
+    <h2>{{ title }}</h2>
+    {% if summary|default('') is not empty %}<p>{{ summary }}</p>{% endif %}
+  </div>
+  <div class="kis-resource-toolbar-filters">{% block filters %}{% endblock %}</div>
+  <div class="kis-resource-toolbar-actions">{% block actions %}{% endblock %}</div>
+</section>

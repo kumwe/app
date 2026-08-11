@@ -1,0 +1,10 @@
+<section
+  id="{{ id }}-panel-{{ tab }}"
+  class="kis-tab-panel{% if class|default('') is not empty %} {{ class }}{% endif %}"
+  role="tabpanel"
+  aria-labelledby="{{ id }}-tab-{{ tab }}"
+  data-kis-tab-panel="{{ tab }}"
+  tabindex="0"
+>
+  {% block content %}{% endblock %}
+</section>

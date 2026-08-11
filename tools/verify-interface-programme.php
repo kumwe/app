@@ -1486,18 +1486,27 @@ function phpTokenText(mixed $token): string
  */
 function validateExtensionManifests(string $root, array $inventory, array &$errors): void
 {
+    $inventorySurfaces = [];
+    $inventorySurfacesByManifest = [];
     $declaredRoutes = [];
     foreach ($inventory['surfaces'] as $surface) {
+        if (!is_array($surface) || !is_string($surface['id'] ?? null)) {
+            continue;
+        }
+        $inventorySurfaces[$surface['id']] = $surface;
         foreach ($surface['route_contracts'] as $route) {
             if (is_string($route['source_manifest'] ?? null) && is_string($route['declaration_name'] ?? null)) {
                 $declaredRoutes[$route['source_manifest'] . '|' . $route['declaration_name']] = true;
+                $inventorySurfacesByManifest[$route['source_manifest']][$surface['id']] = true;
             }
         }
     }
     $declaredNavigation = [];
+    $inventoryNavigation = [];
     foreach ($inventory['navigation_catalog'] as $navigation) {
         if (str_starts_with((string) ($navigation['source'] ?? ''), 'examples/extensions/')) {
             $declaredNavigation[$navigation['source'] . '|' . $navigation['id']] = true;
+            $inventoryNavigation[$navigation['source'] . '|' . $navigation['id']] = $navigation;
         }
     }
     $actualRoutes = [];
@@ -1505,6 +1514,64 @@ function validateExtensionManifests(string $root, array $inventory, array &$erro
     foreach (glob($root . '/examples/extensions/*/kumwe.json') ?: [] as $manifestPath) {
         $relative = relativePath($manifestPath, $root);
         $manifest = readJson($manifestPath, $errors);
+        $manifestSurfaces = [];
+        foreach ($manifest['contributions']['interface']['surfaces'] ?? [] as $surface) {
+            if (!is_array($surface) || !is_string($surface['surface'] ?? null)) {
+                $errors[] = sprintf('Extension manifest %s has an interface surface without an ID.', $relative);
+                continue;
+            }
+            $surfaceId = $surface['surface'];
+            if (isset($manifestSurfaces[$surfaceId])) {
+                $errors[] = sprintf('Extension manifest %s repeats interface surface %s.', $relative, $surfaceId);
+                continue;
+            }
+            $manifestSurfaces[$surfaceId] = true;
+            $inventorySurface = $inventorySurfaces[$surfaceId] ?? null;
+            if (!is_array($inventorySurface)) {
+                $errors[] = sprintf(
+                    'Extension interface surface %s from %s is absent from the surface inventory.',
+                    $surfaceId,
+                    $relative,
+                );
+                continue;
+            }
+            if (!isset($inventorySurfacesByManifest[$relative][$surfaceId])) {
+                $errors[] = sprintf(
+                    'Extension interface surface %s is not source-bound to %s in the surface inventory.',
+                    $surfaceId,
+                    $relative,
+                );
+            }
+            $manifestCapabilities = expectList(
+                $surface['capabilities'] ?? null,
+                'extension surface ' . $surfaceId . ' capabilities',
+                $errors,
+            );
+            $inventoryCapabilities = expectList(
+                $inventorySurface['capabilities'] ?? null,
+                'inventory surface ' . $surfaceId . ' capabilities',
+                $errors,
+            );
+            sort($manifestCapabilities, SORT_STRING);
+            sort($inventoryCapabilities, SORT_STRING);
+            if ($manifestCapabilities !== $inventoryCapabilities) {
+                $errors[] = sprintf(
+                    'Extension surface %s capabilities %s do not match inventory capabilities %s.',
+                    $surfaceId,
+                    printable($manifestCapabilities),
+                    printable($inventoryCapabilities),
+                );
+            }
+        }
+        if ($manifestSurfaces !== []) {
+            compareSets(
+                $manifestSurfaces,
+                $inventorySurfacesByManifest[$relative] ?? [],
+                'extension interface surface',
+                $relative . ' surface inventory',
+                $errors,
+            );
+        }
         foreach (['administrator', 'portal'] as $area) {
             $areaData = $manifest['contributions'][$area] ?? [];
             if (!is_array($areaData)) {
@@ -1517,7 +1584,32 @@ function validateExtensionManifests(string $root, array $inventory, array &$erro
             }
             foreach ($areaData['navigation'] ?? [] as $navigation) {
                 if (is_array($navigation) && is_string($navigation['id'] ?? null)) {
-                    $actualNavigation[$relative . '|' . $navigation['id']] = true;
+                    $navigationKey = $relative . '|' . $navigation['id'];
+                    $actualNavigation[$navigationKey] = true;
+                    $surfaceId = $navigation['surface'] ?? null;
+                    $inventoryEntry = $inventoryNavigation[$navigationKey] ?? null;
+                    if (is_string($surfaceId) && $surfaceId !== '') {
+                        if (!isset($manifestSurfaces[$surfaceId])) {
+                            $errors[] = sprintf(
+                                'Extension navigation %s references undeclared interface surface %s.',
+                                $navigationKey,
+                                $surfaceId,
+                            );
+                        }
+                        if (($inventoryEntry['surface_id'] ?? null) !== $surfaceId) {
+                            $errors[] = sprintf(
+                                'Extension navigation %s surface %s does not match inventory surface %s.',
+                                $navigationKey,
+                                $surfaceId,
+                                printable($inventoryEntry['surface_id'] ?? null),
+                            );
+                        }
+                    } elseif ($manifestSurfaces !== []) {
+                        $errors[] = sprintf(
+                            'Extension navigation %s omits its interface surface reference.',
+                            $navigationKey,
+                        );
+                    }
                 }
             }
         }

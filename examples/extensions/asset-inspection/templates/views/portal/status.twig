@@ -1,14 +1,25 @@
-<section class="panel stack" aria-labelledby="inspection-example-status-title">
-  <p class="eyebrow">{{ surface_label }}</p>
-  <h1 id="inspection-example-status-title">{{ heading }}</h1>
-  <p>{{ notice }}</p>
-  <p>Site: <strong>{{ site_identifier }}</strong></p>
-  {% for summary in summaries %}
-    <article>
-      <h2>{{ summary.reference }}</h2>
-      <p>Risk score: {{ summary.risk_score }}</p>
-    </article>
-  {% endfor %}
-  <p>The portal is explicitly capability-gated and receives no restricted internal-note field.</p>
-  <p>Inbox-processed example mutations observed in this process: {{ activity.integration_events }}</p>
-</section>
+{% extends 'portal/layout.twig' %}
+{% block title %}Inspection status · Kumwe Portal{% endblock %}
+{% block content %}
+  {% include '@kis/page-header.twig' with {
+    eyebrow: surface_label,
+    title: heading,
+    purpose: notice
+  } only %}
+  <section class="portal-business-panel portal-business-stack" aria-label="Inspection status">
+    <p>Site: <strong>{{ site_identifier }}</strong></p>
+    {% for summary in summaries %}
+      <article>
+        <h2>{{ summary.reference }}</h2>
+        <p>Risk score: {{ summary.risk_score }}</p>
+      </article>
+    {% else %}
+      {% include '@kis/empty-state.twig' with {
+        title: 'No visible inspections',
+        message: 'No inspection currently matches the policy-filtered portal view.'
+      } only %}
+    {% endfor %}
+    <p>The portal is explicitly capability-gated and receives no restricted internal-note field.</p>
+    <p>Inbox-processed example mutations observed in this process: {{ activity.integration_events }}</p>
+  </section>
+{% endblock %}

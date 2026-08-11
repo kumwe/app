@@ -1,20 +1,42 @@
 {
+  "_reveal-validation-CTLFnA7Q.js": {
+    "file": "js/reveal-validation-CTLFnA7Q.js",
+    "name": "reveal-validation"
+  },
   "assets/administrator/main.ts": {
-    "file": "js/administrator-CDKHYF8B.js",
+    "file": "js/administrator-C5NhuF7W.js",
     "name": "administrator",
     "src": "assets/administrator/main.ts",
     "isEntry": true,
+    "imports": [
+      "_reveal-validation-CTLFnA7Q.js"
+    ],
     "css": [
-      "css/administrator-DJU_ndMB.css"
+      "css/administrator-C4agCTGO.css"
+    ]
+  },
+  "assets/portal/main.ts": {
+    "file": "js/portal-DK--GzYn.js",
+    "name": "portal",
+    "src": "assets/portal/main.ts",
+    "isEntry": true,
+    "imports": [
+      "_reveal-validation-CTLFnA7Q.js"
+    ],
+    "css": [
+      "css/portal-BsNK-E4w.css"
     ]
   },
   "assets/site/main.ts": {
-    "file": "js/site-D9W83X-h.js",
+    "file": "js/site-BEc-2Kz4.js",
     "name": "site",
     "src": "assets/site/main.ts",
     "isEntry": true,
+    "imports": [
+      "_reveal-validation-CTLFnA7Q.js"
+    ],
     "css": [
-      "css/site-CEuyLCp0.css"
+      "css/site-AGZO6iG3.css"
     ]
   }
 }

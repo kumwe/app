@@ -3,13 +3,11 @@
 {% block context_title %}Asset inspection example{% endblock %}
 {% block context_subtitle %}Neutral extensibility proof{% endblock %}
 {% block content %}
-  <div class="page-heading">
-    <div>
-      <p class="eyebrow">{{ surface_label }}</p>
-      <h1>{{ heading }}</h1>
-      <p>{{ notice }}</p>
-    </div>
-  </div>
+  {% include '@kis/page-header.twig' with {
+    eyebrow: surface_label,
+    title: heading,
+    purpose: notice
+  } only %}
   <section class="panel stack" aria-labelledby="asset-proof-model-title">
     <div>
       <p class="eyebrow">Signed business model</p>
@@ -31,7 +29,14 @@
     <dl>
       <dt>Transaction-local inspection mutations observed</dt><dd>{{ activity.domain_events }}</dd>
       <dt>Inbox-processed inspection mutations observed</dt><dd>{{ activity.integration_events }}</dd>
-      <dt>Latest scheduled-job digest</dt><dd><code>{{ activity.latest_job_digest ?? 'No job observed in this process' }}</code></dd>
+      <dt>Latest scheduled-job digest</dt>
+      <dd>
+        {% include '@kis/technical-value.twig' with {
+          label: 'Latest scheduled-job digest',
+          value: activity.latest_job_digest ?? 'No job observed in this process',
+          copy: activity.latest_job_digest is not null
+        } only %}
+      </dd>
     </dl>
     <p>These counters are bounded process-local diagnostics. Core outbox, inbox, schedule, job, and projection records are the durable evidence.</p>
   </section>

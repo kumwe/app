@@ -1,0 +1,261 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:kumwe:kis:1.0:surface-declaration",
+  "title": "Kumwe Interface Standard 1.0 surface declaration",
+  "description": "Canonical, non-executable semantic declaration admitted by Kumwe's owner-bound contribution registry.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "surface",
+    "standard",
+    "area",
+    "actor",
+    "intent",
+    "resource",
+    "purpose",
+    "pattern",
+    "capabilities",
+    "states",
+    "customization",
+    "responsive",
+    "icon"
+  ],
+  "properties": {
+    "surface": {"$ref": "#/$defs/dottedName"},
+    "standard": {"const": "kis-1.0"},
+    "area": {"enum": ["administrator", "portal", "public", "template"]},
+    "actor": {"enum": ["administrator", "portal", "public"]},
+    "intent": {
+      "enum": [
+        "collection",
+        "detail",
+        "form",
+        "parent-child",
+        "chooser",
+        "workflow",
+        "review",
+        "comparison",
+        "monitor",
+        "settings",
+        "diagnostics"
+      ]
+    },
+    "resource": {"$ref": "#/$defs/semanticName"},
+    "purpose": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 255,
+      "pattern": "^(?!\\s)(?!.*\\s$)(?!.*(?:[Jj][Aa][Vv][Aa][Ss][Cc][Rr][Ii][Pp][Tt]:|[Dd][Aa][Tt][Aa]:[Tt][Ee][Xx][Tt]/[Hh][Tt][Mm][Ll]))[^<>{}\\u0000-\\u001f\\u007f]+$"
+    },
+    "pattern": {
+      "enum": [
+        "collection-workspace",
+        "master-detail-workspace",
+        "focused-form",
+        "drawer-form",
+        "step-flow",
+        "inline-subform",
+        "child-collection",
+        "tabs",
+        "local-navigation",
+        "resource-chooser",
+        "review-confirmation",
+        "comparison",
+        "status-workspace",
+        "settings-workspace",
+        "diagnostics-workspace"
+      ]
+    },
+    "capabilities": {
+      "type": "array",
+      "maxItems": 64,
+      "uniqueItems": true,
+      "items": {"$ref": "#/$defs/capability"}
+    },
+    "states": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 7,
+      "uniqueItems": true,
+      "items": {
+        "enum": ["default", "empty", "sparse", "dense", "error", "permission-reduced", "read-only"]
+      },
+      "contains": {"const": "default"}
+    },
+    "customization": {
+      "type": "array",
+      "maxItems": 9,
+      "uniqueItems": true,
+      "allOf": [
+        {"contains": {"properties": {"slot": {"const": "columns"}}, "required": ["slot"]}, "minContains": 0, "maxContains": 1},
+        {"contains": {"properties": {"slot": {"const": "density"}}, "required": ["slot"]}, "minContains": 0, "maxContains": 1},
+        {"contains": {"properties": {"slot": {"const": "saved-views"}}, "required": ["slot"]}, "minContains": 0, "maxContains": 1},
+        {"contains": {"properties": {"slot": {"const": "layout"}}, "required": ["slot"]}, "minContains": 0, "maxContains": 1},
+        {"contains": {"properties": {"slot": {"const": "theme-mode"}}, "required": ["slot"]}, "minContains": 0, "maxContains": 1},
+        {"contains": {"properties": {"slot": {"const": "dashboard-cards"}}, "required": ["slot"]}, "minContains": 0, "maxContains": 1},
+        {"contains": {"properties": {"slot": {"const": "landing-workspace"}}, "required": ["slot"]}, "minContains": 0, "maxContains": 1},
+        {"contains": {"properties": {"slot": {"const": "navigation-shortcuts"}}, "required": ["slot"]}, "minContains": 0, "maxContains": 1},
+        {"contains": {"properties": {"slot": {"const": "labels-help"}}, "required": ["slot"]}, "minContains": 0, "maxContains": 1}
+      ],
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["slot", "scope"],
+        "properties": {
+          "slot": {
+            "enum": [
+              "columns",
+              "density",
+              "saved-views",
+              "layout",
+              "theme-mode",
+              "dashboard-cards",
+              "landing-workspace",
+              "navigation-shortcuts",
+              "labels-help"
+            ]
+          },
+          "scope": {"enum": ["site", "administrator", "role-workspace", "user"]}
+        }
+      }
+    },
+    "responsive": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 64,
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["element", "priority", "may_collapse"],
+        "properties": {
+          "element": {"$ref": "#/$defs/semanticName"},
+          "priority": {"enum": ["essential", "primary", "secondary", "optional"]},
+          "may_collapse": {"type": "boolean"}
+        },
+        "allOf": [
+          {
+            "if": {"properties": {"priority": {"const": "essential"}}, "required": ["priority"]},
+            "then": {"properties": {"may_collapse": {"const": false}}}
+          }
+        ]
+      }
+    },
+    "icon": {
+      "oneOf": [
+        {"type": "null"},
+        {"type": "string", "pattern": "^[a-z][a-z0-9-]{0,63}$"}
+      ]
+    }
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"actor": {"const": "public"}}, "required": ["actor"]},
+      "then": {"properties": {"capabilities": {"maxItems": 0}}},
+      "else": {
+        "properties": {
+          "capabilities": {"minItems": 1},
+          "states": {"contains": {"const": "permission-reduced"}}
+        }
+      }
+    },
+    {
+      "if": {"properties": {"intent": {"const": "collection"}}, "required": ["intent"]},
+      "then": {
+        "properties": {
+          "pattern": {"enum": ["collection-workspace", "master-detail-workspace"]},
+          "states": {
+            "allOf": [
+              {"contains": {"const": "empty"}},
+              {"contains": {"const": "dense"}},
+              {"contains": {"const": "error"}}
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {"properties": {"intent": {"const": "detail"}}, "required": ["intent"]},
+      "then": {"properties": {"pattern": {"enum": ["master-detail-workspace", "tabs", "local-navigation"]}}}
+    },
+    {
+      "if": {"properties": {"intent": {"const": "form"}}, "required": ["intent"]},
+      "then": {
+        "properties": {
+          "pattern": {"enum": ["focused-form", "drawer-form", "step-flow"]},
+          "states": {"contains": {"const": "error"}}
+        }
+      }
+    },
+    {
+      "if": {"properties": {"intent": {"const": "parent-child"}}, "required": ["intent"]},
+      "then": {
+        "properties": {
+          "pattern": {"enum": ["master-detail-workspace", "inline-subform", "child-collection"]},
+          "states": {
+            "allOf": [
+              {"contains": {"const": "empty"}},
+              {"contains": {"const": "dense"}},
+              {"contains": {"const": "error"}}
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {"properties": {"intent": {"const": "chooser"}}, "required": ["intent"]},
+      "then": {"properties": {"pattern": {"const": "resource-chooser"}}}
+    },
+    {
+      "if": {"properties": {"intent": {"const": "workflow"}}, "required": ["intent"]},
+      "then": {
+        "properties": {
+          "pattern": {"enum": ["step-flow", "tabs", "status-workspace"]},
+          "states": {"contains": {"const": "error"}}
+        }
+      }
+    },
+    {
+      "if": {"properties": {"intent": {"const": "review"}}, "required": ["intent"]},
+      "then": {"properties": {"pattern": {"const": "review-confirmation"}}}
+    },
+    {
+      "if": {"properties": {"intent": {"const": "comparison"}}, "required": ["intent"]},
+      "then": {"properties": {"pattern": {"const": "comparison"}}}
+    },
+    {
+      "if": {"properties": {"intent": {"const": "monitor"}}, "required": ["intent"]},
+      "then": {"properties": {"pattern": {"const": "status-workspace"}}}
+    },
+    {
+      "if": {"properties": {"intent": {"const": "settings"}}, "required": ["intent"]},
+      "then": {
+        "properties": {
+          "pattern": {"enum": ["settings-workspace", "tabs", "local-navigation"]},
+          "states": {"contains": {"const": "error"}}
+        }
+      }
+    },
+    {
+      "if": {"properties": {"intent": {"const": "diagnostics"}}, "required": ["intent"]},
+      "then": {"properties": {"pattern": {"enum": ["diagnostics-workspace", "tabs"]}}}
+    }
+  ],
+  "$defs": {
+    "dottedName": {
+      "type": "string",
+      "maxLength": 191,
+      "pattern": "^[a-z][a-z0-9]*(?:-?[a-z0-9]+)*(?:\\.[a-z][a-z0-9]*(?:-?[a-z0-9]+)*)+$"
+    },
+    "semanticName": {
+      "type": "string",
+      "maxLength": 191,
+      "pattern": "^[a-z][a-z0-9]*(?:(?:\\.|-)[a-z0-9]+)*$"
+    },
+    "capability": {
+      "type": "string",
+      "maxLength": 191,
+      "pattern": "^[a-z][a-z0-9]*(?:[._:-][a-z0-9]+)*$"
+    }
+  }
+}

@@ -1,0 +1,25 @@
+<kumwe-drawer class="kis-drawer" data-kis-component="drawer" data-kis-drawer="{{ id }}">
+  <button
+    class="button{% if primary|default(false) %} primary{% endif %}"
+    type="button"
+    aria-controls="{{ id }}-drawer"
+    aria-expanded="false"
+    data-kis-drawer-open
+  >{{ open_label }}</button>
+  <aside
+    id="{{ id }}-drawer"
+    class="kis-drawer-panel"
+    aria-labelledby="{{ id }}-drawer-title"
+    data-kis-drawer-panel
+    tabindex="-1"
+  >
+    <header>
+      <div>
+        <h2 id="{{ id }}-drawer-title">{{ title }}</h2>
+        {% if purpose|default('') is not empty %}<p>{{ purpose }}</p>{% endif %}
+      </div>
+      <button class="button" type="button" data-kis-drawer-close>Close</button>
+    </header>
+    <div class="kis-drawer-body">{% block content %}{% endblock %}</div>
+  </aside>
+</kumwe-drawer>

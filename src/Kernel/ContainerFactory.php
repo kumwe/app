@@ -61,6 +61,7 @@ use Kumwe\CMS\Administrator\Http\Handler\AdministratorCreateContentHandler;
 use Kumwe\CMS\Administrator\Http\Handler\AdministratorDashboardHandler;
 use Kumwe\CMS\Administrator\Http\Handler\AdministratorExtensionActionHandler;
 use Kumwe\CMS\Administrator\Http\Handler\AdministratorExtensionsHandler;
+use Kumwe\CMS\Administrator\Http\Handler\AdministratorInterfaceStandardHandler;
 use Kumwe\CMS\Administrator\Http\Handler\AdministratorLoginHandler;
 use Kumwe\CMS\Administrator\Http\Handler\AdministratorLogoutHandler;
 use Kumwe\CMS\Administrator\Http\Handler\AdministratorMediaHandler;
@@ -1476,6 +1477,7 @@ final class ContainerFactory
                         self::service($container, PortalExecutionContextFactory::class),
                         self::service($container, ReportService::class),
                     ),
+                    self::service($container, ViteAssetManifest::class),
                 ), true);
         }
         $container->share(RouterInterface::class, static fn (): RouterInterface =>
@@ -2724,6 +2726,11 @@ final class ContainerFactory
             self::service($container, AdministratorRenderer::class),
             self::service($container, PublicPageLocator::class),
         ), true);
+        $container->share(AdministratorInterfaceStandardHandler::class, static fn (
+            Container $container,
+        ): AdministratorInterfaceStandardHandler => new AdministratorInterfaceStandardHandler(
+            self::service($container, AdministratorRenderer::class),
+        ), true);
         $container->share(AdministratorReportHandler::class, static fn (
             Container $container,
         ): AdministratorReportHandler => new AdministratorReportHandler(
@@ -3308,6 +3315,14 @@ final class ContainerFactory
         self::administratorRoute(
             $application->get('/administrator', AdministratorDashboardHandler::class, 'administrator.index'),
             'content.read',
+        );
+        self::administratorRoute(
+            $application->get(
+                '/administrator/interface-standard',
+                AdministratorInterfaceStandardHandler::class,
+                'administrator.interface-standard',
+            ),
+            'administrator.access',
         );
         self::administratorRoute(
             $application->get(

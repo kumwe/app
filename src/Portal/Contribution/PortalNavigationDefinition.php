@@ -35,6 +35,7 @@ final readonly class PortalNavigationDefinition implements ContributionDefinitio
      * @param   string  $capability   Required capability owned by the same contributor.
      * @param   int     $priority     Sort weight from 0 through 100000.
      * @param   string  $keywords     Optional search text up to 500 characters.
+     * @param   ?string $surface      Stable KIS surface identifier, or null for a legacy pre-KIS package.
      *
      * @throws  InvalidArgumentException  When any field is unsafe or outside its bound.
      *
@@ -50,9 +51,13 @@ final readonly class PortalNavigationDefinition implements ContributionDefinitio
         string $capability,
         public int $priority,
         public string $keywords = '',
+        public ?string $surface = null,
     ) {
         PortalWorkspaceDefinition::assertIdentifier($id, 'navigation');
         PortalWorkspaceDefinition::assertIdentifier($workspace, 'workspace');
+        if ($surface !== null) {
+            PortalWorkspaceDefinition::assertIdentifier($surface, 'interface surface');
+        }
         $this->capability = Capability::fromString($capability)->value();
         if (
             trim($label) === ''
@@ -94,7 +99,7 @@ final readonly class PortalNavigationDefinition implements ContributionDefinitio
      */
     public function toArray(): array
     {
-        return [
+        $document = [
             'id' => $this->id,
             'workspace' => $this->workspace,
             'label' => $this->label,
@@ -105,5 +110,10 @@ final readonly class PortalNavigationDefinition implements ContributionDefinitio
             'priority' => $this->priority,
             'keywords' => $this->keywords,
         ];
+        if ($this->surface !== null) {
+            $document['surface'] = $this->surface;
+        }
+
+        return $document;
     }
 }

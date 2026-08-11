@@ -1,0 +1,184 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:kumwe:kis:1.0:presentation-preference",
+  "title": "Kumwe Interface Standard 1.0 presentation preference",
+  "description": "Portable, optimistic-versioned and auditable value for one customization slot explicitly allowed by a conformant surface.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "standard",
+    "surface",
+    "owner",
+    "scope",
+    "scope_id",
+    "slot",
+    "value",
+    "version",
+    "updated_by",
+    "updated_at"
+  ],
+  "properties": {
+    "schema": {"const": 1},
+    "standard": {"const": "kis-1.0"},
+    "surface": {"$ref": "#/$defs/dottedName"},
+    "owner": {
+      "type": "string",
+      "maxLength": 191,
+      "pattern": "^(?:core|[a-z][a-z0-9-]*/[a-z][a-z0-9-]*)$"
+    },
+    "scope": {"enum": ["site", "administrator", "role-workspace", "user"]},
+    "scope_id": {
+      "oneOf": [
+        {"type": "null"},
+        {"$ref": "#/$defs/scopeIdentity"}
+      ]
+    },
+    "slot": {
+      "enum": [
+        "columns",
+        "density",
+        "saved-views",
+        "layout",
+        "theme-mode",
+        "dashboard-cards",
+        "landing-workspace",
+        "navigation-shortcuts",
+        "labels-help"
+      ]
+    },
+    "value": {},
+    "version": {"type": "integer", "minimum": 1},
+    "updated_by": {"type": "string", "minLength": 1, "maxLength": 191, "pattern": "^[^<>{}\\u0000-\\u001f\\u007f]+$"},
+    "updated_at": {"type": "string", "format": "date-time"}
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {"scope": {"const": "administrator"}},
+        "required": ["scope"]
+      },
+      "then": {
+        "properties": {"scope_id": {"type": "null"}}
+      },
+      "else": {
+        "properties": {"scope_id": {"$ref": "#/$defs/scopeIdentity"}}
+      }
+    }
+  ],
+  "oneOf": [
+    {
+      "properties": {
+        "slot": {"const": "columns"},
+        "scope": {"enum": ["administrator", "role-workspace", "user"]},
+        "value": {"$ref": "#/$defs/semanticNameList"}
+      }
+    },
+    {
+      "properties": {
+        "slot": {"const": "density"},
+        "value": {"enum": ["comfortable", "compact", "touch"]}
+      }
+    },
+    {
+      "properties": {
+        "slot": {"const": "saved-views"},
+        "scope": {"enum": ["administrator", "role-workspace", "user"]},
+        "value": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["name", "sort", "page_size"],
+          "properties": {
+            "name": {"$ref": "#/$defs/plainText"},
+            "sort": {"$ref": "#/$defs/semanticNameList"},
+            "page_size": {"type": "integer", "minimum": 10, "maximum": 200}
+          }
+        }
+      }
+    },
+    {
+      "properties": {
+        "slot": {"const": "layout"},
+        "scope": {"enum": ["site", "administrator"]},
+        "value": {"enum": ["standard", "catalog-wide", "detail-wide"]}
+      }
+    },
+    {
+      "properties": {
+        "slot": {"const": "theme-mode"},
+        "scope": {"enum": ["site", "user"]},
+        "value": {"enum": ["light", "dark", "system"]}
+      }
+    },
+    {
+      "properties": {
+        "slot": {"const": "dashboard-cards"},
+        "scope": {"enum": ["administrator", "role-workspace", "user"]},
+        "value": {"$ref": "#/$defs/semanticNameList"}
+      }
+    },
+    {
+      "properties": {
+        "slot": {"const": "landing-workspace"},
+        "scope": {"enum": ["administrator", "role-workspace", "user"]},
+        "value": {"$ref": "#/$defs/dottedName"}
+      }
+    },
+    {
+      "properties": {
+        "slot": {"const": "navigation-shortcuts"},
+        "scope": {"enum": ["role-workspace", "user"]},
+        "value": {"$ref": "#/$defs/dottedNameList"}
+      }
+    },
+    {
+      "properties": {
+        "slot": {"const": "labels-help"},
+        "scope": {"const": "administrator"},
+        "value": {
+          "type": "object",
+          "minProperties": 1,
+          "maxProperties": 64,
+          "propertyNames": {"$ref": "#/$defs/semanticName"},
+          "additionalProperties": {"$ref": "#/$defs/plainText"}
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "scopeIdentity": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 191,
+      "pattern": "^[^<>{}\\u0000-\\u001f\\u007f]+$"
+    },
+    "dottedName": {
+      "type": "string",
+      "maxLength": 191,
+      "pattern": "^[a-z][a-z0-9]*(?:-?[a-z0-9]+)*(?:\\.[a-z][a-z0-9]*(?:-?[a-z0-9]+)*)+$"
+    },
+    "semanticName": {
+      "type": "string",
+      "maxLength": 191,
+      "pattern": "^[a-z][a-z0-9]*(?:(?:\\.|-)[a-z0-9]+)*$"
+    },
+    "plainText": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 255,
+      "pattern": "^[^<>{}\\u0000-\\u001f\\u007f]+$"
+    },
+    "semanticNameList": {
+      "type": "array",
+      "maxItems": 64,
+      "uniqueItems": true,
+      "items": {"$ref": "#/$defs/semanticName"}
+    },
+    "dottedNameList": {
+      "type": "array",
+      "maxItems": 32,
+      "uniqueItems": true,
+      "items": {"$ref": "#/$defs/dottedName"}
+    }
+  }
+}

@@ -8,6 +8,7 @@ use LogicException;
 use Kumwe\CMS\Extension\Contribution\AdministratorRouteHandlerFactory;
 use Kumwe\CMS\Extension\Contribution\ExtensionContributionProvider;
 use Kumwe\CMS\Extension\Contribution\ExtensionContributionRegistrar;
+use Kumwe\CMS\Extension\Contribution\InterfaceSurfaceRegistrar;
 use Kumwe\CMS\Extension\Runtime\ExtensionContainer;
 use Kumwe\CMS\Extension\Runtime\ExtensionRouteRegistrar;
 use Kumwe\CMS\Extension\Runtime\RuntimeExtension;
@@ -135,6 +136,12 @@ final class Provider implements RuntimeExtension, ExtensionContributionProvider
         }
         foreach ($declarations->resourcePolicies() as $definition) {
             $contributions->resourcePolicy($definition);
+        }
+        if (!$contributions instanceof InterfaceSurfaceRegistrar) {
+            throw new LogicException('The asset-inspection KIS surface registrar is unavailable.');
+        }
+        foreach ($declarations->interfaceSurfaces() as $definition) {
+            $contributions->interfaceSurface($definition);
         }
         foreach ($declarations->businessDefinitions() as $definition) {
             $contributions->businessDefinition($definition);

@@ -1,0 +1,11 @@
+<header class="kis-page-header" data-kis-component="page-header">
+  <div class="kis-page-header-copy">
+    {% block context %}
+      {% if eyebrow|default('') is not empty %}<p class="eyebrow">{{ eyebrow }}</p>{% endif %}
+    {% endblock %}
+    <h1>{{ title }}</h1>
+    {% if purpose|default('') is not empty %}<p>{{ purpose }}</p>{% endif %}
+    {% block metadata %}{% endblock %}
+  </div>
+  {% block actions %}{% endblock %}
+</header>

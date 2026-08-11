@@ -27,6 +27,9 @@ use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessViewContract;
 use Kumwe\CMS\BusinessSurface\Presentation\Field\FieldPresentationContribution;
 use Kumwe\CMS\BusinessSurface\Presentation\Field\FieldPresentationCoverage;
 use Kumwe\CMS\Extension\Domain\ExtensionIdentifier;
+use Kumwe\CMS\Identity\Domain\Capability;
+use Kumwe\CMS\InterfaceStandard\SurfaceArea;
+use Kumwe\CMS\InterfaceStandard\SurfaceDefinition;
 use Kumwe\CMS\Portal\Contribution\PortalNavigationDefinition;
 use Kumwe\CMS\Portal\Contribution\PortalRouteDefinition;
 use Kumwe\CMS\Portal\Contribution\PortalTemplateDefinition;
@@ -149,6 +152,14 @@ final readonly class ManifestContributionSet
      * @since  2.0.0
      */
     private array $portalTemplates;
+
+    /**
+     * Conformant semantic interface surfaces, keyed and sorted by stable surface identifier.
+     *
+     * @var    array<string, SurfaceDefinition>
+     * @since  2.0.0
+     */
+    private array $interfaceSurfaces;
 
     /**
      * Declared field types, keyed and sorted by field-type identifier.
@@ -295,6 +306,7 @@ final readonly class ManifestContributionSet
      * @param   iterable<ReportDefinition>                   $reports                Safe report definitions.
      * @param   iterable<WebhookContributionDefinition>      $webhooks               Outbound adapter declarations.
      * @param   int                                          $spiVersion             Contribution SPI revision.
+     * @param   iterable<SurfaceDefinition>                   $interfaceSurfaces      KIS semantic surfaces.
      *
      * @throws  InvalidArgumentException  When an identifier is outside the owner's namespace or declared twice,
      *          navigation or a route references something this set does not declare, a business definition
@@ -329,6 +341,7 @@ final readonly class ManifestContributionSet
         iterable $reports = [],
         iterable $webhooks = [],
         private int $spiVersion = self::SPI_VERSION,
+        iterable $interfaceSurfaces = [],
     ) {
         if (!in_array($spiVersion, [self::SPI_VERSION, self::CURRENT_SPI_VERSION], true)) {
             throw new InvalidArgumentException('The extension contribution SPI version is unsupported.');
@@ -343,6 +356,7 @@ final readonly class ManifestContributionSet
         $this->portalNavigation = $this->index($portalNavigation, 'portal navigation');
         $this->portalRoutes = $this->index($portalRoutes, 'portal route');
         $this->portalTemplates = $this->index($portalTemplates, 'portal template');
+        $this->interfaceSurfaces = $this->index($interfaceSurfaces, 'interface surface');
         $this->fieldTypes = $this->businessIndex($fieldTypes, 'field type');
         $this->fieldPresentations = $this->fieldPresentationIndex($fieldPresentations);
         $this->businessDefinitions = $this->businessIndex($businessDefinitions, 'business definition');
@@ -397,6 +411,18 @@ final readonly class ManifestContributionSet
             if (!isset($this->portalTemplates[$route->template])) {
                 throw new InvalidArgumentException('Contributed portal routes must reference a declared template.');
             }
+        }
+        foreach ($this->interfaceSurfaces as $surface) {
+            foreach ($surface->declaration->capabilities as $capability) {
+                if (!isset($this->capabilities[$capability->value()])) {
+                    throw new InvalidArgumentException(
+                        'A KIS interface surface must reference a capability declared by its owner.',
+                    );
+                }
+            }
+        }
+        if ($this->interfaceSurfaces !== []) {
+            $this->assertInterfaceRouteCoverage();
         }
         $businessOwner = $owner->identifier() === ContributionOwner::CORE
             ? DefinitionOwner::core()
@@ -470,6 +496,120 @@ final readonly class ManifestContributionSet
     }
 
     /**
+     * Bind every KIS-enabled graphical route and navigation entry to one semantic surface.
+     *
+     * Existing schema-4 packages remain compatible while they omit `interface.surfaces`. Once a package
+     * opts in, every safe graphical route must have an area-matched surface with the same stable name,
+     * and navigation must resolve to that route by path and capability. Mutation routes remain actions
+     * of the GET surface rather than pretending to be separate pages.
+     *
+     * @return  void
+     *
+     * @throws  InvalidArgumentException  When a route, surface, capability, or navigation link is orphaned.
+     *
+     * @since   2.0.0
+     */
+    private function assertInterfaceRouteCoverage(): void
+    {
+        $administrator = [];
+        $portal = [];
+        foreach ($this->interfaceSurfaces as $identifier => $surface) {
+            if ($surface->declaration->area === SurfaceArea::Administrator) {
+                $administrator[$identifier] = $surface;
+            } elseif ($surface->declaration->area === SurfaceArea::Portal) {
+                $portal[$identifier] = $surface;
+            }
+        }
+
+        foreach ($administrator as $identifier => $surface) {
+            $route = $this->routes[$identifier] ?? null;
+            if ($route === null || !in_array('GET', $route->methods, true)) {
+                throw new InvalidArgumentException(
+                    'A KIS administrator surface must match its owned graphical GET route name.',
+                );
+            }
+            $capabilities = array_map(
+                static fn (Capability $capability): string => $capability->value(),
+                $surface->declaration->capabilities,
+            );
+            if (!in_array($route->capability, $capabilities, true)) {
+                throw new InvalidArgumentException(
+                    'A KIS administrator surface must include its route capability.',
+                );
+            }
+        }
+        foreach ($portal as $identifier => $surface) {
+            $route = $this->portalRoutes[$identifier] ?? null;
+            if ($route === null || !in_array('GET', $route->methods, true)) {
+                throw new InvalidArgumentException(
+                    'A KIS portal surface must match its owned graphical GET route name.',
+                );
+            }
+            $capabilities = array_map(
+                static fn (Capability $capability): string => $capability->value(),
+                $surface->declaration->capabilities,
+            );
+            if (!in_array($route->capability, $capabilities, true)) {
+                throw new InvalidArgumentException('A KIS portal surface must include its route capability.');
+            }
+        }
+        foreach ($this->routes as $identifier => $route) {
+            if (in_array('GET', $route->methods, true) && !isset($administrator[$identifier])) {
+                throw new InvalidArgumentException(
+                    'A KIS-enabled package must declare every administrator graphical GET route as a surface.',
+                );
+            }
+        }
+        foreach ($this->portalRoutes as $identifier => $route) {
+            if (in_array('GET', $route->methods, true) && !isset($portal[$identifier])) {
+                throw new InvalidArgumentException(
+                    'A KIS-enabled package must declare every portal graphical GET route as a surface.',
+                );
+            }
+        }
+        foreach ($this->navigation as $item) {
+            if ($item->surface === null || !isset($administrator[$item->surface])) {
+                throw new InvalidArgumentException(
+                    'KIS administrator navigation must declare an admitted interface surface identifier.',
+                );
+            }
+            $matched = array_filter(
+                $this->routes,
+                static fn (AdministratorRouteDefinition $route): bool =>
+                    $route->name === $item->surface
+                    && in_array('GET', $route->methods, true)
+                    && $route->path === $item->path
+                    && $route->capability === $item->capability,
+            );
+            if ($matched === []) {
+                throw new InvalidArgumentException(
+                    'KIS administrator navigation must resolve to an owned graphical route and surface.',
+                );
+            }
+        }
+        foreach ($this->portalNavigation as $item) {
+            if ($item->surface === null || !isset($portal[$item->surface])) {
+                throw new InvalidArgumentException(
+                    'KIS portal navigation must declare an admitted interface surface identifier.',
+                );
+            }
+            $matched = array_filter(
+                $this->portalRoutes,
+                static fn (PortalRouteDefinition $route): bool =>
+                    $route->name === $item->surface
+                    && in_array('GET', $route->methods, true)
+                    && $route->path === $item->path
+                    && $route->capability === $item->capability,
+            );
+            if ($matched === []) {
+                throw new InvalidArgumentException(
+                    'KIS portal navigation must resolve to an owned graphical route and surface.',
+                );
+            }
+        }
+    }
+
+    /**
      * Refuse SPI-2 ordering claims that the portable schema compiler cannot materialize.
      *
      * A reciprocal one-to-many/many-to-one pair is stored only in the many-to-one side's direct target
@@ -531,6 +671,7 @@ final readonly class ManifestContributionSet
         $topLevelKeys = ['version', 'capabilities', 'resource_policies', 'administrator', 'portal', 'business'];
         if ($manifestSchema >= 4) {
             $topLevelKeys[] = 'integration';
+            $topLevelKeys[] = 'interface';
         }
         self::knownKeys(
             $data,
@@ -558,6 +699,8 @@ final readonly class ManifestContributionSet
         self::knownKeys($business, $businessKeys, 'business contributions');
         $portal = self::object($data['portal'] ?? [], 'contributions.portal');
         self::knownKeys($portal, ['workspaces', 'navigation', 'routes', 'templates'], 'portal contributions');
+        $interface = self::object($data['interface'] ?? [], 'contributions.interface');
+        self::knownKeys($interface, ['surfaces'], 'interface contributions');
         $integration = self::object($data['integration'] ?? [], 'contributions.integration');
         self::knownKeys(
             $integration,
@@ -661,7 +804,10 @@ final readonly class ManifestContributionSet
         $navigation = array_map(static function (array $item) use ($owner): AdministratorNavigationDefinition {
             self::knownKeys(
                 $item,
-                ['id', 'workspace', 'label', 'description', 'path', 'icon', 'capability', 'priority', 'keywords'],
+                [
+                    'id', 'workspace', 'label', 'description', 'path', 'icon', 'capability', 'priority',
+                    'keywords', 'surface',
+                ],
                 'navigation contribution',
             );
             $definition = new AdministratorNavigationDefinition(
@@ -674,6 +820,7 @@ final readonly class ManifestContributionSet
                 self::string($item, 'capability'),
                 self::integer($item, 'priority'),
                 self::optionalString($item, 'keywords'),
+                ($surface = self::optionalString($item, 'surface')) === '' ? null : $surface,
             );
             $owner->assertOwns($definition->id, 'navigation');
             $owner->assertOwns($definition->workspace, 'workspace');
@@ -722,7 +869,10 @@ final readonly class ManifestContributionSet
         $portalNavigation = array_map(static function (array $item) use ($owner): PortalNavigationDefinition {
             self::knownKeys(
                 $item,
-                ['id', 'workspace', 'label', 'description', 'path', 'icon', 'capability', 'priority', 'keywords'],
+                [
+                    'id', 'workspace', 'label', 'description', 'path', 'icon', 'capability', 'priority',
+                    'keywords', 'surface',
+                ],
                 'portal navigation contribution',
             );
             $definition = new PortalNavigationDefinition(
@@ -735,6 +885,7 @@ final readonly class ManifestContributionSet
                 self::string($item, 'capability'),
                 self::integer($item, 'priority'),
                 self::optionalString($item, 'keywords'),
+                ($surface = self::optionalString($item, 'surface')) === '' ? null : $surface,
             );
             $owner->assertOwns($definition->id, 'portal navigation');
             $owner->assertOwns($definition->workspace, 'portal workspace');
@@ -767,6 +918,13 @@ final readonly class ManifestContributionSet
             $owner->assertOwns($definition->name, 'portal template');
             return $definition;
         }, self::objects($portal['templates'] ?? [], 'contributions.portal.templates'));
+        $interfaceSurfaces = array_map(
+            static fn (array $item): SurfaceDefinition => SurfaceDefinition::fromArray($owner, $item),
+            self::objects($interface['surfaces'] ?? [], 'contributions.interface.surfaces'),
+        );
+        if (array_key_exists('interface', $data) && $interfaceSurfaces === []) {
+            throw new InvalidArgumentException('A declared KIS interface section requires at least one surface.');
+        }
 
         $businessOwner = DefinitionOwner::extension($extension->value());
         $fieldTypes = array_map(static function (array $item) use ($businessOwner): FieldTypeDefinition {
@@ -862,6 +1020,7 @@ final readonly class ManifestContributionSet
             $reports,
             $webhooks,
             $expectedSpi,
+            $interfaceSurfaces,
         );
         $set->assertFieldPresentationCoverage();
 
@@ -1007,6 +1166,18 @@ final readonly class ManifestContributionSet
     public function portalTemplates(): array
     {
         return array_values($this->portalTemplates);
+    }
+
+    /**
+     * Return the KIS semantic surfaces this package declared.
+     *
+     * @return  list<SurfaceDefinition>  Admitted interface declarations in identifier order.
+     *
+     * @since   2.0.0
+     */
+    public function interfaceSurfaces(): array
+    {
+        return array_values($this->interfaceSurfaces);
     }
 
     /**
@@ -1213,6 +1384,7 @@ final readonly class ManifestContributionSet
      *                  routes: list<array<string, mixed>>,
      *                  views: list<array<string, mixed>>
      *              },
+     *              interface?: array{surfaces: list<array<string, mixed>>},
      *              business: array{
      *                  field_types: list<array<string, mixed>>,
      *                  definitions: list<array<string, mixed>>,
@@ -1303,6 +1475,11 @@ final readonly class ManifestContributionSet
             ],
             'business' => $business,
         ];
+        if ($this->interfaceSurfaces !== []) {
+            $document['interface'] = [
+                'surfaces' => $this->exports($this->interfaceSurfaces()),
+            ];
+        }
         if ($this->spiVersion >= self::CURRENT_SPI_VERSION) {
             $document['integration'] = [
                 'event_schemas' => $this->exports($this->eventSchemas()),

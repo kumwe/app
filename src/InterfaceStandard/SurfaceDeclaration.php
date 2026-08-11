@@ -86,6 +86,10 @@ final readonly class SurfaceDeclaration
         public ?IconName $icon,
     ) {
         $owner->assertOwns($surface->value(), 'interface surface');
+        self::assertListBounds($capabilities, 'capabilities', 0, 64);
+        self::assertListBounds($states, 'states', 1, count(SurfaceState::cases()));
+        self::assertListBounds($customization, 'customization', 0, count(CustomizationSlot::cases()));
+        self::assertListBounds($responsive, 'responsive', 1, 64);
         if (
             $purpose !== trim($purpose)
             || $purpose === ''
@@ -283,7 +287,7 @@ final readonly class SurfaceDeclaration
      */
     private static function capabilities(array $data): array
     {
-        $values = self::list($data, 'capabilities');
+        $values = self::list($data, 'capabilities', 0, 64);
         $capabilities = [];
         foreach ($values as $value) {
             if (!is_string($value)) {
@@ -309,7 +313,7 @@ final readonly class SurfaceDeclaration
     private static function states(array $data): array
     {
         $states = [];
-        foreach (self::list($data, 'states') as $value) {
+        foreach (self::list($data, 'states', 1, count(SurfaceState::cases())) as $value) {
             if (!is_string($value) || SurfaceState::tryFrom($value) === null) {
                 throw new InvalidArgumentException('A KIS declaration contains an unsupported surface state.');
             }
@@ -333,7 +337,7 @@ final readonly class SurfaceDeclaration
     private static function customization(array $data): array
     {
         $permissions = [];
-        foreach (self::list($data, 'customization') as $index => $value) {
+        foreach (self::list($data, 'customization', 0, count(CustomizationSlot::cases())) as $index => $value) {
             if (!is_array($value)) {
                 throw new InvalidArgumentException('KIS customization entries must be objects.');
             }
@@ -366,7 +370,7 @@ final readonly class SurfaceDeclaration
     private static function responsive(array $data): array
     {
         $elements = [];
-        foreach (self::list($data, 'responsive') as $index => $value) {
+        foreach (self::list($data, 'responsive', 1, 64) as $index => $value) {
             if (!is_array($value)) {
                 throw new InvalidArgumentException('KIS responsive entries must be objects.');
             }
@@ -419,22 +423,52 @@ final readonly class SurfaceDeclaration
      * Read a required list without accepting associative or scalar alternatives.
      *
      * @param   array<string, mixed>  $data  Declaration document being parsed.
-     * @param   string                $key   Required top-level list key.
+     * @param   string                $key      Required top-level list key.
+     * @param   int                   $minimum  Minimum number of entries.
+     * @param   int                   $maximum  Maximum number of entries.
      *
      * @return  list<mixed>  Exact list values.
      *
-     * @throws  InvalidArgumentException  When the field is not an array list.
+     * @throws  InvalidArgumentException  When the field is not a bounded array list.
      *
      * @since   2.0.0
      */
-    private static function list(array $data, string $key): array
+    private static function list(array $data, string $key, int $minimum, int $maximum): array
     {
         $value = $data[$key] ?? null;
-        if (!is_array($value) || !array_is_list($value)) {
-            throw new InvalidArgumentException(sprintf('KIS declaration field %s must be a list.', $key));
+        if (!is_array($value)) {
+            throw new InvalidArgumentException(sprintf('KIS declaration field %s must be a bounded list.', $key));
         }
+        self::assertListBounds($value, $key, $minimum, $maximum);
 
         return $value;
+    }
+
+    /**
+     * Keep runtime collection budgets identical to the portable JSON Schema limits.
+     *
+     * @param   array<mixed, mixed>  $values   Candidate collection.
+     * @param   string               $key      Field name used in the failure.
+     * @param   int                  $minimum  Minimum accepted entries.
+     * @param   int                  $maximum  Maximum accepted entries.
+     *
+     * @return  void
+     *
+     * @throws  InvalidArgumentException  When the collection is associative or outside its budget.
+     *
+     * @since   2.0.0
+     */
+    private static function assertListBounds(array $values, string $key, int $minimum, int $maximum): void
+    {
+        $count = count($values);
+        if (!array_is_list($values) || $count < $minimum || $count > $maximum) {
+            throw new InvalidArgumentException(sprintf(
+                'KIS declaration field %s must contain between %d and %d list entries.',
+                $key,
+                $minimum,
+                $maximum,
+            ));
+        }
     }
 
     /**

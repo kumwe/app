@@ -1,4 +1,6 @@
-@layer reset, tokens, base, components, utilities, overrides;
+@import "../interface-standard/styles.css";
+
+@layer reset, tokens, base, layout, components, utilities, overrides;
 
 @layer tokens {
   :root {

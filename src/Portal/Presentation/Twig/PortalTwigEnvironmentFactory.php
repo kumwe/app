@@ -49,6 +49,10 @@ final readonly class PortalTwigEnvironmentFactory
     {
         $core = self::directory($coreTemplates, 'core portal templates');
         $loader = new FilesystemLoader($core);
+        $loader->addPath(
+            self::directory($core . '/interface-standard', 'KIS templates'),
+            'kis',
+        );
         ksort($extensions, SORT_STRING);
         foreach ($extensions as $identifier => $path) {
             $owner = ExtensionIdentifier::fromString($identifier)->value();
