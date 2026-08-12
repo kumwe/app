@@ -11,7 +11,8 @@
     data-kis-catalog-toggle
   >{{ catalog_toggle_label|default('Browse resources') }}</button>
   <div class="kis-master-detail-grid">
-    <aside id="{{ id }}-catalog" class="kis-master-detail-catalog" aria-label="{{ catalog_label }}" data-kis-catalog>
+    {# The catalog is a sticky, height-capped sidebar, so keyboard users need focus to scroll it. #}
+    <aside id="{{ id }}-catalog" class="kis-master-detail-catalog" aria-label="{{ catalog_label }}" tabindex="0" data-kis-catalog>
       {% block catalog %}{% endblock %}
     </aside>
     <div class="kis-master-detail-content" data-kis-detail>

@@ -35,6 +35,11 @@ export default defineConfig({
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
+    // A pre-provisioned Chromium (for example an offline CI or development container) may not
+    // match the pinned Playwright revision; naming its binary here avoids a network install.
+    ...(process.env.KUMWE_BROWSER_CHROMIUM
+      ? { launchOptions: { executablePath: process.env.KUMWE_BROWSER_CHROMIUM } }
+      : {}),
   },
   projects: [
     {
