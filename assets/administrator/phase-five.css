@@ -237,6 +237,13 @@
   [data-kis-surface="core.administrator.content-models"] .kis-phase-five-dual-workspace {
     grid-template-columns: minmax(0, 1fr);
   }
+
+  [data-kis-surface="core.administrator.content-models"]
+    details.model-card > form > button[type="submit"] {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+    white-space: normal;
+  }
 }
 
 @layer overrides {

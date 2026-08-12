@@ -629,7 +629,10 @@ test.describe('authenticated administrator', () => {
         });
       }
 
-      const users = page.getByRole('region', { name: 'Users', exact: true });
+      const users = page.locator(
+        '.kis-responsive-table[role="region"][aria-label="Users"]',
+      );
+      await expect(users).toHaveCount(1);
       await expect(users).toBeVisible();
       for (const heading of ['User', 'Status', 'Groups and roles', 'Tasks']) {
         await expect(users.getByRole('columnheader', {
