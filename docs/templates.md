@@ -293,6 +293,20 @@ php bin/kumwe extension:activate vendor/site-template --surface=site \
   --token-file=/run/secrets/kumwe-extension-token
 ```
 
+To swap the public site back to the built-in presentation, disable the theme from the same site
+context; disabling a site template releases that site's binding and the next request renders the
+protected core templates again. Interim example, returning a site from the Horizon example to the
+default theme (the same two steps work from the administrator Extensions screen as **Disable**):
+
+```bash
+php bin/kumwe extension:disable kumwe/horizon-theme-example --site=default \
+  --token-file=/run/secrets/kumwe-extension-token
+php bin/kumwe extension:runtime:watch --once   # or wait for the running runtime watcher to converge
+```
+
+Re-activating the theme later is the same `extension:activate --surface=site` call; no reinstall is
+needed.
+
 Activate an administrator theme through the administrator application so current-password step-up is
 enforced. The selection and immutable signed runtime publication commit in one database transaction. A
 compile or KIS contract failure aborts before the selection changes. Replace long-running application
