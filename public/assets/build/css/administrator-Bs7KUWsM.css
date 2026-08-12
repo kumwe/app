@@ -636,11 +636,6 @@
     grid-template-columns: minmax(0, 1fr);
   }
 
-  [data-kis-surface="core.administrator.content-models"] :is(input, select, textarea) {
-    min-width: 0;
-    max-width: 100%;
-    overflow-x: hidden;
-  }
 }
 
 @layer overrides {
@@ -658,6 +653,20 @@
       :is(form, kumwe-field-builder, kumwe-workflow-builder, [data-field-rows], [data-state-rows], [data-transition-rows]) {
       min-width: 0;
       max-width: 100%;
+    }
+
+    [data-kis-surface="core.administrator.content-models"]
+      :is(kumwe-field-builder, kumwe-workflow-builder) > .section-heading {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      align-items: stretch;
+    }
+
+    [data-kis-surface="core.administrator.content-models"]
+      :is(kumwe-field-builder, kumwe-workflow-builder) > .section-heading > button {
+      max-width: 100%;
+      justify-self: start;
+      white-space: normal;
     }
 
     [data-kis-surface="core.administrator.content-models"] .remove-row {
