@@ -12,6 +12,7 @@
 /storage/logs/*
 /storage/sessions/*
 /storage/tmp/*
+/storage/private/demo-access-credentials.json
 /extensions/*
 /vendor/
 

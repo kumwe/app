@@ -299,6 +299,48 @@ final class VdmBusinessDemoInstallerTest extends TestCase
             ],
         ], $organization[0]['predicate'] ?? null);
 
+        $organizationLess = [
+            'type' => 'attribute_null',
+            'source' => 'context',
+            'attribute' => 'organization',
+            'is_null' => true,
+        ];
+        $update = $this->invoke(
+            $installer,
+            'policyBaselines',
+            $definition,
+            'business.record.update',
+            'vdm',
+            'organization',
+        );
+        self::assertIsArray($update);
+        self::assertIsArray($update[0] ?? null);
+        self::assertSame($organizationLess, $update[0]['predicate'] ?? null);
+
+        $workflow = $this->invoke(
+            $installer,
+            'policyBaselines',
+            $definition,
+            'business.record.action',
+            'vdm',
+            'organization',
+        );
+        self::assertIsArray($workflow);
+        self::assertIsArray($workflow[0] ?? null);
+        self::assertSame('boolean', $workflow[0]['predicate']['type'] ?? null);
+
+        $readOnlyAction = $this->invoke(
+            $installer,
+            'policyBaselines',
+            $definition,
+            'business.record.action',
+            'vdm',
+            'organization-read',
+        );
+        self::assertIsArray($readOnlyAction);
+        self::assertIsArray($readOnlyAction[0] ?? null);
+        self::assertSame($organizationLess, $readOnlyAction[0]['predicate'] ?? null);
+
         $administration = $this->invoke($installer, 'policyBaselines', $definition, $read, 'vdm', 'administration');
         self::assertIsArray($administration);
         self::assertCount(2, $administration);

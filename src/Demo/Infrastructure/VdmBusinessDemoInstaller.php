@@ -457,14 +457,41 @@ final readonly class VdmBusinessDemoInstaller
     }
 
     /**
+     * Business-record operations an organization-scoped portal member may read with.
+     *
+     * @var    list<string>
+     * @since  2.0.0
+     */
+    private const array READ_OPERATIONS = [
+        'business.record.browse',
+        'business.record.export',
+        'business.record.history',
+        'business.record.read',
+        'business.record.report',
+    ];
+
+    /**
+     * Business-record operations that execute declared workflow steps rather than structural edits.
+     *
+     * @var    list<string>
+     * @since  2.0.0
+     */
+    private const array WORKFLOW_OPERATIONS = [
+        'business.record.action',
+        'business.record.transition',
+    ];
+
+    /**
      * Derive every deterministic policy row one definition operation requires under its access mode.
      *
      * The `open` mode answers the historical constant-true allow row byte for byte, so released
      * checkpoints stay valid. The `organization` mode scopes portal members to records whose
-     * `organization` field equals their authenticated organization while every organization-less
-     * context — administrator, CLI, API token, and this installer — keeps full visibility. The
-     * `administration` mode keeps the historical allow row and appends a deny row that vetoes all
-     * organization contexts, so legacy definitions never leak between portal clients.
+     * `organization` field equals their authenticated organization for reading and for declared
+     * workflow actions, while structural mutations stay with organization-less contexts —
+     * administrator, CLI, API token, and this installer — which always keep full visibility.
+     * The `organization-read` mode narrows that further to reading alone. The `administration`
+     * mode keeps the historical allow row and appends a deny row that vetoes all organization
+     * contexts, so legacy definitions never leak between portal clients.
      *
      * @param   EntityTypeDefinition  $definition  Projected definition whose fields establish disclosure.
      * @param   string                $operation   Exact business-record capability and policy action.
@@ -482,17 +509,21 @@ final readonly class VdmBusinessDemoInstaller
         string $mode,
     ): array {
         $fields = $this->recordFieldRules($definition);
-        $allow = $mode === 'organization'
-            ? [
+        $organizationLess = [
+            'type' => 'attribute_null',
+            'source' => 'context',
+            'attribute' => 'organization',
+            'is_null' => true,
+        ];
+        $organizationScoped = in_array($operation, self::READ_OPERATIONS, true)
+            || ($mode === 'organization' && in_array($operation, self::WORKFLOW_OPERATIONS, true));
+        $allow = match (true) {
+            $mode === 'open', $mode === 'administration' => ['type' => 'constant', 'value' => true],
+            $organizationScoped => [
                 'type' => 'boolean',
                 'operator' => 'any',
                 'children' => [
-                    [
-                        'type' => 'attribute_null',
-                        'source' => 'context',
-                        'attribute' => 'organization',
-                        'is_null' => true,
-                    ],
+                    $organizationLess,
                     [
                         'type' => 'field_attribute_comparison',
                         'field' => 'organization',
@@ -502,8 +533,9 @@ final readonly class VdmBusinessDemoInstaller
                         'value_type' => 'string',
                     ],
                 ],
-            ]
-            : ['type' => 'constant', 'value' => true];
+            ],
+            default => $organizationLess,
+        };
         $baselines = [
             $this->assemblePolicyBaseline($definition, $operation, $profile, '', 'allow', $allow, $fields),
         ];
@@ -615,7 +647,8 @@ final readonly class VdmBusinessDemoInstaller
             $entry = $this->map($candidate, 'definition installation entry');
             $fixtureKey = $this->requiredString($entry, 'fixture_key');
             $mode = $entry['record_access'] ?? 'open';
-            if (!is_string($mode) || !in_array($mode, ['open', 'organization', 'administration'], true)) {
+            $modesAllowed = ['open', 'organization', 'organization-read', 'administration'];
+            if (!is_string($mode) || !in_array($mode, $modesAllowed, true)) {
                 throw new RuntimeException(sprintf(
                     'VDM definition %s declares an unknown record-access mode.',
                     $fixtureKey,

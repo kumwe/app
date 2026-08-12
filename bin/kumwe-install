@@ -218,6 +218,45 @@ if ($exitCode !== 0) {
     fail('Administrator creation failed; configuration and schema were retained.');
 }
 
+if (
+    $businessProfile !== 'none'
+    && confirmation('Provision demonstration staff and portal sign-ins with generated passwords?', true)
+) {
+    $credentialsFile = $root . '/storage/private/demo-access-credentials.json';
+    $temporaryPasswordFile = tempnam(sys_get_temp_dir(), 'kumwe-admin-');
+
+    if (!is_string($temporaryPasswordFile)) {
+        fail('Could not create a protected temporary password file.');
+    }
+
+    try {
+        if (!chmod($temporaryPasswordFile, 0600)
+            || file_put_contents($temporaryPasswordFile, $administratorPassword, LOCK_EX) === false
+        ) {
+            fail('Could not write the protected administrator password file.');
+        }
+
+        $exitCode = runCommand([
+            PHP_BINARY,
+            $root . '/bin/kumwe',
+            'demo:provision-access',
+            '--admin-email=' . $administratorEmail,
+            '--admin-password-file=' . $temporaryPasswordFile,
+            '--credentials-file=' . $credentialsFile,
+        ], $root);
+    } finally {
+        if (is_file($temporaryPasswordFile)) {
+            unlink($temporaryPasswordFile);
+        }
+    }
+
+    if ($exitCode !== 0) {
+        fail('Demonstration access provisioning failed; the installation itself was retained.');
+    }
+
+    fwrite(STDOUT, "Demonstration sign-ins were written to {$credentialsFile}.\n");
+}
+
 fwrite(STDOUT, "\nKumwe is configured. Point the web server document root at public/.\n");
 
 /** @return never */

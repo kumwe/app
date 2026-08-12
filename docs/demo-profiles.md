@@ -64,6 +64,19 @@ a released fixture can never be edited, reordered, or removed, only extended by 
 under a higher manifest version. Record access policies are derived from each definition's field
 flags and installed with provenance checkpoints under `core.demo.<profile>.…` policy codes.
 
+## Access manifests
+
+A business profile may ship an `access.json` manifest (`kumwe.demo-access/v1`) declaring its
+demonstration cast: administrator staff roles with their capability sets, portal client organizations
+with their workspaces, and the sign-in identities for both. The released VDM cast declares an
+accountant, clerk, bookkeeper, stockkeeper, and system administrator on the staff side, and portal
+organizations in which one company has two members while others have one — every address inside the
+reserved `.example` zone. The `demo:provision-access` command turns this manifest into real accounts:
+roles and users through the canonical access-control service under an authenticated administrator,
+memberships through the Business Security tables with audit records, and one generated password per
+new account written to an owner-only credentials file. See
+[the command reference](cli.md#demonstration-sign-ins).
+
 ## What profiles never contain
 
 Profiles are data-only. They never contain PHP, SQL, environment interpolation, or credentials of any

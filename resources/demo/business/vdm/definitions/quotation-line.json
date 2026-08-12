@@ -38,30 +38,6 @@
       ]
     },
     {
-      "handle": "organization",
-      "label": "Portal organization",
-      "type": "core.text",
-      "description": "Portal organization identifier that scopes this line to one client's members.",
-      "required": false,
-      "nullable": true,
-      "length": 63,
-      "normalizers": [
-        "trim",
-        "lowercase"
-      ],
-      "indexed": true,
-      "filterable": true,
-      "exportable": false,
-      "sensitivity": "internal",
-      "form_group": "access",
-      "order": 10,
-      "placements": [
-        "detail",
-        "form",
-        "history"
-      ]
-    },
-    {
       "handle": "description",
       "label": "Description",
       "type": "core.text",
@@ -78,7 +54,7 @@
       "exportable": true,
       "sensitivity": "public",
       "form_group": "line",
-      "order": 20,
+      "order": 10,
       "placements": [
         "detail",
         "form",
@@ -101,7 +77,7 @@
       "exportable": true,
       "sensitivity": "public",
       "form_group": "line",
-      "order": 30,
+      "order": 20,
       "placements": [
         "detail",
         "form",
@@ -123,7 +99,7 @@
       "exportable": true,
       "sensitivity": "public",
       "form_group": "line",
-      "order": 40,
+      "order": 30,
       "placements": [
         "detail",
         "form",
@@ -146,7 +122,7 @@
       "exportable": true,
       "sensitivity": "public",
       "form_group": "line",
-      "order": 50,
+      "order": 40,
       "placements": [
         "detail",
         "form",
@@ -170,12 +146,36 @@
       "exportable": true,
       "sensitivity": "public",
       "form_group": "line",
-      "order": 60,
+      "order": 50,
       "placements": [
         "detail",
         "form",
         "list",
         "relation"
+      ]
+    },
+    {
+      "handle": "organization",
+      "label": "Portal organization",
+      "type": "core.text",
+      "description": "Portal organization identifier that scopes this line to one client's members.",
+      "required": false,
+      "nullable": true,
+      "length": 63,
+      "normalizers": [
+        "trim",
+        "lowercase"
+      ],
+      "indexed": true,
+      "filterable": true,
+      "exportable": false,
+      "sensitivity": "internal",
+      "form_group": "access",
+      "order": 60,
+      "placements": [
+        "detail",
+        "form",
+        "history"
       ]
     }
   ],
@@ -209,7 +209,6 @@
   "administrator_exposure": true,
   "portal_exposure": true,
   "portal_operations": [
-    "browse",
     "read",
     "relation"
   ],

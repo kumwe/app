@@ -79,7 +79,7 @@
     },
     {
       "fixture_key": "definition.quotation_line",
-      "record_access": "organization",
+      "record_access": "organization-read",
       "file": "definitions/quotation-line.json",
       "id": "019c7000-0000-7000-8000-000000000108",
       "handle": "site.default.vdm_quotation_line",
@@ -100,7 +100,7 @@
     },
     {
       "fixture_key": "definition.invoice_line",
-      "record_access": "organization",
+      "record_access": "organization-read",
       "file": "definitions/invoice-line.json",
       "id": "019c7000-0000-7000-8000-00000000010a",
       "handle": "site.default.vdm_invoice_line",
@@ -110,7 +110,7 @@
     },
     {
       "fixture_key": "definition.invoice",
-      "record_access": "organization",
+      "record_access": "organization-read",
       "file": "definitions/invoice.json",
       "id": "019c7000-0000-7000-8000-000000000109",
       "handle": "site.default.vdm_invoice",

@@ -1,0 +1,169 @@
+{
+  "format": "kumwe.demo-access/v1",
+  "profile": "vdm",
+  "version": 1,
+  "site": "default",
+  "description": "Demonstration staff roles, portal organizations, and sign-in identities for the VDM example. Passwords are never part of this manifest; the provisioning command generates them at deployment time.",
+  "roles": [
+    {
+      "handle": "vdm-accountant",
+      "label": "Accountant",
+      "area": "administrator",
+      "capabilities": [
+        "administrator.access",
+        "business.record.action",
+        "business.record.browse",
+        "business.record.create",
+        "business.record.export",
+        "business.record.history",
+        "business.record.read",
+        "business.record.relate",
+        "business.record.report",
+        "business.record.transition",
+        "business.record.update"
+      ]
+    },
+    {
+      "handle": "vdm-clerk",
+      "label": "Clerk",
+      "area": "administrator",
+      "capabilities": [
+        "administrator.access",
+        "business.record.browse",
+        "business.record.read",
+        "content.create",
+        "content.read",
+        "content.submit",
+        "content.update"
+      ]
+    },
+    {
+      "handle": "vdm-bookkeeper",
+      "label": "Bookkeeper",
+      "area": "administrator",
+      "capabilities": [
+        "administrator.access",
+        "business.record.browse",
+        "business.record.export",
+        "business.record.history",
+        "business.record.read",
+        "business.record.report"
+      ]
+    },
+    {
+      "handle": "vdm-stockkeeper",
+      "label": "Stockkeeper",
+      "area": "administrator",
+      "capabilities": [
+        "administrator.access",
+        "business.record.browse",
+        "business.record.create",
+        "business.record.read",
+        "business.record.relate",
+        "business.record.update"
+      ]
+    },
+    {
+      "handle": "vdm-system-administrator",
+      "label": "System administrator",
+      "area": "administrator",
+      "capabilities": [
+        "administrator.access",
+        "automation.manage",
+        "business.schema.read",
+        "extensions.manage",
+        "navigation.manage",
+        "settings.manage",
+        "themes.administrator.manage",
+        "themes.site.manage",
+        "users.manage"
+      ]
+    },
+    {
+      "handle": "vdm-client-portal",
+      "label": "Client portal member",
+      "area": "portal",
+      "capabilities": [
+        "business.record.action",
+        "business.record.browse",
+        "business.record.export",
+        "business.record.history",
+        "business.record.read",
+        "business.record.relate",
+        "business.record.report",
+        "business.record.transition",
+        "portal.access"
+      ]
+    }
+  ],
+  "staff": [
+    {
+      "email": "accountant@vdm.example",
+      "display_name": "Demonstration Accountant",
+      "role": "vdm-accountant"
+    },
+    {
+      "email": "clerk@vdm.example",
+      "display_name": "Demonstration Clerk",
+      "role": "vdm-clerk"
+    },
+    {
+      "email": "bookkeeper@vdm.example",
+      "display_name": "Demonstration Bookkeeper",
+      "role": "vdm-bookkeeper"
+    },
+    {
+      "email": "stockkeeper@vdm.example",
+      "display_name": "Demonstration Stockkeeper",
+      "role": "vdm-stockkeeper"
+    },
+    {
+      "email": "sysadmin@vdm.example",
+      "display_name": "Demonstration System Administrator",
+      "role": "vdm-system-administrator"
+    }
+  ],
+  "organizations": [
+    {
+      "identifier": "kalahari-health",
+      "label": "Kalahari Health Systems",
+      "workspace": "general",
+      "members": [
+        {
+          "email": "operations@kalahari-health.example",
+          "display_name": "Kalahari Operations Contact",
+          "role": "vdm-client-portal"
+        },
+        {
+          "email": "finance@kalahari-health.example",
+          "display_name": "Kalahari Finance Contact",
+          "role": "vdm-client-portal"
+        }
+      ]
+    },
+    {
+      "identifier": "desert-bloom",
+      "label": "Desert Bloom Foods",
+      "workspace": "general",
+      "members": [
+        {
+          "email": "orders@desert-bloom.example",
+          "display_name": "Desert Bloom Ordering Contact",
+          "role": "vdm-client-portal"
+        }
+      ]
+    },
+    {
+      "identifier": "namib-learning",
+      "label": "Namib Learning Collective",
+      "workspace": "general",
+      "members": [
+        {
+          "email": "campus@namib-learning.example",
+          "display_name": "Namib Learning Campus Contact",
+          "role": "vdm-client-portal"
+        }
+      ]
+    }
+  ]
+}

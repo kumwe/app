@@ -122,6 +122,29 @@ administrator_password="$(<"$state_directory/administrator-password")"
     '
 unset administrator_password
 
+if [[ "${KUMWE_DEMO_ACCESS:-true}" == true && ! -f "$state_directory/demo-access-credentials.json" ]]; then
+    administrator_password="$(<"$state_directory/administrator-password")"
+    install -m 0600 /dev/null "$state_directory/demo-access-credentials.json"
+    "${compose[@]}" run \
+        --rm \
+        --no-deps \
+        --env KUMWE_DEMO_ADMIN_PASSWORD="$administrator_password" \
+        app \
+        sh -euc '
+            umask 077
+            password_file=/tmp/kumwe-demo-administrator-password
+            credentials_file=/tmp/kumwe-demo-access-credentials.json
+            trap '\''rm -f "$password_file" "$credentials_file"'\'' EXIT
+            printf %s "$KUMWE_DEMO_ADMIN_PASSWORD" > "$password_file"
+            php bin/kumwe demo:provision-access \
+                --admin-email=administrator@kumwe.test \
+                --admin-password-file="$password_file" \
+                --credentials-file="$credentials_file" >&2
+            cat "$credentials_file"
+        ' > "$state_directory/demo-access-credentials.json"
+    unset administrator_password
+fi
+
 "${compose[@]}" --profile automation up --detach --wait app web worker scheduler
 curl --fail --silent --show-error --retry 20 --retry-connrefused \
     "http://127.0.0.1:$http_port/health/ready" >/dev/null
@@ -130,4 +153,7 @@ echo
 echo "Kumwe is ready at http://localhost:$http_port/administrator"
 echo 'Email: administrator@kumwe.test'
 echo "Password: $(<"$state_directory/administrator-password")"
+if [[ -f "$state_directory/demo-access-credentials.json" ]]; then
+    echo "Demonstration staff and portal sign-ins: $state_directory/demo-access-credentials.json"
+fi
 echo "Stop and remove the isolated demo with: $0 down"

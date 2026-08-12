@@ -25,6 +25,7 @@ Commands return `0` on success and a non-zero status on invalid input, unavailab
 | `database:status` | List pending migrations; returns `2` when work is pending |
 | `app:health` | Check readiness from the application process |
 | `user:create-admin` | Create the initial owner from a protected password file |
+| `demo:provision-access` | Provision demonstration staff and portal sign-ins with generated credentials |
 
 The owner command requires `--email`, `--name`, and an absolute `--password-file` whose group/other permission bits are clear.
 
@@ -38,9 +39,11 @@ KUMWE_BUSINESS_DEMO=true \
 php bin/kumwe database:migrate
 ```
 
-The content selector accepts only `documentation`, `placeholder`, or `blank`; the business selector is an independent
-boolean. `documentation` plus `true` is the default. Use `blank` plus `false` before migrating a new database for an
-empty start.
+Both selectors validate against the demo profiles the release actually ships under `resources/demo`; this release
+ships the `documentation`, `placeholder`, and `blank` content profiles and the `vdm` business profile. The business
+dataset may also be named directly with `KUMWE_BUSINESS_PROFILE=vdm` (or `none`), which wins over the boolean alias.
+`documentation` plus `vdm` is the default. Use `blank` plus `none` before migrating a new database for an empty start.
+See [demo profiles](demo-profiles.md) for the manifest contract and for adding profiles in a fork.
 
 Each dataset's choice is frozen independently when its first reconciliation passes validation and begins. Once
 recorded, a later failure does not release it. Every later invocation, including production's one-shot `migrate`
@@ -65,6 +68,26 @@ php bin/kumwe database:recover-lock \
 The command authorizes the system migration use case, verifies expiry, holds the new advisory namespace, and performs
 an exact compare-and-delete. It will not clear an active, changed, malformed, or unconfirmed owner. Run
 `database:migrate` immediately afterward.
+
+### Demonstration sign-ins
+
+`demo:provision-access` provisions the selected business profile's demonstration cast — administrator staff roles
+such as the accountant, clerk, bookkeeper, stockkeeper, and system administrator, and the portal client
+organizations with their members — from the profile's access manifest. It requires host access and a real
+administrator's credentials, generates a fresh password for every account it creates, and writes them once to an
+owner-only credentials file it refuses to overwrite:
+
+```bash
+php bin/kumwe demo:provision-access \
+  --admin-email=administrator@kumwe.test \
+  --admin-password-file=/absolute/protected/password-file \
+  --credentials-file=/absolute/new/demo-access-credentials.json
+```
+
+The run is idempotent: already-provisioned identities are confirmed without a password change, so a rerun never
+invalidates anyone's sign-in. Profiles themselves never contain a password; the credentials file is the only place
+the generated secrets exist besides the command's own output. See
+[the production demonstration](demonstration.md) for where the packaged demo writes this file.
 
 ## Tokens and access
 

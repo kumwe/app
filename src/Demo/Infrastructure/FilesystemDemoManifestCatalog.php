@@ -217,6 +217,186 @@ final readonly class FilesystemDemoManifestCatalog
     }
 
     /**
+     * Load one discovered business profile's demonstration access manifest.
+     *
+     * The access manifest declares the demonstration cast — administrator staff roles, portal
+     * organizations, and sign-in identities — and never any credential material. Every address must
+     * live inside the reserved `.example` zone so a shipped cast can never collide with real mail.
+     *
+     * @param   string  $profile  Discovered business profile name, for example `vdm`.
+     *
+     * @return  array{manifest: array<string, mixed>, checksum: string}  Validated document and canonical digest.
+     *
+     * @throws  RuntimeException  When the profile is undiscovered or the manifest violates its contract.
+     *
+     * @since   2.0.0
+     */
+    public function access(string $profile): array
+    {
+        if (
+            preg_match(self::PROFILE_NAME_PATTERN, $profile) !== 1
+            || !in_array($profile, $this->businessProfiles(), true)
+        ) {
+            throw new RuntimeException('The selected business demo profile is unsupported.');
+        }
+        $loaded = $this->loadDocument(
+            sprintf('%s/resources/demo/business/%s/access.json', $this->root, $profile),
+        );
+        $manifest = $loaded['manifest'];
+        if (
+            ($manifest['format'] ?? null) !== 'kumwe.demo-access/v1'
+            || ($manifest['profile'] ?? null) !== $profile
+        ) {
+            throw new RuntimeException(
+                sprintf('The %s demo access manifest has an invalid contract.', $profile),
+            );
+        }
+        $roles = $this->accessRoles($manifest, $profile);
+        $emails = [];
+        $staff = $manifest['staff'] ?? null;
+        if (!is_array($staff) || !array_is_list($staff) || count($staff) > 64) {
+            throw new RuntimeException(sprintf('The %s demo staff list is invalid.', $profile));
+        }
+        foreach ($staff as $person) {
+            $this->assertAccessIdentity($person, $roles, 'administrator', $emails, $profile);
+        }
+        $organizations = $manifest['organizations'] ?? null;
+        if (!is_array($organizations) || !array_is_list($organizations) || count($organizations) > 32) {
+            throw new RuntimeException(sprintf('The %s demo organization list is invalid.', $profile));
+        }
+        $identifiers = [];
+        foreach ($organizations as $organization) {
+            if (!is_array($organization) || array_is_list($organization)) {
+                throw new RuntimeException(sprintf('A %s demo organization is invalid.', $profile));
+            }
+            $identifier = $organization['identifier'] ?? null;
+            $workspace = $organization['workspace'] ?? null;
+            $label = $organization['label'] ?? null;
+            if (
+                !is_string($identifier)
+                || preg_match(self::PROFILE_NAME_PATTERN, $identifier) !== 1
+                || isset($identifiers[$identifier])
+                || !is_string($workspace)
+                || preg_match(self::PROFILE_NAME_PATTERN, $workspace) !== 1
+                || !is_string($label)
+                || trim($label) === ''
+                || strlen($label) > 160
+            ) {
+                throw new RuntimeException(sprintf('A %s demo organization is invalid.', $profile));
+            }
+            $identifiers[$identifier] = true;
+            $members = $organization['members'] ?? null;
+            if (!is_array($members) || !array_is_list($members) || $members === [] || count($members) > 16) {
+                throw new RuntimeException(sprintf(
+                    'Demo organization %s must declare between one and sixteen members.',
+                    $identifier,
+                ));
+            }
+            foreach ($members as $member) {
+                $this->assertAccessIdentity($member, $roles, 'portal', $emails, $profile);
+            }
+        }
+
+        return $loaded;
+    }
+
+    /**
+     * Validate the declared role vocabulary of one demo access manifest.
+     *
+     * @param   array<string, mixed>  $manifest  Decoded access manifest.
+     * @param   string                $profile   Business profile name for diagnostics.
+     *
+     * @return  array<string, string>  Declared area keyed by role handle.
+     *
+     * @throws  RuntimeException  When a role entry is malformed or duplicated.
+     *
+     * @since   2.0.0
+     */
+    private function accessRoles(array $manifest, string $profile): array
+    {
+        $entries = $manifest['roles'] ?? null;
+        if (!is_array($entries) || !array_is_list($entries) || $entries === [] || count($entries) > 32) {
+            throw new RuntimeException(sprintf('The %s demo role list is invalid.', $profile));
+        }
+        $roles = [];
+        foreach ($entries as $entry) {
+            if (!is_array($entry) || array_is_list($entry)) {
+                throw new RuntimeException(sprintf('A %s demo role is invalid.', $profile));
+            }
+            $handle = $entry['handle'] ?? null;
+            $label = $entry['label'] ?? null;
+            $area = $entry['area'] ?? null;
+            $capabilities = $entry['capabilities'] ?? null;
+            if (
+                !is_string($handle)
+                || preg_match(self::PROFILE_NAME_PATTERN, $handle) !== 1
+                || isset($roles[$handle])
+                || !is_string($label)
+                || trim($label) === ''
+                || strlen($label) > 120
+                || !in_array($area, ['administrator', 'portal'], true)
+                || !is_array($capabilities)
+                || !array_is_list($capabilities)
+                || $capabilities === []
+                || count($capabilities) > 32
+            ) {
+                throw new RuntimeException(sprintf('A %s demo role is invalid.', $profile));
+            }
+            foreach ($capabilities as $capability) {
+                if (!is_string($capability) || preg_match('/^[a-z][a-z0-9._-]{2,190}$/D', $capability) !== 1) {
+                    throw new RuntimeException(sprintf('Demo role %s declares an invalid capability.', $handle));
+                }
+            }
+            $roles[$handle] = $area;
+        }
+
+        return $roles;
+    }
+
+    /**
+     * Validate one declared demo identity against the role vocabulary and the fictional-address rule.
+     *
+     * @param   mixed                  $person   Candidate identity entry.
+     * @param   array<string, string>  $roles    Declared area keyed by role handle.
+     * @param   string                 $area     Area the identity must belong to.
+     * @param   array<string, bool>    &$emails  Addresses seen so far across the whole manifest.
+     * @param   string                 $profile  Business profile name for diagnostics.
+     *
+     * @return  void
+     *
+     * @throws  RuntimeException  When the identity is malformed, duplicated, or outside `.example`.
+     *
+     * @since   2.0.0
+     */
+    private function assertAccessIdentity(
+        mixed $person,
+        array $roles,
+        string $area,
+        array &$emails,
+        string $profile,
+    ): void {
+        if (!is_array($person) || array_is_list($person)) {
+            throw new RuntimeException(sprintf('A %s demo identity is invalid.', $profile));
+        }
+        $email = $person['email'] ?? null;
+        $name = $person['display_name'] ?? null;
+        $role = $person['role'] ?? null;
+        if (
+            !is_string($email)
+            || preg_match('/^[a-z0-9][a-z0-9._-]{0,63}@[a-z0-9][a-z0-9.-]{0,120}\.example$/D', $email) !== 1
+            || isset($emails[$email])
+            || !is_string($name)
+            || trim($name) === ''
+            || strlen($name) > 120
+            || !is_string($role)
+            || ($roles[$role] ?? null) !== $area
+        ) {
+            throw new RuntimeException(sprintf('A %s demo identity is invalid.', $profile));
+        }
+        $emails[$email] = true;
+    }
+
+    /**
      * Read and validate one bounded manifest file.
      *
      * @param   string  $path             Absolute JSON file path.

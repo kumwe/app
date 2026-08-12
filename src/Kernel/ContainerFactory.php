@@ -257,6 +257,7 @@ use Kumwe\CMS\Demo\Application\DemoProfileLedger;
 use Kumwe\CMS\Demo\Application\DemoProfileReconciler;
 use Kumwe\CMS\Demo\Application\VdmBusinessManifestProjector;
 use Kumwe\CMS\Demo\Application\VdmBusinessOperationGuard;
+use Kumwe\CMS\Demo\Infrastructure\DemoAccessProvisioner;
 use Kumwe\CMS\Demo\Infrastructure\DemoContentProfileInstaller;
 use Kumwe\CMS\Demo\Infrastructure\DemoProfileInstaller;
 use Kumwe\CMS\Demo\Infrastructure\FilesystemDemoManifestCatalog;
@@ -303,6 +304,7 @@ use Kumwe\CMS\Extension\Runtime\RuntimeMaterializationState;
 use Kumwe\CMS\Extension\Runtime\RuntimePublicationKeyRing;
 use Kumwe\CMS\Delivery\Console\Command\CreateAccessTokenCommand;
 use Kumwe\CMS\Delivery\Console\Command\CreateAdministratorCommand;
+use Kumwe\CMS\Delivery\Console\Command\DemoAccessCommand;
 use Kumwe\CMS\Delivery\Console\Command\ConsoleAuthorizer;
 use Kumwe\CMS\Delivery\Console\Command\ActivateExtensionCommand;
 use Kumwe\CMS\Delivery\Console\Command\BuildExtensionCommand;
@@ -4501,6 +4503,27 @@ final class ContainerFactory
             self::service($container, AdministratorIdentityGateway::class),
             SystemPrincipal::issue($provenance, SystemIdentity::Bootstrap),
         ), true);
+        $container->share(DemoAccessProvisioner::class, static fn (
+            Container $container,
+        ): DemoAccessProvisioner => new DemoAccessProvisioner(
+            self::service($container, AccessControlService::class),
+            self::service($container, AccessControlRepository::class),
+            self::service($container, BusinessSecurityAdministrationRepository::class),
+            self::service($container, Connection::class),
+            self::service($container, TableNames::class),
+            self::service($container, TransactionManager::class),
+            self::service($container, AuditRecorder::class),
+            self::service($container, ClockInterface::class),
+        ), true);
+        $container->share(DemoAccessCommand::class, static fn (
+            Container $container,
+        ): DemoAccessCommand => new DemoAccessCommand(
+            self::service($container, ApplicationConfiguration::class),
+            self::service($container, FilesystemDemoManifestCatalog::class),
+            self::service($container, AdministratorIdentityGateway::class),
+            self::service($container, DemoAccessProvisioner::class),
+            self::service($container, ClockInterface::class),
+        ), true);
         $container->share(CreateAccessTokenCommand::class, static fn (
             Container $container,
         ): CreateAccessTokenCommand => new CreateAccessTokenCommand(
@@ -4690,6 +4713,7 @@ final class ContainerFactory
                 self::service($container, RecoverMigrationLockCommand::class),
                 self::service($container, HealthCheckCommand::class),
                 self::service($container, CreateAdministratorCommand::class),
+                self::service($container, DemoAccessCommand::class),
                 self::service($container, CreateAccessTokenCommand::class),
                 self::service($container, ListExtensionsCommand::class),
                 self::service($container, InstallExtensionCommand::class),

@@ -405,6 +405,61 @@ final class FilesystemDemoManifestCatalogTest extends TestCase
     }
 
     /**
+     * Proves the released access manifest declares a complete fictional cast without any credential.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testVdmAccessManifestDeclaresTheDemonstrationCast(): void
+    {
+        $loaded = $this->catalog()->access('vdm');
+        $manifest = $loaded['manifest'];
+
+        self::assertSame('kumwe.demo-access/v1', $manifest['format'] ?? null);
+        self::assertSame('vdm', $manifest['profile'] ?? null);
+        self::assertMatchesRegularExpression('/^[a-f0-9]{64}$/D', $loaded['checksum']);
+        $roles = $this->list($manifest['roles'] ?? null, 'roles');
+        $staff = $this->list($manifest['staff'] ?? null, 'staff');
+        $organizations = $this->list($manifest['organizations'] ?? null, 'organizations');
+        self::assertCount(6, $roles);
+        self::assertCount(5, $staff);
+        self::assertCount(3, $organizations);
+        $memberCounts = [];
+        foreach ($organizations as $organization) {
+            $entry = $this->map($organization, 'organization');
+            $identifier = $this->string($entry, 'identifier');
+            $memberCounts[$identifier] = count($this->list($entry['members'] ?? null, 'members'));
+        }
+        ksort($memberCounts);
+        self::assertSame(
+            ['desert-bloom' => 1, 'kalahari-health' => 2, 'namib-learning' => 1],
+            $memberCounts,
+            'One organization demonstrates multiple members while others demonstrate single membership.',
+        );
+        $encoded = json_encode($manifest, JSON_THROW_ON_ERROR);
+        self::assertDoesNotMatchRegularExpression(
+            '/"(?:password|passwd|secret|credential|api[_-]?key|access[_-]?token|private[_-]?key)"/i',
+            $encoded,
+        );
+    }
+
+    /**
+     * Proves an access manifest identity outside the reserved example zone is refused.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAccessManifestRefusesAddressesOutsideTheExampleZone(): void
+    {
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('unsupported');
+
+        $this->catalog()->access('../vdm');
+    }
+
+    /**
      * Build the production manifest catalog against the repository root.
      *
      * @return  FilesystemDemoManifestCatalog
