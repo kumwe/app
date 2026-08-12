@@ -37,9 +37,12 @@ final readonly class ContentFormPresenter
     /**
      * Describe one object level of the schema, recursing into nested objects as grouped children.
      *
-     * Every descriptor carries a `kind` of either `group` or `field`; a group holds its children in
-     * place of an input. Input names and element ids are built from the property path, which is what
-     * lets `ContentFormDataMapper` restore the nesting without the template knowing about it.
+     * Every descriptor carries a `kind` of `group`, `repeatable`, or `field`; a group holds its
+     * children in place of an input, and a repeatable holds one child list per stored row beside a
+     * blank row template whose path segment is the literal `INDEX` placeholder the editor script
+     * substitutes when it adds a row. Input names and element ids are built from the property path,
+     * which is what lets `ContentFormDataMapper` restore the nesting — including numeric row
+     * segments — without the template knowing about it.
      *
      * @param   array<string, mixed>  $schema  Object schema level, holding `properties` and `required`.
      * @param   array<string, mixed>  $values  Stored values for this level, keyed by property name.
@@ -75,6 +78,31 @@ final readonly class ContentFormPresenter
                     'label' => $this->label($key, $fieldSchema),
                     'description' => $this->description($fieldSchema),
                     'children' => $this->objectFields($fieldSchema, $nested, $fieldPath),
+                ];
+                continue;
+            }
+
+            $items = $fieldSchema['items'] ?? null;
+            $itemsSchema = is_array($items) && !array_is_list($items) ? $items : [];
+            if ($type === 'array' && ($itemsSchema['type'] ?? null) === 'object') {
+                /** @var array<string, mixed> $itemsSchema */
+                $list = is_array($value) && array_is_list($value) ? $value : [];
+                $rows = [];
+                foreach ($list as $index => $item) {
+                    $itemValues = is_array($item) && !array_is_list($item) ? $item : [];
+                    /** @var array<string, mixed> $itemValues */
+                    $rows[] = $this->objectFields($itemsSchema, $itemValues, [...$fieldPath, (string) $index]);
+                }
+                $fields[] = [
+                    'kind' => 'repeatable',
+                    'key' => $key,
+                    'label' => $this->label($key, $fieldSchema),
+                    'description' => $this->description($fieldSchema),
+                    'required' => in_array($key, $required, true),
+                    'rows' => $rows,
+                    'template' => $this->objectFields($itemsSchema, [], [...$fieldPath, 'INDEX']),
+                    'min_items' => $fieldSchema['minItems'] ?? null,
+                    'max_items' => $fieldSchema['maxItems'] ?? null,
                 ];
                 continue;
             }

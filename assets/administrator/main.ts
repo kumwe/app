@@ -11,6 +11,7 @@ import './components/presentation-schemes';
 import './components/business-definition-editor';
 import './components/business-surface';
 import './components/dirty-form';
+import './components/repeatable-group';
 import { setupPolicyStepFlows } from './components/policy-step-flow';
 import '../interface-standard/kis-tabs';
 import '../interface-standard/kis-master-detail';

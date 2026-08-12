@@ -54,6 +54,51 @@ final class ContentFormTest extends TestCase
         ], $mapped);
     }
 
+    public function testPresentsAndMapsRepeatableObjectRowsThroughIndexedNames(): void
+    {
+        $definition = $this->sectionedDefinition();
+        $fields = (new ContentFormPresenter())->fields($definition, [
+            'heading' => 'Handbook',
+            'sections' => [
+                ['heading' => 'First part', 'body' => 'First prose.'],
+                ['heading' => 'Second part', 'body' => 'Second prose.'],
+            ],
+        ]);
+
+        $fieldsByKey = array_column($fields, null, 'key');
+        $sections = $fieldsByKey['sections'];
+        self::assertSame('repeatable', $sections['kind']);
+        self::assertCount(2, $sections['rows']);
+        self::assertSame('field__sections__0__heading', $sections['rows'][0][0]['name']);
+        self::assertSame('First part', $sections['rows'][0][0]['value']);
+        self::assertSame('field__sections__1__body', $sections['rows'][1][1]['name']);
+        self::assertSame('field__sections__INDEX__heading', $sections['template'][0]['name']);
+        self::assertSame(24, $sections['max_items']);
+
+        $mapped = (new ContentFormDataMapper())->map($definition, [
+            'field__heading' => 'Handbook',
+            'field__sections__0__heading' => 'First part',
+            'field__sections__0__body' => 'First prose.',
+            'field__sections__2__heading' => 'Third part',
+            'field__sections__2__body' => 'Kept after a removed row.',
+            'field__sections__10__heading' => 'Tenth part',
+            'field__sections__10__body' => 'Sorts numerically after two.',
+        ]);
+        self::assertSame([
+            'heading' => 'Handbook',
+            'sections' => [
+                ['heading' => 'First part', 'body' => 'First prose.'],
+                ['heading' => 'Third part', 'body' => 'Kept after a removed row.'],
+                ['heading' => 'Tenth part', 'body' => 'Sorts numerically after two.'],
+            ],
+        ], $mapped);
+
+        self::assertSame(
+            ['heading' => 'Handbook', 'sections' => []],
+            (new ContentFormDataMapper())->map($definition, ['field__heading' => 'Handbook']),
+        );
+    }
+
     public function testBuildsSchemaAndWorkflowFromGraphicalRows(): void
     {
         $mapper = new ContentModelFormMapper();
@@ -91,6 +136,45 @@ final class ContentFormTest extends TestCase
         self::assertTrue($states[0]['initial']);
         self::assertTrue($states[1]['public']);
         self::assertSame('content.publish', $transitions[0]['required_capability']);
+    }
+
+    private function sectionedDefinition(): ContentTypeDefinition
+    {
+        $time = new DateTimeImmutable('2026-08-12T12:00:00+00:00');
+
+        return new ContentTypeDefinition(
+            '018f22e2-7c8b-7ab0-8f3a-88e8026bb162',
+            SiteContext::default(),
+            'document',
+            'Document',
+            '018f22e2-7c8b-7ab0-8f3a-88e8026bb161',
+            1,
+            [
+                'type' => 'object',
+                'properties' => [
+                    'heading' => ['type' => 'string'],
+                    'sections' => [
+                        'type' => 'array',
+                        'minItems' => 1,
+                        'maxItems' => 24,
+                        'items' => [
+                            'type' => 'object',
+                            'properties' => [
+                                'heading' => ['type' => 'string'],
+                                'body' => ['type' => 'string'],
+                            ],
+                            'required' => ['heading', 'body'],
+                            'additionalProperties' => false,
+                        ],
+                    ],
+                ],
+                'required' => ['heading', 'sections'],
+                'additionalProperties' => false,
+            ],
+            1,
+            $time,
+            $time,
+        );
     }
 
     private function definition(): ContentTypeDefinition
