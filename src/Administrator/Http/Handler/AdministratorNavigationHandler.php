@@ -96,11 +96,7 @@ final readonly class AdministratorNavigationHandler implements RequestHandlerInt
             'items' => $items,
             'content_targets' => $this->content === null ? [] : array_map(
                 static fn (ContentRecord $record): array => $record->toArray(),
-                array_values(array_filter(
-                    $this->content->list($context, 500),
-                    static fn (ContentRecord $record): bool =>
-                        $record->contentTypeId === ContentService::CORE_PAGE_TYPE_ID,
-                )),
+                array_values($this->content->list($context, 500)),
             ),
             'saved' => ($request->getQueryParams()['saved'] ?? null) === '1',
         ]), 200, ['Cache-Control' => 'no-store']);

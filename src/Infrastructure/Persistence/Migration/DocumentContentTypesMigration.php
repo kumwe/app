@@ -289,6 +289,11 @@ final readonly class DocumentContentTypesMigration implements Migration
                 'eyebrow' => ['type' => 'string', 'maxLength' => 160],
                 'heading' => ['type' => 'string', 'minLength' => 1, 'maxLength' => 255],
                 'summary' => ['type' => 'string', 'maxLength' => 1000],
+                'logo' => [
+                    'type' => 'string',
+                    'maxLength' => 500,
+                    'x-kumwe-field' => 'media',
+                ],
                 'primary_action' => $this->action(),
                 'secondary_action' => $this->action(),
                 'features' => [

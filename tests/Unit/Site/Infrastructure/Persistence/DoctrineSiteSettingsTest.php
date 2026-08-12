@@ -12,11 +12,19 @@ use Kumwe\CMS\Application\Authorization\SiteContext;
 use Kumwe\CMS\Application\Authorization\SystemIdentity;
 use Kumwe\CMS\Audit\Application\AuditRecorder;
 use Kumwe\CMS\Audit\Domain\AuditEvent;
+use Kumwe\CMS\Content\Application\ContentRecord;
+use Kumwe\CMS\Content\Application\ContentService;
+use Kumwe\CMS\Content\Application\SiteScopedContentRepository;
+use Kumwe\CMS\Content\Domain\ContentEntry;
+use Kumwe\CMS\Content\Domain\ContentStatus;
 use Kumwe\CMS\Infrastructure\Persistence\TableNames;
+use Kumwe\CMS\Infrastructure\Persistence\TransactionManager;
 use Kumwe\CMS\Site\Infrastructure\Persistence\DoctrineSiteSettings;
 use Kumwe\CMS\Tests\Support\AuthorizationContext;
 use Kumwe\CMS\Tests\Support\ImmediateTransactionManager;
+use Kumwe\CMS\Workflow\Domain\Workflow;
 use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Clock\ClockInterface;
@@ -27,6 +35,8 @@ use Psr\Clock\ClockInterface;
  * @since  2.0.0
  */
 #[CoversClass(DoctrineSiteSettings::class)]
+#[UsesClass(ContentRecord::class)]
+#[UsesClass(ContentService::class)]
 final class DoctrineSiteSettingsTest extends TestCase
 {
     /**
@@ -224,15 +234,19 @@ final class DoctrineSiteSettingsTest extends TestCase
     /**
      * Construct the authoritative store with deterministic infrastructure collaborators.
      *
-     * @param   Connection     $database  Observable database seam.
-     * @param   AuditRecorder  $audit     Recorder carrying this scenario's attribution expectation.
+     * @param   Connection       $database  Observable database seam.
+     * @param   AuditRecorder    $audit     Recorder carrying this scenario's attribution expectation.
+     * @param   ?ContentService  $content   Optional homepage reader for referential-integrity scenarios.
      *
      * @return  DoctrineSiteSettings  Settings adapter under test.
      *
      * @since   2.0.0
      */
-    private function settings(Connection $database, AuditRecorder $audit): DoctrineSiteSettings
-    {
+    private function settings(
+        Connection $database,
+        AuditRecorder $audit,
+        ?ContentService $content = null,
+    ): DoctrineSiteSettings {
         $clock = $this->createStub(ClockInterface::class);
         $clock->method('now')->willReturn(new DateTimeImmutable('2026-08-11T12:00:00+00:00'));
         $authorization = $this->createMock(AuthorizationGateway::class);
@@ -245,6 +259,110 @@ final class DoctrineSiteSettingsTest extends TestCase
             $audit,
             $clock,
             $authorization,
+            $content,
+        );
+    }
+
+    /**
+     * A homepage may be any published content entry, so a document-driven layout can lead the site.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testHomepageAcceptsAnyPublishedContentEntryRegardlessOfLayout(): void
+    {
+        $database = $this->database();
+        $database->method('fetchOne')->willReturn(self::MENU_ID);
+        $database->method('executeStatement')->willReturn(1);
+        $content = $this->content($this->landingRecord());
+
+        $this->settings($database, $this->audit(self::HUMAN_ID), $content)->updateAll(
+            AuthorizationContext::human(['settings.manage'], self::HUMAN_ID),
+            ['homepage_content_id' => '018f22e2-7c8b-7ab0-8f3a-88e8026bb701'],
+        );
+
+        self::addToAssertionCount(1);
+    }
+
+    /**
+     * A homepage nominating an unpublished or unknown entry must still be refused.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testHomepageStillRefusesAnUnpublishedContentEntry(): void
+    {
+        $database = $this->database();
+        $database->method('fetchOne')->willReturn(self::MENU_ID);
+        $content = $this->content(null);
+        $audit = $this->createMock(AuditRecorder::class);
+        $audit->expects(self::never())->method('record');
+
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('The homepage must be a published content entry');
+
+        $this->settings($database, $audit, $content)->updateAll(
+            AuthorizationContext::human(['settings.manage'], self::HUMAN_ID),
+            ['homepage_content_id' => '018f22e2-7c8b-7ab0-8f3a-88e8026bb702'],
+        );
+    }
+
+    /**
+     * Build a real content service whose site-scoped published lookup answers the supplied record.
+     *
+     * @param   ?ContentRecord  $record  Record the homepage lookup resolves, or null for none.
+     *
+     * @return  ContentService  Service backed by deterministic collaborators.
+     *
+     * @since   2.0.0
+     */
+    private function content(?ContentRecord $record): ContentService
+    {
+        $repository = $this->createStub(SiteScopedContentRepository::class);
+        $repository->method('findPublishedByIdForSite')->willReturn($record);
+        $transactions = $this->createStub(TransactionManager::class);
+        $transactions->method('transactional')->willReturnCallback(
+            static fn (callable $operation): mixed => $operation(),
+        );
+        $clock = $this->createStub(ClockInterface::class);
+        $clock->method('now')->willReturn(new DateTimeImmutable('2026-08-12T00:00:00+00:00'));
+
+        return new ContentService(
+            $repository,
+            $this->createStub(AuditRecorder::class),
+            $transactions,
+            $clock,
+            new Workflow(),
+            AuthorizationContext::gateway(),
+            AuthorizationContext::ownershipWriter(),
+        );
+    }
+
+    /**
+     * Build one published record pinned to a non-core content type, as a landing homepage would be.
+     *
+     * @return  ContentRecord  Published landing-layout record.
+     *
+     * @since   2.0.0
+     */
+    private function landingRecord(): ContentRecord
+    {
+        $now = new DateTimeImmutable('2026-08-12T00:00:00+00:00');
+
+        return new ContentRecord(
+            ContentEntry::create(
+                '018f22e2-7c8b-7ab0-8f3a-88e8026bb701',
+                'Welcome',
+                'welcome',
+                ['heading' => 'Welcome', 'features' => [['heading' => 'One', 'body' => 'Body']]],
+                ContentStatus::Published,
+            ),
+            '018f22e2-7c8b-7ab0-8f3a-88e8026bb414',
+            '018f22e2-7c8b-7ab0-8f3a-88e8026bb401',
+            $now,
+            $now,
         );
     }
 

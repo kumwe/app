@@ -2,6 +2,7 @@
 {% block title %}{{ entry.title }} · {{ site_name }}{% endblock %}
 {% block content %}
   {% set page = entry.data|default({}) %}
+  {% set logo = page.logo|default('') %}
   {% set primary_action = page.primary_action|default(null) %}
   {% set secondary_action = page.secondary_action|default(null) %}
   {% set closing = page.closing|default(null) %}
@@ -16,7 +17,7 @@
           {% if secondary_action and secondary_action.url|default('') and secondary_action.label|default('') %}<a class="site-button secondary" href="{{ secondary_action.url }}">{{ secondary_action.label }}</a>{% endif %}
         </div>
       {% endif %}
-    </div></div></header>
+    </div>{% if logo %}<div class="managed-hero-logo"><img src="{{ logo }}" alt="{{ site_name }}" loading="eager"></div>{% endif %}</div></header>
     <section class="managed-section"><div class="site-container">
       <ul class="landing-features">
         {% for feature in page.features|default([]) %}

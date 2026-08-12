@@ -133,8 +133,8 @@ final readonly class AdministratorSettingsHandler implements RequestHandlerInter
             static fn (ContentRecord $record): array => $record->toArray(),
             array_values(array_filter(
                 $content->list($context, 500),
-                fn (ContentRecord $record): bool => $record->contentTypeId === ContentService::CORE_PAGE_TYPE_ID
-                    && $content->publishedById($record->entry->id(), $context->site()) !== null,
+                fn (ContentRecord $record): bool =>
+                    $content->publishedById($record->entry->id(), $context->site()) !== null,
             )),
         );
 

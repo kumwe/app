@@ -95,6 +95,7 @@ final class DocumentContentTypesMigrationTest extends TestCase
             ],
             'landing' => [
                 'heading' => 'Run your business on Kumwe',
+                'logo' => '/media/site/wordmark.svg',
                 'primary_action' => ['label' => 'Start', 'url' => '/pages/start'],
                 'features' => [['heading' => 'Typed business data', 'body' => 'Definitions become surfaces.']],
                 'closing' => ['body' => 'Install the demo.', 'action' => ['label' => 'Demo', 'url' => '/pages/demo']],

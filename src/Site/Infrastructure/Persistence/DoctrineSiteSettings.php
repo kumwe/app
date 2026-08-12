@@ -51,7 +51,7 @@ final readonly class DoctrineSiteSettings implements SiteSettings
      * @param  AuthorizationGateway  $authorization  Policy proving `settings.manage` before a managed read
      *         or any write.
      * @param  ?ContentService       $content        Reader used to prove the nominated homepage is a
-     *         published Page; null skips that check, as a minimal wiring wants.
+     *         published content entry; null skips that check, as a minimal wiring wants.
      *
      * @since  2.0.0
      */
@@ -185,7 +185,7 @@ final readonly class DoctrineSiteSettings implements SiteSettings
      *
      * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not manage settings.
      * @throws  InvalidArgumentException  When a value fails validation, the homepage is not a published
-     *          Page of this site, or the primary menu is not a menu this site owns.
+     *          content entry of this site, or the primary menu is not a menu this site owns.
      * @throws  \Doctrine\DBAL\Exception  When the driver rejects a read or a write.
      *
      * @since   2.0.0
@@ -199,9 +199,9 @@ final readonly class DoctrineSiteSettings implements SiteSettings
         $homepageId = $normalized['homepage_content_id'];
         if (is_string($homepageId) && $this->content !== null) {
             $homepage = $this->content->publishedById($homepageId, $context->site());
-            if ($homepage === null || $homepage->contentTypeId !== ContentService::CORE_PAGE_TYPE_ID) {
+            if ($homepage === null) {
                 throw new InvalidArgumentException(
-                    'The homepage must be a published Page for this site inside its publication window.',
+                    'The homepage must be a published content entry for this site inside its publication window.',
                 );
             }
         }
