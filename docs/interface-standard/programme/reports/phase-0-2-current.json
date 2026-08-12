@@ -448,12 +448,12 @@
       "result_summary": "Passed: 41 modules transformed; administrator, portal, site, and shared validation bundles emitted and every manifest reference exists.",
       "artifact_paths": [
         "public/assets/build/.vite/manifest.json",
-        "public/assets/build/css/administrator-MzV4-tkD.css",
-        "public/assets/build/css/portal-CiZ4bR3i.css",
-        "public/assets/build/css/site-CCvkaTdV.css",
-        "public/assets/build/js/administrator-wb5guyQp.js",
-        "public/assets/build/js/portal-DNTEgk7I.js",
-        "public/assets/build/js/site-xupklbth.js",
+        "public/assets/build/css/administrator-D-nCGNaN.css",
+        "public/assets/build/css/portal-DDovE6Ab.css",
+        "public/assets/build/css/site-CBC-P0eH.css",
+        "public/assets/build/js/administrator-BzFGMljp.js",
+        "public/assets/build/js/portal-Dn5oNgHg.js",
+        "public/assets/build/js/site-DbFO54tB.js",
         "public/assets/build/js/reveal-validation-DkoA-GGU.js"
       ],
       "blocker_finding_ids": [],

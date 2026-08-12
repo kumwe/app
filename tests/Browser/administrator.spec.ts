@@ -267,7 +267,7 @@ test.describe('authenticated administrator', () => {
     await expect(page.getByText(longFieldLabel, { exact: true })).toBeVisible();
     await page.getByRole('tab', { name: 'Publication' }).click();
     await expect(page.getByRole('heading', { name: 'Compatibility plan' })).toBeVisible();
-    await expect(page.getByRole('term', { name: 'Draft checksum' })).toBeVisible();
+    await expect(page.locator('dt').filter({ hasText: /^Draft checksum$/u })).toBeVisible();
     await expectAccessible(page);
     await page.screenshot({
       path: testInfo.outputPath('business-definition-draft.png'),
@@ -308,9 +308,23 @@ test.describe('authenticated administrator', () => {
     await expectAccessible(page);
   });
 
-  test('schema plans are inspectable, capability-gated and visually stable', async ({ page }) => {
+  test('schema plans are inspectable, capability-gated and visually stable', async ({
+    page,
+    isMobile,
+  }) => {
     await page.goto('/administrator/business-schema-plans');
     await expect(page.getByRole('heading', { name: 'Business schema plans' })).toBeVisible();
+    if (isMobile) {
+      await page.getByRole('button', { name: 'Browse schema plans' }).click();
+    }
+    const pendingApprovalPlan = page
+      .locator('.schema-plan-catalog .definition-catalog-item', {
+        has: page.locator('.status-pending-approval'),
+      })
+      .first();
+    await expect(pendingApprovalPlan).toBeVisible();
+    await pendingApprovalPlan.click();
+    await expect(pendingApprovalPlan).toHaveAttribute('aria-current', 'true');
     await page.getByRole('tab', { name: 'Operations' }).click();
     await expect(page.getByRole('heading', { name: 'Generated operations' })).toBeVisible();
     await page.getByRole('tab', { name: 'Summary' }).click();
