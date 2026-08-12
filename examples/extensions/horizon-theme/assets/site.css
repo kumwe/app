@@ -1,0 +1,127 @@
+/* Horizon: a warm branded site theme demonstrating a complete Kumwe template package. */
+:root {
+  color-scheme: light dark;
+  --horizon-sky: #fff7ef;
+  --horizon-ink: #33203b;
+  --horizon-muted: #6d5a75;
+  --horizon-sun: #d9541e;
+  --horizon-dusk: #7a2e6f;
+  --horizon-line: #ecd9c8;
+  --horizon-glow: linear-gradient(120deg, #ffb35c, #e8613c 55%, #a63f79);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --horizon-sky: #221527;
+    --horizon-ink: #f4e8ef;
+    --horizon-muted: #c2a9bd;
+    --horizon-sun: #ffa053;
+    --horizon-dusk: #e8b7d1;
+    --horizon-line: #462f4d;
+  }
+}
+
+* { box-sizing: border-box; }
+
+body.horizon {
+  margin: 0;
+  background: var(--horizon-sky);
+  color: var(--horizon-ink);
+  font-family: Georgia, 'Times New Roman', serif;
+  line-height: 1.65;
+}
+
+.skip-link {
+  position: absolute;
+  inset-inline-start: 1rem;
+  padding: .5rem .8rem;
+  transform: translateY(-180%);
+  background: CanvasText;
+  color: Canvas;
+}
+
+.skip-link:focus { transform: none; }
+
+.site-header {
+  display: flex;
+  width: min(100% - 2rem, 72rem);
+  margin-inline: auto;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  padding-block: 1.1rem;
+  border-bottom: 3px solid transparent;
+  border-image: var(--horizon-glow) 1;
+}
+
+.site-brand {
+  display: flex;
+  align-items: center;
+  gap: .65rem;
+  color: var(--horizon-ink);
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: .02em;
+  text-decoration: none;
+}
+
+.site-header nav ul { display: flex; flex-wrap: wrap; gap: 1rem; margin: 0; padding: 0; list-style: none; }
+.site-header nav a { color: var(--horizon-dusk); font-weight: 600; text-decoration: none; }
+.site-header nav a:hover, .site-header nav a:focus-visible { text-decoration: underline; text-underline-offset: .3em; }
+
+.page-section {
+  width: min(100% - 2rem, 72rem);
+  margin-inline: auto;
+  padding-block: clamp(2rem, 8vw, 5rem);
+}
+
+.page-section > * { max-width: 74ch; }
+
+.horizon-hero { padding-bottom: 1.4rem; margin-bottom: 1.8rem; border-bottom: 1px solid var(--horizon-line); }
+
+.horizon-hero h1 {
+  margin: .2rem 0 .6rem;
+  font-size: clamp(2rem, 5vw, 3.1rem);
+  line-height: 1.12;
+  background: var(--horizon-glow);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.horizon-summary { margin: 0; color: var(--horizon-muted); font-size: 1.12rem; }
+
+.eyebrow {
+  margin: 0;
+  color: var(--horizon-sun);
+  font-family: system-ui, sans-serif;
+  font-size: .76rem;
+  font-weight: 700;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+}
+
+.article-body { overflow-wrap: anywhere; }
+.article-body a { color: var(--horizon-dusk); }
+.article-body h2 { margin-top: 2.2rem; font-size: 1.45rem; }
+
+.button {
+  display: inline-block;
+  padding: .7rem 1.1rem;
+  border: 0;
+  border-radius: 999px;
+  background: var(--horizon-glow);
+  color: #fff8f2;
+  font-family: system-ui, sans-serif;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.site-footer {
+  width: min(100% - 2rem, 72rem);
+  margin-inline: auto;
+  padding-block: 1.4rem;
+  border-top: 1px solid var(--horizon-line);
+  color: var(--horizon-muted);
+  font-size: .92rem;
+}

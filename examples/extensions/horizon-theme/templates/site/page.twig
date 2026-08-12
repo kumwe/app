@@ -1,0 +1,18 @@
+{% extends "layout.twig" %}
+{% block title %}{{ entry.title }} · {{ site_name|default('Kumwe') }}{% endblock %}
+{% block content %}
+  <article class="page-section" aria-labelledby="template-page-title" data-kis-surface="{{ surface_id|default('core.public.page') }}">
+    <header class="horizon-hero">
+      {% if entry.data.eyebrow|default('') %}<p class="eyebrow">{{ entry.data.eyebrow }}</p>{% endif %}
+      <h1 id="template-page-title">{{ entry.data.heading|default(entry.title, true) }}</h1>
+      {% if entry.data.summary|default('') %}<p class="horizon-summary">{{ entry.data.summary }}</p>{% endif %}
+    </header>
+    {% if entry.body_html|default('') %}
+      <div class="article-body">{{ entry.body_html|raw }}</div>
+    {% elseif entry.data.body|default('') %}
+      <div class="article-body">{{ entry.data.body|nl2br }}</div>
+    {% else %}
+      <p role="status">This page has no body content yet.</p>
+    {% endif %}
+  </article>
+{% endblock %}

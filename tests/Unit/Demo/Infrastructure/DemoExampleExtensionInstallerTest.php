@@ -42,6 +42,7 @@ final class DemoExampleExtensionInstallerTest extends TestCase
                 'announcements',
                 'asset-inspection',
                 'audit-listener',
+                'horizon-theme',
                 'minimal-administrator-template',
                 'minimal-template',
             ],
