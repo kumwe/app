@@ -536,11 +536,27 @@ test('opt-in portal reports execute and expose queued export status', async ({ p
   await report.getByRole('button', { name: 'Queue CSV export', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Latest export request' })).toBeVisible();
   await expect(page.getByText('Queued', { exact: true })).toBeVisible();
+  const queuedExportDiagnostics = await expectNoDocumentOverflow(page, {
+    root: 'section[aria-labelledby="portal-export-history-title"]',
+    detectControlOverlaps: false,
+  });
+  expect(
+    queuedExportDiagnostics.findings,
+    JSON.stringify(queuedExportDiagnostics, null, 2),
+  ).toEqual([]);
   const status = page.getByRole('link', { name: 'Refresh status' });
   await expect(status).toHaveAttribute('href', /^\/portal\/reports\/exports\/[0-9a-f-]{36}$/u);
   await expect(page.getByRole('link', { name: 'Download verified CSV' })).toHaveCount(0);
   await status.click();
   await expect(page.getByRole('heading', { name: 'Latest export request' })).toBeVisible();
+  const refreshedExportDiagnostics = await expectNoDocumentOverflow(page, {
+    root: 'section[aria-labelledby="portal-export-history-title"]',
+    detectControlOverlaps: false,
+  });
+  expect(
+    refreshedExportDiagnostics.findings,
+    JSON.stringify(refreshedExportDiagnostics, null, 2),
+  ).toEqual([]);
   await expectAccessible(page, 'section[aria-labelledby="portal-export-history-title"]');
   await page.locator('section[aria-labelledby="portal-export-history-title"]').screenshot({
     path: testInfo.outputPath('portal-export-status.png'),

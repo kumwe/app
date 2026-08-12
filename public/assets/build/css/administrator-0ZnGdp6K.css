@@ -214,6 +214,7 @@
   .kis-business-report-results { min-width: 0; }
   .kis-business-operation-stage { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 10rem), 1fr)); gap: var(--kis-space-3); margin: 0; }
   .kis-business-operation-stage div { min-width: 0; padding: var(--kis-space-3); border: 1px solid var(--kumwe-border); border-radius: var(--kumwe-radius-md); background: var(--kumwe-surface-subtle); }
+  .kis-business-operation-stage :is(dt, dd) { min-width: 0; margin: 0; overflow-wrap: anywhere; }
   .kis-business-custom-list { display: grid; min-width: 0; gap: var(--kis-space-2); margin: 0; padding-left: var(--kis-space-5); }
   .kis-business-custom-object { display: grid; min-width: 0; gap: var(--kis-space-2); margin: 0; }
   .kis-business-custom-object div { display: grid; min-width: 0; grid-template-columns: minmax(8rem, .4fr) minmax(0, 1fr); gap: var(--kis-space-3); padding: var(--kis-space-2); border-bottom: 1px solid var(--kumwe-border); }
