@@ -14,8 +14,8 @@ $contract = $argv[1] ?? null;
 $expected = match ($contract) {
     'documentation-vdm' => [
         'profiles' => ['business-demo' => 'vdm', 'site-content' => 'documentation'],
-        'content' => 27,
-        'navigation' => 27,
+        'content' => 28,
+        'navigation' => 29,
         'business_assets' => [
             'business_action' => 65,
             'business_archive' => 2,
