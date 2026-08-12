@@ -1,0 +1,33 @@
+{% extends "layout.twig" %}
+{% block title %}{{ entry.title }} · {{ site_name }}{% endblock %}
+{% block content %}
+  {% set page = entry.data|default({}) %}
+  <article class="managed-page article-page kis-phase-five-public" aria-labelledby="managed-page-title" data-kis-surface="{{ surface_id|default('core.public.page') }}">
+    <header class="document-header article-header"><div class="site-container article-column">
+      {% if page.eyebrow|default('') %}<p class="eyebrow">{{ page.eyebrow }}</p>{% endif %}
+      <h1 id="managed-page-title">{{ page.heading|default(entry.title, true) }}</h1>
+      {% if page.published_label|default('') %}<p class="article-published">{{ page.published_label }}</p>{% endif %}
+      {% if page.summary|default('') %}<p class="managed-summary">{{ page.summary }}</p>{% endif %}
+    </div></header>
+    <section class="managed-section"><div class="site-container article-column">
+      {% if page.highlights|default([]) is not empty %}
+        <aside class="article-highlights" aria-label="Highlights">
+          <ul>
+            {% for highlight in page.highlights %}<li>{{ highlight }}</li>{% endfor %}
+          </ul>
+        </aside>
+      {% endif %}
+      <div class="article-body">{{ entry.body_html|default('')|raw }}</div>
+      {% if page.further_reading|default([]) is not empty %}
+        <nav class="article-further-reading" aria-labelledby="article-further-reading-title">
+          <h2 id="article-further-reading-title">Further reading</h2>
+          <ul>
+            {% for link in page.further_reading %}
+              <li><a href="{{ link.url }}">{{ link.label }}</a></li>
+            {% endfor %}
+          </ul>
+        </nav>
+      {% endif %}
+    </div></section>
+  </article>
+{% endblock %}

@@ -1,0 +1,20 @@
+{% extends "layout.twig" %}
+{% block title %}{{ entry.title }} · {{ site_name }}{% endblock %}
+{% block content %}
+  {% set page = entry.data|default({}) %}
+  <article class="managed-page faq-page kis-phase-five-public" aria-labelledby="managed-page-title" data-kis-surface="{{ surface_id|default('core.public.page') }}">
+    <header class="document-header"><div class="site-container">
+      {% if page.eyebrow|default('') %}<p class="eyebrow">{{ page.eyebrow }}</p>{% endif %}
+      <h1 id="managed-page-title">{{ page.heading|default(entry.title, true) }}</h1>
+      {% if page.summary|default('') %}<p class="managed-summary">{{ page.summary }}</p>{% endif %}
+    </div></header>
+    <section class="managed-section"><div class="site-container faq-list">
+      {% for item in page.items|default([]) %}
+        <details class="faq-item">
+          <summary>{{ item.question }}</summary>
+          <div class="article-body">{{ item.body_html|default('')|raw }}</div>
+        </details>
+      {% endfor %}
+    </div></section>
+  </article>
+{% endblock %}

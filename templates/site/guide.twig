@@ -1,0 +1,52 @@
+{% extends "layout.twig" %}
+{% block title %}{{ entry.title }} · {{ site_name }}{% endblock %}
+{% block content %}
+  {% set page = entry.data|default({}) %}
+  {% set steps = page.steps|default([]) %}
+  <article class="managed-page document-page guide-page kis-phase-five-public" aria-labelledby="managed-page-title" data-kis-surface="{{ surface_id|default('core.public.page') }}">
+    <header class="document-header"><div class="site-container">
+      {% if page.eyebrow|default('') %}<p class="eyebrow">{{ page.eyebrow }}</p>{% endif %}
+      <h1 id="managed-page-title">{{ page.heading|default(entry.title, true) }}</h1>
+      {% if page.summary|default('') %}<p class="managed-summary">{{ page.summary }}</p>{% endif %}
+    </div></header>
+    <div class="site-container document-layout">
+      <aside class="document-aside">
+        <nav class="document-nav" aria-labelledby="document-nav-title" data-document-nav>
+          <h2 id="document-nav-title">Steps</h2>
+          <ol>
+            {% for step in steps %}
+              <li><a href="#{{ step.anchor }}">{{ step.heading }}</a></li>
+            {% endfor %}
+          </ol>
+        </nav>
+      </aside>
+      <div class="document-body">
+        {% if entry.body_html|default('') %}
+          <section class="document-section" data-document-section>
+            <div class="article-body">{{ entry.body_html|raw }}</div>
+          </section>
+        {% endif %}
+        <ol class="guide-steps">
+          {% for step in steps %}
+            <li class="document-section guide-step" id="{{ step.anchor }}" data-document-section>
+              <h2><span class="guide-step-number" aria-hidden="true">{{ loop.index }}</span>{{ step.heading }}</h2>
+              <div class="article-body">{{ step.body_html|default('')|raw }}</div>
+              {% if step.image|default('') %}
+                <figure class="guide-figure">
+                  <img src="{{ step.image }}" alt="{{ step.image_caption|default(step.heading) }}" loading="lazy">
+                  {% if step.image_caption|default('') %}<figcaption>{{ step.image_caption }}</figcaption>{% endif %}
+                </figure>
+              {% endif %}
+            </li>
+          {% endfor %}
+        </ol>
+        {% if page.outcome|default(null) %}
+          <section class="document-section guide-outcome" data-document-section>
+            <h2>{{ page.outcome.heading|default('What you have now') }}</h2>
+            <div class="article-body">{{ page.outcome.body_html|default('')|raw }}</div>
+          </section>
+        {% endif %}
+      </div>
+    </div>
+  </article>
+{% endblock %}

@@ -442,6 +442,7 @@ use Kumwe\CMS\Infrastructure\Persistence\Migration\CoreSchemaMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\ContentModelRuntimeMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\DatabaseDrivenPresentationMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\DemoProfileProvenanceMigration;
+use Kumwe\CMS\Infrastructure\Persistence\Migration\DocumentContentTypesMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\DynamicSiteContentMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\ExtensionContributionCatalogMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\IdempotencyLeaseNullabilityMigration;
@@ -506,6 +507,7 @@ use Kumwe\CMS\Presentation\Application\AdministratorThemeRecovery;
 use Kumwe\CMS\Presentation\Infrastructure\DoctrineThemeMutationAuthorizer;
 use Kumwe\CMS\Presentation\Infrastructure\Persistence\DoctrinePresentationPreferenceRepository;
 use Kumwe\CMS\Presentation\Asset\ViteAssetManifest;
+use Kumwe\CMS\Presentation\ContentLayoutCatalog;
 use Kumwe\CMS\Presentation\ContentPresenter;
 use Kumwe\CMS\Presentation\SiteRenderer;
 use Kumwe\CMS\Presentation\RichTextFormatter;
@@ -1347,6 +1349,7 @@ final class ContainerFactory
                     new DemoProfileProvenanceMigration(self::service($container, TableNames::class)),
                     new ContentModelIdentifierCollationMigration(self::service($container, TableNames::class)),
                     new InterfacePresentationPreferenceMigration(self::service($container, TableNames::class)),
+                    new DocumentContentTypesMigration(self::service($container, TableNames::class)),
                 ],
                 [
                     // Previously distributed builds used a DBAL-equivalent static-analysis rewrite, then
@@ -2611,12 +2614,19 @@ final class ContainerFactory
         string $root,
         bool $portalEnabled,
     ): void {
+        $container->share(ContentLayoutCatalog::class, static fn (
+            Container $container,
+        ): ContentLayoutCatalog => new ContentLayoutCatalog(
+            self::service($container, ContentModelRepository::class),
+            self::service($container, ApplicationConfiguration::class)->publicSite,
+        ), true);
         $container->share(HomePageHandler::class, static fn (Container $container): HomePageHandler =>
             new HomePageHandler(
                 self::service($container, PublicPageLocator::class),
                 self::service($container, SiteSettings::class),
                 self::service($container, SiteRenderer::class),
                 self::service($container, ContentPresenter::class),
+                self::service($container, ContentLayoutCatalog::class),
             ), true);
         $container->share(LivenessHandler::class, new LivenessHandler(), true);
         $container->share(ApiIndexHandler::class, new ApiIndexHandler(), true);
@@ -2673,6 +2683,7 @@ final class ContainerFactory
             self::service($container, SiteSettings::class),
             self::service($container, SiteRenderer::class),
             self::service($container, ContentPresenter::class),
+            self::service($container, ContentLayoutCatalog::class),
         ), true);
         $container->share(ExtensionAssetHandler::class, static fn (
             Container $container,

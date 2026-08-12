@@ -1,0 +1,44 @@
+{% extends "layout.twig" %}
+{% block title %}{{ entry.title }} · {{ site_name }}{% endblock %}
+{% block content %}
+  {% set page = entry.data|default({}) %}
+  {% set entries = page.entries|default([]) %}
+  <article class="managed-page document-page reference-page kis-phase-five-public" aria-labelledby="managed-page-title" data-kis-surface="{{ surface_id|default('core.public.page') }}">
+    <header class="document-header"><div class="site-container">
+      {% if page.eyebrow|default('') %}<p class="eyebrow">{{ page.eyebrow }}</p>{% endif %}
+      <h1 id="managed-page-title">{{ page.heading|default(entry.title, true) }}</h1>
+      {% if page.summary|default('') %}<p class="managed-summary">{{ page.summary }}</p>{% endif %}
+    </div></header>
+    <div class="site-container document-layout">
+      <aside class="document-aside">
+        <nav class="document-nav" aria-labelledby="document-nav-title" data-document-nav>
+          <h2 id="document-nav-title">In this reference</h2>
+          <ol>
+            {% for item in entries %}
+              <li><a href="#{{ item.anchor }}">{{ item.term }}</a></li>
+            {% endfor %}
+          </ol>
+        </nav>
+      </aside>
+      <div class="document-body">
+        {% if entry.body_html|default('') %}
+          <section class="document-section" data-document-section>
+            <div class="article-body">{{ entry.body_html|raw }}</div>
+          </section>
+        {% endif %}
+        {% for item in entries %}
+          <section class="document-section reference-entry" id="{{ item.anchor }}" data-document-section>
+            <h2>
+              <code class="reference-term">{{ item.term }}</code>
+              {% if item.kind|default('') %}<span class="reference-kind">{{ item.kind }}</span>{% endif %}
+            </h2>
+            <div class="article-body">{{ item.body_html|default('')|raw }}</div>
+            {% if item.example|default('') %}
+              <pre class="reference-example" aria-label="Example for {{ item.term }}"><code>{{ item.example }}</code></pre>
+            {% endif %}
+          </section>
+        {% endfor %}
+      </div>
+    </div>
+  </article>
+{% endblock %}

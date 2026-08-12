@@ -130,6 +130,42 @@
       "must_not_contain": []
     },
     {
+      "path": "templates/site/article.twig",
+      "surface_ids": ["core.public.page"],
+      "must_contain": ["data-kis-surface=\"{{ surface_id|default('core.public.page') }}\"", "aria-labelledby=\"managed-page-title\"", "entry.body_html|default('')|raw", "article-further-reading"],
+      "must_not_contain": []
+    },
+    {
+      "path": "templates/site/document.twig",
+      "surface_ids": ["core.public.page"],
+      "must_contain": ["data-kis-surface=\"{{ surface_id|default('core.public.page') }}\"", "aria-labelledby=\"managed-page-title\"", "data-document-nav", "data-document-section", "section.body_html|default('')|raw"],
+      "must_not_contain": []
+    },
+    {
+      "path": "templates/site/faq.twig",
+      "surface_ids": ["core.public.page"],
+      "must_contain": ["data-kis-surface=\"{{ surface_id|default('core.public.page') }}\"", "aria-labelledby=\"managed-page-title\"", "<details class=\"faq-item\">", "item.body_html|default('')|raw"],
+      "must_not_contain": []
+    },
+    {
+      "path": "templates/site/guide.twig",
+      "surface_ids": ["core.public.page"],
+      "must_contain": ["data-kis-surface=\"{{ surface_id|default('core.public.page') }}\"", "aria-labelledby=\"managed-page-title\"", "data-document-nav", "guide-step-number", "step.body_html|default('')|raw"],
+      "must_not_contain": []
+    },
+    {
+      "path": "templates/site/landing.twig",
+      "surface_ids": ["core.public.page"],
+      "must_contain": ["data-kis-surface=\"{{ surface_id|default('core.public.page') }}\"", "aria-labelledby=\"managed-page-title\"", "landing-features", "feature.body_html|default('')|raw"],
+      "must_not_contain": []
+    },
+    {
+      "path": "templates/site/reference.twig",
+      "surface_ids": ["core.public.page"],
+      "must_contain": ["data-kis-surface=\"{{ surface_id|default('core.public.page') }}\"", "aria-labelledby=\"managed-page-title\"", "data-document-nav", "reference-term", "item.body_html|default('')|raw"],
+      "must_not_contain": []
+    },
+    {
       "path": "examples/extensions/minimal-template/templates/site/page.twig",
       "surface_ids": ["core.public.page"],
       "must_contain": ["aria-labelledby=\"template-page-title\"", "surface_id|default('core.public.page')", "entry.body_html|raw"],

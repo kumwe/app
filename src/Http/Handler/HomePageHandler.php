@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\CMS\Http\Handler;
 
 use Kumwe\CMS\Presentation\Application\SitePresentation;
+use Kumwe\CMS\Presentation\ContentLayoutCatalog;
 use Kumwe\CMS\Presentation\ContentPresenter;
 use Kumwe\CMS\Presentation\SiteRenderer;
 use Kumwe\CMS\Site\Application\PublicPageLocator;
@@ -31,13 +32,14 @@ final readonly class HomePageHandler implements RequestHandlerInterface
     /**
      * Bind the front page to the locator, settings, and rendering collaborators it composes.
      *
-     * @param  PublicPageLocator  $pages      Resolver for the nominated homepage record and the site's
+     * @param  PublicPageLocator     $pages      Resolver for the nominated homepage record and the site's
      *         public navigation tree.
-     * @param  SiteSettings       $settings   Source of the site name, presentation contract, and the
+     * @param  SiteSettings          $settings   Source of the site name, presentation contract, and the
      *         search-indexing switch.
-     * @param  SiteRenderer       $renderer   Site template renderer that produces the HTML body.
-     * @param  ContentPresenter   $presenter  Presenter that escapes and renders the record's stored
+     * @param  SiteRenderer          $renderer   Site template renderer that produces the HTML body.
+     * @param  ContentPresenter      $presenter  Presenter that escapes and renders the record's stored
      *         bodies before they reach a template.
+     * @param  ContentLayoutCatalog  $layouts    Content-type to site-template layout selection.
      *
      * @since  2.0.0
      */
@@ -46,6 +48,7 @@ final readonly class HomePageHandler implements RequestHandlerInterface
         private SiteSettings $settings,
         private SiteRenderer $renderer,
         private ContentPresenter $presenter,
+        private ContentLayoutCatalog $layouts,
     ) {
     }
 
@@ -71,7 +74,7 @@ final readonly class HomePageHandler implements RequestHandlerInterface
     {
         $settings = $this->settings->current();
         $record = $this->pages->homepage();
-        $template = $record === null ? 'home' : 'page';
+        $template = $record === null ? 'home' : $this->layouts->templateFor($record);
         $entry = $record === null ? null : $this->presenter->present($record);
         $presentation = SitePresentation::from(
             $settings['presentation'] ?? SitePresentation::defaults(),

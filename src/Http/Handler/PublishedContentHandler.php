@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\CMS\Http\Handler;
 
 use Kumwe\CMS\Presentation\Application\SitePresentation;
+use Kumwe\CMS\Presentation\ContentLayoutCatalog;
 use Kumwe\CMS\Presentation\ContentPresenter;
 use Kumwe\CMS\Presentation\SiteRenderer;
 use Kumwe\CMS\Site\Application\PublicPageLocator;
@@ -35,13 +36,14 @@ final readonly class PublishedContentHandler implements RequestHandlerInterface
     /**
      * Bind the public content route to the locator, settings, and rendering collaborators it composes.
      *
-     * @param  PublicPageLocator  $pages      Resolver that maps a request path to a published record and
+     * @param  PublicPageLocator     $pages      Resolver that maps a request path to a published record and
      *         reports that record's canonical path.
-     * @param  SiteSettings       $settings   Source of the site name, presentation contract, and the
+     * @param  SiteSettings          $settings   Source of the site name, presentation contract, and the
      *         search-indexing switch.
-     * @param  SiteRenderer       $renderer   Site template renderer that produces the HTML body.
-     * @param  ContentPresenter   $presenter  Presenter that escapes and renders the record's stored
+     * @param  SiteRenderer          $renderer   Site template renderer that produces the HTML body.
+     * @param  ContentPresenter      $presenter  Presenter that escapes and renders the record's stored
      *         bodies before they reach a template.
+     * @param  ContentLayoutCatalog  $layouts    Content-type to site-template layout selection.
      *
      * @since  2.0.0
      */
@@ -50,6 +52,7 @@ final readonly class PublishedContentHandler implements RequestHandlerInterface
         private SiteSettings $settings,
         private SiteRenderer $renderer,
         private ContentPresenter $presenter,
+        private ContentLayoutCatalog $layouts,
     ) {
     }
 
@@ -103,7 +106,7 @@ final readonly class PublishedContentHandler implements RequestHandlerInterface
         )->toView();
 
         return new HtmlResponse(
-            $this->renderer->render('page', [
+            $this->renderer->render($this->layouts->templateFor($record), [
                 'site_name' => $settings['site_name'],
                 'entry' => $this->presenter->present($record),
                 'navigation' => $this->pages->navigation(),

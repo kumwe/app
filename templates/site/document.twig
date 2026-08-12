@@ -1,0 +1,40 @@
+{% extends "layout.twig" %}
+{% block title %}{{ entry.title }} · {{ site_name }}{% endblock %}
+{% block content %}
+  {% set page = entry.data|default({}) %}
+  {% set sections = page.sections|default([]) %}
+  {% set has_introduction = entry.body_html|default('') != '' %}
+  <article class="managed-page document-page kis-phase-five-public" aria-labelledby="managed-page-title" data-kis-surface="{{ surface_id|default('core.public.page') }}">
+    <header class="document-header"><div class="site-container">
+      {% if page.eyebrow|default('') %}<p class="eyebrow">{{ page.eyebrow }}</p>{% endif %}
+      <h1 id="managed-page-title">{{ page.heading|default(entry.title, true) }}</h1>
+      {% if page.summary|default('') %}<p class="managed-summary">{{ page.summary }}</p>{% endif %}
+    </div></header>
+    <div class="site-container document-layout">
+      <aside class="document-aside">
+        <nav class="document-nav" aria-labelledby="document-nav-title" data-document-nav>
+          <h2 id="document-nav-title">On this page</h2>
+          <ol>
+            {% if has_introduction %}<li><a href="#document-introduction">Introduction</a></li>{% endif %}
+            {% for section in sections %}
+              <li><a href="#{{ section.anchor }}">{{ section.heading }}</a></li>
+            {% endfor %}
+          </ol>
+        </nav>
+      </aside>
+      <div class="document-body">
+        {% if has_introduction %}
+          <section class="document-section" id="document-introduction" data-document-section>
+            <div class="article-body">{{ entry.body_html|raw }}</div>
+          </section>
+        {% endif %}
+        {% for section in sections %}
+          <section class="document-section" id="{{ section.anchor }}" data-document-section>
+            <h2>{{ section.heading }}</h2>
+            <div class="article-body">{{ section.body_html|default('')|raw }}</div>
+          </section>
+        {% endfor %}
+      </div>
+    </div>
+  </article>
+{% endblock %}
