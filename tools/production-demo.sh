@@ -59,6 +59,10 @@ export KUMWE_HTTP_PORT="$http_port"
 export KUMWE_RELEASE=2.0.0-administrator-demo
 export KUMWE_DEPLOYMENT_ID=administrator-demo
 export KUMWE_REPLICA_ID=administrator-demo-1
+# The demonstration deploys everything by default: the documentation site content
+# (all six document layouts), the VDM business dataset (six client companies), and
+# the provisioned staff and portal sign-ins (KUMWE_DEMO_ACCESS=false opts out; the
+# generated credentials land in the state directory, never in the repository).
 export KUMWE_SITE_CONTENT_PROFILE=documentation
 export KUMWE_BUSINESS_DEMO=true
 export KUMWE_DB_DRIVER=mariadb

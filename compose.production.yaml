@@ -9,7 +9,21 @@ x-kumwe-environment: &kumwe-environment
   APP_TRUSTED_PROXIES: ${KUMWE_TRUSTED_PROXIES:-}
   APP_MAX_BODY_BYTES: ${KUMWE_MAX_BODY_BYTES:-8388608}
   APP_ADMIN_SESSION_SECONDS: ${KUMWE_ADMIN_SESSION_SECONDS:-28800}
+  # Demonstration defaults: a fresh installation deploys the complete showcase.
+  # KUMWE_SITE_CONTENT_PROFILE selects the managed site content installed on first
+  # migrate, discovered from resources/demo/content — this release ships
+  # `documentation` (the full 27-page site across all six layouts, the default),
+  # `placeholder` (one welcome page), and `blank` (no content). A fork may drop its
+  # own profile beside the shipped ones and name it here.
   KUMWE_SITE_CONTENT_PROFILE: ${KUMWE_SITE_CONTENT_PROFILE:-documentation}
+  # KUMWE_BUSINESS_DEMO installs the released VDM business demonstration by default:
+  # twelve definitions, eighty records across six client companies, workflows, and
+  # portal-scoped access policies. Set `false` to install no business data, or set
+  # KUMWE_BUSINESS_PROFILE to a named dataset discovered from resources/demo/business
+  # (it wins over this boolean when present). Demonstration staff and client portal
+  # sign-ins are provisioned by the installer or tools/production-demo.sh (default on,
+  # opt out with KUMWE_DEMO_ACCESS=false); passwords are generated at provisioning
+  # time and written once to a credentials file outside the repository.
   KUMWE_BUSINESS_DEMO: '${KUMWE_BUSINESS_DEMO:-true}'
   KUMWE_RELEASE: ${KUMWE_RELEASE:?Set KUMWE_RELEASE to the deployed 2.x release}
   KUMWE_DEPLOYMENT_ID: ${KUMWE_DEPLOYMENT_ID:?Set a stable deployment identifier}
