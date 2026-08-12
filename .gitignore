@@ -6,6 +6,7 @@
 /.php-cs-fixer.cache
 /.phpstan.cache/
 /node_modules/
+/test-results/
 /build/
 /coverage/
 /storage/cache/*
