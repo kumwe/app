@@ -35,9 +35,9 @@ final readonly class ApplicationConfiguration
      * @param   string                  $publicSite                    Site context anonymous front-end requests
      *          resolve to.
      * @param   string                  $siteContentProfile            Built-in content dataset selected for a
-     *          newly installed site: documentation, placeholder, or blank.
-     * @param   bool                    $businessDemo                  Whether the built-in VDM business dataset is
-     *          installed and maintained alongside the selected site content.
+     *          newly installed site; the demo catalog discovers the shipped vocabulary at reconciliation.
+     * @param   string                  $businessProfile               Named business demonstration dataset
+     *          installed and maintained alongside the selected site content, or `none` for no business data.
      * @param   non-empty-list<string>  $trustedHosts                  Host names the application answers to; a
      *          request for any other host is refused.
      * @param   list<string>            $trustedProxies                Addresses or CIDR ranges whose forwarding
@@ -80,7 +80,7 @@ final readonly class ApplicationConfiguration
         public string $baseUrl,
         public string $publicSite,
         public string $siteContentProfile,
-        public bool $businessDemo,
+        public string $businessProfile,
         public array $trustedHosts,
         public array $trustedProxies,
         public int $maxBodyBytes,
@@ -106,9 +106,14 @@ final readonly class ApplicationConfiguration
             throw new InvalidArgumentException('Production APP_BASE_URL must use HTTPS.');
         }
         SiteContext::fromString($publicSite);
-        if (!in_array($siteContentProfile, ['documentation', 'placeholder', 'blank'], true)) {
+        if (preg_match('/^[a-z][a-z0-9-]{0,62}$/D', $siteContentProfile) !== 1) {
             throw new InvalidArgumentException(
-                'KUMWE_SITE_CONTENT_PROFILE must be documentation, placeholder, or blank.',
+                'KUMWE_SITE_CONTENT_PROFILE must be a lowercase profile name such as documentation or blank.',
+            );
+        }
+        if (preg_match('/^[a-z][a-z0-9-]{0,62}$/D', $businessProfile) !== 1) {
+            throw new InvalidArgumentException(
+                'KUMWE_BUSINESS_PROFILE must be a lowercase profile name such as vdm, or none.',
             );
         }
 

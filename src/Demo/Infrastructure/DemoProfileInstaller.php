@@ -17,9 +17,10 @@ use Throwable;
 /**
  * Coordinates the two independently selectable, durable built-in demo datasets after schema migration.
  *
- * Site documentation and VDM business records deliberately have separate selector rows. Disabling business
- * examples is therefore persisted as the explicit `none` profile rather than treated as an instruction to
- * do nothing, and a later environment change cannot silently inject data into an established installation.
+ * Site content and business demonstration records deliberately have separate selector rows. Disabling
+ * business examples is therefore persisted as the explicit `none` profile rather than treated as an
+ * instruction to do nothing, and a later environment change cannot silently inject data into an
+ * established installation.
  * Each manifest is restartable at its resource checkpoints and marked complete only after its application
  * service pass succeeds.
  *
@@ -76,7 +77,7 @@ final readonly class DemoProfileInstaller implements DemoProfileReconciler
     }
 
     /**
-     * Reconcile the selected documentation, legacy placeholder, or blank content profile.
+     * Reconcile the selected site-content profile.
      *
      * @param   \Kumwe\CMS\Application\Authorization\ExecutionContext  $context  Installer context.
      *
@@ -115,7 +116,7 @@ final readonly class DemoProfileInstaller implements DemoProfileReconciler
     }
 
     /**
-     * Reconcile VDM business examples or persist the explicit no-business-data selection.
+     * Reconcile the named business demonstration or persist the explicit no-business-data selection.
      *
      * @param   \Kumwe\CMS\Application\Authorization\ExecutionContext  $context  Installer context.
      *
@@ -125,11 +126,12 @@ final readonly class DemoProfileInstaller implements DemoProfileReconciler
      */
     private function business(\Kumwe\CMS\Application\Authorization\ExecutionContext $context): array
     {
-        $profile = $this->configuration->businessDemo ? 'vdm' : 'none';
-        $loaded = $this->configuration->businessDemo ? $this->catalog->vdmBusiness() : $this->noBusinessManifest();
+        $profile = $this->configuration->businessProfile;
+        $enabled = $profile !== 'none';
+        $loaded = $enabled ? $this->catalog->business($profile) : $this->noBusinessManifest();
         $manifest = $loaded['manifest'];
         $manifestVersion = $this->manifestVersion($manifest);
-        if ($this->configuration->businessDemo) {
+        if ($enabled) {
             $this->business->preflight($context, $manifest);
         }
         if (
@@ -144,7 +146,7 @@ final readonly class DemoProfileInstaller implements DemoProfileReconciler
             return [];
         }
         try {
-            $messages = $this->configuration->businessDemo
+            $messages = $enabled
                 ? $this->business->install($context, $manifest)
                 : ['Recorded the blank business-demo selection.'];
             $this->ledger->complete($context->site()->identifier(), VdmBusinessDemoInstaller::DATASET);

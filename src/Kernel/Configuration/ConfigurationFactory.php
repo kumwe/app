@@ -62,7 +62,7 @@ final class ConfigurationFactory
             baseUrl: $environment->string('APP_BASE_URL'),
             publicSite: $environment->string('APP_PUBLIC_SITE', 'default'),
             siteContentProfile: $environment->string('KUMWE_SITE_CONTENT_PROFILE', 'documentation'),
-            businessDemo: $environment->boolean('KUMWE_BUSINESS_DEMO', true),
+            businessProfile: $this->businessProfile($environment),
             trustedHosts: $this->trustedHosts($environment),
             trustedProxies: $environment->commaSeparatedList('APP_TRUSTED_PROXIES'),
             maxBodyBytes: $environment->positiveInteger('APP_MAX_BODY_BYTES', 2_097_152),
@@ -96,6 +96,30 @@ final class ConfigurationFactory
                 namespace: $environment->string('REDIS_NAMESPACE', 'kumwe.cms'),
             ),
         );
+    }
+
+    /**
+     * Resolve the named business demonstration profile from the current and the legacy selector.
+     *
+     * `KUMWE_BUSINESS_PROFILE` names any discovered business dataset directly and wins when present.
+     * The historical boolean `KUMWE_BUSINESS_DEMO` keeps working as an alias: enabled selects the
+     * released `vdm` example and disabled selects the explicit `none` profile, so existing
+     * deployments and Compose files keep their meaning without an edit.
+     *
+     * @param   Environment  $environment  Allow-listed variables resolved from the process and dotenv file.
+     *
+     * @return  string  Named business profile, or `none` for a deliberately empty business runtime.
+     *
+     * @since   2.0.0
+     */
+    private function businessProfile(Environment $environment): string
+    {
+        $named = $environment->optionalString('KUMWE_BUSINESS_PROFILE');
+        if ($named !== null && $named !== '') {
+            return $named;
+        }
+
+        return $environment->boolean('KUMWE_BUSINESS_DEMO', true) ? 'vdm' : 'none';
     }
 
     /**

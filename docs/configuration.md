@@ -39,8 +39,9 @@ Start from `.env.example` for development. Production Compose maps operator-faci
 | `APP_DEBUG` | Detailed development failures | `false` |
 | `APP_BASE_URL` | Canonical absolute URL | HTTPS URL |
 | `APP_PUBLIC_SITE` | Explicit site served by public content and theme routes | Canonical site identifier; defaults to `default` |
-| `KUMWE_SITE_CONTENT_PROFILE` | Initial managed content: `documentation`, `placeholder`, or `blank` | `documentation` |
-| `KUMWE_BUSINESS_DEMO` | Install the independent VDM business example | `true` or `false`; defaults to `true` |
+| `KUMWE_SITE_CONTENT_PROFILE` | Initial managed content, discovered from the shipped `resources/demo/content` manifests; this release ships `documentation`, `placeholder`, and `blank` | `documentation` |
+| `KUMWE_BUSINESS_PROFILE` | Named business demonstration dataset, discovered from `resources/demo/business`, or `none`; wins over `KUMWE_BUSINESS_DEMO` when set | `vdm` or `none` |
+| `KUMWE_BUSINESS_DEMO` | Legacy boolean alias selecting the released VDM business example (`true`) or `none` (`false`) | Prefer `KUMWE_BUSINESS_PROFILE` |
 | `APP_TRUSTED_HOSTS` | Comma-separated accepted hostnames | Exact public hosts |
 | `APP_TRUSTED_PROXIES` | Comma-separated proxy address ranges | Only the actual proxy network |
 | `APP_MAX_BODY_BYTES` | Maximum parsed request body | Match proxy and PHP limits |

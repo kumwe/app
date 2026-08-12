@@ -37,9 +37,72 @@ final readonly class FilesystemDemoManifestCatalog
     }
 
     /**
-     * Load one of the three closed site-content profiles.
+     * Grammar every selectable demo profile name must satisfy.
      *
-     * @param   string  $profile  `documentation`, `placeholder`, or `blank`.
+     * The same rule bounds discovered manifest files and operator-provided selections, so a traversal
+     * attempt or malformed selector is refused before any filesystem path is derived from it.
+     *
+     * @var    string
+     * @since  2.0.0
+     */
+    private const string PROFILE_NAME_PATTERN = '/^[a-z][a-z0-9-]{0,62}$/D';
+
+    /**
+     * Discover the site-content profiles shipped with this release.
+     *
+     * A site-content profile is one `resources/demo/content/<name>.json` manifest. Discovery keeps the
+     * selectable vocabulary open for forks and derived distributions: dropping a new manifest next to the
+     * released ones makes it selectable without code changes.
+     *
+     * @return  list<string>  Sorted profile names available for selection.
+     *
+     * @since   2.0.0
+     */
+    public function contentProfiles(): array
+    {
+        $paths = glob(sprintf('%s/resources/demo/content/*.json', $this->root));
+        $profiles = [];
+        foreach ($paths === false ? [] : $paths as $path) {
+            $name = basename($path, '.json');
+            if (preg_match(self::PROFILE_NAME_PATTERN, $name) === 1) {
+                $profiles[] = $name;
+            }
+        }
+        sort($profiles);
+
+        return $profiles;
+    }
+
+    /**
+     * Discover the business demonstration profiles shipped with this release.
+     *
+     * A business profile is one `resources/demo/business/<name>/profile.json` manifest with its definition
+     * and records documents beside it. The explicit `none` selection is not a shipped profile and never
+     * appears here.
+     *
+     * @return  list<string>  Sorted profile names available for selection.
+     *
+     * @since   2.0.0
+     */
+    public function businessProfiles(): array
+    {
+        $paths = glob(sprintf('%s/resources/demo/business/*/profile.json', $this->root));
+        $profiles = [];
+        foreach ($paths === false ? [] : $paths as $path) {
+            $name = basename(dirname($path));
+            if (preg_match(self::PROFILE_NAME_PATTERN, $name) === 1) {
+                $profiles[] = $name;
+            }
+        }
+        sort($profiles);
+
+        return $profiles;
+    }
+
+    /**
+     * Load one discovered site-content profile.
+     *
+     * @param   string  $profile  Discovered profile name, for example `documentation`.
      *
      * @return  array{manifest: array<string, mixed>, checksum: string}  Validated document and canonical digest.
      *
@@ -47,7 +110,10 @@ final readonly class FilesystemDemoManifestCatalog
      */
     public function content(string $profile): array
     {
-        if (!in_array($profile, ['documentation', 'placeholder', 'blank'], true)) {
+        if (
+            preg_match(self::PROFILE_NAME_PATTERN, $profile) !== 1
+            || !in_array($profile, $this->contentProfiles(), true)
+        ) {
             throw new RuntimeException('The selected site-content demo profile is unsupported.');
         }
 
@@ -59,7 +125,7 @@ final readonly class FilesystemDemoManifestCatalog
     }
 
     /**
-     * Load the separately selectable Vast Development Method business dataset.
+     * Load the released Vast Development Method business dataset.
      *
      * @return  array{manifest: array<string, mixed>, checksum: string}  Validated document and canonical digest.
      *
@@ -67,22 +133,51 @@ final readonly class FilesystemDemoManifestCatalog
      */
     public function vdmBusiness(): array
     {
-        $loaded = $this->loadDocument($this->root . '/resources/demo/business/vdm/profile.json');
+        return $this->business('vdm');
+    }
+
+    /**
+     * Load one discovered business demonstration dataset.
+     *
+     * @param   string  $profile  Discovered profile name, for example `vdm`.
+     *
+     * @return  array{manifest: array<string, mixed>, checksum: string}  Validated document and canonical digest.
+     *
+     * @throws  RuntimeException  When the profile is undiscovered or any manifest violates its contract.
+     *
+     * @since   2.0.0
+     */
+    public function business(string $profile): array
+    {
+        if (
+            preg_match(self::PROFILE_NAME_PATTERN, $profile) !== 1
+            || !in_array($profile, $this->businessProfiles(), true)
+        ) {
+            throw new RuntimeException('The selected business demo profile is unsupported.');
+        }
+        $base = sprintf('%s/resources/demo/business/%s', $this->root, $profile);
+        $loaded = $this->loadDocument($base . '/profile.json');
         $manifest = $loaded['manifest'];
         if (
             ($manifest['format'] ?? null) !== 'kumwe.demo-business-profile/v1'
-            || ($manifest['profile'] ?? null) !== 'vdm'
+            || ($manifest['profile'] ?? null) !== $profile
         ) {
-            throw new RuntimeException('The VDM business demo manifest has an invalid contract.');
+            throw new RuntimeException(
+                sprintf('The %s business demo manifest has an invalid contract.', $profile),
+            );
         }
         $order = $manifest['installation_order'] ?? null;
         if (!is_array($order) || !array_is_list($order) || $order === [] || count($order) > 64) {
-            throw new RuntimeException('The VDM business demo definition order is invalid.');
+            throw new RuntimeException(
+                sprintf('The %s business demo definition order is invalid.', $profile),
+            );
         }
         $definitions = [];
         foreach ($order as $entry) {
             if (!is_array($entry) || array_is_list($entry)) {
-                throw new RuntimeException('A VDM business demo definition entry is invalid.');
+                throw new RuntimeException(
+                    sprintf('A %s business demo definition entry is invalid.', $profile),
+                );
             }
             $fixtureKey = $entry['fixture_key'] ?? null;
             $file = $entry['file'] ?? null;
@@ -93,24 +188,29 @@ final readonly class FilesystemDemoManifestCatalog
                 || preg_match('/^definitions\/[a-z][a-z0-9-]{0,62}\.json$/D', $file) !== 1
                 || isset($definitions[$fixtureKey])
             ) {
-                throw new RuntimeException('A VDM business demo definition reference is invalid.');
+                throw new RuntimeException(
+                    sprintf('A %s business demo definition reference is invalid.', $profile),
+                );
             }
-            $definition = $this->decodeDocument($this->root . '/resources/demo/business/vdm/' . $file);
+            $definition = $this->decodeDocument($base . '/' . $file);
             if (($definition['id'] ?? null) !== ($entry['id'] ?? null)) {
-                throw new RuntimeException(sprintf('VDM definition %s has an unexpected identity.', $fixtureKey));
+                throw new RuntimeException(sprintf(
+                    'Business demo definition %s has an unexpected identity.',
+                    $fixtureKey,
+                ));
             }
             $definitions[$fixtureKey] = $definition;
         }
         $recordsFile = $manifest['records_file'] ?? null;
         if (!is_string($recordsFile) || $recordsFile !== 'records.json') {
-            throw new RuntimeException('The VDM business demo records reference is invalid.');
+            throw new RuntimeException(
+                sprintf('The %s business demo records reference is invalid.', $profile),
+            );
         }
         $aggregate = [
             ...$manifest,
             'definition_documents' => $definitions,
-            'records_document' => $this->decodeDocument(
-                $this->root . '/resources/demo/business/vdm/' . $recordsFile,
-            ),
+            'records_document' => $this->decodeDocument($base . '/' . $recordsFile),
         ];
 
         return ['manifest' => $aggregate, 'checksum' => CanonicalDefinitionJson::checksum($aggregate)];

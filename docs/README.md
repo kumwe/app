@@ -10,6 +10,7 @@ Use this index to install, operate, administer, integrate, extend, or evolve Kum
 
 - [Getting started](getting-started.md): launch the development stack and create the owner.
 - [Configuration](configuration.md): administrator settings, environment variables, secrets, database selection, and Redis.
+- [Demo profiles](demo-profiles.md): discoverable content and business demonstration datasets, selection, and authoring.
 - [Production installation](operations/install.md): released Docker images, Composer project, and release ZIP.
 - [Production deployment](operations/deploy.md): topology, image pinning, proxy boundary, and deployment checks.
 

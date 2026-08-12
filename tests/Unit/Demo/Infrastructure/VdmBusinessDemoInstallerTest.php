@@ -80,7 +80,7 @@ final class VdmBusinessDemoInstallerTest extends TestCase
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('exists without an installer provenance checkpoint');
 
-        $this->invoke($installer, 'installRecordPolicies', $this->context(), $definition);
+        $this->invoke($installer, 'installRecordPolicies', $this->context(), $definition, 'vdm');
     }
 
     /**
@@ -427,7 +427,7 @@ final class VdmBusinessDemoInstallerTest extends TestCase
         VdmBusinessDemoInstaller $installer,
         EntityTypeDefinition $definition,
     ): array {
-        $baseline = $this->invoke($installer, 'policyBaseline', $definition, 'business.record.read');
+        $baseline = $this->invoke($installer, 'policyBaseline', $definition, 'business.record.read', 'vdm');
         self::assertIsArray($baseline);
 
         return $baseline;

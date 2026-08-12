@@ -132,12 +132,13 @@ final readonly class VdmBusinessDemoInstaller
     public function preflight(ExecutionContext $context, array $manifest): void
     {
         $manifest = $this->projector->forSite($manifest, $context->site());
+        $profile = $this->requiredString($manifest, 'profile');
         $assets = $this->ledger->assets($context->site()->identifier(), self::DATASET);
         $records = $this->requiredMap($manifest, 'records_document');
         $operations = $this->operations->validate($records, $assets);
         $documents = $this->requiredMap($manifest, 'definition_documents');
         $order = $this->requiredList($manifest, 'installation_order', 64);
-        $this->preflightDefinitionsAndPolicies($context, $documents, $order, $operations, $assets);
+        $this->preflightDefinitionsAndPolicies($context, $documents, $order, $operations, $assets, $profile);
     }
 
     /**
@@ -154,6 +155,7 @@ final readonly class VdmBusinessDemoInstaller
     {
         $this->preflight($context, $manifest);
         $manifest = $this->projector->forSite($manifest, $context->site());
+        $profile = $this->requiredString($manifest, 'profile');
         $records = $this->requiredMap($manifest, 'records_document');
         $operations = $this->operations->validate(
             $records,
@@ -172,10 +174,11 @@ final readonly class VdmBusinessDemoInstaller
             $installed[$definition->handle] = $definition;
             $messages[] = sprintf('Prepared VDM business definition %s.', $definition->handle);
         }
-        $this->transactions->transactional(function () use ($context, $installed): void {
+        $this->transactions->transactional(function () use ($context, $installed, $profile): void {
             $createdPolicies = false;
             foreach ($installed as $definition) {
-                $createdPolicies = $this->installRecordPolicies($context, $definition) || $createdPolicies;
+                $createdPolicies = $this->installRecordPolicies($context, $definition, $profile)
+                    || $createdPolicies;
             }
             if ($createdPolicies) {
                 $this->database->executeStatement(sprintf(
@@ -207,6 +210,7 @@ final readonly class VdmBusinessDemoInstaller
      *              archives: list<array<string, mixed>>
      *          }                     $operations  Validated record-operation declarations.
      * @param   list<array<string, mixed>>  $assets     Complete VDM dataset checkpoint set.
+     * @param   string                      $profile    Validated business demo profile name.
      *
      * @return  void
      *
@@ -220,6 +224,7 @@ final readonly class VdmBusinessDemoInstaller
         array $order,
         array $operations,
         array $assets,
+        string $profile,
     ): void {
         /** @var array<string, EntityTypeDefinition> $definitions */
         $definitions = [];
@@ -262,7 +267,7 @@ final readonly class VdmBusinessDemoInstaller
         $policies = [];
         foreach ($definitions as $definition) {
             foreach (self::RECORD_OPERATIONS as $operation) {
-                $policy = $this->policyBaseline($definition, $operation);
+                $policy = $this->policyBaseline($definition, $operation, $profile);
                 $fixtureKey = $this->requiredString($policy, 'fixture_key');
                 if (isset($policies[$fixtureKey])) {
                     throw new RuntimeException(sprintf('VDM policy fixture %s is duplicated.', $fixtureKey));
@@ -444,20 +449,21 @@ final readonly class VdmBusinessDemoInstaller
      *
      * @param   EntityTypeDefinition  $definition  Projected definition whose fields establish disclosure.
      * @param   string                $operation   Exact business-record capability and policy action.
+     * @param   string                $profile     Validated business demo profile name.
      *
      * @return  array<string, mixed>  Complete desired policy baseline used by preflight and installation.
      *
      * @since   2.0.0
      */
-    private function policyBaseline(EntityTypeDefinition $definition, string $operation): array
+    private function policyBaseline(EntityTypeDefinition $definition, string $operation, string $profile): array
     {
         $predicate = ['type' => 'constant', 'value' => true];
         $fields = $this->recordFieldRules($definition);
-        $policyCode = $this->policyCode($definition, $operation);
+        $policyCode = $this->policyCode($definition, $operation, $profile);
         $fixtureKey = 'policy.' . substr(hash('sha256', $policyCode), 0, 32);
         $id = Uuid::uuid5(
             Uuid::NAMESPACE_URL,
-            'https://kumwe.dev/demo/vdm/policy/' . $policyCode,
+            sprintf('https://kumwe.dev/demo/%s/policy/%s', $profile, $policyCode),
         )->toString();
         $state = [
             'policy_code' => $policyCode,
@@ -859,20 +865,24 @@ final readonly class VdmBusinessDemoInstaller
      *
      * @param   ExecutionContext      $context     Profile installer context.
      * @param   EntityTypeDefinition  $definition  Published definition receiving policies.
+     * @param   string                $profile     Validated business demo profile name.
      *
      * @return  bool  Whether at least one new policy row was installed.
      *
      * @since   2.0.0
      */
-    private function installRecordPolicies(ExecutionContext $context, EntityTypeDefinition $definition): bool
-    {
+    private function installRecordPolicies(
+        ExecutionContext $context,
+        EntityTypeDefinition $definition,
+        string $profile,
+    ): bool {
         $created = false;
         $predicate = ['type' => 'constant', 'value' => true];
         $fields = $this->recordFieldRules($definition);
         $checksum = CanonicalDefinitionJson::checksum(['ast' => $predicate, 'fields' => $fields]);
         foreach (self::RECORD_OPERATIONS as $operation) {
-            $policyCode = $this->policyCode($definition, $operation);
-            $baseline = $this->policyBaseline($definition, $operation);
+            $baseline = $this->policyBaseline($definition, $operation, $profile);
+            $policyCode = $this->requiredString($baseline, 'policy_code');
             $existing = $this->database->fetchAssociative(sprintf(
                 'SELECT id, entity_definition_id, action, ast_checksum FROM %s WHERE policy_code = ?',
                 $this->tables->quoted('resource_policies'),
@@ -882,7 +892,7 @@ final readonly class VdmBusinessDemoInstaller
                 continue;
             }
             $created = true;
-            $id = Uuid::uuid5(Uuid::NAMESPACE_URL, 'https://kumwe.dev/demo/vdm/policy/' . $policyCode)->toString();
+            $id = $this->requiredString($baseline, 'id');
             $now = $this->clock->now();
             $this->transactions->transactional(function () use (
                 $context,
@@ -1361,14 +1371,15 @@ final readonly class VdmBusinessDemoInstaller
      *
      * @param   EntityTypeDefinition  $definition  Published definition that owns the policy.
      * @param   string                $operation   Business-record capability represented by the policy.
+     * @param   string                $profile     Validated business demo profile name.
      *
-     * @return  string  Stable policy code unique to the definition and operation.
+     * @return  string  Stable policy code unique to the profile, definition, and operation.
      *
      * @since   2.0.0
      */
-    private function policyCode(EntityTypeDefinition $definition, string $operation): string
+    private function policyCode(EntityTypeDefinition $definition, string $operation, string $profile): string
     {
-        return 'core.demo.vdm.'
+        return 'core.demo.' . $profile . '.'
             . str_replace('-', '', $definition->id)
             . '.'
             . substr($operation, strlen('business.record.'));

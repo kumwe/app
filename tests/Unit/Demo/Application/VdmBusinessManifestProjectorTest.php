@@ -127,6 +127,57 @@ final class VdmBusinessManifestProjectorTest extends TestCase
     }
 
     /**
+     * Project a differently named business profile through the same namespace derivation as VDM.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testProjectionDerivesNamespacesFromTheTemplateProfileName(): void
+    {
+        $source = (new FilesystemDemoManifestCatalog(dirname(__DIR__, 4)))->vdmBusiness()['manifest'];
+        $encoded = json_encode($source, JSON_THROW_ON_ERROR);
+        $renamed = str_replace(['"vdm"', 'site.default.vdm_'], ['"farming"', 'site.default.farming_'], $encoded);
+        /** @var array<string, mixed> $farming */
+        $farming = json_decode($renamed, true, 64, JSON_THROW_ON_ERROR);
+
+        $projected = (new VdmBusinessManifestProjector())->forSite(
+            $farming,
+            SiteContext::fromString('customer-east'),
+        );
+
+        $reencoded = json_encode($projected, JSON_THROW_ON_ERROR);
+        self::assertStringContainsString('site.customer-east.farming_client_account', $reencoded);
+        self::assertStringNotContainsString('site.default.farming_client_account', $reencoded);
+        $vdmProjection = (new VdmBusinessManifestProjector())->forSite(
+            $source,
+            SiteContext::fromString('customer-east'),
+        );
+        self::assertNotSame(
+            $this->identityUuids($vdmProjection),
+            $this->identityUuids($projected),
+        );
+    }
+
+    /**
+     * Refuse a template that declares no valid profile name to anchor its namespaces.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testProjectionRejectsAMissingProfileName(): void
+    {
+        $source = (new FilesystemDemoManifestCatalog(dirname(__DIR__, 4)))->vdmBusiness()['manifest'];
+        unset($source['profile']);
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('declares no valid profile name');
+
+        (new VdmBusinessManifestProjector())->forSite($source, SiteContext::default());
+    }
+
+    /**
      * Reject site identifiers that cannot form the business owner namespace or a portable handle.
      *
      * @return  void
@@ -141,7 +192,7 @@ final class VdmBusinessManifestProjectorTest extends TestCase
             (new VdmBusinessManifestProjector())->forSite($source, SiteContext::fromString('tenant:west'));
             self::fail('The business-definition owner constraint was not enforced.');
         } catch (RuntimeException $exception) {
-            self::assertStringContainsString('cannot own VDM business definitions', $exception->getMessage());
+            self::assertStringContainsString('cannot own business demo definitions', $exception->getMessage());
         }
 
         try {

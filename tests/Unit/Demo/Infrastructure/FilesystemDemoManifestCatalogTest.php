@@ -356,6 +356,46 @@ final class FilesystemDemoManifestCatalogTest extends TestCase
     }
 
     /**
+     * Proves discovery reports exactly the released profile vocabulary without a hard-coded list.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testDiscoveryReportsTheReleasedProfileVocabulary(): void
+    {
+        self::assertSame(['blank', 'documentation', 'placeholder'], $this->catalog()->contentProfiles());
+        self::assertSame(['vdm'], $this->catalog()->businessProfiles());
+    }
+
+    /**
+     * Proves the generic business loader answers the released VDM dataset byte for byte.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testGenericBusinessLoaderMatchesTheVdmShortcut(): void
+    {
+        self::assertSame($this->catalog()->vdmBusiness(), $this->catalog()->business('vdm'));
+    }
+
+    /**
+     * Proves an undiscovered business profile is refused before any filesystem path is constructed.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testUnknownBusinessProfileIsRejected(): void
+    {
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('unsupported');
+
+        $this->catalog()->business('../vdm');
+    }
+
+    /**
      * Build the production manifest catalog against the repository root.
      *
      * @return  FilesystemDemoManifestCatalog

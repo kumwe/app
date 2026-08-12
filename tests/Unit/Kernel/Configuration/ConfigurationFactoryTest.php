@@ -30,7 +30,7 @@ final class ConfigurationFactoryTest extends TestCase
         self::assertSame(['kumwe.test'], $configuration->trustedHosts);
         self::assertSame('default', $configuration->publicSite);
         self::assertSame('documentation', $configuration->siteContentProfile);
-        self::assertTrue($configuration->businessDemo);
+        self::assertSame('vdm', $configuration->businessProfile);
         self::assertSame('kumwe_', $configuration->database->tablePrefix);
         self::assertSame('pgsql', $configuration->database->driver);
         self::assertSame('redis', $configuration->redis->host);
@@ -116,27 +116,62 @@ final class ConfigurationFactoryTest extends TestCase
         $configuration = (new ConfigurationFactory())->create(new Environment($values));
 
         self::assertSame('placeholder', $configuration->siteContentProfile);
-        self::assertFalse($configuration->businessDemo);
+        self::assertSame('none', $configuration->businessProfile);
 
         $values['KUMWE_SITE_CONTENT_PROFILE'] = 'blank';
         $configuration = (new ConfigurationFactory())->create(new Environment($values));
         self::assertSame('blank', $configuration->siteContentProfile);
-        self::assertFalse($configuration->businessDemo);
+        self::assertSame('none', $configuration->businessProfile);
     }
 
     /**
-     * Proves an unknown site-content profile fails during bootstrap instead of silently seeding another dataset.
+     * Proves the named business selector wins over the legacy boolean without disabling the alias.
      *
      * @return  void
      *
      * @since   2.0.0
      */
-    public function testUnknownSiteContentProfileIsRejected(): void
+    public function testNamedBusinessProfileOverridesLegacyBoolean(): void
     {
         $values = $this->values();
-        $values['KUMWE_SITE_CONTENT_PROFILE'] = 'company-demo';
+        $values['KUMWE_BUSINESS_DEMO'] = 'off';
+        $values['KUMWE_BUSINESS_PROFILE'] = 'farming';
+
+        $configuration = (new ConfigurationFactory())->create(new Environment($values));
+
+        self::assertSame('farming', $configuration->businessProfile);
+    }
+
+    /**
+     * Proves a malformed site-content profile fails during bootstrap instead of reaching reconciliation.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testMalformedSiteContentProfileIsRejected(): void
+    {
+        $values = $this->values();
+        $values['KUMWE_SITE_CONTENT_PROFILE'] = 'Company Demo';
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('KUMWE_SITE_CONTENT_PROFILE');
+
+        (new ConfigurationFactory())->create(new Environment($values));
+    }
+
+    /**
+     * Proves a malformed business profile selector fails during bootstrap with its own diagnostic.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testMalformedBusinessProfileIsRejected(): void
+    {
+        $values = $this->values();
+        $values['KUMWE_BUSINESS_PROFILE'] = '../vdm';
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('KUMWE_BUSINESS_PROFILE');
 
         (new ConfigurationFactory())->create(new Environment($values));
     }

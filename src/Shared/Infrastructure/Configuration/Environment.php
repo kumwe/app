@@ -50,6 +50,7 @@ final readonly class Environment
         'KUMWE_INSTANCE_ID',
         'KUMWE_SITE_CONTENT_PROFILE',
         'KUMWE_BUSINESS_DEMO',
+        'KUMWE_BUSINESS_PROFILE',
         'DB_DRIVER',
         'DB_HOST',
         'DB_PORT',

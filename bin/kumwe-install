@@ -67,15 +67,31 @@ $database = match ($driverChoice) {
 };
 
 [$driver, $defaultHost, $defaultPort, $defaultVersion] = $database;
-$siteContentProfile = strtolower(
-    prompt('Initial site content [documentation/placeholder/blank]', 'documentation'),
-);
+$contentProfiles = discoveredProfiles(glob($root . '/resources/demo/content/*.json') ?: []);
+$businessProfiles = discoveredProfiles(glob($root . '/resources/demo/business/*/profile.json') ?: [], true);
 
-if (!in_array($siteContentProfile, ['documentation', 'placeholder', 'blank'], true)) {
-    fail('Initial site content must be documentation, placeholder or blank.');
+if ($contentProfiles === []) {
+    fail('This release ships no site-content demo profiles; the installation cannot continue.');
 }
 
-$businessDemo = confirmation('Install the Vast Development Method business demonstration?', true);
+$defaultContent = in_array('documentation', $contentProfiles, true) ? 'documentation' : $contentProfiles[0];
+$siteContentProfile = strtolower(
+    prompt(sprintf('Initial site content [%s]', implode('/', $contentProfiles)), $defaultContent),
+);
+
+if (!in_array($siteContentProfile, $contentProfiles, true)) {
+    fail(sprintf('Initial site content must be one of: %s.', implode(', ', $contentProfiles)));
+}
+
+$businessChoices = [...$businessProfiles, 'none'];
+$defaultBusiness = in_array('vdm', $businessProfiles, true) ? 'vdm' : 'none';
+$businessProfile = strtolower(
+    prompt(sprintf('Business demonstration dataset [%s]', implode('/', $businessChoices)), $defaultBusiness),
+);
+
+if (!in_array($businessProfile, $businessChoices, true)) {
+    fail(sprintf('Business demonstration dataset must be one of: %s.', implode(', ', $businessChoices)));
+}
 $databaseHost = prompt('Database host', $defaultHost);
 $databasePort = prompt('Database port', $defaultPort);
 $databaseName = prompt('Database name', 'kumwe');
@@ -107,7 +123,7 @@ $values = [
     'APP_MAX_BODY_BYTES' => '8388608',
     'APP_ADMIN_SESSION_SECONDS' => '28800',
     'KUMWE_SITE_CONTENT_PROFILE' => $siteContentProfile,
-    'KUMWE_BUSINESS_DEMO' => $businessDemo ? 'true' : 'false',
+    'KUMWE_BUSINESS_PROFILE' => $businessProfile,
     'KUMWE_RELEASE' => $packageRelease,
     'APP_SECRET' => base64_encode(random_bytes(48)),
     'EXTENSION_RUNTIME_SIGNING_KEY_ID' => 'runtime-v1',
@@ -296,6 +312,31 @@ function encodeEnvironmentValue(string $value): string
         ["\\\\", '\\"', '\\r', '\\n'],
         $value,
     ) . '"';
+}
+
+/**
+ * Reduce discovered demo manifest paths to sorted selectable profile names.
+ *
+ * @param  list<string>  $paths      Globbed manifest paths.
+ * @param  bool          $directory  Whether the profile name is the manifest's directory rather than its file.
+ *
+ * @return list<string>
+ */
+function discoveredProfiles(array $paths, bool $directory = false): array
+{
+    $profiles = [];
+
+    foreach ($paths as $path) {
+        $name = $directory ? basename(dirname($path)) : basename($path, '.json');
+
+        if (preg_match('/^[a-z][a-z0-9-]{0,62}$/D', $name) === 1) {
+            $profiles[] = $name;
+        }
+    }
+
+    sort($profiles);
+
+    return $profiles;
 }
 
 /** @param non-empty-list<string> $command */
