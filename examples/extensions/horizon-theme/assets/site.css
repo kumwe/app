@@ -1,4 +1,13 @@
 /* Horizon: a warm branded site theme demonstrating a complete Kumwe template package. */
+
+/*
+ * The host stylesheet outlet always loads before this file, so every shell class the theme owns
+ * carries a horizon- prefix: the host's .site-header/.site-brand/.site-footer rules can never reach
+ * this markup, and the theme never depends on host-owned custom properties. Navigation reuses the
+ * host's menu markup (nested lists from the shared macro) and the host's progressive-enhancement
+ * hooks — html[data-site-navigation-enhanced] and [data-open] — while styling both itself.
+ */
+
 :root {
   color-scheme: light dark;
   --horizon-sky: #fff7ef;
@@ -31,6 +40,8 @@ body.horizon {
   line-height: 1.65;
 }
 
+body.horizon h1, body.horizon h2, body.horizon h3 { color: var(--horizon-ink); }
+
 .skip-link {
   position: absolute;
   inset-inline-start: 1rem;
@@ -42,19 +53,20 @@ body.horizon {
 
 .skip-link:focus { transform: none; }
 
-.site-header {
+.horizon-header {
   display: flex;
   width: min(100% - 2rem, 72rem);
   margin-inline: auto;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 1.5rem;
+  gap: .6rem 1.5rem;
   padding-block: 1.1rem;
   border-bottom: 3px solid transparent;
   border-image: var(--horizon-glow) 1;
 }
 
-.site-brand {
+.horizon-brand {
   display: flex;
   align-items: center;
   gap: .65rem;
@@ -65,9 +77,69 @@ body.horizon {
   text-decoration: none;
 }
 
-.site-header nav ul { display: flex; flex-wrap: wrap; gap: 1rem; margin: 0; padding: 0; list-style: none; }
-.site-header nav a { color: var(--horizon-dusk); font-weight: 600; text-decoration: none; }
-.site-header nav a:hover, .site-header nav a:focus-visible { text-decoration: underline; text-underline-offset: .3em; }
+/* Only the top level lays out as a row; nested lists are submenu panels. */
+.horizon-nav ul { margin: 0; padding: 0; list-style: none; }
+.horizon-nav > ul { display: flex; flex-wrap: wrap; align-items: center; gap: .25rem 1rem; }
+.horizon-nav li { position: relative; }
+.horizon-nav a { display: inline-block; padding: .2rem 0; color: var(--horizon-dusk); font-weight: 600; text-decoration: none; }
+.horizon-nav a:hover, .horizon-nav a:focus-visible { text-decoration: underline; text-underline-offset: .3em; }
+.horizon-nav a[aria-current="page"] {
+  color: var(--horizon-sun);
+  text-decoration: underline;
+  text-decoration-thickness: .14em;
+  text-underline-offset: .3em;
+}
+
+/* Nested menu levels open on hover and keep working for keyboard focus. */
+.horizon-nav li ul {
+  position: absolute;
+  z-index: 20;
+  top: 100%;
+  left: 0;
+  display: none;
+  min-width: 12rem;
+  padding: .55rem .85rem;
+  border: 1px solid var(--horizon-line);
+  background: var(--horizon-sky);
+  box-shadow: 0 .9rem 2rem rgb(51 32 59 / .18);
+}
+
+.horizon-nav li:hover > ul, .horizon-nav li:focus-within > ul { display: grid; gap: .3rem; }
+
+/* The host module enhances this button; without scripting the full menu simply stays visible. */
+.horizon-nav-toggle {
+  display: none;
+  padding: .45rem .9rem;
+  border: 1px solid var(--horizon-line);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--horizon-dusk);
+  font-family: system-ui, sans-serif;
+  font-size: .8rem;
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+
+@media (max-width: 46rem) {
+  .horizon-nav { flex-basis: 100%; }
+  .horizon-nav > ul { display: block; padding-block: .35rem; }
+  .horizon-nav > ul > li { padding-block: .3rem; }
+  .horizon-nav li ul {
+    position: static;
+    display: block;
+    min-width: 0;
+    margin-block: .25rem;
+    padding: .1rem 0 .1rem .85rem;
+    border: 0;
+    border-left: 2px solid var(--horizon-line);
+    background: transparent;
+    box-shadow: none;
+  }
+  html[data-site-navigation-enhanced] .horizon-nav-toggle { display: inline-flex; }
+  html[data-site-navigation-enhanced] .horizon-nav { display: none; }
+  html[data-site-navigation-enhanced] .horizon-nav[data-open] { display: block; }
+}
 
 .page-section {
   width: min(100% - 2rem, 72rem);
@@ -101,7 +173,7 @@ body.horizon {
   text-transform: uppercase;
 }
 
-.article-body { overflow-wrap: anywhere; }
+.article-body { overflow-wrap: anywhere; color: var(--horizon-ink); font-size: 1.05rem; }
 .article-body a { color: var(--horizon-dusk); }
 .article-body h2 { margin-top: 2.2rem; font-size: 1.45rem; }
 
@@ -117,7 +189,7 @@ body.horizon {
   text-decoration: none;
 }
 
-.site-footer {
+.horizon-footer {
   width: min(100% - 2rem, 72rem);
   margin-inline: auto;
   padding-block: 1.4rem;
