@@ -1,10 +1,28 @@
 # Kumwe CMS
 
-Kumwe is an extensible PHP content-management system for websites and portals. It combines a graphical administrator, structured content and publishing workflows, role-based access, menus, installable extensions and templates, REST and MCP integrations, durable automation, and reproducible production delivery.
+Kumwe is a modern CMS, built with disciplined engineering and AI acceleration. It is two platforms
+behind one set of rules: a content-management system — managed pages, media, nested menus, and
+governed publishing workflows in a graphical administrator — and a business application platform — a
+typed business definition and record runtime with policies, approvals, reports, and an isolated
+client portal. Both halves run through the same application services, so what the browser allows, the
+REST API, CLI, MCP tools, workers, and scheduler allow, and what one refuses, the others refuse too.
 
-## Start a local site
+- Content, media, and navigation are managed records with revisions, workflow states, and audit trails.
+- Business definitions declare typed entities, relationships, views, actions, and safe formulas; the
+  runtime generates the administrator and portal surfaces, the REST contract, and the CLI/MCP tools.
+- Extensions install through a signed pipeline into a compiled, verified runtime — plugins,
+  components, templates, and languages, without rebuilding the application image.
+- Automation is durable: database-backed queues, leases, bounded retries, and recurring schedules.
 
-Docker Engine with Compose v2 is the shortest path. The default database is MariaDB.
+Entry points: [`AGENTS.md`](AGENTS.md) for contributors, the
+[coding standard](docs/coding-standard.md), [demo profiles](docs/demo-profiles.md),
+[workers and scheduler](docs/automation.md), and the full [documentation index](docs/README.md).
+
+## Quick start: the full demonstration
+
+Docker Engine with Compose v2 is the shortest path. The copied environment selects the documentation
+site and the Vast Development Method (VDM) business dataset by default, and `database:migrate`
+installs both.
 
 ```bash
 git clone https://github.com/Kumwe/cms.git
@@ -16,31 +34,18 @@ docker compose up -d --wait
 curl --fail http://localhost:8080/health/ready
 ```
 
-The copied environment selects the documentation site and Vast Development Method (VDM) business demonstration by
-default. Choose the initial datasets before the first migration. For an empty installation, set:
+The app container runs as user `${KUMWE_UID:-1000}:${KUMWE_GID:-1000}` over the mounted checkout. If
+your host user is not UID 1000, export matching identifiers before the first compose command so the
+checkout stays writable from inside the container:
 
-```dotenv
-KUMWE_SITE_CONTENT_PROFILE=blank
-KUMWE_BUSINESS_DEMO=false
+```bash
+export KUMWE_UID="$(id -u)" KUMWE_GID="$(id -g)"
 ```
 
-Site content and business data are independent choices. Each dataset's choice is frozen independently when its first
-reconciliation passes validation and begins. Once recorded, a later failure does not release it; retry with the same
-value. Later migration runs refuse configuration drift. Released site-content revisions may update or retire only
-fixtures that still match Kumwe's last-applied state, so administrator customizations remain untouched. VDM
-definitions may advance only while untouched. Operators may edit runtime records normally; applied VDM manifest
-create, relation, action, archive, and policy checkpoints are immutable, and later manifests may append new operations
-but may not rewrite or remove an applied fixture.
-
-The development server serves compiled browser assets through the dedicated router and continuously verifies the local extension runtime, so `/health/ready` remains meaningful after startup. To use another host port, change the single Compose setting in `.env` before starting the services:
-
-```dotenv
-KUMWE_HTTP_PORT=9900
-```
-
-Compose then publishes `http://localhost:9900`, injects the matching application base URL, and keeps the container listening internally on port 8080. `KUMWE_HTTP_BIND` controls the host interface and defaults to `127.0.0.1`; changing `APP_BASE_URL` alone does not publish a Docker port. Run `docker compose up -d --wait` after changing the listener so Compose recreates the app service and waits for HTTP readiness.
-
-Create an administrator account from a protected password file:
+Create the owner account, then complete the demonstration — sign-ins and example extensions — with
+one command. Passwords never travel as arguments; they arrive in files only you can read. Paths
+passed to the container must be container-visible, which is why the flags below use the `/app` prefix
+(the checkout is mounted there):
 
 ```bash
 install -m 0600 /dev/null .admin-password
@@ -49,31 +54,135 @@ docker compose run --rm app php bin/kumwe user:create-admin \
   --email=owner@example.com \
   --name="Site owner" \
   --password-file=/app/.admin-password
+docker compose run --rm app php bin/kumwe demo:install \
+  --admin-email=owner@example.com \
+  --admin-password-file=/app/.admin-password \
+  --credentials-file=/app/storage/private/demo-access-credentials.json
 rm .admin-password
 ```
 
-Repeat the same command with a different email address whenever another full administrator is required. The host-authorized command reuses the canonical `administrator` role, restores any missing global administrator grants, and refuses an existing email without changing that account's password. Run all pending migrations first; the password file must be absolute inside the container, readable by the application user, and inaccessible to group and other users.
+`demo:install` provisions the VDM demonstration cast — five staff accounts and six portal client
+organizations with nine members — and installs the shipped example extensions (`announcements`,
+`asset-inspection`, `audit-listener`, and the `horizon-theme` site theme, which installs as
+selectable and is never activated for you). Each new account receives a generated password written
+exactly twice: to the command output and to the owner-only credentials file, which lands on the host
+at `storage/private/demo-access-credentials.json`.
 
-Open <http://localhost:8080/administrator>. The [getting-started guide](docs/getting-started.md) continues through the
-editable Kumwe documentation site, typed menu links, the VDM business workflow, user groups, and site configuration.
-A default database ships with published documentation, navigation, settings, realistic fictional business records,
-and read-only Kumwe logo media. These are managed records, not hardcoded screens or authentication credentials.
+Re-running the command is safe: existing accounts and installed examples are confirmed, no password
+is re-issued, and the credentials file is only created on a run that actually generated a new
+password — otherwise the command reports that existing sign-ins remain valid and touches nothing.
 
-## Capabilities
+Sign in at <http://localhost:8080/administrator> with the owner or a staff account, and at
+<http://localhost:8080/portal> with a portal member. The site content and business records were
+already installed by `database:migrate`; the [getting-started guide](docs/getting-started.md)
+continues from here.
 
-- Create, revise, review, schedule, publish, unpublish, archive, trash, and restore content through generated graphical fields and workflow controls.
-- Search and filter content, manage reusable media, order nested menus, and render the same managed navigation in the built-in public presentation.
-- Manage menus, nested navigation, users, groups, scoped capability grants, API tokens, site identity, reusable color schemes, interaction styles, extensions, and templates from the administrator when the signed-in user has permission.
-- Apply the same content, navigation, identity, and extension rules through application services shared by the browser, CLI, REST, MCP, workers, and scheduler.
-- Install signed plugins, components, modules, templates, languages, and packages without rebuilding the application image.
-- Graphically author and immutably publish typed business definitions with exact fields, relationships, views, actions, workflows, safe formulas, compatibility plans, and extension-owned contributions.
-- Enforce organization and workspace memberships, deny-overrides record and field policies, maker-checker approvals,
-  replay-safe step-up authentication, and scoped delegation through every delivery surface.
-- Serve an isolated ordinary-user portal with its own sessions, CSRF boundary, account security, approvals, and
-  signed extension workspaces, navigation, templates, and routes.
-- Run optimistic, retry-safe API mutations with capability-scoped tokens, ETags, persisted idempotency results, revisions, and audit events.
-- Run durable jobs and recurring schedules with bounded retries, leases, occurrence keys, and failure records.
-- Deploy immutable nginx and PHP-FPM images with MariaDB by default, or select MySQL or PostgreSQL.
+### Without Docker
+
+The same flow runs on host PHP 8.5 with MariaDB (or MySQL/PostgreSQL) and Redis reachable from the
+process. Point `DB_HOST` and `REDIS_HOST` in `.env` at your services (for example `127.0.0.1`), then:
+
+```bash
+composer install
+cp .env.example .env   # edit DB_HOST and REDIS_HOST first
+php bin/kumwe database:migrate
+sh tools/development-server.sh   # serves http://localhost:8080
+```
+
+Run the same `user:create-admin` and `demo:install` commands with host-absolute paths — for example
+`--admin-password-file="$PWD/.admin-password"` and
+`--credentials-file="$PWD/storage/private/demo-access-credentials.json"`. The password and
+credentials file rules are identical: absolute paths, regular files, no group or other permission
+bits. Composer-project and release-ZIP installations follow the
+[production install guide](docs/operations/install.md) instead; `bin/kumwe-install` walks the same
+steps interactively.
+
+## Starting clean
+
+For an empty installation, choose the blank datasets in `.env` before the first migration:
+
+```dotenv
+KUMWE_SITE_CONTENT_PROFILE=blank
+KUMWE_BUSINESS_PROFILE=none
+```
+
+Then run the same `database:migrate` and create the first administrator with `user:create-admin` as
+above. Each dataset's choice is frozen independently when its first reconciliation begins; later
+migration runs refuse a different value rather than switching profiles, so decide before the first
+migrate. With `none` selected, `demo:install` skips the demonstration cast cleanly and can still
+install the example extensions if you want them. See [demo profiles](docs/demo-profiles.md) for the
+selector contract.
+
+## Running it
+
+The development Compose stack runs three services: `app` (the PHP built-in server behind a dedicated
+asset router, plus a watcher that keeps the extension runtime verified), `database` (MariaDB by
+default; MySQL and PostgreSQL are supported), and `redis`. `docker compose up -d --wait` returns only
+once `/health/ready` answers. `KUMWE_HTTP_PORT` in `.env` moves the published port.
+
+Background work is real infrastructure, not an afterthought. Queued report exports are completed by a
+worker on the `exports` queue — without one they stay queued forever:
+
+```bash
+php bin/kumwe queue:work --queue=default --sleep-ms=1000
+php bin/kumwe queue:work --queue=exports --sleep-ms=1000
+php bin/kumwe schedule:run --loop
+```
+
+Production Compose runs the web, PHP-FPM, one-shot migrate, database, and Redis services, and starts
+the same worker and scheduler commands as dedicated services:
+
+```bash
+docker compose -f compose.production.yaml --profile automation up -d worker scheduler
+```
+
+[Workers and scheduler](docs/automation.md) covers queues, schedules, and operating rules;
+[operations](docs/operations/README.md) covers deployment, backup, and upgrades.
+
+## Testing
+
+```bash
+composer qa
+```
+
+That is the merge gate. Its parts run individually:
+
+```bash
+composer architecture:policy   # layer and dependency policy
+composer cs                    # PSR-12 layout, 120-character lines
+composer analyse               # PHPStan at level max
+composer docs:api              # documentation-block completeness
+composer openapi:check         # the compiled REST contract is current
+composer test:unit             # unit suite
+composer test:integration      # integration suite (needs the database)
+```
+
+The browser suite runs against the started stack:
+
+```bash
+npm ci
+npm run check
+npm run build
+npm run test:browser
+```
+
+Every supported engine — MariaDB, MySQL 8.4, PostgreSQL 17 — runs the same services and migrations;
+select one per installation with `DB_DRIVER` and `KUMWE_DATABASE_IMAGE` and re-run the same suites.
+[Development and testing](docs/development.md) documents the local and CI contracts;
+[CONTRIBUTING.md](CONTRIBUTING.md) and [`AGENTS.md`](AGENTS.md) describe the workflow.
+
+## Contributing and extending
+
+- Read [`AGENTS.md`](AGENTS.md) first; the [coding standard](docs/coding-standard.md) is normative
+  for every contributor, human or automated.
+- Scaffold an extension with `php bin/kumwe extension:scaffold` and build against
+  [extensions](docs/extensions.md) and [templates](docs/templates.md); everything installs through
+  the signed pipeline.
+- Demonstration data is packaged as versioned [demo profiles](docs/demo-profiles.md). Build a site,
+  then turn it into a shareable, installable profile with `php bin/kumwe demo:export-profile` — forks
+  ship their own demonstrations by dropping a profile beside the released ones.
+- Report problems and propose changes on [GitHub issues](https://github.com/Kumwe/cms/issues) and
+  [discussions](https://github.com/Kumwe/cms/discussions).
 
 ## Supported runtime
 
@@ -85,52 +194,8 @@ and read-only Kumwe logo media. These are managed records, not hardcoded screens
 | Redis | Current Redis 8 image line for cache, locks, rate limits, and coordination |
 | Web | nginx and PHP-FPM release images |
 
-Every database engine runs the same application services and migrations. Choose one engine per installation; Kumwe does not duplicate its CRUD or workflow pipeline by database.
-
-## Installation choices
-
-| Method | Best for | Guide |
-|---|---|---|
-| Released Docker images | Reproducible production and container platforms | [Production install](docs/operations/install.md#docker-images) |
-| Composer project | PHP hosts and source-controlled deployments | [Production install](docs/operations/install.md#composer-project) |
-| Release ZIP | Hosts without server-side Composer | [Production install](docs/operations/install.md#release-zip) |
-| Git checkout and development Compose | Contributors and extension development | [Getting started](docs/getting-started.md) |
-
-All methods install the same application. Configuration is supplied through environment variables or protected secret files, migrations run through `bin/kumwe`, and administrator accounts are created explicitly; public registration cannot claim a new installation.
-
-## Documentation
-
-The [documentation index](docs/README.md) organizes guides by task:
-
-| Goal | Guide |
-|---|---|
-| Install and configure a site | [Getting started](docs/getting-started.md) and [configuration](docs/configuration.md) |
-| Administer content, navigation, users, and settings | [Administrator](docs/administration.md) |
-| Define operational entities and extension schemas | [Business definitions](docs/business-definitions.md) |
-| Configure policy, approvals, step-up, and scoped authority | [Business security](docs/business-security.md) |
-| Use or extend the ordinary-user portal | [Ordinary-user portal](docs/portal.md) |
-| Operate Kumwe from a shell | [Command-line interface](docs/cli.md) |
-| Integrate an application or AI client | [REST API](docs/rest-api.md) and [MCP](docs/mcp.md) |
-| Create extensions, events, migrations, or templates | [Extensions](docs/extensions.md) and [templates](docs/templates.md) |
-| Run jobs and schedules | [Workers and scheduler](docs/automation.md) |
-| Deploy, monitor, back up, recover, and upgrade | [Operations](docs/operations/README.md) |
-| Understand or evolve the design | [Architecture](docs/architecture/README.md) |
-| Test and contribute | [Development](docs/development.md) and [contributing](CONTRIBUTING.md) |
-| Run the complete CMS locally | [Production demonstration](docs/demonstration.md) |
-
-The machine-readable API contract is [api/openapi/kumwe-v1.json](api/openapi/kumwe-v1.json). Run `php bin/kumwe list` from an installed release for the CLI command index.
-
-## Verify a change
-
-```bash
-composer qa
-npm ci
-npm run check
-npm run build
-npm run test:browser
-```
-
-Pull requests additionally build and start the complete CMS, migrate a clean database, exercise HTTP and CLI behavior, run browser/accessibility/responsive/visual tests, and run the supported database matrix. Release jobs build and scan the exact images and ZIP artifact, generate SBOMs and provenance, and publish signed checksums. See [Development and testing](docs/development.md) for the local and CI contracts.
+The machine-readable API contract is [api/openapi/kumwe-v1.json](api/openapi/kumwe-v1.json). Run
+`php bin/kumwe list` from an installed release for the CLI command index.
 
 ## License
 

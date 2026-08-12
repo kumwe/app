@@ -74,8 +74,9 @@ organizations in which one company has two members while others have one — eve
 reserved `.example` zone. The `demo:provision-access` command turns this manifest into real accounts:
 roles and users through the canonical access-control service under an authenticated administrator,
 memberships through the Business Security tables with audit records, and one generated password per
-new account written to an owner-only credentials file. See
-[the command reference](cli.md#demonstration-sign-ins).
+new account written to an owner-only credentials file. The `demo:install` command is the front door:
+it runs this provisioning and the example-extension installation together in one authenticated,
+repeatable step. See [the command reference](cli.md#demonstration-sign-ins).
 
 ## What profiles never contain
 
