@@ -7,6 +7,7 @@ namespace Kumwe\CMS\Tests\Unit\Portal\Contribution;
 use InvalidArgumentException;
 use Kumwe\CMS\Application\Authorization\AuthorizationPolicyRegistry;
 use Kumwe\CMS\Application\Authorization\ResourcePolicyTarget;
+use Kumwe\CMS\Extension\Application\Trust\TrustStore;
 use Kumwe\CMS\Extension\Contribution\CapabilityDefinition;
 use Kumwe\CMS\Extension\Contribution\CapabilityDefinitionRegistry;
 use Kumwe\CMS\Extension\Contribution\ContributionOwner;
@@ -24,9 +25,22 @@ use Kumwe\CMS\Portal\Contribution\PortalTemplateDefinition;
 use Kumwe\CMS\Portal\Contribution\PortalTemplateRegistry;
 use Kumwe\CMS\Portal\Contribution\PortalWorkspaceDefinition;
 use Kumwe\CMS\Portal\Contribution\PortalWorkspaceRegistry;
+use Kumwe\CMS\Portal\Http\Handler\PortalExtensionRootRedirectHandler;
+use Kumwe\CMS\Portal\Http\Middleware\PortalAuthorizationMiddleware;
 use Kumwe\CMS\Portal\Presentation\PortalContributionRenderer;
+use Kumwe\CMS\Portal\Presentation\PortalRenderer;
+use Laminas\Diactoros\ServerRequestFactory;
+use Laminas\HttpHandlerRunner\RequestHandlerRunnerInterface;
+use Laminas\Stratigility\MiddlewarePipe;
+use Mezzio\Application;
+use Mezzio\MiddlewareContainer;
+use Mezzio\MiddlewareFactory;
+use Mezzio\Router\FastRouteRouter;
+use Mezzio\Router\Route;
+use Mezzio\Router\RouteCollector;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
+use Psr\Container\ContainerInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\RequestHandlerInterface;
@@ -39,6 +53,7 @@ use Psr\Http\Server\RequestHandlerInterface;
 #[CoversClass(PortalNavigationRegistry::class)]
 #[CoversClass(PortalTemplateRegistry::class)]
 #[CoversClass(PortalRouteRegistry::class)]
+#[CoversClass(PortalExtensionRootRedirectHandler::class)]
 final class PortalContributionRegistryTest extends TestCase
 {
     public function testOwnedCapabilityTemplateNavigationAndRouteStayInTheExtensionPortalNamespace(): void
@@ -146,6 +161,83 @@ final class PortalContributionRegistryTest extends TestCase
             'acme.orders.read',
             'acme.orders.index',
         ), $this->factory());
+    }
+
+    public function testRootSlashAliasIsProtectedAndWinsOverThePublicSiteCatchAll(): void
+    {
+        $owner = ContributionOwner::extension('acme/orders');
+        $authorization = new AuthorizationPolicyRegistry();
+        $capabilities = new CapabilityDefinitionRegistry($authorization);
+        $capabilities->register($owner, new CapabilityDefinition(
+            'acme.orders.read',
+            'Read orders',
+            'Read orders in the customer portal.',
+        ));
+        $policies = new ResourcePolicyDefinitionRegistry($authorization);
+        $policies->register($owner, new ResourcePolicyDefinition(
+            'acme.orders.portal',
+            'acme.orders.read',
+            [new ResourcePolicyTarget('portal_session')],
+        ));
+        $templates = new PortalTemplateRegistry();
+        $templates->register($owner, new PortalTemplateDefinition('acme.orders.index', 'orders/index.twig'));
+        $routes = new PortalRouteRegistry($capabilities, $templates, $authorization);
+        $routes->register($owner, new PortalRouteDefinition(
+            'acme.orders.index',
+            '/',
+            ['GET'],
+            'acme.orders.read',
+            'acme.orders.index',
+        ), $this->factory());
+
+        [$application, $router] = $this->routingApplication();
+        /** @var TrustStore $trust */
+        $trust = (new \ReflectionClass(TrustStore::class))->newInstanceWithoutConstructor();
+        /** @var PortalRenderer $renderer */
+        $renderer = (new \ReflectionClass(PortalRenderer::class))->newInstanceWithoutConstructor();
+        $routes->registerInto($application, $trust, $renderer);
+        $application->get('/{path:.+}', new class implements RequestHandlerInterface {
+            public function handle(ServerRequestInterface $request): ResponseInterface
+            {
+                throw new \LogicException('The routing assertion never dispatches the public catch-all.');
+            }
+        }, 'site.content.path');
+
+        $request = (new ServerRequestFactory())->createServerRequest(
+            'GET',
+            'https://kumwe.test/portal/extensions/acme/orders/?view=open',
+        );
+        $matched = $router->match($request);
+        self::assertSame(
+            'portal.extension.acme.orders.index:canonical-trailing-slash',
+            $matched->getMatchedRouteName(),
+        );
+        $matchedRoute = $matched->getMatchedRoute();
+        self::assertInstanceOf(Route::class, $matchedRoute);
+        self::assertSame('/portal/extensions/acme/orders/', $matchedRoute->getPath());
+        self::assertSame([
+            PortalAuthorizationMiddleware::OPTION_REQUIRED_CAPABILITIES => ['acme.orders.read'],
+        ], $matchedRoute->getOptions());
+        self::assertCount(1, $routes->ownedBy($owner));
+
+        $canonical = $router->match((new ServerRequestFactory())->createServerRequest(
+            'GET',
+            'https://kumwe.test/portal/extensions/acme/orders',
+        ));
+        self::assertSame('portal.extension.acme.orders.index', $canonical->getMatchedRouteName());
+        $canonicalRoute = $canonical->getMatchedRoute();
+        self::assertInstanceOf(Route::class, $canonicalRoute);
+        self::assertSame([
+            PortalAuthorizationMiddleware::OPTION_REQUIRED_CAPABILITIES => ['acme.orders.read'],
+        ], $canonicalRoute->getOptions());
+
+        $response = (new PortalExtensionRootRedirectHandler('/portal/extensions/acme/orders'))->handle($request);
+        self::assertSame(308, $response->getStatusCode());
+        self::assertSame(
+            '/portal/extensions/acme/orders?view=open',
+            $response->getHeaderLine('Location'),
+        );
+        self::assertSame('no-store', $response->getHeaderLine('Cache-Control'));
     }
 
     public function testNavigationRejectsAnOwnedCapabilityWithoutAPortalSessionPolicy(): void
@@ -266,5 +358,21 @@ final class PortalContributionRegistryTest extends TestCase
                 };
             }
         };
+    }
+
+    /**
+     * @return  array{Application, FastRouteRouter}  Application and its directly inspectable router.
+     */
+    private function routingApplication(): array
+    {
+        $router = new FastRouteRouter(null, null, ['cache_enabled' => false]);
+        $application = new Application(
+            new MiddlewareFactory(new MiddlewareContainer($this->createStub(ContainerInterface::class))),
+            new MiddlewarePipe(),
+            new RouteCollector($router, true),
+            $this->createStub(RequestHandlerRunnerInterface::class),
+        );
+
+        return [$application, $router];
     }
 }

@@ -1592,6 +1592,7 @@ function validateExtensionManifests(string $root, array $inventory, array &$erro
     $inventorySurfacesByManifest = [];
     $declaredInventorySurfacesByManifest = [];
     $declaredRoutes = [];
+    $inventoryRoutes = [];
     foreach ($inventory['surfaces'] as $surface) {
         if (!is_array($surface) || !is_string($surface['id'] ?? null)) {
             continue;
@@ -1599,7 +1600,9 @@ function validateExtensionManifests(string $root, array $inventory, array &$erro
         $inventorySurfaces[$surface['id']] = $surface;
         foreach ($surface['route_contracts'] as $route) {
             if (is_string($route['source_manifest'] ?? null) && is_string($route['declaration_name'] ?? null)) {
-                $declaredRoutes[$route['source_manifest'] . '|' . $route['declaration_name']] = true;
+                $routeKey = $route['source_manifest'] . '|' . $route['declaration_name'];
+                $declaredRoutes[$routeKey] = true;
+                $inventoryRoutes[$routeKey] = $route;
                 $inventorySurfacesByManifest[$route['source_manifest']][$surface['id']] = true;
                 if (($surface['kis_runtime_disposition'] ?? null) === 'declared') {
                     $declaredInventorySurfacesByManifest[$route['source_manifest']][$surface['id']] = true;
@@ -1620,6 +1623,7 @@ function validateExtensionManifests(string $root, array $inventory, array &$erro
     foreach (glob($root . '/examples/extensions/*/kumwe.json') ?: [] as $manifestPath) {
         $relative = relativePath($manifestPath, $root);
         $manifest = readJson($manifestPath, $errors);
+        $extension = $manifest['name'] ?? null;
         $manifestSurfaces = [];
         foreach ($manifest['contributions']['interface']['surfaces'] ?? [] as $surface) {
             if (!is_array($surface) || !is_string($surface['surface'] ?? null)) {
@@ -1698,7 +1702,16 @@ function validateExtensionManifests(string $root, array $inventory, array &$erro
             }
             foreach ($areaData['routes'] ?? [] as $route) {
                 if (is_array($route) && is_string($route['name'] ?? null)) {
-                    $actualRoutes[$relative . '|' . $route['name']] = true;
+                    $routeKey = $relative . '|' . $route['name'];
+                    $actualRoutes[$routeKey] = true;
+                    validateExtensionMountedPath(
+                        $area,
+                        $extension,
+                        $route['path'] ?? null,
+                        $inventoryRoutes[$routeKey]['path'] ?? null,
+                        'Extension graphical route ' . $routeKey,
+                        $errors,
+                    );
                 }
             }
             foreach ($areaData['navigation'] ?? [] as $navigation) {
@@ -1707,6 +1720,14 @@ function validateExtensionManifests(string $root, array $inventory, array &$erro
                     $actualNavigation[$navigationKey] = true;
                     $surfaceId = $navigation['surface'] ?? null;
                     $inventoryEntry = $inventoryNavigation[$navigationKey] ?? null;
+                    validateExtensionMountedPath(
+                        $area,
+                        $extension,
+                        $navigation['path'] ?? null,
+                        $inventoryEntry['path'] ?? null,
+                        'Extension navigation ' . $navigationKey,
+                        $errors,
+                    );
                     if (is_string($surfaceId) && $surfaceId !== '') {
                         if (!isset($manifestSurfaces[$surfaceId])) {
                             $errors[] = sprintf(
@@ -1735,6 +1756,51 @@ function validateExtensionManifests(string $root, array $inventory, array &$erro
     }
     compareSets($actualRoutes, $declaredRoutes, 'extension graphical route', 'surface inventory', $errors);
     compareSets($actualNavigation, $declaredNavigation, 'extension navigation', 'navigation catalogue', $errors);
+}
+
+/**
+ * Reconcile an extension's relative graphical declaration with its exact mounted inventory path.
+ *
+ * @param   string        $area           Administrator or portal contribution area.
+ * @param   mixed         $extension      Manifest package identifier.
+ * @param   mixed         $declaredPath   Owner-relative route or navigation path.
+ * @param   mixed         $inventoryPath  Absolute path recorded by the programme inventory.
+ * @param   string        $label          Human-readable declaration identifier.
+ * @param   list<string>  $errors         Accumulated validation failures.
+ *
+ * @return  void
+ *
+ * @since   2.0.0
+ */
+function validateExtensionMountedPath(
+    string $area,
+    mixed $extension,
+    mixed $declaredPath,
+    mixed $inventoryPath,
+    string $label,
+    array &$errors,
+): void {
+    if (
+        !in_array($area, ['administrator', 'portal'], true)
+        || !is_string($extension)
+        || $extension === ''
+        || !is_string($declaredPath)
+        || $declaredPath === ''
+    ) {
+        $errors[] = sprintf('%s cannot resolve its mounted path from the extension manifest.', $label);
+        return;
+    }
+
+    $prefix = $area === 'administrator' ? '/administrator/extensions/' : '/portal/extensions/';
+    $expected = $prefix . $extension . ($declaredPath === '/' ? '' : $declaredPath);
+    if ($inventoryPath !== $expected) {
+        $errors[] = sprintf(
+            '%s inventory path %s does not match mounted path %s.',
+            $label,
+            printable($inventoryPath),
+            $expected,
+        );
+    }
 }
 
 /**

@@ -78,6 +78,7 @@ test('component diagnostics expose the Business Definition failure without a doc
       .diagnostic-component { position: relative; width: 15rem; height: 8rem; overflow: hidden; }
       .diagnostic-child { width: 30rem; height: 2rem; }
       .diagnostic-action { position: absolute; left: 1rem; top: 4rem; width: 8rem; height: 2rem; }
+      @media print { details > * { display: block !important; } }
     </style>
     <form id="business-definition-form" class="diagnostic-component">
       <input type="hidden" name="id" value="named form controls must not replace the form id">
@@ -114,6 +115,15 @@ test('component diagnostics expose the Business Definition failure without a doc
   ]));
   expect(report.findings).not.toEqual(expect.arrayContaining([
     expect.objectContaining({ selector: '[data-interface-id="closed-editor"]' }),
+  ]));
+
+  await page.emulateMedia({ media: 'print' });
+  const printReport = await collectInterfaceDiagnostics(page);
+  expect(printReport.findings).toEqual(expect.arrayContaining([
+    expect.objectContaining({
+      kind: 'component-overflow',
+      selector: '[data-interface-id="closed-editor"]',
+    }),
   ]));
 });
 

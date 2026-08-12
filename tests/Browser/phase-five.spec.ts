@@ -150,13 +150,30 @@ test('Phase 5 presentation modes preserve focus, touch, zoom, high contrast, mot
   await page.evaluate(() => {
     document.documentElement.style.fontSize = '200%';
   });
-  const zoomedContentModels = await expectNoDocumentOverflow(page, {
+  const contentTypeEditor = page.locator(
+    '#content-type-catalog > details:not(#create-content-type)',
+  ).first();
+  await contentTypeEditor.evaluate((details) => details.setAttribute('open', ''));
+  await contentTypeEditor.scrollIntoViewIfNeeded();
+  const zoomedContentType = await expectNoDocumentOverflow(page, {
     root: '#administrator-content',
     detectControlOverlaps: false,
   });
   expect(
-    zoomedContentModels.findings,
-    JSON.stringify(zoomedContentModels, null, 2),
+    zoomedContentType.findings,
+    JSON.stringify(zoomedContentType, null, 2),
+  ).toEqual([]);
+
+  const workflowEditor = page.locator('#create-workflow');
+  await workflowEditor.evaluate((details) => details.setAttribute('open', ''));
+  await workflowEditor.scrollIntoViewIfNeeded();
+  const zoomedWorkflow = await expectNoDocumentOverflow(page, {
+    root: '#administrator-content',
+    detectControlOverlaps: false,
+  });
+  expect(
+    zoomedWorkflow.findings,
+    JSON.stringify(zoomedWorkflow, null, 2),
   ).toEqual([]);
 
   await page.goto('/administrator/settings');
@@ -170,5 +187,9 @@ test('Phase 5 presentation modes preserve focus, touch, zoom, high contrast, mot
   await expect(printableSettings.getByRole('button', { name: 'Save settings and design' }))
     .toBeHidden();
   await expect(printableSettings.getByRole('button', { name: 'Choose media' })).toBeHidden();
-  await expectNoDocumentOverflow(page, { root: '#administrator-content', detectControlOverlaps: false });
+  const printDiagnostics = await expectNoDocumentOverflow(page, {
+    root: '#administrator-content',
+    detectControlOverlaps: false,
+  });
+  expect(printDiagnostics.findings, JSON.stringify(printDiagnostics, null, 2)).toEqual([]);
 });

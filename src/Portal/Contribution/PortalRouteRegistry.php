@@ -13,6 +13,7 @@ use Kumwe\CMS\Extension\Contribution\ContributionOwner;
 use Kumwe\CMS\Extension\Contribution\ContributionSurface;
 use Kumwe\CMS\Extension\Runtime\TrustEnforcingRequestHandler;
 use Kumwe\CMS\Identity\Domain\Capability;
+use Kumwe\CMS\Portal\Http\Handler\PortalExtensionRootRedirectHandler;
 use Kumwe\CMS\Portal\Http\Middleware\PortalAuthorizationMiddleware;
 use Kumwe\CMS\Portal\Http\Middleware\PortalCsrfMiddleware;
 use Kumwe\CMS\Portal\Presentation\PortalContributionRenderer;
@@ -152,6 +153,28 @@ final class PortalRouteRegistry implements ContributionSurface
                 self::routeName($owner, $definition),
             );
             $route->setOptions([
+                PortalAuthorizationMiddleware::OPTION_REQUIRED_CAPABILITIES => [$definition->capability],
+            ]);
+            if ($definition->path !== '/') {
+                continue;
+            }
+
+            $canonicalPath = self::routePath($owner, $definition);
+            $redirectHandler = new TrustEnforcingRequestHandler(
+                new PortalExtensionRootRedirectHandler($canonicalPath),
+                $trust,
+                $owner->identifier(),
+            );
+            $redirectPipeline = array_intersect($definition->methods, ['DELETE', 'PATCH', 'POST', 'PUT']) === []
+                ? $redirectHandler
+                : [PortalCsrfMiddleware::class, $redirectHandler];
+            $redirectRoute = $application->route(
+                $canonicalPath . '/',
+                $redirectPipeline,
+                $definition->methods,
+                self::routeName($owner, $definition) . ':canonical-trailing-slash',
+            );
+            $redirectRoute->setOptions([
                 PortalAuthorizationMiddleware::OPTION_REQUIRED_CAPABILITIES => [$definition->capability],
             ]);
         }

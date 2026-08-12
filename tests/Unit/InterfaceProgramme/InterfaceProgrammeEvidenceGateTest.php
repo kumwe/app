@@ -177,6 +177,62 @@ PHP;
     }
 
     /**
+     * Reject drift between relative extension declarations and owner-aware mounted inventory paths.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testExtensionGraphicalPathsRequireExactMountedInventoryBindings(): void
+    {
+        $errors = [];
+        \validateExtensionMountedPath(
+            'portal',
+            'kumwe/asset-inspection-example',
+            '/',
+            '/portal/extensions/kumwe/asset-inspection-example/status/',
+            'Extension graphical route asset inspection',
+            $errors,
+        );
+        \validateExtensionMountedPath(
+            'portal',
+            'kumwe/asset-inspection-example',
+            '/',
+            '/portal/extensions/kumwe/asset-inspection-example/status/',
+            'Extension navigation asset inspection',
+            $errors,
+        );
+
+        self::assertSame([
+            'Extension graphical route asset inspection inventory path '
+                . '/portal/extensions/kumwe/asset-inspection-example/status/ does not match mounted path '
+                . '/portal/extensions/kumwe/asset-inspection-example.',
+            'Extension navigation asset inspection inventory path '
+                . '/portal/extensions/kumwe/asset-inspection-example/status/ does not match mounted path '
+                . '/portal/extensions/kumwe/asset-inspection-example.',
+        ], $errors);
+
+        $errors = [];
+        \validateExtensionMountedPath(
+            'portal',
+            'kumwe/asset-inspection-example',
+            '/',
+            '/portal/extensions/kumwe/asset-inspection-example',
+            'Extension graphical route asset inspection',
+            $errors,
+        );
+        \validateExtensionMountedPath(
+            'portal',
+            'kumwe/asset-inspection-example',
+            '/',
+            '/portal/extensions/kumwe/asset-inspection-example',
+            'Extension navigation asset inspection',
+            $errors,
+        );
+        self::assertSame([], $errors);
+    }
+
+    /**
      * Keep legacy navigation null while enforcing exact typed bindings for migrated items.
      *
      * @return  void

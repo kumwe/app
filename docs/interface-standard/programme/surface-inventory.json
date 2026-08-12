@@ -1316,7 +1316,7 @@
       "bounded_context": "example-asset-inspection",
       "purpose": "Prove an extension can opt in a read-only policy-filtered portal status surface.",
       "route_contracts": [
-        {"name": "portal.extension.kumwe.asset-inspection-example.portal.status", "declaration_name": "kumwe.asset-inspection-example.portal.status", "methods": ["GET"], "path": "/portal/extensions/kumwe/asset-inspection-example/status/", "source_manifest": "examples/extensions/asset-inspection/kumwe.json"}
+        {"name": "portal.extension.kumwe.asset-inspection-example.portal.status", "declaration_name": "kumwe.asset-inspection-example.portal.status", "methods": ["GET"], "path": "/portal/extensions/kumwe/asset-inspection-example", "source_manifest": "examples/extensions/asset-inspection/kumwe.json"}
       ],
       "handler_sources": ["examples/extensions/asset-inspection/src/Delivery/Portal/InspectionStatusHandler.php"],
       "templates": ["examples/extensions/asset-inspection/templates/views/portal/status.twig", "templates/portal/layout.twig"],
@@ -1434,7 +1434,7 @@
     {"id": "core.portal-security", "runtime_surface_binding": "declared", "area": "portal", "path": "/portal/security", "icon": "shield", "capability": "portal.access", "surface_id": "core.portal.security", "source": "src/Extension/Contribution/CoreExtensionContributions.php"},
     {"id": "kumwe.announcements-example.navigation", "runtime_surface_binding": "declared", "area": "administrator", "path": "/administrator/extensions/kumwe/announcements-example", "icon": "extensions", "capability": "kumwe.announcements-example.manage", "surface_id": "kumwe.announcements-example.index", "source": "examples/extensions/announcements/kumwe.json"},
     {"id": "kumwe.asset-inspection-example.navigation", "runtime_surface_binding": "declared", "area": "administrator", "path": "/administrator/extensions/kumwe/asset-inspection-example", "icon": "extensions", "capability": "kumwe.asset-inspection-example.manage", "surface_id": "kumwe.asset-inspection-example.administrator.index", "source": "examples/extensions/asset-inspection/kumwe.json"},
-    {"id": "kumwe.asset-inspection-example.portal.navigation", "runtime_surface_binding": "declared", "area": "portal", "path": "/portal/extensions/kumwe/asset-inspection-example/status/", "icon": "status", "capability": "kumwe.asset-inspection-example.view", "surface_id": "kumwe.asset-inspection-example.portal.status", "source": "examples/extensions/asset-inspection/kumwe.json"}
+    {"id": "kumwe.asset-inspection-example.portal.navigation", "runtime_surface_binding": "declared", "area": "portal", "path": "/portal/extensions/kumwe/asset-inspection-example", "icon": "status", "capability": "kumwe.asset-inspection-example.view", "surface_id": "kumwe.asset-inspection-example.portal.status", "source": "examples/extensions/asset-inspection/kumwe.json"}
   ],
   "generated_instances": [
     {"source": "examples/extensions/announcements/kumwe.json", "handle": "kumwe.announcements-example.category", "owner": {"type": "extension", "identifier": "kumwe/announcements-example"}, "areas": ["administrator"], "views": [{"handle": "catalog", "kind": "list", "areas": ["administrator"]}]},

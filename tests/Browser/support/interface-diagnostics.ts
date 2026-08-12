@@ -91,11 +91,16 @@ export async function collectInterfaceDiagnostics(
       if (isIgnored(element)) {
         return false;
       }
-      const closedDisclosure = element.closest('details:not([open])');
-      if (closedDisclosure !== null && element !== closedDisclosure) {
-        const summary = closedDisclosure.querySelector(':scope > summary');
-        if (summary === null || (element !== summary && !summary.contains(element))) {
-          return false;
+      if (!matchMedia('print').matches) {
+        let closedDisclosure = element.closest('details:not([open])');
+        while (closedDisclosure !== null) {
+          if (element !== closedDisclosure) {
+            const summary = closedDisclosure.querySelector(':scope > summary');
+            if (summary === null || (element !== summary && !summary.contains(element))) {
+              return false;
+            }
+          }
+          closedDisclosure = closedDisclosure.parentElement?.closest('details:not([open])') ?? null;
         }
       }
       const style = getComputedStyle(element);
