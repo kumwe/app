@@ -455,6 +455,8 @@ final readonly class DemoContentProfileInstaller
                     $this->requiredString($item, 'target_type'),
                     $contentId,
                     $this->nullableString($item, 'target_url'),
+                    $this->nullableString($item, 'template'),
+                    $this->nullableString($item, 'color_scheme'),
                 );
             } else {
                 $current = $this->itemRecordState($stored);
@@ -480,6 +482,8 @@ final readonly class DemoContentProfileInstaller
                         $this->requiredString($item, 'target_type'),
                         $contentId,
                         $this->nullableString($item, 'target_url'),
+                        $this->nullableString($item, 'template'),
+                        $this->nullableString($item, 'color_scheme'),
                     );
                 }
             }
@@ -926,7 +930,7 @@ final readonly class DemoContentProfileInstaller
      */
     private function itemState(array $item, ?string $parentId, ?string $contentId): array
     {
-        return [
+        $state = [
             'parent_id' => $parentId,
             'title' => $this->requiredString($item, 'title'),
             'slug' => $this->requiredString($item, 'slug'),
@@ -936,6 +940,18 @@ final readonly class DemoContentProfileInstaller
             'content_id' => $contentId,
             'target_url' => $this->nullableString($item, 'target_url'),
         ];
+        // Presentation bindings join the fingerprint only when bound, so every checkpoint recorded
+        // before the binding columns existed keeps its checksum and is still recognised as untouched.
+        $template = $this->nullableString($item, 'template');
+        if ($template !== null) {
+            $state['template'] = $template;
+        }
+        $scheme = $this->nullableString($item, 'color_scheme');
+        if ($scheme !== null) {
+            $state['color_scheme'] = $scheme;
+        }
+
+        return $state;
     }
 
     /**
@@ -949,7 +965,7 @@ final readonly class DemoContentProfileInstaller
      */
     private function itemRecordState(MenuItemRecord $item): array
     {
-        return [
+        $state = [
             'parent_id' => $item->parentId,
             'title' => $item->title,
             'slug' => $item->slug,
@@ -959,6 +975,15 @@ final readonly class DemoContentProfileInstaller
             'content_id' => $item->contentId,
             'target_url' => $item->targetUrl,
         ];
+        // Mirrors itemState(): bindings are fingerprinted only when bound, keeping legacy checksums stable.
+        if ($item->template !== null) {
+            $state['template'] = $item->template;
+        }
+        if ($item->colorScheme !== null) {
+            $state['color_scheme'] = $item->colorScheme;
+        }
+
+        return $state;
     }
 
     /**
