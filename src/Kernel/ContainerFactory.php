@@ -455,6 +455,7 @@ use Kumwe\CMS\Infrastructure\Persistence\Migration\DoctrineNonTransactionalMigra
 use Kumwe\CMS\Infrastructure\Persistence\Migration\JobRecoveryMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\InstallationGlobalAutomationMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\InterfacePresentationPreferenceMigration;
+use Kumwe\CMS\Infrastructure\Persistence\Migration\MenuPresentationBindingMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\NonTransactionalMigrationRecovery;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\SiteAutomationContextMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\TokenAndTrustLifecycleMigration;
@@ -1352,6 +1353,7 @@ final class ContainerFactory
                     new ContentModelIdentifierCollationMigration(self::service($container, TableNames::class)),
                     new InterfacePresentationPreferenceMigration(self::service($container, TableNames::class)),
                     new DocumentContentTypesMigration(self::service($container, TableNames::class)),
+                    new MenuPresentationBindingMigration(self::service($container, TableNames::class)),
                 ],
                 [
                     // Previously distributed builds used a DBAL-equivalent static-analysis rewrite, then
@@ -3047,6 +3049,7 @@ final class ContainerFactory
             self::service($container, NavigationService::class),
             self::service($container, AdministratorRenderer::class),
             self::service($container, ContentService::class),
+            self::service($container, SiteSettings::class),
         ), true);
         $container->share(AdministratorAccessControlHandler::class, static fn (
             Container $container,

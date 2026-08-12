@@ -23,19 +23,23 @@ final readonly class MenuItemRecord
     /**
      * Capture a menu item exactly as it is stored.
      *
-     * @param  string             $id          UUIDv7 primary key of the item.
-     * @param  string             $menuId      Menu the item belongs to; an item never moves between menus.
-     * @param  ?string            $parentId    Parent item, or null when the item sits at the menu root.
-     * @param  string             $title       Label the navigation renders for this item.
-     * @param  string             $slug        Lowercase URL segment this item contributes to the path.
-     * @param  string             $path        Absolute site path: the parent's path joined with this slug.
-     * @param  int                $position    Sort order among siblings; lower values render first.
-     * @param  int                $version     Optimistic-locking counter incremented by every write.
-     * @param  DateTimeImmutable  $createdAt   When the item was first stored.
-     * @param  DateTimeImmutable  $updatedAt   When the item was last written.
-     * @param  string             $targetType  What the item points at: `content`, `anchor` or `url`.
-     * @param  ?string            $contentId   Content the item resolves to, for `content` and `anchor` targets.
-     * @param  ?string            $targetUrl   Fragment for an `anchor` target, or the link for a `url` target.
+     * @param  string             $id           UUIDv7 primary key of the item.
+     * @param  string             $menuId       Menu the item belongs to; an item never moves between menus.
+     * @param  ?string            $parentId     Parent item, or null when the item sits at the menu root.
+     * @param  string             $title        Label the navigation renders for this item.
+     * @param  string             $slug         Lowercase URL segment this item contributes to the path.
+     * @param  string             $path         Absolute site path: the parent's path joined with this slug.
+     * @param  int                $position     Sort order among siblings; lower values render first.
+     * @param  int                $version      Optimistic-locking counter incremented by every write.
+     * @param  DateTimeImmutable  $createdAt    When the item was first stored.
+     * @param  DateTimeImmutable  $updatedAt    When the item was last written.
+     * @param  string             $targetType   What the item points at: `content`, `anchor` or `url`.
+     * @param  ?string            $contentId    Content the item resolves to, for `content` and `anchor` targets.
+     * @param  ?string            $targetUrl    Fragment for an `anchor` target, or the link for a `url` target.
+     * @param  ?string            $template     Site template overriding the linked page's type-declared
+     *         layout, or null to keep the content type's decision.
+     * @param  ?string            $colorScheme  Presentation colour-scheme handle overriding the site's
+     *         active scheme while the linked page renders, or null to keep the site's decision.
      *
      * @since  2.0.0
      */
@@ -53,6 +57,8 @@ final readonly class MenuItemRecord
         public string $targetType = 'content',
         public ?string $contentId = null,
         public ?string $targetUrl = null,
+        public ?string $template = null,
+        public ?string $colorScheme = null,
     ) {
     }
 
@@ -76,6 +82,8 @@ final readonly class MenuItemRecord
             'target_type' => $this->targetType,
             'content_id' => $this->contentId,
             'target_url' => $this->targetUrl,
+            'template' => $this->template,
+            'color_scheme' => $this->colorScheme,
             'version' => $this->version,
             'created_at' => $this->createdAt->format(DATE_ATOM),
             'updated_at' => $this->updatedAt->format(DATE_ATOM),

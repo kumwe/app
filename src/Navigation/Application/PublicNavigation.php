@@ -131,6 +131,38 @@ final readonly class PublicNavigation
     }
 
     /**
+     * Read the presentation binding of the menu item that publishes a piece of content.
+     *
+     * A menu item may pin a site template and a colour scheme for the page it links; this returns
+     * both, from the first item in stored order that targets the content — the same item every other
+     * public resolution rule elects — or nulls when the content is unmounted or carries no override.
+     *
+     * @param   string   $contentId        Identifier of the content whose binding is wanted.
+     * @param   ?string  $preferredHandle  Menu to search, overriding the configured default.
+     *
+     * @return  array{template: ?string, color_scheme: ?string}  The item's overrides, null when unset.
+     *
+     * @since   2.0.0
+     */
+    public function bindingForContent(string $contentId, ?string $preferredHandle = null): array
+    {
+        $menu = $this->publicMenu($preferredHandle);
+        if ($menu instanceof MenuRecord) {
+            foreach ($this->repository->items($menu->id) as $item) {
+                if (
+                    $item->targetType === 'content'
+                    && $item->contentId === $contentId
+                    && $this->belongsToPublicSite('menu_item', $item->id)
+                ) {
+                    return ['template' => $item->template, 'color_scheme' => $item->colorScheme];
+                }
+            }
+        }
+
+        return ['template' => null, 'color_scheme' => null];
+    }
+
+    /**
      * Resolve a piece of content to the path the navigation publishes it at.
      *
      * The inverse of `contentIdForPath()`, used when building a link to content rather than answering a

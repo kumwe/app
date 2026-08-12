@@ -68,6 +68,40 @@ final class ContentLayoutCatalogTest extends TestCase
     }
 
     /**
+     * A menu-bound override wins when it names a known layout and is ignored when it does not.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testMenuOverridesWinOnlyWhenTheyNameAKnownLayout(): void
+    {
+        $models = $this->createStub(ContentModelRepository::class);
+        $models->method('contentType')->willReturn($this->definition('document'));
+        $catalog = new ContentLayoutCatalog($models, 'default');
+
+        self::assertSame('article', $catalog->templateFor($this->record(), 'article'));
+        self::assertSame('page', $catalog->templateFor($this->record(), 'page'));
+        self::assertSame('document', $catalog->templateFor($this->record(), 'newsletter'));
+        self::assertSame('document', $catalog->templateFor($this->record(), null));
+    }
+
+    /**
+     * The selectable handle list names every core layout and ends with the general page layout.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testHandlesListEveryCoreLayoutEndingWithPage(): void
+    {
+        self::assertSame(
+            ['article', 'document', 'faq', 'guide', 'landing', 'reference', 'page'],
+            ContentLayoutCatalog::handles(),
+        );
+    }
+
+    /**
      * Build one published record pinned to an arbitrary content type identity.
      *
      * @return  ContentRecord  Minimal published record for layout resolution.

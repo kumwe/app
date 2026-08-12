@@ -74,11 +74,14 @@ final readonly class HomePageHandler implements RequestHandlerInterface
     {
         $settings = $this->settings->current();
         $record = $this->pages->homepage();
-        $template = $record === null ? 'home' : $this->layouts->templateFor($record);
+        $binding = $record === null
+            ? ['template' => null, 'color_scheme' => null]
+            : $this->pages->presentationBindingFor($record);
+        $template = $record === null ? 'home' : $this->layouts->templateFor($record, $binding['template']);
         $entry = $record === null ? null : $this->presenter->present($record);
         $presentation = SitePresentation::from(
             $settings['presentation'] ?? SitePresentation::defaults(),
-        )->toView();
+        )->withSchemeOverride($binding['color_scheme'])->toView();
         $variables = $record === null
             ? ['site_name' => $settings['site_name'], 'presentation' => $presentation]
             : ['site_name' => $settings['site_name'], 'entry' => $entry, 'presentation' => $presentation];
