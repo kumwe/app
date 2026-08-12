@@ -832,6 +832,57 @@ var KumweDirtyForm = class KumweDirtyForm extends i {
 };
 KumweDirtyForm = __decorate([t("kumwe-dirty-form")], KumweDirtyForm);
 //#endregion
+//#region assets/administrator/components/repeatable-group.ts
+var INDEX_TOKEN = "INDEX";
+var nextIndex = (rows) => {
+	let highest = -1;
+	for (const input of rows.querySelectorAll("[name^=\"field__\"]")) {
+		const segments = input.name.split("__");
+		for (const segment of segments) if (/^\d+$/.test(segment)) highest = Math.max(highest, Number(segment));
+	}
+	return highest + 1;
+};
+var substituteIndex = (row, index) => {
+	for (const element of row.querySelectorAll("[name], [id], [data-media-target], label[for]")) for (const attribute of [
+		"name",
+		"id",
+		"data-media-target",
+		"for"
+	]) {
+		const value = element.getAttribute(attribute);
+		if (value !== null && value.includes(INDEX_TOKEN)) element.setAttribute(attribute, value.replaceAll(INDEX_TOKEN, String(index)));
+	}
+	const title = row.querySelector(".repeatable-row-title");
+	if (title) title.textContent = `${title.textContent ?? ""} ${index + 1}`.trim();
+};
+var setup = (group) => {
+	const rows = group.querySelector("[data-repeatable-rows]");
+	const template = group.querySelector("[data-repeatable-template]");
+	const add = group.querySelector("[data-repeatable-add]");
+	if (!rows || !template || !add) return;
+	const limit = Number(group.dataset.repeatableMax ?? "");
+	const enforceLimit = () => {
+		add.disabled = Number.isFinite(limit) && limit > 0 && rows.querySelectorAll("[data-repeatable-row]").length >= limit;
+	};
+	add.addEventListener("click", () => {
+		const row = template.content.cloneNode(true).querySelector("[data-repeatable-row]");
+		if (!row) return;
+		substituteIndex(row, nextIndex(rows));
+		rows.append(row);
+		enforceLimit();
+		row.querySelector("input, textarea, select")?.focus();
+	});
+	group.addEventListener("click", (event) => {
+		const target = event.target;
+		if (target instanceof HTMLElement && target.closest("[data-repeatable-remove]")) {
+			target.closest("[data-repeatable-row]")?.remove();
+			enforceLimit();
+		}
+	});
+	enforceLimit();
+};
+for (const group of document.querySelectorAll("[data-repeatable]")) setup(group);
+//#endregion
 //#region assets/administrator/components/policy-step-flow.ts
 /**
 * Progressively enhance the server-rendered resource-policy authoring stages.

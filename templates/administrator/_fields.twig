@@ -2,6 +2,15 @@
   {% for field in fields %}
     {% if field.kind == 'group' %}
       <fieldset class="field-group stack"><legend>{{ field.label }}</legend>{% if field.description %}<p class="field-help">{{ field.description }}</p>{% endif %}{{ _self.render(field.children) }}</fieldset>
+    {% elseif field.kind == 'repeatable' %}
+      <fieldset class="field-group field-repeatable stack" data-repeatable{% if field.max_items is not null %} data-repeatable-max="{{ field.max_items }}"{% endif %}><legend>{{ field.label }}</legend>{% if field.description %}<p class="field-help">{{ field.description }}</p>{% endif %}
+        <div class="repeatable-rows stack" data-repeatable-rows>
+          {% for row in field.rows %}<div class="repeatable-row stack" data-repeatable-row><p class="repeatable-row-title">{{ field.label }} {{ loop.index }}</p>{{ _self.render(row) }}<button class="js-only repeatable-remove" type="button" data-repeatable-remove>Remove entry</button></div>{% endfor %}
+        </div>
+        <template data-repeatable-template><div class="repeatable-row stack" data-repeatable-row><p class="repeatable-row-title">{{ field.label }}</p>{{ _self.render(field.template) }}<button class="js-only repeatable-remove" type="button" data-repeatable-remove>Remove entry</button></div></template>
+        <button class="js-only repeatable-add" type="button" data-repeatable-add>Add {{ field.label|lower }} entry</button>
+        <noscript><p class="field-help">Adding entries needs the browser editor; existing entries stay editable above.</p></noscript>
+      </fieldset>
     {% elseif field.input == 'checkbox' %}
       <label class="check"><input type="checkbox" name="{{ field.name }}" value="1"{% if field.checked %} checked{% endif %}{% if field.required %} required{% endif %}><span>{{ field.label }}{% if field.description %}<small>{{ field.description }}</small>{% endif %}</span></label>
     {% elseif field.input == 'select' %}

@@ -112,6 +112,16 @@ final readonly class ContentFormDataMapper
                 continue;
             }
 
+            $itemsSchema = $this->associativeArray($fieldSchema['items'] ?? null, []);
+            if ($type === 'array' && ($itemsSchema['type'] ?? null) === 'object') {
+                $rows = $this->mapRows($itemsSchema, $body, $fieldPath);
+                if ($rows !== [] || $isRequired) {
+                    $result[$key] = $rows;
+                    $present = true;
+                }
+                continue;
+            }
+
             $name = 'field__' . implode('__', $fieldPath);
             $raw = $body[$name] ?? null;
             [$valuePresent, $value] = $this->mapValue($fieldSchema, $raw, $isRequired, $name);
@@ -122,6 +132,51 @@ final readonly class ContentFormDataMapper
         }
 
         return [$present, $result];
+    }
+
+    /**
+     * Collect the submitted rows of one array-of-objects property, in ascending row order.
+     *
+     * The editor names every row input with a numeric path segment, so the rows that exist are
+     * discovered from the body itself rather than from a count field: any index that contributed at
+     * least one input becomes a candidate row, indices sort numerically, and gaps left by removed
+     * rows close up. A row whose object resolves to nothing is dropped, so an untouched blank row
+     * cannot write an empty object into the stored document.
+     *
+     * @param   array<string, mixed>     $itemsSchema  Object schema every row is mapped through.
+     * @param   array<array-key, mixed>  $body         Parsed request body holding the row inputs.
+     * @param   list<string>             $path         Property names walked to the array property.
+     *
+     * @return  list<array<string, mixed>>  Mapped row objects in submitted order.
+     *
+     * @throws  InvalidArgumentException  When a row value does not parse as the type its schema
+     *          declares.
+     *
+     * @since   2.0.0
+     */
+    private function mapRows(array $itemsSchema, array $body, array $path): array
+    {
+        $prefix = 'field__' . implode('__', $path) . '__';
+        $indices = [];
+        foreach (array_keys($body) as $bodyKey) {
+            if (!is_string($bodyKey) || !str_starts_with($bodyKey, $prefix)) {
+                continue;
+            }
+            if (preg_match('/^([0-9]+)__/', substr($bodyKey, strlen($prefix)), $match) === 1) {
+                $indices[(int) $match[1]] = true;
+            }
+        }
+        ksort($indices);
+
+        $rows = [];
+        foreach (array_keys($indices) as $index) {
+            [$rowPresent, $row] = $this->mapObject($itemsSchema, $body, [...$path, (string) $index]);
+            if ($rowPresent && $row !== []) {
+                $rows[] = $row;
+            }
+        }
+
+        return $rows;
     }
 
     /**

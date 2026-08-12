@@ -264,6 +264,10 @@
   .editor-form { padding: clamp(1rem, 2.5vw, 1.5rem); }
   .field-group { margin: 0; padding: 1rem; border: 1px solid var(--kumwe-border); border-radius: var(--kumwe-radius-md); }
   .field-group legend { padding-inline: .4rem; font-weight: 720; }
+  .repeatable-row { position: relative; padding: 1rem; border: 1px solid var(--kumwe-border); border-radius: var(--kumwe-radius-md); background: var(--kumwe-surface-raised); }
+  .repeatable-row-title { margin: 0; color: var(--kumwe-text-muted); font-size: .8rem; font-weight: 720; letter-spacing: .06em; text-transform: uppercase; }
+  .repeatable-remove { justify-self: start; }
+  .repeatable-add { justify-self: start; }
   .character-count { justify-self: end; color: var(--kumwe-text-subtle); font-size: .7rem; }
   kumwe-rich-text { display: grid; gap: .38rem; }
   .js .rich-text-shell { display: grid !important; overflow: hidden; border: 1px solid var(--kumwe-border-strong); border-radius: var(--kumwe-radius-sm); background: var(--kumwe-surface); }
