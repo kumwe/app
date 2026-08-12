@@ -1,7 +1,7 @@
 {
   "format": "kumwe.demo-business-records/v1",
   "profile": "vdm",
-  "version": 2,
+  "version": 3,
   "site": "default",
   "currency": "NAD",
   "records": [
@@ -1005,6 +1005,314 @@
         "expires_on": "2027-02-01",
         "auto_renew": true
       }
+    },
+    {
+      "fixture_key": "client.okavango_logistics",
+      "definition": "site.default.vdm_client_account",
+      "record_id": "019c7000-0000-7000-8000-000000001106",
+      "idempotency_key": "kumwe-demo-vdm-v1:create:client:okavango-logistics",
+      "values": {
+        "client_code": "CLI-006",
+        "name": "Okavango Logistics",
+        "industry": "logistics",
+        "city": "Rundu",
+        "primary_email": "dispatch@okavango-logistics.example",
+        "phone": "+264 66 000 1006",
+        "website": "https://okavango-logistics.example",
+        "contact_role": "Depot dispatch manager",
+        "service_tier": "managed",
+        "active": true,
+        "notes": "Demo account only. Freight and warehousing operator on the Kavango corridor."
+      }
+    },
+    {
+      "fixture_key": "client.erongo_coast_tours",
+      "definition": "site.default.vdm_client_account",
+      "record_id": "019c7000-0000-7000-8000-000000001107",
+      "idempotency_key": "kumwe-demo-vdm-v1:create:client:erongo-tours",
+      "values": {
+        "client_code": "CLI-007",
+        "name": "Erongo Coast Tours",
+        "industry": "professional_services",
+        "city": "Swakopmund",
+        "primary_email": "bookings@erongo-tours.example",
+        "phone": "+264 64 000 1007",
+        "website": "https://erongo-tours.example",
+        "contact_role": "Bookings coordinator",
+        "service_tier": "project",
+        "active": true,
+        "notes": "Demo account only. Coastal touring company furnishing a new guest lounge."
+      }
+    },
+    {
+      "fixture_key": "client.zambezi_farm_supplies",
+      "definition": "site.default.vdm_client_account",
+      "record_id": "019c7000-0000-7000-8000-000000001108",
+      "idempotency_key": "kumwe-demo-vdm-v1:create:client:zambezi-farms",
+      "values": {
+        "client_code": "CLI-008",
+        "name": "Zambezi Farm Supplies",
+        "industry": "agriculture",
+        "city": "Katima Mulilo",
+        "primary_email": "stores@zambezi-farms.example",
+        "phone": "+264 66 000 1008",
+        "website": "https://zambezi-farms.example",
+        "contact_role": "Stores supervisor",
+        "service_tier": "retainer",
+        "active": true,
+        "notes": "Demo account only. Agricultural supplies co-operative with a retail store."
+      }
+    },
+    {
+      "fixture_key": "product.storage_rack",
+      "definition": "site.default.vdm_product",
+      "record_id": "019c7000-0000-7000-8000-000000001611",
+      "idempotency_key": "kumwe-demo-vdm-v1:create:product:prd-011",
+      "values": {
+        "product_code": "PRD-011",
+        "name": "Kavango Storage Rack",
+        "product_kind": "physical_good",
+        "category": "storage",
+        "billing_unit": "each",
+        "unit_price": {"amount": "3800.00", "currency": "NAD"},
+        "active": true,
+        "summary": "Heavy-duty hardwood storage rack for warehouse and back-of-store use."
+      }
+    },
+    {
+      "fixture_key": "product.website_care_plan",
+      "definition": "site.default.vdm_product",
+      "record_id": "019c7000-0000-7000-8000-000000001612",
+      "idempotency_key": "kumwe-demo-vdm-v1:create:product:prd-012",
+      "values": {
+        "product_code": "PRD-012",
+        "name": "Website Care Plan",
+        "product_kind": "hosting_service",
+        "category": "hosting",
+        "billing_unit": "month",
+        "unit_price": {"amount": "640.00", "currency": "NAD"},
+        "active": true,
+        "summary": "Monthly website hosting, updates, and content support for one public site."
+      }
+    },
+    {
+      "fixture_key": "quotation.q6",
+      "definition": "site.default.vdm_quotation",
+      "record_id": "019c7000-0000-7000-8000-000000001706",
+      "idempotency_key": "kumwe-demo-vdm-v1:create:quotation:quo-2026-006",
+      "values": {
+        "quote_number": "QUO-2026-006",
+        "title": "Warehouse racking fit-out",
+        "issued_on": "2026-06-10",
+        "valid_until": "2026-07-31",
+        "subtotal": {"amount": "82800.00", "currency": "NAD"},
+        "tax": {"amount": "12420.00", "currency": "NAD"},
+        "total": {"amount": "95220.00", "currency": "NAD"},
+        "organization": "okavango-logistics",
+        "terms": "Payment within 30 days of acceptance. Installation at the Rundu depot included."
+      }
+    },
+    {
+      "fixture_key": "quotation.q7",
+      "definition": "site.default.vdm_quotation",
+      "record_id": "019c7000-0000-7000-8000-000000001707",
+      "idempotency_key": "kumwe-demo-vdm-v1:create:quotation:quo-2026-007",
+      "values": {
+        "quote_number": "QUO-2026-007",
+        "title": "Guest lounge furnishing",
+        "issued_on": "2026-06-24",
+        "valid_until": "2026-08-15",
+        "subtotal": {"amount": "29080.00", "currency": "NAD"},
+        "tax": {"amount": "4362.00", "currency": "NAD"},
+        "total": {"amount": "33442.00", "currency": "NAD"},
+        "organization": "erongo-tours",
+        "terms": "Payment within 30 days of acceptance. Delivery to the Swakopmund lounge included."
+      }
+    },
+    {
+      "fixture_key": "quotation.q8",
+      "definition": "site.default.vdm_quotation",
+      "record_id": "019c7000-0000-7000-8000-000000001708",
+      "idempotency_key": "kumwe-demo-vdm-v1:create:quotation:quo-2026-008",
+      "values": {
+        "quote_number": "QUO-2026-008",
+        "title": "Stock control software rollout",
+        "issued_on": "2026-05-20",
+        "valid_until": "2026-07-01",
+        "subtotal": {"amount": "18500.00", "currency": "NAD"},
+        "tax": {"amount": "2775.00", "currency": "NAD"},
+        "total": {"amount": "21275.00", "currency": "NAD"},
+        "organization": "zambezi-farms",
+        "terms": "Annual licence billed on acceptance. Training in Katima Mulilo included."
+      }
+    },
+    {
+      "fixture_key": "invoice.i6",
+      "definition": "site.default.vdm_invoice",
+      "record_id": "019c7000-0000-7000-8000-000000001906",
+      "idempotency_key": "kumwe-demo-vdm-v1:create:invoice:inv-2026-106",
+      "values": {
+        "invoice_number": "INV-2026-106",
+        "issued_on": "2026-07-08",
+        "due_on": "2026-08-07",
+        "subtotal": {"amount": "82800.00", "currency": "NAD"},
+        "tax": {"amount": "12420.00", "currency": "NAD"},
+        "total": {"amount": "95220.00", "currency": "NAD"},
+        "organization": "okavango-logistics",
+        "paid_on": "2026-07-30",
+        "payment_reference": "EFT-88412"
+      }
+    },
+    {
+      "fixture_key": "invoice.i7",
+      "definition": "site.default.vdm_invoice",
+      "record_id": "019c7000-0000-7000-8000-000000001907",
+      "idempotency_key": "kumwe-demo-vdm-v1:create:invoice:inv-2026-107",
+      "values": {
+        "invoice_number": "INV-2026-107",
+        "issued_on": "2026-07-21",
+        "due_on": "2026-08-20",
+        "subtotal": {"amount": "29080.00", "currency": "NAD"},
+        "tax": {"amount": "4362.00", "currency": "NAD"},
+        "total": {"amount": "33442.00", "currency": "NAD"},
+        "organization": "erongo-tours"
+      }
+    },
+    {
+      "fixture_key": "invoice.i8",
+      "definition": "site.default.vdm_invoice",
+      "record_id": "019c7000-0000-7000-8000-000000001908",
+      "idempotency_key": "kumwe-demo-vdm-v1:create:invoice:inv-2026-108",
+      "values": {
+        "invoice_number": "INV-2026-108",
+        "issued_on": "2026-05-12",
+        "due_on": "2026-06-11",
+        "subtotal": {"amount": "11160.00", "currency": "NAD"},
+        "tax": {"amount": "1674.00", "currency": "NAD"},
+        "total": {"amount": "12834.00", "currency": "NAD"},
+        "organization": "zambezi-farms"
+      }
+    },
+    {
+      "fixture_key": "invoice.i9",
+      "definition": "site.default.vdm_invoice",
+      "record_id": "019c7000-0000-7000-8000-000000001909",
+      "idempotency_key": "kumwe-demo-vdm-v1:create:invoice:inv-2026-109",
+      "values": {
+        "invoice_number": "INV-2026-109",
+        "issued_on": "2026-06-02",
+        "due_on": "2026-07-02",
+        "subtotal": {"amount": "1850.00", "currency": "NAD"},
+        "tax": {"amount": "277.50", "currency": "NAD"},
+        "total": {"amount": "2127.50", "currency": "NAD"},
+        "organization": "okavango-logistics",
+        "paid_on": "2026-06-20",
+        "payment_reference": "EFT-88117"
+      }
+    },
+    {
+      "fixture_key": "subscription.s6",
+      "definition": "site.default.vdm_subscription",
+      "record_id": "019c7000-0000-7000-8000-000000001b06",
+      "idempotency_key": "kumwe-demo-vdm-v1:create:subscription:sub-2026-206",
+      "values": {
+        "subscription_code": "SUB-2026-206",
+        "service_label": "Fleet application hosting",
+        "billing_cycle": "monthly",
+        "amount": {"amount": "1850.00", "currency": "NAD"},
+        "started_on": "2026-03-01",
+        "renews_on": "2026-09-01",
+        "auto_renew": true,
+        "organization": "okavango-logistics"
+      }
+    },
+    {
+      "fixture_key": "subscription.s7",
+      "definition": "site.default.vdm_subscription",
+      "record_id": "019c7000-0000-7000-8000-000000001b07",
+      "idempotency_key": "kumwe-demo-vdm-v1:create:subscription:sub-2026-207",
+      "values": {
+        "subscription_code": "SUB-2026-207",
+        "service_label": "Website care, coastal tours",
+        "billing_cycle": "monthly",
+        "amount": {"amount": "640.00", "currency": "NAD"},
+        "started_on": "2026-04-15",
+        "renews_on": "2026-09-15",
+        "auto_renew": true,
+        "organization": "erongo-tours"
+      }
+    },
+    {
+      "fixture_key": "subscription.s8",
+      "definition": "site.default.vdm_subscription",
+      "record_id": "019c7000-0000-7000-8000-000000001b08",
+      "idempotency_key": "kumwe-demo-vdm-v1:create:subscription:sub-2026-208",
+      "values": {
+        "subscription_code": "SUB-2026-208",
+        "service_label": "Store systems care",
+        "billing_cycle": "annual",
+        "amount": {"amount": "7680.00", "currency": "NAD"},
+        "started_on": "2026-01-10",
+        "renews_on": "2027-01-10",
+        "auto_renew": false,
+        "organization": "zambezi-farms"
+      }
+    },
+    {
+      "fixture_key": "domain.d7",
+      "definition": "site.default.vdm_domain",
+      "record_id": "019c7000-0000-7000-8000-000000001c07",
+      "idempotency_key": "kumwe-demo-vdm-v1:create:domain:okavango-logistics.example",
+      "values": {
+        "domain_name": "okavango-logistics.example",
+        "registrar": "Namib Registry Services",
+        "registered_on": "2025-03-01",
+        "expires_on": "2027-03-01",
+        "auto_renew": true,
+        "organization": "okavango-logistics"
+      }
+    },
+    {
+      "fixture_key": "domain.d8",
+      "definition": "site.default.vdm_domain",
+      "record_id": "019c7000-0000-7000-8000-000000001c08",
+      "idempotency_key": "kumwe-demo-vdm-v1:create:domain:okavango-fleet.example",
+      "values": {
+        "domain_name": "okavango-fleet.example",
+        "registrar": "Namib Registry Services",
+        "registered_on": "2024-09-15",
+        "expires_on": "2026-09-15",
+        "auto_renew": false,
+        "organization": "okavango-logistics"
+      }
+    },
+    {
+      "fixture_key": "domain.d9",
+      "definition": "site.default.vdm_domain",
+      "record_id": "019c7000-0000-7000-8000-000000001c09",
+      "idempotency_key": "kumwe-demo-vdm-v1:create:domain:erongo-tours.example",
+      "values": {
+        "domain_name": "erongo-tours.example",
+        "registrar": "Namib Registry Services",
+        "registered_on": "2025-06-20",
+        "expires_on": "2027-06-20",
+        "auto_renew": true,
+        "organization": "erongo-tours"
+      }
+    },
+    {
+      "fixture_key": "domain.d10",
+      "definition": "site.default.vdm_domain",
+      "record_id": "019c7000-0000-7000-8000-000000001c0a",
+      "idempotency_key": "kumwe-demo-vdm-v1:create:domain:zambezi-farms.example",
+      "values": {
+        "domain_name": "zambezi-farms.example",
+        "registrar": "Namib Registry Services",
+        "registered_on": "2025-01-10",
+        "expires_on": "2027-01-10",
+        "auto_renew": true,
+        "organization": "zambezi-farms"
+      }
     }
   ],
   "relations": [
@@ -1106,7 +1414,378 @@
     {"fixture_key": "relation.d5.client", "definition": "site.default.vdm_domain", "source_record_id": "019c7000-0000-7000-8000-000000001c05", "relationship": "client", "target_record_id": "019c7000-0000-7000-8000-000000001103", "idempotency_key": "kumwe-demo-vdm-v1:relate:d5:client"},
     {"fixture_key": "relation.d5.subscription", "definition": "site.default.vdm_domain", "source_record_id": "019c7000-0000-7000-8000-000000001c05", "relationship": "subscription", "target_record_id": "019c7000-0000-7000-8000-000000001b04", "idempotency_key": "kumwe-demo-vdm-v1:relate:d5:subscription"},
     {"fixture_key": "relation.d6.client", "definition": "site.default.vdm_domain", "source_record_id": "019c7000-0000-7000-8000-000000001c06", "relationship": "client", "target_record_id": "019c7000-0000-7000-8000-000000001103", "idempotency_key": "kumwe-demo-vdm-v1:relate:d6:client"},
-    {"fixture_key": "relation.d6.subscription", "definition": "site.default.vdm_domain", "source_record_id": "019c7000-0000-7000-8000-000000001c06", "relationship": "subscription", "target_record_id": "019c7000-0000-7000-8000-000000001b04", "idempotency_key": "kumwe-demo-vdm-v1:relate:d6:subscription"}
+    {"fixture_key": "relation.d6.subscription", "definition": "site.default.vdm_domain", "source_record_id": "019c7000-0000-7000-8000-000000001c06", "relationship": "subscription", "target_record_id": "019c7000-0000-7000-8000-000000001b04", "idempotency_key": "kumwe-demo-vdm-v1:relate:d6:subscription"},
+    {
+      "fixture_key": "relation.q6.client",
+      "definition": "site.default.vdm_quotation",
+      "source_record_id": "019c7000-0000-7000-8000-000000001706",
+      "relationship": "client",
+      "target_record_id": "019c7000-0000-7000-8000-000000001106",
+      "idempotency_key": "kumwe-demo-vdm-v1:relate:q6:client"
+    },
+    {
+      "fixture_key": "relation.q6.line_1",
+      "definition": "site.default.vdm_quotation",
+      "source_record_id": "019c7000-0000-7000-8000-000000001706",
+      "relationship": "lines",
+      "target_record_id": "019c7000-0000-7000-8000-000000001811",
+      "idempotency_key": "kumwe-demo-vdm-v1:relate:q6:line1",
+      "position": 0,
+      "target_values": {
+        "description": "Storage racks for the central aisle",
+        "product": "019c7000-0000-7000-8000-000000001611",
+        "quantity": {"amount": "12.00", "unit": "each"},
+        "unit_price": {"amount": "3800.00", "currency": "NAD"},
+        "line_total": {"amount": "45600.00", "currency": "NAD"},
+        "organization": "okavango-logistics"
+      }
+    },
+    {
+      "fixture_key": "relation.q6.line_2",
+      "definition": "site.default.vdm_quotation",
+      "source_record_id": "019c7000-0000-7000-8000-000000001706",
+      "relationship": "lines",
+      "target_record_id": "019c7000-0000-7000-8000-000000001812",
+      "idempotency_key": "kumwe-demo-vdm-v1:relate:q6:line2",
+      "position": 1,
+      "target_values": {
+        "description": "On-site carpentry installation hours",
+        "product": "019c7000-0000-7000-8000-000000001606",
+        "quantity": {"amount": "60.00", "unit": "each"},
+        "unit_price": {"amount": "620.00", "currency": "NAD"},
+        "line_total": {"amount": "37200.00", "currency": "NAD"},
+        "organization": "okavango-logistics"
+      }
+    },
+    {
+      "fixture_key": "relation.q7.client",
+      "definition": "site.default.vdm_quotation",
+      "source_record_id": "019c7000-0000-7000-8000-000000001707",
+      "relationship": "client",
+      "target_record_id": "019c7000-0000-7000-8000-000000001107",
+      "idempotency_key": "kumwe-demo-vdm-v1:relate:q7:client"
+    },
+    {
+      "fixture_key": "relation.q7.line_1",
+      "definition": "site.default.vdm_quotation",
+      "source_record_id": "019c7000-0000-7000-8000-000000001707",
+      "relationship": "lines",
+      "target_record_id": "019c7000-0000-7000-8000-000000001813",
+      "idempotency_key": "kumwe-demo-vdm-v1:relate:q7:line1",
+      "position": 0,
+      "target_values": {
+        "description": "Council chairs for the reception lounge",
+        "product": "019c7000-0000-7000-8000-000000001602",
+        "quantity": {"amount": "6.00", "unit": "each"},
+        "unit_price": {"amount": "2380.00", "currency": "NAD"},
+        "line_total": {"amount": "14280.00", "currency": "NAD"},
+        "organization": "erongo-tours"
+      }
+    },
+    {
+      "fixture_key": "relation.q7.line_2",
+      "definition": "site.default.vdm_quotation",
+      "source_record_id": "019c7000-0000-7000-8000-000000001707",
+      "relationship": "lines",
+      "target_record_id": "019c7000-0000-7000-8000-000000001814",
+      "idempotency_key": "kumwe-demo-vdm-v1:relate:q7:line2",
+      "position": 1,
+      "target_values": {
+        "description": "Boardroom table for the briefing room",
+        "product": "019c7000-0000-7000-8000-000000001604",
+        "quantity": {"amount": "1.00", "unit": "each"},
+        "unit_price": {"amount": "14800.00", "currency": "NAD"},
+        "line_total": {"amount": "14800.00", "currency": "NAD"},
+        "organization": "erongo-tours"
+      }
+    },
+    {
+      "fixture_key": "relation.q8.client",
+      "definition": "site.default.vdm_quotation",
+      "source_record_id": "019c7000-0000-7000-8000-000000001708",
+      "relationship": "client",
+      "target_record_id": "019c7000-0000-7000-8000-000000001108",
+      "idempotency_key": "kumwe-demo-vdm-v1:relate:q8:client"
+    },
+    {
+      "fixture_key": "relation.q8.line_1",
+      "definition": "site.default.vdm_quotation",
+      "source_record_id": "019c7000-0000-7000-8000-000000001708",
+      "relationship": "lines",
+      "target_record_id": "019c7000-0000-7000-8000-000000001815",
+      "idempotency_key": "kumwe-demo-vdm-v1:relate:q8:line1",
+      "position": 0,
+      "target_values": {
+        "description": "Nara Inventory Suite annual licence",
+        "product": "019c7000-0000-7000-8000-000000001607",
+        "quantity": {"amount": "1.00", "unit": "each"},
+        "unit_price": {"amount": "18500.00", "currency": "NAD"},
+        "line_total": {"amount": "18500.00", "currency": "NAD"},
+        "organization": "zambezi-farms"
+      }
+    },
+    {
+      "fixture_key": "relation.i6.client",
+      "definition": "site.default.vdm_invoice",
+      "source_record_id": "019c7000-0000-7000-8000-000000001906",
+      "relationship": "client",
+      "target_record_id": "019c7000-0000-7000-8000-000000001106",
+      "idempotency_key": "kumwe-demo-vdm-v1:relate:i6:client"
+    },
+    {
+      "fixture_key": "relation.i6.quotation",
+      "definition": "site.default.vdm_invoice",
+      "source_record_id": "019c7000-0000-7000-8000-000000001906",
+      "relationship": "quotation",
+      "target_record_id": "019c7000-0000-7000-8000-000000001706",
+      "idempotency_key": "kumwe-demo-vdm-v1:relate:i6:quotation"
+    },
+    {
+      "fixture_key": "relation.i6.line_1",
+      "definition": "site.default.vdm_invoice",
+      "source_record_id": "019c7000-0000-7000-8000-000000001906",
+      "relationship": "lines",
+      "target_record_id": "019c7000-0000-7000-8000-000000001a0a",
+      "idempotency_key": "kumwe-demo-vdm-v1:relate:i6:line1",
+      "position": 0,
+      "target_values": {
+        "description": "Storage racks for the central aisle",
+        "product": "019c7000-0000-7000-8000-000000001611",
+        "quantity": {"amount": "12.00", "unit": "each"},
+        "unit_price": {"amount": "3800.00", "currency": "NAD"},
+        "line_total": {"amount": "45600.00", "currency": "NAD"},
+        "organization": "okavango-logistics"
+      }
+    },
+    {
+      "fixture_key": "relation.i6.line_2",
+      "definition": "site.default.vdm_invoice",
+      "source_record_id": "019c7000-0000-7000-8000-000000001906",
+      "relationship": "lines",
+      "target_record_id": "019c7000-0000-7000-8000-000000001a0b",
+      "idempotency_key": "kumwe-demo-vdm-v1:relate:i6:line2",
+      "position": 1,
+      "target_values": {
+        "description": "On-site carpentry installation hours",
+        "product": "019c7000-0000-7000-8000-000000001606",
+        "quantity": {"amount": "60.00", "unit": "each"},
+        "unit_price": {"amount": "620.00", "currency": "NAD"},
+        "line_total": {"amount": "37200.00", "currency": "NAD"},
+        "organization": "okavango-logistics"
+      }
+    },
+    {
+      "fixture_key": "relation.i7.client",
+      "definition": "site.default.vdm_invoice",
+      "source_record_id": "019c7000-0000-7000-8000-000000001907",
+      "relationship": "client",
+      "target_record_id": "019c7000-0000-7000-8000-000000001107",
+      "idempotency_key": "kumwe-demo-vdm-v1:relate:i7:client"
+    },
+    {
+      "fixture_key": "relation.i7.quotation",
+      "definition": "site.default.vdm_invoice",
+      "source_record_id": "019c7000-0000-7000-8000-000000001907",
+      "relationship": "quotation",
+      "target_record_id": "019c7000-0000-7000-8000-000000001707",
+      "idempotency_key": "kumwe-demo-vdm-v1:relate:i7:quotation"
+    },
+    {
+      "fixture_key": "relation.i7.line_1",
+      "definition": "site.default.vdm_invoice",
+      "source_record_id": "019c7000-0000-7000-8000-000000001907",
+      "relationship": "lines",
+      "target_record_id": "019c7000-0000-7000-8000-000000001a0c",
+      "idempotency_key": "kumwe-demo-vdm-v1:relate:i7:line1",
+      "position": 0,
+      "target_values": {
+        "description": "Council chairs for the reception lounge",
+        "product": "019c7000-0000-7000-8000-000000001602",
+        "quantity": {"amount": "6.00", "unit": "each"},
+        "unit_price": {"amount": "2380.00", "currency": "NAD"},
+        "line_total": {"amount": "14280.00", "currency": "NAD"},
+        "organization": "erongo-tours"
+      }
+    },
+    {
+      "fixture_key": "relation.i7.line_2",
+      "definition": "site.default.vdm_invoice",
+      "source_record_id": "019c7000-0000-7000-8000-000000001907",
+      "relationship": "lines",
+      "target_record_id": "019c7000-0000-7000-8000-000000001a0d",
+      "idempotency_key": "kumwe-demo-vdm-v1:relate:i7:line2",
+      "position": 1,
+      "target_values": {
+        "description": "Boardroom table for the briefing room",
+        "product": "019c7000-0000-7000-8000-000000001604",
+        "quantity": {"amount": "1.00", "unit": "each"},
+        "unit_price": {"amount": "14800.00", "currency": "NAD"},
+        "line_total": {"amount": "14800.00", "currency": "NAD"},
+        "organization": "erongo-tours"
+      }
+    },
+    {
+      "fixture_key": "relation.i8.client",
+      "definition": "site.default.vdm_invoice",
+      "source_record_id": "019c7000-0000-7000-8000-000000001908",
+      "relationship": "client",
+      "target_record_id": "019c7000-0000-7000-8000-000000001108",
+      "idempotency_key": "kumwe-demo-vdm-v1:relate:i8:client"
+    },
+    {
+      "fixture_key": "relation.i8.line_1",
+      "definition": "site.default.vdm_invoice",
+      "source_record_id": "019c7000-0000-7000-8000-000000001908",
+      "relationship": "lines",
+      "target_record_id": "019c7000-0000-7000-8000-000000001a0e",
+      "idempotency_key": "kumwe-demo-vdm-v1:relate:i8:line1",
+      "position": 0,
+      "target_values": {
+        "description": "Sales counter rebuild at the Katima store",
+        "product": "019c7000-0000-7000-8000-000000001606",
+        "quantity": {"amount": "18.00", "unit": "each"},
+        "unit_price": {"amount": "620.00", "currency": "NAD"},
+        "line_total": {"amount": "11160.00", "currency": "NAD"},
+        "organization": "zambezi-farms"
+      }
+    },
+    {
+      "fixture_key": "relation.i9.client",
+      "definition": "site.default.vdm_invoice",
+      "source_record_id": "019c7000-0000-7000-8000-000000001909",
+      "relationship": "client",
+      "target_record_id": "019c7000-0000-7000-8000-000000001106",
+      "idempotency_key": "kumwe-demo-vdm-v1:relate:i9:client"
+    },
+    {
+      "fixture_key": "relation.i9.line_1",
+      "definition": "site.default.vdm_invoice",
+      "source_record_id": "019c7000-0000-7000-8000-000000001909",
+      "relationship": "lines",
+      "target_record_id": "019c7000-0000-7000-8000-000000001a0f",
+      "idempotency_key": "kumwe-demo-vdm-v1:relate:i9:line1",
+      "position": 0,
+      "target_values": {
+        "description": "Managed application hosting, June",
+        "product": "019c7000-0000-7000-8000-000000001609",
+        "quantity": {"amount": "1.00", "unit": "each"},
+        "unit_price": {"amount": "1850.00", "currency": "NAD"},
+        "line_total": {"amount": "1850.00", "currency": "NAD"},
+        "organization": "okavango-logistics"
+      }
+    },
+    {
+      "fixture_key": "relation.s6.client",
+      "definition": "site.default.vdm_subscription",
+      "source_record_id": "019c7000-0000-7000-8000-000000001b06",
+      "relationship": "client",
+      "target_record_id": "019c7000-0000-7000-8000-000000001106",
+      "idempotency_key": "kumwe-demo-vdm-v1:relate:s6:client"
+    },
+    {
+      "fixture_key": "relation.s6.product",
+      "definition": "site.default.vdm_subscription",
+      "source_record_id": "019c7000-0000-7000-8000-000000001b06",
+      "relationship": "product",
+      "target_record_id": "019c7000-0000-7000-8000-000000001609",
+      "idempotency_key": "kumwe-demo-vdm-v1:relate:s6:product"
+    },
+    {
+      "fixture_key": "relation.s7.client",
+      "definition": "site.default.vdm_subscription",
+      "source_record_id": "019c7000-0000-7000-8000-000000001b07",
+      "relationship": "client",
+      "target_record_id": "019c7000-0000-7000-8000-000000001107",
+      "idempotency_key": "kumwe-demo-vdm-v1:relate:s7:client"
+    },
+    {
+      "fixture_key": "relation.s7.product",
+      "definition": "site.default.vdm_subscription",
+      "source_record_id": "019c7000-0000-7000-8000-000000001b07",
+      "relationship": "product",
+      "target_record_id": "019c7000-0000-7000-8000-000000001612",
+      "idempotency_key": "kumwe-demo-vdm-v1:relate:s7:product"
+    },
+    {
+      "fixture_key": "relation.s8.client",
+      "definition": "site.default.vdm_subscription",
+      "source_record_id": "019c7000-0000-7000-8000-000000001b08",
+      "relationship": "client",
+      "target_record_id": "019c7000-0000-7000-8000-000000001108",
+      "idempotency_key": "kumwe-demo-vdm-v1:relate:s8:client"
+    },
+    {
+      "fixture_key": "relation.s8.product",
+      "definition": "site.default.vdm_subscription",
+      "source_record_id": "019c7000-0000-7000-8000-000000001b08",
+      "relationship": "product",
+      "target_record_id": "019c7000-0000-7000-8000-000000001612",
+      "idempotency_key": "kumwe-demo-vdm-v1:relate:s8:product"
+    },
+    {
+      "fixture_key": "relation.d7.client",
+      "definition": "site.default.vdm_domain",
+      "source_record_id": "019c7000-0000-7000-8000-000000001c07",
+      "relationship": "client",
+      "target_record_id": "019c7000-0000-7000-8000-000000001106",
+      "idempotency_key": "kumwe-demo-vdm-v1:relate:d7:client"
+    },
+    {
+      "fixture_key": "relation.d7.subscription",
+      "definition": "site.default.vdm_domain",
+      "source_record_id": "019c7000-0000-7000-8000-000000001c07",
+      "relationship": "subscription",
+      "target_record_id": "019c7000-0000-7000-8000-000000001b06",
+      "idempotency_key": "kumwe-demo-vdm-v1:relate:d7:subscription"
+    },
+    {
+      "fixture_key": "relation.d8.client",
+      "definition": "site.default.vdm_domain",
+      "source_record_id": "019c7000-0000-7000-8000-000000001c08",
+      "relationship": "client",
+      "target_record_id": "019c7000-0000-7000-8000-000000001106",
+      "idempotency_key": "kumwe-demo-vdm-v1:relate:d8:client"
+    },
+    {
+      "fixture_key": "relation.d8.subscription",
+      "definition": "site.default.vdm_domain",
+      "source_record_id": "019c7000-0000-7000-8000-000000001c08",
+      "relationship": "subscription",
+      "target_record_id": "019c7000-0000-7000-8000-000000001b06",
+      "idempotency_key": "kumwe-demo-vdm-v1:relate:d8:subscription"
+    },
+    {
+      "fixture_key": "relation.d9.client",
+      "definition": "site.default.vdm_domain",
+      "source_record_id": "019c7000-0000-7000-8000-000000001c09",
+      "relationship": "client",
+      "target_record_id": "019c7000-0000-7000-8000-000000001107",
+      "idempotency_key": "kumwe-demo-vdm-v1:relate:d9:client"
+    },
+    {
+      "fixture_key": "relation.d9.subscription",
+      "definition": "site.default.vdm_domain",
+      "source_record_id": "019c7000-0000-7000-8000-000000001c09",
+      "relationship": "subscription",
+      "target_record_id": "019c7000-0000-7000-8000-000000001b07",
+      "idempotency_key": "kumwe-demo-vdm-v1:relate:d9:subscription"
+    },
+    {
+      "fixture_key": "relation.d10.client",
+      "definition": "site.default.vdm_domain",
+      "source_record_id": "019c7000-0000-7000-8000-000000001c0a",
+      "relationship": "client",
+      "target_record_id": "019c7000-0000-7000-8000-000000001108",
+      "idempotency_key": "kumwe-demo-vdm-v1:relate:d10:client"
+    },
+    {
+      "fixture_key": "relation.d10.subscription",
+      "definition": "site.default.vdm_domain",
+      "source_record_id": "019c7000-0000-7000-8000-000000001c0a",
+      "relationship": "subscription",
+      "target_record_id": "019c7000-0000-7000-8000-000000001b08",
+      "idempotency_key": "kumwe-demo-vdm-v1:relate:d10:subscription"
+    }
   ],
   "actions": [
     {"fixture_key": "action.engagement_001.activate", "definition": "site.default.vdm_engagement", "record_id": "019c7000-0000-7000-8000-000000001301", "action": "activate", "idempotency_key": "kumwe-demo-vdm-v1:action:eng001:activate"},
@@ -1161,7 +1840,112 @@
     {"fixture_key": "action.s3.pause", "definition": "site.default.vdm_subscription", "record_id": "019c7000-0000-7000-8000-000000001b03", "action": "pause", "idempotency_key": "kumwe-demo-vdm-v1:action:s3:pause"},
     {"fixture_key": "action.s4.cancel", "definition": "site.default.vdm_subscription", "record_id": "019c7000-0000-7000-8000-000000001b04", "action": "cancel", "idempotency_key": "kumwe-demo-vdm-v1:action:s4:cancel"},
     {"fixture_key": "action.d3.flag_expiring", "definition": "site.default.vdm_domain", "record_id": "019c7000-0000-7000-8000-000000001c03", "action": "flag_expiring", "idempotency_key": "kumwe-demo-vdm-v1:action:d3:flag-expiring"},
-    {"fixture_key": "action.d5.flag_expiring", "definition": "site.default.vdm_domain", "record_id": "019c7000-0000-7000-8000-000000001c05", "action": "flag_expiring", "idempotency_key": "kumwe-demo-vdm-v1:action:d5:flag-expiring"}
+    {"fixture_key": "action.d5.flag_expiring", "definition": "site.default.vdm_domain", "record_id": "019c7000-0000-7000-8000-000000001c05", "action": "flag_expiring", "idempotency_key": "kumwe-demo-vdm-v1:action:d5:flag-expiring"},
+    {
+      "fixture_key": "action.q6.send",
+      "definition": "site.default.vdm_quotation",
+      "record_id": "019c7000-0000-7000-8000-000000001706",
+      "action": "send",
+      "idempotency_key": "kumwe-demo-vdm-v1:action:q6:send"
+    },
+    {
+      "fixture_key": "action.q6.accept",
+      "definition": "site.default.vdm_quotation",
+      "record_id": "019c7000-0000-7000-8000-000000001706",
+      "action": "accept",
+      "idempotency_key": "kumwe-demo-vdm-v1:action:q6:accept"
+    },
+    {
+      "fixture_key": "action.q7.send",
+      "definition": "site.default.vdm_quotation",
+      "record_id": "019c7000-0000-7000-8000-000000001707",
+      "action": "send",
+      "idempotency_key": "kumwe-demo-vdm-v1:action:q7:send"
+    },
+    {
+      "fixture_key": "action.q7.accept",
+      "definition": "site.default.vdm_quotation",
+      "record_id": "019c7000-0000-7000-8000-000000001707",
+      "action": "accept",
+      "idempotency_key": "kumwe-demo-vdm-v1:action:q7:accept"
+    },
+    {
+      "fixture_key": "action.q8.send",
+      "definition": "site.default.vdm_quotation",
+      "record_id": "019c7000-0000-7000-8000-000000001708",
+      "action": "send",
+      "idempotency_key": "kumwe-demo-vdm-v1:action:q8:send"
+    },
+    {
+      "fixture_key": "action.q8.decline",
+      "definition": "site.default.vdm_quotation",
+      "record_id": "019c7000-0000-7000-8000-000000001708",
+      "action": "decline",
+      "idempotency_key": "kumwe-demo-vdm-v1:action:q8:decline"
+    },
+    {
+      "fixture_key": "action.i6.issue",
+      "definition": "site.default.vdm_invoice",
+      "record_id": "019c7000-0000-7000-8000-000000001906",
+      "action": "issue",
+      "idempotency_key": "kumwe-demo-vdm-v1:action:i6:issue"
+    },
+    {
+      "fixture_key": "action.i6.record_payment",
+      "definition": "site.default.vdm_invoice",
+      "record_id": "019c7000-0000-7000-8000-000000001906",
+      "action": "record_payment",
+      "idempotency_key": "kumwe-demo-vdm-v1:action:i6:record_payment"
+    },
+    {
+      "fixture_key": "action.i7.issue",
+      "definition": "site.default.vdm_invoice",
+      "record_id": "019c7000-0000-7000-8000-000000001907",
+      "action": "issue",
+      "idempotency_key": "kumwe-demo-vdm-v1:action:i7:issue"
+    },
+    {
+      "fixture_key": "action.i8.issue",
+      "definition": "site.default.vdm_invoice",
+      "record_id": "019c7000-0000-7000-8000-000000001908",
+      "action": "issue",
+      "idempotency_key": "kumwe-demo-vdm-v1:action:i8:issue"
+    },
+    {
+      "fixture_key": "action.i8.mark_overdue",
+      "definition": "site.default.vdm_invoice",
+      "record_id": "019c7000-0000-7000-8000-000000001908",
+      "action": "mark_overdue",
+      "idempotency_key": "kumwe-demo-vdm-v1:action:i8:mark_overdue"
+    },
+    {
+      "fixture_key": "action.i9.issue",
+      "definition": "site.default.vdm_invoice",
+      "record_id": "019c7000-0000-7000-8000-000000001909",
+      "action": "issue",
+      "idempotency_key": "kumwe-demo-vdm-v1:action:i9:issue"
+    },
+    {
+      "fixture_key": "action.i9.record_payment",
+      "definition": "site.default.vdm_invoice",
+      "record_id": "019c7000-0000-7000-8000-000000001909",
+      "action": "record_payment",
+      "idempotency_key": "kumwe-demo-vdm-v1:action:i9:record_payment"
+    },
+    {
+      "fixture_key": "action.s8.pause",
+      "definition": "site.default.vdm_subscription",
+      "record_id": "019c7000-0000-7000-8000-000000001b08",
+      "action": "pause",
+      "idempotency_key": "kumwe-demo-vdm-v1:action:s8:pause"
+    },
+    {
+      "fixture_key": "action.d8.flag_expiring",
+      "definition": "site.default.vdm_domain",
+      "record_id": "019c7000-0000-7000-8000-000000001c08",
+      "action": "flag_expiring",
+      "idempotency_key": "kumwe-demo-vdm-v1:action:d8:flag_expiring"
+    }
   ],
   "archives": [
     {
@@ -1173,9 +1957,9 @@
     {"fixture_key": "archive.quotation_q5", "definition": "site.default.vdm_quotation", "record_id": "019c7000-0000-7000-8000-000000001705", "idempotency_key": "kumwe-demo-vdm-v1:archive:quotation-q5"}
   ],
   "expected": {
-    "record_count": 61,
-    "relation_count": 96,
-    "action_count": 50,
+    "record_count": 80,
+    "relation_count": 130,
+    "action_count": 65,
     "archive_count": 2,
     "workflow_states": {
       "engagements": {
@@ -1200,22 +1984,22 @@
       "quotations": {
         "draft": 1,
         "sent": 1,
-        "accepted": 2,
-        "declined": 1
+        "accepted": 4,
+        "declined": 2
       },
       "invoices": {
-        "issued": 1,
-        "paid": 2,
-        "overdue": 2
+        "issued": 2,
+        "paid": 4,
+        "overdue": 3
       },
       "subscriptions": {
-        "active": 3,
-        "paused": 1,
+        "active": 5,
+        "paused": 2,
         "cancelled": 1
       },
       "domains": {
-        "active": 4,
-        "expiring": 2
+        "active": 7,
+        "expiring": 3
       }
     }
   }

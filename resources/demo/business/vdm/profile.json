@@ -1,7 +1,7 @@
 {
   "format": "kumwe.demo-business-profile/v1",
   "profile": "vdm",
-  "version": 3,
+  "version": 4,
   "label": "Vast Development Method business demo",
   "description": "A realistic, fictional client-delivery and commerce graph for a Namibian software, carpentry, and infrastructure business.",
   "site_template": "default",
@@ -155,9 +155,9 @@
   ],
   "expected": {
     "definition_count": 12,
-    "record_count": 61,
-    "relation_count": 96,
-    "action_count": 50,
+    "record_count": 80,
+    "relation_count": 130,
+    "action_count": 65,
     "archive_count": 2
   }
 }
