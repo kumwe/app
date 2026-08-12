@@ -11,6 +11,8 @@
   .kis-phase-five {
     display: grid;
     gap: 1.25rem;
+    container-name: kis-phase-five;
+    container-type: inline-size;
   }
 
   .kis-phase-five .kis-page-header,
@@ -219,9 +221,45 @@
     border-left: .3rem solid var(--kumwe-warning);
     background: var(--kumwe-warning-soft);
   }
+
+  [data-kis-surface="core.administrator.business-security"],
+  [data-kis-surface="core.administrator.business-security"] > *,
+  [data-kis-surface="core.administrator.business-security"] .section-heading > *,
+  [data-kis-surface="core.administrator.business-security"] .panel-header > * {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  [data-kis-surface="core.administrator.business-security"] :is(code, h2, h3, h4, p, dd, td, th) {
+    overflow-wrap: anywhere;
+  }
 }
 
 @layer overrides {
+  @container kis-phase-five (max-width: 62em) {
+    .kis-phase-five .editor-grid {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .kis-phase-five .editor-grid > *,
+    .kis-phase-five .field-group,
+    .kis-phase-five .media-input {
+      min-width: 0;
+    }
+
+    .kis-phase-five .editor-sidebar {
+      position: static;
+    }
+
+    .kis-phase-five .media-input {
+      display: grid;
+    }
+
+    .kis-phase-five .presentation-color-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
   @media (max-width: 62rem) {
     .kis-phase-five-summary,
     .kis-phase-five-workspace {
@@ -231,6 +269,17 @@
     .kis-phase-five-catalog {
       position: static;
       max-height: none;
+    }
+  }
+
+  @media (max-width: 48rem) {
+    [data-kis-surface="core.administrator.business-security"] :is(.section-heading, .panel-header) {
+      display: grid;
+      align-items: stretch;
+    }
+
+    [data-kis-surface="core.administrator.business-security"] .page-actions {
+      flex-wrap: wrap;
     }
   }
 

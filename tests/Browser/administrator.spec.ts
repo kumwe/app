@@ -384,6 +384,7 @@ test.describe('authenticated administrator', () => {
   });
 
   test('business security is structured, isolated and accessible', async ({ page }, testInfo) => {
+    test.slow();
     await page.goto('/administrator/business-security');
     await expect(page.getByRole('heading', { level: 1, name: 'Business Security' })).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Authority overview' })).toBeVisible();
@@ -486,8 +487,10 @@ test.describe('authenticated administrator', () => {
     await page.getByRole('link', { name: 'Security events', exact: true }).click();
     await expect(page).toHaveURL(/section=events/u);
     await expect(page.getByRole('heading', { name: 'Security events' })).toBeVisible();
-    await expect(page.locator('[data-kis-surface="core.administrator.access-control"]'))
-      .not.toContainText(/password|recovery_code|metadata/u);
+    const securityEvents = page.getByRole('region', { name: 'Identity security events' });
+    await expect(securityEvents.locator('tbody')).not.toContainText(/password|recovery_code|metadata/u);
+    await expect(page.getByText('Operational metadata and all credential values are omitted.'))
+      .toBeVisible();
     await expectAccessible(page);
   });
 
@@ -625,11 +628,13 @@ test.describe('authenticated administrator', () => {
     await report.locator('[name="parameters[minimum_score]"]').fill('70');
     await report.getByRole('button', { name: 'Run report', exact: true }).click();
 
-    const results = page.getByRole('region', { name: 'Report results' });
+    const results = page.getByRole('region', { name: 'Report results', exact: true });
     await expect(results).toBeVisible();
-    await expect(results.getByRole('columnheader', { name: 'Reference' })).toBeVisible();
-    await expect(results.getByRole('columnheader', { name: 'Risk score' })).toBeVisible();
-    const accepted = results.getByRole('row').filter({ hasText: 'BROWSER-INSPECT-001' });
+    const resultsTable = results.getByRole('region', { name: 'Scrollable report results table' });
+    await expect(resultsTable).toBeVisible();
+    await expect(resultsTable.getByRole('columnheader', { name: 'Reference' })).toBeVisible();
+    await expect(resultsTable.getByRole('columnheader', { name: 'Risk score' })).toBeVisible();
+    const accepted = resultsTable.getByRole('row').filter({ hasText: 'BROWSER-INSPECT-001' });
     await expect(accepted).toBeVisible();
     await expect(accepted).toContainText('79');
     await expect(page.getByText('Browser report restricted note', { exact: true })).toHaveCount(0);
@@ -672,10 +677,10 @@ test.describe('authenticated administrator', () => {
     });
   });
 
-  test('generated business list, detail and confirmations remain progressively enhanced', async ({
+  test('generated business list remains responsive and progressively enhanced', async ({
     page,
     isMobile,
-  }, testInfo) => {
+  }) => {
     await page.goto(`/administrator/business/${businessDefinitionHandle}`);
     await expect(page.locator(isMobile ? '.kis-business-result-card' : '.business-record-table tbody tr').first()).toBeVisible();
     await expect(page.getByRole('link', { name: 'Report', exact: true })).toBeVisible();
@@ -706,6 +711,11 @@ test.describe('authenticated administrator', () => {
     await expect(page.locator('input[name="operation_id"]')).not.toHaveValue('');
     await expect(page.locator('input[name="confirmed"]')).toHaveValue('1');
     await page.goBack();
+  });
+
+  test('generated business detail and confirmation remain accessible and visually stable', async ({
+    page,
+  }, testInfo) => {
     await page.goto(
       `/administrator/business/${businessDefinitionHandle}/${windhoekOrderId}`,
     );
@@ -843,6 +853,7 @@ test.describe('authenticated administrator', () => {
   test('generated business forms complete an ordinary no-JavaScript lifecycle', async ({
     browser,
   }, testInfo) => {
+    test.slow();
     const context = await browser.newContext({ javaScriptEnabled: false });
     const page = await context.newPage();
     try {

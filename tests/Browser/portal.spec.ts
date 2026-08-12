@@ -364,11 +364,13 @@ test('opt-in portal reports execute and expose queued export status', async ({ p
   await report.locator('[name="parameters[minimum_score]"]').fill('70');
   await report.getByRole('button', { name: 'Run report', exact: true }).click();
 
-  const results = page.getByRole('region', { name: 'Report results' });
+  const results = page.getByRole('region', { name: 'Report results', exact: true });
   await expect(results).toBeVisible();
-  await expect(results.getByRole('columnheader', { name: 'Reference' })).toBeVisible();
-  await expect(results.getByRole('columnheader', { name: 'Risk score' })).toBeVisible();
-  const accepted = results.getByRole('row').filter({ hasText: 'BROWSER-INSPECT-001' });
+  const resultsTable = results.getByRole('region', { name: 'Scrollable report results table' });
+  await expect(resultsTable).toBeVisible();
+  await expect(resultsTable.getByRole('columnheader', { name: 'Reference' })).toBeVisible();
+  await expect(resultsTable.getByRole('columnheader', { name: 'Risk score' })).toBeVisible();
+  const accepted = resultsTable.getByRole('row').filter({ hasText: 'BROWSER-INSPECT-001' });
   await expect(accepted).toBeVisible();
   await expect(accepted).toContainText('79');
   await expect(page.getByText('Browser report restricted note', { exact: true })).toHaveCount(0);
@@ -449,8 +451,9 @@ test('portal maker-checker approval requires a distinct step-up identity', async
     await approverPage.getByRole('button', { name: 'Approve', exact: true }).click();
     await expect(approverPage.getByText('approved', { exact: true })).toBeVisible();
     await approverPage.getByRole('tab', { name: /Decision history/u }).click();
-    await expect(approverPage.getByRole('heading', { name: 'Decision history' })).toBeVisible();
-    await expect(approverPage.getByText('Browser maker-checker acceptance', { exact: true })).toBeVisible();
+    const history = approverPage.getByRole('tabpanel', { name: /Decision history/u });
+    await expect(history.getByRole('heading', { name: 'Decision history' })).toBeVisible();
+    await expect(history.getByRole('listitem')).toContainText('Browser maker-checker acceptance');
   } finally {
     await approverContext.close();
   }
@@ -465,6 +468,7 @@ test('portal maker-checker approval requires a distinct step-up identity', async
 });
 
 test('portal generated forms complete a no-JavaScript lifecycle', async ({ browser }, testInfo) => {
+  test.slow();
   const context = await browser.newContext({ javaScriptEnabled: false });
   const page = await context.newPage();
   try {

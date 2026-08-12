@@ -90,7 +90,7 @@ export const interfaceLandingSurfaces = [
     id: 'administrator.access',
     shell: 'administrator',
     path: '/administrator/access',
-    heading: 'Users, groups and permissions',
+    heading: 'Users & access',
     purpose: 'Manage people, roles, grants and delivery credentials.',
   },
   {
