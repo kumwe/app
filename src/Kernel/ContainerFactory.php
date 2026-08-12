@@ -310,6 +310,7 @@ use Kumwe\CMS\Delivery\Console\Command\CreateAdministratorCommand;
 use Kumwe\CMS\Delivery\Console\Command\DemoAccessCommand;
 use Kumwe\CMS\Delivery\Console\Command\DemoExamplesCommand;
 use Kumwe\CMS\Delivery\Console\Command\DemoExportCommand;
+use Kumwe\CMS\Delivery\Console\Command\DemoInstallCommand;
 use Kumwe\CMS\Delivery\Console\Command\ConsoleAuthorizer;
 use Kumwe\CMS\Delivery\Console\Command\ActivateExtensionCommand;
 use Kumwe\CMS\Delivery\Console\Command\BuildExtensionCommand;
@@ -4558,6 +4559,16 @@ final class ContainerFactory
             self::service($container, AdministratorIdentityGateway::class),
             self::service($container, DemoExampleExtensionInstaller::class),
         ), true);
+        $container->share(DemoInstallCommand::class, static fn (
+            Container $container,
+        ): DemoInstallCommand => new DemoInstallCommand(
+            self::service($container, ApplicationConfiguration::class),
+            self::service($container, FilesystemDemoManifestCatalog::class),
+            self::service($container, AdministratorIdentityGateway::class),
+            self::service($container, DemoAccessProvisioner::class),
+            self::service($container, DemoExampleExtensionInstaller::class),
+            self::service($container, ClockInterface::class),
+        ), true);
         $container->share(DemoProfileExporter::class, static fn (
             Container $container,
         ): DemoProfileExporter => new DemoProfileExporter(
@@ -4777,6 +4788,7 @@ final class ContainerFactory
                 self::service($container, CreateAdministratorCommand::class),
                 self::service($container, DemoAccessCommand::class),
                 self::service($container, DemoExamplesCommand::class),
+                self::service($container, DemoInstallCommand::class),
                 self::service($container, DemoExportCommand::class),
                 self::service($container, CreateAccessTokenCommand::class),
                 self::service($container, ListExtensionsCommand::class),
