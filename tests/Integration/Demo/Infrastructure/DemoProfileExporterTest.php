@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kumwe\CMS\Tests\Unit\Demo\Infrastructure;
+namespace Kumwe\CMS\Tests\Integration\Demo\Infrastructure;
 
 use FilesystemIterator;
 use Kumwe\CMS\Content\Application\ContentService;
