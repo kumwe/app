@@ -260,6 +260,7 @@ use Kumwe\CMS\Demo\Application\VdmBusinessOperationGuard;
 use Kumwe\CMS\Demo\Infrastructure\DemoAccessProvisioner;
 use Kumwe\CMS\Demo\Infrastructure\DemoExampleExtensionInstaller;
 use Kumwe\CMS\Demo\Infrastructure\DemoContentProfileInstaller;
+use Kumwe\CMS\Demo\Infrastructure\DemoProfileExporter;
 use Kumwe\CMS\Demo\Infrastructure\DemoProfileInstaller;
 use Kumwe\CMS\Demo\Infrastructure\FilesystemDemoManifestCatalog;
 use Kumwe\CMS\Demo\Infrastructure\Persistence\DoctrineDemoProfileLedger;
@@ -307,6 +308,7 @@ use Kumwe\CMS\Delivery\Console\Command\CreateAccessTokenCommand;
 use Kumwe\CMS\Delivery\Console\Command\CreateAdministratorCommand;
 use Kumwe\CMS\Delivery\Console\Command\DemoAccessCommand;
 use Kumwe\CMS\Delivery\Console\Command\DemoExamplesCommand;
+use Kumwe\CMS\Delivery\Console\Command\DemoExportCommand;
 use Kumwe\CMS\Delivery\Console\Command\ConsoleAuthorizer;
 use Kumwe\CMS\Delivery\Console\Command\ActivateExtensionCommand;
 use Kumwe\CMS\Delivery\Console\Command\BuildExtensionCommand;
@@ -4555,6 +4557,22 @@ final class ContainerFactory
             self::service($container, AdministratorIdentityGateway::class),
             self::service($container, DemoExampleExtensionInstaller::class),
         ), true);
+        $container->share(DemoProfileExporter::class, static fn (
+            Container $container,
+        ): DemoProfileExporter => new DemoProfileExporter(
+            self::service($container, ContentService::class),
+            self::service($container, NavigationService::class),
+            self::service($container, SiteSettings::class),
+            self::service($container, DemoProfileLedger::class),
+            self::service($container, ClockInterface::class),
+        ), true);
+        $container->share(DemoExportCommand::class, static fn (
+            Container $container,
+        ): DemoExportCommand => new DemoExportCommand(
+            self::service($container, ApplicationConfiguration::class),
+            self::service($container, AdministratorIdentityGateway::class),
+            self::service($container, DemoProfileExporter::class),
+        ), true);
         $container->share(CreateAccessTokenCommand::class, static fn (
             Container $container,
         ): CreateAccessTokenCommand => new CreateAccessTokenCommand(
@@ -4746,6 +4764,7 @@ final class ContainerFactory
                 self::service($container, CreateAdministratorCommand::class),
                 self::service($container, DemoAccessCommand::class),
                 self::service($container, DemoExamplesCommand::class),
+                self::service($container, DemoExportCommand::class),
                 self::service($container, CreateAccessTokenCommand::class),
                 self::service($container, ListExtensionsCommand::class),
                 self::service($container, InstallExtensionCommand::class),
