@@ -583,6 +583,7 @@ test('portal maker-checker approval requires a distinct step-up identity', async
   page,
   browser,
 }, testInfo) => {
+  // KIS-EVIDENCE-BEGIN p6-001-maker-checker
   test.setTimeout(90_000);
   const project = testInfo.project.name.startsWith('mobile-') ? 'mobile' : 'desktop';
   const retry = Math.min(testInfo.retry, 1);
@@ -667,6 +668,7 @@ test('portal maker-checker approval requires a distinct step-up identity', async
   await expectPortalRecordName(page, name);
   await expect(page.locator('.portal-business-status')).toContainText('Approved');
   await expectAccessible(page);
+  // KIS-EVIDENCE-END p6-001-maker-checker
 });
 
 test('portal generated forms complete a no-JavaScript lifecycle', async ({ browser }, testInfo) => {

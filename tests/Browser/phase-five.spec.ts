@@ -106,6 +106,7 @@ test('Phase 5 portal home exposes plain-language access readiness and secure rec
 test('Phase 5 public presentation keeps the configured home identity and long labels bounded', async ({
   page,
 }, testInfo) => {
+  // KIS-EVIDENCE-BEGIN p6-003-template-use-ui
   await page.goto('/');
   await expect(page.locator('[data-kis-surface="core.public.home"]')).toBeVisible();
   await expect(page.getByRole('heading', { level: 1 })).toHaveCount(1);
@@ -117,12 +118,14 @@ test('Phase 5 public presentation keeps the configured home identity and long la
   await expectNoDocumentOverflow(page, { root: '#site-content', detectControlOverlaps: false });
   await expectAccessible(page);
   await attachScreenshot(page, testInfo, 'phase-five-public-long-label');
+  // KIS-EVIDENCE-END p6-003-template-use-ui
 });
 
 test('Phase 5 presentation modes preserve focus, touch, zoom, high contrast, motion, and print', async ({
   page,
   isMobile,
 }) => {
+  // KIS-EVIDENCE-BEGIN p6-004-presentation-matrix
   await page.emulateMedia({ colorScheme: 'dark', reducedMotion: 'reduce', forcedColors: 'active' });
   await signInAdministrator(page);
   await page.goto('/administrator/settings');
@@ -202,4 +205,5 @@ test('Phase 5 presentation modes preserve focus, touch, zoom, high contrast, mot
     detectControlOverlaps: false,
   });
   expect(printDiagnostics.findings, JSON.stringify(printDiagnostics, null, 2)).toEqual([]);
+  // KIS-EVIDENCE-END p6-004-presentation-matrix
 });

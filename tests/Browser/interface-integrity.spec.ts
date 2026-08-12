@@ -72,6 +72,7 @@ async function attachEvidence(
 test('component diagnostics expose the Business Definition failure without a document scrollbar', async ({
   page,
 }) => {
+  // KIS-EVIDENCE-BEGIN p6-004-component-diagnostics
   await page.setContent(`
     <style>
       html, body { width: 100%; margin: 0; overflow-x: hidden; }
@@ -125,9 +126,11 @@ test('component diagnostics expose the Business Definition failure without a doc
       selector: '[data-interface-id="closed-editor"]',
     }),
   ]));
+  // KIS-EVIDENCE-END p6-004-component-diagnostics
 });
 
 test('administrator landing routes emit complete interface baselines', async ({ page }, testInfo) => {
+  // KIS-EVIDENCE-BEGIN p6-004-administrator-diagnostics
   test.setTimeout(120_000);
   await signInAdministrator(page);
   const registeredPaths = await page.locator('.administrator-navigation a[href]').evaluateAll((links) =>
@@ -150,9 +153,11 @@ test('administrator landing routes emit complete interface baselines', async ({ 
     await expectAccessible(page);
     await attachEvidence(page, testInfo, surface, report);
   }
+  // KIS-EVIDENCE-END p6-004-administrator-diagnostics
 });
 
 test('portal landing routes emit complete interface baselines', async ({ page }, testInfo) => {
+  // KIS-EVIDENCE-BEGIN p6-004-portal-diagnostics
   test.setTimeout(120_000);
   await signInPortal(page);
   const registeredPaths = await page.locator('.portal-navigation a[href]').evaluateAll((links) =>
@@ -175,4 +180,5 @@ test('portal landing routes emit complete interface baselines', async ({ page },
     await expectAccessible(page);
     await attachEvidence(page, testInfo, surface, report);
   }
+  // KIS-EVIDENCE-END p6-004-portal-diagnostics
 });

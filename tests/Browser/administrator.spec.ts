@@ -282,6 +282,7 @@ test.describe('authenticated administrator', () => {
   });
 
   test('business definitions publish through graphical compatibility gates', async ({ page }, testInfo) => {
+    // KIS-EVIDENCE-BEGIN p6-002-definition-ui
     const suffix = `${Date.now()}_${Math.floor(Math.random() * 10000)}`;
     const handle = `site.default.browser_invoice_${suffix}`;
     await page.goto('/administrator/business-definitions?new=1');
@@ -324,6 +325,7 @@ test.describe('authenticated administrator', () => {
     await expect(page.getByRole('heading', { name: 'Version history' })).toBeVisible();
     await expect(page.getByText('Version 1', { exact: true })).toBeVisible();
     await expectAccessible(page);
+    // KIS-EVIDENCE-END p6-002-definition-ui
   });
 
   test('definition workspace contains dense package contracts and permission-reduced actors', async ({
@@ -490,6 +492,7 @@ test.describe('authenticated administrator', () => {
   test('users and access separates provisioning, assignments, tokens and step-up', async ({
     page,
   }, testInfo) => {
+    // KIS-EVIDENCE-BEGIN p6-001-access-ui
     test.setTimeout(90_000);
     const expectBoundedAccessWorkspace = async (attachment: string): Promise<void> => {
       await expectAccessible(page);
@@ -548,6 +551,7 @@ test.describe('authenticated administrator', () => {
     await expect(page.getByRole('button', { name: 'Begin authenticator setup' })).toBeVisible();
     await expect(page.locator('input[name="step_up_code"]')).toHaveCount(0);
     await expectBoundedAccessWorkspace('access-step-up-enrollment');
+    // KIS-EVIDENCE-END p6-001-access-ui
   });
 
   test('published content links through a typed menu to its canonical path', async ({
@@ -703,6 +707,7 @@ test.describe('authenticated administrator', () => {
   });
 
   test('reports execute graphically and expose queued export status', async ({ page }, testInfo) => {
+    // KIS-EVIDENCE-BEGIN p6-002-report-ui
     test.setTimeout(120_000);
     await page.goto('/administrator/reports');
     await expect(page.getByRole('heading', { level: 1, name: 'Business reports' })).toBeVisible();
@@ -782,6 +787,7 @@ test.describe('authenticated administrator', () => {
       animations: 'disabled',
       caret: 'hide',
     });
+    // KIS-EVIDENCE-END p6-002-report-ui
   });
 
   test('generated business list remains responsive and progressively enhanced', async ({
@@ -905,6 +911,7 @@ test.describe('authenticated administrator', () => {
     page,
     isMobile,
   }, testInfo) => {
+    // KIS-EVIDENCE-BEGIN p6-002-record-relations-ui
     test.setTimeout(90_000);
     await page.goto(`/administrator/business/${businessDefinitionHandle}`);
     await page.getByRole('link', { name: /Create session 5 order/i }).click();
@@ -1013,11 +1020,13 @@ test.describe('authenticated administrator', () => {
     });
     expect(ownedLineDiagnostics.findings, JSON.stringify(ownedLineDiagnostics, null, 2)).toEqual([]);
     await attachLiveInterfaceScreenshot(page, testInfo, 'administrator-owned-lines');
+    // KIS-EVIDENCE-END p6-002-record-relations-ui
   });
 
   test('generated business forms create, update and retain history without JavaScript', async ({
     browser,
   }, testInfo) => {
+    // KIS-EVIDENCE-BEGIN p6-002-history-ui
     test.setTimeout(120_000);
     const context = await browser.newContext({ javaScriptEnabled: false });
     const page = await context.newPage();
@@ -1066,11 +1075,13 @@ test.describe('authenticated administrator', () => {
     } finally {
       await context.close();
     }
+    // KIS-EVIDENCE-END p6-002-history-ui
   });
 
   test('generated business bulk lifecycle completes without JavaScript', async ({
     browser,
   }, testInfo) => {
+    // KIS-EVIDENCE-BEGIN p6-002-bulk-ui
     test.setTimeout(120_000);
     const context = await browser.newContext({ javaScriptEnabled: false });
     const page = await context.newPage();
@@ -1109,12 +1120,14 @@ test.describe('authenticated administrator', () => {
     } finally {
       await context.close();
     }
+    // KIS-EVIDENCE-END p6-002-bulk-ui
   });
 
   test('typed component navigation opens an accessible graphical page', async ({
     page,
     isMobile,
   }, testInfo) => {
+    // KIS-EVIDENCE-BEGIN p6-003-extension-use-ui
     await ensureAnnouncementsActive(page);
     await page.goto('/administrator');
     if (isMobile) {
@@ -1143,6 +1156,7 @@ test.describe('authenticated administrator', () => {
     });
     expect(diagnostics.findings, JSON.stringify(diagnostics, null, 2)).toEqual([]);
     await attachLiveInterfaceScreenshot(page, testInfo, 'announcements-contribution');
+    // KIS-EVIDENCE-END p6-003-extension-use-ui
   });
 
   test('component navigation and guarded route are unavailable without its capability', async ({
@@ -1173,6 +1187,7 @@ test.describe('authenticated administrator', () => {
     page,
     isMobile,
   }) => {
+    // KIS-EVIDENCE-BEGIN p6-003-extension-reactivation-ui
     test.setTimeout(90_000);
     await ensureAnnouncementsActive(page);
     try {
@@ -1200,5 +1215,6 @@ test.describe('authenticated administrator', () => {
       await page.getByRole('button', { name: 'Open administrator navigation' }).click();
     }
     await expect(page.getByRole('link', { name: 'Announcements' })).toBeVisible();
+    // KIS-EVIDENCE-END p6-003-extension-reactivation-ui
   });
 });

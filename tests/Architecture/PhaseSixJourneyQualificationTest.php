@@ -271,7 +271,7 @@ final class PhaseSixJourneyQualificationTest extends TestCase
                 sprintf('%s lost its executable marker.', $evidence['id']),
             );
             $evidenceScope = $evidence['kind'] === 'playwright'
-                ? $this->playwrightTestBody($contents, $evidence['marker'])
+                ? $this->playwrightEvidenceSpan($contents, $evidence['marker'], $evidence['id'])
                 : $contents;
             self::assertNotEmpty($evidence['must_contain']);
             foreach ($evidence['must_contain'] as $requiredToken) {
@@ -295,17 +295,25 @@ final class PhaseSixJourneyQualificationTest extends TestCase
      *
      * @since   2.0.0
      */
-    public function testPlaywrightEvidenceTokensBelongToTheExactMarkedTestBody(): void
+    public function testPlaywrightEvidenceTokensBelongToTheExactMarkedSpan(): void
     {
         $source = <<<'TYPESCRIPT'
 test('sibling journey', async ({ page }) => {
   await page.getByText('sibling-only-token').click();
 });
 
-test('owned journey', async ({ page }) => {
-  const path = `/records/${recordId}/{literal-braces}`;
-  await expect(page).toHaveURL(/records\/[0-9]{2}/u);
+test('owned [journey] / (exact)?', async ({
+  page = (() => ({ nested: true }))(),
+}: { page?: Page } = {}) => {
+  // KIS-EVIDENCE-BEGIN adversarial-owned
+  const path = `/records/${`${recordId}/{literal-braces}`}`;
+  // test('comment journey', async () => { borrowed-comment-token });
+  const string = "test('string journey', async () => { borrowed-string-token });";
+  const defaultArrow = ({ value = 'borrowed-default-token' } = {}) => ({ value });
+  await expect(page).toHaveURL(/[{}]|records\/[0-9]{2}/u);
+  expect(8 / 2).toBe(4);
   await page.getByText('owned-token').click();
+  // KIS-EVIDENCE-END adversarial-owned
 });
 
 test('later journey', async ({ page }) => {
@@ -313,12 +321,82 @@ test('later journey', async ({ page }) => {
 });
 TYPESCRIPT;
 
-        $scope = $this->playwrightTestBody($source, 'owned journey');
+        $scope = $this->playwrightEvidenceSpan(
+            $source,
+            'owned [journey] / (exact)?',
+            'adversarial-owned',
+        );
 
         self::assertStringContainsString('sibling-only-token', $source);
         self::assertStringNotContainsString('sibling-only-token', $scope);
+        self::assertStringContainsString('borrowed-comment-token', $scope);
+        self::assertStringContainsString('borrowed-string-token', $scope);
+        self::assertStringContainsString('borrowed-default-token', $scope);
         self::assertStringContainsString('owned-token', $scope);
         self::assertStringNotContainsString('later-only-token', $scope);
+    }
+
+    /**
+     * Proves an evidence span without both explicit sentinels is rejected closed.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testPlaywrightEvidenceSpanRejectsMissingSentinels(): void
+    {
+        $this->expectException(\PHPUnit\Framework\AssertionFailedError::class);
+        $this->playwrightEvidenceSpan(
+            "test('owned journey', async () => {\n  void 'unbound';\n});\n",
+            'owned journey',
+            'missing',
+        );
+    }
+
+    /**
+     * Proves evidence sentinels cannot be moved across a sibling test boundary.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testPlaywrightEvidenceSpanRejectsMisplacedSentinels(): void
+    {
+        $source = <<<'TYPESCRIPT'
+test('owned journey', async () => {
+  // KIS-EVIDENCE-BEGIN misplaced
+  void 'owned';
+});
+test('later journey', async () => {
+  void 'later';
+  // KIS-EVIDENCE-END misplaced
+});
+TYPESCRIPT;
+
+        $this->expectException(\PHPUnit\Framework\AssertionFailedError::class);
+        $this->playwrightEvidenceSpan($source, 'owned journey', 'misplaced');
+    }
+
+    /**
+     * Proves duplicated evidence sentinels are rejected instead of selecting one arbitrarily.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testPlaywrightEvidenceSpanRejectsDuplicateSentinels(): void
+    {
+        $source = <<<'TYPESCRIPT'
+test('owned journey', async () => {
+  // KIS-EVIDENCE-BEGIN duplicate
+  // KIS-EVIDENCE-BEGIN duplicate
+  void 'owned';
+  // KIS-EVIDENCE-END duplicate
+});
+TYPESCRIPT;
+
+        $this->expectException(\PHPUnit\Framework\AssertionFailedError::class);
+        $this->playwrightEvidenceSpan($source, 'owned journey', 'duplicate');
     }
 
     /**
@@ -538,157 +616,109 @@ TYPESCRIPT;
     }
 
     /**
-     * Extract the callback body belonging to exactly one named Playwright test declaration.
+     * Extract one explicitly bounded evidence span from exactly one named Playwright test declaration.
      *
-     * String, template, regular-expression and comment contents are masked before structural braces are
-     * balanced, so source text that merely resembles a test boundary cannot widen the evidence scope.
+     * @param   string  $source      Complete TypeScript test source.
+     * @param   string  $marker      Exact Playwright test title declared by the evidence record.
+     * @param   string  $evidenceId  Stable evidence identifier used by both boundary sentinels.
      *
-     * @param   string  $source  Complete TypeScript test source.
-     * @param   string  $marker  Exact Playwright test title declared by the evidence record.
-     *
-     * @return  string  Original, unmasked callback body for the marked test only.
+     * @return  string  Original source text between the evidence sentinels.
      *
      * @since   2.0.0
      */
-    private function playwrightTestBody(string $source, string $marker): string
+    private function playwrightEvidenceSpan(string $source, string $marker, string $evidenceId): string
     {
-        $matches = [];
-        $pattern = "/\\btest\\(\\s*'" . preg_quote($marker, '/') . "'\\s*,/";
+        $declarations = [];
+        $declarationPattern = "/^[ \\t]*test\\(\\s*'" . preg_quote($marker, '/') . "'\\s*,/m";
         self::assertSame(
             1,
-            preg_match_all($pattern, $source, $matches, PREG_OFFSET_CAPTURE),
+            preg_match_all($declarationPattern, $source, $declarations, PREG_OFFSET_CAPTURE),
             sprintf('Playwright marker %s must name exactly one test declaration.', $marker),
         );
-        self::assertIsArray($matches[0][0] ?? null);
-        self::assertIsInt($matches[0][0][1] ?? null);
-        $declarationEnd = $matches[0][0][1] + strlen($matches[0][0][0]);
-        $structure = $this->maskJavaScriptNonCode($source);
-        $arrow = strpos($structure, '=>', $declarationEnd);
-        self::assertIsInt($arrow, sprintf('Playwright marker %s has no callback arrow.', $marker));
+        self::assertIsArray($declarations[0][0] ?? null);
+        self::assertIsString($declarations[0][0][0] ?? null);
+        self::assertIsInt($declarations[0][0][1] ?? null);
+        $declarationEnd = $declarations[0][0][1] + strlen($declarations[0][0][0]);
 
-        $bodyStart = $arrow + 2;
-        $length = strlen($structure);
-        while ($bodyStart < $length && ctype_space($structure[$bodyStart])) {
-            ++$bodyStart;
-        }
+        $beginSentinel = '// KIS-EVIDENCE-BEGIN ' . $evidenceId;
+        $endSentinel = '// KIS-EVIDENCE-END ' . $evidenceId;
+        $beginMatches = [];
+        $endMatches = [];
         self::assertSame(
-            '{',
-            $structure[$bodyStart] ?? null,
-            sprintf('Playwright marker %s must use a block callback.', $marker),
+            1,
+            preg_match_all(
+                '/^[ \\t]*' . preg_quote($beginSentinel, '/') . '[ \\t]*$/m',
+                $source,
+                $beginMatches,
+                PREG_OFFSET_CAPTURE,
+            ),
+            sprintf('Playwright evidence %s must have exactly one begin sentinel.', $evidenceId),
+        );
+        self::assertSame(
+            1,
+            preg_match_all(
+                '/^[ \\t]*' . preg_quote($endSentinel, '/') . '[ \\t]*$/m',
+                $source,
+                $endMatches,
+                PREG_OFFSET_CAPTURE,
+            ),
+            sprintf('Playwright evidence %s must have exactly one end sentinel.', $evidenceId),
+        );
+        self::assertIsArray($beginMatches[0][0] ?? null);
+        self::assertIsString($beginMatches[0][0][0] ?? null);
+        self::assertIsInt($beginMatches[0][0][1] ?? null);
+        self::assertIsArray($endMatches[0][0] ?? null);
+        self::assertIsString($endMatches[0][0][0] ?? null);
+        self::assertIsInt($endMatches[0][0][1] ?? null);
+        $beginOffset = $beginMatches[0][0][1];
+        $beginEnd = $beginOffset + strlen($beginMatches[0][0][0]);
+        $endOffset = $endMatches[0][0][1];
+        $endEnd = $endOffset + strlen($endMatches[0][0][0]);
+
+        self::assertGreaterThan(
+            $declarationEnd,
+            $beginOffset,
+            sprintf('Playwright evidence %s begins before its named test declaration.', $evidenceId),
+        );
+        self::assertGreaterThan(
+            $beginEnd,
+            $endOffset,
+            sprintf('Playwright evidence %s has reversed or empty sentinels.', $evidenceId),
         );
 
-        $depth = 0;
-        for ($offset = $bodyStart; $offset < $length; ++$offset) {
-            if ($structure[$offset] === '{') {
-                ++$depth;
-                continue;
-            }
-            if ($structure[$offset] !== '}') {
-                continue;
-            }
-            --$depth;
-            if ($depth === 0) {
-                return substr($source, $bodyStart + 1, $offset - $bodyStart - 1);
-            }
+        $nextTest = [];
+        $nextTestResult = preg_match(
+            '/^[ \\t]*test\\(/m',
+            $source,
+            $nextTest,
+            PREG_OFFSET_CAPTURE,
+            $declarationEnd,
+        );
+        self::assertNotFalse($nextTestResult);
+        if ($nextTestResult === 1) {
+            self::assertIsArray($nextTest[0] ?? null);
+            self::assertIsInt($nextTest[0][1] ?? null);
+            $nextTestOffset = $nextTest[0][1];
+        } else {
+            $nextTestOffset = strlen($source);
         }
+        self::assertLessThan(
+            $nextTestOffset,
+            $endOffset,
+            sprintf('Playwright evidence %s crosses into the next test declaration.', $evidenceId),
+        );
+        self::assertSame(
+            1,
+            preg_match('/=>[ \\t]*\\{[ \\t]*\\R\\z/', substr($source, $declarationEnd, $beginOffset - $declarationEnd)),
+            sprintf('Playwright evidence %s must begin on the first callback-body line.', $evidenceId),
+        );
+        self::assertSame(
+            1,
+            preg_match('/\\A\\R[ \\t]*\\}\\);/', substr($source, $endEnd)),
+            sprintf('Playwright evidence %s must end immediately before its callback closes.', $evidenceId),
+        );
 
-        self::fail(sprintf('Playwright marker %s has no balanced callback body.', $marker));
-    }
-
-    /**
-     * Replace JavaScript non-code lexemes with spaces while preserving offsets and structural punctuation.
-     *
-     * @param   string  $source  Complete JavaScript or TypeScript source.
-     *
-     * @return  string  Same-length source whose strings, templates, regular expressions and comments are masked.
-     *
-     * @since   2.0.0
-     */
-    private function maskJavaScriptNonCode(string $source): string
-    {
-        $masked = $source;
-        $length = strlen($source);
-        for ($offset = 0; $offset < $length; ++$offset) {
-            $character = $source[$offset];
-            $next = $source[$offset + 1] ?? '';
-            if ($character === '/' && $next === '/') {
-                for (; $offset < $length && $source[$offset] !== "\n"; ++$offset) {
-                    $masked[$offset] = ' ';
-                }
-                continue;
-            }
-            if ($character === '/' && $next === '*') {
-                do {
-                    $masked[$offset] = ' ';
-                    ++$offset;
-                } while ($offset < $length && !(($source[$offset - 1] ?? '') === '*' && $source[$offset] === '/'));
-                if ($offset < $length) {
-                    $masked[$offset] = ' ';
-                }
-                continue;
-            }
-            if (in_array($character, ["'", '"', '`'], true)) {
-                $quote = $character;
-                $masked[$offset] = ' ';
-                while (++$offset < $length) {
-                    $masked[$offset] = ' ';
-                    if ($source[$offset] === '\\') {
-                        if (++$offset < $length) {
-                            $masked[$offset] = ' ';
-                        }
-                        continue;
-                    }
-                    if ($source[$offset] === $quote) {
-                        break;
-                    }
-                }
-                continue;
-            }
-            if ($character === '/' && $this->slashStartsJavaScriptRegex($masked, $offset)) {
-                $masked[$offset] = ' ';
-                $inCharacterClass = false;
-                while (++$offset < $length) {
-                    $masked[$offset] = ' ';
-                    if ($source[$offset] === '\\') {
-                        if (++$offset < $length) {
-                            $masked[$offset] = ' ';
-                        }
-                        continue;
-                    }
-                    if ($source[$offset] === '[') {
-                        $inCharacterClass = true;
-                    } elseif ($source[$offset] === ']') {
-                        $inCharacterClass = false;
-                    } elseif ($source[$offset] === '/' && !$inCharacterClass) {
-                        while (ctype_alpha($source[$offset + 1] ?? '')) {
-                            $masked[++$offset] = ' ';
-                        }
-                        break;
-                    }
-                }
-            }
-        }
-
-        return $masked;
-    }
-
-    /**
-     * Distinguish a JavaScript regular-expression literal from division using its preceding code token.
-     *
-     * @param   string  $masked  Source whose preceding non-code lexemes are already blanked.
-     * @param   int     $offset  Slash offset being classified.
-     *
-     * @return  bool  True when the slash starts a regular-expression literal.
-     *
-     * @since   2.0.0
-     */
-    private function slashStartsJavaScriptRegex(string $masked, int $offset): bool
-    {
-        do {
-            --$offset;
-        } while ($offset >= 0 && ctype_space($masked[$offset]));
-
-        return $offset < 0 || str_contains('([{:,;=!?&|+-*%^~<>', $masked[$offset]);
+        return substr($source, $beginEnd, $endOffset - $beginEnd);
     }
 
     /**

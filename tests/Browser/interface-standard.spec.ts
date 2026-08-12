@@ -28,6 +28,7 @@ test.describe('KIS production component gallery', () => {
     page,
     isMobile,
   }) => {
+    // KIS-EVIDENCE-BEGIN p6-004-component-modes
     await page.goto('/administrator/interface-standard?tab=overview');
     await expect(page.getByRole('heading', { level: 1, name: 'Kumwe Interface Standard' })).toBeVisible();
     for (const component of [
@@ -113,6 +114,7 @@ test.describe('KIS production component gallery', () => {
     await expect(page).toHaveScreenshot('kis-gallery-states-dark.png', {
       fullPage: true,
     });
+    // KIS-EVIDENCE-END p6-004-component-modes
   });
 });
 
@@ -122,6 +124,7 @@ test.describe('KIS server-rendered fallback', () => {
   test('tabs, panels, drawer content and direct navigation remain usable without JavaScript', async ({
     page,
   }) => {
+    // KIS-EVIDENCE-BEGIN p6-004-no-javascript
     await signIn(page);
     await page.goto('/administrator/interface-standard?tab=forms');
 
@@ -134,6 +137,7 @@ test.describe('KIS server-rendered fallback', () => {
     await expect(page).toHaveURL(/\/administrator\/interface-standard\?tab=safety/u);
     await expect(page.getByRole('heading', { name: 'Purge remains separate' })).toBeVisible();
     await expectNoDocumentOverflow(page, { root: '#administrator-content', detectControlOverlaps: false });
+    // KIS-EVIDENCE-END p6-004-no-javascript
   });
 });
 
