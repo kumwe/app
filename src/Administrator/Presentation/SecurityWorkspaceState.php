@@ -76,7 +76,7 @@ final readonly class SecurityWorkspaceState
     /**
      * Resolve a Business Security request to one closed concern and task.
      *
-     * @param   array<string, mixed>  $query  Untrusted request query parameters.
+     * @param   array<array-key, mixed>  $query  Untrusted PSR-7 request query parameters.
      *
      * @return  self  Safe state whose values belong to the Business Security vocabulary.
      *
@@ -90,7 +90,7 @@ final readonly class SecurityWorkspaceState
     /**
      * Resolve a Users and Access request to one closed concern and task.
      *
-     * @param   array<string, mixed>  $query  Untrusted request query parameters.
+     * @param   array<array-key, mixed>  $query  Untrusted PSR-7 request query parameters.
      *
      * @return  self  Safe state whose values belong to the identity workspace vocabulary.
      *
@@ -192,7 +192,7 @@ final readonly class SecurityWorkspaceState
     /**
      * Resolve shared scalar fields against one surface-specific concern map.
      *
-     * @param   array<string, mixed>         $query     Untrusted request query parameters.
+     * @param   array<array-key, mixed>      $query     Untrusted PSR-7 request query parameters.
      * @param   array<string, list<string>>  $concerns  Allowed concern-to-mode map.
      * @param   string                       $default   Concern used when the request is absent or invalid.
      * @param   bool                         $business  Whether Business Security kind and step rules apply.

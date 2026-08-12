@@ -1,4 +1,5 @@
-<section class="panel" aria-labelledby="component-title">
+<section class="panel" aria-labelledby="component-title"
+  data-kis-surface="@@EXTENSION_DOTTED@@.administrator.index" data-kis-component="diagnostics-workspace">
   <h1 id="component-title">{{ heading }}</h1>
   <p>{{ message }}</p>
   <p><strong>Package:</strong> <code>@@EXTENSION_IDENTIFIER@@</code></p>

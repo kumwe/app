@@ -22,10 +22,13 @@ use Kumwe\CMS\Extension\Contribution\AdministratorRouteHandlerFactory;
 use Kumwe\CMS\Extension\Contribution\AdministratorViewDefinition;
 use Kumwe\CMS\Extension\Contribution\AdministratorWorkspaceDefinition;
 use Kumwe\CMS\Extension\Contribution\CapabilityDefinition;
+use Kumwe\CMS\Extension\Contribution\ContributionOwner;
 use Kumwe\CMS\Extension\Contribution\ExtensionContributionProvider;
 use Kumwe\CMS\Extension\Contribution\ExtensionContributionRegistrar;
+use Kumwe\CMS\Extension\Contribution\InterfaceSurfaceRegistrar;
 use Kumwe\CMS\Extension\Contribution\ResourcePolicyDefinition;
 use Kumwe\CMS\Extension\Runtime\ExtensionContainer;
+use Kumwe\CMS\InterfaceStandard\SurfaceDefinition;
 use Kumwe\CMS\Portal\Contribution\PortalNavigationDefinition;
 use Kumwe\CMS\Portal\Contribution\PortalRouteDefinition;
 use Kumwe\CMS\Portal\Contribution\PortalRouteHandlerFactory;
@@ -133,6 +136,9 @@ final class Provider implements ExtensionServiceProvider, ExtensionContributionP
      */
     public function contribute(ExtensionContributionRegistrar $contributions, ExtensionContainer $container): void
     {
+        if (!$contributions instanceof InterfaceSurfaceRegistrar) {
+            throw new \LogicException('The component KIS surface registrar is unavailable.');
+        }
         $contributions->capability(new CapabilityDefinition(
             '@@EXTENSION_DOTTED@@.access',
             'Access @@LABEL_PHP@@',
@@ -150,9 +156,63 @@ final class Provider implements ExtensionServiceProvider, ExtensionContributionP
         foreach (BusinessDefinitions::all() as $definition) {
             $contributions->businessDefinition($definition);
         }
+        $this->contributeInterface($contributions);
         $this->contributeAdministrator($contributions, $container);
         $this->contributePortal($contributions, $container);
         $this->contributeIntegration($contributions, $container);
+    }
+
+    /**
+     * Register the administrator and portal surfaces mirrored in the manifest.
+     *
+     * @param   InterfaceSurfaceRegistrar  $contributions  Owner-bound KIS surface sink.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    private function contributeInterface(InterfaceSurfaceRegistrar $contributions): void
+    {
+        $owner = ContributionOwner::extension('@@EXTENSION_IDENTIFIER@@');
+        $contributions->interfaceSurface(SurfaceDefinition::fromArray($owner, [
+            'surface' => '@@EXTENSION_DOTTED@@.administrator.index',
+            'standard' => 'kis-1.0',
+            'area' => 'administrator',
+            'actor' => 'administrator',
+            'intent' => 'diagnostics',
+            'resource' => 'component-overview',
+            'purpose' => 'Review component activity and continue into its generated record workspaces.',
+            'pattern' => 'diagnostics-workspace',
+            'capabilities' => ['@@EXTENSION_DOTTED@@.access'],
+            'states' => ['default', 'empty', 'dense', 'error', 'permission-reduced'],
+            'customization' => [['slot' => 'density', 'scope' => 'user']],
+            'responsive' => [
+                ['element' => 'component-activity', 'priority' => 'essential', 'may_collapse' => false],
+                ['element' => 'integration-status', 'priority' => 'secondary', 'may_collapse' => true],
+            ],
+            'icon' => 'extensions',
+        ]));
+        $contributions->interfaceSurface(SurfaceDefinition::fromArray($owner, [
+            'surface' => '@@EXTENSION_DOTTED@@.portal.index',
+            'standard' => 'kis-1.0',
+            'area' => 'portal',
+            'actor' => 'portal',
+            'intent' => 'monitor',
+            'resource' => 'component-status',
+            'purpose' => 'Review the policy-filtered component activity available to this portal member.',
+            'pattern' => 'status-workspace',
+            'capabilities' => ['@@EXTENSION_DOTTED@@.access'],
+            'states' => ['default', 'empty', 'error', 'permission-reduced', 'read-only'],
+            'customization' => [
+                ['slot' => 'density', 'scope' => 'user'],
+                ['slot' => 'theme-mode', 'scope' => 'user'],
+            ],
+            'responsive' => [
+                ['element' => 'component-status', 'priority' => 'essential', 'may_collapse' => false],
+                ['element' => 'activity-summary', 'priority' => 'secondary', 'may_collapse' => true],
+            ],
+            'icon' => 'extensions',
+        ]));
     }
 
     /**
@@ -176,6 +236,7 @@ final class Provider implements ExtensionServiceProvider, ExtensionContributionP
             '@@EXTENSION_DOTTED@@.navigation', '@@EXTENSION_DOTTED@@.workspace', '@@LABEL_PHP@@',
             'Open @@LABEL_PHP@@ administration.', '/', 'extensions', '@@EXTENSION_DOTTED@@.access', 10,
             '@@LABEL_PHP@@ component records',
+            '@@EXTENSION_DOTTED@@.administrator.index',
         ));
         $contributions->administratorView(new AdministratorViewDefinition(
             '@@EXTENSION_DOTTED@@.administrator.index', 'index.twig',
@@ -211,6 +272,7 @@ final class Provider implements ExtensionServiceProvider, ExtensionContributionP
             '@@EXTENSION_DOTTED@@.portal.navigation', '@@EXTENSION_DOTTED@@.portal.workspace', '@@LABEL_PHP@@',
             'Open @@LABEL_PHP@@.', '/', 'extensions', '@@EXTENSION_DOTTED@@.access', 10,
             '@@LABEL_PHP@@ component records',
+            '@@EXTENSION_DOTTED@@.portal.index',
         ));
         $contributions->portalTemplate(new PortalTemplateDefinition(
             '@@EXTENSION_DOTTED@@.portal.index', 'index.twig',

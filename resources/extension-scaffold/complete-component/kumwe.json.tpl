@@ -33,6 +33,49 @@
       "lifecycle": "active",
       "version": 1
     }],
+    "interface": {
+      "surfaces": [
+        {
+          "surface": "@@EXTENSION_DOTTED@@.administrator.index",
+          "standard": "kis-1.0",
+          "area": "administrator",
+          "actor": "administrator",
+          "intent": "diagnostics",
+          "resource": "component-overview",
+          "purpose": "Review component activity and continue into its generated record workspaces.",
+          "pattern": "diagnostics-workspace",
+          "capabilities": ["@@EXTENSION_DOTTED@@.access"],
+          "states": ["default", "empty", "dense", "error", "permission-reduced"],
+          "customization": [{"slot": "density", "scope": "user"}],
+          "responsive": [
+            {"element": "component-activity", "priority": "essential", "may_collapse": false},
+            {"element": "integration-status", "priority": "secondary", "may_collapse": true}
+          ],
+          "icon": "extensions"
+        },
+        {
+          "surface": "@@EXTENSION_DOTTED@@.portal.index",
+          "standard": "kis-1.0",
+          "area": "portal",
+          "actor": "portal",
+          "intent": "monitor",
+          "resource": "component-status",
+          "purpose": "Review the policy-filtered component activity available to this portal member.",
+          "pattern": "status-workspace",
+          "capabilities": ["@@EXTENSION_DOTTED@@.access"],
+          "states": ["default", "empty", "error", "permission-reduced", "read-only"],
+          "customization": [
+            {"slot": "density", "scope": "user"},
+            {"slot": "theme-mode", "scope": "user"}
+          ],
+          "responsive": [
+            {"element": "component-status", "priority": "essential", "may_collapse": false},
+            {"element": "activity-summary", "priority": "secondary", "may_collapse": true}
+          ],
+          "icon": "extensions"
+        }
+      ]
+    },
     "administrator": {
       "workspaces": [{
         "id": "@@EXTENSION_DOTTED@@.workspace",
@@ -48,6 +91,7 @@
         "path": "/",
         "icon": "extensions",
         "capability": "@@EXTENSION_DOTTED@@.access",
+        "surface": "@@EXTENSION_DOTTED@@.administrator.index",
         "priority": 10,
         "keywords": "@@LABEL_JSON@@ component records"
       }],
@@ -78,6 +122,7 @@
         "path": "/",
         "icon": "extensions",
         "capability": "@@EXTENSION_DOTTED@@.access",
+        "surface": "@@EXTENSION_DOTTED@@.portal.index",
         "priority": 10,
         "keywords": "@@LABEL_JSON@@ component records"
       }],

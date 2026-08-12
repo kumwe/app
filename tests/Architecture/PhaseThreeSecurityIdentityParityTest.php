@@ -158,6 +158,9 @@ final class PhaseThreeSecurityIdentityParityTest extends TestCase
             "{% if selected_id is not null %}&amp;id={{ selected_id|url_encode }}{% endif %}",
             $access,
         );
+        self::assertStringNotContainsString('namespace(', $access);
+        self::assertStringContainsString('selected_grant_role', $access);
+        self::assertStringContainsString('selected_grant', $access);
 
         $handler = $this->contents(
             'src/Administrator/Http/Handler/AdministratorAccessControlHandler.php',

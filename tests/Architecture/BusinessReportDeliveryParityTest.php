@@ -25,7 +25,8 @@ final class BusinessReportDeliveryParityTest extends TestCase
         self::assertIsString($administrator);
         self::assertIsString($portal);
         self::assertStringContainsString('name="_csrf"', $administrator);
-        self::assertStringContainsString('administrator_session.csrfToken', $administrator);
+        self::assertStringContainsString('value="{{ csrf }}"', $administrator);
+        self::assertStringContainsString("\$data['csrf'] = \$session->csrfToken", $administratorHandler);
         self::assertStringContainsString('name="_csrf"', $portal);
         self::assertStringContainsString('portal_session.csrfToken', $portal);
         self::assertStringContainsString("\$operation === 'export_download'", $administratorHandler);

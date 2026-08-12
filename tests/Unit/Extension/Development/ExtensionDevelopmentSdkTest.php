@@ -236,6 +236,7 @@ final class ExtensionDevelopmentSdkTest extends TestCase
             'acme.quality-component.item_consumer',
         )->identifier());
         $inventory = $registries->inventory($declarations->owner);
+        self::assertCount(2, $inventory['interface']['surfaces']);
         self::assertCount(1, $inventory['business']['definitions']);
         self::assertCount(1, $inventory['integration']['event_schemas']);
         self::assertCount(1, $inventory['integration']['domain_listeners']);

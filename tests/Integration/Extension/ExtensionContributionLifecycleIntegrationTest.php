@@ -88,7 +88,7 @@ final class ExtensionContributionLifecycleIntegrationTest extends TestCase
             self::assertSame('disabled', $result['status']);
             self::assertTrue($database->createSchemaManager()->tablesExist([$dataTable]));
             $diagnostic = $this->installed($manager, $context, $identifier);
-            self::assertSame(3, $diagnostic['manifest_schema']);
+            self::assertSame(4, $diagnostic['manifest_schema']);
             self::assertFalse($diagnostic['contributions']['active']);
             self::assertFalse($diagnostic['contributions']['capabilities'][0]['active']);
             self::assertFalse($diagnostic['contributions']['resource_policies'][0]['active']);

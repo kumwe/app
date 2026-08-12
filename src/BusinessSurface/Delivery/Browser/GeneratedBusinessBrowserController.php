@@ -798,8 +798,15 @@ final readonly class GeneratedBusinessBrowserController
         if (!is_array($value) || ($value !== [] && array_is_list($value))) {
             throw new InvalidArgumentException($message);
         }
+        $metadata = [];
+        foreach ($value as $key => $item) {
+            if (!is_string($key)) {
+                throw new InvalidArgumentException($message);
+            }
+            $metadata[$key] = $item;
+        }
 
-        return $value;
+        return $metadata;
     }
 
     /**
