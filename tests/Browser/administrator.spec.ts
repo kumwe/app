@@ -1015,11 +1015,10 @@ test.describe('authenticated administrator', () => {
     await attachLiveInterfaceScreenshot(page, testInfo, 'administrator-owned-lines');
   });
 
-  test('generated business forms complete an ordinary no-JavaScript lifecycle', async ({
+  test('generated business forms create, update and retain history without JavaScript', async ({
     browser,
   }, testInfo) => {
-    test.slow();
-    test.setTimeout(300_000);
+    test.setTimeout(120_000);
     const context = await browser.newContext({ javaScriptEnabled: false });
     const page = await context.newPage();
     try {
@@ -1064,10 +1063,28 @@ test.describe('authenticated administrator', () => {
       await page.getByRole('link', { name: 'History', exact: true }).click();
       await expect(page.getByRole('heading', { level: 1, name: 'Record history' })).toBeVisible();
       await expect(page.getByText('update', { exact: true }).first()).toBeVisible();
+    } finally {
+      await context.close();
+    }
+  });
+
+  test('generated business bulk lifecycle completes without JavaScript', async ({
+    browser,
+  }, testInfo) => {
+    test.setTimeout(120_000);
+    const context = await browser.newContext({ javaScriptEnabled: false });
+    const page = await context.newPage();
+    try {
+      await signIn(page);
+      await page.goto(`/administrator/business/${businessDefinitionHandle}?new=1`);
+      const name = `No JS administrator bulk ${testInfo.project.name} ${Date.now()}`;
+      await fillSession5OrderForm(page, name);
+      await page.getByRole('button', { name: 'Create record' }).click();
+      await expectAdministratorRecordName(page, name);
       await page.goto(`/administrator/business/${businessDefinitionHandle}`);
-      await page.getByLabel('Search records').fill(updatedName);
+      await page.getByLabel('Search records').fill(name);
       await page.getByRole('button', { name: 'Apply', exact: true }).click();
-      await expectAdministratorRecordRow(page, updatedName);
+      await expectAdministratorRecordRow(page, name);
       await page.locator('input[name="bulk_records[]"]:visible').first().check();
       await page.getByLabel('Bulk operation').selectOption('archive');
       await page.getByRole('button', { name: 'Review bulk operation' }).click();
@@ -1077,10 +1094,12 @@ test.describe('authenticated administrator', () => {
         `/administrator/business/${businessDefinitionHandle}\\?saved=1&bulk_count=1$`,
       ));
       await expect(page.getByText('The bulk operation completed for 1 record.')).toBeVisible();
-      await page.getByLabel('Search records').fill(updatedName);
+      await page.getByLabel('Search records').fill(name);
+      await page.getByText('Filters, sorting and lifecycle', { exact: true }).click();
+      await expect(page.getByLabel('Include archived')).toBeVisible();
       await page.getByLabel('Include archived').check();
       await page.getByRole('button', { name: 'Apply', exact: true }).click();
-      await expectAdministratorRecordRow(page, updatedName);
+      await expectAdministratorRecordRow(page, name);
       await page.locator('input[name="bulk_records[]"]:visible').first().check();
       await page.getByLabel('Bulk operation').selectOption('restore');
       await page.getByRole('button', { name: 'Review bulk operation' }).click();

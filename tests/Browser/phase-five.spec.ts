@@ -147,6 +147,16 @@ test('Phase 5 presentation modes preserve focus, touch, zoom, high contrast, mot
   await expectNoDocumentOverflow(page, { root: '#administrator-content', detectControlOverlaps: false });
 
   await page.goto('/administrator/content-models');
+  await expect(page.locator('#create-content-type')).toHaveAttribute('open', '');
+  const defaultContentModels = await expectNoDocumentOverflow(page, {
+    root: '#administrator-content',
+    detectControlOverlaps: false,
+  });
+  expect(
+    defaultContentModels.findings,
+    JSON.stringify(defaultContentModels, null, 2),
+  ).toEqual([]);
+
   await page.evaluate(() => {
     document.documentElement.style.fontSize = '200%';
   });

@@ -7,11 +7,12 @@
     title: heading,
     purpose: notice
   } only %}
-  <section class="portal-business-panel portal-business-stack" aria-label="Inspection status">
+  <section class="portal-business-panel portal-business-stack" aria-labelledby="asset-inspection-visible-title">
+    <h2 id="asset-inspection-visible-title">Visible inspections</h2>
     <p>Site: <strong>{{ site_identifier }}</strong></p>
     {% for summary in summaries %}
       <article>
-        <h2>{{ summary.reference }}</h2>
+        <h3>{{ summary.reference }}</h3>
         <p>Risk score: {{ summary.risk_score }}</p>
       </article>
     {% else %}

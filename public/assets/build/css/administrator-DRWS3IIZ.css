@@ -629,6 +629,10 @@
   [data-kis-surface="core.administrator.business-security"] :is(code, h2, h3, h4, p, dd, td, th) {
     overflow-wrap: anywhere;
   }
+
+  [data-kis-surface="core.administrator.content-models"] .kis-phase-five-dual-workspace {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 @layer overrides {
@@ -638,7 +642,7 @@
     }
 
     [data-kis-surface="core.administrator.content-models"]
-      :is(.kis-phase-five-dual-workspace, .two-column, .builder-row, .builder-row-expanded, .builder-options) {
+      :is(.two-column, .builder-row, .builder-row-expanded, .builder-options) {
       grid-template-columns: minmax(0, 1fr);
     }
 

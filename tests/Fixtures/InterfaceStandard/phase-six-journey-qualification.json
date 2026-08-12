@@ -195,12 +195,23 @@
       "id": "p6-002-history-ui",
       "path": "tests/Browser/administrator.spec.ts",
       "kind": "playwright",
-      "marker": "generated business forms complete an ordinary no-JavaScript lifecycle",
+      "marker": "generated business forms create, update and retain history without JavaScript",
       "owner": "ci-browser",
       "must_contain": [
         "View operation status",
         "Save changes",
-        "Record history",
+        "Record history"
+      ]
+    },
+    {
+      "id": "p6-002-bulk-ui",
+      "path": "tests/Browser/administrator.spec.ts",
+      "kind": "playwright",
+      "marker": "generated business bulk lifecycle completes without JavaScript",
+      "owner": "ci-browser",
+      "must_contain": [
+        "Archive selected records",
+        "Restore selected records",
         "The bulk operation completed for 1 record."
       ]
     },
@@ -695,7 +706,7 @@
         {"id": "publish", "evidence": ["p6-002-definition-ui"]},
         {"id": "schema-plan", "evidence": ["p6-002-schema-runtime"]},
         {"id": "schema-approve-execute", "evidence": ["p6-002-schema-runtime"]},
-        {"id": "record-create", "evidence": ["p6-002-record-relations-ui", "p6-002-history-ui"]},
+        {"id": "record-create", "evidence": ["p6-002-record-relations-ui", "p6-002-history-ui", "p6-002-bulk-ui"]},
         {"id": "relations", "evidence": ["p6-002-record-relations-ui"]},
         {"id": "action", "evidence": ["p6-002-action-runtime"]},
         {"id": "report", "evidence": ["p6-002-report-ui"]},

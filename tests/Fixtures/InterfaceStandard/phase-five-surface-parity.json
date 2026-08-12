@@ -120,8 +120,8 @@
     {
       "path": "examples/extensions/asset-inspection/templates/views/portal/status.twig",
       "surface_ids": ["kumwe.asset-inspection-example.portal.status"],
-      "must_contain": ["@kis/page-header.twig", "@kis/empty-state.twig", "data-kis-surface=\"kumwe.asset-inspection-example.portal.status\""],
-      "must_not_contain": ["internal_note"]
+      "must_contain": ["@kis/page-header.twig", "@kis/empty-state.twig", "data-kis-surface=\"kumwe.asset-inspection-example.portal.status\"", "aria-labelledby=\"asset-inspection-visible-title\"", "<h2 id=\"asset-inspection-visible-title\">Visible inspections</h2>"],
+      "must_not_contain": ["internal_note", "aria-label=\"Inspection status\""]
     },
     {
       "path": "examples/extensions/minimal-template/templates/site/home.twig",

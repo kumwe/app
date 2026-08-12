@@ -382,7 +382,21 @@ test('asset-inspection portal workspace is policy-filtered and bounded', async (
   );
   await expect(surface).toBeVisible();
   await expect(page.getByRole('heading', { level: 1, name: 'Asset inspection example' })).toBeVisible();
-  await expect(page.getByRole('region', { name: 'Inspection status' })).toBeVisible();
+  const visibleInspections = surface.getByRole('region', {
+    name: 'Visible inspections',
+    exact: true,
+  });
+  await expect(visibleInspections).toHaveCount(1);
+  await expect(visibleInspections).toBeVisible();
+  await expect(visibleInspections.getByRole('heading', {
+    level: 2,
+    name: 'Visible inspections',
+    exact: true,
+  })).toBeVisible();
+  await expect(page.getByRole('region', {
+    name: 'Inspection status',
+    exact: true,
+  })).toHaveCount(1);
   await expect(page.getByText('EXAMPLE-INSPECTION-001')).toBeVisible();
   await expect(page.getByText('ROW-POLICY-DENIED')).toHaveCount(0);
   await expect(page.getByText('FOREIGN-SITE-ROW')).toHaveCount(0);
@@ -702,6 +716,8 @@ test('portal generated forms complete a no-JavaScript lifecycle', async ({ brows
     await expect(page).toHaveURL(new RegExp(`/portal/business/${businessDefinitionHandle}\\?saved=1&bulk_count=1$`));
     await expect(page.getByText('The bulk operation completed for 1 record.')).toBeVisible();
     await page.getByLabel('Search records').fill(updatedName);
+    await page.getByText('Filters, sorting and lifecycle', { exact: true }).click();
+    await expect(page.getByLabel('Include archived')).toBeVisible();
     await page.getByLabel('Include archived').check();
     await page.getByRole('button', { name: 'Apply', exact: true }).click();
     await expectPortalRecordRow(page, updatedName);
