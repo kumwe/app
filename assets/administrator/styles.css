@@ -431,7 +431,8 @@
     .panel { box-shadow: none; }
   }
 }
-.definition-catalog-item { display: grid; gap: .2rem; padding: .8rem; border: 1px solid var(--kumwe-border); border-radius: var(--kumwe-radius-md); color: inherit; text-decoration: none; }
+.definition-catalog-item { display: grid; min-width: 0; max-width: 100%; gap: .2rem; overflow-wrap: anywhere; padding: .8rem; border: 1px solid var(--kumwe-border); border-radius: var(--kumwe-radius-md); color: inherit; text-decoration: none; }
+.definition-catalog-item > * { min-width: 0; }
 .definition-catalog-item.active { border-color: var(--kumwe-accent); background: var(--kumwe-surface-subtle); }
 .definition-catalog-item span, .definition-catalog-item small { color: var(--kumwe-text-muted); }
 .definition-row summary { display: flex; justify-content: space-between; gap: 1rem; cursor: pointer; }
@@ -439,12 +440,14 @@
 .check-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)); gap: .5rem; }
 .formula-builder { padding: .75rem; border-radius: var(--kumwe-radius-md); background: var(--kumwe-surface-subtle); }
 .definition-metadata { display: grid; gap: .5rem; }
-.definition-metadata div { display: grid; grid-template-columns: 9rem minmax(0, 1fr); gap: 1rem; }
+.definition-metadata div { display: grid; min-width: 0; grid-template-columns: 9rem minmax(0, 1fr); gap: 1rem; }
+.definition-metadata dt, .definition-metadata dd { min-width: 0; }
+.definition-metadata dd { overflow-wrap: anywhere; }
 .definition-metadata code { overflow-wrap: anywhere; }
 .compatibility-change { border-left: .25rem solid var(--kumwe-border); padding-left: .75rem; }
 .compatibility-change.destructive { border-color: var(--kumwe-danger); }
 .compatibility-change.data_migration_required { border-color: var(--kumwe-warning); }
-.schema-plan-catalog { display: grid; height: min(34rem, 60vh); gap: .55rem; overflow-y: auto; }
+.schema-plan-catalog { display: grid; width: 100%; min-width: 0; max-width: 100%; height: min(34rem, 60vh); grid-template-columns: minmax(0, 1fr); gap: .55rem; overflow-y: auto; }
 .schema-plan-summary { border-top: .25rem solid var(--kumwe-accent); }
 .schema-checksums dd { min-width: 0; overflow-wrap: anywhere; }
 .schema-risk { display: inline-flex; width: fit-content; align-items: center; padding: .34rem .55rem; border-radius: 999px; background: var(--kumwe-info-soft); color: var(--kumwe-info); font-size: .68rem; font-weight: 720; line-height: 1; text-transform: capitalize; }
