@@ -270,19 +270,55 @@ final class PhaseSixJourneyQualificationTest extends TestCase
                 $contents,
                 sprintf('%s lost its executable marker.', $evidence['id']),
             );
+            $evidenceScope = $evidence['kind'] === 'playwright'
+                ? $this->playwrightTestBody($contents, $evidence['marker'])
+                : $contents;
             self::assertNotEmpty($evidence['must_contain']);
             foreach ($evidence['must_contain'] as $requiredToken) {
                 self::assertIsString($requiredToken);
                 self::assertNotSame('', $requiredToken);
                 self::assertStringContainsString(
                     $requiredToken,
-                    $contents,
+                    $evidenceScope,
                     sprintf('%s lost required execution token %s.', $evidence['id'], $requiredToken),
                 );
             }
         }
 
         self::assertSame(array_keys($owners), array_keys($usedOwners));
+    }
+
+    /**
+     * Proves a Playwright evidence token cannot be borrowed from another test in the same source file.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testPlaywrightEvidenceTokensBelongToTheExactMarkedTestBody(): void
+    {
+        $source = <<<'TYPESCRIPT'
+test('sibling journey', async ({ page }) => {
+  await page.getByText('sibling-only-token').click();
+});
+
+test('owned journey', async ({ page }) => {
+  const path = `/records/${recordId}/{literal-braces}`;
+  await expect(page).toHaveURL(/records\/[0-9]{2}/u);
+  await page.getByText('owned-token').click();
+});
+
+test('later journey', async ({ page }) => {
+  await page.getByText('later-only-token').click();
+});
+TYPESCRIPT;
+
+        $scope = $this->playwrightTestBody($source, 'owned journey');
+
+        self::assertStringContainsString('sibling-only-token', $source);
+        self::assertStringNotContainsString('sibling-only-token', $scope);
+        self::assertStringContainsString('owned-token', $scope);
+        self::assertStringNotContainsString('later-only-token', $scope);
     }
 
     /**
@@ -499,6 +535,160 @@ final class PhaseSixJourneyQualificationTest extends TestCase
         }
 
         return $indexed;
+    }
+
+    /**
+     * Extract the callback body belonging to exactly one named Playwright test declaration.
+     *
+     * String, template, regular-expression and comment contents are masked before structural braces are
+     * balanced, so source text that merely resembles a test boundary cannot widen the evidence scope.
+     *
+     * @param   string  $source  Complete TypeScript test source.
+     * @param   string  $marker  Exact Playwright test title declared by the evidence record.
+     *
+     * @return  string  Original, unmasked callback body for the marked test only.
+     *
+     * @since   2.0.0
+     */
+    private function playwrightTestBody(string $source, string $marker): string
+    {
+        $matches = [];
+        $pattern = "/\\btest\\(\\s*'" . preg_quote($marker, '/') . "'\\s*,/";
+        self::assertSame(
+            1,
+            preg_match_all($pattern, $source, $matches, PREG_OFFSET_CAPTURE),
+            sprintf('Playwright marker %s must name exactly one test declaration.', $marker),
+        );
+        self::assertIsArray($matches[0][0] ?? null);
+        self::assertIsInt($matches[0][0][1] ?? null);
+        $declarationEnd = $matches[0][0][1] + strlen($matches[0][0][0]);
+        $structure = $this->maskJavaScriptNonCode($source);
+        $arrow = strpos($structure, '=>', $declarationEnd);
+        self::assertIsInt($arrow, sprintf('Playwright marker %s has no callback arrow.', $marker));
+
+        $bodyStart = $arrow + 2;
+        $length = strlen($structure);
+        while ($bodyStart < $length && ctype_space($structure[$bodyStart])) {
+            ++$bodyStart;
+        }
+        self::assertSame(
+            '{',
+            $structure[$bodyStart] ?? null,
+            sprintf('Playwright marker %s must use a block callback.', $marker),
+        );
+
+        $depth = 0;
+        for ($offset = $bodyStart; $offset < $length; ++$offset) {
+            if ($structure[$offset] === '{') {
+                ++$depth;
+                continue;
+            }
+            if ($structure[$offset] !== '}') {
+                continue;
+            }
+            --$depth;
+            if ($depth === 0) {
+                return substr($source, $bodyStart + 1, $offset - $bodyStart - 1);
+            }
+        }
+
+        self::fail(sprintf('Playwright marker %s has no balanced callback body.', $marker));
+    }
+
+    /**
+     * Replace JavaScript non-code lexemes with spaces while preserving offsets and structural punctuation.
+     *
+     * @param   string  $source  Complete JavaScript or TypeScript source.
+     *
+     * @return  string  Same-length source whose strings, templates, regular expressions and comments are masked.
+     *
+     * @since   2.0.0
+     */
+    private function maskJavaScriptNonCode(string $source): string
+    {
+        $masked = $source;
+        $length = strlen($source);
+        for ($offset = 0; $offset < $length; ++$offset) {
+            $character = $source[$offset];
+            $next = $source[$offset + 1] ?? '';
+            if ($character === '/' && $next === '/') {
+                for (; $offset < $length && $source[$offset] !== "\n"; ++$offset) {
+                    $masked[$offset] = ' ';
+                }
+                continue;
+            }
+            if ($character === '/' && $next === '*') {
+                do {
+                    $masked[$offset] = ' ';
+                    ++$offset;
+                } while ($offset < $length && !(($source[$offset - 1] ?? '') === '*' && $source[$offset] === '/'));
+                if ($offset < $length) {
+                    $masked[$offset] = ' ';
+                }
+                continue;
+            }
+            if (in_array($character, ["'", '"', '`'], true)) {
+                $quote = $character;
+                $masked[$offset] = ' ';
+                while (++$offset < $length) {
+                    $masked[$offset] = ' ';
+                    if ($source[$offset] === '\\') {
+                        if (++$offset < $length) {
+                            $masked[$offset] = ' ';
+                        }
+                        continue;
+                    }
+                    if ($source[$offset] === $quote) {
+                        break;
+                    }
+                }
+                continue;
+            }
+            if ($character === '/' && $this->slashStartsJavaScriptRegex($masked, $offset)) {
+                $masked[$offset] = ' ';
+                $inCharacterClass = false;
+                while (++$offset < $length) {
+                    $masked[$offset] = ' ';
+                    if ($source[$offset] === '\\') {
+                        if (++$offset < $length) {
+                            $masked[$offset] = ' ';
+                        }
+                        continue;
+                    }
+                    if ($source[$offset] === '[') {
+                        $inCharacterClass = true;
+                    } elseif ($source[$offset] === ']') {
+                        $inCharacterClass = false;
+                    } elseif ($source[$offset] === '/' && !$inCharacterClass) {
+                        while (ctype_alpha($source[$offset + 1] ?? '')) {
+                            $masked[++$offset] = ' ';
+                        }
+                        break;
+                    }
+                }
+            }
+        }
+
+        return $masked;
+    }
+
+    /**
+     * Distinguish a JavaScript regular-expression literal from division using its preceding code token.
+     *
+     * @param   string  $masked  Source whose preceding non-code lexemes are already blanked.
+     * @param   int     $offset  Slash offset being classified.
+     *
+     * @return  bool  True when the slash starts a regular-expression literal.
+     *
+     * @since   2.0.0
+     */
+    private function slashStartsJavaScriptRegex(string $masked, int $offset): bool
+    {
+        do {
+            --$offset;
+        } while ($offset >= 0 && ctype_space($masked[$offset]));
+
+        return $offset < 0 || str_contains('([{:,;=!?&|+-*%^~<>', $masked[$offset]);
     }
 
     /**

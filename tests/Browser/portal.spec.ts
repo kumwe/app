@@ -730,7 +730,11 @@ test('portal generated forms complete a no-JavaScript lifecycle', async ({ brows
     await page.goto(`/portal/business/${businessDefinitionHandle}`);
     await page.getByLabel('Search records').fill(updatedName);
     await page.getByRole('button', { name: 'Apply', exact: true }).click();
-    await page.getByRole('link', { name: 'View', exact: true }).click();
+    const visibleResult = page
+      .locator('tbody tr:visible, li.kis-business-result-card:visible')
+      .filter({ hasText: updatedName });
+    await expect(visibleResult).toHaveCount(1);
+    await visibleResult.getByRole('link', { name: /^(?:View|Open record)$/ }).click();
     let tags = page.locator('article.portal-business-relation').filter({
       has: page.getByRole('heading', { name: 'Tags', exact: true }),
     });

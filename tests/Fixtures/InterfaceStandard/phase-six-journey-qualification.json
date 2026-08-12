@@ -69,7 +69,7 @@
       "owner": "ci-browser",
       "must_contain": [
         "Provision an ordinary portal member",
-        "Business Security",
+        "API, CLI and MCP tokens",
         "input[name=\"step_up_code\"]"
       ]
     },
@@ -406,8 +406,8 @@
       "marker": "tabs, panels, drawer content and direct navigation remain usable without JavaScript",
       "owner": "ci-browser",
       "must_contain": [
-        "javaScriptEnabled: false",
-        "data-kis-tab-panel",
+        "/administrator/interface-standard?tab=forms",
+        "[role=\"tabpanel\"]:visible",
         "Purge remains separate"
       ]
     },
