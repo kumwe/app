@@ -65,7 +65,7 @@
       "id": "p6-001-access-ui",
       "path": "tests/Browser/administrator.spec.ts",
       "kind": "playwright",
-      "marker": "users and access separates identity concerns and portal provisioning",
+      "marker": "users and access separates provisioning, assignments, tokens and step-up",
       "owner": "ci-browser",
       "must_contain": [
         "Provision an ordinary portal member",
