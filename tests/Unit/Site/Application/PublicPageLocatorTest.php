@@ -7,6 +7,7 @@ namespace Kumwe\CMS\Tests\Unit\Site\Application;
 use DateTimeImmutable;
 use Kumwe\CMS\Application\Authorization\SiteContext;
 use Kumwe\CMS\Audit\Application\AuditRecorder;
+use Kumwe\CMS\Content\Application\ContentModelRepository;
 use Kumwe\CMS\Content\Application\ContentRecord;
 use Kumwe\CMS\Content\Application\ContentService;
 use Kumwe\CMS\Content\Application\SiteScopedContentRepository;
@@ -18,6 +19,7 @@ use Kumwe\CMS\Navigation\Application\MenuItemRecord;
 use Kumwe\CMS\Navigation\Application\MenuRecord;
 use Kumwe\CMS\Navigation\Application\NavigationRepository;
 use Kumwe\CMS\Navigation\Application\PublicNavigation;
+use Kumwe\CMS\Presentation\ContentLayoutCatalog;
 use Kumwe\CMS\Presentation\ContentPresenter;
 use Kumwe\CMS\Presentation\RichTextFormatter;
 use Kumwe\CMS\Presentation\SiteRenderer;
@@ -36,6 +38,7 @@ use Twig\Loader\ArrayLoader;
 #[CoversClass(PublicPageLocator::class)]
 #[CoversClass(PublishedContentHandler::class)]
 #[CoversClass(ContentPresenter::class)]
+#[UsesClass(ContentLayoutCatalog::class)]
 #[UsesClass(ContentRecord::class)]
 #[UsesClass(ContentService::class)]
 #[UsesClass(PublicNavigation::class)]
@@ -106,6 +109,7 @@ final class PublicPageLocatorTest extends TestCase
             $settings,
             new SiteRenderer(new SiteTwigEnvironment(new ArrayLoader())),
             new ContentPresenter(new RichTextFormatter()),
+            $this->layouts(),
         );
         $request = (new ServerRequestFactory())->createServerRequest(
             'GET',
@@ -133,6 +137,7 @@ final class PublicPageLocatorTest extends TestCase
                 'page.twig' => '{{ current_path }}|{{ entry.title }}|{{ entry.body_html|raw }}',
             ]))),
             new ContentPresenter(new RichTextFormatter()),
+            $this->layouts(),
         );
         $request = (new ServerRequestFactory())->createServerRequest(
             'GET',
@@ -301,5 +306,10 @@ final class PublicPageLocatorTest extends TestCase
             $at,
             $at,
         );
+    }
+
+    private function layouts(): ContentLayoutCatalog
+    {
+        return new ContentLayoutCatalog($this->createStub(ContentModelRepository::class), 'default');
     }
 }
