@@ -220,7 +220,7 @@ final class FilesystemDemoManifestCatalogTest extends TestCase
 
         self::assertSame('kumwe.demo-business-profile/v1', $manifest['format'] ?? null);
         self::assertSame('vdm', $manifest['profile'] ?? null);
-        self::assertSame(3, $manifest['version'] ?? null);
+        self::assertSame(4, $manifest['version'] ?? null);
         self::assertMatchesRegularExpression('/^[a-f0-9]{64}$/D', $loaded['checksum']);
         self::assertCount(12, $order);
         self::assertSame(count($order), $expected['definition_count'] ?? null);
@@ -454,7 +454,7 @@ final class FilesystemDemoManifestCatalogTest extends TestCase
         $organizations = $this->list($manifest['organizations'] ?? null, 'organizations');
         self::assertCount(6, $roles);
         self::assertCount(5, $staff);
-        self::assertCount(3, $organizations);
+        self::assertCount(6, $organizations);
         $memberCounts = [];
         foreach ($organizations as $organization) {
             $entry = $this->map($organization, 'organization');
@@ -463,9 +463,16 @@ final class FilesystemDemoManifestCatalogTest extends TestCase
         }
         ksort($memberCounts);
         self::assertSame(
-            ['desert-bloom' => 1, 'kalahari-health' => 2, 'namib-learning' => 1],
+            [
+                'desert-bloom' => 1,
+                'erongo-tours' => 1,
+                'kalahari-health' => 2,
+                'namib-learning' => 1,
+                'okavango-logistics' => 2,
+                'zambezi-farms' => 2,
+            ],
             $memberCounts,
-            'One organization demonstrates multiple members while others demonstrate single membership.',
+            'Several organizations demonstrate multiple members while others demonstrate single membership.',
         );
         $encoded = json_encode($manifest, JSON_THROW_ON_ERROR);
         self::assertDoesNotMatchRegularExpression(

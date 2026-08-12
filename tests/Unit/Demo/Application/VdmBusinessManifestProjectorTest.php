@@ -75,8 +75,8 @@ final class VdmBusinessManifestProjectorTest extends TestCase
 
         $sourceUuids = $this->identityUuids($source);
         $projectedUuids = $this->identityUuids($projected);
-        self::assertCount(73, $sourceUuids);
-        self::assertCount(73, $projectedUuids);
+        self::assertCount(92, $sourceUuids);
+        self::assertCount(92, $projectedUuids);
         self::assertSame([], array_values(array_intersect($sourceUuids, $projectedUuids)));
         self::assertSame($probeUuid, $projected['projection_probe']['uuid'] ?? null);
         self::assertSame($probeHandle, $projected['projection_probe']['handle'] ?? null);

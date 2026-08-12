@@ -1,7 +1,7 @@
 {
   "format": "kumwe.demo-access/v1",
   "profile": "vdm",
-  "version": 1,
+  "version": 2,
   "site": "default",
   "description": "Demonstration staff roles, portal organizations, and sign-in identities for the VDM example. Passwords are never part of this manifest; the provisioning command generates them at deployment time.",
   "roles": [
@@ -161,6 +161,52 @@
         {
           "email": "campus@namib-learning.example",
           "display_name": "Namib Learning Campus Contact",
+          "role": "vdm-client-portal"
+        }
+      ]
+    },
+    {
+      "identifier": "okavango-logistics",
+      "label": "Okavango Logistics",
+      "workspace": "general",
+      "members": [
+        {
+          "email": "dispatch@okavango-logistics.example",
+          "display_name": "Okavango Dispatch Contact",
+          "role": "vdm-client-portal"
+        },
+        {
+          "email": "accounts@okavango-logistics.example",
+          "display_name": "Okavango Accounts Contact",
+          "role": "vdm-client-portal"
+        }
+      ]
+    },
+    {
+      "identifier": "erongo-tours",
+      "label": "Erongo Coast Tours",
+      "workspace": "general",
+      "members": [
+        {
+          "email": "bookings@erongo-tours.example",
+          "display_name": "Erongo Bookings Contact",
+          "role": "vdm-client-portal"
+        }
+      ]
+    },
+    {
+      "identifier": "zambezi-farms",
+      "label": "Zambezi Farm Supplies",
+      "workspace": "general",
+      "members": [
+        {
+          "email": "stores@zambezi-farms.example",
+          "display_name": "Zambezi Stores Contact",
+          "role": "vdm-client-portal"
+        },
+        {
+          "email": "finance@zambezi-farms.example",
+          "display_name": "Zambezi Finance Contact",
           "role": "vdm-client-portal"
         }
       ]
