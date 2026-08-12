@@ -21,13 +21,33 @@ use RuntimeException;
 final class FilesystemDemoManifestCatalogTest extends TestCase
 {
     /**
+     * Documented fields every page of one layout must author, keyed by content-type identity.
+     *
+     * The core Page type demands the four hero fields; each document-driven layout demands the
+     * fields its public template cannot render without. A page failing this list would install
+     * fine and then present an empty surface, so the release contract refuses it here.
+     *
+     * @var    array<string, list<string>>
+     * @since  2.0.0
+     */
+    private const array REQUIRED_PAGE_FIELDS = [
+        '018f22e2-7c8b-7ab0-8f3a-88e8026bb402' => ['eyebrow', 'heading', 'summary', 'body'],
+        '018f22e2-7c8b-7ab0-8f3a-88e8026bb410' => ['heading', 'body', 'sections'],
+        '018f22e2-7c8b-7ab0-8f3a-88e8026bb411' => ['heading', 'body', 'steps'],
+        '018f22e2-7c8b-7ab0-8f3a-88e8026bb412' => ['heading', 'entries'],
+        '018f22e2-7c8b-7ab0-8f3a-88e8026bb413' => ['heading', 'items'],
+        '018f22e2-7c8b-7ab0-8f3a-88e8026bb414' => ['heading', 'features'],
+        '018f22e2-7c8b-7ab0-8f3a-88e8026bb415' => ['heading', 'body'],
+    ];
+
+    /**
      * Proves the default documentation profile is a complete linked guide rather than a landing-page stub.
      *
      * @return  void
      *
      * @since   2.0.0
      */
-    public function testDocumentationProfileProvidesSixteenLinkedGuides(): void
+    public function testDocumentationProfileProvidesTwentySevenLinkedGuides(): void
     {
         $loaded = $this->catalog()->content('documentation');
         $manifest = $loaded['manifest'];
@@ -36,9 +56,9 @@ final class FilesystemDemoManifestCatalogTest extends TestCase
 
         self::assertSame('kumwe.demo-content/v1', $manifest['format'] ?? null);
         self::assertSame('documentation', $manifest['profile'] ?? null);
-        self::assertSame(2, $manifest['version'] ?? null);
+        self::assertSame(3, $manifest['version'] ?? null);
         self::assertMatchesRegularExpression('/^[a-f0-9]{64}$/D', $loaded['checksum']);
-        self::assertCount(16, $content);
+        self::assertCount(27, $content);
         self::assertCount(1, $menus);
 
         $reservedSystemRoutes = [
@@ -52,17 +72,20 @@ final class FilesystemDemoManifestCatalogTest extends TestCase
         ];
         $pages = [];
         $pageIds = [];
+        $layoutsUsed = [];
         foreach ($content as $candidate) {
             $page = $this->map($candidate, 'documentation page');
             $fixtureKey = $this->string($page, 'fixture_key');
             $resourceId = $this->string($page, 'resource_id');
+            $typeId = $this->string($page, 'content_type_id');
             self::assertNotContains($this->string($page, 'slug'), $reservedSystemRoutes);
             self::assertArrayNotHasKey($fixtureKey, $pages);
             self::assertArrayNotHasKey($resourceId, $pageIds);
-            self::assertSame(3, $page['content_type_version'] ?? null);
+            self::assertArrayHasKey($typeId, self::REQUIRED_PAGE_FIELDS);
+            self::assertIsInt($page['content_type_version'] ?? null);
             self::assertSame('published', $page['workflow_state_key'] ?? null);
             $data = $this->map($page['data'] ?? null, 'page data');
-            foreach (['eyebrow', 'heading', 'summary', 'body'] as $requiredField) {
+            foreach (self::REQUIRED_PAGE_FIELDS[$typeId] as $requiredField) {
                 self::assertArrayHasKey($requiredField, $data);
             }
             foreach (['primary_action', 'secondary_action'] as $optionalAction) {
@@ -75,17 +98,24 @@ final class FilesystemDemoManifestCatalogTest extends TestCase
             }
             $pages[$fixtureKey] = $page;
             $pageIds[$resourceId] = true;
+            $layoutsUsed[$typeId] = true;
         }
 
+        self::assertCount(
+            count(self::REQUIRED_PAGE_FIELDS),
+            $layoutsUsed,
+            'Every shipped layout must be demonstrated by at least one page.',
+        );
+
         $settings = $this->map($manifest['settings'] ?? null, 'documentation settings');
-        self::assertSame('page.home', $settings['homepage_content_fixture_key'] ?? null);
-        self::assertSame($pages['page.home']['resource_id'], $settings['homepage_content_id'] ?? null);
-        self::assertSame('Kumwe documentation', $pages['page.home']['title'] ?? null);
+        self::assertSame('page.welcome', $settings['homepage_content_fixture_key'] ?? null);
+        self::assertSame($pages['page.welcome']['resource_id'], $settings['homepage_content_id'] ?? null);
+        self::assertSame('Welcome to Kumwe', $pages['page.welcome']['title'] ?? null);
 
         $menu = $this->map($menus[0], 'documentation menu');
         $items = $this->list($menu['items'] ?? null, 'documentation menu items');
         self::assertSame('main', $menu['handle'] ?? null);
-        self::assertCount(16, $items);
+        self::assertCount(27, $items);
         $seen = [];
         foreach ($items as $candidate) {
             $item = $this->map($candidate, 'documentation menu item');

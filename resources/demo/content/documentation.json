@@ -1,7 +1,7 @@
 {
   "format": "kumwe.demo-content/v1",
   "profile": "documentation",
-  "version": 2,
+  "version": 3,
   "site": {
     "fixture_key": "site.default",
     "resource_id": "default",
@@ -15,9 +15,9 @@
     "site_fixture_key": "site.default",
     "site_id": "default",
     "site_name": "Kumwe",
-    "homepage_content_fixture_key": "page.home",
-    "homepage_content_id": "00000000-0000-7000-8000-000000001001",
-    "homepage_slug": "home",
+    "homepage_content_fixture_key": "page.welcome",
+    "homepage_content_id": "00000000-0000-7000-8000-000000002016",
+    "homepage_slug": "welcome",
     "default_locale": "en",
     "timezone": "UTC",
     "search_indexing_enabled": true,
@@ -86,23 +86,23 @@
   },
   "content": [
     {
-      "fixture_key": "page.home",
-      "resource_id": "00000000-0000-7000-8000-000000001001",
+      "fixture_key": "page.welcome",
+      "resource_id": "00000000-0000-7000-8000-000000002016",
       "site_fixture_key": "site.default",
       "site_id": "default",
-      "content_type_id": "018f22e2-7c8b-7ab0-8f3a-88e8026bb402",
-      "content_type_version": 3,
+      "content_type_id": "018f22e2-7c8b-7ab0-8f3a-88e8026bb414",
+      "content_type_version": 1,
       "workflow_id": "018f22e2-7c8b-7ab0-8f3a-88e8026bb401",
       "workflow_version": 1,
       "workflow_state_key": "published",
-      "title": "Kumwe documentation",
-      "slug": "home",
+      "title": "Welcome to Kumwe",
+      "slug": "welcome",
       "canonical_path": "/",
       "data": {
         "logo": "/media/00000000-0000-7000-8000-000000000902/kumwe-wordmark.svg",
         "eyebrow": "Learn in the running system",
-        "heading": "Build, publish, operate, and extend with Kumwe.",
-        "summary": "This managed documentation site turns the installed application into a guided tour of the workflows that are available now.",
+        "heading": "Publish your site. Run your business. Prove it all works.",
+        "summary": "Kumwe is a new kind of CMS and application platform that's built human-led but AI-assisted. Every page on this site is managed content served by the system it describes.",
         "primary_action": {
           "label": "Start the tour",
           "url": "/start-here"
@@ -111,25 +111,49 @@
           "label": "Open administrator",
           "url": "/administrator"
         },
-        "body": "Kumwe keeps content, business data, permissions, presentation, integrations, and operations behind shared application services. The pages in this site explain the practical route through each area and link to the screens where you can try it.\n\n## Choose a task\n- [Start with a safe first tour](/start-here)\n- [Create and publish managed content](/content)\n- [Model and run a business application](/business)\n- [Package extensions and integrations](/extend)\n- [Operate the complete runtime](/operate)\n\nThe examples are ordinary managed pages. Edit one, save a new version, change the menu, or choose a different homepage to see the same services that custom delivery adapters use.",
-        "capabilities": {
-          "anchor": "capabilities",
-          "heading": "Follow real workflows, not screenshots.",
-          "body": "Each guide ends in an observable result: a public page, a published model, a generated record surface, a bounded permission, a queued job, or operational evidence. Use the links in the guide, make one controlled change, and then verify it from another surface."
-        },
-        "platform": {
-          "anchor": "platform",
-          "heading": "One governed core across every surface.",
-          "body": "The administrator, portal, REST API, command line, MCP tools, workers, and extension routes share authorization, validation, audit, tenancy, and persistence rules. Learning one workflow therefore explains the behavior you should expect everywhere else."
+        "features": [
+          {
+            "anchor": "managed-content",
+            "heading": "Content that stays governed.",
+            "body": "Every page on this site is a managed record: its content type pins the fields, its workflow state decides public visibility, and its menu item gives it a canonical route. The layout is driven by the document itself, so editors fill defined fields rather than hand-building markup. You are reading the result now.\n\n[Explore managed content](/content)"
+          },
+          {
+            "anchor": "business-applications",
+            "heading": "Business applications from typed definitions.",
+            "body": "State fields, relationships, actions, exposure, and lifecycle in a versioned business definition, and Kumwe compiles it into portable storage, shared record services, and generated screens, APIs, and reports. Every surface reads the same policy-aware record boundary, so a rule changed in the definition changes everywhere at once.\n\n[Model a business application](/business)"
+          },
+          {
+            "anchor": "least-privilege",
+            "heading": "Least privilege, down to the field.",
+            "body": "Capabilities, row policies, and field disclosure rules decide what each actor may see and do, and missing context defaults to denial. Sensitive operations can require independent maker and checker approval, and ordinary users work in a separate [portal](/portal) that creates its own authenticated context and exposes only trusted routes and generated surfaces.\n\n[See the security model](/business/security)"
+          },
+          {
+            "anchor": "extensions-integrations",
+            "heading": "Extensions without a second pipeline.",
+            "body": "Signed extension manifests contribute routes, services, business definitions, events, jobs, and templates through stable registries, and the site operator decides what authority each package is granted. Integrations call the same services through REST, the command line, and MCP, behind one shared authorization boundary.\n\n[Extend and integrate](/extend)"
+          },
+          {
+            "anchor": "disciplined-operations",
+            "heading": "Operations you can prove.",
+            "body": "Health endpoints gate startup, workers and schedules run durable jobs, and backup, restore, and upgrade are rehearsed rather than assumed. Releases qualify against MariaDB, MySQL, and PostgreSQL before they ship, and the same evidence-first checks are documented for your own deployments.\n\n[Operate Kumwe](/operate)"
+          }
+        ],
+        "closing": {
+          "heading": "Open in purpose, curated in implementation.",
+          "body": "Kumwe welcomes use cases, testing, demonstration profiles, extension ideas, documentation, and domain knowledge. Core code moves through a controlled maintainer pipeline so releases stay coherent and safe — you always know where your contribution plugs in and who carries it from there. Begin with [Start here](/start-here), then sign in with the [demonstration accounts](/start-here/demo-access) to try every role in the running example.",
+          "action": {
+            "label": "Join the community",
+            "url": "/community"
+          }
         }
       },
       "publish_at": null,
       "unpublish_at": null,
-      "version": 3,
+      "version": 1,
       "revision": {
-        "fixture_key": "page.home.revision.documentation",
-        "resource_id": "00000000-0000-7000-8000-000000002900",
-        "revision_number": 3
+        "fixture_key": "page.welcome.revision.1",
+        "resource_id": "00000000-0000-7000-8000-000000003016",
+        "revision_number": 1
       }
     },
     {
@@ -735,6 +759,904 @@
         "resource_id": "00000000-0000-7000-8000-000000003015",
         "revision_number": 1
       }
+    },
+    {
+      "fixture_key": "page.first-page",
+      "resource_id": "00000000-0000-7000-8000-000000002017",
+      "site_fixture_key": "site.default",
+      "site_id": "default",
+      "content_type_id": "018f22e2-7c8b-7ab0-8f3a-88e8026bb411",
+      "content_type_version": 1,
+      "workflow_id": "018f22e2-7c8b-7ab0-8f3a-88e8026bb401",
+      "workflow_version": 1,
+      "workflow_state_key": "published",
+      "title": "Create and publish your first page",
+      "slug": "first-page",
+      "canonical_path": "/start-here/first-page",
+      "data": {
+        "eyebrow": "First page",
+        "heading": "Take one page from draft to the public site.",
+        "summary": "Sign in, create a draft in Content, submit it for review, publish it, and open the result — one loop through the governed workflow every page uses.",
+        "body": "This guide takes one page from nothing to a public URL using only the administrator. You need a running installation from the [installation guide](/start-here/getting-started) and an account holding the content capabilities involved; the owner created during installation holds them all.\n\n## How the workflow behaves\n- Every edit creates an immutable revision and an audit event, so no state change loses work.\n- The editor offers only the transitions valid for the page's current state and your capabilities.\n- A published page is public only after its optional publish date and before its optional unpublish date.\n\nEvery step below uses generated screens; routine authoring never requires reading or writing JSON.",
+        "steps": [
+          {
+            "anchor": "sign-in",
+            "heading": "Sign in at the administrator.",
+            "body": "Open [/administrator](/administrator) and sign in with the owner account created during installation, or with any user granted content.create, content.submit, and content.publish. The navigation shows only the areas your account may manage, so if **Content** is missing, review the grants under **Users and access** before continuing. The [administrator tour](/start-here/administrator) explains each area."
+          },
+          {
+            "anchor": "open-content",
+            "heading": "Open Content.",
+            "body": "Choose **Content** in the administrator navigation. The list is searchable, filterable, and paginated, with workflow actions, trash, and restore. The installed documentation pages live here as ordinary managed records — this page included — so you can open one to see a finished example before creating your own."
+          },
+          {
+            "anchor": "choose-a-layout",
+            "heading": "Create the page and choose its layout.",
+            "body": "Create a new page and select a content type. This documentation site installs six layouts — Document, Guide, Reference, Questions and answers, Landing page, and Article — and each renders differently on the public site; the page you are reading uses the Guide layout. Your choice generates the editor: text, rich-text, media, and the other field controls come from the content type definition. Give the page a title and a slug, then complete the generated fields. [Content models](/content/models) explains how these definitions are built and versioned."
+          },
+          {
+            "anchor": "save-the-draft",
+            "heading": "Save the draft.",
+            "body": "Saving creates the page in the Draft state. Each edit records an immutable revision and an audit event, and optimistic versions stop an old browser tab from overwriting newer work, so you can revise freely. A draft is never public: the public site serves only published pages inside their publication window."
+          },
+          {
+            "anchor": "submit-for-review",
+            "heading": "Submit it for review.",
+            "body": "Use the **Submit** action to move the draft into Review. The editor lists only valid actions for the current state, so Submit appears while the page is a draft and disappears once it is under review. A reviewer holding content.review can return the page for changes, which moves it back to Draft with its revision history intact. On a fresh installation where you hold every capability yourself, the state change still shows how separate editor and reviewer roles divide the work."
+          },
+          {
+            "anchor": "publish",
+            "heading": "Publish.",
+            "body": "The **Publish** action moves the page from draft or review to Published and requires content.publish. Publication dates are optional: when set, the page is public only after publish_at and before unpublish_at. **Unpublish** returns a published page to Draft at any time, so publishing is never a one-way door."
+          },
+          {
+            "anchor": "view-the-page",
+            "heading": "View it on the public site.",
+            "body": "Use the **View page** action in the editor. It appears only when the workflow state and publication window make the page public, and it resolves the same URL the public site uses. An unlinked page answers at its slug; once you add it to a menu under **Navigation**, the menu hierarchy becomes its canonical URL, such as /about-us/contact-details. [Media and navigation](/content/media-navigation) covers menus, and [Pages and publishing](/content/pages) covers the rest of the editorial surface."
+          }
+        ],
+        "outcome": {
+          "heading": "What you now have.",
+          "body": "A page you created is live at a public URL, and its complete history — every draft revision, the review transition, the publish action, and the matching audit events — is inspectable in the administrator. You have exercised the same workflow every editor uses and the same application services shared by the REST API, command line, and MCP tools. Continue with [content models](/content/models) to define your own layouts, or open [Content](/content) for the wider publishing tour."
+        }
+      },
+      "publish_at": null,
+      "unpublish_at": null,
+      "version": 1,
+      "revision": {
+        "fixture_key": "page.first-page.revision.1",
+        "resource_id": "00000000-0000-7000-8000-000000003017",
+        "revision_number": 1
+      }
+    },
+    {
+      "fixture_key": "page.demo-access",
+      "resource_id": "00000000-0000-7000-8000-000000002018",
+      "site_fixture_key": "site.default",
+      "site_id": "default",
+      "content_type_id": "018f22e2-7c8b-7ab0-8f3a-88e8026bb410",
+      "content_type_version": 1,
+      "workflow_id": "018f22e2-7c8b-7ab0-8f3a-88e8026bb401",
+      "workflow_version": 1,
+      "workflow_state_key": "published",
+      "title": "Demonstration identities and credentials",
+      "slug": "demo-access",
+      "canonical_path": "/start-here/demo-access",
+      "data": {
+        "eyebrow": "Demonstration access",
+        "heading": "Sign in as every demonstrated role without a shared secret.",
+        "summary": "The demonstration provisions five staff accounts and three client organizations, generates every password at provisioning time, and writes the sign-ins exactly once to an owner-only credentials file that is never committed.",
+        "body": "The demonstration installs a complete cast: five staff accounts that sign in at [the administrator](/administrator) and four portal members spread across three fictional client organizations that sign in at [the portal](/portal). Every address lives in the reserved .example zone, and no password is ever shipped — each one is generated on your installation at provisioning time and written once to a protected credentials file.\n\nThe cast itself is declared as data in the VDM business profile's access manifest. The **demo:provision-access** command turns that declaration into real accounts: roles and users through the canonical access-control service under an authenticated administrator, and portal memberships through the Business Security tables with audit records. Signing in as each identity in turn is the fastest way to watch [security policy](/business/security) doing real work.",
+        "sections": [
+          {
+            "anchor": "why-generated-credentials",
+            "heading": "Why the demonstration never ships a password.",
+            "body": "A demonstration that ships a fixed default password would teach the wrong habit and leave a known secret in every installation. Kumwe's demo profiles are data-only: they never contain passwords, tokens, or key material of any kind, and the manifest tests enforce that rule. The access manifest declares identities, roles, and organization memberships — nothing more.\n\nPasswords therefore exist only after you provision, only on your installation, and only in one owner-only file. **demo:provision-access** requires host access and a real administrator's credentials, generates a fresh password for every account it creates, and writes them exactly once. Because provisioning runs through the same access-control and audit services you use yourself, the demonstration cast is created the way any real account is — nothing about it bypasses the system it exists to demonstrate."
+          },
+          {
+            "anchor": "staff-roles",
+            "heading": "Five staff roles with deliberately different reach.",
+            "body": "All five staff accounts sign in at [the administrator](/administrator) with addresses on the vdm.example domain, and each carries a deliberately different capability set:\n\n- **accountant@vdm.example** holds the full set of business record operations: browse, read, create, update, workflow transitions and actions, relations, history, exports, and reports.\n- **clerk@vdm.example** reads business records and works on managed content — creating, updating, and submitting pages for review — without business write access.\n- **bookkeeper@vdm.example** is read-only with evidence duties: browse, read, history, exports, and reports, but no create or update.\n- **stockkeeper@vdm.example** maintains records and their relations — browse, read, create, update, relate — without exports, reports, or workflow transitions.\n- **sysadmin@vdm.example** configures the platform — users, settings, navigation, themes, extensions, and automation, with read access to business schemas — but holds no business record operations.\n\nSign in as each in turn and compare which administrator areas and record operations appear. The [administrator tour](/start-here/administrator) shows the same areas from the owner's seat; these five show what least privilege looks like when [record and field policy](/business/security) finishes the decision."
+          },
+          {
+            "anchor": "client-organizations",
+            "heading": "Three client organizations behind the portal.",
+            "body": "Three fictional client organizations demonstrate the portal side, each with its own workspace and its own records:\n\n- **Kalahari Health Systems** (kalahari-health) has two members — an operations contact and a finance contact — sharing one company, so you can watch two colleagues reach the same organization from different sign-ins.\n- **Desert Bloom Foods** (desert-bloom) has one ordering contact and a pending quotation you can accept to watch a portal workflow action complete.\n- **Namib Learning Collective** (namib-learning) has one campus contact.\n\nEach member signs in at [the portal](/portal) and sees only that organization's quotations, invoices, subscriptions, and domains beside the shared product catalogue. Portal members hold record capabilities — browsing, reading, workflow actions, relations, history, exports, and reports — and nothing else: no administrator access, no schema or user administration. [Security, approvals, and portal](/business/security) explains how that boundary is enforced, and when you are ready to create a real organization you follow [provision a client](/business/provision-client) instead of the demonstration cast."
+          },
+          {
+            "anchor": "credentials-file",
+            "heading": "Where your credentials file is.",
+            "body": "Where the file lands depends on how you installed:\n\n- **bin/kumwe-install** asks for confirmation, then writes **storage/private/demo-access-credentials.json** inside your installation; the path is excluded from version control and is never committed.\n- **tools/production-demo.sh** writes **demo-access-credentials.json** inside its owner-only temporary state directory and prints the exact path when readiness passes. Export **KUMWE_DEMO_ACCESS=false** before running it to skip cast provisioning entirely.\n- Running **demo:provision-access** yourself, you choose the destination with **--credentials-file**; the path must be absolute and must not exist yet.\n\nThe file is created with owner-only mode 0600, and the generated secrets exist nowhere else besides the command's own output. Treat it like any credential store: use it for the review, keep it out of shared channels, and remove it when the review ends. Running **bash tools/production-demo.sh down** deletes the demonstration stack together with its generated secrets."
+          },
+          {
+            "anchor": "re-provisioning",
+            "heading": "Re-provision without breaking anyone's sign-in.",
+            "body": "Provisioning is refused while the credentials file already exists — the command tells you to move the file away rather than ever overwriting it. That refusal is the write-once guarantee: no later run can silently rotate or expose credentials a reviewer is already using.\n\nThe run itself is idempotent in the safe direction. Already-provisioned identities are confirmed without a password change, so a rerun never invalidates an existing sign-in; fresh passwords are generated only for accounts that do not exist yet. To rerun, move or delete the old credentials file, then invoke **demo:provision-access** again with your administrator email, a protected password file, and a new credentials path — the exact options are on [the command-line page](/extend/cli).\n\nThe packaged demonstration applies the same rule at its own level: **tools/production-demo.sh** skips provisioning while its state directory already holds a credentials file, and a fresh state directory always produces a fresh run with different generated values."
+          }
+        ]
+      },
+      "publish_at": null,
+      "unpublish_at": null,
+      "version": 1,
+      "revision": {
+        "fixture_key": "page.demo-access.revision.1",
+        "resource_id": "00000000-0000-7000-8000-000000003018",
+        "revision_number": 1
+      }
+    },
+    {
+      "fixture_key": "page.faq",
+      "resource_id": "00000000-0000-7000-8000-000000002019",
+      "site_fixture_key": "site.default",
+      "site_id": "default",
+      "content_type_id": "018f22e2-7c8b-7ab0-8f3a-88e8026bb413",
+      "content_type_version": 1,
+      "workflow_id": "018f22e2-7c8b-7ab0-8f3a-88e8026bb401",
+      "workflow_version": 1,
+      "workflow_state_key": "published",
+      "title": "Frequently asked questions",
+      "slug": "faq",
+      "canonical_path": "/start-here/faq",
+      "data": {
+        "eyebrow": "Quick answers",
+        "heading": "Short answers that end at a screen, a command, or a file.",
+        "summary": "Newcomer and operator questions about Kumwe, its demonstration data, and the way the project is built. Each answer links to the page, screen, or command where you can verify it yourself.",
+        "items": [
+          {
+            "question": "What is Kumwe?",
+            "body": "Kumwe is a content management system and application platform built on PHP 8.5. One governed core serves the public site, the [administrator](/administrator), the client [portal](/portal), the REST API, the command line, MCP tools, and background workers, so authorization, validation, audit, and persistence behave the same on every surface. This documentation site is itself a running Kumwe installation: every page here is a managed content entry you can open and edit through [Content](/content)."
+          },
+          {
+            "question": "Is Kumwe a CMS or an application platform?",
+            "body": "Both, deliberately. The content side models pages, workflows, media, and navigation as one editable public site — start at [Content](/content). The application side compiles versioned business definitions into governed transactional workspaces with generated records, reports, policies, and integration events — start at [Business applications](/business). Both sides sit behind the same shared services, so learning one workflow explains the behavior you should expect from the other."
+          },
+          {
+            "question": "Where are the demonstration passwords?",
+            "body": "Nowhere in the repository or the demonstration data. Profiles never contain a user, password, token, or secret, and the manifest tests enforce that. Credentials are generated at deployment time: the production demonstration script prints a freshly generated administrator sign-in and writes the generated sign-ins for the full demonstration cast — the staff roles and the portal client members — to a credentials file inside its owner-only state directory. [Demonstration access](/start-here/demo-access) explains how to reach each demonstrated role."
+          },
+          {
+            "question": "Can I edit the demonstration pages without losing my changes?",
+            "body": "Yes — they exist to be edited. Every page in this site is an ordinary managed entry with typed fields, workflow state, revisions, and audit records. Reconciliation uses a three-way checksum comparison: a released fixture is updated only while it still matches the state Kumwe last applied, so your changes are preserved and reported rather than overwritten by a later release. Make one small edit through [Pages and publishing](/content/pages) and verify it on the public path."
+          },
+          {
+            "question": "How do I remove the demonstration data?",
+            "body": "Decide before the first migration. Set **KUMWE_SITE_CONTENT_PROFILE=blank** and **KUMWE_BUSINESS_PROFILE=none** before the first run of **php bin/kumwe database:migrate** to install an empty site with no business examples. Each dataset's selection is frozen the first time it reconciles, and later runs refuse a different profile — changing profiles in place is not a migration or recovery mechanism. The self-contained production demonstration removes its own containers, volumes, and generated secrets with **bash tools/production-demo.sh down**. [Install and start Kumwe](/start-here/getting-started) covers the surrounding installation steps."
+          },
+          {
+            "question": "Can I ship my own demonstration profile in a fork?",
+            "body": "Yes — no PHP changes are required to make a well-formed profile selectable. Demonstration data ships as discoverable, versioned profiles: validated JSON manifests under **resources/demo**. A fork adds a school, a farm, or an online shop by dropping a new profile next to the released ones and selecting it with **KUMWE_SITE_CONTENT_PROFILE** or **KUMWE_BUSINESS_PROFILE** before the first migration. Profiles are data-only — never PHP, SQL, or credentials — each carries an integer version raised on any change, and applied business operations are append-only. The released VDM example described in [Business applications](/business) is the reference implementation of the contract."
+          },
+          {
+            "question": "Which databases does Kumwe support?",
+            "body": "MariaDB LTS, MySQL 8.4, and PostgreSQL 17 are supported targets, with Redis supplying runtime coordination such as sign-in throttling, disposable caches, and distributed locks; the selected relational database remains authoritative. Migrations are portable, and the pull-request workflow repeats the full production topology on all three database families, so installation behavior must not depend on one dialect. [Install and start Kumwe](/start-here/getting-started) lists the connection variables; [Operate Kumwe](/operate) covers qualifying a release against every supported family."
+          },
+          {
+            "question": "How do layouts relate to content types?",
+            "body": "A content type is the contract: a stable handle, a field schema, a workflow reference, and a published version that pins how entries validate. A layout is presentation: the active template renders each type's presented data as a matching public page. This FAQ is a managed entry whose type defines a heading and a list of question-and-answer items; the template turns that structure into the page you are reading. Change fields and lifecycle in [Content models and workflows](/content/models); change public chrome and presentation in [Media, navigation, and presentation](/content/media-navigation)."
+          },
+          {
+            "question": "What is the portal?",
+            "body": "The portal at [/portal](/portal) is the authenticated surface for ordinary users such as client members. It is deliberately separate from the public site and the [administrator](/administrator): it creates its own session and exposes only trusted contributed routes and generated surfaces. In the demonstration, a client member sees only that organization's quotations, invoices, subscriptions, and domains beside the shared product catalogue. Read [the client portal](/business/portal) for the boundary and [Security, approvals, and portal](/business/security) for how to verify it."
+          },
+          {
+            "question": "How do I check that an installation is healthy?",
+            "body": "Check liveness and readiness before opening the user interface: a successfully migrated site keeps its readiness endpoint at HTTP 200 and serves its compiled assets directly. Then complete one small publishing loop — sign in, edit a demonstration page, and confirm the change on its public path from a signed-out browser — so any failure points at one boundary. [Start here](/start-here) walks through that loop; [Operate Kumwe](/operate) lists the production signals worth monitoring."
+          },
+          {
+            "question": "How is the project developed and governed?",
+            "body": "Kumwe is built human-led but AI-assisted: a modern CMS built with disciplined engineering and AI acceleration. Governance follows a curated-contribution model — open in purpose and feedback, curated in implementation, so stability and architecture do not drift. Core code moves through a controlled maintainer pipeline in which every change passes the full quality gate: architecture policy, documentation-block completeness, coding-standard and static-analysis checks, and the test suite. [The Kumwe 2 story](/community/kumwe-2) gives the background; [Community](/community) shows where contributions plug in."
+          },
+          {
+            "question": "How do I contribute?",
+            "body": "Start with what the project openly welcomes: use cases, testing, demo profiles, extension ideas, documentation, and domain knowledge. Those contributions have a clear place to plug in and shape releases directly. Code changes travel the curated maintainer pipeline: read the coding standard, then run **composer qa** before submitting — it runs the architecture policy, the documentation-block check, the code-style check, static analysis, and the unit tests. [Community](/community) lists the current entry points."
+          },
+          {
+            "question": "Where do I report problems?",
+            "body": "For a suspected security vulnerability, never open a public issue: use the repository's private security-advisory reporting on GitHub and include the affected version, required privileges, exact reproduction steps, and observed impact. For everything else — bugs, documentation gaps, demonstration problems, and ideas — open an issue in the repository's public tracker. [Community](/community) explains how reported feedback feeds the curated-contribution model."
+          }
+        ]
+      },
+      "publish_at": null,
+      "unpublish_at": null,
+      "version": 1,
+      "revision": {
+        "fixture_key": "page.faq.revision.1",
+        "resource_id": "00000000-0000-7000-8000-000000003019",
+        "revision_number": 1
+      }
+    },
+    {
+      "fixture_key": "page.business-handbook",
+      "resource_id": "00000000-0000-7000-8000-000000002020",
+      "site_fixture_key": "site.default",
+      "site_id": "default",
+      "content_type_id": "018f22e2-7c8b-7ab0-8f3a-88e8026bb410",
+      "content_type_version": 1,
+      "workflow_id": "018f22e2-7c8b-7ab0-8f3a-88e8026bb401",
+      "workflow_version": 1,
+      "workflow_state_key": "published",
+      "title": "The business handbook",
+      "slug": "handbook",
+      "canonical_path": "/business/handbook",
+      "data": {
+        "eyebrow": "Commerce demonstration",
+        "heading": "Tour the installed VDM business example from catalogue to ledger.",
+        "summary": "The default installation ships the Vast Development Method example: a fictional Namibian software, carpentry, and infrastructure business modelled as twelve typed definitions with sixty-one records, real workflows, derived access policies, and a client portal view. This handbook walks the whole graph and shows where to verify each claim.",
+        "body": "Keep the default business profile and every fresh installation carries the Vast Development Method (VDM) example: a fictional client-delivery and commerce graph for a Namibian software, carpentry, and infrastructure business. It lives in resources/demo/business/vdm as data-only JSON — profile.json, one typed definition per file under definitions, records.json, and access.json — and installs through the same application services an operator uses, so policies, revisions, audit entries, and idempotency rows exist from the first sign-in. No profile ever contains a password, token, or secret.\n\n## Read alongside this handbook\n- [Business definitions](/business/definitions) for the modelling contract behind every schema here.\n- [Business records](/business/records) for day-to-day record operations.\n- [Security, approvals, and portal](/business/security) for the deny-by-default model this dataset demonstrates.\n- [Demo access](/start-here/demo-access) for the generated staff and client sign-ins.\n\nTo follow along live, sign in at [/administrator](/administrator) as a staff account from the credentials file and at [/portal](/portal) as a client member, then compare what each surface shows for the same records.",
+        "sections": [
+          {
+            "anchor": "twelve-definitions",
+            "heading": "Twelve definitions, one dependency graph",
+            "body": "Open **Business definitions** in the administrator and you find the twelve VDM schemas installed in dependency order, every handle prefixed with site.default.vdm_. Half describe consultancy delivery, half describe commerce, and two of them are line definitions owned by their parent documents:\n\n- **Client accounts** — five fictional companies, from Desert Bloom Foods in Windhoek to Copper Ridge Logistics in Otjiwarongo, with contact, service-tier, and status fields.\n- **Service catalogue items** — the six offered services that engagements and work entries link to.\n- **Engagements** — five delivery agreements binding a client to catalogue services, with an activate, pause, and complete workflow.\n- **Service requests** — six inbound requests that are triaged, scheduled, resolved, and closed.\n- **Work entries** — eight time and delivery records that are submitted, then approved or rejected.\n- **Products** — the ten-item commerce catalogue described in the next section.\n- **Quotations** and **quotation lines** — five offers whose ordered lines form an owned collection: a line exists only inside its quotation.\n- **Invoices** and **invoice lines** — five billing documents that relate to their client and engagement, link back to an originating quotation, and own their lines the same way.\n- **Subscriptions** — five recurring services carrying an exact amount, billing cycle, and renewal date.\n- **Domains** — six registered zones with registrar, expiry, and renewal state.\n\nInspect any one of them to see the complete contract from [business definitions](/business/definitions) in force: typed fields with exact NAD money values, declared relationships, views, actions, workflow bindings, and explicit administrator, portal, and public exposure."
+          },
+          {
+            "anchor": "goods-and-services",
+            "heading": "One product catalogue spans goods and services",
+            "body": "The catalogue is deliberately mixed so a single definition proves that goods and services share one contract. The product kind field allows physical good, carpentry service, software licence, and hosting service; the billing unit allows each, hour, month, and year; the unit price is exact NAD money. The ten records span:\n\n- **Furniture goods** — the Acacia Study Chair, Karas Council Chair, Omaruru Workshop Table, and Baobab Boardroom Table, priced per item.\n- **Carpentry work** — the Built-in Wall Cupboard as a fixed-price build and the Custom Carpentry Hour billed by the hour.\n- **Software** — the Nara Inventory Suite Licence and the Field Survey Application Licence, billed per year.\n- **Hosting and domains** — Managed Application Hosting per month and Domain Registration and Care per year.\n\nThe recurring items do not stop at the catalogue. Subscription records carry the billing cycle, exact amount, start and renewal dates, and an auto-renew flag, so hosting and domain care bill on each renewal rather than through a one-off invoice line; domain records hold the registrar and expiry dates that drive those renewals. Because the product definition uses the open access mode, this catalogue is the one dataset that staff and portal members browse identically."
+          },
+          {
+            "anchor": "document-workflows",
+            "heading": "Documents move through explicit workflow states",
+            "body": "Quotations and invoices are workflow documents, not status columns. A quotation starts in draft, moves to sent, and ends accepted, declined, or expired. Send and expire are staff transitions; accept and decline are declared portal actions, so a signed-in client member decides the offer from [/portal](/portal) — and the shipped dataset leaves one quotation pending so you can accept it as the Desert Bloom member.\n\nAn invoice starts in draft and is issued by staff. From issued it is either paid through the record-payment transition or marked overdue; an overdue invoice is settled to paid or written off. Write-off is flagged **high-impact**: it demands the independent approval and fresh step-up proof described in [security](/business/security), and it is never exposed to the portal. The shipped ledger holds paid, issued, and overdue examples — including one invoice that went overdue and was then settled — and deliberately writes nothing off, leaving the high-impact path for you to exercise yourself.\n\nThe supporting records follow the same pattern. Subscriptions pause, resume, cancel, or lapse; domains are flagged expiring, then renewed or released. Releasing a domain is the profile's second high-impact action. Every transition you replay lands in the record's history and audit trail, which you can inspect from the **Business** area in [/administrator](/administrator)."
+          },
+          {
+            "anchor": "record-access-modes",
+            "heading": "Four record-access modes decide what the portal sees",
+            "body": "The profile manifest assigns each definition one of four record-access modes, and the installer derives closed policy documents from each definition's own field ceilings, installing them with provenance checkpoints so you can trace every rule back to the profile:\n\n- **Open** — a constant allow. Products use it, so every authenticated surface shares one catalogue.\n- **Organization** — portal members reach only rows whose organization field equals their authenticated organization, for reading and for declared workflow actions. Quotations, subscriptions, and domains use it, which is why a member can accept a quotation or renew a domain — but only their own.\n- **Organization-read** — the same row scope narrowed to reading alone. Invoices, invoice lines, and quotation lines use it: a member studies every line of an invoice yet cannot transition it.\n- **Administration** — an appended deny row vetoes every organization context. Client accounts, the service catalogue, engagements, service requests, and work entries never appear in the portal at all.\n\nOrganization-less contexts — the administrator, CLI, and API tokens — keep full row visibility, still bounded by each actor's capabilities. The mode only admits rows: which operations exist at all is decided by the definition's closed portal allow-list, in which no flag ever implies another operation. Sign in as a client member from the [demo access](/start-here/demo-access) credentials file and verify the sum: the shared products, your organization's documents, and nothing else. [The client portal](/business/portal) explains the session boundary behind this, and [provision a client](/business/provision-client) shows how to add an organization of your own."
+          },
+          {
+            "anchor": "append-only-ledger",
+            "heading": "An append-only, byte-immutable ledger keeps the tour reproducible",
+            "body": "The dataset is a ledger, not a snapshot. records.json declares every create, relation, workflow action, and archive as an explicit operation with a stable fixture key and an idempotency key, and profile.json fixes the execution order plus the expected totals: twelve definitions, sixty-one records, ninety-six relations, fifty workflow actions, and two archives. Installation replays those operations through the ordinary application services, so the revisions, audit entries, and idempotency rows you inspect are real, not seeded shortcuts.\n\nThe release contract is append-only and byte-immutable. The first run of php bin/kumwe database:migrate freezes the profile choice in a durable ledger; later runs refuse a different profile, a manifest downgrade, or a same-version byte change. A released fixture is never edited, reordered, or removed — the profile evolves only by appending operations under a raised version number. Run bash tools/production-demo.sh and you get exactly this graph on every fresh state directory; run it with the down argument to remove the isolated stack again. Your own edits on top are ordinary operator work, cleanly separated from the released fixtures — which is why every count and state in this handbook is something you can check on your own installation."
+          }
+        ]
+      },
+      "publish_at": null,
+      "unpublish_at": null,
+      "version": 1,
+      "revision": {
+        "fixture_key": "page.business-handbook.revision.1",
+        "resource_id": "00000000-0000-7000-8000-000000003020",
+        "revision_number": 1
+      }
+    },
+    {
+      "fixture_key": "page.portal-guide",
+      "resource_id": "00000000-0000-7000-8000-000000002021",
+      "site_fixture_key": "site.default",
+      "site_id": "default",
+      "content_type_id": "018f22e2-7c8b-7ab0-8f3a-88e8026bb411",
+      "content_type_version": 1,
+      "workflow_id": "018f22e2-7c8b-7ab0-8f3a-88e8026bb401",
+      "workflow_version": 1,
+      "workflow_state_key": "published",
+      "title": "Use the client portal",
+      "slug": "portal",
+      "canonical_path": "/business/portal",
+      "data": {
+        "eyebrow": "Client access",
+        "heading": "See the business application exactly as one client organization sees it.",
+        "summary": "Sign in at /portal as a fictional client member, read the navigation your grants produce, browse only your organization's quotations and invoices, answer a quotation, and confirm that structural controls are absent by design.",
+        "body": "The portal is the authenticated surface for ordinary members at [/portal](/portal), intentionally separate from the public site and the administrator. It reuses the shared identity, membership, capability, policy, approval, audit, and business-record boundaries without reusing an administrator session, so what a client member can reach is decided by the same rules you configured in [security and approvals](/business/security) — evaluated from the client's side.\n\nRun this guide against the demonstration stack with demo access provisioned. The fictional client organizations and their generated sign-ins come from the credentials file described in [demo access](/start-here/demo-access).",
+        "steps": [
+          {
+            "anchor": "find-your-credentials",
+            "heading": "Find your portal credentials",
+            "body": "The demonstration provisioning step writes every generated sign-in to demo-access-credentials.json inside the owner-only state directory of tools/production-demo.sh. Alongside the five staff accounts it lists the portal members of three fictional client organizations: two contacts for Kalahari Health Systems and one each for Desert Bloom Foods and the Namib Learning Collective. Each password is generated for your deployment and appears in no profile or repository file. [Demo access](/start-here/demo-access) explains the file and the full cast."
+          },
+          {
+            "anchor": "sign-in-at-the-portal",
+            "heading": "Sign in at the portal",
+            "body": "Open [/portal](/portal) and sign in with a client member's email and generated password. The server-side context resolver chooses your current site membership and workspace; the optional workspace field on the form is only a bounded hint and can never establish an organization, role, or authority claim. Unknown, ambiguous, and inactive selections receive the same response as invalid credentials, so failed attempts disclose nothing. After login the shell names the server-selected site, organization, and workspace, and the session lives in a portal-only cookie with Path=/portal. The same identity is refused at [administrator](/administrator) sign-in."
+          },
+          {
+            "anchor": "read-the-navigation",
+            "heading": "Read the Business records navigation",
+            "body": "The navigation is capability filtered on the server: one card per business definition that your grants and record policy expose, served below /portal/business. A client member sees the shared product catalogue beside the organization's quotations, invoices, subscriptions, and domains. The consultancy records — client accounts, engagements, service requests, and work entries — do not appear, because their record access is administration-scoped. Hiding a link is usability only; the route and application authorization behind it remain mandatory either way."
+          },
+          {
+            "anchor": "browse-your-rows",
+            "heading": "Browse your organization's quotations and invoices",
+            "body": "Open the quotations list, then the invoices list. Every row belongs to your organization: each record carries a portal organization identifier that scopes it to one client's members, and the installed record-access policy resolves rows against your current membership, so another client's documents are never listed, counted, or searchable. Requesting another organization's record directly returns the same not-found response as a record that does not exist. Compare the invoice list closely — the fixtures include paid, issued, and overdue examples."
+          },
+          {
+            "anchor": "answer-a-quotation",
+            "heading": "Accept or decline a quotation",
+            "body": "Sign in as the Desert Bloom Foods member and open the pending quotation in its sent state. The detail offers **Accept quotation** and **Decline quotation**, the two workflow actions the definition marks for the portal. Accepting moves the record from sent to accepted inside the shared record transaction, with authorization, validation, workflow, revision, and audit applied atomically. Send and expire remain administrator-only actions, so a client can answer a quotation but never issue or expire one."
+          },
+          {
+            "anchor": "view-invoice-lines",
+            "heading": "View invoice lines through the relation view",
+            "body": "From an invoice detail, follow the **Invoice lines** relationship. Each disclosed relationship has its own fixed relation route that hydrates exactly that one handle, so the lines load as a dedicated view. The invoice definition exposes browse, read, relation, history, report, export, and status to the portal — no create, update, or archive — and the line records are organization-read, so quantities and money arrive as exact canonical values you can inspect but not alter."
+          },
+          {
+            "anchor": "note-what-is-absent",
+            "heading": "Understand why structural controls are absent",
+            "body": "Nothing in the portal edits structure. There is no definition designer, grant editor, workflow toggle, or exposure setting; the only security screen manages your own sign-in credentials. The client member role holds record capabilities plus portal access and nothing wider, the portal operation allow-list defaults to empty, and an exposed view or action never implies another mutation. Policy denial is omission rather than a disabled control, so absence itself is evidence that the boundary holds. Structure stays in the administrator, authored through [business definitions](/business/definitions) and governed as described in [security and approvals](/business/security)."
+          }
+        ],
+        "outcome": {
+          "heading": "What you proved",
+          "body": "You have exercised multi-tenant isolation from the outside: a shared identity resolved to one exact membership, navigation reduced to the definitions your grants and record policy expose, lists that only ever contain your organization's rows, one permitted workflow action, and a read-only relation view — with every structural control absent by design. To stand up an organization like this yourself, follow [provision a client](/business/provision-client); to compare the same records from the staff side, return to [business records](/business/records)."
+        }
+      },
+      "publish_at": null,
+      "unpublish_at": null,
+      "version": 1,
+      "revision": {
+        "fixture_key": "page.portal-guide.revision.1",
+        "resource_id": "00000000-0000-7000-8000-000000003021",
+        "revision_number": 1
+      }
+    },
+    {
+      "fixture_key": "page.provision-client",
+      "resource_id": "00000000-0000-7000-8000-000000002022",
+      "site_fixture_key": "site.default",
+      "site_id": "default",
+      "content_type_id": "018f22e2-7c8b-7ab0-8f3a-88e8026bb411",
+      "content_type_version": 1,
+      "workflow_id": "018f22e2-7c8b-7ab0-8f3a-88e8026bb401",
+      "workflow_version": 1,
+      "workflow_state_key": "published",
+      "title": "Provision a client, three ways",
+      "slug": "provision-client",
+      "canonical_path": "/business/provision-client",
+      "data": {
+        "eyebrow": "Client access",
+        "heading": "Create the same client through the administrator, the REST API, and MCP.",
+        "summary": "One client needs an active user account, the portal access grant, an organization, and a live membership. This guide produces those four facts in the administrator, over the REST API, and through MCP, automates them with demo:provision-access, and verifies the result at the portal sign-in.",
+        "body": "A client is not one record. Kumwe admits someone to the portal only when four separate facts line up: an active user account, the portal.access capability, an organization, and a live membership binding that account to the organization. [Business security](/business/security) decides each fact through the same deny-by-default gateway on every surface.\n\nThis guide reaches the same provisioned client three ways — through the administrator screens, over the REST API, and through MCP — and then proves the result by signing in at [the portal](/portal). Because every surface calls the same shared application services, each route produces the same memberships, the same optimistic versions, and the same audit events. Where a surface refuses part of the work, that refusal is a designed safeguard, and this guide names it instead of working around it.",
+        "steps": [
+          {
+            "anchor": "what-a-client-needs",
+            "heading": "Know what a client is made of",
+            "body": "Provisioning succeeds when all four facts exist:\n\n- An **active user account**: the shared human identity that signs in at the portal.\n- A **portal access grant**: the portal.access capability, carried by a group the account belongs to.\n- An **organization**: the business scope the client works inside, optionally divided into workspaces.\n- A **live membership**: the versioned binding between the account and the organization; the portal context resolver offers only current memberships.\n\nMiss any one and portal login fails without disclosing which fact was missing, because authentication failures are deliberately non-enumerating. [The portal](/business/portal) page explains the session and context boundary; this guide concentrates on producing the four facts."
+          },
+          {
+            "anchor": "administrator-route",
+            "heading": "Provision in the administrator",
+            "body": "Sign in at [the administrator](/administrator) and open **Users and access**. Create the user with an initial password and active status, create or reuse a client group, assign the user to it, and add the portal.access grant to the group. Identity work here requires users.manage, the group review screen confirms the submitted capability change set with a current authenticator or recovery code, and the server repeats every authorization check regardless of what the navigation shows.\n\nThen open the security administration screen, which requires business.security.manage. It manages organizations, workspaces, memberships, and membership roles through typed, allowlisted controls — there is no raw JSON, SQL, or expression editor. Create the client organization, add a workspace if the workflow needs one, and create the membership that binds the new account to the organization with its own version, status, and role assignments. The server blocks self-assignment, stale form versions, and changes outside the selected organization and workspace, and every change produces a redacted audit event."
+          },
+          {
+            "anchor": "rest-route",
+            "heading": "Provision over the REST API",
+            "body": "The identity family under [the REST API](/extend/rest-api) does the same work for integrations. Every request carries a bearer token in the Authorization header plus exactly one Kumwe-Site header naming the site recorded on the token — the security context is never derived from Host or forwarding headers. All identity routes require users.manage, and every mutation requires a caller-generated Idempotency-Key so an identical retry replays the stored response instead of repeating the work.\n\n- **POST /api/v1/users** creates the account with its status; later updates through PATCH carry the current optimistic version.\n- **POST /api/v1/roles** creates the client group, and **PUT /api/v1/users/{id}/roles/{roleId}** assigns the user to it.\n- **POST /api/v1/roles/{id}/grants** adds the scoped portal.access grant to the group.\n- **POST /api/v1/tokens** issues a capability-scoped token when the client also needs machine access; the plaintext appears exactly once in the creation response and never in lists.\n\nThe documented REST identity family covers accounts, groups, grants, and tokens. Organization and membership administration remains on the security administration screen, so complete that fact in the browser — the shared services hold that boundary, not the client."
+          },
+          {
+            "anchor": "mcp-route",
+            "heading": "Drive and confirm it over MCP",
+            "body": "Connect over authenticated Streamable HTTP with the same bearer token and Kumwe-Site header, or launch a local stdio server with mcp:serve, its required site option, and a protected token file; [MCP](/extend/mcp-server) documents both transports. Each tool then requires its own capability, exactly as the matching screen or endpoint does.\n\n- **kumwe_user_list** lists users, groups, and assignments under users.manage, so a connected client can confirm the account and its group assignment exist.\n- **kumwe_token_list** and **kumwe_token_revoke** inspect the client's issued credentials and withdraw them immediately when the task ends.\n- **kumwe_business_discover** and **kumwe_business_read** show exactly which generated entities and records a token's bound membership exposes — issue the client a scoped token and the preview is the client's own view.\n\nWhat MCP will not do is part of the proof: operations that would transmit a password or grant permissions are intentionally not MCP tools, so account creation and the portal.access grant cannot be scripted through a model client. That gap is the same service policy you meet everywhere else — an operation's safeguards travel with the service, and a surface that cannot supply them does not receive the operation."
+          },
+          {
+            "anchor": "demo-automation",
+            "heading": "Let the demonstration provision it for you",
+            "body": "The demonstration dataset automates exactly this sequence. The demo:provision-access command reads the selected business profile's access manifest and provisions the whole cast — the accountant, clerk, bookkeeper, stockkeeper, and system administrator staff roles, plus the portal client organizations with their members. It requires host access and a real administrator's credentials: pass the administrator email, an absolute protected password file, and a path for a new credentials file.\n\nThe command generates a fresh password for every account it creates and writes them once to an owner-only credentials file it refuses to overwrite. The run is idempotent — already-provisioned identities are confirmed without a password change, so a rerun never invalidates anyone's sign-in. Profiles themselves never contain a password; the credentials file is the only place the generated secrets exist besides the command's own output. [Demo access](/start-here/demo-access) explains how the packaged demonstration uses this file, and [the command line](/extend/cli) documents the full command and its flags."
+          },
+          {
+            "anchor": "verify-at-the-portal",
+            "heading": "Verify at the portal sign-in",
+            "body": "Sign in at [the portal](/portal) with the new client's credentials. Portal login accepts the shared identity, then the server-side context resolver must find a current membership — the membership you just created. Success creates an opaque portal-only session bound to the site, organization, workspace, membership version, and policy generation, and the shell shows the server-selected context beside capability-filtered navigation.\n\nTest the negative space too. An account without portal.access, a suspended membership, or a stale workspace hint receives the same non-enumerating response as invalid credentials. Inside, the member should see only their organization's records beside anything deliberately shared — in the demonstration dataset a client member sees their own quotations, invoices, subscriptions, and domains beside the shared product catalogue, and nothing belonging to another organization. Administrator visibility is not evidence that portal policy is correct; this sign-in is the test that counts."
+          }
+        ],
+        "outcome": {
+          "heading": "One service, three doors.",
+          "body": "The administrator screens, the REST endpoints, and the MCP tools never reimplement provisioning — each one calls the same shared identity and business-security services under the same deny-by-default gateway, producing the same memberships, versions, and audit events. That is why the routes agree: create the account in the browser, add the grant over REST, confirm the result over MCP, and the portal cannot tell the difference. It is also why they deliberately differ at the edges — MCP will not carry a password, the documented REST surface leaves membership administration to the security screens, and only demo:provision-access writes generated credentials to a protected file — because safeguards belong to the operation, not the surface. Whichever door you use, verify from another one: [the records](/business/records) in the administrator, the catalogue over MCP, and the client's own view at [the portal](/portal)."
+        }
+      },
+      "publish_at": null,
+      "unpublish_at": null,
+      "version": 1,
+      "revision": {
+        "fixture_key": "page.provision-client.revision.1",
+        "resource_id": "00000000-0000-7000-8000-000000003022",
+        "revision_number": 1
+      }
+    },
+    {
+      "fixture_key": "page.rest-api",
+      "resource_id": "00000000-0000-7000-8000-000000002023",
+      "site_fixture_key": "site.default",
+      "site_id": "default",
+      "content_type_id": "018f22e2-7c8b-7ab0-8f3a-88e8026bb412",
+      "content_type_version": 1,
+      "workflow_id": "018f22e2-7c8b-7ab0-8f3a-88e8026bb401",
+      "workflow_version": 1,
+      "workflow_state_key": "published",
+      "title": "REST API reference",
+      "slug": "rest-api",
+      "canonical_path": "/extend/rest-api",
+      "data": {
+        "eyebrow": "Integration surface",
+        "heading": "Automate every governed workflow through /api/v1.",
+        "summary": "Bearer tokens, explicit site context, idempotent mutations, optimistic versions, and policy-filtered business surfaces give integrations exactly the same authority rules as every interactive screen.",
+        "body": "The versioned API is rooted at /api/v1, and its authoritative machine-readable contract is the deterministic OpenAPI 3.1 document served at GET /api/v1/openapi.json with a strong entity tag. Generate clients and validation fixtures from that contract rather than scraping rendered documentation, and treat undocumented response fields as unstable.\n\nEvery route family shares one discipline: a bearer token with an exact site header, capability checks on both the route and the workflow action, a caller-generated idempotency key on every mutation, and optimistic versions with entity tags on versioned resources. The same application services drive the [command line](/extend/cli) and [MCP tools](/extend/mcp-server), so behavior you verify here predicts those surfaces, and [Security, approvals, and portal](/business/security) explains why a business response may silently omit data another role can see.\n\nThis reference concentrates on authentication, content, generated business records, and the shared request contract. The remaining families follow the same conventions under their own capabilities: menus and menu items require navigation.manage; users, groups, grants, and tokens require users.manage; site settings require settings.manage; extension lifecycle requires extensions.manage; schedules and jobs require automation.manage; and the non-executable plan preview at POST /api/v1/plans requires content.read plus an idempotency key.",
+        "entries": [
+          {
+            "anchor": "bearer-authentication",
+            "term": "Authorization and Kumwe-Site",
+            "kind": "concept",
+            "body": "Send the opaque token issued by the administrator or the token:create command as a bearer credential, together with exactly one canonical Kumwe-Site header. The header value must exactly match the site recorded on the token; Kumwe never derives this security context from Host or forwarded proxy headers. Tokens are stored as SHA-256 digests, may expire, and carry an explicit capability set plus bindings for organization or workspace, membership version, policy generation, subject security epoch, audience, purpose, family, and bounded delegation depth. A valid digest is refused when any binding is stale or the requested route has no concrete matching scope, and disabled or deleted sites fail authentication immediately.",
+            "example": "GET /api/v1/content HTTP/1.1\nHost: cms.example.org\nAuthorization: Bearer TOKEN\nKumwe-Site: corporate"
+          },
+          {
+            "anchor": "token-issuance",
+            "term": "GET, POST /api/v1/tokens",
+            "kind": "endpoint",
+            "body": "Token administration requires users.manage. GET lists token metadata and never includes token material. POST issues a capability-scoped token and returns the plaintext value exactly once, so store it immediately and never log or retry the creation response through an intermediary that records bodies. DELETE /api/v1/tokens/{tokenId} revokes a token immediately. Issuance and rotation may only reduce the caller's effective capabilities, scope, lifetime, audience, purpose, and delegation depth: a token never exceeds the actor or delegated boundary that created it.",
+            "example": "POST /api/v1/tokens HTTP/1.1\nAuthorization: Bearer TOKEN\nKumwe-Site: corporate\nIdempotency-Key: token-issue-20260812-001\nContent-Type: application/json"
+          },
+          {
+            "anchor": "idempotency-key",
+            "term": "Idempotency-Key",
+            "kind": "field",
+            "body": "Every mutation requires this caller-generated header. Kumwe persists the request digest and the completed response for 24 hours: an identical retry returns the stored response with Idempotency-Replayed: true, while reuse with different request data, authority, scope, or definition is rejected. Read-only routes, including the business search document, do not consume a key. Never retry a non-idempotent request without the same key and body, and honor Retry-After when a response carries it.",
+            "example": "Idempotency-Key: page-create-20260804-001\n\nHTTP/1.1 200 OK\nIdempotency-Replayed: true"
+          },
+          {
+            "anchor": "optimistic-concurrency",
+            "term": "ETag and If-Match",
+            "kind": "concept",
+            "body": "Reads and mutation results return an entity tag. Updates and deletes of versioned content, menus, and menu items require that latest ETag in If-Match; business record mutations require exactly one strong tag of the form \"vN\"; user updates instead carry their positive optimistic version inside the JSON document. A stale value produces a precondition or conflict response and never overwrites current state, so read the resource again, reconcile your change, and resend it with the fresh tag.",
+            "example": "PATCH /api/v1/content/CONTENT_ID HTTP/1.1\nAuthorization: Bearer TOKEN\nKumwe-Site: corporate\nIf-Match: \"v3\"\nIdempotency-Key: page-edit-20260812-002"
+          },
+          {
+            "anchor": "content-endpoints",
+            "term": "/api/v1/content",
+            "kind": "endpoint",
+            "body": "GET lists content and requires content.read. POST creates a draft under content.create, naming the content type, title, slug, and typed data document. GET /api/v1/content/{id} returns one record with its current entity tag. PATCH updates only the supplied fields under content.update, DELETE moves the record to trash under content.delete, and POST /api/v1/content/{id}/restore brings archived or trashed content back under content.restore. Route authorization and workflow authorization both apply: a token holding content.read cannot publish merely because it can reach a transition route. The editorial model behind these records is described in [Pages and publishing](/content/pages).",
+            "example": "curl --request POST https://cms.example.org/api/v1/content \\\n  --header \"Authorization: Bearer $KUMWE_TOKEN\" \\\n  --header 'Kumwe-Site: corporate' \\\n  --header 'Content-Type: application/json' \\\n  --header 'Idempotency-Key: page-create-20260804-001' \\\n  --data '{\"content_type\":\"page\",\"title\":\"About us\",\"slug\":\"about-us\",\"data\":{\"body\":\"<p>About our team.</p>\"}}'"
+          },
+          {
+            "anchor": "content-transition",
+            "term": "POST /api/v1/content/{id}/transition",
+            "kind": "endpoint",
+            "body": "One route drives the workflow pinned to the record: submit, review, publish, unpublish, or archive by posting the target status. Authorization is action-specific and follows the same capability map as the administrator; entering a public state always requires content.publish and leaving one always requires content.unpublish. Send the record's current entity tag in If-Match and a fresh idempotency key, then keep the ETag returned by each response for the next versioned mutation.",
+            "example": "curl --request POST https://cms.example.org/api/v1/content/CONTENT_ID/transition \\\n  --header \"Authorization: Bearer $KUMWE_TOKEN\" \\\n  --header 'Kumwe-Site: corporate' \\\n  --header 'Content-Type: application/json' \\\n  --header 'Idempotency-Key: page-review-20260804-001' \\\n  --header 'If-Match: \"v1\"' \\\n  --data '{\"status\":\"review\"}'"
+          },
+          {
+            "anchor": "content-types-workflows",
+            "term": "/api/v1/content-types and /api/v1/workflows",
+            "kind": "endpoint",
+            "body": "Content model definitions are site-scoped and versioned. Reads require content.read; publishing a new definition version requires content.update, the current entity tag in If-Match, and an idempotency key. A content-type schema uses the supported JSON Schema subset in the OpenAPI contract. A workflow contains named states, exactly one non-public initial state, public-state flags, and directed transitions that each demand a capability. Existing content stays pinned to the definition versions that validated it, and a breaking change is rejected unless you explicitly supply allow_breaking: true; that override publishes a new version and never mutates historical ones. Model the change deliberately first — [Content models and workflows](/content/models) explains the editorial consequences.",
+            "example": "PATCH /api/v1/content-types/{id} HTTP/1.1\nAuthorization: Bearer TOKEN\nKumwe-Site: corporate\nIf-Match: \"v2\"\nIdempotency-Key: page-type-v3-20260812-001\nContent-Type: application/json"
+          },
+          {
+            "anchor": "business-definitions",
+            "term": "GET /api/v1/business/definitions",
+            "kind": "endpoint",
+            "body": "Discovery for generated business surfaces. The collection route returns the definitions, fields, views, actions, and relations visible to your token; GET /api/v1/business/definitions/{definition} inspects one visible generated schema. Every result is filtered by the same row, field, and action plan used by the administrator, portal, CLI, and MCP, and denial is omission: a definition or field you may not see is simply absent, and missing and denied record, relation target, approval, and operation identifiers are indistinguishable. Published, actively installed definitions share one stable generic route family, so a new business application needs no new client code.",
+            "example": "GET /api/v1/business/definitions HTTP/1.1\nHost: cms.example.org\nAuthorization: Bearer TOKEN\nKumwe-Site: corporate"
+          },
+          {
+            "anchor": "business-records",
+            "term": "/api/v1/business/records/{definition}",
+            "kind": "endpoint",
+            "body": "One route family covers the record lifecycle. GET browses and POST creates against the collection; GET, PATCH, and DELETE address one record at /api/v1/business/records/{definition}/{record}; POST to the archive and restore routes changes lifecycle state; GET on the history route reads a bounded revision window; POST to actions/{action} executes a published policy-visible action; and the relations routes browse, add, remove, and reorder targets. Create accepts a values object with record_id set to null; update sends only values. Exact decimals travel as JSON strings, and money and quantity are closed amount-and-currency and amount-and-unit objects. Every mutation requires an idempotency key and, for existing records, exactly one strong If-Match, while GET /api/v1/business/operations/{operation} reads back the caller-bound completed mutation result.",
+            "example": "POST /api/v1/business/records/{definition} HTTP/1.1\nAuthorization: Bearer TOKEN\nKumwe-Site: corporate\nContent-Type: application/json\nIdempotency-Key: record-create-20260812-001\n\n{\"values\":{\"total\":{\"amount\":\"199.00\",\"currency\":\"EUR\"}},\"record_id\":null}"
+          },
+          {
+            "anchor": "business-search",
+            "term": "POST /api/v1/business/records/{definition}/search",
+            "kind": "endpoint",
+            "body": "The bounded read-only query document for a definition's collection. The closed GeneratedBusinessQuery schema accepts a recursive filter, a term-and-fields search, sorts, an opaque after cursor, a page size up to 200, field and include projections, lifecycle flags, and aggregates. Unknown keys, floats for exact values, more than five sorts, 64 filter operations, eight nesting levels, two relation hops, 64 projected fields, four includes, or 16 aggregates are rejected before repository access, and an include is additionally capped at 1,000 hydrated rows and never performs one query per source record. Search is read-only and does not consume an idempotency key, so retry it freely.",
+            "example": "POST /api/v1/business/records/{definition}/search HTTP/1.1\nContent-Type: application/json\n\n{\"search\":{\"term\":\"overdue\",\"fields\":[\"status\"]},\"sorts\":[{\"field\":\"created_at\",\"direction\":\"desc\"}],\"page_size\":50}"
+          },
+          {
+            "anchor": "approvals-step-up",
+            "term": "Approvals and step-up decisions",
+            "kind": "concept",
+            "body": "GET /api/v1/business/approvals and GET /api/v1/business/approvals/{approval} expose scoped, redacted approval projections: output omits requester, approver, role, policy, payload, and binding digest identities, and a request stays visible only while its active definition still declares the bound high-impact action for the API surface. Bearer REST cannot manufacture the fresh session-bound step-up proof required to approve, reject, or revoke, and a bearer-originated request cannot later be consumed through REST either — complete high-impact execution through the [administrator](/administrator) or [portal](/portal) decision flow. A typed custom action carries the same contract-validated input object into approval and attempted execution; changing that input invalidates the binding, and reusing the operation key for another input is rejected. Ordinary actions remain fully available through REST. The governance model is explained in [Security, approvals, and portal](/business/security).",
+            "example": "POST /api/v1/business/records/{definition}/{record}/actions/{action}/approval HTTP/1.1\nAuthorization: Bearer TOKEN\nKumwe-Site: corporate\nIdempotency-Key: action-approval-20260812-001"
+          },
+          {
+            "anchor": "problem-details",
+            "term": "application/problem+json",
+            "kind": "object",
+            "body": "Every failure body is an application/problem+json document carrying type, title, status, and detail, plus the request correlation identifier for support and audit matching. Expect 400 for malformed input, 401 for authentication failure, 403 for a missing capability, 404 for an absent resource, 409 for in-progress or retry conflicts, 412 for stale entity tags, 413 for an oversized request, and 422 for validation failure. Treat undocumented response fields as unstable, honor Retry-After when present, and never retry a non-idempotent request without the same idempotency key and body. An unexpected current-contract invariant failure on the OpenAPI route returns a no-store 503 with Retry-After: 30.",
+            "example": "HTTP/1.1 412 Precondition Failed\nContent-Type: application/problem+json\n\n{\"type\":\"about:blank\",\"title\":\"Precondition Failed\",\"status\":412,\"detail\":\"The supplied entity tag does not match the current version.\"}"
+          }
+        ]
+      },
+      "publish_at": null,
+      "unpublish_at": null,
+      "version": 1,
+      "revision": {
+        "fixture_key": "page.rest-api.revision.1",
+        "resource_id": "00000000-0000-7000-8000-000000003023",
+        "revision_number": 1
+      }
+    },
+    {
+      "fixture_key": "page.mcp-server",
+      "resource_id": "00000000-0000-7000-8000-000000002024",
+      "site_fixture_key": "site.default",
+      "site_id": "default",
+      "content_type_id": "018f22e2-7c8b-7ab0-8f3a-88e8026bb412",
+      "content_type_version": 1,
+      "workflow_id": "018f22e2-7c8b-7ab0-8f3a-88e8026bb401",
+      "workflow_version": 1,
+      "workflow_state_key": "published",
+      "title": "MCP server reference",
+      "slug": "mcp-server",
+      "canonical_path": "/extend/mcp-server",
+      "data": {
+        "eyebrow": "Model Context Protocol",
+        "heading": "Connect model clients to the same governed services as every other surface.",
+        "summary": "The MCP server publishes an explicit, capability-scoped tool catalog over authenticated streamable HTTP and local stdio; every mutation is idempotent, versioned, and audited.",
+        "body": "This reference describes the MCP surface: how a client connects and authenticates, what each tool or tool group does, and how every call is authorized. After connecting, call the discovery tool and compare its answer with this page.\n\nGive a client only the capabilities required for the immediate task, prefer read-only tokens for analysis and separate short-lived tokens for approved writes, and rotate or revoke the token when the task ends. The [REST API](/extend/rest-api) remains the complete machine-to-machine API, the [command line](/extend/cli) covers operator tasks including the MCP transport, and [Security, approvals, and portal](/business/security) explains the policy model every call passes through.",
+        "entries": [
+          {
+            "anchor": "mcp-server",
+            "term": "Kumwe MCP server",
+            "kind": "concept",
+            "body": "Kumwe exposes capability-protected application services through the official PHP MCP SDK. One server runs over authenticated streamable HTTP and local stdio, and its handlers call the same application services as the administrator, [REST API](/extend/rest-api), and [command line](/extend/cli); they do not query tables, edit files, or bypass workflow, authorization, revisions, optimistic versions, or audit records. High-risk operations that would transmit a password, install an arbitrary package, delete state, or grant permissions are intentionally not MCP tools. Use the administrator, protected CLI, or REST endpoint with the operation's explicit safeguards."
+          },
+          {
+            "anchor": "streamable-http",
+            "term": "/mcp over streamable HTTP",
+            "kind": "endpoint",
+            "body": "Send a Kumwe bearer token on every request together with the required Kumwe-Site header. That header selects exactly one validated site and must match the site bound into the token; host and forwarding headers never select the site. The transport also validates the exact host, Origin behavior, MCP protocol version, request body limit, and persistent session. The route requires authentication, and each tool then requires its own capability, so a settings-only token can use settings tools without also receiving content access.",
+            "example": "POST https://cms.example.org/mcp\nAuthorization: Bearer TOKEN\nKumwe-Site: corporate"
+          },
+          {
+            "anchor": "local-stdio",
+            "term": "mcp:serve over local stdio",
+            "kind": "command",
+            "body": "For a local client, create a short-lived, least-privilege token and store it in an absolute owner-readable file, then configure the client to launch the stdio server. The required site option selects exactly one site for the lifetime of the process, and the token must have been issued for that same site; a token for another site is rejected. Stdio grants no implicit local administrator power: the token is reverified for expiry, revocation, and its current capabilities before each protected handler access. Run the process as a dedicated unprivileged service account, and never give an MCP client database-administration credentials, signing private keys, backup keys, or unrestricted extension or media filesystem access.",
+            "example": "php bin/kumwe mcp:serve \\\n  --site=corporate \\\n  --token-file=/run/secrets/kumwe-mcp-token"
+          },
+          {
+            "anchor": "discovery-and-prompt",
+            "term": "Discovery, resource, and prompt",
+            "kind": "object",
+            "body": "**kumwe_discover** lists the tools, resources, and prompts exposed to the authenticated token, and the kumwe://capabilities resource returns the machine-readable server surface. The **kumwe_site_review** prompt prepares a content, SEO, structure, or extension review using authorized tools. Neither discovery nor the prompt grants capabilities, and neither can expand the token's access.",
+            "example": "kumwe_discover {} -> exposed tools, resources, prompts\nread kumwe://capabilities -> machine-readable server surface"
+          },
+          {
+            "anchor": "content-tools",
+            "term": "Content tools",
+            "kind": "object",
+            "body": "**kumwe_content_list** (content.read) lists content, optionally including trashed records. **kumwe_content_create** (content.create) creates a draft page, and **kumwe_content_update** (content.update) updates title, slug, and body at an expected version. **kumwe_content_transition** submits, reviews, publishes, unpublishes, archives, or restores through workflow policy; one tool accepts several target states, but each transition performs action-specific authorization. Publishing and unpublishing are audited with the bearer-token subject, and the records you change are the same managed pages described in [Pages and publishing](/content/pages).",
+            "example": "kumwe_content_update {\n  \"title\": \"Launch update\",\n  \"slug\": \"launch-update\",\n  \"body\": \"...\",\n  \"version\": 4,\n  \"operationId\": \"content-launch-update-01\"\n}"
+          },
+          {
+            "anchor": "site-administration-tools",
+            "term": "Menu, settings, access, and automation tools",
+            "kind": "object",
+            "body": "**kumwe_menu_list**, **kumwe_menu_create**, **kumwe_menu_item_list**, **kumwe_menu_item_get**, **kumwe_menu_item_create**, **kumwe_menu_item_update**, and **kumwe_menu_item_delete** (navigation.manage) read typed, nested menu items, link content, sections, or safe URLs while maintaining menu paths, and delete a versioned menu item. **kumwe_settings_get** and **kumwe_settings_update** (settings.manage) read browser-managed site settings and update validated identity, homepage, primary menu, schemes, and interaction styles. **kumwe_user_list** (users.manage) lists users, groups, and assignments, while **kumwe_token_list** and **kumwe_token_revoke** inspect token metadata or revoke access. **kumwe_extension_list** and **kumwe_extension_activate** (extensions.manage) list installed extensions and activate one with its runtime map, and **kumwe_schedule_list** and **kumwe_schedule_create** (automation.manage) list schedules or create a validated recurring schedule. Settings changes, extension activation, and schedules are audited with the bearer-token subject.",
+            "example": "kumwe_menu_list {} (navigation.manage)\nkumwe_settings_get {} (settings.manage)"
+          },
+          {
+            "anchor": "business-definition-and-schema-tools",
+            "term": "Business definition and schema plan tools",
+            "kind": "object",
+            "body": "**kumwe_business_definition_list** and **kumwe_business_definition_get** (content.read) list the definition catalog or read a published version, **kumwe_business_definition_draft** and **kumwe_business_definition_history** read the working draft or the published version history, and **kumwe_business_definition_compatibility** previews the compatibility plan the draft would publish. **kumwe_business_definition_publish** (content.update) publishes the draft as a new immutable version at an expected revision.\n\nSchema plan work is deliberately staged. **kumwe_business_schema_definitions** and **kumwe_business_schema_plan_list** (business.schema.read) list plannable definitions or existing plans, and **kumwe_business_schema_plan_get** reads a plan with its durable step journal and canonical checksum. **kumwe_business_schema_plan_create** (business.schema.plan) compiles a deterministic plan and runs no DDL, **kumwe_business_schema_plan_approve** (business.schema.approve) approves the exact inspected checksum, **kumwe_business_schema_plan_execute** (business.schema.execute) applies an approved plan under the schema lock, and **kumwe_business_schema_plan_recover** (business.schema.recover) resumes or reconciles an interrupted plan. Each stage names only its own capability, so a token granted inspection cannot approve, and one granted approval cannot execute; execute and recover are annotated destructive because they change physical tables. Approval binds to the checksum read at inspection, so a plan that changed afterwards is refused rather than applied. Composing a destructive purge plan and approving a high-impact plan both require re-proving the caller's current password, which this surface cannot supply, so those two operations are deliberately absent: use the administrator screen or the protected CLI.",
+            "example": "plan_create -> plan_get (read checksum) -> plan_approve (bind checksum) -> plan_execute (under schema lock)"
+          },
+          {
+            "anchor": "generated-business-tools",
+            "term": "Generated business record tools",
+            "kind": "object",
+            "body": "Generated records use a bounded static vocabulary; Kumwe never registers a tool for every entity. The current actor's catalog determines which definitions, fields, views, actions, and relations appear. **kumwe_business_discover** lists policy-visible generated entities and capabilities, and **kumwe_business_inspect** inspects one schema, view, action, and relation set. **kumwe_business_search** executes the shared bounded filter, search, sort, and projection document, **kumwe_business_read** reads one record by public identity, and **kumwe_business_history** reads up to 200 policy-filtered revisions before an optional version cursor.\n\nEvery write starts with **kumwe_business_plan_mutation**, which seals the proposed mutation to the current actor, scope, policy, definition and runtime generation, input digest, and record version, and returns an opaque five-minute token. **kumwe_business_create**, **kumwe_business_update**, the lifecycle tools **kumwe_business_archive**, **kumwe_business_restore**, and **kumwe_business_delete**, and the relation tools **kumwe_business_relate**, **kumwe_business_unrelate**, and **kumwe_business_reorder** present that token with the exact same arguments; execution re-resolves every binding and fails closed if anything changed. **kumwe_business_request_action** requests maker-checker approval for an exact action binding, **kumwe_business_execute_action** consumes the approved binding when required, and **kumwe_business_operation_status** reads a completed operation only under its original actor, scope, and policy bindings. Results use the same omission-safe projector as [Records and generated surfaces](/business/records) and never include record keys, actor IDs, policy evidence, or denied handles.",
+            "example": "1. kumwe_business_plan_mutation { proposed change } -> opaque five-minute plan token\n2. kumwe_business_update { same arguments, operationId, plan token, expected version }"
+          },
+          {
+            "anchor": "safe-mutations",
+            "term": "operationId and version",
+            "kind": "field",
+            "body": "Every MCP mutation requires an operationId of 16 to 128 safe characters. Generate one stable ID per intended change and keep it for retries: Kumwe stores the request digest and completed result for 24 hours.\n\n- Retrying the same operation and input returns the stored result.\n- Reusing the ID for different input is rejected.\n- Retrying while the first operation is running reports an in-progress conflict.\n- A failed operation releases the ID so a corrected retry can proceed.\n\nUpdates and transitions also require the current positive version; a stale version fails instead of overwriting another editor or integration. Keep operation IDs and returned versions in the calling workflow so retries remain safe.",
+            "example": "\"operationId\": \"site-menu-rebuild-2026a\", \"version\": 7 -> retry with both unchanged"
+          },
+          {
+            "anchor": "authorization-pipeline",
+            "term": "One authorization pipeline",
+            "kind": "concept",
+            "body": "Every MCP call answers to the decision chain described in [Security, approvals, and portal](/business/security). The route requires authentication, each tool names its own capability, and MCP tokens use the kumwe-mcp audience and MCP purpose while remaining bound to their live site, organization, workspace, membership version, policy generation, security epoch, token family, and delegation depth. Discovery never expands that authority, and every business-record tool or resource must pass the shared row and field disclosure plan before returning identities, counts, relations, aggregates, or values, exactly as the administrator, portal, and [REST API](/extend/rest-api) do.\n\nStep-up stays in the browser. A bearer MCP context has no fresh single-use step-up proof, and Kumwe does not accept a password or authenticator code through a model tool, so approval voting is intentionally absent. Request maker-checker approval through MCP, decide it through the administrator or portal step-up flow, and complete high-impact execution in the browser; ordinary planned actions remain fully executable through MCP. In the client, require human confirmation before publishing, changing settings, or activating extensions, keep tokens, passwords, personal data, and unpublished bodies out of client logs, and monitor audit events, authentication failures, denied capabilities, and unusual mutation volume."
+          }
+        ]
+      },
+      "publish_at": null,
+      "unpublish_at": null,
+      "version": 1,
+      "revision": {
+        "fixture_key": "page.mcp-server.revision.1",
+        "resource_id": "00000000-0000-7000-8000-000000003024",
+        "revision_number": 1
+      }
+    },
+    {
+      "fixture_key": "page.cli",
+      "resource_id": "00000000-0000-7000-8000-000000002025",
+      "site_fixture_key": "site.default",
+      "site_id": "default",
+      "content_type_id": "018f22e2-7c8b-7ab0-8f3a-88e8026bb412",
+      "content_type_version": 1,
+      "workflow_id": "018f22e2-7c8b-7ab0-8f3a-88e8026bb401",
+      "workflow_version": 1,
+      "workflow_state_key": "published",
+      "title": "Command line reference",
+      "slug": "cli",
+      "canonical_path": "/extend/cli",
+      "data": {
+        "eyebrow": "Command line",
+        "heading": "Drive the governed runtime from php bin/kumwe.",
+        "summary": "Every management command calls the same shared services as the administrator, REST API, and MCP tools, with token-scoped authorization, stable JSON output, and meaningful exit codes.",
+        "body": "Run the CLI from the installed release with the same environment as the web application. **php bin/kumwe list** prints every available command; in the production Compose stack, execute the same invocations inside the app service through the packaged entrypoint. Commands return 0 on success and a non-zero status on invalid input, unavailable dependencies, or failed work, and should run as the unprivileged application service account.\n\n## Authentication\n- Every token-authenticated management command requires both **--site=SITE** and **--token-file=PATH**. The selected site is validated and must exactly match the site bound into the token, and the verified token subject becomes the audit actor.\n- The token file must be absolute, non-symlinked, and readable only by its owner.\n- Migration, bootstrap, worker, and scheduler commands use dedicated internal identities instead of bearer tokens; extension package commands additionally rely on protected host and container access.\n\nCommands that expose business records use the same record and field policy plan as the [REST API](/extend/rest-api), [MCP tools](/extend/mcp-server), workers, and the portal, so a permission you verify here is the permission every other surface enforces.",
+        "entries": [
+          {
+            "anchor": "kumwe-install",
+            "term": "php bin/kumwe-install",
+            "kind": "command",
+            "body": "The interactive installer walks a new deployment through Composer or ZIP configuration, runs the database migrations, and creates the owner account in one guided session. Use it for a first installation; scripted deployments run **database:migrate** and **user:create-admin** directly instead. [Install and start Kumwe](/start-here/getting-started) covers the startup sequence around it.",
+            "example": "php bin/kumwe-install"
+          },
+          {
+            "anchor": "database-migrate",
+            "term": "database:migrate",
+            "kind": "command",
+            "body": "Applies pending forward-only migrations, then reconciles the configured site-content and business datasets. **KUMWE_SITE_CONTENT_PROFILE** selects a content profile the release ships under resources/demo — this release ships **documentation**, **placeholder**, and **blank** — and **KUMWE_BUSINESS_PROFILE** selects **vdm** or **none**; the boolean alias **KUMWE_BUSINESS_DEMO=true** also selects vdm. **documentation** plus **vdm** is the default; use **blank** plus **none** before migrating a new database for an empty start.\n\nEach dataset's choice is frozen when its first reconciliation passes validation and begins: every later invocation, including production's one-shot migrate service, must receive the same value, and a different value fails instead of switching profiles. Profiles carry no credentials — create administrators, ordinary users, tokens, and passwords through their dedicated commands. Migration holds a database-session advisory lock plus a compatibility row; when upgrading from a build that only used the expiring row lock, stop every older application, worker, and scheduler before migrating.",
+            "example": "KUMWE_SITE_CONTENT_PROFILE=documentation \\\nKUMWE_BUSINESS_DEMO=true \\\nphp bin/kumwe database:migrate"
+          },
+          {
+            "anchor": "database-status",
+            "term": "database:status",
+            "kind": "command",
+            "body": "Lists pending migrations and returns exit status 2 when work is pending, so a deployment pipeline can gate a release on a clean status without parsing output. Run it before and after **database:migrate** to confirm the schema is where you expect.",
+            "example": "php bin/kumwe database:status"
+          },
+          {
+            "anchor": "database-recover-lock",
+            "term": "database:recover-lock",
+            "kind": "command",
+            "body": "Removes one expired migration lock left behind by a crashed pre-advisory process, after a quiesced cutover. Read the exact owner token from the **migration_locks** table first: the command authorizes the system migration use case, verifies expiry, holds the new advisory namespace, and performs an exact compare-and-delete. It will not clear an active, changed, malformed, or unconfirmed owner. Run **database:migrate** immediately afterward.",
+            "example": "php bin/kumwe database:recover-lock \\\n  --expected-owner=EXACT_64_HEX_OWNER \\\n  --confirm-legacy-quiesced"
+          },
+          {
+            "anchor": "app-health",
+            "term": "app:health",
+            "kind": "command",
+            "body": "Checks readiness from the application process. Use it during startup verification and deployment diagnostics before opening the [administrator](/administrator): a passing check means the runtime itself, not just the web server, considers its dependencies available.",
+            "example": "php bin/kumwe app:health"
+          },
+          {
+            "anchor": "user-create-admin",
+            "term": "user:create-admin",
+            "kind": "command",
+            "body": "Creates the initial owner account. It requires **--email**, **--name**, and an absolute **--password-file** whose group and other permission bits are clear, so the password never appears on the command line. Remove the password file after use, then sign in at [/administrator](/administrator).",
+            "example": "php bin/kumwe user:create-admin \\\n  --email=owner@example.com \\\n  --name='Site owner' \\\n  --password-file=/run/secrets/kumwe-owner-password"
+          },
+          {
+            "anchor": "demo-provision-access",
+            "term": "demo:provision-access",
+            "kind": "command",
+            "body": "Provisions the selected business profile's demonstration cast — administrator staff roles such as the accountant, clerk, bookkeeper, stockkeeper, and system administrator, plus the portal client organizations with their members — from the profile's access manifest. It requires host access and a real administrator's credentials, generates a fresh password for every account it creates, and writes them once to an owner-only credentials file it refuses to overwrite. The run is idempotent: already-provisioned identities are confirmed without a password change, so a rerun never invalidates anyone's sign-in. See [demonstration sign-ins](/start-here/demo-access) for where the packaged demo writes this file.",
+            "example": "php bin/kumwe demo:provision-access \\\n  --admin-email=administrator@kumwe.test \\\n  --admin-password-file=/absolute/protected/password-file \\\n  --credentials-file=/absolute/new/demo-access-credentials.json"
+          },
+          {
+            "anchor": "token-create",
+            "term": "token:create",
+            "kind": "command",
+            "body": "Issues a management credential with an explicit capability list and expiry, authorized by an operator password file or an existing token file. The plaintext token is printed exactly once — route it directly to a secret manager and clear terminal capture according to site policy. When the capabilities reach organization-sensitive records, a password-authenticated operator passes **--organization=IDENTIFIER** and, for a workspace-bound credential, also **--workspace=IDENTIFIER**; Kumwe resolves that exact live membership from storage and embeds its membership and policy generations, so the identifiers alone confer no authority, and a workspace without an organization is refused. Issuance authorized by an existing token file cannot override either selection. CLI credentials use the kumwe-cli audience and a closed management purpose, and site, organization, workspace, membership version, policy generation, security epoch, family, and delegation depth are revalidated before a concrete command is authorized.",
+            "example": "php bin/kumwe token:create \\\n  --site=default \\\n  --email=owner@example.com \\\n  --name=deployment-integration \\\n  --capabilities=content.read,content.create,content.update \\\n  --expires-at=2027-01-01T00:00:00Z \\\n  --password-file=/run/secrets/kumwe-owner-password"
+          },
+          {
+            "anchor": "access",
+            "term": "access",
+            "kind": "command",
+            "body": "Manages users, roles, and grants on one site. **users**, **roles**, and **tokens** list the current identities and credentials; **create-user**, **create-role**, **assign-role**, and **grant** build access up, while **update-user**, **revoke-role**, **revoke-grant**, and **revoke-token** take it away. User updates require the current **--version**. Password files must be absolute, non-symlinked, readable only by their owner, and removed after use. Revoke a leaked API or MCP credential immediately with **access revoke-token**. The capability and scope model these grants feed is described in [security, approvals, and portal](/business/security).",
+            "example": "php bin/kumwe access create-user \\\n  --site=corporate --token-file=/run/secrets/kumwe-identity-token \\\n  --email=editor@example.com --display-name='Site editor' \\\n  --password-file=/run/secrets/editor-initial-password --status=active\nphp bin/kumwe access grant \\\n  --site=corporate --token-file=/run/secrets/kumwe-identity-token \\\n  --role=ROLE_ID --capability=content.update --scope-type=global"
+          },
+          {
+            "anchor": "content",
+            "term": "content",
+            "kind": "command",
+            "body": "Prints JSON and calls the same content service as the administrator, REST API, and MCP tools. **list**, **get**, **create**, **update**, **transition**, **trash**, and **restore** cover the editorial lifecycle; every mutation must send the current returned version, and **--deleted=1** on list includes trashed records when recovery work needs them. The workflow states you move through are the ones described in [pages and publishing](/content/pages).",
+            "example": "php bin/kumwe content create \\\n  --site=corporate --token-file=/run/secrets/kumwe-operator-token \\\n  --title='About us' --slug=about-us --content-type=page \\\n  --data='{\"body\":\"<p>About our team.</p>\"}'\nphp bin/kumwe content transition \\\n  --site=corporate --token-file=/run/secrets/kumwe-operator-token \\\n  --id=CONTENT_ID --version=2 --status=review"
+          },
+          {
+            "anchor": "content-model",
+            "term": "content-model",
+            "kind": "command",
+            "body": "Manages the same site-scoped, immutable content-type and workflow definitions as the administrator and REST API. Set **--kind=content-type** or **--kind=workflow**; **create** takes the complete definition, and **update** requires **--id**, the current positive **--version**, and a full replacement. Pass **--allow-breaking=1** only after deliberately reviewing consumers — historical content remains pinned to its earlier versions. [Content models and workflows](/content/models) explains what the definitions contain.",
+            "example": "php bin/kumwe content-model create --kind=content-type \\\n  --site=corporate --token-file=/run/secrets/kumwe-content-token \\\n  --handle=article --name=Article --workflow=WORKFLOW_ID \\\n  --schema='{\"type\":\"object\",\"properties\":{\"body\":{\"type\":\"string\"}},\"required\":[\"body\"],\"additionalProperties\":false}'"
+          },
+          {
+            "anchor": "business-definition",
+            "term": "business-definition",
+            "kind": "command",
+            "body": "Drives the same versioned business-definition catalog as the administrator and REST API. Reads — **list**, **get**, **draft**, **history**, **compatibility** — require content.read; everything else requires content.update. **import** reads the definition document from a protected file rather than the command line, so a definition never reaches the process table. Inspect **compatibility** before publishing: a plan that changes behavior or data refuses to publish unless you pass **--confirmed=1**. Use **--version** with **get** to read a specific published version, and **supersede**, **deprecate**, or **reject** with **--version** to retire one. Start with [business definitions](/business/definitions) for what a definition declares.",
+            "example": "php bin/kumwe business-definition import --site=corporate \\\n  --token-file=/run/secrets/kumwe-modeller-token \\\n  --definition-file=/run/secrets/asset-definition.json\nphp bin/kumwe business-definition publish --site=corporate \\\n  --token-file=/run/secrets/kumwe-modeller-token \\\n  --handle=site.corporate.asset --expected-revision=4 --confirmed=1"
+          },
+          {
+            "anchor": "business-schema",
+            "term": "business-schema",
+            "kind": "command",
+            "body": "Inspects and applies compiled schema plans, with a dedicated capability per stage so inspection, approval, and execution can be held by different operators: **definitions**, **plans**, and **get** need business.schema.read, **plan** needs business.schema.plan, **approve** needs business.schema.approve, **execute** needs business.schema.execute, **recover** needs business.schema.recover, and **purge-plan** needs business.schema.destructive. **get** returns the plan with its durable step journal and canonical checksum, and approval binds to that exact checksum — if the plan changed after you inspected it, approval fails rather than applying something you did not read. High-impact and destructive plans additionally require **--confirmation** and recorded recovery evidence via **--evidence**. After an interrupted execution, inspect the journal first, then use **recover**.",
+            "example": "php bin/kumwe business-schema plan --site=corporate \\\n  --token-file=/run/secrets/kumwe-schema-token --definition=DEFINITION_ID\nphp bin/kumwe business-schema approve --site=corporate \\\n  --token-file=/run/secrets/kumwe-approver-token \\\n  --plan=PLAN_ID --expected-checksum=CHECKSUM\nphp bin/kumwe business-schema execute --site=corporate \\\n  --token-file=/run/secrets/kumwe-executor-token --plan=PLAN_ID"
+          },
+          {
+            "anchor": "business-record",
+            "term": "business-record",
+            "kind": "command",
+            "body": "Reads and mutates generated business records through the same shared catalog, query decoder, exact-value projector, and transactional record service as every other surface, printing a stable JSON success or error envelope. Actions cover discovery with **entities** and **schema**; reads with **list**, **get**, **history**, **report**, and **export**; lifecycle with **create**, **update**, **archive**, **restore**, and **delete**; custom actions with **action** and **request-action**; relations with **relate**, **unrelate**, and **reorder**; approvals inspection with **approvals** and **approval**; and **operation** status. There is no organization-selection flag — the token's live membership decides scope.\n\nMutations require a stable **--operation-id**, reused only for an identical retry, and existing-record mutations require the positive **--expected-version** last read. Values, action input, query documents, target values, and reorder lists are accepted only from absolute, owner-only, regular files capped at 2 MiB, so PII and secrets never leak through process lists. The CLI deliberately exposes no approval vote: a high-impact decision still requires the browser's fresh, session-bound step-up proof, while ordinary actions remain fully executable here. Failures carry a redacted error code and stable exit status — 64 usage, 65 malformed data, 66 missing or denied, 69 unavailable, 73 conflict, 75 in progress, 77 authorization, 78 configuration. See [records and generated surfaces](/business/records).",
+            "example": "php bin/kumwe business-record list \\\n  --site=corporate --token-file=/run/secrets/kumwe-cli-token \\\n  --definition=acme.sales_order --query-file=/run/kumwe/query.json\nphp bin/kumwe business-record update \\\n  --site=corporate --token-file=/run/secrets/kumwe-cli-token \\\n  --definition=acme.sales_order --record=SO-00042 \\\n  --expected-version=7 --operation-id=sales-order-42-update-0008 \\\n  --values-file=/run/kumwe/order-values.json"
+          },
+          {
+            "anchor": "navigation",
+            "term": "navigation",
+            "kind": "command",
+            "body": "Manages menus and their items: **list**, **create-menu**, **update-menu**, and **delete-menu** for menus; **items**, **get-item**, **create-item**, **update-item**, and **delete-item** for entries. Target a managed page with **--target-type=content**, a section link with **--target-type=anchor** and a fragment target URL, or a safe custom destination with **--target-type=url**. Updates and deletes require **--id** and **--version**; pass an empty **--parent=** for a root item. The structures you edit here render as described in [media, navigation, and presentation](/content/media-navigation).",
+            "example": "php bin/kumwe navigation create-item \\\n  --site=corporate --token-file=/run/secrets/kumwe-operator-token \\\n  --menu=MENU_ID --title=About --slug=about --position=10 \\\n  --target-type=content --content=CONTENT_ID"
+          },
+          {
+            "anchor": "settings",
+            "term": "settings",
+            "kind": "command",
+            "body": "**get** prints the site's current settings and **update** changes only the options you pass, so presentation options omitted from an update retain their current database values. Alongside the site name, homepage content, locale, timezone, and search indexing, the presentation flags control the logo, primary menu, active scheme, button style and shape, header style, and footer text; **--presentation-schemes-json** replaces the reusable validated scheme list and **--presentation-json** replaces the complete presentation object returned by get. Only browser-managed site settings belong here — change database, Redis, proxy, release, and secret configuration through the deployment environment covered in [Operate Kumwe](/operate).",
+            "example": "php bin/kumwe settings update \\\n  --site=corporate --token-file=/run/secrets/kumwe-operator-token \\\n  --site-name='Example site' --homepage-content=CONTENT_UUID \\\n  --locale=en --timezone=Africa/Windhoek \\\n  --presentation-active-scheme=corporate --presentation-header-style=glass"
+          },
+          {
+            "anchor": "extension-lifecycle",
+            "term": "extension:list, extension:install, extension:activate, extension:disable, extension:uninstall",
+            "kind": "command",
+            "body": "Manage signed extension packages through their full lifecycle. **extension:install** takes an absolute package path with its **--key-id** and **--signature**; **extension:activate** enables a package, adding **--surface=site** to activate a theme for the public site; **extension:disable** and **extension:uninstall** reverse the process, and **extension:list** shows the current state. These commands additionally rely on protected host and container access. Restart long-running workers after any extension lifecycle change. Packaging and signing are covered in [extensions and templates](/extend/extensions).",
+            "example": "php bin/kumwe extension:install /absolute/package.zip \\\n  --site=corporate --token-file=/run/secrets/kumwe-extension-token \\\n  --key-id=KEY --signature=BASE64\nphp bin/kumwe extension:activate vendor/theme \\\n  --site=corporate --surface=site \\\n  --token-file=/run/secrets/kumwe-extension-token"
+          },
+          {
+            "anchor": "theme-administrator-recover",
+            "term": "theme:administrator:recover",
+            "kind": "command",
+            "body": "Restores the core administrator theme. The command demands the exact confirmation value shown in the example, so it cannot run by accident; reach for it when an administrator theme activation needs to be rolled back to the shipped interface.",
+            "example": "php bin/kumwe theme:administrator:recover --confirm=restore-core-administrator"
+          },
+          {
+            "anchor": "queue-work",
+            "term": "queue:work",
+            "kind": "command",
+            "body": "Runs a queue worker against a named queue. Use the long-lived form under a supervisor with a polling interval, or **--once** to process a single job as a one-shot deployment diagnostic. Workers use a dedicated internal identity rather than a bearer token, and must be restarted after extension lifecycle changes.",
+            "example": "php bin/kumwe queue:work --queue=default --sleep-ms=1000\nphp bin/kumwe queue:work --once"
+          },
+          {
+            "anchor": "schedule-run",
+            "term": "schedule:run",
+            "kind": "command",
+            "body": "Runs the scheduler that dispatches due automation schedules. Use **--loop** for the long-lived process under a supervisor, or the one-shot form for deployment diagnostics. Like the queue workers, it uses a dedicated internal identity instead of a bearer token.",
+            "example": "php bin/kumwe schedule:run --loop"
+          },
+          {
+            "anchor": "automation",
+            "term": "automation",
+            "kind": "command",
+            "body": "Manages the schedules and jobs the workers execute. **create** registers a cron-timed job with a name, timezone, job handle, and JSON payload; **schedules** and **jobs** list the current state; **enable**, **disable**, and **delete** take **--id** and **--version**, and **retry** or **cancel** take **--id** for queued jobs. [Integrations and automation](/extend/integrations) describes the jobs themselves.",
+            "example": "php bin/kumwe automation create \\\n  --site=corporate --token-file=/run/secrets/kumwe-automation-token \\\n  --name=\"Nightly extension map\" --cron=\"0 2 * * *\" --timezone=UTC \\\n  --job=extensions.runtime.rebuild --payload='{}'\nphp bin/kumwe automation schedules \\\n  --site=corporate --token-file=/run/secrets/kumwe-automation-token"
+          },
+          {
+            "anchor": "mcp-serve",
+            "term": "mcp:serve",
+            "kind": "command",
+            "body": "Serves the MCP stdio transport: the command reads MCP frames from standard input and writes protocol output to standard output, so an agent client launches it directly. **--site** is required and the protected token must have been issued for that exact site; the token determines the tool capabilities, and local shell access does not imply owner access. Run it under a dedicated service account with no database-administration or unrestricted host-filesystem access. The tools it exposes are documented in [MCP](/extend/mcp-server).",
+            "example": "php bin/kumwe mcp:serve \\\n  --site=corporate \\\n  --token-file=/run/secrets/kumwe-mcp-token"
+          }
+        ]
+      },
+      "publish_at": null,
+      "unpublish_at": null,
+      "version": 1,
+      "revision": {
+        "fixture_key": "page.cli.revision.1",
+        "resource_id": "00000000-0000-7000-8000-000000003025",
+        "revision_number": 1
+      }
+    },
+    {
+      "fixture_key": "page.community",
+      "resource_id": "00000000-0000-7000-8000-000000002026",
+      "site_fixture_key": "site.default",
+      "site_id": "default",
+      "content_type_id": "018f22e2-7c8b-7ab0-8f3a-88e8026bb410",
+      "content_type_version": 1,
+      "workflow_id": "018f22e2-7c8b-7ab0-8f3a-88e8026bb401",
+      "workflow_version": 1,
+      "workflow_state_key": "published",
+      "title": "Community and contribution",
+      "slug": "community",
+      "canonical_path": "/community",
+      "data": {
+        "eyebrow": "Curated contribution",
+        "heading": "Open in purpose, curated in implementation.",
+        "summary": "Kumwe welcomes use cases, testing, demo profiles, extension ideas, documentation, and domain knowledge; core code moves through a controlled maintainer pipeline so releases stay coherent and safe.",
+        "body": "Kumwe is a modern CMS and application platform, built human-led with disciplined engineering and AI acceleration. The community works the same way: participation is open in purpose and feedback, and curated in implementation, so the stability and architecture you rely on do not drift.\n\n## What is welcome\n- Use cases and feedback from real sites and real operations\n- Testing against the released application and its documentation\n- Demo profiles that show Kumwe running a new domain\n- Extension ideas and packaged extensions\n- Documentation corrections and improvements\n- Domain knowledge that sharpens definitions and policies\n\nCore code moves through a controlled maintainer pipeline: every change is reviewed and passes the same quality gate before it ships, so each release stays coherent and safe. The sections below explain how the platform is built, why contribution works this way, and exactly where each of those contributions lands.",
+        "sections": [
+          {
+            "anchor": "how-kumwe-is-built",
+            "heading": "How Kumwe is built.",
+            "body": "Kumwe is built human-led and AI-assisted: maintainers set the architecture, review every change, and own every release, while disciplined tooling and AI acceleration raise the pace without lowering the bar. That discipline is mechanical, not aspirational. One quality gate runs the architecture policy, the coding standard, static analysis at its strictest level, and the test suites on every change. Every class, method, property, constant, and enum case carries a documentation block. Dependencies arrive through constructors, and the dependency direction is enforced by the same gate: domain depends on nothing, and infrastructure and delivery depend inward.\n\nThe evidence is this running system. Every guide on this site ends in an observable result — a public page, a governed record, a policy denial, a durable job — because the platform is built so its claims can be checked. [Start here](/start-here) if you have not taken that tour yet."
+          },
+          {
+            "anchor": "curated-contribution",
+            "heading": "The curated-contribution model.",
+            "body": "Kumwe is open in purpose and feedback, and curated in implementation. Anyone can shape what the platform should do: report what works and what fails, describe the site or operation you need, question a decision, or propose a capability. What stays curated is how those needs become core code. A small maintainer group writes and reviews the core, so the architecture keeps one direction, security boundaries keep one owner, and every release is something the maintainers can stand behind.\n\nThe reason is the platform's own promises. Versioned definitions, policy-checked record services, immutable revisions, and guarded schema plans hold only while the code enforcing them stays coherent; a pipeline where every core change passes the same review and the same gate is how those guarantees survive growth. Contribution outside that pipeline is designed to be first-class, not a consolation: demo profiles, extensions, documentation, and testing are all supported surfaces that do not wait on core commit access."
+          },
+          {
+            "anchor": "where-to-plug-in",
+            "heading": "Where you can plug in today.",
+            "body": "Each item below lands on a real surface in the released platform.\n\n- **Use cases and feedback.** Describe the site, application, or workflow you need in concrete terms: which records, which actors, which policies, which reports. The vocabulary in [Business definitions](/business/definitions) — fields, exposure, actions, approvals — is the most useful shape for that description.\n- **Testing.** Install the release or use the [demo access](/start-here/demo-access) accounts, follow a guide, and report exactly where behavior and documentation disagree. A precise reproduction against a named screen or route is a contribution maintainers can act on immediately.\n- **Demo profiles.** Demonstration data ships as drop-in profile directories under resources/demo: a site-content manifest, or a business directory with its profile, definitions, and records documents. A well-formed profile becomes selectable at installation with no PHP changes, so a school, a farm, or an online shop demonstration is something you can build and share today; the released VDM business profile is the reference implementation of the contract.\n- **Extensions and extension ideas.** An extension is a versioned package with a kumwe.json manifest at its root, contributing services, routes, business definitions, events, jobs, and templates through typed registries. The small examples shipped under examples/extensions are inspectable starting contracts, and [Extensions and templates](/extend/extensions) documents the format and lifecycle.\n- **Documentation.** These pages are managed content, and the repository documentation is plain Markdown. Corrections, missing steps, and clearer explanations are welcome — especially where you tested something and the words did not match the behavior.\n- **Domain knowledge.** If you know how bookkeeping, inspections, stock, or membership actually works, that knowledge shapes better definitions, policies, demo profiles, and defaults than code alone can."
+          },
+          {
+            "anchor": "coherent-decisions",
+            "heading": "How decisions stay coherent.",
+            "body": "Every proposal follows the same route, whoever raises it. A need is stated as a use case, weighed against the published architecture principles, and then either scheduled as core work in the maintainer pipeline or directed to a surface that does not need core changes — usually an extension or a demo profile. Core work then passes review, the full quality gate, and the release checks described in [Operate Kumwe](/operate) before it ships.\n\nTwo consequences are worth stating plainly. A good idea may land as an extension rather than a core feature; that is the architecture protecting every existing installation, and the extension surface is built to carry real functionality, not leftovers. And a release ships when its behavior, documentation, and recovery story agree, not when a date arrives. [Kumwe 2](/community/kumwe-2) is what that standard most recently produced."
+          }
+        ]
+      },
+      "publish_at": null,
+      "unpublish_at": null,
+      "version": 1,
+      "revision": {
+        "fixture_key": "page.community.revision.1",
+        "resource_id": "00000000-0000-7000-8000-000000003026",
+        "revision_number": 1
+      }
+    },
+    {
+      "fixture_key": "page.kumwe-2",
+      "resource_id": "00000000-0000-7000-8000-000000002027",
+      "site_fixture_key": "site.default",
+      "site_id": "default",
+      "content_type_id": "018f22e2-7c8b-7ab0-8f3a-88e8026bb415",
+      "content_type_version": 1,
+      "workflow_id": "018f22e2-7c8b-7ab0-8f3a-88e8026bb401",
+      "workflow_version": 1,
+      "workflow_state_key": "published",
+      "title": "Kumwe 2.0: the demonstration release",
+      "slug": "kumwe-2",
+      "canonical_path": "/community/kumwe-2",
+      "data": {
+        "eyebrow": "Release notes",
+        "heading": "Version 2.0 turns the running installation into its own demonstration.",
+        "summary": "Kumwe 2.0 ships six document-driven layouts, a typed business demonstration you can trace end to end, least-privilege security you can test from the client portal, pluggable demo profiles, and generated sign-ins for every demonstrated role.",
+        "published_label": "August 2026",
+        "body": "Kumwe 2.0 is a release you can walk through rather than read about. The page in front of you is part of the evidence: an ordinary managed content item, rendered by the new article layout and published through the same workflow, revision, and menu services as every other page on this site. Each capability below ends in a screen, a command, or a file you can open.\n\n## A content engine that documents itself\n\nThe managed content engine renders six document-driven layouts — landing, document, guide, reference, questions and answers, and article — each defined by a validated schema and filled by ordinary content items. The homepage demonstrates the landing layout, [the FAQ](/start-here/faq) demonstrates questions and answers, and this article demonstrates the article layout, with its published label, highlights, and further-reading list all supplied by structured fields. Open Content in the [administrator](/administrator) to inspect the fields, revision, publication state, and ownership of any page here, or start from [Content models](/content/models) to see how the layouts are defined.\n\n## A typed business platform, demonstrated end to end\n\nThe Vast Development Method (VDM) business demonstration ships twelve related schemas: a consultancy graph plus a commerce graph of products, quotations with ordered lines, invoices, subscriptions, and domain registrations, each with workflows, views, actions, and exposure rules. Inspect the model in [Business definitions](/business/definitions), then use [Business records](/business/records) to trace a fictional client account through its service request, engagement, catalogue service, and work entries — and follow the commerce side from an accepted quotation to its invoice, subscription, and domains, comparing paid, issued, and overdue examples.\n\n## Least privilege you can sign in and test\n\nAuthorization in 2.0 is layered: capabilities begin the decision, and site ownership, organization and workspace membership, row policy, field disclosure, maker-and-checker approvals, step-up proofs, and token scope finish it. The client portal proves the model from the outside. It creates its own authenticated context, and a member signing in at [the portal](/portal) sees only that organization's quotations, invoices, subscriptions, and domains beside the shared product catalogue — including accepting a pending quotation as a portal workflow action. [Security, approvals, and portal](/business/security) explains the policy layers, and [the client portal guide](/business/portal) walks the member journey.\n\n## Pluggable demonstration profiles\n\nDemonstration data is no longer hard-coded seeding. A profile is a directory of validated JSON manifests below resources/demo; the demo catalog discovers what a release ships, and operators select the site-content and business datasets independently through the KUMWE_SITE_CONTENT_PROFILE and KUMWE_BUSINESS_PROFILE environment variables. A fork adds its own demonstration — a school, a farm, an online shop — by dropping a well-formed profile next to the released ones, with no PHP changes. Reconciliation is a three-way checksum comparison, so a page you have customized is preserved and reported rather than overwritten by a later release.\n\n## Identities without shared secrets\n\nRun bash tools/production-demo.sh from the repository root and the demonstration provisions its full cast: the accountant, clerk, bookkeeper, stockkeeper, and system administrator staff accounts, plus the portal members of the fictional client organizations. Every sign-in is freshly generated and written to demo-access-credentials.json inside the script's owner-only state directory; Kumwe's profiles never contain a user or password. That one file is how a reviewer enters every demonstrated role — compare what each staff account can reach in the [administrator](/administrator), then switch to a client member in the portal. [Demonstration access](/start-here/demo-access) covers the details, and [provisioning a client](/business/provision-client) shows how to add an organization of your own.\n\n## How this release was built\n\nKumwe is a new kind of CMS and application platform that's built human-led but AI-assisted. Maintainers own every architectural decision, security boundary, and release gate in 2.0, and acceleration passes through the same review, analysis, and test gates as any other change. The project is open in purpose and feedback and curated in implementation; the [community pages](/community) explain where use cases, testing, demo profiles, extension ideas, and documentation plug in.\n\nTake the tour from [Start here](/start-here), or jump straight to [operating the complete runtime](/operate).",
+        "highlights": [
+          "Six document-driven layouts — landing, document, guide, reference, questions and answers, and article — render every page of this demonstration site from validated, structured content.",
+          "The VDM business demonstration ships twelve related schemas spanning a consultancy graph and a commerce graph of products, quotations, invoices, subscriptions, and domain registrations.",
+          "Least-privilege authorization layers capabilities, membership, row policy, field disclosure, approvals, step-up proofs, and token scope on every surface.",
+          "Client members sign in at the portal and see only their own organization's commerce records beside the shared product catalogue.",
+          "Demonstration data ships as discoverable, versioned profiles that forks extend without any PHP changes.",
+          "Every demonstration identity is generated at provisioning time; no profile ever contains a user or password."
+        ],
+        "further_reading": [
+          {
+            "label": "Demonstration access",
+            "url": "/start-here/demo-access"
+          },
+          {
+            "label": "Content models",
+            "url": "/content/models"
+          },
+          {
+            "label": "Business definitions",
+            "url": "/business/definitions"
+          },
+          {
+            "label": "Security, approvals, and portal",
+            "url": "/business/security"
+          },
+          {
+            "label": "The client portal",
+            "url": "/business/portal"
+          }
+        ]
+      },
+      "publish_at": null,
+      "unpublish_at": null,
+      "version": 1,
+      "revision": {
+        "fixture_key": "page.kumwe-2.revision.1",
+        "resource_id": "00000000-0000-7000-8000-000000003027",
+        "revision_number": 1
+      }
     }
   ],
   "menus": [
@@ -753,14 +1675,14 @@
           "parent_fixture_key": null,
           "parent_id": null,
           "title": "Home",
-          "slug": "home",
-          "path": "/home",
+          "slug": "welcome",
+          "path": "/welcome",
           "canonical_path": "/",
           "position": 0,
           "version": 1,
           "target_type": "content",
-          "content_fixture_key": "page.home",
-          "content_id": "00000000-0000-7000-8000-000000001001",
+          "content_fixture_key": "page.welcome",
+          "content_id": "00000000-0000-7000-8000-000000002016",
           "target_url": null
         },
         {
@@ -809,6 +1731,54 @@
           "target_type": "content",
           "content_fixture_key": "page.administrator-tour",
           "content_id": "00000000-0000-7000-8000-000000002003",
+          "target_url": null
+        },
+        {
+          "fixture_key": "menu.main.start-here.first-page",
+          "resource_id": "00000000-0000-7000-8000-000000004016",
+          "parent_fixture_key": "menu.main.start-here",
+          "parent_id": "00000000-0000-7000-8000-000000004001",
+          "title": "Your first page",
+          "slug": "first-page",
+          "path": "/start-here/first-page",
+          "canonical_path": "/start-here/first-page",
+          "position": 2,
+          "version": 1,
+          "target_type": "content",
+          "content_fixture_key": "page.first-page",
+          "content_id": "00000000-0000-7000-8000-000000002017",
+          "target_url": null
+        },
+        {
+          "fixture_key": "menu.main.start-here.demo-access",
+          "resource_id": "00000000-0000-7000-8000-000000004017",
+          "parent_fixture_key": "menu.main.start-here",
+          "parent_id": "00000000-0000-7000-8000-000000004001",
+          "title": "Demonstration access",
+          "slug": "demo-access",
+          "path": "/start-here/demo-access",
+          "canonical_path": "/start-here/demo-access",
+          "position": 3,
+          "version": 1,
+          "target_type": "content",
+          "content_fixture_key": "page.demo-access",
+          "content_id": "00000000-0000-7000-8000-000000002018",
+          "target_url": null
+        },
+        {
+          "fixture_key": "menu.main.start-here.faq",
+          "resource_id": "00000000-0000-7000-8000-000000004018",
+          "parent_fixture_key": "menu.main.start-here",
+          "parent_id": "00000000-0000-7000-8000-000000004001",
+          "title": "FAQ",
+          "slug": "faq",
+          "path": "/start-here/faq",
+          "canonical_path": "/start-here/faq",
+          "position": 4,
+          "version": 1,
+          "target_type": "content",
+          "content_fixture_key": "page.faq",
+          "content_id": "00000000-0000-7000-8000-000000002019",
           "target_url": null
         },
         {
@@ -940,6 +1910,54 @@
           "target_url": null
         },
         {
+          "fixture_key": "menu.main.business.handbook",
+          "resource_id": "00000000-0000-7000-8000-000000004019",
+          "parent_fixture_key": "menu.main.business",
+          "parent_id": "00000000-0000-7000-8000-000000004008",
+          "title": "Business handbook",
+          "slug": "handbook",
+          "path": "/business/handbook",
+          "canonical_path": "/business/handbook",
+          "position": 3,
+          "version": 1,
+          "target_type": "content",
+          "content_fixture_key": "page.business-handbook",
+          "content_id": "00000000-0000-7000-8000-000000002020",
+          "target_url": null
+        },
+        {
+          "fixture_key": "menu.main.business.portal",
+          "resource_id": "00000000-0000-7000-8000-000000004020",
+          "parent_fixture_key": "menu.main.business",
+          "parent_id": "00000000-0000-7000-8000-000000004008",
+          "title": "Client portal",
+          "slug": "portal",
+          "path": "/business/portal",
+          "canonical_path": "/business/portal",
+          "position": 4,
+          "version": 1,
+          "target_type": "content",
+          "content_fixture_key": "page.portal-guide",
+          "content_id": "00000000-0000-7000-8000-000000002021",
+          "target_url": null
+        },
+        {
+          "fixture_key": "menu.main.business.provision-client",
+          "resource_id": "00000000-0000-7000-8000-000000004021",
+          "parent_fixture_key": "menu.main.business",
+          "parent_id": "00000000-0000-7000-8000-000000004008",
+          "title": "Provision a client",
+          "slug": "provision-client",
+          "path": "/business/provision-client",
+          "canonical_path": "/business/provision-client",
+          "position": 5,
+          "version": 1,
+          "target_type": "content",
+          "content_fixture_key": "page.provision-client",
+          "content_id": "00000000-0000-7000-8000-000000002022",
+          "target_url": null
+        },
+        {
           "fixture_key": "menu.main.extend",
           "resource_id": "00000000-0000-7000-8000-000000004012",
           "parent_fixture_key": null,
@@ -988,6 +2006,54 @@
           "target_url": null
         },
         {
+          "fixture_key": "menu.main.extend.rest-api",
+          "resource_id": "00000000-0000-7000-8000-000000004022",
+          "parent_fixture_key": "menu.main.extend",
+          "parent_id": "00000000-0000-7000-8000-000000004012",
+          "title": "REST API",
+          "slug": "rest-api",
+          "path": "/extend/rest-api",
+          "canonical_path": "/extend/rest-api",
+          "position": 2,
+          "version": 1,
+          "target_type": "content",
+          "content_fixture_key": "page.rest-api",
+          "content_id": "00000000-0000-7000-8000-000000002023",
+          "target_url": null
+        },
+        {
+          "fixture_key": "menu.main.extend.mcp-server",
+          "resource_id": "00000000-0000-7000-8000-000000004023",
+          "parent_fixture_key": "menu.main.extend",
+          "parent_id": "00000000-0000-7000-8000-000000004012",
+          "title": "MCP server",
+          "slug": "mcp-server",
+          "path": "/extend/mcp-server",
+          "canonical_path": "/extend/mcp-server",
+          "position": 3,
+          "version": 1,
+          "target_type": "content",
+          "content_fixture_key": "page.mcp-server",
+          "content_id": "00000000-0000-7000-8000-000000002024",
+          "target_url": null
+        },
+        {
+          "fixture_key": "menu.main.extend.cli",
+          "resource_id": "00000000-0000-7000-8000-000000004024",
+          "parent_fixture_key": "menu.main.extend",
+          "parent_id": "00000000-0000-7000-8000-000000004012",
+          "title": "Command line",
+          "slug": "cli",
+          "path": "/extend/cli",
+          "canonical_path": "/extend/cli",
+          "position": 4,
+          "version": 1,
+          "target_type": "content",
+          "content_fixture_key": "page.cli",
+          "content_id": "00000000-0000-7000-8000-000000002025",
+          "target_url": null
+        },
+        {
           "fixture_key": "menu.main.operate",
           "resource_id": "00000000-0000-7000-8000-000000004015",
           "parent_fixture_key": null,
@@ -1001,6 +2067,38 @@
           "target_type": "content",
           "content_fixture_key": "page.operate",
           "content_id": "00000000-0000-7000-8000-000000002015",
+          "target_url": null
+        },
+        {
+          "fixture_key": "menu.main.community",
+          "resource_id": "00000000-0000-7000-8000-000000004025",
+          "parent_fixture_key": null,
+          "parent_id": null,
+          "title": "Community",
+          "slug": "community",
+          "path": "/community",
+          "canonical_path": "/community",
+          "position": 6,
+          "version": 1,
+          "target_type": "content",
+          "content_fixture_key": "page.community",
+          "content_id": "00000000-0000-7000-8000-000000002026",
+          "target_url": null
+        },
+        {
+          "fixture_key": "menu.main.community.kumwe-2",
+          "resource_id": "00000000-0000-7000-8000-000000004026",
+          "parent_fixture_key": "menu.main.community",
+          "parent_id": "00000000-0000-7000-8000-000000004025",
+          "title": "Kumwe 2.0",
+          "slug": "kumwe-2",
+          "path": "/community/kumwe-2",
+          "canonical_path": "/community/kumwe-2",
+          "position": 0,
+          "version": 1,
+          "target_type": "content",
+          "content_fixture_key": "page.kumwe-2",
+          "content_id": "00000000-0000-7000-8000-000000002027",
           "target_url": null
         }
       ]

@@ -98,7 +98,7 @@ jobs:
           test "$(wc -c < "$evidence/administrator.js")" -gt 1000
           grep -Fq "/assets/build/${administrator_css}" "$evidence/administrator-login.html"
           grep -Fq 'Kumwe documentation' "$evidence/public-home.html"
-          grep -Fq 'Build, publish, operate, and extend with Kumwe.' "$evidence/public-home.html"
+          grep -Fq 'Publish your site. Run your business. Prove it all works.' "$evidence/public-home.html"
           grep -Fq 'kumwe-wordmark.svg' "$evidence/public-home.html"
 
           demo_evidence="$(
@@ -183,8 +183,8 @@ jobs:
           PHP
           )"
           test "$(jq -r '.profiles' <<<"$demo_evidence")" = '2'
-          test "$(jq -r '.content' <<<"$demo_evidence")" = '16'
-          test "$(jq -r '.menu_items' <<<"$demo_evidence")" = '16'
+          test "$(jq -r '.content' <<<"$demo_evidence")" = '27'
+          test "$(jq -r '.menu_items' <<<"$demo_evidence")" = '27'
           test "$(jq -r '.definitions' <<<"$demo_evidence")" = '12'
           test "$(jq -r '.records' <<<"$demo_evidence")" = '61'
           test "$(jq -r '.assets.business_definition' <<<"$demo_evidence")" = '12'

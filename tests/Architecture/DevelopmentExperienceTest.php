@@ -84,7 +84,7 @@ final class DevelopmentExperienceTest extends TestCase
             [
                 '"profile": "documentation"',
                 'Kumwe documentation',
-                'Build, publish, operate, and extend with Kumwe.',
+                'Publish your site. Run your business. Prove it all works.',
                 'Business definitions',
                 'kumwe-wordmark.svg',
             ] as $contract
