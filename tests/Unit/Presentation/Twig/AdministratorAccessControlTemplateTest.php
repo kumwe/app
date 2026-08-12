@@ -9,6 +9,7 @@ use Kumwe\CMS\Identity\Domain\StepUp\StepUpEnrollmentSetup;
 use PHPUnit\Framework\Attributes\CoversNothing;
 use PHPUnit\Framework\TestCase;
 use Twig\Environment;
+use Twig\Extension\CoreExtension;
 use Twig\Loader\FilesystemLoader;
 
 /**
@@ -32,7 +33,7 @@ final class AdministratorAccessControlTemplateTest extends TestCase
         $loader = new FilesystemLoader($root . '/templates/administrator');
         $loader->addPath($root . '/templates/interface-standard', 'kis');
         $twig = new Environment($loader, ['strict_variables' => true]);
-        $twig->setTimezone('UTC');
+        $twig->getExtension(CoreExtension::class)->setTimezone('UTC');
         $secret = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
         $enrollment = new StepUpEnrollmentSetup(
             '018f22e2-7c8b-7ab0-8f3a-88e8026bb701',
