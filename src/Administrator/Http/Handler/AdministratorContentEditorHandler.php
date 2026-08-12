@@ -132,8 +132,10 @@ final readonly class AdministratorContentEditorHandler implements RequestHandler
      *
      * An existing entry always wins, and is resolved at the version it pinned, so opening an old
      * entry never quietly migrates it onto a newer schema. For a new entry the `content_type` query
-     * parameter selects by UUID or handle — that is how the "new entry of this type" links work —
-     * and the first defined type is the fallback when nothing was asked for.
+     * parameter selects by UUID or handle — that is how the "new entry of this type" links work.
+     * When nothing was asked for, the core Page type is the ambient default so seeding further
+     * layout types never changes what an unqualified `/administrator/content/new` creates; the
+     * first defined type remains the fallback only on sites that removed the core type.
      *
      * @param   ServerRequestInterface       $request      Request whose query string may name a type.
      * @param   list<ContentTypeDefinition>  $definitions  Head versions available to the acting site.
@@ -167,6 +169,11 @@ final readonly class AdministratorContentEditorHandler implements RequestHandler
                 if ($definition->id === $requested || $definition->handle === $requested) {
                     return $definition;
                 }
+            }
+        }
+        foreach ($definitions as $definition) {
+            if ($definition->id === ContentService::CORE_PAGE_TYPE_ID) {
+                return $definition;
             }
         }
 
