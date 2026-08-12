@@ -1,0 +1,37 @@
+{
+  "schema": 1,
+  "name": "kumwe/horizon-theme-example",
+  "type": "template",
+  "version": "1.0.0",
+  "provider": "KumweExample\\HorizonTheme\\Provider",
+  "autoload": {
+    "psr-4": {
+      "KumweExample\\HorizonTheme\\": "src/"
+    }
+  },
+  "requires": {
+    "kumwe": "^2.0.0",
+    "php": "^8.5.0"
+  },
+  "template": {
+    "contract": 1,
+    "standard": "kis-1.0",
+    "components": {
+      "minimum": "1.0.0",
+      "maximum": "1.0.0"
+    },
+    "tokens": {
+      "minimum": "1.0.0",
+      "maximum": "1.0.0"
+    }
+  },
+  "dependencies": [],
+  "migrations": [],
+  "configuration": {},
+  "permissions": [],
+  "routes": [],
+  "events": [],
+  "assets": [
+    "assets/site.css"
+  ]
+}

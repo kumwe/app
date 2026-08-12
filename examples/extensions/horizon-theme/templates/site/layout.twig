@@ -1,0 +1,31 @@
+{% import "@core-site/_navigation.twig" as navigation_tree %}
+{# KIS 1.0 validates these host outlets and semantic landmarks while leaving their composition theme-owned. #}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>{% block title %}{{ site_name|default('Kumwe') }}{% endblock %}</title>
+  {% if canonical_url|default('') %}<link rel="canonical" href="{{ canonical_url }}">{% endif %}
+  {% for stylesheet in site_assets.stylesheets|default([]) %}<link rel="stylesheet" href="{{ stylesheet }}">{% endfor %}
+  <link rel="stylesheet" href="/assets/extensions/kumwe/horizon-theme-example/1.0.0/assets/site.css">
+  {% for module in site_assets.modules|default([]) %}<script type="module" src="{{ module }}"></script>{% endfor %}
+</head>
+<body class="horizon">
+  <a class="skip-link" href="#site-content">Skip to content</a>
+  <header class="site-header">
+    <a class="site-brand" href="/">
+      {% if site_logo|default('') %}<img src="{{ site_logo }}" alt="" width="40" height="40">{% endif %}
+      <span>{{ site_name|default('Kumwe') }}</span>
+    </a>
+    {% if navigation|default([]) is not empty %}
+      <nav aria-label="Main navigation">
+        {{ navigation_tree.branch(navigation, current_path|default('/')) }}
+      </nav>
+    {% endif %}
+  </header>
+  <main id="site-content" tabindex="-1">{% block content %}{% endblock %}</main>
+  <footer class="site-footer"><p>{{ site_name|default('Kumwe') }} · over the horizon, powered by Kumwe CMS</p></footer>
+</body>
+</html>

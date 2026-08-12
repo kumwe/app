@@ -31,13 +31,14 @@ final readonly class DemoExamplesCommand implements Command
     /**
      * Examples installed when the operator does not narrow the selection.
      *
-     * The two template scaffolds are deliberately absent: they exist to be copied by extension
-     * authors, not to run in a demonstration.
+     * The two minimal template scaffolds are deliberately absent: they exist to be copied by
+     * extension authors, not to run in a demonstration. The Horizon theme is included but only
+     * installed — switching the public site onto it stays an operator decision.
      *
      * @var    list<string>
      * @since  2.0.0
      */
-    private const array DEFAULT_EXAMPLES = ['announcements', 'asset-inspection', 'audit-listener'];
+    private const array DEFAULT_EXAMPLES = ['announcements', 'asset-inspection', 'audit-listener', 'horizon-theme'];
 
     /**
      * Wire the command to configuration, authentication, and the example installer.
@@ -111,12 +112,9 @@ final readonly class DemoExamplesCommand implements Command
             );
             foreach ($selection as $example) {
                 $result = $this->installer->install($context, $example);
-                $output->line(sprintf(
-                    '%s %s (%s).',
-                    $result['installed'] ? 'Installed' : ($result['activated'] ? 'Reactivated' : 'Confirmed'),
-                    $result['identifier'],
-                    $example,
-                ));
+                $verb = $result['installed'] ? 'Installed' : ($result['activated'] ? 'Reactivated' : 'Confirmed');
+                $note = $result['installed'] && !$result['activated'] ? '; selectable, not activated' : '';
+                $output->line(sprintf('%s %s (%s%s).', $verb, $result['identifier'], $example, $note));
             }
 
             return 0;

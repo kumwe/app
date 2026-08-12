@@ -1415,7 +1415,10 @@
     {"path": "examples/extensions/minimal-administrator-template/templates/administrator/layout.twig", "kind": "installable-override", "surface_ids": []},
     {"path": "examples/extensions/minimal-template/templates/site/home.twig", "kind": "installable-override", "surface_ids": ["core.public.home"]},
     {"path": "examples/extensions/minimal-template/templates/site/layout.twig", "kind": "installable-override", "surface_ids": ["core.public.home", "core.public.page"]},
-    {"path": "examples/extensions/minimal-template/templates/site/page.twig", "kind": "installable-override", "surface_ids": ["core.public.page"]}
+    {"path": "examples/extensions/minimal-template/templates/site/page.twig", "kind": "installable-override", "surface_ids": ["core.public.page"]},
+    {"path": "examples/extensions/horizon-theme/templates/site/home.twig", "kind": "installable-override", "surface_ids": ["core.public.home"]},
+    {"path": "examples/extensions/horizon-theme/templates/site/layout.twig", "kind": "installable-override", "surface_ids": ["core.public.home", "core.public.page"]},
+    {"path": "examples/extensions/horizon-theme/templates/site/page.twig", "kind": "installable-override", "surface_ids": ["core.public.page"]}
   ],
   "navigation_catalog": [
     {"id": "core.dashboard", "runtime_surface_binding": "declared", "area": "administrator", "path": "/administrator", "icon": "dashboard", "capability": "content.read", "surface_id": "core.administrator.dashboard", "source": "src/Extension/Contribution/CoreExtensionContributions.php"},

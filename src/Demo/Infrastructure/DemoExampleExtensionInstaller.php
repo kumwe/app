@@ -101,7 +101,8 @@ final readonly class DemoExampleExtensionInstaller
             throw new InvalidArgumentException(sprintf('The %s example is not shipped.', $example));
         }
         $directory = sprintf('%s/%s/%s', $this->root, self::EXAMPLES_DIRECTORY, $example);
-        $identifier = $this->identifier($directory);
+        [$identifier, $type] = $this->manifestIdentity($directory);
+        $activatable = $type !== 'template';
 
         $status = null;
         foreach ($this->extensions->installed($context) as $row) {
@@ -110,7 +111,7 @@ final readonly class DemoExampleExtensionInstaller
                 break;
             }
         }
-        if ($status === 'active') {
+        if ($status === 'active' || ($status !== null && !$activatable)) {
             return ['identifier' => $identifier, 'installed' => false, 'activated' => false];
         }
         if ($status !== null) {
@@ -140,26 +141,32 @@ final readonly class DemoExampleExtensionInstaller
                 sodium_crypto_sign_secretkey($keyPair),
             );
             $this->extensions->install($archive, $context, $keyId, base64_encode($signature));
-            $this->extensions->activate($identifier, $context);
+            if ($activatable) {
+                $this->extensions->activate($identifier, $context);
+            }
         } finally {
             @unlink($archive);
         }
 
-        return ['identifier' => $identifier, 'installed' => true, 'activated' => true];
+        return ['identifier' => $identifier, 'installed' => true, 'activated' => $activatable];
     }
 
     /**
-     * Read the `vendor/name` identifier out of an example's manifest.
+     * Read the `vendor/name` identifier and package type out of an example's manifest.
+     *
+     * The type decides the activation posture: a `template` example installs so it becomes
+     * selectable, but activating it onto the site surface stays an operator decision because it
+     * would restyle the whole public site.
      *
      * @param   string  $directory  Absolute example directory holding `kumwe.json`.
      *
-     * @return  string  The manifest's declared identifier.
+     * @return  array{string, string}  The manifest's declared identifier and its package type.
      *
      * @throws  RuntimeException  When the manifest is unreadable or declares no identifier.
      *
      * @since   2.0.0
      */
-    private function identifier(string $directory): string
+    private function manifestIdentity(string $directory): array
     {
         $raw = @file_get_contents($directory . '/kumwe.json');
         if (!is_string($raw)) {
@@ -170,8 +177,9 @@ final readonly class DemoExampleExtensionInstaller
         if (!is_string($name) || preg_match('#^[a-z0-9-]+/[a-z0-9-]+$#D', $name) !== 1) {
             throw new RuntimeException('The example manifest declares no usable identifier.');
         }
+        $type = is_array($manifest) && is_string($manifest['type'] ?? null) ? $manifest['type'] : 'component';
 
-        return $name;
+        return [$name, $type];
     }
 
     /**

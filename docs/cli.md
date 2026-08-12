@@ -85,8 +85,9 @@ php bin/kumwe demo:provision-access \
   --credentials-file=/absolute/new/demo-access-credentials.json
 ```
 
-`demo:install-examples` installs the shipped example extensions — `announcements`, `asset-inspection`, and
-`audit-listener` by default — through the same signed pipeline an operator upload passes: each example is packaged
+`demo:install-examples` installs the shipped example extensions — `announcements`, `asset-inspection`,
+`audit-listener`, and the `horizon-theme` site theme by default (the theme installs as selectable and is
+never activated onto the site surface) — through the same signed pipeline an operator upload passes: each example is packaged
 deterministically, signed with a single-use key registered in the trust store for exactly that package, installed,
 and activated. It requires host access and a real administrator's credentials, is idempotent per example, and
 `--extensions` narrows the selection to any subset:
