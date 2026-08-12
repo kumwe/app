@@ -205,8 +205,8 @@
   .guide-figure img { width: 100%; height: auto; border: 1px solid var(--site-border); border-radius: var(--site-radius); box-shadow: 0 1rem 2.8rem rgb(7 24 45 / .08); }
   .guide-figure figcaption { margin-top: .5rem; color: var(--site-muted); font-size: .85rem; }
   .guide-outcome { padding-left: 1.1rem; border-left: .3rem solid var(--site-accent); }
-  .reference-entry h2 { display: flex; flex-wrap: wrap; align-items: center; gap: .6rem; }
-  .reference-term { padding: .2rem .5rem; border-radius: .45rem; background: var(--site-accent-soft); color: var(--site-accent-strong); font-size: 1.05rem; }
+  .reference-entry h2 { display: flex; flex-wrap: wrap; align-items: baseline; gap: .6rem; }
+  .reference-term { background: none; padding: 0; color: var(--site-ink); font-size: 1.45rem; font-weight: 700; letter-spacing: -.01em; overflow-wrap: anywhere; }
   .reference-kind { padding: .18rem .55rem; border: 1px solid var(--site-border); border-radius: 999px; background: var(--site-surface); color: var(--site-muted); font-size: .72rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
   .reference-example { margin: 1rem 0 0; padding: .95rem 1.1rem; overflow-x: auto; border: 1px solid var(--site-border); border-radius: .7rem; background: var(--site-navy-950); color: #e8f0f8; font-size: .85rem; }
   .faq-list { display: grid; max-width: var(--site-reading-width); gap: .8rem; }
