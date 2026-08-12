@@ -1,7 +1,7 @@
 {
   "format": "kumwe.demo-content/v1",
   "profile": "documentation",
-  "version": 3,
+  "version": 4,
   "site": {
     "fixture_key": "site.default",
     "resource_id": "default",
@@ -1587,6 +1587,11 @@
             "anchor": "coherent-decisions",
             "heading": "How decisions stay coherent.",
             "body": "Every proposal follows the same route, whoever raises it. A need is stated as a use case, weighed against the published architecture principles, and then either scheduled as core work in the maintainer pipeline or directed to a surface that does not need core changes — usually an extension or a demo profile. Core work then passes review, the full quality gate, and the release checks described in [Operate Kumwe](/operate) before it ships.\n\nTwo consequences are worth stating plainly. A good idea may land as an extension rather than a core feature; that is the architecture protecting every existing installation, and the extension surface is built to carry real functionality, not leftovers. And a release ships when its behavior, documentation, and recovery story agree, not when a date arrives. [Kumwe 2](/community/kumwe-2) is what that standard most recently produced."
+          },
+          {
+            "anchor": "source-issues-discussions",
+            "heading": "Source, issues, and discussions.",
+            "body": "Kumwe lives on GitHub, and that is where every conversation starts.\n\n- [Read the source](https://github.com/kumwe/cms) — the platform, the examples, the demo profiles, and every quality gate are in one repository.\n- [Open an issue](https://github.com/kumwe/cms/issues) — precise reproductions, documentation gaps, and use-case descriptions are all welcome issues.\n- [Join the discussions](https://github.com/kumwe/cms/discussions) — questions, ideas, demo profiles you are building, and feedback on the direction of the platform.\n\nMeet [the team behind Kumwe](/community/team) to see who reads them."
           }
         ]
       },
@@ -1596,6 +1601,46 @@
       "revision": {
         "fixture_key": "page.community.revision.1",
         "resource_id": "00000000-0000-7000-8000-000000003026",
+        "revision_number": 1
+      }
+    },
+    {
+      "fixture_key": "page.team",
+      "resource_id": "00000000-0000-7000-8000-000000002028",
+      "site_fixture_key": "site.default",
+      "site_id": "default",
+      "content_type_id": "018f22e2-7c8b-7ab0-8f3a-88e8026bb410",
+      "content_type_version": 1,
+      "workflow_id": "018f22e2-7c8b-7ab0-8f3a-88e8026bb401",
+      "workflow_version": 1,
+      "workflow_state_key": "published",
+      "title": "The team behind Kumwe",
+      "slug": "team",
+      "canonical_path": "/community/team",
+      "data": {
+        "eyebrow": "The people",
+        "heading": "Human-led means humans you can name.",
+        "summary": "Kumwe is architected, reviewed, and released by a maintainer team. This page introduces the people who own those decisions, starting with the lead architect.",
+        "body": "Kumwe is a modern CMS and application platform, built with disciplined engineering and AI acceleration — and the discipline has owners. The maintainers named here define the architecture, review every change, validate the quality gates, and stand behind each release. More of the team will be introduced on this page over time.\n\nIf you want to work with the team, [Community and contribution](/community) explains where use cases, testing, demo profiles, extension ideas, documentation, and domain knowledge plug in.",
+        "sections": [
+          {
+            "anchor": "llewellyn-van-der-merwe",
+            "heading": "Llewellyn van der Merwe — lead architect",
+            "body": "Llewellyn is the lead architect of Kumwe: he defines how the platform should work, monitors and validates its quality gates, workflows, and deliverables, and carries the architectural decisions the [curated-contribution model](/community) describes. He is Director and Senior Architectural Engineer of Intelligent Software and Systems at Vast Development Method — the practice whose initials the [business demonstration](/business/handbook) carries.\n\nHis engineering record long predates AI-accelerated development. He is a long-standing contributor to the Joomla project and its ecosystem, and the creator of Joomla Component Builder, a definition-driven component generator whose philosophy — declare the model, generate the working software — Kumwe’s typed business platform carries forward. His open-source work spans the getBible platform, official Joomla Docker images and the octojoom tooling, and AI-era bridges such as an MCP server for Joomla site management; it has earned an Arctic Code Vault contribution and GitHub Developer Program membership.\n\n- [Llewellyn on GitHub](https://github.com/Llewellynvdm)\n- [Technical profile at llewellyn.vdm.io](https://llewellyn.vdm.io)\n- [Self-hosted git at git.vdm.dev](https://git.vdm.dev)"
+          },
+          {
+            "anchor": "a-growing-team",
+            "heading": "A growing team",
+            "body": "Other engineers in the Vast Development Method office already contribute to Kumwe through the same maintainer pipeline, and their profiles will join this page as the project grows. The team model matches the contribution model: open in purpose and feedback, curated in implementation, so every release has named people who can stand behind it."
+          }
+        ]
+      },
+      "publish_at": null,
+      "unpublish_at": null,
+      "version": 1,
+      "revision": {
+        "fixture_key": "page.team.revision.1",
+        "resource_id": "00000000-0000-7000-8000-000000003028",
         "revision_number": 1
       }
     },
@@ -2100,6 +2145,38 @@
           "content_fixture_key": "page.kumwe-2",
           "content_id": "00000000-0000-7000-8000-000000002027",
           "target_url": null
+        },
+        {
+          "fixture_key": "menu.main.community.team",
+          "resource_id": "00000000-0000-7000-8000-000000004027",
+          "parent_fixture_key": "menu.main.community",
+          "parent_id": "00000000-0000-7000-8000-000000004025",
+          "title": "The team",
+          "slug": "team",
+          "path": "/community/team",
+          "canonical_path": "/community/team",
+          "position": 1,
+          "version": 1,
+          "target_type": "content",
+          "content_fixture_key": "page.team",
+          "content_id": "00000000-0000-7000-8000-000000002028",
+          "target_url": null
+        },
+        {
+          "fixture_key": "menu.main.github",
+          "resource_id": "00000000-0000-7000-8000-000000004028",
+          "parent_fixture_key": null,
+          "parent_id": null,
+          "title": "GitHub",
+          "slug": "github",
+          "path": "/github",
+          "canonical_path": "/github",
+          "position": 7,
+          "version": 1,
+          "target_type": "url",
+          "content_fixture_key": null,
+          "content_id": null,
+          "target_url": "https://github.com/kumwe/cms"
         }
       ]
     }

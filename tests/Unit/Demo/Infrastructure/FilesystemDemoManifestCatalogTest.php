@@ -47,7 +47,7 @@ final class FilesystemDemoManifestCatalogTest extends TestCase
      *
      * @since   2.0.0
      */
-    public function testDocumentationProfileProvidesTwentySevenLinkedGuides(): void
+    public function testDocumentationProfileProvidesTwentyEightLinkedGuides(): void
     {
         $loaded = $this->catalog()->content('documentation');
         $manifest = $loaded['manifest'];
@@ -56,9 +56,9 @@ final class FilesystemDemoManifestCatalogTest extends TestCase
 
         self::assertSame('kumwe.demo-content/v1', $manifest['format'] ?? null);
         self::assertSame('documentation', $manifest['profile'] ?? null);
-        self::assertSame(3, $manifest['version'] ?? null);
+        self::assertSame(4, $manifest['version'] ?? null);
         self::assertMatchesRegularExpression('/^[a-f0-9]{64}$/D', $loaded['checksum']);
-        self::assertCount(27, $content);
+        self::assertCount(28, $content);
         self::assertCount(1, $menus);
 
         $reservedSystemRoutes = [
@@ -115,11 +115,21 @@ final class FilesystemDemoManifestCatalogTest extends TestCase
         $menu = $this->map($menus[0], 'documentation menu');
         $items = $this->list($menu['items'] ?? null, 'documentation menu items');
         self::assertSame('main', $menu['handle'] ?? null);
-        self::assertCount(27, $items);
+        self::assertCount(29, $items);
         $seen = [];
+        $externalTargets = [];
         foreach ($items as $candidate) {
             $item = $this->map($candidate, 'documentation menu item');
             $fixtureKey = $this->string($item, 'fixture_key');
+            if (($item['target_type'] ?? null) === 'url') {
+                $target = $this->string($item, 'target_url');
+                self::assertStringStartsWith('https://', $target);
+                self::assertNull($item['content_fixture_key'] ?? null);
+                $externalTargets[] = $target;
+                self::assertArrayNotHasKey($fixtureKey, $seen);
+                $seen[$fixtureKey] = $item;
+                continue;
+            }
             $contentKey = $this->string($item, 'content_fixture_key');
             self::assertArrayHasKey($contentKey, $pages);
             self::assertSame($pages[$contentKey]['resource_id'], $item['content_id'] ?? null);
@@ -136,6 +146,11 @@ final class FilesystemDemoManifestCatalogTest extends TestCase
             self::assertArrayNotHasKey($fixtureKey, $seen);
             $seen[$fixtureKey] = $item;
         }
+        self::assertSame(
+            ['https://github.com/kumwe/cms'],
+            $externalTargets,
+            'The navigation links back to the project repository.',
+        );
     }
 
     /**
