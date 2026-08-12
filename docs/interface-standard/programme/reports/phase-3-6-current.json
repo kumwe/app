@@ -1,0 +1,1009 @@
+{
+  "schema_version": 1,
+  "template_version": 1,
+  "report_id": "KIS-PHASE-3-6-CURRENT-2026-08-12",
+  "report_kind": "phase_checkpoint",
+  "state": "in_review",
+  "overall_status": "not_run",
+  "branch": "agent/kis-phase-3-6",
+  "base_revision": "3b9a785c0b83d720dd386914daf6b822feef90db",
+  "source_revision": "99663feb759311091965e7b2e0c354c2eb43c664",
+  "prepared_at": "2026-08-12T05:07:41Z",
+  "prepared_by_role": "release-owner",
+  "scope": {
+    "summary": "Phase 3 security and identity, Phase 4 generated business/report surfaces, Phase 5 remaining/template surfaces, and Phase 6 whole-system automation through P6-006; P6-007 accountable final acceptance remains pending.",
+    "phase_numbers": [
+      3,
+      4,
+      5,
+      6
+    ],
+    "work_item_ids": [
+      "P3-001",
+      "P3-002",
+      "P3-003",
+      "P3-004",
+      "P3-005",
+      "P3-006",
+      "P3-007",
+      "P3-008",
+      "P4-001",
+      "P4-002",
+      "P4-003",
+      "P4-004",
+      "P4-005",
+      "P4-006",
+      "P4-007",
+      "P4-008",
+      "P5-001",
+      "P5-002",
+      "P5-003",
+      "P5-004",
+      "P5-005",
+      "P5-006",
+      "P5-007",
+      "P5-008",
+      "P6-001",
+      "P6-002",
+      "P6-003",
+      "P6-004",
+      "P6-005",
+      "P6-006",
+      "P6-007"
+    ],
+    "surface_ids": [
+      "core.public.home",
+      "core.public.page",
+      "core.administrator.login",
+      "core.administrator.dashboard",
+      "core.administrator.content-collection",
+      "core.administrator.content-editor",
+      "core.administrator.media",
+      "core.administrator.content-models",
+      "core.administrator.navigation",
+      "core.administrator.generated-catalog",
+      "core.administrator.generated-definition",
+      "core.administrator.generated-record",
+      "core.administrator.generated-relationship",
+      "core.administrator.generated-choices",
+      "core.administrator.generated-custom-view",
+      "core.administrator.generated-operation",
+      "core.administrator.reports",
+      "core.administrator.access-control",
+      "core.administrator.business-security",
+      "core.administrator.extensions",
+      "core.administrator.automation",
+      "core.administrator.settings",
+      "core.portal.home",
+      "core.portal.security",
+      "core.portal.approvals",
+      "core.portal.generated-catalog",
+      "core.portal.generated-definition",
+      "core.portal.generated-record",
+      "core.portal.generated-relationship",
+      "core.portal.generated-choices",
+      "core.portal.generated-custom-view",
+      "core.portal.generated-operation",
+      "core.portal.reports",
+      "kumwe.announcements-example.index",
+      "kumwe.asset-inspection-example.administrator.index",
+      "kumwe.asset-inspection-example.portal.status"
+    ],
+    "journey_ids": [
+      "journey.public-content",
+      "journey.administrator-entry",
+      "journey.content-lifecycle",
+      "journey.site-structure",
+      "journey.definition-to-record",
+      "journey.business-record-lifecycle",
+      "journey.report-export",
+      "journey.security-governance",
+      "journey.portal-provisioning",
+      "journey.portal-work",
+      "journey.extension-lifecycle",
+      "journey.automation-operation",
+      "journey.presentation-customization"
+    ],
+    "changed_paths": [
+      "assets",
+      "public/assets/build",
+      "src",
+      "templates",
+      "tests",
+      "examples/extensions",
+      "docs/interface-standard/programme"
+    ],
+    "included_revisions": [
+      "99663feb759311091965e7b2e0c354c2eb43c664"
+    ],
+    "working_tree_included": false,
+    "excluded_worktree_note": "The report qualifies only the committed Phase 3-6 implementation revision and explicitly excludes the later governance-checkpoint working tree and unrelated changes."
+  },
+  "kis": {
+    "version": "kis-1.0",
+    "normative_document_paths": [
+      "docs/interface-standard/README.md",
+      "docs/interface-standard/pattern-selection.md",
+      "docs/interface-standard/workspaces-navigation.md",
+      "docs/interface-standard/forms-subforms.md",
+      "docs/interface-standard/collections-tables.md",
+      "docs/interface-standard/actions-safety.md",
+      "docs/interface-standard/responsive-accessibility.md",
+      "docs/interface-standard/conformance.md",
+      "docs/interface-standard/customization.md",
+      "docs/interface-standard/template-authoring.md"
+    ],
+    "decision_ids": [],
+    "deviation_ids": []
+  },
+  "behavior_changes": {
+    "routes": [
+      "Focused Business Security and Users & Access task states",
+      "Generated business/report task states",
+      "Remaining administrator/portal/public KIS surfaces"
+    ],
+    "capabilities": [
+      "Existing capability checks retained at every rendered action and server mutation boundary"
+    ],
+    "fields": [
+      "Policy-safe generated list/report fields and guided policy authoring controls"
+    ],
+    "actions": [
+      "URL-addressable browse, create, edit, review, approval, history, export, and recovery actions"
+    ],
+    "payloads": [
+      "Existing server payload ownership retained; raw policy AST and secret values remain undisclosed"
+    ],
+    "states": [
+      "Dense, empty, permission-reduced, mobile, no-JavaScript, error, review, and step-up-boundary states"
+    ],
+    "notes": "The remediation changes presentation and task composition while preserving domain policy, routes, authorization, CSRF, concurrency, approval, audit, and recovery behavior."
+  },
+  "parity": {
+    "status": "passed",
+    "manifest_paths": [
+      "docs/interface-standard/programme/phase-2-business-workspace-parity.json",
+      "tests/Fixtures/InterfaceStandard/phase-three-security-identity-parity.json",
+      "tests/Fixtures/InterfaceStandard/phase-4-generated-surface-parity.json",
+      "tests/Fixtures/InterfaceStandard/phase-five-surface-parity.json",
+      "tests/Fixtures/InterfaceStandard/phase-six-journey-qualification.json"
+    ],
+    "result_summary": "Route, capability, field, action, payload, state, authorization, and outcome parity passed in Kumwe CI run 31564853522."
+  },
+  "check_matrix": [
+    {
+      "id": "CHANGESET-INTEGRITY",
+      "category": "source",
+      "requirement": "The bounded diff is intentional, whitespace-clean, and names every included revision.",
+      "applicability": "required",
+      "status": "passed",
+      "command": "git diff --check 3b9a785c0b83d720dd386914daf6b822feef90db..99663feb759311091965e7b2e0c354c2eb43c664",
+      "environment": "GitHub Actions Ubuntu 24.04 with PHP 8.5, pinned Node/Chromium, MariaDB LTS, MySQL 8.4, PostgreSQL 17, Redis, nginx, and PHP-FPM.",
+      "result_summary": "Passed for 99663feb759311091965e7b2e0c354c2eb43c664; durable evidence: https://github.com/kumwe/cms/actions/runs/31564853522",
+      "artifact_paths": [],
+      "blocker_finding_ids": [],
+      "evidence_ids": [],
+      "phase_numbers": [
+        3,
+        4,
+        5,
+        6
+      ],
+      "work_item_ids": [
+        "P3-002",
+        "P3-003",
+        "P3-004",
+        "P3-005",
+        "P4-002",
+        "P4-003",
+        "P4-004",
+        "P4-005",
+        "P5-001",
+        "P5-002",
+        "P5-003",
+        "P5-004",
+        "P5-005",
+        "P5-006",
+        "P5-008",
+        "P6-006"
+      ]
+    },
+    {
+      "id": "PROGRAMME-INVENTORY",
+      "category": "programme",
+      "requirement": "Programme records are internally coherent and match route, navigation, template, manifest, and generated-definition sources.",
+      "applicability": "required",
+      "status": "passed",
+      "command": "composer interface:programme",
+      "environment": "GitHub Actions Ubuntu 24.04 with PHP 8.5, pinned Node/Chromium, MariaDB LTS, MySQL 8.4, PostgreSQL 17, Redis, nginx, and PHP-FPM.",
+      "result_summary": "Passed for 99663feb759311091965e7b2e0c354c2eb43c664; durable evidence: https://github.com/kumwe/cms/actions/runs/31564853522",
+      "artifact_paths": [
+        "tools/verify-interface-programme.php",
+        "docs/interface-standard/programme/surface-inventory.json",
+        "docs/interface-standard/programme/phase-ledger.json"
+      ],
+      "blocker_finding_ids": [],
+      "evidence_ids": [],
+      "phase_numbers": [
+        3,
+        4,
+        5,
+        6
+      ],
+      "work_item_ids": [
+        "P6-006"
+      ]
+    },
+    {
+      "id": "ARCHITECTURE-POLICY",
+      "category": "architecture",
+      "requirement": "Repository architecture and dependency policies pass.",
+      "applicability": "required",
+      "status": "passed",
+      "command": "bash tools/verify-policy.sh",
+      "environment": "GitHub Actions Ubuntu 24.04 with PHP 8.5, pinned Node/Chromium, MariaDB LTS, MySQL 8.4, PostgreSQL 17, Redis, nginx, and PHP-FPM.",
+      "result_summary": "Passed for 99663feb759311091965e7b2e0c354c2eb43c664; durable evidence: https://github.com/kumwe/cms/actions/runs/31564853522",
+      "artifact_paths": [
+        "tools/verify-policy.sh"
+      ],
+      "blocker_finding_ids": [],
+      "evidence_ids": [],
+      "phase_numbers": [
+        3,
+        4,
+        5,
+        6
+      ],
+      "work_item_ids": [
+        "P6-006"
+      ]
+    },
+    {
+      "id": "PHP-CODING-STANDARDS",
+      "category": "php",
+      "requirement": "PHP coding standards pass for all affected source and tests.",
+      "applicability": "required",
+      "status": "passed",
+      "command": "composer cs",
+      "environment": "GitHub Actions Ubuntu 24.04 with PHP 8.5, pinned Node/Chromium, MariaDB LTS, MySQL 8.4, PostgreSQL 17, Redis, nginx, and PHP-FPM.",
+      "result_summary": "Passed for 99663feb759311091965e7b2e0c354c2eb43c664; durable evidence: https://github.com/kumwe/cms/actions/runs/31564853522",
+      "artifact_paths": [],
+      "blocker_finding_ids": [],
+      "evidence_ids": [],
+      "phase_numbers": [
+        3,
+        4,
+        5,
+        6
+      ],
+      "work_item_ids": [
+        "P3-002",
+        "P3-003",
+        "P3-004",
+        "P3-005",
+        "P4-002",
+        "P4-003",
+        "P4-004",
+        "P4-005",
+        "P5-001",
+        "P5-002",
+        "P5-003",
+        "P5-004",
+        "P5-005",
+        "P5-006",
+        "P5-008",
+        "P6-006"
+      ]
+    },
+    {
+      "id": "PHP-STATIC-ANALYSIS",
+      "category": "php",
+      "requirement": "Static analysis passes at the repository level.",
+      "applicability": "required",
+      "status": "passed",
+      "command": "composer analyse",
+      "environment": "GitHub Actions Ubuntu 24.04 with PHP 8.5, pinned Node/Chromium, MariaDB LTS, MySQL 8.4, PostgreSQL 17, Redis, nginx, and PHP-FPM.",
+      "result_summary": "Passed for 99663feb759311091965e7b2e0c354c2eb43c664; durable evidence: https://github.com/kumwe/cms/actions/runs/31564853522",
+      "artifact_paths": [],
+      "blocker_finding_ids": [],
+      "evidence_ids": [],
+      "phase_numbers": [
+        3,
+        4,
+        5,
+        6
+      ],
+      "work_item_ids": [
+        "P3-002",
+        "P3-003",
+        "P3-004",
+        "P3-005",
+        "P4-002",
+        "P4-003",
+        "P4-004",
+        "P4-005",
+        "P5-001",
+        "P5-002",
+        "P5-003",
+        "P5-004",
+        "P5-005",
+        "P5-006",
+        "P5-008",
+        "P6-006"
+      ]
+    },
+    {
+      "id": "PHP-UNIT",
+      "category": "php",
+      "requirement": "Affected unit and architecture tests pass before the complete test suite.",
+      "applicability": "required",
+      "status": "passed",
+      "command": "composer test:unit",
+      "environment": "GitHub Actions Ubuntu 24.04 with PHP 8.5, pinned Node/Chromium, MariaDB LTS, MySQL 8.4, PostgreSQL 17, Redis, nginx, and PHP-FPM.",
+      "result_summary": "Passed for 99663feb759311091965e7b2e0c354c2eb43c664; durable evidence: https://github.com/kumwe/cms/actions/runs/31564853522",
+      "artifact_paths": [
+        "tests/Unit/InterfaceProgramme/InterfaceProgrammeVerifierTest.php",
+        "tests/Unit/Administrator/Http/Handler/AdministratorAccessControlHandlerTest.php"
+      ],
+      "blocker_finding_ids": [],
+      "evidence_ids": [],
+      "phase_numbers": [
+        3,
+        4,
+        5,
+        6
+      ],
+      "work_item_ids": [
+        "P3-002",
+        "P3-003",
+        "P3-004",
+        "P3-005",
+        "P4-002",
+        "P4-003",
+        "P4-004",
+        "P4-005",
+        "P5-001",
+        "P5-002",
+        "P5-003",
+        "P5-004",
+        "P5-005",
+        "P5-006",
+        "P5-008",
+        "P6-006"
+      ]
+    },
+    {
+      "id": "PHP-INTEGRATION-FUNCTIONAL",
+      "category": "php",
+      "requirement": "Affected integration and functional behavior passes with production adapters.",
+      "applicability": "conditional",
+      "status": "passed",
+      "command": "vendor/bin/phpunit --testsuite integration",
+      "environment": "GitHub Actions Ubuntu 24.04 with PHP 8.5, pinned Node/Chromium, MariaDB LTS, MySQL 8.4, PostgreSQL 17, Redis, nginx, and PHP-FPM.",
+      "result_summary": "Passed for 99663feb759311091965e7b2e0c354c2eb43c664; durable evidence: https://github.com/kumwe/cms/actions/runs/31564853522",
+      "artifact_paths": [
+        "tests/Integration/Extension/ExtensionContributionLifecycleIntegrationTest.php"
+      ],
+      "blocker_finding_ids": [],
+      "evidence_ids": [],
+      "phase_numbers": [
+        3,
+        4,
+        5,
+        6
+      ],
+      "work_item_ids": [
+        "P3-002",
+        "P3-003",
+        "P3-004",
+        "P3-005",
+        "P4-002",
+        "P4-003",
+        "P4-004",
+        "P4-005",
+        "P5-001",
+        "P5-002",
+        "P5-003",
+        "P5-004",
+        "P5-005",
+        "P5-006",
+        "P5-008",
+        "P6-006"
+      ]
+    },
+    {
+      "id": "OPENAPI-CONSISTENCY",
+      "category": "contract",
+      "requirement": "OpenAPI compilation remains reproducible when delivery contracts are affected.",
+      "applicability": "conditional",
+      "status": "passed",
+      "command": "composer openapi:check",
+      "environment": "GitHub Actions Ubuntu 24.04 with PHP 8.5, pinned Node/Chromium, MariaDB LTS, MySQL 8.4, PostgreSQL 17, Redis, nginx, and PHP-FPM.",
+      "result_summary": "Passed for 99663feb759311091965e7b2e0c354c2eb43c664; durable evidence: https://github.com/kumwe/cms/actions/runs/31564853522",
+      "artifact_paths": [
+        "api/openapi/kumwe-v1.json"
+      ],
+      "blocker_finding_ids": [],
+      "evidence_ids": [],
+      "phase_numbers": [
+        3,
+        4,
+        5,
+        6
+      ],
+      "work_item_ids": []
+    },
+    {
+      "id": "COMPOSER-QA",
+      "category": "aggregate",
+      "requirement": "The canonical PHP QA aggregate passes locally.",
+      "applicability": "required",
+      "status": "passed",
+      "command": "composer qa",
+      "environment": "GitHub Actions Ubuntu 24.04 with PHP 8.5, pinned Node/Chromium, MariaDB LTS, MySQL 8.4, PostgreSQL 17, Redis, nginx, and PHP-FPM.",
+      "result_summary": "Passed for 99663feb759311091965e7b2e0c354c2eb43c664; durable evidence: https://github.com/kumwe/cms/actions/runs/31564853522",
+      "artifact_paths": [],
+      "blocker_finding_ids": [],
+      "evidence_ids": [],
+      "phase_numbers": [
+        3,
+        4,
+        5,
+        6
+      ],
+      "work_item_ids": [
+        "P3-002",
+        "P3-003",
+        "P3-004",
+        "P3-005",
+        "P4-002",
+        "P4-003",
+        "P4-004",
+        "P4-005",
+        "P5-001",
+        "P5-002",
+        "P5-003",
+        "P5-004",
+        "P5-005",
+        "P5-006",
+        "P5-008",
+        "P6-006"
+      ]
+    },
+    {
+      "id": "FRONTEND-TYPECHECK",
+      "category": "frontend",
+      "requirement": "TypeScript type checking passes.",
+      "applicability": "required",
+      "status": "passed",
+      "command": "npm run check",
+      "environment": "GitHub Actions Ubuntu 24.04 with PHP 8.5, pinned Node/Chromium, MariaDB LTS, MySQL 8.4, PostgreSQL 17, Redis, nginx, and PHP-FPM.",
+      "result_summary": "Passed for 99663feb759311091965e7b2e0c354c2eb43c664; durable evidence: https://github.com/kumwe/cms/actions/runs/31564853522",
+      "artifact_paths": [
+        "package.json"
+      ],
+      "blocker_finding_ids": [],
+      "evidence_ids": [],
+      "phase_numbers": [
+        3,
+        4,
+        5,
+        6
+      ],
+      "work_item_ids": [
+        "P3-001",
+        "P3-002",
+        "P3-003",
+        "P3-004",
+        "P3-005",
+        "P3-006",
+        "P3-007",
+        "P3-008",
+        "P4-001",
+        "P4-002",
+        "P4-003",
+        "P4-004",
+        "P4-005",
+        "P4-006",
+        "P4-007",
+        "P4-008",
+        "P5-001",
+        "P5-002",
+        "P5-003",
+        "P5-004",
+        "P5-005",
+        "P5-006",
+        "P5-007",
+        "P5-008",
+        "P6-001",
+        "P6-002",
+        "P6-003",
+        "P6-004",
+        "P6-005",
+        "P6-006"
+      ]
+    },
+    {
+      "id": "FRONTEND-BUILD",
+      "category": "frontend",
+      "requirement": "The production frontend bundle builds reproducibly.",
+      "applicability": "required",
+      "status": "passed",
+      "command": "npm run build",
+      "environment": "GitHub Actions Ubuntu 24.04 with PHP 8.5, pinned Node/Chromium, MariaDB LTS, MySQL 8.4, PostgreSQL 17, Redis, nginx, and PHP-FPM.",
+      "result_summary": "Passed for 99663feb759311091965e7b2e0c354c2eb43c664; durable evidence: https://github.com/kumwe/cms/actions/runs/31564853522",
+      "artifact_paths": [
+        "public/assets/build/.vite/manifest.json"
+      ],
+      "blocker_finding_ids": [],
+      "evidence_ids": [],
+      "phase_numbers": [
+        3,
+        4,
+        5,
+        6
+      ],
+      "work_item_ids": [
+        "P3-001",
+        "P3-002",
+        "P3-003",
+        "P3-004",
+        "P3-005",
+        "P3-006",
+        "P3-007",
+        "P3-008",
+        "P4-001",
+        "P4-002",
+        "P4-003",
+        "P4-004",
+        "P4-005",
+        "P4-006",
+        "P4-007",
+        "P4-008",
+        "P5-001",
+        "P5-002",
+        "P5-003",
+        "P5-004",
+        "P5-005",
+        "P5-006",
+        "P5-007",
+        "P5-008",
+        "P6-001",
+        "P6-002",
+        "P6-003",
+        "P6-004",
+        "P6-005",
+        "P6-006"
+      ]
+    },
+    {
+      "id": "BROWSER-BEHAVIOR",
+      "category": "browser",
+      "requirement": "Affected tasks complete in Chromium with positive, negative, and no-JavaScript coverage where applicable.",
+      "applicability": "required",
+      "status": "passed",
+      "command": "npm run test:browser",
+      "environment": "GitHub Actions Ubuntu 24.04 with PHP 8.5, pinned Node/Chromium, MariaDB LTS, MySQL 8.4, PostgreSQL 17, Redis, nginx, and PHP-FPM.",
+      "result_summary": "Passed for 99663feb759311091965e7b2e0c354c2eb43c664; durable evidence: https://github.com/kumwe/cms/actions/runs/31564853522",
+      "artifact_paths": [
+        "tests/Browser/administrator.spec.ts",
+        "tests/Browser/portal.spec.ts"
+      ],
+      "blocker_finding_ids": [],
+      "evidence_ids": [],
+      "phase_numbers": [
+        3,
+        4,
+        5,
+        6
+      ],
+      "work_item_ids": [
+        "P3-002",
+        "P3-003",
+        "P3-004",
+        "P3-005",
+        "P3-006",
+        "P3-007",
+        "P3-008",
+        "P4-002",
+        "P4-003",
+        "P4-004",
+        "P4-005",
+        "P4-006",
+        "P4-007",
+        "P4-008",
+        "P5-001",
+        "P5-002",
+        "P5-003",
+        "P5-004",
+        "P5-005",
+        "P5-006",
+        "P5-007",
+        "P5-008",
+        "P6-001",
+        "P6-002",
+        "P6-003",
+        "P6-004"
+      ]
+    },
+    {
+      "id": "BROWSER-ACCESSIBILITY",
+      "category": "accessibility",
+      "requirement": "Axe, keyboard, focus, landmarks, names, zoom, motion, and touch obligations pass for affected states.",
+      "applicability": "required",
+      "status": "passed",
+      "command": "npm run test:browser -- tests/Browser/administrator.spec.ts tests/Browser/portal.spec.ts tests/Browser/interface-integrity.spec.ts",
+      "environment": "GitHub Actions Ubuntu 24.04 with PHP 8.5, pinned Node/Chromium, MariaDB LTS, MySQL 8.4, PostgreSQL 17, Redis, nginx, and PHP-FPM.",
+      "result_summary": "Passed for 99663feb759311091965e7b2e0c354c2eb43c664; durable evidence: https://github.com/kumwe/cms/actions/runs/31564853522",
+      "artifact_paths": [
+        "tests/Browser/administrator.spec.ts",
+        "tests/Browser/portal.spec.ts",
+        "tests/Browser/interface-integrity.spec.ts"
+      ],
+      "blocker_finding_ids": [],
+      "evidence_ids": [],
+      "phase_numbers": [
+        3,
+        4,
+        5,
+        6
+      ],
+      "work_item_ids": [
+        "P3-002",
+        "P3-003",
+        "P3-004",
+        "P3-005",
+        "P3-006",
+        "P3-007",
+        "P3-008",
+        "P4-002",
+        "P4-003",
+        "P4-004",
+        "P4-005",
+        "P4-006",
+        "P4-007",
+        "P4-008",
+        "P5-001",
+        "P5-002",
+        "P5-003",
+        "P5-004",
+        "P5-005",
+        "P5-006",
+        "P5-007",
+        "P5-008",
+        "P6-001",
+        "P6-002",
+        "P6-003",
+        "P6-004"
+      ]
+    },
+    {
+      "id": "BROWSER-VISUAL-DIAGNOSTICS",
+      "category": "visual",
+      "requirement": "Viewport, theme, data, state, and input matrices have no unintended clipping, overflow, overlap, or missing assets.",
+      "applicability": "required",
+      "status": "passed",
+      "command": "npm run test:browser -- tests/Browser/interface-integrity.spec.ts tests/Browser/administrator.spec.ts tests/Browser/portal.spec.ts",
+      "environment": "GitHub Actions Ubuntu 24.04 with PHP 8.5, pinned Node/Chromium, MariaDB LTS, MySQL 8.4, PostgreSQL 17, Redis, nginx, and PHP-FPM.",
+      "result_summary": "Passed for 99663feb759311091965e7b2e0c354c2eb43c664; durable evidence: https://github.com/kumwe/cms/actions/runs/31564853522",
+      "artifact_paths": [
+        "tests/Browser/interface-integrity.spec.ts"
+      ],
+      "blocker_finding_ids": [],
+      "evidence_ids": [
+        "EVID-FIND-0004-CI-BROWSER",
+        "EVID-FIND-0006-CI-BROWSER"
+      ],
+      "phase_numbers": [
+        3,
+        4,
+        5,
+        6
+      ],
+      "work_item_ids": [
+        "P3-002",
+        "P3-003",
+        "P3-004",
+        "P3-005",
+        "P3-006",
+        "P3-007",
+        "P3-008",
+        "P4-002",
+        "P4-003",
+        "P4-004",
+        "P4-005",
+        "P4-006",
+        "P4-007",
+        "P4-008",
+        "P5-001",
+        "P5-002",
+        "P5-003",
+        "P5-004",
+        "P5-005",
+        "P5-006",
+        "P5-007",
+        "P5-008",
+        "P6-001",
+        "P6-002",
+        "P6-003",
+        "P6-004"
+      ]
+    },
+    {
+      "id": "MIGRATION-PARITY",
+      "category": "parity",
+      "requirement": "Old/new route, capability, field, action, payload, validation, error, and outcome parity is proved.",
+      "applicability": "conditional",
+      "status": "passed",
+      "command": "Run Phase 2-5 parity fixtures in PHP and browser matrices",
+      "environment": "GitHub Actions Ubuntu 24.04 with PHP 8.5, pinned Node/Chromium, MariaDB LTS, MySQL 8.4, PostgreSQL 17, Redis, nginx, and PHP-FPM.",
+      "result_summary": "Passed for 99663feb759311091965e7b2e0c354c2eb43c664; durable evidence: https://github.com/kumwe/cms/actions/runs/31564853522",
+      "artifact_paths": [
+        "tests/Fixtures/InterfaceStandard/phase-three-security-identity-parity.json",
+        "tests/Fixtures/InterfaceStandard/phase-4-generated-surface-parity.json",
+        "tests/Fixtures/InterfaceStandard/phase-five-surface-parity.json"
+      ],
+      "blocker_finding_ids": [],
+      "evidence_ids": [],
+      "phase_numbers": [
+        3,
+        4,
+        5,
+        6
+      ],
+      "work_item_ids": [
+        "P3-001",
+        "P3-008",
+        "P4-001",
+        "P4-003",
+        "P4-008",
+        "P5-001",
+        "P5-002",
+        "P5-003",
+        "P5-004",
+        "P5-005"
+      ]
+    },
+    {
+      "id": "SECURITY-NEGATIVE-PATHS",
+      "category": "security",
+      "requirement": "Authorization, disclosure, CSRF, step-up, concurrency, approval, audit, and recovery negative paths pass.",
+      "applicability": "conditional",
+      "status": "passed",
+      "command": "GitHub security run 31564853353 plus focused application negative-path matrices",
+      "environment": "GitHub Actions Ubuntu 24.04 with PHP 8.5, pinned Node/Chromium, MariaDB LTS, MySQL 8.4, PostgreSQL 17, Redis, nginx, and PHP-FPM.",
+      "result_summary": "Passed for 99663feb759311091965e7b2e0c354c2eb43c664; durable evidence: https://github.com/kumwe/cms/actions/runs/31564853353",
+      "artifact_paths": [
+        ".github/workflows/security.yml",
+        "tests/Browser/administrator.spec.ts",
+        "tests/Browser/portal.spec.ts"
+      ],
+      "blocker_finding_ids": [],
+      "evidence_ids": [],
+      "phase_numbers": [
+        3,
+        4,
+        5,
+        6
+      ],
+      "work_item_ids": [
+        "P3-001",
+        "P3-003",
+        "P3-004",
+        "P3-005",
+        "P3-006",
+        "P3-007",
+        "P3-008",
+        "P4-001",
+        "P4-002",
+        "P4-003",
+        "P4-004",
+        "P4-005",
+        "P4-006",
+        "P4-008",
+        "P5-003",
+        "P5-005",
+        "P5-006",
+        "P6-001",
+        "P6-002",
+        "P6-003",
+        "P6-005",
+        "P6-006"
+      ]
+    },
+    {
+      "id": "TEMPLATE-EXTENSION-CONFORMANCE",
+      "category": "extensibility",
+      "requirement": "Core and installed templates/extensions preserve typed KIS, customization, fallback, reset, and ownership contracts.",
+      "applicability": "conditional",
+      "status": "passed",
+      "command": "Run typed contribution reconciliation, template fallback/reset, extension lifecycle, and browser conformance matrices",
+      "environment": "GitHub Actions Ubuntu 24.04 with PHP 8.5, pinned Node/Chromium, MariaDB LTS, MySQL 8.4, PostgreSQL 17, Redis, nginx, and PHP-FPM.",
+      "result_summary": "Passed for 99663feb759311091965e7b2e0c354c2eb43c664; durable evidence: https://github.com/kumwe/cms/actions/runs/31564853522",
+      "artifact_paths": [
+        "examples/extensions/announcements/kumwe.json",
+        "tests/Integration/Extension/ExtensionContributionLifecycleIntegrationTest.php"
+      ],
+      "blocker_finding_ids": [],
+      "evidence_ids": [],
+      "phase_numbers": [
+        3,
+        4,
+        5,
+        6
+      ],
+      "work_item_ids": [
+        "P4-004",
+        "P4-006",
+        "P5-003",
+        "P5-004",
+        "P5-006",
+        "P6-003",
+        "P6-006"
+      ]
+    },
+    {
+      "id": "DATABASE-TOPOLOGY",
+      "category": "qualification",
+      "requirement": "Relevant production topology and database adapters render and mutate representative state consistently.",
+      "applicability": "conditional",
+      "status": "passed",
+      "command": "Kumwe CI run 31564853522 and Development Compose acceptance run 31564853361",
+      "environment": "GitHub Actions Ubuntu 24.04 with PHP 8.5, pinned Node/Chromium, MariaDB LTS, MySQL 8.4, PostgreSQL 17, Redis, nginx, and PHP-FPM.",
+      "result_summary": "Passed for 99663feb759311091965e7b2e0c354c2eb43c664; durable evidence: https://github.com/kumwe/cms/actions/runs/31564853361",
+      "artifact_paths": [
+        ".github/workflows/ci.yml",
+        ".github/workflows/development-compose.yml",
+        "tests/Fixtures/InterfaceStandard/phase-six-journey-qualification.json"
+      ],
+      "blocker_finding_ids": [],
+      "evidence_ids": [],
+      "phase_numbers": [
+        3,
+        4,
+        5,
+        6
+      ],
+      "work_item_ids": [
+        "P4-006",
+        "P5-006",
+        "P6-001",
+        "P6-002",
+        "P6-003",
+        "P6-004",
+        "P6-005",
+        "P6-007"
+      ]
+    },
+    {
+      "id": "RECOVERY-ROLLBACK",
+      "category": "recovery",
+      "requirement": "Rollback, template fallback/reset, and data recovery procedures are proportionate and verified.",
+      "applicability": "conditional",
+      "status": "passed",
+      "command": "Kumwe CI deployment/recovery acceptance run 31564853522 and Compose acceptance run 31564853361",
+      "environment": "GitHub Actions Ubuntu 24.04 with PHP 8.5, pinned Node/Chromium, MariaDB LTS, MySQL 8.4, PostgreSQL 17, Redis, nginx, and PHP-FPM.",
+      "result_summary": "Passed for 99663feb759311091965e7b2e0c354c2eb43c664; durable evidence: https://github.com/kumwe/cms/actions/runs/31564853522",
+      "artifact_paths": [
+        ".github/workflows/deployment-acceptance.yml",
+        "docs/interface-standard/programme/continuation-protocol.md"
+      ],
+      "blocker_finding_ids": [],
+      "evidence_ids": [],
+      "phase_numbers": [
+        3,
+        4,
+        5,
+        6
+      ],
+      "work_item_ids": [
+        "P6-005"
+      ]
+    },
+    {
+      "id": "HUMAN-REVIEW",
+      "category": "review",
+      "requirement": "Accountable product, accessibility, security, KIS, and release roles review applicable evidence.",
+      "applicability": "required",
+      "status": "not_run",
+      "command": "Accountable product, accessibility, security, KIS, programme, and release owners review the committed checkpoint and PR evidence",
+      "environment": "Accountable review on pull request #31.",
+      "result_summary": "Not run: automated qualification is complete, but accountable final human acceptance cannot be self-attested by an implementation agent.",
+      "artifact_paths": [
+        "docs/interface-standard/programme/phase-ledger.json",
+        "docs/interface-standard/programme/verification-report-template.json"
+      ],
+      "blocker_finding_ids": [],
+      "evidence_ids": [],
+      "phase_numbers": [
+        3,
+        4,
+        5,
+        6
+      ],
+      "work_item_ids": [
+        "P6-007"
+      ]
+    }
+  ],
+  "impact": {
+    "security": {
+      "status": "affected",
+      "summary": "Security and identity pages are task-focused while capability, CSRF, disclosure, approval, audit, and step-up boundaries remain server-owned and pass negative-path tests."
+    },
+    "accessibility": {
+      "status": "affected",
+      "summary": "Shared semantics, focus management, keyboard behavior, responsive alternatives, reduced motion, zoom, touch, and Chromium accessibility checks passed."
+    },
+    "customization": {
+      "status": "affected",
+      "summary": "Presentation freedom remains inside typed KIS tokens, slots, preferences, and versioned contribution contracts."
+    },
+    "templates": {
+      "status": "affected",
+      "summary": "Administrator, portal, and site template install, override, compatibility rejection, fallback, and reset paths passed."
+    },
+    "extensions": {
+      "status": "affected",
+      "summary": "Graphical contributions now declare typed surface ownership and reconcile strictly with runtime registration and conformance fixtures."
+    },
+    "database": {
+      "status": "affected",
+      "summary": "MariaDB, MySQL, and PostgreSQL qualification passed with consistent GUI policy and state behavior."
+    },
+    "deployment": {
+      "status": "affected",
+      "summary": "Production deployment and Development Compose acceptance passed in runs 31564853522 and 31564853361."
+    }
+  },
+  "findings": {
+    "register_path": "docs/interface-standard/programme/findings-register.json",
+    "finding_ids": [
+      "KIS-FINDING-0001",
+      "KIS-FINDING-0002",
+      "KIS-FINDING-0003",
+      "KIS-FINDING-0004",
+      "KIS-FINDING-0005",
+      "KIS-FINDING-0006"
+    ],
+    "new_finding_ids": [],
+    "resolved_finding_ids": [
+      "KIS-FINDING-0004",
+      "KIS-FINDING-0006"
+    ]
+  },
+  "recovery": {
+    "required": true,
+    "strategy": "Revert phase-scoped commits in reverse dependency order; preserve data migrations unless a tested reverse migration exists; use typed template fallback/reset and validated backup/restore paths.",
+    "command_or_procedure": "Deployment/recovery acceptance in Kumwe CI run 31564853522 and Development Compose run 31564853361.",
+    "verified": true,
+    "artifact_paths": [
+      ".github/workflows/deployment-acceptance.yml",
+      "docs/interface-standard/customization.md",
+      "docs/interface-standard/programme/continuation-protocol.md"
+    ]
+  },
+  "residual_risks": [
+    {
+      "severity": "P2",
+      "summary": "P6-007 and Gate F remain intentionally in review until accountable human owners accept the complete evidence bundle.",
+      "owner_role": "programme-owner",
+      "finding_ids": []
+    }
+  ],
+  "signoff": {
+    "merge_recommendation": "hold",
+    "decision": "pending",
+    "reviewer_roles": [
+      "programme-owner",
+      "kis-owner",
+      "product-task-owner",
+      "security-owner",
+      "accessibility-owner",
+      "extension-contract-owner",
+      "quality-owner",
+      "release-owner"
+    ],
+    "notes": "All automatable checks and programme work through P6-006 are accepted. HUMAN-REVIEW remains not_run; only accountable final acceptance may move P6-007, Gate F, Phase 6, and the programme to complete."
+  }
+}
