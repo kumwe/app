@@ -14,6 +14,7 @@
 /storage/tmp/*
 /storage/private/demo-access-credentials.json
 /extensions/*
+/public/assets/extensions/
 /vendor/
 
 !/storage/cache/.gitkeep
