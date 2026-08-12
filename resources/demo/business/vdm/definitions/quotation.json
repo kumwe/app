@@ -1,0 +1,398 @@
+{
+  "id": "019c7000-0000-7000-8000-000000000107",
+  "owner": {
+    "type": "site",
+    "identifier": "default"
+  },
+  "site": "default",
+  "handle": "site.default.vdm_quotation",
+  "singular_label": "Quotation",
+  "plural_label": "Quotations",
+  "status": "draft",
+  "definition_version": 0,
+  "storage_mode": "relational",
+  "identity_strategy": "uuid",
+  "scope": "site",
+  "audit_enabled": true,
+  "revisions_enabled": true,
+  "soft_delete_enabled": true,
+  "fields": [
+    {
+      "handle": "id",
+      "label": "ID",
+      "type": "core.uuid",
+      "required": true,
+      "nullable": false,
+      "unique": true,
+      "indexed": true,
+      "immutable_after_create": true,
+      "server_only": true,
+      "read_only": true,
+      "create_visible": false,
+      "update_visible": false,
+      "read_visible": true,
+      "sensitivity": "public",
+      "placements": [
+        "detail",
+        "history"
+      ]
+    },
+    {
+      "handle": "quote_number",
+      "label": "Quotation number",
+      "type": "core.text",
+      "required": true,
+      "nullable": false,
+      "length": 40,
+      "normalizers": [
+        "trim",
+        "uppercase"
+      ],
+      "unique": true,
+      "indexed": true,
+      "immutable_after_create": true,
+      "searchable": true,
+      "filterable": true,
+      "sortable": true,
+      "reportable": true,
+      "exportable": true,
+      "sensitivity": "public",
+      "form_group": "identity",
+      "order": 10,
+      "placements": [
+        "detail",
+        "form",
+        "history",
+        "list",
+        "relation"
+      ]
+    },
+    {
+      "handle": "organization",
+      "label": "Portal organization",
+      "type": "core.text",
+      "description": "Portal organization identifier that scopes this quotation to one client's members.",
+      "required": false,
+      "nullable": true,
+      "length": 63,
+      "normalizers": [
+        "trim",
+        "lowercase"
+      ],
+      "indexed": true,
+      "filterable": true,
+      "exportable": false,
+      "sensitivity": "internal",
+      "form_group": "access",
+      "order": 20,
+      "placements": [
+        "detail",
+        "form",
+        "history"
+      ]
+    },
+    {
+      "handle": "title",
+      "label": "Title",
+      "type": "core.text",
+      "required": true,
+      "nullable": false,
+      "length": 180,
+      "normalizers": [
+        "trim",
+        "unicode_nfc"
+      ],
+      "searchable": true,
+      "sortable": true,
+      "reportable": true,
+      "exportable": true,
+      "sensitivity": "public",
+      "form_group": "identity",
+      "order": 30,
+      "placements": [
+        "detail",
+        "form",
+        "list"
+      ]
+    },
+    {
+      "handle": "issued_on",
+      "label": "Issued on",
+      "type": "core.date",
+      "required": true,
+      "nullable": false,
+      "filterable": true,
+      "sortable": true,
+      "reportable": true,
+      "exportable": true,
+      "sensitivity": "public",
+      "form_group": "commercial",
+      "order": 40,
+      "placements": [
+        "detail",
+        "form",
+        "list"
+      ]
+    },
+    {
+      "handle": "valid_until",
+      "label": "Valid until",
+      "type": "core.date",
+      "required": false,
+      "nullable": true,
+      "filterable": true,
+      "sortable": true,
+      "reportable": true,
+      "exportable": true,
+      "sensitivity": "public",
+      "form_group": "commercial",
+      "order": 50,
+      "placements": [
+        "detail",
+        "form",
+        "list"
+      ]
+    },
+    {
+      "handle": "subtotal",
+      "label": "Subtotal",
+      "type": "core.money",
+      "required": true,
+      "nullable": false,
+      "precision": 16,
+      "scale": 2,
+      "configuration": {
+        "currency": "NAD"
+      },
+      "reportable": true,
+      "exportable": true,
+      "sensitivity": "public",
+      "form_group": "commercial",
+      "order": 60,
+      "placements": [
+        "detail",
+        "form",
+        "list"
+      ]
+    },
+    {
+      "handle": "tax",
+      "label": "Tax",
+      "type": "core.money",
+      "required": true,
+      "nullable": false,
+      "precision": 16,
+      "scale": 2,
+      "configuration": {
+        "currency": "NAD"
+      },
+      "reportable": true,
+      "exportable": true,
+      "sensitivity": "public",
+      "form_group": "commercial",
+      "order": 70,
+      "placements": [
+        "detail",
+        "form"
+      ]
+    },
+    {
+      "handle": "total",
+      "label": "Total",
+      "type": "core.money",
+      "description": "Exact quoted amount recorded without floating-point arithmetic.",
+      "required": true,
+      "nullable": false,
+      "precision": 16,
+      "scale": 2,
+      "configuration": {
+        "currency": "NAD"
+      },
+      "reportable": true,
+      "exportable": true,
+      "sensitivity": "public",
+      "form_group": "commercial",
+      "order": 80,
+      "placements": [
+        "detail",
+        "form",
+        "list"
+      ]
+    },
+    {
+      "handle": "terms",
+      "label": "Terms",
+      "type": "core.rich_text",
+      "required": false,
+      "nullable": true,
+      "length": 8000,
+      "searchable": false,
+      "exportable": true,
+      "sensitivity": "public",
+      "form_group": "commercial",
+      "order": 90,
+      "placements": [
+        "detail",
+        "form"
+      ]
+    },
+    {
+      "handle": "internal_notes",
+      "label": "Internal notes",
+      "type": "core.rich_text",
+      "required": false,
+      "nullable": true,
+      "length": 4000,
+      "searchable": false,
+      "filterable": false,
+      "sortable": false,
+      "reportable": false,
+      "exportable": false,
+      "sensitivity": "restricted",
+      "form_group": "internal",
+      "order": 100,
+      "placements": [
+        "detail",
+        "form",
+        "history"
+      ]
+    }
+  ],
+  "relationships": [
+    {
+      "handle": "client",
+      "label": "Client account",
+      "kind": "many_to_one",
+      "target": "site.default.vdm_client_account",
+      "inverse": null,
+      "required": false,
+      "unique": false,
+      "ordered": false,
+      "on_delete": "set_null"
+    },
+    {
+      "handle": "lines",
+      "label": "Quotation lines",
+      "kind": "owned_line_collection",
+      "target": "site.default.vdm_quotation_line",
+      "inverse": null,
+      "required": false,
+      "unique": false,
+      "ordered": true,
+      "on_delete": "cascade"
+    }
+  ],
+  "views": [
+    {
+      "handle": "quotation_list",
+      "label": "Quotations",
+      "kind": "list",
+      "fields": [
+        "quote_number",
+        "title",
+        "issued_on",
+        "valid_until",
+        "total"
+      ],
+      "filters": [
+        "quote_number",
+        "issued_on",
+        "valid_until"
+      ],
+      "sorts": [
+        "quote_number",
+        "issued_on"
+      ],
+      "administrator": true,
+      "portal": true,
+      "public": false
+    }
+  ],
+  "actions": [
+    {
+      "handle": "send",
+      "label": "Send to client",
+      "capability": "business.record.transition",
+      "administrator": true,
+      "portal": false,
+      "public": false,
+      "transition": "send"
+    },
+    {
+      "handle": "accept",
+      "label": "Accept quotation",
+      "capability": "business.record.transition",
+      "administrator": true,
+      "portal": true,
+      "public": false,
+      "transition": "accept"
+    },
+    {
+      "handle": "decline",
+      "label": "Decline quotation",
+      "capability": "business.record.transition",
+      "administrator": true,
+      "portal": true,
+      "public": false,
+      "transition": "decline"
+    },
+    {
+      "handle": "expire",
+      "label": "Mark expired",
+      "capability": "business.record.transition",
+      "administrator": true,
+      "portal": false,
+      "public": false,
+      "transition": "expire"
+    }
+  ],
+  "workflow": {
+    "initial_state": "draft",
+    "states": [
+      "draft",
+      "sent",
+      "accepted",
+      "declined",
+      "expired"
+    ],
+    "transitions": [
+      {
+        "handle": "send",
+        "from": "draft",
+        "to": "sent",
+        "capability": "business.record.transition"
+      },
+      {
+        "handle": "accept",
+        "from": "sent",
+        "to": "accepted",
+        "capability": "business.record.transition"
+      },
+      {
+        "handle": "decline",
+        "from": "sent",
+        "to": "declined",
+        "capability": "business.record.transition"
+      },
+      {
+        "handle": "expire",
+        "from": "sent",
+        "to": "expired",
+        "capability": "business.record.transition"
+      }
+    ]
+  },
+  "record_invariants": [],
+  "compatibility_metadata": {},
+  "administrator_exposure": true,
+  "portal_exposure": true,
+  "portal_operations": [
+    "action",
+    "browse",
+    "history",
+    "read",
+    "relation",
+    "status"
+  ],
+  "public_exposure": false
+}

@@ -80,7 +80,7 @@ final class VdmBusinessDemoInstallerTest extends TestCase
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('exists without an installer provenance checkpoint');
 
-        $this->invoke($installer, 'installRecordPolicies', $this->context(), $definition, 'vdm');
+        $this->invoke($installer, 'installRecordPolicies', $this->context(), $definition, 'vdm', 'open');
     }
 
     /**
@@ -250,6 +250,97 @@ final class VdmBusinessDemoInstallerTest extends TestCase
 
         $this->invoke($installer, 'assertDefinitionRuntime', $this->context(), $desired, [
             'last_applied_checksum' => $baseline->checksum(),
+        ]);
+    }
+
+    /**
+     * Proves each record-access mode shapes its generated policy rows exactly as released.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testRecordAccessModesShapeGeneratedPolicyBaselines(): void
+    {
+        $installer = $this->installer($this->database(), $this->createStub(DemoProfileLedger::class));
+        $definition = $this->definition()->published(1);
+        $read = 'business.record.read';
+
+        $open = $this->invoke($installer, 'policyBaselines', $definition, $read, 'vdm', 'open');
+        self::assertIsArray($open);
+        self::assertCount(1, $open);
+        self::assertIsArray($open[0]);
+        self::assertSame('allow', $open[0]['effect'] ?? null);
+        self::assertSame(['type' => 'constant', 'value' => true], $open[0]['predicate'] ?? null);
+
+        $organization = $this->invoke($installer, 'policyBaselines', $definition, $read, 'vdm', 'organization');
+        self::assertIsArray($organization);
+        self::assertCount(1, $organization);
+        self::assertIsArray($organization[0]);
+        self::assertSame('allow', $organization[0]['effect'] ?? null);
+        self::assertSame([
+            'type' => 'boolean',
+            'operator' => 'any',
+            'children' => [
+                [
+                    'type' => 'attribute_null',
+                    'source' => 'context',
+                    'attribute' => 'organization',
+                    'is_null' => true,
+                ],
+                [
+                    'type' => 'field_attribute_comparison',
+                    'field' => 'organization',
+                    'source' => 'context',
+                    'attribute' => 'organization',
+                    'operator' => 'equal',
+                    'value_type' => 'string',
+                ],
+            ],
+        ], $organization[0]['predicate'] ?? null);
+
+        $administration = $this->invoke($installer, 'policyBaselines', $definition, $read, 'vdm', 'administration');
+        self::assertIsArray($administration);
+        self::assertCount(2, $administration);
+        self::assertSame($open[0], $administration[0]);
+        $guard = $administration[1];
+        self::assertIsArray($guard);
+        self::assertSame('deny', $guard['effect'] ?? null);
+        self::assertIsString($guard['policy_code'] ?? null);
+        self::assertStringEndsWith('.portal-guard', $guard['policy_code']);
+        self::assertSame([
+            'type' => 'attribute_null',
+            'source' => 'context',
+            'attribute' => 'organization',
+            'is_null' => false,
+        ], $guard['predicate'] ?? null);
+        $fields = $guard['fields'] ?? null;
+        self::assertIsArray($fields);
+        self::assertNotSame([], $fields);
+        foreach ($fields as $handles) {
+            self::assertSame([], $handles);
+        }
+        self::assertNotSame($open[0]['fixture_key'] ?? null, $guard['fixture_key'] ?? null);
+    }
+
+    /**
+     * Proves an undeclared record-access vocabulary word is refused before any policy derivation.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testUnknownRecordAccessModeIsRejected(): void
+    {
+        $installer = $this->installer($this->database(), $this->createStub(DemoProfileLedger::class));
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('unknown record-access mode');
+
+        $this->invoke($installer, 'recordAccessModes', [
+            'installation_order' => [
+                ['fixture_key' => 'definition.sample', 'record_access' => 'everyone'],
+            ],
         ]);
     }
 
@@ -427,7 +518,9 @@ final class VdmBusinessDemoInstallerTest extends TestCase
         VdmBusinessDemoInstaller $installer,
         EntityTypeDefinition $definition,
     ): array {
-        $baseline = $this->invoke($installer, 'policyBaseline', $definition, 'business.record.read', 'vdm');
+        $baselines = $this->invoke($installer, 'policyBaselines', $definition, 'business.record.read', 'vdm', 'open');
+        self::assertIsArray($baselines);
+        $baseline = $baselines[0] ?? null;
         self::assertIsArray($baseline);
 
         return $baseline;

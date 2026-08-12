@@ -17,12 +17,12 @@ $expected = match ($contract) {
         'content' => 16,
         'navigation' => 16,
         'business_assets' => [
-            'business_action' => 29,
-            'business_archive' => 1,
-            'business_definition' => 5,
-            'business_record' => 30,
-            'business_relation' => 43,
-            'resource_policy' => 65,
+            'business_action' => 50,
+            'business_archive' => 2,
+            'business_definition' => 12,
+            'business_record' => 61,
+            'business_relation' => 96,
+            'resource_policy' => 221,
         ],
     ],
     'placeholder-none' => [
@@ -169,9 +169,16 @@ foreach ([...$definitionHandles, ...$installationHandles] as $businessHandle) {
 }
 $expectedBusinessHandles = $expected['business_assets'] !== [] ? [
     sprintf('site.%s.vdm_client_account', $configuration->publicSite),
+    sprintf('site.%s.vdm_domain', $configuration->publicSite),
     sprintf('site.%s.vdm_engagement', $configuration->publicSite),
+    sprintf('site.%s.vdm_invoice', $configuration->publicSite),
+    sprintf('site.%s.vdm_invoice_line', $configuration->publicSite),
+    sprintf('site.%s.vdm_product', $configuration->publicSite),
+    sprintf('site.%s.vdm_quotation', $configuration->publicSite),
+    sprintf('site.%s.vdm_quotation_line', $configuration->publicSite),
     sprintf('site.%s.vdm_service_catalog_item', $configuration->publicSite),
     sprintf('site.%s.vdm_service_request', $configuration->publicSite),
+    sprintf('site.%s.vdm_subscription', $configuration->publicSite),
     sprintf('site.%s.vdm_work_entry', $configuration->publicSite),
 ] : [];
 if ($definitionHandles !== $expectedBusinessHandles || $installationHandles !== $expectedBusinessHandles) {

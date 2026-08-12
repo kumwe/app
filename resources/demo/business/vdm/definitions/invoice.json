@@ -1,0 +1,436 @@
+{
+  "id": "019c7000-0000-7000-8000-000000000109",
+  "owner": {
+    "type": "site",
+    "identifier": "default"
+  },
+  "site": "default",
+  "handle": "site.default.vdm_invoice",
+  "singular_label": "Invoice",
+  "plural_label": "Invoices",
+  "status": "draft",
+  "definition_version": 0,
+  "storage_mode": "relational",
+  "identity_strategy": "uuid",
+  "scope": "site",
+  "audit_enabled": true,
+  "revisions_enabled": true,
+  "soft_delete_enabled": true,
+  "fields": [
+    {
+      "handle": "id",
+      "label": "ID",
+      "type": "core.uuid",
+      "required": true,
+      "nullable": false,
+      "unique": true,
+      "indexed": true,
+      "immutable_after_create": true,
+      "server_only": true,
+      "read_only": true,
+      "create_visible": false,
+      "update_visible": false,
+      "read_visible": true,
+      "sensitivity": "public",
+      "placements": [
+        "detail",
+        "history"
+      ]
+    },
+    {
+      "handle": "invoice_number",
+      "label": "Invoice number",
+      "type": "core.text",
+      "required": true,
+      "nullable": false,
+      "length": 40,
+      "normalizers": [
+        "trim",
+        "uppercase"
+      ],
+      "unique": true,
+      "indexed": true,
+      "immutable_after_create": true,
+      "searchable": true,
+      "filterable": true,
+      "sortable": true,
+      "reportable": true,
+      "exportable": true,
+      "sensitivity": "public",
+      "form_group": "identity",
+      "order": 10,
+      "placements": [
+        "detail",
+        "form",
+        "history",
+        "list",
+        "relation"
+      ]
+    },
+    {
+      "handle": "organization",
+      "label": "Portal organization",
+      "type": "core.text",
+      "description": "Portal organization identifier that scopes this invoice to one client's members.",
+      "required": false,
+      "nullable": true,
+      "length": 63,
+      "normalizers": [
+        "trim",
+        "lowercase"
+      ],
+      "indexed": true,
+      "filterable": true,
+      "exportable": false,
+      "sensitivity": "internal",
+      "form_group": "access",
+      "order": 20,
+      "placements": [
+        "detail",
+        "form",
+        "history"
+      ]
+    },
+    {
+      "handle": "issued_on",
+      "label": "Issued on",
+      "type": "core.date",
+      "required": true,
+      "nullable": false,
+      "filterable": true,
+      "sortable": true,
+      "reportable": true,
+      "exportable": true,
+      "sensitivity": "public",
+      "form_group": "commercial",
+      "order": 30,
+      "placements": [
+        "detail",
+        "form",
+        "list"
+      ]
+    },
+    {
+      "handle": "due_on",
+      "label": "Due on",
+      "type": "core.date",
+      "required": true,
+      "nullable": false,
+      "filterable": true,
+      "sortable": true,
+      "reportable": true,
+      "exportable": true,
+      "sensitivity": "public",
+      "form_group": "commercial",
+      "order": 40,
+      "placements": [
+        "detail",
+        "form",
+        "list"
+      ]
+    },
+    {
+      "handle": "paid_on",
+      "label": "Paid on",
+      "type": "core.date",
+      "required": false,
+      "nullable": true,
+      "filterable": true,
+      "sortable": true,
+      "reportable": true,
+      "exportable": true,
+      "sensitivity": "public",
+      "form_group": "commercial",
+      "order": 50,
+      "placements": [
+        "detail",
+        "form",
+        "list"
+      ]
+    },
+    {
+      "handle": "subtotal",
+      "label": "Subtotal",
+      "type": "core.money",
+      "required": true,
+      "nullable": false,
+      "precision": 16,
+      "scale": 2,
+      "configuration": {
+        "currency": "NAD"
+      },
+      "reportable": true,
+      "exportable": true,
+      "sensitivity": "public",
+      "form_group": "commercial",
+      "order": 60,
+      "placements": [
+        "detail",
+        "form"
+      ]
+    },
+    {
+      "handle": "tax",
+      "label": "Tax",
+      "type": "core.money",
+      "required": true,
+      "nullable": false,
+      "precision": 16,
+      "scale": 2,
+      "configuration": {
+        "currency": "NAD"
+      },
+      "reportable": true,
+      "exportable": true,
+      "sensitivity": "public",
+      "form_group": "commercial",
+      "order": 70,
+      "placements": [
+        "detail",
+        "form"
+      ]
+    },
+    {
+      "handle": "total",
+      "label": "Total",
+      "type": "core.money",
+      "description": "Exact invoiced amount recorded without floating-point arithmetic.",
+      "required": true,
+      "nullable": false,
+      "precision": 16,
+      "scale": 2,
+      "configuration": {
+        "currency": "NAD"
+      },
+      "reportable": true,
+      "exportable": true,
+      "sensitivity": "public",
+      "form_group": "commercial",
+      "order": 80,
+      "placements": [
+        "detail",
+        "form",
+        "list"
+      ]
+    },
+    {
+      "handle": "payment_reference",
+      "label": "Payment reference",
+      "type": "core.text",
+      "required": false,
+      "nullable": true,
+      "length": 64,
+      "normalizers": [
+        "trim"
+      ],
+      "exportable": false,
+      "sensitivity": "confidential",
+      "form_group": "commercial",
+      "order": 90,
+      "placements": [
+        "detail",
+        "form",
+        "history"
+      ]
+    },
+    {
+      "handle": "collection_notes",
+      "label": "Collection notes",
+      "type": "core.rich_text",
+      "required": false,
+      "nullable": true,
+      "length": 4000,
+      "searchable": false,
+      "filterable": false,
+      "sortable": false,
+      "reportable": false,
+      "exportable": false,
+      "sensitivity": "restricted",
+      "form_group": "internal",
+      "order": 100,
+      "placements": [
+        "detail",
+        "form",
+        "history"
+      ]
+    }
+  ],
+  "relationships": [
+    {
+      "handle": "client",
+      "label": "Client account",
+      "kind": "many_to_one",
+      "target": "site.default.vdm_client_account",
+      "inverse": null,
+      "required": false,
+      "unique": false,
+      "ordered": false,
+      "on_delete": "set_null"
+    },
+    {
+      "handle": "engagement",
+      "label": "Client engagement",
+      "kind": "many_to_one",
+      "target": "site.default.vdm_engagement",
+      "inverse": null,
+      "required": false,
+      "unique": false,
+      "ordered": false,
+      "on_delete": "set_null"
+    },
+    {
+      "handle": "quotation",
+      "label": "Source quotation",
+      "kind": "many_to_one",
+      "target": "site.default.vdm_quotation",
+      "inverse": null,
+      "required": false,
+      "unique": false,
+      "ordered": false,
+      "on_delete": "set_null"
+    },
+    {
+      "handle": "lines",
+      "label": "Invoice lines",
+      "kind": "owned_line_collection",
+      "target": "site.default.vdm_invoice_line",
+      "inverse": null,
+      "required": false,
+      "unique": false,
+      "ordered": true,
+      "on_delete": "cascade"
+    }
+  ],
+  "views": [
+    {
+      "handle": "invoice_list",
+      "label": "Invoices",
+      "kind": "list",
+      "fields": [
+        "invoice_number",
+        "issued_on",
+        "due_on",
+        "paid_on",
+        "total"
+      ],
+      "filters": [
+        "invoice_number",
+        "issued_on",
+        "due_on",
+        "paid_on"
+      ],
+      "sorts": [
+        "invoice_number",
+        "issued_on",
+        "due_on"
+      ],
+      "administrator": true,
+      "portal": true,
+      "public": false
+    }
+  ],
+  "actions": [
+    {
+      "handle": "issue",
+      "label": "Issue invoice",
+      "capability": "business.record.transition",
+      "administrator": true,
+      "portal": false,
+      "public": false,
+      "transition": "issue"
+    },
+    {
+      "handle": "record_payment",
+      "label": "Record payment",
+      "capability": "business.record.transition",
+      "administrator": true,
+      "portal": false,
+      "public": false,
+      "transition": "record_payment"
+    },
+    {
+      "handle": "mark_overdue",
+      "label": "Mark overdue",
+      "capability": "business.record.transition",
+      "administrator": true,
+      "portal": false,
+      "public": false,
+      "transition": "mark_overdue"
+    },
+    {
+      "handle": "settle_overdue",
+      "label": "Record late payment",
+      "capability": "business.record.transition",
+      "administrator": true,
+      "portal": false,
+      "public": false,
+      "transition": "settle_overdue"
+    },
+    {
+      "handle": "write_off",
+      "label": "Write off",
+      "capability": "business.record.transition",
+      "administrator": true,
+      "portal": false,
+      "public": false,
+      "high_impact": true,
+      "transition": "write_off"
+    }
+  ],
+  "workflow": {
+    "initial_state": "draft",
+    "states": [
+      "draft",
+      "issued",
+      "paid",
+      "overdue",
+      "written_off"
+    ],
+    "transitions": [
+      {
+        "handle": "issue",
+        "from": "draft",
+        "to": "issued",
+        "capability": "business.record.transition"
+      },
+      {
+        "handle": "record_payment",
+        "from": "issued",
+        "to": "paid",
+        "capability": "business.record.transition"
+      },
+      {
+        "handle": "mark_overdue",
+        "from": "issued",
+        "to": "overdue",
+        "capability": "business.record.transition"
+      },
+      {
+        "handle": "settle_overdue",
+        "from": "overdue",
+        "to": "paid",
+        "capability": "business.record.transition"
+      },
+      {
+        "handle": "write_off",
+        "from": "overdue",
+        "to": "written_off",
+        "capability": "business.record.transition"
+      }
+    ]
+  },
+  "record_invariants": [],
+  "compatibility_metadata": {},
+  "administrator_exposure": true,
+  "portal_exposure": true,
+  "portal_operations": [
+    "browse",
+    "export",
+    "history",
+    "read",
+    "relation",
+    "report",
+    "status"
+  ],
+  "public_exposure": false
+}

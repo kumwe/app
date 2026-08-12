@@ -1,9 +1,9 @@
 {
   "format": "kumwe.demo-business-profile/v1",
   "profile": "vdm",
-  "version": 2,
+  "version": 3,
   "label": "Vast Development Method business demo",
-  "description": "A realistic, fictional client-delivery graph for a Namibian software and infrastructure consultancy.",
+  "description": "A realistic, fictional client-delivery and commerce graph for a Namibian software, carpentry, and infrastructure business.",
   "site_template": "default",
   "source_context": {
     "organization": "Vast Development Method",
@@ -22,6 +22,7 @@
   "installation_order": [
     {
       "fixture_key": "definition.client_account",
+      "record_access": "administration",
       "file": "definitions/client-account.json",
       "id": "019c7000-0000-7000-8000-000000000101",
       "handle": "site.default.vdm_client_account",
@@ -29,6 +30,7 @@
     },
     {
       "fixture_key": "definition.service_catalog_item",
+      "record_access": "administration",
       "file": "definitions/service-catalog-item.json",
       "id": "019c7000-0000-7000-8000-000000000102",
       "handle": "site.default.vdm_service_catalog_item",
@@ -36,6 +38,7 @@
     },
     {
       "fixture_key": "definition.engagement",
+      "record_access": "administration",
       "file": "definitions/engagement.json",
       "id": "019c7000-0000-7000-8000-000000000103",
       "handle": "site.default.vdm_engagement",
@@ -46,6 +49,7 @@
     },
     {
       "fixture_key": "definition.service_request",
+      "record_access": "administration",
       "file": "definitions/service-request.json",
       "id": "019c7000-0000-7000-8000-000000000104",
       "handle": "site.default.vdm_service_request",
@@ -56,12 +60,87 @@
     },
     {
       "fixture_key": "definition.work_entry",
+      "record_access": "administration",
       "file": "definitions/work-entry.json",
       "id": "019c7000-0000-7000-8000-000000000105",
       "handle": "site.default.vdm_work_entry",
       "depends_on": [
         "definition.engagement",
         "definition.service_catalog_item"
+      ]
+    },
+    {
+      "fixture_key": "definition.product",
+      "record_access": "open",
+      "file": "definitions/product.json",
+      "id": "019c7000-0000-7000-8000-000000000106",
+      "handle": "site.default.vdm_product",
+      "depends_on": []
+    },
+    {
+      "fixture_key": "definition.quotation_line",
+      "record_access": "organization",
+      "file": "definitions/quotation-line.json",
+      "id": "019c7000-0000-7000-8000-000000000108",
+      "handle": "site.default.vdm_quotation_line",
+      "depends_on": [
+        "definition.product"
+      ]
+    },
+    {
+      "fixture_key": "definition.quotation",
+      "record_access": "organization",
+      "file": "definitions/quotation.json",
+      "id": "019c7000-0000-7000-8000-000000000107",
+      "handle": "site.default.vdm_quotation",
+      "depends_on": [
+        "definition.client_account",
+        "definition.quotation_line"
+      ]
+    },
+    {
+      "fixture_key": "definition.invoice_line",
+      "record_access": "organization",
+      "file": "definitions/invoice-line.json",
+      "id": "019c7000-0000-7000-8000-00000000010a",
+      "handle": "site.default.vdm_invoice_line",
+      "depends_on": [
+        "definition.product"
+      ]
+    },
+    {
+      "fixture_key": "definition.invoice",
+      "record_access": "organization",
+      "file": "definitions/invoice.json",
+      "id": "019c7000-0000-7000-8000-000000000109",
+      "handle": "site.default.vdm_invoice",
+      "depends_on": [
+        "definition.client_account",
+        "definition.engagement",
+        "definition.quotation",
+        "definition.invoice_line"
+      ]
+    },
+    {
+      "fixture_key": "definition.subscription",
+      "record_access": "organization",
+      "file": "definitions/subscription.json",
+      "id": "019c7000-0000-7000-8000-00000000010b",
+      "handle": "site.default.vdm_subscription",
+      "depends_on": [
+        "definition.client_account",
+        "definition.product"
+      ]
+    },
+    {
+      "fixture_key": "definition.domain",
+      "record_access": "organization",
+      "file": "definitions/domain.json",
+      "id": "019c7000-0000-7000-8000-00000000010c",
+      "handle": "site.default.vdm_domain",
+      "depends_on": [
+        "definition.client_account",
+        "definition.subscription"
       ]
     }
   ],
@@ -75,10 +154,10 @@
     "archive_records"
   ],
   "expected": {
-    "definition_count": 5,
-    "record_count": 30,
-    "relation_count": 43,
-    "action_count": 29,
-    "archive_count": 1
+    "definition_count": 12,
+    "record_count": 61,
+    "relation_count": 96,
+    "action_count": 50,
+    "archive_count": 2
   }
 }

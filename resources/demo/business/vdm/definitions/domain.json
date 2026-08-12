@@ -1,0 +1,321 @@
+{
+  "id": "019c7000-0000-7000-8000-00000000010c",
+  "owner": {
+    "type": "site",
+    "identifier": "default"
+  },
+  "site": "default",
+  "handle": "site.default.vdm_domain",
+  "singular_label": "Domain registration",
+  "plural_label": "Domain registrations",
+  "status": "draft",
+  "definition_version": 0,
+  "storage_mode": "relational",
+  "identity_strategy": "uuid",
+  "scope": "site",
+  "audit_enabled": true,
+  "revisions_enabled": true,
+  "soft_delete_enabled": true,
+  "fields": [
+    {
+      "handle": "id",
+      "label": "ID",
+      "type": "core.uuid",
+      "required": true,
+      "nullable": false,
+      "unique": true,
+      "indexed": true,
+      "immutable_after_create": true,
+      "server_only": true,
+      "read_only": true,
+      "create_visible": false,
+      "update_visible": false,
+      "read_visible": true,
+      "sensitivity": "public",
+      "placements": [
+        "detail",
+        "history"
+      ]
+    },
+    {
+      "handle": "domain_name",
+      "label": "Domain name",
+      "type": "core.text",
+      "description": "Fully qualified fictional domain; demonstration data stays inside reserved example zones.",
+      "required": true,
+      "nullable": false,
+      "length": 191,
+      "normalizers": [
+        "trim",
+        "lowercase"
+      ],
+      "unique": true,
+      "indexed": true,
+      "immutable_after_create": true,
+      "searchable": true,
+      "filterable": true,
+      "sortable": true,
+      "reportable": true,
+      "exportable": true,
+      "sensitivity": "public",
+      "form_group": "identity",
+      "order": 10,
+      "placements": [
+        "detail",
+        "form",
+        "history",
+        "list",
+        "relation"
+      ]
+    },
+    {
+      "handle": "organization",
+      "label": "Portal organization",
+      "type": "core.text",
+      "description": "Portal organization identifier that scopes this registration to one client's members.",
+      "required": false,
+      "nullable": true,
+      "length": 63,
+      "normalizers": [
+        "trim",
+        "lowercase"
+      ],
+      "indexed": true,
+      "filterable": true,
+      "exportable": false,
+      "sensitivity": "internal",
+      "form_group": "access",
+      "order": 20,
+      "placements": [
+        "detail",
+        "form",
+        "history"
+      ]
+    },
+    {
+      "handle": "registrar",
+      "label": "Registrar",
+      "type": "core.text",
+      "required": true,
+      "nullable": false,
+      "length": 120,
+      "normalizers": [
+        "trim",
+        "unicode_nfc"
+      ],
+      "filterable": true,
+      "sortable": true,
+      "reportable": true,
+      "exportable": true,
+      "sensitivity": "public",
+      "form_group": "registration",
+      "order": 30,
+      "placements": [
+        "detail",
+        "form",
+        "list"
+      ]
+    },
+    {
+      "handle": "registered_on",
+      "label": "Registered on",
+      "type": "core.date",
+      "required": true,
+      "nullable": false,
+      "filterable": true,
+      "sortable": true,
+      "reportable": true,
+      "exportable": true,
+      "sensitivity": "public",
+      "form_group": "registration",
+      "order": 40,
+      "placements": [
+        "detail",
+        "form",
+        "list"
+      ]
+    },
+    {
+      "handle": "expires_on",
+      "label": "Expires on",
+      "type": "core.date",
+      "required": true,
+      "nullable": false,
+      "filterable": true,
+      "sortable": true,
+      "reportable": true,
+      "exportable": true,
+      "sensitivity": "public",
+      "form_group": "registration",
+      "order": 50,
+      "placements": [
+        "detail",
+        "form",
+        "list"
+      ]
+    },
+    {
+      "handle": "auto_renew",
+      "label": "Renews automatically",
+      "type": "core.boolean",
+      "required": true,
+      "nullable": false,
+      "default": true,
+      "filterable": true,
+      "sortable": true,
+      "reportable": true,
+      "exportable": true,
+      "sensitivity": "public",
+      "form_group": "registration",
+      "order": 60,
+      "placements": [
+        "detail",
+        "form",
+        "list"
+      ]
+    },
+    {
+      "handle": "dns_notes",
+      "label": "DNS notes",
+      "type": "core.rich_text",
+      "required": false,
+      "nullable": true,
+      "length": 4000,
+      "searchable": false,
+      "filterable": false,
+      "sortable": false,
+      "reportable": false,
+      "exportable": false,
+      "sensitivity": "restricted",
+      "form_group": "internal",
+      "order": 70,
+      "placements": [
+        "detail",
+        "form",
+        "history"
+      ]
+    }
+  ],
+  "relationships": [
+    {
+      "handle": "client",
+      "label": "Client account",
+      "kind": "many_to_one",
+      "target": "site.default.vdm_client_account",
+      "inverse": null,
+      "required": false,
+      "unique": false,
+      "ordered": false,
+      "on_delete": "set_null"
+    },
+    {
+      "handle": "subscription",
+      "label": "Billing subscription",
+      "kind": "many_to_one",
+      "target": "site.default.vdm_subscription",
+      "inverse": null,
+      "required": false,
+      "unique": false,
+      "ordered": false,
+      "on_delete": "set_null"
+    }
+  ],
+  "views": [
+    {
+      "handle": "domain_list",
+      "label": "Domain registrations",
+      "kind": "list",
+      "fields": [
+        "domain_name",
+        "registrar",
+        "registered_on",
+        "expires_on",
+        "auto_renew"
+      ],
+      "filters": [
+        "registrar",
+        "expires_on",
+        "auto_renew"
+      ],
+      "sorts": [
+        "domain_name",
+        "registered_on",
+        "expires_on"
+      ],
+      "administrator": true,
+      "portal": true,
+      "public": false
+    }
+  ],
+  "actions": [
+    {
+      "handle": "flag_expiring",
+      "label": "Flag as expiring",
+      "capability": "business.record.transition",
+      "administrator": true,
+      "portal": false,
+      "public": false,
+      "transition": "flag_expiring"
+    },
+    {
+      "handle": "renew",
+      "label": "Renew domain",
+      "capability": "business.record.transition",
+      "administrator": true,
+      "portal": true,
+      "public": false,
+      "transition": "renew"
+    },
+    {
+      "handle": "release",
+      "label": "Release domain",
+      "capability": "business.record.transition",
+      "administrator": true,
+      "portal": false,
+      "public": false,
+      "high_impact": true,
+      "transition": "release"
+    }
+  ],
+  "workflow": {
+    "initial_state": "active",
+    "states": [
+      "active",
+      "expiring",
+      "released"
+    ],
+    "transitions": [
+      {
+        "handle": "flag_expiring",
+        "from": "active",
+        "to": "expiring",
+        "capability": "business.record.transition"
+      },
+      {
+        "handle": "renew",
+        "from": "expiring",
+        "to": "active",
+        "capability": "business.record.transition"
+      },
+      {
+        "handle": "release",
+        "from": "expiring",
+        "to": "released",
+        "capability": "business.record.transition"
+      }
+    ]
+  },
+  "record_invariants": [],
+  "compatibility_metadata": {},
+  "administrator_exposure": true,
+  "portal_exposure": true,
+  "portal_operations": [
+    "action",
+    "browse",
+    "history",
+    "read",
+    "relation",
+    "status"
+  ],
+  "public_exposure": false
+}

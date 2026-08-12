@@ -1,0 +1,318 @@
+{
+  "id": "019c7000-0000-7000-8000-000000000106",
+  "owner": {
+    "type": "site",
+    "identifier": "default"
+  },
+  "site": "default",
+  "handle": "site.default.vdm_product",
+  "singular_label": "Product",
+  "plural_label": "Products",
+  "status": "draft",
+  "definition_version": 0,
+  "storage_mode": "relational",
+  "identity_strategy": "uuid",
+  "scope": "site",
+  "audit_enabled": true,
+  "revisions_enabled": true,
+  "soft_delete_enabled": true,
+  "fields": [
+    {
+      "handle": "id",
+      "label": "ID",
+      "type": "core.uuid",
+      "required": true,
+      "nullable": false,
+      "unique": true,
+      "indexed": true,
+      "immutable_after_create": true,
+      "server_only": true,
+      "read_only": true,
+      "create_visible": false,
+      "update_visible": false,
+      "read_visible": true,
+      "filterable": true,
+      "sortable": true,
+      "exportable": true,
+      "sensitivity": "public",
+      "placements": [
+        "detail",
+        "history"
+      ]
+    },
+    {
+      "handle": "product_code",
+      "label": "Product code",
+      "type": "core.text",
+      "description": "Stable catalogue reference printed on quotations and invoices.",
+      "required": true,
+      "nullable": false,
+      "length": 32,
+      "normalizers": [
+        "trim",
+        "uppercase"
+      ],
+      "unique": true,
+      "indexed": true,
+      "immutable_after_create": true,
+      "searchable": true,
+      "filterable": true,
+      "sortable": true,
+      "reportable": true,
+      "exportable": true,
+      "sensitivity": "public",
+      "form_group": "identity",
+      "order": 10,
+      "placements": [
+        "detail",
+        "form",
+        "history",
+        "list",
+        "relation"
+      ]
+    },
+    {
+      "handle": "name",
+      "label": "Product name",
+      "type": "core.text",
+      "required": true,
+      "nullable": false,
+      "length": 160,
+      "normalizers": [
+        "trim",
+        "unicode_nfc"
+      ],
+      "unique": true,
+      "indexed": true,
+      "searchable": true,
+      "filterable": true,
+      "sortable": true,
+      "reportable": true,
+      "exportable": true,
+      "sensitivity": "public",
+      "form_group": "identity",
+      "order": 20,
+      "placements": [
+        "detail",
+        "form",
+        "history",
+        "list",
+        "relation"
+      ]
+    },
+    {
+      "handle": "product_kind",
+      "label": "Product kind",
+      "type": "core.enum",
+      "description": "Whether this line is a physical good, crafted work, a licence, or a recurring service.",
+      "required": true,
+      "nullable": false,
+      "default": "physical_good",
+      "configuration": {
+        "options": [
+          "carpentry_service",
+          "hosting_service",
+          "physical_good",
+          "software_licence"
+        ]
+      },
+      "filterable": true,
+      "sortable": true,
+      "reportable": true,
+      "exportable": true,
+      "sensitivity": "public",
+      "form_group": "catalogue",
+      "order": 30,
+      "placements": [
+        "detail",
+        "form",
+        "list"
+      ]
+    },
+    {
+      "handle": "category",
+      "label": "Category",
+      "type": "core.enum",
+      "required": true,
+      "nullable": false,
+      "default": "seating",
+      "configuration": {
+        "options": [
+          "custom_build",
+          "domains",
+          "hosting",
+          "licences",
+          "seating",
+          "storage",
+          "tables"
+        ]
+      },
+      "filterable": true,
+      "sortable": true,
+      "reportable": true,
+      "exportable": true,
+      "sensitivity": "public",
+      "form_group": "catalogue",
+      "order": 40,
+      "placements": [
+        "detail",
+        "form",
+        "list"
+      ]
+    },
+    {
+      "handle": "billing_unit",
+      "label": "Billing unit",
+      "type": "core.enum",
+      "required": true,
+      "nullable": false,
+      "default": "each",
+      "configuration": {
+        "options": [
+          "each",
+          "hour",
+          "month",
+          "year"
+        ]
+      },
+      "filterable": true,
+      "sortable": true,
+      "reportable": true,
+      "exportable": true,
+      "sensitivity": "public",
+      "form_group": "commercial",
+      "order": 50,
+      "placements": [
+        "detail",
+        "form",
+        "list"
+      ]
+    },
+    {
+      "handle": "unit_price",
+      "label": "Unit price",
+      "type": "core.money",
+      "description": "Exact list price per billing unit, recorded without floating-point arithmetic.",
+      "required": true,
+      "nullable": false,
+      "precision": 14,
+      "scale": 2,
+      "configuration": {
+        "currency": "NAD"
+      },
+      "reportable": true,
+      "exportable": true,
+      "sensitivity": "public",
+      "form_group": "commercial",
+      "order": 60,
+      "placements": [
+        "detail",
+        "form",
+        "list"
+      ]
+    },
+    {
+      "handle": "active",
+      "label": "Available for sale",
+      "type": "core.boolean",
+      "required": true,
+      "nullable": false,
+      "default": true,
+      "filterable": true,
+      "sortable": true,
+      "reportable": true,
+      "exportable": true,
+      "sensitivity": "public",
+      "form_group": "commercial",
+      "order": 70,
+      "placements": [
+        "detail",
+        "form",
+        "list"
+      ]
+    },
+    {
+      "handle": "summary",
+      "label": "Sales summary",
+      "type": "core.text",
+      "required": true,
+      "nullable": false,
+      "length": 500,
+      "normalizers": [
+        "trim",
+        "unicode_nfc"
+      ],
+      "searchable": true,
+      "exportable": true,
+      "sensitivity": "public",
+      "form_group": "catalogue",
+      "order": 80,
+      "placements": [
+        "detail",
+        "form"
+      ]
+    },
+    {
+      "handle": "specification",
+      "label": "Specification",
+      "type": "core.rich_text",
+      "required": false,
+      "nullable": true,
+      "length": 8000,
+      "searchable": false,
+      "filterable": false,
+      "sortable": false,
+      "reportable": false,
+      "exportable": true,
+      "sensitivity": "public",
+      "form_group": "catalogue",
+      "order": 90,
+      "placements": [
+        "detail",
+        "form",
+        "history"
+      ]
+    }
+  ],
+  "relationships": [],
+  "views": [
+    {
+      "handle": "product_catalogue",
+      "label": "Product catalogue",
+      "kind": "list",
+      "fields": [
+        "product_code",
+        "name",
+        "product_kind",
+        "category",
+        "billing_unit",
+        "unit_price",
+        "active"
+      ],
+      "filters": [
+        "product_kind",
+        "category",
+        "billing_unit",
+        "active"
+      ],
+      "sorts": [
+        "product_code",
+        "name"
+      ],
+      "administrator": true,
+      "portal": true,
+      "public": false
+    }
+  ],
+  "actions": [],
+  "workflow": null,
+  "record_invariants": [],
+  "compatibility_metadata": {},
+  "administrator_exposure": true,
+  "portal_exposure": true,
+  "portal_operations": [
+    "browse",
+    "read"
+  ],
+  "public_exposure": false
+}

@@ -1,0 +1,217 @@
+{
+  "id": "019c7000-0000-7000-8000-000000000108",
+  "owner": {
+    "type": "site",
+    "identifier": "default"
+  },
+  "site": "default",
+  "handle": "site.default.vdm_quotation_line",
+  "singular_label": "Quotation line",
+  "plural_label": "Quotation lines",
+  "status": "draft",
+  "definition_version": 0,
+  "storage_mode": "relational",
+  "identity_strategy": "uuid",
+  "scope": "site",
+  "audit_enabled": true,
+  "revisions_enabled": true,
+  "soft_delete_enabled": true,
+  "fields": [
+    {
+      "handle": "id",
+      "label": "ID",
+      "type": "core.uuid",
+      "required": true,
+      "nullable": false,
+      "unique": true,
+      "indexed": true,
+      "immutable_after_create": true,
+      "server_only": true,
+      "read_only": true,
+      "create_visible": false,
+      "update_visible": false,
+      "read_visible": true,
+      "sensitivity": "public",
+      "placements": [
+        "detail",
+        "history"
+      ]
+    },
+    {
+      "handle": "organization",
+      "label": "Portal organization",
+      "type": "core.text",
+      "description": "Portal organization identifier that scopes this line to one client's members.",
+      "required": false,
+      "nullable": true,
+      "length": 63,
+      "normalizers": [
+        "trim",
+        "lowercase"
+      ],
+      "indexed": true,
+      "filterable": true,
+      "exportable": false,
+      "sensitivity": "internal",
+      "form_group": "access",
+      "order": 10,
+      "placements": [
+        "detail",
+        "form",
+        "history"
+      ]
+    },
+    {
+      "handle": "description",
+      "label": "Description",
+      "type": "core.text",
+      "required": true,
+      "nullable": false,
+      "length": 200,
+      "normalizers": [
+        "trim",
+        "unicode_nfc"
+      ],
+      "searchable": true,
+      "filterable": true,
+      "sortable": true,
+      "exportable": true,
+      "sensitivity": "public",
+      "form_group": "line",
+      "order": 20,
+      "placements": [
+        "detail",
+        "form",
+        "list",
+        "relation"
+      ]
+    },
+    {
+      "handle": "product",
+      "label": "Catalogue product",
+      "type": "core.entity_reference",
+      "description": "Catalogue product this line prices; free-text lines may omit it.",
+      "required": false,
+      "nullable": true,
+      "configuration": {
+        "target": "site.default.vdm_product"
+      },
+      "indexed": true,
+      "filterable": true,
+      "exportable": true,
+      "sensitivity": "public",
+      "form_group": "line",
+      "order": 30,
+      "placements": [
+        "detail",
+        "form",
+        "relation"
+      ]
+    },
+    {
+      "handle": "quantity",
+      "label": "Quantity",
+      "type": "core.quantity",
+      "required": true,
+      "nullable": false,
+      "precision": 10,
+      "scale": 2,
+      "configuration": {
+        "unit": "each"
+      },
+      "reportable": true,
+      "exportable": true,
+      "sensitivity": "public",
+      "form_group": "line",
+      "order": 40,
+      "placements": [
+        "detail",
+        "form",
+        "list",
+        "relation"
+      ]
+    },
+    {
+      "handle": "unit_price",
+      "label": "Unit price",
+      "type": "core.money",
+      "required": true,
+      "nullable": false,
+      "precision": 14,
+      "scale": 2,
+      "configuration": {
+        "currency": "NAD"
+      },
+      "reportable": true,
+      "exportable": true,
+      "sensitivity": "public",
+      "form_group": "line",
+      "order": 50,
+      "placements": [
+        "detail",
+        "form",
+        "list",
+        "relation"
+      ]
+    },
+    {
+      "handle": "line_total",
+      "label": "Line total",
+      "type": "core.money",
+      "description": "Exact extended amount recorded without floating-point arithmetic.",
+      "required": true,
+      "nullable": false,
+      "precision": 16,
+      "scale": 2,
+      "configuration": {
+        "currency": "NAD"
+      },
+      "reportable": true,
+      "exportable": true,
+      "sensitivity": "public",
+      "form_group": "line",
+      "order": 60,
+      "placements": [
+        "detail",
+        "form",
+        "list",
+        "relation"
+      ]
+    }
+  ],
+  "relationships": [],
+  "views": [
+    {
+      "handle": "quotation_line_list",
+      "label": "Quotation lines",
+      "kind": "list",
+      "fields": [
+        "description",
+        "quantity",
+        "unit_price",
+        "line_total"
+      ],
+      "filters": [
+        "description"
+      ],
+      "sorts": [
+        "description"
+      ],
+      "administrator": true,
+      "portal": true,
+      "public": false
+    }
+  ],
+  "actions": [],
+  "workflow": null,
+  "record_invariants": [],
+  "compatibility_metadata": {},
+  "administrator_exposure": true,
+  "portal_exposure": true,
+  "portal_operations": [
+    "browse",
+    "read",
+    "relation"
+  ],
+  "public_exposure": false
+}

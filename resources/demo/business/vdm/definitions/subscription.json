@@ -1,0 +1,386 @@
+{
+  "id": "019c7000-0000-7000-8000-00000000010b",
+  "owner": {
+    "type": "site",
+    "identifier": "default"
+  },
+  "site": "default",
+  "handle": "site.default.vdm_subscription",
+  "singular_label": "Subscription",
+  "plural_label": "Subscriptions",
+  "status": "draft",
+  "definition_version": 0,
+  "storage_mode": "relational",
+  "identity_strategy": "uuid",
+  "scope": "site",
+  "audit_enabled": true,
+  "revisions_enabled": true,
+  "soft_delete_enabled": true,
+  "fields": [
+    {
+      "handle": "id",
+      "label": "ID",
+      "type": "core.uuid",
+      "required": true,
+      "nullable": false,
+      "unique": true,
+      "indexed": true,
+      "immutable_after_create": true,
+      "server_only": true,
+      "read_only": true,
+      "create_visible": false,
+      "update_visible": false,
+      "read_visible": true,
+      "sensitivity": "public",
+      "placements": [
+        "detail",
+        "history"
+      ]
+    },
+    {
+      "handle": "subscription_code",
+      "label": "Subscription code",
+      "type": "core.text",
+      "required": true,
+      "nullable": false,
+      "length": 40,
+      "normalizers": [
+        "trim",
+        "uppercase"
+      ],
+      "unique": true,
+      "indexed": true,
+      "immutable_after_create": true,
+      "searchable": true,
+      "filterable": true,
+      "sortable": true,
+      "reportable": true,
+      "exportable": true,
+      "sensitivity": "public",
+      "form_group": "identity",
+      "order": 10,
+      "placements": [
+        "detail",
+        "form",
+        "history",
+        "list",
+        "relation"
+      ]
+    },
+    {
+      "handle": "organization",
+      "label": "Portal organization",
+      "type": "core.text",
+      "description": "Portal organization identifier that scopes this subscription to one client's members.",
+      "required": false,
+      "nullable": true,
+      "length": 63,
+      "normalizers": [
+        "trim",
+        "lowercase"
+      ],
+      "indexed": true,
+      "filterable": true,
+      "exportable": false,
+      "sensitivity": "internal",
+      "form_group": "access",
+      "order": 20,
+      "placements": [
+        "detail",
+        "form",
+        "history"
+      ]
+    },
+    {
+      "handle": "service_label",
+      "label": "Service label",
+      "type": "core.text",
+      "description": "Client-facing name of the recurring service, for example the hosted plan or domain bundle.",
+      "required": true,
+      "nullable": false,
+      "length": 160,
+      "normalizers": [
+        "trim",
+        "unicode_nfc"
+      ],
+      "searchable": true,
+      "sortable": true,
+      "reportable": true,
+      "exportable": true,
+      "sensitivity": "public",
+      "form_group": "identity",
+      "order": 30,
+      "placements": [
+        "detail",
+        "form",
+        "list"
+      ]
+    },
+    {
+      "handle": "billing_cycle",
+      "label": "Billing cycle",
+      "type": "core.enum",
+      "required": true,
+      "nullable": false,
+      "default": "monthly",
+      "configuration": {
+        "options": [
+          "annual",
+          "monthly"
+        ]
+      },
+      "filterable": true,
+      "sortable": true,
+      "reportable": true,
+      "exportable": true,
+      "sensitivity": "public",
+      "form_group": "commercial",
+      "order": 40,
+      "placements": [
+        "detail",
+        "form",
+        "list"
+      ]
+    },
+    {
+      "handle": "amount",
+      "label": "Amount per cycle",
+      "type": "core.money",
+      "description": "Exact recurring amount recorded without floating-point arithmetic.",
+      "required": true,
+      "nullable": false,
+      "precision": 14,
+      "scale": 2,
+      "configuration": {
+        "currency": "NAD"
+      },
+      "reportable": true,
+      "exportable": true,
+      "sensitivity": "public",
+      "form_group": "commercial",
+      "order": 50,
+      "placements": [
+        "detail",
+        "form",
+        "list"
+      ]
+    },
+    {
+      "handle": "started_on",
+      "label": "Started on",
+      "type": "core.date",
+      "required": true,
+      "nullable": false,
+      "filterable": true,
+      "sortable": true,
+      "reportable": true,
+      "exportable": true,
+      "sensitivity": "public",
+      "form_group": "commercial",
+      "order": 60,
+      "placements": [
+        "detail",
+        "form",
+        "list"
+      ]
+    },
+    {
+      "handle": "renews_on",
+      "label": "Renews on",
+      "type": "core.date",
+      "required": true,
+      "nullable": false,
+      "filterable": true,
+      "sortable": true,
+      "reportable": true,
+      "exportable": true,
+      "sensitivity": "public",
+      "form_group": "commercial",
+      "order": 70,
+      "placements": [
+        "detail",
+        "form",
+        "list"
+      ]
+    },
+    {
+      "handle": "auto_renew",
+      "label": "Renews automatically",
+      "type": "core.boolean",
+      "required": true,
+      "nullable": false,
+      "default": true,
+      "filterable": true,
+      "sortable": true,
+      "reportable": true,
+      "exportable": true,
+      "sensitivity": "public",
+      "form_group": "commercial",
+      "order": 80,
+      "placements": [
+        "detail",
+        "form",
+        "list"
+      ]
+    },
+    {
+      "handle": "provisioning_notes",
+      "label": "Provisioning notes",
+      "type": "core.rich_text",
+      "required": false,
+      "nullable": true,
+      "length": 4000,
+      "searchable": false,
+      "filterable": false,
+      "sortable": false,
+      "reportable": false,
+      "exportable": false,
+      "sensitivity": "restricted",
+      "form_group": "internal",
+      "order": 90,
+      "placements": [
+        "detail",
+        "form",
+        "history"
+      ]
+    }
+  ],
+  "relationships": [
+    {
+      "handle": "client",
+      "label": "Client account",
+      "kind": "many_to_one",
+      "target": "site.default.vdm_client_account",
+      "inverse": null,
+      "required": false,
+      "unique": false,
+      "ordered": false,
+      "on_delete": "set_null"
+    },
+    {
+      "handle": "product",
+      "label": "Catalogue product",
+      "kind": "many_to_one",
+      "target": "site.default.vdm_product",
+      "inverse": null,
+      "required": false,
+      "unique": false,
+      "ordered": false,
+      "on_delete": "set_null"
+    }
+  ],
+  "views": [
+    {
+      "handle": "subscription_list",
+      "label": "Subscriptions",
+      "kind": "list",
+      "fields": [
+        "subscription_code",
+        "service_label",
+        "billing_cycle",
+        "amount",
+        "renews_on",
+        "auto_renew"
+      ],
+      "filters": [
+        "billing_cycle",
+        "auto_renew",
+        "renews_on"
+      ],
+      "sorts": [
+        "subscription_code",
+        "service_label",
+        "renews_on"
+      ],
+      "administrator": true,
+      "portal": true,
+      "public": false
+    }
+  ],
+  "actions": [
+    {
+      "handle": "pause",
+      "label": "Pause subscription",
+      "capability": "business.record.transition",
+      "administrator": true,
+      "portal": false,
+      "public": false,
+      "transition": "pause"
+    },
+    {
+      "handle": "resume",
+      "label": "Resume subscription",
+      "capability": "business.record.transition",
+      "administrator": true,
+      "portal": true,
+      "public": false,
+      "transition": "resume"
+    },
+    {
+      "handle": "cancel",
+      "label": "Cancel subscription",
+      "capability": "business.record.transition",
+      "administrator": true,
+      "portal": true,
+      "public": false,
+      "transition": "cancel"
+    },
+    {
+      "handle": "lapse",
+      "label": "Mark lapsed",
+      "capability": "business.record.transition",
+      "administrator": true,
+      "portal": false,
+      "public": false,
+      "transition": "lapse"
+    }
+  ],
+  "workflow": {
+    "initial_state": "active",
+    "states": [
+      "active",
+      "paused",
+      "cancelled",
+      "lapsed"
+    ],
+    "transitions": [
+      {
+        "handle": "pause",
+        "from": "active",
+        "to": "paused",
+        "capability": "business.record.transition"
+      },
+      {
+        "handle": "resume",
+        "from": "paused",
+        "to": "active",
+        "capability": "business.record.transition"
+      },
+      {
+        "handle": "cancel",
+        "from": "active",
+        "to": "cancelled",
+        "capability": "business.record.transition"
+      },
+      {
+        "handle": "lapse",
+        "from": "paused",
+        "to": "lapsed",
+        "capability": "business.record.transition"
+      }
+    ]
+  },
+  "record_invariants": [],
+  "compatibility_metadata": {},
+  "administrator_exposure": true,
+  "portal_exposure": true,
+  "portal_operations": [
+    "action",
+    "browse",
+    "history",
+    "read",
+    "relation",
+    "status"
+  ],
+  "public_exposure": false
+}

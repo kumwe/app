@@ -190,9 +190,9 @@ final class FilesystemDemoManifestCatalogTest extends TestCase
 
         self::assertSame('kumwe.demo-business-profile/v1', $manifest['format'] ?? null);
         self::assertSame('vdm', $manifest['profile'] ?? null);
-        self::assertSame(2, $manifest['version'] ?? null);
+        self::assertSame(3, $manifest['version'] ?? null);
         self::assertMatchesRegularExpression('/^[a-f0-9]{64}$/D', $loaded['checksum']);
-        self::assertCount(5, $order);
+        self::assertCount(12, $order);
         self::assertSame(count($order), $expected['definition_count'] ?? null);
         self::assertSame(count($records), $expected['record_count'] ?? null);
         self::assertSame(count($relations), $expected['relation_count'] ?? null);
@@ -229,18 +229,27 @@ final class FilesystemDemoManifestCatalogTest extends TestCase
             self::assertArrayHasKey($definition, $definitions);
             $recordIndex[$recordId] = $record;
         }
+        $lineIndex = [];
         foreach ($relations as $candidate) {
             $relation = $this->map($candidate, 'relationship declaration');
             $sourceId = $this->string($relation, 'source_record_id');
             $targetId = $this->string($relation, 'target_record_id');
             self::assertArrayHasKey($sourceId, $recordIndex);
-            self::assertArrayHasKey($targetId, $recordIndex);
             self::assertSame($recordIndex[$sourceId]['definition'], $relation['definition'] ?? null);
             $definition = $definitions[$this->string($relation, 'definition')];
             $relationship = $this->memberByHandle(
                 $this->list($definition['relationships'] ?? null, 'definition relationships'),
                 $this->string($relation, 'relationship'),
             );
+            if (($relationship['kind'] ?? null) === 'owned_line_collection') {
+                self::assertArrayNotHasKey($targetId, $recordIndex);
+                self::assertArrayNotHasKey($targetId, $lineIndex);
+                self::assertArrayHasKey($this->string($relationship, 'target'), $definitions);
+                $this->map($relation['target_values'] ?? null, 'owned line values');
+                $lineIndex[$targetId] = true;
+                continue;
+            }
+            self::assertArrayHasKey($targetId, $recordIndex);
             self::assertSame($recordIndex[$targetId]['definition'], $relationship['target'] ?? null);
         }
         foreach ($actions as $candidate) {

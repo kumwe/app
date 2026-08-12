@@ -133,12 +133,13 @@ final readonly class VdmBusinessDemoInstaller
     {
         $manifest = $this->projector->forSite($manifest, $context->site());
         $profile = $this->requiredString($manifest, 'profile');
+        $modes = $this->recordAccessModes($manifest);
         $assets = $this->ledger->assets($context->site()->identifier(), self::DATASET);
         $records = $this->requiredMap($manifest, 'records_document');
         $operations = $this->operations->validate($records, $assets);
         $documents = $this->requiredMap($manifest, 'definition_documents');
         $order = $this->requiredList($manifest, 'installation_order', 64);
-        $this->preflightDefinitionsAndPolicies($context, $documents, $order, $operations, $assets, $profile);
+        $this->preflightDefinitionsAndPolicies($context, $documents, $order, $operations, $assets, $profile, $modes);
     }
 
     /**
@@ -156,6 +157,7 @@ final readonly class VdmBusinessDemoInstaller
         $this->preflight($context, $manifest);
         $manifest = $this->projector->forSite($manifest, $context->site());
         $profile = $this->requiredString($manifest, 'profile');
+        $modes = $this->recordAccessModes($manifest);
         $records = $this->requiredMap($manifest, 'records_document');
         $operations = $this->operations->validate(
             $records,
@@ -164,6 +166,7 @@ final readonly class VdmBusinessDemoInstaller
         $documents = $this->requiredMap($manifest, 'definition_documents');
         $order = $this->requiredList($manifest, 'installation_order', 64);
         $installed = [];
+        $installedModes = [];
         $messages = [];
         foreach ($order as $entry) {
             $entry = $this->map($entry, 'definition installation entry');
@@ -172,13 +175,18 @@ final readonly class VdmBusinessDemoInstaller
             $definition = $this->installDefinition($context, $fixtureKey, $document);
             $this->installSchema($context, $definition);
             $installed[$definition->handle] = $definition;
+            $installedModes[$definition->handle] = $modes[$fixtureKey] ?? 'open';
             $messages[] = sprintf('Prepared VDM business definition %s.', $definition->handle);
         }
-        $this->transactions->transactional(function () use ($context, $installed, $profile): void {
+        $this->transactions->transactional(function () use ($context, $installed, $installedModes, $profile): void {
             $createdPolicies = false;
             foreach ($installed as $definition) {
-                $createdPolicies = $this->installRecordPolicies($context, $definition, $profile)
-                    || $createdPolicies;
+                $createdPolicies = $this->installRecordPolicies(
+                    $context,
+                    $definition,
+                    $profile,
+                    $installedModes[$definition->handle],
+                ) || $createdPolicies;
             }
             if ($createdPolicies) {
                 $this->database->executeStatement(sprintf(
@@ -211,6 +219,7 @@ final readonly class VdmBusinessDemoInstaller
      *          }                     $operations  Validated record-operation declarations.
      * @param   list<array<string, mixed>>  $assets     Complete VDM dataset checkpoint set.
      * @param   string                      $profile    Validated business demo profile name.
+     * @param   array<string, string>       $modes      Validated record-access mode by definition fixture key.
      *
      * @return  void
      *
@@ -225,6 +234,7 @@ final readonly class VdmBusinessDemoInstaller
         array $operations,
         array $assets,
         string $profile,
+        array $modes,
     ): void {
         /** @var array<string, EntityTypeDefinition> $definitions */
         $definitions = [];
@@ -265,14 +275,16 @@ final readonly class VdmBusinessDemoInstaller
 
         /** @var array<string, array<string, mixed>> $policies */
         $policies = [];
-        foreach ($definitions as $definition) {
+        foreach ($definitions as $definitionFixture => $definition) {
             foreach (self::RECORD_OPERATIONS as $operation) {
-                $policy = $this->policyBaseline($definition, $operation, $profile);
-                $fixtureKey = $this->requiredString($policy, 'fixture_key');
-                if (isset($policies[$fixtureKey])) {
-                    throw new RuntimeException(sprintf('VDM policy fixture %s is duplicated.', $fixtureKey));
+                $mode = $modes[$definitionFixture] ?? 'open';
+                foreach ($this->policyBaselines($definition, $operation, $profile, $mode) as $policy) {
+                    $fixtureKey = $this->requiredString($policy, 'fixture_key');
+                    if (isset($policies[$fixtureKey])) {
+                        throw new RuntimeException(sprintf('VDM policy fixture %s is duplicated.', $fixtureKey));
+                    }
+                    $policies[$fixtureKey] = $policy;
                 }
-                $policies[$fixtureKey] = $policy;
             }
         }
 
@@ -445,21 +457,102 @@ final readonly class VdmBusinessDemoInstaller
     }
 
     /**
-     * Derive the deterministic database row and ledger checkpoint for one generated record policy.
+     * Derive every deterministic policy row one definition operation requires under its access mode.
+     *
+     * The `open` mode answers the historical constant-true allow row byte for byte, so released
+     * checkpoints stay valid. The `organization` mode scopes portal members to records whose
+     * `organization` field equals their authenticated organization while every organization-less
+     * context — administrator, CLI, API token, and this installer — keeps full visibility. The
+     * `administration` mode keeps the historical allow row and appends a deny row that vetoes all
+     * organization contexts, so legacy definitions never leak between portal clients.
      *
      * @param   EntityTypeDefinition  $definition  Projected definition whose fields establish disclosure.
      * @param   string                $operation   Exact business-record capability and policy action.
      * @param   string                $profile     Validated business demo profile name.
+     * @param   string                $mode        Validated record-access mode for the definition.
      *
-     * @return  array<string, mixed>  Complete desired policy baseline used by preflight and installation.
+     * @return  list<array<string, mixed>>  Desired policy baselines used by preflight and installation.
      *
      * @since   2.0.0
      */
-    private function policyBaseline(EntityTypeDefinition $definition, string $operation, string $profile): array
-    {
-        $predicate = ['type' => 'constant', 'value' => true];
+    private function policyBaselines(
+        EntityTypeDefinition $definition,
+        string $operation,
+        string $profile,
+        string $mode,
+    ): array {
         $fields = $this->recordFieldRules($definition);
-        $policyCode = $this->policyCode($definition, $operation, $profile);
+        $allow = $mode === 'organization'
+            ? [
+                'type' => 'boolean',
+                'operator' => 'any',
+                'children' => [
+                    [
+                        'type' => 'attribute_null',
+                        'source' => 'context',
+                        'attribute' => 'organization',
+                        'is_null' => true,
+                    ],
+                    [
+                        'type' => 'field_attribute_comparison',
+                        'field' => 'organization',
+                        'source' => 'context',
+                        'attribute' => 'organization',
+                        'operator' => 'equal',
+                        'value_type' => 'string',
+                    ],
+                ],
+            ]
+            : ['type' => 'constant', 'value' => true];
+        $baselines = [
+            $this->assemblePolicyBaseline($definition, $operation, $profile, '', 'allow', $allow, $fields),
+        ];
+        if ($mode === 'administration') {
+            $guard = [
+                'type' => 'attribute_null',
+                'source' => 'context',
+                'attribute' => 'organization',
+                'is_null' => false,
+            ];
+            $baselines[] = $this->assemblePolicyBaseline(
+                $definition,
+                $operation,
+                $profile,
+                '.portal-guard',
+                'deny',
+                $guard,
+                $this->emptyFieldRules(),
+            );
+        }
+
+        return $baselines;
+    }
+
+    /**
+     * Assemble one deterministic policy row and its immutable ledger checkpoint identity.
+     *
+     * @param   EntityTypeDefinition  $definition  Projected definition owning the policy.
+     * @param   string                $operation   Exact business-record capability and policy action.
+     * @param   string                $profile     Validated business demo profile name.
+     * @param   string                $codeSuffix  Stable policy-code suffix distinguishing companion rows.
+     * @param   string                $effect      Policy effect, `allow` or `deny`.
+     * @param   array<string, mixed>  $predicate   Canonical record predicate document.
+     * @param   array<string, mixed>  $fields      Field disclosure rules for the row.
+     *
+     * @return  array<string, mixed>  Complete desired policy baseline.
+     *
+     * @since   2.0.0
+     */
+    private function assemblePolicyBaseline(
+        EntityTypeDefinition $definition,
+        string $operation,
+        string $profile,
+        string $codeSuffix,
+        string $effect,
+        array $predicate,
+        array $fields,
+    ): array {
+        $policyCode = $this->policyCode($definition, $operation, $profile) . $codeSuffix;
         $fixtureKey = 'policy.' . substr(hash('sha256', $policyCode), 0, 32);
         $id = Uuid::uuid5(
             Uuid::NAMESPACE_URL,
@@ -477,12 +570,61 @@ final readonly class VdmBusinessDemoInstaller
             'policy_code' => $policyCode,
             'definition_id' => $definition->id,
             'operation' => $operation,
+            'effect' => $effect,
             'predicate' => $predicate,
             'fields' => $fields,
             'ast_checksum' => CanonicalDefinitionJson::checksum(['ast' => $predicate, 'fields' => $fields]),
             'state' => $state,
             'asset_checksum' => CanonicalDefinitionJson::checksum($state),
         ];
+    }
+
+    /**
+     * Build the field-rule document a deny row carries: no disclosure in any usage.
+     *
+     * @return  array<string, list<string>>  Every field-access usage mapped to an empty allowlist.
+     *
+     * @since   2.0.0
+     */
+    private function emptyFieldRules(): array
+    {
+        $rules = [];
+        foreach (FieldAccessUsage::cases() as $usage) {
+            $rules[$usage->value] = [];
+        }
+        $rules['actions'] = [];
+
+        return $rules;
+    }
+
+    /**
+     * Read and validate the per-definition record-access modes the manifest declares.
+     *
+     * @param   array<string, mixed>  $manifest  Projected aggregate manifest.
+     *
+     * @return  array<string, string>  Validated mode by definition fixture key; `open` when undeclared.
+     *
+     * @throws  RuntimeException  When an installation entry declares an unknown record-access mode.
+     *
+     * @since   2.0.0
+     */
+    private function recordAccessModes(array $manifest): array
+    {
+        $modes = [];
+        foreach ($this->requiredList($manifest, 'installation_order', 64) as $candidate) {
+            $entry = $this->map($candidate, 'definition installation entry');
+            $fixtureKey = $this->requiredString($entry, 'fixture_key');
+            $mode = $entry['record_access'] ?? 'open';
+            if (!is_string($mode) || !in_array($mode, ['open', 'organization', 'administration'], true)) {
+                throw new RuntimeException(sprintf(
+                    'VDM definition %s declares an unknown record-access mode.',
+                    $fixtureKey,
+                ));
+            }
+            $modes[$fixtureKey] = $mode;
+        }
+
+        return $modes;
     }
 
     /**
@@ -573,7 +715,7 @@ final readonly class VdmBusinessDemoInstaller
             'capability_code' => $operation,
             'resource_type' => 'business_record',
             'action' => $operation,
-            'effect' => 'allow',
+            'effect' => $this->requiredString($policy, 'effect'),
             'scope_type' => 'site',
             'entity_definition_id' => $this->requiredString($policy, 'definition_id'),
             'ast_checksum' => $this->requiredString($policy, 'ast_checksum'),
@@ -866,6 +1008,7 @@ final readonly class VdmBusinessDemoInstaller
      * @param   ExecutionContext      $context     Profile installer context.
      * @param   EntityTypeDefinition  $definition  Published definition receiving policies.
      * @param   string                $profile     Validated business demo profile name.
+     * @param   string                $mode        Validated record-access mode for the definition.
      *
      * @return  bool  Whether at least one new policy row was installed.
      *
@@ -875,90 +1018,93 @@ final readonly class VdmBusinessDemoInstaller
         ExecutionContext $context,
         EntityTypeDefinition $definition,
         string $profile,
+        string $mode,
     ): bool {
         $created = false;
-        $predicate = ['type' => 'constant', 'value' => true];
-        $fields = $this->recordFieldRules($definition);
-        $checksum = CanonicalDefinitionJson::checksum(['ast' => $predicate, 'fields' => $fields]);
         foreach (self::RECORD_OPERATIONS as $operation) {
-            $baseline = $this->policyBaseline($definition, $operation, $profile);
-            $policyCode = $this->requiredString($baseline, 'policy_code');
-            $existing = $this->database->fetchAssociative(sprintf(
-                'SELECT id, entity_definition_id, action, ast_checksum FROM %s WHERE policy_code = ?',
-                $this->tables->quoted('resource_policies'),
-            ), [$policyCode]);
-            if ($existing !== false) {
-                $this->assertPolicyCheckpointAtInstallation($context, $baseline);
-                continue;
-            }
-            $created = true;
-            $id = $this->requiredString($baseline, 'id');
-            $now = $this->clock->now();
-            $this->transactions->transactional(function () use (
-                $context,
-                $definition,
-                $operation,
-                $policyCode,
-                $predicate,
-                $fields,
-                $checksum,
-                $id,
-                $now,
-            ): void {
-                $this->database->insert($this->tables->raw('resource_policies'), [
-                    'id' => $id,
-                    'policy_code' => $policyCode,
-                    'owner_kind' => 'core',
-                    'owner_identifier' => 'core',
-                    'capability_code' => $operation,
-                    'resource_type' => 'business_record',
-                    'action' => $operation,
-                    'effect' => 'allow',
-                    'scope_type' => 'site',
-                    'organization_id' => null,
-                    'entity_definition_id' => $definition->id,
-                    'canonical_ast' => $predicate,
-                    'field_rules' => $fields,
-                    'ast_checksum' => $checksum,
-                    'policy_version' => 1,
-                    'priority' => -1_000,
-                    'status' => 'active',
-                    'created_by' => $context->actorId(),
-                    'created_at' => $now,
-                    'updated_at' => $now,
-                ], [
-                    'canonical_ast' => Types::JSON,
-                    'field_rules' => Types::JSON,
-                    'created_at' => Types::DATETIME_IMMUTABLE,
-                    'updated_at' => Types::DATETIME_IMMUTABLE,
-                ]);
-                $this->recordOwnership($context, 'resource_policy', $id);
-                $this->audit->record(new AuditEvent(
-                    Uuid::uuid7()->toString(),
+            foreach ($this->policyBaselines($definition, $operation, $profile, $mode) as $baseline) {
+                $policyCode = $this->requiredString($baseline, 'policy_code');
+                $existing = $this->database->fetchAssociative(sprintf(
+                    'SELECT id, entity_definition_id, action, ast_checksum FROM %s WHERE policy_code = ?',
+                    $this->tables->quoted('resource_policies'),
+                ), [$policyCode]);
+                if ($existing !== false) {
+                    $this->assertPolicyCheckpointAtInstallation($context, $baseline);
+                    continue;
+                }
+                $created = true;
+                $id = $this->requiredString($baseline, 'id');
+                $effect = $this->requiredString($baseline, 'effect');
+                $predicate = $this->map($baseline['predicate'] ?? null, 'policy predicate');
+                $fields = $this->map($baseline['fields'] ?? null, 'policy field rules');
+                $checksum = $this->requiredString($baseline, 'ast_checksum');
+                $now = $this->clock->now();
+                $this->transactions->transactional(function () use (
+                    $context,
+                    $definition,
+                    $operation,
+                    $policyCode,
+                    $effect,
+                    $predicate,
+                    $fields,
+                    $checksum,
+                    $id,
                     $now,
-                    $context->actorId(),
-                    'demo.business.policy.install',
+                ): void {
+                    $this->database->insert($this->tables->raw('resource_policies'), [
+                        'id' => $id,
+                        'policy_code' => $policyCode,
+                        'owner_kind' => 'core',
+                        'owner_identifier' => 'core',
+                        'capability_code' => $operation,
+                        'resource_type' => 'business_record',
+                        'action' => $operation,
+                        'effect' => $effect,
+                        'scope_type' => 'site',
+                        'organization_id' => null,
+                        'entity_definition_id' => $definition->id,
+                        'canonical_ast' => $predicate,
+                        'field_rules' => $fields,
+                        'ast_checksum' => $checksum,
+                        'policy_version' => 1,
+                        'priority' => -1_000,
+                        'status' => 'active',
+                        'created_by' => $context->actorId(),
+                        'created_at' => $now,
+                        'updated_at' => $now,
+                    ], [
+                        'canonical_ast' => Types::JSON,
+                        'field_rules' => Types::JSON,
+                        'created_at' => Types::DATETIME_IMMUTABLE,
+                        'updated_at' => Types::DATETIME_IMMUTABLE,
+                    ]);
+                    $this->recordOwnership($context, 'resource_policy', $id);
+                    $this->audit->record(new AuditEvent(
+                        Uuid::uuid7()->toString(),
+                        $now,
+                        $context->actorId(),
+                        'demo.business.policy.install',
+                        'resource_policy',
+                        $id,
+                        'success',
+                        [
+                            'site' => $context->site()->identifier(),
+                            'policy_code' => $policyCode,
+                            'definition_id' => $definition->id,
+                        ],
+                    ));
+                });
+                $this->ledger->recordAsset(
+                    $context->site()->identifier(),
+                    self::DATASET,
+                    $this->requiredString($baseline, 'fixture_key'),
                     'resource_policy',
                     $id,
-                    'success',
-                    [
-                        'site' => $context->site()->identifier(),
-                        'policy_code' => $policyCode,
-                        'definition_id' => $definition->id,
-                    ],
-                ));
-            });
-            $state = ['policy_code' => $policyCode, 'definition_id' => $definition->id, 'operation' => $operation];
-            $this->ledger->recordAsset(
-                $context->site()->identifier(),
-                self::DATASET,
-                'policy.' . substr(hash('sha256', $policyCode), 0, 32),
-                'resource_policy',
-                $id,
-                CanonicalDefinitionJson::checksum($state),
-                1,
-                $state,
-            );
+                    $this->requiredString($baseline, 'asset_checksum'),
+                    1,
+                    $this->map($baseline['state'] ?? null, 'policy checkpoint state'),
+                );
+            }
         }
 
         return $created;

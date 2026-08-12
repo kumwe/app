@@ -51,7 +51,7 @@ final class VdmBusinessDefinitionSchemaTest extends TestCase
             self::assertFalse(array_is_list($document));
             $drafts[] = EntityTypeDefinition::fromArray($document);
         }
-        self::assertCount(5, $drafts);
+        self::assertCount(12, $drafts);
 
         $fieldTypes = new FieldTypeRegistry();
         (new BusinessDefinitionValidator($fieldTypes))->validateGraph($drafts);
