@@ -866,6 +866,30 @@ final readonly class DoctrineAccessControlRepository implements AccessControlRep
     }
 
     /**
+     * Read the identified grant snapshot a role-scoped change set compares and edits.
+     *
+     * @param   string  $roleId  UUID of the role whose grants are being edited.
+     *
+     * @return  list<array{id: string, capability: string, scope_type: string, scope_identifier: ?string}>
+     *          Stable grant rows including their immutable identifiers.
+     *
+     * @since   2.0.0
+     */
+    public function roleGrantRecords(string $roleId): array
+    {
+        /**
+         * @var list<array{id: string, capability: string, scope_type: string, scope_identifier: ?string}> $rows
+         */
+        $rows = $this->database->fetchAllAssociative(sprintf(
+            'SELECT id, capability_code AS capability, scope_type, scope_identifier FROM %s '
+            . 'WHERE role_id = ? ORDER BY capability_code, scope_type, scope_identifier, id',
+            $this->tables->quoted('role_capability_grants'),
+        ), [$roleId]);
+
+        return $rows;
+    }
+
+    /**
      * Read every capability a user holds through their roles, with the scope each applies in.
      *
      * The statement joins the user's roles to their grants and deduplicates, so a capability conferred by

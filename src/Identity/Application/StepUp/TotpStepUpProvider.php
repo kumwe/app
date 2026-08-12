@@ -224,7 +224,7 @@ final readonly class TotpStepUpProvider implements StepUpProvider, Administrator
      */
     public function challenge(StepUpIntent $intent, string $code, string $source): StepUpVerification
     {
-        return $this->attempt($intent, $source, $intent->purpose, function () use (
+        return $this->attempt($intent, $source, $this->throttlePurpose($intent->purpose), function () use (
             $intent,
             $code,
         ): StepUpVerification {
@@ -282,7 +282,8 @@ final readonly class TotpStepUpProvider implements StepUpProvider, Administrator
      */
     public function recover(StepUpIntent $intent, string $recoveryCode, string $source): StepUpVerification
     {
-        return $this->attempt($intent, $source, $intent->purpose . ':recovery', function () use (
+        $throttlePurpose = $this->throttlePurpose($intent->purpose) . ':recovery';
+        return $this->attempt($intent, $source, $throttlePurpose, function () use (
             $intent,
             $recoveryCode,
         ): StepUpVerification {
@@ -366,6 +367,24 @@ final readonly class TotpStepUpProvider implements StepUpProvider, Administrator
 
             return $result;
         });
+    }
+
+    /**
+     * Keep payload-bound proofs inside one action-level failure budget.
+     *
+     * Access-control purposes end in a canonical SHA-256 payload binding. Removing only that controlled
+     * suffix for throttling prevents an attacker varying harmless form fields to obtain a fresh attempt
+     * budget, while the issued proof retains the full exact-purpose binding.
+     *
+     * @param   string  $purpose  Exact proof purpose, optionally ending in `.payload.` and a SHA-256 digest.
+     *
+     * @return  string  Stable action-level throttle partition.
+     *
+     * @since   2.0.0
+     */
+    private function throttlePurpose(string $purpose): string
+    {
+        return preg_replace('/\.payload\.[a-f0-9]{64}$/D', '', $purpose) ?? $purpose;
     }
 
     /**

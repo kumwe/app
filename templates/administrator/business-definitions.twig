@@ -28,7 +28,7 @@
       catalog_toggle_label: 'Browse definitions'
     } %}
       {% block catalog %}
-    <aside class="panel stack">
+    <section class="panel stack definition-catalog">
       {% embed '@kis/resource-toolbar.twig' with {
         label: 'Definition catalog',
         title: 'Entities',
@@ -55,7 +55,7 @@
           </form>
         </details>
       {% endif %}
-    </aside>
+    </section>
       {% endblock %}
 
       {% block detail %}
@@ -76,7 +76,7 @@
           </section>{% endblock %}
         {% endembed %}
         {% embed '@kis/tab-panel.twig' with {id: 'business-definition-workspace', tab: 'fields'} %}
-          {% block content %}<section class="panel stack"><div class="section-heading"><h2>Fields</h2><span class="count-badge">{{ definition.fields|length }}</span></div><div class="table-wrap" tabindex="0" role="region" aria-label="Definition fields"><table><thead><tr><th>Field</th><th>Type</th><th>Required</th><th>Use</th></tr></thead><tbody>{% for field in definition.fields %}<tr><td><strong>{{ field.label }}</strong><br><code>{{ field.handle }}</code></td><td><code>{{ field.type }}</code></td><td>{{ field.required ? 'Yes' : 'No' }}</td><td>{{ field.placements|join(', ') }}</td></tr>{% endfor %}</tbody></table></div></section>{% endblock %}
+          {% block content %}<section class="panel stack"><div class="section-heading"><h2>Fields</h2><span class="count-badge">{{ definition.fields|length }}</span></div><div class="table-wrap kis-responsive-table" tabindex="0" role="region" aria-label="Definition fields"><table class="definition-fields-table"><thead><tr><th scope="col">Field</th><th scope="col">Type</th><th scope="col">Required</th><th scope="col">Use</th></tr></thead><tbody>{% for field in definition.fields %}<tr><th scope="row" data-label="Field"><strong>{{ field.label }}</strong><br><code>{{ field.handle }}</code></th><td data-label="Type"><code>{{ field.type }}</code></td><td data-label="Required">{{ field.required ? 'Yes' : 'No' }}</td><td data-label="Use">{{ field.placements|join(', ') }}</td></tr>{% endfor %}</tbody></table></div></section>{% endblock %}
         {% endembed %}
         {% embed '@kis/tab-panel.twig' with {id: 'business-definition-workspace', tab: 'relationships'} %}
           {% block content %}<section class="panel stack"><div class="section-heading"><h2>Relationships</h2><span class="count-badge">{{ definition.relationships|length }}</span></div>{% for relation in definition.relationships %}<p><strong>{{ relation.label }}</strong> · {{ relation.kind }} → <code>{{ relation.target }}</code>{% if relation.inverse %} · inverse {{ relation.inverse }}{% endif %}</p>{% else %}<p class="text-muted">No relationships are declared.</p>{% endfor %}</section>{% endblock %}

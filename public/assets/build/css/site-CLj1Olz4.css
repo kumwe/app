@@ -360,14 +360,16 @@
 
   @container kis-master-detail (max-width: 56rem) {
     .kis-master-detail-grid { grid-template-columns: minmax(0, 1fr); }
-    .kis-catalog-toggle { display: inline-flex; }
+    .kis-master-detail-catalog { position: static; max-height: none; }
+    kumwe-master-detail[data-enhanced] .kis-catalog-toggle { display: inline-flex; }
     kumwe-master-detail[data-enhanced] .kis-master-detail-catalog { display: none; position: static; max-height: none; }
     kumwe-master-detail[data-enhanced][data-catalog-open] .kis-master-detail-catalog { display: grid; }
   }
 
   @media (max-width: 56rem) {
     .kis-master-detail-grid { grid-template-columns: minmax(0, 1fr); }
-    .kis-catalog-toggle { display: inline-flex; }
+    .kis-master-detail-catalog { position: static; max-height: none; }
+    kumwe-master-detail[data-enhanced] .kis-catalog-toggle { display: inline-flex; }
     kumwe-master-detail[data-enhanced] .kis-master-detail-catalog { display: none; position: static; max-height: none; }
     kumwe-master-detail[data-enhanced][data-catalog-open] .kis-master-detail-catalog { display: grid; }
   }

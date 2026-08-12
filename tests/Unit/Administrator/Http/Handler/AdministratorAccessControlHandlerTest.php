@@ -122,6 +122,51 @@ final class AdministratorAccessControlHandlerTest extends TestCase
     }
 
     /**
+     * Binds a proof to the exact submitted change set without binding credential or CSRF values.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testStepUpPurposeBindsExactPayloadAndResourceSnapshot(): void
+    {
+        $handler = $this->handler($this->createStub(AdministratorSessionStore::class));
+        $method = new \ReflectionMethod($handler, 'stepUpPurpose');
+        $first = $method->invoke($handler, 'grant.synchronize', [
+            'action' => 'grant.synchronize',
+            'role_id' => 'role-one',
+            'grant_snapshot' => str_repeat('a', 64),
+            'selected_capabilities' => 'content.update,content.publish',
+            '_csrf' => 'csrf-one',
+            'step_up_code' => '111111',
+        ]);
+        $sameChange = $method->invoke($handler, 'grant.synchronize', [
+            'action' => 'grant.synchronize',
+            'role_id' => 'role-one',
+            'grant_snapshot' => str_repeat('a', 64),
+            'selected_capabilities' => 'content.update,content.publish',
+            '_csrf' => 'csrf-two',
+            'step_up_code' => '222222',
+        ]);
+        $differentChange = $method->invoke($handler, 'grant.synchronize', [
+            'action' => 'grant.synchronize',
+            'role_id' => 'role-one',
+            'grant_snapshot' => str_repeat('a', 64),
+            'selected_capabilities' => 'content.update',
+            '_csrf' => 'csrf-two',
+            'step_up_code' => '222222',
+        ]);
+
+        self::assertIsString($first);
+        self::assertMatchesRegularExpression(
+            '/^identity\.access_control\.grant\.synchronize\.payload\.[a-f0-9]{64}$/D',
+            $first,
+        );
+        self::assertSame($first, $sameChange);
+        self::assertNotSame($first, $differentChange);
+    }
+
+    /**
      * Build the handler with production value objects and inert ports not reached by context selection.
      *
      * @param   AdministratorSessionStore  $sessions  Session port whose selection call is under test.

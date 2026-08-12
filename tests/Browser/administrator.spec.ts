@@ -32,6 +32,23 @@ async function expectStylesLoaded(page: Page): Promise<void> {
   expect(await page.locator('link[rel="stylesheet"]').count()).toBeGreaterThan(0);
 }
 
+async function expectFocusedAccessAction(page: Page, action: string): Promise<void> {
+  const actionInput = page.locator(`form input[name="action"][value="${action}"]`);
+  await expect(actionInput).toHaveCount(1);
+
+  const form = actionInput.locator('xpath=ancestor::form[1]');
+  await expect(form).toBeVisible();
+  await expect(form.locator('input[name="action"]')).toHaveValue(action);
+
+  const verifier = form.getByRole('group', { name: 'Verify this exact action' });
+  await expect(verifier).toHaveCount(1);
+  await expect(verifier).toBeVisible();
+  await expect(form.locator('select[name="step_up_method"]')).toHaveCount(1);
+  await expect(form.locator('input[name="step_up_code"]')).toHaveCount(1);
+  await expect(form.locator('input[name="recovery_code"]')).toHaveCount(1);
+  await expect(page.getByRole('group', { name: 'Verify this exact action' })).toHaveCount(1);
+}
+
 /** Attach the unmodified live interface before any compatibility-only baseline normalization. */
 async function attachLiveInterfaceScreenshot(
   page: Page,
@@ -515,16 +532,41 @@ test.describe('authenticated administrator', () => {
     await page.getByRole('link', { name: 'Create user' }).first().click();
     await expect(page.getByRole('heading', { name: 'Create active identity' })).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Next: grant portal membership' })).toBeVisible();
-    await expect(page.getByRole('group', { name: 'Verify this exact action' })).toBeVisible();
+    await expectFocusedAccessAction(page, 'user.create');
     await expect(page.getByRole('link', { name: 'Continue to membership' }))
       .toHaveAttribute('href', /business-security\?section=memberships&mode=create/u);
     await expectBoundedAccessWorkspace('access-portal-provisioning');
+
+    await page.goto('/administrator/access?section=groups');
+    await expect(page.getByRole('heading', { name: 'Groups and roles' })).toBeVisible();
+    await expect(page.locator('input[name="step_up_code"]')).toHaveCount(0);
+    await page.getByRole('link', { name: 'Review role' }).first().click();
+    await expectFocusedAccessAction(page, 'grant.synchronize');
+    const roleGrantChangeSet = page.locator('form[data-role-grant-change-set]');
+    await expect(roleGrantChangeSet.locator('input[name="grant_snapshot"]')).toHaveCount(1);
+    await expect(roleGrantChangeSet.locator('input[name="grant_snapshot"]')).not.toHaveValue('');
+    expect(await roleGrantChangeSet.locator('input[name="selected_capabilities[]"]').count())
+      .toBeGreaterThan(0);
+
+    await page.goto('/administrator/access?section=groups');
+    await page.getByRole('link', { name: 'Create role' }).first().click();
+    await expect(page.getByRole('heading', { name: 'Create group or role' })).toBeVisible();
+    await expectFocusedAccessAction(page, 'role.create');
+    await expectBoundedAccessWorkspace('access-role-creation');
+
+    await page.goto('/administrator/access?section=grants');
+    await expect(page.getByRole('heading', { name: 'Capability grants' })).toBeVisible();
+    await expect(page.locator('input[name="step_up_code"]')).toHaveCount(0);
+    await page.getByRole('link', { name: 'Create grant' }).first().click();
+    await expect(page.getByRole('heading', { name: 'Create capability grant' })).toBeVisible();
+    await expectFocusedAccessAction(page, 'grant.create');
+    await expectBoundedAccessWorkspace('access-grant-creation');
 
     await page.goto('/administrator/access?section=assignments');
     await expect(page.getByRole('heading', { name: 'Role assignments' })).toBeVisible();
     await page.getByRole('link', { name: 'Assign role' }).first().click();
     await expect(page.getByRole('heading', { name: 'Assign group or role' })).toBeVisible();
-    await expect(page.getByRole('group', { name: 'Verify this exact action' })).toBeVisible();
+    await expectFocusedAccessAction(page, 'role.assign');
     await expect(page.getByRole('heading', { name: 'Portal membership remains separate' })).toBeVisible();
     await expect(page.getByRole('link', { name: 'Continue portal provisioning' }))
       .toHaveAttribute('href', /business-security\?section=memberships&mode=create/u);
@@ -537,7 +579,7 @@ test.describe('authenticated administrator', () => {
     await expect(page.getByLabel('Capabilities')).toHaveAttribute('multiple', '');
     await expect(page.getByLabel('Audience')).toBeVisible();
     await expect(page.getByLabel('Purpose')).toBeVisible();
-    await expect(page.getByRole('group', { name: 'Verify this exact action' })).toBeVisible();
+    await expectFocusedAccessAction(page, 'token.create');
     await expectBoundedAccessWorkspace('access-token-issuance');
 
     await page.goto('/administrator/access?section=events');
@@ -564,6 +606,200 @@ test.describe('authenticated administrator', () => {
     await expect(page.locator('input[name="step_up_code"]')).toBeVisible();
     await expect(page.getByRole('button', { name: 'Confirm enrollment' })).toBeVisible();
     // KIS-EVIDENCE-END p6-001-access-ui
+  });
+
+  test('access and entity workspaces remain compact at supported sizes and text zoom', async ({
+    page,
+    isMobile,
+  }) => {
+    test.setTimeout(90_000);
+
+    const expectBoundedWorkspace = async (): Promise<void> => {
+      const diagnostics = await expectNoDocumentOverflow(page, {
+        root: '#administrator-content',
+        detectControlOverlaps: false,
+      });
+      expect(diagnostics.findings, JSON.stringify(diagnostics, null, 2)).toEqual([]);
+    };
+    const openUsers = async (zoomed = false): Promise<void> => {
+      await page.goto('/administrator/access?section=users');
+      if (zoomed) {
+        await page.evaluate(() => {
+          document.documentElement.style.fontSize = '200%';
+        });
+      }
+
+      const users = page.getByRole('region', { name: 'Users', exact: true });
+      await expect(users).toBeVisible();
+      for (const heading of ['User', 'Status', 'Groups and roles', 'Tasks']) {
+        await expect(users.getByRole('columnheader', {
+          name: heading,
+          exact: true,
+          includeHidden: true,
+        })).toHaveCount(1);
+      }
+      const firstUser = users.locator('tbody tr').first();
+      const identity = firstUser.locator('th[scope="row"]');
+      const groups = firstUser.locator('td').nth(1);
+      await expect(identity).toBeVisible();
+      await expect(groups).toBeVisible();
+      await expect(identity).not.toHaveText('');
+      await expect(groups).not.toHaveText('');
+      const visibleUserColumns = await firstUser.evaluate((row) => {
+        const region = row.closest('[role="region"]');
+        const identityCell = row.querySelector('th[scope="row"]');
+        const groupCell = row.querySelectorAll('td').item(1);
+        if (region === null || identityCell === null || groupCell === null) {
+          throw new Error('The users table does not expose its identity and group cells.');
+        }
+
+        const bounds = region.getBoundingClientRect();
+        const contained = (cell: Element): boolean => {
+          const cellBounds = cell.getBoundingClientRect();
+          return cellBounds.left >= bounds.left - 1 && cellBounds.right <= bounds.right + 1;
+        };
+        return { groups: contained(groupCell), identity: contained(identityCell) };
+      });
+      expect(visibleUserColumns).toEqual({ groups: true, identity: true });
+      await expect(page.locator('input[name="step_up_code"]')).toHaveCount(0);
+      await expectBoundedWorkspace();
+    };
+    const openAssignment = async (zoomed = false): Promise<void> => {
+      await page.goto('/administrator/access?section=assignments&mode=create');
+      if (zoomed) {
+        await page.evaluate(() => {
+          document.documentElement.style.fontSize = '200%';
+        });
+      }
+
+      await expectFocusedAccessAction(page, 'role.assign');
+      const actionInput = page.locator('input[name="action"][value="role.assign"]');
+      const form = actionInput.locator('xpath=ancestor::form[1]');
+      const assign = form.getByRole('button', { name: 'Assign role' });
+      const dimensions = await assign.evaluate((button) => {
+        const bounds = button.getBoundingClientRect();
+        const fontSize = Number.parseFloat(getComputedStyle(button).fontSize);
+        return {
+          heightInEm: bounds.height / fontSize,
+          widthInEm: bounds.width / fontSize,
+        };
+      });
+      expect(dimensions.heightInEm).toBeLessThanOrEqual(4.5);
+      expect(dimensions.widthInEm).toBeLessThanOrEqual(20);
+      await expectBoundedWorkspace();
+    };
+    const openRoleCapabilitySet = async (zoomed = false): Promise<void> => {
+      await page.goto('/administrator/access?section=groups');
+      await expect(page.locator('input[name="step_up_code"]')).toHaveCount(0);
+      await page.getByRole('link', { name: 'Review role' }).first().click();
+      if (zoomed) {
+        await page.evaluate(() => {
+          document.documentElement.style.fontSize = '200%';
+        });
+      }
+
+      await expectFocusedAccessAction(page, 'grant.synchronize');
+      const changeSet = page.locator('form[data-role-grant-change-set]');
+      await expect(changeSet).toHaveCount(1);
+      await expect(changeSet.locator('input[name="grant_snapshot"]')).toHaveCount(1);
+      await expect(changeSet.locator('input[name="grant_snapshot"]')).not.toHaveValue('');
+      const capabilityOptions = changeSet.locator('input[name="selected_capabilities[]"]');
+      expect(await capabilityOptions.count()).toBeGreaterThan(0);
+      await expect(capabilityOptions.first()).toBeVisible();
+
+      const optionLayout = await changeSet.locator('.option-grid').evaluate((grid) => {
+        const bounds = grid.getBoundingClientRect();
+        const cards = [...grid.querySelectorAll<HTMLElement>('.option-card')];
+        return {
+          count: cards.length,
+          allContained: cards.every((card) => {
+            const cardBounds = card.getBoundingClientRect();
+            return cardBounds.left >= bounds.left - 1 && cardBounds.right <= bounds.right + 1;
+          }),
+          maximumHeightInEm: Math.max(...cards.map((card) =>
+            card.getBoundingClientRect().height / Number.parseFloat(getComputedStyle(card).fontSize)
+          )),
+        };
+      });
+      expect(optionLayout.count).toBeGreaterThan(0);
+      expect(optionLayout.allContained).toBe(true);
+      expect(optionLayout.maximumHeightInEm).toBeLessThanOrEqual(10);
+      await expectBoundedWorkspace();
+    };
+    const openEntityDefinition = async (zoomed = false): Promise<void> => {
+      await page.goto(
+        `/administrator/business-definitions?definition=${assetInspectionDefinition}&tab=fields`,
+      );
+      if (zoomed) {
+        await page.evaluate(() => {
+          document.documentElement.style.fontSize = '200%';
+        });
+      }
+
+      const workspace = page.locator(
+        '[data-kis-master-detail="business-definition-workspace"]',
+      );
+      await expect(workspace).toBeVisible();
+      const catalogToggle = workspace.getByRole('button', { name: 'Browse definitions' });
+      if (await catalogToggle.isVisible()) {
+        await catalogToggle.click();
+        await expect(workspace.getByRole('complementary', { name: 'Definition catalog' }))
+          .toBeVisible();
+        await expect(workspace.locator('.definition-catalog-item').first()).toBeVisible();
+        await catalogToggle.click();
+      } else {
+        await expect(workspace.getByRole('complementary', { name: 'Definition catalog' }))
+          .toBeVisible();
+      }
+
+      const fields = workspace.getByRole('region', { name: 'Definition fields' });
+      await expect(fields).toBeVisible();
+      for (const heading of ['Field', 'Type', 'Required', 'Use']) {
+        await expect(fields.getByRole('columnheader', {
+          name: heading,
+          exact: true,
+          includeHidden: true,
+        })).toHaveCount(1);
+      }
+      const firstField = fields.locator('tbody tr').first();
+      const visibleFieldColumns = await firstField.evaluate((row) => {
+        const region = row.closest('[role="region"]');
+        const cells = row.querySelectorAll(':scope > th, :scope > td');
+        if (region === null || cells.length !== 4) {
+          throw new Error('The definition fields table does not expose its four semantic cells.');
+        }
+
+        const bounds = region.getBoundingClientRect();
+        const contained = (cell: Element): boolean => {
+          const cellBounds = cell.getBoundingClientRect();
+          return cellBounds.left >= bounds.left - 1 && cellBounds.right <= bounds.right + 1;
+        };
+        return {
+          field: contained(cells.item(0)),
+          type: contained(cells.item(1)),
+          required: contained(cells.item(2)),
+          use: contained(cells.item(3)),
+        };
+      });
+      expect(visibleFieldColumns).toEqual({ field: true, required: true, type: true, use: true });
+      await expectBoundedWorkspace();
+    };
+
+    const viewports = isMobile
+      ? [{ width: 412, height: 915 }]
+      : [{ width: 1440, height: 960 }, { width: 1024, height: 800 }];
+    for (const viewport of viewports) {
+      await page.setViewportSize(viewport);
+      await openUsers();
+      await openAssignment();
+      await openEntityDefinition();
+    }
+
+    await openRoleCapabilitySet();
+    await openRoleCapabilitySet(true);
+    await openUsers(true);
+    await openAssignment(true);
+    await openEntityDefinition(true);
   });
 
   test('published content links through a typed menu to its canonical path', async ({
