@@ -80,10 +80,17 @@ test('component diagnostics expose the Business Definition failure without a doc
       .diagnostic-action { position: absolute; left: 1rem; top: 4rem; width: 8rem; height: 2rem; }
     </style>
     <form id="business-definition-form" class="diagnostic-component">
+      <input type="hidden" name="id" value="named form controls must not replace the form id">
       <section class="diagnostic-child" data-interface-id="diagnostic-child">Clipped content</section>
       <button class="diagnostic-action" data-interface-id="first-action">First</button>
       <button class="diagnostic-action" data-interface-id="second-action">Second</button>
     </form>
+    <details id="closed-disclosure">
+      <summary>Optional editor</summary>
+      <form class="diagnostic-component" data-interface-id="closed-editor">
+        <section class="diagnostic-child">Intentionally undisclosed content</section>
+      </form>
+    </details>
   `);
 
   const report = await collectInterfaceDiagnostics(page);
@@ -104,6 +111,9 @@ test('component diagnostics expose the Business Definition failure without a doc
       selector: '[data-interface-id="first-action"]',
       relatedSelector: '[data-interface-id="second-action"]',
     }),
+  ]));
+  expect(report.findings).not.toEqual(expect.arrayContaining([
+    expect.objectContaining({ selector: '[data-interface-id="closed-editor"]' }),
   ]));
 });
 

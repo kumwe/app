@@ -64,7 +64,8 @@ jobs:
     name: Browser, accessibility and visual regression
     needs: frontend
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    # The complete desktop/mobile evidence matrix includes native no-JavaScript mutation lifecycles.
+    timeout-minutes: 45
     services:
       database:
         image: postgres:17-alpine

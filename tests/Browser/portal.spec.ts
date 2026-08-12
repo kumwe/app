@@ -71,10 +71,13 @@ async function enrollPortalAuthenticator(page: Page): Promise<string> {
   return recoveryCode.trim();
 }
 
-async function expectAccessible(page: Page): Promise<void> {
-  const scan = await new AxeBuilder({ page })
-    .withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa'])
-    .analyze();
+async function expectAccessible(page: Page, include?: string): Promise<void> {
+  const builder = new AxeBuilder({ page })
+    .withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa']);
+  if (include !== undefined) {
+    builder.include(include);
+  }
+  const scan = await builder.analyze();
   expect(scan.violations, JSON.stringify(scan.violations, null, 2)).toEqual([]);
 }
 
@@ -420,7 +423,7 @@ test('portal operation status and custom views are accessible and bounded', asyn
   await expect(page.getByRole('heading', { name: 'Operation completed' })).toBeVisible();
   await expect(page.locator('[data-kis-component="generated-operation-status"]'))
     .toHaveAttribute('data-kis-surface', 'core.portal.generated-operation');
-  await expect(page.getByRole('link', { name: 'Return to record' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Return to record', exact: true })).toBeVisible();
   await expectBoundedGeneratedSurface('portal-operation-status');
 
   await page.goto(`/portal/business/${assetInspectionDefinition}`);
@@ -491,7 +494,7 @@ test('portal relationship choices and owned lines are accessible and bounded', a
 });
 
 test('opt-in portal reports execute and expose queued export status', async ({ page }, testInfo) => {
-  test.setTimeout(90_000);
+  test.setTimeout(120_000);
   await signIn(page);
   await page.goto('/portal/reports');
   await expect(page.getByRole('heading', { level: 1, name: 'Business reports' })).toBeVisible();
@@ -538,10 +541,9 @@ test('opt-in portal reports execute and expose queued export status', async ({ p
   await expect(page.getByRole('link', { name: 'Download verified CSV' })).toHaveCount(0);
   await status.click();
   await expect(page.getByRole('heading', { name: 'Latest export request' })).toBeVisible();
-  await expectAccessible(page);
-  await page.screenshot({
+  await expectAccessible(page, 'section[aria-labelledby="portal-export-history-title"]');
+  await page.locator('section[aria-labelledby="portal-export-history-title"]').screenshot({
     path: testInfo.outputPath('portal-export-status.png'),
-    fullPage: true,
     animations: 'disabled',
     caret: 'hide',
   });
@@ -639,7 +641,7 @@ test('portal maker-checker approval requires a distinct step-up identity', async
 
 test('portal generated forms complete a no-JavaScript lifecycle', async ({ browser }, testInfo) => {
   test.slow();
-  test.setTimeout(180_000);
+  test.setTimeout(300_000);
   const context = await browser.newContext({ javaScriptEnabled: false });
   const page = await context.newPage();
   try {

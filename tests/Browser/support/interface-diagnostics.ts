@@ -91,6 +91,13 @@ export async function collectInterfaceDiagnostics(
       if (isIgnored(element)) {
         return false;
       }
+      const closedDisclosure = element.closest('details:not([open])');
+      if (closedDisclosure !== null && element !== closedDisclosure) {
+        const summary = closedDisclosure.querySelector(':scope > summary');
+        if (summary === null || (element !== summary && !summary.contains(element))) {
+          return false;
+        }
+      }
       const style = getComputedStyle(element);
       const bounds = rectangle(element);
       return style.display !== 'none'
@@ -104,8 +111,9 @@ export async function collectInterfaceDiagnostics(
         && bounds.top < window.innerHeight;
     };
     const selectorFor = (element: Element): string => {
-      if (element.id !== '') {
-        return `#${CSS.escape(element.id)}`;
+      const elementId = element.getAttribute('id');
+      if (elementId !== null && elementId !== '') {
+        return `#${CSS.escape(elementId)}`;
       }
       const diagnosticId = element.getAttribute('data-interface-id');
       if (diagnosticId !== null) {

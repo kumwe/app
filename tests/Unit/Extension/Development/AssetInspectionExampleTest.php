@@ -28,6 +28,7 @@ use Kumwe\CMS\Extension\Domain\PackageSignature;
 use Kumwe\CMS\Extension\Infrastructure\Package\ZipArchiveReader;
 use Kumwe\CMS\Extension\Runtime\RestrictedExtensionContainer;
 use Kumwe\CMS\Tests\Support\AssetInspectionDeploymentAcceptance;
+use KumweExample\AssetInspection\Application\InspectionAccessPolicy;
 use KumweExample\AssetInspection\Application\InspectionPolicyProfile;
 use KumweExample\AssetInspection\Definitions;
 use KumweExample\AssetInspection\Provider;
@@ -123,6 +124,16 @@ final class AssetInspectionExampleTest extends TestCase
         self::assertCount(2, $contributions->interfaceSurfaces());
         self::assertCount(1, $contributions->portalRoutes());
         self::assertCount(1, $contributions->customBusinessViews());
+
+        $portalRoute = $contributions->portalRoutes()[0];
+        $portalNavigation = $contributions->portalNavigation()[0];
+        self::assertSame('/', $portalRoute->path);
+        self::assertSame('/', $portalNavigation->path);
+        self::assertSame(InspectionAccessPolicy::VIEW, $portalRoute->capability);
+        self::assertSame(InspectionAccessPolicy::VIEW, $portalNavigation->capability);
+        self::assertSame('kumwe.asset-inspection-example.portal.status', $portalRoute->name);
+        self::assertSame('kumwe.asset-inspection-example.portal.status', $portalRoute->template);
+        self::assertSame('kumwe.asset-inspection-example.portal.status', $portalNavigation->surface);
 
         $summaryContract = $contributions->customBusinessViews()[0];
         self::assertSame(
@@ -461,6 +472,18 @@ final class AssetInspectionExampleTest extends TestCase
             'kumwe.asset-inspection-example.schemas.inspection-risk-summary-v1',
         ));
         self::assertCount(2, $inventory['interface']['surfaces']);
+        self::assertSame(
+            [[
+                'name' => 'kumwe.asset-inspection-example.portal.status',
+                'path' => '/',
+                'methods' => ['GET'],
+                'capability' => InspectionAccessPolicy::VIEW,
+                'template' => 'kumwe.asset-inspection-example.portal.status',
+                'registered_name' => 'portal.extension.kumwe.asset-inspection-example.portal.status',
+                'registered_path' => '/portal/extensions/kumwe/asset-inspection-example',
+            ]],
+            $registries->portalRoutes()->ownedBy($declarations->owner),
+        );
         self::assertCount(1, $inventory['integration']['domain_listeners']);
         self::assertCount(1, $inventory['integration']['consumers']);
         self::assertCount(1, $inventory['integration']['jobs']);

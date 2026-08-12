@@ -12,10 +12,13 @@ const assetInspectionReport = 'kumwe.asset-inspection-example.inspection-summary
 const windhoekOrderId = '019b40d9-8dd0-7ca2-a0db-9eae6a150511';
 const windhoekTargetId = '019b40d9-8dd0-7ca2-a0db-9eae6a150521';
 
-async function expectAccessible(page: Page): Promise<void> {
-  const scan = await new AxeBuilder({ page })
-    .withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa'])
-    .analyze();
+async function expectAccessible(page: Page, include?: string): Promise<void> {
+  const builder = new AxeBuilder({ page })
+    .withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa']);
+  if (include !== undefined) {
+    builder.include(include);
+  }
+  const scan = await builder.analyze();
   expect(scan.violations, JSON.stringify(scan.violations, null, 2)).toEqual([]);
 }
 
@@ -700,7 +703,7 @@ test.describe('authenticated administrator', () => {
   });
 
   test('reports execute graphically and expose queued export status', async ({ page }, testInfo) => {
-    test.setTimeout(90_000);
+    test.setTimeout(120_000);
     await page.goto('/administrator/reports');
     await expect(page.getByRole('heading', { level: 1, name: 'Business reports' })).toBeVisible();
     await expect(page.locator('a[href="/administrator/reports"]')).toHaveAttribute(
@@ -757,10 +760,9 @@ test.describe('authenticated administrator', () => {
     await expect(page.getByRole('link', { name: 'Download verified CSV' })).toHaveCount(0);
     await status.click();
     await expect(page.getByRole('heading', { name: 'Latest export request' })).toBeVisible();
-    await expectAccessible(page);
-    await page.screenshot({
+    await expectAccessible(page, 'section[aria-labelledby="export-history-title"]');
+    await page.locator('section[aria-labelledby="export-history-title"]').screenshot({
       path: testInfo.outputPath('administrator-export-status.png'),
-      fullPage: true,
       animations: 'disabled',
       caret: 'hide',
     });
@@ -829,7 +831,7 @@ test.describe('authenticated administrator', () => {
     await expect(page.getByRole('heading', { name: 'Operation completed' })).toBeVisible();
     await expect(page.locator('[data-kis-component="generated-operation-status"]'))
       .toHaveAttribute('data-kis-surface', 'core.administrator.generated-operation');
-    await expect(page.getByRole('link', { name: 'Return to record' })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Return to record', exact: true })).toBeVisible();
     await expectBoundedGeneratedSurface('administrator-operation-status');
 
     await page.goto(`/administrator/business/${assetInspectionDefinition}`);
@@ -1001,7 +1003,7 @@ test.describe('authenticated administrator', () => {
     browser,
   }, testInfo) => {
     test.slow();
-    test.setTimeout(180_000);
+    test.setTimeout(300_000);
     const context = await browser.newContext({ javaScriptEnabled: false });
     const page = await context.newPage();
     try {

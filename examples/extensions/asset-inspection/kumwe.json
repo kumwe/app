@@ -110,7 +110,7 @@
         "workspace": "kumwe.asset-inspection-example.portal.workspace",
         "label": "Inspection status",
         "description": "Open the policy-filtered inspection status example.",
-        "path": "/status/",
+        "path": "/",
         "icon": "status",
         "capability": "kumwe.asset-inspection-example.view",
         "priority": 10,
@@ -119,7 +119,7 @@
       }],
       "routes": [{
         "name": "kumwe.asset-inspection-example.portal.status",
-        "path": "/status/",
+        "path": "/",
         "methods": ["GET"],
         "capability": "kumwe.asset-inspection-example.view",
         "template": "kumwe.asset-inspection-example.portal.status"

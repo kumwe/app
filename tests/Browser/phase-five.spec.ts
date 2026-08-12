@@ -146,6 +146,20 @@ test('Phase 5 presentation modes preserve focus, touch, zoom, high contrast, mot
   });
   await expectNoDocumentOverflow(page, { root: '#administrator-content', detectControlOverlaps: false });
 
+  await page.goto('/administrator/content-models');
+  await page.evaluate(() => {
+    document.documentElement.style.fontSize = '200%';
+  });
+  const zoomedContentModels = await expectNoDocumentOverflow(page, {
+    root: '#administrator-content',
+    detectControlOverlaps: false,
+  });
+  expect(
+    zoomedContentModels.findings,
+    JSON.stringify(zoomedContentModels, null, 2),
+  ).toEqual([]);
+
+  await page.goto('/administrator/settings');
   await page.emulateMedia({ media: 'print', colorScheme: 'light', forcedColors: 'none' });
   await expect(page.locator('.kis-phase-five-section-nav')).toBeHidden();
   const printableSettings = page.locator('form[data-kis-dirty-form]');

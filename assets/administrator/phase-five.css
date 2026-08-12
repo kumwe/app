@@ -241,6 +241,21 @@
       grid-template-columns: minmax(0, 1fr);
     }
 
+    [data-kis-surface="core.administrator.content-models"]
+      :is(.kis-phase-five-dual-workspace, .two-column, .builder-row, .builder-row-expanded, .builder-options) {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    [data-kis-surface="core.administrator.content-models"]
+      :is(form, kumwe-field-builder, kumwe-workflow-builder, [data-field-rows], [data-state-rows], [data-transition-rows]) {
+      min-width: 0;
+      max-width: 100%;
+    }
+
+    [data-kis-surface="core.administrator.content-models"] .remove-row {
+      justify-self: start;
+    }
+
     .kis-phase-five .editor-grid > *,
     .kis-phase-five .field-group,
     .kis-phase-five .media-input {
