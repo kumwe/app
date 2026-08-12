@@ -263,6 +263,8 @@ final readonly class DoctrineNavigationRepository implements NavigationRepositor
             'target_type' => $item->targetType,
             'content_id' => $item->contentId,
             'target_url' => $item->targetUrl,
+            'template' => $item->template,
+            'color_scheme' => $item->colorScheme,
             'version' => $item->version,
             'created_at' => $item->createdAt,
             'updated_at' => $item->updatedAt,
@@ -273,6 +275,8 @@ final readonly class DoctrineNavigationRepository implements NavigationRepositor
             'target_type' => Types::STRING,
             'content_id' => Types::GUID,
             'target_url' => Types::STRING,
+            'template' => Types::STRING,
+            'color_scheme' => Types::STRING,
             'created_at' => Types::DATETIME_IMMUTABLE,
             'updated_at' => Types::DATETIME_IMMUTABLE,
         ]);
@@ -298,14 +302,17 @@ final readonly class DoctrineNavigationRepository implements NavigationRepositor
     {
         $affected = $this->database->executeStatement(sprintf(
             'UPDATE %s SET parent_id = ?, title = ?, slug = ?, path = ?, position = ?, target_type = ?, '
-            . 'content_id = ?, target_url = ?, version = ?, updated_at = ? WHERE id = ? AND version = ?',
+            . 'content_id = ?, target_url = ?, template = ?, color_scheme = ?, version = ?, updated_at = ? '
+            . 'WHERE id = ? AND version = ?',
             $this->tables->quoted('navigation_items'),
         ), [
             $item->parentId, $item->title, $item->slug, $item->path, $item->position, $item->targetType,
-            $item->contentId, $item->targetUrl, $item->version, $item->updatedAt, $item->id, $expectedVersion,
+            $item->contentId, $item->targetUrl, $item->template, $item->colorScheme, $item->version,
+            $item->updatedAt, $item->id, $expectedVersion,
         ], [
             Types::GUID, Types::STRING, Types::STRING, Types::STRING, Types::INTEGER, Types::STRING,
-            Types::GUID, Types::STRING, Types::INTEGER, Types::DATETIME_IMMUTABLE, Types::GUID, Types::INTEGER,
+            Types::GUID, Types::STRING, Types::STRING, Types::STRING, Types::INTEGER,
+            Types::DATETIME_IMMUTABLE, Types::GUID, Types::INTEGER,
         ]);
         $this->assertChanged($affected, 'menu item');
     }
@@ -510,6 +517,8 @@ final readonly class DoctrineNavigationRepository implements NavigationRepositor
             is_string($row['target_type'] ?? null) ? $row['target_type'] : 'content',
             $this->nullableString($row, 'content_id'),
             $this->nullableString($row, 'target_url'),
+            $this->nullableString($row, 'template'),
+            $this->nullableString($row, 'color_scheme'),
         );
     }
 

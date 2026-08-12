@@ -13,6 +13,9 @@ use Kumwe\CMS\Content\Application\ContentService;
 use Kumwe\CMS\Navigation\Application\MenuItemRecord;
 use Kumwe\CMS\Navigation\Application\MenuRecord;
 use Kumwe\CMS\Navigation\Application\NavigationService;
+use Kumwe\CMS\Presentation\Application\SitePresentation;
+use Kumwe\CMS\Presentation\ContentLayoutCatalog;
+use Kumwe\CMS\Site\Application\SiteSettings;
 use Laminas\Diactoros\Response\HtmlResponse;
 use Laminas\Diactoros\Response\RedirectResponse;
 use Psr\Http\Message\ResponseInterface;
@@ -38,6 +41,8 @@ final readonly class AdministratorNavigationHandler implements RequestHandlerInt
      * @param  NavigationService      $navigation  Reads menus and items, and performs every mutation.
      * @param  AdministratorRenderer  $renderer    Renders the `navigation` template.
      * @param  ?ContentService        $content     Supplies the pages offered as link targets; null offers none.
+     * @param  ?SiteSettings          $settings    Supplies the colour schemes offered as per-item overrides;
+     *         null offers none.
      *
      * @since  2.0.0
      */
@@ -45,6 +50,7 @@ final readonly class AdministratorNavigationHandler implements RequestHandlerInt
         private NavigationService $navigation,
         private AdministratorRenderer $renderer,
         private ?ContentService $content = null,
+        private ?SiteSettings $settings = null,
     ) {
     }
 
@@ -98,8 +104,37 @@ final readonly class AdministratorNavigationHandler implements RequestHandlerInt
                 static fn (ContentRecord $record): array => $record->toArray(),
                 array_values($this->content->list($context, 500)),
             ),
+            'layout_options' => ContentLayoutCatalog::handles(),
+            'scheme_options' => $this->schemeOptions(),
             'saved' => ($request->getQueryParams()['saved'] ?? null) === '1',
         ]), 200, ['Cache-Control' => 'no-store']);
+    }
+
+    /**
+     * List the colour schemes an item may bind, as handle-and-name pairs for the select.
+     *
+     * The list comes from the same validated presentation document the public site renders with, so
+     * only a scheme that can actually take effect is offered. Without wired settings the list is
+     * empty and the screen offers only the site default.
+     *
+     * @return  list<array{handle: string, name: string}>  Selectable schemes in stored order.
+     *
+     * @since   2.0.0
+     */
+    private function schemeOptions(): array
+    {
+        if ($this->settings === null) {
+            return [];
+        }
+        $presentation = SitePresentation::from(
+            $this->settings->current()['presentation'] ?? SitePresentation::defaults(),
+        );
+        $options = [];
+        foreach ($presentation->schemeCatalog() as $scheme) {
+            $options[] = ['handle' => $scheme['handle'], 'name' => $scheme['name']];
+        }
+
+        return $options;
     }
 
     /**
@@ -164,6 +199,8 @@ final readonly class AdministratorNavigationHandler implements RequestHandlerInt
                 $form['target_type'] ?? 'content',
                 $this->nullable($form, 'content_id'),
                 $this->nullable($form, 'target_url'),
+                $this->nullable($form, 'template'),
+                $this->nullable($form, 'color_scheme'),
             ),
             'item.update' => $this->navigation->updateItem(
                 $context,
@@ -176,6 +213,8 @@ final readonly class AdministratorNavigationHandler implements RequestHandlerInt
                 $form['target_type'] ?? 'content',
                 $this->nullable($form, 'content_id'),
                 $this->nullable($form, 'target_url'),
+                $this->nullable($form, 'template'),
+                $this->nullable($form, 'color_scheme'),
             ),
             'item.delete' => $this->navigation->deleteItem(
                 $context,

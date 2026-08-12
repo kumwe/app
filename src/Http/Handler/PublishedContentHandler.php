@@ -101,12 +101,13 @@ final readonly class PublishedContentHandler implements RequestHandlerInterface
         if ($settings['search_indexing_enabled'] !== true) {
             $headers['X-Robots-Tag'] = 'noindex, nofollow, noarchive';
         }
+        $binding = $this->pages->presentationBindingFor($record);
         $presentation = SitePresentation::from(
             $settings['presentation'] ?? SitePresentation::defaults(),
-        )->toView();
+        )->withSchemeOverride($binding['color_scheme'])->toView();
 
         return new HtmlResponse(
-            $this->renderer->render($this->layouts->templateFor($record), [
+            $this->renderer->render($this->layouts->templateFor($record, $binding['template']), [
                 'site_name' => $settings['site_name'],
                 'entry' => $this->presenter->present($record),
                 'navigation' => $this->pages->navigation(),

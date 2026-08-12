@@ -330,3 +330,14 @@ The Playwright diagnostic evidence and completion policy are normative in
 [`interface-standard/conformance.md`](interface-standard/conformance.md). A package is complete only when
 it installs disabled, passes static and rendered conformance, activates on its declared surface, survives
 restart, resets/disables safely, and leaves the protected administrator recovery path usable.
+
+## Per-menu presentation binding
+
+A published page's layout resolves from its content type, and the whole site shares one active colour
+scheme. A menu item may override either decision for the page it links: bind a template and that page
+renders through it; bind a colour scheme and that page renders in it, while every other page keeps the
+site's choice. Both selects live on the item forms of the administrator navigation screen, blank means
+"no override", and an override naming a layout or scheme that no longer exists degrades to the type or
+site default instead of failing the page. This is how one navigation tree can present a documentation
+section, a landing campaign, and an article stream each in its own dress without forking the content
+model.

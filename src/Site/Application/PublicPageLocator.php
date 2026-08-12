@@ -152,6 +152,25 @@ final readonly class PublicPageLocator
     }
 
     /**
+     * Read the per-menu presentation binding of the item that publishes a record.
+     *
+     * The menu item is the seam where an operator overrides how one linked page presents: a bound
+     * template wins over the content type's layout, and a bound colour scheme wins over the site's
+     * active scheme, both only for that page. A record no menu publishes answers nulls, so callers
+     * fall back to the type and site defaults without branching.
+     *
+     * @param   ContentRecord  $record  Record whose publishing item's binding is wanted.
+     *
+     * @return  array{template: ?string, color_scheme: ?string}  The overrides, null where unset.
+     *
+     * @since   2.0.0
+     */
+    public function presentationBindingFor(ContentRecord $record): array
+    {
+        return $this->navigation->bindingForContent($record->entry->id(), $this->primaryMenu());
+    }
+
+    /**
      * Build the path a record is reachable at, and prove that the path round-trips back to it.
      *
      * Administration screens use this to decide whether to offer a "view on site" link: the record has

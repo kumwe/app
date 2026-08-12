@@ -262,6 +262,56 @@ final readonly class SitePresentation
     }
 
     /**
+     * Expose the validated colour schemes for screens that offer them as choices.
+     *
+     * @return  list<array{handle: string, name: string, color_mode: string, colors: array<string, string>}>
+     *          Every scheme the contract carries, in stored order.
+     *
+     * @since   2.0.0
+     */
+    public function schemeCatalog(): array
+    {
+        return $this->schemes;
+    }
+
+    /**
+     * Return a copy whose active scheme is the named one, or this instance when the name misses.
+     *
+     * This is how a per-menu colour-scheme binding takes effect: the handle stored on a menu item is
+     * offered here, and only a handle naming one of the validated schemes changes anything. A null,
+     * blank, or unknown handle keeps the site's own decision, so a scheme that was renamed or removed
+     * after being bound degrades to the default instead of failing the page.
+     *
+     * @param   ?string  $handle  Candidate scheme handle, or null when no override is bound.
+     *
+     * @return  self  A presentation whose palette reflects the override, or this very instance.
+     *
+     * @since   2.0.0
+     */
+    public function withSchemeOverride(?string $handle): self
+    {
+        if ($handle === null || $handle === '' || $handle === $this->activeScheme) {
+            return $this;
+        }
+        foreach ($this->schemes as $scheme) {
+            if ($scheme['handle'] === $handle) {
+                return new self(
+                    $this->logo,
+                    $this->footerText,
+                    $this->primaryMenu,
+                    $handle,
+                    $this->buttonStyle,
+                    $this->buttonShape,
+                    $this->headerStyle,
+                    $this->schemes,
+                );
+            }
+        }
+
+        return $this;
+    }
+
+    /**
      * Find the scheme the contract marks as in force.
      *
      * @return  array{handle: string, name: string, color_mode: string, colors: array<string, string>}

@@ -77,4 +77,19 @@ final class SitePresentationTest extends TestCase
         $this->expectExceptionMessage('WCAG AA text contrast');
         SitePresentation::from($values);
     }
+
+    public function testSchemeOverrideSwitchesOnlyToAValidatedScheme(): void
+    {
+        $presentation = SitePresentation::from(SitePresentation::defaults());
+
+        $ocean = $presentation->withSchemeOverride('ocean')->toView();
+        self::assertSame('ocean', $ocean['active_scheme']);
+
+        $unknown = $presentation->withSchemeOverride('sunset')->toView();
+        self::assertSame('corporate', $unknown['active_scheme']);
+
+        self::assertSame($presentation, $presentation->withSchemeOverride(null));
+        self::assertSame($presentation, $presentation->withSchemeOverride(''));
+        self::assertSame($presentation, $presentation->withSchemeOverride('corporate'));
+    }
 }

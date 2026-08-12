@@ -297,15 +297,19 @@ final readonly class NavigationService
      * entirely selects the legacy content item that carries no explicit target and is resolved by slug
      * at render time; passing `content` without a `$contentId` is rejected.
      *
-     * @param   ExecutionContext  $context     Actor and site the new item is created under.
-     * @param   string            $menuId      UUID of the menu to add the item to.
-     * @param   ?string           $parentId    Parent item, or null to place the item at the menu root.
-     * @param   string            $title       Label the navigation renders.
-     * @param   string            $slug        URL segment the item contributes to its path.
-     * @param   int               $position    Sort order among siblings; lower values render first.
-     * @param   ?string           $targetType  `content`, `anchor` or `url`; null for a legacy content item.
-     * @param   ?string           $contentId   Content to link to, required for an explicit content target.
-     * @param   ?string           $targetUrl   Fragment for an anchor, or the link for a `url` target.
+     * @param   ExecutionContext  $context      Actor and site the new item is created under.
+     * @param   string            $menuId       UUID of the menu to add the item to.
+     * @param   ?string           $parentId     Parent item, or null to place the item at the menu root.
+     * @param   string            $title        Label the navigation renders.
+     * @param   string            $slug         URL segment the item contributes to its path.
+     * @param   int               $position     Sort order among siblings; lower values render first.
+     * @param   ?string           $targetType   `content`, `anchor` or `url`; null for a legacy content item.
+     * @param   ?string           $contentId    Content to link to, required for an explicit content target.
+     * @param   ?string           $targetUrl    Fragment for an anchor, or the link for a `url` target.
+     * @param   ?string           $template     Site template overriding the linked page's type-declared
+     *          layout; null or blank keeps the content type's decision.
+     * @param   ?string           $colorScheme  Colour-scheme handle overriding the site's active scheme
+     *          while the linked page renders; null or blank keeps the site's decision.
      *
      * @return  MenuItemRecord  The stored item, at version 1, with its path resolved.
      *
@@ -326,9 +330,13 @@ final readonly class NavigationService
         ?string $targetType = null,
         ?string $contentId = null,
         ?string $targetUrl = null,
+        ?string $template = null,
+        ?string $colorScheme = null,
     ): MenuItemRecord {
         $this->authorize($context, AuthorizationResource::item('menu', $menuId));
         $this->menu($context, $menuId);
+        $template = $this->presentationHandle($template, 'template');
+        $colorScheme = $this->presentationHandle($colorScheme, 'color scheme');
         $slug = $this->slug($slug);
         $position = $this->position($position);
         $legacyUntargetedContent = $targetType === null;
@@ -356,6 +364,8 @@ final readonly class NavigationService
             $targetType,
             $contentId,
             $targetUrl,
+            $template,
+            $colorScheme,
         );
 
         return $this->transactions->transactional(function () use ($context, $item, $now): MenuItemRecord {
@@ -395,6 +405,10 @@ final readonly class NavigationService
      * @param   ?string           $targetType       `content`, `anchor` or `url`; null keeps the stored target.
      * @param   ?string           $contentId        Replacement content target, ignored when type is null.
      * @param   ?string           $targetUrl        Replacement fragment or link, ignored when type is null.
+     * @param   ?string           $template         Replacement layout override; null or blank clears it so
+     *          the content type decides again.
+     * @param   ?string           $colorScheme      Replacement colour-scheme override; null or blank clears
+     *          it so the site's active scheme applies.
      *
      * @return  MenuItemRecord  The stored item, with its version incremented and its path resolved.
      *
@@ -417,11 +431,15 @@ final readonly class NavigationService
         ?string $targetType = null,
         ?string $contentId = null,
         ?string $targetUrl = null,
+        ?string $template = null,
+        ?string $colorScheme = null,
     ): MenuItemRecord {
         $this->authorize($context, AuthorizationResource::item('menu_item', $id));
         $stored = $this->item($context, $id);
         $this->assertVersion($stored->version, $expectedVersion);
         $slug = $this->slug($slug);
+        $template = $this->presentationHandle($template, 'template');
+        $colorScheme = $this->presentationHandle($colorScheme, 'color scheme');
         [$targetType, $contentId, $targetUrl] = $this->target(
             $context,
             $targetType ?? $stored->targetType,
@@ -454,6 +472,8 @@ final readonly class NavigationService
             $targetType,
             $contentId,
             $targetUrl,
+            $template,
+            $colorScheme,
         );
 
         return $this->transactions->transactional(function () use (
@@ -550,6 +570,43 @@ final readonly class NavigationService
             Capability::fromString('navigation.manage'),
             $resource,
         );
+    }
+
+        /**
+         * Normalise an optional presentation-binding handle to the lowercase grammar or to null.
+         *
+         * The grammar matches template names and colour-scheme handles alike, and a blank submission
+         * clears the binding rather than storing an empty string, so "no override" has exactly one
+         * stored representation. Existence is deliberately not checked here: a handle naming a template
+         * or scheme that later disappears must degrade to the type or site default at render time, not
+         * strand the menu item as unwritable.
+         *
+         * @param   ?string  $handle  Operator-supplied handle, or null when no override is offered.
+         * @param   string   $label   Field name used in the rejection message.
+         *
+         * @return  ?string  The normalised handle, or null when the binding is absent or cleared.
+         *
+         * @throws  InvalidArgumentException  When a non-blank handle falls outside the grammar.
+         *
+         * @since   2.0.0
+         */
+    private function presentationHandle(?string $handle, string $label): ?string
+    {
+        if ($handle === null) {
+            return null;
+        }
+        $handle = strtolower(trim($handle));
+        if ($handle === '') {
+            return null;
+        }
+        if (preg_match('/^[a-z][a-z0-9_-]{0,63}$/D', $handle) !== 1) {
+            throw new InvalidArgumentException(sprintf(
+                'The menu item %s must be a lowercase handle such as landing or corporate.',
+                $label,
+            ));
+        }
+
+        return $handle;
     }
 
     /**
