@@ -403,6 +403,21 @@ interface AccessControlRepository
     public function roleGrants(string $roleId): array;
 
     /**
+     * Read the complete grant records attached to one role under the caller's role lock.
+     *
+     * Unlike `roleGrants()`, this projection includes each immutable grant identifier so a role-scoped
+     * change set can remove only records that were present in its verified snapshot.
+     *
+     * @param   string  $roleId  UUID of the role whose exact grant snapshot is required.
+     *
+     * @return  list<array{id: string, capability: string, scope_type: string, scope_identifier: ?string}>
+     *          Stable grant records ordered by capability, scope and identifier.
+     *
+     * @since   2.0.0
+     */
+    public function roleGrantRecords(string $roleId): array;
+
+    /**
      * Read the stable code policy identifies a role by.
      *
      * The access-control service uses it to recognise the `administrator` role, which an actor may not

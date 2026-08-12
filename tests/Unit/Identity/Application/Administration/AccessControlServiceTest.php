@@ -11,6 +11,7 @@ use Kumwe\CMS\Application\Authorization\AuthorizationResource;
 use Kumwe\CMS\Application\Authorization\ExecutionContext;
 use Kumwe\CMS\Application\Authorization\ResourceSiteOwnershipWriter;
 use Kumwe\CMS\Application\Authorization\SiteContext;
+use Kumwe\CMS\Application\Automation\CanonicalJson;
 use Kumwe\CMS\Audit\Application\AuditRecorder;
 use Kumwe\CMS\Audit\Domain\AuditEvent;
 use Kumwe\CMS\Identity\Application\Administration\AccessControlRepository;
@@ -197,6 +198,93 @@ final class AccessControlServiceTest extends TestCase
         );
 
         self::assertNotSame('', $grantId);
+    }
+
+    /**
+     * Applies one verified role change set under one lock while preserving scoped grants.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testSynchronizesGlobalRoleGrantsAsOneAtomicChangeSet(): void
+    {
+        $removedId = '018f22e2-7c8b-7ab0-8f3a-88e8026bb304';
+        $scopedId = '018f22e2-7c8b-7ab0-8f3a-88e8026bb305';
+        $current = [
+            [
+                'id' => $removedId,
+                'capability' => 'content.delete',
+                'scope_type' => 'global',
+                'scope_identifier' => null,
+            ],
+            [
+                'id' => $scopedId,
+                'capability' => 'content.update',
+                'scope_type' => 'content',
+                'scope_identifier' => self::USER,
+            ],
+        ];
+        $snapshot = CanonicalJson::digest([
+            [$removedId, 'content.delete', 'global', null],
+            [$scopedId, 'content.update', 'content', self::USER],
+        ]);
+        $repository = $this->createMock(AccessControlRepository::class);
+        $repository->expects(self::once())->method('capabilities')->with(500, 0)->willReturn([[
+            'code' => 'content.publish',
+            'description' => 'Publish content.',
+        ]]);
+        $repository->expects(self::once())->method('lockRole')->with(self::ROLE);
+        $repository->expects(self::exactly(2))->method('roleGrantRecords')->with(self::ROLE)
+            ->willReturnOnConsecutiveCalls($current, [$current[1], [
+                'id' => '018f22e2-7c8b-7ab0-8f3a-88e8026bb306',
+                'capability' => 'content.publish',
+                'scope_type' => 'global',
+                'scope_identifier' => null,
+            ]]);
+        $repository->expects(self::once())->method('revokeGrant')->with($removedId);
+        $repository->expects(self::once())->method('grant')->with(
+            self::isType('string'),
+            self::ROLE,
+            'content.publish',
+            'global',
+            null,
+            self::ACTOR,
+            self::equalTo(new DateTimeImmutable('2026-08-04T10:00:00+00:00')),
+        );
+
+        $this->service($repository)->synchronizeGlobalRoleGrants(
+            $this->context(['users.manage', 'content.publish']),
+            self::ROLE,
+            ['content.publish'],
+            $snapshot,
+        );
+    }
+
+    /**
+     * Refuses a stale role grant snapshot before any grant write is attempted.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testRejectsStaleRoleGrantChangeSet(): void
+    {
+        $repository = $this->createMock(AccessControlRepository::class);
+        $repository->method('capabilities')->willReturn([]);
+        $repository->expects(self::once())->method('lockRole')->with(self::ROLE);
+        $repository->expects(self::once())->method('roleGrantRecords')->willReturn([]);
+        $repository->expects(self::never())->method('grant');
+        $repository->expects(self::never())->method('revokeGrant');
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('changed; reload');
+        $this->service($repository)->synchronizeGlobalRoleGrants(
+            $this->context(),
+            self::ROLE,
+            [],
+            str_repeat('a', 64),
+        );
     }
 
     public function testCannotAssignRoleWhoseGrantsExceedActorsEffectiveAuthority(): void

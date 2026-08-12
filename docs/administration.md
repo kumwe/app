@@ -89,11 +89,18 @@ Open **Users and access** to:
 - update display name, email, and status;
 - create groups (roles);
 - assign or remove a user from a group;
-- grant or revoke a capability on a group;
+- apply one global-capability change set to a group, or manage an individual scoped grant;
 - issue a capability-scoped API/MCP token for an existing user;
 - inspect token metadata and revoke active credentials immediately.
 
 Grants can be global or scoped to a component or content type. Prefer task-specific groups such as Editors, Reviewers, Publishers, Extension managers, and Operators instead of sharing an all-powerful account.
+
+The group review screen presents global capabilities as one compact change set. One authenticator or recovery code
+confirms that exact submitted set, including the role's current grant snapshot; the service then locks the role,
+rejects concurrent edits, rechecks every delegation, and commits the whole set atomically. Scoped grants are
+preserved by that editor and retain their own target-specific review flow. Verification is never a reusable global
+permission bypass: its proof is bound to the actor, replacement session, authority context, and canonical payload,
+and is consumed once.
 
 Kumwe prevents an administrator from disabling their own account or removing their own administrator role through the same request. Keep at least two separately controlled owner accounts for production recovery.
 

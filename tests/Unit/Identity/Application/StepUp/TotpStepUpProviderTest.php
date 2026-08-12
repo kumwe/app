@@ -120,7 +120,60 @@ final class TotpStepUpProviderTest extends TestCase
         }
     }
 
-    private function intent(string $sessionId): StepUpIntent
+    /**
+     * Keeps payload-specific proofs exact while throttling all payloads under their shared action.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testPayloadBoundPurposesShareActionThrottlePartition(): void
+    {
+        $clock = new MutableStepUpClock(new DateTimeImmutable('2026-08-09T10:00:00+00:00'));
+        $throttle = new RecordingStepUpThrottle();
+        $provider = new TotpStepUpProvider(
+            new MemoryStepUpCredentialStore(),
+            new SodiumStepUpSecretCipher(str_repeat('e', 32)),
+            new SodiumStepUpRecoveryCodeHasher(str_repeat('h', 32)),
+            new DeterministicStepUpRandom(),
+            new TimeStepTestAlgorithm(),
+            $throttle,
+            new RecordingStepUpSessionRotator(),
+            new RecordingStepUpProofStore(),
+            new ImmediateStepUpTransactions(),
+            new RecordingStepUpAudit(),
+            $clock,
+        );
+        $setup = $provider->beginEnrollment(self::SUBJECT, 'Kumwe', 'user@example.test');
+        $completed = $provider->confirmEnrollment(
+            $this->intent(self::SESSION),
+            $setup->enrollmentId,
+            '123456',
+            '192.0.2.5',
+        );
+        $base = 'identity.access_control.grant.synchronize';
+        $firstPurpose = $base . '.payload.' . str_repeat('a', 64);
+        $secondPurpose = $base . '.payload.' . str_repeat('b', 64);
+
+        $clock->advance('+30 seconds');
+        $first = $provider->challenge(
+            $this->intent($completed->verification->rotatedSession->sessionId, $firstPurpose),
+            '123456',
+            '192.0.2.5',
+        );
+        $clock->advance('+30 seconds');
+        $second = $provider->challenge(
+            $this->intent($first->rotatedSession->sessionId, $secondPurpose),
+            '123456',
+            '192.0.2.5',
+        );
+
+        self::assertSame($firstPurpose, $first->intent->purpose);
+        self::assertSame($secondPurpose, $second->intent->purpose);
+        self::assertSame([$base, $base], array_slice($throttle->purposes, -2));
+    }
+
+    private function intent(string $sessionId, string $purpose = 'records.approve'): StepUpIntent
     {
         return new StepUpIntent(
             self::SUBJECT,
@@ -128,7 +181,7 @@ final class TotpStepUpProviderTest extends TestCase
             'site-a',
             'org-a',
             'workspace-a',
-            'records.approve',
+            $purpose,
             7,
         );
     }
@@ -302,8 +355,17 @@ final class RecordingStepUpThrottle implements StepUpAttemptThrottle
     /** @var list<bool> */
     public array $results = [];
 
+    /**
+     * Attempt partitions presented before credential work begins.
+     *
+     * @var    list<string>
+     * @since  2.0.0
+     */
+    public array $purposes = [];
+
     public function assertAllowed(string $subjectId, string $source, string $purpose): void
     {
+        $this->purposes[] = $purpose;
     }
 
     public function record(string $subjectId, string $source, string $purpose, bool $succeeded): void

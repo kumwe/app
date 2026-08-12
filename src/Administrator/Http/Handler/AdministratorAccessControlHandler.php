@@ -10,6 +10,7 @@ use Kumwe\CMS\Administrator\Http\AdministratorRequest;
 use Kumwe\CMS\Administrator\Http\Middleware\AdministratorSessionMiddleware;
 use Kumwe\CMS\Administrator\Presentation\AdministratorRenderer;
 use Kumwe\CMS\Administrator\Presentation\SecurityWorkspaceState;
+use Kumwe\CMS\Application\Automation\CanonicalJson;
 use Kumwe\CMS\Application\Authorization\AuthenticationStrength;
 use Kumwe\CMS\Application\Authorization\ExecutionContext;
 use Kumwe\CMS\BusinessSecurity\Application\Approval\StepUpProofConsumer;
@@ -161,7 +162,7 @@ final readonly class AdministratorAccessControlHandler implements RequestHandler
                 $csrf = $completion->verification->rotatedSession->csrfToken;
                 $recoveryCodes = $completion->recoveryCodes;
             } else {
-                $purpose = $this->stepUpPurpose($action);
+                $purpose = $this->stepUpPurpose($action, $form);
                 /**
                  * @var    array{
                  *             verification: StepUpVerification,
@@ -228,7 +229,7 @@ final readonly class AdministratorAccessControlHandler implements RequestHandler
                 ? $this->access->roles($context)
                 : [],
             'tokens' => $section === 'tokens' ? $this->access->tokens($context) : [],
-            'available_capabilities' => in_array($section, ['grants', 'tokens'], true)
+            'available_capabilities' => in_array($section, ['groups', 'grants', 'tokens'], true)
                 ? $this->access->capabilities($context)
                 : [],
             'security_events' => $section === 'events' ? $this->access->securityEvents($context) : [],
@@ -323,6 +324,18 @@ final readonly class AdministratorAccessControlHandler implements RequestHandler
             }),
             'grant.revoke' => $this->after(function () use ($context, $form): void {
                 $this->access->revokeGrant($context, AdministratorRequest::required($form, 'grant_id'));
+            }),
+            'grant.synchronize' => $this->after(function () use ($context, $form): void {
+                $selected = array_values(array_filter(array_map(
+                    'trim',
+                    explode(',', $form['selected_capabilities'] ?? ''),
+                ), static fn (string $capability): bool => $capability !== ''));
+                $this->access->synchronizeGlobalRoleGrants(
+                    $context,
+                    AdministratorRequest::required($form, 'role_id'),
+                    $selected,
+                    AdministratorRequest::required($form, 'grant_snapshot'),
+                );
             }),
             'token.create' => $this->createToken($form, $context),
             'token.revoke' => $this->after(function () use ($context, $form): void {
@@ -478,15 +491,16 @@ final readonly class AdministratorAccessControlHandler implements RequestHandler
     /**
      * Resolve the closed proof purpose for one supported access-control mutation.
      *
-     * @param   string  $action  Mutation action received from the administrator form.
+     * @param   string                 $action  Mutation action received from the administrator form.
+     * @param   array<string, string>  $form    Exact submitted change set, including its resource snapshot.
      *
      * @return  string  Exact purpose to which the proof must be bound.
      *
      * @since   2.0.0
      */
-    private function stepUpPurpose(string $action): string
+    private function stepUpPurpose(string $action, array $form): string
     {
-        return match ($action) {
+        $base = match ($action) {
             'user.create',
             'user.update',
             'role.create',
@@ -494,12 +508,18 @@ final readonly class AdministratorAccessControlHandler implements RequestHandler
             'role.revoke',
             'grant.create',
             'grant.revoke',
+            'grant.synchronize',
             'token.create',
             'token.revoke',
             'token.rotate',
             'token.emergency_revoke' => 'identity.access_control.' . str_replace('_', '.', $action),
             default => throw new InvalidArgumentException('The access-control step-up purpose is invalid.'),
         };
+        foreach (['_csrf', 'step_up_method', 'step_up_code', 'recovery_code'] as $credentialField) {
+            unset($form[$credentialField]);
+        }
+
+        return $base . '.payload.' . CanonicalJson::digest($form);
     }
 
     /**

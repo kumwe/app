@@ -360,14 +360,16 @@
 
   @container kis-master-detail (max-width: 56rem) {
     .kis-master-detail-grid { grid-template-columns: minmax(0, 1fr); }
-    .kis-catalog-toggle { display: inline-flex; }
+    .kis-master-detail-catalog { position: static; max-height: none; }
+    kumwe-master-detail[data-enhanced] .kis-catalog-toggle { display: inline-flex; }
     kumwe-master-detail[data-enhanced] .kis-master-detail-catalog { display: none; position: static; max-height: none; }
     kumwe-master-detail[data-enhanced][data-catalog-open] .kis-master-detail-catalog { display: grid; }
   }
 
   @media (max-width: 56rem) {
     .kis-master-detail-grid { grid-template-columns: minmax(0, 1fr); }
-    .kis-catalog-toggle { display: inline-flex; }
+    .kis-master-detail-catalog { position: static; max-height: none; }
+    kumwe-master-detail[data-enhanced] .kis-catalog-toggle { display: inline-flex; }
     kumwe-master-detail[data-enhanced] .kis-master-detail-catalog { display: none; position: static; max-height: none; }
     kumwe-master-detail[data-enhanced][data-catalog-open] .kis-master-detail-catalog { display: grid; }
   }
@@ -876,7 +878,7 @@
 
 @layer reset {
   *, *::before, *::after { box-sizing: border-box; }
-  html { min-width: 20rem; font-family: var(--kumwe-font-sans); line-height: 1.5; text-size-adjust: 100%; }
+  html { min-width: 320px; font-family: var(--kumwe-font-sans); line-height: 1.5; text-size-adjust: 100%; }
   body { min-height: 100vh; margin: 0; background: var(--kumwe-canvas); color: var(--kumwe-text); }
   button, input, optgroup, select, textarea { margin: 0; font: inherit; }
   button, [type="button"], [type="submit"] { cursor: pointer; }
@@ -1134,6 +1136,55 @@
   .role-card + .role-card { margin-top: .8rem; }
   .grant-list { display: flex; flex-wrap: wrap; gap: .5rem; }
   .grant-pill { display: inline-flex; align-items: center; gap: .4rem; padding: .35rem .5rem; border: 1px solid var(--kumwe-border); border-radius: 999px; background: var(--kumwe-surface); font-size: .72rem; }
+  .kis-access-control { width: 100%; min-width: 0; max-width: 100%; container: kis-access-control / inline-size; }
+  .kis-access-control > *, .kis-access-control :is(form, fieldset, .section-heading, .panel-header) > * { min-width: 0; }
+  .kis-access-control > nav.panel { margin-bottom: 1rem; padding: .5rem; }
+  .kis-access-control > nav .actions { display: flex; max-width: 100%; flex-wrap: wrap; gap: .4rem; }
+  .kis-access-control > nav .button,
+  .kis-access-control .actions > form,
+  .kis-access-control .actions > form button { max-width: 100%; overflow-wrap: anywhere; text-align: center; }
+  .kis-access-control :is(h2, h3, p, code, small, td, th) { overflow-wrap: anywhere; }
+  .kis-access-control section.panel > form { width: min(100%, 56rem); }
+  .kis-access-control .field-group { min-width: 0; max-width: 100%; padding: clamp(.75rem, 2vw, 1rem); }
+  .kis-access-control [aria-labelledby="groups-heading"] > .role-card { gap: .5rem; padding: .7rem .8rem; }
+  .kis-access-control [aria-labelledby="groups-heading"] > .role-card + .role-card { margin-top: .5rem; }
+  .kis-access-control [aria-labelledby="groups-heading"] > .role-card :is(h3, p) { margin-bottom: 0; }
+  .kis-access-control .option-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr));
+    gap: .5rem;
+  }
+  .kis-access-control .option-card {
+    display: flex;
+    min-width: 0;
+    align-items: flex-start;
+    gap: .6rem;
+    padding: .65rem .7rem;
+    border: 1px solid var(--kumwe-border);
+    border-radius: var(--kumwe-radius-md);
+    background: var(--kumwe-surface-subtle);
+    font-weight: 500;
+  }
+  .kis-access-control .option-card input { flex: 0 0 auto; }
+  .kis-access-control .option-card span { display: grid; min-width: 0; gap: .15rem; }
+  .kis-access-control .option-card :is(strong, small) { overflow-wrap: anywhere; }
+  .kis-access-control [aria-labelledby="role-review-heading"] > .role-card {
+    grid-template-columns: minmax(12rem, 1fr) minmax(7rem, .35fr) auto;
+    gap: .5rem 1rem;
+    align-items: center;
+    padding: .7rem .8rem;
+  }
+  .kis-access-control [aria-labelledby="assign-role-heading"] > form { margin-inline: auto; }
+  .kis-access-table { min-width: 42rem; table-layout: fixed; }
+  .kis-access-table :is(th, td) { min-width: 0; overflow-wrap: anywhere; vertical-align: top; }
+  .kis-access-table .status { max-width: 100%; }
+  .kis-responsive-table { overflow: visible; container: kis-responsive-table / inline-size; }
+  [data-kis-master-detail="business-definition-workspace"] { --kis-catalog-width: 17rem; }
+  .definition-catalog { gap: .5rem; padding: .75rem; }
+  .definition-catalog .kis-resource-toolbar { padding: .25rem 0 .65rem; border: 0; border-radius: 0; box-shadow: none; }
+  .definition-catalog-item { padding: .65rem .7rem; }
+  .definition-fields-table { min-width: 36rem; table-layout: fixed; }
+  .definition-fields-table :is(th, td) { min-width: 0; overflow-wrap: anywhere; vertical-align: top; }
   .notice-dismiss { margin-left: auto; border: 0 !important; background: transparent !important; color: currentColor !important; min-height: 1.8rem !important; padding: .2rem .35rem !important; }
   .login-page { display: grid; min-height: 100vh; place-items: center; padding: 1rem; background: radial-gradient(circle at 15% 15%, rgb(7 143 215 / .16), transparent 28rem), radial-gradient(circle at 90% 80%, rgb(163 164 164 / .13), transparent 28rem), var(--kumwe-canvas); }
   .login-card { width: min(100%, 28rem); overflow: hidden; }
@@ -1156,6 +1207,71 @@
 }
 
 @layer overrides {
+  @container kis-access-control (max-width: 48rem) {
+    .kis-access-control :is(.section-heading, .panel-header) { display: grid; align-items: stretch; }
+    .kis-access-control .page-actions { width: auto; align-items: flex-start; }
+    .kis-access-control .page-actions :is(.button, button) { max-width: 100%; flex: 0 1 auto; }
+    .kis-access-control [aria-labelledby="role-review-heading"] > .role-card { grid-template-columns: minmax(0, 1fr); }
+    .kis-access-control .field-group .two-column { grid-template-columns: minmax(0, 1fr); }
+  }
+
+  @container kis-responsive-table (max-width: 48rem) {
+    .kis-responsive-table :is(.kis-access-table, .definition-fields-table) { min-width: 0; }
+    .kis-responsive-table :is(.kis-access-table, .definition-fields-table) thead {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+    .kis-responsive-table :is(.kis-access-table, .definition-fields-table) tbody { display: grid; gap: .75rem; }
+    .kis-responsive-table :is(.kis-access-table, .definition-fields-table) tr {
+      display: grid;
+      min-width: 0;
+      padding: .65rem .75rem;
+      border: 1px solid var(--kumwe-border);
+      border-radius: var(--kumwe-radius-md);
+      background: var(--kumwe-surface-subtle);
+    }
+    .kis-responsive-table :is(.kis-access-table, .definition-fields-table) :is(th, td) {
+      display: grid;
+      min-width: 0;
+      grid-template-columns: minmax(0, .36fr) minmax(0, 1fr);
+      gap: .75rem;
+      padding: .45rem 0;
+      border-bottom: 1px solid var(--kumwe-border);
+      background: transparent;
+      color: var(--kumwe-text);
+      font-size: .82rem;
+      font-weight: 500;
+      letter-spacing: normal;
+      text-align: left;
+      text-transform: none;
+    }
+    .kis-responsive-table :is(.kis-access-table, .definition-fields-table) :is(th, td):last-child { border-bottom: 0; }
+    .kis-responsive-table :is(.kis-access-table, .definition-fields-table) :is(th, td)::before {
+      color: var(--kumwe-text-muted);
+      content: attr(data-label);
+      font-size: .68rem;
+      font-weight: 750;
+      letter-spacing: .075em;
+      text-transform: uppercase;
+    }
+  }
+
+  @container kis-master-detail (max-width: 68rem) {
+    [data-kis-master-detail="business-definition-workspace"] .kis-master-detail-grid { grid-template-columns: minmax(0, 1fr); }
+    [data-kis-master-detail="business-definition-workspace"] .kis-master-detail-catalog { position: static; max-height: none; }
+    [data-kis-master-detail="business-definition-workspace"][data-enhanced] .kis-catalog-toggle { display: inline-flex; }
+    [data-kis-master-detail="business-definition-workspace"][data-enhanced] .kis-master-detail-catalog { display: none; }
+    [data-kis-master-detail="business-definition-workspace"][data-enhanced][data-catalog-open]
+      .kis-master-detail-catalog { display: grid; }
+  }
+
   @media (max-width: 74rem) {
     .metric-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .dashboard-grid { grid-template-columns: 1fr; }
@@ -1165,7 +1281,7 @@
     .presentation-color-grid { grid-template-columns: repeat(3, minmax(6.5rem, 1fr)); }
   }
 
-  @media (max-width: 62rem) {
+  @media (max-width: 68rem) {
     .administrator-shell { grid-template: "topbar" var(--kumwe-topbar-height) "main" 1fr / minmax(0, 1fr); }
     .administrator-sidebar { transform: translateX(-102%); transition: transform .2s ease; box-shadow: var(--kumwe-shadow-xl); }
     .administrator-shell[data-navigation-open] .administrator-sidebar { transform: none; }
@@ -1201,9 +1317,15 @@
     .pagination { align-items: stretch; }
     .pagination-actions { width: 100%; }
     .pagination-actions .button { flex: 1; }
+    .kis-access-control :is(.section-heading, .panel-header) { display: grid; align-items: stretch; }
+    .kis-access-control .page-actions { width: auto; align-items: flex-start; }
+    .kis-access-control .page-actions :is(.button, button) { max-width: 100%; flex: 0 1 auto; }
+    .kis-access-control [aria-labelledby="role-review-heading"] > .role-card { grid-template-columns: minmax(0, 1fr); }
+    .kis-access-control .field-group .two-column { grid-template-columns: minmax(0, 1fr); }
   }
 
   @media (max-width: 32rem) {
+    .administrator-topbar { gap: .375rem; padding-inline: .5rem; }
     .topbar-context span { display: none; }
     .topbar-action[data-secondary-action] { display: none; }
     .metric-grid { grid-template-columns: 1fr; }

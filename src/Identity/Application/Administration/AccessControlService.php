@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Kumwe\CMS\Identity\Application\Administration;
 
 use InvalidArgumentException;
+use Kumwe\CMS\Application\Automation\CanonicalJson;
 use Kumwe\CMS\Application\Authorization\AuthorizationGateway;
 use Kumwe\CMS\Application\Authorization\AuthorizationResource;
 use Kumwe\CMS\Application\Authorization\ExecutionContext;
@@ -100,7 +101,18 @@ final readonly class AccessControlService
     public function roles(ExecutionContext $context): array
     {
         $this->authorize($context, AuthorizationResource::collection('role'));
-        return $this->filterPaged($context, 'role', $this->repository->roles(...));
+        $roles = $this->filterPaged($context, 'role', $this->repository->roles(...));
+        foreach ($roles as &$role) {
+            $grants = $role['grants'] ?? null;
+            if (!is_array($grants) || !array_is_list($grants)) {
+                throw new RuntimeException('A role grant inventory is invalid.');
+            }
+            /** @var list<array<string, mixed>> $grants */
+            $role['grant_snapshot'] = $this->grantSnapshot($grants);
+        }
+        unset($role);
+
+        return $roles;
     }
 
     /**
@@ -505,6 +517,141 @@ final readonly class AccessControlService
     }
 
     /**
+     * Apply one role-scoped global-capability change set atomically.
+     *
+     * The submitted snapshot is compared only after the role is locked, so another administrator's
+     * intervening grant edit fails closed. Every requested addition is checked against the live capability
+     * vocabulary and the actor's delegation ceiling before the first write. Scoped grants are deliberately
+     * preserved; the batch editor changes only the global checkboxes it displays.
+     *
+     * @param   ExecutionContext  $context           Actor and exact authority context for the change set.
+     * @param   string            $roleId            UUID of the single role being edited.
+     * @param   list<string>      $selected          Global capability codes selected after the edit.
+     * @param   string            $expectedSnapshot  SHA-256 snapshot rendered with the form.
+     *
+     * @return  void
+     *
+     * @throws  InvalidArgumentException  When the snapshot is stale, a capability is unknown, or the
+     *          submitted set is malformed or unreasonably large.
+     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not manage the
+     *          role or one removed grant, or may not delegate one requested addition.
+     *
+     * @since   2.0.0
+     */
+    public function synchronizeGlobalRoleGrants(
+        ExecutionContext $context,
+        string $roleId,
+        array $selected,
+        string $expectedSnapshot,
+    ): void {
+        $this->authorize($context, AuthorizationResource::item('role', $roleId));
+        if (preg_match('/^[a-f0-9]{64}$/D', $expectedSnapshot) !== 1) {
+            throw new InvalidArgumentException('The role grant snapshot is invalid.');
+        }
+        if (count($selected) > 200) {
+            throw new InvalidArgumentException('A role change set may contain at most 200 capabilities.');
+        }
+        $normalized = [];
+        foreach ($selected as $candidate) {
+            $capability = Capability::fromString($candidate)->value();
+            $normalized[$capability] = true;
+        }
+        ksort($normalized, SORT_STRING);
+
+        $known = [];
+        $offset = 0;
+        do {
+            $page = $this->repository->capabilities(500, $offset);
+            foreach ($page as $capability) {
+                $known[$capability['code']] = true;
+            }
+            $offset += count($page);
+        } while (count($page) === 500);
+        foreach (array_keys($normalized) as $capability) {
+            if (!isset($known[$capability])) {
+                throw new InvalidArgumentException('The role change set contains an unknown capability.');
+            }
+        }
+
+        $this->transactions->transactional(function () use (
+            $context,
+            $roleId,
+            $normalized,
+            $expectedSnapshot,
+        ): void {
+            $this->repository->lockRole($roleId);
+            $this->authorize($context, AuthorizationResource::item('role', $roleId));
+            $current = $this->repository->roleGrantRecords($roleId);
+            if (!hash_equals($expectedSnapshot, $this->grantSnapshot($current))) {
+                throw new InvalidArgumentException(
+                    'The role capabilities changed; reload the role before applying this change set.',
+                );
+            }
+
+            $kept = [];
+            $remove = [];
+            foreach ($current as $grant) {
+                if ($grant['scope_type'] !== 'global') {
+                    continue;
+                }
+                $capability = $grant['capability'];
+                if (isset($normalized[$capability]) && !isset($kept[$capability])) {
+                    $kept[$capability] = true;
+                    continue;
+                }
+                $this->authorize($context, AuthorizationResource::item('grant', $grant['id']));
+                $remove[] = $grant;
+            }
+            $add = array_values(array_diff(array_keys($normalized), array_keys($kept)));
+            foreach ($add as $capability) {
+                $this->authorization->assertCanDelegate(
+                    $context,
+                    Capability::fromString($capability),
+                    GrantScope::global(),
+                );
+            }
+
+            $actorId = $context->actorId();
+            $at = $this->clock->now();
+            foreach ($remove as $grant) {
+                $this->repository->revokeGrant($grant['id']);
+                $this->ownership->remove(
+                    AuthorizationResource::item('grant', $grant['id']),
+                    SiteContext::default(),
+                );
+                $this->audit($actorId, 'capability.revoke', 'grant', $grant['id'], [
+                    'change_set_role_id' => $roleId,
+                ]);
+            }
+            foreach ($add as $capability) {
+                $grantId = Uuid::uuid7()->toString();
+                $this->repository->grant(
+                    $grantId,
+                    $roleId,
+                    $capability,
+                    'global',
+                    null,
+                    $actorId,
+                    $at,
+                );
+                $this->ownership->record(AuthorizationResource::item('grant', $grantId), SiteContext::default());
+                $this->audit($actorId, 'capability.grant', 'role', $roleId, [
+                    'capability' => $capability,
+                    'scope_type' => 'global',
+                    'scope_identifier' => null,
+                    'change_set_role_id' => $roleId,
+                ]);
+            }
+            $this->audit($actorId, 'capability.change_set', 'role', $roleId, [
+                'added' => count($add),
+                'removed' => count($remove),
+                'snapshot_before' => $expectedSnapshot,
+                'snapshot_after' => $this->grantSnapshot($this->repository->roleGrantRecords($roleId)),
+            ]);
+        });
+    }
+
+    /**
      * Remove a capability grant, authorized against both the grant and the role behind it.
      *
      * The role is read from the stored grant rather than taken from the caller, so naming a grant is not
@@ -820,6 +967,40 @@ final readonly class AccessControlService
         return $type === 'global'
             ? GrantScope::global()
             : GrantScope::named($type, $identifier ?? '');
+    }
+
+    /**
+     * Fingerprint an exact role grant inventory independently of row order.
+     *
+     * @param   list<array<string, mixed>>  $grants  Grant rows rendered or read under the role lock.
+     *
+     * @return  string  Canonical SHA-256 resource-version snapshot.
+     *
+     * @throws  RuntimeException  When a grant row does not contain the required typed fields.
+     *
+     * @since   2.0.0
+     */
+    private function grantSnapshot(array $grants): string
+    {
+        $snapshot = [];
+        foreach ($grants as $grant) {
+            $id = $grant['id'] ?? null;
+            $capability = $grant['capability'] ?? null;
+            $scopeType = $grant['scope_type'] ?? null;
+            $scopeIdentifier = $grant['scope_identifier'] ?? null;
+            if (
+                !is_string($id)
+                || !is_string($capability)
+                || !is_string($scopeType)
+                || ($scopeIdentifier !== null && !is_string($scopeIdentifier))
+            ) {
+                throw new RuntimeException('A role grant snapshot is invalid.');
+            }
+            $snapshot[] = [$id, $capability, $scopeType, $scopeIdentifier];
+        }
+        usort($snapshot, static fn (array $left, array $right): int => $left <=> $right);
+
+        return CanonicalJson::digest($snapshot);
     }
 
     /**
