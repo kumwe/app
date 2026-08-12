@@ -147,8 +147,7 @@ final readonly class PortalReportHandler implements RequestHandlerInterface
         ExecutionContext $context,
         string $reportId,
         BusinessRecordQueryPurpose $purpose,
-    ): array
-    {
+    ): array {
         $source = $request->getQueryParams();
         if (strtoupper($request->getMethod()) !== 'GET') {
             $source = $request->getAttribute(PortalCsrfMiddleware::ATTRIBUTE_PARSED_BODY);

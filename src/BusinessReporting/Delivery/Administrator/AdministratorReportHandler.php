@@ -149,8 +149,7 @@ final readonly class AdministratorReportHandler implements RequestHandlerInterfa
         ExecutionContext $context,
         string $reportId,
         BusinessRecordQueryPurpose $purpose,
-    ): array
-    {
+    ): array {
         $source = $request->getQueryParams();
         if (strtoupper($request->getMethod()) !== 'GET') {
             $source = $request->getAttribute(AdministratorCsrfMiddleware::ATTRIBUTE_PARSED_BODY);
