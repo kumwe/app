@@ -6,11 +6,12 @@
 {% block title %}{{ definition.singular_label }} · Kumwe Portal{% endblock %}
 
 {% block content %}
+<div data-kis-business data-kis-component="generated-record" data-kis-surface="{{ relationship_focus|default(null) ? 'core.portal.generated-relationship' : 'core.portal.generated-record' }}" data-record-task="{{ record_task }}">
 <header class="portal-business-heading">
     <div>
         <p class="eyebrow">{{ definition.plural_label }}</p>
         <h1>{{ definition.singular_label }}</h1>
-        <p><code>{{ record.record_id }}</code> · Version {{ record.version }}</p>
+        <p>{% include '@kis/technical-value.twig' with {label: 'Record ID', value: record.record_id} only %} · Version {{ record.version }}</p>
     </div>
     <nav class="portal-actions" aria-label="Record actions">
         {% if relationship_focus|default(null) %}
@@ -27,7 +28,6 @@
                 <a class="portal-button secondary" href="{{ business_base_path }}/{{ definition.handle|url_encode }}/{{ record.record_id|url_encode }}/views/{{ declared_view.handle|url_encode }}">{{ declared_view.label }}</a>
             {% endif %}
         {% endfor %}
-        {% if available_operations.history is defined %}<a class="portal-button secondary" href="{{ record_path }}?history=1">History</a>{% endif %}
         {% if available_operations.report is defined %}
             <a class="portal-button secondary" href="{{ business_base_path }}/{{ definition.handle|url_encode }}?purpose=report">Report</a>
         {% endif %}
@@ -49,9 +49,22 @@
     </section>
 {% endif %}
 
-<div class="portal-business-detail-layout">
-    <div class="portal-business-stack">
-        <section class="portal-business-panel" aria-labelledby="portal-business-values-title">
+{% set record_tasks = [
+    {id: 'summary', label: 'Summary', href: record_path ~ '?task=summary'},
+    {id: 'relations', label: 'Relations', href: record_path ~ '?task=relations', count: definition.relationships|length},
+    {id: 'actions', label: 'Actions', href: record_path ~ '?task=actions', count: definition.actions|length}
+] %}
+{% if available_operations.history is defined %}
+    {% set record_tasks = record_tasks|merge([{id: 'history', label: 'History', href: record_path ~ '?task=history'}]) %}
+{% endif %}
+<div class="kis-business-record-tabs">
+    {% include '@kis/task-navigation.twig' with {label: 'Record tasks', tasks: record_tasks, active: record_task} only %}
+</div>
+
+<div class="portal-business-detail-layout kis-business-record-grid">
+    <div class="portal-business-stack kis-business-stack">
+        {% if record_task == 'summary' %}
+        <section class="portal-business-panel kis-business-section" aria-labelledby="portal-business-values-title">
             <div class="portal-business-section-heading">
                 <h2 id="portal-business-values-title">Record details</h2>
                 <span class="portal-business-status">
@@ -61,21 +74,22 @@
             {% if fields is empty %}
                 <p>No field values are available for this record.</p>
             {% else %}
-                <dl class="portal-details portal-business-details">
+                <dl class="portal-details portal-business-details kis-business-details">
                     {% for field in fields %}
                         <div><dt>{{ field.label }}</dt><dd>{{ field.display is not same as('') ? field.display : 'Not set' }}</dd></div>
                     {% endfor %}
                 </dl>
             {% endif %}
         </section>
+        {% endif %}
 
-        {% if definition.relationships is not empty %}
-            <section class="portal-business-panel portal-business-stack" aria-labelledby="portal-business-relations-title">
+        {% if record_task in ['summary', 'relations'] and definition.relationships is not empty %}
+            <section class="portal-business-panel portal-business-stack kis-business-section" aria-labelledby="portal-business-relations-title">
                 <div><p class="eyebrow">Connected records</p><h2 id="portal-business-relations-title">Relationships and ordered lines</h2></div>
                 {% for relationship in definition.relationships %}
                     {% set related = record.includes[relationship.handle]|default([]) %}
                     {% set relationship_loaded = relationship.loaded|default(false) %}
-                    <article class="portal-business-relation" aria-labelledby="portal-relation-{{ relationship.handle }}-title">
+                    <article class="portal-business-relation kis-business-relation" aria-labelledby="portal-relation-{{ relationship.handle }}-title">
                         <div class="portal-business-section-heading">
                             <div>
                                 <h3 id="portal-relation-{{ relationship.handle }}-title">{{ relationship.label }}</h3>
@@ -96,7 +110,7 @@
                         {% elseif related is empty %}
                             <p>No related records are currently included.</p>
                         {% else %}
-                            <ul class="portal-business-related-records">
+                            <ul class="portal-business-related-records kis-business-related-records">
                                 {% for related_record in related %}
                                     <li>
                                         <span>
@@ -125,7 +139,7 @@
                             and relationship.owned_line_form|default(null)
                         %}
                             {% set line_form = relationship.owned_line_form %}
-                            <form class="portal-business-relation-form portal-business-owned-line-form" method="post">
+                            <form class="portal-business-relation-form portal-business-owned-line-form kis-business-relation-form kis-business-owned-line-form" method="post">
                                 <input type="hidden" name="_csrf" value="{{ csrf }}">
                                 <input type="hidden" name="operation" value="relate">
                                 <input type="hidden" name="operation_id" value="{{ operation_id }}">
@@ -161,7 +175,7 @@
                             and available_operations.relation is defined
                             and relationship.choice_available
                         %}
-                            <form class="portal-business-relation-form" method="post">
+                            <form class="portal-business-relation-form kis-business-relation-form" method="post">
                                 <input type="hidden" name="_csrf" value="{{ csrf }}">
                                 <input type="hidden" name="operation" value="relate">
                                 <input type="hidden" name="operation_id" value="{{ operation_id }}">
@@ -202,7 +216,7 @@
                             and related is not empty
                             and available_operations.reorder is defined
                         %}
-                            <form class="portal-business-order-form" method="post">
+                            <form class="portal-business-order-form kis-business-order-form" method="post">
                                 <input type="hidden" name="_csrf" value="{{ csrf }}">
                                 <input type="hidden" name="operation" value="reorder">
                                 <input type="hidden" name="operation_id" value="{{ operation_id }}">
@@ -244,22 +258,25 @@
         {% endif %}
     </div>
 
-    <aside class="portal-business-stack" aria-label="Record operations">
+    {% if record_task in ['summary', 'actions'] %}
+    <aside class="portal-business-stack kis-business-record-sidebar" aria-label="Record operations">
+        {% if record_task == 'summary' %}
         <section class="portal-business-panel">
             <p class="eyebrow">Record state</p>
             <h2>{{ record.workflow_state|default('Active')|replace({'_': ' '})|title }}</h2>
-            <dl class="portal-details portal-business-metadata">
+            <dl class="portal-details portal-business-metadata kis-business-metadata">
                 <div><dt>Created</dt><dd><time datetime="{{ record.created_at }}">{{ record.created_at|date('Y-m-d H:i') }}</time></dd></div>
                 <div><dt>Updated</dt><dd><time datetime="{{ record.updated_at }}">{{ record.updated_at|date('Y-m-d H:i') }}</time></dd></div>
                 <div><dt>Definition</dt><dd>v{{ record.definition_version }}</dd></div>
             </dl>
         </section>
+        {% endif %}
 
-        {% if available_operations.action is defined and definition.actions is not empty %}
+        {% if record_task in ['summary', 'actions'] and available_operations.action is defined and definition.actions is not empty %}
             <section class="portal-business-panel portal-business-stack" aria-labelledby="portal-business-actions-title">
                 <div><p class="eyebrow">Workflow</p><h2 id="portal-business-actions-title">Available actions</h2></div>
                 {% for action in definition.actions %}
-                    <a class="portal-button{% if action.high_impact %} danger{% endif %}" href="{{ record_path }}?confirm=action&action={{ action.handle|url_encode }}">
+                    <a class="portal-button{% if action.high_impact %} danger{% endif %}" href="{{ record_path }}?confirm=action&amp;action={{ action.handle|url_encode }}">
                         {{ action.label }}{% if action.transition %} → {{ action.transition|replace({'_': ' '})|title }}{% endif %}
                     </a>
                     {% if available_operations.approval is defined and action.high_impact %}
@@ -272,6 +289,7 @@
             </section>
         {% endif %}
 
+        {% if record_task in ['summary', 'actions'] %}
         <section class="portal-business-panel portal-business-stack" aria-labelledby="portal-business-lifecycle-title">
             <div><p class="eyebrow">Lifecycle</p><h2 id="portal-business-lifecycle-title">Record controls</h2></div>
             {% if available_operations.restore is defined and (record.archived_at or record.deleted_at) %}
@@ -284,6 +302,9 @@
                 <a class="portal-button danger" href="{{ record_path }}?confirm=delete{% if record.archived_at %}&archived=1{% endif %}">Delete record</a>
             {% endif %}
         </section>
+        {% endif %}
     </aside>
+    {% endif %}
+</div>
 </div>
 {% endblock %}

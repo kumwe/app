@@ -220,6 +220,37 @@ final readonly class DoctrineAccessControlRepository implements AccessControlRep
     }
 
     /**
+     * Read one page of installation identity and credential audit events, newest first.
+     *
+     * The closed action-prefix filter prevents the identity screen from becoming a general audit export.
+     * Metadata is never selected, which keeps credential purpose, recovery, reason, and policy context out
+     * of the graphical timeline while retaining accountable actor, target, outcome, and time.
+     *
+     * @param   int  $limit   Maximum rows to read in this page, from 1 to 500.
+     * @param   int  $offset  Rows to skip before collecting the page.
+     *
+     * @return  list<array<string, mixed>>  Newest identity-related events without stored metadata.
+     *
+     * @throws  InvalidArgumentException  When the page window is invalid.
+     *
+     * @since   2.0.0
+     */
+    public function securityEvents(int $limit = 100, int $offset = 0): array
+    {
+        $this->assertPage($limit, $offset);
+
+        return $this->database->fetchAllAssociative(sprintf(
+            'SELECT id, occurred_at, actor_id, action, subject_type, subject_id, outcome FROM %s '
+            . "WHERE action = 'administrator.create' OR action LIKE 'user.%%' OR action LIKE 'role.%%' "
+            . "OR action LIKE 'capability.%%' OR action LIKE 'token.%%' OR action LIKE 'identity.step_up.%%' "
+            . 'ORDER BY occurred_at DESC, id DESC LIMIT %d OFFSET %d',
+            $this->tables->quoted('audit_events'),
+            $limit,
+            $offset,
+        ));
+    }
+
+    /**
      * Write a new user row together with the password credential it signs in with.
      *
      * The address is stored twice, as given and as the normalised lookup key, and the account starts at

@@ -273,10 +273,17 @@ PHP;
         $surfaces = [
             [
                 'id' => 'core.administrator.widgets',
+                'owner' => 'core',
                 'kis_runtime_disposition' => 'declared',
                 'kis_contract' => $contract,
             ],
-            ['id' => 'core.administrator.legacy', 'kis_runtime_disposition' => 'legacy'],
+            ['id' => 'core.administrator.legacy', 'owner' => 'core', 'kis_runtime_disposition' => 'legacy'],
+            [
+                'id' => 'acme.widgets.administrator',
+                'owner' => 'acme/widgets',
+                'kis_runtime_disposition' => 'declared',
+                'kis_contract' => $contract,
+            ],
         ];
         $errors = [];
         \validateCoreSurfaceContracts($source, $surfaces, $errors);
@@ -297,6 +304,82 @@ PHP;
             'Core typed surface core.administrator.legacy is not admitted by a declared inventory disposition.',
             $errors,
         );
+    }
+
+    /**
+     * Refuse complete migration scopes that retain legacy surfaces or unbound navigation.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testCompletedMigrationScopeRequiresDeclaredSurfacesAndNavigation(): void
+    {
+        $inventory = [
+            'surfaces' => [[
+                'id' => 'core.administrator.widgets',
+                'kis_runtime_disposition' => 'legacy',
+                'target' => ['phase' => 5, 'migration_status' => 'planned'],
+            ]],
+            'navigation_catalog' => [[
+                'id' => 'core.widgets',
+                'surface_id' => 'core.administrator.widgets',
+                'runtime_surface_binding' => 'legacy',
+            ]],
+        ];
+        $ledger = [
+            'programme_status' => 'in_progress',
+            'phases' => [['number' => 5, 'status' => 'complete']],
+        ];
+        $errors = [];
+        \validateMigrationDispositions($inventory, $ledger, $errors);
+        self::assertContains('Completed migration scope retains legacy surface core.administrator.widgets.', $errors);
+
+        $inventory['surfaces'][0]['kis_runtime_disposition'] = 'declared';
+        $inventory['surfaces'][0]['target']['migration_status'] = 'complete';
+        $errors = [];
+        \validateMigrationDispositions($inventory, $ledger, $errors);
+        self::assertContains(
+            'Navigation core.widgets must bind its declared KIS surface core.administrator.widgets.',
+            $errors,
+        );
+
+        $inventory['navigation_catalog'][0]['runtime_surface_binding'] = 'declared';
+        $errors = [];
+        \validateMigrationDispositions($inventory, $ledger, $errors);
+        self::assertSame([], $errors);
+    }
+
+    /**
+     * Prevent rendered literal surface markers from creating an inventory shadow namespace.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testLiteralTemplateSurfaceMarkersMustBeInventoried(): void
+    {
+        $errors = [];
+        \validateTemplateSurfaceMarkers(
+            'templates/portal/approval-detail.twig',
+            '<div data-kis-surface="core.portal.approval-detail"></div>',
+            ['core.portal.approvals' => true],
+            $errors,
+        );
+
+        self::assertSame([
+            'Template templates/portal/approval-detail.twig renders unknown literal KIS surface '
+                . 'core.portal.approval-detail.',
+        ], $errors);
+
+        $errors = [];
+        \validateTemplateSurfaceMarkers(
+            'templates/portal/approval-detail.twig',
+            '<div data-kis-surface="core.portal.approvals"></div>',
+            ['core.portal.approvals' => true],
+            $errors,
+        );
+        self::assertSame([], $errors);
     }
 
     /**

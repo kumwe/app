@@ -3,27 +3,44 @@
 {% block title %}Workspace · Kumwe Portal{% endblock %}
 
 {% block content %}
-<section aria-labelledby="portal-home-title">
-    <p class="eyebrow">Your workspace</p>
-    <h1 id="portal-home-title">Welcome to Kumwe Portal</h1>
-    <p>Only records and actions allowed by your current membership and policy are available here.</p>
-</section>
+<div class="kis-phase-five-portal" data-kis-surface="core.portal.home">
+    {% include '@kis/page-header.twig' with {
+        eyebrow: 'Your workspace',
+        title: 'Welcome to Kumwe Portal',
+        purpose: 'Continue the work available to your current organization and workspace membership.'
+    } only %}
 
-<section class="portal-cards" aria-labelledby="portal-areas-title">
-    <h2 id="portal-areas-title">Available areas</h2>
-    {% if portal_navigation is empty %}
-        <p>No portal areas are currently available for this membership.</p>
-    {% else %}
-        <ul>
-            {% for item in portal_navigation %}
-                <li>
-                    <a href="{{ item.href }}">
-                        <strong>{{ item.label }}</strong>
-                        <span>{{ item.description }}</span>
-                    </a>
-                </li>
-            {% endfor %}
-        </ul>
-    {% endif %}
-</section>
+    <section class="portal-access-card" aria-labelledby="portal-access-title">
+        <p class="eyebrow">Current access</p>
+        <h2 id="portal-access-title">Access context and readiness</h2>
+        <p>Every area below is filtered before it reaches this page. If work is missing, confirm the active context with an administrator.</p>
+        <dl class="portal-access-context">
+            <div><dt>Site</dt><dd>{{ portal_site }}</dd></div>
+            <div><dt>Organization</dt><dd>{{ portal_organization ?: 'No organization selected' }}</dd></div>
+            <div><dt>Workspace</dt><dd>{{ portal_workspace ?: 'No workspace selected' }}</dd></div>
+            <div><dt>Available areas</dt><dd>{{ portal_navigation|length }}</dd></div>
+        </dl>
+    </section>
+
+    <section class="portal-cards" aria-labelledby="portal-areas-title">
+        <h2 id="portal-areas-title">Available areas</h2>
+        {% if portal_navigation is empty %}
+            {% include '@kis/empty-state.twig' with {
+                title: 'No work is available in this context',
+                message: 'Your membership is active, but no portal area is available for the selected organization and workspace. Ask an administrator to review the assignment or choose another permitted context.'
+            } only %}
+        {% else %}
+            <ul>
+                {% for item in portal_navigation %}
+                    <li>
+                        <a href="{{ item.href }}"{% if item.id == active_navigation %} aria-current="page"{% endif %}>
+                            <strong>{{ item.label }}</strong>
+                            <span>{{ item.description }}</span>
+                        </a>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+    </section>
+</div>
 {% endblock %}

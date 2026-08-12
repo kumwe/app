@@ -1,9 +1,9 @@
 {% extends "layout.twig" %}
 {% block title %}Site setup · {{ site_name|default('Kumwe') }}{% endblock %}
 {% block content %}
-  <section class="page-section">
+  <section class="page-section" aria-labelledby="template-home-title" data-kis-surface="core.public.home">
     <p class="eyebrow">Site setup</p>
-    <h1>Choose a published homepage</h1>
+    <h1 id="template-home-title">Choose a published homepage</h1>
     <p>The configured homepage is unavailable. Sign in to select or publish a managed page.</p>
     <p><a class="button" href="/administrator/settings">Open site settings</a></p>
   </section>

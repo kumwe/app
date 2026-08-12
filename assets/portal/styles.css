@@ -1,5 +1,6 @@
 @import "../../public/assets/portal.css";
 @import "../interface-standard/styles.css";
+@import "./phase-five.css";
 
 :root {
   --kumwe-border: var(--portal-line);

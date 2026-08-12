@@ -5,24 +5,36 @@
 {% block context_subtitle %}Disclosure-filtered revision evidence{% endblock %}
 
 {% block content %}
-  <kumwe-business-surface>
+  {% set record_path = business_base_path ~ '/' ~ (definition_handle|url_encode) ~ '/' ~ (record_id|url_encode) %}
+  <kumwe-business-surface data-kis-business data-kis-component="generated-record-history" data-kis-surface="core.administrator.generated-record" data-record-task="history">
     <header class="page-heading">
       <div>
         <p class="eyebrow">{{ definition_handle }}</p>
         <h1>Record history</h1>
-        <p><code>{{ record_id }}</code></p>
+        <p>{% include '@kis/technical-value.twig' with {label: 'Record ID', value: record_id} only %}</p>
       </div>
       <div class="page-actions">
-        <a class="button" href="{{ business_base_path }}/{{ definition_handle|url_encode }}/{{ record_id|url_encode }}">Back to record</a>
+        <a class="button" href="{{ record_path }}">Back to record</a>
       </div>
     </header>
+
+    {% include '@kis/task-navigation.twig' with {
+      label: 'Record tasks',
+      active: 'history',
+      tasks: [
+        {id: 'summary', label: 'Summary', href: record_path ~ '?task=summary'},
+        {id: 'relations', label: 'Relations', href: record_path ~ '?task=relations'},
+        {id: 'history', label: 'History', href: record_path ~ '?task=history'},
+        {id: 'actions', label: 'Actions', href: record_path ~ '?task=actions'}
+      ]
+    } only %}
 
     {% if items is empty %}
       <section class="empty-state"><div class="empty-state-content"><h2>No revisions are available</h2><p>This record has no visible history entries.</p></div></section>
     {% else %}
-      <ol class="business-history-list">
+      <ol class="business-history-list kis-business-history">
         {% for revision in items %}
-          <li class="panel business-history-entry">
+          <li class="panel business-history-entry kis-business-history-entry">
             <header>
               <div>
                 <p class="eyebrow">{{ revision.operation|replace({'_': ' '}) }}</p>
@@ -64,7 +76,7 @@
       </ol>
       {% if has_more and before_version %}
         <nav class="pagination-actions" aria-label="History pages">
-          <a class="button" href="?history=1&before_version={{ before_version }}" rel="next">Older revisions</a>
+          <a class="button" href="?task=history&amp;before_version={{ before_version }}" rel="next">Older revisions</a>
         </nav>
       {% endif %}
     {% endif %}

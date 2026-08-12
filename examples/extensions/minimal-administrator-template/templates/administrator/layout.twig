@@ -53,7 +53,7 @@
           <strong>{% block context_title %}Administrator workspace{% endblock %}</strong>
           <span>{% block context_subtitle %}Manage your website with confidence{% endblock %}</span>
         </div>
-        <button class="command-trigger" type="button" data-open-command-palette>
+        <button class="command-trigger" type="button" aria-label="Search administrator" data-open-command-palette>
           <span>Search administrator</span><kbd>Ctrl K</kbd>
         </button>
         <form action="/administrator/logout" method="post">
@@ -67,14 +67,14 @@
         aria-label="Close administrator navigation"
         data-navigation-backdrop
       ></button>
-      <main class="administrator-main" id="administrator-content" tabindex="-1">
+      <main class="administrator-main" id="administrator-content" tabindex="-1" data-kis-template-surface="administrator">
         <div class="administrator-content">{% block content %}{% endblock %}</div>
       </main>
       <script type="application/json" id="administrator-command-data">{{ administrator_commands_json|raw }}</script>
       <kumwe-command-palette></kumwe-command-palette>
     </div>
   {% else %}
-    <main class="login-page" id="administrator-content" tabindex="-1">
+    <main class="login-page" id="administrator-content" tabindex="-1" data-kis-template-surface="administrator-guest">
       {% block guest_content %}{{ block('content') }}{% endblock %}
     </main>
   {% endif %}

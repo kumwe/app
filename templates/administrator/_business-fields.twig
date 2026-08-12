@@ -1,5 +1,5 @@
 {% macro structured_node(node, input_id) %}
-  <div class="business-structured-node business-structured-node-{{ node.kind }}">
+  <div class="business-structured-node business-structured-node-{{ node.kind }} kis-business-structured-node">
     {% if node.fixed_kind %}
       <input type="hidden" name="{{ node.kind_name }}" value="{{ node.kind }}">
     {% else %}
@@ -26,9 +26,9 @@
           required
         >
       </label>
-      <div class="business-structured-entries">
+      <div class="business-structured-entries kis-business-structured-entries">
         {% for entry in node.entries %}
-          <fieldset class="business-structured-entry">
+          <fieldset class="business-structured-entry kis-business-structured-entry">
             <legend>{{ node.kind == 'object' ? 'Property ' ~ loop.index : 'Row ' ~ loop.index }}</legend>
             {% if node.kind == 'object' %}
               <label for="{{ input_id }}-{{ loop.index0 }}-key">Key
@@ -82,17 +82,17 @@
 {% endmacro %}
 
 {% macro render(fields, definition, record, business_base_path, value_prefix = 'values') %}
-  <div class="business-fields">
+  <div class="business-fields kis-business-fields">
     {% for field in fields %}
       {% set input_id = 'business-field-' ~ field.handle %}
       {% set error_id = input_id ~ '-errors' %}
       {% set help_id = input_id ~ '-help' %}
       {% set has_help = field.description is not empty or field.help_text is not empty %}
       {% set described_by = (has_help ? help_id : '') ~ (has_help and field.errors is not empty ? ' ' : '') ~ (field.errors is not empty ? error_id : '') %}
-      <div class="business-field{% if field.errors is not empty %} business-field-invalid{% endif %}">
+      <div class="business-field kis-business-field{% if field.errors is not empty %} business-field-invalid kis-business-field-invalid{% endif %}">
         {% if field.widget == 'output' %}
-          <span class="business-field-label" id="{{ input_id }}-label">{{ field.label }}</span>
-          <output class="business-field-output" aria-labelledby="{{ input_id }}-label"{% if has_help %} aria-describedby="{{ help_id }}"{% endif %}>
+          <span class="business-field-label kis-business-field-label" id="{{ input_id }}-label">{{ field.label }}</span>
+          <output class="business-field-output kis-business-field-output" aria-labelledby="{{ input_id }}-label"{% if has_help %} aria-describedby="{{ help_id }}"{% endif %}>
             {{ field.display is not same as('') ? field.display : 'Not set' }}
           </output>
         {% elseif field.widget == 'checkbox' %}
@@ -112,11 +112,11 @@
         {% elseif field.widget in ['money', 'quantity', 'zoned_datetime'] %}
           <fieldset
             id="{{ input_id }}"
-            class="business-composite"
+            class="business-composite kis-business-composite"
             {% if described_by is not empty %}aria-describedby="{{ described_by }}"{% endif %}
           >
             <legend>{{ field.label }}{% if field.required %} <span aria-hidden="true">*</span>{% endif %}</legend>
-            <div class="two-column">
+            <div class="two-column kis-business-columns">
               {% if field.widget in ['money', 'quantity'] %}
                 {% set qualifier = field.widget == 'money' ? 'currency' : 'unit' %}
                 <label for="{{ input_id }}-amount">Amount
@@ -171,7 +171,7 @@
           </fieldset>
         {% else %}
           {% if field.widget in ['json', 'collection'] %}
-            <span class="business-field-label" id="{{ input_id }}-label">
+            <span class="business-field-label kis-business-field-label" id="{{ input_id }}-label">
               {{ field.label }}{% if field.required %} <span aria-hidden="true">*</span>{% endif %}
             </span>
           {% else %}
@@ -247,7 +247,7 @@
             {% else %}
               <div
                 id="{{ input_id }}"
-                class="business-structured-editor"
+                class="business-structured-editor kis-business-structured-editor"
                 aria-labelledby="{{ input_id }}-label"
                 {% if described_by is not empty %}aria-describedby="{{ described_by }}"{% endif %}
               >
@@ -307,7 +307,7 @@
           </p>
         {% endif %}
         {% if field.errors is not empty %}
-          <ul class="business-field-errors" id="{{ error_id }}">
+          <ul class="business-field-errors kis-business-field-errors" id="{{ error_id }}">
             {% for error in field.errors %}<li>{{ error }}</li>{% endfor %}
           </ul>
         {% endif %}

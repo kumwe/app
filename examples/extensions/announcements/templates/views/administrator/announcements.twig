@@ -3,17 +3,22 @@
 {% block context_title %}Announcements{% endblock %}
 {% block context_subtitle %}Trusted component contribution{% endblock %}
 {% block content %}
-  <div class="page-heading">
-    <div>
-      <p class="eyebrow">Example component</p>
-      <h1>Announcements</h1>
-      <p>A graphical administrator page supplied without a Kumwe core route or navigation edit.</p>
-    </div>
-  </div>
+  <div class="kis-phase-five" data-kis-surface="kumwe.announcements-example.index">
+  {% include '@kis/page-header.twig' with {
+    eyebrow: 'Example component',
+    title: 'Announcements',
+    purpose: 'A graphical administrator page supplied through the same KIS contract as core surfaces.'
+  } only %}
   <section class="panel stack" aria-labelledby="announcement-list-title">
     <div><p class="eyebrow">{{ site_name }}</p><h2 id="announcement-list-title">Component announcements</h2></div>
     {% for announcement in announcements %}
       <article class="stack"><h3>{{ announcement.title }}</h3><p>{{ announcement.message }}</p></article>
+    {% else %}
+      {% include '@kis/empty-state.twig' with {
+        title: 'No announcements',
+        message: 'This component has not published an announcement for the current site.'
+      } only %}
     {% endfor %}
   </section>
+  </div>
 {% endblock %}

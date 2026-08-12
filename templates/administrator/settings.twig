@@ -2,18 +2,29 @@
 {% block title %}Site settings · Kumwe{% endblock %}
 {% block context_title %}Site settings{% endblock %}
 {% block content %}
-  <header class="page-heading">
-    <div><p class="eyebrow">Website</p><h1>Site settings</h1><p>Control the public identity, homepage, menu, corporate design system, regional defaults, and search visibility.</p></div>
-    <div class="page-actions"><a class="button" href="/" target="_blank" rel="noopener">View website</a></div>
-  </header>
+  <div class="kis-phase-five" data-kis-surface="core.administrator.settings">
+  {% embed '@kis/page-header.twig' with {
+    eyebrow: 'Website',
+    title: 'Site settings',
+    purpose: 'Control the public identity, homepage, menu, design system, regional defaults, and search visibility.'
+  } only %}
+    {% block actions %}<div class="page-actions"><a class="button" href="/" target="_blank" rel="noopener">View website</a></div>{% endblock %}
+  {% endembed %}
+  <nav class="kis-phase-five-section-nav" aria-label="Site setting groups">
+    <a href="#settings-identity">Public identity</a>
+    <a href="#settings-design">Design system</a>
+    <a href="#settings-regional">Regional defaults</a>
+    <a href="#settings-search">Search engines</a>
+  </nav>
   {% if saved %}<div class="notice success" role="status"><span>Settings and presentation saved.</span><button class="notice-dismiss" type="button" aria-label="Dismiss" data-dismiss-notice>×</button></div>{% endif %}
   {% if error %}<div class="notice danger" role="alert"><span>{{ error }}</span></div>{% endif %}
 
   <div class="editor-grid">
-    <form class="panel editor-main editor-form stack" action="/administrator/settings" method="post">
+    <kumwe-dirty-form>
+    <form class="panel editor-main editor-form stack" action="/administrator/settings" method="post" data-kis-dirty-form>
       <input type="hidden" name="_csrf" value="{{ csrf }}">
 
-      <fieldset class="field-group stack">
+      <fieldset id="settings-identity" class="field-group stack kis-phase-five-card">
         <legend>Public identity</legend>
         <label>Site name<small>Shown in the public header, page titles, and footer.</small><input name="site_name" value="{{ settings.site_name }}" maxlength="160" required></label>
         <div class="stack"><label for="presentation-logo">Site logo<small>Choose a managed image or enter a root-relative URL. This identity is independent of the homepage content.</small></label><span class="media-input"><input id="presentation-logo" name="presentation_logo" value="{{ settings.presentation.logo }}" maxlength="2048"><button type="button" data-open-media-picker data-media-target="presentation-logo">Choose media</button></span></div>
@@ -22,7 +33,7 @@
         <label>Primary menu<small>The selected database menu supplies the public header links and canonical page paths.</small><select name="presentation_primary_menu" required><option value="{{ settings.presentation.primary_menu }}">{{ settings.presentation.primary_menu }} · Current menu</option>{% for menu in menus %}{% if menu.handle != settings.presentation.primary_menu %}<option value="{{ menu.handle }}">{{ menu.title }} · {{ menu.handle }}</option>{% endif %}{% endfor %}</select></label>
       </fieldset>
 
-      <fieldset class="field-group stack">
+      <fieldset id="settings-design" class="field-group stack kis-phase-five-card">
         <legend>Design system</legend>
         <p class="field-help">Choose a coordinated scheme and interaction treatment. Every value below is stored as managed site data and used by the built-in public theme.</p>
         <div class="two-column">
@@ -83,10 +94,12 @@
         </kumwe-presentation-schemes>
       </fieldset>
 
-      <fieldset class="field-group stack"><legend>Regional defaults</legend><div class="two-column"><label>Default locale<small>Use a language-region value such as en-NA.</small><input name="default_locale" value="{{ settings.default_locale }}" maxlength="35" required></label><label>Timezone<small>Use an IANA timezone such as Africa/Windhoek.</small><input name="timezone" value="{{ settings.timezone }}" maxlength="80" required></label></div></fieldset>
-      <fieldset class="field-group stack"><legend>Search engines</legend><label class="check"><input type="checkbox" name="search_indexing_enabled" value="1"{% if settings.search_indexing_enabled %} checked{% endif %}><span>Allow search indexing<small>When disabled, Kumwe publishes no-index instructions. It does not make content private.</small></span></label></fieldset>
+      <fieldset id="settings-regional" class="field-group stack kis-phase-five-card"><legend>Regional defaults</legend><div class="two-column"><label>Default locale<small>Use a language-region value such as en-NA.</small><input name="default_locale" value="{{ settings.default_locale }}" maxlength="35" required></label><label>Timezone<small>Use an IANA timezone such as Africa/Windhoek.</small><input name="timezone" value="{{ settings.timezone }}" maxlength="80" required></label></div></fieldset>
+      <fieldset id="settings-search" class="field-group stack kis-phase-five-card"><legend>Search engines</legend><label class="check"><input type="checkbox" name="search_indexing_enabled" value="1"{% if settings.search_indexing_enabled %} checked{% endif %}><span>Allow search indexing<small>When disabled, Kumwe publishes no-index instructions. It does not make content private.</small></span></label></fieldset>
+      <p class="kis-dirty-status" role="status" aria-live="polite" data-kis-dirty-status>Changes are saved when you submit this form.</p>
       <div class="page-actions"><button class="primary" type="submit">Save settings and design</button></div>
     </form>
+    </kumwe-dirty-form>
 
     <aside class="editor-sidebar stack">
       <section class="panel panel-body stack"><div><p class="eyebrow">Presentation</p><h2>Public website</h2></div><p class="text-muted text-small">The built-in Twig theme reads these database values on every site render. Installed site templates may override the markup while retaining managed content.</p><a href="/administrator/navigation">Manage public menus</a>{% if capabilities['extensions.manage'] is defined %}<a href="/administrator/extensions">Install or activate templates</a>{% endif %}</section>
@@ -104,4 +117,5 @@
       </dialog>
     </kumwe-media-picker>
   {% endif %}
+  </div>
 {% endblock %}

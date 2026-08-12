@@ -787,6 +787,196 @@ var KumweBusinessConfirmation = class KumweBusinessConfirmation extends i {
 };
 KumweBusinessConfirmation = __decorate([t("kumwe-business-confirmation")], KumweBusinessConfirmation);
 //#endregion
+//#region assets/administrator/components/dirty-form.ts
+var KumweDirtyForm = class KumweDirtyForm extends i {
+	form = null;
+	status = null;
+	markDirty = () => {
+		if (this.hasAttribute("data-dirty")) return;
+		this.setAttribute("data-dirty", "");
+		if (this.status !== null) this.status.textContent = "Unsaved changes";
+	};
+	clearDirty = () => {
+		this.removeAttribute("data-dirty");
+		if (this.status !== null) this.status.textContent = "Changes are saved when you submit this form.";
+	};
+	warnBeforeLeave = (event) => {
+		if (!this.hasAttribute("data-dirty")) return;
+		event.preventDefault();
+		event.returnValue = "";
+	};
+	createRenderRoot() {
+		return this;
+	}
+	connectedCallback() {
+		super.connectedCallback();
+		this.form = this.querySelector("form");
+		this.status = this.querySelector("[data-kis-dirty-status]");
+		this.form?.addEventListener("input", this.markDirty);
+		this.form?.addEventListener("change", this.markDirty);
+		this.form?.addEventListener("submit", this.clearDirty);
+		window.addEventListener("beforeunload", this.warnBeforeLeave);
+	}
+	disconnectedCallback() {
+		this.form?.removeEventListener("input", this.markDirty);
+		this.form?.removeEventListener("change", this.markDirty);
+		this.form?.removeEventListener("submit", this.clearDirty);
+		window.removeEventListener("beforeunload", this.warnBeforeLeave);
+		this.form = null;
+		this.status = null;
+		super.disconnectedCallback();
+	}
+	render() {
+		return b`<slot></slot>`;
+	}
+};
+KumweDirtyForm = __decorate([t("kumwe-dirty-form")], KumweDirtyForm);
+//#endregion
+//#region assets/administrator/components/policy-step-flow.ts
+/**
+* Progressively enhance the server-rendered resource-policy authoring stages.
+*
+* The complete native form remains in the document for no-JavaScript use. Enhancement hides only the
+* inactive stage, changes canonical step URLs through history state so entered values remain intact,
+* restores every stage before native constraint validation, and focuses the first invalid stage.
+*/
+var PolicyStepFlowController = class {
+	root;
+	pendingInvalid = null;
+	submissionRestoreTimer = null;
+	revealedStep = null;
+	constructor(root) {
+		this.root = root;
+	}
+	connect() {
+		if (this.root.hasAttribute("data-enhanced")) return;
+		this.root.addEventListener("click", this.handleClick);
+		this.root.addEventListener("invalid", this.handleInvalid, true);
+		this.root.addEventListener("kis:reveal-target", this.handleRevealTarget);
+		window.addEventListener("popstate", this.handleLocationChange);
+		window.addEventListener("hashchange", this.handleLocationChange);
+		this.root.dataset.enhanced = "";
+		const locationStep = this.locationStep();
+		this.activate(locationStep ?? this.selectedStep(), false, locationStep !== null);
+	}
+	navigationLinks() {
+		return Array.from(this.root.querySelectorAll("[data-kis-policy-step-link]"));
+	}
+	panels() {
+		return Array.from(this.root.querySelectorAll("[data-kis-policy-step-panel]"));
+	}
+	selectedStep() {
+		return this.root.dataset.kisActiveStep ?? this.root.querySelector("[data-kis-policy-step-link][aria-current=\"step\"]")?.dataset.kisPolicyStepLink ?? this.panels()[0]?.dataset.kisPolicyStepPanel ?? "";
+	}
+	locationStep() {
+		const parameter = this.root.dataset.kisStepParameter ?? "step";
+		const requested = new URL(window.location.href).searchParams.get(parameter);
+		if (requested !== null && this.panel(requested) !== null) return requested;
+		const hashTarget = window.location.hash === "" ? null : document.getElementById(window.location.hash.slice(1));
+		return hashTarget instanceof HTMLElement && this.root.contains(hashTarget) ? hashTarget.closest("[data-kis-policy-step-panel]")?.dataset.kisPolicyStepPanel ?? null : null;
+	}
+	panel(step) {
+		return this.panels().find((panel) => panel.dataset.kisPolicyStepPanel === step) ?? null;
+	}
+	activate(step, updateLocation, focus) {
+		const panel = this.panel(step) ?? this.panels()[0];
+		const selected = panel?.dataset.kisPolicyStepPanel;
+		if (!panel || !selected) return;
+		this.root.dataset.kisActiveStep = selected;
+		for (const link of this.navigationLinks()) {
+			const active = link.dataset.kisPolicyStepLink === selected;
+			link.classList.toggle("primary", active);
+			if (active) link.setAttribute("aria-current", "step");
+			else link.removeAttribute("aria-current");
+		}
+		for (const candidate of this.panels()) {
+			const active = candidate === panel;
+			candidate.hidden = !active;
+			candidate.toggleAttribute("data-kis-step-current", active);
+			candidate.querySelector("[data-kis-current-step-label]")?.toggleAttribute("hidden", !active);
+		}
+		if (updateLocation) {
+			const destinationLink = this.navigationLinks().find((link) => link.dataset.kisPolicyStepLink === selected);
+			if (destinationLink) {
+				const destination = new URL(destinationLink.href, window.location.href);
+				window.history.pushState({}, "", `${destination.pathname}${destination.search}${destination.hash}`);
+			}
+		}
+		const label = this.navigationLinks().find((link) => link.dataset.kisPolicyStepLink === selected)?.textContent?.trim();
+		const announcement = this.root.querySelector("[data-kis-policy-step-announcement]");
+		if (announcement && label) announcement.textContent = `${label} is active.`;
+		if (focus) panel.focus();
+	}
+	revealAllPanels() {
+		for (const panel of this.panels()) panel.hidden = false;
+	}
+	prepareForSubmission() {
+		if (this.submissionRestoreTimer !== null) window.clearTimeout(this.submissionRestoreTimer);
+		this.revealedStep = this.selectedStep();
+		this.revealAllPanels();
+		this.submissionRestoreTimer = window.setTimeout(() => {
+			const step = this.revealedStep;
+			this.submissionRestoreTimer = null;
+			this.revealedStep = null;
+			if (step === null || !this.root.isConnected || this.pendingInvalid !== null) return;
+			this.activate(step, false, false);
+		}, 0);
+	}
+	handleClick = (event) => {
+		const target = event.target;
+		if (!(target instanceof Element)) return;
+		if (!event.defaultPrevented && target.closest("button[type=\"submit\"], input[type=\"submit\"]")) {
+			this.prepareForSubmission();
+			return;
+		}
+		const link = target.closest("[data-kis-policy-step-link], [data-kis-policy-step-target]");
+		if (!link || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+		const destination = new URL(link.href, window.location.href);
+		if (destination.origin !== window.location.origin || destination.pathname !== window.location.pathname) return;
+		const step = link.dataset.kisPolicyStepLink ?? link.dataset.kisPolicyStepTarget;
+		if (!step || this.panel(step) === null) return;
+		event.preventDefault();
+		this.activate(step, true, true);
+	};
+	handleInvalid = (event) => {
+		const target = event.target;
+		if (!(target instanceof HTMLElement)) return;
+		const step = target.closest("[data-kis-policy-step-panel]")?.dataset.kisPolicyStepPanel;
+		if (!step) return;
+		if (this.submissionRestoreTimer !== null) window.clearTimeout(this.submissionRestoreTimer);
+		this.submissionRestoreTimer = null;
+		this.revealedStep = null;
+		this.revealAllPanels();
+		if (this.pendingInvalid !== null) return;
+		this.pendingInvalid = {
+			step,
+			target
+		};
+		window.setTimeout(() => {
+			const pending = this.pendingInvalid;
+			this.pendingInvalid = null;
+			if (pending === null || !this.root.isConnected) return;
+			this.activate(pending.step, true, false);
+			pending.target.focus();
+		}, 0);
+	};
+	handleRevealTarget = (event) => {
+		if (!(event.target instanceof Element) || !this.root.contains(event.target)) return;
+		const panel = event.target.closest("[data-kis-policy-step-panel]");
+		if (panel?.dataset.kisPolicyStepPanel) this.activate(panel.dataset.kisPolicyStepPanel, true, false);
+	};
+	handleLocationChange = () => {
+		const step = this.locationStep();
+		if (step !== null) this.activate(step, false, true);
+	};
+};
+/** Enhance every bounded policy flow present in the current administrator response. */
+function setupPolicyStepFlows() {
+	document.querySelectorAll("[data-kis-policy-step-flow]").forEach((root) => {
+		new PolicyStepFlowController(root).connect();
+	});
+}
+//#endregion
 //#region assets/administrator/main.ts
 document.documentElement.classList.add("js");
 var focusableSelector = "a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex=\"-1\"])";
@@ -883,4 +1073,5 @@ setupSlugSuggestion();
 setupCopyValues();
 setupValidationReveal();
 setupNavigationTargets();
+setupPolicyStepFlows();
 //#endregion

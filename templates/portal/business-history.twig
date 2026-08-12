@@ -3,17 +3,30 @@
 {% block title %}Record history · Kumwe Portal{% endblock %}
 
 {% block content %}
+{% set record_path = business_base_path ~ '/' ~ (definition_handle|url_encode) ~ '/' ~ (record_id|url_encode) %}
+<div data-kis-business data-kis-component="generated-record-history" data-kis-surface="core.portal.generated-record" data-record-task="history">
 <header class="portal-business-heading">
-    <div><p class="eyebrow">{{ definition_handle }}</p><h1>Record history</h1><p><code>{{ record_id }}</code></p></div>
-    <a class="portal-button secondary" href="{{ business_base_path }}/{{ definition_handle|url_encode }}/{{ record_id|url_encode }}">Back to record</a>
+    <div><p class="eyebrow">{{ definition_handle }}</p><h1>Record history</h1><p>{% include '@kis/technical-value.twig' with {label: 'Record ID', value: record_id} only %}</p></div>
+    <a class="portal-button secondary" href="{{ record_path }}">Back to record</a>
 </header>
+
+{% include '@kis/task-navigation.twig' with {
+    label: 'Record tasks',
+    active: 'history',
+    tasks: [
+        {id: 'summary', label: 'Summary', href: record_path ~ '?task=summary'},
+        {id: 'relations', label: 'Relations', href: record_path ~ '?task=relations'},
+        {id: 'history', label: 'History', href: record_path ~ '?task=history'},
+        {id: 'actions', label: 'Actions', href: record_path ~ '?task=actions'}
+    ]
+} only %}
 
 {% if items is empty %}
     <section class="portal-business-empty"><h2>No revisions are available</h2><p>This record has no visible history entries.</p></section>
 {% else %}
-    <ol class="portal-business-history">
+    <ol class="portal-business-history kis-business-history">
         {% for revision in items %}
-            <li class="portal-business-panel">
+            <li class="portal-business-panel kis-business-history-entry">
                 <header class="portal-business-section-heading">
                     <div>
                         <p class="eyebrow">{{ revision.operation|replace({'_': ' '}) }}</p>
@@ -54,7 +67,8 @@
         {% endfor %}
     </ol>
     {% if has_more and before_version %}
-        <nav class="portal-actions" aria-label="History pages"><a class="portal-button secondary" href="?history=1&before_version={{ before_version }}" rel="next">Older revisions</a></nav>
+        <nav class="portal-actions" aria-label="History pages"><a class="portal-button secondary" href="?task=history&amp;before_version={{ before_version }}" rel="next">Older revisions</a></nav>
     {% endif %}
 {% endif %}
+</div>
 {% endblock %}

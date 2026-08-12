@@ -1,0 +1,14 @@
+<nav class="kis-tabs kis-task-navigation" aria-label="{{ label }}" data-kis-component="task-navigation">
+  <div class="kis-task-navigation-list">
+    {% for task in tasks %}
+      <a
+        href="{{ task.href }}"
+        data-kis-task="{{ task.id }}"
+        {% if task.id == active %}aria-current="page"{% endif %}
+      >
+        <span>{{ task.label }}</span>
+        {% if task.count|default(null) is not null %}<span class="count-badge">{{ task.count }}</span>{% endif %}
+      </a>
+    {% endfor %}
+  </div>
+</nav>

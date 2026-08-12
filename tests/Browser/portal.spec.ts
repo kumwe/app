@@ -149,7 +149,7 @@ async function expectPortalRecordName(page: Page, value: string): Promise<void> 
 }
 
 async function expectPortalRecordRow(page: Page, value: string): Promise<void> {
-  await expect(page.locator('.portal-business-table tbody tr').filter({ hasText: value }).first())
+  await expect(page.locator('.portal-business-table tbody tr:visible, .kis-business-result-card:visible').filter({ hasText: value }).first())
     .toBeVisible();
 }
 
@@ -158,6 +158,11 @@ test('portal login is accessible, centered and visually bounded', async ({ page 
   await expect(page.getByRole('heading', { name: 'Sign in to the portal' })).toBeVisible();
   await expect(page.locator('.portal-shell')).toHaveClass(/\bportal-shell--guest\b/u);
   await expect(page.locator('.portal-navigation')).toHaveCount(0);
+  await page.getByText('What access do I need?').click();
+  await expect(page.getByText('Your own active user identity', { exact: false })).toBeVisible();
+  await expect(page.getByText('does not reveal which identity or access prerequisite is missing', {
+    exact: false,
+  })).toBeVisible();
   await expectStylesLoaded(page);
   await expectAccessible(page);
   const visualContract = await page.evaluate(() => {
@@ -298,6 +303,7 @@ test('portal shell keeps sessions isolated and protects mutations', async ({ pag
 
 test('opt-in business workspaces use the portal shell on desktop and mobile', async ({
   page,
+  isMobile,
 }, testInfo) => {
   await signIn(page);
   await page.goto('/portal/business');
@@ -305,10 +311,10 @@ test('opt-in business workspaces use the portal shell on desktop and mobile', as
   await expect(page.getByRole('heading', { level: 1, name: 'Business records' })).toBeVisible();
   await expect(page.getByRole('link', { name: /Open session 5 orders/i })).toBeVisible();
   await page.goto(`/portal/business/${businessDefinitionHandle}`);
-  await expect(page.locator('.portal-business-table tbody tr').first()).toBeVisible();
+  await expect(page.locator(isMobile ? '.kis-business-result-card' : '.portal-business-table tbody tr').first()).toBeVisible();
   await expect(page.getByRole('link', { name: 'Report', exact: true })).toBeVisible();
   await expect(page.getByRole('link', { name: 'Export', exact: true })).toBeVisible();
-  await page.getByRole('checkbox', { name: /Select record/ }).first().check();
+  await page.locator('input[name="bulk_records[]"]:visible').first().check();
   await page.getByLabel('Bulk operation').selectOption('archive');
   await page.getByRole('button', { name: 'Review bulk operation' }).click();
   await expect(page.getByRole('heading', { name: 'Archive selected records' })).toBeVisible();
@@ -317,7 +323,7 @@ test('opt-in business workspaces use the portal shell on desktop and mobile', as
   await page.goto(`/portal/business/${businessDefinitionHandle}`);
   await page.getByLabel('Search records').fill('Windhoek order');
   await page.getByRole('button', { name: 'Apply', exact: true }).click();
-  await expectPortalRecordRow(page, 'Windhoek order');
+  await expect(page.locator(isMobile ? '.kis-business-result-card' : '.portal-business-table tbody tr').filter({ hasText: 'Windhoek order' }).first()).toBeVisible();
   await expectStylesLoaded(page);
   await expectAccessible(page);
   expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBe(0);
@@ -350,12 +356,12 @@ test('opt-in business workspaces use the portal shell on desktop and mobile', as
 test('opt-in portal reports execute and expose queued export status', async ({ page }, testInfo) => {
   await signIn(page);
   await page.goto('/portal/reports');
-  await expect(page.getByRole('heading', { level: 1, name: 'Business report' })).toBeVisible();
+  await expect(page.getByRole('heading', { level: 1, name: 'Business reports' })).toBeVisible();
   await expect(page.locator('a[href="/portal/reports"]')).toHaveAttribute('aria-current', 'page');
   await expect(page.getByRole('link', { name: 'Inspection status' })).toBeVisible();
   const report = page.locator(`form[action="/portal/reports/${assetInspectionReport}"]`);
   await expect(report.getByRole('heading', { name: 'Asset inspection example summary' })).toBeVisible();
-  await report.getByLabel('Parameters as JSON object').fill('{"minimum_score":70}');
+  await report.locator('[name="parameters[minimum_score]"]').fill('70');
   await report.getByRole('button', { name: 'Run report', exact: true }).click();
 
   const results = page.getByRole('region', { name: 'Report results' });
@@ -369,6 +375,13 @@ test('opt-in portal reports execute and expose queued export status', async ({ p
   await expectStylesLoaded(page);
   await expectAccessible(page);
   expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBe(0);
+  if ((page.viewportSize()?.width ?? 0) >= 900) {
+    const dimensions = await page.locator('.kis-business-report-grid').evaluate((layout) => ({
+      catalogWidth: layout.children.item(0)?.getBoundingClientRect().width ?? 0,
+      workspaceWidth: layout.children.item(1)?.getBoundingClientRect().width ?? 0,
+    }));
+    expect(dimensions.workspaceWidth).toBeGreaterThan(dimensions.catalogWidth);
+  }
   await page.screenshot({
     path: testInfo.outputPath('portal-report-results.png'),
     fullPage: true,
@@ -377,13 +390,13 @@ test('opt-in portal reports execute and expose queued export status', async ({ p
   });
 
   await report.getByRole('button', { name: 'Queue CSV export', exact: true }).click();
-  await expect(page.getByRole('heading', { name: 'Export Queued' })).toBeVisible();
-  await expect(page.getByText(/Rows: pending\./u)).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Latest export request' })).toBeVisible();
+  await expect(page.getByText('Queued', { exact: true })).toBeVisible();
   const status = page.getByRole('link', { name: 'Refresh status' });
   await expect(status).toHaveAttribute('href', /^\/portal\/reports\/exports\/[0-9a-f-]{36}$/u);
   await expect(page.getByRole('link', { name: 'Download verified CSV' })).toHaveCount(0);
   await status.click();
-  await expect(page.getByRole('heading', { name: 'Export Queued' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Latest export request' })).toBeVisible();
   await expectAccessible(page);
   await page.screenshot({
     path: testInfo.outputPath('portal-export-status.png'),
@@ -435,6 +448,9 @@ test('portal maker-checker approval requires a distinct step-up identity', async
     await approverPage.getByLabel('Reason').fill('Browser maker-checker acceptance');
     await approverPage.getByRole('button', { name: 'Approve', exact: true }).click();
     await expect(approverPage.getByText('approved', { exact: true })).toBeVisible();
+    await approverPage.getByRole('tab', { name: /Decision history/u }).click();
+    await expect(approverPage.getByRole('heading', { name: 'Decision history' })).toBeVisible();
+    await expect(approverPage.getByText('Browser maker-checker acceptance', { exact: true })).toBeVisible();
   } finally {
     await approverContext.close();
   }
@@ -485,7 +501,7 @@ test('portal generated forms complete a no-JavaScript lifecycle', async ({ brows
     await page.getByLabel('Search records').fill(updatedName);
     await page.getByRole('button', { name: 'Apply', exact: true }).click();
     await expectPortalRecordRow(page, updatedName);
-    await page.getByRole('checkbox', { name: /Select record/ }).check();
+    await page.locator('input[name="bulk_records[]"]:visible').first().check();
     await page.getByLabel('Bulk operation').selectOption('archive');
     await page.getByRole('button', { name: 'Review bulk operation' }).click();
     await page.getByRole('checkbox').check();
@@ -496,7 +512,7 @@ test('portal generated forms complete a no-JavaScript lifecycle', async ({ brows
     await page.getByLabel('Include archived').check();
     await page.getByRole('button', { name: 'Apply', exact: true }).click();
     await expectPortalRecordRow(page, updatedName);
-    await page.getByRole('checkbox', { name: /Select record/ }).check();
+    await page.locator('input[name="bulk_records[]"]:visible').first().check();
     await page.getByLabel('Bulk operation').selectOption('restore');
     await page.getByRole('button', { name: 'Review bulk operation' }).click();
     await page.getByRole('checkbox').check();

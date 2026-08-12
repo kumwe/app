@@ -9,6 +9,7 @@ use InvalidArgumentException;
 use Kumwe\CMS\Administrator\Http\AdministratorRequest;
 use Kumwe\CMS\Administrator\Http\Middleware\AdministratorSessionMiddleware;
 use Kumwe\CMS\Administrator\Presentation\AdministratorRenderer;
+use Kumwe\CMS\Administrator\Presentation\SecurityWorkspaceState;
 use Kumwe\CMS\Application\Authorization\AuthenticationStrength;
 use Kumwe\CMS\Application\Authorization\ExecutionContext;
 use Kumwe\CMS\BusinessSecurity\Application\Approval\StepUpProofConsumer;
@@ -99,6 +100,7 @@ final readonly class AdministratorAccessControlHandler implements RequestHandler
     {
         $session = AdministratorRequest::session($request);
         $context = AdministratorRequest::context($request);
+        $workspace = SecurityWorkspaceState::access($request->getQueryParams());
         $createdToken = null;
         $enrollment = null;
         $recoveryCodes = [];
@@ -107,15 +109,18 @@ final readonly class AdministratorAccessControlHandler implements RequestHandler
         if (strtoupper($request->getMethod()) === 'POST') {
             $form = AdministratorRequest::form($request);
             if (($form['action'] ?? null) === 'context.select') {
-                $workspace = trim($form['workspace'] ?? '');
+                $workspaceIdentifier = trim($form['workspace'] ?? '');
                 $created = $this->sessions->selectMembership(
                     $context,
                     AdministratorRequest::required($form, 'organization'),
-                    $workspace === '' ? null : $workspace,
+                    $workspaceIdentifier === '' ? null : $workspaceIdentifier,
                     $request->getHeaderLine('User-Agent'),
                 );
 
-                return new RedirectResponse('/administrator/access?saved=1', 303, [
+                return new RedirectResponse($workspace->url(
+                    '/administrator/access',
+                    ['saved' => '1'],
+                ), 303, [
                     'Cache-Control' => 'no-store',
                     'Set-Cookie' => $this->cookie($created->token),
                 ]);
@@ -201,7 +206,10 @@ final readonly class AdministratorAccessControlHandler implements RequestHandler
             }
             if ($createdToken === null) {
                 if ($enrollment === null && $recoveryCodes === []) {
-                    return new RedirectResponse('/administrator/access?saved=1', 303, array_filter([
+                    return new RedirectResponse($workspace->url(
+                        '/administrator/access',
+                        ['saved' => '1'],
+                    ), 303, array_filter([
                         'Set-Cookie' => $replacementToken === null ? null : $this->cookie($replacementToken),
                     ], static fn (?string $header): bool => $header !== null));
                 }
@@ -209,15 +217,24 @@ final readonly class AdministratorAccessControlHandler implements RequestHandler
         }
 
         $context = AdministratorRequest::context($request);
+        $section = $workspace->section;
         return new HtmlResponse($this->renderer->render('access-control', [
             'csrf' => $csrf,
             'capabilities' => AdministratorRequest::capabilityMap($request),
-            'users' => $this->access->users($context),
-            'roles' => $this->access->roles($context),
-            'tokens' => $this->access->tokens($context),
-            'available_capabilities' => $this->access->capabilities($context),
+            'users' => in_array($section, ['users', 'assignments'], true)
+                ? $this->access->users($context)
+                : [],
+            'roles' => in_array($section, ['groups', 'grants', 'assignments'], true)
+                ? $this->access->roles($context)
+                : [],
+            'tokens' => $section === 'tokens' ? $this->access->tokens($context) : [],
+            'available_capabilities' => in_array($section, ['grants', 'tokens'], true)
+                ? $this->access->capabilities($context)
+                : [],
+            'security_events' => $section === 'events' ? $this->access->securityEvents($context) : [],
             'created_token' => $createdToken,
             'saved' => ($request->getQueryParams()['saved'] ?? null) === '1',
+            'workspace' => $workspace->toArray(),
             'organization_selections' => $this->memberships->selections(
                 $context->actorId(),
                 $context->site(),

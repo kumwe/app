@@ -13,12 +13,15 @@ use Kumwe\CMS\Extension\Contribution\AdministratorRouteHandlerFactory;
 use Kumwe\CMS\Extension\Contribution\AdministratorViewDefinition;
 use Kumwe\CMS\Extension\Contribution\AdministratorWorkspaceDefinition;
 use Kumwe\CMS\Extension\Contribution\CapabilityDefinition;
+use Kumwe\CMS\Extension\Contribution\ContributionOwner;
 use Kumwe\CMS\Extension\Contribution\ExtensionContributionProvider;
 use Kumwe\CMS\Extension\Contribution\ExtensionContributionRegistrar;
+use Kumwe\CMS\Extension\Contribution\InterfaceSurfaceRegistrar;
 use Kumwe\CMS\Extension\Contribution\ResourcePolicyDefinition;
 use Kumwe\CMS\Extension\Runtime\ExtensionContainer;
 use Kumwe\CMS\Extension\Runtime\ExtensionRouteRegistrar;
 use Kumwe\CMS\Extension\Runtime\RuntimeExtension;
+use Kumwe\CMS\InterfaceStandard\SurfaceDefinition;
 use Kumwe\CMS\Site\Application\SiteSettings;
 use KumweExample\Announcements\Application\AnnouncementService;
 use KumweExample\Announcements\Delivery\AnnouncementsPageHandlerFactory;
@@ -56,6 +59,9 @@ final class Provider implements RuntimeExtension, ExtensionContributionProvider
         ExtensionContributionRegistrar $contributions,
         ExtensionContainer $container,
     ): void {
+        if (!$contributions instanceof InterfaceSurfaceRegistrar) {
+            throw new \LogicException('The announcements KIS surface registrar is unavailable.');
+        }
         $contributions->capability(new CapabilityDefinition(
             'kumwe.announcements-example.manage',
             'Manage announcements example',
@@ -75,6 +81,43 @@ final class Provider implements RuntimeExtension, ExtensionContributionProvider
         foreach (BusinessDefinitions::all() as $definition) {
             $contributions->businessDefinition($definition);
         }
+        $contributions->interfaceSurface(SurfaceDefinition::fromArray(
+            ContributionOwner::extension('kumwe/announcements-example'),
+            [
+                'surface' => 'kumwe.announcements-example.index',
+                'standard' => 'kis-1.0',
+                'area' => 'administrator',
+                'actor' => 'administrator',
+                'intent' => 'collection',
+                'resource' => 'announcement-workspace',
+                'purpose' => 'Browse extension-owned announcements and continue into their generated '
+                    . 'management workspaces.',
+                'pattern' => 'collection-workspace',
+                'capabilities' => ['kumwe.announcements-example.manage'],
+                'states' => [
+                    'default',
+                    'empty',
+                    'dense',
+                    'error',
+                    'permission-reduced',
+                    'read-only',
+                ],
+                'customization' => [['slot' => 'density', 'scope' => 'user']],
+                'responsive' => [
+                    [
+                        'element' => 'announcement-work',
+                        'priority' => 'essential',
+                        'may_collapse' => false,
+                    ],
+                    [
+                        'element' => 'generated-workspaces',
+                        'priority' => 'secondary',
+                        'may_collapse' => true,
+                    ],
+                ],
+                'icon' => 'extensions',
+            ],
+        ));
         $contributions->administratorWorkspace(new AdministratorWorkspaceDefinition(
             'kumwe.announcements-example.workspace',
             'Announcements',
@@ -91,6 +134,7 @@ final class Provider implements RuntimeExtension, ExtensionContributionProvider
             'kumwe.announcements-example.manage',
             10,
             'announcements example component contribution',
+            'kumwe.announcements-example.index',
         ));
         $contributions->administratorView(new AdministratorViewDefinition(
             'kumwe.announcements-example.index',

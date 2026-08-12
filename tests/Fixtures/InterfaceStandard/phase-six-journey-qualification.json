@@ -1,0 +1,769 @@
+{
+  "format": "kumwe-kis-phase-six-journey-qualification-v1",
+  "schema_version": 1,
+  "phase": 6,
+  "standard": "kis-1.0",
+  "execution_owners": [
+    {
+      "id": "ci-browser-bootstrap",
+      "path": ".github/workflows/ci.yml",
+      "marker": "Migrate and create the browser-test administrator"
+    },
+    {
+      "id": "ci-browser",
+      "path": ".github/workflows/ci.yml",
+      "marker": "Exercise browser, accessibility and visual contracts"
+    },
+    {
+      "id": "ci-quality",
+      "path": ".github/workflows/ci.yml",
+      "marker": "Unit and architecture tests"
+    },
+    {
+      "id": "ci-database",
+      "path": ".github/workflows/ci.yml",
+      "marker": "Run complete test suite"
+    },
+    {
+      "id": "ci-deployment",
+      "path": ".github/workflows/deployment-acceptance.yml",
+      "marker": "Start the complete production topology"
+    },
+    {
+      "id": "ci-security",
+      "path": ".github/workflows/security.yml",
+      "marker": "Validate and audit dependencies"
+    }
+  ],
+  "evidence": [
+    {
+      "id": "p6-001-browser-identity-bootstrap",
+      "path": "tests/Support/prepare-browser-contribution.php",
+      "kind": "executable-php",
+      "marker": "$portalUser = $access->createUser(",
+      "owner": "ci-browser-bootstrap",
+      "must_contain": [
+        "'Browser Portal Member'",
+        "$approvalUser = $access->createUser(",
+        "foreach (['maker', 'approver'] as $approvalActor)"
+      ]
+    },
+    {
+      "id": "p6-001-browser-membership-bootstrap",
+      "path": "tests/Support/prepare-browser-contribution.php",
+      "kind": "executable-php",
+      "marker": "$security->insertMembership(",
+      "owner": "ci-browser-bootstrap",
+      "must_contain": [
+        "$security->assignMembershipWorkspace(",
+        "$security->assignMembershipRole(",
+        "$workspaceId",
+        "$portalRole"
+      ]
+    },
+    {
+      "id": "p6-001-access-ui",
+      "path": "tests/Browser/administrator.spec.ts",
+      "kind": "playwright",
+      "marker": "users and access separates identity concerns and portal provisioning",
+      "owner": "ci-browser",
+      "must_contain": [
+        "Provision an ordinary portal member",
+        "Business Security",
+        "input[name=\"step_up_code\"]"
+      ]
+    },
+    {
+      "id": "p6-001-maker-checker",
+      "path": "tests/Browser/portal.spec.ts",
+      "kind": "playwright",
+      "marker": "portal maker-checker approval requires a distinct step-up identity",
+      "owner": "ci-browser",
+      "must_contain": [
+        "await signIn(page, makerEmail, makerPassword)",
+        "Create session 5 order",
+        "Request approval for Approve",
+        "Approval requested.",
+        "await signIn(approverPage, approverEmail, approverPassword)",
+        "Browser maker-checker acceptance",
+        "Decision history",
+        "portal-business-status"
+      ]
+    },
+    {
+      "id": "p6-001-login-non-enumeration",
+      "path": "tests/Unit/Portal/Http/PortalLoginHandlerTest.php",
+      "kind": "phpunit",
+      "marker": "testCredentialsAndUnavailableMembershipUseTheSameNonEnumeratingResponse",
+      "owner": "ci-quality",
+      "must_contain": [
+        "assertSame($invalidCredentials->getStatusCode(), $unavailableMembership->getStatusCode())",
+        "assertSame((string) $invalidCredentials->getBody(), (string) $unavailableMembership->getBody())"
+      ]
+    },
+    {
+      "id": "p6-001-user-service",
+      "path": "tests/Unit/Identity/Application/Administration/AccessControlServiceTest.php",
+      "kind": "phpunit",
+      "marker": "testCreatesNormalizedUserWithHashedPasswordAndAuditEvent",
+      "owner": "ci-quality",
+      "must_contain": [
+        "->method('insertUser')",
+        "->method('hash')",
+        "event->action() === 'user.create'",
+        "->createUser("
+      ]
+    },
+    {
+      "id": "p6-001-membership-role-service",
+      "path": "tests/Unit/BusinessSecurity/Application/BusinessSecurityAdministrationServiceTest.php",
+      "kind": "phpunit",
+      "marker": "testRoleAssignmentAppliesDelegationCeilingAndConsumesExactProof",
+      "owner": "ci-quality",
+      "must_contain": [
+        "->method('assignMembershipRole')",
+        "->method('assertCanDelegate')",
+        "->method('consume')",
+        "$service->assignRole("
+      ]
+    },
+    {
+      "id": "p6-002-definition-ui",
+      "path": "tests/Browser/administrator.spec.ts",
+      "kind": "playwright",
+      "marker": "business definitions publish through graphical compatibility gates",
+      "owner": "ci-browser",
+      "must_contain": [
+        "/administrator/business-definitions?new=1",
+        "Save and validate draft",
+        "Publish version 1",
+        "Version history"
+      ]
+    },
+    {
+      "id": "p6-002-schema-runtime",
+      "path": "tests/Integration/BusinessSchema/BusinessSchemaRuntimeIntegrationTest.php",
+      "kind": "phpunit",
+      "marker": "testPublishPlanApproveExecuteAndIntrospectTypedSchema",
+      "owner": "ci-database",
+      "must_contain": [
+        "$schemas->createPlan(",
+        "$schemas->approve(",
+        "$schemas->execute(",
+        "SchemaInstallationStatus::Active"
+      ]
+    },
+    {
+      "id": "p6-002-record-relations-ui",
+      "path": "tests/Browser/administrator.spec.ts",
+      "kind": "playwright",
+      "marker": "generated relationship selectors and owned lines persist and reorder",
+      "owner": "ci-browser",
+      "must_contain": [
+        "Create record",
+        "Add relationship",
+        "Add Neutral line",
+        "Save order"
+      ]
+    },
+    {
+      "id": "p6-002-action-runtime",
+      "path": "tests/Integration/BusinessSurface/GeneratedBusinessBrowserIntegrationTest.php",
+      "kind": "phpunit",
+      "marker": "testWorkflowActionConfirmationExecutesWithoutJavascript",
+      "owner": "ci-database",
+      "must_contain": [
+        "'confirm' => 'action'",
+        "'action' => 'approve'",
+        "self::assertSame('approved'"
+      ]
+    },
+    {
+      "id": "p6-002-report-ui",
+      "path": "tests/Browser/administrator.spec.ts",
+      "kind": "playwright",
+      "marker": "reports execute graphically and expose queued export status",
+      "owner": "ci-browser",
+      "must_contain": [
+        "Run report",
+        "Report results",
+        "Queue CSV export",
+        "Latest export request"
+      ]
+    },
+    {
+      "id": "p6-002-history-ui",
+      "path": "tests/Browser/administrator.spec.ts",
+      "kind": "playwright",
+      "marker": "generated business forms complete an ordinary no-JavaScript lifecycle",
+      "owner": "ci-browser",
+      "must_contain": [
+        "View operation status",
+        "Save changes",
+        "Record history",
+        "The bulk operation completed for 1 record."
+      ]
+    },
+    {
+      "id": "p6-003-extension-lifecycle",
+      "path": "tests/Integration/Extension/ExtensionContributionLifecycleIntegrationTest.php",
+      "kind": "phpunit",
+      "marker": "testSignedContributionLifecycleIsPermissionAwareTrustBoundAndDataPreserving",
+      "owner": "ci-database",
+      "must_contain": [
+        "$manager->install(",
+        "$manager->activate(",
+        "$manager->disable(",
+        "$manager->uninstall("
+      ]
+    },
+    {
+      "id": "p6-003-extension-use-ui",
+      "path": "tests/Browser/administrator.spec.ts",
+      "kind": "playwright",
+      "marker": "typed component navigation opens an accessible graphical page",
+      "owner": "ci-browser",
+      "must_contain": [
+        "Announcements",
+        "Contribution contract active",
+        "expectAccessible(page)"
+      ]
+    },
+    {
+      "id": "p6-003-extension-reactivation-ui",
+      "path": "tests/Browser/administrator.spec.ts",
+      "kind": "playwright",
+      "marker": "disabling removes component navigation and reactivation restores it",
+      "owner": "ci-browser",
+      "must_contain": [
+        "button', { name: 'Disable'",
+        "/component · 2\\.0\\.0 · disabled/",
+        "ensureAnnouncementsActive(page)",
+        "link', { name: 'Announcements'"
+      ]
+    },
+    {
+      "id": "p6-003-template-conformance",
+      "path": "tests/Architecture/TemplatePackageConformanceTest.php",
+      "kind": "phpunit",
+      "marker": "testSiteReferencePackageIsInstallableAndActivationReady",
+      "owner": "ci-quality",
+      "must_contain": [
+        "examples/extensions/minimal-template",
+        "ThemePackageValidator"
+      ]
+    },
+    {
+      "id": "p6-003-template-use-ui",
+      "path": "tests/Browser/phase-five.spec.ts",
+      "kind": "playwright",
+      "marker": "Phase 5 public presentation keeps the configured home identity and long labels bounded",
+      "owner": "ci-browser",
+      "must_contain": [
+        "data-kis-surface=\"core.public.home\"",
+        "expectNoDocumentOverflow",
+        "expectAccessible(page)"
+      ]
+    },
+    {
+      "id": "p6-003-preference-customization",
+      "path": "tests/Integration/InterfaceStandard/PresentationPreferencePersistenceIntegrationTest.php",
+      "kind": "phpunit",
+      "marker": "testPortablePreferenceLifecyclePersistsExactly",
+      "owner": "ci-database",
+      "must_contain": [
+        "$repository->save($created, 0)",
+        "$repository->save($updated, 1)",
+        "$repository->delete("
+      ]
+    },
+    {
+      "id": "p6-003-template-upgrade",
+      "path": "tests/Integration/Presentation/DoctrineThemeManagerIntegrationTest.php",
+      "kind": "phpunit",
+      "marker": "testActivePluginUpgradeRetainsOldRootUntilReplicaConvergence",
+      "owner": "ci-database",
+      "must_contain": [
+        "2.0.0",
+        "extension_runtime_retirements",
+        "runtime_path"
+      ]
+    },
+    {
+      "id": "p6-003-preference-fallback",
+      "path": "tests/Unit/InterfaceStandard/PresentationPreferenceResolverTest.php",
+      "kind": "phpunit",
+      "marker": "testRemovedSlotFallsBackWithDiagnostic",
+      "owner": "ci-quality",
+      "must_contain": [
+        "self::assertSame('compact'",
+        "kis.preference.slot-removed"
+      ]
+    },
+    {
+      "id": "p6-003-template-reset",
+      "path": "tests/Unit/Delivery/Console/Command/ThemeCommandTest.php",
+      "kind": "phpunit",
+      "marker": "testRecoveryRequiresExactConfirmationAndRestoresCore",
+      "owner": "ci-quality",
+      "must_contain": [
+        "--confirm=restore-core-administrator",
+        "protected built-in administrator theme"
+      ]
+    },
+    {
+      "id": "p6-004-component-diagnostics",
+      "path": "tests/Browser/interface-integrity.spec.ts",
+      "kind": "playwright",
+      "marker": "component diagnostics expose the Business Definition failure without a document scrollbar",
+      "owner": "ci-browser",
+      "must_contain": [
+        "component-overflow",
+        "clipped-by-ancestor",
+        "control-overlap",
+        "horizontalOverflow"
+      ]
+    },
+    {
+      "id": "p6-004-administrator-diagnostics",
+      "path": "tests/Browser/interface-integrity.spec.ts",
+      "kind": "playwright",
+      "marker": "administrator landing routes emit complete interface baselines",
+      "owner": "ci-browser",
+      "must_contain": [
+        "routesFor('administrator')",
+        "expectNoDocumentOverflow",
+        "attachEvidence(page, testInfo, surface, report)"
+      ]
+    },
+    {
+      "id": "p6-004-portal-diagnostics",
+      "path": "tests/Browser/interface-integrity.spec.ts",
+      "kind": "playwright",
+      "marker": "portal landing routes emit complete interface baselines",
+      "owner": "ci-browser",
+      "must_contain": [
+        "routesFor('portal')",
+        "expectNoDocumentOverflow",
+        "attachEvidence(page, testInfo, surface, report)"
+      ]
+    },
+    {
+      "id": "p6-004-diagnostic-inventory",
+      "path": "tests/Architecture/PhaseSixJourneyQualificationTest.php",
+      "kind": "phpunit",
+      "marker": "testFullDiagnosticsCoverEveryCoreNavigationDestination",
+      "owner": "ci-quality",
+      "must_contain": [
+        "surface-inventory.json",
+        "interface-surface-manifest.ts",
+        "runtime_surface_binding",
+        "The full browser diagnostic manifest drifted from declared core navigation."
+      ]
+    },
+    {
+      "id": "p6-004-component-modes",
+      "path": "tests/Browser/interface-standard.spec.ts",
+      "kind": "playwright",
+      "marker": "components preserve keyboard, focus, URL, responsive and mode contracts",
+      "owner": "ci-browser",
+      "must_contain": [
+        "ArrowRight",
+        "toBeFocused()",
+        "toHaveURL(",
+        "colorScheme: 'dark'",
+        "reducedMotion: 'reduce'"
+      ]
+    },
+    {
+      "id": "p6-004-presentation-matrix",
+      "path": "tests/Browser/phase-five.spec.ts",
+      "kind": "playwright",
+      "marker": "Phase 5 presentation modes preserve focus, touch, zoom, high contrast, motion, and print",
+      "owner": "ci-browser",
+      "must_contain": [
+        "forcedColors: 'active'",
+        "toBeGreaterThanOrEqual(44)",
+        "fontSize = '200%'",
+        "media: 'print'"
+      ]
+    },
+    {
+      "id": "p6-004-no-javascript",
+      "path": "tests/Browser/interface-standard.spec.ts",
+      "kind": "playwright",
+      "marker": "tabs, panels, drawer content and direct navigation remain usable without JavaScript",
+      "owner": "ci-browser",
+      "must_contain": [
+        "javaScriptEnabled: false",
+        "data-kis-tab-panel",
+        "Purge remains separate"
+      ]
+    },
+    {
+      "id": "p6-005-topology-contract",
+      "path": "tests/Architecture/ProductionArtifactsTest.php",
+      "kind": "phpunit",
+      "marker": "testProductionTopologyKeepsDataServicesInternalAndSecretsFileBacked",
+      "owner": "ci-quality",
+      "must_contain": [
+        "web:",
+        "worker:",
+        "scheduler:",
+        "internal: true",
+        "DB_PASSWORD_FILE"
+      ]
+    },
+    {
+      "id": "p6-005-database-matrix-contract",
+      "path": "tests/Architecture/ProductionArtifactsTest.php",
+      "kind": "phpunit",
+      "marker": "testCiDeploysEverySupportedDatabaseAndComposerDistribution",
+      "owner": "ci-quality",
+      "must_contain": [
+        "mariadb:lts",
+        "mysql:8.4",
+        "postgres:17-alpine",
+        "Restore a production backup into a clean database"
+      ]
+    },
+    {
+      "id": "p6-005-database-matrix-execution",
+      "path": ".github/workflows/ci.yml",
+      "kind": "workflow-step",
+      "marker": "Run complete test suite",
+      "owner": "ci-database",
+      "must_contain": [
+        "name: MariaDB LTS",
+        "name: MySQL 8.4 LTS",
+        "name: PostgreSQL 17",
+        "composer test",
+        "Run complete test suite with coverage"
+      ]
+    },
+    {
+      "id": "p6-005-backup-contract",
+      "path": "tests/Architecture/ProductionArtifactsTest.php",
+      "kind": "phpunit",
+      "marker": "testBackupToolsAreFailClosedAndRefuseNonV2Data",
+      "owner": "ci-quality",
+      "must_contain": [
+        "set -Eeuo pipefail",
+        "KUMWE_BACKUP_CONSISTENCY",
+        "Kumwe 1.x and unknown formats are refused"
+      ]
+    },
+    {
+      "id": "p6-005-backup-execution",
+      "path": ".github/workflows/ci.yml",
+      "kind": "workflow-step",
+      "marker": "Exercise clean-target backup and restore",
+      "owner": "ci-database",
+      "must_contain": [
+        "business-runtime-backup-acceptance.php seed",
+        "bash tools/backup.sh",
+        "bash tools/restore.sh",
+        "business-runtime-backup-acceptance.php verify"
+      ]
+    },
+    {
+      "id": "p6-005-deployment-topology",
+      "path": ".github/workflows/deployment-acceptance.yml",
+      "kind": "workflow-step",
+      "marker": "Start the complete production topology",
+      "owner": "ci-deployment",
+      "must_contain": [
+        "--profile automation",
+        "up --detach --wait app web worker scheduler",
+        "Exercise HTTP, CLI and process health"
+      ]
+    },
+    {
+      "id": "p6-005-deployment-restore",
+      "path": ".github/workflows/deployment-acceptance.yml",
+      "kind": "workflow-step",
+      "marker": "Restore a production backup into a clean database",
+      "owner": "ci-deployment",
+      "must_contain": [
+        "business-runtime-backup-acceptance.php seed",
+        "bash tools/backup.sh",
+        "bash tools/restore.sh",
+        "asset-inspection-deployment-acceptance.php",
+        "tree_checksum_manifest"
+      ]
+    },
+    {
+      "id": "p6-005-security-source",
+      "path": ".github/workflows/security.yml",
+      "kind": "workflow-step",
+      "marker": "Scan repository for secrets",
+      "owner": "ci-security",
+      "must_contain": [
+        "--redact",
+        "gitleaks.json",
+        "exit \"$scan_status\""
+      ]
+    },
+    {
+      "id": "p6-005-security-dependencies",
+      "path": ".github/workflows/security.yml",
+      "kind": "workflow-step",
+      "marker": "Scan filesystem dependencies and configuration",
+      "owner": "ci-security",
+      "must_contain": [
+        "--severity HIGH,CRITICAL",
+        "--scanners vuln,misconfig,secret"
+      ]
+    },
+    {
+      "id": "p6-005-security-image",
+      "path": ".github/workflows/security.yml",
+      "kind": "workflow-step",
+      "marker": "Scan production runtime image",
+      "owner": "ci-security",
+      "must_contain": [
+        "image --exit-code 1 --ignore-unfixed",
+        "kumwe-security:${GITHUB_SHA}"
+      ]
+    },
+    {
+      "id": "p6-005-security-sbom",
+      "path": ".github/workflows/security.yml",
+      "kind": "workflow-step",
+      "marker": "Generate source SBOM",
+      "owner": "ci-security",
+      "must_contain": [
+        "cyclonedx-json",
+        "kumwe-source.cdx.json",
+        "Upload security evidence"
+      ]
+    },
+    {
+      "id": "p6-006-core-contracts",
+      "path": "tests/Unit/InterfaceProgramme/InterfaceProgrammeEvidenceGateTest.php",
+      "kind": "phpunit",
+      "marker": "testCoreTypedSurfaceBindingUsesTheCompleteCanonicalContract",
+      "owner": "ci-quality",
+      "must_contain": [
+        "validateCoreSurfaceContracts",
+        "kis_contract",
+        "SurfaceDefinition::fromArray"
+      ]
+    },
+    {
+      "id": "p6-006-completed-migrations",
+      "path": "tests/Unit/InterfaceProgramme/InterfaceProgrammeEvidenceGateTest.php",
+      "kind": "phpunit",
+      "marker": "testCompletedMigrationScopeRequiresDeclaredSurfacesAndNavigation",
+      "owner": "ci-quality",
+      "must_contain": [
+        "kis_runtime_disposition",
+        "migration_status",
+        "runtime_surface_binding"
+      ]
+    },
+    {
+      "id": "p6-006-graphical-fail-closed",
+      "path": "tests/Unit/Extension/Contribution/InterfaceSurfaceContributionTest.php",
+      "kind": "phpunit",
+      "marker": "testGraphicalPackageCannotOmitItsInterfaceDeclaration",
+      "owner": "ci-quality",
+      "must_contain": [
+        "unset($document['interface'])",
+        "declare every administrator graphical GET route as a surface"
+      ]
+    },
+    {
+      "id": "p6-006-owner-lifecycle",
+      "path": "tests/Unit/Extension/Contribution/ExtensionContributionRegistrySetTest.php",
+      "kind": "phpunit",
+      "marker": "testEveryDeclaredSurfaceAppearsInInventoryAndIsWithdrawnOnRemoval",
+      "owner": "ci-quality",
+      "must_contain": [
+        "surfaceKeys()",
+        "remove($owner)"
+      ]
+    },
+    {
+      "id": "p6-006-programme-verifier",
+      "path": "tests/Unit/InterfaceProgramme/InterfaceProgrammeVerifierTest.php",
+      "kind": "phpunit",
+      "marker": "testProgrammeRecordsReportsAndFindingsMatchGraphicalSources",
+      "owner": "ci-quality",
+      "must_contain": [
+        "tools/verify-interface-programme.php",
+        "KIS programme verified"
+      ]
+    },
+    {
+      "id": "p6-007-gate-qualification",
+      "path": "tests/Unit/InterfaceProgramme/InterfaceProgrammeEvidenceGateTest.php",
+      "kind": "qualification",
+      "marker": "testCompletePhaseRequiresSatisfiedItemsAndExitGates",
+      "owner": "ci-quality",
+      "must_contain": [
+        "Complete phase 0 has incomplete work item P0-001.",
+        "Complete phase 0 has incomplete exit gate GATE-A."
+      ]
+    },
+    {
+      "id": "p6-007-blocking-finding-qualification",
+      "path": "tests/Unit/InterfaceProgramme/InterfaceProgrammeEvidenceGateTest.php",
+      "kind": "qualification",
+      "marker": "testBlockingFindingsPreventWorkItemAndGateCompletion",
+      "owner": "ci-quality",
+      "must_contain": [
+        "Completed work item P0-001 is blocked by unresolved finding KIS-FINDING-P0.",
+        "Completed gate GATE-A is blocked by unresolved finding KIS-FINDING-P0."
+      ]
+    },
+    {
+      "id": "p6-007-waiver-qualification",
+      "path": "tests/Unit/InterfaceProgramme/InterfaceProgrammeEvidenceGateTest.php",
+      "kind": "qualification",
+      "marker": "testGovernedWaiverExpiresDeterministically",
+      "owner": "ci-quality",
+      "must_contain": [
+        "Waiver for work item P2-001 expired",
+        "target_phase",
+        "current_focus"
+      ]
+    },
+    {
+      "id": "p6-007-evidence-index-qualification",
+      "path": "tests/Unit/InterfaceProgramme/InterfaceProgrammeVerifierTest.php",
+      "kind": "qualification",
+      "marker": "testProgrammeRecordsReportsAndFindingsMatchGraphicalSources",
+      "owner": "ci-quality",
+      "must_contain": [
+        "tools/verify-interface-programme.php",
+        "work items",
+        "findings",
+        "verification reports"
+      ]
+    },
+    {
+      "id": "p6-007-final-acceptance-qualification",
+      "path": "tests/Architecture/PhaseSixJourneyQualificationTest.php",
+      "kind": "qualification",
+      "marker": "testFinalAcceptanceContractPrecedesGitHubConfirmation",
+      "owner": "ci-quality",
+      "must_contain": [
+        "GitHub is the final confirmation, not the development iteration loop.",
+        "open findings and severities",
+        "work-item IDs completed, in review, blocked, and next ready",
+        "P2/P3 waiver records the finding, accountable role",
+        "verification-report-template.json",
+        "HUMAN-REVIEW"
+      ]
+    },
+    {
+      "id": "p6-007-human-review-contract",
+      "path": "docs/interface-standard/programme/verification-report-template.json",
+      "kind": "review",
+      "marker": "HUMAN-REVIEW",
+      "owner": "ci-quality",
+      "must_contain": [
+        "Accountable product, accessibility, security, KIS, and release roles review applicable evidence.",
+        "\"applicability\": \"required\"",
+        "\"status\": \"not_run\"",
+        "\"merge_recommendation\": \"hold\"",
+        "\"decision\": \"pending\"",
+        "\"reviewer_roles\": []"
+      ]
+    }
+  ],
+  "work_items": [
+    {
+      "id": "P6-001",
+      "journey": "provision -> portal -> work -> submit -> checker decision -> result",
+      "acceptance_points": [
+        {"id": "provision", "evidence": ["p6-001-browser-identity-bootstrap", "p6-001-access-ui", "p6-001-user-service"]},
+        {"id": "membership", "evidence": ["p6-001-browser-membership-bootstrap", "p6-001-access-ui", "p6-001-membership-role-service"]},
+        {"id": "portal-sign-in", "evidence": ["p6-001-maker-checker", "p6-001-login-non-enumeration"]},
+        {"id": "open-work", "evidence": ["p6-001-maker-checker"]},
+        {"id": "submit-for-approval", "evidence": ["p6-001-maker-checker"]},
+        {"id": "checker-decision", "evidence": ["p6-001-maker-checker"]},
+        {"id": "result", "evidence": ["p6-001-maker-checker"]}
+      ]
+    },
+    {
+      "id": "P6-002",
+      "journey": "define -> publish -> schema plan -> approve and execute -> record -> relations -> action -> report -> history",
+      "acceptance_points": [
+        {"id": "define", "evidence": ["p6-002-definition-ui"]},
+        {"id": "publish", "evidence": ["p6-002-definition-ui"]},
+        {"id": "schema-plan", "evidence": ["p6-002-schema-runtime"]},
+        {"id": "schema-approve-execute", "evidence": ["p6-002-schema-runtime"]},
+        {"id": "record-create", "evidence": ["p6-002-record-relations-ui", "p6-002-history-ui"]},
+        {"id": "relations", "evidence": ["p6-002-record-relations-ui"]},
+        {"id": "action", "evidence": ["p6-002-action-runtime"]},
+        {"id": "report", "evidence": ["p6-002-report-ui"]},
+        {"id": "history", "evidence": ["p6-002-history-ui"]}
+      ]
+    },
+    {
+      "id": "P6-003",
+      "journey": "install -> activate -> use -> customize -> disable -> reactivate -> upgrade -> fallback -> reset",
+      "acceptance_points": [
+        {"id": "install", "evidence": ["p6-003-extension-lifecycle", "p6-003-template-conformance"]},
+        {"id": "activate", "evidence": ["p6-003-extension-lifecycle", "p6-003-template-conformance"]},
+        {"id": "use", "evidence": ["p6-003-extension-use-ui", "p6-003-template-use-ui"]},
+        {"id": "customize", "evidence": ["p6-003-preference-customization"]},
+        {"id": "disable", "evidence": ["p6-003-extension-lifecycle", "p6-003-extension-reactivation-ui"]},
+        {"id": "reactivate", "evidence": ["p6-003-extension-lifecycle", "p6-003-extension-reactivation-ui"]},
+        {"id": "upgrade", "evidence": ["p6-003-template-upgrade"]},
+        {"id": "fallback", "evidence": ["p6-003-preference-fallback"]},
+        {"id": "reset", "evidence": ["p6-003-template-reset"]}
+      ]
+    },
+    {
+      "id": "P6-004",
+      "journey": "diagnose every shell and component across supported interaction modes",
+      "acceptance_points": [
+        {"id": "component-diagnostics", "evidence": ["p6-004-component-diagnostics"]},
+        {"id": "administrator-diagnostics", "evidence": ["p6-004-administrator-diagnostics", "p6-004-diagnostic-inventory"]},
+        {"id": "portal-diagnostics", "evidence": ["p6-004-portal-diagnostics", "p6-004-diagnostic-inventory"]},
+        {"id": "keyboard-focus-url-responsive", "evidence": ["p6-004-component-modes"]},
+        {"id": "touch-zoom-contrast-motion-print", "evidence": ["p6-004-presentation-matrix"]},
+        {"id": "no-javascript", "evidence": ["p6-004-no-javascript"]}
+      ]
+    },
+    {
+      "id": "P6-005",
+      "journey": "qualify topology, database matrix, recovery and security in their real CI owners",
+      "acceptance_points": [
+        {"id": "production-topology", "evidence": ["p6-005-topology-contract", "p6-005-deployment-topology"]},
+        {"id": "mariadb", "evidence": ["p6-005-database-matrix-contract", "p6-005-database-matrix-execution"]},
+        {"id": "mysql", "evidence": ["p6-005-database-matrix-contract", "p6-005-database-matrix-execution"]},
+        {"id": "postgresql", "evidence": ["p6-005-database-matrix-contract", "p6-005-database-matrix-execution"]},
+        {"id": "backup-restore", "evidence": ["p6-005-backup-contract", "p6-005-backup-execution", "p6-005-deployment-restore"]},
+        {"id": "security-source", "evidence": ["p6-005-security-source"]},
+        {"id": "security-dependencies", "evidence": ["p6-005-security-dependencies"]},
+        {"id": "security-image", "evidence": ["p6-005-security-image"]},
+        {"id": "security-sbom", "evidence": ["p6-005-security-sbom"]}
+      ]
+    },
+    {
+      "id": "P6-006",
+      "journey": "keep every graphical route, navigation item and lifecycle owner bound to permanent declarations",
+      "acceptance_points": [
+        {"id": "core-contracts", "evidence": ["p6-006-core-contracts"]},
+        {"id": "completed-migrations", "evidence": ["p6-006-completed-migrations"]},
+        {"id": "graphical-fail-closed", "evidence": ["p6-006-graphical-fail-closed"]},
+        {"id": "owner-lifecycle", "evidence": ["p6-006-owner-lifecycle"]},
+        {"id": "programme-verification", "evidence": ["p6-006-programme-verifier"]}
+      ]
+    },
+    {
+      "id": "P6-007",
+      "journey": "accept qualification -> publish continuation state -> use GitHub only as final confirmation",
+      "acceptance_points": [
+        {"id": "gates", "evidence": ["p6-007-gate-qualification"]},
+        {"id": "unresolved-severity-waivers", "evidence": ["p6-007-blocking-finding-qualification", "p6-007-waiver-qualification"]},
+        {"id": "evidence-index-residual-p3", "evidence": ["p6-007-evidence-index-qualification", "p6-007-final-acceptance-qualification"]},
+        {"id": "continuation-acceptance-github-confirmation", "evidence": ["p6-007-final-acceptance-qualification", "p6-007-human-review-contract"]}
+      ]
+    }
+  ]
+}

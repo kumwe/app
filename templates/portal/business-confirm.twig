@@ -22,11 +22,12 @@
 {% block title %}{{ operation_label }} · Kumwe Portal{% endblock %}
 
 {% block content %}
+<div data-kis-business data-kis-component="generated-operation-confirmation" data-kis-surface="core.portal.generated-record">
 <header class="portal-business-heading">
     <div><p class="eyebrow">Confirmation required</p><h1 id="portal-business-confirm-title">{{ operation_label }}</h1><p>Review the exact record and version before continuing.</p></div>
 </header>
 
-<section class="portal-business-panel portal-business-confirmation{% if confirmation in ['delete', 'action'] %} danger{% endif %}" aria-labelledby="portal-business-confirm-title">
+<section class="portal-business-panel portal-business-confirmation kis-business-confirmation{% if confirmation in ['delete', 'action'] %} danger{% endif %}"{% if confirmation in ['delete', 'action'] %} data-danger{% endif %} aria-labelledby="portal-business-confirm-title">
     {% if error_summary is defined and error_summary %}<div class="portal-alert" role="alert"><h2>Action could not be completed</h2><p>{{ error_summary }}</p></div>{% endif %}
     {% if approval_requested|default(false) and approval_request_id|default(null) %}
         <div class="portal-notice" role="status">
@@ -131,4 +132,5 @@
         <a class="portal-button secondary" href="{{ business_base_path }}/{{ definition.handle|url_encode }}/{{ record.record_id|url_encode }}">Return to record</a>
     {% endif %}
 </section>
+</div>
 {% endblock %}

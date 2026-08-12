@@ -2,6 +2,7 @@
 
 {% block title %}Choose a value · Kumwe{% endblock %}
 {% block content %}
+  <div data-kis-business data-kis-component="generated-choice-browser" data-kis-surface="core.portal.generated-choices">
     <header class="portal-business-heading">
       <div>
         <p class="eyebrow">{{ choice_kind == 'media' ? 'Media reference' : 'Related record' }}</p>
@@ -20,7 +21,7 @@
           <p>Search remains within the server-authorized choice set.</p>
         </div>
       </div>
-      <form method="get" class="portal-business-query-form portal-business-stack">
+      <form method="get" class="portal-business-query-form portal-business-stack kis-business-query-form">
         <input type="hidden" name="operation" value="{{ choice_operation }}">
         {% if choice_kind == 'media' %}
           <label for="choice-search">Media name</label>
@@ -63,8 +64,8 @@
       {% if choices is empty %}
         <p>No available choices match this search.</p>
       {% else %}
-        <div class="portal-table-wrap" tabindex="0" aria-label="Available choices table">
-          <table class="portal-table">
+        <div class="portal-table-wrap kis-business-table-region" tabindex="0" role="region" aria-label="Available choices table" data-scroll-label="Scroll horizontally to review choice details">
+          <table class="portal-table kis-business-table">
             <thead>
               <tr>
                 <th scope="col">Choice</th>
@@ -81,7 +82,7 @@
                       {% if choice.fields is empty %}
                         <span>No additional disclosed fields</span>
                       {% else %}
-                        <dl class="business-choice-fields">
+                        <dl class="business-choice-fields kis-business-details">
                           {% for field in choice.fields %}
                             <div><dt>{{ field.label }}</dt><dd>{{ field.display is not empty ? field.display : 'Not set' }}</dd></div>
                           {% endfor %}
@@ -111,4 +112,5 @@
         </div>
       {% endif %}
     </section>
+  </div>
 {% endblock %}

@@ -4,6 +4,7 @@
 {% block title %}{{ record ? 'Edit ' ~ definition.singular_label : 'Create ' ~ definition.singular_label }} · Kumwe Portal{% endblock %}
 
 {% block content %}
+<div data-kis-business data-kis-component="generated-record-form" data-kis-surface="core.portal.generated-definition">
 <header class="portal-business-heading">
     <div>
         <p class="eyebrow">{{ definition.plural_label }}</p>
@@ -14,7 +15,7 @@
 </header>
 
 {% if error_summary is defined %}
-    <section class="portal-alert portal-business-error-summary" role="alert" aria-labelledby="portal-business-error-title" tabindex="-1">
+    <section class="portal-alert portal-business-error-summary kis-validation-summary" data-kis-component="validation-summary" role="alert" aria-labelledby="portal-business-error-title" tabindex="-1">
         <h2 id="portal-business-error-title">The record could not be saved</h2>
         <p>{{ error_summary }}</p>
         <ul>
@@ -26,7 +27,7 @@
 {% endif %}
 
 <form
-    class="portal-business-panel portal-business-form"
+    class="portal-business-panel portal-business-form kis-business-form"
     action="{{ business_base_path }}/{{ definition.handle|url_encode }}{{ record ? '/' ~ record.record_id|url_encode : '' }}"
     method="post"
 >
@@ -46,4 +47,5 @@
         <a class="portal-button secondary" href="{{ business_base_path }}/{{ definition.handle|url_encode }}{{ record ? '/' ~ record.record_id|url_encode : '' }}">Cancel</a>
     </div>
 </form>
+</div>
 {% endblock %}

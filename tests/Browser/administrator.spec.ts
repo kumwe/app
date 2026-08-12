@@ -103,7 +103,7 @@ async function expectAdministratorRecordName(page: Page, value: string): Promise
 }
 
 async function expectAdministratorRecordRow(page: Page, value: string): Promise<void> {
-  await expect(page.locator('.business-record-table tbody tr').filter({ hasText: value }).first())
+  await expect(page.locator('.business-record-table tbody tr:visible, .kis-business-result-card:visible').filter({ hasText: value }).first())
     .toBeVisible();
 }
 
@@ -203,6 +203,32 @@ test.describe('public presentation without JavaScript', () => {
     await page.keyboard.press('Enter');
     await expect(page.locator('#site-content')).toBeFocused();
   });
+});
+
+test('policy authoring retains a complete native no-JavaScript path', async ({ browser }) => {
+  const context = await browser.newContext({ javaScriptEnabled: false });
+  const page = await context.newPage();
+  try {
+    await signIn(page);
+    await page.goto(
+      '/administrator/business-security?section=policies&mode=create&kind=resource&step=review#policy-step-review',
+    );
+    await expect(page).toHaveURL(/kind=resource&step=review#policy-step-review$/u);
+    await expect(page.getByRole('link', { name: '4. Review', exact: true }))
+      .toHaveAttribute('aria-current', 'step');
+    await expect(page.locator('[data-kis-policy-step-panel]')).toHaveCount(4);
+    for (const stage of await page.locator('[data-kis-policy-step-panel]').all()) {
+      await expect(stage).toBeVisible();
+    }
+    await expect(page.locator('[data-kis-policy-step-flow] form')).toHaveAttribute('method', 'post');
+    await expect(page.getByRole('group', { name: 'Verify this exact action' })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Continue to predicate' })).toHaveAttribute(
+      'href',
+      /section=policies&mode=create&kind=resource&step=predicate#policy-step-predicate$/u,
+    );
+  } finally {
+    await context.close();
+  }
 });
 
 test.describe('authenticated administrator', () => {
@@ -360,8 +386,38 @@ test.describe('authenticated administrator', () => {
   test('business security is structured, isolated and accessible', async ({ page }, testInfo) => {
     await page.goto('/administrator/business-security');
     await expect(page.getByRole('heading', { level: 1, name: 'Business Security' })).toBeVisible();
-    await expect(page.getByRole('heading', { name: 'Row and field policies' })).toBeVisible();
-    await expect(page.getByRole('heading', { name: 'Separation-of-duty rules' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Authority overview' })).toBeVisible();
+    await expect(page.getByRole('navigation', { name: 'Business Security concerns' }).getByRole('link'))
+      .toHaveCount(6);
+    await expect(page.locator('input[name="step_up_code"]')).toHaveCount(0);
+
+    await page.getByRole('link', { name: 'Policies', exact: true }).click();
+    await expect(page).toHaveURL(/section=policies/u);
+    await expect(page.getByRole('heading', { name: 'Policy catalog' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Organizations and workspaces' })).toHaveCount(0);
+    await page.getByRole('link', { name: 'Create policy', exact: true }).click();
+    await expect(page.getByRole('heading', { name: 'Create row and field policy' })).toBeVisible();
+    await expect(page).toHaveURL(/kind=resource&step=scope#policy-step-scope$/u);
+    await expect(page.getByRole('link', { name: '1. Scope', exact: true }))
+      .toHaveAttribute('aria-current', 'step');
+    await expect(page.locator('#policy-step-scope')).toBeFocused();
+    await expect(page.locator('#policy-step-scope')).toBeVisible();
+    await expect(page.locator('#policy-step-predicate')).toBeHidden();
+    await expect(page.getByRole('group', { name: 'Verify this exact action' })).toBeHidden();
+    const policyCode = page.locator('input[name="policy_code"]');
+    await policyCode.fill('browser.policy.retained');
+
+    await page.getByRole('link', { name: 'Continue to predicate' }).click();
+    await expect(page).toHaveURL(/kind=resource&step=predicate#policy-step-predicate$/u);
+    await expect(page.locator('#policy-step-predicate')).toBeFocused();
+    await expect(policyCode).toHaveValue('browser.policy.retained');
+    await expect(page.locator('#policy-step-scope')).toBeHidden();
+    await expect(page.getByRole('link', { name: '2. Predicate', exact: true }))
+      .toHaveAttribute('aria-current', 'step');
+
+    await page.getByRole('link', { name: 'Continue to disclosure' }).click();
+    await expect(page).toHaveURL(/kind=resource&step=disclosure#policy-step-disclosure$/u);
+    await expect(page.locator('#policy-step-disclosure')).toBeFocused();
     await expect(page.locator('textarea')).toHaveCount(0);
     await expect(page.locator('input[name="policy_json"], input[name="canonical_ast"]')).toHaveCount(0);
     for (const usage of [
@@ -383,7 +439,17 @@ test.describe('authenticated administrator', () => {
     ]) {
       await expect(page.locator(`select[name="fields_${usage}[]"]`)).toBeVisible();
     }
-    await expect(page.getByRole('group', { name: 'Confirm with step-up verification' }).first()).toBeVisible();
+    await expect(policyCode).toHaveValue('browser.policy.retained');
+    await expect(page.getByRole('group', { name: 'Verify this exact action' })).toBeHidden();
+
+    await page.getByRole('link', { name: 'Review policy' }).click();
+    await expect(page).toHaveURL(/kind=resource&step=review#policy-step-review$/u);
+    await expect(page.locator('#policy-step-review')).toBeFocused();
+    await expect(page.getByRole('link', { name: '4. Review', exact: true }))
+      .toHaveAttribute('aria-current', 'step');
+    await expect(policyCode).toHaveValue('browser.policy.retained');
+    await expect(page.getByRole('group', { name: 'Verify this exact action' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Create reviewed policy' })).toBeVisible();
     const missingCsrf = await page.context().request.post('/administrator/business-security', {
       form: { action: 'organization.create', identifier: 'forged', name: 'Forged' },
     });
@@ -401,6 +467,28 @@ test.describe('authenticated administrator', () => {
       animations: 'disabled',
       caret: 'hide',
     });
+  });
+
+  test('users and access separates identity concerns and portal provisioning', async ({ page }) => {
+    await page.goto('/administrator/access');
+    await expect(page.getByRole('heading', { level: 1, name: 'Users & access' })).toBeVisible();
+    await expect(page.getByRole('navigation', { name: 'Users and Access concerns' }).getByRole('link'))
+      .toHaveCount(6);
+    await expect(page.getByRole('heading', { name: 'Users', exact: true })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Provision an ordinary portal member' })).toBeVisible();
+    await expect(page.locator('input[name="step_up_code"]')).toHaveCount(0);
+
+    await page.getByRole('link', { name: 'Groups & roles', exact: true }).click();
+    await expect(page).toHaveURL(/section=groups/u);
+    await expect(page.getByRole('heading', { name: 'Groups and roles' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Users', exact: true })).toHaveCount(0);
+
+    await page.getByRole('link', { name: 'Security events', exact: true }).click();
+    await expect(page).toHaveURL(/section=events/u);
+    await expect(page.getByRole('heading', { name: 'Security events' })).toBeVisible();
+    await expect(page.locator('[data-kis-surface="core.administrator.access-control"]'))
+      .not.toContainText(/password|recovery_code|metadata/u);
+    await expectAccessible(page);
   });
 
   test('published content links through a typed menu to its canonical path', async ({ page }) => {
@@ -523,7 +611,7 @@ test.describe('authenticated administrator', () => {
 
   test('reports execute graphically and expose queued export status', async ({ page }, testInfo) => {
     await page.goto('/administrator/reports');
-    await expect(page.getByRole('heading', { level: 1, name: 'Business report' })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1, name: 'Business reports' })).toBeVisible();
     await expect(page.locator('a[href="/administrator/reports"]')).toHaveAttribute(
       'aria-current',
       'page',
@@ -534,7 +622,7 @@ test.describe('authenticated administrator', () => {
     await expect(report.getByRole('heading', { name: 'Asset inspection example summary' }))
       .toBeVisible();
     await expect(report.getByText(assetInspectionReport, { exact: true })).toBeVisible();
-    await report.getByLabel('Parameters as JSON object').fill('{"minimum_score":70}');
+    await report.locator('[name="parameters[minimum_score]"]').fill('70');
     await report.getByRole('button', { name: 'Run report', exact: true }).click();
 
     const results = page.getByRole('region', { name: 'Report results' });
@@ -548,6 +636,13 @@ test.describe('authenticated administrator', () => {
     await expectStylesLoaded(page);
     await expectAccessible(page);
     expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBe(0);
+    if ((page.viewportSize()?.width ?? 0) >= 900) {
+      const dimensions = await page.locator('.kis-business-report-grid').evaluate((layout) => ({
+        catalogWidth: layout.children.item(0)?.getBoundingClientRect().width ?? 0,
+        workspaceWidth: layout.children.item(1)?.getBoundingClientRect().width ?? 0,
+      }));
+      expect(dimensions.workspaceWidth).toBeGreaterThan(dimensions.catalogWidth);
+    }
     await page.screenshot({
       path: testInfo.outputPath('administrator-report-results.png'),
       fullPage: true,
@@ -556,7 +651,8 @@ test.describe('authenticated administrator', () => {
     });
 
     await report.getByRole('button', { name: 'Queue CSV export', exact: true }).click();
-    await expect(page.getByRole('heading', { name: 'Export Queued' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Latest export request' })).toBeVisible();
+    await expect(page.getByText('Queued', { exact: true })).toBeVisible();
     await expect(page.locator('dl')).toContainText('Rows');
     await expect(page.locator('dl')).toContainText('Pending');
     const status = page.getByRole('link', { name: 'Refresh status' });
@@ -566,7 +662,7 @@ test.describe('authenticated administrator', () => {
     );
     await expect(page.getByRole('link', { name: 'Download verified CSV' })).toHaveCount(0);
     await status.click();
-    await expect(page.getByRole('heading', { name: 'Export Queued' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Latest export request' })).toBeVisible();
     await expectAccessible(page);
     await page.screenshot({
       path: testInfo.outputPath('administrator-export-status.png'),
@@ -581,12 +677,12 @@ test.describe('authenticated administrator', () => {
     isMobile,
   }, testInfo) => {
     await page.goto(`/administrator/business/${businessDefinitionHandle}`);
-    await expect(page.locator('.business-record-table tbody tr').first()).toBeVisible();
+    await expect(page.locator(isMobile ? '.kis-business-result-card' : '.business-record-table tbody tr').first()).toBeVisible();
     await expect(page.getByRole('link', { name: 'Report', exact: true })).toBeVisible();
     await expect(page.getByRole('link', { name: 'Export', exact: true })).toBeVisible();
     await page.getByLabel('Search records').fill('Windhoek order');
     await page.getByRole('button', { name: 'Apply', exact: true }).click();
-    await expectAdministratorRecordRow(page, 'Windhoek order');
+    await expect(page.locator(isMobile ? '.kis-business-result-card' : '.business-record-table tbody tr').filter({ hasText: 'Windhoek order' }).first()).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBe(0);
     if (isMobile) {
       expect(await page.locator('.business-table-wrap').evaluate((table) =>
@@ -603,7 +699,7 @@ test.describe('authenticated administrator', () => {
     await pageSearch.fill('does-not-match-any-seeded-record');
     await expect(page.getByText('No records on this page match your search.')).toBeVisible();
     await pageSearch.clear();
-    await page.getByRole('checkbox', { name: /Select record/ }).first().check();
+    await page.locator('input[name="bulk_records[]"]:visible').first().check();
     await page.getByLabel('Bulk operation').selectOption('archive');
     await page.getByRole('button', { name: 'Review bulk operation' }).click();
     await expect(page.getByRole('heading', { name: 'Archive selected records' })).toBeVisible();
@@ -795,7 +891,7 @@ test.describe('authenticated administrator', () => {
       await page.getByLabel('Search records').fill(updatedName);
       await page.getByRole('button', { name: 'Apply', exact: true }).click();
       await expectAdministratorRecordRow(page, updatedName);
-      await page.getByRole('checkbox', { name: /Select record/ }).check();
+      await page.locator('input[name="bulk_records[]"]:visible').first().check();
       await page.getByLabel('Bulk operation').selectOption('archive');
       await page.getByRole('button', { name: 'Review bulk operation' }).click();
       await page.getByRole('checkbox').check();
@@ -808,7 +904,7 @@ test.describe('authenticated administrator', () => {
       await page.getByLabel('Include archived').check();
       await page.getByRole('button', { name: 'Apply', exact: true }).click();
       await expectAdministratorRecordRow(page, updatedName);
-      await page.getByRole('checkbox', { name: /Select record/ }).check();
+      await page.locator('input[name="bulk_records[]"]:visible').first().check();
       await page.getByLabel('Bulk operation').selectOption('restore');
       await page.getByRole('button', { name: 'Review bulk operation' }).click();
       await page.getByRole('checkbox').check();

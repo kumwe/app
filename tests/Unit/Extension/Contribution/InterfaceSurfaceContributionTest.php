@@ -180,6 +180,28 @@ final class InterfaceSurfaceContributionTest extends TestCase
     }
 
     /**
+     * Require every schema-four graphical package to opt into KIS explicitly.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testGraphicalPackageCannotOmitItsInterfaceDeclaration(): void
+    {
+        $document = self::contributions();
+        unset($document['interface']);
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('declare every administrator graphical GET route as a surface');
+
+        ManifestContributionSet::fromManifest(
+            ExtensionIdentifier::fromString('acme/inspections'),
+            $document,
+            4,
+        );
+    }
+
+    /**
      * Refuse navigation that is not explicitly bound to the surface its graphical route serves.
      *
      * @return  void

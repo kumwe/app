@@ -9,6 +9,7 @@ use InvalidArgumentException;
 use Kumwe\CMS\Administrator\Http\AdministratorRequest;
 use Kumwe\CMS\Administrator\Http\Middleware\AdministratorSessionMiddleware;
 use Kumwe\CMS\Administrator\Presentation\AdministratorRenderer;
+use Kumwe\CMS\Administrator\Presentation\SecurityWorkspaceState;
 use Kumwe\CMS\Application\Authorization\AuthenticationStrength;
 use Kumwe\CMS\Application\Authorization\ExecutionContext;
 use Kumwe\CMS\BusinessSecurity\Application\Administration\BusinessSecurityAdministrationService;
@@ -78,6 +79,7 @@ final readonly class AdministratorBusinessSecurityHandler implements RequestHand
     {
         $context = AdministratorRequest::context($request);
         $session = AdministratorRequest::session($request);
+        $workspace = SecurityWorkspaceState::business($request->getQueryParams());
         $csrf = $session->csrfToken;
         if (strtoupper($request->getMethod()) === 'POST') {
             $form = AdministratorRequest::form($request);
@@ -123,7 +125,10 @@ final readonly class AdministratorBusinessSecurityHandler implements RequestHand
                 $csrf = $verification->rotatedSession->csrfToken;
             }
 
-            return new RedirectResponse('/administrator/business-security?saved=1', 303, array_filter([
+            return new RedirectResponse($workspace->url(
+                '/administrator/business-security',
+                ['saved' => '1'],
+            ), 303, array_filter([
                 'Cache-Control' => 'no-store',
                 'Set-Cookie' => $replacementToken === null ? null : $this->cookie($replacementToken),
             ], static fn (?string $header): bool => $header !== null));
@@ -134,6 +139,10 @@ final readonly class AdministratorBusinessSecurityHandler implements RequestHand
             'actor_id' => $context->actorId(),
             'capabilities' => AdministratorRequest::capabilityMap($request),
             'security' => $this->security->overview($context),
+            'workspace' => $workspace->toArray(),
+            'policy_steps' => $workspace->policySteps('/administrator/business-security'),
+            'active_organization' => $context->organization()?->identifier(),
+            'active_workspace' => $context->workspace()?->identifier(),
             'saved' => ($request->getQueryParams()['saved'] ?? null) === '1',
         ]), 200, ['Cache-Control' => 'no-store']);
     }

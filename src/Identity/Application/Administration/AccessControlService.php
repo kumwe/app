@@ -170,6 +170,29 @@ final readonly class AccessControlService
     }
 
     /**
+     * List recent installation-wide identity and credential security events.
+     *
+     * `users.manage` is installation-global, so the collection authorization occurs before reading any
+     * audit row. The repository exposes a closed identity-only projection and omits event metadata, which
+     * prevents this focused timeline from becoming an unbounded audit or secret-disclosure surface.
+     *
+     * @param   ExecutionContext  $context  Authenticated installation identity administrator.
+     *
+     * @return  list<array<string, mixed>>  Newest accountable identity events, capped at 100 rows.
+     *
+     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor lacks installation
+     *          identity-management authority.
+     *
+     * @since   2.0.0
+     */
+    public function securityEvents(ExecutionContext $context): array
+    {
+        $this->authorize($context, AuthorizationResource::collection('user'));
+
+        return $this->repository->securityEvents();
+    }
+
+    /**
      * Create a user with a hashed password and register it against the default site.
      *
      * The address, name and password are normalised, checked and hashed before anything is written; the

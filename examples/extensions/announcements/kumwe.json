@@ -1,5 +1,5 @@
 {
-  "schema": 3,
+  "schema": 4,
   "name": "kumwe/announcements-example",
   "type": "component",
   "version": "2.0.0",
@@ -17,7 +17,7 @@
   "events": [],
   "assets": [],
   "contributions": {
-    "version": 1,
+    "version": 2,
     "capabilities": [{
       "id": "kumwe.announcements-example.manage",
       "label": "Manage announcements example",
@@ -47,6 +47,7 @@
         "path": "/",
         "icon": "extensions",
         "capability": "kumwe.announcements-example.manage",
+        "surface": "kumwe.announcements-example.index",
         "priority": 10,
         "keywords": "announcements example component contribution"
       }],
@@ -60,6 +61,26 @@
       "views": [{
         "name": "kumwe.announcements-example.index",
         "template": "announcements.twig"
+      }]
+    },
+    "interface": {
+      "surfaces": [{
+        "surface": "kumwe.announcements-example.index",
+        "standard": "kis-1.0",
+        "area": "administrator",
+        "actor": "administrator",
+        "intent": "collection",
+        "resource": "announcement-workspace",
+        "purpose": "Browse extension-owned announcements and continue into their generated management workspaces.",
+        "pattern": "collection-workspace",
+        "capabilities": ["kumwe.announcements-example.manage"],
+        "states": ["default", "empty", "dense", "error", "permission-reduced", "read-only"],
+        "customization": [{"slot": "density", "scope": "user"}],
+        "responsive": [
+          {"element": "announcement-work", "priority": "essential", "may_collapse": false},
+          {"element": "generated-workspaces", "priority": "secondary", "may_collapse": true}
+        ],
+        "icon": "extensions"
       }]
     },
     "business": {
@@ -93,7 +114,7 @@
           {"handle":"id","label":"ID","type":"core.uuid","required":true,"nullable":false,"length":null,"unique":true,"indexed":true,"immutable_after_create":true,"filterable":false,"sortable":false,"order":0},
           {"handle":"name","label":"Name","type":"core.text","required":true,"nullable":false,"length":120,"unique":true,"indexed":true,"filterable":true,"sortable":true,"order":0}
         ],
-        "relationships": [{"handle":"announcements","label":"Announcements","kind":"one_to_many","target":"kumwe.announcements-example.announcement","inverse":"category","ordered":true,"on_delete":"restrict"}],
+        "relationships": [{"handle":"announcements","label":"Announcements","kind":"one_to_many","target":"kumwe.announcements-example.announcement","inverse":"category","ordered":false,"on_delete":"restrict"}],
         "views": [{"handle":"catalog","label":"Category catalog","kind":"list","fields":["name"],"filters":["name"],"sorts":["name"]}],
         "actions": [],
         "workflow": null,

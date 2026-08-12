@@ -1,0 +1,314 @@
+@layer components {
+  .kis-phase-five,
+  .kis-phase-five > *,
+  .kis-phase-five-workspace,
+  .kis-phase-five-workspace > *,
+  .kis-phase-five-card,
+  .kis-phase-five-card > * {
+    min-width: 0;
+  }
+
+  .kis-phase-five {
+    display: grid;
+    gap: 1.25rem;
+  }
+
+  .kis-phase-five .kis-page-header,
+  .kis-phase-five .kis-resource-toolbar {
+    margin-bottom: 0;
+  }
+
+  .kis-phase-five-summary {
+    display: grid;
+    grid-template-columns: minmax(0, 1.4fr) minmax(16rem, .6fr);
+    gap: 1rem;
+    align-items: center;
+    padding: clamp(1rem, 2.5vw, 1.5rem);
+  }
+
+  .kis-phase-five-summary .dashboard-search {
+    max-width: none;
+    margin-bottom: 0;
+  }
+
+  .kis-phase-five-summary .hero-progress {
+    border-color: var(--kumwe-border);
+    background: var(--kumwe-surface-subtle);
+    color: var(--kumwe-text);
+  }
+
+  .kis-phase-five-summary .hero-progress span {
+    color: var(--kumwe-text-muted);
+  }
+
+  .kis-phase-five-summary .progress-track {
+    background: var(--kumwe-border);
+  }
+
+  .kis-phase-five-workspace {
+    display: grid;
+    grid-template-columns: minmax(15rem, 19rem) minmax(0, 1fr);
+    gap: 1.25rem;
+    align-items: start;
+  }
+
+  .kis-phase-five-catalog {
+    display: grid;
+    gap: .75rem;
+    padding: 1rem;
+  }
+
+  .kis-phase-five-catalog nav,
+  .kis-phase-five-catalog ul {
+    min-width: 0;
+  }
+
+  .kis-phase-five-catalog ul {
+    display: grid;
+    gap: .35rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .kis-phase-five-catalog a {
+    display: grid;
+    gap: .12rem;
+    min-height: var(--kis-touch-target);
+    padding: .65rem .75rem;
+    border: 1px solid transparent;
+    border-radius: var(--kumwe-radius-md);
+    color: var(--kumwe-text);
+    overflow-wrap: anywhere;
+    text-decoration: none;
+  }
+
+  .kis-phase-five-catalog a:hover,
+  .kis-phase-five-catalog a:focus-visible {
+    border-color: var(--kumwe-accent);
+    background: var(--kumwe-accent-soft);
+  }
+
+  .kis-phase-five-catalog small {
+    color: var(--kumwe-text-muted);
+  }
+
+  .kis-phase-five-card {
+    scroll-margin-top: calc(var(--kumwe-topbar-height) + 1rem);
+  }
+
+  .kis-phase-five-card > summary {
+    overflow-wrap: anywhere;
+  }
+
+  .kis-phase-five-status-line {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .4rem .75rem;
+    align-items: center;
+    color: var(--kumwe-text-muted);
+    font-size: .82rem;
+  }
+
+  .kis-phase-five-status-line code,
+  .kis-phase-five-card code,
+  .kis-phase-five-card dd,
+  .kis-phase-five-card td {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+
+  .kis-phase-five-section-nav {
+    display: flex;
+    max-width: 100%;
+    gap: .35rem;
+    overflow-x: auto;
+    padding: .35rem;
+    border: 1px solid var(--kumwe-border);
+    border-radius: var(--kumwe-radius-lg);
+    background: var(--kumwe-surface);
+    scrollbar-width: thin;
+  }
+
+  .kis-phase-five-section-nav a {
+    display: inline-flex;
+    min-height: var(--kis-touch-target);
+    flex: 0 0 auto;
+    align-items: center;
+    padding: .55rem .75rem;
+    border-radius: var(--kumwe-radius-md);
+    color: var(--kumwe-text-muted);
+    font-size: .84rem;
+    font-weight: 680;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+
+  .kis-phase-five-section-nav a:hover,
+  .kis-phase-five-section-nav a:focus-visible {
+    background: var(--kumwe-accent-soft);
+    color: var(--kumwe-accent-strong);
+  }
+
+  .kis-phase-five-danger-zone {
+    padding: 1rem;
+    border: 1px solid color-mix(in srgb, var(--kumwe-danger), transparent 45%);
+    border-radius: var(--kumwe-radius-md);
+    background: var(--kumwe-danger-soft);
+  }
+
+  .kis-phase-five-danger-zone > summary {
+    color: var(--kumwe-danger-strong);
+    font-weight: 750;
+  }
+
+  .kis-phase-five-danger-zone form {
+    margin-top: 1rem;
+  }
+
+  kumwe-dirty-form {
+    display: contents;
+  }
+
+  .kis-dirty-status {
+    min-height: 1.25rem;
+    margin: 0;
+    color: var(--kumwe-text-muted);
+    font-size: .8rem;
+  }
+
+  kumwe-dirty-form[data-dirty] .kis-dirty-status {
+    color: var(--kumwe-warning);
+    font-weight: 650;
+  }
+
+  .kis-phase-five-extension-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 23rem), 1fr));
+    gap: 1rem;
+  }
+
+  .kis-phase-five-extension-card {
+    display: grid;
+    gap: 1rem;
+    padding: 1rem;
+  }
+
+  .kis-phase-five-extension-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .6rem;
+    align-items: end;
+  }
+
+  .kis-phase-five-extension-actions form {
+    display: flex;
+    min-width: min(100%, 14rem);
+    flex-wrap: wrap;
+    gap: .5rem;
+    align-items: end;
+  }
+
+  .kis-phase-five-extension-actions label {
+    min-width: min(100%, 18rem);
+    flex: 1 1 18rem;
+  }
+
+  .kis-phase-five-security-note {
+    padding: .85rem 1rem;
+    border-left: .3rem solid var(--kumwe-warning);
+    background: var(--kumwe-warning-soft);
+  }
+}
+
+@layer overrides {
+  @media (max-width: 62rem) {
+    .kis-phase-five-summary,
+    .kis-phase-five-workspace {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .kis-phase-five-catalog {
+      position: static;
+      max-height: none;
+    }
+  }
+
+  @media (max-width: 40rem) {
+    .kis-phase-five-summary .dashboard-search,
+    .kis-phase-five-extension-actions,
+    .kis-phase-five-extension-actions form {
+      display: grid;
+      width: 100%;
+    }
+
+    .kis-phase-five-summary .dashboard-search button,
+    .kis-phase-five-extension-actions button,
+    .kis-phase-five-extension-actions .button {
+      width: 100%;
+    }
+  }
+
+  @media (pointer: coarse) {
+    .kis-phase-five-section-nav a,
+    .kis-phase-five-catalog a,
+    .kis-phase-five .link-button {
+      min-height: 2.75rem;
+    }
+  }
+
+  @media (prefers-contrast: more) {
+    .kis-phase-five-catalog a,
+    .kis-phase-five-section-nav,
+    .kis-phase-five-danger-zone,
+    .kis-phase-five-extension-card {
+      border-width: 2px;
+    }
+  }
+
+  @media (forced-colors: active) {
+    .kis-phase-five-catalog a:focus-visible,
+    .kis-phase-five-section-nav a:focus-visible,
+    .kis-phase-five-danger-zone,
+    .kis-phase-five-security-note {
+      border: 2px solid CanvasText;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .kis-phase-five *,
+    .kis-phase-five *::before,
+    .kis-phase-five *::after {
+      scroll-behavior: auto !important;
+      transition-duration: .01ms !important;
+    }
+  }
+
+  @media print {
+    .kis-phase-five-section-nav,
+    .kis-phase-five .page-actions,
+    .kis-phase-five form,
+    .kis-phase-five .pagination-actions,
+    .kis-phase-five .kis-resource-toolbar {
+      display: none !important;
+    }
+
+    .kis-phase-five,
+    .kis-phase-five-workspace,
+    .kis-phase-five-summary,
+    .kis-phase-five-extension-grid {
+      display: block;
+    }
+
+    .kis-phase-five .panel,
+    .kis-phase-five-card,
+    .kis-phase-five-extension-card {
+      break-inside: avoid;
+      box-shadow: none;
+    }
+
+    .kis-phase-five details > * {
+      display: block !important;
+    }
+  }
+}

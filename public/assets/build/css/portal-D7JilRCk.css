@@ -159,6 +159,267 @@ main { width: 100%; min-width: 0; max-width: 76rem; padding: clamp(1.25rem, 4vw,
     .portal-notice { background: #24493e; }
 }
 
+@layer components {
+  [data-kis-business] {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    container-name: kis-business;
+    container-type: inline-size;
+  }
+
+  [data-kis-business] > * { min-width: 0; }
+
+  [data-kis-business][data-density="compact"] {
+    --kis-density-block: var(--kis-space-2);
+    --kis-density-inline: var(--kis-space-3);
+  }
+  [data-kis-business][data-density="touch"] {
+    --kis-density-block: var(--kis-space-5);
+    --kis-density-inline: var(--kis-space-5);
+    --kis-touch-target: 3rem;
+  }
+  [data-kis-business][data-density="compact"] .kis-business-table th,
+  [data-kis-business][data-density="compact"] .kis-business-table td { padding-block: var(--kis-space-2); }
+  [data-kis-business][data-density="compact"] .kis-business-result-card { padding: var(--kis-space-3); }
+  [data-kis-business][data-density="touch"] .kis-business-table th,
+  [data-kis-business][data-density="touch"] .kis-business-table td { padding-block: var(--kis-space-4); }
+  [data-kis-business][data-density="touch"] .kis-business-result-card a,
+  [data-kis-business][data-density="touch"] .kis-business-result-card button,
+  [data-kis-business][data-density="touch"] .kis-business-result-card input { min-height: 3rem; }
+  [data-kis-business][data-representation="cards"] .kis-business-table-region { display: none; }
+  [data-kis-business][data-representation="cards"] .kis-business-card-list { display: grid; }
+  [data-kis-business][data-representation="table"] .kis-business-table-region { display: block; }
+  [data-kis-business][data-representation="table"] .kis-business-card-list { display: none; }
+
+  .kis-business-stack { display: grid; min-width: 0; gap: var(--kis-space-4); }
+  .kis-business-section { min-width: 0; padding: var(--kis-density-block) var(--kis-density-inline); }
+  .kis-business-section-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--kis-space-4); }
+  .kis-business-section-heading h2,
+  .kis-business-section-heading h3,
+  .kis-business-section-heading p { margin-bottom: 0; }
+  .kis-business-section-heading p { margin-top: var(--kis-space-1); color: var(--kumwe-text-muted); }
+
+  .kis-business-workspaces {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr));
+    gap: var(--kis-space-4);
+  }
+  .kis-business-workspace-card {
+    display: grid;
+    min-width: 0;
+    min-height: 15rem;
+    gap: var(--kis-space-4);
+    padding: var(--kis-space-5);
+    align-content: space-between;
+  }
+  .kis-business-workspace-card h2,
+  .kis-business-workspace-card p { margin-bottom: 0; }
+  .kis-business-workspace-card p { overflow-wrap: anywhere; }
+  .kis-business-facts {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1px;
+    margin: 0;
+    overflow: hidden;
+    border: 1px solid var(--kumwe-border);
+    border-radius: var(--kumwe-radius-md);
+    background: var(--kumwe-border);
+  }
+  .kis-business-facts div { display: grid; min-width: 0; gap: var(--kis-space-1); padding: var(--kis-space-3); background: var(--kumwe-surface-subtle); }
+  .kis-business-facts dt { color: var(--kumwe-text-muted); font-size: .72rem; font-weight: 680; }
+  .kis-business-facts dd { margin: 0; overflow-wrap: anywhere; font-size: 1.1rem; font-weight: 760; }
+
+  .kis-business-view-nav { display: flex; min-width: 0; flex-wrap: wrap; gap: var(--kis-space-2); align-items: center; }
+  .kis-business-view-nav [aria-current="page"] { border-color: var(--kumwe-accent); background: var(--kumwe-accent-soft); }
+  .kis-business-query-form {
+    display: grid;
+    width: 100%;
+    min-width: 0;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr));
+    gap: var(--kis-space-3);
+    align-items: end;
+  }
+  .kis-business-query-form > * { min-width: 0; }
+  .kis-business-query-form label { display: grid; gap: var(--kis-space-1); }
+  .kis-business-query-form .check { display: flex; min-height: var(--kis-touch-target); align-items: center; }
+  .kis-business-advanced-filters { grid-column: 1 / -1; }
+  .kis-business-advanced-filters summary,
+  .kis-business-column-picker summary { min-height: var(--kis-touch-target); cursor: pointer; font-weight: 680; }
+  .kis-business-advanced-grid,
+  .kis-business-column-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr)); gap: var(--kis-space-3); padding-top: var(--kis-space-3); }
+  .kis-business-column-grid label { display: flex; min-width: 0; gap: var(--kis-space-2); align-items: flex-start; overflow-wrap: anywhere; }
+  .kis-business-applied-filters { display: flex; min-width: 0; flex-wrap: wrap; gap: var(--kis-space-2); align-items: center; }
+  .kis-business-filter-token { display: inline-flex; max-width: 100%; gap: var(--kis-space-1); padding: .35rem .55rem; border-radius: 999px; background: var(--kumwe-surface-subtle); overflow-wrap: anywhere; }
+
+  .kis-business-aggregates { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 10rem), 1fr)); gap: var(--kis-space-3); }
+  .kis-business-aggregate { display: grid; min-width: 0; gap: var(--kis-space-1); padding: var(--kis-space-4); }
+  .kis-business-aggregate span { color: var(--kumwe-text-muted); font-size: .78rem; }
+  .kis-business-aggregate strong { overflow-wrap: anywhere; font-size: 1.2rem; }
+
+  .kis-business-collection { min-width: 0; overflow: hidden; }
+  .kis-business-table-region {
+    position: relative;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+  }
+  .kis-business-table-region::before {
+    display: block;
+    position: sticky;
+    left: 0;
+    width: max-content;
+    padding: var(--kis-space-2) var(--kis-space-3);
+    color: var(--kumwe-text-muted);
+    content: attr(data-scroll-label);
+    font-size: .72rem;
+  }
+  .kis-business-table { min-width: 52rem; }
+  .kis-business-table th,
+  .kis-business-table td { max-width: 24rem; overflow-wrap: anywhere; vertical-align: top; }
+  .kis-business-table tbody th code,
+  .kis-business-table tbody th small { display: block; }
+  .kis-business-table tbody th small { margin-top: var(--kis-space-1); color: var(--kumwe-text-muted); font-size: .72rem; }
+  .kis-business-card-list { display: none; gap: var(--kis-space-3); margin: 0; padding: 0; list-style: none; }
+  .kis-business-result-card { display: grid; min-width: 0; gap: var(--kis-space-3); padding: var(--kis-space-4); border: 1px solid var(--kumwe-border); border-radius: var(--kumwe-radius-md); background: var(--kumwe-surface); }
+  .kis-business-result-card > header { display: flex; min-width: 0; align-items: flex-start; justify-content: space-between; gap: var(--kis-space-3); }
+  .kis-business-result-card dl { display: grid; gap: var(--kis-space-2); margin: 0; }
+  .kis-business-result-card dl div { display: grid; min-width: 0; grid-template-columns: minmax(7rem, .42fr) minmax(0, 1fr); gap: var(--kis-space-2); }
+  .kis-business-result-card dt { color: var(--kumwe-text-muted); font-size: .76rem; font-weight: 680; }
+  .kis-business-result-card dd { min-width: 0; margin: 0; overflow-wrap: anywhere; }
+  .kis-business-bulk-controls { display: flex; flex-wrap: wrap; gap: var(--kis-space-3); align-items: end; padding: var(--kis-space-4); border-top: 1px solid var(--kumwe-border); background: var(--kumwe-surface-subtle); }
+  .kis-business-bulk-controls label { min-width: min(100%, 18rem); }
+  .kis-business-bulk-controls .field-help { flex-basis: 100%; }
+  .kis-business-pagination { display: flex; flex-wrap: wrap; gap: var(--kis-space-3); align-items: center; justify-content: space-between; padding: var(--kis-space-4); border-top: 1px solid var(--kumwe-border); }
+
+  .kis-business-record-tabs { margin-bottom: var(--kis-space-4); }
+  .kis-task-navigation .kis-task-navigation-list { display: flex; max-width: 100%; gap: var(--kis-space-1); overflow-x: auto; overscroll-behavior-inline: contain; scrollbar-width: thin; }
+  .kis-task-navigation [data-kis-task] { display: inline-flex; min-height: var(--kis-touch-target); flex: 0 0 auto; align-items: center; gap: var(--kis-space-2); padding: .65rem .8rem; border-bottom: .2rem solid transparent; color: var(--kumwe-text-muted); font-size: .84rem; font-weight: 680; text-decoration: none; white-space: nowrap; }
+  .kis-task-navigation [data-kis-task]:hover { color: var(--kumwe-accent-strong); }
+  .kis-task-navigation [data-kis-task][aria-current="page"] { border-bottom-color: var(--kumwe-accent); color: var(--kumwe-text); }
+  .kis-business-record-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(16rem, 21rem); gap: var(--kis-space-5); align-items: start; }
+  .kis-business-report-grid { grid-template-columns: minmax(16rem, 21rem) minmax(0, 1fr); }
+  .kis-business-record-sidebar { display: grid; position: sticky; top: calc(var(--kumwe-topbar-height) + var(--kis-space-4)); gap: var(--kis-space-4); }
+  .kis-business-details { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr)); gap: 1px; margin: 0; overflow: hidden; border: 1px solid var(--kumwe-border); border-radius: var(--kumwe-radius-md); background: var(--kumwe-border); }
+  .kis-business-details div { min-width: 0; padding: var(--kis-space-3); background: var(--kumwe-surface-subtle); }
+  .kis-business-details dt { color: var(--kumwe-text-muted); font-size: .74rem; font-weight: 680; }
+  .kis-business-details dd { min-width: 0; margin: var(--kis-space-1) 0 0; overflow-wrap: anywhere; }
+  .kis-business-metadata { display: grid; gap: var(--kis-space-3); margin: 0; }
+  .kis-business-metadata div { display: grid; min-width: 0; grid-template-columns: minmax(7rem, .45fr) minmax(0, 1fr); gap: var(--kis-space-3); }
+  .kis-business-metadata dt { color: var(--kumwe-text-muted); font-size: .76rem; font-weight: 680; }
+  .kis-business-metadata dd { min-width: 0; margin: 0; overflow-wrap: anywhere; }
+  .kis-business-relation { display: grid; min-width: 0; gap: var(--kis-space-3); padding: var(--kis-space-4); border: 1px solid var(--kumwe-border); border-radius: var(--kumwe-radius-md); background: var(--kumwe-surface-subtle); }
+  .kis-business-relation + .kis-business-relation { margin-top: var(--kis-space-3); }
+  .kis-business-related-records { display: grid; gap: var(--kis-space-2); margin: 0; padding: 0; list-style: none; }
+  .kis-business-related-records li { display: flex; min-width: 0; align-items: center; justify-content: space-between; gap: var(--kis-space-3); padding: var(--kis-space-3); border: 1px solid var(--kumwe-border); border-radius: var(--kumwe-radius-sm); background: var(--kumwe-surface); }
+  .kis-business-related-records li > span { display: grid; min-width: 0; overflow-wrap: anywhere; }
+  .kis-business-related-records small { color: var(--kumwe-text-muted); }
+  .kis-business-relation-form { display: grid; grid-template-columns: minmax(12rem, 1fr) minmax(7rem, .35fr) auto; gap: var(--kis-space-3); align-items: end; }
+  .kis-business-relation-form > * { min-width: 0; }
+  .kis-business-owned-line-form { grid-template-columns: minmax(0, 1fr); align-items: stretch; }
+  .kis-business-order-form { display: grid; gap: var(--kis-space-3); padding-top: var(--kis-space-3); border-top: 1px solid var(--kumwe-border); }
+  .kis-business-order-form ol { display: grid; gap: var(--kis-space-2); margin: 0; padding-left: var(--kis-space-6); }
+  .kis-business-order-form li { display: flex; min-width: 0; gap: var(--kis-space-2); align-items: center; justify-content: space-between; padding: var(--kis-space-2); border: 1px solid var(--kumwe-border); border-radius: var(--kumwe-radius-sm); background: var(--kumwe-surface); }
+  .kis-business-order-form li > label { display: grid; min-width: 0; grid-template-columns: auto minmax(10rem, 1fr); gap: var(--kis-space-2); align-items: center; flex: 1; }
+
+  .kis-business-form { display: grid; width: min(100%, var(--kis-form-width)); gap: var(--kis-space-4); margin-inline: auto; }
+  .kis-business-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--kis-space-4); }
+  .kis-business-field { display: grid; min-width: 0; gap: var(--kis-space-1); align-content: start; }
+  .kis-business-field:has(textarea),
+  .kis-business-field:has(fieldset),
+  .kis-business-field:has(.kis-business-composite) { grid-column: 1 / -1; }
+  .kis-business-field-label { font-size: .88rem; font-weight: 680; }
+  .kis-business-field-output { min-height: var(--kis-touch-target); padding: .62rem .75rem; overflow-wrap: anywhere; border: 1px solid var(--kumwe-border); border-radius: var(--kumwe-radius-sm); background: var(--kumwe-surface-subtle); color: var(--kumwe-text-muted); }
+  .kis-business-field-invalid input,
+  .kis-business-field-invalid select,
+  .kis-business-field-invalid textarea,
+  .kis-business-field-invalid fieldset { border-color: var(--kumwe-danger); }
+  .kis-business-field-errors { margin: 0; padding-left: var(--kis-space-5); color: var(--kumwe-danger-strong); font-size: .8rem; }
+  .kis-business-composite { display: grid; gap: var(--kis-space-3); margin: 0; padding: var(--kis-space-4); border: 1px solid var(--kumwe-border); border-radius: var(--kumwe-radius-md); }
+  .kis-business-composite legend { padding-inline: var(--kis-space-2); font-weight: 680; }
+  .kis-business-columns { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--kis-space-3); }
+  .kis-business-structured-editor,
+  .kis-business-structured-node,
+  .kis-business-structured-entries { display: grid; gap: var(--kis-space-3); }
+  .kis-business-structured-editor { padding: var(--kis-space-3); border: 1px solid var(--kumwe-border); border-radius: var(--kumwe-radius-md); }
+  .kis-business-structured-entry { display: grid; gap: var(--kis-space-3); margin: 0; padding: var(--kis-space-3); border: 1px solid var(--kumwe-border); border-radius: var(--kumwe-radius-sm); background: var(--kumwe-surface-subtle); }
+  .kis-business-schema-fields,
+  .kis-business-schema-field,
+  .kis-business-schema-array-items { display: grid; gap: var(--kis-space-3); }
+  .kis-business-schema-fields { grid-column: 1 / -1; }
+  .kis-business-schema-group { display: grid; gap: var(--kis-space-3); margin: 0; padding: var(--kis-space-3); border: 1px solid var(--kumwe-border); border-radius: var(--kumwe-radius-md); }
+  .kis-business-schema-array-item { display: grid; gap: var(--kis-space-2); padding: var(--kis-space-3); border-left: .2rem solid var(--kumwe-border-strong); background: var(--kumwe-surface-subtle); }
+
+  .kis-business-history { display: grid; gap: var(--kis-space-4); margin: 0; padding: 0; list-style: none; }
+  .kis-business-history-entry { display: grid; min-width: 0; gap: var(--kis-space-3); padding: var(--kis-space-4); }
+  .kis-business-history-entry > header { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--kis-space-3); }
+  .kis-business-history-entry h2,
+  .kis-business-history-entry p { margin-bottom: 0; }
+  .kis-business-confirmation { width: min(100%, var(--kis-dialog-width)); margin-inline: auto; }
+  .kis-business-confirmation[data-danger] { border-top: .3rem solid var(--kumwe-danger); }
+  .kis-business-confirm-check { padding: var(--kis-space-3); border: 1px solid var(--kumwe-border-strong); border-radius: var(--kumwe-radius-md); background: var(--kumwe-surface-subtle); }
+
+  .kis-business-report-catalog { display: grid; gap: var(--kis-space-2); }
+  .kis-business-report-link { display: grid; min-width: 0; gap: var(--kis-space-1); padding: var(--kis-space-3); border: 1px solid var(--kumwe-border); border-radius: var(--kumwe-radius-md); color: inherit; text-decoration: none; }
+  .kis-business-report-link[aria-current="true"] { border-color: var(--kumwe-accent); background: var(--kumwe-accent-soft); }
+  .kis-business-report-link span { color: var(--kumwe-text-muted); font-size: .78rem; }
+  .kis-business-report-parameters { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr)); gap: var(--kis-space-3); }
+  .kis-business-report-parameters > * { min-width: 0; }
+  .kis-business-report-results { min-width: 0; }
+  .kis-business-operation-stage { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 10rem), 1fr)); gap: var(--kis-space-3); margin: 0; }
+  .kis-business-operation-stage div { min-width: 0; padding: var(--kis-space-3); border: 1px solid var(--kumwe-border); border-radius: var(--kumwe-radius-md); background: var(--kumwe-surface-subtle); }
+  .kis-business-custom-list { display: grid; min-width: 0; gap: var(--kis-space-2); margin: 0; padding-left: var(--kis-space-5); }
+  .kis-business-custom-object { display: grid; min-width: 0; gap: var(--kis-space-2); margin: 0; }
+  .kis-business-custom-object div { display: grid; min-width: 0; grid-template-columns: minmax(8rem, .4fr) minmax(0, 1fr); gap: var(--kis-space-3); padding: var(--kis-space-2); border-bottom: 1px solid var(--kumwe-border); }
+  .kis-business-custom-object dt { color: var(--kumwe-text-muted); font-weight: 680; }
+  .kis-business-custom-object dd { min-width: 0; margin: 0; overflow-wrap: anywhere; }
+
+  @container kis-business (max-width: 54rem) {
+    .kis-business-record-grid { grid-template-columns: minmax(0, 1fr); }
+    .kis-business-record-sidebar { position: static; }
+    [data-kis-component="generated-collection"] .kis-business-table-region { display: none; }
+    [data-kis-component="generated-collection"] .kis-business-card-list { display: grid; }
+    [data-kis-business][data-representation="table"] .kis-business-table-region { display: block; }
+    [data-kis-business][data-representation="table"] .kis-business-card-list { display: none; }
+    .kis-business-relation-form,
+    .kis-business-fields,
+    .kis-business-columns { grid-template-columns: minmax(0, 1fr); }
+  }
+
+  @container kis-business (max-width: 34rem) {
+    .kis-business-section-heading,
+    .kis-business-result-card > header,
+    .kis-business-history-entry > header,
+    .kis-business-pagination { display: grid; }
+    .kis-business-facts { grid-template-columns: minmax(0, 1fr); }
+    .kis-business-result-card dl div,
+    .kis-business-metadata div { grid-template-columns: minmax(0, 1fr); gap: var(--kis-space-1); }
+    .kis-business-related-records li,
+    .kis-business-order-form li { align-items: stretch; flex-direction: column; }
+    .kis-business-order-form li > label { grid-template-columns: minmax(0, 1fr); }
+  }
+
+  @media (forced-colors: active) {
+    .kis-business-view-nav [aria-current="page"],
+    .kis-business-report-link[aria-current="true"] { outline: 2px solid CanvasText; outline-offset: -2px; }
+  }
+
+  @media print {
+    .kis-business-view-nav,
+    .kis-business-column-picker,
+    .kis-business-bulk-controls,
+    .kis-business-pagination,
+    .kis-business-record-sidebar .page-actions,
+    .kis-task-navigation { display: none !important; }
+    .kis-business-table-region { display: block; overflow: visible; }
+    .kis-business-card-list { display: none; }
+    .kis-business-table { min-width: 0; }
+  }
+}
+
 @layer tokens {
   :root {
     --kis-space-1: .25rem;
@@ -287,6 +548,130 @@ main { width: 100%; min-width: 0; max-width: 76rem; padding: clamp(1.25rem, 4vw,
     .kis-tabs, .kis-catalog-toggle, .kis-drawer [data-kis-drawer-open], .kis-copy-value { display: none !important; }
     .kis-tab-panel, .kis-drawer-panel { display: block !important; position: static; width: auto; box-shadow: none; }
     .kis-master-detail-grid { grid-template-columns: 1fr; }
+  }
+}
+@layer components {
+  .kis-phase-five-portal {
+    display: grid;
+    min-width: 0;
+    gap: 1.25rem;
+  }
+
+  .kis-phase-five-portal .kis-page-header {
+    margin-bottom: 0;
+  }
+
+  .portal-access-context {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr));
+    gap: .75rem;
+    margin: 0;
+  }
+
+  .portal-access-context > div {
+    min-width: 0;
+    padding: .85rem;
+    border: 1px solid var(--portal-line);
+    border-radius: var(--kumwe-radius-md);
+    background: var(--portal-paper);
+  }
+
+  .portal-access-context dt {
+    color: var(--portal-muted);
+    font-size: .76rem;
+    font-weight: 700;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+  }
+
+  .portal-access-context dd {
+    margin: .25rem 0 0;
+    overflow-wrap: anywhere;
+    font-weight: 700;
+  }
+
+  .portal-security-actions {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr));
+    gap: 1rem;
+  }
+
+  .portal-security-actions details,
+  .portal-security-primary,
+  .portal-access-card {
+    min-width: 0;
+    padding: 1rem;
+    border: 1px solid var(--portal-line);
+    border-radius: var(--kumwe-radius-lg);
+    background: var(--portal-panel);
+  }
+
+  .portal-security-actions details > summary {
+    min-height: var(--kis-touch-target);
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .portal-secret-once {
+    padding: .8rem 1rem;
+    border-left: .3rem solid var(--kumwe-warning);
+    background: var(--kumwe-warning-soft);
+  }
+
+  .portal-secret,
+  .portal-uri,
+  .portal-recovery-codes code {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+}
+
+@media (pointer: coarse) {
+  .kis-phase-five-portal button,
+  .kis-phase-five-portal summary,
+  .kis-phase-five-portal a {
+    min-height: 2.75rem;
+  }
+}
+
+@media (prefers-contrast: more) {
+  .portal-security-actions details,
+  .portal-security-primary,
+  .portal-access-card,
+  .portal-access-context > div {
+    border-width: 2px;
+  }
+}
+
+@media (forced-colors: active) {
+  .portal-secret-once,
+  .portal-security-actions details,
+  .portal-security-primary,
+  .portal-access-card {
+    border: 2px solid CanvasText;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kis-phase-five-portal *,
+  .kis-phase-five-portal *::before,
+  .kis-phase-five-portal *::after {
+    scroll-behavior: auto !important;
+    transition-duration: .01ms !important;
+  }
+}
+
+@media print {
+  .portal-header,
+  .portal-navigation,
+  .kis-phase-five-portal form,
+  .kis-phase-five-portal .page-actions {
+    display: none !important;
+  }
+
+  .portal-security-actions,
+  .portal-access-context {
+    display: block;
   }
 }
 

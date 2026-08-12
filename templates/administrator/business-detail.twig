@@ -8,12 +8,12 @@
 {% block context_subtitle %}Generated business record detail{% endblock %}
 
 {% block content %}
-  <kumwe-business-surface>
+  <kumwe-business-surface data-kis-business data-kis-component="generated-record" data-kis-surface="{{ relationship_focus|default(null) ? 'core.administrator.generated-relationship' : 'core.administrator.generated-record' }}" data-record-task="{{ record_task }}">
     <header class="page-heading">
       <div>
         <p class="eyebrow">{{ definition.plural_label }}</p>
         <h1>{{ definition.singular_label }}</h1>
-        <p><code>{{ record.record_id }}</code> · Version {{ record.version }}</p>
+        <p>{% include '@kis/technical-value.twig' with {label: 'Record ID', value: record.record_id} only %} · Version {{ record.version }}</p>
       </div>
       <div class="page-actions">
         {% if relationship_focus|default(null) %}
@@ -32,7 +32,6 @@
             </a>
           {% endif %}
         {% endfor %}
-        {% if available_operations.history is defined %}<a class="button" href="{{ record_path }}?history=1">History</a>{% endif %}
         {% if available_operations.report is defined %}
           <a class="button" href="{{ business_base_path }}/{{ definition.handle|url_encode }}?purpose=report">Report</a>
         {% endif %}
@@ -54,9 +53,22 @@
       </section>
     {% endif %}
 
-    <div class="business-detail-layout">
-      <div class="stack">
-        <section class="panel panel-body" aria-labelledby="business-values-title">
+    {% set record_tasks = [
+      {id: 'summary', label: 'Summary', href: record_path ~ '?task=summary'},
+      {id: 'relations', label: 'Relations', href: record_path ~ '?task=relations', count: definition.relationships|length},
+      {id: 'actions', label: 'Actions', href: record_path ~ '?task=actions', count: definition.actions|length}
+    ] %}
+    {% if available_operations.history is defined %}
+      {% set record_tasks = record_tasks|merge([{id: 'history', label: 'History', href: record_path ~ '?task=history'}]) %}
+    {% endif %}
+    <div class="kis-business-record-tabs">
+      {% include '@kis/task-navigation.twig' with {label: 'Record tasks', tasks: record_tasks, active: record_task} only %}
+    </div>
+
+    <div class="business-detail-layout kis-business-record-grid">
+      <div class="stack kis-business-stack">
+        {% if record_task == 'summary' %}
+        <section class="panel panel-body kis-business-section" aria-labelledby="business-values-title">
           <div class="section-heading">
             <h2 id="business-values-title">Record details</h2>
             <span class="status">
@@ -66,21 +78,22 @@
           {% if fields is empty %}
             <p class="text-muted">No field values are available for this record.</p>
           {% else %}
-            <dl class="business-detail-fields">
+            <dl class="business-detail-fields kis-business-details">
               {% for field in fields %}
                 <div><dt>{{ field.label }}</dt><dd>{{ field.display is not same as('') ? field.display : 'Not set' }}</dd></div>
               {% endfor %}
             </dl>
           {% endif %}
         </section>
+        {% endif %}
 
-        {% if definition.relationships is not empty %}
-          <section class="panel panel-body stack" aria-labelledby="business-relations-title">
+        {% if record_task in ['summary', 'relations'] and definition.relationships is not empty %}
+          <section class="panel panel-body stack kis-business-section" aria-labelledby="business-relations-title">
             <div><p class="eyebrow">Connected records</p><h2 id="business-relations-title">Relationships and ordered lines</h2></div>
             {% for relationship in definition.relationships %}
               {% set related = record.includes[relationship.handle]|default([]) %}
               {% set relationship_loaded = relationship.loaded|default(false) %}
-              <article class="business-relation" aria-labelledby="relation-{{ relationship.handle }}-title">
+              <article class="business-relation kis-business-relation" aria-labelledby="relation-{{ relationship.handle }}-title">
                 <div class="section-heading">
                   <div>
                     <h3 id="relation-{{ relationship.handle }}-title">{{ relationship.label }}</h3>
@@ -102,7 +115,7 @@
                 {% elseif related is empty %}
                   <p class="text-muted">No related records are currently included.</p>
                 {% else %}
-                  <ul class="business-related-records">
+                  <ul class="business-related-records kis-business-related-records">
                     {% for related_record in related %}
                       <li>
                         <span>
@@ -132,7 +145,7 @@
                   and relationship.owned_line_form|default(null)
                 %}
                   {% set line_form = relationship.owned_line_form %}
-                  <form class="business-relation-form business-owned-line-form" method="post">
+                  <form class="business-relation-form business-owned-line-form kis-business-relation-form kis-business-owned-line-form" method="post">
                     <input type="hidden" name="_csrf" value="{{ csrf }}">
                     <input type="hidden" name="operation" value="relate">
                     <input type="hidden" name="operation_id" value="{{ operation_id }}">
@@ -170,7 +183,7 @@
                   and available_operations.relation is defined
                   and relationship.choice_available
                 %}
-                  <form class="business-relation-form" method="post">
+                  <form class="business-relation-form kis-business-relation-form" method="post">
                     <input type="hidden" name="_csrf" value="{{ csrf }}">
                     <input type="hidden" name="operation" value="relate">
                     <input type="hidden" name="operation_id" value="{{ operation_id }}">
@@ -213,7 +226,7 @@
                   and available_operations.reorder is defined
                 %}
                   <kumwe-business-ordered-lines>
-                    <form class="business-order-form" method="post">
+                    <form class="business-order-form kis-business-order-form" method="post">
                       <input type="hidden" name="_csrf" value="{{ csrf }}">
                       <input type="hidden" name="operation" value="reorder">
                       <input type="hidden" name="operation_id" value="{{ operation_id }}">
@@ -265,21 +278,24 @@
         {% endif %}
       </div>
 
-      <aside class="stack business-detail-sidebar" aria-label="Record operations">
+      {% if record_task in ['summary', 'actions'] %}
+      <aside class="stack business-detail-sidebar kis-business-record-sidebar" aria-label="Record operations">
+        {% if record_task == 'summary' %}
         <section class="panel panel-body stack">
           <div><p class="eyebrow">Record state</p><h2>{{ record.workflow_state|default('Active')|replace({'_': ' '})|title }}</h2></div>
-          <dl class="business-record-metadata">
+          <dl class="business-record-metadata kis-business-metadata">
             <div><dt>Created</dt><dd><time datetime="{{ record.created_at }}">{{ record.created_at|date('M j, Y H:i') }}</time></dd></div>
             <div><dt>Updated</dt><dd><time datetime="{{ record.updated_at }}">{{ record.updated_at|date('M j, Y H:i') }}</time></dd></div>
             <div><dt>Definition</dt><dd>v{{ record.definition_version }}</dd></div>
           </dl>
         </section>
+        {% endif %}
 
-        {% if available_operations.action is defined and definition.actions is not empty %}
+        {% if record_task in ['summary', 'actions'] and available_operations.action is defined and definition.actions is not empty %}
           <section class="panel panel-body stack" aria-labelledby="business-actions-title">
             <div><p class="eyebrow">Workflow</p><h2 id="business-actions-title">Available actions</h2></div>
             {% for action in definition.actions %}
-              <a class="button{% if action.high_impact %} danger{% endif %}" href="{{ record_path }}?confirm=action&action={{ action.handle|url_encode }}">
+              <a class="button{% if action.high_impact %} danger{% endif %}" href="{{ record_path }}?confirm=action&amp;action={{ action.handle|url_encode }}">
                 {{ action.label }}{% if action.transition %} → {{ action.transition|replace({'_': ' '})|title }}{% endif %}
               </a>
               {% if available_operations.approval is defined and action.high_impact %}
@@ -291,6 +307,7 @@
           </section>
         {% endif %}
 
+        {% if record_task in ['summary', 'actions'] %}
         <section class="panel panel-body stack" aria-labelledby="business-lifecycle-title">
           <div><p class="eyebrow">Lifecycle</p><h2 id="business-lifecycle-title">Record controls</h2></div>
           {% if available_operations.restore is defined and (record.archived_at or record.deleted_at) %}
@@ -303,7 +320,9 @@
             <a class="button danger" href="{{ record_path }}?confirm=delete{% if record.archived_at %}&archived=1{% endif %}">Delete record</a>
           {% endif %}
         </section>
+        {% endif %}
       </aside>
+      {% endif %}
     </div>
   </kumwe-business-surface>
 {% endblock %}

@@ -1,6 +1,7 @@
 {% extends 'portal/layout.twig' %}
 {% block title %}Inspection status · Kumwe Portal{% endblock %}
 {% block content %}
+  <div class="kis-phase-five-portal" data-kis-surface="kumwe.asset-inspection-example.portal.status">
   {% include '@kis/page-header.twig' with {
     eyebrow: surface_label,
     title: heading,
@@ -22,4 +23,5 @@
     <p>The portal is explicitly capability-gated and receives no restricted internal-note field.</p>
     <p>Inbox-processed example mutations observed in this process: {{ activity.integration_events }}</p>
   </section>
+  </div>
 {% endblock %}

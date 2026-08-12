@@ -1,14 +1,14 @@
 {% extends "layout.twig" %}
 {% block title %}{{ entry.title }} · {{ site_name|default('Kumwe') }}{% endblock %}
 {% block content %}
-  <article class="page-section">
-    <h1>{{ entry.title }}</h1>
+  <article class="page-section" aria-labelledby="template-page-title" data-kis-surface="{{ surface_id|default('core.public.page') }}">
+    <h1 id="template-page-title">{{ entry.title }}</h1>
     {% if entry.body_html|default('') %}
       <div class="article-body">{{ entry.body_html|raw }}</div>
     {% elseif entry.data.body|default('') %}
       <div class="article-body">{{ entry.data.body|nl2br }}</div>
     {% else %}
-      <p>This page has no body content yet.</p>
+      <p role="status">This page has no body content yet.</p>
     {% endif %}
   </article>
 {% endblock %}

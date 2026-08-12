@@ -2,14 +2,24 @@
 {% block title %}Automation · Kumwe{% endblock %}
 {% block context_title %}Automation{% endblock %}
 {% block content %}
-  <header class="page-heading"><div><p class="eyebrow">Operations</p><h1>Automation</h1><p>Schedule registered work, inspect delivery, and recover failed jobs without server access.</p></div></header>
+  <div class="kis-phase-five" data-kis-surface="core.administrator.automation">
+  {% include '@kis/page-header.twig' with {
+    eyebrow: 'Operations',
+    title: 'Automation',
+    purpose: 'Schedule registered work, inspect delivery, and recover failed jobs without server access.'
+  } only %}
+  <nav class="kis-phase-five-section-nav" aria-label="Automation concerns">
+    <a href="#automation-schedules">Schedules</a>
+    <a href="#automation-new-schedule">New schedule</a>
+    <a href="#automation-runs">Recent jobs</a>
+  </nav>
   {% if saved %}<div class="notice success" role="status"><span>Automation updated.</span><button class="notice-dismiss" type="button" aria-label="Dismiss" data-dismiss-notice>×</button></div>{% endif %}
 
   <div class="editor-grid">
-    <section class="panel">
+    <section id="automation-schedules" class="panel kis-phase-five-card">
       <header class="panel-header"><div><h2>Schedules</h2><p>Recurring jobs use explicit queues, timezones, and typed configuration.</p></div></header>
-      {% if schedules is empty %}<div class="panel-body"><p class="text-muted">No schedules configured.</p></div>{% else %}<div class="table-wrap automation-schedules" tabindex="0" role="region" aria-label="Automation schedules"><table>
-        <thead><tr><th>Name</th><th>Job</th><th>Next run</th><th>Status</th><th><span class="sr-only">Actions</span></th></tr></thead>
+      {% if schedules is empty %}{% include '@kis/empty-state.twig' with {title: 'No schedules configured', message: 'Create a schedule when recurring work should run automatically.'} only %}{% else %}<div class="table-wrap automation-schedules" tabindex="0" role="region" aria-label="Automation schedules; scroll horizontally for more columns"><table>
+        <thead><tr><th scope="col">Name</th><th scope="col">Job</th><th scope="col">Next run</th><th scope="col">Status</th><th scope="col"><span class="sr-only">Actions</span></th></tr></thead>
         <tbody>{% for schedule in schedules %}<tr>
           <td><span class="content-title"><strong>{{ schedule.name }}</strong><span><code>{{ schedule.cron_expression }}</code></span></span></td>
           <td><span class="content-title"><strong>{{ schedule.job_type }}</strong><span>{{ schedule.queue }}</span></span></td>
@@ -20,7 +30,7 @@
       </table></div>{% endif %}
     </section>
 
-    <aside class="panel panel-body stack automation-builder">
+    <aside id="automation-new-schedule" class="panel panel-body stack automation-builder kis-phase-five-card">
       <div><p class="eyebrow">New schedule</p><h2>Configure recurring work</h2><p class="text-muted text-small">Only registered job types are available. Inputs change to match the selected job.</p></div>
       <form action="/administrator/automation" method="post" class="stack"><input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="action" value="schedule.create">
         <label>Name<input name="name" maxlength="160" required></label>
@@ -38,11 +48,12 @@
     </aside>
   </div>
 
-  <section class="panel" style="margin-top: 1.25rem">
+  <section id="automation-runs" class="panel kis-phase-five-card">
     <header class="panel-header"><div><h2>Recent jobs</h2><p>Delivery attempts and recoverable failures across registered queues.</p></div></header>
-    <div class="table-wrap" tabindex="0" role="region" aria-label="Recent automation jobs"><table><thead><tr><th>Job</th><th>Status</th><th>Attempts</th><th>Available</th><th><span class="sr-only">Actions</span></th></tr></thead><tbody>
-      {% for job in jobs %}<tr><td><span class="content-title"><strong>{{ job.job_type }}</strong><span><code>{{ job.id }}</code> · {{ job.queue }}</span>{% if job.error_message %}<span class="text-small">{{ job.error_message }}</span>{% endif %}</span></td><td><span class="status status-{{ job.status }}">{{ job.status|title }}</span></td><td>{{ job.attempts }} / {{ job.maximum_attempts }}</td><td>{{ job.available_at }}</td><td class="actions">{% if job.status in ['dead', 'pending'] %}<form action="/administrator/automation" method="post"><input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="id" value="{{ job.id }}">{% if job.status == 'dead' %}<button class="link-button" name="action" value="job.retry">Retry</button>{% endif %}{% if job.status == 'pending' %}<button class="link-button danger" name="action" value="job.cancel">Cancel</button>{% endif %}</form>{% else %}<span class="text-muted">No action</span>{% endif %}</td></tr>
+    <div class="table-wrap" tabindex="0" role="region" aria-label="Recent automation jobs; scroll horizontally for more columns"><table><thead><tr><th scope="col">Job</th><th scope="col">Status</th><th scope="col">Attempts</th><th scope="col">Available</th><th scope="col"><span class="sr-only">Actions</span></th></tr></thead><tbody>
+      {% for job in jobs %}<tr><td><span class="content-title"><strong>{{ job.job_type }}</strong><span>{% include '@kis/technical-value.twig' with {label: 'Job identifier', value: job.id, copy: true} only %} · {{ job.queue }}</span>{% if job.error_message %}<span class="text-small">{{ job.error_message }}</span>{% endif %}</span></td><td><span class="status status-{{ job.status }}">{{ job.status|title }}</span></td><td>{{ job.attempts }} / {{ job.maximum_attempts }}</td><td>{{ job.available_at }}</td><td class="actions">{% if job.status in ['dead', 'pending'] %}<form action="/administrator/automation" method="post"><input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="id" value="{{ job.id }}">{% if job.status == 'dead' %}<button class="link-button" name="action" value="job.retry" aria-label="Retry {{ job.job_type }} job">Retry</button>{% endif %}{% if job.status == 'pending' %}<button class="link-button danger" name="action" value="job.cancel" aria-label="Cancel {{ job.job_type }} job">Cancel</button>{% endif %}</form>{% else %}<span class="text-muted">No action available</span>{% endif %}</td></tr>
       {% else %}<tr><td colspan="5">No jobs recorded.</td></tr>{% endfor %}
     </tbody></table></div>
   </section>
+  </div>
 {% endblock %}

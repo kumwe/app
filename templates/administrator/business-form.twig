@@ -6,7 +6,7 @@
 {% block context_subtitle %}Generated, policy-aware record form{% endblock %}
 
 {% block content %}
-  <kumwe-business-surface>
+  <kumwe-business-surface data-kis-business data-kis-component="generated-record-form" data-kis-surface="core.administrator.generated-definition">
     <header class="page-heading">
       <div>
         <p class="eyebrow">{{ definition.plural_label }}</p>
@@ -19,7 +19,7 @@
     </header>
 
     {% if error_summary is defined %}
-      <section class="notice danger business-error-summary" role="alert" aria-labelledby="business-error-title" tabindex="-1">
+      <section class="notice danger business-error-summary kis-validation-summary" data-kis-component="validation-summary" role="alert" aria-labelledby="business-error-title" tabindex="-1">
         <div>
           <h2 id="business-error-title">The record could not be saved</h2>
           <p>{{ error_summary }}</p>
@@ -33,7 +33,7 @@
     {% endif %}
 
     <form
-      class="panel editor-form stack business-record-form"
+      class="panel editor-form stack business-record-form kis-business-form"
       action="{{ business_base_path }}/{{ definition.handle|url_encode }}{{ record ? '/' ~ record.record_id|url_encode : '' }}"
       method="post"
     >

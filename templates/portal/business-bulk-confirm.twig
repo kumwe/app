@@ -14,6 +14,7 @@
 {% block title %}{{ operation_label }} · Kumwe Portal{% endblock %}
 
 {% block content %}
+<div data-kis-business data-kis-component="generated-bulk-confirmation" data-kis-surface="core.portal.generated-definition">
 <header class="portal-business-heading">
     <div><p class="eyebrow">Bulk confirmation required</p><h1 id="portal-business-bulk-confirm-title">{{ operation_label }}</h1><p>All {{ bulk.items|length }} reviewed versions are rechecked.</p></div>
 </header>
@@ -24,7 +25,7 @@
     </section>
 {% endif %}
 
-<section class="portal-business-panel portal-business-confirmation{% if bulk.operation == 'action' %} danger{% endif %}" aria-labelledby="portal-business-bulk-confirm-title">
+<section class="portal-business-panel portal-business-confirmation kis-business-confirmation{% if bulk.operation == 'action' %} danger{% endif %}"{% if bulk.operation == 'action' %} data-danger{% endif %} aria-labelledby="portal-business-bulk-confirm-title">
     <div class="portal-table-wrap" tabindex="0" role="region" aria-label="Selected records and expected versions">
         <table class="portal-table">
             <thead><tr><th scope="col">Record</th><th scope="col">Expected version</th></tr></thead>
@@ -56,7 +57,7 @@
                 >Update action rows</button>
             </fieldset>
         {% endif %}
-        <label class="portal-business-checkbox">
+        <label class="portal-business-checkbox kis-business-confirm-check">
             <input type="checkbox" required>
             <span>I reviewed all {{ bulk.items|length }} records and understand that one stale or denied record cancels the entire bulk operation.</span>
         </label>
@@ -66,4 +67,5 @@
         </div>
     </form>
 </section>
+</div>
 {% endblock %}

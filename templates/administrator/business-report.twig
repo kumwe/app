@@ -1,48 +1,78 @@
 {% extends "layout.twig" %}
-{% block title %}Business report · Kumwe{% endblock %}
-{% block context_title %}Business report{% endblock %}
+{% import '@kis/report-parameter-fields.twig' as report_fields %}
+
+{% block title %}Business reports · Kumwe{% endblock %}
+{% block context_title %}Business reports{% endblock %}
+{% block context_subtitle %}Policy-filtered reporting workspace{% endblock %}
+
 {% block content %}
-  <section class="panel">
-    <header class="panel-header"><div><h1>Business report</h1><p>Policy-filtered values only.</p></div></header>
+  {% set selected_report = report_result ? report_result.report : (export ? export.report : null) %}
+  <div data-kis-business data-kis-component="generated-report-workspace" data-kis-surface="core.administrator.reports" class="kis-business-stack">
+    {% embed '@kis/page-header.twig' with {
+      eyebrow: 'Reports',
+      title: 'Business reports',
+      purpose: 'Choose an available report, provide its declared parameters, and review disclosure-safe results or export status.'
+    } only %}{% endembed %}
+
     {% if report_error %}
-      <div class="panel-body" role="alert"><h2>Report request not accepted</h2><p>{{ report_error }}</p></div>
+      <section class="notice danger kis-validation-summary" data-kis-component="validation-summary" role="alert" tabindex="-1">
+        <div><h2>Report request not accepted</h2><p>{{ report_error }}</p></div>
+      </section>
     {% endif %}
-    {% if reports is empty %}
-      <div class="panel-body"><p>No active reports are available to this administrator surface.</p></div>
-    {% else %}
-      {% for report in reports %}
-        <form method="post" action="{{ report.execute_url }}" class="panel-body" aria-label="Run {{ report.title }}">
-          <input type="hidden" name="_csrf" value="{{ administrator_session.csrfToken }}">
-          <h2>{{ report.title }}</h2>
-          <p><code>{{ report.id }}</code></p>
-          {% if report.parameters %}
-            <details><summary>Parameter contract</summary><ul>
-              {% for parameter in report.parameters %}
-                <li><code>{{ parameter.name }}</code> — {{ parameter.type }}{% if parameter.multiple %} list{% endif %}{% if parameter.required %}, required{% endif %}</li>
-              {% endfor %}
-            </ul></details>
-          {% endif %}
-          <label>Parameters as JSON object
-            <textarea name="parameters_json" rows="3" spellcheck="false">{}</textarea>
-          </label>
-          <div class="actions">
-            <button type="submit">Run report</button>
-            {% if report.can_export %}<button type="submit" formaction="{{ report.export_url }}">Queue CSV export</button>{% endif %}
-          </div>
-        </form>
-      {% endfor %}
-    {% endif %}
-    {% if report_result %}
-      <div class="table-wrap" tabindex="0" role="region" aria-label="Report results">
-        <table><thead><tr>{% for column in report_result.columns %}<th>{{ column.label }}</th>{% endfor %}{% if report_result.has_drill_downs %}<th>Details</th>{% endif %}</tr></thead>
-          <tbody>{% for row in report_result.rows %}{% set row_index = loop.index0 %}<tr>{% for column in report_result.columns %}<td>{{ attribute(row, column.alias)|default('') }}</td>{% endfor %}{% if report_result.has_drill_downs %}<td>{% for link in attribute(report_result.drill_downs, row_index) %}<a href="{{ link.url }}">Open details</a>{% if not loop.last %}<br>{% endif %}{% else %}<span aria-label="No detail view">—</span>{% endfor %}</td>{% endif %}</tr>{% else %}<tr><td colspan="{{ report_result.columns|length + (report_result.has_drill_downs ? 1 : 0) }}">No matching rows.</td></tr>{% endfor %}</tbody>
-        </table>
+
+    <div class="kis-business-record-grid kis-business-report-grid">
+      <aside class="panel panel-body kis-business-record-sidebar" aria-labelledby="report-catalog-title">
+        <h2 id="report-catalog-title">Catalog</h2>
+        {% if reports is empty %}
+          <p>No active reports are available to this administrator surface.</p>
+        {% else %}
+          <nav class="kis-business-report-catalog" aria-label="Available reports">
+            {% for report in reports %}
+              <a class="kis-business-report-link" href="#report-runner-{{ loop.index }}" aria-current="{{ selected_report == report.id ? 'true' : 'false' }}">
+                <strong>{{ report.title }}</strong><span>{{ report.parameters|length }} parameter{{ report.parameters|length == 1 ? '' : 's' }}</span>
+              </a>
+            {% endfor %}
+          </nav>
+        {% endif %}
+      </aside>
+
+      <div class="kis-business-stack">
+        <section class="panel panel-body kis-business-stack" aria-labelledby="report-runner-title">
+          <div class="kis-business-section-heading"><div><p class="eyebrow">Runner</p><h2 id="report-runner-title">Run or export</h2></div></div>
+          {% for report in reports %}
+            <form id="report-runner-{{ loop.index }}" method="post" action="{{ report.execute_url }}" class="kis-business-form" aria-label="Run {{ report.title }}">
+              <input type="hidden" name="_csrf" value="{{ csrf }}">
+              <div><h3>{{ report.title }}</h3>{% include '@kis/technical-value.twig' with {label: 'Report ID', value: report.id} only %}</div>
+              {{ report_fields.fields(report.parameters, 'administrator-report-' ~ loop.index) }}
+              <div class="page-actions">
+                <button class="primary" type="submit">Run report</button>
+                {% if report.can_export %}<button type="submit" formaction="{{ report.export_url }}">Queue CSV export</button>{% endif %}
+              </div>
+            </form>
+            {% if not loop.last %}<hr>{% endif %}
+          {% endfor %}
+        </section>
+
+        <section class="panel panel-body kis-business-report-results" aria-labelledby="report-results-title">
+          <div class="kis-business-section-heading"><div><p class="eyebrow">Results</p><h2 id="report-results-title">Report results</h2></div>{% if report_result %}<span class="count-badge">{{ report_result.row_count }} rows</span>{% endif %}</div>
+          {% if report_result %}
+            <div class="kis-business-table-region" tabindex="0" role="region" aria-label="Report results" data-scroll-label="Scroll horizontally to review every result column">
+              <table class="kis-business-table"><thead><tr>{% for column in report_result.columns %}<th scope="col">{{ column.label }}</th>{% endfor %}{% if report_result.has_drill_downs %}<th scope="col">Details</th>{% endif %}</tr></thead>
+                <tbody>{% for row in report_result.rows %}{% set row_index = loop.index0 %}<tr>{% for column in report_result.columns %}<td data-label="{{ column.label }}">{{ attribute(row, column.alias) is same as(true) ? 'Yes' : (attribute(row, column.alias) is same as(false) ? 'No' : attribute(row, column.alias)|default('')) }}</td>{% endfor %}{% if report_result.has_drill_downs %}<td>{% for link in attribute(report_result.drill_downs, row_index) %}<a href="{{ link.url }}">Open details</a>{% if not loop.last %}<br>{% endif %}{% else %}<span aria-label="No detail view">—</span>{% endfor %}</td>{% endif %}</tr>{% else %}<tr><td colspan="{{ report_result.columns|length + (report_result.has_drill_downs ? 1 : 0) }}">No matching rows.</td></tr>{% endfor %}</tbody>
+              </table>
+            </div>
+            <dl class="kis-business-metadata"><div><dt>Definition checksum</dt><dd>{% include '@kis/technical-value.twig' with {label: 'Definition checksum', value: report_result.definition_checksum, copy: false} only %}</dd></div><div><dt>Query digest</dt><dd>{% include '@kis/technical-value.twig' with {label: 'Query digest', value: report_result.query_digest, copy: false} only %}</dd></div></dl>
+          {% else %}<p>Run a report to display its bounded results here.</p>{% endif %}
+        </section>
+
+        <section class="panel panel-body" aria-labelledby="export-history-title">
+          <div><p class="eyebrow">Export history</p><h2 id="export-history-title">Latest export request</h2></div>
+          {% if export %}
+            <dl class="kis-business-operation-stage"><div><dt>Status</dt><dd>{{ export.status|replace({'_': ' '})|title }}</dd></div><div><dt>Requested</dt><dd>{{ export.created_at }}</dd></div><div><dt>Rows</dt><dd>{{ export.row_count is null ? 'Pending' : export.row_count }}</dd></div><div><dt>Checksum</dt><dd>{{ export.checksum|default('Pending') }}</dd></div></dl>
+            <p><a href="/administrator/reports/exports/{{ export.id }}">Refresh status</a>{% if export.status == 'completed' %} · <a href="/administrator/reports/exports/{{ export.id }}/download">Download verified CSV</a>{% endif %}</p>
+          {% else %}<p>Queued exports appear here with status, row count, and verified download details.</p>{% endif %}
+        </section>
       </div>
-    {% elseif export %}
-      <div class="panel-body"><h2>Export {{ export.status|replace({'_': ' '})|title }}</h2>
-        <dl><dt>Requested</dt><dd>{{ export.created_at }}</dd><dt>Rows</dt><dd>{{ export.row_count is null ? 'Pending' : export.row_count }}</dd><dt>Checksum</dt><dd>{{ export.checksum|default('Pending') }}</dd></dl>
-        <p><a href="/administrator/reports/exports/{{ export.id }}">Refresh status</a>{% if export.status == 'completed' %} · <a href="/administrator/reports/exports/{{ export.id }}/download">Download verified CSV</a>{% endif %}</p>
-      </div>
-    {% endif %}
-  </section>
+    </div>
+  </div>
 {% endblock %}

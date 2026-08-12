@@ -16,7 +16,7 @@
 {% block context_subtitle %}Review every record and expected version{% endblock %}
 
 {% block content %}
-  <kumwe-business-confirmation>
+  <kumwe-business-confirmation data-kis-business data-kis-component="generated-bulk-confirmation" data-kis-surface="core.administrator.generated-definition">
     <header class="page-heading">
       <div>
         <p class="eyebrow">Bulk confirmation required</p>
@@ -31,7 +31,7 @@
       </section>
     {% endif %}
 
-    <section class="panel panel-body stack business-confirmation{% if bulk.operation == 'action' %} danger{% endif %}" aria-labelledby="business-bulk-confirm-title">
+    <section class="panel panel-body stack business-confirmation kis-business-confirmation{% if bulk.operation == 'action' %} danger{% endif %}"{% if bulk.operation == 'action' %} data-danger{% endif %} aria-labelledby="business-bulk-confirm-title">
       <div class="table-wrap" tabindex="0" role="region" aria-label="Selected records and expected versions">
         <table>
           <thead><tr><th scope="col">Record</th><th scope="col">Expected version</th></tr></thead>
@@ -66,7 +66,7 @@
             >Update action rows</button>
           </fieldset>
         {% endif %}
-        <label class="check business-confirm-check">
+        <label class="check business-confirm-check kis-business-confirm-check">
           <input type="checkbox" required data-business-confirm-check>
           <span>I reviewed all {{ bulk.items|length }} records and understand that one stale or denied record cancels the entire bulk operation.</span>
         </label>

@@ -7,6 +7,7 @@ namespace Kumwe\CMS\BusinessReporting\Delivery\Administrator;
 use InvalidArgumentException;
 use JsonException;
 use Kumwe\CMS\Application\Authorization\AuthenticatedSurface;
+use Kumwe\CMS\Application\Authorization\ExecutionContext;
 use Kumwe\CMS\Administrator\Http\AdministratorRequest;
 use Kumwe\CMS\Administrator\Http\Middleware\AdministratorCsrfMiddleware;
 use Kumwe\CMS\Administrator\Presentation\AdministratorRenderer;
@@ -18,6 +19,7 @@ use Kumwe\CMS\BusinessReporting\Application\ReportRowLimitExceeded;
 use Kumwe\CMS\BusinessReporting\Application\ReportService;
 use Kumwe\CMS\BusinessReporting\Application\ReportUnavailable;
 use Kumwe\CMS\BusinessReporting\Delivery\Api\ReportApiPresenter;
+use Kumwe\CMS\BusinessReporting\Delivery\Browser\ReportParameterInput;
 use Kumwe\CMS\BusinessReporting\Domain\ReportDefinition;
 use Laminas\Diactoros\Response;
 use Laminas\Diactoros\Response\EmptyResponse;
@@ -78,7 +80,7 @@ final readonly class AdministratorReportHandler implements RequestHandlerInterfa
                     new ReportExecutionRequest(
                         $context,
                         $reportId,
-                        $this->parameters($request),
+                        $this->parameters($request, $context, $reportId, BusinessRecordQueryPurpose::Report),
                         $context->organization()?->identifier(),
                         BusinessRecordQueryPurpose::Report,
                     ),
@@ -87,7 +89,7 @@ final readonly class AdministratorReportHandler implements RequestHandlerInterfa
                 $data['export'] = $this->presenter->export($this->exports->request(
                     $context,
                     $reportId,
-                    $this->parameters($request),
+                    $this->parameters($request, $context, $reportId, BusinessRecordQueryPurpose::Export),
                     $context->organization()?->identifier(),
                 ));
             } elseif ($operation === 'export_status' && is_string($artifactId)) {
@@ -133,13 +135,21 @@ final readonly class AdministratorReportHandler implements RequestHandlerInterfa
     /**
      * Decode a nested API-style parameter object or the graphical JSON editor value.
      *
-     * @param   ServerRequestInterface  $request  Report submission carrying its declared parameters.
+     * @param   ServerRequestInterface      $request   Report submission carrying its declared parameters.
+     * @param   ExecutionContext            $context   Authenticated administrator authority.
+     * @param   string                      $reportId  Exact route report identifier.
+     * @param   BusinessRecordQueryPurpose  $purpose   Report or export policy purpose.
      *
      * @return  array<string, mixed>  String-keyed parameter values for the report definition.
      *
      * @since   2.0.0
      */
-    private function parameters(ServerRequestInterface $request): array
+    private function parameters(
+        ServerRequestInterface $request,
+        ExecutionContext $context,
+        string $reportId,
+        BusinessRecordQueryPurpose $purpose,
+    ): array
     {
         $source = $request->getQueryParams();
         if (strtoupper($request->getMethod()) !== 'GET') {
@@ -149,6 +159,9 @@ final readonly class AdministratorReportHandler implements RequestHandlerInterfa
             }
         }
         $parameters = $source['parameters'] ?? null;
+        if ($parameters !== null && array_key_exists('parameters_json', $source)) {
+            throw new InvalidArgumentException('Administrator report parameter representations cannot be mixed.');
+        }
         if ($parameters === null && isset($source['parameters_json']) && is_string($source['parameters_json'])) {
             try {
                 $parameters = json_decode($source['parameters_json'], true, 32, JSON_THROW_ON_ERROR);
@@ -160,13 +173,48 @@ final readonly class AdministratorReportHandler implements RequestHandlerInterfa
                 );
             }
         }
+        $native = array_key_exists('parameters', $source);
         $parameters ??= [];
         if (!is_array($parameters) || ($parameters !== [] && array_is_list($parameters))) {
             throw new InvalidArgumentException('Administrator report parameters must form an object.');
         }
 
         /** @var array<string, mixed> $parameters */
-        return $parameters;
+        if (!$native) {
+            return $parameters;
+        }
+
+        return ReportParameterInput::map(
+            $this->reportDefinition($context, $reportId, $purpose)->parameters,
+            $parameters,
+        );
+    }
+
+    /**
+     * Resolve metadata only from the same purpose-filtered discovery service used by execution.
+     *
+     * @param   ExecutionContext            $context   Authenticated administrator authority.
+     * @param   string                      $reportId  Exact route report identifier.
+     * @param   BusinessRecordQueryPurpose  $purpose   Report or export policy purpose.
+     *
+     * @return  ReportDefinition  Policy-visible immutable declaration.
+     *
+     * @throws  ReportUnavailable  When the identifier is absent or unavailable for this purpose.
+     *
+     * @since   2.0.0
+     */
+    private function reportDefinition(
+        ExecutionContext $context,
+        string $reportId,
+        BusinessRecordQueryPurpose $purpose,
+    ): ReportDefinition {
+        foreach ($this->reports->available($context, $purpose) as $definition) {
+            if (hash_equals($definition->identifier(), $reportId)) {
+                return $definition;
+            }
+        }
+
+        throw new ReportUnavailable('The report is unavailable.');
     }
 
     /**

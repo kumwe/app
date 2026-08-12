@@ -413,14 +413,7 @@
       "environment": "GitHub Actions Ubuntu 24.04 with PHP 8.5, pinned Node/Chromium, MariaDB LTS, MySQL 8.4, PostgreSQL 17, Redis, nginx and PHP-FPM.",
       "result_summary": "Passed; durable run: https://github.com/kumwe/cms/actions/runs/31549497432",
       "artifact_paths": [
-        "public/assets/build/.vite/manifest.json",
-        "public/assets/build/css/administrator-D-nCGNaN.css",
-        "public/assets/build/css/portal-DDovE6Ab.css",
-        "public/assets/build/css/site-CBC-P0eH.css",
-        "public/assets/build/js/administrator-BzFGMljp.js",
-        "public/assets/build/js/portal-Dn5oNgHg.js",
-        "public/assets/build/js/site-DbFO54tB.js",
-        "public/assets/build/js/reveal-validation-DkoA-GGU.js"
+        "public/assets/build/.vite/manifest.json"
       ],
       "blocker_finding_ids": [],
       "evidence_ids": [],

@@ -9,7 +9,7 @@
     {% if node.items is empty %}
       <p class="text-muted">No items</p>
     {% else %}
-      <ol class="business-custom-list">
+      <ol class="business-custom-list kis-business-custom-list">
         {% for item in node.items %}<li>{{ _self.node(item.value) }}</li>{% endfor %}
       </ol>
     {% endif %}
@@ -17,7 +17,7 @@
     {% if node.entries is empty %}
       <p class="text-muted">No values</p>
     {% else %}
-      <dl class="business-custom-object">
+      <dl class="business-custom-object kis-business-custom-object">
         {% for entry in node.entries %}
           <div><dt>{{ entry.label }}</dt><dd>{{ _self.node(entry.value) }}</dd></div>
         {% endfor %}
@@ -41,7 +41,7 @@
     and not field.write_only
     and field.value_type in ['string', 'reference', 'integer', 'boolean']
   )|slice(0, 128) %}
-  <kumwe-business-surface>
+  <kumwe-business-surface data-kis-business data-kis-component="generated-custom-view" data-kis-surface="core.administrator.generated-custom-view">
     <header class="page-heading">
       <div>
         <p class="eyebrow">{{ view.kind|replace({'_': ' '}) }} custom view</p>
@@ -68,7 +68,7 @@
     <section class="panel panel-body stack" aria-labelledby="business-custom-query-title">
       <div><p class="eyebrow">Parameters</p><h2 id="business-custom-query-title">Run this view</h2></div>
       {% if parameter_supported %}
-        <form class="business-query-form" action="{{ custom_path }}" method="get">
+        <form class="business-query-form kis-business-query-form" action="{{ custom_path }}" method="get">
           {{ schema_fields.fields(parameter_fields) }}
           {% if searchable_fields is not empty %}
             <label for="business-custom-search">Search records

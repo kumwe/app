@@ -447,14 +447,7 @@
       "environment": "Node 24.14.0, Vite 8.2.0; checked-in production asset directory",
       "result_summary": "Passed: 41 modules transformed; administrator, portal, site, and shared validation bundles emitted and every manifest reference exists.",
       "artifact_paths": [
-        "public/assets/build/.vite/manifest.json",
-        "public/assets/build/css/administrator-D-nCGNaN.css",
-        "public/assets/build/css/portal-DDovE6Ab.css",
-        "public/assets/build/css/site-CBC-P0eH.css",
-        "public/assets/build/js/administrator-BzFGMljp.js",
-        "public/assets/build/js/portal-Dn5oNgHg.js",
-        "public/assets/build/js/site-DbFO54tB.js",
-        "public/assets/build/js/reveal-validation-DkoA-GGU.js"
+        "public/assets/build/.vite/manifest.json"
       ],
       "blocker_finding_ids": [],
       "evidence_ids": [],

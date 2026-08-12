@@ -3,7 +3,7 @@
 {% block title %}Sign in · Kumwe Portal{% endblock %}
 
 {% block content %}
-<section class="portal-login" aria-labelledby="portal-login-title">
+<section class="portal-login kis-phase-five-portal" aria-labelledby="portal-login-title" data-kis-surface="core.portal.login">
     <p class="eyebrow">Business workspace</p>
     <h1 id="portal-login-title">Sign in to the portal</h1>
     <p>Use your Kumwe identity. Your organization and workspace are resolved from active memberships.</p>
@@ -24,5 +24,17 @@
 
         <button type="submit">Sign in</button>
     </form>
+
+    <details class="portal-sign-in-help">
+        <summary>What access do I need?</summary>
+        <p>An administrator must provision each part of portal access before you sign in:</p>
+        <ol>
+            <li>Your own active user identity — never a shared account.</li>
+            <li>An active membership in the organization.</li>
+            <li>A permitted workspace and the roles needed for your work.</li>
+            <li>The exact workspace identifier, only when your administrator asks you to enter one.</li>
+        </ol>
+        <p>If sign-in is unavailable, ask your administrator to review the complete provisioning path. For your security, this page does not reveal which identity or access prerequisite is missing.</p>
+    </details>
 </section>
 {% endblock %}

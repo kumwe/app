@@ -1,5 +1,7 @@
 @layer reset, tokens, base, layout, components, utilities, overrides;
 
+@import "./generated-business.css";
+
 @layer tokens {
   :root {
     --kis-space-1: .25rem;

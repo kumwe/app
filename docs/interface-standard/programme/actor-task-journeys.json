@@ -381,7 +381,7 @@
       "id": "journey.extension-lifecycle",
       "label": "Install, use, disable and restore graphical contributions",
       "actor_ids": ["system-administrator", "extension-operator", "portal-member"],
-      "surface_sequence": ["core.administrator.extensions", "extension.administrator.route-family", "example.announcements.administrator", "kumwe.asset-inspection-example.administrator.index", "extension.portal.route-family", "kumwe.asset-inspection-example.portal.status"],
+      "surface_sequence": ["core.administrator.extensions", "extension.administrator.route-family", "kumwe.announcements-example.index", "kumwe.asset-inspection-example.administrator.index", "extension.portal.route-family", "kumwe.asset-inspection-example.portal.status"],
       "success": "Trusted contributions appear with correct navigation and policy, disappear on disable, recover on reactivation and retain owned data."
     },
     {

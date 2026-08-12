@@ -5,6 +5,7 @@
 {% block context_subtitle %}Caller-bound mutation evidence{% endblock %}
 
 {% block content %}
+  <div data-kis-business data-kis-component="generated-operation-status" data-kis-surface="core.administrator.generated-operation">
   <header class="page-heading">
     <div><p class="eyebrow">Generated business operation</p><h1>Operation status</h1><p>Only operations bound to your current identity, scope, policy, and surface are disclosed.</p></div>
   </header>
@@ -18,7 +19,7 @@
       </div>
     </section>
   {% else %}
-    <section class="panel panel-body stack" aria-labelledby="business-operation-complete">
+    <section class="panel panel-body stack kis-business-section" aria-labelledby="business-operation-complete">
       <div class="section-heading">
         <div>
           <p class="eyebrow">{{ operation_status.state }}</p>
@@ -30,7 +31,7 @@
             : operation_status.result.operation|title }}
         </span>
       </div>
-      <dl class="business-record-metadata">
+      <dl class="business-record-metadata kis-business-operation-stage">
         <div><dt>Operation ID</dt><dd><code>{{ operation_status.operation_id }}</code></dd></div>
         <div><dt>Operation</dt><dd><code>{{ operation_status.operation }}</code></dd></div>
         {% if operation_status.operation == 'business.record.action_approval_request' %}
@@ -58,4 +59,5 @@
       </div>
     </section>
   {% endif %}
+  </div>
 {% endblock %}

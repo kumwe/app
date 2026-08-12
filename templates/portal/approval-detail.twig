@@ -3,58 +3,105 @@
 {% block title %}Approval request · Kumwe Portal{% endblock %}
 
 {% block content %}
-<p><a href="/portal/approvals">← Approval inbox</a></p>
-<section aria-labelledby="approval-detail-title">
-    <p class="eyebrow">{{ approval.status }}</p>
-    <h1 id="approval-detail-title">Approval request</h1>
+<div data-kis-surface="core.portal.approvals" data-kis-component="review-workspace">
+    <p><a href="/portal/approvals">← Approval inbox</a></p>
+    {% include '@kis/page-header.twig' with {
+        eyebrow: approval.status,
+        title: 'Approval request',
+        purpose: 'Review the exact target and current decision history before recording a protected decision.'
+    } only %}
     {% if notice %}<div class="portal-notice" role="status">{{ notice }}</div>{% endif %}
     {% if error %}<div class="portal-alert" role="alert">{{ error }}</div>{% endif %}
-    <dl class="portal-details">
-        <div><dt>Request</dt><dd><code>{{ approval.id }}</code></dd></div>
-        <div><dt>Action</dt><dd><code>{{ approval.action }}</code></dd></div>
-        <div><dt>Resource</dt><dd>{{ approval.resourceType }}, version {{ approval.resourceVersion }}</dd></div>
-        <div><dt>Quorum</dt><dd>{{ approval.approvalCount }} of {{ approval.requiredQuorum }}</dd></div>
-        <div><dt>Created</dt><dd><time datetime="{{ approval.createdAt|date('c') }}">{{ approval.createdAt|date('Y-m-d H:i T') }}</time></dd></div>
-        <div><dt>Expires</dt><dd><time datetime="{{ approval.expiresAt|date('c') }}">{{ approval.expiresAt|date('Y-m-d H:i T') }}</time></dd></div>
-    </dl>
-</section>
 
-{% if approval.votes is not empty %}
-<section aria-labelledby="approval-votes-title">
-    <h2 id="approval-votes-title">Decisions</h2>
-    <ol>
-    {% for vote in approval.votes %}
-        <li><strong>{{ vote.decision }}</strong> at <time datetime="{{ vote.decidedAt|date('c') }}">{{ vote.decidedAt|date('Y-m-d H:i T') }}</time>{% if vote.reason %}: {{ vote.reason }}{% endif %}</li>
-    {% endfor %}
-    </ol>
-</section>
-{% endif %}
+    <kumwe-tabs data-kis-tab-parameter="view">
+        {% include '@kis/tabs.twig' with {
+            id: 'portal-approval',
+            label: 'Approval request concerns',
+            active: view,
+            tabs: [
+                {id: 'review', label: 'Review', href: '/portal/approvals/' ~ (approval.id|url_encode) ~ '?view=review'},
+                {id: 'history', label: 'Decision history', href: '/portal/approvals/' ~ (approval.id|url_encode) ~ '?view=history', count: approval.votes|length}
+            ]
+        } only %}
 
-{% if approval.canApprove or approval.canRevoke %}
-<section class="portal-security-panel" aria-labelledby="approval-decision-title">
-    <h2 id="approval-decision-title">Record a protected decision</h2>
-    <p>Your authenticator or recovery code is verified for this exact decision and cannot be replayed.</p>
-    <form method="post" class="portal-security-form" id="approval-decision-form">
-        <input type="hidden" name="_csrf" value="{{ portal_session.csrfToken }}">
-        <fieldset>
-            <legend>Verification method</legend>
-            <label><input type="radio" name="verification_method" value="totp" checked> Authenticator code</label>
-            <label><input type="radio" name="verification_method" value="recovery"> Recovery code</label>
-        </fieldset>
-        <label for="approval-verification">Verification code</label>
-        <input id="approval-verification" name="verification" autocomplete="one-time-code" required>
-        {% if approval.canApprove %}
-            <label for="approval-reason">Reason <span>(optional, 500 characters)</span></label>
-            <textarea id="approval-reason" name="reason" maxlength="500"></textarea>
-            <div class="portal-actions">
-                <button type="submit" formaction="/portal/approvals/{{ approval.id }}/approve">Approve</button>
-                <button type="submit" class="portal-danger" formaction="/portal/approvals/{{ approval.id }}/reject">Reject</button>
-            </div>
-        {% endif %}
-        {% if approval.canRevoke %}
-            <button type="submit" class="portal-danger" formaction="/portal/approvals/{{ approval.id }}/revoke">Revoke approval</button>
-        {% endif %}
-    </form>
-</section>
-{% endif %}
+        <section
+            id="portal-approval-panel-review"
+            class="kis-tab-panel"
+            role="tabpanel"
+            aria-labelledby="portal-approval-tab-review"
+            data-kis-tab-panel="review"
+            tabindex="0"
+        >
+            <section aria-labelledby="approval-review-title">
+                <h2 id="approval-review-title">Review target and consequence</h2>
+                <p>Confirm the action, resource version, quorum, and expiry. Your decision is recorded in the immutable approval history.</p>
+                <dl class="portal-details">
+                    <div><dt>Request</dt><dd>{% include '@kis/technical-value.twig' with {label: 'Request ID', value: approval.id} only %}</dd></div>
+                    <div><dt>Action</dt><dd><code>{{ approval.action }}</code></dd></div>
+                    <div><dt>Resource</dt><dd>{{ approval.resourceType }}, version {{ approval.resourceVersion }}</dd></div>
+                    <div><dt>Quorum</dt><dd>{{ approval.approvalCount }} of {{ approval.requiredQuorum }}</dd></div>
+                    <div><dt>Created</dt><dd><time datetime="{{ approval.createdAt|date('c') }}">{{ approval.createdAt|date('Y-m-d H:i T') }}</time></dd></div>
+                    <div><dt>Expires</dt><dd><time datetime="{{ approval.expiresAt|date('c') }}">{{ approval.expiresAt|date('Y-m-d H:i T') }}</time></dd></div>
+                </dl>
+            </section>
+
+            {% if approval.canApprove or approval.canRevoke %}
+            <section class="portal-security-panel" aria-labelledby="approval-decision-title">
+                <h2 id="approval-decision-title">Record a protected decision</h2>
+                <p>Step-up verification occurs only at this final action boundary. The authenticator or recovery code is bound to this exact decision and cannot be replayed.</p>
+                <form method="post" class="portal-security-form" id="approval-decision-form">
+                    <input type="hidden" name="_csrf" value="{{ portal_session.csrfToken }}">
+                    <fieldset>
+                        <legend>Verification method</legend>
+                        <label><input type="radio" name="verification_method" value="totp" checked> Authenticator code</label>
+                        <label><input type="radio" name="verification_method" value="recovery"> Recovery code</label>
+                    </fieldset>
+                    <label for="approval-verification">Verification code</label>
+                    <input id="approval-verification" name="verification" autocomplete="one-time-code" required>
+                    {% if approval.canApprove %}
+                        <label for="approval-reason">Reason <span>(optional, 500 characters)</span></label>
+                        <textarea id="approval-reason" name="reason" maxlength="500"></textarea>
+                        <div class="portal-actions">
+                            <button type="submit" formaction="/portal/approvals/{{ approval.id }}/approve">Approve</button>
+                            <button type="submit" class="portal-danger" formaction="/portal/approvals/{{ approval.id }}/reject">Reject</button>
+                        </div>
+                    {% endif %}
+                    {% if approval.canRevoke %}
+                        <button type="submit" class="portal-danger" formaction="/portal/approvals/{{ approval.id }}/revoke">Revoke approval</button>
+                    {% endif %}
+                </form>
+            </section>
+            {% else %}
+                {% include '@kis/empty-state.twig' with {
+                    title: 'No decision is available',
+                    message: 'This request is visible for review, but its current state or policy does not permit another decision.'
+                } only %}
+            {% endif %}
+        </section>
+
+        <section
+            id="portal-approval-panel-history"
+            class="kis-tab-panel"
+            role="tabpanel"
+            aria-labelledby="portal-approval-tab-history"
+            data-kis-tab-panel="history"
+            tabindex="0"
+        >
+            <h2>Decision history</h2>
+            <p>This append-only record discloses decision, time, and supplied reason. Internal actor and policy evidence remain protected.</p>
+            {% if approval.votes is empty %}
+                {% include '@kis/empty-state.twig' with {
+                    title: 'No decisions have been recorded',
+                    message: 'The request has not yet received a visible decision.'
+                } only %}
+            {% else %}
+                <ol>
+                {% for vote in approval.votes %}
+                    <li><strong>{{ vote.decision }}</strong> at <time datetime="{{ vote.decidedAt|date('c') }}">{{ vote.decidedAt|date('Y-m-d H:i T') }}</time>{% if vote.reason %}: {{ vote.reason }}{% endif %}</li>
+                {% endfor %}
+                </ol>
+            {% endif %}
+        </section>
+    </kumwe-tabs>
+</div>
 {% endblock %}

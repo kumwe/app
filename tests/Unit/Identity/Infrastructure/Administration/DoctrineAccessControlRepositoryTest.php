@@ -182,6 +182,41 @@ final class DoctrineAccessControlRepositoryTest extends TestCase
     }
 
     /**
+     * Proves the security timeline selects only bounded identity fields and never stored event metadata.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testSecurityEventsUseClosedActionProjectionWithoutMetadata(): void
+    {
+        $database = $this->database();
+        $database->expects(self::once())->method('fetchAllAssociative')->with(
+            self::callback(static function (string $sql): bool {
+                self::assertStringContainsString('kumwe_audit_events', $sql);
+                self::assertStringContainsString("action LIKE 'identity.step_up.%'", $sql);
+                self::assertStringContainsString('ORDER BY occurred_at DESC, id DESC', $sql);
+                self::assertStringNotContainsString('metadata', $sql);
+
+                return true;
+            }),
+        )->willReturn([[
+            'id' => '0191574f-f0b8-7bf3-a9aa-91c6b8244f30',
+            'occurred_at' => '2026-08-12 10:00:00',
+            'actor_id' => '0191574f-f0b8-7bf3-a9aa-91c6b8244f31',
+            'action' => 'identity.step_up.challenge',
+            'subject_type' => 'step_up_credential',
+            'subject_id' => '0191574f-f0b8-7bf3-a9aa-91c6b8244f32',
+            'outcome' => 'success',
+        ]]);
+
+        $events = $this->repository($database)->securityEvents();
+
+        self::assertCount(1, $events);
+        self::assertArrayNotHasKey('metadata', $events[0]);
+    }
+
+    /**
      * Build the adapter with the supplied DBAL test double.
      *
      * @param   Connection  $database  Test double recording the adapter's SQL interactions.

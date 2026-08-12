@@ -3,31 +3,36 @@
 {% block title %}Approvals · Kumwe Portal{% endblock %}
 
 {% block content %}
-<section aria-labelledby="approval-inbox-title">
-    <p class="eyebrow">Maker-checker workflow</p>
-    <h1 id="approval-inbox-title">Approval inbox</h1>
-    <p>Only requests visible in your current organization and workspace are listed.</p>
+<div data-kis-surface="core.portal.approvals" data-kis-component="collection-workspace">
+    {% include '@kis/page-header.twig' with {
+        eyebrow: 'Maker-checker workflow',
+        title: 'Approval inbox',
+        purpose: 'Review only the requests available in your current organization and workspace.'
+    } only %}
     {% if notice %}<div class="portal-notice" role="status">{{ notice }}</div>{% endif %}
-</section>
 
-{% if approvals is empty %}
-    <p>No approval requests are available in this workspace.</p>
-{% else %}
-<div class="portal-table-wrap" tabindex="0" role="region" aria-label="Approval requests">
-    <table class="portal-table">
-        <thead><tr><th scope="col">Request</th><th scope="col">Action</th><th scope="col">Resource</th><th scope="col">Progress</th><th scope="col">Expires</th></tr></thead>
-        <tbody>
-        {% for approval in approvals %}
-            <tr>
-                <th scope="row"><a href="/portal/approvals/{{ approval.id }}">{{ approval.id }}</a><br><small>{{ approval.status }}</small></th>
-                <td><code>{{ approval.action }}</code></td>
-                <td>{{ approval.resourceType }}, version {{ approval.resourceVersion }}</td>
-                <td>{{ approval.approvalCount }} of {{ approval.requiredQuorum }}</td>
-                <td><time datetime="{{ approval.expiresAt|date('c') }}">{{ approval.expiresAt|date('Y-m-d H:i T') }}</time></td>
-            </tr>
-        {% endfor %}
-        </tbody>
-    </table>
+    {% if approvals is empty %}
+        {% include '@kis/empty-state.twig' with {
+            title: 'No approval requests are available',
+            message: 'There is nothing to review in this workspace. New requests appear here only when policy permits you to decide them.'
+        } only %}
+    {% else %}
+    <div class="portal-table-wrap" tabindex="0" role="region" aria-label="Approval requests">
+        <table class="portal-table">
+            <thead><tr><th scope="col">Request</th><th scope="col">Action</th><th scope="col">Resource</th><th scope="col">Progress</th><th scope="col">Expires</th></tr></thead>
+            <tbody>
+            {% for approval in approvals %}
+                <tr>
+                    <th scope="row"><a href="/portal/approvals/{{ approval.id }}?view=review">{{ approval.id }}</a><br><small>{{ approval.status }}</small></th>
+                    <td><code>{{ approval.action }}</code></td>
+                    <td>{{ approval.resourceType }}, version {{ approval.resourceVersion }}</td>
+                    <td>{{ approval.approvalCount }} of {{ approval.requiredQuorum }}</td>
+                    <td><time datetime="{{ approval.expiresAt|date('c') }}">{{ approval.expiresAt|date('Y-m-d H:i T') }}</time></td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
 </div>
-{% endif %}
 {% endblock %}

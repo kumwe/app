@@ -100,6 +100,7 @@ validateSurfaces(
     $ownerIds,
     $errors,
 );
+validateMigrationDispositions($inventory, $ledger, $errors);
 validateTemplates($root, $inventory, $surfaceIds, $errors);
 validateCoreRoutes($root, $inventory, $errors);
 validateNavigationSources($root, $inventory, $errors);
@@ -515,6 +516,62 @@ function validateSurfaces(
 }
 
 /**
+ * Prevent a completed migration phase from retaining an undeclared runtime surface or navigation link.
+ *
+ * @param   array<string, mixed>  $inventory  Authoritative surface and navigation inventory.
+ * @param   array<string, mixed>  $ledger     Phase and programme state.
+ * @param   list<string>          $errors     Accumulated validation failures.
+ *
+ * @return  void
+ *
+ * @since   2.0.0
+ */
+function validateMigrationDispositions(array $inventory, array $ledger, array &$errors): void
+{
+    $completePhases = [];
+    foreach ($ledger['phases'] ?? [] as $phase) {
+        if (is_array($phase) && is_int($phase['number'] ?? null) && ($phase['status'] ?? null) === 'complete') {
+            $completePhases[$phase['number']] = true;
+        }
+    }
+    $programmeComplete = ($ledger['programme_status'] ?? null) === 'complete';
+    $surfaceDispositions = [];
+    foreach ($inventory['surfaces'] ?? [] as $surface) {
+        if (!is_array($surface) || !is_string($surface['id'] ?? null)) {
+            continue;
+        }
+        $id = $surface['id'];
+        $disposition = $surface['kis_runtime_disposition'] ?? null;
+        $surfaceDispositions[$id] = $disposition;
+        $targetPhase = $surface['target']['phase'] ?? null;
+        $mustBeDeclared = $programmeComplete || (is_int($targetPhase) && isset($completePhases[$targetPhase]));
+        if ($mustBeDeclared && $disposition !== 'declared') {
+            $errors[] = sprintf('Completed migration scope retains legacy surface %s.', $id);
+        }
+        if ($disposition === 'declared' && ($surface['target']['migration_status'] ?? null) !== 'complete') {
+            $errors[] = sprintf('Declared KIS surface %s must record a complete migration target.', $id);
+        }
+    }
+    foreach ($inventory['navigation_catalog'] ?? [] as $navigation) {
+        if (!is_array($navigation) || !is_string($navigation['id'] ?? null)) {
+            continue;
+        }
+        $surfaceId = $navigation['surface_id'] ?? null;
+        if (
+            is_string($surfaceId)
+            && ($surfaceDispositions[$surfaceId] ?? null) === 'declared'
+            && ($navigation['runtime_surface_binding'] ?? null) !== 'declared'
+        ) {
+            $errors[] = sprintf(
+                'Navigation %s must bind its declared KIS surface %s.',
+                $navigation['id'],
+                $surfaceId,
+            );
+        }
+    }
+}
+
+/**
  * Compare the template catalogue with every repository Twig source.
  *
  * @param   string                $root        Repository root.
@@ -535,6 +592,10 @@ function validateTemplates(string $root, array $inventory, array $surfaceIds, ar
         }
         $catalogued[$template['path']] = true;
         requireFile($root, $template['path'], 'catalogued template', $errors);
+        $contents = file_get_contents($root . '/' . $template['path']);
+        if (is_string($contents)) {
+            validateTemplateSurfaceMarkers($template['path'], $contents, $surfaceIds, $errors);
+        }
         validateReferences(
             $template['surface_ids'] ?? null,
             $surfaceIds,
@@ -549,6 +610,44 @@ function validateTemplates(string $root, array $inventory, array $surfaceIds, ar
     }
     $actual = array_fill_keys(array_values(array_unique($actual)), true);
     compareSets($actual, $catalogued, 'Twig source', 'template catalogue', $errors);
+}
+
+/**
+ * Reject literal template surface markers that bypass the authoritative inventory.
+ *
+ * Dynamic markers remain governed by their catalogue links and handler contracts. Literal IDs are exact
+ * enough to bind directly, so allowing an unknown one would create a second, silently ungoverned surface
+ * vocabulary in rendered HTML.
+ *
+ * @param   string               $path        Repository-relative template path.
+ * @param   string               $contents    Complete Twig source.
+ * @param   array<string, true>  $surfaceIds  Authoritative surface lookup.
+ * @param   list<string>         $errors      Accumulated validation failures.
+ *
+ * @return  void
+ *
+ * @since   2.0.0
+ */
+function validateTemplateSurfaceMarkers(
+    string $path,
+    string $contents,
+    array $surfaceIds,
+    array &$errors,
+): void {
+    preg_match_all(
+        '/data-kis-surface\s*=\s*"([A-Za-z][A-Za-z0-9._:-]*)"/D',
+        $contents,
+        $matches,
+    );
+    foreach (array_unique($matches[1] ?? []) as $surfaceId) {
+        if (!isset($surfaceIds[$surfaceId])) {
+            $errors[] = sprintf(
+                'Template %s renders unknown literal KIS surface %s.',
+                $path,
+                $surfaceId,
+            );
+        }
+    }
 }
 
 /**
@@ -924,6 +1023,9 @@ function validateCoreSurfaceContracts(string $source, array $surfaces, array &$e
     foreach ($surfaces as $surface) {
         $id = $surface['id'] ?? null;
         if (!is_string($id)) {
+            continue;
+        }
+        if (!in_array($surface['owner'] ?? null, ['core', 'core-generator'], true)) {
             continue;
         }
         $disposition = $surface['kis_runtime_disposition'] ?? null;
@@ -1488,6 +1590,7 @@ function validateExtensionManifests(string $root, array $inventory, array &$erro
 {
     $inventorySurfaces = [];
     $inventorySurfacesByManifest = [];
+    $declaredInventorySurfacesByManifest = [];
     $declaredRoutes = [];
     foreach ($inventory['surfaces'] as $surface) {
         if (!is_array($surface) || !is_string($surface['id'] ?? null)) {
@@ -1498,6 +1601,9 @@ function validateExtensionManifests(string $root, array $inventory, array &$erro
             if (is_string($route['source_manifest'] ?? null) && is_string($route['declaration_name'] ?? null)) {
                 $declaredRoutes[$route['source_manifest'] . '|' . $route['declaration_name']] = true;
                 $inventorySurfacesByManifest[$route['source_manifest']][$surface['id']] = true;
+                if (($surface['kis_runtime_disposition'] ?? null) === 'declared') {
+                    $declaredInventorySurfacesByManifest[$route['source_manifest']][$surface['id']] = true;
+                }
             }
         }
     }
@@ -1542,6 +1648,21 @@ function validateExtensionManifests(string $root, array $inventory, array &$erro
                     $relative,
                 );
             }
+            if (($inventorySurface['kis_runtime_disposition'] ?? null) !== 'declared') {
+                $errors[] = sprintf(
+                    'Extension interface surface %s from %s must have a declared inventory disposition.',
+                    $surfaceId,
+                    $relative,
+                );
+            }
+            $manifestContract = $surface;
+            unset($manifestContract['surface']);
+            if (canonical($manifestContract) !== canonical($inventorySurface['kis_contract'] ?? null)) {
+                $errors[] = sprintf(
+                    'Extension interface surface %s does not match its complete canonical kis_contract.',
+                    $surfaceId,
+                );
+            }
             $manifestCapabilities = expectList(
                 $surface['capabilities'] ?? null,
                 'extension surface ' . $surfaceId . ' capabilities',
@@ -1563,15 +1684,13 @@ function validateExtensionManifests(string $root, array $inventory, array &$erro
                 );
             }
         }
-        if ($manifestSurfaces !== []) {
-            compareSets(
-                $manifestSurfaces,
-                $inventorySurfacesByManifest[$relative] ?? [],
-                'extension interface surface',
-                $relative . ' surface inventory',
-                $errors,
-            );
-        }
+        compareSets(
+            $manifestSurfaces,
+            $declaredInventorySurfacesByManifest[$relative] ?? [],
+            'declared extension interface surface',
+            $relative . ' surface inventory',
+            $errors,
+        );
         foreach (['administrator', 'portal'] as $area) {
             $areaData = $manifest['contributions'][$area] ?? [];
             if (!is_array($areaData)) {

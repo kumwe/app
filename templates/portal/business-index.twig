@@ -3,21 +3,22 @@
 {% block title %}Business records · Kumwe Portal{% endblock %}
 
 {% block content %}
-<section class="portal-business-heading" aria-labelledby="portal-business-title">
-    <p class="eyebrow">Generated workspaces</p>
-    <h1 id="portal-business-title">Business records</h1>
-    <p>Only business definitions explicitly enabled for this portal and your current scope appear here.</p>
-</section>
+<div data-kis-business data-kis-component="generated-catalog" data-kis-surface="core.portal.generated-catalog">
+{% embed '@kis/page-header.twig' with {
+    eyebrow: 'Generated workspaces',
+    title: 'Business records',
+    purpose: 'Only business definitions explicitly enabled for this portal and your current scope appear here.'
+} only %}{% endembed %}
 
 {% if definitions is empty %}
-    <section class="portal-business-empty" aria-labelledby="portal-business-empty-title">
-        <h2 id="portal-business-empty-title">No business workspaces are available</h2>
-        <p>Your portal permissions and organization scope do not currently expose any business definitions.</p>
-    </section>
+    {% embed '@kis/empty-state.twig' with {
+        title: 'No business workspaces are available',
+        message: 'Your portal permissions and organization scope do not currently expose any business definitions.'
+    } only %}{% endembed %}
 {% else %}
-    <section class="portal-business-cards" aria-label="Available business workspaces">
+    <section class="portal-business-cards kis-business-workspaces" aria-label="Available business workspaces">
         {% for definition in definitions %}
-            <article>
+            <article class="kis-business-workspace-card">
                 <p class="eyebrow">{{ definition.scope|replace({'_': ' '}) }}</p>
                 <h2>{{ definition.plural_label }}</h2>
                 <p>{{ definition.fields|length }} visible fields · definition version {{ definition.version }}</p>
@@ -26,4 +27,5 @@
         {% endfor %}
     </section>
 {% endif %}
+</div>
 {% endblock %}

@@ -55,7 +55,7 @@ final class BusinessDefinitions
             [[
                 'handle' => 'announcements', 'label' => 'Announcements', 'kind' => 'one_to_many',
                 'target' => 'kumwe.announcements-example.announcement', 'inverse' => 'category',
-                'ordered' => true, 'on_delete' => 'restrict',
+                'ordered' => false, 'on_delete' => 'restrict',
             ]],
             [[
                 'handle' => 'catalog', 'label' => 'Category catalog', 'kind' => 'list',

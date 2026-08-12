@@ -111,6 +111,7 @@ final readonly class PublishedContentHandler implements RequestHandlerInterface
                 'canonical_url' => $canonicalPath,
                 'site_logo' => $presentation['logo'],
                 'presentation' => $presentation,
+                'surface_id' => 'core.public.page',
             ]),
             200,
             $headers,

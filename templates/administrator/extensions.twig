@@ -2,134 +2,200 @@
 {% block title %}Extensions · Kumwe{% endblock %}
 {% block context_title %}Extensions{% endblock %}
 {% block content %}
-  <div class="page-heading"><div><p class="eyebrow">Platform</p><h1>Extensions</h1><p>Install verified packages, manage activation, and maintain the signing trust boundary.</p></div></div>
-  {% if error is defined %}<div class="alert" role="alert">{{ error }}</div>{% endif %}
-  <div class="editor-grid">
-    <section class="panel stack">
-      <div><p class="eyebrow">Installed</p><h2>Runtime extensions</h2></div>
-      {% if extensions is empty %}<p>No extensions are installed. Core content management remains available.</p>{% endif %}
-      {% for extension in extensions %}
-        <article>
-          <div class="page-heading"><div><strong>{{ extension.identifier }}</strong><div>{{ extension.extension_type }} · {{ extension.installed_version }} · {{ extension.status }}{% if extension.theme_surfaces is not empty %} · {{ extension.theme_surfaces|join(', ') }} theme{% endif %}</div></div>
-            <div class="stack">
-              {% if extension.extension_type == 'template' %}
-                {% if capabilities['themes.site.manage'] is defined %}
+  <div class="kis-phase-five" data-kis-surface="core.administrator.extensions">
+    {% include '@kis/page-header.twig' with {
+      eyebrow: 'Platform',
+      title: 'Extensions',
+      purpose: 'Install verified packages, manage activation, and maintain the signing trust boundary.'
+    } only %}
+    <nav class="kis-phase-five-section-nav" aria-label="Extension management concerns">
+      <a href="#installed-extensions">Installed extensions</a>
+      <a href="#install-extension">Install package</a>
+      <a href="#extension-trust">Signing trust</a>
+    </nav>
+
+    {% if error is defined %}<div class="notice danger" role="alert">{{ error }}</div>{% endif %}
+
+    <section id="installed-extensions" class="panel stack kis-phase-five-card" aria-labelledby="installed-extensions-title">
+      <div><p class="eyebrow">Installed</p><h2 id="installed-extensions-title">Runtime extensions</h2><p class="text-muted">Lifecycle actions apply to the selected package without changing core content.</p></div>
+      {% if extensions is empty %}
+        {% include '@kis/empty-state.twig' with {
+          title: 'No extensions installed',
+          message: 'Core content management remains available. Install a verified package when the site needs another capability.'
+        } only %}
+      {% else %}
+        <div class="kis-phase-five-extension-grid">
+          {% for extension in extensions %}
+            <article class="panel kis-phase-five-extension-card" aria-labelledby="extension-{{ loop.index }}-title">
+              <header>
+                <p class="eyebrow">{{ extension.extension_type|title }}</p>
+                <h3 id="extension-{{ loop.index }}-title">
+                  {% include '@kis/technical-value.twig' with {
+                    label: 'Extension identifier',
+                    value: extension.identifier,
+                    copy: true
+                  } only %}
+                </h3>
+                <p class="kis-phase-five-status-line">
+                  <span>{{ extension.extension_type }} · {{ extension.installed_version }} · {{ extension.status }}</span>
+                  <span class="status status-{{ extension.status }}">{{ extension.status|title }}</span>
+                  {% if extension.theme_surfaces is not empty %}<span>{{ extension.theme_surfaces|join(', ')|title }} theme</span>{% endif %}
+                </p>
+              </header>
+
+              <div class="kis-phase-five-extension-actions" aria-label="Lifecycle actions for {{ extension.identifier }}">
+                {% if extension.extension_type == 'template' %}
+                  {% if capabilities['themes.site.manage'] is defined %}
+                    <form action="/administrator/extensions/action" method="post">
+                      <input type="hidden" name="_csrf" value="{{ csrf }}">
+                      <input type="hidden" name="identifier" value="{{ extension.identifier }}">
+                      <input type="hidden" name="surface" value="site">
+                      <button type="submit" name="action" value="activate">Use for site</button>
+                    </form>
+                  {% endif %}
+                  {% if capabilities['themes.administrator.manage'] is defined %}
+                    <form action="/administrator/extensions/action" method="post">
+                      <input type="hidden" name="_csrf" value="{{ csrf }}">
+                      <input type="hidden" name="identifier" value="{{ extension.identifier }}">
+                      <input type="hidden" name="surface" value="administrator">
+                      <label>Current password<small>Required only at administrator-theme activation.</small><input type="password" name="current_password" autocomplete="current-password" required></label>
+                      <button type="submit" name="action" value="activate">Use for administrator</button>
+                    </form>
+                  {% endif %}
+                {% elseif extension.status != 'active' %}
                   <form action="/administrator/extensions/action" method="post">
-                    <input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="identifier" value="{{ extension.identifier }}"><input type="hidden" name="surface" value="site">
-                    <button type="submit" name="action" value="activate">Use for site</button>
+                    <input type="hidden" name="_csrf" value="{{ csrf }}">
+                    <input type="hidden" name="identifier" value="{{ extension.identifier }}">
+                    <button type="submit" name="action" value="activate">Activate</button>
                   </form>
                 {% endif %}
-                {% if capabilities['themes.administrator.manage'] is defined %}
-                  <form action="/administrator/extensions/action" method="post" class="stack">
-                    <input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="identifier" value="{{ extension.identifier }}"><input type="hidden" name="surface" value="administrator">
-                    <label>Current password for administrator-theme activation<input type="password" name="current_password" autocomplete="current-password" required></label>
-                    <button type="submit" name="action" value="activate">Use for administrator</button>
+
+                {% if extension.status == 'active' %}
+                  <form action="/administrator/extensions/action" method="post">
+                    <input type="hidden" name="_csrf" value="{{ csrf }}">
+                    <input type="hidden" name="identifier" value="{{ extension.identifier }}">
+                    {% if 'administrator' in extension.theme_surfaces %}<label>Current password<input type="password" name="current_password" autocomplete="current-password" required></label>{% endif %}
+                    <button type="submit" name="action" value="disable">Disable</button>
                   </form>
                 {% endif %}
-              {% elseif extension.status != 'active' %}
-                <form action="/administrator/extensions/action" method="post">
-                  <input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="identifier" value="{{ extension.identifier }}">
-                  <button type="submit" name="action" value="activate">Activate</button>
+              </div>
+
+              <details class="advanced-definition">
+                <summary>Declared contributions · manifest schema {{ extension.manifest_schema }}</summary>
+                <div class="stack">
+                  {% if extension.contributions.capabilities is empty and extension.contributions.administrator.workspaces is empty and extension.contributions.administrator.navigation is empty and extension.contributions.administrator.routes is empty and extension.contributions.administrator.views is empty %}
+                    <p>This release has no typed contribution declarations.</p>
+                  {% endif %}
+                  {% if extension.contributions.capabilities is not empty %}
+                    <div><strong>Capabilities</strong><ul>{% for contribution in extension.contributions.capabilities %}<li><code>{{ contribution.id }}</code> · {{ contribution.label }} · {{ contribution.active ? 'active' : 'inactive' }}</li>{% endfor %}</ul></div>
+                  {% endif %}
+                  {% if extension.contributions.administrator.workspaces is not empty %}
+                    <div><strong>Administrator workspaces</strong><ul>{% for contribution in extension.contributions.administrator.workspaces %}<li><code>{{ contribution.id }}</code> · {{ contribution.label }} · {{ contribution.active ? 'active' : 'inactive' }}</li>{% endfor %}</ul></div>
+                  {% endif %}
+                  {% if extension.contributions.administrator.navigation is not empty %}
+                    <div><strong>Administrator navigation</strong><ul>{% for contribution in extension.contributions.administrator.navigation %}<li><code>{{ contribution.id }}</code> · {{ contribution.path }} · {{ contribution.capability }} · {{ contribution.active ? 'active' : 'inactive' }}</li>{% endfor %}</ul></div>
+                  {% endif %}
+                  {% if extension.contributions.administrator.routes is not empty %}
+                    <div><strong>Administrator routes</strong><ul>{% for contribution in extension.contributions.administrator.routes %}<li><code>{{ contribution.name }}</code> · {{ contribution.methods|join(', ') }} {{ contribution.path }} · {{ contribution.capability }} · {{ contribution.active ? 'active' : 'inactive' }}</li>{% endfor %}</ul></div>
+                  {% endif %}
+                  {% if extension.contributions.administrator.views is not empty %}
+                    <div><strong>Templates and views</strong><ul>{% for contribution in extension.contributions.administrator.views %}<li><code>{{ contribution.name }}</code> · {{ contribution.template }} · {{ contribution.active ? 'active' : 'inactive' }}</li>{% endfor %}</ul></div>
+                  {% endif %}
+                </div>
+              </details>
+
+              <details class="kis-phase-five-danger-zone">
+                <summary>Uninstall extension</summary>
+                <form action="/administrator/extensions/action" method="post" class="stack">
+                  <input type="hidden" name="_csrf" value="{{ csrf }}">
+                  <input type="hidden" name="identifier" value="{{ extension.identifier }}">
+                  {% if 'administrator' in extension.theme_surfaces %}<label>Current password<input type="password" name="current_password" autocomplete="current-password" required></label>{% endif %}
+                  <p>Uninstalling removes this package from the runtime. Review owned data and recovery requirements before continuing.</p>
+                  <button class="danger" type="submit" name="action" value="uninstall" data-confirm="Uninstall {{ extension.identifier }}?">Uninstall {{ extension.identifier }}</button>
                 </form>
-              {% endif %}
-              <form action="/administrator/extensions/action" method="post">
-                <input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="identifier" value="{{ extension.identifier }}">
-                {% if 'administrator' in extension.theme_surfaces %}
-                  <label>Current password for administrator-theme changes<input type="password" name="current_password" autocomplete="current-password" required></label>
-                {% endif %}
-                {% if extension.status == 'active' %}<button type="submit" name="action" value="disable">Disable</button>{% endif %}
-                <button class="danger" type="submit" name="action" value="uninstall">Uninstall</button>
-              </form>
-            </div>
-          </div>
-          <details class="advanced-definition">
-            <summary>Declared contributions · manifest schema {{ extension.manifest_schema }}</summary>
-            <div class="stack">
-              {% if extension.contributions.capabilities is empty and extension.contributions.administrator.workspaces is empty and extension.contributions.administrator.navigation is empty and extension.contributions.administrator.routes is empty and extension.contributions.administrator.views is empty %}
-                <p>This release has no typed contribution declarations.</p>
-              {% endif %}
-              {% if extension.contributions.capabilities is not empty %}
-                <div><strong>Capabilities</strong><ul>{% for contribution in extension.contributions.capabilities %}<li><code>{{ contribution.id }}</code> · {{ contribution.label }} · {{ contribution.active ? 'active' : 'inactive' }}</li>{% endfor %}</ul></div>
-              {% endif %}
-              {% if extension.contributions.administrator.workspaces is not empty %}
-                <div><strong>Administrator workspaces</strong><ul>{% for contribution in extension.contributions.administrator.workspaces %}<li><code>{{ contribution.id }}</code> · {{ contribution.label }} · {{ contribution.active ? 'active' : 'inactive' }}</li>{% endfor %}</ul></div>
-              {% endif %}
-              {% if extension.contributions.administrator.navigation is not empty %}
-                <div><strong>Administrator navigation</strong><ul>{% for contribution in extension.contributions.administrator.navigation %}<li><code>{{ contribution.id }}</code> · {{ contribution.path }} · {{ contribution.capability }} · {{ contribution.active ? 'active' : 'inactive' }}</li>{% endfor %}</ul></div>
-              {% endif %}
-              {% if extension.contributions.administrator.routes is not empty %}
-                <div><strong>Administrator routes</strong><ul>{% for contribution in extension.contributions.administrator.routes %}<li><code>{{ contribution.name }}</code> · {{ contribution.methods|join(', ') }} {{ contribution.path }} · {{ contribution.capability }} · {{ contribution.active ? 'active' : 'inactive' }}</li>{% endfor %}</ul></div>
-              {% endif %}
-              {% if extension.contributions.administrator.views is not empty %}
-                <div><strong>Templates and views</strong><ul>{% for contribution in extension.contributions.administrator.views %}<li><code>{{ contribution.name }}</code> · {{ contribution.template }} · {{ contribution.active ? 'active' : 'inactive' }}</li>{% endfor %}</ul></div>
-              {% endif %}
-            </div>
-          </details>
-        </article>
-      {% endfor %}
+              </details>
+            </article>
+          {% endfor %}
+        </div>
+      {% endif %}
     </section>
-    <aside class="panel stack">
-      <div><p class="eyebrow">Install</p><h2>Upload package</h2></div>
+
+    <section id="install-extension" class="panel panel-body stack kis-phase-five-card" aria-labelledby="install-extension-title">
+      <div><p class="eyebrow">Install</p><h2 id="install-extension-title">Upload a verified package</h2><p class="text-muted text-small">Packages install disabled. Signature, compatibility, archive, and conformance checks run before activation.</p></div>
       <form action="/administrator/extensions" method="post" enctype="multipart/form-data" class="stack">
         <input type="hidden" name="_csrf" value="{{ csrf }}">
         <label>Kumwe extension ZIP<input type="file" name="package" accept=".zip,application/zip" required></label>
         <label>Signing key ID (signed production packages)<input type="text" name="key_id"></label>
         <label>Ed25519 signature (base64)<textarea name="signature" rows="4"></textarea></label>
-        <button class="primary" type="submit">Verify and install</button>
+        <div class="page-actions"><button class="primary" type="submit">Verify and install</button></div>
       </form>
-    </aside>
-  </div>
-  <div class="editor-grid">
-    <section class="panel stack">
-      <div><p class="eyebrow">Supply chain</p><h2>Extension trust keys</h2></div>
-      {% if trust_keys is empty %}<p>No signing keys are trusted. Signed packages cannot be activated.</p>{% endif %}
-      {% for key in trust_keys %}
-        <article>
-          <strong>{{ key.key_id }}</strong>
-          <div>{{ key.vendor_namespace }}/{{ key.extension_pattern }} · expires {{ key.expires_at }}{% if key.revoked_at %} · revoked{% endif %}</div>
-          {% if key.affected_extensions is not empty %}
-            <div>Releases requiring upgrade or quarantine: {{ key.affected_extensions|join(', ') }}</div>
-          {% endif %}
-          {% if not key.revoked_at %}
-            <details>
-              <summary>Rotate key</summary>
-              <form action="/administrator/extensions/action" method="post" class="stack">
-                <input type="hidden" name="_csrf" value="{{ csrf }}">
-                <input type="hidden" name="action" value="trust-rotate">
-                <input type="hidden" name="old_key_id" value="{{ key.key_id }}">
-                <label>New key ID<input type="text" name="new_key_id" maxlength="127" required></label>
-                <label>New Ed25519 public key (base64)<textarea name="public_key_base64" rows="3" required></textarea></label>
-                <label>Vendor namespace<input type="text" name="vendor_namespace" value="{{ key.vendor_namespace }}"></label>
-                <label>Extension name constraint<input type="text" name="extension_pattern" value="{{ key.extension_pattern }}"></label>
-                <label>Expires at<input type="datetime-local" name="expires_at" required></label>
-                <button type="submit">Begin rotation overlap</button>
-              </form>
-            </details>
-            <form action="/administrator/extensions/action" method="post" class="stack">
-              <input type="hidden" name="_csrf" value="{{ csrf }}">
-              <input type="hidden" name="key_id" value="{{ key.key_id }}">
-              <label>Revocation reason<input type="text" name="reason" maxlength="500" required></label>
-              <button type="submit" name="action" value="trust-revoke">Finalize rotation</button>
-              <button class="danger" type="submit" name="action" value="trust-emergency-revoke">
-                Emergency revoke and quarantine
-              </button>
-            </form>
-          {% endif %}
-        </article>
-      {% endfor %}
     </section>
-    <aside class="panel stack">
-      <div><p class="eyebrow">Trust</p><h2>Add signing key</h2></div>
-      <form action="/administrator/extensions/action" method="post" class="stack">
-        <input type="hidden" name="_csrf" value="{{ csrf }}">
-        <input type="hidden" name="action" value="trust-add">
-        <label>Key ID<input type="text" name="key_id" maxlength="127" required></label>
-        <label>Ed25519 public key (base64)<textarea name="public_key_base64" rows="3" required></textarea></label>
-        <label>Vendor namespace<input type="text" name="vendor_namespace" value="*"></label>
-        <label>Extension name constraint<input type="text" name="extension_pattern" value="*"></label>
-        <label>Expires at<input type="datetime-local" name="expires_at" required></label>
-        <button class="primary" type="submit">Add trusted key</button>
-      </form>
-    </aside>
+
+    <div id="extension-trust" class="editor-grid kis-phase-five-card">
+      <section class="panel stack" aria-labelledby="extension-trust-title">
+        <div><p class="eyebrow">Supply chain</p><h2 id="extension-trust-title">Extension trust keys</h2><p class="text-muted">Rotation and emergency revocation are explicit, auditable operations.</p></div>
+        {% if trust_keys is empty %}
+          {% include '@kis/empty-state.twig' with {
+            title: 'No trusted signing keys',
+            message: 'Signed production packages cannot be activated until an authorized key is added.'
+          } only %}
+        {% endif %}
+        {% for key in trust_keys %}
+          <article class="panel kis-phase-five-extension-card">
+            <h3>{% include '@kis/technical-value.twig' with {label: 'Signing key identifier', value: key.key_id, copy: true} only %}</h3>
+            <p class="kis-phase-five-status-line"><span>{{ key.vendor_namespace }}/{{ key.extension_pattern }}</span><span>Expires {{ key.expires_at }}</span>{% if key.revoked_at %}<span class="status status-failed">Revoked</span>{% endif %}</p>
+            {% if key.affected_extensions is not empty %}<p class="kis-phase-five-security-note">Releases requiring upgrade or quarantine: {{ key.affected_extensions|join(', ') }}</p>{% endif %}
+            {% if not key.revoked_at %}
+              <details class="advanced-definition">
+                <summary>Rotate key</summary>
+                <form action="/administrator/extensions/action" method="post" class="stack">
+                  <input type="hidden" name="_csrf" value="{{ csrf }}">
+                  <input type="hidden" name="action" value="trust-rotate">
+                  <input type="hidden" name="old_key_id" value="{{ key.key_id }}">
+                  <label>New key ID<input type="text" name="new_key_id" maxlength="127" required></label>
+                  <label>New Ed25519 public key (base64)<textarea name="public_key_base64" rows="3" required></textarea></label>
+                  <label>Vendor namespace<input type="text" name="vendor_namespace" value="{{ key.vendor_namespace }}"></label>
+                  <label>Extension name constraint<input type="text" name="extension_pattern" value="{{ key.extension_pattern }}"></label>
+                  <label>Expires at<input type="datetime-local" name="expires_at" required></label>
+                  <button type="submit">Begin rotation overlap</button>
+                </form>
+              </details>
+              <details class="advanced-definition">
+                <summary>Finalize planned rotation</summary>
+                <form action="/administrator/extensions/action" method="post" class="stack">
+                  <input type="hidden" name="_csrf" value="{{ csrf }}">
+                  <input type="hidden" name="key_id" value="{{ key.key_id }}">
+                  <label>Revocation reason<input type="text" name="reason" maxlength="500" required></label>
+                  <button type="submit" name="action" value="trust-revoke">Finalize rotation</button>
+                </form>
+              </details>
+              <details class="kis-phase-five-danger-zone">
+                <summary>Emergency revoke and quarantine</summary>
+                <form action="/administrator/extensions/action" method="post" class="stack">
+                  <input type="hidden" name="_csrf" value="{{ csrf }}">
+                  <input type="hidden" name="key_id" value="{{ key.key_id }}">
+                  <label>Emergency reason<input type="text" name="reason" maxlength="500" required></label>
+                  <p>Immediately revokes trust and quarantines affected active releases. Use only when the signing boundary is compromised.</p>
+                  <button class="danger" type="submit" name="action" value="trust-emergency-revoke">Emergency revoke and quarantine</button>
+                </form>
+              </details>
+            {% endif %}
+          </article>
+        {% endfor %}
+      </section>
+      <aside class="panel stack" aria-labelledby="add-signing-key-title">
+        <div><p class="eyebrow">Trust</p><h2 id="add-signing-key-title">Add signing key</h2></div>
+        <form action="/administrator/extensions/action" method="post" class="stack">
+          <input type="hidden" name="_csrf" value="{{ csrf }}">
+          <input type="hidden" name="action" value="trust-add">
+          <label>Key ID<input type="text" name="key_id" maxlength="127" required></label>
+          <label>Ed25519 public key (base64)<textarea name="public_key_base64" rows="3" required></textarea></label>
+          <label>Vendor namespace<input type="text" name="vendor_namespace" value="*"></label>
+          <label>Extension name constraint<input type="text" name="extension_pattern" value="*"></label>
+          <label>Expires at<input type="datetime-local" name="expires_at" required></label>
+          <button class="primary" type="submit">Add trusted key</button>
+        </form>
+      </aside>
+    </div>
   </div>
 {% endblock %}

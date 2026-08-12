@@ -394,6 +394,42 @@ final class AccessControlServiceTest extends TestCase
         $this->service($repository)->users($context);
     }
 
+    /**
+     * Proves the identity event timeline is gated before its repository projection is read.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testSiteScopedManagerCannotReadInstallationSecurityEvents(): void
+    {
+        $repository = $this->createMock(AccessControlRepository::class);
+        $repository->expects(self::never())->method('securityEvents');
+
+        $this->expectException(AuthorizationDenied::class);
+        $this->service($repository)->securityEvents(AuthorizationContext::siteScoped('users.manage'));
+    }
+
+    /**
+     * Proves an installation identity administrator receives the closed security-event projection.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testInstallationManagerCanReadSecurityEvents(): void
+    {
+        $events = [[
+            'id' => '018f22e2-7c8b-7ab0-8f3a-88e8026bb304',
+            'action' => 'user.create',
+            'outcome' => 'success',
+        ]];
+        $repository = $this->createMock(AccessControlRepository::class);
+        $repository->expects(self::once())->method('securityEvents')->willReturn($events);
+
+        self::assertSame($events, $this->service($repository)->securityEvents($this->context()));
+    }
+
     public function testSiteTokenRevocationLocksTheSameUserRowUsedByIssuance(): void
     {
         $repository = $this->createMock(AccessControlRepository::class);

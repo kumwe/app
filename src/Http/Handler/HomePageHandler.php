@@ -83,6 +83,7 @@ final readonly class HomePageHandler implements RequestHandlerInterface
         $variables['navigation'] = $this->pages->navigation();
         $variables['current_path'] = '/';
         $variables['canonical_url'] = '/';
+        $variables['surface_id'] = 'core.public.home';
 
         $headers = [
             'Cache-Control' => 'public, max-age=60, stale-while-revalidate=300',

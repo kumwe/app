@@ -185,6 +185,7 @@ final readonly class GeneratedBusinessBrowserController
 
         return new BusinessBrowserResult('business-detail', [
             ...$model,
+            'record_task' => 'relations',
             'operation_id' => 'browser:' . $context->requestId(),
             'completed_operation_id' => $this->completedOperation($query),
             'completed_bulk_count' => $this->completedBulkCount($query),
@@ -581,9 +582,29 @@ final readonly class GeneratedBusinessBrowserController
                 $browserQuery->document(),
                 $purpose,
             );
+            $definitionMetadata = $this->metadataMap(
+                $model['definition'] ?? null,
+                'Generated collection definition metadata is unavailable.',
+            );
+            $fields = $this->metadataList(
+                $definitionMetadata['fields'] ?? null,
+                'Generated collection field metadata is unavailable.',
+            );
+            $presentation = BusinessCollectionPresentation::fromQuery(
+                $query,
+                $fields,
+                $this->defaultCollectionColumns($definitionMetadata),
+            );
             $nextCursor = $model['next_cursor'] ?? null;
             return new BusinessBrowserResult('business-list', [
                 ...$model,
+                'visible_columns' => $this->visibleColumns($fields, $presentation->columns),
+                'collection_presentation' => [
+                    'columns' => $presentation->columns,
+                    'density' => $presentation->density,
+                    'representation' => $presentation->representation,
+                ],
+                'presentation_query' => http_build_query($presentation->query()),
                 'query_state' => $browserQuery->formState(),
                 'query_purpose' => $purpose->value,
                 'next_query' => is_string($nextCursor) ? $browserQuery->next($nextCursor) : null,
@@ -605,10 +626,12 @@ final readonly class GeneratedBusinessBrowserController
                 $query,
             ));
         }
-        if (($query['history'] ?? null) === '1') {
+        $recordTask = $this->recordTask($query);
+        if (($query['history'] ?? null) === '1' || $recordTask === 'history') {
             return new BusinessBrowserResult('business-history', [
                 'definition_handle' => $definition,
                 'record_id' => $record,
+                'record_task' => 'history',
                 ...$this->business->history(
                     $context,
                     $surface,
@@ -647,14 +670,136 @@ final readonly class GeneratedBusinessBrowserController
             ($query['archived'] ?? null) === '1',
             ($query['deleted'] ?? null) === '1',
         );
-        return new BusinessBrowserResult('business-detail', $this->relationshipChoices(
-            $context,
-            $surface,
-            $definition,
-            $record,
-            $model,
-            $query,
-        ));
+        return new BusinessBrowserResult('business-detail', [
+            ...$this->relationshipChoices(
+                $context,
+                $surface,
+                $definition,
+                $record,
+                $model,
+                $query,
+            ),
+            'record_task' => $recordTask,
+        ]);
+    }
+
+    /**
+     * Select the first generated list view as a policy-filtered collection default.
+     *
+     * @param   array<string, mixed>  $definition  Catalog metadata after surface and field policy.
+     *
+     * @return  list<string>  Ordered disclosed handles, or an empty list when no generated list view exists.
+     *
+     * @since   2.0.0
+     */
+    private function defaultCollectionColumns(array $definition): array
+    {
+        $views = $definition['views'] ?? [];
+        if (!is_array($views) || !array_is_list($views)) {
+            throw new InvalidArgumentException('Generated collection view metadata is unavailable.');
+        }
+        foreach ($views as $view) {
+            if (
+                is_array($view)
+                && ($view['kind'] ?? null) === 'list'
+                && ($view['custom'] ?? null) === false
+            ) {
+                return $this->stringMetadataList(
+                    $view['fields'] ?? null,
+                    'Generated collection view fields are unavailable.',
+                );
+            }
+        }
+
+        return [];
+    }
+
+    /**
+     * Reorder policy-filtered field metadata without inventing or revealing a field.
+     *
+     * @param   list<array<string, mixed>>  $fields   Catalog fields visible for this operation.
+     * @param   list<string>                $columns  Validated presentation order.
+     *
+     * @return  list<array<string, mixed>>  Exact metadata rendered by table and mobile cards.
+     *
+     * @since   2.0.0
+     */
+    private function visibleColumns(array $fields, array $columns): array
+    {
+        $indexed = [];
+        foreach ($fields as $field) {
+            $handle = $field['handle'] ?? null;
+            if (is_string($handle)) {
+                $indexed[$handle] = $field;
+            }
+        }
+
+        return array_map(
+            static fn (string $column): array => $indexed[$column],
+            $columns,
+        );
+    }
+
+    /**
+     * Decode one server-addressable record task while retaining the legacy history link.
+     *
+     * @param   array<string, mixed>  $query  Browser query carrying an optional task.
+     *
+     * @return  string  Summary, relations, history, or actions task handle.
+     *
+     * @since   2.0.0
+     */
+    private function recordTask(array $query): string
+    {
+        $task = $query['task'] ?? 'summary';
+        if (!is_string($task) || !in_array($task, ['summary', 'relations', 'history', 'actions'], true)) {
+            throw new InvalidArgumentException('A generated business record task is invalid.');
+        }
+
+        return $task;
+    }
+
+    /**
+     * Validate string metadata lists produced by the trusted catalog.
+     *
+     * @param   mixed   $value    Candidate list.
+     * @param   string  $message  Stable failure message.
+     *
+     * @return  list<string>  Exact ordered strings.
+     *
+     * @since   2.0.0
+     */
+    private function stringMetadataList(mixed $value, string $message): array
+    {
+        if (!is_array($value) || !array_is_list($value)) {
+            throw new InvalidArgumentException($message);
+        }
+        foreach ($value as $item) {
+            if (!is_string($item)) {
+                throw new InvalidArgumentException($message);
+            }
+        }
+
+        return $value;
+    }
+
+    /**
+     * Validate one metadata object received from the application facade.
+     *
+     * @param   mixed   $value    Candidate object.
+     * @param   string  $message  Stable failure message.
+     *
+     * @return  array<string, mixed>  Valid object map.
+     *
+     * @since   2.0.0
+     */
+    private function metadataMap(mixed $value, string $message): array
+    {
+        if (!is_array($value) || ($value !== [] && array_is_list($value))) {
+            throw new InvalidArgumentException($message);
+        }
+
+        return $value;
     }
 
     /**
@@ -711,7 +856,10 @@ final readonly class GeneratedBusinessBrowserController
                     $this->nestedObject($form, 'target_choice_labels'),
                 );
 
-                return new BusinessBrowserResult('business-detail', $model);
+                return new BusinessBrowserResult('business-detail', [
+                    ...$model,
+                    'record_task' => 'relations',
+                ]);
             }
             if (
                 !in_array($operation, ['create', 'update'], true)
@@ -957,6 +1105,7 @@ final readonly class GeneratedBusinessBrowserController
                 );
                 return new BusinessBrowserResult('business-detail', [
                     ...$model,
+                    'record_task' => 'relations',
                     'error_summary' => 'The related record failed validation. Review the marked fields.',
                 ], status: 422);
             }

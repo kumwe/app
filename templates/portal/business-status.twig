@@ -3,6 +3,7 @@
 {% block title %}Operation status · Kumwe Portal{% endblock %}
 
 {% block content %}
+<div data-kis-business data-kis-component="generated-operation-status" data-kis-surface="core.portal.generated-operation">
 <header class="portal-business-heading">
     <div><p class="eyebrow">Generated business operation</p><h1>Operation status</h1><p>Only operations bound to your current identity, scope, policy, and portal are disclosed.</p></div>
 </header>
@@ -26,7 +27,7 @@
                     : operation_status.result.operation|title }}
             </span>
         </div>
-        <dl class="portal-details portal-business-metadata">
+        <dl class="portal-details portal-business-metadata kis-business-operation-stage">
             <div><dt>Operation ID</dt><dd><code>{{ operation_status.operation_id }}</code></dd></div>
             <div><dt>Operation</dt><dd><code>{{ operation_status.operation }}</code></dd></div>
             {% if operation_status.operation == 'business.record.action_approval_request' %}
@@ -54,4 +55,5 @@
         </div>
     </section>
 {% endif %}
+</div>
 {% endblock %}

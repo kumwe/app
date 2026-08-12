@@ -17,7 +17,13 @@
     or available_operations.restore is defined
     or (available_operations.action is defined and bulk_actions is not empty)
   ) %}
-  <kumwe-business-surface>
+  <kumwe-business-surface
+    data-kis-business
+    data-kis-component="generated-collection"
+    data-kis-surface="core.administrator.generated-definition"
+    data-density="{{ collection_presentation.density }}"
+    data-representation="{{ collection_presentation.representation }}"
+  >
     <header class="page-heading">
       <div>
         <p class="eyebrow">{{ definition.scope|replace({'_': ' '}) }}</p>
@@ -58,15 +64,24 @@
       <div class="notice success" role="status">The bulk operation completed for {{ completed_bulk_count }} record{{ completed_bulk_count == 1 ? '' : 's' }}.</div>
     {% endif %}
 
+    <nav class="kis-business-view-nav" aria-label="Collection views">
+      <a class="button" href="{{ business_base_path }}/{{ definition.handle|url_encode }}" aria-current="{{ collection_presentation.columns == definition.fields|map(field => field.handle) ? 'page' : 'false' }}">All fields</a>
+      {% for declared_view in definition.views %}
+        {% if declared_view.kind == 'list' and not declared_view.custom %}
+          <a class="button" href="{{ business_base_path }}/{{ definition.handle|url_encode }}?{% for column in declared_view.fields %}columns%5B%5D={{ column|url_encode }}{% if not loop.last %}&amp;{% endif %}{% endfor %}" aria-current="{{ collection_presentation.columns == declared_view.fields ? 'page' : 'false' }}">{{ declared_view.label }}</a>
+        {% endif %}
+      {% endfor %}
+    </nav>
+
     {% if aggregates is not empty %}
-      <section class="business-aggregate-grid" aria-label="Report totals">
+      <section class="business-aggregate-grid kis-business-aggregates" aria-label="Report totals">
         {% for label, value in aggregates %}
-          <article class="panel business-aggregate"><span>{{ label|replace({'_': ' '})|title }}</span><strong>{{ value }}</strong></article>
+          <article class="panel business-aggregate kis-business-aggregate"><span>{{ label|replace({'_': ' '})|title }}</span><strong>{{ value }}</strong></article>
         {% endfor %}
       </section>
     {% endif %}
 
-    <section class="panel business-list-panel" aria-labelledby="business-results-title">
+    <section class="panel business-list-panel kis-business-collection" aria-labelledby="business-results-title">
       <div class="table-toolbar business-table-toolbar">
         <div>
           <h2 id="business-results-title">Records</h2>
@@ -75,7 +90,7 @@
         <label class="search-field js-only" for="business-page-search">Filter this page
           <input id="business-page-search" type="search" autocomplete="off" data-business-page-search>
         </label>
-        <form class="business-query-form" action="{{ business_base_path }}/{{ definition.handle|url_encode }}" method="get">
+        <form class="business-query-form kis-business-query-form" action="{{ business_base_path }}/{{ definition.handle|url_encode }}" method="get">
           {% if query_purpose != 'browse' %}<input type="hidden" name="purpose" value="{{ query_purpose }}">{% endif %}
           {% if searchable_fields is not empty %}
             <label for="business-search">Search records
@@ -83,6 +98,9 @@
             </label>
             {% for field in searchable_fields %}<input type="hidden" name="search_fields[]" value="{{ field.handle }}">{% endfor %}
           {% endif %}
+          <details class="kis-business-advanced-filters">
+            <summary>Filters, sorting and lifecycle</summary>
+            <div class="kis-business-advanced-grid">
           {% for field in graphical_filter_fields %}
             {% if field.schema.enum is defined %}
               <label for="business-filter-{{ field.handle }}">{{ field.label }}
@@ -142,12 +160,45 @@
               <label class="check"><input type="checkbox" name="include_deleted" value="1"{% if query_state.include_deleted %} checked{% endif %}> <span>Include deleted</span></label>
             {% endif %}
           {% endif %}
+            </div>
+          </details>
+          <details class="kis-business-column-picker">
+            <summary>Columns and display</summary>
+            <div class="kis-business-column-grid">
+              {% for field in definition.fields %}
+                <label><input type="checkbox" name="columns[]" value="{{ field.handle }}"{% if field.handle in collection_presentation.columns %} checked{% endif %}> <span>{{ field.label }}</span></label>
+              {% endfor %}
+              <label for="business-density">Density
+                <select id="business-density" name="density">
+                  {% for density in ['comfortable', 'compact', 'touch'] %}<option value="{{ density }}"{% if collection_presentation.density == density %} selected{% endif %}>{{ density|title }}</option>{% endfor %}
+                </select>
+              </label>
+              <label for="business-representation">Small-screen view
+                <select id="business-representation" name="representation">
+                  <option value="auto"{% if collection_presentation.representation == 'auto' %} selected{% endif %}>Automatic</option>
+                  <option value="table"{% if collection_presentation.representation == 'table' %} selected{% endif %}>Table</option>
+                  <option value="cards"{% if collection_presentation.representation == 'cards' %} selected{% endif %}>Cards</option>
+                </select>
+              </label>
+            </div>
+          </details>
           <div class="page-actions">
             <button type="submit">Apply</button>
             <a class="button" href="{{ business_base_path }}/{{ definition.handle|url_encode }}{% if query_purpose != 'browse' %}?purpose={{ query_purpose|url_encode }}{% endif %}">Reset</a>
           </div>
         </form>
       </div>
+
+      {% if query_state.filters is not empty or query_state.search_term or query_state.include_archived or query_state.include_deleted %}
+        <div class="kis-business-applied-filters" aria-label="Applied filters">
+          <strong>Applied:</strong>
+          {% if query_state.search_term %}<span class="kis-business-filter-token">Search “{{ query_state.search_term }}”</span>{% endif %}
+          {% for handle, value in query_state.filters %}<span class="kis-business-filter-token">{{ handle|replace({'_': ' '})|title }}: {{ value is same as(true) ? 'Yes' : (value is same as(false) ? 'No' : value) }}</span>{% endfor %}
+          {% if query_state.include_archived %}<span class="kis-business-filter-token">Archived included</span>{% endif %}
+          {% if query_state.include_deleted %}<span class="kis-business-filter-token">Deleted included</span>{% endif %}
+          <a href="{{ business_base_path }}/{{ definition.handle|url_encode }}">Clear all</a>
+        </div>
+      {% endif %}
 
       {% if items is empty %}
         <div class="empty-state">
@@ -164,13 +215,13 @@
       {% else %}
         {% if bulk_available %}<form class="business-bulk-form" action="{{ business_base_path }}/{{ definition.handle|url_encode }}" method="get">{% endif %}
         <kumwe-business-table>
-          <div class="table-wrap business-table-wrap" tabindex="0" role="region" aria-label="{{ definition.plural_label }} results">
-            <table class="business-record-table">
+          <div class="table-wrap business-table-wrap kis-business-table-region" tabindex="0" role="region" aria-label="{{ definition.plural_label }} results" data-scroll-label="Scroll horizontally to review every selected column">
+            <table class="business-record-table kis-business-table">
               <thead>
                 <tr>
                   {% if bulk_available %}<th scope="col"><span class="sr-only">Select</span></th>{% endif %}
                   <th scope="col">Record</th>
-                  {% for field in definition.fields %}<th scope="col">{{ field.label }}</th>{% endfor %}
+                  {% for field in visible_columns %}<th scope="col">{{ field.label }}</th>{% endfor %}
                   <th scope="col">State</th>
                   <th scope="col"><span class="sr-only">Actions</span></th>
                 </tr>
@@ -188,7 +239,7 @@
                       </td>
                     {% endif %}
                     <th scope="row"><code>{{ item.record_id }}</code><small>v{{ item.version }}</small></th>
-                    {% for column in definition.fields %}
+                    {% for column in visible_columns %}
                       {% set matches = item.fields|filter(field => field.handle == column.handle) %}
                       <td data-label="{{ column.label }}">
                         {% if matches is not empty %}
@@ -209,12 +260,31 @@
               </tbody>
             </table>
           </div>
+          <ul class="kis-business-card-list" aria-label="{{ definition.plural_label }} summary cards">
+            {% for item in items %}
+              {% set item_state = item.deleted_at ? 'Deleted' : (item.archived_at ? 'Archived' : item.workflow_state|default('Active')) %}
+              <li class="kis-business-result-card">
+                <header>
+                  <span><strong>{{ definition.singular_label }}</strong><br><code>{{ item.record_id }}</code></span>
+                  <span class="status">{{ item_state|replace({'_': ' '})|title }}</span>
+                </header>
+                {% if bulk_available %}<label class="check"><input type="checkbox" name="bulk_records[]" value="{{ {'record_id': item.record_id, 'expected_version': item.version}|json_encode }}"><span>Select this record</span></label>{% endif %}
+                <dl>
+                  {% for column in visible_columns %}
+                    {% set matches = item.fields|filter(field => field.handle == column.handle) %}
+                    <div><dt>{{ column.label }}</dt><dd>{{ matches is not empty ? ((matches|first).display is not same as('') ? (matches|first).display : 'Not set') : 'Not available' }}</dd></div>
+                  {% endfor %}
+                </dl>
+                {% if available_operations.read is defined %}<a class="button" href="{{ business_base_path }}/{{ definition.handle|url_encode }}/{{ item.record_id|url_encode }}">Open record</a>{% endif %}
+              </li>
+            {% endfor %}
+          </ul>
           <p class="business-page-search-empty" role="status" hidden data-business-search-empty>
             No records on this page match your search.
           </p>
         </kumwe-business-table>
         {% if bulk_available %}
-          <div class="business-bulk-controls">
+          <div class="business-bulk-controls kis-business-bulk-controls">
             <label for="business-bulk-operation">Bulk operation
               <select id="business-bulk-operation" name="bulk_operation" required>
                 <option value="" selected disabled>Choose an operation</option>
@@ -232,11 +302,11 @@
         {% endif %}
       {% endif %}
 
-      <footer class="pagination">
+      <footer class="pagination kis-business-pagination">
         <span>Bounded record page</span>
         <nav class="pagination-actions" aria-label="Record pages">
           {% if next_query %}
-            <a class="button" href="{{ business_base_path }}/{{ definition.handle|url_encode }}?{% if query_purpose != 'browse' %}purpose={{ query_purpose|url_encode }}&amp;{% endif %}query={{ next_query|url_encode }}" rel="next">
+            <a class="button" href="{{ business_base_path }}/{{ definition.handle|url_encode }}?{% if query_purpose != 'browse' %}purpose={{ query_purpose|url_encode }}&amp;{% endif %}query={{ next_query|url_encode }}&amp;{{ presentation_query }}" rel="next">
               Next page
             </a>
           {% endif %}

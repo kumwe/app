@@ -6,9 +6,9 @@
     {% if node.kind == 'scalar' %}
         <span{% if node.empty %} class="portal-text-muted"{% endif %}>{{ node.value }}</span>
     {% elseif node.kind == 'list' %}
-        {% if node.items is empty %}<p>No items</p>{% else %}<ol class="portal-business-custom-list">{% for item in node.items %}<li>{{ _self.node(item.value) }}</li>{% endfor %}</ol>{% endif %}
+        {% if node.items is empty %}<p>No items</p>{% else %}<ol class="portal-business-custom-list kis-business-custom-list">{% for item in node.items %}<li>{{ _self.node(item.value) }}</li>{% endfor %}</ol>{% endif %}
     {% elseif node.kind == 'object' %}
-        {% if node.entries is empty %}<p>No values</p>{% else %}<dl class="portal-details portal-business-custom-object">{% for entry in node.entries %}<div><dt>{{ entry.label }}</dt><dd>{{ _self.node(entry.value) }}</dd></div>{% endfor %}</dl>{% endif %}
+        {% if node.entries is empty %}<p>No values</p>{% else %}<dl class="portal-details portal-business-custom-object kis-business-custom-object">{% for entry in node.entries %}<div><dt>{{ entry.label }}</dt><dd>{{ _self.node(entry.value) }}</dd></div>{% endfor %}</dl>{% endif %}
     {% endif %}
 {% endmacro %}
 
@@ -23,6 +23,7 @@
     and not field.write_only
     and field.value_type in ['string', 'reference', 'integer', 'boolean']
 )|slice(0, 128) %}
+<div data-kis-business data-kis-component="generated-custom-view" data-kis-surface="core.portal.generated-custom-view">
 <header class="portal-business-heading">
     <div><p class="eyebrow">{{ view.kind|replace({'_': ' '}) }} custom view</p><h1>{{ view.label }}</h1><p>{{ definition.plural_label }} · definition version {{ definition.version }}</p></div>
     <nav class="portal-actions" aria-label="View actions">
@@ -35,7 +36,7 @@
 <section class="portal-business-panel portal-business-stack" aria-labelledby="portal-custom-query-title">
     <div><p class="eyebrow">Parameters</p><h2 id="portal-custom-query-title">Run this view</h2></div>
     {% if parameter_supported %}
-        <form class="portal-business-query-form" action="{{ custom_path }}" method="get">
+        <form class="portal-business-query-form kis-business-query-form" action="{{ custom_path }}" method="get">
             {{ schema_fields.fields(parameter_fields) }}
             {% if searchable_fields is not empty %}
                 <label for="portal-custom-search">Search records<input id="portal-custom-search" type="search" name="search_term" value="{{ query_state.search_term|default('') }}"></label>
@@ -70,4 +71,5 @@
     <div><p class="eyebrow">Contract-validated result</p><h2 id="portal-custom-result-title">View result</h2></div>
     {% if data_projection %}{{ custom_result.node(data_projection) }}{% elseif parameter_supported and not custom_view_submitted %}<p>Choose any parameters above, then run the view.</p>{% else %}<p>No result is available.</p>{% endif %}
 </section>
+</div>
 {% endblock %}

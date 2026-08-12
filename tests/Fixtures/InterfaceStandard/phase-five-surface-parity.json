@@ -1,0 +1,189 @@
+{
+  "schema_version": 1,
+  "phase": 5,
+  "standard": "kis-1.0",
+  "documents": [
+    {
+      "path": "templates/administrator/dashboard.twig",
+      "surface_ids": ["core.administrator.dashboard"],
+      "must_contain": ["data-kis-surface=\"core.administrator.dashboard\"", "@kis/page-header.twig", "action=\"/administrator/content\"", "Create content", "Recently updated"],
+      "must_not_contain": []
+    },
+    {
+      "path": "templates/administrator/content-list.twig",
+      "surface_ids": ["core.administrator.content-collection"],
+      "must_contain": ["@kis/resource-toolbar.twig", "name=\"q\"", "name=\"status\"", "name=\"type\"", "name=\"scope\"", "name=\"sort\"", "name=\"version\"", "name=\"_csrf\"", "/trash", "/restore"],
+      "must_not_contain": []
+    },
+    {
+      "path": "templates/administrator/content-form.twig",
+      "surface_ids": ["core.administrator.content-editor"],
+      "must_contain": ["data-kis-dirty-form", "name=\"_csrf\"", "name=\"content_type\"", "name=\"version\"", "name=\"title\"", "name=\"slug\"", "name=\"publish_at\"", "name=\"unpublish_at\"", "/transition", "Create draft", "Save changes"],
+      "must_not_contain": ["name=\"definition_json\""]
+    },
+    {
+      "path": "templates/administrator/content-models.twig",
+      "surface_ids": ["core.administrator.content-models"],
+      "must_contain": ["id=\"content-type-catalog\"", "id=\"workflow-catalog\"", "name=\"kind\"", "name=\"action\"", "name=\"version\"", "name=\"allow_breaking\"", "kumwe-field-builder", "kumwe-workflow-builder"],
+      "must_not_contain": []
+    },
+    {
+      "path": "templates/administrator/navigation.twig",
+      "surface_ids": ["core.administrator.navigation"],
+      "must_contain": ["data-kis-surface=\"core.administrator.navigation\"", "menu.update", "menu.delete", "item.create", "item.update", "item.delete", "item.reorder", "name=\"version\"", "name=\"position\"", "kis-phase-five-danger-zone"],
+      "must_not_contain": ["Save dragged order"]
+    },
+    {
+      "path": "templates/administrator/extensions.twig",
+      "surface_ids": ["core.administrator.extensions"],
+      "must_contain": ["data-kis-surface=\"core.administrator.extensions\"", "enctype=\"multipart/form-data\"", "name=\"package\"", "name=\"signature\"", "value=\"activate\"", "value=\"disable\"", "value=\"uninstall\"", "value=\"trust-add\"", "value=\"trust-rotate\"", "value=\"trust-revoke\"", "value=\"trust-emergency-revoke\"", "name=\"current_password\"", "kis-phase-five-danger-zone"],
+      "must_not_contain": []
+    },
+    {
+      "path": "templates/administrator/automation.twig",
+      "surface_ids": ["core.administrator.automation"],
+      "must_contain": ["id=\"automation-schedules\"", "id=\"automation-new-schedule\"", "id=\"automation-runs\"", "schedule.create", "schedule.delete", "job.retry", "job.cancel", "name=\"_csrf\"", "name=\"version\""],
+      "must_not_contain": ["style=\"margin-top:"]
+    },
+    {
+      "path": "templates/administrator/media.twig",
+      "surface_ids": ["core.administrator.media"],
+      "must_contain": ["@kis/resource-toolbar.twig", "enctype=\"multipart/form-data\"", "name=\"media\"", "name=\"q\"", "name=\"kind\"", "name=\"_csrf\"", "/delete"],
+      "must_not_contain": []
+    },
+    {
+      "path": "templates/administrator/settings.twig",
+      "surface_ids": ["core.administrator.settings"],
+      "must_contain": ["data-kis-dirty-form", "id=\"settings-identity\"", "id=\"settings-design\"", "id=\"settings-regional\"", "id=\"settings-search\"", "name=\"_csrf\"", "name=\"homepage_content_id\"", "name=\"presentation_primary_menu\"", "name=\"default_locale\"", "name=\"timezone\"", "name=\"search_indexing_enabled\""],
+      "must_not_contain": []
+    },
+    {
+      "path": "templates/portal/home.twig",
+      "surface_ids": ["core.portal.home"],
+      "must_contain": ["Access context and readiness", "portal_site", "portal_organization", "portal_workspace", "portal_navigation", "@kis/empty-state.twig"],
+      "must_not_contain": ["capability"]
+    },
+    {
+      "path": "templates/portal/security.twig",
+      "surface_ids": ["core.portal.security"],
+      "must_contain": ["Shown once", "name=\"_csrf\"", "name=\"enrollment_id\"", "name=\"code\"", "name=\"recovery_code\"", "/portal/security/totp/enroll", "/portal/security/totp/confirm", "/portal/security/challenge", "/portal/security/recovery"],
+      "must_not_contain": ["data-copy-value"]
+    },
+    {
+      "path": "templates/site/home.twig",
+      "surface_ids": ["core.public.home"],
+      "must_contain": ["data-kis-surface=\"core.public.home\"", "aria-labelledby=\"site-setup-title\"", "/administrator/settings"],
+      "must_not_contain": []
+    },
+    {
+      "path": "templates/site/page.twig",
+      "surface_ids": ["core.public.page"],
+      "must_contain": ["data-kis-surface=\"{{ surface_id|default('core.public.page') }}\"", "aria-labelledby=\"managed-page-title\"", "entry.body_html|raw", "primary_action", "secondary_action"],
+      "must_not_contain": []
+    },
+    {
+      "path": "src/Http/Handler/HomePageHandler.php",
+      "surface_ids": ["core.public.home"],
+      "must_contain": ["$variables['surface_id'] = 'core.public.home';", "'current_path'", "'canonical_url'"],
+      "must_not_contain": []
+    },
+    {
+      "path": "src/Http/Handler/PublishedContentHandler.php",
+      "surface_ids": ["core.public.page"],
+      "must_contain": ["'surface_id' => 'core.public.page'", "'current_path'", "'canonical_url'"],
+      "must_not_contain": []
+    },
+    {
+      "path": "examples/extensions/announcements/templates/views/administrator/announcements.twig",
+      "surface_ids": ["kumwe.announcements-example.index"],
+      "must_contain": ["@kis/page-header.twig", "@kis/empty-state.twig", "data-kis-surface=\"kumwe.announcements-example.index\""],
+      "must_not_contain": []
+    },
+    {
+      "path": "examples/extensions/announcements/kumwe.json",
+      "surface_ids": ["kumwe.announcements-example.index"],
+      "must_contain": ["\"schema\": 4", "\"version\": 2", "\"surface\": \"kumwe.announcements-example.index\"", "\"pattern\": \"collection-workspace\"", "\"element\": \"announcement-work\"", "\"element\": \"generated-workspaces\""],
+      "must_not_contain": ["example.announcements.administrator"]
+    },
+    {
+      "path": "examples/extensions/announcements/src/Provider.php",
+      "surface_ids": ["kumwe.announcements-example.index"],
+      "must_contain": ["InterfaceSurfaceRegistrar", "$contributions->interfaceSurface(", "ContributionOwner::extension('kumwe/announcements-example')", "new AdministratorNavigationDefinition("],
+      "must_not_contain": []
+    },
+    {
+      "path": "examples/extensions/asset-inspection/templates/views/administrator/index.twig",
+      "surface_ids": ["kumwe.asset-inspection-example.administrator.index"],
+      "must_contain": ["@kis/page-header.twig", "@kis/technical-value.twig", "data-kis-surface=\"kumwe.asset-inspection-example.administrator.index\""],
+      "must_not_contain": []
+    },
+    {
+      "path": "examples/extensions/asset-inspection/templates/views/portal/status.twig",
+      "surface_ids": ["kumwe.asset-inspection-example.portal.status"],
+      "must_contain": ["@kis/page-header.twig", "@kis/empty-state.twig", "data-kis-surface=\"kumwe.asset-inspection-example.portal.status\""],
+      "must_not_contain": ["internal_note"]
+    },
+    {
+      "path": "examples/extensions/minimal-template/templates/site/home.twig",
+      "surface_ids": ["core.public.home"],
+      "must_contain": ["aria-labelledby=\"template-home-title\"", "data-kis-surface=\"core.public.home\"", "/administrator/settings"],
+      "must_not_contain": []
+    },
+    {
+      "path": "examples/extensions/minimal-template/templates/site/page.twig",
+      "surface_ids": ["core.public.page"],
+      "must_contain": ["aria-labelledby=\"template-page-title\"", "surface_id|default('core.public.page')", "entry.body_html|raw"],
+      "must_not_contain": []
+    },
+    {
+      "path": "examples/extensions/minimal-administrator-template/templates/administrator/layout.twig",
+      "surface_ids": [],
+      "must_contain": ["data-kis-template-surface=\"administrator\"", "data-kis-template-surface=\"administrator-guest\"", "administrator_navigation", "administrator_assets.stylesheets", "administrator_assets.modules", "administrator-command-data"],
+      "must_not_contain": []
+    }
+  ],
+  "mode_stylesheets": [
+    {
+      "path": "assets/administrator/phase-five.css",
+      "must_contain": ["@media (pointer: coarse)", "@media (prefers-contrast: more)", "@media (forced-colors: active)", "@media (prefers-reduced-motion: reduce)", "@media print"]
+    },
+    {
+      "path": "assets/portal/phase-five.css",
+      "must_contain": ["@media (pointer: coarse)", "@media (prefers-contrast: more)", "@media (forced-colors: active)", "@media (prefers-reduced-motion: reduce)", "@media print"]
+    },
+    {
+      "path": "assets/site/phase-five.css",
+      "must_contain": ["@media (pointer: coarse)", "@media (prefers-contrast: more)", "@media (forced-colors: active)", "@media print"]
+    },
+    {
+      "path": "examples/extensions/minimal-template/assets/site.css",
+      "must_contain": ["@media (pointer: coarse)", "@media (prefers-contrast: more)", "@media (forced-colors: active)", "@media (prefers-reduced-motion: reduce)", "@media print"]
+    },
+    {
+      "path": "examples/extensions/minimal-administrator-template/assets/administrator.css",
+      "must_contain": ["@media (pointer: coarse)", "@media (prefers-contrast: more)", "@media (forced-colors: active)", "@media (prefers-reduced-motion: reduce)", "@media print"]
+    }
+  ],
+  "qualification_sources": [
+    {
+      "path": "tests/Architecture/TemplatePackageConformanceTest.php",
+      "must_contain": ["testSiteReferencePackageIsInstallableAndActivationReady", "testAdministratorReferencePackageIsInstallableAndActivationReady", "ThemePackageValidator"]
+    },
+    {
+      "path": "tests/Integration/Presentation/DoctrineThemeManagerIntegrationTest.php",
+      "must_contain": ["testInvalidThemeIsRejectedBeforeDoctrineActivationChanges", "testActivePluginUpgradeRetainsOldRootUntilReplicaConvergence", "testActivationAndDisablePublishDurableGenerations", "testAdministratorRecoveryPublishesCoreSelection", "testDisablingOneSiteThemeRetainsAssignmentsForOtherSites"]
+    },
+    {
+      "path": "tests/Unit/Presentation/Application/ThemePackageValidatorTest.php",
+      "must_contain": ["testEverySiteEntryRequiresTheProtectedPublicShell", "testUnsupportedKisCompatibilityIsRejectedBeforeTemplateCompilation", "testAdministratorShellRequiresCapabilityFilteredNavigationOutlet", "testAdministratorShellRequiresHostAssetOutlets"]
+    },
+    {
+      "path": "tests/Unit/Portal/Presentation/Twig/PortalTwigEnvironmentFactoryTest.php",
+      "must_contain": ["testPortalExposesCoreKisAndOwnerIsolatedExtensionTemplates"]
+    },
+    {
+      "path": "docs/templates.md",
+      "must_contain": ["Install, activate, and recover", "theme:administrator:recover", "resets/disables safely"]
+    }
+  ]
+}

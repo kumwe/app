@@ -9,16 +9,16 @@
   {% set secondary_action = page.secondary_action|default(null) %}
   {% set capabilities = page.capabilities|default(null) %}
   {% set platform = page.platform|default(null) %}
-  <article class="managed-page{% if heading or summary or logo %} managed-page-landing{% endif %}">
+  <article class="managed-page kis-phase-five-public{% if heading or summary or logo %} managed-page-landing{% endif %}" aria-labelledby="managed-page-title" data-kis-surface="{{ surface_id|default('core.public.page') }}">
     {% if heading or summary or logo %}
       <header class="managed-hero"><div class="site-container managed-hero-grid"><div class="managed-hero-copy">
         {% if page.eyebrow|default('') %}<p class="eyebrow">{{ page.eyebrow }}</p>{% endif %}
-        <h1>{{ heading|default(entry.title, true) }}</h1>
+        <h1 id="managed-page-title">{{ heading|default(entry.title, true) }}</h1>
         {% if summary %}<p class="managed-summary">{{ summary }}</p>{% endif %}
         {% if primary_action or secondary_action %}<div class="managed-actions">{% if primary_action and primary_action.url|default('') and primary_action.label|default('') %}<a class="site-button" href="{{ primary_action.url }}">{{ primary_action.label }}</a>{% endif %}{% if secondary_action and secondary_action.url|default('') and secondary_action.label|default('') %}<a class="site-button secondary" href="{{ secondary_action.url }}">{{ secondary_action.label }}</a>{% endif %}</div>{% endif %}
       </div>{% if logo %}<div class="managed-hero-logo"><img src="{{ logo }}" alt="{{ site_name }}" loading="eager"></div>{% endif %}</div></header>
     {% else %}
-      <header class="article-heading site-container"><h1>{{ entry.title }}</h1></header>
+      <header class="article-heading site-container"><h1 id="managed-page-title">{{ entry.title }}</h1></header>
     {% endif %}
     {% if entry.body_html|default('') %}<section class="managed-section"><div class="site-container article-body">{{ entry.body_html|raw }}</div></section>{% endif %}
     {% if capabilities %}<section class="managed-section managed-section-accent"{% if capabilities.anchor|default('') %} id="{{ capabilities.anchor }}"{% endif %}><div class="site-container managed-section-grid"><h2>{{ capabilities.heading|default('') }}</h2><div class="article-body">{{ capabilities.body_html|default('')|raw }}</div></div></section>{% endif %}

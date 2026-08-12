@@ -2,15 +2,45 @@
 {% block title %}Menus · Kumwe{% endblock %}
 {% block context_title %}Menus{% endblock %}
 {% block content %}
-  <header class="page-heading"><div><p class="eyebrow">Site structure</p><h1>Menus and navigation</h1><p>Arrange the links visitors use to move through the public website.</p></div><div class="page-actions"><a class="button" href="/" target="_blank" rel="noopener">View website</a></div></header>
+  <div class="kis-phase-five" data-kis-surface="core.administrator.navigation">
+    {% embed '@kis/page-header.twig' with {
+      eyebrow: 'Site structure',
+      title: 'Menus and navigation',
+      purpose: 'Arrange the links visitors use to move through the public website.'
+    } only %}
+      {% block actions %}<div class="page-actions"><a class="button" href="/" target="_blank" rel="noopener">View website</a></div>{% endblock %}
+    {% endembed %}
   {% if saved %}<div class="notice success" role="status"><span>Navigation updated. Public pages use the saved menu immediately.</span><button class="notice-dismiss" type="button" aria-label="Dismiss notice" data-dismiss-notice>×</button></div>{% endif %}
 
   {% if menus is empty %}
-    <section class="empty-state"><div class="empty-state-content"><span class="empty-state-icon"><svg aria-hidden="true"><use href="#kumwe-icon-navigation"></use></svg></span><h2>Create the main menu</h2><p>Start with one menu, then add published pages in the order visitors should see them.</p></div></section>
+    {% include '@kis/empty-state.twig' with {
+      title: 'Create the main menu',
+      message: 'Start with one menu, then add published pages in the order visitors should see them.'
+    } only %}
   {% endif %}
 
+  {% embed '@kis/master-detail.twig' with {
+    id: 'navigation-workspace',
+    catalog_label: 'Menu catalog',
+    catalog_toggle_label: 'Browse menus',
+    menus: menus,
+    items: items,
+    content_targets: content_targets,
+    csrf: csrf
+  } only %}
+    {% block catalog %}
+      <div class="kis-phase-five-catalog">
+        <div><p class="eyebrow">Catalog</p><h2>Public menus</h2><p class="field-help">Choose a menu to edit its links and order.</p></div>
+        <nav aria-label="Available menus"><ul>
+          {% for menu in menus %}<li><a href="#menu-{{ menu.id }}"><strong>{{ menu.title }}</strong><small>{{ items[menu.id]|length }} links · version {{ menu.version }}</small></a></li>{% endfor %}
+          <li><a href="#create-menu"><strong>Create menu</strong><small>Add another public navigation container</small></a></li>
+        </ul></nav>
+      </div>
+    {% endblock %}
+    {% block detail %}
+      <div class="stack">
   {% for menu in menus %}
-    <section class="panel menu-card">
+    <section id="menu-{{ menu.id }}" class="panel menu-card kis-phase-five-card">
       <header class="panel-header"><div><h2>{{ menu.title }}</h2><p><code>{{ menu.handle }}</code> · {{ items[menu.id]|length }} links · version {{ menu.version }}</p></div></header>
       <div class="panel-body stack">
         <form action="/administrator/navigation" method="post" class="form-grid"><input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="action" value="menu.update"><input type="hidden" name="id" value="{{ menu.id }}"><input type="hidden" name="version" value="{{ menu.version }}"><label>Menu handle<input name="handle" value="{{ menu.handle }}" pattern="[a-z][a-z0-9_]*" required></label><label>Menu title<input name="title" value="{{ menu.title }}" maxlength="255" required></label><button type="submit">Save menu details</button></form>
@@ -33,14 +63,18 @@
               </article>
             {% else %}<div class="empty-state"><div class="empty-state-content"><h3>No links yet</h3><p>Add the first public page below.</p></div></div>{% endfor %}
           </div>
-          {% if items[menu.id] is not empty %}<form action="/administrator/navigation" method="post" class="page-actions"><input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="action" value="item.reorder"><input type="hidden" name="menu_id" value="{{ menu.id }}"><input type="hidden" name="order" value="{% for item in items[menu.id] %}{{ not loop.first ? ',' : '' }}{{ item.id }}{% endfor %}" data-order-input><button type="submit">Save dragged order</button><span class="field-help">Drag rows into order, then save.</span></form>{% endif %}
+          {% if items[menu.id] is not empty %}<form action="/administrator/navigation" method="post" class="page-actions"><input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="action" value="item.reorder"><input type="hidden" name="menu_id" value="{{ menu.id }}"><input type="hidden" name="order" value="{% for item in items[menu.id] %}{{ not loop.first ? ',' : '' }}{{ item.id }}{% endfor %}" data-order-input><button type="submit">Save item order</button><span class="field-help">Drag rows or edit each numeric position, then save.</span></form>{% endif %}
         </kumwe-menu-tree>
 
         <details class="advanced-definition"><summary>Add a menu item</summary><form action="/administrator/navigation" method="post" class="form-grid panel-body" data-navigation-target-form><input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="action" value="item.create"><input type="hidden" name="menu_id" value="{{ menu.id }}"><label>Link label<input name="title" required data-navigation-title></label><label>Link type<select name="target_type" data-navigation-target-type><option value="content">Page</option><option value="anchor">Page section</option><option value="url">Custom URL</option></select></label><label data-navigation-content-field>Page<select name="content_id" data-navigation-content><option value="">Select a page…</option>{% for target in content_targets %}<option value="{{ target.id }}" data-slug="{{ target.slug }}">{{ target.title }} · {{ target.status|replace({'_': ' '})|title }}</option>{% endfor %}</select></label><label data-navigation-url-field>Anchor or custom URL<input name="target_url" placeholder="#platform or https://example.org"></label><label>URL segment<input name="slug" pattern="[a-z0-9]+(-[a-z0-9]+)*" required data-navigation-slug></label><label>Parent<select name="parent_id"><option value="">Top level</option>{% for item in items[menu.id] %}<option value="{{ item.id }}">{{ item.path }}</option>{% endfor %}</select></label><label>Position<input type="number" min="0" name="position" value="{{ items[menu.id]|length }}"></label><button class="primary" type="submit">Add link</button></form></details>
-        <details class="advanced-definition"><summary>Danger zone</summary><form action="/administrator/navigation" method="post" class="panel-body stack"><input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="action" value="menu.delete"><input type="hidden" name="id" value="{{ menu.id }}"><input type="hidden" name="version" value="{{ menu.version }}"><p class="field-help">Deleting this menu also deletes every link it contains.</p><button class="danger" type="submit" data-confirm="Delete ‘{{ menu.title }}’ and all its links?">Delete menu</button></form></details>
+        <details class="kis-phase-five-danger-zone"><summary>Danger zone</summary><form action="/administrator/navigation" method="post" class="stack"><input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="action" value="menu.delete"><input type="hidden" name="id" value="{{ menu.id }}"><input type="hidden" name="version" value="{{ menu.version }}"><p>Deleting <strong>{{ menu.title }}</strong> also deletes its {{ items[menu.id]|length }} link{{ items[menu.id]|length == 1 ? '' : 's' }}. Public pages remain stored, but visitors lose these navigation paths.</p><button class="danger" type="submit" data-confirm="Delete ‘{{ menu.title }}’ and all its links?">Delete {{ menu.title }} menu</button></form></details>
       </div>
     </section>
   {% endfor %}
 
-  <section class="panel panel-body stack"><div><p class="eyebrow">New navigation</p><h2>Create a menu</h2></div><form action="/administrator/navigation" method="post" class="form-grid"><input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="action" value="menu.create"><label>Handle<input name="handle" value="{{ menus is empty ? 'main' : '' }}" pattern="[a-z][a-z0-9_]*" required></label><label>Title<input name="title" value="{{ menus is empty ? 'Main menu' : '' }}" maxlength="255" required></label><button class="primary" type="submit">Create menu</button></form></section>
+    <section id="create-menu" class="panel panel-body stack kis-phase-five-card"><div><p class="eyebrow">New navigation</p><h2>Create a menu</h2><p class="field-help">Create the container first, then add page, section, or external links.</p></div><form action="/administrator/navigation" method="post" class="form-grid"><input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="action" value="menu.create"><label>Handle<input name="handle" value="{{ menus is empty ? 'main' : '' }}" pattern="[a-z][a-z0-9_]*" required></label><label>Title<input name="title" value="{{ menus is empty ? 'Main menu' : '' }}" maxlength="255" required></label><button class="primary" type="submit">Create menu</button></form></section>
+      </div>
+    {% endblock %}
+  {% endembed %}
+  </div>
 {% endblock %}

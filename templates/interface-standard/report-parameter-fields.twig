@@ -1,0 +1,45 @@
+{% macro fields(parameters, id_prefix) %}
+  <div class="kis-business-report-parameters">
+    {% for parameter in parameters %}
+      {% set input_id = id_prefix ~ '-' ~ parameter.name %}
+      {% set label = parameter.name|replace({'_': ' '})|title %}
+      <div class="kis-business-field">
+        <label for="{{ input_id }}">{{ label }}{% if parameter.required %} <span aria-hidden="true">*</span>{% endif %}</label>
+        {% if parameter.multiple %}
+          <textarea
+            id="{{ input_id }}"
+            name="parameters[{{ parameter.name }}]"
+            rows="4"
+            {% if parameter.required %}required{% endif %}
+            aria-describedby="{{ input_id }}-help"
+          >{% if parameter.default is iterable %}{{ parameter.default|join('\n') }}{% endif %}</textarea>
+        {% elseif parameter.type == 'boolean' %}
+          <select id="{{ input_id }}" name="parameters[{{ parameter.name }}]"{% if parameter.required %} required{% endif %} aria-describedby="{{ input_id }}-help">
+            <option value=""{% if parameter.default is null %} selected{% endif %}>{{ parameter.required ? 'Choose yes or no' : 'Use report default' }}</option>
+            <option value="1"{% if parameter.default is same as(true) %} selected{% endif %}>Yes</option>
+            <option value="0"{% if parameter.default is same as(false) %} selected{% endif %}>No</option>
+          </select>
+        {% else %}
+          <input
+            id="{{ input_id }}"
+            name="parameters[{{ parameter.name }}]"
+            type="{{ parameter.type == 'integer' ? 'number' : (parameter.type == 'date' ? 'date' : 'text') }}"
+            value="{{ parameter.default is null ? '' : parameter.default }}"
+            {% if parameter.type == 'integer' %}step="1"{% endif %}
+            {% if parameter.type == 'decimal' %}inputmode="decimal" pattern="-?(?:0|[1-9][0-9]*)(?:\.[0-9]+)?"{% endif %}
+            {% if parameter.type == 'date_time' %}placeholder="2026-08-12T09:30:00+02:00"{% endif %}
+            {% if parameter.type == 'identifier' %}maxlength="191" autocomplete="off"{% endif %}
+            {% if parameter.type == 'string' %}maxlength="4096"{% endif %}
+            {% if parameter.required %}required{% endif %}
+            aria-describedby="{{ input_id }}-help"
+          >
+        {% endif %}
+        <small id="{{ input_id }}-help">
+          {{ parameter.type|replace({'_': ' '})|title }}{% if parameter.multiple %}; enter one value per line, up to 100{% endif %}{% if not parameter.required %}; optional{% endif %}.
+        </small>
+      </div>
+    {% else %}
+      <p>No parameters are required. Run the report to use its declared scope.</p>
+    {% endfor %}
+  </div>
+{% endmacro %}

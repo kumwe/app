@@ -81,6 +81,21 @@ interface AccessControlRepository
     public function tokens(string $siteIdentifier, int $limit = 100, int $offset = 0): array;
 
     /**
+     * Read one page of installation identity and credential audit events.
+     *
+     * The projection contains attribution and target metadata only. Stored event metadata is deliberately
+     * excluded because it may contain operational context that is unnecessary for this security timeline.
+     *
+     * @param   int  $limit   Maximum rows to read in this page.
+     * @param   int  $offset  Rows to skip before collecting the page.
+     *
+     * @return  list<array<string, mixed>>  Newest identity-related events without stored metadata.
+     *
+     * @since   2.0.0
+     */
+    public function securityEvents(int $limit = 100, int $offset = 0): array;
+
+    /**
      * Read the lifecycle status stored for one user.
      *
      * @param   string  $userId  UUID of the user whose status decides the transition being attempted.

@@ -24,7 +24,7 @@
 {% block context_subtitle %}Review before applying this operation{% endblock %}
 
 {% block content %}
-  <kumwe-business-confirmation>
+  <kumwe-business-confirmation data-kis-business data-kis-component="generated-operation-confirmation" data-kis-surface="core.administrator.generated-record">
     <header class="page-heading">
       <div>
         <p class="eyebrow">Confirmation required</p>
@@ -33,7 +33,7 @@
       </div>
     </header>
 
-    <section class="panel panel-body stack business-confirmation{% if confirmation in ['delete', 'action'] %} danger{% endif %}" aria-labelledby="business-confirm-title">
+    <section class="panel panel-body stack business-confirmation kis-business-confirmation{% if confirmation in ['delete', 'action'] %} danger{% endif %}"{% if confirmation in ['delete', 'action'] %} data-danger{% endif %} aria-labelledby="business-confirm-title">
       {% if error_summary is defined and error_summary %}<div class="notice error" role="alert"><h2>Action could not be completed</h2><p>{{ error_summary }}</p></div>{% endif %}
       {% if approval_requested|default(false) and approval_request_id|default(null) %}
         <div class="notice success" role="status">

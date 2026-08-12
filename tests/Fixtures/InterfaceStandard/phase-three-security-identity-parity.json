@@ -1,0 +1,190 @@
+{
+  "format": "kumwe-kis-security-identity-parity-v1",
+  "schema_version": 1,
+  "phase": 3,
+  "standard": "kis-1.0",
+  "route_registry": "src/Kernel/ContainerFactory.php",
+  "surfaces": [
+    {
+      "id": "core.administrator.business-security",
+      "handler": "src/Administrator/Http/Handler/AdministratorBusinessSecurityHandler.php",
+      "application_sources": [
+        "src/BusinessSecurity/Application/Administration/BusinessSecurityAdministrationService.php",
+        "src/BusinessSecurity/Application/Approval/ApprovalService.php"
+      ],
+      "templates": ["templates/administrator/business-security.twig"],
+      "routes": [
+        {"method": "GET", "path": "/administrator/business-security", "name": "administrator.business-security", "capability": "business.security.manage", "csrf": false},
+        {"method": "POST", "path": "/administrator/business-security", "name": "administrator.business-security.update", "capability": "business.security.manage", "csrf": true}
+      ],
+      "concerns": ["overview", "organizations", "memberships", "policies", "approvals", "credentials"],
+      "positive_actors": [
+        "authenticated installation security administrator with business.security.manage",
+        "organization-scoped security administrator receiving only that organization and selected workspace",
+        "approval actor whose live projection grants the exact approval decision"
+      ],
+      "negative_actors": [
+        "unauthenticated actor",
+        "administrator without business.security.manage",
+        "administrator requesting a foreign organization or workspace record",
+        "administrator attempting self-membership escalation",
+        "approval actor without business.approval.approve or business.approval.manage"
+      ],
+      "common_fields": ["_csrf", "action"],
+      "step_up_fields": ["step_up_method", "step_up_code", "recovery_code"],
+      "actions": [
+        {"action": "organization.create", "fields": ["identifier", "name"], "service": "createOrganization", "step_up": "business.security.organization.create", "version_field": null},
+        {"action": "workspace.create", "fields": ["organization_id", "identifier", "name"], "service": "createWorkspace", "step_up": "business.security.workspace.create", "version_field": null},
+        {"action": "membership.create", "fields": ["organization_id", "user_id", "valid_from", "valid_until"], "service": "createMembership", "step_up": "business.security.membership.create", "version_field": null},
+        {"action": "membership.status", "fields": ["membership_id", "status", "version"], "service": "changeMembershipStatus", "step_up": "business.security.membership.status", "version_field": "version"},
+        {"action": "membership.workspace.assign", "fields": ["membership_id", "workspace_id"], "service": "assignWorkspace", "step_up": "business.security.membership.workspace.assign", "version_field": null},
+        {"action": "membership.workspace.revoke", "fields": ["membership_id", "workspace_id"], "service": "revokeWorkspace", "step_up": "business.security.membership.workspace.revoke", "version_field": null},
+        {"action": "membership.role.assign", "fields": ["membership_id", "role_id"], "service": "assignRole", "step_up": "business.security.membership.role.assign", "version_field": null},
+        {"action": "membership.role.revoke", "fields": ["membership_id", "role_id"], "service": "revokeRole", "step_up": "business.security.membership.role.revoke", "version_field": null},
+        {
+          "action": "resource_policy.create",
+          "fields": [
+            "policy_code", "operation", "effect", "organization_id", "definition_id",
+            "predicate_type", "predicate_field", "predicate_operator", "predicate_value_type",
+            "predicate_value", "priority", "fields_create[]", "fields_update[]", "fields_detail[]",
+            "fields_list[]", "fields_filter[]", "fields_search[]", "fields_sort[]", "fields_aggregate[]",
+            "fields_report[]", "fields_export[]", "fields_audit[]", "fields_mcp[]", "fields_relation[]",
+            "fields_include[]", "fields_public_reference[]", "fields_actions[]"
+          ],
+          "service": "createResourcePolicy",
+          "step_up": "business.security.resource_policy.create",
+          "version_field": null
+        },
+        {"action": "resource_policy.status", "fields": ["id", "status", "version"], "service": "changeResourcePolicyStatus", "step_up": "business.security.resource_policy.status", "version_field": "version"},
+        {"action": "separation_duty.create", "fields": ["rule_code", "resource_type", "request_action", "approval_action", "organization_id", "requester_role_id", "approver_role_id", "quorum", "distinct_actors"], "service": "createSeparationRule", "step_up": "business.security.separation_duty.create", "version_field": null},
+        {"action": "separation_duty.status", "fields": ["id", "status", "version"], "service": "changeSeparationRuleStatus", "step_up": "business.security.separation_duty.status", "version_field": "version"},
+        {"action": "approval.approve", "fields": ["request_id", "reason"], "service": "approve", "step_up": "business.approval.approve", "version_field": "approval request resource version", "action_capability": "business.approval.approve"},
+        {"action": "approval.reject", "fields": ["request_id", "reason"], "service": "reject", "step_up": "business.approval.reject", "version_field": "approval request resource version", "action_capability": "business.approval.approve"},
+        {"action": "approval.cancel", "fields": ["request_id"], "service": "cancel", "step_up": null, "version_field": "approval request state", "actor_rule": "current requester only"},
+        {"action": "approval.revoke", "fields": ["request_id"], "service": "revoke", "step_up": "business.approval.revoke", "version_field": "approval request resource version", "action_capability": "business.approval.manage"}
+      ],
+      "scope_constraints": [
+        "site ownership is checked by application services",
+        "organization and workspace presentation rows are filtered before Twig",
+        "membership assignment revalidates subject scope and prevents self-escalation",
+        "policy fields and actions are checked against the selected immutable definition",
+        "approval decisions revalidate actor, target, resource version, context, expiry and quorum"
+      ],
+      "forbidden_presentation": ["policy_json", "canonical_ast", "SQL editor", "credential secret", "step-up proof nonce"]
+    },
+    {
+      "id": "core.administrator.access-control",
+      "handler": "src/Administrator/Http/Handler/AdministratorAccessControlHandler.php",
+      "application_sources": [
+        "src/Identity/Application/Administration/AccessControlService.php",
+        "src/Identity/Application/Administration/AdministratorIdentityGateway.php"
+      ],
+      "templates": ["templates/administrator/access-control.twig"],
+      "routes": [
+        {"method": "GET", "path": "/administrator/access", "name": "administrator.access-control", "capability": "users.manage", "csrf": false},
+        {"method": "POST", "path": "/administrator/access", "name": "administrator.access-control.update", "capability": "users.manage", "csrf": true}
+      ],
+      "concerns": ["users", "groups", "grants", "assignments", "tokens", "events"],
+      "positive_actors": [
+        "authenticated installation identity administrator with users.manage",
+        "administrator selecting one of their current organization memberships"
+      ],
+      "negative_actors": [
+        "unauthenticated actor",
+        "administrator without users.manage",
+        "site-scoped grant that does not satisfy installation-global users.manage",
+        "administrator requesting a foreign site identity or token",
+        "administrator delegating a grant above their live delegation ceiling"
+      ],
+      "common_fields": ["_csrf", "action"],
+      "step_up_fields": ["step_up_method", "step_up_code", "recovery_code"],
+      "actions": [
+        {"action": "context.select", "fields": ["organization", "workspace"], "service": "selectMembership", "step_up": null, "outcome": "session and CSRF rotation"},
+        {"action": "step_up.begin", "fields": [], "service": "beginEnrollment", "step_up": null, "outcome": "one-time enrollment material"},
+        {"action": "step_up.confirm", "fields": ["enrollment_id", "step_up_code"], "service": "confirmEnrollment", "step_up": "identity.step_up.enrollment", "outcome": "session rotation and recovery codes shown once"},
+        {"action": "user.create", "fields": ["email", "display_name", "password", "status"], "service": "createUser", "step_up": "identity.access_control.user.create", "version_field": null},
+        {"action": "user.update", "fields": ["id", "email", "display_name", "status", "version"], "service": "updateUser", "step_up": "identity.access_control.user.update", "version_field": "version"},
+        {"action": "role.create", "fields": ["code", "name"], "service": "createRole", "step_up": "identity.access_control.role.create", "version_field": null},
+        {"action": "role.assign", "fields": ["user_id", "role_id"], "service": "assignRole", "step_up": "identity.access_control.role.assign", "version_field": null},
+        {"action": "role.revoke", "fields": ["user_id", "role_id"], "service": "revokeRole", "step_up": "identity.access_control.role.revoke", "version_field": null},
+        {"action": "grant.create", "fields": ["role_id", "capability", "scope_type", "scope_identifier"], "service": "grant", "step_up": "identity.access_control.grant.create", "version_field": null},
+        {"action": "grant.revoke", "fields": ["grant_id"], "service": "revokeGrant", "step_up": "identity.access_control.grant.revoke", "version_field": null},
+        {"action": "token.create", "fields": ["token_email", "token_name", "token_capabilities[]", "expires_at", "audience", "purpose"], "service": "issueAccessToken", "step_up": "identity.access_control.token.create", "version_field": null, "outcome": "secret shown once"},
+        {"action": "token.revoke", "fields": ["token_id"], "service": "revokeToken", "step_up": "identity.access_control.token.revoke", "version_field": null},
+        {"action": "token.rotate", "fields": ["token_id", "token_name", "expires_at"], "service": "rotateAccessToken", "step_up": "identity.access_control.token.rotate", "version_field": null, "outcome": "replacement secret shown once"},
+        {"action": "token.emergency_revoke", "fields": ["user_id", "reason"], "service": "emergencyRevokeAllSubjectTokens", "step_up": "identity.access_control.token.emergency.revoke", "version_field": "subject security epoch"}
+      ],
+      "scope_constraints": [
+        "users.manage is installation-global",
+        "user, role, grant and token application services authorize before persistence",
+        "role assignment and grants enforce the actor delegation ceiling",
+        "tokens remain site-bound and plaintext is returned only by issue or rotation",
+        "security events use a closed identity-only action projection and omit stored metadata"
+      ],
+      "forbidden_presentation": ["password hash", "token digest", "token secret outside one-time result", "audit metadata", "recovery-code digest"]
+    },
+    {
+      "id": "core.portal.approvals",
+      "handler": "src/Portal/Http/Handler/PortalApprovalHandler.php",
+      "application_sources": [
+        "src/BusinessSurface/Application/BusinessApprovalSurfaceService.php",
+        "src/BusinessSecurity/Application/Approval/ApprovalService.php"
+      ],
+      "templates": ["templates/portal/approvals.twig", "templates/portal/approval-detail.twig", "templates/portal/approval-not-found.twig"],
+      "routes": [
+        {"method": "GET", "path": "/portal/approvals", "name": "portal.approvals", "capability": "portal.access", "csrf": false},
+        {"method": "GET", "path": "/portal/approvals/{id}", "name": "portal.approvals.detail", "capability": "portal.access", "csrf": false},
+        {"method": "POST", "path": "/portal/approvals/{id}/approve", "name": "portal.approvals.approve", "capability": "portal.access plus live canApprove projection", "csrf": true},
+        {"method": "POST", "path": "/portal/approvals/{id}/reject", "name": "portal.approvals.reject", "capability": "portal.access plus live canApprove projection", "csrf": true},
+        {"method": "POST", "path": "/portal/approvals/{id}/revoke", "name": "portal.approvals.revoke", "capability": "portal.access plus live canRevoke projection", "csrf": true}
+      ],
+      "concerns": ["browse", "review", "history"],
+      "positive_actors": [
+        "portal member whose current organization and workspace projection exposes the request",
+        "portal approver with live canApprove",
+        "portal approval manager with live canRevoke"
+      ],
+      "negative_actors": [
+        "actor without a portal session",
+        "portal member in a foreign organization or workspace",
+        "member whose request projection is absent",
+        "member whose decision eligibility changed before verification or mutation",
+        "actor submitting an expired, replayed or wrong-purpose verification code"
+      ],
+      "common_fields": ["_csrf", "verification_method", "verification"],
+      "step_up_fields": ["verification_method", "verification"],
+      "actions": [
+        {"action": "approve", "fields": ["reason"], "service": "approve", "step_up": "business.approval.approve", "version_field": "resourceVersion", "eligibility": "canApprove"},
+        {"action": "reject", "fields": ["reason"], "service": "reject", "step_up": "business.approval.reject", "version_field": "resourceVersion", "eligibility": "canApprove"},
+        {"action": "revoke", "fields": [], "service": "revoke", "step_up": "business.approval.revoke", "version_field": "resourceVersion", "eligibility": "canRevoke"}
+      ],
+      "scope_constraints": [
+        "inbox and detail use the portal-safe live exposure gate",
+        "missing and unauthorized details return the same 404 representation",
+        "the request is re-fetched before step-up and again before mutation",
+        "the proof binds actor, rotated session, site, organization, workspace, purpose and security epoch",
+        "the service revalidates target version, expiry, quorum and actor separation"
+      ],
+      "forbidden_presentation": ["resourceId", "requesterId", "approverId", "bindingDigest", "payloadDigest", "ruleCode", "ruleVersion", "approverRoleId", "distinctActors"]
+    }
+  ],
+  "cross_surface_journey": {
+    "id": "journey.portal-provisioning",
+    "steps": [
+      "create a unique active identity in Users",
+      "create an organization membership in Business Security",
+      "assign the minimum workspace and organization role",
+      "review effective membership access and provide the exact portal sign-in context",
+      "sign in without disclosing which prerequisite failed"
+    ],
+    "shared_seeded_secret_required": false
+  },
+  "invariants": [
+    "all essential controls submit through native HTML forms",
+    "all concern and task destinations are real URLs",
+    "step-up fields appear only in focused final action forms",
+    "CSRF, authorization, optimistic version, audit and application-service boundaries remain unchanged",
+    "invalid concern, mode, kind, step and record selectors fail to a bounded safe state",
+    "permission-filtered counts, actions and records are never reconstructed in Twig"
+  ]
+}

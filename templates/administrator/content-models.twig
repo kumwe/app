@@ -2,15 +2,44 @@
 {% block title %}Content models · Kumwe{% endblock %}
 {% block context_title %}Content models{% endblock %}
 {% block content %}
-  <header class="page-heading"><div><p class="eyebrow">Structure</p><h1>Content models</h1><p>Define the fields people complete and the workflow that moves content safely toward publication.</p></div><div class="page-actions"><a class="button" href="/administrator/content/new">Create content</a></div></header>
+  <div class="kis-phase-five" data-kis-surface="core.administrator.content-models">
+    {% embed '@kis/page-header.twig' with {
+      eyebrow: 'Structure',
+      title: 'Content models',
+      purpose: 'Define the fields people complete and the workflow that moves content safely toward publication.'
+    } only %}
+      {% block actions %}<div class="page-actions"><a class="button" href="/administrator/content/new">Create content</a></div>{% endblock %}
+    {% endembed %}
 
   <div class="notice" role="status"><span><strong>Versioned by design.</strong> Publishing a model creates an immutable version. Existing content remains pinned to the version it was created with.</span><button class="notice-dismiss" type="button" aria-label="Dismiss notice" data-dismiss-notice>×</button></div>
 
-  <section class="model-layout">
-    <div class="stack">
-      <div class="section-heading"><div><p class="eyebrow">Authoring</p><h2>Content types</h2></div><span class="count-badge">{{ content_types|length }}</span></div>
+  {% embed '@kis/master-detail.twig' with {
+    id: 'content-model-workspace',
+    catalog_label: 'Content model catalog',
+    catalog_toggle_label: 'Browse content models',
+    content_types: content_types,
+    workflows: workflows,
+    capabilities: capabilities,
+    csrf: csrf
+  } only %}
+    {% block catalog %}
+      <div class="kis-phase-five-catalog">
+        <div><p class="eyebrow">Catalog</p><h2>Models and workflows</h2><p class="field-help">Choose a stable concern. Editors remain separate from this catalog.</p></div>
+        <nav aria-label="Content models and workflows">
+          <h3>Content types</h3>
+          <ul>{% for type in content_types %}<li><a href="#content-type-{{ type.handle }}"><strong>{{ type.name }}</strong><small>{{ type.handle }} · version {{ type.version }}</small></a></li>{% endfor %}</ul>
+          <h3>Workflows</h3>
+          <ul>{% for workflow in workflows %}<li><a href="#workflow-{{ workflow.handle }}"><strong>{{ workflow.name }}</strong><small>{{ workflow.handle }} · version {{ workflow.version }}</small></a></li>{% endfor %}</ul>
+          {% if capabilities['content.update'] is defined %}<ul><li><a href="#create-content-type"><strong>Create content type</strong><small>Build a reusable authoring form</small></a></li><li><a href="#create-workflow"><strong>Create workflow</strong><small>Define publication states</small></a></li></ul>{% endif %}
+        </nav>
+      </div>
+    {% endblock %}
+    {% block detail %}
+  <section class="model-layout kis-phase-five-dual-workspace">
+    <div id="content-type-catalog" class="stack kis-phase-five-card">
+      <div class="section-heading"><div><p class="eyebrow">Authoring</p><h2>Content types</h2><p class="field-help">Choose a type to inspect or publish its next immutable version.</p></div><span class="count-badge">{{ content_types|length }}</span></div>
       {% for type in content_types %}
-        <details class="panel model-card">
+        <details id="content-type-{{ type.handle }}" class="panel model-card kis-phase-five-card">
           <summary><span><strong>{{ type.name }}</strong><br><span>{{ type.handle }} · version {{ type.version }}</span></span></summary>
           {% if capabilities['content.update'] is defined %}
             <form method="post" class="stack">
@@ -41,7 +70,7 @@
       {% endfor %}
 
       {% if capabilities['content.update'] is defined %}
-        <details class="panel model-card" open>
+        <details id="create-content-type" class="panel model-card kis-phase-five-card" open>
           <summary><span><strong>Create a content type</strong><br><span>Build a reusable authoring form</span></span></summary>
           <form method="post" class="stack"><input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="kind" value="content_type"><input type="hidden" name="action" value="create"><input type="hidden" name="schema_mode" value="builder">
             <div class="two-column"><label>Handle<input name="handle" placeholder="article" pattern="[a-z][a-z0-9_-]*" required></label><label>Name<input name="name" placeholder="Article" required></label></div>
@@ -55,10 +84,10 @@
       {% endif %}
     </div>
 
-    <div class="stack">
-      <div class="section-heading"><div><p class="eyebrow">Publishing</p><h2>Workflows</h2></div><span class="count-badge">{{ workflows|length }}</span></div>
+    <div id="workflow-catalog" class="stack kis-phase-five-card">
+      <div class="section-heading"><div><p class="eyebrow">Publishing</p><h2>Workflows</h2><p class="field-help">Choose a workflow to inspect states, transitions, and required permissions.</p></div><span class="count-badge">{{ workflows|length }}</span></div>
       {% for workflow in workflows %}
-        <details class="panel model-card">
+        <details id="workflow-{{ workflow.handle }}" class="panel model-card kis-phase-five-card">
           <summary><span><strong>{{ workflow.name }}</strong><br><span>{{ workflow.handle }} · version {{ workflow.version }}</span></span></summary>
           {% if capabilities['content.update'] is defined %}
             <form method="post" class="stack"><input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="kind" value="workflow"><input type="hidden" name="action" value="update"><input type="hidden" name="id" value="{{ workflow.id }}"><input type="hidden" name="version" value="{{ workflow.version }}"><input type="hidden" name="workflow_mode" value="builder"><label>Name<input name="name" value="{{ workflow.name }}" required></label>
@@ -83,7 +112,7 @@
       {% endfor %}
 
       {% if capabilities['content.update'] is defined %}
-        <details class="panel model-card"><summary><span><strong>Create a workflow</strong><br><span>Define review and publication states</span></span></summary>
+        <details id="create-workflow" class="panel model-card kis-phase-five-card"><summary><span><strong>Create a workflow</strong><br><span>Define review and publication states</span></span></summary>
           <form method="post" class="stack"><input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="kind" value="workflow"><input type="hidden" name="action" value="create"><input type="hidden" name="workflow_mode" value="builder"><div class="two-column"><label>Handle<input name="handle" placeholder="editorial" pattern="[a-z][a-z0-9_-]*" required></label><label>Name<input name="name" placeholder="Editorial" required></label></div>
             <kumwe-workflow-builder class="stack"><div class="section-heading"><h3>States</h3><button type="button" data-add-workflow-row="state">Add state</button></div><div class="stack-compact" data-state-rows>
               {% for key, name in {'draft':'Draft','review':'Review','published':'Published'} %}{% set index = loop.index0 %}<div class="builder-row builder-row-expanded" data-workflow-row><label>Key<input name="state_{{ index }}_key" value="{{ key }}" required></label><label>Name<input name="state_{{ index }}_name" value="{{ name }}" required></label><label class="check"><input type="radio" name="initial_state_key" value="{{ key }}"{% if key == 'draft' %} checked{% endif %}><span>Initial</span></label><label class="check"><input type="checkbox" name="state_{{ index }}_public" value="1"{% if key == 'published' %} checked{% endif %}><span>Public</span></label><button class="remove-row" type="button" data-remove-workflow-row>Remove</button></div>{% endfor %}
@@ -97,4 +126,7 @@
       {% endif %}
     </div>
   </section>
+    {% endblock %}
+  {% endembed %}
+  </div>
 {% endblock %}

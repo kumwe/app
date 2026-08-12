@@ -421,7 +421,7 @@ final readonly class ManifestContributionSet
                 }
             }
         }
-        if ($this->interfaceSurfaces !== []) {
+        if ($this->spiVersion >= self::CURRENT_SPI_VERSION || $this->interfaceSurfaces !== []) {
             $this->assertInterfaceRouteCoverage();
         }
         $businessOwner = $owner->identifier() === ContributionOwner::CORE
@@ -498,10 +498,10 @@ final readonly class ManifestContributionSet
     /**
      * Bind every KIS-enabled graphical route and navigation entry to one semantic surface.
      *
-     * Existing schema-4 packages remain compatible while they omit `interface.surfaces`. Once a package
-     * opts in, every safe graphical route must have an area-matched surface with the same stable name,
-     * and navigation must resolve to that route by path and capability. Mutation routes remain actions
-     * of the GET surface rather than pretending to be separate pages.
+     * Every current-SPI graphical route must have an area-matched surface with the same stable name, and
+     * navigation must resolve to that route by path and capability. Mutation routes remain actions of the
+     * GET surface rather than pretending to be separate pages. This is intentionally fail-closed for new
+     * schema-4 packages while retaining the frozen schema-2 and schema-3 compatibility grammars.
      *
      * @return  void
      *

@@ -92,6 +92,18 @@ final class GeneratedBusinessBrowserIntegrationTest extends TestCase
         );
         self::assertSame('business-detail', $archived->template);
         self::assertSame(2, $archived->data['record']['version']);
+        self::assertSame('summary', $archived->data['record_task']);
+        $actions = $browser->dispatch(
+            $context,
+            BusinessSurface::Administrator,
+            '/administrator/business',
+            'GET',
+            $definition,
+            $recordId,
+            ['archived' => '1', 'task' => 'actions'],
+            [],
+        );
+        self::assertSame('actions', $actions->data['record_task']);
         $status = $browser->operationStatus($context, 'browser:redirect-archive');
         self::assertSame(200, $status->status);
         self::assertSame($definition, $status->data['operation_status']['definition_reference']);
@@ -182,6 +194,9 @@ final class GeneratedBusinessBrowserIntegrationTest extends TestCase
                 'search_term' => 'Browser query',
                 'search_fields' => ['name'],
                 'page_size' => '1',
+                'columns' => ['status', 'name'],
+                'density' => 'compact',
+                'representation' => 'cards',
             ],
             [],
         );
@@ -193,6 +208,14 @@ final class GeneratedBusinessBrowserIntegrationTest extends TestCase
         self::assertSame('Browser query', $nextDocument['search']['term']);
         self::assertSame('asc', $nextDocument['sorts'][0]['direction']);
         self::assertArrayHasKey('after', $nextDocument);
+        self::assertSame(['status', 'name'], $first->data['collection_presentation']['columns']);
+        self::assertSame('compact', $first->data['collection_presentation']['density']);
+        self::assertSame('cards', $first->data['collection_presentation']['representation']);
+        self::assertSame(
+            ['status', 'name'],
+            array_column($first->data['visible_columns'], 'handle'),
+        );
+        self::assertStringContainsString('density=compact', $first->data['presentation_query']);
 
         $second = $browser->dispatch(
             $context,
@@ -201,7 +224,12 @@ final class GeneratedBusinessBrowserIntegrationTest extends TestCase
             'GET',
             $definition,
             null,
-            ['query' => $first->data['next_query']],
+            [
+                'query' => $first->data['next_query'],
+                'columns' => ['status', 'name'],
+                'density' => 'compact',
+                'representation' => 'cards',
+            ],
             [],
         );
         self::assertCount(1, $second->data['items']);

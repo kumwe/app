@@ -1,170 +1,340 @@
 {% extends "layout.twig" %}
+
 {% macro step_up() %}
   <fieldset class="field-group stack">
-    <legend>Confirm with step-up verification</legend>
-    <p class="text-muted text-small">The code is bound to this action, site, organization, workspace and rotated session, and is used once.</p>
-    <label>Method<select name="step_up_method"><option value="totp">Authenticator code</option><option value="recovery">Recovery code</option></select></label>
+    <legend>Verify this exact action</legend>
+    <p class="text-muted text-small">Verification is requested only at submission and is bound to this actor, action, scope, target version and rotated session.</p>
+    <label>Verification method
+      <select name="step_up_method">
+        <option value="totp">Authenticator code</option>
+        <option value="recovery">Recovery code</option>
+      </select>
+    </label>
     <div class="two-column">
       <label>Authenticator code<input name="step_up_code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6,10}"></label>
       <label>Recovery code<input name="recovery_code" autocomplete="one-time-code" maxlength="128"></label>
     </div>
-    <small>Fill the field matching the selected method. Codes and recovery material are never retained by this form.</small>
+    <small>Fill only the field matching the selected method. Codes and recovery material are never retained.</small>
   </fieldset>
 {% endmacro %}
+
 {% import _self as security_forms %}
+{% set section = workspace.section %}
+{% set mode = workspace.mode %}
+{% set selected_id = workspace.id %}
+
 {% block title %}Business Security · Kumwe{% endblock %}
 {% block context_title %}Business Security{% endblock %}
 {% block content %}
-  <header class="page-heading"><div><p class="eyebrow">Business authority</p><h1>Business Security</h1><p>Manage organization boundaries, row and field policy, separation of duties, approvals and credential scope from one accountable workspace.</p></div></header>
+<div data-kis-surface="core.administrator.business-security" data-kis-component="local-navigation">
+  {% embed '@kis/page-header.twig' with {
+    eyebrow: 'Business authority',
+    title: 'Business Security',
+    purpose: 'Govern organization boundaries, membership, row and field policy, maker-checker approvals and credential assurance as separate accountable tasks.'
+  } %}
+    {% block metadata %}
+      <p><strong>Authority context:</strong> {{ active_organization|default('Installation-wide') }}{% if active_workspace %} / {{ active_workspace }}{% endif %}</p>
+    {% endblock %}
+    {% block actions %}
+      <div class="page-actions"><a class="button" href="/administrator/access?section=users">Open Users &amp; Access</a></div>
+    {% endblock %}
+  {% endembed %}
+
   {% if saved %}<div class="notice success" role="status"><span>Business Security updated.</span><button class="notice-dismiss" type="button" aria-label="Dismiss" data-dismiss-notice>×</button></div>{% endif %}
 
-  <section class="panel stack" aria-labelledby="organization-heading">
-    <header class="panel-header"><div><p class="eyebrow">Authority boundaries</p><h2 id="organization-heading">Organizations and workspaces</h2><p>Organizations are site-owned policy boundaries. Workspaces are always nested inside one organization.</p></div></header>
-    <div class="admin-grid">
-      <form method="post" action="/administrator/business-security" class="panel-body stack">
-        <input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="action" value="organization.create">
-        <h3>Create organization</h3>
-        <label>Identifier<input name="identifier" pattern="[a-z0-9][a-z0-9._:-]{0,190}" maxlength="191" required></label>
-        <label>Name<input name="name" maxlength="191" required></label>
-        {{ security_forms.step_up() }}
-        <button class="primary" type="submit">Create organization</button>
-      </form>
-      <form method="post" action="/administrator/business-security" class="panel-body stack">
-        <input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="action" value="workspace.create">
-        <h3>Create workspace</h3>
-        <label>Organization<select name="organization_id" required>{% for organization in security.organizations %}<option value="{{ organization.id }}">{{ organization.name }} · {{ organization.identifier }}</option>{% endfor %}</select></label>
-        <label>Identifier<input name="identifier" pattern="[a-z0-9][a-z0-9._:-]{0,190}" maxlength="191" required></label>
-        <label>Name<input name="name" maxlength="191" required></label>
-        {{ security_forms.step_up() }}
-        <button class="primary" type="submit">Create workspace</button>
-      </form>
+  <nav class="panel" aria-label="Business Security concerns">
+    <div class="actions">
+      {% for item in [
+        {id: 'overview', label: 'Overview'},
+        {id: 'organizations', label: 'Organizations'},
+        {id: 'memberships', label: 'Memberships'},
+        {id: 'policies', label: 'Policies'},
+        {id: 'approvals', label: 'Approvals'},
+        {id: 'credentials', label: 'Credentials'}
+      ] %}
+        <a class="button{% if section == item.id %} primary{% endif %}" href="/administrator/business-security?section={{ item.id }}"{% if section == item.id %} aria-current="page"{% endif %}>{{ item.label }}</a>
+      {% endfor %}
     </div>
-    <div class="table-wrap" tabindex="0" role="region" aria-label="Organizations and workspaces"><table>
-      <thead><tr><th>Organization</th><th>Status</th><th>Policy generation</th><th>Workspaces</th></tr></thead>
-      <tbody>{% for organization in security.organizations %}<tr>
-        <td><strong>{{ organization.name }}</strong><br><code>{{ organization.identifier }}</code></td>
-        <td><span class="status status-{{ organization.status }}">{{ organization.status|title }}</span></td>
-        <td>{{ organization.policy_generation }} <small>version {{ organization.version }}</small></td>
-        <td>{% for workspace in security.workspaces|filter(item => item.organization_id == organization.id) %}<span class="status status-{{ workspace.status }}">{{ workspace.name }} · {{ workspace.identifier }}</span> {% else %}<span class="text-muted">None</span>{% endfor %}</td>
-      </tr>{% else %}<tr><td colspan="4">No organizations configured.</td></tr>{% endfor %}</tbody>
-    </table></div>
-  </section>
+  </nav>
 
-  <section class="panel stack" aria-labelledby="membership-heading">
-    <header class="panel-header"><div><p class="eyebrow">People and roles</p><h2 id="membership-heading">Organization memberships</h2><p>Assignments update live membership versions and user security epochs. You cannot change your own membership from this screen.</p></div></header>
-    <form method="post" action="/administrator/business-security" class="panel-body stack">
-      <input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="action" value="membership.create">
-      <div class="form-grid">
-        <label>Organization<select name="organization_id" required>{% for organization in security.organizations %}<option value="{{ organization.id }}">{{ organization.name }}</option>{% endfor %}</select></label>
-        <label>User<select name="user_id" required>{% for user in security.users %}<option value="{{ user.id }}">{{ user.display_name }} · {{ user.email }}</option>{% endfor %}</select></label>
-        <label>Valid from<input type="datetime-local" name="valid_from" required></label>
-        <label>Valid until<input type="datetime-local" name="valid_until"></label>
+  {% if section == 'overview' %}
+    <section class="stack" aria-labelledby="security-overview-heading">
+      <div class="section-heading"><div><p class="eyebrow">Scoped summary</p><h2 id="security-overview-heading">Authority overview</h2><p>Counts include only records visible in the current site and membership scope.</p></div></div>
+      <div class="admin-grid">
+        <article class="role-card"><h3>Organizations</h3><p><strong>{{ security.organizations|length }}</strong> policy boundaries and {{ security.workspaces|length }} workspaces.</p><a class="button" href="/administrator/business-security?section=organizations">Review boundaries</a></article>
+        <article class="role-card"><h3>Memberships</h3><p><strong>{{ security.memberships|length }}</strong> visible memberships with explainable effective access.</p><a class="button" href="/administrator/business-security?section=memberships">Review membership</a></article>
+        <article class="role-card"><h3>Policies</h3><p><strong>{{ security.resource_policies|length }}</strong> row or field policies and {{ security.separation_rules|length }} maker-checker rules.</p><a class="button" href="/administrator/business-security?section=policies">Review policy</a></article>
+        <article class="role-card"><h3>Approvals</h3><p><strong>{{ security.approvals|length }}</strong> visible requests in this authority scope.</p><a class="button" href="/administrator/business-security?section=approvals">Open approval work</a></article>
+        <article class="role-card"><h3>Credentials</h3><p>Status and delegation diagnostics never disclose secrets, proof nonces or token material.</p><a class="button" href="/administrator/business-security?section=credentials">Inspect assurance</a></article>
+        <article class="role-card"><h3>Portal readiness</h3><p>Create an active identity, then add the minimum organization membership, workspace and role before sign-in.</p><a class="button" href="/administrator/access?section=users&mode=create">Start provisioning</a></article>
       </div>
-      {{ security_forms.step_up() }}
-      <button class="primary" type="submit">Create membership</button>
-    </form>
-    {% for membership in security.memberships %}
-      <article class="role-card stack">
-        <header><h3>{{ membership.display_name }} <small>{{ membership.email }}</small></h3><p><strong>{{ membership.organization_identifier }}</strong> · {{ membership.status|title }} · version {{ membership.version }}{% if membership.expired %} · expired{% endif %}</p></header>
-        <div class="two-column">
-          <div><h4>Workspaces</h4>{% for workspace in membership.workspaces %}<span class="status">{{ workspace.name }}</span> {% else %}<span class="text-muted">Organization-wide</span>{% endfor %}</div>
-          <div><h4>Roles</h4>{% for role in membership.roles %}<span class="status">{{ role.name }}</span> {% else %}<span class="text-muted">No roles</span>{% endfor %}</div>
-        </div>
-        <details><summary>Change membership, workspace or role</summary><div class="panel-body stack">
-          <form method="post" action="/administrator/business-security" class="stack">
-            <input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="membership_id" value="{{ membership.id }}"><input type="hidden" name="version" value="{{ membership.version }}">
+    </section>
+
+  {% elseif section == 'organizations' %}
+    {% if mode == 'create' %}
+      <p><a href="/administrator/business-security?section=organizations">← Organization catalog</a></p>
+      <nav class="actions" aria-label="Create authority boundary">
+        <a class="button{% if workspace.kind == 'organization' %} primary{% endif %}" href="/administrator/business-security?section=organizations&amp;mode=create&amp;kind=organization"{% if workspace.kind == 'organization' %} aria-current="page"{% endif %}>New organization</a>
+        <a class="button{% if workspace.kind == 'workspace' %} primary{% endif %}" href="/administrator/business-security?section=organizations&amp;mode=create&amp;kind=workspace"{% if workspace.kind == 'workspace' %} aria-current="page"{% endif %}>New workspace</a>
+      </nav>
+      {% if workspace.kind == 'workspace' %}
+        <section class="panel stack" aria-labelledby="create-workspace-heading">
+          <div><p class="eyebrow">Focused authoring</p><h2 id="create-workspace-heading">Create workspace</h2><p>A workspace is always nested inside one active organization.</p></div>
+          {% if security.organizations is empty %}
+            {% embed '@kis/empty-state.twig' with {title: 'An organization is required', message: 'Create the policy boundary before adding its first workspace.'} %}{% block action %}<a class="button primary" href="/administrator/business-security?section=organizations&amp;mode=create&amp;kind=organization">Create organization</a>{% endblock %}{% endembed %}
+          {% else %}
+            <form method="post" action="/administrator/business-security?section=organizations" class="stack">
+              <input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="action" value="workspace.create">
+              <label>Organization<select name="organization_id" required>{% for organization in security.organizations %}<option value="{{ organization.id }}">{{ organization.name }} · {{ organization.identifier }}</option>{% endfor %}</select></label>
+              <label>Identifier<input name="identifier" pattern="[a-z0-9][a-z0-9._:-]{0,190}" maxlength="191" required><small>Stable lowercase identifier used in membership context.</small></label>
+              <label>Name<input name="name" maxlength="191" required></label>
+              {{ security_forms.step_up() }}
+              <div class="page-actions"><button class="primary" type="submit">Create workspace</button><a class="button" href="/administrator/business-security?section=organizations">Cancel</a></div>
+            </form>
+          {% endif %}
+        </section>
+      {% else %}
+        <section class="panel stack" aria-labelledby="create-organization-heading">
+          <div><p class="eyebrow">Focused authoring</p><h2 id="create-organization-heading">Create organization</h2><p>The organization becomes a site-owned policy boundary.</p></div>
+          <form method="post" action="/administrator/business-security?section=organizations" class="stack">
+            <input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="action" value="organization.create">
+            <label>Identifier<input name="identifier" pattern="[a-z0-9][a-z0-9._:-]{0,190}" maxlength="191" required></label>
+            <label>Name<input name="name" maxlength="191" required></label>
+            {{ security_forms.step_up() }}
+            <div class="page-actions"><button class="primary" type="submit">Create organization</button><a class="button" href="/administrator/business-security?section=organizations">Cancel</a></div>
+          </form>
+        </section>
+      {% endif %}
+    {% else %}
+      <section class="panel stack" aria-labelledby="organization-heading">
+        <header class="panel-header section-heading"><div><p class="eyebrow">Authority boundaries</p><h2 id="organization-heading">Organizations and workspaces</h2><p>Browse first; creation remains a separate, protected task.</p></div><a class="button primary" href="/administrator/business-security?section=organizations&amp;mode=create&amp;kind=organization">Create organization</a></header>
+        {% if security.organizations is empty %}
+          {% embed '@kis/empty-state.twig' with {title: 'No organizations configured', message: 'Create the first site-owned authority boundary before memberships or workspaces can be provisioned.'} %}{% block action %}<a class="button primary" href="/administrator/business-security?section=organizations&amp;mode=create&amp;kind=organization">Create organization</a>{% endblock %}{% endembed %}
+        {% else %}
+          <div class="table-wrap" tabindex="0" role="region" aria-label="Organizations and workspaces"><table>
+            <thead><tr><th scope="col">Organization</th><th scope="col">Status</th><th scope="col">Policy generation</th><th scope="col">Workspaces</th></tr></thead>
+            <tbody>{% for organization in security.organizations %}<tr>
+              <th scope="row"><strong>{{ organization.name }}</strong><br>{% include '@kis/technical-value.twig' with {label: 'Organization identifier', value: organization.identifier} only %}</th>
+              <td><span class="status status-{{ organization.status }}">{{ organization.status|title }}</span></td>
+              <td>{{ organization.policy_generation }} <small>record version {{ organization.version }}</small></td>
+              <td>{% for item in security.workspaces|filter(item => item.organization_id == organization.id) %}<span class="status status-{{ item.status }}">{{ item.name }} · {{ item.identifier }}</span> {% else %}<span class="text-muted">No workspaces</span>{% endfor %}</td>
+            </tr>{% endfor %}</tbody>
+          </table></div>
+          <div class="page-actions"><a class="button" href="/administrator/business-security?section=organizations&amp;mode=create&amp;kind=workspace">Create workspace</a></div>
+        {% endif %}
+      </section>
+    {% endif %}
+
+  {% elseif section == 'memberships' %}
+    {% set membership = selected_id ? security.memberships|filter(item => item.id == selected_id)|first : null %}
+    {% if mode == 'create' %}
+      <p><a href="/administrator/business-security?section=memberships">← Membership catalog</a></p>
+      <section class="panel stack" aria-labelledby="create-membership-heading">
+        <div><p class="eyebrow">Portal provisioning · step 2</p><h2 id="create-membership-heading">Create organization membership</h2><p>Choose an active identity and authority boundary, then add only the workspace and role needed for ordinary portal work.</p></div>
+        {% if security.organizations is empty or security.users is empty %}
+          {% embed '@kis/empty-state.twig' with {title: 'Provisioning prerequisites are incomplete', message: security.organizations is empty ? 'Create an organization before a membership.' : 'Create an active user before a membership.'} %}
+            {% block action %}{% if security.organizations is empty %}<a class="button primary" href="/administrator/business-security?section=organizations&amp;mode=create&amp;kind=organization">Create organization</a>{% else %}<a class="button primary" href="/administrator/access?section=users&amp;mode=create">Create user</a>{% endif %}{% endblock %}
+          {% endembed %}
+        {% else %}
+          <form method="post" action="/administrator/business-security?section=memberships" class="stack">
+            <input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="action" value="membership.create">
+            <div class="form-grid">
+              <label>Organization<select name="organization_id" required>{% for organization in security.organizations %}<option value="{{ organization.id }}">{{ organization.name }} · {{ organization.identifier }}</option>{% endfor %}</select></label>
+              <label>User<select name="user_id" required>{% for user in security.users %}<option value="{{ user.id }}">{{ user.display_name }} · {{ user.email }}</option>{% endfor %}</select></label>
+              <label>Valid from<input type="datetime-local" name="valid_from" required></label>
+              <label>Valid until <span class="text-muted">(optional)</span><input type="datetime-local" name="valid_until"></label>
+            </div>
+            {{ security_forms.step_up() }}
+            <div class="page-actions"><button class="primary" type="submit">Create membership</button><a class="button" href="/administrator/business-security?section=memberships">Cancel</a></div>
+          </form>
+        {% endif %}
+      </section>
+    {% elseif mode == 'edit' %}
+      <p><a href="/administrator/business-security?section=memberships">← Membership catalog</a></p>
+      {% if not membership %}
+        {% embed '@kis/empty-state.twig' with {title: 'Membership unavailable', message: 'The membership does not exist in the current authority scope or is no longer available.'} %}{% block action %}<a class="button" href="/administrator/business-security?section=memberships">Return to memberships</a>{% endblock %}{% endembed %}
+      {% else %}
+        <section class="panel stack" aria-labelledby="edit-membership-heading">
+          <div class="section-heading"><div><p class="eyebrow">Focused edit</p><h2 id="edit-membership-heading">{{ membership.display_name }}</h2><p>{{ membership.organization_identifier }} · {{ membership.status|title }} · version {{ membership.version }}{% if membership.expired %} · expired{% endif %}</p></div><a class="button" href="/administrator/business-security?section=memberships&amp;mode=review&amp;id={{ membership.id|url_encode }}">Explain access</a></div>
+          <form method="post" action="/administrator/business-security?section=memberships" class="stack">
+            <input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="action" value="membership.status"><input type="hidden" name="membership_id" value="{{ membership.id }}"><input type="hidden" name="version" value="{{ membership.version }}">
             <label>Status<select name="status">{% for status in ['active','suspended','revoked'] %}<option value="{{ status }}"{% if membership.status == status %} selected{% endif %}>{{ status|title }}</option>{% endfor %}</select></label>
-            {{ security_forms.step_up() }}<button name="action" value="membership.status">Save status</button>
+            {{ security_forms.step_up() }}<button class="primary" type="submit">Save membership status</button>
           </form>
-          <form method="post" action="/administrator/business-security" class="stack">
-            <input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="membership_id" value="{{ membership.id }}">
-            <label>Workspace<select name="workspace_id">{% for workspace in security.workspaces|filter(item => item.organization_id == membership.organization_id) %}<option value="{{ workspace.id }}">{{ workspace.name }}</option>{% endfor %}</select></label>
-            {{ security_forms.step_up() }}<div class="actions"><button name="action" value="membership.workspace.assign">Assign workspace</button><button class="danger" name="action" value="membership.workspace.revoke">Revoke workspace</button></div>
+          <div class="admin-grid">
+            <form method="post" action="/administrator/business-security?section=memberships" class="role-card stack">
+              <input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="membership_id" value="{{ membership.id }}">
+              <h3>Workspace assignment</h3><label>Workspace<select name="workspace_id" required>{% for item in security.workspaces|filter(item => item.organization_id == membership.organization_id) %}<option value="{{ item.id }}">{{ item.name }}</option>{% endfor %}</select></label>
+              {{ security_forms.step_up() }}<div class="actions"><button name="action" value="membership.workspace.assign">Assign workspace</button><button class="danger" name="action" value="membership.workspace.revoke">Revoke workspace</button></div>
+            </form>
+            <form method="post" action="/administrator/business-security?section=memberships" class="role-card stack">
+              <input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="membership_id" value="{{ membership.id }}">
+              <h3>Role assignment</h3><label>Role<select name="role_id" required>{% for role in security.roles %}<option value="{{ role.id }}">{{ role.name }} · {{ role.code }}</option>{% endfor %}</select></label>
+              {{ security_forms.step_up() }}<div class="actions"><button name="action" value="membership.role.assign">Assign role</button><button class="danger" name="action" value="membership.role.revoke">Revoke role</button></div>
+            </form>
+          </div>
+        </section>
+      {% endif %}
+    {% elseif mode == 'review' %}
+      <p><a href="/administrator/business-security?section=memberships">← Membership catalog</a></p>
+      {% if not membership %}
+        {% embed '@kis/empty-state.twig' with {title: 'Membership unavailable', message: 'The membership does not exist in the current authority scope or is no longer available.'} %}{% endembed %}
+      {% else %}
+        <section class="panel stack" aria-labelledby="effective-access-heading">
+          <div class="section-heading"><div><p class="eyebrow">Explainable authority</p><h2 id="effective-access-heading">Effective access for {{ membership.display_name }}</h2><p>{{ membership.organization_identifier }} · {{ membership.status|title }} · version {{ membership.version }}</p></div><a class="button" href="/administrator/business-security?section=memberships&amp;mode=edit&amp;id={{ membership.id|url_encode }}">Edit membership</a></div>
+          <div class="two-column"><div><h3>Workspaces</h3>{% for item in membership.workspaces %}<span class="status">{{ item.name }}</span> {% else %}<span class="text-muted">Organization-wide</span>{% endfor %}</div><div><h3>Roles</h3>{% for role in membership.roles %}<span class="status">{{ role.name }}</span> {% else %}<span class="text-muted">No roles</span>{% endfor %}</div></div>
+          <div class="table-wrap" tabindex="0" role="region" aria-label="Effective access for {{ membership.display_name }}"><table>
+            <thead><tr><th scope="col">Capability</th><th scope="col">Source</th><th scope="col">Scope</th><th scope="col">Impact</th><th scope="col">Decision</th></tr></thead>
+            <tbody>{% for access in membership.effective_access %}<tr><th scope="row"><code>{{ access.capability }}</code><br><small>owner {{ access.owner }}</small></th><td>{{ access.role }}</td><td>{{ access.scope_type }}{% if access.scope_identifier %}:{{ access.scope_identifier }}{% endif %}</td><td>{{ access.high_impact ? 'High impact' : 'Standard' }} · {{ access.delegable ? 'delegable' : 'not delegable' }}</td><td><span class="status status-{{ access.effective ? 'published' : 'draft' }}">{{ access.effective ? 'Effective' : 'Dormant' }}</span><br><small>{{ access.reason|replace({'_':' '}) }}</small></td></tr>{% else %}<tr><td colspan="5">No effective grants. Assign the minimum portal role before expecting work destinations.</td></tr>{% endfor %}</tbody>
+          </table></div>
+          <div class="notice" role="status"><span><strong>Portal readiness:</strong> an active membership plus an assigned role and, when required, an assigned workspace must all be live before sign-in.</span></div>
+        </section>
+      {% endif %}
+    {% else %}
+      <section class="panel stack" aria-labelledby="membership-heading">
+        <header class="panel-header section-heading"><div><p class="eyebrow">People and roles</p><h2 id="membership-heading">Organization memberships</h2><p>Assignments update live membership versions and security epochs. You cannot change your own membership here.</p></div><a class="button primary" href="/administrator/business-security?section=memberships&amp;mode=create">Create membership</a></header>
+        {% if security.memberships is empty %}
+          {% embed '@kis/empty-state.twig' with {title: 'No memberships configured', message: 'Provision an active identity and organization before creating the first ordinary portal membership.'} %}{% block action %}<a class="button primary" href="/administrator/business-security?section=memberships&amp;mode=create">Create membership</a>{% endblock %}{% endembed %}
+        {% else %}
+          <div class="table-wrap" tabindex="0" role="region" aria-label="Organization memberships"><table><thead><tr><th scope="col">Member</th><th scope="col">Organization</th><th scope="col">Status</th><th scope="col">Workspaces</th><th scope="col">Roles</th><th scope="col">Actions</th></tr></thead><tbody>
+          {% for item in security.memberships %}<tr><th scope="row">{{ item.display_name }}<br><small>{{ item.email }}</small></th><td>{{ item.organization_identifier }}</td><td>{{ item.status|title }} · v{{ item.version }}{% if item.expired %}<br><span class="status status-draft">Expired</span>{% endif %}</td><td>{{ item.workspaces is empty ? 'Organization-wide' : item.workspaces|map(value => value.name)|join(', ') }}</td><td>{{ item.roles is empty ? 'No roles' : item.roles|map(value => value.name)|join(', ') }}</td><td><a href="/administrator/business-security?section=memberships&amp;mode=review&amp;id={{ item.id|url_encode }}">Explain access</a><br><a href="/administrator/business-security?section=memberships&amp;mode=edit&amp;id={{ item.id|url_encode }}">Edit membership</a></td></tr>{% endfor %}
+          </tbody></table></div>
+        {% endif %}
+      </section>
+    {% endif %}
+
+  {% elseif section == 'policies' %}
+    {% set resource_policy = selected_id ? security.resource_policies|filter(item => item.id == selected_id)|first : null %}
+    {% set separation_rule = selected_id ? security.separation_rules|filter(item => item.id == selected_id)|first : null %}
+    {% if mode == 'create' %}
+      <p><a href="/administrator/business-security?section=policies">← Policy catalog</a></p>
+      <nav class="actions" aria-label="Policy authoring type"><a class="button{% if workspace.kind == 'resource' %} primary{% endif %}" href="/administrator/business-security?section=policies&amp;mode=create&amp;kind=resource&amp;step=scope#policy-step-scope"{% if workspace.kind == 'resource' %} aria-current="page"{% endif %}>Row and field policy</a><a class="button{% if workspace.kind == 'separation' %} primary{% endif %}" href="/administrator/business-security?section=policies&amp;mode=create&amp;kind=separation"{% if workspace.kind == 'separation' %} aria-current="page"{% endif %}>Maker-checker rule</a></nav>
+      {% if workspace.kind == 'separation' %}
+        <section class="panel stack" aria-labelledby="separation-create-heading">
+          <div><p class="eyebrow">Guided authoring</p><h2 id="separation-create-heading">Create separation-of-duty rule</h2><p>Bind a request and approval to distinct roles, quorum and human actors.</p></div>
+          <form method="post" action="/administrator/business-security?section=policies" class="stack">
+            <input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="action" value="separation_duty.create">
+            <div class="form-grid"><label>Rule code<input name="rule_code" pattern="[a-z][a-z0-9._-]*" maxlength="191" required></label><label>Organization<select name="organization_id"><option value="">Site-wide</option>{% for organization in security.organizations %}<option value="{{ organization.id }}">{{ organization.name }}</option>{% endfor %}</select></label><label>Resource type<input name="resource_type" pattern="[a-z][a-z0-9._-]*" maxlength="63" required></label><label>Request operation<input name="request_action" list="business-security-request-actions" pattern="[a-z][a-z0-9]*(?:[._:-][a-z0-9]+)*" maxlength="127" placeholder="business.record.action:approve" required></label><datalist id="business-security-request-actions">{% for capability in security.capabilities %}<option value="{{ capability.code }}">{% endfor %}{% for definition in security.definitions %}{% for action in definition.actions %}<option value="business.record.action:{{ action.handle }}">{% endfor %}{% endfor %}</datalist><label>Approval action<select name="approval_action" required>{% for capability in security.approval_capabilities %}<option value="{{ capability.code }}">{{ capability.code }}</option>{% endfor %}</select></label><label>Requester role<select name="requester_role_id"><option value="">Any eligible requester</option>{% for role in security.roles %}<option value="{{ role.id }}">{{ role.name }}</option>{% endfor %}</select></label><label>Approver role<select name="approver_role_id"><option value="">Any eligible approver</option>{% for role in security.roles %}<option value="{{ role.id }}">{{ role.name }}</option>{% endfor %}</select></label><label>Quorum<input type="number" name="quorum" min="1" max="32" value="1" required></label></div>
+            <label><input type="checkbox" name="distinct_actors" value="1" checked> Requester and approvers must be distinct</label>
+            <section class="notice warning"><div><h3>Review consequence</h3><p>The rule changes who may complete a protected operation. The service revalidates roles, quorum, actor separation and exact scope at submission.</p></div></section>
+            {{ security_forms.step_up() }}<div class="page-actions"><button class="primary" type="submit">Create separation rule</button><a class="button" href="/administrator/business-security?section=policies">Cancel</a></div>
           </form>
-          <form method="post" action="/administrator/business-security" class="stack">
-            <input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="membership_id" value="{{ membership.id }}">
-            <label>Role<select name="role_id">{% for role in security.roles %}<option value="{{ role.id }}">{{ role.name }} · {{ role.code }}</option>{% endfor %}</select></label>
-            {{ security_forms.step_up() }}<div class="actions"><button name="action" value="membership.role.assign">Assign role</button><button class="danger" name="action" value="membership.role.revoke">Revoke role</button></div>
-          </form>
-        </div></details>
-        <details><summary>Explain effective access ({{ membership.effective_access|length }})</summary><div class="table-wrap" tabindex="0" role="region" aria-label="Effective access for {{ membership.display_name }}"><table>
-          <thead><tr><th>Capability</th><th>Source</th><th>Scope</th><th>Impact</th><th>Decision</th></tr></thead>
-          <tbody>{% for access in membership.effective_access %}<tr><td><code>{{ access.capability }}</code><br><small>owner {{ access.owner }}</small></td><td>{{ access.role }}</td><td>{{ access.scope_type }}{% if access.scope_identifier %}:{{ access.scope_identifier }}{% endif %}</td><td>{{ access.high_impact ? 'High impact' : 'Standard' }} · {{ access.delegable ? 'delegable' : 'not delegable' }}</td><td><span class="status status-{{ access.effective ? 'published' : 'draft' }}">{{ access.effective ? 'Effective' : 'Dormant' }}</span><br><small>{{ access.reason|replace({'_':' '}) }}</small></td></tr>{% else %}<tr><td colspan="5">No effective grants.</td></tr>{% endfor %}</tbody>
-        </table></div></details>
-      </article>
-    {% else %}<p class="panel-body text-muted">No organization memberships configured.</p>{% endfor %}
-  </section>
+        </section>
+      {% else %}
+        <section class="panel stack" aria-labelledby="resource-policy-create-heading">
+          <div><p class="eyebrow">Guided policy authoring</p><h2 id="resource-policy-create-heading">Create row and field policy</h2><p>Complete scope, predicate, explicit disclosure and review. No JSON, SQL or executable policy text is accepted.</p></div>
+          <div class="stack" data-kis-policy-step-flow data-kis-active-step="{{ workspace.step }}">
+            <nav class="page-actions" aria-label="Policy authoring steps">
+              {% for step in policy_steps %}
+                <a
+                  class="button{% if step.current %} primary{% endif %}"
+                  href="{{ step.url }}"
+                  aria-controls="policy-step-{{ step.id }}"
+                  {% if step.current %}aria-current="step"{% endif %}
+                  data-kis-policy-step-link="{{ step.id }}"
+                >{{ step.label }}</a>
+              {% endfor %}
+            </nav>
+            <p class="sr-only" role="status" aria-live="polite" data-kis-policy-step-announcement></p>
+            <noscript><div class="notice"><span>All four stages are expanded below. Complete them in order and submit from the final review stage. Step links reload the page and discard unsubmitted values, so use the expanded form to keep your work.</span></div></noscript>
+            <form method="post" action="/administrator/business-security?section=policies&amp;mode=create&amp;kind=resource&amp;step=review" class="stack">
+              <input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="action" value="resource_policy.create">
+              <fieldset
+                id="policy-step-scope"
+                class="field-group stack"
+                tabindex="-1"
+                data-kis-policy-step-panel="scope"
+                {% if workspace.step == 'scope' %}data-kis-step-current{% endif %}
+              >
+                <legend>Step 1 · Scope <span class="status" data-kis-current-step-label{% if workspace.step != 'scope' %} hidden{% endif %}>Current step</span></legend>
+                <p>Choose one policy identity, authority boundary, immutable definition version and live operation.</p>
+                <div class="form-grid"><label>Policy code<input name="policy_code" pattern="[a-z][a-z0-9._-]*" maxlength="191" required></label><label>Organization<select name="organization_id"><option value="">Site-wide</option>{% for organization in security.organizations %}<option value="{{ organization.id }}">{{ organization.name }}</option>{% endfor %}</select></label><label>Definition<select name="definition_id" required>{% for definition in security.definitions %}<option value="{{ definition.id }}">{{ definition.handle }} · v{{ definition.version }}</option>{% endfor %}</select></label><label>Operation<select name="operation" required>{% for capability in security.business_record_capabilities %}<option value="{{ capability.code }}">{{ capability.code }}</option>{% endfor %}</select><small>Only live capabilities bound to business records are offered.</small></label><label>Effect<select name="effect"><option value="deny">Deny</option><option value="allow">Allow</option></select></label><label>Priority<input type="number" name="priority" min="-100000" max="100000" value="0"></label></div>
+                <div class="page-actions"><a class="button primary" href="{{ policy_steps[1].url }}" data-kis-policy-step-target="predicate">Continue to predicate</a></div>
+              </fieldset>
+              <fieldset
+                id="policy-step-predicate"
+                class="field-group stack"
+                tabindex="-1"
+                data-kis-policy-step-panel="predicate"
+                {% if workspace.step == 'predicate' %}data-kis-step-current{% endif %}
+              >
+                <legend>Step 2 · Record predicate <span class="status" data-kis-current-step-label{% if workspace.step != 'predicate' %} hidden{% endif %}>Current step</span></legend>
+                <p>Express one bounded typed condition; no executable policy text is accepted.</p>
+                <div class="form-grid"><label>Type<select name="predicate_type"><option value="constant">Constant</option><option value="comparison">Field comparison</option><option value="null">Null check</option></select></label><label>Field<select name="predicate_field"><option value="">None</option>{% for definition in security.definitions %}<optgroup label="{{ definition.handle }}">{% for field in definition.fields|filter(item => item.policy_type) %}<option value="{{ field.handle }}">{{ field.handle }} · {{ field.policy_type }}</option>{% endfor %}</optgroup>{% endfor %}</select></label><label>Operator<select name="predicate_operator"><option value="equal">Equal</option><option value="not_equal">Not equal</option><option value="less_than">Less than</option><option value="less_than_or_equal">Less than or equal</option><option value="greater_than">Greater than</option><option value="greater_than_or_equal">Greater than or equal</option></select></label><label>Value type<select name="predicate_value_type">{% for type in ['string','integer','decimal','boolean','temporal'] %}<option value="{{ type }}">{{ type|title }}</option>{% endfor %}</select></label><label>Value<input name="predicate_value" maxlength="4096" value="false"><small>Constants and null checks use true or false.</small></label></div>
+                <div class="page-actions"><a class="button" href="{{ policy_steps[0].url }}" data-kis-policy-step-target="scope">Back to scope</a><a class="button primary" href="{{ policy_steps[2].url }}" data-kis-policy-step-target="disclosure">Continue to disclosure</a></div>
+              </fieldset>
+              <fieldset
+                id="policy-step-disclosure"
+                class="field-group stack"
+                tabindex="-1"
+                data-kis-policy-step-panel="disclosure"
+                {% if workspace.step == 'disclosure' %}data-kis-step-current{% endif %}
+              >
+                <legend>Step 3 · Explicit field and action disclosure <span class="status" data-kis-current-step-label{% if workspace.step != 'disclosure' %} hidden{% endif %}>Current step</span></legend>
+                <p>Select fields only from the chosen definition. The service rejects cross-definition or unknown values.</p>
+                <div class="form-grid">{% for usage in ['create','update','detail','list','filter','search','sort','aggregate','report','export','audit','mcp','relation','include','public_reference'] %}<label>{{ usage|replace({'_':' '})|title }} fields<select name="fields_{{ usage }}[]" multiple size="5">{% for definition in security.definitions %}<optgroup label="{{ definition.handle }}">{% for field in definition.fields %}<option value="{{ field.handle }}">{{ field.handle }}</option>{% endfor %}</optgroup>{% endfor %}</select></label>{% endfor %}<label>Declared actions<select name="fields_actions[]" multiple size="5">{% for definition in security.definitions %}<optgroup label="{{ definition.handle }}">{% for action in definition.actions %}<option value="{{ action.handle }}">{{ action.label }}</option>{% endfor %}</optgroup>{% endfor %}</select></label></div>
+                <div class="page-actions"><a class="button" href="{{ policy_steps[1].url }}" data-kis-policy-step-target="predicate">Back to predicate</a><a class="button primary" href="{{ policy_steps[3].url }}" data-kis-policy-step-target="review">Review policy</a></div>
+              </fieldset>
+              <fieldset
+                id="policy-step-review"
+                class="field-group stack"
+                tabindex="-1"
+                data-kis-policy-step-panel="review"
+                {% if workspace.step == 'review' %}data-kis-step-current{% endif %}
+              >
+                <legend>Step 4 · Review and submit <span class="status" data-kis-current-step-label{% if workspace.step != 'review' %} hidden{% endif %}>Current step</span></legend>
+                <p>Review the retained values in the preceding stages before crossing the protected submission boundary.</p>
+                <div class="notice warning"><span><strong>High-impact boundary.</strong> Confirm the selected scope, typed predicate, allow/deny effect and every disclosed usage. An allow policy that could escalate the current actor is refused.</span></div>
+                {{ security_forms.step_up() }}
+                <div class="page-actions"><a class="button" href="{{ policy_steps[2].url }}" data-kis-policy-step-target="disclosure">Back to disclosure</a><button class="primary" type="submit">Create reviewed policy</button><a class="button" href="/administrator/business-security?section=policies">Cancel</a></div>
+              </fieldset>
+            </form>
+          </div>
+        </section>
+      {% endif %}
+    {% elseif mode == 'review' %}
+      <p><a href="/administrator/business-security?section=policies">← Policy catalog</a></p>
+      {% if workspace.kind == 'separation' and separation_rule %}
+        <section class="panel stack" aria-labelledby="review-separation-heading"><div><p class="eyebrow">Protected review</p><h2 id="review-separation-heading">{{ separation_rule.rule_code }}</h2><p>{{ separation_rule.resource_type }} · <code>{{ separation_rule.request_action }}</code> → <code>{{ separation_rule.approval_action }}</code></p></div><dl class="definition-metadata"><div><dt>Authority scope</dt><dd>{{ separation_rule.organization_identifier|default('Site-wide') }}</dd></div><div><dt>Roles</dt><dd>Maker {{ separation_rule.requester_role_code|default('Any eligible requester') }} · checker {{ separation_rule.approver_role_code|default('Any eligible approver') }}</dd></div><div><dt>Quorum</dt><dd>{{ separation_rule.quorum }} · {{ separation_rule.distinct_actors ? 'distinct actors required' : 'same actor permitted' }}</dd></div><div><dt>Current state</dt><dd>{{ separation_rule.status|title }} · version {{ separation_rule.version }}</dd></div></dl><form method="post" action="/administrator/business-security?section=policies" class="stack"><input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="action" value="separation_duty.status"><input type="hidden" name="id" value="{{ separation_rule.id }}"><input type="hidden" name="version" value="{{ separation_rule.version }}"><input type="hidden" name="status" value="{{ separation_rule.status == 'active' ? 'inactive' : 'active' }}"><div class="notice warning"><span>This changes the live maker-checker boundary and advances its optimistic version.</span></div>{{ security_forms.step_up() }}<button class="{{ separation_rule.status == 'active' ? 'danger' : 'primary' }}" type="submit">{{ separation_rule.status == 'active' ? 'Deactivate rule' : 'Activate rule' }}</button></form></section>
+      {% elseif workspace.kind == 'resource' and resource_policy %}
+        <section class="panel stack" aria-labelledby="review-policy-heading"><div><p class="eyebrow">Protected review</p><h2 id="review-policy-heading">{{ resource_policy.policy_code }}</h2><p><code>{{ resource_policy.capability_code }}</code> · {{ resource_policy.effect|upper }} · {{ resource_policy.organization_identifier|default('Site-wide') }} · {{ resource_policy.definition_handle|default('All definitions') }}</p></div><dl class="definition-metadata"><div><dt>Predicate</dt><dd>{% if resource_policy.predicate.type == 'comparison' %}{{ resource_policy.predicate.field }} {{ resource_policy.predicate.operator|replace({'_':' '}) }} {{ resource_policy.predicate.value }} ({{ resource_policy.predicate.value_type }}){% elseif resource_policy.predicate.type == 'null' %}{{ resource_policy.predicate.field }} is {{ resource_policy.predicate.is_null ? 'null' : 'not null' }}{% elseif resource_policy.predicate.type == 'constant' %}Always {{ resource_policy.predicate.value ? 'true' : 'false' }}{% else %}Bounded compound expression{% endif %}</dd></div><div><dt>Current state</dt><dd>{{ resource_policy.status|title }} · version {{ resource_policy.policy_version }}</dd></div></dl><details><summary>Review field and action rules</summary><dl>{% for usage, fields in resource_policy.field_rules %}<dt>{{ usage|replace({'_':' '})|title }}</dt><dd>{{ fields is empty ? 'None' : fields|join(', ') }}</dd>{% endfor %}</dl></details><form method="post" action="/administrator/business-security?section=policies" class="stack"><input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="action" value="resource_policy.status"><input type="hidden" name="id" value="{{ resource_policy.id }}"><input type="hidden" name="version" value="{{ resource_policy.policy_version }}"><input type="hidden" name="status" value="{{ resource_policy.status == 'active' ? 'inactive' : 'active' }}"><div class="notice warning"><span>This changes live record disclosure and advances the optimistic policy version.</span></div>{{ security_forms.step_up() }}<button class="{{ resource_policy.status == 'active' ? 'danger' : 'primary' }}" type="submit">{{ resource_policy.status == 'active' ? 'Deactivate policy' : 'Activate policy' }}</button></form></section>
+      {% else %}
+        {% embed '@kis/empty-state.twig' with {title: 'Policy unavailable', message: 'The selected policy does not exist in the current authority scope or has changed.'} %}{% endembed %}
+      {% endif %}
+    {% elseif mode == 'history' %}
+      <section class="panel stack" aria-labelledby="policy-history-heading"><div><p class="eyebrow">Audit path</p><h2 id="policy-history-heading">Policy change history</h2><p>Current versions remain here; immutable identity and policy mutation events are reviewed in the security event timeline.</p></div><div class="page-actions"><a class="button primary" href="/administrator/access?section=events">Open security events</a><a class="button" href="/administrator/business-security?section=policies">Return to policies</a></div></section>
+    {% else %}
+      <section class="panel stack" aria-labelledby="policy-heading"><header class="panel-header section-heading"><div><p class="eyebrow">Row, field and maker-checker policy</p><h2 id="policy-heading">Policy catalog</h2><p>Browse live bounded policy documents before entering authoring or protected status review.</p></div><div class="page-actions"><a class="button primary" href="/administrator/business-security?section=policies&amp;mode=create&amp;kind=resource&amp;step=scope#policy-step-scope">Create policy</a><a class="button" href="/administrator/business-security?section=policies&amp;mode=create&amp;kind=separation">Create separation rule</a></div></header>
+        <h3>Row and field policies</h3>{% for item in security.resource_policies %}<article class="role-card"><div class="section-heading"><div><h4>{{ item.policy_code }}</h4><p><code>{{ item.capability_code }}</code> · {{ item.effect|upper }} · {{ item.organization_identifier|default('Site-wide') }} · {{ item.definition_handle|default('All definitions') }}</p></div><a class="button" href="/administrator/business-security?section=policies&amp;mode=review&amp;kind=resource&amp;id={{ item.id|url_encode }}">Review {{ item.status == 'active' ? 'deactivation' : 'activation' }}</a></div></article>{% else %}<p class="text-muted">No row or field policies configured.</p>{% endfor %}
+        <h3>Separation-of-duty rules</h3><div class="table-wrap" tabindex="0" role="region" aria-label="Separation-of-duty rules"><table><thead><tr><th scope="col">Rule</th><th scope="col">Binding</th><th scope="col">Roles</th><th scope="col">Quorum</th><th scope="col">State</th><th scope="col">Review</th></tr></thead><tbody>{% for item in security.separation_rules %}<tr><th scope="row">{{ item.rule_code }}<br><small>{{ item.organization_identifier|default('Site-wide') }}</small></th><td>{{ item.resource_type }}<br><code>{{ item.request_action }}</code> → <code>{{ item.approval_action }}</code></td><td>Maker: {{ item.requester_role_code|default('Any') }}<br>Checker: {{ item.approver_role_code|default('Any') }}</td><td>{{ item.quorum }} · {{ item.distinct_actors ? 'distinct actors' : 'same actor allowed' }}</td><td>{{ item.status|title }} · v{{ item.version }}</td><td><a href="/administrator/business-security?section=policies&amp;mode=review&amp;kind=separation&amp;id={{ item.id|url_encode }}">Review {{ item.status == 'active' ? 'deactivation' : 'activation' }}</a></td></tr>{% else %}<tr><td colspan="6">No separation-of-duty rules configured.</td></tr>{% endfor %}</tbody></table></div>
+        <div class="page-actions"><a class="button" href="/administrator/business-security?section=policies&amp;mode=history">Policy audit path</a></div>
+      </section>
+    {% endif %}
 
-  <section class="panel stack" aria-labelledby="policy-heading">
-    <header class="panel-header"><div><p class="eyebrow">ABAC</p><h2 id="policy-heading">Row and field policies</h2><p>Build a bounded typed predicate and explicit field/action disclosure. No JSON or executable policy text is accepted.</p></div></header>
-    <form method="post" action="/administrator/business-security" class="panel-body stack">
-      <input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="action" value="resource_policy.create">
-      <div class="form-grid">
-        <label>Policy code<input name="policy_code" pattern="[a-z][a-z0-9._-]*" maxlength="191" required></label>
-        <label>Organization<select name="organization_id"><option value="">Site-wide</option>{% for organization in security.organizations %}<option value="{{ organization.id }}">{{ organization.name }}</option>{% endfor %}</select></label>
-        <label>Definition<select name="definition_id" required>{% for definition in security.definitions %}<option value="{{ definition.id }}">{{ definition.handle }} · v{{ definition.version }}</option>{% endfor %}</select></label>
-        <label>Operation<select name="operation" required>{% for capability in security.business_record_capabilities %}<option value="{{ capability.code }}">{{ capability.code }}</option>{% endfor %}</select><small>Only live capabilities explicitly bound to business records are offered, including extension-owned operations.</small></label>
-        <label>Effect<select name="effect"><option value="deny">Deny</option><option value="allow">Allow</option></select></label>
-        <label>Priority<input type="number" name="priority" min="-100000" max="100000" value="0"></label>
-      </div>
-      <fieldset class="field-group stack"><legend>Record predicate</legend><div class="form-grid">
-        <label>Type<select name="predicate_type"><option value="constant">Constant</option><option value="comparison">Field comparison</option><option value="null">Null check</option></select></label>
-        <label>Field<select name="predicate_field"><option value="">None</option>{% for definition in security.definitions %}<optgroup label="{{ definition.handle }}">{% for field in definition.fields|filter(item => item.policy_type) %}<option value="{{ field.handle }}">{{ field.handle }} · {{ field.policy_type }}</option>{% endfor %}</optgroup>{% endfor %}</select></label>
-        <label>Operator<select name="predicate_operator"><option value="equal">Equal</option><option value="not_equal">Not equal</option><option value="less_than">Less than</option><option value="less_than_or_equal">Less than or equal</option><option value="greater_than">Greater than</option><option value="greater_than_or_equal">Greater than or equal</option></select></label>
-        <label>Value type<select name="predicate_value_type">{% for type in ['string','integer','decimal','boolean','temporal'] %}<option value="{{ type }}">{{ type|title }}</option>{% endfor %}</select></label>
-        <label>Value<input name="predicate_value" maxlength="4096" value="false"><small>Constants and null checks use true or false.</small></label>
-      </div></fieldset>
-      <fieldset class="field-group stack"><legend>Explicit field and action disclosure</legend><p class="text-muted text-small">Select fields from the same definition chosen above. The server rejects mismatches.</p>
-        <div class="form-grid">{% for usage in ['create','update','detail','list','filter','search','sort','aggregate','report','export','audit','mcp','relation','include','public_reference'] %}<label>{{ usage|replace({'_':' '})|title }} fields<select name="fields_{{ usage }}[]" multiple size="5">{% for definition in security.definitions %}<optgroup label="{{ definition.handle }}">{% for field in definition.fields %}<option value="{{ field.handle }}">{{ field.handle }}</option>{% endfor %}</optgroup>{% endfor %}</select></label>{% endfor %}
-          <label>Declared actions<select name="fields_actions[]" multiple size="5">{% for definition in security.definitions %}<optgroup label="{{ definition.handle }}">{% for action in definition.actions %}<option value="{{ action.handle }}">{{ action.label }}</option>{% endfor %}</optgroup>{% endfor %}</select></label>
-        </div>
-      </fieldset>
-      {{ security_forms.step_up() }}
-      <button class="primary" type="submit">Create policy</button>
-    </form>
-    {% for policy in security.resource_policies %}<article class="role-card stack"><header><h3>{{ policy.policy_code }}</h3><p><code>{{ policy.capability_code }}</code> · {{ policy.effect|upper }} · {{ policy.organization_identifier|default('Site-wide') }} · {{ policy.definition_handle|default('All definitions') }}</p></header>
-      <div><strong>Predicate:</strong>{% if policy.predicate.type == 'comparison' %} {{ policy.predicate.field }} {{ policy.predicate.operator|replace({'_':' '}) }} {{ policy.predicate.value }} ({{ policy.predicate.value_type }}){% elseif policy.predicate.type == 'null' %} {{ policy.predicate.field }} is {{ policy.predicate.is_null ? 'null' : 'not null' }}{% elseif policy.predicate.type == 'constant' %} always {{ policy.predicate.value ? 'true' : 'false' }}{% else %} bounded compound expression{% endif %}</div>
-      <details><summary>Field and action rules</summary><dl>{% for usage, fields in policy.field_rules %}<dt>{{ usage|replace({'_':' '})|title }}</dt><dd>{{ fields is empty ? 'None' : fields|join(', ') }}</dd>{% endfor %}</dl></details>
-      <form method="post" action="/administrator/business-security" class="stack"><input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="action" value="resource_policy.status"><input type="hidden" name="id" value="{{ policy.id }}"><input type="hidden" name="version" value="{{ policy.policy_version }}"><input type="hidden" name="status" value="{{ policy.status == 'active' ? 'inactive' : 'active' }}">{{ security_forms.step_up() }}<button class="{{ policy.status == 'active' ? 'danger' : '' }}" type="submit">{{ policy.status == 'active' ? 'Deactivate' : 'Activate' }}</button></form>
-    </article>{% else %}<p class="panel-body text-muted">No row or field policies configured.</p>{% endfor %}
-  </section>
+  {% elseif section == 'approvals' %}
+    {% set approval = selected_id ? security.approvals|filter(item => item.id == selected_id)|first : null %}
+    {% if mode == 'review' %}
+      <p><a href="/administrator/business-security?section=approvals">← Approval inbox</a></p>
+      {% if not approval %}
+        {% embed '@kis/empty-state.twig' with {title: 'Approval unavailable', message: 'The request does not exist in the current authority scope or is no longer visible.'} %}{% endembed %}
+      {% else %}
+        <section class="panel stack" aria-labelledby="approval-review-heading"><div><p class="eyebrow">Version-bound review</p><h2 id="approval-review-heading">{{ approval.rule_code }}</h2><p>{{ approval.organization_identifier|default('Site') }}{% if approval.workspace_identifier %} / {{ approval.workspace_identifier }}{% endif %}</p></div><dl class="definition-metadata"><div><dt>Request</dt><dd>{% include '@kis/technical-value.twig' with {label: 'Approval request', value: approval.id} only %}</dd></div><div><dt>Operation</dt><dd><code>{{ approval.action }}</code></dd></div><div><dt>Target</dt><dd>{{ approval.resource_type }} · {{ approval.resource_id }} · version {{ approval.resource_version }}</dd></div><div><dt>Decision state</dt><dd>{{ approval.status|title }} · {{ approval.required_quorum }} approval(s) · expires {{ approval.expires_at }}</dd></div><div><dt>Maker</dt><dd>{{ approval.requester_id }}</dd></div></dl>
+        {% if approval.status == 'pending' %}{% if capabilities['business.approval.approve'] is defined %}<form method="post" action="/administrator/business-security?section=approvals" class="stack"><input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="request_id" value="{{ approval.id }}"><label>Decision reason <span class="text-muted">(optional)</span><input name="reason" maxlength="500"></label>{{ security_forms.step_up() }}<div class="actions"><button class="primary" name="action" value="approval.approve">Approve exact request</button><button class="danger" name="action" value="approval.reject">Reject exact request</button></div></form>{% endif %}{% if approval.requester_id == actor_id %}<form method="post" action="/administrator/business-security?section=approvals"><input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="action" value="approval.cancel"><input type="hidden" name="request_id" value="{{ approval.id }}"><button class="link-button" type="submit">Cancel my request</button></form>{% endif %}{% elseif approval.status == 'approved' and capabilities['business.approval.manage'] is defined %}<form method="post" action="/administrator/business-security?section=approvals" class="stack"><input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="action" value="approval.revoke"><input type="hidden" name="request_id" value="{{ approval.id }}">{{ security_forms.step_up() }}<button class="danger" type="submit">Revoke exact approval</button></form>{% else %}<p class="text-muted">This request is closed or no decision is permitted in the current authority scope.</p>{% endif %}</section>
+      {% endif %}
+    {% elseif mode == 'history' %}
+      {% set visible_votes = selected_id ? security.approval_votes|filter(vote => vote.request_id == selected_id) : security.approval_votes %}
+      <section class="panel stack" aria-labelledby="approval-history-heading"><div><p class="eyebrow">Immutable decisions</p><h2 id="approval-history-heading">Approval decision history</h2><p>Decision attribution is retained separately from the active inbox.</p></div><div class="table-wrap" tabindex="0" role="region" aria-label="Approval decision history"><table><thead><tr><th scope="col">Request</th><th scope="col">Approver</th><th scope="col">Decision</th><th scope="col">Reason</th><th scope="col">Time</th></tr></thead><tbody>{% for vote in visible_votes %}<tr><th scope="row">{{ vote.request_id }}</th><td>{{ vote.approver_id }}</td><td>{{ vote.decision|title }}</td><td>{{ vote.reason|default('—') }}</td><td>{{ vote.decided_at }}</td></tr>{% else %}<tr><td colspan="5">No visible approval decisions.</td></tr>{% endfor %}</tbody></table></div><div class="page-actions"><a class="button" href="/administrator/business-security?section=approvals">Return to inbox</a></div></section>
+    {% else %}
+      <section class="panel stack" aria-labelledby="approval-heading"><header class="panel-header section-heading"><div><p class="eyebrow">Inbox</p><h2 id="approval-heading">Approval requests</h2><p>Makers see their requests; approvers and managers see only the scoped inbox. Decisions move to a dedicated review.</p></div><a class="button" href="/administrator/business-security?section=approvals&amp;mode=history">Decision history</a></header><div class="table-wrap" tabindex="0" role="region" aria-label="Approval requests"><table><thead><tr><th scope="col">Request</th><th scope="col">Resource</th><th scope="col">Maker</th><th scope="col">State</th><th scope="col">Review</th></tr></thead><tbody>{% for item in security.approvals %}<tr><th scope="row">{{ item.rule_code }}<br><small>{{ item.id }}</small><br>{{ item.created_at }}</th><td><code>{{ item.action }}</code><br>{{ item.resource_type }} · {{ item.resource_id }} · v{{ item.resource_version }}<br><small>{{ item.organization_identifier|default('Site') }}{% if item.workspace_identifier %} / {{ item.workspace_identifier }}{% endif %}</small></td><td>{{ item.requester_id }}</td><td><span class="status status-{{ item.status }}">{{ item.status|title }}</span><br>{{ item.required_quorum }} approval(s)<br><small>expires {{ item.expires_at }}</small></td><td><a href="/administrator/business-security?section=approvals&amp;mode=review&amp;id={{ item.id|url_encode }}">Review request</a><br><a href="/administrator/business-security?section=approvals&amp;mode=history&amp;id={{ item.id|url_encode }}">Decision history</a></td></tr>{% else %}<tr><td colspan="5">No approval requests are visible in this authority scope.</td></tr>{% endfor %}</tbody></table></div></section>
+    {% endif %}
 
-  <section class="panel stack" aria-labelledby="sod-heading">
-    <header class="panel-header"><div><p class="eyebrow">Maker-checker</p><h2 id="sod-heading">Separation-of-duty rules</h2><p>Bind request and approval actions to distinct optional roles, a quorum and distinct human actors.</p></div></header>
-    <form method="post" action="/administrator/business-security" class="panel-body stack"><input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="action" value="separation_duty.create">
-      <div class="form-grid">
-        <label>Rule code<input name="rule_code" pattern="[a-z][a-z0-9._-]*" maxlength="191" required></label>
-        <label>Organization<select name="organization_id"><option value="">Site-wide</option>{% for organization in security.organizations %}<option value="{{ organization.id }}">{{ organization.name }}</option>{% endfor %}</select></label>
-        <label>Resource type<input name="resource_type" pattern="[a-z][a-z0-9._-]*" maxlength="63" required></label>
-        <label>Request operation<input name="request_action" list="business-security-request-actions" pattern="[a-z][a-z0-9]*(?:[._:-][a-z0-9]+)*" maxlength="127" placeholder="business.record.action:approve" required><small>Use the exact bound operation token. Definition actions use <code>business.record.action:&lt;action_handle&gt;</code>.</small></label>
-        <datalist id="business-security-request-actions">{% for capability in security.capabilities %}<option value="{{ capability.code }}">{% endfor %}{% for definition in security.definitions %}{% for action in definition.actions %}<option value="business.record.action:{{ action.handle }}">{% endfor %}{% endfor %}</datalist>
-        <label>Approval action<select name="approval_action">{% for capability in security.approval_capabilities %}<option value="{{ capability.code }}">{{ capability.code }}</option>{% endfor %}</select><small>Only live capabilities explicitly bound to approval requests are offered.</small></label>
-        <label>Requester role<select name="requester_role_id"><option value="">Any eligible requester</option>{% for role in security.roles %}<option value="{{ role.id }}">{{ role.name }}</option>{% endfor %}</select></label>
-        <label>Approver role<select name="approver_role_id"><option value="">Any eligible approver</option>{% for role in security.roles %}<option value="{{ role.id }}">{{ role.name }}</option>{% endfor %}</select></label>
-        <label>Quorum<input type="number" name="quorum" min="1" max="32" value="1" required></label>
-        <label><input type="checkbox" name="distinct_actors" value="1" checked> Requester and approvers must be distinct</label>
-      </div>
-      {{ security_forms.step_up() }}<button class="primary" type="submit">Create separation rule</button>
-    </form>
-    <div class="table-wrap" tabindex="0" role="region" aria-label="Separation-of-duty rules"><table><thead><tr><th>Rule</th><th>Binding</th><th>Roles</th><th>Quorum</th><th>Status</th><th>Manage</th></tr></thead><tbody>{% for rule in security.separation_rules %}<tr><td><strong>{{ rule.rule_code }}</strong><br><small>{{ rule.organization_identifier|default('Site-wide') }}</small></td><td>{{ rule.resource_type }}<br><code>{{ rule.request_action }}</code> → <code>{{ rule.approval_action }}</code></td><td>Maker: {{ rule.requester_role_code|default('Any') }}<br>Checker: {{ rule.approver_role_code|default('Any') }}</td><td>{{ rule.quorum }} · {{ rule.distinct_actors ? 'distinct actors' : 'same actor allowed' }}</td><td>{{ rule.status|title }} · v{{ rule.version }}</td><td><details><summary>Change</summary><form method="post" action="/administrator/business-security" class="stack"><input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="action" value="separation_duty.status"><input type="hidden" name="id" value="{{ rule.id }}"><input type="hidden" name="version" value="{{ rule.version }}"><input type="hidden" name="status" value="{{ rule.status == 'active' ? 'inactive' : 'active' }}">{{ security_forms.step_up() }}<button class="{{ rule.status == 'active' ? 'danger' : '' }}" type="submit">{{ rule.status == 'active' ? 'Deactivate' : 'Activate' }}</button></form></details></td></tr>{% else %}<tr><td colspan="6">No separation-of-duty rules configured.</td></tr>{% endfor %}</tbody></table></div>
-  </section>
-
-  <section class="panel stack" aria-labelledby="approval-heading">
-    <header class="panel-header"><div><p class="eyebrow">Inbox and history</p><h2 id="approval-heading">Approval requests</h2><p>Makers see only their own requests; approvers and approval managers see the scoped inbox. Decisions require an action-bound, single-use step-up proof.</p></div></header>
-    <div class="table-wrap" tabindex="0" role="region" aria-label="Approval requests"><table><thead><tr><th>Request</th><th>Resource</th><th>Maker</th><th>State</th><th>Decision</th></tr></thead><tbody>{% for approval in security.approvals %}<tr><td><strong>{{ approval.rule_code }}</strong><br><small>{{ approval.id }}</small><br>{{ approval.created_at }}</td><td><code>{{ approval.action }}</code><br>{{ approval.resource_type }} · {{ approval.resource_id }} · v{{ approval.resource_version }}<br><small>{{ approval.organization_identifier|default('Site') }}{% if approval.workspace_identifier %} / {{ approval.workspace_identifier }}{% endif %}</small></td><td>{{ approval.requester_id }}</td><td><span class="status status-{{ approval.status }}">{{ approval.status|title }}</span><br>{{ approval.required_quorum }} approval(s)<br><small>expires {{ approval.expires_at }}</small></td><td>{% if approval.status == 'pending' %}
-        {% if capabilities['business.approval.approve'] is defined %}<details><summary>Approve or reject</summary><form method="post" action="/administrator/business-security" class="stack"><input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="request_id" value="{{ approval.id }}"><label>Reason<input name="reason" maxlength="500"></label>{{ security_forms.step_up() }}<div class="actions"><button name="action" value="approval.approve">Approve</button><button class="danger" name="action" value="approval.reject">Reject</button></div></form></details>{% endif %}
-        {% if approval.requester_id == actor_id %}<form method="post" action="/administrator/business-security"><input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="action" value="approval.cancel"><input type="hidden" name="request_id" value="{{ approval.id }}"><button class="link-button" type="submit">Cancel my request</button></form>{% endif %}
-        {% elseif approval.status == 'approved' and capabilities['business.approval.manage'] is defined %}<details><summary>Revoke approval</summary><form method="post" action="/administrator/business-security" class="stack"><input type="hidden" name="_csrf" value="{{ csrf }}"><input type="hidden" name="action" value="approval.revoke"><input type="hidden" name="request_id" value="{{ approval.id }}">{{ security_forms.step_up() }}<button class="danger" type="submit">Revoke</button></form></details>{% else %}<span class="text-muted">Closed</span>{% endif %}</td></tr>{% else %}<tr><td colspan="5">No approval requests are visible in this authority scope.</td></tr>{% endfor %}</tbody></table></div>
-    {% if security.approval_votes is not empty %}<details><summary>Immutable decision history</summary><div class="table-wrap" tabindex="0" role="region" aria-label="Approval decision history"><table><thead><tr><th>Request</th><th>Approver</th><th>Decision</th><th>Reason</th><th>Time</th></tr></thead><tbody>{% for vote in security.approval_votes %}<tr><td>{{ vote.request_id }}</td><td>{{ vote.approver_id }}</td><td>{{ vote.decision|title }}</td><td>{{ vote.reason|default('—') }}</td><td>{{ vote.decided_at }}</td></tr>{% endfor %}</tbody></table></div></details>{% endif %}
-  </section>
-
-  <section class="panel stack" aria-labelledby="credential-heading">
-    <header class="panel-header"><div><p class="eyebrow">Credential assurance</p><h2 id="credential-heading">Step-up status</h2><p>Status only: encrypted secrets, proof nonces and recovery-code digests are never disclosed.</p></div></header>
-    <div class="table-wrap" tabindex="0" role="region" aria-label="Step-up credential status"><table><thead><tr><th>User</th><th>Status</th><th>Confirmed</th><th>Last verified</th><th>Recovery</th></tr></thead><tbody>{% for credential in security.step_up_credentials %}<tr><td>{{ credential.display_name }}<br><small>{{ credential.email }}</small></td><td>{{ credential.status|title }} · v{{ credential.version }}</td><td>{{ credential.confirmed_at|default('Not confirmed') }}</td><td>{{ credential.last_verified_at|default('Never') }}</td><td>{{ credential.recovery_codes_remaining }} unused codes</td></tr>{% else %}<tr><td colspan="5">No step-up status is available with your capabilities.</td></tr>{% endfor %}</tbody></table></div>
-  </section>
-
-  <section class="panel stack" aria-labelledby="token-heading">
-    <header class="panel-header"><div><p class="eyebrow">Delegated credentials</p><h2 id="token-heading">Token scope and delegation diagnostics</h2><p>Metadata only. Families, parentage, depth and capability attenuation are shown without token material.</p></div></header>
-    <div class="table-wrap" tabindex="0" role="region" aria-label="Token scope diagnostics"><table><thead><tr><th>Token</th><th>Subject</th><th>Scope</th><th>Family</th><th>Capabilities</th><th>Diagnostics</th></tr></thead><tbody>{% for token in security.tokens %}<tr><td><strong>{{ token.name }}</strong><br><small>{{ token.id }}</small><br>{{ token.revoked_at ? 'Revoked' : 'Active' }}</td><td>{{ token.display_name }}<br><small>{{ token.email }}</small></td><td>{% for scope in token.scope_summary %}<code>{{ scope }}</code><br>{% endfor %}</td><td><small>family {{ token.family_id }}<br>parent {{ token.parent_token_id|default('root') }}<br>depth {{ token.delegation_depth }}</small></td><td>{{ token.capabilities|join(', ') }}</td><td><span class="status status-{{ token.delegation_valid ? 'published' : 'draft' }}">{{ token.delegation_valid ? 'Bounded' : 'Review' }}</span><br>{% for reason in token.delegation_diagnostics %}<small>{{ reason|replace({'_':' '}) }}</small><br>{% endfor %}</td></tr>{% else %}<tr><td colspan="6">No token diagnostics are available with your capabilities.</td></tr>{% endfor %}</tbody></table></div>
-  </section>
+  {% elseif section == 'credentials' %}
+    {% if mode == 'history' %}
+      <section class="panel stack" aria-labelledby="credential-history-heading"><div><p class="eyebrow">Credential audit</p><h2 id="credential-history-heading">Credential history</h2><p>Enrollment, verification, token issue, rotation and revocation events are retained without secret material.</p></div><div class="page-actions"><a class="button primary" href="/administrator/access?section=events">Open security events</a><a class="button" href="/administrator/business-security?section=credentials">Return to credential status</a></div></section>
+    {% else %}
+    <section class="panel stack" aria-labelledby="credential-heading"><header class="panel-header section-heading"><div><p class="eyebrow">Credential assurance</p><h2 id="credential-heading">Step-up status</h2><p>Status only: encrypted secrets, proof nonces and recovery-code digests are never disclosed.</p></div><a class="button" href="/administrator/access?section=events">Set up or review verification</a></header><div class="table-wrap" tabindex="0" role="region" aria-label="Step-up credential status"><table><thead><tr><th scope="col">User</th><th scope="col">Status</th><th scope="col">Confirmed</th><th scope="col">Last verified</th><th scope="col">Recovery</th></tr></thead><tbody>{% for item in security.step_up_credentials %}<tr><th scope="row">{{ item.display_name }}<br><small>{{ item.email }}</small></th><td>{{ item.status|title }} · v{{ item.version }}</td><td>{{ item.confirmed_at|default('Not confirmed') }}</td><td>{{ item.last_verified_at|default('Never') }}</td><td>{{ item.recovery_codes_remaining }} unused codes</td></tr>{% else %}<tr><td colspan="5">No step-up status is available with your capabilities.</td></tr>{% endfor %}</tbody></table></div></section>
+    <section class="panel stack" aria-labelledby="token-heading"><header class="panel-header"><div><p class="eyebrow">Delegated credentials</p><h2 id="token-heading">Token scope and delegation diagnostics</h2><p>Metadata only. Families, parentage, depth and capability attenuation appear without token material.</p></div><a class="button" href="/administrator/business-security?section=credentials&amp;mode=history">Credential history</a></header><div class="table-wrap" tabindex="0" role="region" aria-label="Token scope diagnostics"><table><thead><tr><th scope="col">Token</th><th scope="col">Subject</th><th scope="col">Scope</th><th scope="col">Family</th><th scope="col">Capabilities</th><th scope="col">Diagnostics</th></tr></thead><tbody>{% for item in security.tokens %}<tr><th scope="row">{{ item.name }}<br><small>{{ item.id }}</small><br>{{ item.revoked_at ? 'Revoked' : 'Active' }}</th><td>{{ item.display_name }}<br><small>{{ item.email }}</small></td><td>{% for scope in item.scope_summary %}<code>{{ scope }}</code><br>{% endfor %}</td><td><small>family {{ item.family_id }}<br>parent {{ item.parent_token_id|default('root') }}<br>depth {{ item.delegation_depth }}</small></td><td>{{ item.capabilities|join(', ') }}</td><td><span class="status status-{{ item.delegation_valid ? 'published' : 'draft' }}">{{ item.delegation_valid ? 'Bounded' : 'Review' }}</span><br>{% for reason in item.delegation_diagnostics %}<small>{{ reason|replace({'_':' '}) }}</small><br>{% endfor %}</td></tr>{% else %}<tr><td colspan="6">No token diagnostics are available with your capabilities.</td></tr>{% endfor %}</tbody></table></div></section>
+    {% endif %}
+  {% endif %}
+</div>
 {% endblock %}

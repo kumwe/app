@@ -1,0 +1,79 @@
+@layer components {
+  .kis-phase-five-public,
+  .kis-phase-five-public > *,
+  .kis-phase-five-public .site-container,
+  .kis-phase-five-public .article-body {
+    min-width: 0;
+  }
+
+  .kis-phase-five-public h1,
+  .kis-phase-five-public h2,
+  .kis-phase-five-public h3,
+  .kis-phase-five-public p,
+  .kis-phase-five-public a,
+  .kis-phase-five-public li {
+    overflow-wrap: anywhere;
+  }
+
+  .kis-phase-five-public .article-body table {
+    display: block;
+    max-width: 100%;
+    overflow-x: auto;
+  }
+
+  .kis-phase-five-public .article-body pre,
+  .kis-phase-five-public .article-body code {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+    white-space: pre-wrap;
+  }
+}
+
+@media (pointer: coarse) {
+  .kis-phase-five-public a,
+  .kis-phase-five-public button {
+    min-height: 2.75rem;
+  }
+}
+
+@media (prefers-contrast: more) {
+  .kis-phase-five-public .site-button,
+  .kis-phase-five-public .managed-hero-logo,
+  .kis-phase-five-public .empty-home-card {
+    border-width: 2px;
+  }
+}
+
+@media (forced-colors: active) {
+  .kis-phase-five-public .site-button,
+  .kis-phase-five-public .managed-hero-logo,
+  .kis-phase-five-public .empty-home-card {
+    border: 2px solid ButtonText;
+  }
+}
+
+@media print {
+  .site-header,
+  .site-footer,
+  .managed-actions,
+  .empty-home-card {
+    display: none !important;
+  }
+
+  .kis-phase-five-public .managed-hero,
+  .kis-phase-five-public .managed-section,
+  .kis-phase-five-public .article-heading {
+    padding-block: 1rem;
+    background: transparent;
+  }
+
+  .kis-phase-five-public .managed-hero-grid,
+  .kis-phase-five-public .managed-section-grid {
+    display: block;
+  }
+
+  .kis-phase-five-public a[href]::after {
+    content: " (" attr(href) ")";
+    font-size: .8em;
+  }
+}

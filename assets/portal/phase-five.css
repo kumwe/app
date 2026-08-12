@@ -1,0 +1,124 @@
+@layer components {
+  .kis-phase-five-portal {
+    display: grid;
+    min-width: 0;
+    gap: 1.25rem;
+  }
+
+  .kis-phase-five-portal .kis-page-header {
+    margin-bottom: 0;
+  }
+
+  .portal-access-context {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr));
+    gap: .75rem;
+    margin: 0;
+  }
+
+  .portal-access-context > div {
+    min-width: 0;
+    padding: .85rem;
+    border: 1px solid var(--portal-line);
+    border-radius: var(--kumwe-radius-md);
+    background: var(--portal-paper);
+  }
+
+  .portal-access-context dt {
+    color: var(--portal-muted);
+    font-size: .76rem;
+    font-weight: 700;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+  }
+
+  .portal-access-context dd {
+    margin: .25rem 0 0;
+    overflow-wrap: anywhere;
+    font-weight: 700;
+  }
+
+  .portal-security-actions {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr));
+    gap: 1rem;
+  }
+
+  .portal-security-actions details,
+  .portal-security-primary,
+  .portal-access-card {
+    min-width: 0;
+    padding: 1rem;
+    border: 1px solid var(--portal-line);
+    border-radius: var(--kumwe-radius-lg);
+    background: var(--portal-panel);
+  }
+
+  .portal-security-actions details > summary {
+    min-height: var(--kis-touch-target);
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .portal-secret-once {
+    padding: .8rem 1rem;
+    border-left: .3rem solid var(--kumwe-warning);
+    background: var(--kumwe-warning-soft);
+  }
+
+  .portal-secret,
+  .portal-uri,
+  .portal-recovery-codes code {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+}
+
+@media (pointer: coarse) {
+  .kis-phase-five-portal button,
+  .kis-phase-five-portal summary,
+  .kis-phase-five-portal a {
+    min-height: 2.75rem;
+  }
+}
+
+@media (prefers-contrast: more) {
+  .portal-security-actions details,
+  .portal-security-primary,
+  .portal-access-card,
+  .portal-access-context > div {
+    border-width: 2px;
+  }
+}
+
+@media (forced-colors: active) {
+  .portal-secret-once,
+  .portal-security-actions details,
+  .portal-security-primary,
+  .portal-access-card {
+    border: 2px solid CanvasText;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kis-phase-five-portal *,
+  .kis-phase-five-portal *::before,
+  .kis-phase-five-portal *::after {
+    scroll-behavior: auto !important;
+    transition-duration: .01ms !important;
+  }
+}
+
+@media print {
+  .portal-header,
+  .portal-navigation,
+  .kis-phase-five-portal form,
+  .kis-phase-five-portal .page-actions {
+    display: none !important;
+  }
+
+  .portal-security-actions,
+  .portal-access-context {
+    display: block;
+  }
+}

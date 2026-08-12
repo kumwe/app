@@ -3,65 +3,73 @@
 {% block title %}Account security · Kumwe Portal{% endblock %}
 
 {% block content %}
-<section aria-labelledby="portal-security-title">
-    <p class="eyebrow">Account security</p>
-    <h1 id="portal-security-title">Two-step verification</h1>
-    <p>Use an authenticator code for sensitive actions. Recovery codes are single-use.</p>
-    {% if notice %}<div class="portal-notice" role="status">{{ notice }}</div>{% endif %}
-    {% if error %}<div class="portal-alert" role="alert">{{ error }}</div>{% endif %}
-</section>
+<div class="kis-phase-five-portal" data-kis-surface="core.portal.security">
+    {% include '@kis/page-header.twig' with {
+        eyebrow: 'Account security',
+        title: 'Two-step verification',
+        purpose: 'Use an authenticator code for sensitive actions. Recovery codes are single-use.'
+    } only %}
+    {% if notice %}<div class="portal-notice notice" role="status">{{ notice }}</div>{% endif %}
+    {% if error %}<div class="portal-alert notice danger" role="alert">{{ error }}</div>{% endif %}
 
-{% if recovery_codes is not empty %}
-<section class="portal-security-panel" aria-labelledby="recovery-codes-title">
-    <h2 id="recovery-codes-title">Your recovery codes</h2>
-    <p>Store these somewhere private. Each code works once.</p>
-    <ol class="portal-recovery-codes">
-        {% for code in recovery_codes %}<li><code>{{ code }}</code></li>{% endfor %}
-    </ol>
-</section>
-{% elseif enrollment %}
-<section class="portal-security-panel" aria-labelledby="enrollment-title">
-    <h2 id="enrollment-title">Connect your authenticator</h2>
-    <p>Enter this secret in your authenticator, then confirm with its current code.</p>
-    <p><strong>Setup key:</strong> <code class="portal-secret">{{ enrollment.secret }}</code></p>
-    <details><summary>Authenticator URI</summary><code class="portal-uri">{{ enrollment.provisioningUri }}</code></details>
-    <p>This setup expires at <time datetime="{{ enrollment.expiresAt|date('c') }}">{{ enrollment.expiresAt|date('Y-m-d H:i T') }}</time>.</p>
-    <form method="post" action="/portal/security/totp/confirm" class="portal-security-form">
-        <input type="hidden" name="_csrf" value="{{ portal_session.csrfToken }}">
-        <input type="hidden" name="enrollment_id" value="{{ enrollment.enrollmentId }}">
-        <label for="portal-enrollment-code">Authenticator code</label>
-        <input id="portal-enrollment-code" name="code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6,8}" required>
-        <button type="submit">Confirm authenticator</button>
-    </form>
-</section>
-{% else %}
-<div class="portal-security-grid">
-    <section class="portal-security-panel" aria-labelledby="enroll-title">
-        <h2 id="enroll-title">Set up an authenticator</h2>
-        <p>Start a new ten-minute enrollment. An existing active authenticator is never overwritten.</p>
-        <form method="post" action="/portal/security/totp/enroll">
-            <input type="hidden" name="_csrf" value="{{ portal_session.csrfToken }}">
-            <button type="submit">Start setup</button>
-        </form>
-    </section>
-    <section class="portal-security-panel" aria-labelledby="verify-title">
-        <h2 id="verify-title">Verify with authenticator</h2>
-        <form method="post" action="/portal/security/challenge" class="portal-security-form">
-            <input type="hidden" name="_csrf" value="{{ portal_session.csrfToken }}">
-            <label for="portal-challenge-code">Authenticator code</label>
-            <input id="portal-challenge-code" name="code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6,8}" required>
-            <button type="submit">Verify identity</button>
-        </form>
-    </section>
-    <section class="portal-security-panel" aria-labelledby="recover-title">
-        <h2 id="recover-title">Use a recovery code</h2>
-        <form method="post" action="/portal/security/recovery" class="portal-security-form">
-            <input type="hidden" name="_csrf" value="{{ portal_session.csrfToken }}">
-            <label for="portal-recovery-code">Recovery code</label>
-            <input id="portal-recovery-code" name="recovery_code" autocomplete="one-time-code" required>
-            <button type="submit">Use recovery code</button>
-        </form>
-    </section>
+    {% if recovery_codes is not empty %}
+        <section class="portal-security-panel portal-secret-once" aria-labelledby="recovery-codes-title">
+            <p class="eyebrow">Shown once</p>
+            <h2 id="recovery-codes-title">Your recovery codes</h2>
+            <p>Store these somewhere private before leaving this page. Each code works once and Kumwe will not display this set again.</p>
+            <ol class="portal-recovery-codes">
+                {% for code in recovery_codes %}<li><code>{{ code }}</code></li>{% endfor %}
+            </ol>
+        </section>
+    {% elseif enrollment %}
+        <section class="portal-security-panel" aria-labelledby="enrollment-title">
+            <p class="eyebrow">Enrollment in progress</p>
+            <h2 id="enrollment-title">Connect your authenticator</h2>
+            <p class="portal-secret-once"><strong>This setup secret is shown only for the current enrollment.</strong> Do not share it or include it in screenshots or support messages.</p>
+            <p>Enter this setup key in your authenticator, then confirm with its current code.</p>
+            <p><strong>Setup key:</strong> <code class="portal-secret">{{ enrollment.secret }}</code></p>
+            <details><summary>Show authenticator URI</summary><code class="portal-uri">{{ enrollment.provisioningUri }}</code></details>
+            <p>This setup expires at <time datetime="{{ enrollment.expiresAt|date('c') }}">{{ enrollment.expiresAt|date('Y-m-d H:i T') }}</time>.</p>
+            <form method="post" action="/portal/security/totp/confirm" class="portal-security-form">
+                <input type="hidden" name="_csrf" value="{{ portal_session.csrfToken }}">
+                <input type="hidden" name="enrollment_id" value="{{ enrollment.enrollmentId }}">
+                <label for="portal-enrollment-code">Authenticator code</label>
+                <input id="portal-enrollment-code" name="code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6,8}" required>
+                <button type="submit">Confirm authenticator</button>
+            </form>
+        </section>
+    {% else %}
+        <section class="portal-security-primary" aria-labelledby="enroll-title">
+            <p class="eyebrow">Recommended</p>
+            <h2 id="enroll-title">Set up an authenticator</h2>
+            <p>Start a new ten-minute enrollment. An existing active authenticator is never overwritten.</p>
+            <form method="post" action="/portal/security/totp/enroll">
+                <input type="hidden" name="_csrf" value="{{ portal_session.csrfToken }}">
+                <button type="submit">Start setup</button>
+            </form>
+        </section>
+        <section class="portal-security-actions" aria-label="Existing authenticator and recovery options">
+            <details>
+                <summary>Verify with an authenticator</summary>
+                <p>Use this when a sensitive action asks you to verify your identity.</p>
+                <form method="post" action="/portal/security/challenge" class="portal-security-form">
+                    <input type="hidden" name="_csrf" value="{{ portal_session.csrfToken }}">
+                    <label for="portal-challenge-code">Authenticator code</label>
+                    <input id="portal-challenge-code" name="code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6,8}" required>
+                    <button type="submit">Verify identity</button>
+                </form>
+            </details>
+            <details>
+                <summary>Use a recovery code</summary>
+                <p>Each recovery code works once. The code is never retained after verification.</p>
+                <form method="post" action="/portal/security/recovery" class="portal-security-form">
+                    <input type="hidden" name="_csrf" value="{{ portal_session.csrfToken }}">
+                    <label for="portal-recovery-code">Recovery code</label>
+                    <input id="portal-recovery-code" name="recovery_code" autocomplete="one-time-code" required>
+                    <button type="submit">Use recovery code</button>
+                </form>
+            </details>
+        </section>
+    {% endif %}
 </div>
-{% endif %}
 {% endblock %}

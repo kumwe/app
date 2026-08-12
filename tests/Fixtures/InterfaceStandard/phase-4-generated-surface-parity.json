@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "phase": 4,
+  "shared_stylesheet": "assets/interface-standard/generated-business.css",
+  "shared_parameter_component": "templates/interface-standard/report-parameter-fields.twig",
+  "shared_task_component": "templates/interface-standard/task-navigation.twig",
+  "surfaces": [
+    {"id": "catalog", "template": "business-index.twig", "marker": "generated-catalog"},
+    {"id": "collection", "template": "business-list.twig", "marker": "generated-collection"},
+    {"id": "record", "template": "business-detail.twig", "marker": "generated-record"},
+    {"id": "form", "template": "business-form.twig", "marker": "generated-record-form"},
+    {"id": "choices", "template": "business-choices.twig", "marker": "generated-choice-browser"},
+    {"id": "custom_view", "template": "business-custom-view.twig", "marker": "generated-custom-view"},
+    {"id": "operation_status", "template": "business-status.twig", "marker": "generated-operation-status"},
+    {"id": "reports", "template": "business-report.twig", "marker": "generated-report-workspace"},
+    {"id": "confirmation", "template": "business-confirm.twig", "marker": "generated-operation-confirmation"},
+    {"id": "bulk_confirmation", "template": "business-bulk-confirm.twig", "marker": "generated-bulk-confirmation"}
+  ],
+  "invariants": [
+    "application_service_boundary",
+    "policy_filtered_metadata",
+    "precision_safe_native_parameters",
+    "optimistic_concurrency",
+    "idempotency",
+    "approval_and_step_up",
+    "audit_and_operation_status",
+    "administrator_portal_parity",
+    "no_extension_specific_css"
+  ]
+}

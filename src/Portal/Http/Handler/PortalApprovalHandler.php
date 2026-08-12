@@ -98,7 +98,9 @@ final readonly class PortalApprovalHandler implements RequestHandlerInterface
         if ($request->getMethod() === 'GET') {
             $query = $request->getQueryParams();
             $notice = is_string($query['updated'] ?? null) ? 'The approval request was updated.' : '';
-            return $this->detail($session, $detail, $notice);
+            $view = ($query['view'] ?? null) === 'history' ? 'history' : 'review';
+
+            return $this->detail($session, $detail, $notice, view: $view);
         }
 
         $decision = $this->decision($request->getUri()->getPath());
@@ -204,6 +206,7 @@ final readonly class PortalApprovalHandler implements RequestHandlerInterface
      * @param   string                                         $error     Optional protected error message.
      * @param   int                                            $status    HTTP status code.
      * @param   array<non-empty-string, array<string>|string>  $headers   Additional response headers.
+     * @param   string                                         $view      Active review or decision-history concern.
      *
      * @return  ResponseInterface  Non-cacheable approval detail response.
      *
@@ -216,11 +219,13 @@ final readonly class PortalApprovalHandler implements RequestHandlerInterface
         string $error = '',
         int $status = 200,
         array $headers = [],
+        string $view = 'review',
     ): ResponseInterface {
         return new HtmlResponse($this->renderer->render('approval-detail', [
             'approval' => self::detailProjection($approval),
             'notice' => $notice,
             'error' => $error,
+            'view' => $view === 'history' ? 'history' : 'review',
             'active_navigation' => 'core.portal-approvals',
         ], $session), $status, ['Cache-Control' => 'no-store'] + $headers);
     }

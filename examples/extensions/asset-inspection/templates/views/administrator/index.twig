@@ -3,6 +3,7 @@
 {% block context_title %}Asset inspection example{% endblock %}
 {% block context_subtitle %}Neutral extensibility proof{% endblock %}
 {% block content %}
+  <div class="kis-phase-five" data-kis-surface="kumwe.asset-inspection-example.administrator.index">
   {% include '@kis/page-header.twig' with {
     eyebrow: surface_label,
     title: heading,
@@ -54,4 +55,5 @@
     {% endfor %}
     <p>Foreign-site and below-threshold rows were removed before rendering. Restricted-field disclosure: {{ restricted_disclosed ? 'profile-authorized' : 'withheld' }}.</p>
   </section>
+  </div>
 {% endblock %}

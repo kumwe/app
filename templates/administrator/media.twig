@@ -2,7 +2,12 @@
 {% block title %}Media · Kumwe{% endblock %}
 {% block context_title %}Media library{% endblock %}
 {% block content %}
-  <header class="page-heading"><div><p class="eyebrow">Workspace</p><h1>Media library</h1><p>Upload, find and reuse images and documents across your content.</p></div></header>
+  <div class="kis-phase-five" data-kis-surface="core.administrator.media">
+  {% include '@kis/page-header.twig' with {
+    eyebrow: 'Workspace',
+    title: 'Media library',
+    purpose: 'Upload, find and reuse images and documents across your content.'
+  } only %}
   {% if uploaded %}<div class="notice success" role="status"><span>Media uploaded successfully.</span><button class="notice-dismiss" type="button" aria-label="Dismiss" data-dismiss-notice>×</button></div>{% endif %}
   {% if deleted %}<div class="notice success" role="status"><span>Media deleted successfully.</span><button class="notice-dismiss" type="button" aria-label="Dismiss" data-dismiss-notice>×</button></div>{% endif %}
   {% if error %}<div class="notice danger" role="alert">{{ error }}</div>{% endif %}
@@ -18,13 +23,26 @@
     {% endif %}
 
     <section class="panel media-library-panel">
-      <form class="table-toolbar" action="/administrator/media" method="get">
-        <label class="search-field">Search<input type="search" name="q" value="{{ query }}" placeholder="File name"></label>
-        <label>File type<select name="kind"><option value="all"{% if kind == 'all' %} selected{% endif %}>All files</option><option value="image"{% if kind == 'image' %} selected{% endif %}>Images</option><option value="document"{% if kind == 'document' %} selected{% endif %}>Documents</option></select></label>
-        <button class="toolbar-submit" type="submit">Apply</button>{% if query or kind != 'all' %}<a class="button" href="/administrator/media">Clear</a>{% endif %}
+      <form action="/administrator/media" method="get" role="search">
+        {% embed '@kis/resource-toolbar.twig' with {
+          label: 'Discover media',
+          title: 'Managed files',
+          summary: total ~ ' file' ~ (total == 1 ? '' : 's'),
+          query: query,
+          kind: kind
+        } only %}
+          {% block filters %}
+            <label class="search-field">Search<input type="search" name="q" value="{{ query }}" placeholder="File name"></label>
+            <label>File type<select name="kind"><option value="all"{% if kind == 'all' %} selected{% endif %}>All files</option><option value="image"{% if kind == 'image' %} selected{% endif %}>Images</option><option value="document"{% if kind == 'document' %} selected{% endif %}>Documents</option></select></label>
+          {% endblock %}
+          {% block actions %}<button class="toolbar-submit" type="submit">Apply filters</button>{% if query or kind != 'all' %}<a class="button" href="/administrator/media">Clear filters</a>{% endif %}{% endblock %}
+        {% endembed %}
       </form>
       {% if assets is empty %}
-        <div class="empty-state"><div class="empty-state-content"><div class="empty-state-icon"><svg aria-hidden="true"><use href="#kumwe-icon-media"></use></svg></div><h2>No media found</h2><p>{% if query or kind != 'all' %}Try a broader search or clear the filters.{% else %}Upload the first image or document to make it available to editors.{% endif %}</p></div></div>
+        {% include '@kis/empty-state.twig' with {
+          title: 'No media found',
+          message: query or kind != 'all' ? 'Try a broader search or clear the filters.' : 'Upload the first image or document to make it available to editors.'
+        } only %}
       {% else %}
         <div class="media-grid">{% for asset in assets %}<article class="media-card">
           <div class="media-preview">{% if asset.is_image %}<img src="{{ asset.url }}" alt="Preview of {{ asset.name }}" loading="lazy">{% else %}<span class="media-file-placeholder" aria-hidden="true">PDF</span>{% endif %}</div>
@@ -34,4 +52,5 @@
       {% endif %}
     </section>
   </section>
+  </div>
 {% endblock %}
