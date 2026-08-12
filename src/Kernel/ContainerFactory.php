@@ -258,6 +258,7 @@ use Kumwe\CMS\Demo\Application\DemoProfileReconciler;
 use Kumwe\CMS\Demo\Application\VdmBusinessManifestProjector;
 use Kumwe\CMS\Demo\Application\VdmBusinessOperationGuard;
 use Kumwe\CMS\Demo\Infrastructure\DemoAccessProvisioner;
+use Kumwe\CMS\Demo\Infrastructure\DemoExampleExtensionInstaller;
 use Kumwe\CMS\Demo\Infrastructure\DemoContentProfileInstaller;
 use Kumwe\CMS\Demo\Infrastructure\DemoProfileInstaller;
 use Kumwe\CMS\Demo\Infrastructure\FilesystemDemoManifestCatalog;
@@ -305,6 +306,7 @@ use Kumwe\CMS\Extension\Runtime\RuntimePublicationKeyRing;
 use Kumwe\CMS\Delivery\Console\Command\CreateAccessTokenCommand;
 use Kumwe\CMS\Delivery\Console\Command\CreateAdministratorCommand;
 use Kumwe\CMS\Delivery\Console\Command\DemoAccessCommand;
+use Kumwe\CMS\Delivery\Console\Command\DemoExamplesCommand;
 use Kumwe\CMS\Delivery\Console\Command\ConsoleAuthorizer;
 use Kumwe\CMS\Delivery\Console\Command\ActivateExtensionCommand;
 use Kumwe\CMS\Delivery\Console\Command\BuildExtensionCommand;
@@ -4535,6 +4537,21 @@ final class ContainerFactory
             self::service($container, DemoAccessProvisioner::class),
             self::service($container, ClockInterface::class),
         ), true);
+        $container->share(DemoExampleExtensionInstaller::class, static fn (
+            Container $container,
+        ): DemoExampleExtensionInstaller => new DemoExampleExtensionInstaller(
+            dirname(__DIR__, 2),
+            self::service($container, ExtensionManager::class),
+            self::service($container, TrustStore::class),
+            self::service($container, ClockInterface::class),
+        ), true);
+        $container->share(DemoExamplesCommand::class, static fn (
+            Container $container,
+        ): DemoExamplesCommand => new DemoExamplesCommand(
+            self::service($container, ApplicationConfiguration::class),
+            self::service($container, AdministratorIdentityGateway::class),
+            self::service($container, DemoExampleExtensionInstaller::class),
+        ), true);
         $container->share(CreateAccessTokenCommand::class, static fn (
             Container $container,
         ): CreateAccessTokenCommand => new CreateAccessTokenCommand(
@@ -4725,6 +4742,7 @@ final class ContainerFactory
                 self::service($container, HealthCheckCommand::class),
                 self::service($container, CreateAdministratorCommand::class),
                 self::service($container, DemoAccessCommand::class),
+                self::service($container, DemoExamplesCommand::class),
                 self::service($container, CreateAccessTokenCommand::class),
                 self::service($container, ListExtensionsCommand::class),
                 self::service($container, InstallExtensionCommand::class),

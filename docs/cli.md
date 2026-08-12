@@ -26,6 +26,7 @@ Commands return `0` on success and a non-zero status on invalid input, unavailab
 | `app:health` | Check readiness from the application process |
 | `user:create-admin` | Create the initial owner from a protected password file |
 | `demo:provision-access` | Provision demonstration staff and portal sign-ins with generated credentials |
+| `demo:install-examples` | Install and activate the shipped example extensions through the signed pipeline |
 
 The owner command requires `--email`, `--name`, and an absolute `--password-file` whose group/other permission bits are clear.
 
@@ -82,6 +83,19 @@ php bin/kumwe demo:provision-access \
   --admin-email=administrator@kumwe.test \
   --admin-password-file=/absolute/protected/password-file \
   --credentials-file=/absolute/new/demo-access-credentials.json
+```
+
+`demo:install-examples` installs the shipped example extensions — `announcements`, `asset-inspection`, and
+`audit-listener` by default — through the same signed pipeline an operator upload passes: each example is packaged
+deterministically, signed with a single-use key registered in the trust store for exactly that package, installed,
+and activated. It requires host access and a real administrator's credentials, is idempotent per example, and
+`--extensions` narrows the selection to any subset:
+
+```bash
+php bin/kumwe demo:install-examples \
+    --admin-email=operator@example.com \
+    --admin-password-file=/path/to/password-file \
+    --extensions=announcements,asset-inspection
 ```
 
 The run is idempotent: already-provisioned identities are confirmed without a password change, so a rerun never

@@ -149,6 +149,29 @@ if [[ "${KUMWE_DEMO_ACCESS:-true}" == true && ! -f "$state_directory/demo-access
     unset administrator_password
 fi
 
+# The shipped example extensions install by default through the signed pipeline;
+# KUMWE_DEMO_EXTENSIONS=false skips them, or name a subset such as "announcements".
+if [[ "${KUMWE_DEMO_EXTENSIONS:-true}" != false ]]; then
+    example_selection=''
+    [[ "${KUMWE_DEMO_EXTENSIONS:-true}" != true ]] && example_selection="--extensions=${KUMWE_DEMO_EXTENSIONS}"
+    administrator_password="$(<"$state_directory/administrator-password")"
+    "${compose[@]}" run \
+        --rm \
+        --no-deps \
+        --env KUMWE_DEMO_ADMIN_PASSWORD="$administrator_password" \
+        app \
+        sh -euc '
+            umask 077
+            password_file=/tmp/kumwe-demo-administrator-password
+            trap '\''rm -f "$password_file"'\'' EXIT
+            printf %s "$KUMWE_DEMO_ADMIN_PASSWORD" > "$password_file"
+            php bin/kumwe demo:install-examples \
+                --admin-email=administrator@kumwe.test \
+                --admin-password-file="$password_file" '"$example_selection"'
+        '
+    unset administrator_password
+fi
+
 "${compose[@]}" --profile automation up --detach --wait app web worker scheduler
 curl --fail --silent --show-error --retry 20 --retry-connrefused \
     "http://127.0.0.1:$http_port/health/ready" >/dev/null
