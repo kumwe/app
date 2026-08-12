@@ -260,6 +260,7 @@ use Kumwe\CMS\Demo\Application\VdmBusinessOperationGuard;
 use Kumwe\CMS\Demo\Infrastructure\DemoAccessProvisioner;
 use Kumwe\CMS\Demo\Infrastructure\DemoExampleExtensionInstaller;
 use Kumwe\CMS\Demo\Infrastructure\DemoContentProfileInstaller;
+use Kumwe\CMS\Demo\Infrastructure\DemoBusinessProfileExporter;
 use Kumwe\CMS\Demo\Infrastructure\DemoProfileExporter;
 use Kumwe\CMS\Demo\Infrastructure\DemoProfileInstaller;
 use Kumwe\CMS\Demo\Infrastructure\FilesystemDemoManifestCatalog;
@@ -4566,12 +4567,24 @@ final class ContainerFactory
             self::service($container, DemoProfileLedger::class),
             self::service($container, ClockInterface::class),
         ), true);
+        $container->share(DemoBusinessProfileExporter::class, static fn (
+            Container $container,
+        ): DemoBusinessProfileExporter => new DemoBusinessProfileExporter(
+            self::service($container, BusinessDefinitionService::class),
+            self::service($container, BusinessRecordService::class),
+            self::service($container, AccessControlService::class),
+            self::service($container, BusinessSecurityAdministrationRepository::class),
+            self::service($container, FilesystemDemoManifestCatalog::class),
+            self::service($container, ApplicationConfiguration::class),
+            self::service($container, DemoProfileLedger::class),
+        ), true);
         $container->share(DemoExportCommand::class, static fn (
             Container $container,
         ): DemoExportCommand => new DemoExportCommand(
             self::service($container, ApplicationConfiguration::class),
             self::service($container, AdministratorIdentityGateway::class),
             self::service($container, DemoProfileExporter::class),
+            self::service($container, DemoBusinessProfileExporter::class),
         ), true);
         $container->share(CreateAccessTokenCommand::class, static fn (
             Container $container,
