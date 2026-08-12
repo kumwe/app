@@ -18,6 +18,11 @@ different value for a new state directory; Kumwe's profiles never contain a user
 clerk, bookkeeper, stockkeeper, and system administrator staff accounts plus the portal members of the fictional
 client organizations — and writes their generated sign-ins to `demo-access-credentials.json` inside the same state
 directory. That one file is how a reviewer enters every demonstrated role without any shared or seeded secret.
+
+Unless `KUMWE_DEMO_EXTENSIONS=false` is exported, the script also installs the shipped example extensions —
+announcements, asset inspection, and the audit listener — through the signed extension pipeline, so the
+demonstration shows contributed screens, reports, durable jobs, and portal surfaces exactly as a real extension
+would deliver them. Set the variable to a comma-separated subset such as `announcements` to install only some.
 Open the address in a current Chromium, Firefox, or Safari browser. The local connector binds only to
 `127.0.0.1:18080`; a real deployment must remain behind the HTTPS reverse proxy described in the
 [deployment runbook](operations/deploy.md).
