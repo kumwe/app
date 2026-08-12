@@ -713,20 +713,56 @@ test.describe('authenticated administrator', () => {
       const optionLayout = await changeSet.locator('.option-grid').evaluate((grid) => {
         const bounds = grid.getBoundingClientRect();
         const cards = [...grid.querySelectorAll<HTMLElement>('.option-card')];
+        const layouts = cards.map((card) => {
+          const cardBounds = card.getBoundingClientRect();
+          const checkbox = card.querySelector<HTMLElement>('input[type="checkbox"]');
+          const copy = card.querySelector<HTMLElement>('span');
+          const fontSize = Number.parseFloat(getComputedStyle(card).fontSize);
+          if (checkbox === null || copy === null) {
+            return {
+              contentContained: false,
+              heightInEm: Number.POSITIVE_INFINITY,
+              chromeHeightInEm: Number.POSITIVE_INFINITY,
+            };
+          }
+
+          const checkboxBounds = checkbox.getBoundingClientRect();
+          const copyBounds = copy.getBoundingClientRect();
+          const contained = (childBounds: DOMRect): boolean =>
+            childBounds.left >= cardBounds.left - 1
+            && childBounds.right <= cardBounds.right + 1
+            && childBounds.top >= cardBounds.top - 1
+            && childBounds.bottom <= cardBounds.bottom + 1;
+          return {
+            contentContained: contained(checkboxBounds)
+              && contained(copyBounds)
+              && copy.scrollWidth <= copy.clientWidth + 1
+              && copy.scrollHeight <= copy.clientHeight + 1,
+            heightInEm: cardBounds.height / fontSize,
+            chromeHeightInEm: (
+              cardBounds.height - Math.max(checkboxBounds.height, copyBounds.height)
+            ) / fontSize,
+          };
+        });
         return {
           count: cards.length,
           allContained: cards.every((card) => {
             const cardBounds = card.getBoundingClientRect();
             return cardBounds.left >= bounds.left - 1 && cardBounds.right <= bounds.right + 1;
           }),
-          maximumHeightInEm: Math.max(...cards.map((card) =>
-            card.getBoundingClientRect().height / Number.parseFloat(getComputedStyle(card).fontSize)
-          )),
+          allContentContained: layouts.every((layout) => layout.contentContained),
+          maximumHeightInEm: Math.max(...layouts.map((layout) => layout.heightInEm)),
+          maximumChromeHeightInEm: Math.max(...layouts.map((layout) => layout.chromeHeightInEm)),
         };
       });
       expect(optionLayout.count).toBeGreaterThan(0);
       expect(optionLayout.allContained).toBe(true);
-      expect(optionLayout.maximumHeightInEm).toBeLessThanOrEqual(10);
+      expect(optionLayout.allContentContained).toBe(true);
+      if (zoomed) {
+        expect(optionLayout.maximumChromeHeightInEm).toBeLessThanOrEqual(2.5);
+      } else {
+        expect(optionLayout.maximumHeightInEm).toBeLessThanOrEqual(10);
+      }
       await expectBoundedWorkspace();
     };
     const openEntityDefinition = async (zoomed = false): Promise<void> => {
