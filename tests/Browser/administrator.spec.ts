@@ -1,11 +1,13 @@
 import AxeBuilder from '@axe-core/playwright';
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Page, type TestInfo } from '@playwright/test';
+import { expectNoDocumentOverflow } from './support/interface-diagnostics';
 
 const administratorEmail = process.env.KUMWE_BROWSER_ADMIN_EMAIL ?? 'browser-administrator@kumwe.test';
 const administratorPassword = process.env.KUMWE_BROWSER_ADMIN_PASSWORD ?? 'browser administrator password';
 const limitedEmail = process.env.KUMWE_BROWSER_LIMITED_EMAIL ?? 'browser-limited@kumwe.test';
 const limitedPassword = process.env.KUMWE_BROWSER_LIMITED_PASSWORD ?? 'browser limited password';
 const businessDefinitionHandle = 'site.default.session5_order';
+const assetInspectionDefinition = 'kumwe.asset-inspection-example.inspection';
 const assetInspectionReport = 'kumwe.asset-inspection-example.inspection-summary';
 const windhoekOrderId = '019b40d9-8dd0-7ca2-a0db-9eae6a150511';
 const windhoekTargetId = '019b40d9-8dd0-7ca2-a0db-9eae6a150521';
@@ -25,6 +27,17 @@ async function expectStylesLoaded(page: Page): Promise<void> {
   );
   expect(failedStylesheets).toEqual([]);
   expect(await page.locator('link[rel="stylesheet"]').count()).toBeGreaterThan(0);
+}
+
+/** Attach the unmodified live interface before any compatibility-only baseline normalization. */
+async function attachLiveInterfaceScreenshot(
+  page: Page,
+  testInfo: TestInfo,
+  name: string,
+): Promise<void> {
+  const path = testInfo.outputPath(`${name}.png`);
+  await page.screenshot({ path, fullPage: true, animations: 'disabled', caret: 'hide' });
+  await testInfo.attach(name, { path, contentType: 'image/png' });
 }
 
 /** Keep legacy comparisons scoped to their original shell; Session 6 has dedicated real screenshots. */
@@ -337,7 +350,7 @@ test.describe('authenticated administrator', () => {
   test('schema plans are inspectable, capability-gated and visually stable', async ({
     page,
     isMobile,
-  }) => {
+  }, testInfo) => {
     await page.goto('/administrator/business-schema-plans');
     await expect(page.getByRole('heading', { name: 'Business schema plans' })).toBeVisible();
     if (isMobile) {
@@ -371,6 +384,7 @@ test.describe('authenticated administrator', () => {
     expect(await missingCsrf.text()).toContain('security token is invalid');
     await expectStylesLoaded(page);
     await expectAccessible(page);
+    await attachLiveInterfaceScreenshot(page, testInfo, 'schema-plans-live');
     await preservePreSession6VisualSnapshot(page);
     await expect(page).toHaveScreenshot('schema-plans.png', {
       fullPage: true,
@@ -470,7 +484,20 @@ test.describe('authenticated administrator', () => {
     });
   });
 
-  test('users and access separates identity concerns and portal provisioning', async ({ page }) => {
+  test('users and access separates provisioning, assignments, tokens and step-up', async ({
+    page,
+  }, testInfo) => {
+    test.setTimeout(90_000);
+    const expectBoundedAccessWorkspace = async (attachment: string): Promise<void> => {
+      await expectAccessible(page);
+      const diagnostics = await expectNoDocumentOverflow(page, {
+        root: '#administrator-content',
+        detectControlOverlaps: false,
+      });
+      expect(diagnostics.findings, JSON.stringify(diagnostics, null, 2)).toEqual([]);
+      await attachLiveInterfaceScreenshot(page, testInfo, attachment);
+    };
+
     await page.goto('/administrator/access');
     await expect(page.getByRole('heading', { level: 1, name: 'Users & access' })).toBeVisible();
     await expect(page.getByRole('navigation', { name: 'Users and Access concerns' }).getByRole('link'))
@@ -479,22 +506,50 @@ test.describe('authenticated administrator', () => {
     await expect(page.getByRole('heading', { name: 'Provision an ordinary portal member' })).toBeVisible();
     await expect(page.locator('input[name="step_up_code"]')).toHaveCount(0);
 
-    await page.getByRole('link', { name: 'Groups & roles', exact: true }).click();
-    await expect(page).toHaveURL(/section=groups/u);
-    await expect(page.getByRole('heading', { name: 'Groups and roles' })).toBeVisible();
-    await expect(page.getByRole('heading', { name: 'Users', exact: true })).toHaveCount(0);
+    await page.getByRole('link', { name: 'Create user' }).first().click();
+    await expect(page.getByRole('heading', { name: 'Create active identity' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Next: grant portal membership' })).toBeVisible();
+    await expect(page.getByRole('group', { name: 'Verify this exact action' })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Continue to membership' }))
+      .toHaveAttribute('href', /business-security\?section=memberships&mode=create/u);
+    await expectBoundedAccessWorkspace('access-portal-provisioning');
 
-    await page.getByRole('link', { name: 'Security events', exact: true }).click();
-    await expect(page).toHaveURL(/section=events/u);
+    await page.goto('/administrator/access?section=assignments');
+    await expect(page.getByRole('heading', { name: 'Role assignments' })).toBeVisible();
+    await page.getByRole('link', { name: 'Assign role' }).first().click();
+    await expect(page.getByRole('heading', { name: 'Assign group or role' })).toBeVisible();
+    await expect(page.getByRole('group', { name: 'Verify this exact action' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Portal membership remains separate' })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Continue portal provisioning' }))
+      .toHaveAttribute('href', /business-security\?section=memberships&mode=create/u);
+    await expectBoundedAccessWorkspace('access-role-assignment');
+
+    await page.goto('/administrator/access?section=tokens');
+    await expect(page.getByRole('heading', { name: 'API, CLI and MCP tokens' })).toBeVisible();
+    await page.getByRole('link', { name: 'Create token' }).first().click();
+    await expect(page.getByRole('heading', { name: 'Create API, CLI or MCP token' })).toBeVisible();
+    await expect(page.getByLabel('Capabilities')).toHaveAttribute('multiple', '');
+    await expect(page.getByLabel('Audience')).toBeVisible();
+    await expect(page.getByLabel('Purpose')).toBeVisible();
+    await expect(page.getByRole('group', { name: 'Verify this exact action' })).toBeVisible();
+    await expectBoundedAccessWorkspace('access-token-issuance');
+
+    await page.goto('/administrator/access?section=events');
     await expect(page.getByRole('heading', { name: 'Security events' })).toBeVisible();
     const securityEvents = page.getByRole('region', { name: 'Identity security events' });
     await expect(securityEvents.locator('tbody')).not.toContainText(/password|recovery_code|metadata/u);
     await expect(page.getByText('Operational metadata and all credential values are omitted.'))
       .toBeVisible();
-    await expectAccessible(page);
+    await page.getByRole('link', { name: 'Set up my verification' }).click();
+    await expect(page.getByRole('heading', { name: 'Authenticator and recovery setup' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Begin authenticator setup' })).toBeVisible();
+    await expect(page.locator('input[name="step_up_code"]')).toHaveCount(0);
+    await expectBoundedAccessWorkspace('access-step-up-enrollment');
   });
 
-  test('published content links through a typed menu to its canonical path', async ({ page }) => {
+  test('published content links through a typed menu to its canonical path', async ({
+    page,
+  }, testInfo) => {
     const suffix = `${Date.now()}-${Math.floor(Math.random() * 10000)}`;
     const title = `Browser About ${suffix}`;
     const slug = `browser-about-${suffix}`;
@@ -528,6 +583,12 @@ test.describe('authenticated administrator', () => {
       `/${slug}`,
     );
     await expectAccessible(page);
+    const diagnostics = await expectNoDocumentOverflow(page, {
+      root: '#site-content',
+      detectControlOverlaps: false,
+    });
+    expect(diagnostics.findings, JSON.stringify(diagnostics, null, 2)).toEqual([]);
+    await attachLiveInterfaceScreenshot(page, testInfo, 'published-content-canonical-page');
   });
 
   test('media library is usable and accessible', async ({ page }, testInfo) => {
@@ -597,22 +658,49 @@ test.describe('authenticated administrator', () => {
     await expect(page.getByRole('heading', { level: 1, name: 'Business records' })).toBeVisible();
     await expect(page.getByRole('link', { name: /Open session 5 orders/i })).toBeVisible();
     await expect(page.getByRole('link', { name: 'Open Example inspections' })).toBeVisible();
+    const liveNavigation = page.locator('.administrator-navigation');
+    await expect(liveNavigation.locator('a[href="/administrator/access"]')).toHaveCount(1);
+    await expect(liveNavigation.locator('a[href="/administrator/business-security"]')).toHaveCount(1);
+    await expect(liveNavigation.locator('a[href="/administrator/reports"]')).toHaveCount(1);
+    await expect(liveNavigation.locator(
+      'a[href^="/administrator/extensions/kumwe/asset-inspection-example"]',
+    )).toHaveCount(1);
     await expectStylesLoaded(page);
     await expectAccessible(page);
     expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBe(0);
+    await attachLiveInterfaceScreenshot(page, testInfo, 'business-workspaces');
     await preservePreSession6VisualSnapshot(page);
     await expect(page).toHaveScreenshot('administrator-generated-business-workspace.png', {
       fullPage: true,
     });
-    await page.screenshot({
-      path: testInfo.outputPath('business-workspaces.png'),
-      fullPage: true,
-      animations: 'disabled',
-      caret: 'hide',
+  });
+
+  test('asset-inspection extension workspace is policy-filtered and bounded', async ({
+    page,
+  }, testInfo) => {
+    await page.goto('/administrator/extensions/kumwe/asset-inspection-example');
+    const surface = page.locator(
+      '[data-kis-surface="kumwe.asset-inspection-example.administrator.index"]',
+    );
+    await expect(surface).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1, name: 'Asset inspection example' }))
+      .toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Row and field disclosure' })).toBeVisible();
+    await expect(page.getByText('EXAMPLE-INSPECTION-001')).toBeVisible();
+    await expect(page.getByText('ROW-POLICY-DENIED')).toHaveCount(0);
+    await expect(page.getByText('FOREIGN-SITE-ROW')).toHaveCount(0);
+    await expect(page.getByText('Restricted-field disclosure: withheld.')).toBeVisible();
+    await expectAccessible(page);
+    const diagnostics = await expectNoDocumentOverflow(page, {
+      root: '#administrator-content',
+      detectControlOverlaps: false,
     });
+    expect(diagnostics.findings, JSON.stringify(diagnostics, null, 2)).toEqual([]);
+    await attachLiveInterfaceScreenshot(page, testInfo, 'asset-inspection-extension-workspace');
   });
 
   test('reports execute graphically and expose queued export status', async ({ page }, testInfo) => {
+    test.setTimeout(90_000);
     await page.goto('/administrator/reports');
     await expect(page.getByRole('heading', { level: 1, name: 'Business reports' })).toBeVisible();
     await expect(page.locator('a[href="/administrator/reports"]')).toHaveAttribute(
@@ -637,6 +725,7 @@ test.describe('authenticated administrator', () => {
     const accepted = resultsTable.getByRole('row').filter({ hasText: 'BROWSER-INSPECT-001' });
     await expect(accepted).toBeVisible();
     await expect(accepted).toContainText('79');
+    await expect(resultsTable.getByText('BROWSER-POLICY-DENIED', { exact: true })).toHaveCount(0);
     await expect(page.getByText('Browser report restricted note', { exact: true })).toHaveCount(0);
     await expectStylesLoaded(page);
     await expectAccessible(page);
@@ -680,7 +769,7 @@ test.describe('authenticated administrator', () => {
   test('generated business list remains responsive and progressively enhanced', async ({
     page,
     isMobile,
-  }) => {
+  }, testInfo) => {
     await page.goto(`/administrator/business/${businessDefinitionHandle}`);
     await expect(page.locator(isMobile ? '.kis-business-result-card' : '.business-record-table tbody tr').first()).toBeVisible();
     await expect(page.getByRole('link', { name: 'Report', exact: true })).toBeVisible();
@@ -694,6 +783,7 @@ test.describe('authenticated administrator', () => {
         table.scrollHeight - table.clientHeight,
       )).toBe(0);
     }
+    await attachLiveInterfaceScreenshot(page, testInfo, 'business-record-list-live');
     await preservePreSession6VisualSnapshot(page);
     await expect(page).toHaveScreenshot('administrator-generated-business-list.png', {
       fullPage: true,
@@ -713,6 +803,57 @@ test.describe('authenticated administrator', () => {
     await page.goBack();
   });
 
+  test('generated operation status and custom views are accessible and bounded', async ({
+    page,
+  }, testInfo) => {
+    test.setTimeout(90_000);
+    const expectBoundedGeneratedSurface = async (attachment: string): Promise<void> => {
+      await expectAccessible(page);
+      const diagnostics = await expectNoDocumentOverflow(page, {
+        root: '#administrator-content',
+        detectControlOverlaps: false,
+      });
+      expect(diagnostics.findings, JSON.stringify(diagnostics, null, 2)).toEqual([]);
+      await attachLiveInterfaceScreenshot(page, testInfo, attachment);
+    };
+
+    await page.goto(`/administrator/business/${businessDefinitionHandle}?new=1`);
+    const name = `Operation evidence ${testInfo.project.name} ${Date.now()}`;
+    await fillSession5OrderForm(page, name);
+    await page.getByRole('button', { name: 'Create record' }).click();
+    await expect(page).toHaveURL(new RegExp(
+      `/administrator/business/${businessDefinitionHandle}/[^?]+\\?saved=1&completed_operation=`,
+    ));
+    await page.getByRole('link', { name: 'View operation status' }).click();
+    await expect(page.getByRole('heading', { level: 1, name: 'Operation status' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Operation completed' })).toBeVisible();
+    await expect(page.locator('[data-kis-component="generated-operation-status"]'))
+      .toHaveAttribute('data-kis-surface', 'core.administrator.generated-operation');
+    await expect(page.getByRole('link', { name: 'Return to record' })).toBeVisible();
+    await expectBoundedGeneratedSurface('administrator-operation-status');
+
+    await page.goto(`/administrator/business/${assetInspectionDefinition}`);
+    const customView = page.getByRole('link', { name: 'Inspection risk summary' });
+    await expect(customView).toBeVisible();
+    await customView.click();
+    await expect(page.getByRole('heading', { level: 1, name: 'Inspection risk summary' })).toBeVisible();
+    await expect(page.locator('[data-kis-component="generated-custom-view"]'))
+      .toHaveAttribute('data-kis-surface', 'core.administrator.generated-custom-view');
+    await expect(page.getByRole('heading', { name: 'View result' })).toBeVisible();
+    await page.getByLabel('Rows available to the view').selectOption('25');
+    await page.getByRole('button', { name: 'Run view' }).click();
+    await expect(page).toHaveURL(/page_size=25/u);
+    await expect(page.getByText('Policy-filtered inspection risk summary')).toBeVisible();
+    await expect(page.getByText('BROWSER-INSPECT-001')).toBeVisible();
+    await expect(page.getByText('BROWSER-POLICY-DENIED', { exact: true })).toHaveCount(0);
+    await expect(page.getByText('Browser report restricted note', { exact: true })).toHaveCount(0);
+    const restricted = page.locator('.kis-business-custom-object > div').filter({
+      has: page.getByText('Restricted fields disclosed', { exact: true }),
+    });
+    await expect(restricted.locator('dd')).toHaveText('No');
+    await expectBoundedGeneratedSurface('administrator-custom-view');
+  });
+
   test('generated business detail and confirmation remain accessible and visually stable', async ({
     page,
   }, testInfo) => {
@@ -721,19 +862,13 @@ test.describe('authenticated administrator', () => {
     );
     await expect(page.getByRole('heading', { name: 'Record details' })).toBeVisible();
     await expectAccessible(page);
+    await attachLiveInterfaceScreenshot(page, testInfo, 'business-record-detail');
     await preservePreSession6VisualSnapshot(page);
     await expect(page).toHaveScreenshot('administrator-generated-business-detail.png', {
       fullPage: true,
       mask: [page.locator('time')],
       maskColor: '#d9e2e8',
     });
-    await page.screenshot({
-      path: testInfo.outputPath('business-record-detail.png'),
-      fullPage: true,
-      animations: 'disabled',
-      caret: 'hide',
-    });
-
     await page.getByRole('link', { name: 'Archive record' }).click();
     await expect(page.getByRole('heading', { name: 'Archive record' })).toBeVisible();
     const confirm = page.getByRole('button', { name: 'Archive record' });
@@ -741,15 +876,10 @@ test.describe('authenticated administrator', () => {
     await page.getByRole('checkbox').check();
     await expect(confirm).toBeEnabled();
     await expectAccessible(page);
+    await attachLiveInterfaceScreenshot(page, testInfo, 'business-record-confirmation');
     await preservePreSession6VisualSnapshot(page);
     await expect(page).toHaveScreenshot('administrator-generated-business-confirmation.png', {
       fullPage: true,
-    });
-    await page.screenshot({
-      path: testInfo.outputPath('business-record-confirmation.png'),
-      fullPage: true,
-      animations: 'disabled',
-      caret: 'hide',
     });
   });
 
@@ -757,8 +887,10 @@ test.describe('authenticated administrator', () => {
     page,
     isMobile,
   }, testInfo) => {
+    test.setTimeout(90_000);
     await page.goto(`/administrator/business/${businessDefinitionHandle}`);
     await page.getByRole('link', { name: /Create session 5 order/i }).click();
+    await attachLiveInterfaceScreenshot(page, testInfo, 'business-record-form-live');
     await preservePreSession6VisualSnapshot(page);
     await expect(page).toHaveScreenshot('administrator-generated-business-form.png', {
       fullPage: true,
@@ -789,6 +921,15 @@ test.describe('authenticated administrator', () => {
     });
     await tags.getByRole('link', { name: 'Search available records' }).click();
     await expect(page.getByRole('heading', { name: 'Choose tags' })).toBeVisible();
+    await expect(page.locator('[data-kis-component="generated-choice-browser"]'))
+      .toHaveAttribute('data-kis-surface', 'core.administrator.generated-choices');
+    await expectAccessible(page);
+    const choiceDiagnostics = await expectNoDocumentOverflow(page, {
+      root: '#administrator-content',
+      detectControlOverlaps: false,
+    });
+    expect(choiceDiagnostics.findings, JSON.stringify(choiceDiagnostics, null, 2)).toEqual([]);
+    await attachLiveInterfaceScreenshot(page, testInfo, 'administrator-relationship-chooser');
     const choiceLayout = await page.locator('.business-choice-table').evaluate((table) => ({
       viewportWidth: window.innerWidth,
       rootOverflow: document.documentElement.scrollWidth - window.innerWidth,
@@ -848,12 +989,19 @@ test.describe('authenticated administrator', () => {
     await expect(lines.locator('[data-business-order-list] li').first())
       .toHaveAttribute('data-record-id', secondLineId);
     await expectAccessible(page);
+    const ownedLineDiagnostics = await expectNoDocumentOverflow(page, {
+      root: '#administrator-content',
+      detectControlOverlaps: false,
+    });
+    expect(ownedLineDiagnostics.findings, JSON.stringify(ownedLineDiagnostics, null, 2)).toEqual([]);
+    await attachLiveInterfaceScreenshot(page, testInfo, 'administrator-owned-lines');
   });
 
   test('generated business forms complete an ordinary no-JavaScript lifecycle', async ({
     browser,
   }, testInfo) => {
     test.slow();
+    test.setTimeout(180_000);
     const context = await browser.newContext({ javaScriptEnabled: false });
     const page = await context.newPage();
     try {
@@ -952,12 +1100,12 @@ test.describe('authenticated administrator', () => {
     await expect(page.getByText('Contribution contract active')).toBeVisible();
     await expectStylesLoaded(page);
     await expectAccessible(page);
-    await page.screenshot({
-      path: testInfo.outputPath('announcements-contribution.png'),
-      fullPage: true,
-      animations: 'disabled',
-      caret: 'hide',
+    const diagnostics = await expectNoDocumentOverflow(page, {
+      root: '#administrator-content',
+      detectControlOverlaps: false,
     });
+    expect(diagnostics.findings, JSON.stringify(diagnostics, null, 2)).toEqual([]);
+    await attachLiveInterfaceScreenshot(page, testInfo, 'announcements-contribution');
   });
 
   test('component navigation and guarded route are unavailable without its capability', async ({

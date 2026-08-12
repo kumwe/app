@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace KumweExample\AssetInspection;
 
 use LogicException;
+use Kumwe\CMS\BusinessRecord\Application\BusinessRecordService;
 use Kumwe\CMS\Extension\Contribution\AdministratorRouteHandlerFactory;
 use Kumwe\CMS\Extension\Contribution\ExtensionContributionProvider;
 use Kumwe\CMS\Extension\Contribution\ExtensionContributionRegistrar;
@@ -16,6 +17,7 @@ use Kumwe\CMS\Portal\Contribution\PortalRouteHandlerFactory;
 use KumweExample\AssetInspection\Application\InspectionAccessPolicy;
 use KumweExample\AssetInspection\Application\InspectionOverviewService;
 use KumweExample\AssetInspection\Application\InspectionPolicyProfile;
+use KumweExample\AssetInspection\Application\InspectionSummaryViewHandler;
 use KumweExample\AssetInspection\Delivery\Administrator\InspectionOverviewHandlerFactory;
 use KumweExample\AssetInspection\Delivery\Portal\InspectionStatusHandlerFactory;
 use KumweExample\AssetInspection\Integration\InspectionActivityProjectionBuilder;
@@ -42,6 +44,14 @@ final class Provider implements RuntimeExtension, ExtensionContributionProvider
 
     /** @var string Owner-scoped overview application service. @since 2.0.0 */
     private const OVERVIEW = 'extension.kumwe.asset-inspection-example.overview';
+
+    /**
+     * Owner-scoped service resolving the policy-filtered generated custom-view handler.
+     *
+     * @var    string
+     * @since  2.0.0
+     */
+    private const SUMMARY_VIEW = 'extension.kumwe.asset-inspection-example.summary-view';
 
     /** @var string Owner-scoped administrator handler factory. @since 2.0.0 */
     private const ADMINISTRATOR_FACTORY = 'extension.kumwe.asset-inspection-example.administrator-factory';
@@ -90,6 +100,17 @@ final class Provider implements RuntimeExtension, ExtensionContributionProvider
                 }
 
                 return new InspectionOverviewService($policy, $ledger);
+            },
+        );
+        $container->share(
+            self::SUMMARY_VIEW,
+            static function (ExtensionContainer $container): InspectionSummaryViewHandler {
+                $records = $container->get(BusinessRecordService::class);
+                if (!$records instanceof BusinessRecordService) {
+                    throw new LogicException('The asset-inspection custom-view record service is unavailable.');
+                }
+
+                return new InspectionSummaryViewHandler($records);
             },
         );
         $container->share(
@@ -145,6 +166,13 @@ final class Provider implements RuntimeExtension, ExtensionContributionProvider
         }
         foreach ($declarations->businessDefinitions() as $definition) {
             $contributions->businessDefinition($definition);
+        }
+        $summaryView = $container->get(self::SUMMARY_VIEW);
+        if (!$summaryView instanceof InspectionSummaryViewHandler) {
+            throw new LogicException('The asset-inspection custom-view handler is unavailable.');
+        }
+        foreach ($declarations->customBusinessViews() as $definition) {
+            $contributions->customBusinessViewHandler($definition, $summaryView);
         }
         $this->administrator($contributions, $container);
         $this->portal($contributions, $container);

@@ -731,10 +731,24 @@
   @media print {
     .kis-phase-five-section-nav,
     .kis-phase-five .page-actions,
-    .kis-phase-five form,
     .kis-phase-five .pagination-actions,
-    .kis-phase-five .kis-resource-toolbar {
+    .kis-phase-five .kis-resource-toolbar,
+    .kis-phase-five button,
+    .kis-phase-five input[type="button"],
+    .kis-phase-five input[type="reset"],
+    .kis-phase-five input[type="submit"] {
       display: none !important;
+    }
+
+    .kis-phase-five form {
+      display: block;
+    }
+
+    .kis-phase-five :is(input, select, textarea) {
+      border-color: var(--kumwe-border-strong);
+      background: transparent;
+      box-shadow: none;
+      color: var(--kumwe-text);
     }
 
     .kis-phase-five,

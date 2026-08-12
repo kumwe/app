@@ -515,6 +515,20 @@ try {
         NeutralBusinessFixture::idempotencyKey('browser-asset-inspection'),
         recordId: $assetInspectionId,
     ));
+    $deniedAssetInspectionId = '019bc210-0000-7000-8000-000000000102';
+    $businessRecords->create(new CreateRecordCommand(
+        $context,
+        'kumwe.asset-inspection-example.inspection',
+        [
+            'id' => $deniedAssetInspectionId,
+            'reference' => 'BROWSER-POLICY-DENIED',
+            'inspection_date' => '2026-08-11',
+            'raw_score' => 65,
+            'adjustment' => 0,
+        ],
+        NeutralBusinessFixture::idempotencyKey('browser-asset-inspection-policy-denied'),
+        recordId: $deniedAssetInspectionId,
+    ));
 
     if (!class_exists('KumweExample\\AssetInspection\\Definitions', false)) {
         require_once $assetRoot . '/src/Definitions.php';

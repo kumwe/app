@@ -1,3 +1,4 @@
+import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page, type TestInfo } from '@playwright/test';
 import {
   collectInterfaceDiagnostics,
@@ -35,6 +36,14 @@ async function signInPortal(page: Page): Promise<void> {
 
 function routesFor(shell: InterfaceShell): readonly InterfaceLandingSurface[] {
   return interfaceLandingSurfaces.filter((surface) => surface.shell === shell);
+}
+
+/** Require the automated WCAG 2.2 AA contract on every inventoried core landing route. */
+async function expectAccessible(page: Page): Promise<void> {
+  const scan = await new AxeBuilder({ page })
+    .withTags(['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa'])
+    .analyze();
+  expect(scan.violations, JSON.stringify(scan.violations, null, 2)).toEqual([]);
 }
 
 async function attachEvidence(
@@ -99,6 +108,7 @@ test('component diagnostics expose the Business Definition failure without a doc
 });
 
 test('administrator landing routes emit complete interface baselines', async ({ page }, testInfo) => {
+  test.setTimeout(120_000);
   await signInAdministrator(page);
   const registeredPaths = await page.locator('.administrator-navigation a[href]').evaluateAll((links) =>
     links.map((link) => link.getAttribute('href')),
@@ -116,11 +126,14 @@ test('administrator landing routes emit complete interface baselines', async ({ 
       root: '#administrator-content',
       detectControlOverlaps: false,
     });
+    expect(report.findings, JSON.stringify({ surface, report }, null, 2)).toEqual([]);
+    await expectAccessible(page);
     await attachEvidence(page, testInfo, surface, report);
   }
 });
 
 test('portal landing routes emit complete interface baselines', async ({ page }, testInfo) => {
+  test.setTimeout(120_000);
   await signInPortal(page);
   const registeredPaths = await page.locator('.portal-navigation a[href]').evaluateAll((links) =>
     links.map((link) => link.getAttribute('href')),
@@ -138,6 +151,8 @@ test('portal landing routes emit complete interface baselines', async ({ page },
       root: '#portal-main',
       detectControlOverlaps: false,
     });
+    expect(report.findings, JSON.stringify({ surface, report }, null, 2)).toEqual([]);
+    await expectAccessible(page);
     await attachEvidence(page, testInfo, surface, report);
   }
 });

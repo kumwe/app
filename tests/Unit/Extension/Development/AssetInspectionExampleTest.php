@@ -7,11 +7,13 @@ namespace Kumwe\CMS\Tests\Unit\Extension\Development;
 use Closure;
 use InvalidArgumentException;
 use Kumwe\CMS\BusinessDefinition\Domain\ComputationMode;
+use Kumwe\CMS\BusinessDefinition\Domain\DefinitionOwner;
 use Kumwe\CMS\BusinessDefinition\Domain\EntityTypeDefinition;
 use Kumwe\CMS\BusinessDefinition\Domain\PortalOperation;
 use Kumwe\CMS\BusinessDefinition\Domain\Sensitivity;
 use Kumwe\CMS\BusinessIntegration\Application\PayloadSchemaValidator;
 use Kumwe\CMS\BusinessIntegration\Domain\ConsumerIdempotency;
+use Kumwe\CMS\BusinessRecord\Application\BusinessRecordService;
 use Kumwe\CMS\BusinessSecurity\Application\FieldAccessUsage;
 use Kumwe\CMS\Extension\Application\Package\PackageSafetyPolicy;
 use Kumwe\CMS\Extension\Contribution\ExtensionContributionRegistrySet;
@@ -120,6 +122,36 @@ final class AssetInspectionExampleTest extends TestCase
         self::assertCount(2, $contributions->capabilities());
         self::assertCount(2, $contributions->interfaceSurfaces());
         self::assertCount(1, $contributions->portalRoutes());
+        self::assertCount(1, $contributions->customBusinessViews());
+
+        $summaryContract = $contributions->customBusinessViews()[0];
+        self::assertSame(
+            'kumwe.asset-inspection-example.views.inspection-risk-summary',
+            $summaryContract->handler,
+        );
+        self::assertSame(
+            'kumwe.asset-inspection-example.schemas.inspection-risk-summary-v1',
+            $summaryContract->schema,
+        );
+        self::assertSame([], $summaryContract->querySchema->toArray()['required']);
+        self::assertSame(
+            ['heading', 'inspections', 'restricted_fields_disclosed'],
+            $summaryContract->resultSchema->toArray()['required'],
+        );
+        self::assertSame(
+            120,
+            $summaryContract->resultSchema->toArray()['properties']['inspections']['items']
+                ['properties']['risk_score']['maximum'],
+        );
+        self::assertSame(
+            200,
+            $summaryContract->resultSchema->toArray()['properties']['inspections']['maxItems'],
+        );
+        $summaryContract->resultSchema->assertValid([
+            'heading' => 'Upper-bound inspection risk',
+            'inspections' => [['reference' => 'MAXIMUM-RISK', 'risk_score' => 120]],
+            'restricted_fields_disclosed' => false,
+        ], 'view result');
 
         $inspection = self::inspection($contributions->businessDefinitions());
         $fields = [];
@@ -164,6 +196,15 @@ final class AssetInspectionExampleTest extends TestCase
             [PortalOperation::Browse, PortalOperation::Export, PortalOperation::Read, PortalOperation::Report],
             $inspection->portalOperations(),
         );
+        $views = [];
+        foreach ($inspection->views() as $view) {
+            $views[$view->handle] = $view;
+        }
+        self::assertArrayHasKey('inspection_risk_summary', $views);
+        self::assertTrue($views['inspection_risk_summary']->administrator);
+        self::assertTrue($views['inspection_risk_summary']->portal);
+        self::assertSame($summaryContract->handler, $views['inspection_risk_summary']->handler);
+        self::assertSame($summaryContract->schema, $views['inspection_risk_summary']->schema);
 
         $listener = $contributions->domainListeners()[0];
         $consumer = $contributions->eventConsumers()[0];
@@ -395,7 +436,10 @@ final class AssetInspectionExampleTest extends TestCase
     {
         $declarations = self::manifest()->contributions();
         $registries = new ExtensionContributionRegistrySet();
-        $container = new RestrictedExtensionContainer(Definitions::OWNER, []);
+        $records = (new \ReflectionClass(BusinessRecordService::class))->newInstanceWithoutConstructor();
+        $container = new RestrictedExtensionContainer(Definitions::OWNER, [
+            BusinessRecordService::class => $records,
+        ]);
         $provider = new Provider();
         $provider->register($container);
         $registrar = $registries->registrar($declarations->owner, $declarations);
@@ -410,6 +454,12 @@ final class AssetInspectionExampleTest extends TestCase
         );
         $inventory = $registries->inventory($declarations->owner);
         self::assertCount(5, $inventory['business']['definitions']);
+        self::assertCount(1, $inventory['business']['view_handlers']);
+        self::assertNotNull($registries->customBusinessViewHandlers()->contract(
+            DefinitionOwner::extension(Definitions::OWNER),
+            'kumwe.asset-inspection-example.views.inspection-risk-summary',
+            'kumwe.asset-inspection-example.schemas.inspection-risk-summary-v1',
+        ));
         self::assertCount(2, $inventory['interface']['surfaces']);
         self::assertCount(1, $inventory['integration']['domain_listeners']);
         self::assertCount(1, $inventory['integration']['consumers']);
@@ -417,6 +467,14 @@ final class AssetInspectionExampleTest extends TestCase
         self::assertCount(1, $inventory['integration']['schedules']);
         self::assertCount(1, $inventory['integration']['projections']);
         self::assertCount(1, $inventory['integration']['reports']);
+
+        $registries->remove($declarations->owner);
+        self::assertSame([], $registries->inventory($declarations->owner)['business']['view_handlers']);
+        self::assertNull($registries->customBusinessViewHandlers()->contract(
+            DefinitionOwner::extension(Definitions::OWNER),
+            'kumwe.asset-inspection-example.views.inspection-risk-summary',
+            'kumwe.asset-inspection-example.schemas.inspection-risk-summary-v1',
+        ));
     }
 
     /**

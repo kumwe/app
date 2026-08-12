@@ -132,7 +132,38 @@
     "business": {
       "field_types": [],
       "field_presentations": [],
-      "view_handlers": [],
+      "view_handlers": [{
+        "handler": "kumwe.asset-inspection-example.views.inspection-risk-summary",
+        "schema": "kumwe.asset-inspection-example.schemas.inspection-risk-summary-v1",
+        "query_schema": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {},
+          "required": []
+        },
+        "result_schema": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "heading": {"type": "string", "maxLength": 120},
+            "inspections": {
+              "type": "array",
+              "maxItems": 200,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "reference": {"type": "string", "maxLength": 80},
+                  "risk_score": {"type": "integer", "minimum": 0, "maximum": 120}
+                },
+                "required": ["reference", "risk_score"]
+              }
+            },
+            "restricted_fields_disclosed": {"type": "boolean"}
+          },
+          "required": ["heading", "inspections", "restricted_fields_disclosed"]
+        }
+      }],
       "action_handlers": [],
       "definitions": [
         {
@@ -242,6 +273,7 @@
           ],
           "views": [
             {"handle":"list","label":"Inspection list","kind":"list","fields":["reference","inspection_date","risk_score"],"filters":["reference","inspection_date","risk_score"],"sorts":["inspection_date","risk_score"],"administrator":true,"portal":true,"public":false},
+            {"handle":"inspection_risk_summary","label":"Inspection risk summary","kind":"list","fields":["reference","inspection_date","risk_score"],"filters":["reference","inspection_date","risk_score"],"sorts":["inspection_date","risk_score"],"administrator":true,"portal":true,"public":false,"handler":"kumwe.asset-inspection-example.views.inspection-risk-summary","schema":"kumwe.asset-inspection-example.schemas.inspection-risk-summary-v1"},
             {"handle":"detail","label":"Inspection detail","kind":"detail","fields":["reference","inspection_date","risk_score"],"filters":[],"sorts":[],"administrator":true,"portal":true,"public":false},
             {"handle":"restricted_detail","label":"Restricted inspection detail","kind":"detail","fields":["reference","inspection_date","risk_score","internal_note"],"filters":[],"sorts":[],"administrator":true,"portal":false,"public":false},
             {"handle":"form","label":"Inspection form","kind":"form","fields":["reference","inspection_date","raw_score","adjustment","risk_score","internal_note"],"filters":[],"sorts":[],"administrator":true,"portal":false,"public":false}

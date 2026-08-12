@@ -148,5 +148,13 @@ test('Phase 5 presentation modes preserve focus, touch, zoom, high contrast, mot
 
   await page.emulateMedia({ media: 'print', colorScheme: 'light', forcedColors: 'none' });
   await expect(page.locator('.kis-phase-five-section-nav')).toBeHidden();
+  const printableSettings = page.locator('form[data-kis-dirty-form]');
+  await expect(printableSettings).toBeVisible();
+  await expect(printableSettings.getByRole('group', { name: 'Public identity' })).toBeVisible();
+  await expect(printableSettings.getByRole('group', { name: 'Design system' })).toBeVisible();
+  await expect(printableSettings.getByLabel('Active color scheme')).toBeVisible();
+  await expect(printableSettings.getByRole('button', { name: 'Save settings and design' }))
+    .toBeHidden();
+  await expect(printableSettings.getByRole('button', { name: 'Choose media' })).toBeHidden();
   await expectNoDocumentOverflow(page, { root: '#administrator-content', detectControlOverlaps: false });
 });

@@ -1,5 +1,5 @@
 import AxeBuilder from '@axe-core/playwright';
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Page, type TestInfo } from '@playwright/test';
 import { createHmac } from 'node:crypto';
 import { expectNoDocumentOverflow } from './support/interface-diagnostics';
 
@@ -8,7 +8,9 @@ const portalEmail = process.env.KUMWE_BROWSER_PORTAL_EMAIL
 const portalPassword = process.env.KUMWE_BROWSER_PORTAL_PASSWORD
   ?? 'browser portal password';
 const businessDefinitionHandle = 'site.default.session5_order';
+const assetInspectionDefinition = 'kumwe.asset-inspection-example.inspection';
 const assetInspectionReport = 'kumwe.asset-inspection-example.inspection-summary';
+const windhoekOrderId = '019b40d9-8dd0-7ca2-a0db-9eae6a150511';
 
 function base32Bytes(secret: string): Uint8Array {
   const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
@@ -84,6 +86,17 @@ async function expectStylesLoaded(page: Page): Promise<void> {
   );
   expect(failedStylesheets).toEqual([]);
   expect(await page.locator('link[rel="stylesheet"]').count()).toBeGreaterThan(0);
+}
+
+/** Attach the unmodified live interface before any compatibility-only baseline normalization. */
+async function attachLiveInterfaceScreenshot(
+  page: Page,
+  testInfo: TestInfo,
+  name: string,
+): Promise<void> {
+  const path = testInfo.outputPath(`${name}.png`);
+  await page.screenshot({ path, fullPage: true, animations: 'disabled', caret: 'hide' });
+  await testInfo.attach(name, { path, contentType: 'image/png' });
 }
 
 /** Keep legacy comparisons scoped to their original shell; Session 6 has dedicated real screenshots. */
@@ -327,17 +340,19 @@ test('opt-in business workspaces use the portal shell on desktop and mobile', as
   await expectStylesLoaded(page);
   await expectAccessible(page);
   expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBe(0);
+  const liveNavigation = page.locator('.portal-navigation');
+  await expect(liveNavigation.locator('a[href="/portal/approvals"]')).toBeVisible();
+  await expect(liveNavigation.locator('a[href="/portal/reports"]')).toBeVisible();
+  await expect(liveNavigation.locator('a[href="/portal/security"]')).toBeVisible();
+  await expect(liveNavigation.locator(
+    'a[href^="/portal/extensions/kumwe/asset-inspection-example"]',
+  )).toBeVisible();
+  await attachLiveInterfaceScreenshot(page, testInfo, 'portal-business-records');
   await preservePreSession6VisualSnapshot(page);
   await expect(page).toHaveScreenshot('portal-generated-business-list.png', {
     fullPage: true,
     mask: [page.locator('.portal-business-table tbody tr')],
     maskColor: '#d9e2e8',
-  });
-  await page.screenshot({
-    path: testInfo.outputPath('portal-business-records.png'),
-    fullPage: true,
-    animations: 'disabled',
-    caret: 'hide',
   });
   await page.goto(
     `/portal/business/${businessDefinitionHandle}/019b40d9-8dd0-7ca2-a0db-9eae6a150511`,
@@ -345,6 +360,7 @@ test('opt-in business workspaces use the portal shell on desktop and mobile', as
   await expect(page.getByRole('heading', { name: 'Record details' })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBe(0);
   await expectAccessible(page);
+  await attachLiveInterfaceScreenshot(page, testInfo, 'portal-business-detail-live');
   await preservePreSession6VisualSnapshot(page);
   await expect(page).toHaveScreenshot('portal-generated-business-detail.png', {
     fullPage: true,
@@ -353,7 +369,129 @@ test('opt-in business workspaces use the portal shell on desktop and mobile', as
   });
 });
 
+test('asset-inspection portal workspace is policy-filtered and bounded', async ({
+  page,
+}, testInfo) => {
+  await signIn(page);
+  await page.goto('/portal/extensions/kumwe/asset-inspection-example');
+  const surface = page.locator(
+    '[data-kis-surface="kumwe.asset-inspection-example.portal.status"]',
+  );
+  await expect(surface).toBeVisible();
+  await expect(page.getByRole('heading', { level: 1, name: 'Asset inspection example' })).toBeVisible();
+  await expect(page.getByRole('region', { name: 'Inspection status' })).toBeVisible();
+  await expect(page.getByText('EXAMPLE-INSPECTION-001')).toBeVisible();
+  await expect(page.getByText('ROW-POLICY-DENIED')).toHaveCount(0);
+  await expect(page.getByText('FOREIGN-SITE-ROW')).toHaveCount(0);
+  await expect(page.getByText(/receives no restricted internal-note field/u)).toBeVisible();
+  await expectAccessible(page);
+  const diagnostics = await expectNoDocumentOverflow(page, {
+    root: '#portal-main',
+    detectControlOverlaps: false,
+  });
+  expect(diagnostics.findings, JSON.stringify(diagnostics, null, 2)).toEqual([]);
+  await attachLiveInterfaceScreenshot(page, testInfo, 'asset-inspection-portal-workspace');
+});
+
+test('portal operation status and custom views are accessible and bounded', async ({
+  page,
+}, testInfo) => {
+  test.setTimeout(90_000);
+  const expectBoundedGeneratedSurface = async (attachment: string): Promise<void> => {
+    await expectAccessible(page);
+    const diagnostics = await expectNoDocumentOverflow(page, {
+      root: '#portal-main',
+      detectControlOverlaps: false,
+    });
+    expect(diagnostics.findings, JSON.stringify(diagnostics, null, 2)).toEqual([]);
+    await attachLiveInterfaceScreenshot(page, testInfo, attachment);
+  };
+
+  await signIn(page);
+  await page.goto(`/portal/business/${businessDefinitionHandle}?new=1`);
+  const name = `Portal operation evidence ${testInfo.project.name} ${Date.now()}`;
+  await fillSession5OrderForm(page, name);
+  await page.getByRole('button', { name: 'Create record' }).click();
+  await expect(page).toHaveURL(new RegExp(
+    `/portal/business/${businessDefinitionHandle}/[^?]+\\?saved=1&completed_operation=`,
+  ));
+  await page.getByRole('link', { name: 'View operation status' }).click();
+  await expect(page.getByRole('heading', { level: 1, name: 'Operation status' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Operation completed' })).toBeVisible();
+  await expect(page.locator('[data-kis-component="generated-operation-status"]'))
+    .toHaveAttribute('data-kis-surface', 'core.portal.generated-operation');
+  await expect(page.getByRole('link', { name: 'Return to record' })).toBeVisible();
+  await expectBoundedGeneratedSurface('portal-operation-status');
+
+  await page.goto(`/portal/business/${assetInspectionDefinition}`);
+  const customView = page.getByRole('link', { name: 'Inspection risk summary' });
+  await expect(customView).toBeVisible();
+  await customView.click();
+  await expect(page.getByRole('heading', { level: 1, name: 'Inspection risk summary' })).toBeVisible();
+  await expect(page.locator('[data-kis-component="generated-custom-view"]'))
+    .toHaveAttribute('data-kis-surface', 'core.portal.generated-custom-view');
+  await expect(page.getByRole('heading', { name: 'View result' })).toBeVisible();
+  await page.getByLabel('Rows available to the view').selectOption('25');
+  await page.getByRole('button', { name: 'Run view' }).click();
+  await expect(page).toHaveURL(/page_size=25/u);
+  await expect(page.getByText('Policy-filtered inspection risk summary')).toBeVisible();
+  await expect(page.getByText('BROWSER-INSPECT-001')).toBeVisible();
+  await expect(page.getByText('BROWSER-POLICY-DENIED', { exact: true })).toHaveCount(0);
+  await expect(page.getByText('Browser report restricted note', { exact: true })).toHaveCount(0);
+  const restricted = page.locator('.kis-business-custom-object > div').filter({
+    has: page.getByText('Restricted fields disclosed', { exact: true }),
+  });
+  await expect(restricted.locator('dd')).toHaveText('No');
+  await expectBoundedGeneratedSurface('portal-custom-view');
+});
+
+test('portal relationship choices and owned lines are accessible and bounded', async ({
+  page,
+}, testInfo) => {
+  test.setTimeout(90_000);
+  await signIn(page);
+  const recordPath = `/portal/business/${businessDefinitionHandle}/${windhoekOrderId}`;
+  await page.goto(recordPath);
+  let tags = page.locator('article.portal-business-relation').filter({
+    has: page.getByRole('heading', { name: 'Tags', exact: true }),
+  });
+  await tags.getByRole('link', { name: 'View and manage' }).click();
+  tags = page.locator('article.portal-business-relation').filter({
+    has: page.getByRole('heading', { name: 'Tags', exact: true }),
+  });
+  await tags.getByRole('link', { name: 'Search available records' }).click();
+  await expect(page.getByRole('heading', { name: 'Choose tags' })).toBeVisible();
+  await expect(page.locator('[data-kis-component="generated-choice-browser"]'))
+    .toHaveAttribute('data-kis-surface', 'core.portal.generated-choices');
+  await expect(page.getByRole('region', { name: 'Available choices table' })).toBeVisible();
+  await expectAccessible(page);
+  const choiceDiagnostics = await expectNoDocumentOverflow(page, {
+    root: '#portal-main',
+    detectControlOverlaps: false,
+  });
+  expect(choiceDiagnostics.findings, JSON.stringify(choiceDiagnostics, null, 2)).toEqual([]);
+  await attachLiveInterfaceScreenshot(page, testInfo, 'portal-relationship-chooser');
+
+  await page.goto(recordPath);
+  let lines = page.locator('article.portal-business-relation').filter({
+    has: page.getByRole('heading', { name: 'Lines', exact: true }),
+  });
+  await lines.getByRole('link', { name: 'View and manage' }).click();
+  lines = page.locator('article.portal-business-relation').filter({
+    has: page.getByRole('heading', { name: 'Lines', exact: true }),
+  });
+  await expect(lines.locator('form.portal-business-owned-line-form')).toBeVisible();
+  await expectAccessible(page);
+  const ownedLineDiagnostics = await expectNoDocumentOverflow(page, {
+    root: '#portal-main',
+    detectControlOverlaps: false,
+  });
+  expect(ownedLineDiagnostics.findings, JSON.stringify(ownedLineDiagnostics, null, 2)).toEqual([]);
+  await attachLiveInterfaceScreenshot(page, testInfo, 'portal-owned-lines');
+});
+
 test('opt-in portal reports execute and expose queued export status', async ({ page }, testInfo) => {
+  test.setTimeout(90_000);
   await signIn(page);
   await page.goto('/portal/reports');
   await expect(page.getByRole('heading', { level: 1, name: 'Business reports' })).toBeVisible();
@@ -373,6 +511,7 @@ test('opt-in portal reports execute and expose queued export status', async ({ p
   const accepted = resultsTable.getByRole('row').filter({ hasText: 'BROWSER-INSPECT-001' });
   await expect(accepted).toBeVisible();
   await expect(accepted).toContainText('79');
+  await expect(resultsTable.getByText('BROWSER-POLICY-DENIED', { exact: true })).toHaveCount(0);
   await expect(page.getByText('Browser report restricted note', { exact: true })).toHaveCount(0);
   await expectStylesLoaded(page);
   await expectAccessible(page);
@@ -412,6 +551,7 @@ test('portal maker-checker approval requires a distinct step-up identity', async
   page,
   browser,
 }, testInfo) => {
+  test.setTimeout(90_000);
   const project = testInfo.project.name.startsWith('mobile-') ? 'mobile' : 'desktop';
   const retry = Math.min(testInfo.retry, 1);
   const makerEmail = `browser-maker-${project}-${retry}@kumwe.test`;
@@ -436,8 +576,12 @@ test('portal maker-checker approval requires a distinct step-up identity', async
 
   const approverEmail = `browser-approver-${project}-${retry}@kumwe.test`;
   const approverPassword = `browser ${project} approver password ${retry}`;
+  const viewport = page.viewportSize();
   const approverContext = await browser.newContext({
     baseURL: process.env.KUMWE_BROWSER_BASE_URL ?? 'http://127.0.0.1:8080',
+    viewport: viewport ?? { width: 1280, height: 720 },
+    isMobile: project === 'mobile',
+    hasTouch: project === 'mobile',
   });
   const approverPage = await approverContext.newPage();
   try {
@@ -445,6 +589,21 @@ test('portal maker-checker approval requires a distinct step-up identity', async
     const recoveryCode = await enrollPortalAuthenticator(approverPage);
     await approverPage.goto(`/portal/approvals/${approvalRequestId}`);
     await expect(approverPage.getByRole('heading', { name: 'Approval request' })).toBeVisible();
+    await expect(approverPage.locator('[data-kis-component="review-workspace"]'))
+      .toHaveAttribute('data-kis-surface', 'core.portal.approvals');
+    await expect(approverPage.getByRole('heading', { name: 'Review target and consequence' }))
+      .toBeVisible();
+    await expectAccessible(approverPage);
+    const reviewDiagnostics = await expectNoDocumentOverflow(approverPage, {
+      root: '#portal-main',
+      detectControlOverlaps: false,
+    });
+    expect(reviewDiagnostics.findings, JSON.stringify(reviewDiagnostics, null, 2)).toEqual([]);
+    await attachLiveInterfaceScreenshot(
+      approverPage,
+      testInfo,
+      'portal-approval-detail-before-decision',
+    );
     await approverPage.getByLabel('Recovery code').check();
     await approverPage.getByLabel('Verification code').fill(recoveryCode);
     await approverPage.getByLabel('Reason').fill('Browser maker-checker acceptance');
@@ -454,6 +613,17 @@ test('portal maker-checker approval requires a distinct step-up identity', async
     const history = approverPage.getByRole('tabpanel', { name: /Decision history/u });
     await expect(history.getByRole('heading', { name: 'Decision history' })).toBeVisible();
     await expect(history.getByRole('listitem')).toContainText('Browser maker-checker acceptance');
+    await expectAccessible(approverPage);
+    const historyDiagnostics = await expectNoDocumentOverflow(approverPage, {
+      root: '#portal-main',
+      detectControlOverlaps: false,
+    });
+    expect(historyDiagnostics.findings, JSON.stringify(historyDiagnostics, null, 2)).toEqual([]);
+    await attachLiveInterfaceScreenshot(
+      approverPage,
+      testInfo,
+      'portal-approval-decision-history',
+    );
   } finally {
     await approverContext.close();
   }
@@ -469,6 +639,7 @@ test('portal maker-checker approval requires a distinct step-up identity', async
 
 test('portal generated forms complete a no-JavaScript lifecycle', async ({ browser }, testInfo) => {
   test.slow();
+  test.setTimeout(180_000);
   const context = await browser.newContext({ javaScriptEnabled: false });
   const page = await context.newPage();
   try {
