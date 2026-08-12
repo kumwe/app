@@ -878,7 +878,7 @@ final readonly class DoctrineAccessControlRepository implements AccessControlRep
     public function roleGrantRecords(string $roleId): array
     {
         /**
-         * @var list<array{id: string, capability: string, scope_type: string, scope_identifier: ?string}> $rows
+         * @var    list<array{id: string, capability: string, scope_type: string, scope_identifier: ?string}>  $rows
          */
         $rows = $this->database->fetchAllAssociative(sprintf(
             'SELECT id, capability_code AS capability, scope_type, scope_identifier FROM %s '
