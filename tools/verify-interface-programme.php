@@ -2574,6 +2574,48 @@ function requireNoBlockingFindingsForGate(
 }
 
 /**
+ * Keep environment limitations auditable while allowing verified CI evidence to close them.
+ *
+ * An environment limitation starts as an open, surface-neutral blocker. It may only resolve
+ * after retaining the original blocked evidence and adding passed evidence from a supported
+ * qualification environment. This preserves the diagnostic history without making local tool
+ * availability a permanent programme dead end.
+ *
+ * @param   array<string, mixed>  $finding            Finding record.
+ * @param   string                $id                 Finding identifier.
+ * @param   bool                  $hasBlockedEvidence Whether the limitation is evidenced.
+ * @param   bool                  $hasPassedEvidence  Whether a supported environment verified it.
+ * @param   list<string>          $errors             Accumulated validation failures.
+ *
+ * @return  void
+ *
+ * @since   2.0.0
+ */
+function validateEnvironmentFindingLifecycle(
+    array $finding,
+    string $id,
+    bool $hasBlockedEvidence,
+    bool $hasPassedEvidence,
+    array &$errors,
+): void {
+    $isOpenLimitation = ($finding['status'] ?? null) === 'open'
+        && ($finding['disposition'] ?? null) === 'environment_blocked'
+        && $hasBlockedEvidence;
+    $isVerifiedResolution = ($finding['status'] ?? null) === 'resolved'
+        && ($finding['disposition'] ?? null) === 'verified_fixed'
+        && $hasBlockedEvidence
+        && $hasPassedEvidence;
+
+    if (($finding['surface_ids'] ?? null) !== [] || (!$isOpenLimitation && !$isVerifiedResolution)) {
+        $errors[] = sprintf(
+            'Environment finding %s must be surface-neutral and either remain blocked or retain blocked evidence '
+                . 'with passed qualification evidence when resolved.',
+            $id,
+        );
+    }
+}
+
+/**
  * Validate the deduplicated findings register and return its embedded evidence identifiers.
  *
  * @param   string                                  $root          Repository root.
@@ -2664,6 +2706,7 @@ function validateFindingsRegister(
         validateReferences($finding['work_item_ids'] ?? null, $workItems, 'work item', 'finding ' . $id, $errors);
         $hasBlockedEvidence = false;
         $hasObservedSource = false;
+        $hasPassedEvidence = false;
         foreach (expectList($finding['evidence'] ?? null, 'finding ' . $id . ' evidence', $errors) as $evidence) {
             if (!is_array($evidence) || !is_string($evidence['id'] ?? null) || $evidence['id'] === '') {
                 $errors[] = sprintf('Finding %s has evidence without an ID.', $id);
@@ -2699,18 +2742,18 @@ function validateFindingsRegister(
                 $hasObservedSource = true;
             }
             if (($evidence['status'] ?? null) === 'passed') {
+                $hasPassedEvidence = true;
                 $passedEvidenceByFinding[$id][$evidenceId] = true;
             }
         }
         if (($finding['category'] ?? null) === 'environment_limitation') {
-            if (
-                ($finding['disposition'] ?? null) !== 'environment_blocked'
-                || ($finding['status'] ?? null) !== 'open'
-                || ($finding['surface_ids'] ?? null) !== []
-                || !$hasBlockedEvidence
-            ) {
-                $errors[] = sprintf('Environment finding %s must remain open, blocked, surface-neutral evidence.', $id);
-            }
+            validateEnvironmentFindingLifecycle(
+                $finding,
+                $id,
+                $hasBlockedEvidence,
+                $hasPassedEvidence,
+                $errors,
+            );
         }
         if (($finding['disposition'] ?? null) === 'fixed_pending_verification') {
             if (($finding['status'] ?? null) !== 'in_review' || !$hasObservedSource || !$hasBlockedEvidence) {

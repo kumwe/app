@@ -485,6 +485,47 @@ PHP;
     }
 
     /**
+     * Preserve an environment block's history while permitting supported CI to verify its resolution.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testEnvironmentFindingMayResolveWithBlockedAndPassedEvidence(): void
+    {
+        $open = [
+            'status' => 'open',
+            'disposition' => 'environment_blocked',
+            'surface_ids' => [],
+        ];
+        $errors = [];
+        \validateEnvironmentFindingLifecycle($open, 'KIS-ENV-TEST', true, false, $errors);
+        self::assertSame([], $errors);
+
+        $resolved = [
+            'status' => 'resolved',
+            'disposition' => 'verified_fixed',
+            'surface_ids' => [],
+        ];
+        $errors = [];
+        \validateEnvironmentFindingLifecycle($resolved, 'KIS-ENV-TEST', true, true, $errors);
+        self::assertSame([], $errors);
+
+        $errors = [];
+        \validateEnvironmentFindingLifecycle($resolved, 'KIS-ENV-TEST', true, false, $errors);
+        self::assertContains(
+            'Environment finding KIS-ENV-TEST must be surface-neutral and either remain blocked or retain blocked '
+                . 'evidence with passed qualification evidence when resolved.',
+            $errors,
+        );
+
+        $resolved['surface_ids'] = ['core.portal.login'];
+        $errors = [];
+        \validateEnvironmentFindingLifecycle($resolved, 'KIS-ENV-TEST', true, true, $errors);
+        self::assertNotSame([], $errors);
+    }
+
+    /**
      * Enforce both evidence-type and prerequisite completion rules on gates.
      *
      * @return  void
