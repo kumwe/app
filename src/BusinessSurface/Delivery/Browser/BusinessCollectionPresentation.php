@@ -36,9 +36,9 @@ final readonly class BusinessCollectionPresentation
     /**
      * Parse native controls against the exact policy-visible field list.
      *
-     * @param   array<string, mixed>       $query    Decoded browser query string.
-     * @param   list<array<string, mixed>>  $fields   Field metadata already filtered by application policy.
-     * @param   list<string>               $defaults  Declared default-view columns, or an empty list for all.
+     * @param   array<string, mixed>        $query     Decoded browser query string.
+     * @param   list<array<string, mixed>>  $fields    Field metadata already filtered by application policy.
+     * @param   list<string>                $defaults  Declared default-view columns, or an empty list for all.
      *
      * @return  self  Safe presentation state for both administrator and portal Twig templates.
      *
@@ -145,10 +145,10 @@ final readonly class BusinessCollectionPresentation
     /**
      * Select one bounded literal without coercing scalar or collection input.
      *
-     * @param   array<string, mixed>  $query     Decoded browser query.
-     * @param   string                $key       Native control name.
-     * @param   list<string>          $allowed   Closed literal vocabulary.
-     * @param   string                $default   Value used when the control is absent.
+     * @param   array<string, mixed>  $query    Decoded browser query.
+     * @param   string                $key      Native control name.
+     * @param   list<string>          $allowed  Closed literal vocabulary.
+     * @param   string                $default  Value used when the control is absent.
      *
      * @return  string  Admitted literal.
      *

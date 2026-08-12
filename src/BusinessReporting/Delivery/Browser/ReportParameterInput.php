@@ -24,7 +24,7 @@ final class ReportParameterInput
      * Convert one native parameter object against its exact policy-visible report declaration.
      *
      * @param   list<ReportParameterDefinition>  $definitions  Parameters from the selected report.
-     * @param   array<string, mixed>              $input        Parsed native form object.
+     * @param   array<string, mixed>             $input        Parsed native form object.
      *
      * @return  array<string, mixed>  Typed values for `ReportExecutionRequest` or export request.
      *
