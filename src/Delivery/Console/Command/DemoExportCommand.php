@@ -9,6 +9,7 @@ use Kumwe\CMS\Application\Authorization\AuthenticationStrength;
 use Kumwe\CMS\Application\Authorization\SiteContext;
 use Kumwe\CMS\Delivery\Console\Command;
 use Kumwe\CMS\Delivery\Console\Output;
+use Kumwe\CMS\Demo\Infrastructure\DemoBusinessProfileExporter;
 use Kumwe\CMS\Demo\Infrastructure\DemoProfileExporter;
 use Kumwe\CMS\Demo\Infrastructure\FilesystemDemoManifestCatalog;
 use Kumwe\CMS\Identity\Application\Administration\AdministratorIdentityGateway;
@@ -32,11 +33,12 @@ use Throwable;
 final readonly class DemoExportCommand implements Command
 {
     /**
-     * Wire the export pipeline to configuration, authentication, and the manifest projector.
+     * Wire the export pipeline to configuration, authentication, and the manifest projectors.
      *
      * @param  ApplicationConfiguration      $configuration  Validated process profile selectors.
      * @param  AdministratorIdentityGateway  $identities     Password verifier for the acting administrator.
-     * @param  DemoProfileExporter           $exporter       Live-system-to-manifest projector.
+     * @param  DemoProfileExporter           $exporter       Site-content-to-manifest projector.
+     * @param  DemoBusinessProfileExporter   $business       Business-dataset-to-manifest projector.
      *
      * @since  2.0.0
      */
@@ -44,6 +46,7 @@ final readonly class DemoExportCommand implements Command
         private ApplicationConfiguration $configuration,
         private AdministratorIdentityGateway $identities,
         private DemoProfileExporter $exporter,
+        private DemoBusinessProfileExporter $business,
     ) {
     }
 
@@ -72,7 +75,7 @@ final readonly class DemoExportCommand implements Command
     }
 
     /**
-     * Export the site-content dataset into a validated package below the requested directory.
+     * Export the site-content, business, and access datasets into one validated package.
      *
      * @param   list<string>  $arguments  Only `--name=value` options: `--admin-email`,
      *          `--admin-password-file`, `--profile`, and `--output`.
@@ -103,10 +106,22 @@ final readonly class DemoExportCommand implements Command
                 'demo-export-' . bin2hex(random_bytes(16)),
             );
             $manifest = $this->exporter->contentManifest($context, $profile);
-            $checksums = $this->exporter->writePackage($directory, $profile, [
-                sprintf('content/%s.json', $profile) => $manifest,
-            ]);
-            $verified = new FilesystemDemoManifestCatalog($directory)->content($profile);
+            $business = $this->business->documents($context, $profile);
+            $documents = [sprintf('content/%s.json', $profile) => $manifest];
+            $exportsBusiness = $business['profile'] !== [];
+            if ($exportsBusiness) {
+                $documents[sprintf('business/%s/profile.json', $profile)] = $business['profile'];
+                foreach ($business['definitions'] as $relative => $document) {
+                    $documents[sprintf('business/%s/%s', $profile, $relative)] = $document;
+                }
+                $documents[sprintf('business/%s/records.json', $profile)] = $business['records'];
+                if ($business['access'] !== []) {
+                    $documents[sprintf('business/%s/access.json', $profile)] = $business['access'];
+                }
+            }
+            $checksums = $this->exporter->writePackage($directory, $profile, $documents);
+            $catalog = new FilesystemDemoManifestCatalog($directory);
+            $verified = $catalog->content($profile);
             $content = $manifest['content'];
             $menus = $manifest['menus'];
             $output->line(sprintf(
@@ -115,6 +130,7 @@ final readonly class DemoExportCommand implements Command
                 is_array($menus) ? count($menus) : 0,
                 $profile,
             ));
+            $this->reportBusiness($output, $catalog, $profile, $business, $exportsBusiness);
             foreach ($checksums as $relative => $checksum) {
                 $output->line(sprintf('%s %s', $checksum, $relative));
             }
@@ -130,6 +146,89 @@ final readonly class DemoExportCommand implements Command
 
             return 1;
         }
+    }
+
+    /**
+     * Report the exported business dataset and access cast, re-validating both through the catalog.
+     *
+     * @param   Output                         $output           Sink for the export summary lines.
+     * @param   FilesystemDemoManifestCatalog  $catalog          Catalog bound to the written package.
+     * @param   string                         $profile          Profile name the package was written under.
+     * @param   array{
+     *              profile: array<string, mixed>,
+     *              definitions: array<string, array<string, mixed>>,
+     *              records: array<string, mixed>,
+     *              access: array<string, mixed>,
+     *              withheld_identities: int
+     *          }                              $business         Documents the business exporter produced.
+     * @param   bool                           $exportsBusiness  Whether business documents were written.
+     *
+     * @return  void
+     *
+     * @throws  \RuntimeException  When the written package fails the catalog's re-validation.
+     *
+     * @since   2.0.0
+     */
+    private function reportBusiness(
+        Output $output,
+        FilesystemDemoManifestCatalog $catalog,
+        string $profile,
+        array $business,
+        bool $exportsBusiness,
+    ): void {
+        if (!$exportsBusiness) {
+            $output->line('No published site-owned business definitions; the business dataset was not exported.');
+
+            return;
+        }
+        $verified = $catalog->business($profile);
+        $expected = $business['records']['expected'] ?? null;
+        $counts = is_array($expected) ? $expected : [];
+        $output->line(sprintf(
+            'Exported %d business definitions, %d records, %d relations, %d actions, and %d archives.',
+            count($business['definitions']),
+            $this->count($counts, 'record_count'),
+            $this->count($counts, 'relation_count'),
+            $this->count($counts, 'action_count'),
+            $this->count($counts, 'archive_count'),
+        ));
+        $output->line(sprintf('Business catalog re-validation checksum %s.', $verified['checksum']));
+        if ($business['access'] !== []) {
+            $access = $catalog->access($profile);
+            $output->line(sprintf(
+                'Exported the demonstration access cast with %d roles, %d staff, and %d organizations.',
+                $this->count($business['access'], 'roles'),
+                $this->count($business['access'], 'staff'),
+                $this->count($business['access'], 'organizations'),
+            ));
+            $output->line(sprintf('Access catalog re-validation checksum %s.', $access['checksum']));
+        } else {
+            $output->line('No .example identities qualified; access.json was not written.');
+        }
+        $output->line(sprintf(
+            'Withheld %d identities outside the reserved .example zone.',
+            $business['withheld_identities'],
+        ));
+    }
+
+    /**
+     * Read one count out of an exported document member that may be an integer or a list.
+     *
+     * @param   array<array-key, mixed>  $document  Document or count map to read from.
+     * @param   string                   $key       Member holding the count or the counted list.
+     *
+     * @return  int  The integer itself, the list's size, or zero for anything else.
+     *
+     * @since   2.0.0
+     */
+    private function count(array $document, string $key): int
+    {
+        $value = $document[$key] ?? null;
+        if (is_int($value)) {
+            return $value;
+        }
+
+        return is_array($value) ? count($value) : 0;
     }
 
     /**

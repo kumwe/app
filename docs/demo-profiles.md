@@ -98,3 +98,44 @@ accounts receive generated credentials at deployment time through host-authorize
 
 The released VDM business example under `resources/demo/business/vdm` is the reference implementation of
 this contract.
+
+## Exporting a running system
+
+The `demo:export-profile` command projects a running installation back into an installable package
+through the same authorized application services an administrator uses:
+
+```bash
+php bin/kumwe demo:export-profile \
+  --admin-email=admin@example.test \
+  --admin-password-file=/root/.kumwe-admin-password \
+  --profile=my-site \
+  --output=/root/kumwe-export
+```
+
+The password file obeys the same rules as `demo:provision-access`: an absolute path to a regular file
+that is not a symlink and carries no group or other permission bits. The output directory must not
+exist yet; the command creates it, writes the package below `<output>/resources/demo`, and re-validates
+every manifest through the same catalog that guards release manifests before reporting success.
+
+The package contains the site-content manifest (`content/<profile>.json`), and — when the site
+publishes site-owned business definitions — the business dataset under `business/<profile>/`: the
+profile document, one canonical definition document per published definition in dependency order, the
+records document with every record, relation, workflow action, and archive, and the demonstration
+access manifest. Beside the tree the command writes `export.json`, an integrity index repeating each
+document's canonical checksum so a recipient can verify the package without trusting its transport.
+Copying `<output>/resources/demo` over an installation's `resources/demo` makes the profile selectable.
+
+Resources installed from a profile keep their ledgered fixture keys, idempotency keys, and applied
+request bytes, so an export of an installed dataset stays diffable against the manifest it came from;
+operator-created resources receive freshly minted keys. Record-access modes are recovered through the
+frozen-selector invariant: a definition still declared by the configured source business profile keeps
+the `record_access` that profile shipped for it, and every other definition is exported as
+`administration`, the most restrictive mode, for an operator to relax deliberately.
+
+The access manifest applies a hard privacy rule: only identities whose address already lives inside
+the reserved `.example` zone are exported. Every other identity is withheld, the command reports how
+many were withheld, and when no identity qualifies at all `access.json` is not written rather than
+written invalid. Credentials are never exported — no export path can reach a password, token, or key —
+so accounts on a target installation are re-provisioned with `demo:provision-access`, which generates
+fresh passwords at deployment time and writes them once to an owner-only credentials file
+(a regenerate-and-reset flow, never a copy).
