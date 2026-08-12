@@ -238,11 +238,10 @@
     grid-template-columns: minmax(0, 1fr);
   }
 
-  [data-kis-surface="core.administrator.content-models"]
-    details.model-card > form > button[type="submit"] {
+  [data-kis-surface="core.administrator.content-models"] :is(input, select, textarea) {
+    min-width: 0;
     max-width: 100%;
-    overflow-wrap: anywhere;
-    white-space: normal;
+    overflow-x: hidden;
   }
 }
 
