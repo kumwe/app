@@ -551,6 +551,18 @@ test.describe('authenticated administrator', () => {
     await expect(page.getByRole('button', { name: 'Begin authenticator setup' })).toBeVisible();
     await expect(page.locator('input[name="step_up_code"]')).toHaveCount(0);
     await expectBoundedAccessWorkspace('access-step-up-enrollment');
+    await page.getByRole('button', { name: 'Begin authenticator setup' }).click();
+    await expect(page.getByText('Add this secret to your authenticator now.')).toBeVisible();
+    await expect(page.getByText('Provisioning URI:', { exact: false })).toBeVisible();
+    await expect(page.locator('time[datetime]')).toHaveAttribute(
+      'datetime',
+      /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{2}:\d{2}$/u,
+    );
+    await expect(page.locator('input[name="enrollment_id"]')).toHaveValue(
+      /^[0-9a-f-]{36}$/u,
+    );
+    await expect(page.locator('input[name="step_up_code"]')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Confirm enrollment' })).toBeVisible();
     // KIS-EVIDENCE-END p6-001-access-ui
   });
 
