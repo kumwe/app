@@ -43,9 +43,21 @@ final class AuditTamperHarness
         AuditAppendOnlyGuard::install($database, $tables);
     }
 
-    /** Reports whether the guards refuse an update of the given row, restoring nothing on the way. */
+    /**
+     * Reports whether the guards refuse an update of the given row, undoing the write when they do not.
+     *
+     * The probe has to attempt the real statement, because whether the database refuses it is exactly
+     * the question. On a server with no guards the statement therefore succeeds, and an unrestored
+     * success would leave the shared trail permanently divergent — every later test in the run would
+     * then fail with a digest mismatch that has nothing to do with what it was testing. The previous
+     * value is put back so the probe answers its question without becoming the tampering.
+     */
     public static function updateIsRefused(Connection $database, TableNames $tables, string $id): bool
     {
+        $outcome = $database->fetchOne(sprintf(
+            'SELECT outcome FROM %s WHERE id = ?',
+            $tables->quoted('audit_events'),
+        ), [$id]);
         try {
             $database->executeStatement(sprintf(
                 'UPDATE %s SET outcome = ? WHERE id = ?',
@@ -54,13 +66,30 @@ final class AuditTamperHarness
         } catch (\Throwable) {
             return true;
         }
+        if (is_string($outcome)) {
+            $database->executeStatement(sprintf(
+                'UPDATE %s SET outcome = ? WHERE id = ?',
+                $tables->quoted('audit_events'),
+            ), [$outcome, $id]);
+        }
 
         return false;
     }
 
-    /** Reports whether the guards refuse a delete of the given row. */
+    /**
+     * Reports whether the guards refuse a delete of the given row, restoring it when they do not.
+     *
+     * Like `updateIsRefused()`, the probe must really try the delete, so on an unguarded server the row
+     * genuinely goes away. It is re-inserted exactly as it was — position, digest and witness link
+     * included — so the probe leaves the trail as it found it.
+     */
     public static function deleteIsRefused(Connection $database, TableNames $tables, string $id): bool
     {
+        $row = $database->fetchAssociative(sprintf(
+            'SELECT id, occurred_at, actor_id, action, subject_type, subject_id, outcome, metadata, '
+            . 'position, digest, previous_digest FROM %s WHERE id = ?',
+            $tables->quoted('audit_events'),
+        ), [$id]);
         try {
             $database->executeStatement(sprintf(
                 'DELETE FROM %s WHERE id = ?',
@@ -68,6 +97,12 @@ final class AuditTamperHarness
             ), [$id]);
         } catch (\Throwable) {
             return true;
+        }
+        if (is_array($row)) {
+            if (is_resource($row['metadata'])) {
+                $row['metadata'] = stream_get_contents($row['metadata']);
+            }
+            $database->insert($tables->raw('audit_events'), $row);
         }
 
         return false;
