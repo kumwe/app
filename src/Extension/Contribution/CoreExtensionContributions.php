@@ -557,7 +557,7 @@ final class CoreExtensionContributions
                 new ResourcePolicyTarget('grant'),
                 new ResourcePolicyTarget('role'),
                 new ResourcePolicyTarget('user'),
-            ], installationGlobal: true),
+            ], installationGlobal: true, systems: [SystemIdentity::CredentialRecovery]),
         ];
     }
 

@@ -106,6 +106,69 @@ Kumwe prevents an administrator from disabling their own account or removing the
 
 Tokens are shown once and stored only as a digest. Copy a new token directly into its destination secret manager. Give it the smallest capability set and an expiry; never paste tokens into issue trackers, templates, or content fields.
 
+## Credential rotation and recovery
+
+Every credential in an installation can be retired, and retiring one retires everything issued under it. The
+instrument is the account's security epoch: a single number that API tokens, portal sessions, administrator
+sessions and outstanding step-up verifications all compare themselves against, so one advance ends all four on the
+next request rather than at their own expiry.
+
+**Change your own password.** Open **Users and access → Security events → Set up my verification → Rotate my
+credentials**. You must type the password you are replacing and pass a verification for the change itself. Wrong
+current passwords are counted against the same throttle that guards sign-in, so repeated guesses lock the attempt
+budget rather than probing the credential. A replacement must be at least twelve characters and must differ from
+the one it replaces. Changing it signs you out of every browser you are signed in on and retires your tokens,
+portal sessions and outstanding verifications, so you are returned to sign-in and continue with the new password.
+
+**Reissue your recovery codes.** From the same screen. Ten fresh codes replace the whole previous set, which stops
+working immediately, so copy them into your offline secret store before leaving the page. Only a current
+authenticator code authorizes a reissue — a recovery code cannot, because one leaked code must not be able to mint
+ten replacements.
+
+**Reset somebody else's password.** Open **Users and access → Users → Review access → Reset password**. This asks
+for no current password, because the point is that the account holder cannot supply one; everything that replaces
+that proof is accountability instead. It needs `users.manage` over that exact account, a verification of your own,
+and a written reason, and it records an audit event naming you as the actor and them as the subject. That trail is
+what makes an administrative reset something other than a silent account takeover, so treat it as an exceptional
+act rather than a routine one: deliver the replacement through an approved private channel and have the person
+change it themselves immediately. You cannot reset your own password this way; use the self-service change, which
+proves the current one.
+
+**Retire somebody's second factor.** **Users and access → Users → Review access → Retire second factors**, for a
+lost authenticator whose recovery codes are spent. It retires every enrolled credential, destroys the unspent
+recovery codes, records your reason beside the retired credential as well as in the audit trail, and advances the
+account's security epoch. Retiring is also what unblocks re-enrollment, because enrollment refuses while an active
+credential exists; the person then enrolls a replacement themselves from their own security panel.
+
+**End somebody's sessions.** **Users and access → Users → Review access → End every session**, for a shared
+workstation, a departed contractor's laptop or a reported stolen phone. It signs the account out everywhere
+without changing its password, roles or status.
+
+### When nobody can pass a verification at all
+
+Each operation above is itself protected by a step-up verification, which is the correct design and has one honest
+consequence: if every operator has between them lost every authenticator and spent every recovery code, no
+in-application path remains — including the reset that would repair them. That is a genuine total lockout, and the
+answer is the console, where reaching the host is the authorization:
+
+```bash
+bin/kumwe user:recover-credentials reset-password --email=… --password-file=… --reason=…
+bin/kumwe user:recover-credentials revoke-step-up  --email=… --reason=…
+bin/kumwe user:recover-credentials terminate-sessions --email=… --reason=…
+```
+
+Anyone who can run this already owns the host, the database and the application secret, and could rewrite the
+credential tables by hand; what the command adds is that the repair takes the same locks, advances the same epoch,
+ends the same sessions and writes the same audit events as the screen, so it is reconstructable afterwards. It runs
+under a dedicated `system:credential-recovery` identity rather than the narrower bootstrap one, so reviewing
+whether host authority was ever used to reach an account is a search for that one actor string in **Security
+events**. Hold host access more narrowly than administrator access, and keep at least two separately controlled
+owner accounts with separately stored recovery codes so the lockout stays hypothetical.
+
+The console also carries the ordinary authorized forms of the same operations — `bin/kumwe access reset-password`,
+`revoke-step-up` and `terminate-sessions` — which need a token carrying `users.manage` and behave exactly as the
+screens do. Reach for those in runbooks and for `user:recover-credentials` only in the lockout.
+
 ## Business security and second factor
 
 The security administration screen manages organizations, workspaces, memberships and membership roles,

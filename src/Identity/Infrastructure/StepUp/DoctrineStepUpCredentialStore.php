@@ -312,6 +312,149 @@ final readonly class DoctrineStepUpCredentialStore implements StepUpCredentialSt
     }
 
     /**
+     * Retire every live credential a subject holds and destroy their unspent recovery digests.
+     *
+     * The candidate rows are read and locked first, in identifier order, so two responders retiring the
+     * same person's second factor queue rather than deadlock and neither can see a row the other is
+     * about to change. Each candidate is then updated under the version it was read at: a credential
+     * that advanced in between — because the subject was in the middle of a challenge — fails the fence
+     * and the whole retirement is retried by the caller rather than half-applied. Unspent digests are
+     * deleted one credential at a time instead of through a subquery, which keeps the statement legal
+     * on every supported driver; consumed digests are left in place because they record that a recovery
+     * code was used.
+     *
+     * @param   string             $subjectId  Subject whose second factor is being retired.
+     * @param   DateTimeImmutable  $revokedAt  Instant recorded as the retirement time.
+     * @param   string             $reason     Operator justification stored beside each retired row.
+     *
+     * @return  int  How many credentials were retired; zero when the subject had none enrolled.
+     *
+     * @throws  RuntimeException  When a locked candidate could not be retired, meaning it changed
+     *          underneath the lock.
+     * @throws  \Doctrine\DBAL\Exception  When the driver rejects one of the statements.
+     *
+     * @since   2.0.0
+     */
+    public function revokeForSubject(string $subjectId, DateTimeImmutable $revokedAt, string $reason): int
+    {
+        return $this->database->transactional(function () use ($subjectId, $revokedAt, $reason): int {
+            $candidates = $this->database->fetchAllAssociative(sprintf(
+                'SELECT id, version FROM %s '
+                . "WHERE subject_id = ? AND status IN ('pending', 'active') AND disabled_at IS NULL "
+                . 'ORDER BY id%s',
+                $this->tables->quoted('step_up_credentials'),
+                $this->lockClause(),
+            ), [$subjectId]);
+            foreach ($candidates as $candidate) {
+                $credentialId = $this->string($candidate, 'id');
+                $changed = $this->database->executeStatement(sprintf(
+                    "UPDATE %s SET status = 'revoked', disabled_at = ?, revocation_reason = ?, "
+                    . 'version = version + 1 WHERE id = ? AND subject_id = ? AND version = ?',
+                    $this->tables->quoted('step_up_credentials'),
+                ), [
+                    $revokedAt,
+                    $reason,
+                    $credentialId,
+                    $subjectId,
+                    $this->integer($candidate['version'] ?? null),
+                ], [
+                    Types::DATETIME_IMMUTABLE,
+                    Types::STRING,
+                    Types::STRING,
+                    Types::STRING,
+                    Types::INTEGER,
+                ]);
+                if ($changed !== 1) {
+                    throw new RuntimeException('A step-up credential changed while it was being revoked.');
+                }
+                $this->database->executeStatement(sprintf(
+                    'DELETE FROM %s WHERE credential_id = ? AND consumed_at IS NULL',
+                    $this->tables->quoted('step_up_recovery_codes'),
+                ), [$credentialId], [Types::STRING]);
+            }
+
+            return count($candidates);
+        });
+    }
+
+    /**
+     * Replace one live credential's whole recovery-code set behind its optimistic version fence.
+     *
+     * The credential is advanced first, so a failed fence costs nothing and no digest is written; only
+     * once exactly one live row moved are the old digests dropped and the new ones inserted. Dropping
+     * the consumed rows along with the unspent ones is intentional — the replacement set has to be
+     * exactly the ten codes just printed, and the fact that recovery was used survives in the audit
+     * trail rather than in this table.
+     *
+     * @param   string             $credentialId     Active credential UUID.
+     * @param   string             $subjectId        Authenticated actor UUID the credential must belong to.
+     * @param   int                $expectedVersion  Version read before the replacement set was generated.
+     * @param   list<string>       $digests          Unique keyed digests replacing the stored set.
+     * @param   DateTimeImmutable  $reissuedAt       Instant recorded as the creation time of each digest.
+     *
+     * @return  bool  True only when one live credential advanced and every digest was stored.
+     *
+     * @throws  InvalidArgumentException  When the digest list is empty, malformed or duplicated.
+     * @throws  \Doctrine\DBAL\Exception  When the driver rejects one of the statements.
+     *
+     * @since   2.0.0
+     */
+    public function replaceRecoveryCodes(
+        string $credentialId,
+        string $subjectId,
+        int $expectedVersion,
+        array $digests,
+        DateTimeImmutable $reissuedAt,
+    ): bool {
+        if ($digests === [] || !array_is_list($digests)) {
+            throw new InvalidArgumentException('TOTP recovery digests must be a non-empty list.');
+        }
+        $unique = [];
+        foreach ($digests as $digest) {
+            if (preg_match('/^[0-9a-f]{64}$/D', $digest) !== 1 || isset($unique[$digest])) {
+                throw new InvalidArgumentException('A TOTP recovery digest is invalid or duplicated.');
+            }
+            $unique[$digest] = true;
+        }
+
+        return $this->database->transactional(function () use (
+            $credentialId,
+            $subjectId,
+            $expectedVersion,
+            $unique,
+            $reissuedAt,
+        ): bool {
+            $changed = $this->database->executeStatement(sprintf(
+                'UPDATE %s SET version = version + 1 '
+                . "WHERE id = ? AND subject_id = ? AND status = 'active' AND disabled_at IS NULL "
+                . 'AND version = ?',
+                $this->tables->quoted('step_up_credentials'),
+            ), [$credentialId, $subjectId, $expectedVersion], [
+                Types::STRING,
+                Types::STRING,
+                Types::INTEGER,
+            ]);
+            if ($changed !== 1) {
+                return false;
+            }
+            $this->database->executeStatement(sprintf(
+                'DELETE FROM %s WHERE credential_id = ?',
+                $this->tables->quoted('step_up_recovery_codes'),
+            ), [$credentialId], [Types::STRING]);
+            foreach (array_keys($unique) as $digest) {
+                $this->database->insert($this->tables->raw('step_up_recovery_codes'), [
+                    'credential_id' => $credentialId,
+                    'code_digest' => $digest,
+                    'created_at' => $reissuedAt,
+                    'consumed_at' => null,
+                ], ['created_at' => Types::DATETIME_IMMUTABLE]);
+            }
+
+            return true;
+        });
+    }
+
+    /**
      * Reconstitute a validated credential from a DBAL row.
      *
      * @param   array<string, mixed>  $row  Selected storage row.

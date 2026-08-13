@@ -30,6 +30,23 @@ enum SystemIdentity: string
     case Bootstrap = 'system:bootstrap';
 
     /**
+     * Repairs the credentials of an installation that nobody can authenticate or step up as any more.
+     *
+     * Deliberately separate from `Bootstrap`, which is granted `administrator.bootstrap` alone so that
+     * creating the first account can never become a way to edit identity records afterwards. The
+     * break-glass repair genuinely does need `users.manage`, so it is given its own identity rather
+     * than widening that one — which also means the audit trail names `system:credential-recovery` as
+     * the actor, and an operator reviewing whether host authority was used to reach an account has one
+     * exact string to look for.
+     *
+     * Held only by the console command that performs the repair. Reaching that console is the whole of
+     * the authorization, so the identity is worth no more than the host it runs on is protected.
+     *
+     * @since  2.0.0
+     */
+    case CredentialRecovery = 'system:credential-recovery';
+
+    /**
      * Console execution that carries no authority of its own.
      *
      * No resource policy names it, so a context issued under this identity is refused every action;

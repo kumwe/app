@@ -7,6 +7,7 @@ namespace Kumwe\CMS\Tests\Unit\Delivery\Console\Command;
 use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
 use Kumwe\CMS\Application\Authorization\AuthorizationGateway;
+use Kumwe\CMS\Application\Security\HighImpactCredentialGuard;
 use Kumwe\CMS\Audit\Application\AuditRecorder;
 use Kumwe\CMS\BusinessSecurity\Application\Administration\BusinessSecurityAdministrationRepository;
 use Kumwe\CMS\Delivery\Console\Command\DemoInstallCommand;
@@ -19,7 +20,9 @@ use Kumwe\CMS\Extension\Application\Trust\TrustStore;
 use Kumwe\CMS\Identity\Application\Administration\AccessControlRepository;
 use Kumwe\CMS\Identity\Application\Administration\AccessControlService;
 use Kumwe\CMS\Identity\Application\Administration\AdministratorIdentityGateway;
+use Kumwe\CMS\Identity\Application\Administration\AdministratorSessionStore;
 use Kumwe\CMS\Identity\Application\Security\PasswordHasher;
+use Kumwe\CMS\Identity\Application\StepUp\StepUpCredentialStore;
 use Kumwe\CMS\Infrastructure\Persistence\TableNames;
 use Kumwe\CMS\Infrastructure\Persistence\TransactionManager;
 use Kumwe\CMS\Kernel\Configuration\ApplicationConfiguration;
@@ -376,6 +379,9 @@ final class DemoInstallCommandTest extends TestCase
             $this->clock(),
             $this->createStub(AuthorizationGateway::class),
             AuthorizationContext::ownershipWriter(),
+            $this->createStub(HighImpactCredentialGuard::class),
+            $this->createStub(StepUpCredentialStore::class),
+            $this->createStub(AdministratorSessionStore::class),
         );
         $connection = $this->createStub(Connection::class);
 

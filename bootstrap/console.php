@@ -29,6 +29,7 @@ $recoveryCommands = [
     'extension:trust',
     'database:migrate',
     'user:create-admin',
+    'user:recover-credentials',
 ];
 $factory = new ContainerFactory();
 

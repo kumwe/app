@@ -127,6 +127,9 @@ final readonly class ManageAccessCommand implements Command
                 'rotate-token' => $this->rotateToken($options, $context),
                 'revoke-user-tokens' => $this->revokeUserTokens($options, $context),
                 'emergency-revoke-user-tokens' => $this->emergencyRevokeUserTokens($options, $context),
+                'reset-password' => $this->resetPassword($options, $context),
+                'revoke-step-up' => $this->revokeStepUp($options, $context),
+                'terminate-sessions' => $this->terminateSessions($options, $context),
                 default => throw new \InvalidArgumentException('Unsupported access action.'),
             };
             $output->line(CommandInput::render($result));
@@ -334,6 +337,102 @@ final readonly class ManageAccessCommand implements Command
     private function emergencyRevokeUserTokens(array $options, ExecutionContext $context): array
     {
         return ['revoked_tokens' => $this->access->emergencyRevokeAllSubjectTokens(
+            $context,
+            CommandInput::required($options, 'user'),
+            CommandInput::required($options, 'reason'),
+        )];
+    }
+
+    /**
+     * Replace another account's password from a protected file, on the record.
+     *
+     * The console face of the administrator reset, for the ordinary case where an operator is
+     * authorized and the site is reachable but the browser is not the tool at hand — a runbook step, a
+     * provisioning script, a support rotation. It carries exactly the same rules the screen does: the
+     * actor must hold `users.manage` over the account, the reason is mandatory and lands on the audit
+     * event beside an actor who is not the subject, and an operator may not reset their own password
+     * this way because that would skip proving the current one.
+     *
+     * The replacement arrives in a file the operator has locked down rather than as an argument, the
+     * same way `user:create-admin` takes one, so it never reaches shell history or the process table.
+     *
+     * @param   array<string, string>  $options  Console options; `user`, `password-file` and `reason`
+     *          are all required.
+     * @param   ExecutionContext       $context  Authorized actor the reset is audited under.
+     *
+     * @return  array{updated: bool, sessions_terminated: int}  Confirmation and how many of the
+     *          subject's administrator sessions the reset ended.
+     *
+     * @throws  \InvalidArgumentException  When an option is missing, the file is unreadable or empty,
+     *          the reason is too long, the replacement is shorter than twelve characters, or the actor
+     *          named their own account.
+     *
+     * @since   2.0.0
+     */
+    private function resetPassword(array $options, ExecutionContext $context): array
+    {
+        return [
+            'updated' => true,
+            'sessions_terminated' => $this->access->resetUserPassword(
+                $context,
+                CommandInput::required($options, 'user'),
+                CommandInput::secretFile(CommandInput::required($options, 'password-file')),
+                CommandInput::required($options, 'reason'),
+            ),
+        ];
+    }
+
+    /**
+     * Retire every second factor an account holds so a replacement can be enrolled.
+     *
+     * For the operator who lost the authenticator and spent the recovery codes: nothing they can
+     * present will satisfy a step-up challenge again, and enrollment refuses to issue a replacement
+     * while the dead credential is still active, so without this the account is locked out of every
+     * step-up-gated mutation permanently. Retiring the credential lifts both at once. It also advances
+     * the subject's security epoch, which retires their tokens, sessions and outstanding proofs, so the
+     * reason is mandatory and is what explains that blast radius afterwards.
+     *
+     * @param   array<string, string>  $options  Console options; `user` and `reason` are required.
+     * @param   ExecutionContext       $context  Authorized actor the retirement is audited under.
+     *
+     * @return  array{revoked_credentials: int}  How many credentials this call retired.
+     *
+     * @throws  \InvalidArgumentException  When `user` or `reason` is missing, the reason is longer than
+     *          500 characters, or the account does not exist.
+     *
+     * @since   2.0.0
+     */
+    private function revokeStepUp(array $options, ExecutionContext $context): array
+    {
+        return ['revoked_credentials' => $this->access->revokeStepUpCredentials(
+            $context,
+            CommandInput::required($options, 'user'),
+            CommandInput::required($options, 'reason'),
+        )];
+    }
+
+    /**
+     * Sign an account out of every browser it is signed in on, without touching anything else.
+     *
+     * The narrow response to a session that should not still be open — a shared workstation, a departed
+     * contractor's laptop, a report of a stolen phone — where suspending the account would be too
+     * large and revoking tokens would not reach the browser at all. The security epoch advances, so
+     * portal sessions and outstanding step-up proofs go with the administrator ones; roles, password
+     * and lifecycle status are left exactly as they were.
+     *
+     * @param   array<string, string>  $options  Console options; `user` and `reason` are required.
+     * @param   ExecutionContext       $context  Authorized actor the termination is audited under.
+     *
+     * @return  array{sessions_terminated: int}  How many administrator sessions this call ended.
+     *
+     * @throws  \InvalidArgumentException  When `user` or `reason` is missing, the reason is longer than
+     *          500 characters, or the account does not exist.
+     *
+     * @since   2.0.0
+     */
+    private function terminateSessions(array $options, ExecutionContext $context): array
+    {
+        return ['sessions_terminated' => $this->access->terminateUserSessions(
             $context,
             CommandInput::required($options, 'user'),
             CommandInput::required($options, 'reason'),

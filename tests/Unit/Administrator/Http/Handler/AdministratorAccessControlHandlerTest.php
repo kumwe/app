@@ -14,6 +14,7 @@ use Kumwe\CMS\Application\Authorization\AuthorizationGateway;
 use Kumwe\CMS\Application\Authorization\ExecutionContext;
 use Kumwe\CMS\Application\Authorization\ResourceSiteOwnershipWriter;
 use Kumwe\CMS\Application\Authorization\SiteContext;
+use Kumwe\CMS\Application\Security\HighImpactCredentialGuard;
 use Kumwe\CMS\Audit\Application\AuditRecorder;
 use Kumwe\CMS\BusinessSecurity\Application\Approval\StepUpProofConsumer;
 use Kumwe\CMS\BusinessSecurity\Application\MembershipDirectory;
@@ -26,6 +27,7 @@ use Kumwe\CMS\Identity\Application\Administration\CreatedAdministratorSession;
 use Kumwe\CMS\Identity\Application\Security\PasswordHasher;
 use Kumwe\CMS\Identity\Application\StepUp\AdministratorStepUpProvider;
 use Kumwe\CMS\Identity\Application\StepUp\AuthorizationStepUpProofAdapter;
+use Kumwe\CMS\Identity\Application\StepUp\StepUpCredentialStore;
 use Kumwe\CMS\Infrastructure\Persistence\TransactionManager;
 use Kumwe\CMS\Presentation\Twig\AdministratorTwigEnvironment;
 use Kumwe\CMS\Presentation\Twig\RecoveryAdministratorTwigEnvironment;
@@ -167,6 +169,55 @@ final class AdministratorAccessControlHandlerTest extends TestCase
     }
 
     /**
+     * Proves no submitted password reaches the durable purpose digest a proof and its audit event carry.
+     *
+     * A purpose digest is stored on the step-up proof row and repeated in the audit metadata, so folding
+     * a plaintext password into it would leave an offline-guessable commitment to that password in two
+     * tables. Every credential-bearing field must therefore be invisible to the digest.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testStepUpPurposeIsBlindToEverySubmittedCredentialField(): void
+    {
+        $handler = $this->handler($this->createStub(AdministratorSessionStore::class));
+        $method = new \ReflectionMethod($handler, 'stepUpPurpose');
+        $base = [
+            'action' => 'user.password.reset',
+            'user_id' => 'user-one',
+            'reason' => 'lost device, ticket 4711',
+        ];
+        $first = $method->invoke($handler, 'user.password.reset', $base + [
+            'new_password' => 'the first replacement passphrase',
+            'current_password' => 'the first current passphrase',
+            'password' => 'another secret entirely',
+            '_csrf' => 'csrf-one',
+            'step_up_code' => '111111',
+        ]);
+        $second = $method->invoke($handler, 'user.password.reset', $base + [
+            'new_password' => 'a completely different passphrase',
+            'current_password' => 'a different current passphrase',
+            'password' => 'yet another secret',
+            '_csrf' => 'csrf-two',
+            'step_up_code' => '222222',
+        ]);
+        $differentReason = $method->invoke($handler, 'user.password.reset', [
+            'action' => 'user.password.reset',
+            'user_id' => 'user-one',
+            'reason' => 'a different reason',
+        ]);
+
+        self::assertIsString($first);
+        self::assertMatchesRegularExpression(
+            '/^identity\.access_control\.user\.password\.reset\.payload\.[a-f0-9]{64}$/D',
+            $first,
+        );
+        self::assertSame($first, $second);
+        self::assertNotSame($first, $differentReason);
+    }
+
+    /**
      * Build the handler with production value objects and inert ports not reached by context selection.
      *
      * @param   AdministratorSessionStore  $sessions  Session port whose selection call is under test.
@@ -185,6 +236,9 @@ final class AdministratorAccessControlHandlerTest extends TestCase
             $this->createStub(ClockInterface::class),
             $this->createStub(AuthorizationGateway::class),
             $this->createStub(ResourceSiteOwnershipWriter::class),
+            $this->createStub(HighImpactCredentialGuard::class),
+            $this->createStub(StepUpCredentialStore::class),
+            $sessions,
         );
         $renderer = new AdministratorRenderer(
             new AdministratorTwigEnvironment(new ArrayLoader()),

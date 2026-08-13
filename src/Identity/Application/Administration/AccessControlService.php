@@ -11,9 +11,11 @@ use Kumwe\CMS\Application\Authorization\AuthorizationResource;
 use Kumwe\CMS\Application\Authorization\ExecutionContext;
 use Kumwe\CMS\Application\Authorization\ResourceSiteOwnershipWriter;
 use Kumwe\CMS\Application\Authorization\SiteContext;
+use Kumwe\CMS\Application\Security\HighImpactCredentialGuard;
 use Kumwe\CMS\Audit\Application\AuditRecorder;
 use Kumwe\CMS\Audit\Domain\AuditEvent;
 use Kumwe\CMS\Identity\Application\Security\PasswordHasher;
+use Kumwe\CMS\Identity\Application\StepUp\StepUpCredentialStore;
 use Kumwe\CMS\Identity\Domain\Capability;
 use Kumwe\CMS\Identity\Domain\EmailAddress;
 use Kumwe\CMS\Identity\Domain\GrantScope;
@@ -43,7 +45,8 @@ final readonly class AccessControlService
      * Wire the store and the collaborators every mutation here depends on.
      *
      * @param  AccessControlRepository      $repository     Store the users, roles, grants and tokens live in.
-     * @param  PasswordHasher               $passwords      Hashes a new user's password before it is stored.
+     * @param  PasswordHasher               $passwords      Hashes a new or replacement password before it is
+     *         stored, and is the only place a plaintext one is ever compared.
      * @param  TransactionManager           $transactions   Wraps each mutation so its lock, write and audit
      *         entry commit together or not at all.
      * @param  AuditRecorder                $audit          Records who changed what, on every mutation.
@@ -51,6 +54,12 @@ final readonly class AccessControlService
      * @param  AuthorizationGateway         $authorization  Answers both the access and the delegation question.
      * @param  ResourceSiteOwnershipWriter  $ownership      Registers each new record against the site that owns
      *         it, so later authorization can resolve its scope.
+     * @param  HighImpactCredentialGuard    $credentials    Re-proves the actor's current password, under the
+     *         same throttle sign-in uses, before they may replace it.
+     * @param  StepUpCredentialStore        $stepUp         Store the enrolled second factors live in, so an
+     *         administrator can retire one the holder can no longer present.
+     * @param  AdministratorSessionStore    $sessions       Ends the subject's browser sessions beside the
+     *         epoch advance that already invalidates their tokens and proofs.
      *
      * @since  2.0.0
      */
@@ -62,6 +71,9 @@ final readonly class AccessControlService
         private ClockInterface $clock,
         private AuthorizationGateway $authorization,
         private ResourceSiteOwnershipWriter $ownership,
+        private HighImpactCredentialGuard $credentials,
+        private StepUpCredentialStore $stepUp,
+        private AdministratorSessionStore $sessions,
     ) {
     }
 
@@ -321,6 +333,239 @@ final readonly class AccessControlService
                 $at,
             );
             $this->audit($context->actorId(), 'user.update', 'user', $id, ['status' => $status->value]);
+        });
+    }
+
+    /**
+     * Replace the acting operator's own password, after they have re-proved the current one.
+     *
+     * The one path in the installation that a person may use on themselves, and the only one that
+     * accepts a plaintext current password: `HighImpactCredentialGuard` compares it against the stored
+     * hash joined to an active user row, through the same hasher sign-in uses and behind the same
+     * throttle, so a run of wrong guesses spends an attempt budget rather than buying an oracle. The
+     * new password is measured against the same rule an administrative reset applies, and refused when
+     * it equals the one being replaced — a change that changes nothing would advance the epoch and sign
+     * the operator out for no gain.
+     *
+     * What the change invalidates is deliberately everything the platform already knows how to
+     * invalidate, through one instrument rather than a new one. The repository raises the subject's
+     * security epoch in the same statement sequence as the credential write, and that single number is
+     * what the API-token verifier, the portal session store, the administrator session store and every
+     * outstanding step-up proof each compare themselves against. The administrator sessions are then
+     * also swept from the table, so nothing is left behind that could only fail later.
+     *
+     * @param   ExecutionContext  $context          Authenticated actor replacing their own credential.
+     * @param   string            $currentPassword  Password being replaced, re-entered for this act.
+     * @param   string            $newPassword      Replacement password; only its hash is stored.
+     *
+     * @return  int  How many of the actor's administrator sessions were ended by the change.
+     *
+     * @throws  InvalidArgumentException  When the replacement fails the password rule or repeats the
+     *          current one.
+     * @throws  \Kumwe\CMS\Application\Security\HighImpactAuthenticationRequired  When the context carries
+     *          no human principal, or the current password does not match the actor's credential.
+     * @throws  \Kumwe\CMS\Identity\Application\Administration\AuthenticationThrottled  When the actor has
+     *          already spent the attempt budget for credential changes.
+     *
+     * @since   2.0.0
+     */
+    public function changeOwnPassword(
+        ExecutionContext $context,
+        #[\SensitiveParameter] string $currentPassword,
+        #[\SensitiveParameter] string $newPassword,
+    ): int {
+        $this->credentials->assertCurrentPassword($context, 'identity.password.change', $currentPassword);
+        $this->assertPasswordPolicy($newPassword);
+        if (hash_equals($currentPassword, $newPassword)) {
+            throw new InvalidArgumentException('The replacement password must differ from the current one.');
+        }
+        $actorId = $context->actorId();
+        $hash = $this->passwords->hash($newPassword);
+        $at = $this->clock->now();
+
+        return $this->transactions->transactional(function () use ($context, $actorId, $hash, $at): int {
+            $this->repository->lockUser($actorId);
+            $this->repository->changePassword($actorId, $hash, $at);
+            $ended = $this->sessions->deleteAllForUser($context, $actorId);
+            $this->audit($actorId, 'user.password.change', 'user', $actorId, [
+                'self_service' => true,
+                'sessions_terminated' => $ended,
+            ]);
+
+            return $ended;
+        });
+    }
+
+    /**
+     * Replace another account's password as an administrator, on the record and with a reason.
+     *
+     * The deliberate asymmetry with `changeOwnPassword()`: no current password is demanded, because the
+     * whole point is that the account holder cannot supply one. Everything that replaces that proof is
+     * therefore about accountability rather than possession. `users.manage` is asserted against the
+     * exact record, the reason is mandatory and stored on the audit event, and the event records an
+     * actor who is not the subject — which is what makes a quiet takeover impossible to perform without
+     * leaving the takeover in the trail an operator reads on the security-events screen.
+     *
+     * An actor may not reset their own password here. Allowing it would make this a way to replace a
+     * credential without proving the current one, which is exactly the check `changeOwnPassword()`
+     * exists to apply; the refusal keeps the two paths from collapsing into one.
+     *
+     * The invalidation is identical to the self-service path — one epoch advance retiring the subject's
+     * tokens, portal sessions, administrator sessions and step-up proofs, plus the session sweep — so
+     * whoever currently holds the account is put out of it by the reset rather than at their leisure.
+     *
+     * @param   ExecutionContext  $context      Actor and site the reset is authorized and audited against.
+     * @param   string            $userId       UUID of the account whose password is replaced.
+     * @param   string            $newPassword  Replacement password; only its hash is stored.
+     * @param   string            $reason       Operator justification, 1 to 500 characters once trimmed.
+     *
+     * @return  int  How many of the subject's administrator sessions the reset ended.
+     *
+     * @throws  InvalidArgumentException  When the actor names their own account, the reason is empty or
+     *          too long, the replacement fails the password rule, or the subject has no credential.
+     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not manage
+     *          this user.
+     *
+     * @since   2.0.0
+     */
+    public function resetUserPassword(
+        ExecutionContext $context,
+        string $userId,
+        #[\SensitiveParameter] string $newPassword,
+        string $reason,
+    ): int {
+        $this->authorize($context, AuthorizationResource::item('user', $userId));
+        if ($userId === $context->actorId()) {
+            throw new InvalidArgumentException(
+                'Replace your own password through the self-service change, which proves the current one.',
+            );
+        }
+        $reason = $this->reason($reason);
+        $this->assertPasswordPolicy($newPassword);
+        $actorId = $context->actorId();
+        $hash = $this->passwords->hash($newPassword);
+        $at = $this->clock->now();
+
+        return $this->transactions->transactional(function () use (
+            $context,
+            $actorId,
+            $userId,
+            $hash,
+            $reason,
+            $at,
+        ): int {
+            $this->repository->lockUser($userId);
+            $this->repository->changePassword($userId, $hash, $at);
+            $ended = $this->sessions->deleteAllForUser($context, $userId);
+            $this->audit($actorId, 'user.password.reset', 'user', $userId, [
+                'self_service' => false,
+                'reason' => $reason,
+                'sessions_terminated' => $ended,
+            ]);
+
+            return $ended;
+        });
+    }
+
+    /**
+     * Retire every second factor a subject holds, so a lost authenticator is recoverable.
+     *
+     * Without this a lost authenticator with spent recovery codes is terminal: every step-up-gated
+     * mutation refuses the holder forever, and `beginEnrollment()` refuses to enroll a replacement
+     * while an active credential exists, so the account cannot even be repaired by its owner. Retiring
+     * the credential clears both at once — the refusal to re-enroll lifts because nothing is active any
+     * more, and the retired row keeps the reason beside it.
+     *
+     * This is itself a high-impact act, so it carries the same accountability as an emergency
+     * revocation: `users.manage` on the exact record, a mandatory reason, an audit event under the
+     * `identity.step_up.` prefix the security-events screen already surfaces, and a security-epoch
+     * advance that retires the subject's outstanding proofs, tokens and sessions along with the
+     * credential. Callers on the administrator surface reach it only behind a payload-bound step-up
+     * challenge of the actor's own, which is what keeps a stolen session from resetting somebody's
+     * second factor.
+     *
+     * @param   ExecutionContext  $context  Actor and site the retirement is authorized and audited against.
+     * @param   string            $userId   UUID of the subject whose second factors are retired.
+     * @param   string            $reason   Operator justification, 1 to 500 characters once trimmed.
+     *
+     * @return  int  How many credentials were retired, zero when the subject had none enrolled.
+     *
+     * @throws  InvalidArgumentException  When the reason is empty or too long, or the subject does not
+     *          exist and so could not be locked.
+     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not manage
+     *          this user.
+     *
+     * @since   2.0.0
+     */
+    public function revokeStepUpCredentials(ExecutionContext $context, string $userId, string $reason): int
+    {
+        $this->authorize($context, AuthorizationResource::item('user', $userId));
+        $reason = $this->reason($reason);
+        $actorId = $context->actorId();
+        $at = $this->clock->now();
+
+        return $this->transactions->transactional(function () use (
+            $context,
+            $actorId,
+            $userId,
+            $reason,
+            $at,
+        ): int {
+            $this->repository->lockUser($userId);
+            $revoked = $this->stepUp->revokeForSubject($userId, $at, $reason);
+            $this->repository->advanceSecurityEpoch($userId);
+            $ended = $this->sessions->deleteAllForUser($context, $userId);
+            $this->audit($actorId, 'identity.step_up.credential.revoke', 'user', $userId, [
+                'revoked_credentials' => $revoked,
+                'sessions_terminated' => $ended,
+                'reason' => $reason,
+                'self_service' => $actorId === $userId,
+            ]);
+
+            return $revoked;
+        });
+    }
+
+    /**
+     * End every session a subject holds and retire everything else issued to them.
+     *
+     * The operation the break-glass revocation was missing. Revoking tokens killed API credentials and,
+     * through the epoch, portal sessions and step-up proofs, but a live administrator cookie kept
+     * working until it expired; suspending the account was the only lever that reached it, and
+     * suspension is a much larger act than signing somebody out. This raises the epoch and sweeps the
+     * session table, which ends every browser the subject is signed in on without touching their
+     * account's lifecycle state, their roles or their password.
+     *
+     * @param   ExecutionContext  $context  Actor and site the termination is authorized and audited against.
+     * @param   string            $userId   UUID of the subject whose sessions are ended.
+     * @param   string            $reason   Operator justification, 1 to 500 characters once trimmed.
+     *
+     * @return  int  How many administrator sessions were ended, zero when the subject held none.
+     *
+     * @throws  InvalidArgumentException  When the reason is empty or too long, or the subject does not
+     *          exist and so could not be locked.
+     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not manage
+     *          this user.
+     *
+     * @since   2.0.0
+     */
+    public function terminateUserSessions(ExecutionContext $context, string $userId, string $reason): int
+    {
+        $this->authorize($context, AuthorizationResource::item('user', $userId));
+        $reason = $this->reason($reason);
+        $actorId = $context->actorId();
+
+        return $this->transactions->transactional(function () use ($context, $actorId, $userId, $reason): int {
+            $this->repository->lockUser($userId);
+            $this->repository->advanceSecurityEpoch($userId);
+            $ended = $this->sessions->deleteAllForUser($context, $userId);
+            $this->audit($actorId, 'user.sessions.terminate', 'user', $userId, [
+                'sessions_terminated' => $ended,
+                'reason' => $reason,
+                'self_service' => $actorId === $userId,
+            ]);
+
+            return $ended;
         });
     }
 
@@ -744,10 +989,7 @@ final readonly class AccessControlService
     {
         $this->authorize($context, AuthorizationResource::item('site', $context->site()->identifier()));
         $actorId = $context->actorId();
-        $reason = trim($reason);
-        if ($reason === '' || mb_strlen($reason) > 500) {
-            throw new InvalidArgumentException('An emergency revocation reason of 1 to 500 characters is required.');
-        }
+        $reason = $this->reason($reason);
         $at = $this->clock->now();
 
         return $this->transactions->transactional(function () use (
@@ -800,16 +1042,15 @@ final readonly class AccessControlService
         string $reason,
     ): int {
         $this->authorize($context, AuthorizationResource::item('user', $userId));
-        $reason = trim($reason);
-        if ($reason === '' || mb_strlen($reason) > 500) {
-            throw new InvalidArgumentException('An emergency revocation reason of 1 to 500 characters is required.');
-        }
+        $reason = $this->reason($reason);
         $at = $this->clock->now();
         return $this->transactions->transactional(function () use ($context, $userId, $reason, $at): int {
             $this->repository->lockUser($userId);
             $count = $this->repository->revokeSubjectTokens($userId, $at, $reason);
+            $ended = $this->sessions->deleteAllForUser($context, $userId);
             $this->audit($context->actorId(), 'token.emergency_revoke_all', 'user', $userId, [
                 'revoked_tokens' => $count,
+                'sessions_terminated' => $ended,
                 'reason' => $reason,
             ]);
             return $count;
@@ -835,6 +1076,58 @@ final readonly class AccessControlService
         }
 
         return $name;
+    }
+
+    /**
+     * Trim an operator's justification and refuse one that explains nothing or runs away.
+     *
+     * Every credential-retiring act here demands one, because the count each returns is meaningless to
+     * an auditor without the sentence that says why it was run.
+     *
+     * @param   string  $reason  Justification exactly as submitted.
+     *
+     * @return  string  The trimmed justification.
+     *
+     * @throws  InvalidArgumentException  When the reason is empty or longer than 500 characters.
+     *
+     * @since   2.0.0
+     */
+    private function reason(string $reason): string
+    {
+        $reason = trim($reason);
+        if ($reason === '' || mb_strlen($reason) > 500) {
+            throw new InvalidArgumentException('An emergency revocation reason of 1 to 500 characters is required.');
+        }
+
+        return $reason;
+    }
+
+    /**
+     * Apply the installation's rule for a password that replaces an existing one.
+     *
+     * Twelve characters is the floor the administrator's own form has always declared, restated here so
+     * the console and any other caller cannot undercut it. The upper bound belongs to `PasswordHasher`,
+     * which refuses rather than truncates, so this only has to stop the short end. Deliberately no
+     * composition rule: a length floor with no character-class demand is what current guidance asks
+     * for, and a rule that pushes people toward predictable substitutions buys nothing.
+     *
+     * The rule is applied to replacements only. Imposing it on `createUser()` retroactively would
+     * change the meaning of an existing call for every caller in the installation, which is a
+     * separate decision from giving credentials a rotation path.
+     *
+     * @param   string  $password  Replacement password exactly as submitted.
+     *
+     * @return  void
+     *
+     * @throws  InvalidArgumentException  When the password is shorter than twelve characters.
+     *
+     * @since   2.0.0
+     */
+    private function assertPasswordPolicy(#[\SensitiveParameter] string $password): void
+    {
+        if (mb_strlen($password) < 12) {
+            throw new InvalidArgumentException('A replacement password must contain at least 12 characters.');
+        }
     }
 
     /**

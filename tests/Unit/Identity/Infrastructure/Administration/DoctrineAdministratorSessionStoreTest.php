@@ -9,6 +9,7 @@ use Doctrine\DBAL\Connection;
 use InvalidArgumentException;
 use Kumwe\CMS\Application\Authorization\AuthorizationGateway;
 use Kumwe\CMS\Application\Authorization\AuthorizationResource;
+use Kumwe\CMS\Application\Authorization\ExecutionContext;
 use Kumwe\CMS\Application\Authorization\MembershipContext;
 use Kumwe\CMS\Application\Authorization\OrganizationContext;
 use Kumwe\CMS\Application\Authorization\ResourceSiteOwnershipWriter;
@@ -182,11 +183,127 @@ final class DoctrineAdministratorSessionStoreTest extends TestCase
         )->find(str_repeat('A', 48), $userAgent);
     }
 
+    public function testResolutionRefusesASessionIssuedUnderASupersededSecurityEpoch(): void
+    {
+        $database = $this->database();
+        $database->expects(self::once())->method('fetchAssociative')->with(
+            self::callback(static function (string $sql): bool {
+                self::assertStringContainsString('s.security_epoch = u.security_epoch', $sql);
+                self::assertStringContainsString("u.status = 'active'", $sql);
+
+                return true;
+            }),
+            self::isType('array'),
+            self::isType('array'),
+        )->willReturn(false);
+        $database->expects(self::never())->method('update');
+
+        self::assertNull($this->store(
+            $database,
+            $this->createStub(TransactionManager::class),
+            $this->createStub(ResourceSiteOwnershipWriter::class),
+        )->find(str_repeat('A', 48), 'test-browser'));
+    }
+
+    public function testTerminationRemovesEverySessionWithTheOwnershipRowOfItsOwnSite(): void
+    {
+        $database = $this->database();
+        $database->expects(self::once())->method('fetchAllAssociative')->with(
+            self::callback(static function (string $sql): bool {
+                self::assertStringContainsString('kumwe_administrator_sessions', $sql);
+                self::assertStringContainsString('user_id = ?', $sql);
+                self::assertStringContainsString('ORDER BY id', $sql);
+
+                return true;
+            }),
+            [self::USER],
+            self::isType('array'),
+        )->willReturn([
+            ['id' => self::SESSION_ONE, 'site_identifier' => SiteContext::DEFAULT],
+            ['id' => self::SESSION_TWO, 'site_identifier' => 'secondary'],
+        ]);
+        $deleted = [];
+        $database->expects(self::exactly(2))->method('delete')->willReturnCallback(
+            static function (string $table, array $criteria) use (&$deleted): int {
+                self::assertSame('kumwe_administrator_sessions', $table);
+                $sessionId = $criteria['id'] ?? null;
+                self::assertIsString($sessionId);
+                $deleted[] = $sessionId;
+
+                return 1;
+            },
+        );
+        $sites = [];
+        $ownership = $this->createMock(ResourceSiteOwnershipWriter::class);
+        $ownership->expects(self::exactly(2))->method('remove')->with(
+            self::callback(static fn (AuthorizationResource $resource): bool =>
+                $resource->type() === 'administrator_session'),
+            self::callback(static function (SiteContext $site) use (&$sites): bool {
+                $sites[] = $site->identifier();
+
+                return true;
+            }),
+        );
+
+        $count = $this->store($database, $this->transactionManager(), $ownership)->deleteAllForUser(
+            AuthorizationContext::human(['users.manage']),
+            self::USER,
+        );
+
+        self::assertSame(2, $count);
+        self::assertSame([self::SESSION_ONE, self::SESSION_TWO], $deleted);
+        self::assertSame([SiteContext::DEFAULT, 'secondary'], $sites);
+    }
+
+    public function testTerminationDemandsIdentityAuthorityForAnotherAccountAndSessionAuthorityForYourOwn(): void
+    {
+        $demanded = [];
+        $authorization = $this->createMock(AuthorizationGateway::class);
+        $authorization->expects(self::exactly(2))->method('assertAllowed')->willReturnCallback(
+            static function (
+                ExecutionContext $context,
+                Capability $capability,
+                AuthorizationResource $resource,
+            ) use (&$demanded): void {
+                $demanded[] = $capability->value() . ':' . $resource->type();
+            },
+        );
+        $database = $this->database();
+        $database->method('fetchAllAssociative')->willReturn([]);
+
+        $store = $this->store(
+            $database,
+            $this->createTransactionManager(),
+            $this->createStub(ResourceSiteOwnershipWriter::class),
+            null,
+            $authorization,
+        );
+        $actor = '018f22e2-7c8b-7ab0-8f3a-88e8026bb420';
+        $store->deleteAllForUser(AuthorizationContext::human(['users.manage'], $actor), self::USER);
+        $store->deleteAllForUser(AuthorizationContext::human(['administrator.access'], $actor), $actor);
+
+        self::assertSame(
+            ['users.manage:user', 'administrator.access:administrator_session'],
+            $demanded,
+        );
+    }
+
+    private function createTransactionManager(): TransactionManager
+    {
+        $transactions = $this->createMock(TransactionManager::class);
+        $transactions->method('transactional')->willReturnCallback(
+            static fn (callable $operation): mixed => $operation(),
+        );
+
+        return $transactions;
+    }
+
     private function store(
         Connection $database,
         TransactionManager $transactions,
         ResourceSiteOwnershipWriter $ownership,
         ?MembershipDirectory $memberships = null,
+        ?AuthorizationGateway $authorization = null,
     ): DoctrineAdministratorSessionStore {
         $clock = $this->createStub(ClockInterface::class);
         $clock->method('now')->willReturn(new DateTimeImmutable('2026-08-05T10:00:00+00:00'));
@@ -196,7 +313,7 @@ final class DoctrineAdministratorSessionStoreTest extends TestCase
             new TableNames($database, 'kumwe_'),
             $clock,
             str_repeat('s', 64),
-            $this->createStub(AuthorizationGateway::class),
+            $authorization ?? $this->createStub(AuthorizationGateway::class),
             $transactions,
             $ownership,
             AuthorizationContext::provenance(),

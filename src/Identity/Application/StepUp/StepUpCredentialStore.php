@@ -113,4 +113,55 @@ interface StepUpCredentialStore
         string $digest,
         DateTimeImmutable $consumedAt,
     ): bool;
+
+    /**
+     * Retire every pending and active credential a subject holds, with the reason that justified it.
+     *
+     * Revocation is expressed per subject rather than per credential because that is the operation an
+     * operator actually performs: a lost or compromised authenticator is reported by the person, not by
+     * the identifier of a row they cannot see, and the invariant `replacePending()` enforces means at
+     * most one credential can be active anyway. Implementations must also destroy the unspent recovery
+     * digests belonging to the retired credentials, so a code printed under the old authenticator
+     * cannot be presented afterwards, and must leave already-consumed digests alone because those are
+     * evidence. Nothing here touches the security epoch: the caller owns that decision and the
+     * transaction it lands in.
+     *
+     * @param   string             $subjectId  Subject whose second factor is being retired.
+     * @param   DateTimeImmutable  $revokedAt  Instant recorded as the retirement time.
+     * @param   string             $reason     Operator justification stored beside each retired row.
+     *
+     * @return  int  How many credentials were retired; zero when the subject had none enrolled.
+     *
+     * @since   2.0.0
+     */
+    public function revokeForSubject(string $subjectId, DateTimeImmutable $revokedAt, string $reason): int;
+
+    /**
+     * Replace one active credential's whole recovery-code set under an optimistic version fence.
+     *
+     * Reissue is a replacement rather than a top-up: the previous digests are removed, spent and
+     * unspent alike, so the count of usable codes after the call is exactly the count supplied and a
+     * list printed earlier stops working the moment a new one is printed. Implementations must refuse
+     * unless the credential is live and still carries the expected version, so a reissue racing a
+     * recovery consumption cannot resurrect a code the other request just spent.
+     *
+     * @param   string             $credentialId     Active credential UUID.
+     * @param   string             $subjectId        Authenticated actor UUID the credential must belong to.
+     * @param   int                $expectedVersion  Version read before the replacement set was generated.
+     * @param   list<string>       $digests          Unique keyed digests replacing the stored set.
+     * @param   DateTimeImmutable  $reissuedAt       Instant recorded as the creation time of each digest.
+     *
+     * @return  bool  True only when one live credential advanced and every digest was stored.
+     *
+     * @throws  \InvalidArgumentException  When the digest list is empty, malformed or duplicated.
+     *
+     * @since   2.0.0
+     */
+    public function replaceRecoveryCodes(
+        string $credentialId,
+        string $subjectId,
+        int $expectedVersion,
+        array $digests,
+        DateTimeImmutable $reissuedAt,
+    ): bool;
 }

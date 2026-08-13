@@ -25,6 +25,7 @@ Commands return `0` on success and a non-zero status on invalid input, unavailab
 | `database:status` | List pending migrations; returns `2` when work is pending |
 | `app:health` | Check readiness from the application process |
 | `user:create-admin` | Create the initial owner from a protected password file |
+| `user:recover-credentials` | Break-glass: reset a password, retire second factors, or end sessions from the host |
 | `demo:install` | Provision the demonstration sign-ins and install the example extensions in one step |
 | `demo:provision-access` | Provision demonstration staff and portal sign-ins with generated credentials |
 | `demo:install-examples` | Install and activate the shipped example extensions through the signed pipeline |
@@ -395,6 +396,44 @@ php bin/kumwe access grant \
 
 Additional actions are `update-user`, `revoke-role`, and `revoke-grant`. User updates require the current `--version`. Password files must be absolute, non-symlinked, readable only by their owner, and removed after use.
 Revoke API or MCP credentials immediately with `access revoke-token --site=corporate --token-file=... --token=TOKEN_ID`.
+
+### Credential rotation and recovery
+
+```bash
+php bin/kumwe access reset-password \
+  --site=corporate --token-file=/run/secrets/kumwe-identity-token \
+  --user=USER_ID --password-file=/run/secrets/replacement-password \
+  --reason='Lost device, ticket 4711'
+php bin/kumwe access revoke-step-up \
+  --site=corporate --token-file=/run/secrets/kumwe-identity-token \
+  --user=USER_ID --reason='Authenticator lost, recovery codes spent'
+php bin/kumwe access terminate-sessions \
+  --site=corporate --token-file=/run/secrets/kumwe-identity-token \
+  --user=USER_ID --reason='Shared workstation'
+```
+
+All three need a token carrying `users.manage` and a written reason, and all three advance the account's security
+epoch, so the subject's API tokens, portal sessions, administrator sessions and outstanding step-up verifications
+stop working on their next request. `reset-password` refuses your own account: replacing your own password
+requires proving the current one, which only the administrator screen asks for. `revoke-step-up` destroys the
+account's unspent recovery codes and is what allows it to enroll a replacement authenticator.
+
+### Break-glass credential recovery
+
+```bash
+php bin/kumwe user:recover-credentials reset-password \
+  --email=owner@example.com --password-file=/run/secrets/replacement-password --reason='…'
+php bin/kumwe user:recover-credentials revoke-step-up --email=owner@example.com --reason='…'
+php bin/kumwe user:recover-credentials terminate-sessions --email=owner@example.com --reason='…'
+```
+
+For the one case the authorized paths cannot cover: an installation where every operator has lost every
+authenticator and spent every recovery code cannot pass the step-up verification that each in-application reset
+demands, including the reset that would repair it. This command therefore takes no token — reaching the host is the
+authorization, exactly as it is for `user:create-admin`. It acts as `system:credential-recovery`, so every run
+leaves an audit event under that actor; search **Security events** for it when reviewing whether host authority was
+used to reach an account. `--reason` is optional here and defaults to a sentence naming the action as break-glass,
+so a lockout is never made worse by a refusal over prose.
 
 ## Extensions
 

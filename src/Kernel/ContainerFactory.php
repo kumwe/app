@@ -349,6 +349,7 @@ use Kumwe\CMS\Delivery\Console\Command\ListExtensionsCommand;
 use Kumwe\CMS\Delivery\Console\Command\ManageAutomationCommand;
 use Kumwe\CMS\Delivery\Console\Command\ManageIntegrationsCommand;
 use Kumwe\CMS\Delivery\Console\Command\ManageAccessCommand;
+use Kumwe\CMS\Delivery\Console\Command\RecoverCredentialsCommand;
 use Kumwe\CMS\Delivery\Console\Command\ManageContentCommand;
 use Kumwe\CMS\Delivery\Console\Command\ManageBusinessDefinitionsCommand;
 use Kumwe\CMS\Delivery\Console\Command\BusinessConsoleFailureMapper;
@@ -487,6 +488,7 @@ use Kumwe\CMS\Infrastructure\Persistence\Migration\InstallationGlobalAutomationM
 use Kumwe\CMS\Infrastructure\Persistence\Migration\InterfacePresentationPreferenceMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\AuditTamperEvidenceMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\RecordEncryptionKeyRingMigration;
+use Kumwe\CMS\Infrastructure\Persistence\Migration\CredentialLifecycleMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\MenuPresentationBindingMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\NonTransactionalMigrationRecovery;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\SiteAutomationContextMigration;
@@ -1327,6 +1329,9 @@ final class ContainerFactory
                 self::service($container, ClockInterface::class),
                 self::service($container, AuthorizationGateway::class),
                 self::service($container, ResourceSiteOwnershipWriter::class),
+                self::service($container, HighImpactCredentialGuard::class),
+                self::service($container, StepUpCredentialStore::class),
+                self::service($container, AdministratorSessionStore::class),
             ), true);
         $container->share(DoctrineSiteSettings::class, static fn (
             Container $container,
@@ -1425,6 +1430,7 @@ final class ContainerFactory
                     new MenuPresentationBindingMigration(self::service($container, TableNames::class)),
                     new AuditTamperEvidenceMigration(self::service($container, TableNames::class)),
                     new RecordEncryptionKeyRingMigration(self::service($container, TableNames::class)),
+                    new CredentialLifecycleMigration(self::service($container, TableNames::class)),
                 ],
                 [
                     // Previously distributed builds used a DBAL-equivalent static-analysis rewrite, then
@@ -4650,6 +4656,13 @@ final class ContainerFactory
             self::service($container, AdministratorIdentityGateway::class),
             SystemPrincipal::issue($provenance, SystemIdentity::Bootstrap),
         ), true);
+        $container->share(RecoverCredentialsCommand::class, static fn (
+            Container $container,
+        ): RecoverCredentialsCommand => new RecoverCredentialsCommand(
+            self::service($container, AccessControlService::class),
+            self::service($container, AccessControlRepository::class),
+            SystemPrincipal::issue($provenance, SystemIdentity::CredentialRecovery),
+        ), true);
         $container->share(DemoAccessProvisioner::class, static fn (
             Container $container,
         ): DemoAccessProvisioner => new DemoAccessProvisioner(
@@ -4931,6 +4944,7 @@ final class ContainerFactory
                 self::service($container, RecoverMigrationLockCommand::class),
                 self::service($container, HealthCheckCommand::class),
                 self::service($container, CreateAdministratorCommand::class),
+                self::service($container, RecoverCredentialsCommand::class),
                 self::service($container, DemoAccessCommand::class),
                 self::service($container, DemoExamplesCommand::class),
                 self::service($container, DemoInstallCommand::class),
