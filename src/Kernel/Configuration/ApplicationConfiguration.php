@@ -26,48 +26,50 @@ final readonly class ApplicationConfiguration
     /**
      * Capture and validate the settings the whole process will read.
      *
-     * @param   RuntimeEnvironment      $environment                   Deployment mode, which decides how
+     * @param   RuntimeEnvironment             $environment                   Deployment mode, which decides how
      *          strict the remaining checks are.
-     * @param   bool                    $debug                         Whether verbose diagnostics and debug-level
+     * @param bool $debug Whether verbose diagnostics and debug-level
      *          logging are enabled.
-     * @param   string                  $baseUrl                       Absolute URL the site is served from; it
+     * @param   string                         $baseUrl                       Absolute URL the site is served from; it
      *          must use HTTPS in production.
-     * @param   string                  $publicSite                    Site context anonymous front-end requests
+     * @param   string                         $publicSite                    Site context anonymous front-end requests
      *          resolve to.
-     * @param   string                  $siteContentProfile            Built-in content dataset selected for a
+     * @param   string                         $siteContentProfile            Built-in content dataset selected for a
      *          newly installed site; the demo catalog discovers the shipped vocabulary at reconciliation.
-     * @param   string                  $businessProfile               Named business demonstration dataset
+     * @param   string                         $businessProfile               Named business demonstration dataset
      *          installed and maintained alongside the selected site content, or `none` for no business data.
-     * @param   non-empty-list<string>  $trustedHosts                  Host names the application answers to; a
+     * @param   non-empty-list<string>         $trustedHosts                  Host names the application answers to; a
      *          request for any other host is refused.
-     * @param   list<string>            $trustedProxies                Addresses or CIDR ranges whose forwarding
+     * @param   list<string>                   $trustedProxies                Addresses or CIDR ranges whose forwarding
      *          headers may be believed when rebuilding the client address.
-     * @param   int                     $maxBodyBytes                  Largest request body accepted before the
+     * @param   int                            $maxBodyBytes                  Largest request body accepted before the
      *          request is rejected.
-     * @param   int                     $administratorSessionSeconds   Administrator session lifetime, from 300
+     * @param   int                            $administratorSessionSeconds   Administrator session lifetime, from 300
      *          to 604800 seconds.
-     * @param   bool                    $allowUnsignedLocalExtensions  Whether an extension installed from a local
+     * @param bool $allowUnsignedLocalExtensions Whether an extension installed from a local
      *          path may skip signature verification; meant for development, not production.
-     * @param   string                  $release                       Version stamp recorded on queued jobs and
+     * @param   string                         $release                       Version stamp recorded on queued jobs and
      *          reported to business schema execution, tying stored work to the build that made it.
-     * @param   string                  $secret                        Application signing secret of at least 32
+     * @param   string                         $secret                        Application signing secret of at least 32
      *          bytes, used for session and token material.
-     * @param   string                  $runtimeSigningKeyId           Identifier of the key currently signing
+     * @param   string                         $runtimeSigningKeyId           Identifier of the key currently signing
      *          the compiled extension runtime map.
-     * @param   string                  $runtimeSigningKey             Active runtime signing key, at least 32
+     * @param   string                         $runtimeSigningKey             Active runtime signing key, at least 32
      *          bytes and deliberately independent of `$secret`, so compromising one cannot forge
      *          the other.
-     * @param   array<string, string>   $runtimePreviousSigningKeys    Retired signing keys by identifier,
+     * @param   array<string, string>          $runtimePreviousSigningKeys    Retired signing keys by identifier,
      *          kept so already-published runtime maps still verify while a rotation completes.
-     * @param   string                  $deploymentId                  Stable name of the deployment this process
+     * @param   string                         $deploymentId                  Stable name of the deployment this process
      *          belongs to.
-     * @param   string                  $replicaId                     Stable name of the replica, distinguishing
+     * @param   string                         $replicaId                     Stable name of the replica, distinguishing
      *          peers within one deployment.
-     * @param   string                  $processId                     Stable name of the process within the replica.
-     * @param   string                  $instanceId                    Stable name of this instance; the four
+     * @param string $processId Stable name of the process within the replica.
+     * @param   string                         $instanceId                    Stable name of this instance; the four
      *          identities together derive the lease a runtime map compilation holds.
-     * @param   DatabaseConfiguration   $database                      Connection settings for the relational store.
-     * @param   RedisConfiguration      $redis                         Connection settings for the Redis server.
+     * @param DatabaseConfiguration $database Connection settings for the relational store.
+     * @param   RedisConfiguration             $redis                         Connection settings for the Redis server.
+     * @param   RecordEncryptionConfiguration  $recordEncryption              Dedicated key material for business-record
+     *          secret fields, so those envelopes no longer depend on the lifetime of `$secret`.
      *
      * @throws  InvalidArgumentException  When a setting is malformed, a secret is too short or
      *          reused, an identity is not a stable identifier, or a production-only rule is violated.
@@ -97,6 +99,7 @@ final readonly class ApplicationConfiguration
         public string $instanceId,
         public DatabaseConfiguration $database,
         public RedisConfiguration $redis,
+        public RecordEncryptionConfiguration $recordEncryption = new RecordEncryptionConfiguration(),
     ) {
         if (filter_var($baseUrl, FILTER_VALIDATE_URL) === false) {
             throw new InvalidArgumentException('APP_BASE_URL must contain an absolute URL.');

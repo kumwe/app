@@ -204,6 +204,84 @@ final class ConfigurationFactoryTest extends TestCase
         (new ConfigurationFactory())->create(new Environment($values));
     }
 
+    public function testRecordEncryptionMaterialDefaultsToNothingConfigured(): void
+    {
+        $configuration = (new ConfigurationFactory())->create(new Environment($this->values()));
+
+        self::assertNull($configuration->recordEncryption->activeKey);
+        self::assertNull($configuration->recordEncryption->activeKeyId);
+        self::assertNull($configuration->recordEncryption->legacySecret);
+        self::assertSame([], $configuration->recordEncryption->previousKeys);
+    }
+
+    public function testRecordEncryptionSecretsCanBeReadFromProtectedFiles(): void
+    {
+        $key = tempnam(sys_get_temp_dir(), 'kumwe-record-key-');
+        $previous = tempnam(sys_get_temp_dir(), 'kumwe-record-previous-');
+        self::assertIsString($key);
+        self::assertIsString($previous);
+        file_put_contents($key, str_repeat('r', 40) . "\n");
+        file_put_contents($previous, json_encode(['record-v0' => str_repeat('q', 40)], JSON_THROW_ON_ERROR));
+        try {
+            $values = $this->values();
+            $values['RECORD_ENCRYPTION_KEY_FILE'] = $key;
+            $values['RECORD_ENCRYPTION_KEY_ID'] = 'record-v1';
+            $values['RECORD_ENCRYPTION_PREVIOUS_KEYS_FILE'] = $previous;
+            $configuration = (new ConfigurationFactory())->create(new Environment($values));
+
+            self::assertSame(str_repeat('r', 40), $configuration->recordEncryption->activeKey);
+            self::assertSame('record-v1', $configuration->recordEncryption->activeKeyId);
+            self::assertSame(['record-v0' => str_repeat('q', 40)], $configuration->recordEncryption->previousKeys);
+        } finally {
+            unlink($key);
+            unlink($previous);
+        }
+    }
+
+    public function testApplicationSecretCanBeReadFromAProtectedFile(): void
+    {
+        $file = tempnam(sys_get_temp_dir(), 'kumwe-app-secret-');
+        self::assertIsString($file);
+        file_put_contents($file, str_repeat('s', 40) . "\n");
+        try {
+            $values = $this->values();
+            unset($values['APP_SECRET']);
+            $values['APP_SECRET_FILE'] = $file;
+            $configuration = (new ConfigurationFactory())->create(new Environment($values));
+
+            self::assertSame(str_repeat('s', 40), $configuration->secret);
+        } finally {
+            unlink($file);
+        }
+    }
+
+    public function testASecretSuppliedBothInlineAndByFileIsRefused(): void
+    {
+        $file = tempnam(sys_get_temp_dir(), 'kumwe-record-key-');
+        self::assertIsString($file);
+        file_put_contents($file, str_repeat('r', 40));
+        try {
+            $values = $this->values();
+            $values['RECORD_ENCRYPTION_KEY'] = str_repeat('r', 40);
+            $values['RECORD_ENCRYPTION_KEY_FILE'] = $file;
+
+            $this->expectException(InvalidArgumentException::class);
+            $this->expectExceptionMessage('Configure RECORD_ENCRYPTION_KEY by value or by file, never both.');
+            (new ConfigurationFactory())->create(new Environment($values));
+        } finally {
+            unlink($file);
+        }
+    }
+
+    public function testARecordKeyIdentifierWithoutItsKeyIsRefused(): void
+    {
+        $values = $this->values();
+        $values['RECORD_ENCRYPTION_KEY_ID'] = 'record-v1';
+
+        $configuration = (new ConfigurationFactory())->create(new Environment($values));
+        self::assertNull($configuration->recordEncryption->activeKeyId);
+    }
+
     /**
      * @return array<string, string>
      */

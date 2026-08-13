@@ -20,7 +20,10 @@ use Kumwe\CMS\BusinessRecord\Application\BusinessRecordDefinitionResolver;
 use Kumwe\CMS\BusinessRecord\Application\BusinessRecordService;
 use Kumwe\CMS\BusinessRecord\Application\RecordFingerprint;
 use Kumwe\CMS\BusinessRecord\Application\ResolvedBusinessDefinition;
-use Kumwe\CMS\BusinessRecord\Infrastructure\Security\SodiumSecretCipher;
+use Kumwe\CMS\BusinessRecord\Domain\SecretKeyMaterial;
+use Kumwe\CMS\BusinessRecord\Domain\SecretKeyRing;
+use Kumwe\CMS\BusinessRecord\Infrastructure\Security\KeyRingSecretKeyProvider;
+use Kumwe\CMS\BusinessSurface\Infrastructure\Security\KeyRingMutationPlanCipher;
 use Kumwe\CMS\BusinessSecurity\Application\BusinessRecordAccessController;
 use Kumwe\CMS\BusinessSecurity\Application\BusinessRecordAccessPlan;
 use Kumwe\CMS\BusinessSecurity\Application\FieldDisclosurePlan;
@@ -252,7 +255,9 @@ final class BusinessMutationPlanServiceTest extends TestCase
             $this->createStub(BusinessRecordDefinitionResolver::class),
             $this->createStub(BusinessRecordAccessController::class),
             new RecordFingerprint(str_repeat('k', 32)),
-            new SodiumSecretCipher('mutation-plan-test', str_repeat('s', 32)),
+            new KeyRingMutationPlanCipher(new KeyRingSecretKeyProvider(new SecretKeyRing(
+                new SecretKeyMaterial('mutation-plan-test', str_repeat('s', 32)),
+            ))),
             $this->createStub(TransactionManager::class),
             new class implements ClockInterface {
                 /**
@@ -329,7 +334,9 @@ final class BusinessMutationPlanServiceTest extends TestCase
             $definitions,
             $access,
             new RecordFingerprint(str_repeat('k', 32)),
-            new SodiumSecretCipher('mutation-plan-test', str_repeat('s', 32)),
+            new KeyRingMutationPlanCipher(new KeyRingSecretKeyProvider(new SecretKeyRing(
+                new SecretKeyMaterial('mutation-plan-test', str_repeat('s', 32)),
+            ))),
             $transactions,
             $this->clock('2026-08-10T13:00:00+00:00'),
         );

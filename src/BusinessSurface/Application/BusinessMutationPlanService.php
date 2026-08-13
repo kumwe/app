@@ -13,7 +13,6 @@ use Kumwe\CMS\BusinessRecord\Application\BusinessRecordDefinitionResolver;
 use Kumwe\CMS\BusinessRecord\Application\BusinessRecordService;
 use Kumwe\CMS\BusinessRecord\Application\RecordFingerprint;
 use Kumwe\CMS\BusinessRecord\Application\RecordRequestGuard;
-use Kumwe\CMS\BusinessRecord\Application\SecretCipher;
 use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordDefinitionUnavailable;
 use Kumwe\CMS\BusinessRecord\Application\Exception\BusinessRecordVersionConflict;
 use Kumwe\CMS\BusinessRecord\Application\Query\ReadRecordQuery;
@@ -90,7 +89,8 @@ final readonly class BusinessMutationPlanService
      * @param  BusinessRecordDefinitionResolver  $definitions   Trusted active definition resolver.
      * @param  BusinessRecordAccessController    $access        Canonical record-policy planner.
      * @param  RecordFingerprint                 $fingerprints  Installation-keyed binding digests.
-     * @param  SecretCipher                      $cipher        Authenticated encryption for opaque plan tokens.
+     * @param  MutationPlanCipher                $cipher        Plan-purpose authenticated encryption, keyed
+     *         separately from record secrets so neither rotation entangles the other.
      * @param  TransactionManager                $transactions  Stable definition, policy and record snapshot.
      * @param  ClockInterface                    $clock         Trusted plan issue and expiry time.
      *
@@ -102,7 +102,7 @@ final readonly class BusinessMutationPlanService
         private BusinessRecordDefinitionResolver $definitions,
         private BusinessRecordAccessController $access,
         private RecordFingerprint $fingerprints,
-        private SecretCipher $cipher,
+        private MutationPlanCipher $cipher,
         private TransactionManager $transactions,
         private ClockInterface $clock,
     ) {
