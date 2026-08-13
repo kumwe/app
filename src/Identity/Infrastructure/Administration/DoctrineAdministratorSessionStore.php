@@ -158,6 +158,7 @@ final readonly class DoctrineAdministratorSessionStore implements AdministratorS
                 'policy_generation' => $context->membership()?->policyGeneration(),
                 'rotation' => 1,
                 'step_up_at' => null,
+                'security_epoch' => $principal->securityEpoch(),
             ], [
                 'created_at' => Types::DATETIME_IMMUTABLE,
                 'last_seen_at' => Types::DATETIME_IMMUTABLE,
@@ -179,10 +180,17 @@ final readonly class DoctrineAdministratorSessionStore implements AdministratorS
      * Resolve a cookie token back into the live session it names, or answer null.
      *
      * Everything an untrusted caller could learn from is collapsed into null: a token of the wrong shape
-     * never reaches the database, and an unknown digest, a passed expiry, a non-active user and a
-     * mismatched `User-Agent` are indistinguishable in the answer. The fingerprint comparison runs in
-     * constant time. A resolution that succeeds rebuilds the principal from the user's current role
-     * grants and epoch and stamps `last_seen_at`, so the row tracks the last request that used it.
+     * never reaches the database, and an unknown digest, a passed expiry, a non-active user, a
+     * superseded security epoch and a mismatched `User-Agent` are indistinguishable in the answer. The
+     * fingerprint comparison runs in constant time. A resolution that succeeds rebuilds the principal
+     * from the user's current role grants and epoch and stamps `last_seen_at`, so the row tracks the
+     * last request that used it.
+     *
+     * The epoch predicate is what makes a revocation reach a browser. The session records the epoch it
+     * was issued under, the user row carries the epoch in force now, and the two must still be equal —
+     * so a password change, a second-factor reset, a role edit or a break-glass token revocation ends
+     * every live administrator cookie on the subject's very next request, the same way it already ended
+     * their API tokens, their portal sessions and their outstanding step-up proofs.
      *
      * @param   string  $token      Opaque token from the administrator cookie; anything outside 43 to 128
      *          base64url characters is refused before a query is issued.
@@ -211,7 +219,8 @@ final readonly class DoctrineAdministratorSessionStore implements AdministratorS
             . 's.site_identifier, s.organization_identifier, s.workspace_identifier, s.membership_id, '
             . 's.membership_version, s.policy_generation '
             . 'FROM %s s INNER JOIN %s u ON u.id = s.user_id '
-            . "WHERE s.token_digest = ? AND s.expires_at > ? AND u.status = 'active'",
+            . "WHERE s.token_digest = ? AND s.expires_at > ? AND u.status = 'active' "
+            . 'AND s.security_epoch = u.security_epoch',
             $this->tables->quoted('administrator_sessions'),
             $this->tables->quoted('users'),
         ), [hash('sha256', $token), $now], [Types::STRING, Types::DATETIME_IMMUTABLE]);
@@ -386,6 +395,7 @@ final readonly class DoctrineAdministratorSessionStore implements AdministratorS
                 'policy_generation' => $membership->policyGeneration(),
                 'rotation' => 1,
                 'step_up_at' => null,
+                'security_epoch' => $principal->securityEpoch(),
             ], [
                 'created_at' => Types::DATETIME_IMMUTABLE,
                 'last_seen_at' => Types::DATETIME_IMMUTABLE,
@@ -415,7 +425,10 @@ final readonly class DoctrineAdministratorSessionStore implements AdministratorS
      *
      * The old row is locked and every server-resolved coordinate from the intent is compared before a
      * replacement cookie, CSRF token, and ownership row are installed atomically. The stored browser
-     * binding is copied rather than accepting a header from the challenge form.
+     * binding is copied rather than accepting a header from the challenge form. Both epochs are
+     * compared against the intent — the user's current one and the one the session being elevated was
+     * issued under — so a revocation that landed between the challenge starting and its verification
+     * arriving refuses the rotation instead of minting a session under a retired authority.
      *
      * @param   StepUpIntent       $intent      Exact old session and authority context being elevated.
      * @param   DateTimeImmutable  $verifiedAt  Trusted successful verification instant.
@@ -430,7 +443,8 @@ final readonly class DoctrineAdministratorSessionStore implements AdministratorS
     {
         return $this->transactions->transactional(function () use ($intent, $verifiedAt): RotatedStepUpSession {
             $row = $this->database->fetchAssociative(sprintf(
-                'SELECT s.*, u.security_epoch FROM %s s INNER JOIN %s u ON u.id = s.user_id '
+                'SELECT s.*, u.security_epoch AS user_security_epoch FROM %s s '
+                . 'INNER JOIN %s u ON u.id = s.user_id '
                 . "WHERE s.id = ? AND s.user_id = ? AND u.status = 'active'%s",
                 $this->tables->quoted('administrator_sessions'),
                 $this->tables->quoted('users'),
@@ -452,6 +466,7 @@ final readonly class DoctrineAdministratorSessionStore implements AdministratorS
                 || ($row['site_identifier'] ?? null) !== $intent->siteIdentifier
                 || $organization !== $intent->organizationIdentifier
                 || $workspace !== $intent->workspaceIdentifier
+                || $this->positiveInteger($row['user_security_epoch'] ?? null) !== $intent->securityEpoch
                 || $this->positiveInteger($row['security_epoch'] ?? null) !== $intent->securityEpoch
             ) {
                 throw new StepUpRejected();
@@ -497,6 +512,7 @@ final readonly class DoctrineAdministratorSessionStore implements AdministratorS
                 'policy_generation' => $row['policy_generation'] ?? null,
                 'rotation' => $this->positiveInteger($row['rotation'] ?? 1) + 1,
                 'step_up_at' => $verifiedAt,
+                'security_epoch' => $intent->securityEpoch,
             ], [
                 'created_at' => Types::DATETIME_IMMUTABLE,
                 'last_seen_at' => Types::DATETIME_IMMUTABLE,
@@ -594,6 +610,76 @@ final readonly class DoctrineAdministratorSessionStore implements AdministratorS
                 AuthorizationResource::item('administrator_session', $sessionId),
                 $context->site(),
             );
+        });
+    }
+
+    /**
+     * End every administrator session one user holds, in every site, inside one transaction.
+     *
+     * Authorization follows who is being signed out. Ending somebody else's sessions is an
+     * identity-management act, asserted as `users.manage` against that exact user, because demanding
+     * `administrator.access` on rows the actor does not own would refuse precisely the responder this
+     * exists for. Ending your own is the sign-out-everywhere a password change performs on itself, so
+     * it asks only for the `administrator.access` the actor must already hold to have a session at all.
+     * Candidates are locked in identifier order so two concurrent terminations queue rather than
+     * deadlock, and each session is removed together with the ownership row for the site that session
+     * itself records — never the actor's own site, which would be the wrong site for a session opened
+     * elsewhere. A row that vanished between the select and its delete aborts the whole termination
+     * rather than being skipped, so the count returned is exactly what was ended.
+     *
+     * The security epoch remains the primary instrument; this is the direct sweep that accompanies it,
+     * so the session table does not keep rows that can no longer resolve.
+     *
+     * @param   ExecutionContext  $context  Actor, site and request identifiers the termination runs under.
+     * @param   string            $userId   UUID of the user whose sessions are all ended.
+     *
+     * @return  int  How many live sessions were ended, zero when the user held none.
+     *
+     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not manage
+     *          this user.
+     * @throws  RuntimeException  When a selected identifier is not usable, a locked row no longer
+     *          existed when its delete ran, or a session records no site to withdraw ownership for.
+     * @throws  \Doctrine\DBAL\Exception  When the driver rejects the candidate read or one of the deletes.
+     *
+     * @since   2.0.0
+     */
+    public function deleteAllForUser(ExecutionContext $context, string $userId): int
+    {
+        $self = $context->actorId() === $userId;
+        $this->authorization->assertAllowed(
+            $context,
+            Capability::fromString($self ? 'administrator.access' : 'users.manage'),
+            $self
+                ? AuthorizationResource::collection('administrator_session')
+                : AuthorizationResource::item('user', $userId),
+        );
+
+        return $this->transactions->transactional(function () use ($userId): int {
+            $rows = $this->database->fetchAllAssociative(sprintf(
+                'SELECT id, site_identifier FROM %s WHERE user_id = ? ORDER BY id%s',
+                $this->tables->quoted('administrator_sessions'),
+                $this->lockClause(),
+            ), [$userId], [Types::GUID]);
+            foreach ($rows as $row) {
+                $sessionId = $row['id'] ?? null;
+                $siteIdentifier = $row['site_identifier'] ?? null;
+                if (!is_string($sessionId) || $sessionId === '' || !is_string($siteIdentifier)) {
+                    throw new RuntimeException('An administrator session row is unusable for termination.');
+                }
+                $affected = $this->database->delete(
+                    $this->tables->raw('administrator_sessions'),
+                    ['id' => $sessionId],
+                );
+                if ((string) $affected !== '1') {
+                    throw new RuntimeException('An administrator session changed during termination.');
+                }
+                $this->ownership->remove(
+                    AuthorizationResource::item('administrator_session', $sessionId),
+                    SiteContext::fromString($siteIdentifier),
+                );
+            }
+
+            return count($rows);
         });
     }
 

@@ -610,6 +610,56 @@ test.describe('authenticated administrator', () => {
     // KIS-EVIDENCE-END p6-001-access-ui
   });
 
+  test('credential rotation and recovery are focused, verified tasks', async ({ page }) => {
+    test.setTimeout(90_000);
+
+    await page.goto('/administrator/access?section=events&mode=review');
+    await page.getByRole('link', { name: 'Rotate my credentials' }).click();
+    await expect(page.getByRole('heading', { name: 'Change my password' })).toBeVisible();
+    await expectFocusedAccessAction(page, 'user.password.change');
+    const passwordChange = page
+      .locator('form input[name="action"][value="user.password.change"]')
+      .locator('xpath=ancestor::form[1]');
+    for (const field of ['current_password', 'new_password', 'new_password_confirmation']) {
+      await expect(passwordChange.locator(`input[name="${field}"]`)).toHaveAttribute('type', 'password');
+    }
+    await expect(page.getByRole('heading', { name: 'Reissue recovery codes' })).toBeVisible();
+    const reissue = page
+      .locator('form input[name="action"][value="step_up.recovery.reissue"]')
+      .locator('xpath=ancestor::form[1]');
+    await expect(reissue.locator('input[name="recovery_code"]')).toHaveCount(0);
+
+    await page.goto('/administrator/access?section=users');
+    await page.getByRole('link', { name: 'Review access' }).first().click();
+    const subject = new URL(page.url()).searchParams.get('id') ?? '';
+    expect(subject).not.toBe('');
+    await expect(page.getByRole('heading', { name: /^Credential recovery for /u })).toBeVisible();
+
+    for (const [mode, heading, action] of [
+      ['unenroll', /^Retire the second factors of /u, 'user.step_up.revoke'],
+      ['sessions', /^End every session of /u, 'user.sessions.terminate'],
+    ] as const) {
+      await page.goto(
+        `/administrator/access?section=users&mode=${mode}&id=${encodeURIComponent(subject)}`,
+      );
+      await expect(page.getByRole('heading', { name: heading })).toBeVisible();
+      await expect(page.locator('input[name="reason"]')).toHaveCount(1);
+      await expectFocusedAccessAction(page, action);
+    }
+
+    await page.goto(
+      `/administrator/access?section=users&mode=password&id=${encodeURIComponent(subject)}`,
+    );
+    const ownAccount = await page.getByRole('heading', {
+      name: 'Reset your own password from your security panel',
+    }).count();
+    if (ownAccount === 0) {
+      await expectFocusedAccessAction(page, 'user.password.reset');
+      await expect(page.locator('input[name="new_password"]')).toHaveAttribute('type', 'password');
+      await expect(page.locator('input[name="current_password"]')).toHaveCount(0);
+    }
+  });
+
   test('access and entity workspaces remain compact at supported sizes and text zoom', async ({
     page,
     isMobile,

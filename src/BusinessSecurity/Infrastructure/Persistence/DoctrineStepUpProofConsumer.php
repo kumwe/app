@@ -75,9 +75,10 @@ final readonly class DoctrineStepUpProofConsumer implements StepUpProofConsumer
             AuthenticatedSurface::Portal => 'portal_sessions',
             default => throw new ApprovalDenied(),
         };
-        $sessionEpoch = $context->surface() === AuthenticatedSurface::Portal
-            ? ' AND s.security_epoch = p.security_epoch'
-            : '';
+        // Both session tables now record the epoch they were issued under, so the session presenting
+        // the proof is held to the same epoch as the proof and the user rather than only the portal
+        // one being held to it.
+        $sessionEpoch = ' AND s.security_epoch = p.security_epoch';
         $organization = $context->organization()?->identifier();
         $workspace = $context->workspace()?->identifier();
         $parameters = [

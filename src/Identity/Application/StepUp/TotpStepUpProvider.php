@@ -328,6 +328,69 @@ final readonly class TotpStepUpProvider implements StepUpProvider, Administrator
     }
 
     /**
+     * Replace the subject's whole recovery-code set and disclose the new codes exactly once.
+     *
+     * No credential is presented here and none is checked, because the check has already happened: the
+     * administrator surface reaches this only inside the transaction of a successful, payload-bound
+     * TOTP challenge whose proof it consumed, so possession of the authenticator is already proven and
+     * asking for it twice would only add a second oracle. The version the active credential was read at
+     * fences the write, so a challenge landing concurrently makes this fail rather than resurrect codes
+     * the other request's consumption just spent.
+     *
+     * Only the digests reach storage; the plaintext exists in this method's return value and nowhere
+     * else, and is never audited, logged or stored.
+     *
+     * @param   string  $subjectId  Authenticated actor whose active credential is reissued against.
+     *
+     * @return  list<string>  Plaintext recovery codes, shown once and unrecoverable afterwards.
+     *
+     * @throws  StepUpRejected  When the subject has no active credential, or the credential advanced
+     *          under a concurrent challenge before the replacement could land.
+     * @throws  \RuntimeException  When a broken random source cannot produce ten unique codes.
+     *
+     * @since   2.0.0
+     */
+    public function reissueRecoveryCodes(string $subjectId): array
+    {
+        self::assertSubject($subjectId);
+        $credential = $this->active($subjectId);
+        [$plainCodes, $digests] = $this->recoveryCodes();
+        $now = $this->clock->now();
+
+        return $this->transactions->transactional(function () use (
+            $credential,
+            $subjectId,
+            $digests,
+            $plainCodes,
+            $now,
+        ): array {
+            if (
+                !$this->credentials->replaceRecoveryCodes(
+                    $credential->id,
+                    $subjectId,
+                    $credential->version,
+                    $digests,
+                    $now,
+                )
+            ) {
+                throw new StepUpRejected();
+            }
+            $this->audit->record(new AuditEvent(
+                $this->random->uuid(),
+                $now,
+                $subjectId,
+                'identity.step_up.recovery.reissue',
+                'step_up_credential',
+                $credential->id,
+                'success',
+                ['issued_codes' => count($plainCodes)],
+            ));
+
+            return $plainCodes;
+        });
+    }
+
+    /**
      * Apply the shared failure budget and make its successful reset part of the outer write transaction.
      *
      * @template T

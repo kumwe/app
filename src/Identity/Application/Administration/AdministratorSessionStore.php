@@ -97,6 +97,30 @@ interface AdministratorSessionStore
     public function delete(ExecutionContext $context, string $sessionId): void;
 
     /**
+     * End every administrator session one user holds, everywhere, at once.
+     *
+     * The counterpart of `delete()` for the case where the subject rather than the session is the
+     * problem. A break-glass revocation, a password change and a second-factor reset all need the
+     * person signed out of every browser they are signed in on, and none of them knows which sessions
+     * those are. Implementations authorize by who is being signed out: `users.manage` against the exact
+     * user when the actor is an identity administrator acting on somebody else's account, and the
+     * ordinary `administrator.access` when the actor is ending their own sessions, which is the
+     * sign-out-everywhere a self-service password change performs on itself. Sessions in every site are
+     * ended, deliberately: the epoch this normally accompanies is installation-wide too.
+     *
+     * @param   ExecutionContext  $context  Actor, site and request identifiers the termination runs under.
+     * @param   string            $userId   UUID of the user whose sessions are all ended.
+     *
+     * @return  int  How many live sessions were ended, zero when the user held none.
+     *
+     * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not manage
+     *          this user, or may not hold an administrator session at all.
+     *
+     * @since   2.0.0
+     */
+    public function deleteAllForUser(ExecutionContext $context, string $userId): int;
+
+    /**
      * Delete every session of the context's site whose expiry has passed.
      *
      * Expired sessions already fail to resolve, so this is housekeeping rather than a security control;

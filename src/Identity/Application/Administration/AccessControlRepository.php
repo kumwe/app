@@ -161,6 +161,66 @@ interface AccessControlRepository
     ): void;
 
     /**
+     * Replace one user's stored password hash and retire everything issued under the old one.
+     *
+     * The counterpart `insertUser()` was missing: without it a password could only ever be written
+     * once, so a compromised or ageing credential had no retirement path short of suspending the
+     * account. Implementations must advance the user's security epoch in the same statement sequence,
+     * because the epoch is the single instrument every other credential in the installation is measured
+     * against — API tokens, portal sessions, administrator sessions and step-up proofs all carry or
+     * compare it, so raising it once is what makes a password change invalidate all of them at once.
+     * Plaintext never reaches this port; the caller hashes through `PasswordHasher` first.
+     *
+     * @param   string             $userId        UUID of the user whose credential is replaced.
+     * @param   string             $passwordHash  Already-hashed replacement password.
+     * @param   DateTimeImmutable  $at            Instant recorded as the credential change time.
+     *
+     * @return  void
+     *
+     * @throws  \InvalidArgumentException  When the user carries no password credential to replace, or
+     *          vanished before the epoch could be advanced.
+     *
+     * @since   2.0.0
+     */
+    public function changePassword(string $userId, string $passwordHash, DateTimeImmutable $at): void;
+
+    /**
+     * Advance one user's security epoch on its own, retiring everything issued under the old one.
+     *
+     * The other epoch-raising writes here each carry a change of their own — an edited user, a revoked
+     * token set, a replaced password. This one exists for the changes that live outside this port: a
+     * retired second factor and a terminated session set are both credential retirements the epoch has
+     * to reach, and neither has a row in these tables to hang the increment off. Callers hold the user
+     * lock and the surrounding transaction, as they do for every other write here.
+     *
+     * @param   string  $userId  UUID of the user whose epoch is advanced.
+     *
+     * @return  void
+     *
+     * @throws  \InvalidArgumentException  When no user row carries that identifier.
+     *
+     * @since   2.0.0
+     */
+    public function advanceSecurityEpoch(string $userId): void;
+
+    /**
+     * Read when one user's password was last written, without reading the credential itself.
+     *
+     * The hash is deliberately not exposed: verification belongs to `PasswordHasher` behind the
+     * high-impact credential guard, and nothing in the administration surface has a reason to hold
+     * stored credential material. Only the age of the credential is answerable here, which is what a
+     * rotation policy and the administrator's own security panel need.
+     *
+     * @param   string  $userId  UUID of the user being inspected.
+     *
+     * @return  ?DateTimeImmutable  The stored change instant, or null when the user has no password
+     *          credential at all.
+     *
+     * @since   2.0.0
+     */
+    public function passwordChangedAt(string $userId): ?DateTimeImmutable;
+
+    /**
      * Write a new role for capability grants to hang from.
      *
      * @param   string             $id    UUID to store the role under.

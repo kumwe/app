@@ -12,11 +12,15 @@ use Kumwe\CMS\Application\Authorization\ExecutionContext;
 use Kumwe\CMS\Application\Authorization\ResourceSiteOwnershipWriter;
 use Kumwe\CMS\Application\Authorization\SiteContext;
 use Kumwe\CMS\Application\Automation\CanonicalJson;
+use Kumwe\CMS\Application\Security\HighImpactAuthenticationRequired;
+use Kumwe\CMS\Application\Security\HighImpactCredentialGuard;
 use Kumwe\CMS\Audit\Application\AuditRecorder;
 use Kumwe\CMS\Audit\Domain\AuditEvent;
 use Kumwe\CMS\Identity\Application\Administration\AccessControlRepository;
 use Kumwe\CMS\Identity\Application\Administration\AccessControlService;
+use Kumwe\CMS\Identity\Application\Administration\AdministratorSessionStore;
 use Kumwe\CMS\Identity\Application\Security\PasswordHasher;
+use Kumwe\CMS\Identity\Application\StepUp\StepUpCredentialStore;
 use Kumwe\CMS\Identity\Domain\Capability;
 use Kumwe\CMS\Identity\Domain\EmailAddress;
 use Kumwe\CMS\Identity\Domain\UserStatus;
@@ -548,11 +552,266 @@ final class AccessControlServiceTest extends TestCase
         ));
     }
 
+    public function testSelfServicePasswordChangeProvesTheCurrentOneAndRetiresEverySession(): void
+    {
+        $repository = $this->createMock(AccessControlRepository::class);
+        $order = 0;
+        $repository->expects(self::once())->method('lockUser')->with(self::ACTOR)
+            ->willReturnCallback(static function () use (&$order): void {
+                self::assertSame(0, $order++);
+            });
+        $repository->expects(self::once())->method('changePassword')->with(
+            self::ACTOR,
+            'replacement-hash',
+            self::equalTo(new DateTimeImmutable('2026-08-04T10:00:00+00:00')),
+        )->willReturnCallback(static function () use (&$order): void {
+            self::assertSame(1, $order++);
+        });
+        $passwords = $this->createMock(PasswordHasher::class);
+        $passwords->expects(self::once())->method('hash')
+            ->with('a replacement passphrase')->willReturn('replacement-hash');
+        $credentials = $this->createMock(HighImpactCredentialGuard::class);
+        $credentials->expects(self::once())->method('assertCurrentPassword')
+            ->with(self::anything(), 'identity.password.change', 'the current passphrase');
+        $sessions = $this->createMock(AdministratorSessionStore::class);
+        $sessions->expects(self::once())->method('deleteAllForUser')
+            ->with(self::anything(), self::ACTOR)
+            ->willReturnCallback(static function () use (&$order): int {
+                self::assertSame(2, $order++);
+                return 3;
+            });
+        $audit = $this->createMock(AuditRecorder::class);
+        $audit->expects(self::once())->method('record')->with(self::callback(
+            static fn (AuditEvent $event): bool => $event->action() === 'user.password.change'
+                && $event->actorId() === self::ACTOR
+                && $event->subjectId() === self::ACTOR
+                && $event->metadata() === ['self_service' => true, 'sessions_terminated' => 3],
+        ));
+
+        self::assertSame(3, $this->service(
+            $repository,
+            $passwords,
+            $audit,
+            null,
+            $credentials,
+            null,
+            $sessions,
+        )->changeOwnPassword($this->context(), 'the current passphrase', 'a replacement passphrase'));
+    }
+
+    public function testSelfServicePasswordChangeStopsBeforeTheStoreWhenTheCurrentOneIsWrong(): void
+    {
+        $repository = $this->createMock(AccessControlRepository::class);
+        $repository->expects(self::never())->method('changePassword');
+        $credentials = $this->createMock(HighImpactCredentialGuard::class);
+        $credentials->method('assertCurrentPassword')
+            ->willThrowException(new HighImpactAuthenticationRequired('nope'));
+
+        $this->expectException(HighImpactAuthenticationRequired::class);
+
+        $this->service($repository, null, null, null, $credentials)
+            ->changeOwnPassword($this->context(), 'wrong passphrase', 'a replacement passphrase');
+    }
+
+    public function testSelfServicePasswordChangeRefusesAReplacementThatIsTooShortOrUnchanged(): void
+    {
+        $repository = $this->createMock(AccessControlRepository::class);
+        $repository->expects(self::never())->method('changePassword');
+
+        $service = $this->service($repository);
+        try {
+            $service->changeOwnPassword($this->context(), 'the current passphrase', 'short');
+            self::fail('A short replacement password was accepted.');
+        } catch (InvalidArgumentException $exception) {
+            self::assertStringContainsString('at least 12 characters', $exception->getMessage());
+        }
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('must differ from the current one');
+        $service->changeOwnPassword($this->context(), 'the same passphrase', 'the same passphrase');
+    }
+
+    public function testAdministrativeResetRecordsAnActorOtherThanTheSubjectWithItsReason(): void
+    {
+        $repository = $this->createMock(AccessControlRepository::class);
+        $repository->expects(self::once())->method('lockUser')->with(self::USER);
+        $repository->expects(self::once())->method('changePassword')->with(self::USER, 'issued-hash');
+        $passwords = $this->createMock(PasswordHasher::class);
+        $passwords->method('hash')->willReturn('issued-hash');
+        $sessions = $this->createMock(AdministratorSessionStore::class);
+        $sessions->expects(self::once())->method('deleteAllForUser')->willReturn(2);
+        $audit = $this->createMock(AuditRecorder::class);
+        $audit->expects(self::once())->method('record')->with(self::callback(
+            static fn (AuditEvent $event): bool => $event->action() === 'user.password.reset'
+                && $event->actorId() === self::ACTOR
+                && $event->subjectId() === self::USER
+                && $event->metadata() === [
+                    'self_service' => false,
+                    'reason' => 'lost device, ticket 4711',
+                    'sessions_terminated' => 2,
+                ],
+        ));
+
+        self::assertSame(2, $this->service(
+            $repository,
+            $passwords,
+            $audit,
+            null,
+            null,
+            null,
+            $sessions,
+        )->resetUserPassword(
+            $this->context(),
+            self::USER,
+            'an issued passphrase',
+            '  lost device, ticket 4711  ',
+        ));
+    }
+
+    public function testAdministrativeResetRefusesToReplaceTheActorsOwnPassword(): void
+    {
+        $repository = $this->createMock(AccessControlRepository::class);
+        $repository->expects(self::never())->method('changePassword');
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('self-service change');
+
+        $this->service($repository)->resetUserPassword(
+            $this->context(),
+            self::ACTOR,
+            'an issued passphrase',
+            'trying to skip the current password check',
+        );
+    }
+
+    public function testAdministrativeResetDemandsAReason(): void
+    {
+        $repository = $this->createMock(AccessControlRepository::class);
+        $repository->expects(self::never())->method('changePassword');
+
+        $this->expectException(InvalidArgumentException::class);
+
+        $this->service($repository)->resetUserPassword(
+            $this->context(),
+            self::USER,
+            'an issued passphrase',
+            '   ',
+        );
+    }
+
+    public function testStepUpRetirementAdvancesTheEpochAndEndsSessionsUnderTheUserLock(): void
+    {
+        $repository = $this->createMock(AccessControlRepository::class);
+        $order = 0;
+        $repository->expects(self::once())->method('lockUser')->with(self::USER)
+            ->willReturnCallback(static function () use (&$order): void {
+                self::assertSame(0, $order++);
+            });
+        $repository->expects(self::once())->method('advanceSecurityEpoch')->with(self::USER)
+            ->willReturnCallback(static function () use (&$order): void {
+                self::assertSame(2, $order++);
+            });
+        $stepUp = $this->createMock(StepUpCredentialStore::class);
+        $stepUp->expects(self::once())->method('revokeForSubject')->with(
+            self::USER,
+            self::equalTo(new DateTimeImmutable('2026-08-04T10:00:00+00:00')),
+            'authenticator lost',
+        )->willReturnCallback(static function () use (&$order): int {
+            self::assertSame(1, $order++);
+            return 1;
+        });
+        $sessions = $this->createMock(AdministratorSessionStore::class);
+        $sessions->expects(self::once())->method('deleteAllForUser')->willReturn(1);
+        $audit = $this->createMock(AuditRecorder::class);
+        $audit->expects(self::once())->method('record')->with(self::callback(
+            static fn (AuditEvent $event): bool => $event->action() === 'identity.step_up.credential.revoke'
+                && $event->subjectId() === self::USER
+                && $event->metadata() === [
+                    'revoked_credentials' => 1,
+                    'sessions_terminated' => 1,
+                    'reason' => 'authenticator lost',
+                    'self_service' => false,
+                ],
+        ));
+
+        self::assertSame(1, $this->service(
+            $repository,
+            null,
+            $audit,
+            null,
+            null,
+            $stepUp,
+            $sessions,
+        )->revokeStepUpCredentials($this->context(), self::USER, 'authenticator lost'));
+    }
+
+    public function testSessionTerminationAdvancesTheEpochWithoutTouchingCredentials(): void
+    {
+        $repository = $this->createMock(AccessControlRepository::class);
+        $repository->expects(self::once())->method('lockUser')->with(self::USER);
+        $repository->expects(self::once())->method('advanceSecurityEpoch')->with(self::USER);
+        $repository->expects(self::never())->method('changePassword');
+        $repository->expects(self::never())->method('revokeSubjectTokens');
+        $sessions = $this->createMock(AdministratorSessionStore::class);
+        $sessions->expects(self::once())->method('deleteAllForUser')->willReturn(4);
+        $audit = $this->createMock(AuditRecorder::class);
+        $audit->expects(self::once())->method('record')->with(self::callback(
+            static fn (AuditEvent $event): bool => $event->action() === 'user.sessions.terminate'
+                && $event->metadata() === [
+                    'sessions_terminated' => 4,
+                    'reason' => 'shared workstation',
+                    'self_service' => false,
+                ],
+        ));
+
+        self::assertSame(4, $this->service(
+            $repository,
+            null,
+            $audit,
+            null,
+            null,
+            null,
+            $sessions,
+        )->terminateUserSessions($this->context(), self::USER, 'shared workstation'));
+    }
+
+    public function testEmergencyTokenRevocationNowAlsoEndsTheSubjectsBrowserSessions(): void
+    {
+        $repository = $this->createMock(AccessControlRepository::class);
+        $repository->expects(self::once())->method('lockUser')->with(self::USER);
+        $repository->expects(self::once())->method('revokeSubjectTokens')->willReturn(5);
+        $sessions = $this->createMock(AdministratorSessionStore::class);
+        $sessions->expects(self::once())->method('deleteAllForUser')
+            ->with(self::anything(), self::USER)->willReturn(2);
+        $audit = $this->createMock(AuditRecorder::class);
+        $audit->expects(self::once())->method('record')->with(self::callback(
+            static fn (AuditEvent $event): bool => $event->action() === 'token.emergency_revoke_all'
+                && $event->metadata() === [
+                    'revoked_tokens' => 5,
+                    'sessions_terminated' => 2,
+                    'reason' => 'account compromise',
+                ],
+        ));
+
+        self::assertSame(5, $this->service(
+            $repository,
+            null,
+            $audit,
+            null,
+            null,
+            null,
+            $sessions,
+        )->emergencyRevokeAllSubjectTokens($this->context(), self::USER, 'account compromise'));
+    }
+
     private function service(
         AccessControlRepository $repository,
         ?PasswordHasher $passwords = null,
         ?AuditRecorder $audit = null,
         ?ResourceSiteOwnershipWriter $ownership = null,
+        ?HighImpactCredentialGuard $credentials = null,
+        ?StepUpCredentialStore $stepUp = null,
+        ?AdministratorSessionStore $sessions = null,
     ): AccessControlService {
         $transactions = $this->createStub(TransactionManager::class);
         $transactions->method('transactional')->willReturnCallback(
@@ -569,6 +828,9 @@ final class AccessControlServiceTest extends TestCase
             $clock,
             AuthorizationContext::gateway(),
             $ownership ?? AuthorizationContext::ownershipWriter(),
+            $credentials ?? $this->createStub(HighImpactCredentialGuard::class),
+            $stepUp ?? $this->createStub(StepUpCredentialStore::class),
+            $sessions ?? $this->createStub(AdministratorSessionStore::class),
         );
     }
 

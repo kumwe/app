@@ -217,6 +217,86 @@ final class DoctrineAccessControlRepositoryTest extends TestCase
     }
 
     /**
+     * Proves a password replacement rewrites the credential and advances the epoch, in that order.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testPasswordChangeRewritesTheCredentialAndThenAdvancesTheEpoch(): void
+    {
+        $userId = '0191574f-f0b8-7bf3-a9aa-91c6b8244f20';
+        $database = $this->database();
+        $statements = [];
+        $database->expects(self::exactly(2))->method('executeStatement')->willReturnCallback(
+            static function (string $sql, array $parameters) use (&$statements): int {
+                $statements[] = $sql;
+                self::assertNotContains('a replacement passphrase', $parameters);
+
+                return 1;
+            },
+        );
+
+        $this->repository($database)->changePassword(
+            $userId,
+            'argon2id-replacement-hash',
+            new DateTimeImmutable('2026-08-09T10:00:00+00:00'),
+        );
+
+        self::assertStringContainsString('kumwe_password_credentials', $statements[0]);
+        self::assertStringContainsString('password_hash = ?', $statements[0]);
+        self::assertStringContainsString('changed_at = ?', $statements[0]);
+        self::assertStringContainsString('security_epoch = security_epoch + 1', $statements[1]);
+    }
+
+    /**
+     * Proves an account with no credential row is refused rather than silently given one.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testPasswordChangeRefusesAnAccountThatCarriesNoCredential(): void
+    {
+        $database = $this->database();
+        $database->expects(self::once())->method('executeStatement')->willReturn(0);
+
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('password credential');
+
+        $this->repository($database)->changePassword(
+            '0191574f-f0b8-7bf3-a9aa-91c6b8244f21',
+            'argon2id-replacement-hash',
+            new DateTimeImmutable('2026-08-09T10:00:00+00:00'),
+        );
+    }
+
+    /**
+     * Proves the standalone epoch advance touches exactly one user row and nothing else.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testStandaloneEpochAdvanceTouchesOnlyTheUserRow(): void
+    {
+        $userId = '0191574f-f0b8-7bf3-a9aa-91c6b8244f22';
+        $database = $this->database();
+        $database->expects(self::once())->method('executeStatement')->with(
+            self::callback(static function (string $sql): bool {
+                self::assertStringContainsString('kumwe_users', $sql);
+                self::assertStringContainsString('security_epoch = security_epoch + 1', $sql);
+
+                return true;
+            }),
+            [$userId],
+            [Types::GUID],
+        )->willReturn(1);
+
+        $this->repository($database)->advanceSecurityEpoch($userId);
+    }
+
+    /**
      * Build the adapter with the supplied DBAL test double.
      *
      * @param   Connection  $database  Test double recording the adapter's SQL interactions.

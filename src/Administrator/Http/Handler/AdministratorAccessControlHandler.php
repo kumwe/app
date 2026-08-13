@@ -47,6 +47,29 @@ use Psr\Http\Server\RequestHandlerInterface;
 final readonly class AdministratorAccessControlHandler implements RequestHandlerInterface
 {
     /**
+     * Submitted fields that carry a secret and must never reach a purpose digest or a redirect.
+     *
+     * The step-up purpose is a canonical digest of the exact submitted change set, and that digest is
+     * stored on the proof row and repeated in the audit event. A password folded into it would leave a
+     * durable, offline-guessable commitment to the plaintext in two tables, so every credential-bearing
+     * field is stripped before the digest is taken. What remains still binds the proof to the action,
+     * the target account and the stated reason, which is what the payload binding is for.
+     *
+     * @var    list<string>
+     * @since  2.0.0
+     */
+    private const array CREDENTIAL_FIELDS = [
+        '_csrf',
+        'step_up_method',
+        'step_up_code',
+        'recovery_code',
+        'current_password',
+        'new_password',
+        'new_password_confirmation',
+        'password',
+    ];
+
+    /**
      * Wire the screen to the services that read and change administrator identities.
      *
      * @param  AccessControlService             $access           Reads and mutates users, roles, grants and tokens.
@@ -161,6 +184,37 @@ final readonly class AdministratorAccessControlHandler implements RequestHandler
                 $replacementToken = $completion->verification->rotatedSession->cookieToken;
                 $csrf = $completion->verification->rotatedSession->csrfToken;
                 $recoveryCodes = $completion->recoveryCodes;
+            } elseif ($action === 'step_up.recovery.reissue') {
+                $purpose = 'identity.step_up.recovery.reissue';
+                /** @var array{verification: StepUpVerification, codes: list<string>} $reissued */
+                $reissued = $this->transactions->transactional(function () use (
+                    $context,
+                    $purpose,
+                    $form,
+                    $request,
+                ): array {
+                    $verification = $this->stepUp->challenge(
+                        $this->stepUpIntent($context, $purpose),
+                        AdministratorRequest::required($form, 'step_up_code'),
+                        $this->source($request),
+                    );
+                    $steppedContext = $this->multiFactorContext($context, $verification);
+                    $this->proofConsumer->consume(
+                        $steppedContext->stepUpProof()
+                            ?? throw new InvalidArgumentException('Administrator reissue proof is unavailable.'),
+                        $steppedContext,
+                        $purpose,
+                        $this->clock->now(),
+                    );
+
+                    return [
+                        'verification' => $verification,
+                        'codes' => $this->stepUp->reissueRecoveryCodes($steppedContext->actorId()),
+                    ];
+                });
+                $replacementToken = $reissued['verification']->rotatedSession->cookieToken;
+                $csrf = $reissued['verification']->rotatedSession->csrfToken;
+                $recoveryCodes = $reissued['codes'];
             } else {
                 $purpose = $this->stepUpPurpose($action, $form);
                 /**
@@ -204,6 +258,9 @@ final readonly class AdministratorAccessControlHandler implements RequestHandler
                 $replacementToken = $verification->rotatedSession->cookieToken;
                 $csrf = $verification->rotatedSession->csrfToken;
                 $createdToken = $result['created_token'];
+                if ($action === 'user.password.change') {
+                    return $this->signedOut();
+                }
             }
             if ($createdToken === null) {
                 if ($enrollment === null && $recoveryCodes === []) {
@@ -242,6 +299,7 @@ final readonly class AdministratorAccessControlHandler implements RequestHandler
             ),
             'active_organization' => $context->organization()?->identifier(),
             'active_workspace' => $context->workspace()?->identifier(),
+            'active_actor_id' => $context->actorId(),
             'step_up_enrollment' => $enrollment,
             'step_up_recovery_codes' => $recoveryCodes,
         ]), 200, array_filter([
@@ -356,6 +414,39 @@ final readonly class AdministratorAccessControlHandler implements RequestHandler
                     AdministratorRequest::required($form, 'reason'),
                 );
             }),
+            'user.password.change' => $this->after(function () use ($context, $form): void {
+                $replacement = AdministratorRequest::required($form, 'new_password');
+                if (!hash_equals($replacement, AdministratorRequest::required($form, 'new_password_confirmation'))) {
+                    throw new InvalidArgumentException('The replacement password and its confirmation differ.');
+                }
+                $this->access->changeOwnPassword(
+                    $context,
+                    AdministratorRequest::required($form, 'current_password'),
+                    $replacement,
+                );
+            }),
+            'user.password.reset' => $this->after(function () use ($context, $form): void {
+                $this->access->resetUserPassword(
+                    $context,
+                    AdministratorRequest::required($form, 'user_id'),
+                    AdministratorRequest::required($form, 'new_password'),
+                    AdministratorRequest::required($form, 'reason'),
+                );
+            }),
+            'user.step_up.revoke' => $this->after(function () use ($context, $form): void {
+                $this->access->revokeStepUpCredentials(
+                    $context,
+                    AdministratorRequest::required($form, 'user_id'),
+                    AdministratorRequest::required($form, 'reason'),
+                );
+            }),
+            'user.sessions.terminate' => $this->after(function () use ($context, $form): void {
+                $this->access->terminateUserSessions(
+                    $context,
+                    AdministratorRequest::required($form, 'user_id'),
+                    AdministratorRequest::required($form, 'reason'),
+                );
+            }),
             default => throw new InvalidArgumentException('The access-control action is not supported.'),
         };
     }
@@ -436,6 +527,31 @@ final readonly class AdministratorAccessControlHandler implements RequestHandler
     }
 
     /**
+     * Send the operator back to sign-in after they have replaced their own password.
+     *
+     * Changing a password advances the actor's own security epoch, which is exactly what retires every
+     * session they hold — including the one this request rotated a moment earlier. Rather than hand the
+     * browser a cookie that will fail to resolve on the next request and leave the operator staring at
+     * an unexplained sign-in page, the replacement cookie is expired here and the redirect states the
+     * outcome, so being signed out reads as the intended consequence of the change.
+     *
+     * @return  ResponseInterface  A 303 to the administrator sign-in with the session cookie cleared.
+     *
+     * @since   2.0.0
+     */
+    private function signedOut(): ResponseInterface
+    {
+        return new RedirectResponse('/administrator/login?password_changed=1', 303, [
+            'Cache-Control' => 'no-store',
+            'Set-Cookie' => sprintf(
+                '%s=; Path=/administrator; Max-Age=0; HttpOnly; SameSite=Strict%s',
+                AdministratorSessionMiddleware::COOKIE_NAME,
+                $this->secureCookie ? '; Secure' : '',
+            ),
+        ]);
+    }
+
+    /**
      * Build an exact second-factor intent only from the authenticated administrator context.
      *
      * @param   ExecutionContext  $context  Authenticated administrator and current session scope.
@@ -512,10 +628,14 @@ final readonly class AdministratorAccessControlHandler implements RequestHandler
             'token.create',
             'token.revoke',
             'token.rotate',
-            'token.emergency_revoke' => 'identity.access_control.' . str_replace('_', '.', $action),
+            'token.emergency_revoke',
+            'user.password.change',
+            'user.password.reset',
+            'user.step_up.revoke',
+            'user.sessions.terminate' => 'identity.access_control.' . str_replace('_', '.', $action),
             default => throw new InvalidArgumentException('The access-control step-up purpose is invalid.'),
         };
-        foreach (['_csrf', 'step_up_method', 'step_up_code', 'recovery_code'] as $credentialField) {
+        foreach (self::CREDENTIAL_FIELDS as $credentialField) {
             unset($form[$credentialField]);
         }
 

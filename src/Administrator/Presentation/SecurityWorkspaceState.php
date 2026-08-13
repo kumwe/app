@@ -37,12 +37,12 @@ final readonly class SecurityWorkspaceState
      * @since  2.0.0
      */
     private const ACCESS_CONCERNS = [
-        'users' => ['browse', 'create', 'edit', 'review', 'history'],
+        'users' => ['browse', 'create', 'edit', 'review', 'history', 'password', 'unenroll', 'sessions'],
         'groups' => ['browse', 'create', 'review', 'history'],
         'grants' => ['browse', 'create', 'review', 'history'],
         'assignments' => ['browse', 'create', 'review', 'history'],
         'tokens' => ['browse', 'create', 'review', 'history'],
-        'events' => ['browse', 'review', 'history'],
+        'events' => ['browse', 'edit', 'review', 'history'],
     ];
 
     /**
@@ -217,7 +217,7 @@ final readonly class SecurityWorkspaceState
         }
         $kind = $business ? self::businessKind($section, $mode, $query['kind'] ?? null) : null;
         $id = self::recordId($query['id'] ?? null);
-        if (!in_array($mode, ['edit', 'review', 'history'], true)) {
+        if (!in_array($mode, ['edit', 'review', 'history', 'password', 'unenroll', 'sessions'], true)) {
             $id = null;
         }
         $step = 'scope';

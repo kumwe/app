@@ -121,6 +121,77 @@ final class TotpStepUpProviderTest extends TestCase
     }
 
     /**
+     * Proves a reissue replaces every recovery code, retires the old ones and audits without material.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testRecoveryCodeReissueReplacesTheWholeSetAndRetiresTheOldCodes(): void
+    {
+        $clock = new MutableStepUpClock(new DateTimeImmutable('2026-08-09T10:00:00+00:00'));
+        $store = new MemoryStepUpCredentialStore();
+        $audit = new RecordingStepUpAudit();
+        $provider = new TotpStepUpProvider(
+            $store,
+            new SodiumStepUpSecretCipher(str_repeat('e', 32)),
+            new SodiumStepUpRecoveryCodeHasher(str_repeat('h', 32)),
+            new DeterministicStepUpRandom(),
+            new TimeStepTestAlgorithm(),
+            new RecordingStepUpThrottle(),
+            new RecordingStepUpSessionRotator(),
+            new RecordingStepUpProofStore(),
+            new ImmediateStepUpTransactions(),
+            $audit,
+            $clock,
+        );
+        $setup = $provider->beginEnrollment(self::SUBJECT, 'Kumwe', 'user@example.test');
+        $completed = $provider->confirmEnrollment($this->intent(self::SESSION), $setup->enrollmentId, '123456', '');
+        $originalDigests = $store->recoveryDigests();
+
+        $reissued = $provider->reissueRecoveryCodes(self::SUBJECT);
+
+        self::assertCount(10, $reissued);
+        self::assertCount(10, array_unique($reissued));
+        self::assertSame([], array_intersect($completed->recoveryCodes, $reissued));
+        self::assertSame([], array_intersect($originalDigests, $store->recoveryDigests()));
+        $event = $audit->events[array_key_last($audit->events)];
+        self::assertSame('identity.step_up.recovery.reissue', $event->action());
+        self::assertSame(['issued_codes' => 10], $event->metadata());
+        foreach ($reissued as $code) {
+            self::assertStringNotContainsString($code, json_encode($event->metadata(), JSON_THROW_ON_ERROR));
+        }
+    }
+
+    /**
+     * Proves a subject with no active credential cannot obtain a fresh recovery-code set.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testRecoveryCodeReissueRefusesASubjectWithNoActiveCredential(): void
+    {
+        $provider = new TotpStepUpProvider(
+            new MemoryStepUpCredentialStore(),
+            new SodiumStepUpSecretCipher(str_repeat('e', 32)),
+            new SodiumStepUpRecoveryCodeHasher(str_repeat('h', 32)),
+            new DeterministicStepUpRandom(),
+            new TimeStepTestAlgorithm(),
+            new RecordingStepUpThrottle(),
+            new RecordingStepUpSessionRotator(),
+            new RecordingStepUpProofStore(),
+            new ImmediateStepUpTransactions(),
+            new RecordingStepUpAudit(),
+            new MutableStepUpClock(new DateTimeImmutable('2026-08-09T10:00:00+00:00')),
+        );
+
+        $this->expectException(StepUpRejected::class);
+
+        $provider->reissueRecoveryCodes(self::SUBJECT);
+    }
+
+    /**
      * Keeps payload-specific proofs exact while throttling all payloads under their shared action.
      *
      * @return  void
@@ -317,6 +388,56 @@ final class MemoryStepUpCredentialStore implements StepUpCredentialStore
             $current->version + 1,
         );
         return true;
+    }
+
+    public function revokeForSubject(string $subjectId, DateTimeImmutable $revokedAt, string $reason): int
+    {
+        if ($this->credential?->subjectId !== $subjectId) {
+            return 0;
+        }
+        $this->credential = null;
+        $this->recovery = [];
+
+        return 1;
+    }
+
+    public function replaceRecoveryCodes(
+        string $credentialId,
+        string $subjectId,
+        int $expectedVersion,
+        array $digests,
+        DateTimeImmutable $reissuedAt,
+    ): bool {
+        $current = $this->credential;
+        if (
+            !$current instanceof TotpCredential
+            || !$current->active
+            || $current->id !== $credentialId
+            || $current->subjectId !== $subjectId
+            || $current->version !== $expectedVersion
+        ) {
+            return false;
+        }
+        $this->recovery = array_fill_keys($digests, true);
+        $this->credential = new TotpCredential(
+            $current->id,
+            $current->subjectId,
+            $current->encryptedSecret,
+            true,
+            $current->createdAt,
+            null,
+            $current->confirmedAt,
+            $current->lastAcceptedTimeStep,
+            $current->version + 1,
+        );
+
+        return true;
+    }
+
+    /** @return list<string> */
+    public function recoveryDigests(): array
+    {
+        return array_keys($this->recovery);
     }
 }
 

@@ -372,6 +372,90 @@ final readonly class DoctrineAccessControlRepository implements AccessControlRep
     }
 
     /**
+     * Replace one user's password hash and advance the security epoch in the same breath.
+     *
+     * Two statements, deliberately in this order and deliberately without a transaction of their own:
+     * the credential is rewritten first and the epoch raised second, so a caller that supplies the
+     * surrounding transaction — every caller does — either lands both or neither. Both must touch
+     * exactly one row. A user with no credential row is refused rather than silently given one, because
+     * an account that never had a password is not one a rotation is meaningful for, and inserting one
+     * here would let a reset create a sign-in path where the installation had chosen not to have one.
+     *
+     * The epoch is the whole point of the second statement. Raising it is what makes this password
+     * change retire the subject's API tokens (`DoctrineAccessTokenVerifier` compares it), their portal
+     * sessions and administrator sessions (both stores compare the stored issuing epoch), and every
+     * outstanding step-up proof (each is bound to the epoch it was minted under).
+     *
+     * @param   string             $userId        UUID of the user whose credential is replaced.
+     * @param   string             $passwordHash  Already-hashed replacement password.
+     * @param   DateTimeImmutable  $at            Instant recorded as the credential change time.
+     *
+     * @return  void
+     *
+     * @throws  InvalidArgumentException  When no credential row carries that user, or the user row
+     *          disappeared before its epoch could be advanced.
+     *
+     * @since   2.0.0
+     */
+    public function changePassword(string $userId, string $passwordHash, DateTimeImmutable $at): void
+    {
+        $this->assertChanged($this->database->executeStatement(sprintf(
+            'UPDATE %s SET password_hash = ?, changed_at = ? WHERE user_id = ?',
+            $this->tables->quoted('password_credentials'),
+        ), [$passwordHash, $at, $userId], [
+            Types::STRING,
+            Types::DATETIME_IMMUTABLE,
+            Types::GUID,
+        ]), 'password credential');
+        $this->incrementSecurityEpoch($userId);
+    }
+
+    /**
+     * Advance one user's security epoch without changing anything else about the row.
+     *
+     * The public face of the private increment every other credential-retiring write here already
+     * uses, for the retirements whose state lives in another store — a revoked second factor, a
+     * terminated session set.
+     *
+     * @param   string  $userId  UUID of the user whose epoch is advanced.
+     *
+     * @return  void
+     *
+     * @throws  InvalidArgumentException  When no user row carries that identifier.
+     *
+     * @since   2.0.0
+     */
+    public function advanceSecurityEpoch(string $userId): void
+    {
+        $this->incrementSecurityEpoch($userId);
+    }
+
+    /**
+     * Read when a user's password was last written, never the credential itself.
+     *
+     * @param   string  $userId  UUID of the user being inspected.
+     *
+     * @return  ?DateTimeImmutable  The stored change instant, or null when the user has no credential
+     *          row or the driver returned something no date reader accepts.
+     *
+     * @throws  \DateMalformedStringException  When the stored instant is a string of an unreadable shape.
+     *
+     * @since   2.0.0
+     */
+    public function passwordChangedAt(string $userId): ?DateTimeImmutable
+    {
+        $changedAt = $this->database->fetchOne(sprintf(
+            'SELECT changed_at FROM %s WHERE user_id = ?',
+            $this->tables->quoted('password_credentials'),
+        ), [$userId]);
+        if ($changedAt instanceof DateTimeImmutable) {
+            return $changedAt;
+        }
+
+        return is_string($changedAt) && $changedAt !== '' ? new DateTimeImmutable($changedAt) : null;
+    }
+
+    /**
      * Write a new role row for capability grants to hang from.
      *
      * The role is created bare: it confers nothing until `grant()` attaches capabilities to it.
