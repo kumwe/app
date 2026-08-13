@@ -13,10 +13,13 @@ use Kumwe\CMS\Application\Automation\CryptographicJitterSource;
 use Kumwe\CMS\Application\Automation\Job\DoctrineJobQueue;
 use Kumwe\CMS\Application\Automation\Job\DoctrineQueueRuntimeOperations;
 use Kumwe\CMS\Application\Automation\Job\DoctrineScheduler;
+use Kumwe\CMS\Application\Automation\Job\EnforceAuditRetentionHandler;
 use Kumwe\CMS\Application\Automation\Job\PurgeAdministratorSessionsHandler;
 use Kumwe\CMS\Application\Automation\Job\PurgeBusinessRecordIdempotencyHandler;
 use Kumwe\CMS\Application\Automation\Job\PurgeIdempotencyRecordsHandler;
+use Kumwe\CMS\Application\Automation\Job\RecordAuditAnchorHandler;
 use Kumwe\CMS\Application\Automation\Job\RebuildExtensionMapHandler;
+use Kumwe\CMS\Application\Automation\Job\VerifyAuditTrailHandler;
 use Kumwe\CMS\Application\Automation\Job\ScheduleRepository;
 use Kumwe\CMS\Application\Automation\Job\TransitionContentHandler;
 use Kumwe\CMS\Application\Automation\JobHandlerRegistry;
@@ -77,8 +80,18 @@ use Kumwe\CMS\Administrator\Http\Middleware\AdministratorSessionMiddleware;
 use Kumwe\CMS\Administrator\Presentation\AdministratorRenderer;
 use Kumwe\CMS\Administrator\Presentation\RecoveryAdministratorRenderer;
 use Kumwe\CMS\Administrator\Presentation\SitePresentationFormMapper;
+use Kumwe\CMS\Audit\Application\AuditAnchorWriter;
+use Kumwe\CMS\Audit\Application\AuditArchiveStorage;
 use Kumwe\CMS\Audit\Application\AuditRecorder;
+use Kumwe\CMS\Audit\Application\AuditRetentionService;
+use Kumwe\CMS\Audit\Application\AuditTrailExporter;
+use Kumwe\CMS\Audit\Application\AuditTrailVerifier;
+use Kumwe\CMS\Audit\Infrastructure\Persistence\DoctrineAuditAnchorWriter;
 use Kumwe\CMS\Audit\Infrastructure\Persistence\DoctrineAuditRecorder;
+use Kumwe\CMS\Audit\Infrastructure\Persistence\DoctrineAuditRetentionService;
+use Kumwe\CMS\Audit\Infrastructure\Persistence\DoctrineAuditTrailExporter;
+use Kumwe\CMS\Audit\Infrastructure\Persistence\DoctrineAuditTrailVerifier;
+use Kumwe\CMS\Audit\Infrastructure\Storage\FilesystemAuditArchiveStorage;
 use Kumwe\CMS\BusinessDefinition\Application\BusinessDefinitionCompatibilityAnalyzer;
 use Kumwe\CMS\BusinessDefinition\Application\BusinessDefinitionContractAdmission;
 use Kumwe\CMS\BusinessDefinition\Application\BusinessDefinitionRepository;
@@ -309,6 +322,7 @@ use Kumwe\CMS\Extension\Runtime\RuntimeMaterializationState;
 use Kumwe\CMS\Extension\Runtime\RuntimePublicationKeyRing;
 use Kumwe\CMS\Delivery\Console\Command\CreateAccessTokenCommand;
 use Kumwe\CMS\Delivery\Console\Command\CreateAdministratorCommand;
+use Kumwe\CMS\Delivery\Console\Command\VerifyAuditTrailCommand;
 use Kumwe\CMS\Delivery\Console\Command\DemoAccessCommand;
 use Kumwe\CMS\Delivery\Console\Command\DemoExamplesCommand;
 use Kumwe\CMS\Delivery\Console\Command\DemoExportCommand;
@@ -317,6 +331,7 @@ use Kumwe\CMS\Delivery\Console\Command\ConsoleAuthorizer;
 use Kumwe\CMS\Delivery\Console\Command\ActivateExtensionCommand;
 use Kumwe\CMS\Delivery\Console\Command\BuildExtensionCommand;
 use Kumwe\CMS\Delivery\Console\Command\DisableExtensionCommand;
+use Kumwe\CMS\Delivery\Console\Command\ExportAuditTrailCommand;
 use Kumwe\CMS\Delivery\Console\Command\HealthCheckCommand;
 use Kumwe\CMS\Delivery\Console\Command\InstallExtensionCommand;
 use Kumwe\CMS\Delivery\Console\Command\InspectExtensionCommand;
@@ -461,6 +476,7 @@ use Kumwe\CMS\Infrastructure\Persistence\Migration\DoctrineNonTransactionalMigra
 use Kumwe\CMS\Infrastructure\Persistence\Migration\JobRecoveryMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\InstallationGlobalAutomationMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\InterfacePresentationPreferenceMigration;
+use Kumwe\CMS\Infrastructure\Persistence\Migration\AuditTamperEvidenceMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\MenuPresentationBindingMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\NonTransactionalMigrationRecovery;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\SiteAutomationContextMigration;
@@ -1117,6 +1133,43 @@ final class ContainerFactory
                 self::service($container, Connection::class),
                 self::service($container, TableNames::class),
             ), true);
+        $container->share(AuditArchiveStorage::class, static fn (): AuditArchiveStorage =>
+            new FilesystemAuditArchiveStorage($root . '/storage/private/audit-archives'), true);
+        $container->share(AuditAnchorWriter::class, static fn (Container $container): AuditAnchorWriter =>
+            new DoctrineAuditAnchorWriter(
+                self::service($container, Connection::class),
+                self::service($container, TableNames::class),
+                self::service($container, TransactionManager::class),
+                self::service($container, AuditRecorder::class),
+                self::service($container, ClockInterface::class),
+                self::service($container, AuthorizationGateway::class),
+            ), true);
+        $container->share(AuditTrailVerifier::class, static fn (Container $container): AuditTrailVerifier =>
+            new DoctrineAuditTrailVerifier(
+                self::service($container, Connection::class),
+                self::service($container, TableNames::class),
+                self::service($container, AuthorizationGateway::class),
+            ), true);
+        $container->share(AuditTrailExporter::class, static fn (Container $container): AuditTrailExporter =>
+            new DoctrineAuditTrailExporter(
+                self::service($container, Connection::class),
+                self::service($container, TableNames::class),
+                self::service($container, TransactionManager::class),
+                self::service($container, AuditArchiveStorage::class),
+                self::service($container, AuditRecorder::class),
+                self::service($container, ClockInterface::class),
+                self::service($container, AuthorizationGateway::class),
+            ), true);
+        $container->share(AuditRetentionService::class, static fn (Container $container): AuditRetentionService =>
+            new DoctrineAuditRetentionService(
+                self::service($container, Connection::class),
+                self::service($container, TableNames::class),
+                self::service($container, TransactionManager::class),
+                self::service($container, AuditTrailExporter::class),
+                self::service($container, AuditRecorder::class),
+                self::service($container, ClockInterface::class),
+                self::service($container, AuthorizationGateway::class),
+            ), true);
         $container->share(ContentRepository::class, static fn (Container $container): ContentRepository =>
             new DoctrineContentRepository(
                 self::service($container, Connection::class),
@@ -1360,6 +1413,7 @@ final class ContainerFactory
                     new InterfacePresentationPreferenceMigration(self::service($container, TableNames::class)),
                     new DocumentContentTypesMigration(self::service($container, TableNames::class)),
                     new MenuPresentationBindingMigration(self::service($container, TableNames::class)),
+                    new AuditTamperEvidenceMigration(self::service($container, TableNames::class)),
                 ],
                 [
                     // Previously distributed builds used a DBAL-equivalent static-analysis rewrite, then
@@ -4405,6 +4459,21 @@ final class ContainerFactory
             self::service($container, BusinessRecordIdempotencyPurger::class),
             self::service($container, AuthorizationGateway::class),
         ), true);
+        $container->share(RecordAuditAnchorHandler::class, static fn (
+            Container $container,
+        ): RecordAuditAnchorHandler => new RecordAuditAnchorHandler(
+            self::service($container, AuditAnchorWriter::class),
+        ), true);
+        $container->share(VerifyAuditTrailHandler::class, static fn (
+            Container $container,
+        ): VerifyAuditTrailHandler => new VerifyAuditTrailHandler(
+            self::service($container, AuditTrailVerifier::class),
+        ), true);
+        $container->share(EnforceAuditRetentionHandler::class, static fn (
+            Container $container,
+        ): EnforceAuditRetentionHandler => new EnforceAuditRetentionHandler(
+            self::service($container, AuditRetentionService::class),
+        ), true);
         $container->share(RebuildExtensionMapHandler::class, static fn (
             Container $container,
         ): RebuildExtensionMapHandler => new RebuildExtensionMapHandler(
@@ -4423,6 +4492,9 @@ final class ContainerFactory
                 self::service($container, PurgeAdministratorSessionsHandler::class),
                 self::service($container, PurgeIdempotencyRecordsHandler::class),
                 self::service($container, PurgeBusinessRecordIdempotencyHandler::class),
+                self::service($container, RecordAuditAnchorHandler::class),
+                self::service($container, VerifyAuditTrailHandler::class),
+                self::service($container, EnforceAuditRetentionHandler::class),
                 self::service($container, RebuildExtensionMapHandler::class),
                 self::service($container, TransitionContentHandler::class),
                 self::service($container, GenerateReportExportHandler::class),
@@ -4787,6 +4859,18 @@ final class ContainerFactory
             self::service($container, TrustStore::class),
             self::service($container, ConsoleAuthorizer::class),
         ), true);
+        $container->share(VerifyAuditTrailCommand::class, static fn (
+            Container $container,
+        ): VerifyAuditTrailCommand => new VerifyAuditTrailCommand(
+            self::service($container, AuditTrailVerifier::class),
+            self::service($container, ConsoleAuthorizer::class),
+        ), true);
+        $container->share(ExportAuditTrailCommand::class, static fn (
+            Container $container,
+        ): ExportAuditTrailCommand => new ExportAuditTrailCommand(
+            self::service($container, AuditTrailExporter::class),
+            self::service($container, ConsoleAuthorizer::class),
+        ), true);
         $container->share(McpServeCommand::class, static fn (Container $container): McpServeCommand =>
             new McpServeCommand(
                 self::service($container, KumweMcpServerFactory::class),
@@ -4834,6 +4918,8 @@ final class ContainerFactory
                 self::service($container, ManageSettingsCommand::class),
                 self::service($container, ManageAccessCommand::class),
                 self::service($container, ManageTrustStoreCommand::class),
+                self::service($container, VerifyAuditTrailCommand::class),
+                self::service($container, ExportAuditTrailCommand::class),
                 self::service($container, McpServeCommand::class),
             ], self::service($container, Output::class)), true);
     }

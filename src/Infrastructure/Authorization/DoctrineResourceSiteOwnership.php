@@ -126,6 +126,7 @@ final readonly class DoctrineResourceSiteOwnership implements ResourceSiteOwners
     {
         return match ($resource->type()) {
             'administrator' => true,
+            'audit_trail' => true,
             'automation_installation' => true,
             'database_schema' => $resource->identifier() === 'current',
             'extension_runtime_map' => $resource->identifier() === 'active',

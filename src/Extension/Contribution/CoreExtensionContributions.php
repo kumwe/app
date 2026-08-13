@@ -38,6 +38,8 @@ final class CoreExtensionContributions
     private const CAPABILITIES = [
         'administrator.access' => 'Enter and use the authenticated administrator surface.',
         'administrator.bootstrap' => 'Create the first administrator through host bootstrap authority.',
+        'audit.export' => 'Export the audit trail as a protected, checksummed archive.',
+        'audit.manage' => 'Anchor, verify, and apply retention to the tamper-evident audit trail.',
         'automation.manage' => 'Manage schedules and background work.',
         'business.approval.approve' => 'Approve or reject high-impact business operations.',
         'business.approval.manage' => 'Revoke and administer high-impact approval requests.',
@@ -93,6 +95,8 @@ final class CoreExtensionContributions
      */
     private const HIGH_IMPACT_CAPABILITIES = [
         'administrator.bootstrap',
+        'audit.export',
+        'audit.manage',
         'business.approval.approve',
         'business.approval.manage',
         'business.record.action',
@@ -117,6 +121,8 @@ final class CoreExtensionContributions
      * @since  2.0.0
      */
     private const GLOBAL_ONLY_CAPABILITIES = [
+        'audit.export',
+        'audit.manage',
         'extensions.manage',
         'themes.administrator.manage',
         'users.manage',
@@ -302,6 +308,20 @@ final class CoreExtensionContributions
                 'administrator.bootstrap',
                 [new ResourcePolicyTarget('administrator')],
                 systems: [SystemIdentity::Bootstrap],
+            ),
+            self::policy(
+                'core.audit.export',
+                'audit.export',
+                [new ResourcePolicyTarget('audit_trail')],
+                installationGlobal: true,
+                systems: [SystemIdentity::InstallationMaintenance],
+            ),
+            self::policy(
+                'core.audit.manage',
+                'audit.manage',
+                [new ResourcePolicyTarget('audit_trail')],
+                installationGlobal: true,
+                systems: [SystemIdentity::InstallationMaintenance],
             ),
             self::policy(
                 'core.automation.manage.site',

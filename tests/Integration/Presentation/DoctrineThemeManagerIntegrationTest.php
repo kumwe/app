@@ -40,6 +40,7 @@ use Kumwe\CMS\Infrastructure\Persistence\TableNames;
 use Kumwe\CMS\Identity\Application\Authorization\InsufficientCapability;
 use Kumwe\CMS\Kernel\Configuration\ConfigurationFactory;
 use Kumwe\CMS\Presentation\Application\ThemeActivationGuard;
+use Kumwe\CMS\Tests\Support\AuditTamperHarness;
 use Kumwe\CMS\Tests\Support\CapabilityThemeAuthorizer;
 use Kumwe\CMS\Presentation\Application\ThemeMutationAuthorizer;
 use Kumwe\CMS\Presentation\Application\ThemePackageValidator;
@@ -724,11 +725,12 @@ final class DoctrineThemeManagerIntegrationTest extends TestCase
             'extension_releases',
             'extensions',
             'extension_runtime_publications',
-            'audit_events',
             ] as $table
         ) {
             $this->database->executeStatement(sprintf('DELETE FROM %s', $this->tables->quoted($table)));
         }
+        // The audit trail is append-only at the database; test cleanup uses the sanctioned window.
+        AuditTamperHarness::truncateTrail($this->database, $this->tables);
         $this->database->executeStatement(sprintf(
             'UPDATE %s SET extension_id = NULL, version = 1, activated_by = NULL',
             $this->tables->quoted('theme_activations'),
