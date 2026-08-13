@@ -25,6 +25,7 @@ Commands return `0` on success and a non-zero status on invalid input, unavailab
 | `database:status` | List pending migrations; returns `2` when work is pending |
 | `app:health` | Check readiness from the application process |
 | `user:create-admin` | Create the initial owner from a protected password file |
+| `demo:install` | Provision the demonstration sign-ins and install the example extensions in one step |
 | `demo:provision-access` | Provision demonstration staff and portal sign-ins with generated credentials |
 | `demo:install-examples` | Install and activate the shipped example extensions through the signed pipeline |
 
@@ -72,6 +73,19 @@ an exact compare-and-delete. It will not clear an active, changed, malformed, or
 
 ### Demonstration sign-ins
 
+`demo:install` is the front door: it runs the cast provisioning and the example installation below in
+one authenticated step, and it is safe to repeat — existing accounts and examples are confirmed, and
+the credentials file is only created on a run that actually generated a new password. When the
+business profile is `none` the cast is skipped with an explanation and the examples still install:
+
+```bash
+php bin/kumwe demo:install \
+  --admin-email=administrator@kumwe.test \
+  --admin-password-file=/absolute/protected/password-file \
+  --credentials-file=/absolute/demo-access-credentials.json
+```
+
+The two underlying commands remain available for running either half on its own.
 `demo:provision-access` provisions the selected business profile's demonstration cast — administrator staff roles
 such as the accountant, clerk, bookkeeper, stockkeeper, and system administrator, and the portal client
 organizations with their members — from the profile's access manifest. It requires host access and a real

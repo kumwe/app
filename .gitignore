@@ -13,7 +13,7 @@
 /storage/logs/*
 /storage/sessions/*
 /storage/tmp/*
-/storage/private/demo-access-credentials.json
+/storage/private/*
 /extensions/*
 /public/assets/extensions/
 /vendor/
@@ -22,4 +22,5 @@
 !/storage/logs/.gitkeep
 !/storage/sessions/.gitkeep
 !/storage/tmp/.gitkeep
+!/storage/private/.gitkeep
 !/extensions/.gitkeep
