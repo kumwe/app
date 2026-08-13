@@ -28,7 +28,21 @@
   --kumwe-shadow-sm: 0 1px 3px rgb(16 35 29 / .1);
   --kumwe-shadow-xl: 0 28px 80px rgb(5 17 12 / .28);
   --kumwe-topbar-height: 4.5rem;
+  --kumwe-font-mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
 }
+
+/*
+ * Name the monospace family instead of leaving `code` on the generic `monospace`
+ * keyword, exactly as the administrator surface already does. Identifiers such as
+ * a record id sit inline beside proportional text, so the two fonts share one line
+ * box and are aligned on a common baseline: the line box grows to the union of both
+ * leaded boxes, which makes its height depend on the ascent/descent ratio of
+ * whichever family the host resolves `monospace` to. That silently moved the page
+ * height between machines — a wrapped identifier measured 24px per line against
+ * DejaVu Sans Mono but 25.28px against Liberation Mono — so full-page screenshots
+ * were reproducible only on the machine that produced them.
+ */
+code, pre { font-family: var(--kumwe-font-mono); }
 
 .button {
   display: inline-flex;
