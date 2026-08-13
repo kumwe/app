@@ -69,7 +69,7 @@ final class ConfigurationFactory
             administratorSessionSeconds: $environment->positiveInteger('APP_ADMIN_SESSION_SECONDS', 28_800),
             allowUnsignedLocalExtensions: $environment->boolean('EXTENSIONS_ALLOW_UNSIGNED_LOCAL'),
             release: $environment->string('KUMWE_RELEASE', '2.0.0-dev'),
-            secret: $environment->string('APP_SECRET'),
+            secret: $this->fileBackedSecret($environment, 'APP_SECRET') ?? $environment->string('APP_SECRET'),
             runtimeSigningKeyId: $environment->string('EXTENSION_RUNTIME_SIGNING_KEY_ID', 'runtime-v1'),
             runtimeSigningKey: $runtimeKey ?? str_repeat('testing-runtime-key-', 2),
             runtimePreviousSigningKeys: $this->previousRuntimeKeys($this->previousKeysPayload($environment)),
@@ -95,7 +95,125 @@ final class ConfigurationFactory
                 database: $environment->nonNegativeInteger('REDIS_DATABASE', 0, 15),
                 namespace: $environment->string('REDIS_NAMESPACE', 'kumwe.cms'),
             ),
+            recordEncryption: $this->recordEncryption($environment),
         );
+    }
+
+    /**
+     * Assemble the dedicated record-encryption settings, all of which a deployment may omit.
+     *
+     * Omitting every one of them is the supported upgrade path, not a degraded mode: the key derived
+     * from `APP_SECRET` stays active and no stored envelope has to move. Each secret may be supplied
+     * inline or through a `_FILE` companion, which is what lets a bare-metal or systemd deployment use
+     * the same mounted-secret discipline the container image already applies.
+     *
+     * @param   Environment  $environment  Allow-listed variables resolved from the process and dotenv file.
+     *
+     * @return  RecordEncryptionConfiguration  The configured record key material, possibly all null.
+     *
+     * @throws  InvalidArgumentException  When a setting names both a value and a file, a named file is
+     *          not a readable regular file or is blank, the retired-key payload is not a flat JSON
+     *          object of identifiers to secrets, or an identifier is set without its key.
+     *
+     * @since   2.0.0
+     */
+    private function recordEncryption(Environment $environment): RecordEncryptionConfiguration
+    {
+        $activeKey = $this->fileBackedSecret($environment, 'RECORD_ENCRYPTION_KEY');
+
+        return new RecordEncryptionConfiguration(
+            activeKeyId: $activeKey === null
+                ? null
+                : $environment->optionalString('RECORD_ENCRYPTION_KEY_ID'),
+            activeKey: $activeKey,
+            previousKeys: $this->keyMap(
+                $this->fileBackedSecret($environment, 'RECORD_ENCRYPTION_PREVIOUS_KEYS'),
+                'RECORD_ENCRYPTION_PREVIOUS_KEYS',
+            ),
+            legacySecret: $this->fileBackedSecret($environment, 'RECORD_ENCRYPTION_LEGACY_SECRET'),
+        );
+    }
+
+    /**
+     * Read one secret from its variable or from the file its `_FILE` companion names.
+     *
+     * The two spellings are mutually exclusive rather than ordered, so there is never a question which
+     * one a deployment is actually running on. The file must be an absolute path to a readable regular
+     * file and must not be a symbolic link, which stops a writable link inside the deployment tree from
+     * redirecting a secret read; the same rule the runtime key ring already applied. A trailing newline
+     * is stripped, because that is what `printf` into a mounted file and most secret managers produce.
+     *
+     * @param   Environment  $environment  Allow-listed variables to read the pair from.
+     * @param   string       $name         Variable name; its file companion is `$name . '_FILE'`.
+     *
+     * @return  ?string  The resolved secret, or null when neither spelling is configured.
+     *
+     * @throws  InvalidArgumentException  When both spellings are supplied, the named file fails its
+     *          location or permission checks, or the file is blank.
+     *
+     * @since   2.0.0
+     */
+    private function fileBackedSecret(Environment $environment, string $name): ?string
+    {
+        $inline = $environment->optionalString($name);
+        $file = $environment->optionalString($name . '_FILE');
+        if ($inline !== null && $file !== null) {
+            throw new InvalidArgumentException(sprintf('Configure %s by value or by file, never both.', $name));
+        }
+        if ($file === null) {
+            return $inline;
+        }
+        if (!str_starts_with($file, '/') || !is_file($file) || is_link($file) || !is_readable($file)) {
+            throw new InvalidArgumentException(sprintf('%s_FILE must be a readable regular file.', $name));
+        }
+        $payload = file_get_contents($file);
+        if (!is_string($payload) || trim($payload) === '') {
+            throw new InvalidArgumentException(sprintf('%s_FILE is empty.', $name));
+        }
+
+        return rtrim($payload, "\r\n");
+    }
+
+    /**
+     * Decode a flat JSON object of key identifier to secret.
+     *
+     * A decode failure or a structurally wrong payload is a configuration error rather than something to
+     * tolerate: silently dropping a retired record key would leave stored envelopes unreadable with no
+     * indication of why.
+     *
+     * @param   ?string  $encoded  JSON object of retired keys, or null when none are configured.
+     * @param   string   $name     Variable name quoted in the failure message.
+     *
+     * @return  array<string, string>  Retired secrets keyed by identifier; empty when none are configured.
+     *
+     * @throws  InvalidArgumentException  When the payload is not valid JSON, is not an object, or maps
+     *          something other than string identifiers to string secrets.
+     *
+     * @since   2.0.0
+     */
+    private function keyMap(?string $encoded, string $name): array
+    {
+        if ($encoded === null) {
+            return [];
+        }
+        try {
+            $decoded = json_decode($encoded, false, 16, JSON_THROW_ON_ERROR);
+        } catch (JsonException $exception) {
+            throw new InvalidArgumentException(sprintf('%s must be valid JSON.', $name), 0, $exception);
+        }
+        if (!$decoded instanceof \stdClass) {
+            throw new InvalidArgumentException(sprintf('%s must be a JSON object.', $name));
+        }
+        /** @var array<string, string> $keys */
+        $keys = [];
+        foreach (get_object_vars($decoded) as $keyId => $key) {
+            if (!is_string($keyId) || !is_string($key)) {
+                throw new InvalidArgumentException(sprintf('%s must map identifiers to secrets.', $name));
+            }
+            $keys[$keyId] = $key;
+        }
+
+        return $keys;
     }
 
     /**
@@ -141,27 +259,7 @@ final class ConfigurationFactory
      */
     private function previousRuntimeKeys(?string $encoded): array
     {
-        if ($encoded === null) {
-            return [];
-        }
-        try {
-            $decoded = json_decode($encoded, false, 16, JSON_THROW_ON_ERROR);
-        } catch (JsonException $exception) {
-            throw new InvalidArgumentException('EXTENSION_RUNTIME_PREVIOUS_KEYS must be valid JSON.', 0, $exception);
-        }
-        if (!$decoded instanceof \stdClass) {
-            throw new InvalidArgumentException('EXTENSION_RUNTIME_PREVIOUS_KEYS must be a JSON object.');
-        }
-        /** @var array<string, string> $keys */
-        $keys = [];
-        foreach (get_object_vars($decoded) as $keyId => $key) {
-            if (!is_string($keyId) || !is_string($key)) {
-                throw new InvalidArgumentException('Previous runtime signing keys must map IDs to secrets.');
-            }
-            $keys[$keyId] = $key;
-        }
-
-        return $keys;
+        return $this->keyMap($encoded, 'EXTENSION_RUNTIME_PREVIOUS_KEYS');
     }
 
     /**

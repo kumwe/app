@@ -23,7 +23,9 @@ final readonly class Environment
      * Environment variable names Kumwe reads; anything else in the process or dotenv scope is ignored.
      *
      * The allow-list is why an unrelated exported variable, or a stray line in a hand-edited `.env`,
-     * cannot reach application configuration.
+     * cannot reach application configuration. Every secret has a `_FILE` companion beside it, so a
+     * deployment that mounts secrets as files rather than exporting them needs no shell wrapper of its
+     * own; `ConfigurationFactory` resolves the pair and refuses both spellings at once.
      *
      * @var    list<string>
      * @since  2.0.0
@@ -38,6 +40,14 @@ final readonly class Environment
         'APP_MAX_BODY_BYTES',
         'APP_ADMIN_SESSION_SECONDS',
         'APP_SECRET',
+        'APP_SECRET_FILE',
+        'RECORD_ENCRYPTION_KEY_ID',
+        'RECORD_ENCRYPTION_KEY',
+        'RECORD_ENCRYPTION_KEY_FILE',
+        'RECORD_ENCRYPTION_PREVIOUS_KEYS',
+        'RECORD_ENCRYPTION_PREVIOUS_KEYS_FILE',
+        'RECORD_ENCRYPTION_LEGACY_SECRET',
+        'RECORD_ENCRYPTION_LEGACY_SECRET_FILE',
         'EXTENSION_RUNTIME_SIGNING_KEY_ID',
         'EXTENSION_RUNTIME_SIGNING_KEY',
         'EXTENSION_RUNTIME_PREVIOUS_KEYS',

@@ -120,6 +120,7 @@ use Kumwe\CMS\BusinessRecord\Application\RecordFingerprint;
 use Kumwe\CMS\BusinessRecord\Application\RecordRuleValidator;
 use Kumwe\CMS\BusinessRecord\Application\RecordValueCodec;
 use Kumwe\CMS\BusinessRecord\Application\SecretCipher;
+use Kumwe\CMS\BusinessRecord\Application\SecretKeyProvider;
 use Kumwe\CMS\BusinessRecord\Infrastructure\Persistence\DoctrineBusinessRecordIdempotencyRepository;
 use Kumwe\CMS\BusinessRecord\Infrastructure\Persistence\DoctrineBusinessRecordMutationFence;
 use Kumwe\CMS\BusinessRecord\Infrastructure\Persistence\DoctrineBusinessRecordQueryCompiler;
@@ -127,7 +128,9 @@ use Kumwe\CMS\BusinessRecord\Infrastructure\Persistence\DoctrineBusinessRecordRe
 use Kumwe\CMS\BusinessRecord\Infrastructure\Persistence\DoctrineBusinessRecordRevisionRepository;
 use Kumwe\CMS\BusinessRecord\Infrastructure\Persistence\DoctrineBusinessRecordWriteRepository;
 use Kumwe\CMS\BusinessRecord\Infrastructure\Persistence\DoctrineBusinessSchemaRecordRepinGateway;
-use Kumwe\CMS\BusinessRecord\Infrastructure\Security\SodiumSecretCipher;
+use Kumwe\CMS\BusinessRecord\Infrastructure\Security\ConfiguredSecretKeyRings;
+use Kumwe\CMS\BusinessRecord\Infrastructure\Security\KeyRingSecretCipher;
+use Kumwe\CMS\BusinessRecord\Infrastructure\Security\KeyRingSecretKeyProvider;
 use Kumwe\CMS\BusinessIntegration\Application\BusinessRecordMutationEventPublisher;
 use Kumwe\CMS\BusinessIntegration\Application\DurableOutboundAdapterDispatcher;
 use Kumwe\CMS\BusinessIntegration\Application\EventContractRegistry;
@@ -196,6 +199,7 @@ use Kumwe\CMS\BusinessSurface\Application\BusinessSurfaceService;
 use Kumwe\CMS\BusinessSurface\Application\CustomBusinessActionExecutor;
 use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessSurfaceDispatcher;
 use Kumwe\CMS\BusinessSurface\Application\GeneratedBusinessActionStepUp;
+use Kumwe\CMS\BusinessSurface\Application\MutationPlanCipher;
 use Kumwe\CMS\BusinessSurface\Delivery\Administrator\AdministratorBusinessSurfaceHandler;
 use Kumwe\CMS\BusinessSurface\Delivery\Browser\BusinessCustomViewPresenter;
 use Kumwe\CMS\BusinessSurface\Delivery\Browser\BusinessDocumentPresenter;
@@ -203,6 +207,7 @@ use Kumwe\CMS\BusinessSurface\Delivery\Browser\GeneratedBusinessBrowserControlle
 use Kumwe\CMS\BusinessSurface\Delivery\Portal\GeneratedBusinessPortalNavigationVisibility;
 use Kumwe\CMS\BusinessSurface\Delivery\Portal\PortalBusinessSurfaceHandler;
 use Kumwe\CMS\BusinessSurface\Infrastructure\Persistence\DoctrineBusinessOperationStatusRepository;
+use Kumwe\CMS\BusinessSurface\Infrastructure\Security\KeyRingMutationPlanCipher;
 use Kumwe\CMS\BusinessSurface\Presentation\Field\FieldPresentationRegistry;
 use Kumwe\CMS\BusinessSecurity\Application\Approval\ApprovalRepository;
 use Kumwe\CMS\BusinessSecurity\Application\Approval\ApprovalQueryRepository;
@@ -1932,11 +1937,12 @@ final class ContainerFactory
             self::service($container, TransactionManager::class),
             self::service($container, ClockInterface::class),
         ), true);
-        $recordEncryptionKey = hash_hmac(
-            'sha256',
-            'kumwe:business-record:encryption:v1',
+        $keyRings = new ConfiguredSecretKeyRings(
             $configuration->secret,
-            true,
+            $configuration->recordEncryption->legacySecret,
+            $configuration->recordEncryption->activeKeyId,
+            $configuration->recordEncryption->activeKey,
+            $configuration->recordEncryption->previousKeys,
         );
         $recordFingerprintKey = hash_hmac(
             'sha256',
@@ -1950,9 +1956,15 @@ final class ContainerFactory
             $configuration->secret,
             true,
         );
+        $container->share(SecretKeyProvider::class, new KeyRingSecretKeyProvider($keyRings->records()), true);
+        $container->share(SecretCipher::class, static fn (
+            Container $container,
+        ): SecretCipher => new KeyRingSecretCipher(
+            self::service($container, SecretKeyProvider::class),
+        ), true);
         $container->share(
-            SecretCipher::class,
-            new SodiumSecretCipher('application-secret-v1', $recordEncryptionKey),
+            MutationPlanCipher::class,
+            new KeyRingMutationPlanCipher(new KeyRingSecretKeyProvider($keyRings->mutationPlans())),
             true,
         );
         $container->share(RecordFingerprint::class, new RecordFingerprint($recordFingerprintKey), true);
@@ -2485,7 +2497,7 @@ final class ContainerFactory
             self::service($container, BusinessRecordDefinitionResolver::class),
             self::service($container, BusinessRecordAccessController::class),
             self::service($container, RecordFingerprint::class),
-            self::service($container, SecretCipher::class),
+            self::service($container, MutationPlanCipher::class),
             self::service($container, TransactionManager::class),
             self::service($container, ClockInterface::class),
         ), true);
