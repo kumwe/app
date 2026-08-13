@@ -18,7 +18,9 @@ use Kumwe\CMS\BusinessReporting\Domain\ExportArtifactStatus;
 use Kumwe\CMS\BusinessReporting\Infrastructure\DoctrineExportArtifactRepository;
 use Kumwe\CMS\Infrastructure\Persistence\DoctrineTransactionManager;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\BusinessIntegrationSdkMigration;
+use Kumwe\CMS\Infrastructure\Persistence\Migration\AuditTamperEvidenceMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\CoreSchemaMigration;
+use Kumwe\CMS\Infrastructure\Persistence\Migration\InstallationGlobalAutomationMigration;
 use Kumwe\CMS\Infrastructure\Persistence\TableNames;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
@@ -57,6 +59,8 @@ final class ExportArtifactPersistenceTest extends TestCase
             $this->transactions,
         );
         (new CoreSchemaMigration($this->tables))->up($this->database);
+        (new InstallationGlobalAutomationMigration($this->tables))->up($this->database);
+        (new AuditTamperEvidenceMigration($this->tables))->up($this->database);
         $migration = new BusinessIntegrationSdkMigration($this->tables);
         $migration->up($this->database);
         $migration->up($this->database);

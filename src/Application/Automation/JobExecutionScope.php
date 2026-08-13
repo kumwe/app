@@ -27,6 +27,9 @@ final class JobExecutionScope
      * @since  2.0.0
      */
     private const INSTALLATION_GLOBAL = [
+        'audit.anchor.record' => SystemIdentity::InstallationMaintenance,
+        'audit.retention.enforce' => SystemIdentity::InstallationMaintenance,
+        'audit.trail.verify' => SystemIdentity::InstallationMaintenance,
         'business.record.idempotency.purge' => SystemIdentity::InstallationMaintenance,
         'extensions.runtime.rebuild' => SystemIdentity::ExtensionMaterializer,
         'system.idempotency.purge' => SystemIdentity::InstallationMaintenance,

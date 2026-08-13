@@ -26,7 +26,9 @@ use Kumwe\CMS\Identity\Application\Authorization\InsufficientCapability;
 use Kumwe\CMS\Identity\Application\Security\PasswordHasher;
 use Kumwe\CMS\Identity\Infrastructure\Administration\DoctrineAdministratorIdentityGateway;
 use Kumwe\CMS\Infrastructure\Persistence\DoctrineTransactionManager;
+use Kumwe\CMS\Infrastructure\Persistence\Migration\AuditTamperEvidenceMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\CoreSchemaMigration;
+use Kumwe\CMS\Infrastructure\Persistence\Migration\InstallationGlobalAutomationMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\ApplicationAuthorizationMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\BusinessDefinitionCatalogMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\BusinessSecurityPortalMigration;
@@ -623,6 +625,8 @@ final class ThemePersistenceIntegrationTest extends TestCase
         (new BusinessDefinitionCatalogMigration($tables))->up($database);
         (new BusinessTransactionalRuntimeMigration($tables))->up($database);
         (new BusinessSecurityPortalMigration($tables))->up($database);
+        (new InstallationGlobalAutomationMigration($tables))->up($database);
+        (new AuditTamperEvidenceMigration($tables))->up($database);
 
         return [$database, $tables];
     }
