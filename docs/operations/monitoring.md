@@ -47,3 +47,43 @@ inbox, checkpoints, process work, export metadata, or runtime generations from a
 ## Audit records
 
 Application audit records are separate from diagnostic logs. They identify actor, action, target, outcome, time, and safe metadata for content, settings, access control, extensions, and automation. Restrict audit access, retain it according to site policy, and include it in incident preservation. Do not treat application logs as a substitute for audit history.
+
+### Tamper evidence
+
+Every `audit_events` row carries a canonical SHA-256 `digest` of its own fields, a `previous_digest` witness link
+to the row that was head when it was written, and a database-allocated monotonic `position`. The scheduled
+`audit.anchor.record` job seals settled position ranges into the chained `audit_anchors` ledger, which fixes each
+range's row count and rolling digest so a later deletion, insertion, or reordering inside it is detectable. Bare
+gaps in `position` are **not** evidence of tampering: a rolled-back transaction consumes an auto-increment value,
+so gaps occur in an intact trail. The anchored row count is what settles the question.
+
+Run `bin/kumwe audit:verify --site=<site> --token-file=<file>` to re-derive the whole chain on demand; it exits
+non-zero and prints the first divergence (class, position, event id). The same walk runs nightly as the
+`audit.trail.verify` job, which fails loudly — a divergence becomes a failed and finally dead-lettered job, not a
+log line. Verification requires the `audit.manage` capability.
+
+### Append-only enforcement and least-privilege accounts
+
+`UPDATE` and `DELETE` on `audit_events` are refused by database triggers on MariaDB, MySQL, and PostgreSQL. The
+only sanctioned removal path is the retention job, which opens a session-scoped window after it has archived and
+anchored the range. These triggers stop mistakes and casual tampering; they cannot stop an account that may drop
+them. Give the application runtime a database account with `SELECT, INSERT, UPDATE, DELETE` on the application
+tables but **without** `SUPER`, `TRIGGER`, or `DROP` (PostgreSQL: not the table owner and without `BYPASSRLS`),
+and reserve a separate migration account for schema changes. With that separation the runtime account cannot
+remove the guards even if the application is compromised.
+
+### Audit export and retention
+
+`bin/kumwe audit:export --site=<site> --token-file=<file> [--from=N] [--to=N]` writes a checksummed, redacted
+NDJSON archive into `storage/private/audit-archives` with `0600` permissions and prints its manifest — key,
+SHA-256, byte size, position range, and the anchor sequence the range was sealed under. The archive bytes never
+pass through the terminal. The export is gated on `audit.export` and is itself recorded as an
+`audit.trail.exported` event. Use it for incident preservation rather than raw database access.
+
+Retention is **off by default**: the `audit.retention.enforce` schedule ships disabled with `retention_days` of
+zero, so an unconfigured installation keeps its trail unbounded. To enable it, set a positive `retention_days` on
+that schedule and enable it. A pass then archives and prunes only whole anchored ranges older than the window: it
+exports the range, chains a `prune` mark carrying the archive checksum and the range's rolling digest into the
+anchor ledger, deletes the rows through the guarded window, and records an `audit.trail.pruned` event — all in one
+transaction. Evidence is transformed into archived evidence, never silently destroyed. Keep the archives under the
+same custody as backups; the trail names their checksums, so an altered archive is detectable.

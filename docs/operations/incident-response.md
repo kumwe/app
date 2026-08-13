@@ -5,7 +5,14 @@
 1. Record the time, deployed image digests, release, affected host and observed
    health responses.
 2. Preserve centralized logs, reverse-proxy logs, database logs and relevant
-   audit records under restricted access.
+   audit records under restricted access. Take the audit trail with
+   `bin/kumwe audit:export --site=<site> --token-file=<file>`, which writes a
+   checksummed, redacted NDJSON archive into private `0600` storage and records
+   the export in the trail; keep the printed manifest with the incident notes.
+   Run `bin/kumwe audit:verify --site=<site> --token-file=<file>` before and
+   after preservation so the record shows whether the trail was already
+   divergent. See
+   [monitoring](monitoring.md#tamper-evidence).
 3. Snapshot persistent volumes or create a verified backup when doing so will not
    destroy evidence.
 4. Do not run destructive cleanup, schema rollback or restore over the affected
