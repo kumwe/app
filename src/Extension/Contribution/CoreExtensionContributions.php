@@ -52,6 +52,7 @@ final class CoreExtensionContributions
         'business.record.export' => 'Export authorized business-record projections.',
         'business.record.history' => 'Read business-record revision history.',
         'business.record.read' => 'Read individual business records.',
+        'business.record.rekey' => 'Re-encrypt stored business-record secrets under the active key.',
         'business.record.relate' => 'Manage business-record relationships and ordered lines.',
         'business.record.report' => 'Run authorized business-record reports and aggregates.',
         'business.record.restore' => 'Restore soft-deleted business records.',
@@ -101,6 +102,7 @@ final class CoreExtensionContributions
         'business.approval.manage',
         'business.record.action',
         'business.record.delete',
+        'business.record.rekey',
         'business.schema.approve',
         'business.schema.destructive',
         'business.schema.execute',
@@ -394,6 +396,9 @@ final class CoreExtensionContributions
             self::policy('core.business.record.read', 'business.record.read', [
                 new ResourcePolicyTarget('business_record'),
             ], systems: [SystemIdentity::ProfileInstaller]),
+            self::policy('core.business.record.rekey', 'business.record.rekey', [
+                new ResourcePolicyTarget('business_record'),
+            ], systems: [SystemIdentity::Worker]),
             self::policy('core.business.record.relate', 'business.record.relate', [
                 new ResourcePolicyTarget('business_record'),
             ], systems: [SystemIdentity::ProfileInstaller]),

@@ -18,6 +18,7 @@ use Kumwe\CMS\Application\Automation\Job\PurgeAdministratorSessionsHandler;
 use Kumwe\CMS\Application\Automation\Job\PurgeBusinessRecordIdempotencyHandler;
 use Kumwe\CMS\Application\Automation\Job\PurgeIdempotencyRecordsHandler;
 use Kumwe\CMS\Application\Automation\Job\RecordAuditAnchorHandler;
+use Kumwe\CMS\Application\Automation\Job\RotateRecordSecretsHandler;
 use Kumwe\CMS\Application\Automation\Job\RebuildExtensionMapHandler;
 use Kumwe\CMS\Application\Automation\Job\VerifyAuditTrailHandler;
 use Kumwe\CMS\Application\Automation\Job\ScheduleRepository;
@@ -119,6 +120,7 @@ use Kumwe\CMS\BusinessRecord\Application\RecordCursorCodec;
 use Kumwe\CMS\BusinessRecord\Application\RecordFingerprint;
 use Kumwe\CMS\BusinessRecord\Application\RecordRuleValidator;
 use Kumwe\CMS\BusinessRecord\Application\RecordValueCodec;
+use Kumwe\CMS\BusinessRecord\Application\RecordSecretRotation;
 use Kumwe\CMS\BusinessRecord\Application\SecretCipher;
 use Kumwe\CMS\BusinessRecord\Application\SecretKeyProvider;
 use Kumwe\CMS\BusinessRecord\Infrastructure\Persistence\DoctrineBusinessRecordIdempotencyRepository;
@@ -128,6 +130,7 @@ use Kumwe\CMS\BusinessRecord\Infrastructure\Persistence\DoctrineBusinessRecordRe
 use Kumwe\CMS\BusinessRecord\Infrastructure\Persistence\DoctrineBusinessRecordRevisionRepository;
 use Kumwe\CMS\BusinessRecord\Infrastructure\Persistence\DoctrineBusinessRecordWriteRepository;
 use Kumwe\CMS\BusinessRecord\Infrastructure\Persistence\DoctrineBusinessSchemaRecordRepinGateway;
+use Kumwe\CMS\BusinessRecord\Infrastructure\Persistence\DoctrineRecordSecretRotation;
 use Kumwe\CMS\BusinessRecord\Infrastructure\Security\ConfiguredSecretKeyRings;
 use Kumwe\CMS\BusinessRecord\Infrastructure\Security\KeyRingSecretCipher;
 use Kumwe\CMS\BusinessRecord\Infrastructure\Security\KeyRingSecretKeyProvider;
@@ -337,6 +340,7 @@ use Kumwe\CMS\Delivery\Console\Command\ActivateExtensionCommand;
 use Kumwe\CMS\Delivery\Console\Command\BuildExtensionCommand;
 use Kumwe\CMS\Delivery\Console\Command\DisableExtensionCommand;
 use Kumwe\CMS\Delivery\Console\Command\ExportAuditTrailCommand;
+use Kumwe\CMS\Delivery\Console\Command\RotateRecordSecretsCommand;
 use Kumwe\CMS\Delivery\Console\Command\HealthCheckCommand;
 use Kumwe\CMS\Delivery\Console\Command\InstallExtensionCommand;
 use Kumwe\CMS\Delivery\Console\Command\InspectExtensionCommand;
@@ -482,6 +486,7 @@ use Kumwe\CMS\Infrastructure\Persistence\Migration\JobRecoveryMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\InstallationGlobalAutomationMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\InterfacePresentationPreferenceMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\AuditTamperEvidenceMigration;
+use Kumwe\CMS\Infrastructure\Persistence\Migration\RecordEncryptionKeyRingMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\MenuPresentationBindingMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\NonTransactionalMigrationRecovery;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\SiteAutomationContextMigration;
@@ -1419,6 +1424,7 @@ final class ContainerFactory
                     new DocumentContentTypesMigration(self::service($container, TableNames::class)),
                     new MenuPresentationBindingMigration(self::service($container, TableNames::class)),
                     new AuditTamperEvidenceMigration(self::service($container, TableNames::class)),
+                    new RecordEncryptionKeyRingMigration(self::service($container, TableNames::class)),
                 ],
                 [
                     // Previously distributed builds used a DBAL-equivalent static-analysis rewrite, then
@@ -2033,6 +2039,20 @@ final class ContainerFactory
         ): BusinessRecordMutationFence => new DoctrineBusinessRecordMutationFence(
             self::service($container, Connection::class),
             self::service($container, TableNames::class),
+        ), true);
+        $container->share(RecordSecretRotation::class, static fn (
+            Container $container,
+        ): RecordSecretRotation => new DoctrineRecordSecretRotation(
+            self::service($container, Connection::class),
+            self::service($container, BusinessDefinitionRepository::class),
+            self::service($container, BusinessSchemaInstallationRepository::class),
+            self::service($container, BusinessRecordMutationFence::class),
+            self::service($container, SecretCipher::class),
+            self::service($container, SecretKeyProvider::class),
+            self::service($container, TransactionManager::class),
+            self::service($container, AuditRecorder::class),
+            self::service($container, AuthorizationGateway::class),
+            self::service($container, ClockInterface::class),
         ), true);
         $container->share(BusinessRecordIdempotencyPurger::class, static fn (
             Container $container,
@@ -4486,6 +4506,11 @@ final class ContainerFactory
         ): EnforceAuditRetentionHandler => new EnforceAuditRetentionHandler(
             self::service($container, AuditRetentionService::class),
         ), true);
+        $container->share(RotateRecordSecretsHandler::class, static fn (
+            Container $container,
+        ): RotateRecordSecretsHandler => new RotateRecordSecretsHandler(
+            self::service($container, RecordSecretRotation::class),
+        ), true);
         $container->share(RebuildExtensionMapHandler::class, static fn (
             Container $container,
         ): RebuildExtensionMapHandler => new RebuildExtensionMapHandler(
@@ -4507,6 +4532,7 @@ final class ContainerFactory
                 self::service($container, RecordAuditAnchorHandler::class),
                 self::service($container, VerifyAuditTrailHandler::class),
                 self::service($container, EnforceAuditRetentionHandler::class),
+                self::service($container, RotateRecordSecretsHandler::class),
                 self::service($container, RebuildExtensionMapHandler::class),
                 self::service($container, TransitionContentHandler::class),
                 self::service($container, GenerateReportExportHandler::class),
@@ -4883,6 +4909,12 @@ final class ContainerFactory
             self::service($container, AuditTrailExporter::class),
             self::service($container, ConsoleAuthorizer::class),
         ), true);
+        $container->share(RotateRecordSecretsCommand::class, static fn (
+            Container $container,
+        ): RotateRecordSecretsCommand => new RotateRecordSecretsCommand(
+            self::service($container, RecordSecretRotation::class),
+            self::service($container, ConsoleAuthorizer::class),
+        ), true);
         $container->share(McpServeCommand::class, static fn (Container $container): McpServeCommand =>
             new McpServeCommand(
                 self::service($container, KumweMcpServerFactory::class),
@@ -4932,6 +4964,7 @@ final class ContainerFactory
                 self::service($container, ManageTrustStoreCommand::class),
                 self::service($container, VerifyAuditTrailCommand::class),
                 self::service($container, ExportAuditTrailCommand::class),
+                self::service($container, RotateRecordSecretsCommand::class),
                 self::service($container, McpServeCommand::class),
             ], self::service($container, Output::class)), true);
     }
