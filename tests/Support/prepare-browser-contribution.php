@@ -265,6 +265,17 @@ try {
     $access->grant($context, $limitedRole, 'content.read');
     $access->assignRole($context, $limitedUser, $limitedRole);
 
+    // The minimal administrator proves the shell degrades: administrator.access and nothing else.
+    $minimalUser = $access->createUser(
+        $context,
+        'browser-minimal@kumwe.test',
+        'Browser Minimal Administrator',
+        'browser minimal password',
+    );
+    $minimalRole = $access->createRole($context, 'browser-minimal', 'Browser Minimal Administrator');
+    $access->grant($context, $minimalRole, 'administrator.access');
+    $access->assignRole($context, $minimalUser, $minimalRole);
+
     $portalUser = $access->createUser(
         $context,
         $portalEmail,

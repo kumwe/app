@@ -12,11 +12,12 @@
       {% block actions %}
         <div class="page-actions">
           {% if capabilities['content.create'] is defined %}<a class="button primary" href="/administrator/content/new"><svg aria-hidden="true"><use href="#kumwe-icon-plus"></use></svg>Create content</a>{% endif %}
-          <a class="button" href="/administrator/content">Browse all content</a>
+          {% if capabilities['content.read'] is defined %}<a class="button" href="/administrator/content">Browse all content</a>{% endif %}
         </div>
       {% endblock %}
     {% endembed %}
 
+    {% if capabilities['content.read'] is defined %}
     <section class="panel kis-phase-five-summary" aria-label="Content discovery and publication progress">
       <form class="dashboard-search" action="/administrator/content" method="get" role="search">
         <label class="sr-only" for="dashboard-content-search">Search content</label>
@@ -36,8 +37,10 @@
       <article class="panel metric-card"><span class="metric-icon warning"><svg aria-hidden="true"><use href="#kumwe-icon-automation"></use></svg></span><span class="metric-copy"><strong class="metric-value">{{ counts.review }}</strong><span class="metric-label">Awaiting review</span></span></article>
       <article class="panel metric-card"><span class="metric-icon violet"><svg aria-hidden="true"><use href="#kumwe-icon-models"></use></svg></span><span class="metric-copy"><strong class="metric-value">{{ content_types|length }}</strong><span class="metric-label">Content types</span></span></article>
     </section>
+    {% endif %}
 
     <div class="dashboard-grid">
+      {% if capabilities['content.read'] is defined %}
       <section class="panel">
         <header class="panel-header"><div><h2>Recently updated</h2><p>Continue where your team left off.</p></div><a href="/administrator/content">View all</a></header>
         {% if entries is empty %}
@@ -54,6 +57,14 @@
           </tbody></table></div>
         {% endif %}
       </section>
+      {% else %}
+      <section class="panel" data-permission-reduced>
+        <header class="panel-header"><div><h2>Your workspace</h2><p>Everything you are permitted to use is listed in the navigation.</p></div></header>
+        <div class="panel-body">
+          <p>Content summaries stay hidden because your account does not hold the <code>content.read</code> capability. Pick a screen from the navigation to begin working.</p>
+        </div>
+      </section>
+      {% endif %}
       <aside class="panel">
         <header class="panel-header"><div><h2>Quick actions</h2><p>Common site-management tasks.</p></div></header>
         <div class="panel-body quick-actions">

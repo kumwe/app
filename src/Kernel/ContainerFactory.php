@@ -2547,11 +2547,11 @@ final class ContainerFactory
             self::service($container, AuthorizationGateway::class),
             SiteContext::fromString($configuration->publicSite),
         ), true);
-        $container->share(
-            AdministratorAuthorizationMiddleware::class,
-            new AdministratorAuthorizationMiddleware(),
-            true,
-        );
+        $container->share(AdministratorAuthorizationMiddleware::class, static fn (
+            Container $container,
+        ): AdministratorAuthorizationMiddleware => new AdministratorAuthorizationMiddleware(
+            self::service($container, AdministratorRenderer::class),
+        ), true);
         $container->share(AdministratorCsrfMiddleware::class, new AdministratorCsrfMiddleware(), true);
         if ($portalEnabled) {
             $container->share(PortalSessionMiddleware::class, static fn (
@@ -3376,7 +3376,7 @@ final class ContainerFactory
         }
         self::administratorRoute(
             $application->get('/administrator', AdministratorDashboardHandler::class, 'administrator.index'),
-            'content.read',
+            'administrator.access',
         );
         self::administratorRoute(
             $application->get(

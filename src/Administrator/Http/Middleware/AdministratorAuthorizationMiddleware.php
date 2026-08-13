@@ -5,8 +5,11 @@ declare(strict_types=1);
 namespace Kumwe\CMS\Administrator\Http\Middleware;
 
 use InvalidArgumentException;
+use Kumwe\CMS\Administrator\Presentation\AdministratorRenderer;
+use Kumwe\CMS\Identity\Application\Administration\AdministratorSession;
 use Kumwe\CMS\Identity\Application\Authentication\AuthenticatedPrincipal;
 use Kumwe\CMS\Identity\Domain\Capability;
+use Laminas\Diactoros\Response\HtmlResponse;
 use Laminas\Diactoros\Response\JsonResponse;
 use LogicException;
 use Mezzio\Router\Route;
@@ -39,21 +42,34 @@ final readonly class AdministratorAuthorizationMiddleware implements MiddlewareI
     public const OPTION_REQUIRED_CAPABILITIES = 'administrator_required_capabilities';
 
     /**
+     * Optionally wire the themed renderer a browser navigation's denial is drawn through.
+     *
+     * @param  ?AdministratorRenderer  $renderer  Renders the `access-denied` screen for a browser `GET`
+     *         that is refused; null answers every denial with a problem document instead.
+     *
+     * @since  2.0.0
+     */
+    public function __construct(private ?AdministratorRenderer $renderer = null)
+    {
+    }
+
+    /**
      * Pass the request on only when its route's declared capabilities are all held by the principal.
      *
      * Traffic outside `/administrator`, and the login form itself, is forwarded untouched. A request
      * whose route did not match carries no declaration and is also forwarded, so a mistyped
      * administrator URL still reaches the not-found handler instead of being reported as forbidden.
-     * A denial is answered as an `application/problem+json` document that names the capability, so a
-     * screen can tell the operator which grant they are missing rather than showing a bare 403.
+     * A denial names the capability the principal lacks, in the shape the caller can use: a browser
+     * navigation receives the themed `access-denied` page, everything else an
+     * `application/problem+json` document.
      *
      * @param   ServerRequestInterface   $request  Request that has already passed the administrator session
      *          middleware.
      * @param   RequestHandlerInterface  $handler  Next handler in the pipe, reached only when every requirement
      *          is met.
      *
-     * @return  ResponseInterface  The handler's response, or a 403 problem document naming the first capability
-     *          the principal lacks.
+     * @return  ResponseInterface  The handler's response, or a 403 page or problem document naming the first
+     *          capability the principal lacks.
      *
      * @throws  LogicException  When an administrator request carries no authenticated principal, or its route
      *          declares no usable capability list.
@@ -76,19 +92,61 @@ final readonly class AdministratorAuthorizationMiddleware implements MiddlewareI
 
         foreach ($this->requiredCapabilities($request) as $capability) {
             if (!$principal->hasCapability($capability)) {
-                return new JsonResponse([
-                    'type' => 'urn:kumwe:problem:insufficient-capability',
-                    'title' => 'Forbidden',
-                    'status' => 403,
-                    'detail' => sprintf('Capability %s is required for this administrator operation.', $capability),
-                ], 403, [
-                    'Content-Type' => 'application/problem+json',
-                    'Cache-Control' => 'no-store',
-                ]);
+                return $this->denied($request, $capability);
             }
         }
 
         return $handler->handle($request);
+    }
+
+    /**
+     * Answer a denied request in the shape its caller can actually use.
+     *
+     * A browser navigation — a `GET` or `HEAD` whose `Accept` header names `text/html` — is answered
+     * with the themed `access-denied` screen: the actor's own capability-filtered navigation, a notice
+     * naming the missing capability, and a way back to the dashboard, so a denial reads as a closed
+     * door rather than a broken sign-in. Every other caller, and every denial when no renderer is
+     * wired, receives the `application/problem+json` document an API client can branch on. Both shapes
+     * carry the capability name and neither is cacheable.
+     *
+     * @param   ServerRequestInterface  $request     Denied request, deciding between page and problem document.
+     * @param   Capability              $capability  First declared capability the principal does not hold.
+     *
+     * @return  ResponseInterface  A themed 403 HTML page for a browser navigation, or a 403 problem document.
+     *
+     * @since   2.0.0
+     */
+    private function denied(ServerRequestInterface $request, Capability $capability): ResponseInterface
+    {
+        $session = $request->getAttribute(AdministratorSession::REQUEST_ATTRIBUTE);
+
+        if (
+            $this->renderer !== null
+            && $session instanceof AdministratorSession
+            && in_array(strtoupper($request->getMethod()), ['GET', 'HEAD'], true)
+            && str_contains(strtolower($request->getHeaderLine('Accept')), 'text/html')
+        ) {
+            $held = [];
+            foreach ($session->principal->capabilities() as $heldCapability) {
+                $held[$heldCapability->value()] = true;
+            }
+
+            return new HtmlResponse($this->renderer->render('access-denied', [
+                'csrf' => $session->csrfToken,
+                'capabilities' => $held,
+                'missing_capability' => $capability->value(),
+            ]), 403, ['Cache-Control' => 'no-store']);
+        }
+
+        return new JsonResponse([
+            'type' => 'urn:kumwe:problem:insufficient-capability',
+            'title' => 'Forbidden',
+            'status' => 403,
+            'detail' => sprintf('Capability %s is required for this administrator operation.', $capability),
+        ], 403, [
+            'Content-Type' => 'application/problem+json',
+            'Cache-Control' => 'no-store',
+        ]);
     }
 
     /**

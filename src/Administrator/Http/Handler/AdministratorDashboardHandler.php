@@ -23,7 +23,10 @@ use Psr\Http\Server\RequestHandlerInterface;
  * changed most recently, and what an operator can create next. Counts are computed from the records the
  * actor may actually read rather than from a `COUNT(*)`, so the totals never describe entries the screen
  * would refuse to show. The listing is deliberately capped and truncated to a handful of rows: this is a
- * summary, and `AdministratorContentListHandler` is where the full, filterable browser lives.
+ * summary, and `AdministratorContentListHandler` is where the full, filterable browser lives. The screen
+ * itself asks only for `administrator.access`: an actor without `content.read` still lands here and gets
+ * the shell with their own navigation, while the content summaries degrade to a permission-reduced state
+ * without a single denied service call being made on their behalf.
  *
  * @since  2.0.0
  */
@@ -55,7 +58,9 @@ final readonly class AdministratorDashboardHandler implements RequestHandlerInte
      * live record in a state the screen has no counter for — anything a site-defined workflow adds —
      * raises only the total. The published percentage is taken over the live entries rather than the
      * total, with the divisor floored at one so an empty site renders zero per cent rather than
-     * dividing by zero.
+     * dividing by zero. An actor whose capability map carries no `content.read` is served the same
+     * screen without the content and content-type reads ever being attempted: the summaries render
+     * empty and the template shows its permission-reduced state instead of a denial.
      *
      * @param   ServerRequestInterface  $request  Administrator request, already authenticated and authorized.
      *
@@ -71,7 +76,9 @@ final readonly class AdministratorDashboardHandler implements RequestHandlerInte
         $session = AdministratorRequest::session($request);
 
         $context = AdministratorRequest::context($request);
-        $records = $this->content->list($context, 500, true);
+        $capabilities = AdministratorRequest::capabilityMap($request);
+        $readsContent = isset($capabilities['content.read']);
+        $records = $readsContent ? $this->content->list($context, 500, true) : [];
         $counts = ['total' => 0, 'published' => 0, 'draft' => 0, 'review' => 0, 'trashed' => 0];
         foreach ($records as $record) {
             $counts['total']++;
@@ -88,17 +95,19 @@ final readonly class AdministratorDashboardHandler implements RequestHandlerInte
 
         return new HtmlResponse($this->renderer->render('dashboard', [
             'csrf' => $session->csrfToken,
-            'capabilities' => AdministratorRequest::capabilityMap($request),
+            'capabilities' => $capabilities,
             'counts' => $counts,
             'published_percent' => min(100, (int) round(($counts['published'] / $active) * 100)),
             'entries' => array_map(
                 fn (ContentRecord $record): array => $this->present($record),
                 array_slice($records, 0, 6),
             ),
-            'content_types' => array_map(
-                static fn (ContentTypeDefinition $type): array => $type->toArray(),
-                $this->models->contentTypes($context),
-            ),
+            'content_types' => $readsContent
+                ? array_map(
+                    static fn (ContentTypeDefinition $type): array => $type->toArray(),
+                    $this->models->contentTypes($context),
+                )
+                : [],
         ]), 200, ['Cache-Control' => 'no-store']);
     }
 

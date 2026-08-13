@@ -1,0 +1,13 @@
+{% extends "layout.twig" %}
+{% block title %}Access denied · Kumwe{% endblock %}
+{% block context_title %}Access denied{% endblock %}
+{% block content %}
+  <div class="page-heading"><div><p class="eyebrow">Permissions</p><h1>You do not have access to this screen</h1><p>Your account is missing the <code>{{ missing_capability }}</code> capability, so this screen stays closed. Everything you are permitted to use is listed in the navigation.</p></div></div>
+  <section class="panel">
+    <header class="panel-header"><div><h2>Where to go next</h2><p>Pick a screen from the navigation, or return to your dashboard.</p></div></header>
+    <div class="panel-body">
+      <p><a class="button primary" href="/administrator">Back to the dashboard</a></p>
+      <p>If your work needs this screen, ask an administrator with user management access to grant the <code>{{ missing_capability }}</code> capability to your role.</p>
+    </div>
+  </section>
+{% endblock %}
