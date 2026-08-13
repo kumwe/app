@@ -1341,6 +1341,7 @@
     {"path": "templates/administrator/_business-schema-fields.twig", "kind": "partial", "surface_ids": ["core.administrator.generated-definition", "core.administrator.generated-record"]},
     {"path": "templates/administrator/_fields.twig", "kind": "partial", "surface_ids": ["core.administrator.content-editor", "core.administrator.content-models"]},
     {"path": "templates/administrator/access-control.twig", "kind": "surface", "surface_ids": ["core.administrator.access-control"]},
+    {"path": "templates/administrator/access-denied.twig", "kind": "error-state", "surface_ids": []},
     {"path": "templates/administrator/automation.twig", "kind": "surface", "surface_ids": ["core.administrator.automation"]},
     {"path": "templates/administrator/business-bulk-confirm.twig", "kind": "surface-state", "surface_ids": ["core.administrator.generated-definition"]},
     {"path": "templates/administrator/business-choices.twig", "kind": "support-fragment", "surface_ids": ["core.administrator.generated-choices"]},
@@ -1421,7 +1422,7 @@
     {"path": "examples/extensions/horizon-theme/templates/site/page.twig", "kind": "installable-override", "surface_ids": ["core.public.page"]}
   ],
   "navigation_catalog": [
-    {"id": "core.dashboard", "runtime_surface_binding": "declared", "area": "administrator", "path": "/administrator", "icon": "dashboard", "capability": "content.read", "surface_id": "core.administrator.dashboard", "source": "src/Extension/Contribution/CoreExtensionContributions.php"},
+    {"id": "core.dashboard", "runtime_surface_binding": "declared", "area": "administrator", "path": "/administrator", "icon": "dashboard", "capability": "administrator.access", "surface_id": "core.administrator.dashboard", "source": "src/Extension/Contribution/CoreExtensionContributions.php"},
     {"id": "core.content", "runtime_surface_binding": "declared", "area": "administrator", "path": "/administrator/content", "icon": "content", "capability": "content.read", "surface_id": "core.administrator.content-collection", "source": "src/Extension/Contribution/CoreExtensionContributions.php"},
     {"id": "core.create-content", "runtime_surface_binding": "declared", "area": "administrator", "path": "/administrator/content/new", "icon": "plus", "capability": "content.create", "surface_id": "core.administrator.content-editor", "source": "src/Extension/Contribution/CoreExtensionContributions.php"},
     {"id": "core.media", "runtime_surface_binding": "declared", "area": "administrator", "path": "/administrator/media", "icon": "media", "capability": "content.read", "surface_id": "core.administrator.media", "source": "src/Extension/Contribution/CoreExtensionContributions.php"},

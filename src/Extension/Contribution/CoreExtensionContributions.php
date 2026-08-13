@@ -1511,7 +1511,7 @@ final class CoreExtensionContributions
                 'Overview and publishing activity',
                 '/administrator',
                 'dashboard',
-                'content.read',
+                'administrator.access',
                 10,
                 'home overview activity',
                 'core.administrator.dashboard',

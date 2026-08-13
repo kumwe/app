@@ -4,9 +4,16 @@ declare(strict_types=1);
 
 namespace Kumwe\CMS\Tests\Unit\Administrator\Http\Middleware;
 
+use DateTimeImmutable;
 use Kumwe\CMS\Administrator\Http\Middleware\AdministratorAuthorizationMiddleware;
+use Kumwe\CMS\Administrator\Navigation\AdministratorNavigationRegistry;
+use Kumwe\CMS\Administrator\Presentation\AdministratorRenderer;
+use Kumwe\CMS\Administrator\Presentation\RecoveryAdministratorRenderer;
+use Kumwe\CMS\Identity\Application\Administration\AdministratorSession;
 use Kumwe\CMS\Identity\Application\Authentication\AuthenticatedPrincipal;
 use Kumwe\CMS\Identity\Domain\Capability;
+use Kumwe\CMS\Presentation\Twig\AdministratorTwigEnvironment;
+use Kumwe\CMS\Presentation\Twig\RecoveryAdministratorTwigEnvironment;
 use Laminas\Diactoros\Response\TextResponse;
 use Laminas\Diactoros\ServerRequestFactory;
 use LogicException;
@@ -20,10 +27,14 @@ use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 use Kumwe\CMS\Tests\Support\AuthorizationContext;
+use Twig\Loader\ArrayLoader;
 
 #[CoversClass(AdministratorAuthorizationMiddleware::class)]
 #[UsesClass(AuthenticatedPrincipal::class)]
 #[UsesClass(Capability::class)]
+#[UsesClass(AdministratorRenderer::class)]
+#[UsesClass(RecoveryAdministratorRenderer::class)]
+#[UsesClass(AdministratorSession::class)]
 final class AdministratorAuthorizationMiddlewareTest extends TestCase
 {
     private const SUBJECT = '018f22e2-7c8b-7ab0-8f3a-88e8026bb301';
@@ -70,6 +81,73 @@ final class AdministratorAuthorizationMiddlewareTest extends TestCase
         );
     }
 
+    public function testBrowserNavigationDenialRendersTheThemedPageWithTheActorsOwnNavigation(): void
+    {
+        $principal = AuthorizationContext::principal(['administrator.access'], self::SUBJECT);
+        $middleware = new AdministratorAuthorizationMiddleware($this->renderer());
+        $response = $middleware->process(
+            $this->request(['navigation.manage'], $principal)
+                ->withHeader('Accept', 'text/html,application/xhtml+xml;q=0.9,*/*;q=0.8')
+                ->withAttribute(AdministratorSession::REQUEST_ATTRIBUTE, $this->session($principal)),
+            $this->neverHandler(),
+        );
+        $body = (string) $response->getBody();
+
+        self::assertSame(403, $response->getStatusCode());
+        self::assertStringContainsString('text/html', $response->getHeaderLine('Content-Type'));
+        self::assertSame('no-store', $response->getHeaderLine('Cache-Control'));
+        self::assertStringContainsString('missing:navigation.manage', $body);
+        self::assertStringContainsString('[core.dashboard]', $body, 'The held navigation must be offered.');
+        self::assertStringNotContainsString(
+            '[core.navigation]',
+            $body,
+            'Navigation the actor cannot open must stay hidden on the denial page.',
+        );
+    }
+
+    public function testNonHtmlAcceptsKeepTheProblemDocumentEvenWithARendererWired(): void
+    {
+        $principal = AuthorizationContext::principal(['administrator.access'], self::SUBJECT);
+        $middleware = new AdministratorAuthorizationMiddleware($this->renderer());
+        $response = $middleware->process(
+            $this->request(['navigation.manage'], $principal)
+                ->withHeader('Accept', 'application/json')
+                ->withAttribute(AdministratorSession::REQUEST_ATTRIBUTE, $this->session($principal)),
+            $this->neverHandler(),
+        );
+
+        self::assertSame(403, $response->getStatusCode());
+        self::assertSame('application/problem+json', $response->getHeaderLine('Content-Type'));
+    }
+
+    public function testMutationDenialsKeepTheProblemDocumentEvenWhenTheBrowserAcceptsHtml(): void
+    {
+        $principal = AuthorizationContext::principal(['administrator.access'], self::SUBJECT);
+        $middleware = new AdministratorAuthorizationMiddleware($this->renderer());
+        $response = $middleware->process(
+            $this->request(['navigation.manage'], $principal, method: 'POST')
+                ->withHeader('Accept', 'text/html')
+                ->withAttribute(AdministratorSession::REQUEST_ATTRIBUTE, $this->session($principal)),
+            $this->neverHandler(),
+        );
+
+        self::assertSame(403, $response->getStatusCode());
+        self::assertSame('application/problem+json', $response->getHeaderLine('Content-Type'));
+    }
+
+    public function testHtmlDenialFallsBackToTheProblemDocumentWithoutASession(): void
+    {
+        $principal = AuthorizationContext::principal(['administrator.access'], self::SUBJECT);
+        $middleware = new AdministratorAuthorizationMiddleware($this->renderer());
+        $response = $middleware->process(
+            $this->request(['navigation.manage'], $principal)->withHeader('Accept', 'text/html'),
+            $this->neverHandler(),
+        );
+
+        self::assertSame(403, $response->getStatusCode());
+        self::assertSame('application/problem+json', $response->getHeaderLine('Content-Type'));
+    }
+
     public function testFailsClosedWhenAdministratorRouteHasNoCapabilityPolicy(): void
     {
         $principal = AuthorizationContext::principal(['administrator.access'], self::SUBJECT);
@@ -87,11 +165,12 @@ final class AdministratorAuthorizationMiddlewareTest extends TestCase
         array $capabilities,
         AuthenticatedPrincipal $principal,
         bool $configurePolicy = true,
+        string $method = 'GET',
     ): ServerRequestInterface {
         $route = new Route(
             '/administrator/navigation',
             $this->createStub(MiddlewareInterface::class),
-            ['GET'],
+            [$method],
             'administrator.navigation',
         );
 
@@ -102,9 +181,33 @@ final class AdministratorAuthorizationMiddlewareTest extends TestCase
         }
 
         return (new ServerRequestFactory())
-            ->createServerRequest('GET', 'https://kumwe.test/administrator/navigation')
+            ->createServerRequest($method, 'https://kumwe.test/administrator/navigation')
             ->withAttribute(RouteResult::class, RouteResult::fromRoute($route))
             ->withAttribute(AuthenticatedPrincipal::REQUEST_ATTRIBUTE, $principal);
+    }
+
+    private function session(AuthenticatedPrincipal $principal): AdministratorSession
+    {
+        return new AdministratorSession(
+            '018f22e2-7c8b-7ab0-8f3a-88e8026bb399',
+            $principal,
+            'csrf-token',
+            new DateTimeImmutable('+1 hour'),
+        );
+    }
+
+    private function renderer(): AdministratorRenderer
+    {
+        $template = 'missing:{{ missing_capability }}'
+            . '{% for item in administrator_navigation %}[{{ item.id }}]{% endfor %}';
+
+        return new AdministratorRenderer(
+            new AdministratorTwigEnvironment(new ArrayLoader(['access-denied.twig' => $template])),
+            new RecoveryAdministratorRenderer(
+                new RecoveryAdministratorTwigEnvironment(new ArrayLoader()),
+            ),
+            AdministratorNavigationRegistry::core(),
+        );
     }
 
     private function successfulHandler(): RequestHandlerInterface

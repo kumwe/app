@@ -404,6 +404,7 @@ final class ExtensionContributionRegistrySetTest extends TestCase
     {
         $navigation = (new ExtensionContributionRegistrySet())->navigation();
         $visible = $navigation->visible([
+            'administrator.access' => true,
             'content.read' => true,
             'content.create' => true,
             'extensions.manage' => true,
@@ -424,10 +425,16 @@ final class ExtensionContributionRegistrySetTest extends TestCase
         self::assertSame(
             ['Workspace', 'Structure', 'System'],
             array_column($navigation->visibleWorkspaces([
+                'administrator.access' => true,
                 'content.read' => true,
                 'content.create' => true,
                 'extensions.manage' => true,
             ]), 'label'),
+        );
+        self::assertSame(
+            ['core.dashboard'],
+            array_column($navigation->visible(['administrator.access' => true]), 'id'),
+            'Every administrator, whatever else they hold, keeps the dashboard as a front door.',
         );
 
         $definitionNavigation = $navigation->visible(['content.read' => true]);
