@@ -1446,6 +1446,56 @@ test.describe('authenticated administrator', () => {
     // KIS-EVIDENCE-END p6-003-extension-use-ui
   });
 
+  test('extensions screen maps each contribution to a linked destination', async ({ page }) => {
+    await ensureAnnouncementsActive(page);
+
+    const announcements = page.locator('article').filter({ hasText: 'kumwe/announcements-example' }).first();
+    const announcementsMap = announcements.locator('.kis-phase-five-contribution-map');
+    await expect(announcementsMap.getByRole('heading', { name: 'Where this extension appears' })).toBeVisible();
+    const screenLink = announcementsMap.locator('a[href="/administrator/extensions/kumwe/announcements-example"]');
+    await expect(screenLink).toHaveText('Announcements');
+    await expect(announcementsMap.locator(
+      'a[href="/administrator/business/kumwe.announcements-example.category"]',
+    )).toHaveText('Announcement categories');
+    await expect(announcementsMap.locator('a[href="/administrator/access"]'))
+      .toHaveText('kumwe.announcements-example.manage');
+    await expect(announcementsMap.getByText('granted to no role automatically').first()).toBeVisible();
+
+    const inspection = page.locator('article').filter({ hasText: 'kumwe/asset-inspection-example' }).first();
+    const inspectionMap = inspection.locator('.kis-phase-five-contribution-map');
+    await expect(inspectionMap.locator(
+      'a[href="/administrator/extensions/kumwe/asset-inspection-example"]',
+    )).toHaveText('Asset inspection example');
+    await expect(inspectionMap.locator(
+      'a[href="/portal/extensions/kumwe/asset-inspection-example"]',
+    )).toHaveText('Inspection status');
+    await expect(inspectionMap.locator(
+      'a[href="/administrator/reports/kumwe.asset-inspection-example.inspection-summary"]',
+    )).toHaveText('Asset inspection example summary');
+    await expect(inspectionMap.getByText('kumwe.asset-inspection-example.review-overdue-daily')).toBeVisible();
+    await expect(inspectionMap.getByText('15 2 * * *', { exact: false }).first()).toBeVisible();
+    await expect(
+      inspectionMap.getByText('kumwe.asset-inspection-example.inspection-mutation-validator'),
+    ).toBeVisible();
+    await expectStylesLoaded(page);
+    await expectAccessible(page);
+    const diagnostics = await expectNoDocumentOverflow(page, {
+      root: '#administrator-content',
+      detectControlOverlaps: false,
+    });
+    expect(diagnostics.findings, JSON.stringify(diagnostics, null, 2)).toEqual([]);
+
+    await screenLink.click();
+    await expect(page).toHaveURL(/\/administrator\/extensions\/kumwe\/announcements-example$/);
+    await expect(page.getByRole('heading', { level: 1, name: 'Announcements' })).toBeVisible();
+
+    await page.goto('/administrator/extensions');
+    await inspectionMap.locator(
+      'a[href="/administrator/business/kumwe.asset-inspection-example.inspection"]',
+    ).click();
+    await expect(page).toHaveURL(/\/administrator\/business\/kumwe\.asset-inspection-example\.inspection$/);
+  });
+
   test('component navigation and guarded route are unavailable without its capability', async ({
     page,
     isMobile,

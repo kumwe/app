@@ -8,6 +8,7 @@ use DateTimeImmutable;
 use InvalidArgumentException;
 use Kumwe\CMS\Application\Authorization\ExecutionContext;
 use Kumwe\CMS\Extension\Application\ExtensionManager;
+use Kumwe\CMS\Extension\Contribution\ExtensionContributionSummary;
 use Kumwe\CMS\Extension\Application\Trust\TrustStore;
 use Kumwe\CMS\Extension\Domain\PackageChecksum;
 use Psr\Clock\ClockInterface;
@@ -84,11 +85,16 @@ final readonly class DemoExampleExtensionInstaller
     /**
      * Install and activate one shipped example, or confirm it where it is already active.
      *
+     * Whichever path is taken, the result carries the extension's contribution lines — the same
+     * summary the Extensions screen shows — so the console can say where the freshly installed
+     * example actually surfaces instead of only that it installed.
+     *
      * @param   ExecutionContext  $context  Authenticated administrator the install runs as.
      * @param   string            $example  Example directory name from `available()`.
      *
-     * @return  array{identifier: string, installed: bool, activated: bool}  The extension identifier,
-     *          whether this call installed the package, and whether this call activated it.
+     * @return  array{identifier: string, installed: bool, activated: bool, contributions: list<string>}
+     *          The extension identifier, whether this call installed the package, whether this call
+     *          activated it, and one factual line per contribution naming where it surfaces.
      *
      * @throws  InvalidArgumentException  When the example name is unknown to this release.
      * @throws  RuntimeException  When packaging fails or the manifest carries no usable identifier.
@@ -105,19 +111,31 @@ final readonly class DemoExampleExtensionInstaller
         $activatable = $type !== 'template';
 
         $status = null;
+        $contributions = [];
         foreach ($this->extensions->installed($context) as $row) {
             if (($row['identifier'] ?? null) === $identifier) {
                 $status = is_string($row['status'] ?? null) ? $row['status'] : 'unknown';
+                $contributions = ExtensionContributionSummary::linesForRow($row);
                 break;
             }
         }
         if ($status === 'active' || ($status !== null && !$activatable)) {
-            return ['identifier' => $identifier, 'installed' => false, 'activated' => false];
+            return [
+                'identifier' => $identifier,
+                'installed' => false,
+                'activated' => false,
+                'contributions' => $contributions,
+            ];
         }
         if ($status !== null) {
             $this->extensions->activate($identifier, $context);
 
-            return ['identifier' => $identifier, 'installed' => false, 'activated' => true];
+            return [
+                'identifier' => $identifier,
+                'installed' => false,
+                'activated' => true,
+                'contributions' => $this->contributionLines($context, $identifier),
+            ];
         }
 
         $archive = $this->package($directory, $example);
@@ -148,7 +166,37 @@ final readonly class DemoExampleExtensionInstaller
             @unlink($archive);
         }
 
-        return ['identifier' => $identifier, 'installed' => true, 'activated' => $activatable];
+        return [
+            'identifier' => $identifier,
+            'installed' => true,
+            'activated' => $activatable,
+            'contributions' => $this->contributionLines($context, $identifier),
+        ];
+    }
+
+    /**
+     * Re-read one identifier's contribution lines after its registry status changed.
+     *
+     * The manager stamps activation state onto every summary entry, so lines read before an
+     * activation would still say inactive; listing again after the change keeps the console's
+     * report consistent with what the Extensions screen now shows.
+     *
+     * @param   ExecutionContext  $context     Authenticated administrator the listing runs as.
+     * @param   string            $identifier  `vendor/name` identifier to look up.
+     *
+     * @return  list<string>  One factual line per contribution; empty when the row is not visible.
+     *
+     * @since   2.0.0
+     */
+    private function contributionLines(ExecutionContext $context, string $identifier): array
+    {
+        foreach ($this->extensions->installed($context) as $row) {
+            if (($row['identifier'] ?? null) === $identifier) {
+                return ExtensionContributionSummary::linesForRow($row);
+            }
+        }
+
+        return [];
     }
 
     /**

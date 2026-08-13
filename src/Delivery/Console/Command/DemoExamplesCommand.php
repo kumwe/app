@@ -115,6 +115,9 @@ final readonly class DemoExamplesCommand implements Command
                 $verb = $result['installed'] ? 'Installed' : ($result['activated'] ? 'Reactivated' : 'Confirmed');
                 $note = $result['installed'] && !$result['activated'] ? '; selectable, not activated' : '';
                 $output->line(sprintf('%s %s (%s%s).', $verb, $result['identifier'], $example, $note));
+                foreach ($result['contributions'] as $line) {
+                    $output->line('  ' . $line);
+                }
             }
 
             return 0;

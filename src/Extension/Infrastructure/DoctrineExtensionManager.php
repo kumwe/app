@@ -27,6 +27,7 @@ use Kumwe\CMS\Extension\Application\Package\PackageSafetyPolicy;
 use Kumwe\CMS\Extension\Application\Trust\TrustStore;
 use Kumwe\CMS\Extension\Contribution\ContributionDefinitionChecksum;
 use Kumwe\CMS\Extension\Contribution\ContributionOwner;
+use Kumwe\CMS\Extension\Contribution\ExtensionContributionSummary;
 use Kumwe\CMS\Extension\Domain\ExtensionIdentifier;
 use Kumwe\CMS\Extension\Domain\ExtensionManifest;
 use Kumwe\CMS\Extension\Domain\ExtensionType;
@@ -146,8 +147,11 @@ final readonly class DoctrineExtensionManager
      * List the installed extensions the actor may manage, enriched with what an operator screen shows.
      *
      * Each row is the registry record joined to the release matching its installed version, with the raw
-     * manifest column replaced by the two derived fields a screen needs: `manifest_schema` and a
-     * `contributions` diagnostic whose entries are stamped with whether the extension is currently active.
+     * manifest column replaced by the derived fields a screen needs: `manifest_schema`, a
+     * `contributions` diagnostic whose entries are stamped with whether the extension is currently
+     * active, and a `contribution_summary` grouping the same declarations by kind with the mounted
+     * URL or plain-language destination of each — the map both the Extensions screen and the console
+     * commands present.
      * `theme_surfaces` names every surface a template is activated on, with a per-site assignment spelled
      * `site:<identifier>`. Filtering is by omission rather than refusal, so an empty list means either
      * nothing is installed or nothing is visible to this actor.
@@ -215,9 +219,17 @@ final readonly class DoctrineExtensionManager
                     $manifest,
                     ($extension['status'] ?? null) === 'active',
                 );
+                $runtimePath = $extension['runtime_path'] ?? null;
+                $extension['contribution_summary'] = ExtensionContributionSummary::project(
+                    $manifest,
+                    ($extension['status'] ?? null) === 'active',
+                    $extension['theme_surfaces'],
+                    $this->dressableThemeSurfaces(is_string($runtimePath) ? $runtimePath : null),
+                );
             } else {
                 $extension['manifest_schema'] = null;
                 $extension['contributions'] = [];
+                $extension['contribution_summary'] = [];
             }
             unset($extension['manifest']);
         }
@@ -1575,6 +1587,37 @@ final readonly class DoctrineExtensionManager
         }
         $contributions['active'] = $active;
         return $contributions;
+    }
+
+    /**
+     * Name the presentation surfaces a deployed package ships template directories for.
+     *
+     * The contribution summary tells an operator which surface a selectable theme would dress, and
+     * that fact lives only in the deployed tree: a package dresses the surfaces it carries a
+     * `templates/<surface>` directory for. Reading the deployed copy keeps the answer honest for
+     * packages whose manifest predates typed contributions.
+     *
+     * @param   ?string  $runtimePath  Runtime path recorded on the registry row, or null when the row
+     *          carries none.
+     *
+     * @return  list<string>  Surface names in `site`, `administrator` order; empty when the path is
+     *          unusable or the package ships no surface templates.
+     *
+     * @since   2.0.0
+     */
+    private function dressableThemeSurfaces(?string $runtimePath): array
+    {
+        if ($runtimePath === null || $runtimePath === '') {
+            return [];
+        }
+        $surfaces = [];
+        foreach (['site', 'administrator'] as $surface) {
+            if (is_dir($this->extensionRoot . '/' . $runtimePath . '/templates/' . $surface)) {
+                $surfaces[] = $surface;
+            }
+        }
+
+        return $surfaces;
     }
 
     /**

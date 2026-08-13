@@ -8,6 +8,7 @@ use InvalidArgumentException;
 use Kumwe\CMS\Delivery\Console\Command;
 use Kumwe\CMS\Delivery\Console\Output;
 use Kumwe\CMS\Extension\Application\ExtensionManager;
+use Kumwe\CMS\Extension\Contribution\ExtensionContributionSummary;
 use Throwable;
 
 /**
@@ -68,6 +69,10 @@ final readonly class InstallExtensionCommand implements Command
     /**
      * Install one package and print the identifier, version and status it was recorded under.
      *
+     * The success line is followed by one line per declared contribution — read from the same
+     * summary the Extensions screen shows — naming where each screen, listener, theme, or record
+     * type will surface, so the operator learns where to look without opening the administrator.
+     *
      * The archive path is positional and is rejected when it is empty or looks like an option, so a
      * forgotten path cannot be silently read as a flag and installed as nothing. Everything after it
      * is `--name=value`: `--site` and `--token-file` are consumed by the authorizer, and the optional
@@ -110,6 +115,15 @@ final readonly class InstallExtensionCommand implements Command
                 $version,
                 $status,
             ));
+            foreach ($this->extensions->installed($context) as $row) {
+                if (($row['identifier'] ?? null) !== $identifier) {
+                    continue;
+                }
+                foreach (ExtensionContributionSummary::linesForRow($row) as $line) {
+                    $output->line('  ' . $line);
+                }
+                break;
+            }
 
             return 0;
         } catch (Throwable $exception) {

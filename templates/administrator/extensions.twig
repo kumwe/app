@@ -80,6 +80,33 @@
                 {% endif %}
               </div>
 
+              <div class="kis-phase-five-contribution-map stack">
+                <h4>Where this extension appears</h4>
+                {% if extension.contribution_summary is defined and extension.contribution_summary is not empty %}
+                  {% for group in extension.contribution_summary %}
+                    <div class="kis-phase-five-contribution-group">
+                      <p class="eyebrow">{{ group.heading }}</p>
+                      <ul>
+                        {% for entry in group.entries %}
+                          <li>
+                            {% if entry.active and entry.href is not null %}
+                              <a href="{{ entry.href }}">{{ entry.label }}</a>
+                            {% else %}
+                              <strong>{{ entry.label }}</strong>
+                            {% endif %}
+                            {% if not entry.active %}<span class="status status-disabled">Inactive</span>{% endif %}
+                            {% if entry.href is not null and not entry.active %}<code>{{ entry.href }}</code>{% endif %}
+                            <span class="text-muted">{{ entry.detail }}</span>
+                          </li>
+                        {% endfor %}
+                      </ul>
+                    </div>
+                  {% endfor %}
+                {% else %}
+                  <p class="text-muted">This release declares no screens, listeners, themes, or definitions of its own.</p>
+                {% endif %}
+              </div>
+
               <details class="advanced-definition">
                 <summary>Declared contributions · manifest schema {{ extension.manifest_schema }}</summary>
                 <div class="stack">

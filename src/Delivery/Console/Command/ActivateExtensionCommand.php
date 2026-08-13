@@ -7,6 +7,7 @@ namespace Kumwe\CMS\Delivery\Console\Command;
 use Kumwe\CMS\Delivery\Console\Command;
 use Kumwe\CMS\Delivery\Console\Output;
 use Kumwe\CMS\Extension\Application\ExtensionManager;
+use Kumwe\CMS\Extension\Contribution\ExtensionContributionSummary;
 use Kumwe\CMS\Presentation\ThemeSurface;
 use Throwable;
 
@@ -67,6 +68,10 @@ final readonly class ActivateExtensionCommand implements Command
     /**
      * Activate the extension named by the first argument and confirm the identifier the manager reported.
      *
+     * The confirmation line is followed by one line per declared contribution — read from the same
+     * summary the Extensions screen shows — naming where each screen, listener, theme, or record
+     * type now surfaces, so activating from a shell still tells the operator what they got.
+     *
      * Authorization requires `extensions.manage` and runs before the surface is acted on. Nothing is
      * allowed to escape: every failure — a bad option, an unauthorized token, a refused administrator
      * surface, a manager error — is written to the output as a message and reported as exit status 1,
@@ -106,6 +111,15 @@ final readonly class ActivateExtensionCommand implements Command
             }
 
             $output->line(sprintf('Activated %s.', $installedIdentifier));
+            foreach ($this->extensions->installed($context) as $row) {
+                if (($row['identifier'] ?? null) !== $installedIdentifier) {
+                    continue;
+                }
+                foreach (ExtensionContributionSummary::linesForRow($row) as $line) {
+                    $output->line('  ' . $line);
+                }
+                break;
+            }
 
             return 0;
         } catch (Throwable $exception) {

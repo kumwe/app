@@ -247,6 +247,10 @@ final class PortalRouteRegistry implements ContributionSurface
     /**
      * Confine extension routes below their own `/portal/extensions/vendor/name` prefix.
      *
+     * Public because it is the single authority on where a contributed portal route surfaces:
+     * the contribution summary an operator reads composes its links with this exact rule rather
+     * than keeping a second copy of it.
+     *
      * @param   ContributionOwner      $owner       Route owner.
      * @param   PortalRouteDefinition  $definition  Route declaration.
      *
@@ -254,7 +258,7 @@ final class PortalRouteRegistry implements ContributionSurface
      *
      * @since   2.0.0
      */
-    private static function routePath(ContributionOwner $owner, PortalRouteDefinition $definition): string
+    public static function routePath(ContributionOwner $owner, PortalRouteDefinition $definition): string
     {
         $path = $owner->identifier() === ContributionOwner::CORE
             ? $definition->path

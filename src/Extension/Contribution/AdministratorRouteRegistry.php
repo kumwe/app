@@ -258,7 +258,9 @@ final class AdministratorRouteRegistry implements ContributionSurface
      *
      * A core route keeps the path it declared. An extension route is confined to a prefix derived
      * from its own identifier below `/administrator/extensions/`, so a contributed path can never
-     * reach a core administrator URL however it was written.
+     * reach a core administrator URL however it was written. Public because it is the single
+     * authority on where a declared route surfaces: the contribution summary an operator reads
+     * composes its links with this exact rule rather than keeping a second copy of it.
      *
      * @param   ContributionOwner             $owner       Contributor the route belongs to.
      * @param   AdministratorRouteDefinition  $definition  Declaration being mounted.
@@ -270,7 +272,7 @@ final class AdministratorRouteRegistry implements ContributionSurface
      *
      * @since   2.0.0
      */
-    private static function routePath(
+    public static function routePath(
         ContributionOwner $owner,
         AdministratorRouteDefinition $definition,
     ): string {
