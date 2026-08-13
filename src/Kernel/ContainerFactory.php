@@ -184,6 +184,7 @@ use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessSurfaceDispatcher
 use Kumwe\CMS\BusinessSurface\Application\GeneratedBusinessActionStepUp;
 use Kumwe\CMS\BusinessSurface\Delivery\Administrator\AdministratorBusinessSurfaceHandler;
 use Kumwe\CMS\BusinessSurface\Delivery\Browser\BusinessCustomViewPresenter;
+use Kumwe\CMS\BusinessSurface\Delivery\Browser\BusinessDocumentPresenter;
 use Kumwe\CMS\BusinessSurface\Delivery\Browser\GeneratedBusinessBrowserController;
 use Kumwe\CMS\BusinessSurface\Delivery\Portal\GeneratedBusinessPortalNavigationVisibility;
 use Kumwe\CMS\BusinessSurface\Delivery\Portal\PortalBusinessSurfaceHandler;
@@ -2329,6 +2330,7 @@ final class ContainerFactory
         $container->share(BusinessRecordProjector::class, new BusinessRecordProjector(), true);
         $container->share(BusinessFormInputMapper::class, new BusinessFormInputMapper(), true);
         $container->share(BusinessCustomViewPresenter::class, new BusinessCustomViewPresenter(), true);
+        $container->share(BusinessDocumentPresenter::class, new BusinessDocumentPresenter(), true);
         $container->share(GeneratedBusinessActionStepUp::class, static fn (
             Container $container,
         ): GeneratedBusinessActionStepUp => new GeneratedBusinessActionStepUp(
@@ -2428,6 +2430,7 @@ final class ContainerFactory
             self::service($container, BusinessFormInputMapper::class),
             self::service($container, BusinessOperationStatusService::class),
             self::service($container, BusinessCustomViewPresenter::class),
+            self::service($container, BusinessDocumentPresenter::class),
         ), true);
         $container->share(OpenApiContractCompiler::class, new OpenApiContractCompiler(), true);
         $container->share(

@@ -1035,12 +1035,54 @@ final readonly class OpenApiContractCompiler
             'properties' => [
                 'handle' => $identifier,
                 'label' => ['type' => 'string', 'maxLength' => 120],
-                'kind' => ['type' => 'string', 'enum' => ['list', 'detail', 'form', 'history', 'relation']],
+                'kind' => [
+                    'type' => 'string',
+                    'enum' => ['list', 'detail', 'form', 'history', 'relation', 'document'],
+                ],
                 'custom' => ['type' => 'boolean'],
                 'fields' => $this->identifierList(128),
                 'filters' => $this->identifierList(128),
                 'sorts' => $this->identifierList(128),
                 'custom_contract' => ['$ref' => '#/components/schemas/GeneratedBusinessCustomContract'],
+                'document' => [
+                    'type' => 'object',
+                    'additionalProperties' => false,
+                    'required' => ['identity', 'groups', 'parties', 'lines', 'totals'],
+                    'properties' => [
+                        'identity' => ['type' => ['string', 'null'], 'pattern' => '^[a-z][a-z0-9_]{0,62}$'],
+                        'groups' => [
+                            'type' => 'array',
+                            'maxItems' => 16,
+                            'items' => [
+                                'type' => 'object',
+                                'additionalProperties' => false,
+                                'required' => ['label', 'fields'],
+                                'properties' => [
+                                    'label' => ['type' => 'string', 'maxLength' => 120],
+                                    'fields' => $this->identifierList(64),
+                                ],
+                            ],
+                        ],
+                        'parties' => [
+                            'type' => 'array',
+                            'maxItems' => 8,
+                            'items' => [
+                                'type' => 'object',
+                                'additionalProperties' => false,
+                                'required' => ['label', 'relationship'],
+                                'properties' => [
+                                    'label' => ['type' => 'string', 'maxLength' => 120],
+                                    'relationship' => [
+                                        'type' => 'string',
+                                        'pattern' => '^[a-z][a-z0-9_]{0,62}$',
+                                    ],
+                                ],
+                            ],
+                        ],
+                        'lines' => ['type' => ['string', 'null'], 'pattern' => '^[a-z][a-z0-9_]{0,62}$'],
+                        'totals' => $this->identifierList(16),
+                    ],
+                ],
             ],
         ];
         $action = [

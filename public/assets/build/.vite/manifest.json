@@ -4,7 +4,7 @@
     "name": "reveal-validation"
   },
   "assets/administrator/main.ts": {
-    "file": "js/administrator-Bt7Iiac7.js",
+    "file": "js/administrator-DVSDjcAl.js",
     "name": "administrator",
     "src": "assets/administrator/main.ts",
     "isEntry": true,
@@ -12,11 +12,11 @@
       "_reveal-validation-DkoA-GGU.js"
     ],
     "css": [
-      "css/administrator-BFseMIlM.css"
+      "css/administrator-DNPr8lAj.css"
     ]
   },
   "assets/portal/main.ts": {
-    "file": "js/portal-tOEm-uxo.js",
+    "file": "js/portal-DOw32Bu5.js",
     "name": "portal",
     "src": "assets/portal/main.ts",
     "isEntry": true,
@@ -24,11 +24,11 @@
       "_reveal-validation-DkoA-GGU.js"
     ],
     "css": [
-      "css/portal-DJrXHXow.css"
+      "css/portal-Vjc1AF_0.css"
     ]
   },
   "assets/site/main.ts": {
-    "file": "js/site-CkLmtwLy.js",
+    "file": "js/site-ADoCkWVv.js",
     "name": "site",
     "src": "assets/site/main.ts",
     "isEntry": true,
@@ -36,7 +36,7 @@
       "_reveal-validation-DkoA-GGU.js"
     ],
     "css": [
-      "css/site-BzEE16_a.css"
+      "css/site-9ian2NJJ.css"
     ]
   }
 }

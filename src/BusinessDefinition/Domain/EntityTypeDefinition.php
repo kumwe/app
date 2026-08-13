@@ -750,7 +750,8 @@ final readonly class EntityTypeDefinition
      * rather than a validator pass: exactly one field of the type the identity strategy demands, no
      * ordered-line field colliding with a declared relationship handle, every expression dependency naming a
      * declared field and no cycle among them, views projecting only declared fields and filtering or sorting
-     * only the fields marked for it, an action's transition naming an edge the bound workflow declares, and
+     * only the fields marked for it, document-view roles naming declared non-UUID fields and declared line
+     * and party relationships, an action's transition naming an edge the bound workflow declares, and
      * action and invariant conditions reading only declared fields.
      *
      * @return  void
@@ -815,6 +816,7 @@ final readonly class EntityTypeDefinition
                     throw new InvalidBusinessDefinition('A business view sorts a non-sortable field.');
                 }
             }
+            $this->assertDocumentRoles($view, $fields);
         }
         $transitions = [];
         foreach ($this->workflow->transitions ?? [] as $transition) {
@@ -835,6 +837,66 @@ final readonly class EntityTypeDefinition
                 if (!isset($fields[$dependency])) {
                     throw new InvalidBusinessDefinition('A record invariant references a missing field.');
                 }
+            }
+        }
+    }
+
+    /**
+     * Prove one view's documentary roles against the fields and relationships this entity declares.
+     *
+     * Beyond existence, the roles carry two documentary guarantees: no role may name a UUID field, so a
+     * rendered document never shows a machine key as its number, a meta value, or a total; and every field
+     * role must sit inside the view's own projection, so the projection list remains the single disclosure
+     * gate the surface catalog filters. Lines must name a declared owned-line collection and every party a
+     * declared many-to-one relationship, which is what lets the generated renderer hydrate them as a body
+     * table and header cards without a bespoke read path.
+     *
+     * @param   ViewDefinition                  $view    Declared view whose optional document block is checked.
+     * @param   array<string, FieldDefinition>  $fields  Declared fields indexed by handle.
+     *
+     * @return  void
+     *
+     * @throws  InvalidBusinessDefinition  When a role names a missing or UUID field, a field role escapes the
+     *          view projection, lines is not a declared owned-line collection, or a party is not a declared
+     *          many-to-one relationship.
+     *
+     * @since   2.0.0
+     */
+    private function assertDocumentRoles(ViewDefinition $view, array $fields): void
+    {
+        if ($view->document === null) {
+            return;
+        }
+        $projected = array_fill_keys($view->fields, true);
+        foreach ($view->document->fieldHandles() as $handle) {
+            if (!isset($fields[$handle])) {
+                throw new InvalidBusinessDefinition('A document view role references missing field ' . $handle . '.');
+            }
+            if ($fields[$handle]->type === 'core.uuid') {
+                throw new InvalidBusinessDefinition('A document view role cannot reference a UUID field.');
+            }
+            if (!isset($projected[$handle])) {
+                throw new InvalidBusinessDefinition('A document view role must stay inside the view projection.');
+            }
+        }
+        $relationships = [];
+        foreach ($this->relationships as $relationship) {
+            $relationships[$relationship->handle] = $relationship;
+        }
+        if ($view->document->lines !== null) {
+            $lines = $relationships[$view->document->lines] ?? null;
+            if ($lines === null || $lines->kind !== RelationshipKind::OwnedLineCollection) {
+                throw new InvalidBusinessDefinition(
+                    'A document view lines role must name a declared owned-line collection.',
+                );
+            }
+        }
+        foreach ($view->document->parties as $party) {
+            $target = $relationships[$party['relationship']] ?? null;
+            if ($target === null || $target->kind !== RelationshipKind::ManyToOne) {
+                throw new InvalidBusinessDefinition(
+                    'A document view party must name a declared many-to-one relationship.',
+                );
             }
         }
     }

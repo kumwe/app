@@ -717,6 +717,178 @@ final readonly class BusinessSurfaceService implements BusinessHistoryUseCase, B
     }
 
     /**
+     * Read one record for the generated detail page, honouring a declared document view when one exists.
+     *
+     * When the policy-filtered metadata carries a generated `document` view, the roles that view declares
+     * are hydrated through the same bounded read the relationship route uses: the declared line collection
+     * and party relationships become the only includes, each line row is projected onto the line
+     * definition's stable list columns, and the surviving role metadata is attached as `document_view`.
+     * Without such a view the model is exactly the ordinary `read()` model, so definitions that never
+     * declared a document keep today's rendering and cost. No new read path exists either way — policy,
+     * disclosure and the bounded include budget are enforced by the same services as every other page.
+     *
+     * @param   ExecutionContext  $context     Authenticated actor.
+     * @param   BusinessSurface   $surface     Exact delivery boundary.
+     * @param   string            $definition  Definition UUID or handle.
+     * @param   string            $record      Public record identity.
+     * @param   bool              $archived    Whether archived records may be addressed.
+     * @param   bool              $deleted     Whether soft-deleted records may be addressed.
+     *
+     * @return  array<string, mixed>  Safe detail model, with `document_view` and hydrated role includes
+     *          when the definition declares a generated document view for this surface.
+     *
+     * @throws  BusinessRecordNotFound  When the definition or record is unavailable for this caller.
+     *
+     * @since   2.0.0
+     */
+    public function document(
+        ExecutionContext $context,
+        BusinessSurface $surface,
+        string $definition,
+        string $record,
+        bool $archived = false,
+        bool $deleted = false,
+    ): array {
+        try {
+            $metadata = $this->catalog->definition(
+                $context,
+                $surface,
+                $definition,
+                BusinessSurfaceOperation::Read,
+            );
+            $view = $this->declaredDocumentView($metadata);
+            $roles = $view === null ? null : ($view['document'] ?? null);
+            $roles = is_array($roles) ? self::objectDocument($roles, 'A document view block is invalid.') : null;
+            $lines = null;
+            $includes = [];
+            if ($roles !== null) {
+                $lines = is_string($roles['lines'] ?? null) ? $roles['lines'] : null;
+                foreach (
+                    self::objectDocuments(
+                        $roles['parties'] ?? [],
+                        'A document view party block is invalid.',
+                    ) as $party
+                ) {
+                    $handle = $party['relationship'] ?? null;
+                    if (is_string($handle) && !in_array($handle, $includes, true)) {
+                        $includes[] = $handle;
+                    }
+                }
+                if ($lines !== null && !in_array($lines, $includes, true)) {
+                    $includes[] = $lines;
+                }
+            }
+            $relationships = self::objectDocuments(
+                $metadata['relationships'] ?? null,
+                'Generated business relationship metadata is invalid.',
+            );
+            $targets = [];
+            foreach ($relationships as &$relationship) {
+                $handle = $relationship['handle'] ?? null;
+                $relationship['loaded'] = is_string($handle) && in_array($handle, $includes, true);
+                if (is_string($handle) && is_string($relationship['target'] ?? null)) {
+                    $targets[$handle] = $relationship['target'];
+                }
+            }
+            unset($relationship);
+            $metadata['relationships'] = $relationships;
+            $recordView = $this->records->read(new ReadRecordQuery(
+                $context,
+                $definition,
+                $record,
+                $this->organization($context, $metadata),
+                projection: $this->metadataHandles($metadata, 'fields'),
+                includeArchived: $archived,
+                includeDeleted: $deleted,
+                includes: $includes,
+            ));
+            $resolved = $this->definitions->pinned($context, $definition, $recordView->definitionVersion);
+            $recordModel = $this->metadataRecord($this->projector->record($recordView), $metadata);
+            $lineColumns = [];
+            if ($includes !== []) {
+                $recordIncludes = self::objectDocument(
+                    $recordModel['includes'] ?? null,
+                    'A generated document projection is invalid.',
+                );
+                foreach ($includes as $handle) {
+                    $target = $targets[$handle] ?? null;
+                    $included = $recordView->includes[$handle] ?? null;
+                    if (!is_string($target) || !is_array($included) || !array_is_list($included)) {
+                        throw new InvalidArgumentException('A generated document projection is invalid.');
+                    }
+                    $projectedIncluded = self::objectDocuments(
+                        $recordIncludes[$handle] ?? null,
+                        'A generated document projection is invalid.',
+                    );
+                    if ($handle === $lines) {
+                        [$lineColumns, $recordIncludes[$handle]] = $this->presentDocumentLines(
+                            $context,
+                            $target,
+                            $included,
+                            $projectedIncluded,
+                        );
+                        continue;
+                    }
+                    $recordIncludes[$handle] = $this->presentIncludedRecords(
+                        $context,
+                        $target,
+                        $included,
+                        $projectedIncluded,
+                    );
+                }
+                $recordModel['includes'] = $recordIncludes;
+            }
+            $model = [
+                'definition' => $metadata,
+                'available_operations' => $this->availableOperations($context, $surface, $definition),
+                'record' => $recordModel,
+                'fields' => $this->present(
+                    $resolved->definition,
+                    $metadata,
+                    FieldPresentationContext::Detail,
+                    $recordView->values,
+                ),
+            ];
+            if ($view !== null) {
+                $model['document_view'] = [...$view, 'line_columns' => $lineColumns];
+            }
+
+            return $model;
+        } catch (BusinessRecordDefinitionUnavailable) {
+            throw new BusinessRecordNotFound();
+        }
+    }
+
+    /**
+     * Find the first generated document view the policy-filtered metadata still discloses.
+     *
+     * @param   array<string, mixed>  $metadata  Safe definition metadata for the read operation.
+     *
+     * @return  ?array<string, mixed>  The view item, or null when no generated document view survives.
+     *
+     * @since   2.0.0
+     */
+    private function declaredDocumentView(array $metadata): ?array
+    {
+        $views = $metadata['views'] ?? [];
+        if (!is_array($views) || !array_is_list($views)) {
+            throw new InvalidArgumentException('Generated business view metadata is invalid.');
+        }
+        foreach ($views as $view) {
+            if (
+                is_array($view)
+                && ($view['kind'] ?? null) === 'document'
+                && ($view['custom'] ?? null) === false
+            ) {
+                /** @var array<string, mixed> $view */
+                return $view;
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * Read one exact relationship section without widening the bounded detail include budget.
      *
      * The relationship must survive read disclosure; mutation controls are gated independently by the
@@ -1957,6 +2129,101 @@ final readonly class BusinessSurfaceService implements BusinessHistoryUseCase, B
         }
 
         return array_values($projected);
+    }
+
+    /**
+     * Project one hydrated owned-line collection onto the line definition's stable list columns.
+     *
+     * The columns come from the target definition's first generated list view, so a document body table
+     * shows the same columns an operator curated for the line list rather than the first four declared
+     * fields a selector would show. Every row carries a cell for every column: a value withheld by row
+     * policy, or a column the caller cannot read, renders as an empty cell instead of collapsing the
+     * table, which keeps one hundred rows scannable and column-stable.
+     *
+     * @param   ExecutionContext                  $context    Authenticated site and actor.
+     * @param   string                            $target     Declared line definition handle.
+     * @param   list<BusinessRecordRelationView>  $records    Disclosure-filtered included line rows.
+     * @param   list<array<string, mixed>>        $projected  Transport projections matching those rows.
+     *
+     * @return  array{0: list<array{handle: string, label: string}>, 1: list<array<string, mixed>>}  Stable
+     *          columns and the rows, each row carrying one presented cell per column under `cells`.
+     *
+     * @since   2.0.0
+     */
+    private function presentDocumentLines(
+        ExecutionContext $context,
+        string $target,
+        array $records,
+        array $projected,
+    ): array {
+        if (count($records) !== count($projected)) {
+            throw new InvalidArgumentException('A generated document line projection is inconsistent.');
+        }
+        $definition = $this->definitions->forCreate($context, $target)->definition;
+        $fields = [];
+        foreach ($definition->fields() as $field) {
+            $fields[$field->handle] = $field;
+        }
+        $columns = [];
+        foreach ($this->documentLineColumnHandles($definition) as $handle) {
+            if (isset($fields[$handle]) && $fields[$handle]->type !== 'core.uuid') {
+                $columns[] = ['handle' => $handle, 'label' => $fields[$handle]->label];
+            }
+        }
+        foreach ($records as $index => $record) {
+            if (!($record instanceof BusinessRecordRelationView) || !isset($projected[$index])) {
+                throw new InvalidArgumentException('A generated document line row is invalid.');
+            }
+            $cells = [];
+            foreach ($columns as $column) {
+                $display = '';
+                if (array_key_exists($column['handle'], $record->values)) {
+                    $presentation = $this->presentations->present(new FieldPresentationRequest(
+                        $fields[$column['handle']],
+                        $this->fieldTypes->get($fields[$column['handle']]->type),
+                        FieldPresentationContext::Relation,
+                        $record->values[$column['handle']],
+                        editable: false,
+                    ));
+                    $display = $presentation->display === '' ? '' : self::choiceText($presentation->display, 256);
+                }
+                $cells[] = ['handle' => $column['handle'], 'display' => $display];
+            }
+            $projected[$index]['cells'] = $cells;
+        }
+
+        return [$columns, array_values($projected)];
+    }
+
+    /**
+     * Choose the column handles a document line table projects for one line definition.
+     *
+     * @param   EntityTypeDefinition  $definition  Declared target line definition.
+     *
+     * @return  list<string>  The first generated list view's fields, or the first four declared non-UUID
+     *          field handles when the definition declares no generated list view.
+     *
+     * @since   2.0.0
+     */
+    private function documentLineColumnHandles(EntityTypeDefinition $definition): array
+    {
+        foreach ($definition->views() as $view) {
+            if ($view->kind === 'list' && $view->handler === null) {
+                return $view->fields;
+            }
+        }
+        $handles = [];
+        foreach ($definition->fields() as $field) {
+            if ($field->type === 'core.uuid') {
+                continue;
+            }
+            $handles[] = $field->handle;
+            if (count($handles) === 4) {
+                break;
+            }
+        }
+
+        return $handles;
     }
 
     /**
