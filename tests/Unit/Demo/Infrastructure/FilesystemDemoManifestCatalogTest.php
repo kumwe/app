@@ -463,6 +463,7 @@ final class FilesystemDemoManifestCatalogTest extends TestCase
 
         self::assertSame('kumwe.demo-access/v1', $manifest['format'] ?? null);
         self::assertSame('vdm', $manifest['profile'] ?? null);
+        self::assertSame(3, $manifest['version'] ?? null);
         self::assertMatchesRegularExpression('/^[a-f0-9]{64}$/D', $loaded['checksum']);
         $roles = $this->list($manifest['roles'] ?? null, 'roles');
         $staff = $this->list($manifest['staff'] ?? null, 'staff');
@@ -470,6 +471,24 @@ final class FilesystemDemoManifestCatalogTest extends TestCase
         self::assertCount(6, $roles);
         self::assertCount(5, $staff);
         self::assertCount(6, $organizations);
+        $capabilitiesByRole = [];
+        foreach ($roles as $role) {
+            $entry = $this->map($role, 'role');
+            if (($entry['area'] ?? null) === 'administrator') {
+                self::assertContains(
+                    'administrator.access',
+                    $this->list($entry['capabilities'] ?? null, 'role capabilities'),
+                    'Every administrator-area demo role must be able to open the administrator front door.',
+                );
+            }
+            $capabilitiesByRole[$this->string($entry, 'handle')] =
+                $this->list($entry['capabilities'] ?? null, 'role capabilities');
+        }
+        self::assertContains(
+            'business.security.manage',
+            $capabilitiesByRole['vdm-system-administrator'] ?? [],
+            'The business-security screen must be demonstrable by the system administrator.',
+        );
         $memberCounts = [];
         foreach ($organizations as $organization) {
             $entry = $this->map($organization, 'organization');
