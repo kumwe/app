@@ -1,7 +1,7 @@
 {
   "format": "kumwe.demo-access/v1",
   "profile": "vdm",
-  "version": 2,
+  "version": 3,
   "site": "default",
   "description": "Demonstration staff roles, portal organizations, and sign-in identities for the VDM example. Passwords are never part of this manifest; the provisioning command generates them at deployment time.",
   "roles": [
@@ -71,6 +71,7 @@
         "administrator.access",
         "automation.manage",
         "business.schema.read",
+        "business.security.manage",
         "extensions.manage",
         "navigation.manage",
         "settings.manage",

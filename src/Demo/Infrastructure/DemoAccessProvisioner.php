@@ -28,7 +28,10 @@ use RuntimeException;
  * and records an audit event for each provisioned resource. Every password is generated here at
  * provisioning time and returned once to the caller; nothing secret is read from or written to any
  * manifest, and existing accounts are never modified — an already-provisioned identity is reported
- * without a password instead of being overwritten.
+ * without a password instead of being overwritten. Roles, by contrast, are reconciled additively on
+ * every run: a capability a later manifest version adds to a declared role is granted to the existing
+ * role, while grants an operator added by hand are left untouched, which is how re-running the command
+ * after a manifest version bump converges a live demonstration on the new cast.
  *
  * @since  2.0.0
  */
@@ -98,10 +101,13 @@ final readonly class DemoAccessProvisioner
             $created = !isset($roleIds[$handle]);
             if ($created) {
                 $roleIds[$handle] = $this->access->createRole($context, $handle, $this->text($role, 'label'));
-                foreach ($this->entries($role, 'capabilities') as $capability) {
-                    if (!is_string($capability)) {
-                        throw new RuntimeException('A demo role capability is invalid.');
-                    }
+            }
+            $held = $created ? [] : $this->grantedCapabilities($roleIds[$handle]);
+            foreach ($this->entries($role, 'capabilities') as $capability) {
+                if (!is_string($capability)) {
+                    throw new RuntimeException('A demo role capability is invalid.');
+                }
+                if (!isset($held[$capability])) {
                     $this->access->grant($context, $roleIds[$handle], $capability);
                 }
             }
@@ -417,6 +423,31 @@ final readonly class DemoAccessProvisioner
         } while (count($page) === 100);
 
         return $roles;
+    }
+
+    /**
+     * Read the global capabilities one existing role already confers, as a lookup for reconciliation.
+     *
+     * Only global grants count as held: the manifest declares its role capabilities globally, so a
+     * scoped grant an operator added by hand neither satisfies a declaration nor blocks the global
+     * grant the reconciliation writes.
+     *
+     * @param   string  $roleId  UUID of the declared role being reconciled.
+     *
+     * @return  array<string, true>  Globally granted capability codes keyed to `true`.
+     *
+     * @since   2.0.0
+     */
+    private function grantedCapabilities(string $roleId): array
+    {
+        $held = [];
+        foreach ($this->identities->roleGrants($roleId) as $grant) {
+            if ($grant['scope_type'] === 'global') {
+                $held[$grant['capability']] = true;
+            }
+        }
+
+        return $held;
     }
 
     /**
