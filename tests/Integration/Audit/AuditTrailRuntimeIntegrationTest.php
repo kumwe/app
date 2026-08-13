@@ -18,6 +18,7 @@ use Kumwe\CMS\Audit\Application\AuditTrailExporter;
 use Kumwe\CMS\Audit\Application\AuditTrailVerifier;
 use Kumwe\CMS\Audit\Domain\AuditEnforcementState;
 use Kumwe\CMS\Audit\Domain\AuditEvent;
+use Kumwe\CMS\Audit\Domain\AuditEventDigest;
 use Kumwe\CMS\Audit\Infrastructure\Persistence\AuditAppendOnlyGuard;
 use Kumwe\CMS\Audit\Infrastructure\Persistence\DoctrineAuditAnchorWriter;
 use Kumwe\CMS\Audit\Infrastructure\Persistence\DoctrineAuditRecorder;
@@ -67,7 +68,14 @@ final class AuditTrailRuntimeIntegrationTest extends TestCase
         }
         self::assertTrue($events->hasIndex($this->tables->raw('uniq_audit_event_position')));
         self::assertTrue($schema->tablesExist([$this->tables->raw('audit_anchors')]));
-        self::assertTrue(AuditAppendOnlyGuard::installed($this->database, $this->tables));
+        // Append-only enforcement is a property of the server's privileges, not of the migration, so
+        // what must hold everywhere is that the trail reports the posture it is actually in. Whether
+        // the triggers really refuse a write is proven under the active branch of the refusal test.
+        self::assertSame(
+            AuditAppendOnlyGuard::state($this->database, $this->tables),
+            $this->verifier()->verify($this->context())->enforcement,
+            'The verification report must agree with the server about append-only enforcement.',
+        );
         self::assertTrue($this->positionIsDatabaseAllocated(), 'The driver must allocate audit positions.');
         self::assertSame('0', (string) $this->database->fetchOne(sprintf(
             'SELECT COUNT(*) FROM %s WHERE position IS NULL OR digest IS NULL',
@@ -111,16 +119,95 @@ final class AuditTrailRuntimeIntegrationTest extends TestCase
         self::assertGreaterThanOrEqual(3, $report->eventsVerified);
     }
 
-    public function testTheDriverRefusesUpdatesAndUnguardedDeletes(): void
+    public function testTheDigestSurvivesWhateverThisEngineDoesToStoredJsonAndDatetimes(): void
+    {
+        // Engines do not store back what they were handed. MySQL's native `json` column reorders object
+        // keys and restyles whitespace, MariaDB keeps JSON as text, PostgreSQL preserves the input, and
+        // `occurred_at` is a datetime(6) on some of them and second-resolution on others. If the digest
+        // were taken over the bytes a driver hands back, `audit:verify` would report tampering on an
+        // untouched trail — a permanent false positive, and worse than any failure it could report
+        // truthfully. It is taken over a canonical form instead, and this pins that on every engine.
+        $cases = [
+            'reordered keys' => ['zulu' => 'z', 'alpha' => 'a', 'mike' => 'm'],
+            'nested and listed' => ['outer' => ['z' => 1, 'a' => ['c', 'b']], 'n' => 42, 'ok' => true],
+            'unicode and slashes' => ['path' => 'a/b/c', 'text' => 'héllo — ünïcode ✓', 'quote' => 'say "hi"'],
+            'numbers that reformat' => ['whole' => 1.0, 'tenth' => 0.1, 'huge' => 9007199254740993],
+        ];
+        $recorded = [];
+        foreach ($cases as $metadata) {
+            $id = Uuid::uuid7()->toString();
+            $recorded[$id] = $metadata;
+            $this->recorder()->record(new AuditEvent(
+                $id,
+                $this->clock()->now(),
+                'roundtrip-actor',
+                'identity.user.activated',
+                'identity.user',
+                'roundtrip-subject',
+                'success',
+                $metadata,
+            ));
+        }
+
+        foreach (array_keys($recorded) as $id) {
+            $row = $this->row((string) $id);
+            $stored = is_string($row['metadata']) ? $row['metadata'] : '';
+            $decoded = $stored === '' ? [] : json_decode($stored, true, 64, JSON_THROW_ON_ERROR);
+            self::assertIsArray($decoded);
+            /** @var array<string, mixed> $decoded */
+            self::assertSame(
+                AuditEventDigest::compute(
+                    (string) $id,
+                    substr((string) $row['occurred_at'], 0, 19),
+                    'roundtrip-actor',
+                    'identity.user.activated',
+                    'identity.user',
+                    'roundtrip-subject',
+                    'success',
+                    $decoded,
+                ),
+                $row['digest'],
+                'The digest must survive this engine\'s storage round-trip unchanged.',
+            );
+        }
+        self::assertTrue($this->verifier()->verify($this->context())->intact());
+    }
+
+    public function testRewritesAreRefusedWhereEnforcementIsInstalledAndDetectedWhereItIsNot(): void
     {
         $identifiers = $this->record(1);
 
-        self::assertTrue(AuditTamperHarness::updateIsRefused($this->database, $this->tables, $identifiers[0]));
-        self::assertTrue(AuditTamperHarness::deleteIsRefused($this->database, $this->tables, $identifiers[0]));
-        self::assertSame('success', $this->database->fetchOne(sprintf(
-            'SELECT outcome FROM %s WHERE id = ?',
+        if (AuditAppendOnlyGuard::installed($this->database, $this->tables)) {
+            self::assertTrue(AuditTamperHarness::updateIsRefused($this->database, $this->tables, $identifiers[0]));
+            self::assertTrue(AuditTamperHarness::deleteIsRefused($this->database, $this->tables, $identifiers[0]));
+            self::assertSame('success', $this->database->fetchOne(sprintf(
+                'SELECT outcome FROM %s WHERE id = ?',
+                $this->tables->quoted('audit_events'),
+            ), [$identifiers[0]]));
+            self::assertTrue($this->verifier()->verify($this->context())->intact());
+
+            return;
+        }
+
+        // This server refused the guards, so the rewrite the guarded branch proves impossible is
+        // simply allowed here. What must still hold is the claim the subsystem actually makes: the
+        // evidence catches it. Prevention is absent; detection is not.
+        $this->database->executeStatement(sprintf(
+            'UPDATE %s SET outcome = ? WHERE id = ?',
             $this->tables->quoted('audit_events'),
-        ), [$identifiers[0]]));
+        ), ['denied', $identifiers[0]]);
+
+        $report = $this->verifier()->verify($this->context());
+        self::assertFalse($report->intact(), 'An unprevented rewrite must still be detected.');
+        self::assertSame('event.digest.mismatch', $report->firstDivergence?->code);
+        self::assertSame($identifiers[0], $report->firstDivergence?->eventId);
+        self::assertSame(AuditEnforcementState::NotInstalled, $report->enforcement);
+        self::assertFalse($report->guarded());
+
+        $this->database->executeStatement(sprintf(
+            'UPDATE %s SET outcome = ? WHERE id = ?',
+            $this->tables->quoted('audit_events'),
+        ), ['success', $identifiers[0]]);
         self::assertTrue($this->verifier()->verify($this->context())->intact());
     }
 
@@ -203,10 +290,20 @@ final class AuditTrailRuntimeIntegrationTest extends TestCase
         ));
 
         self::assertSame(1, $deleted);
-        self::assertTrue(
-            AuditTamperHarness::deleteIsRefused($this->database, $this->tables, $identifiers[1]),
-            'The window must close behind the guarded delete.',
-        );
+        if (AuditAppendOnlyGuard::installed($this->database, $this->tables)) {
+            self::assertTrue(
+                AuditTamperHarness::deleteIsRefused($this->database, $this->tables, $identifiers[1]),
+                'The window must close behind the guarded delete.',
+            );
+        } else {
+            // Nothing was opened, so there is nothing to close; what matters is that the pass did not
+            // leave a guard behind it on a server that never had one.
+            self::assertSame(
+                AuditEnforcementState::NotInstalled,
+                AuditAppendOnlyGuard::state($this->database, $this->tables),
+                'A prune on an unguarded server must not install a guard on its way out.',
+            );
+        }
         $this->database->insert($this->tables->raw('audit_events'), $row);
         self::assertTrue($this->verifier()->verify($this->context())->intact());
     }
@@ -214,11 +311,25 @@ final class AuditTrailRuntimeIntegrationTest extends TestCase
     public function testVerificationReportsTheEnforcementThisServerIsActuallyApplying(): void
     {
         $this->record(2);
+        $observed = AuditAppendOnlyGuard::state($this->database, $this->tables);
 
-        $guarded = $this->verifier()->verify($this->context());
-        self::assertTrue($guarded->intact(), $guarded->firstDivergence?->detail ?? '');
-        self::assertSame(AuditEnforcementState::Active, $guarded->enforcement);
-        self::assertTrue($guarded->guarded());
+        $report = $this->verifier()->verify($this->context());
+        self::assertTrue($report->intact(), $report->firstDivergence?->detail ?? '');
+        self::assertSame($observed, $report->enforcement, 'The report must follow the server.');
+        self::assertSame($observed->installed(), $report->guarded());
+
+        if (!$observed->installed()) {
+            // The interesting property on a server that cannot install the guards is that nothing
+            // talks itself into claiming otherwise: a repeated install attempt keeps reporting the
+            // refusal rather than quietly returning success.
+            self::assertSame(
+                AuditEnforcementState::NotInstalled,
+                AuditAppendOnlyGuard::install($this->database, $this->tables),
+                'A server that refuses the guards must never be reported as having accepted them.',
+            );
+
+            return;
+        }
 
         $this->withoutGuards(function (): void {
             $report = $this->verifier()->verify($this->context());
@@ -358,6 +469,22 @@ final class AuditTrailRuntimeIntegrationTest extends TestCase
         }
 
         return true;
+    }
+
+    private function recorder(): AuditRecorder
+    {
+        $recorder = $this->container->get(AuditRecorder::class);
+        self::assertInstanceOf(AuditRecorder::class, $recorder);
+
+        return $recorder;
+    }
+
+    private function clock(): ClockInterface
+    {
+        $clock = $this->container->get(ClockInterface::class);
+        self::assertInstanceOf(ClockInterface::class, $clock);
+
+        return $clock;
     }
 
     private function verifier(): AuditTrailVerifier
