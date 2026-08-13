@@ -11,7 +11,11 @@
    the export in the trail; keep the printed manifest with the incident notes.
    Run `bin/kumwe audit:verify --site=<site> --token-file=<file>` before and
    after preservation so the record shows whether the trail was already
-   divergent. See
+   divergent. Note its `append_only_enforcement` field in the incident record:
+   an exit of `2` with `not_installed` means the database was not refusing
+   rewrites on this server, so the trail is evidence but was not protected —
+   which changes how much weight the trail carries and widens what the
+   investigation has to consider. See
    [monitoring](monitoring.md#tamper-evidence).
 3. Snapshot persistent volumes or create a verified backup when doing so will not
    destroy evidence.

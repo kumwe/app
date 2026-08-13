@@ -16,6 +16,7 @@ use Kumwe\CMS\Audit\Application\AuditAnchorWriter;
 use Kumwe\CMS\Audit\Application\AuditRecorder;
 use Kumwe\CMS\Audit\Application\AuditTrailExporter;
 use Kumwe\CMS\Audit\Application\AuditTrailVerifier;
+use Kumwe\CMS\Audit\Domain\AuditEnforcementState;
 use Kumwe\CMS\Audit\Domain\AuditEvent;
 use Kumwe\CMS\Audit\Infrastructure\Persistence\AuditAppendOnlyGuard;
 use Kumwe\CMS\Audit\Infrastructure\Persistence\DoctrineAuditAnchorWriter;
@@ -206,6 +207,56 @@ final class AuditTrailRuntimeIntegrationTest extends TestCase
             AuditTamperHarness::deleteIsRefused($this->database, $this->tables, $identifiers[1]),
             'The window must close behind the guarded delete.',
         );
+        $this->database->insert($this->tables->raw('audit_events'), $row);
+        self::assertTrue($this->verifier()->verify($this->context())->intact());
+    }
+
+    public function testVerificationReportsTheEnforcementThisServerIsActuallyApplying(): void
+    {
+        $this->record(2);
+
+        $guarded = $this->verifier()->verify($this->context());
+        self::assertTrue($guarded->intact(), $guarded->firstDivergence?->detail ?? '');
+        self::assertSame(AuditEnforcementState::Active, $guarded->enforcement);
+        self::assertTrue($guarded->guarded());
+
+        $this->withoutGuards(function (): void {
+            $report = $this->verifier()->verify($this->context());
+            self::assertSame(
+                AuditEnforcementState::NotInstalled,
+                $report->enforcement,
+                'The report must follow the server, not whatever the migration once managed to do.',
+            );
+            self::assertTrue($report->intact(), 'Removing prevention does not damage the evidence.');
+            self::assertFalse($report->guarded(), 'An unguarded server must never read as a guarded one.');
+        });
+
+        self::assertSame(AuditEnforcementState::Active, $this->verifier()->verify($this->context())->enforcement);
+    }
+
+    public function testTheRetentionWindowDeletesCorrectlyOnAServerWithNoGuardsToOpen(): void
+    {
+        $identifiers = $this->record(2);
+        $row = $this->row($identifiers[0]);
+
+        $this->withoutGuards(function () use ($identifiers): void {
+            $deleted = $this->database->transactional(fn (): int => AuditAppendOnlyGuard::withPruneAllowed(
+                $this->database,
+                $this->tables,
+                fn (): int => (int) $this->database->executeStatement(sprintf(
+                    'DELETE FROM %s WHERE id = ?',
+                    $this->tables->quoted('audit_events'),
+                ), [$identifiers[0]]),
+            ));
+
+            self::assertSame(1, $deleted, 'The sanctioned prune must still remove exactly its range.');
+            self::assertSame(
+                AuditEnforcementState::NotInstalled,
+                AuditAppendOnlyGuard::state($this->database, $this->tables),
+                'Closing a window that was never open must not install a guard as a side effect.',
+            );
+        });
+
         $this->database->insert($this->tables->raw('audit_events'), $row);
         self::assertTrue($this->verifier()->verify($this->context())->intact());
     }

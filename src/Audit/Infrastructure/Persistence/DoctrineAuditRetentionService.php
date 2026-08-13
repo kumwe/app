@@ -38,6 +38,12 @@ use RuntimeException;
  * drives it simply does not call when retention is unconfigured, which is why an installation that never
  * sets a window keeps its trail forever.
  *
+ * None of that order depends on the triggers actually being installed. On a server that refused them the
+ * window `AuditAppendOnlyGuard::withPruneAllowed()` opens is a no-op, and every step that carries the
+ * evidence — the archive, the checksum, the chained prune mark, the row count reconciliation — runs
+ * exactly as it does on a guarded server. Retention is therefore correct in both postures, and the
+ * post-delete count check still fails the pass closed if the range was not removed exactly.
+ *
  * @since  2.0.0
  */
 final readonly class DoctrineAuditRetentionService implements AuditRetentionService

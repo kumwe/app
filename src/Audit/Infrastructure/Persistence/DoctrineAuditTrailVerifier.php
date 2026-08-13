@@ -11,6 +11,7 @@ use Kumwe\CMS\Application\Authorization\AuthorizationResource;
 use Kumwe\CMS\Application\Authorization\ExecutionContext;
 use Kumwe\CMS\Audit\Application\AuditTrailVerifier;
 use Kumwe\CMS\Audit\Domain\AuditAnchorDigest;
+use Kumwe\CMS\Audit\Domain\AuditEnforcementState;
 use Kumwe\CMS\Audit\Domain\AuditEventDigest;
 use Kumwe\CMS\Audit\Domain\AuditVerificationFinding;
 use Kumwe\CMS\Audit\Domain\AuditVerificationReport;
@@ -35,6 +36,13 @@ use Throwable;
  * Verification is read-only and stops at the first divergence, because everything after a broken link is
  * no longer reliable evidence. It is safe to run against a live installation: rows appended after the
  * head observed at the start of the pass are simply left to the next one.
+ *
+ * Every pass also asks the server whether the append-only guards are actually installed, and carries the
+ * answer in the report. The question is put to the catalog on each run rather than read from anything
+ * the migration recorded, so the report stays true after a dump is restored onto a server that never
+ * accepted the triggers, after a DBA grants the privilege that was missing, and after someone drops
+ * them. Enforcement is prevention and this walk is detection; a report that only said "intact" would let
+ * an installation with no prevention at all look exactly like one that has it.
  *
  * @since  2.0.0
  */
@@ -74,7 +82,8 @@ final readonly class DoctrineAuditTrailVerifier implements AuditTrailVerifier
      * @param   ExecutionContext  $context    Actor the verification is authorized under.
      * @param   int               $batchSize  Rows fetched per batch during the walk, from 1 to 10000.
      *
-     * @return  AuditVerificationReport  Counts of what was re-checked, and the first divergence if any.
+     * @return  AuditVerificationReport  Counts of what was re-checked, the append-only enforcement state
+     *          observed on this server, and the first divergence if any.
      *
      * @throws  InvalidArgumentException  When the batch size is outside its bounds.
      * @throws  \Kumwe\CMS\Application\Authorization\AuthorizationDenied  When the actor may not verify
@@ -96,10 +105,11 @@ final readonly class DoctrineAuditTrailVerifier implements AuditTrailVerifier
             'SELECT MAX(position) FROM %s',
             $this->tables->quoted('audit_events'),
         )), 'trail head position') ?? 0;
+        $enforcement = AuditAppendOnlyGuard::state($this->database, $this->tables);
         try {
             $ledger = AuditLedger::all($this->database, $this->tables);
         } catch (RuntimeException $exception) {
-            return new AuditVerificationReport(0, 0, $head, new AuditVerificationFinding(
+            return new AuditVerificationReport(0, 0, $head, $enforcement, new AuditVerificationFinding(
                 'anchor.row.malformed',
                 0,
                 $exception->getMessage(),
@@ -107,7 +117,7 @@ final readonly class DoctrineAuditTrailVerifier implements AuditTrailVerifier
         }
         $ledgerFinding = $this->verifyLedger($ledger);
         if ($ledgerFinding !== null) {
-            return new AuditVerificationReport(0, 0, $head, $ledgerFinding);
+            return new AuditVerificationReport(0, 0, $head, $enforcement, $ledgerFinding);
         }
         $prunedThrough = 0;
         foreach ($ledger as $entry) {
@@ -117,10 +127,10 @@ final readonly class DoctrineAuditTrailVerifier implements AuditTrailVerifier
         }
         $rangeFinding = $this->verifyRanges($ledger);
         if ($rangeFinding !== null) {
-            return new AuditVerificationReport(0, count($ledger), $head, $rangeFinding);
+            return new AuditVerificationReport(0, count($ledger), $head, $enforcement, $rangeFinding);
         }
 
-        return $this->walk($ledger, $prunedThrough, $head, $batchSize);
+        return $this->walk($ledger, $prunedThrough, $head, $batchSize, $enforcement);
     }
 
     /**
@@ -288,13 +298,19 @@ final readonly class DoctrineAuditTrailVerifier implements AuditTrailVerifier
      * @param   int                     $prunedThrough  Highest position an archived prune mark covers.
      * @param   int                     $head           Highest position present when the pass started.
      * @param   int                     $batchSize      Rows fetched per batch.
+     * @param   AuditEnforcementState   $enforcement    Guard state observed at the start of the pass.
      *
      * @return  AuditVerificationReport  Counts re-checked, and the first divergence if one was found.
      *
      * @since   2.0.0
      */
-    private function walk(array $ledger, int $prunedThrough, int $head, int $batchSize): AuditVerificationReport
-    {
+    private function walk(
+        array $ledger,
+        int $prunedThrough,
+        int $head,
+        int $batchSize,
+        AuditEnforcementState $enforcement,
+    ): AuditVerificationReport {
         $anchors = count($ledger);
         $verified = 0;
         $cursor = 0;
@@ -309,7 +325,7 @@ final readonly class DoctrineAuditTrailVerifier implements AuditTrailVerifier
                 $batchSize,
             ), [$cursor, $head]);
             if ($rows === []) {
-                return new AuditVerificationReport($verified, $anchors, $head);
+                return new AuditVerificationReport($verified, $anchors, $head, $enforcement);
             }
             foreach ($rows as $row) {
                 try {
@@ -319,38 +335,62 @@ final readonly class DoctrineAuditTrailVerifier implements AuditTrailVerifier
                     $identifier = $this->identifier($row['id'] ?? null);
                     $digest = $this->digestOf($row, $identifier);
                 } catch (RuntimeException $exception) {
-                    return new AuditVerificationReport($verified, $anchors, $head, new AuditVerificationFinding(
-                        'event.row.malformed',
-                        $cursor + 1,
-                        $exception->getMessage(),
-                    ));
+                    return new AuditVerificationReport(
+                        $verified,
+                        $anchors,
+                        $head,
+                        $enforcement,
+                        new AuditVerificationFinding(
+                            'event.row.malformed',
+                            $cursor + 1,
+                            $exception->getMessage(),
+                        ),
+                    );
                 }
                 $cursor = $position;
                 if (!hash_equals($stored, $digest)) {
-                    return new AuditVerificationReport($verified, $anchors, $head, new AuditVerificationFinding(
-                        'event.digest.mismatch',
-                        $position,
-                        'The stored event digest disagrees with its recomputation from the row.',
-                        $identifier,
-                    ));
+                    return new AuditVerificationReport(
+                        $verified,
+                        $anchors,
+                        $head,
+                        $enforcement,
+                        new AuditVerificationFinding(
+                            'event.digest.mismatch',
+                            $position,
+                            'The stored event digest disagrees with its recomputation from the row.',
+                            $identifier,
+                        ),
+                    );
                 }
                 $archived = $position <= $prunedThrough + 1;
                 if ($link === null) {
                     if (!$first && !$archived) {
-                        return new AuditVerificationReport($verified, $anchors, $head, new AuditVerificationFinding(
-                            'event.link.missing',
-                            $position,
-                            'The event carries no witness link although it is not the first of the trail.',
-                            $identifier,
-                        ));
+                        return new AuditVerificationReport(
+                            $verified,
+                            $anchors,
+                            $head,
+                            $enforcement,
+                            new AuditVerificationFinding(
+                                'event.link.missing',
+                                $position,
+                                'The event carries no witness link although it is not the first of the trail.',
+                                $identifier,
+                            ),
+                        );
                     }
                 } elseif (!isset($window[$link]) && !$archived) {
-                    return new AuditVerificationReport($verified, $anchors, $head, new AuditVerificationFinding(
-                        'event.link.unresolved',
-                        $position,
-                        'The event witnesses a predecessor digest no retained earlier row carries.',
-                        $identifier,
-                    ));
+                    return new AuditVerificationReport(
+                        $verified,
+                        $anchors,
+                        $head,
+                        $enforcement,
+                        new AuditVerificationFinding(
+                            'event.link.unresolved',
+                            $position,
+                            'The event witnesses a predecessor digest no retained earlier row carries.',
+                            $identifier,
+                        ),
+                    );
                 }
                 $window[$stored] = true;
                 if (count($window) > self::LINK_WINDOW) {
