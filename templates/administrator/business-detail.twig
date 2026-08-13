@@ -35,9 +35,6 @@
         {% if available_operations.report is defined %}
           <a class="button" href="{{ business_base_path }}/{{ definition.handle|url_encode }}?purpose=report">Report</a>
         {% endif %}
-        {% if available_operations.export is defined %}
-          <a class="button" href="{{ business_base_path }}/{{ definition.handle|url_encode }}?purpose=export">Export</a>
-        {% endif %}
         {% if available_operations.update is defined and record.deleted_at is null %}<a class="button primary" href="{{ record_path }}?edit=1">Edit</a>{% endif %}
       </div>
     </header>

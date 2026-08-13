@@ -44,6 +44,12 @@ docker compose -f compose.production.yaml --profile automation up -d worker sche
 
 Use `queue:work --once` and `schedule:run` without `--loop` for deployment smoke tests. A built-in recurring schedule purges expired administrator sessions every 15 minutes.
 
+The development server (`tools/development-server.sh`, used by development Compose and the browser test
+harness) supervises one `queue:work --queue=exports` worker beside the HTTP server, so a CSV export
+queued from a report or record workspace completes without a manually started worker. The supervisor
+restarts the worker whenever extension reconciliation publishes a new runtime generation. Every other
+queue still requires an explicitly started worker, exactly as in production.
+
 ## Manage schedules
 
 ```bash

@@ -1086,7 +1086,11 @@ test.describe('authenticated administrator', () => {
     await page.goto(`/administrator/business/${businessDefinitionHandle}`);
     await expect(page.locator(isMobile ? '.kis-business-result-card' : '.business-record-table tbody tr').first()).toBeVisible();
     await expect(page.getByRole('link', { name: 'Report', exact: true })).toBeVisible();
-    await expect(page.getByRole('link', { name: 'Export', exact: true })).toBeVisible();
+    const exportForm = page.locator(
+      `form[action="/administrator/reports/core.record-export.${businessDefinitionHandle}/exports"]`,
+    );
+    await expect(exportForm.getByRole('button', { name: 'Queue CSV export', exact: true })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Export', exact: true })).toHaveCount(0);
     await page.getByLabel('Search records').fill('Windhoek order');
     await page.getByRole('button', { name: 'Apply', exact: true }).click();
     await expect(page.locator(isMobile ? '.kis-business-result-card' : '.business-record-table tbody tr').filter({ hasText: 'Windhoek order' }).first()).toBeVisible();
@@ -1114,6 +1118,40 @@ test.describe('authenticated administrator', () => {
     await expect(page.locator('input[name="operation_id"]')).not.toHaveValue('');
     await expect(page.locator('input[name="confirmed"]')).toHaveValue('1');
     await page.goBack();
+  });
+
+  test('business list export control queues a CSV export that completes and downloads', async ({
+    page,
+  }) => {
+    test.setTimeout(120_000);
+    await page.goto(`/administrator/business/${businessDefinitionHandle}`);
+    const exportForm = page.locator(
+      `form[action="/administrator/reports/core.record-export.${businessDefinitionHandle}/exports"]`,
+    );
+    await exportForm.getByRole('button', { name: 'Queue CSV export', exact: true }).click();
+    await expect(page).toHaveURL(
+      `/administrator/reports/core.record-export.${businessDefinitionHandle}/exports`,
+    );
+    await expect(page.getByRole('heading', { name: 'Latest export request' })).toBeVisible();
+    await expect(page.getByText('Queued', { exact: true })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Refresh status' })).toHaveAttribute(
+      'href',
+      /^\/administrator\/reports\/exports\/[0-9a-f-]{36}$/u,
+    );
+    await expect(async () => {
+      await page.getByRole('link', { name: 'Refresh status' }).click();
+      await expect(page.getByText('Completed', { exact: true })).toBeVisible({ timeout: 2_000 });
+    }).toPass({ timeout: 60_000, intervals: [1_000] });
+    const download = page.getByRole('link', { name: 'Download verified CSV' });
+    await expect(download).toBeVisible();
+    const href = await download.getAttribute('href');
+    expect(href).toMatch(/^\/administrator\/reports\/exports\/[0-9a-f-]{36}\/download$/u);
+    const csv = await page.request.get(String(href));
+    expect(csv.status()).toBe(200);
+    expect(csv.headers()['content-type']).toContain('text/csv');
+    const body = await csv.text();
+    expect(body).toContain('"Name"');
+    expect(body).toContain('"Windhoek order"');
   });
 
   test('generated operation status and custom views are accessible and bounded', async ({

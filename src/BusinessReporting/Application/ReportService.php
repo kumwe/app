@@ -57,11 +57,13 @@ final readonly class ReportService
     /**
      * Wire reporting to definitions, the policy-aware record seam and capability enforcement.
      *
-     * @param   ReportDefinitionRegistry    $reports            Active report contributions.
-     * @param   BusinessRecordReportReader  $records            Canonical record browse adapter.
-     * @param   AuthorizationGateway        $authorization      Deny-by-default permission gateway.
-     * @param   ReportScopeResolver         $scopes             Installed source-scope resolver.
-     * @param   int                         $maximumExportRows  Absolute expanded-row bound for one export.
+     * @param   ReportDefinitionRegistry     $reports            Active report contributions.
+     * @param   BusinessRecordReportReader   $records            Canonical record browse adapter.
+     * @param   AuthorizationGateway         $authorization      Deny-by-default permission gateway.
+     * @param   ReportScopeResolver          $scopes             Installed source-scope resolver.
+     * @param   int                          $maximumExportRows  Absolute expanded-row bound for one export.
+     * @param   ?RecordExportReportProvider  $recordExports      Derived record-set export reports; null
+     *          keeps resolution limited to contributed reports.
      *
      * @throws  InvalidArgumentException  When the export bound is outside 1 to 100000.
      *
@@ -73,6 +75,7 @@ final readonly class ReportService
         private AuthorizationGateway $authorization,
         private ReportScopeResolver $scopes,
         private int $maximumExportRows = 100_000,
+        private ?RecordExportReportProvider $recordExports = null,
     ) {
         if ($maximumExportRows < 1 || $maximumExportRows > 100_000) {
             throw new InvalidArgumentException('The report export row limit is invalid.');
@@ -93,7 +96,7 @@ final readonly class ReportService
      */
     public function execute(ReportExecutionRequest $request): ReportExecutionResult
     {
-        $report = $this->reports->get($request->reportIdentifier);
+        $report = $this->report($request->context, $request->reportIdentifier);
         if (!$this->isAvailable($request->context, $report, $request->purpose)) {
             throw new ReportUnavailable('The report is unavailable.');
         }
@@ -230,6 +233,31 @@ final readonly class ReportService
         }
 
         return true;
+    }
+
+    /**
+     * Resolve a contributed report, or fall back to one derived record-set export report.
+     *
+     * @param   ExecutionContext  $context     Authenticated actor and site scope.
+     * @param   string            $identifier  Namespaced report handle.
+     *
+     * @return  ReportDefinition  Contributed or derived immutable definition.
+     *
+     * @throws  ReportUnavailable  When neither the registry nor derivation can answer the handle.
+     *
+     * @since   2.0.0
+     */
+    private function report(ExecutionContext $context, string $identifier): ReportDefinition
+    {
+        try {
+            return $this->reports->get($identifier);
+        } catch (ReportUnavailable $exception) {
+            if ($this->recordExports === null) {
+                throw $exception;
+            }
+
+            return $this->recordExports->resolve($context, $identifier);
+        }
     }
 
     /**

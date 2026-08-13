@@ -45,8 +45,11 @@
         {% if available_operations.report is defined %}
           <a class="button" href="{{ business_base_path }}/{{ definition.handle|url_encode }}?purpose=report">Report</a>
         {% endif %}
-        {% if available_operations.export is defined %}
-          <a class="button" href="{{ business_base_path }}/{{ definition.handle|url_encode }}?purpose=export">Export</a>
+        {% if record_export_report %}
+          <form class="business-export-form" method="post" action="/administrator/reports/{{ record_export_report|url_encode }}/exports">
+            <input type="hidden" name="_csrf" value="{{ csrf }}">
+            <button class="button" type="submit">Queue CSV export</button>
+          </form>
         {% endif %}
         {% if available_operations.create is defined %}
           <a class="button primary" href="{{ business_base_path }}/{{ definition.handle|url_encode }}?new=1">
