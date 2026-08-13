@@ -306,6 +306,55 @@
       "administrator": true,
       "portal": true,
       "public": false
+    },
+    {
+      "handle": "quotation_document",
+      "label": "Quotation document",
+      "kind": "document",
+      "fields": [
+        "quote_number",
+        "title",
+        "issued_on",
+        "valid_until",
+        "subtotal",
+        "tax",
+        "total"
+      ],
+      "filters": [],
+      "sorts": [],
+      "administrator": true,
+      "portal": true,
+      "public": false,
+      "document": {
+        "identity": "quote_number",
+        "groups": [
+          {
+            "label": "Summary",
+            "fields": [
+              "title"
+            ]
+          },
+          {
+            "label": "Validity",
+            "fields": [
+              "issued_on",
+              "valid_until"
+            ]
+          }
+        ],
+        "parties": [
+          {
+            "label": "Prepared for",
+            "relationship": "client"
+          }
+        ],
+        "lines": "lines",
+        "totals": [
+          "subtotal",
+          "tax",
+          "total"
+        ]
+      }
     }
   ],
   "actions": [
