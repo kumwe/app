@@ -1,5 +1,6 @@
 {% import "@core-site/_navigation.twig" as navigation_tree %}
 {# KIS 1.0 validates these host outlets and semantic landmarks while leaving their composition theme-owned. #}
+{# Theme-owned classes carry a horizon- prefix so the mandatory host stylesheet outlet cannot restyle them. #}
 <!doctype html>
 <html lang="en">
 <head>
@@ -14,18 +15,19 @@
 </head>
 <body class="horizon">
   <a class="skip-link" href="#site-content">Skip to content</a>
-  <header class="site-header">
-    <a class="site-brand" href="/">
+  <header class="horizon-header">
+    <a class="horizon-brand" href="/">
       {% if site_logo|default('') %}<img src="{{ site_logo }}" alt="" width="40" height="40">{% endif %}
       <span>{{ site_name|default('Kumwe') }}</span>
     </a>
     {% if navigation|default([]) is not empty %}
-      <nav aria-label="Main navigation">
+      <button class="horizon-nav-toggle" type="button" aria-label="Open site navigation" aria-expanded="false" data-site-navigation-toggle>Menu</button>
+      <nav class="horizon-nav" aria-label="Main navigation" data-site-navigation>
         {{ navigation_tree.branch(navigation, current_path|default('/')) }}
       </nav>
     {% endif %}
   </header>
   <main id="site-content" tabindex="-1">{% block content %}{% endblock %}</main>
-  <footer class="site-footer"><p>{{ site_name|default('Kumwe') }} · over the horizon, powered by Kumwe CMS</p></footer>
+  <footer class="horizon-footer"><p>{{ site_name|default('Kumwe') }} · over the horizon, powered by Kumwe CMS</p></footer>
 </body>
 </html>
