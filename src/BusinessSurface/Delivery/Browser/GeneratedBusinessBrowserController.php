@@ -18,6 +18,9 @@ use Kumwe\CMS\BusinessSurface\Application\BusinessOperationStatusService;
 use Kumwe\CMS\BusinessSurface\Application\BusinessSurface;
 use Kumwe\CMS\BusinessSurface\Application\BusinessSurfaceOperation;
 use Kumwe\CMS\BusinessSurface\Application\BusinessSurfaceService;
+use Kumwe\CMS\BusinessReporting\Application\RecordExportReportProvider;
+use Kumwe\CMS\BusinessReporting\Application\ReportService;
+use Kumwe\CMS\BusinessReporting\Application\ReportUnavailable;
 use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessHandlerFailed;
 use Ramsey\Uuid\Uuid;
 
@@ -36,11 +39,13 @@ final readonly class GeneratedBusinessBrowserController
     /**
      * Configure the shared controller.
      *
-     * @param  BusinessSurfaceService          $business     Generated-business application facade.
-     * @param  BusinessFormInputMapper         $forms        Schema-authorized nested input mapper.
-     * @param  BusinessOperationStatusService  $operations   Caller-bound operation-status lookup.
-     * @param  BusinessCustomViewPresenter     $customViews  Safe generic custom-result projector.
-     * @param  BusinessDocumentPresenter       $documents    Document-view arrangement of safe read models.
+     * @param  BusinessSurfaceService          $business       Generated-business application facade.
+     * @param  BusinessFormInputMapper         $forms          Schema-authorized nested input mapper.
+     * @param  BusinessOperationStatusService  $operations     Caller-bound operation-status lookup.
+     * @param  BusinessCustomViewPresenter     $customViews    Safe generic custom-result projector.
+     * @param  BusinessDocumentPresenter       $documents      Document-view arrangement of safe read models.
+     * @param  ReportService                   $reports        Shared report discovery and execution seam.
+     * @param  RecordExportReportProvider      $recordExports  Derived record-set export reports.
      *
      * @since  2.0.0
      */
@@ -50,6 +55,8 @@ final readonly class GeneratedBusinessBrowserController
         private BusinessOperationStatusService $operations,
         private BusinessCustomViewPresenter $customViews,
         private BusinessDocumentPresenter $documents,
+        private ReportService $reports,
+        private RecordExportReportProvider $recordExports,
     ) {
     }
 
@@ -610,6 +617,7 @@ final readonly class GeneratedBusinessBrowserController
                 'query_state' => $browserQuery->formState(),
                 'query_purpose' => $purpose->value,
                 'next_query' => is_string($nextCursor) ? $browserQuery->next($nextCursor) : null,
+                'record_export_report' => $this->recordExportReport($context, $definitionMetadata, $model),
             ]);
         }
         if (($query['edit'] ?? null) === '1') {
@@ -701,6 +709,42 @@ final readonly class GeneratedBusinessBrowserController
             ),
             'record_task' => $recordTask,
         ]);
+    }
+
+    /**
+     * Resolve the queueable record-set CSV export report for one policy-visible collection.
+     *
+     * The affordance is honest by construction: it appears only when the export operation survived the
+     * shared catalog's policy filter and the derived report passes the exact availability decision the
+     * report surfaces use, so a rendered control always maps onto a queueable export.
+     *
+     * @param   ExecutionContext      $context     Authenticated actor and scope.
+     * @param   array<string, mixed>  $definition  Policy-filtered definition metadata.
+     * @param   array<string, mixed>  $model       Browse model carrying available operations.
+     *
+     * @return  string|null  Derived report identifier, or null when no queueable export exists.
+     *
+     * @since   2.0.0
+     */
+    private function recordExportReport(
+        ExecutionContext $context,
+        array $definition,
+        array $model,
+    ): ?string {
+        $operations = $model['available_operations'] ?? null;
+        $handle = $definition['handle'] ?? null;
+        if (!is_array($operations) || !isset($operations['export']) || !is_string($handle)) {
+            return null;
+        }
+        try {
+            $report = $this->recordExports->forDefinition($context, $handle);
+        } catch (ReportUnavailable) {
+            return null;
+        }
+
+        return $this->reports->isAvailable($context, $report, BusinessRecordQueryPurpose::Export)
+            ? $report->identifier()
+            : null;
     }
 
     /**

@@ -331,7 +331,11 @@ test('opt-in business workspaces use the portal shell on desktop and mobile', as
   await page.goto(`/portal/business/${businessDefinitionHandle}`);
   await expect(page.locator(isMobile ? '.kis-business-result-card' : '.portal-business-table tbody tr').first()).toBeVisible();
   await expect(page.getByRole('link', { name: 'Report', exact: true })).toBeVisible();
-  await expect(page.getByRole('link', { name: 'Export', exact: true })).toBeVisible();
+  const exportForm = page.locator(
+    `form[action="/portal/reports/core.record-export.${businessDefinitionHandle}/exports"]`,
+  );
+  await expect(exportForm.getByRole('button', { name: 'Queue CSV export', exact: true })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Export', exact: true })).toHaveCount(0);
   await page.locator('input[name="bulk_records[]"]:visible').first().check();
   await page.getByLabel('Bulk operation').selectOption('archive');
   await page.getByRole('button', { name: 'Review bulk operation' }).click();
@@ -537,6 +541,41 @@ test('portal relationship choices and owned lines are accessible and bounded', a
   });
   expect(ownedLineDiagnostics.findings, JSON.stringify(ownedLineDiagnostics, null, 2)).toEqual([]);
   await attachLiveInterfaceScreenshot(page, testInfo, 'portal-owned-lines');
+});
+
+test('portal business list export control queues a CSV export that completes and downloads', async ({
+  page,
+}) => {
+  test.setTimeout(120_000);
+  await signIn(page);
+  await page.goto(`/portal/business/${businessDefinitionHandle}`);
+  const exportForm = page.locator(
+    `form[action="/portal/reports/core.record-export.${businessDefinitionHandle}/exports"]`,
+  );
+  await exportForm.getByRole('button', { name: 'Queue CSV export', exact: true }).click();
+  await expect(page).toHaveURL(
+    `/portal/reports/core.record-export.${businessDefinitionHandle}/exports`,
+  );
+  await expect(page.getByRole('heading', { name: 'Latest export request' })).toBeVisible();
+  await expect(page.getByText('Queued', { exact: true })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Refresh status' })).toHaveAttribute(
+    'href',
+    /^\/portal\/reports\/exports\/[0-9a-f-]{36}$/u,
+  );
+  await expect(async () => {
+    await page.getByRole('link', { name: 'Refresh status' }).click();
+    await expect(page.getByText('Completed', { exact: true })).toBeVisible({ timeout: 2_000 });
+  }).toPass({ timeout: 60_000, intervals: [1_000] });
+  const download = page.getByRole('link', { name: 'Download verified CSV' });
+  await expect(download).toBeVisible();
+  const href = await download.getAttribute('href');
+  expect(href).toMatch(/^\/portal\/reports\/exports\/[0-9a-f-]{36}\/download$/u);
+  const csv = await page.request.get(String(href));
+  expect(csv.status()).toBe(200);
+  expect(csv.headers()['content-type']).toContain('text/csv');
+  const body = await csv.text();
+  expect(body).toContain('"Name"');
+  expect(body).toContain('"Windhoek order"');
 });
 
 test('opt-in portal reports execute and expose queued export status', async ({ page }, testInfo) => {

@@ -151,6 +151,7 @@ use Kumwe\CMS\BusinessReporting\Application\ExportQueueProducerContextProvider;
 use Kumwe\CMS\BusinessReporting\Application\ExportService;
 use Kumwe\CMS\BusinessReporting\Application\GenerateReportExportHandler;
 use Kumwe\CMS\BusinessReporting\Application\ProjectionRuntime;
+use Kumwe\CMS\BusinessReporting\Application\RecordExportReportProvider;
 use Kumwe\CMS\BusinessReporting\Application\ReportCsvEncoder;
 use Kumwe\CMS\BusinessReporting\Application\ReportDefinitionRegistry;
 use Kumwe\CMS\BusinessReporting\Application\ReportService;
@@ -2253,12 +2254,19 @@ final class ContainerFactory
         ): ReportScopeResolver => new BusinessRecordReportScopeResolver(
             self::service($container, BusinessRecordDefinitionResolver::class),
         ), true);
+        $container->share(RecordExportReportProvider::class, static fn (
+            Container $container,
+        ): RecordExportReportProvider => new RecordExportReportProvider(
+            self::service($container, BusinessRecordDefinitionResolver::class),
+            self::service($container, DoctrinePersistedFieldTypeDefinitionResolver::class),
+        ), true);
         $container->share(ReportService::class, static fn (Container $container): ReportService =>
             new ReportService(
                 self::service($container, ReportDefinitionRegistry::class),
                 new BusinessRecordServiceReportReader(self::service($container, BusinessRecordService::class)),
                 self::service($container, AuthorizationGateway::class),
                 self::service($container, ReportScopeResolver::class),
+                recordExports: self::service($container, RecordExportReportProvider::class),
             ), true);
         $container->share(ExportArtifactRepository::class, static fn (
             Container $container,
@@ -2303,6 +2311,7 @@ final class ContainerFactory
             self::service($container, TransactionManager::class),
             self::service($container, AuditRecorder::class),
             self::service($container, ClockInterface::class),
+            self::service($container, RecordExportReportProvider::class),
         ), true);
         $container->share(ReportCsvEncoder::class, new ReportCsvEncoder(), true);
         $container->share(ExportGenerationService::class, static fn (
@@ -2434,6 +2443,8 @@ final class ContainerFactory
             self::service($container, BusinessOperationStatusService::class),
             self::service($container, BusinessCustomViewPresenter::class),
             self::service($container, BusinessDocumentPresenter::class),
+            self::service($container, ReportService::class),
+            self::service($container, RecordExportReportProvider::class),
         ), true);
         $container->share(OpenApiContractCompiler::class, new OpenApiContractCompiler(), true);
         $container->share(
