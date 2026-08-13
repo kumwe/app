@@ -614,6 +614,36 @@
     flex: 1 1 18rem;
   }
 
+  .kis-phase-five-contribution-map {
+    display: grid;
+    min-width: 0;
+    gap: .65rem;
+  }
+
+  .kis-phase-five-contribution-map h4 {
+    margin: 0;
+  }
+
+  .kis-phase-five-contribution-group {
+    min-width: 0;
+  }
+
+  .kis-phase-five-contribution-map ul {
+    display: grid;
+    margin: 0;
+    padding-left: 1.15rem;
+    gap: .4rem;
+  }
+
+  .kis-phase-five-contribution-map li {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .kis-phase-five-contribution-map code {
+    overflow-wrap: anywhere;
+  }
+
   .kis-phase-five-security-note {
     padding: .85rem 1rem;
     border-left: .3rem solid var(--kumwe-warning);

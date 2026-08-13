@@ -87,7 +87,12 @@ final class DemoExampleExtensionInstallerTest extends TestCase
         $result = $this->installer($manager)->install($this->context(), 'announcements');
 
         self::assertSame(
-            ['identifier' => 'kumwe/announcements-example', 'installed' => false, 'activated' => false],
+            [
+                'identifier' => 'kumwe/announcements-example',
+                'installed' => false,
+                'activated' => false,
+                'contributions' => [],
+            ],
             $result,
         );
     }
@@ -113,7 +118,12 @@ final class DemoExampleExtensionInstallerTest extends TestCase
         $result = $this->installer($manager)->install($this->context(), 'audit-listener');
 
         self::assertSame(
-            ['identifier' => 'kumwe/audit-listener-example', 'installed' => false, 'activated' => true],
+            [
+                'identifier' => 'kumwe/audit-listener-example',
+                'installed' => false,
+                'activated' => true,
+                'contributions' => [],
+            ],
             $result,
         );
     }
