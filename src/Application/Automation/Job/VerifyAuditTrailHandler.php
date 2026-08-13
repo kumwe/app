@@ -19,6 +19,13 @@ use RuntimeException;
  * for an operator to act on. That is deliberately louder than a log line: a trail that no longer verifies
  * is an incident, not a metric.
  *
+ * Absent append-only enforcement is deliberately *not* treated the same way. It is a standing property
+ * of the server — a managed MySQL that will not grant the privilege has the same posture tonight as it
+ * had last night — so failing the job on it would dead-letter a job every night forever and train
+ * operators to ignore the one signal that means something. The report carries the state either way; the
+ * surface that reports it is `audit:verify`, which exits 2 for it, and the operations runbook, which
+ * names the grant that fixes it. This job stays reserved for the thing that is genuinely an incident.
+ *
  * @since  2.0.0
  */
 final readonly class VerifyAuditTrailHandler implements JobHandler

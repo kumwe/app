@@ -14,6 +14,7 @@ use Doctrine\DBAL\Schema\PrimaryKeyConstraint;
 use Doctrine\DBAL\Schema\Schema;
 use Doctrine\DBAL\Types\Types;
 use Kumwe\CMS\Application\Automation\JobExecutionClass;
+use Kumwe\CMS\Audit\Domain\AuditEnforcementState;
 use Kumwe\CMS\Audit\Domain\AuditEventDigest;
 use Kumwe\CMS\Audit\Infrastructure\Persistence\AuditAppendOnlyGuard;
 use Kumwe\CMS\Infrastructure\Persistence\TableNames;
@@ -39,6 +40,15 @@ use Throwable;
  * removal path and archives and anchors the range before it removes anything. The trigger stops every
  * accidental and ad-hoc write; a database account that may drop triggers can still defeat it, which is
  * why `docs/operations/monitoring.md` pairs this with least-privilege account guidance.
+ *
+ * That last step, and only that step, is allowed to come up short. `CREATE TRIGGER` needs a privilege
+ * that managed MySQL services withhold by default — with binary logging enabled and no `SUPER` the
+ * server answers 1419 — so insisting on it would make the platform uninstallable on Amazon RDS, Cloud
+ * SQL and Azure Database for MySQL. The migration therefore records the refusal as a state and carries
+ * on, and everything the rest of this class establishes is unaffected: the chain, the positions and the
+ * anchor ledger are what make tampering *evident*, and they need no privilege at all. `audit:verify`
+ * reports which of the two postures the server is in, so the weaker one can never be mistaken for the
+ * stronger. Any refusal other than the recognised privilege codes still aborts the migration.
  *
  * @since  2.0.0
  */
@@ -158,10 +168,10 @@ final readonly class AuditTamperEvidenceMigration implements RepeatableMigration
         $this->createAnchorLedger($database);
         $this->backfillChain($database);
         $this->sealPositionColumn($database);
-        AuditAppendOnlyGuard::install($database, $this->tables);
+        $enforcement = AuditAppendOnlyGuard::install($database, $this->tables);
         $this->seedCapabilities($database);
         $this->seedSchedules($database);
-        $this->assertApplied($database);
+        $this->assertApplied($database, $enforcement);
     }
 
     /**
@@ -568,7 +578,16 @@ final readonly class AuditTamperEvidenceMigration implements RepeatableMigration
     /**
      * Prove the postconditions this migration exists to establish before it is recorded as applied.
      *
-     * @param   Connection  $database  Connection the checks run on.
+     * The append-only guards are checked conditionally, and the condition is not "were they wanted" but
+     * "did this server accept them". When installation reported `Active` the triggers must be observable
+     * afterwards, so a silent half-install still fails the migration; when it reported `NotInstalled`
+     * the server refused a privilege nobody here can grant, and failing would only turn a documented,
+     * reportable degradation into an uninstallable platform. Every other postcondition — the chain
+     * columns, the anchor ledger, a fully chained trail, the installation-global schedules — is
+     * unconditional, because none of them depends on a privilege.
+     *
+     * @param   Connection             $database     Connection the checks run on.
+     * @param   AuditEnforcementState  $enforcement  What trigger installation reported it achieved.
      *
      * @return  void
      *
@@ -576,7 +595,7 @@ final readonly class AuditTamperEvidenceMigration implements RepeatableMigration
      *
      * @since   2.0.0
      */
-    private function assertApplied(Connection $database): void
+    private function assertApplied(Connection $database, AuditEnforcementState $enforcement): void
     {
         $manager = $database->createSchemaManager();
         $events = $manager->introspectTableByUnquotedName($this->tables->raw('audit_events'));
@@ -595,7 +614,7 @@ final readonly class AuditTamperEvidenceMigration implements RepeatableMigration
         if ($this->number($unchained) !== 0) {
             throw new RuntimeException('The audit trail still holds unchained rows.');
         }
-        if (!AuditAppendOnlyGuard::installed($database, $this->tables)) {
+        if ($enforcement->installed() && !AuditAppendOnlyGuard::installed($database, $this->tables)) {
             throw new RuntimeException('The audit append-only guards are missing.');
         }
         foreach ([self::ANCHOR_JOB_TYPE, self::VERIFY_JOB_TYPE, self::RETENTION_JOB_TYPE] as $type) {

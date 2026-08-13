@@ -8,6 +8,7 @@ use Kumwe\CMS\Application\Authorization\ExecutionContext;
 use Kumwe\CMS\Audit\Application\AuditTrailExport;
 use Kumwe\CMS\Audit\Application\AuditTrailExporter;
 use Kumwe\CMS\Audit\Application\AuditTrailVerifier;
+use Kumwe\CMS\Audit\Domain\AuditEnforcementState;
 use Kumwe\CMS\Audit\Domain\AuditVerificationFinding;
 use Kumwe\CMS\Audit\Domain\AuditVerificationReport;
 use Kumwe\CMS\Audit\Domain\StoredAuditArchive;
@@ -58,7 +59,7 @@ final class AuditConsoleCommandTest extends TestCase
     {
         $output = new CollectingConsoleOutput();
         $command = new VerifyAuditTrailCommand(
-            new StubAuditTrailVerifier(new AuditVerificationReport(12, 3, 12)),
+            new StubAuditTrailVerifier(new AuditVerificationReport(12, 3, 12, AuditEnforcementState::Active)),
             $this->authorizer(),
         );
 
@@ -66,7 +67,35 @@ final class AuditConsoleCommandTest extends TestCase
         self::assertSame(0, $command->execute($this->options(), $output));
         self::assertStringContainsString('"intact": true', $output->lines[0]);
         self::assertStringContainsString('"events_verified": 12', $output->lines[0]);
+        self::assertStringContainsString('"append_only_enforcement": "active"', $output->lines[0]);
         self::assertSame([], $output->errors);
+    }
+
+    /**
+     * Prove an intact trail on a server with no guards is reported as its own, distinctly worse verdict.
+     *
+     * The exit status has to separate it from both neighbours: a deployment gate that treated it as `0`
+     * would sign off an installation with no prevention at all, and one that treated it as `1` could not
+     * tell a missing control from a trail that has actually been tampered with.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testVerificationOfAnUnguardedTrailReportsTheDegradedStateDistinctly(): void
+    {
+        $output = new CollectingConsoleOutput();
+        $command = new VerifyAuditTrailCommand(
+            new StubAuditTrailVerifier(new AuditVerificationReport(12, 3, 12, AuditEnforcementState::NotInstalled)),
+            $this->authorizer(),
+        );
+
+        self::assertSame(2, $command->execute($this->options(), $output));
+        self::assertSame([], $output->lines);
+        self::assertStringContainsString('"intact": true', $output->errors[0]);
+        self::assertStringContainsString('"append_only_enforcement": "not_installed"', $output->errors[0]);
+        self::assertStringContainsString('application-level discipline', $output->errors[0]);
+        self::assertStringNotContainsString('"divergence"', $output->errors[0]);
     }
 
     /**
@@ -80,12 +109,18 @@ final class AuditConsoleCommandTest extends TestCase
     {
         $output = new CollectingConsoleOutput();
         $command = new VerifyAuditTrailCommand(
-            new StubAuditTrailVerifier(new AuditVerificationReport(4, 1, 9, new AuditVerificationFinding(
-                'event.digest.mismatch',
-                5,
-                'The stored event digest disagrees with its recomputation from the row.',
-                '8bd4ec65-92f2-4934-afb8-b22a3cf956cd',
-            ))),
+            new StubAuditTrailVerifier(new AuditVerificationReport(
+                4,
+                1,
+                9,
+                AuditEnforcementState::Active,
+                new AuditVerificationFinding(
+                    'event.digest.mismatch',
+                    5,
+                    'The stored event digest disagrees with its recomputation from the row.',
+                    '8bd4ec65-92f2-4934-afb8-b22a3cf956cd',
+                ),
+            )),
             $this->authorizer(),
         );
 
@@ -94,6 +129,33 @@ final class AuditConsoleCommandTest extends TestCase
         self::assertStringContainsString('"code": "event.digest.mismatch"', $output->errors[0]);
         self::assertStringContainsString('"position": 5', $output->errors[0]);
         self::assertStringContainsString('8bd4ec65-92f2-4934-afb8-b22a3cf956cd', $output->errors[0]);
+        self::assertStringContainsString('"append_only_enforcement": "active"', $output->errors[0]);
+    }
+
+    /**
+     * Prove a divergence outranks a missing guard, so the louder verdict is never masked by the quieter.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testADivergenceOutranksMissingEnforcementInTheExitStatus(): void
+    {
+        $output = new CollectingConsoleOutput();
+        $command = new VerifyAuditTrailCommand(
+            new StubAuditTrailVerifier(new AuditVerificationReport(
+                4,
+                1,
+                9,
+                AuditEnforcementState::NotInstalled,
+                new AuditVerificationFinding('event.link.unresolved', 5, 'Broken witness link.'),
+            )),
+            $this->authorizer(),
+        );
+
+        self::assertSame(1, $command->execute($this->options(), $output));
+        self::assertStringContainsString('"append_only_enforcement": "not_installed"', $output->errors[0]);
+        self::assertStringContainsString('"code": "event.link.unresolved"', $output->errors[0]);
     }
 
     /**
@@ -106,7 +168,7 @@ final class AuditConsoleCommandTest extends TestCase
     public function testVerificationRefusesToRunWithoutAProtectedTokenFile(): void
     {
         $output = new CollectingConsoleOutput();
-        $verifier = new StubAuditTrailVerifier(new AuditVerificationReport(0, 0, 0));
+        $verifier = new StubAuditTrailVerifier(new AuditVerificationReport(0, 0, 0, AuditEnforcementState::Active));
 
         self::assertSame(1, (new VerifyAuditTrailCommand($verifier, $this->authorizer()))->execute(
             ['--site=default'],

@@ -8,9 +8,6 @@ use DateTimeImmutable;
 use DateTimeZone;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\DriverManager;
-use Kumwe\CMS\Application\Authorization\AuthorizationDecision;
-use Kumwe\CMS\Application\Authorization\AuthorizationGateway;
-use Kumwe\CMS\Application\Authorization\AuthorizationResource;
 use Kumwe\CMS\Application\Authorization\ExecutionContext;
 use Kumwe\CMS\Application\Authorization\SiteContext;
 use Kumwe\CMS\Application\Authorization\SystemIdentity;
@@ -27,17 +24,16 @@ use Kumwe\CMS\Audit\Infrastructure\Persistence\DoctrineAuditRetentionService;
 use Kumwe\CMS\Audit\Infrastructure\Persistence\DoctrineAuditTrailExporter;
 use Kumwe\CMS\Audit\Infrastructure\Persistence\DoctrineAuditTrailVerifier;
 use Kumwe\CMS\Audit\Infrastructure\Storage\FilesystemAuditArchiveStorage;
-use Kumwe\CMS\Identity\Domain\Capability;
-use Kumwe\CMS\Identity\Domain\GrantScope;
 use Kumwe\CMS\Infrastructure\Persistence\DoctrineTransactionManager;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\AuditTamperEvidenceMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\CoreSchemaMigration;
 use Kumwe\CMS\Infrastructure\Persistence\Migration\InstallationGlobalAutomationMigration;
 use Kumwe\CMS\Infrastructure\Persistence\TableNames;
+use Kumwe\CMS\Tests\Support\AllowingAuditAuthorization;
 use Kumwe\CMS\Tests\Support\AuditTamperHarness;
+use Kumwe\CMS\Tests\Support\MovableAuditClock;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
-use Psr\Clock\ClockInterface;
 use Ramsey\Uuid\Uuid;
 
 #[CoversClass(AuditTamperEvidenceMigration::class)]
@@ -488,46 +484,5 @@ final class AuditTamperEvidenceTest extends TestCase
             SiteContext::default(),
             'audit-test-' . bin2hex(random_bytes(8)),
         );
-    }
-}
-
-/** Clock a test can move forward so settle windows and retention cutoffs are reached deterministically. */
-final class MovableAuditClock implements ClockInterface
-{
-    public function __construct(private DateTimeImmutable $instant)
-    {
-    }
-
-    public function now(): DateTimeImmutable
-    {
-        return $this->instant;
-    }
-
-    public function advance(string $interval): void
-    {
-        $this->instant = $this->instant->modify($interval);
-    }
-}
-
-/** Gateway double: authorization itself is proven by the application suite, not by this persistence test. */
-final class AllowingAuditAuthorization implements AuthorizationGateway
-{
-    public function decide(
-        ExecutionContext $context,
-        Capability $action,
-        AuthorizationResource $resource,
-    ): AuthorizationDecision {
-        throw new \LogicException('unused');
-    }
-
-    public function assertAllowed(
-        ExecutionContext $context,
-        Capability $action,
-        AuthorizationResource $resource,
-    ): void {
-    }
-
-    public function assertCanDelegate(ExecutionContext $context, Capability $action, GrantScope $scope): void
-    {
     }
 }

@@ -57,10 +57,20 @@ range's row count and rolling digest so a later deletion, insertion, or reorderi
 gaps in `position` are **not** evidence of tampering: a rolled-back transaction consumes an auto-increment value,
 so gaps occur in an intact trail. The anchored row count is what settles the question.
 
-Run `bin/kumwe audit:verify --site=<site> --token-file=<file>` to re-derive the whole chain on demand; it exits
-non-zero and prints the first divergence (class, position, event id). The same walk runs nightly as the
-`audit.trail.verify` job, which fails loudly — a divergence becomes a failed and finally dead-lettered job, not a
-log line. Verification requires the `audit.manage` capability.
+Run `bin/kumwe audit:verify --site=<site> --token-file=<file>` to re-derive the whole chain on demand. The same
+walk runs nightly as the `audit.trail.verify` job, which fails loudly on a divergence — it becomes a failed and
+finally dead-lettered job, not a log line. Verification requires the `audit.manage` capability.
+
+The command has three verdicts, and a deployment gate should branch on all three:
+
+| Exit | `append_only_enforcement` | Meaning |
+| --- | --- | --- |
+| `0` | `active` | The chain verified and the database is refusing rewrites. This is the intended posture. |
+| `2` | `not_installed` | The chain verified, but the append-only triggers are **not** on this server. Nothing is known to have been tampered with; nothing is preventing it either. Printed on stderr. |
+| `1` | either | The trail diverged, or the command could not run. The first divergence is printed with its class, position, and event id. |
+
+The enforcement field is read from the server's catalog on every run, not from anything the migration recorded, so
+it stays true after a restore onto a different server and after a DBA grants or revokes the privilege.
 
 ### Append-only enforcement and least-privilege accounts
 
@@ -71,6 +81,38 @@ them. Give the application runtime a database account with `SELECT, INSERT, UPDA
 tables but **without** `SUPER`, `TRIGGER`, or `DROP` (PostgreSQL: not the table owner and without `BYPASSRLS`),
 and reserve a separate migration account for schema changes. With that separation the runtime account cannot
 remove the guards even if the application is compromised.
+
+#### When the server will not grant them
+
+Installing the triggers needs a privilege managed database services withhold by default, so `database:migrate`
+does **not** insist on it. If the server refuses, the migration records the refusal and completes; it never
+aborts. That is deliberate — demanding the privilege would make Kumwe uninstallable on Amazon RDS, Cloud SQL and
+Azure Database for MySQL as they ship. Only a genuine privilege refusal is absorbed (MySQL and MariaDB `1419`,
+`1227` and `1142`; PostgreSQL SQLSTATE `42501`); any other failure still aborts the migration.
+
+**What the migration account needs, per platform:**
+
+- **MySQL and MariaDB** — the `TRIGGER` privilege on the schema, **plus** either the `SUPER` privilege or
+  `log_bin_trust_function_creators = 1` whenever binary logging is enabled. With binlog on and neither of those,
+  the server answers `ERROR 1419 (HY000): You do not have the SUPER privilege and binary logging is enabled`.
+  On managed services, set the `log_bin_trust_function_creators` parameter to `1` in the parameter group (RDS,
+  Cloud SQL) or use the equivalent server parameter (Azure), then re-run `database:migrate`.
+- **PostgreSQL** — ownership of `audit_events`, or the `TRIGGER` privilege on it plus `CREATE` on its schema.
+  Without it the server answers `SQLSTATE 42501: permission denied for table …`.
+
+**What you lose without it, and what you do not.** You lose *prevention*: nothing stops a rogue or mistaken
+`UPDATE`/`DELETE` at the database, so the trail is append-only by application discipline only. You do **not**
+lose *tamper evidence*, which is the actual claim this subsystem makes. Digest chaining, witness links, monotonic
+positions, the anchor ledger, `audit:verify` and `audit:export` all work identically and still make a mutated,
+deleted, reordered or inserted row detectable after the fact. Enforcement is defence in depth on top of that, not
+the thing that makes the trail trustworthy.
+
+**Detecting and closing the gap.** `bin/kumwe audit:verify` exits `2` and reports
+`"append_only_enforcement": "not_installed"` on any server where the guards are absent, so a qualification run
+cannot mistake it for a guarded installation. To close it, grant the privileges above and re-run
+`bin/kumwe database:migrate` — the migration is repeatable and will install the triggers on the next pass without
+touching anything else. Until then, compensate with least-privilege runtime accounts (above), scheduled
+`audit.trail.verify` runs, and off-host retention of `audit:export` archives.
 
 ### Audit export and retention
 

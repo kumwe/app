@@ -19,6 +19,15 @@ use Throwable;
  * trustworthy. Like every management command it authenticates through a protected token file rather than
  * inheriting authority from the shell.
  *
+ * The verdict has three states rather than two, because the trail can be intact under two materially
+ * different postures. Exit `0` means the chain verified *and* the database is refusing rewrites. Exit
+ * `2` means the chain verified but the append-only triggers are not installed on this server, so the
+ * trail is append-only by application discipline alone — the evidence is sound and nothing is known to
+ * have been tampered with, but prevention is absent and a qualification sign-off has to say so. Exit `1`
+ * is reserved for an actual divergence or a command that could not run. The degraded verdict is written
+ * to the error stream for the same reason it does not exit zero: an operator skimming a deployment log
+ * must not have to notice the absence of a field to learn that a control is missing.
+ *
  * @since  2.0.0
  */
 final readonly class VerifyAuditTrailCommand implements Command
@@ -68,7 +77,9 @@ final readonly class VerifyAuditTrailCommand implements Command
      *          `--batch-size` is optional.
      * @param   Output        $output     Sink the JSON verdict, or the failure message, is written to.
      *
-     * @return  int  `0` when the trail verifies, `1` when it diverges or the command could not run.
+     * @return  int  `0` when the trail verifies and append-only enforcement is installed, `2` when it
+     *          verifies but enforcement is absent on this server, `1` when the trail diverges or the
+     *          command could not run.
      *
      * @since   2.0.0
      */
@@ -84,9 +95,11 @@ final readonly class VerifyAuditTrailCommand implements Command
             $divergence = $report->firstDivergence;
             $result = [
                 'intact' => $report->intact(),
+                'append_only_enforcement' => $report->enforcement->value,
                 'events_verified' => $report->eventsVerified,
                 'anchors_verified' => $report->anchorsVerified,
                 'head_position' => $report->headPosition,
+                'enforcement_detail' => $report->enforcement->summary(),
             ];
             if ($divergence !== null) {
                 $result['divergence'] = [
@@ -98,6 +111,11 @@ final readonly class VerifyAuditTrailCommand implements Command
                 $output->error(CommandInput::render($result));
 
                 return 1;
+            }
+            if (!$report->enforcement->installed()) {
+                $output->error(CommandInput::render($result));
+
+                return 2;
             }
             $output->line(CommandInput::render($result));
 

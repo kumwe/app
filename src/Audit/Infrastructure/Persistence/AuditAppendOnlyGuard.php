@@ -6,8 +6,10 @@ namespace Kumwe\CMS\Audit\Infrastructure\Persistence;
 
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Platforms\AbstractMySQLPlatform;
+use Doctrine\DBAL\Platforms\AbstractPlatform;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use Doctrine\DBAL\Platforms\SQLitePlatform;
+use Kumwe\CMS\Audit\Domain\AuditEnforcementState;
 use Kumwe\CMS\Infrastructure\Persistence\TableNames;
 use RuntimeException;
 use Throwable;
@@ -25,9 +27,19 @@ use Throwable;
  * never leak into another connection, and on SQLite, whose triggers cannot read session state, the
  * trigger is dropped and recreated inside the same transaction instead.
  *
- * This is evidence against mistakes and casual tampering, not against a database superuser: an account
- * that may drop triggers can remove them. `docs/operations/monitoring.md` therefore pairs this control
- * with least-privilege account guidance, and the anchor ledger keeps removals evident regardless.
+ * Installation is best-effort by design, because the privilege it needs is one a managed database
+ * routinely withholds — a MySQL with binary logging enabled and no `SUPER` refuses `CREATE TRIGGER`
+ * outright, which describes Amazon RDS, Cloud SQL and Azure Database for MySQL as they ship. Demanding
+ * the privilege would make Kumwe uninstallable there, so `install()` reports the refusal as a state
+ * instead of raising it, and only for the exact codes `AuditEnforcementRefusal` recognises; every other
+ * failure still aborts the migration. What is lost when enforcement is unavailable is *prevention*, not
+ * evidence: digests, witness links, the anchor ledger and `audit:verify` are untouched, and the
+ * verification report names the degraded state so nobody reads a clean chain as a guarded one.
+ *
+ * Even when installed this is evidence against mistakes and casual tampering, not against a database
+ * superuser: an account that may drop triggers can remove them. `docs/operations/monitoring.md`
+ * therefore pairs this control with least-privilege account guidance, and the anchor ledger keeps
+ * removals evident regardless.
  *
  * @since  2.0.0
  */
@@ -52,19 +64,61 @@ final class AuditAppendOnlyGuard
     /**
      * Install the append-only triggers, doing nothing when they are already present.
      *
+     * The return value is the state the server was left in, and it is read back from the catalog rather
+     * than inferred from whether the statements threw, so a partial install is reported as unavailable
+     * rather than as success. A privilege refusal is absorbed; anything else propagates.
+     *
      * @param   Connection  $database  Connection the audit table lives on.
      * @param   TableNames  $tables    Resolver for prefixed physical table and trigger names.
      *
-     * @return  void
+     * @return  AuditEnforcementState  `Active` when the guards are in place afterwards, `NotInstalled`
+     *          when this server refused the privilege they need.
      *
      * @throws  RuntimeException  When the platform cannot enforce an append-only audit trail.
-     * @throws  \Doctrine\DBAL\Exception  When the driver rejects the trigger definition.
+     * @throws  \Doctrine\DBAL\Exception  When the driver rejects the trigger definition for any reason
+     *          other than a privilege or capability refusal.
      *
      * @since   2.0.0
      */
-    public static function install(Connection $database, TableNames $tables): void
+    public static function install(Connection $database, TableNames $tables): AuditEnforcementState
     {
         $platform = $database->getDatabasePlatform();
+        if (
+            !$platform instanceof AbstractMySQLPlatform
+            && !$platform instanceof PostgreSQLPlatform
+            && !$platform instanceof SQLitePlatform
+        ) {
+            throw new RuntimeException('The database platform cannot enforce an append-only audit trail.');
+        }
+        try {
+            self::createGuards($database, $tables, $platform);
+        } catch (Throwable $error) {
+            if (!AuditEnforcementRefusal::matches($error)) {
+                throw $error;
+            }
+        }
+
+        return self::state($database, $tables);
+    }
+
+    /**
+     * Issue this platform's guard definitions, skipping whichever are already present.
+     *
+     * @param   Connection        $database  Connection the audit table lives on.
+     * @param   TableNames        $tables    Resolver for prefixed physical table and trigger names.
+     * @param   AbstractPlatform  $platform  Platform `install()` has already checked is supported.
+     *
+     * @return  void
+     *
+     * @throws  \Doctrine\DBAL\Exception  When the driver rejects a trigger definition.
+     *
+     * @since   2.0.0
+     */
+    private static function createGuards(
+        Connection $database,
+        TableNames $tables,
+        AbstractPlatform $platform,
+    ): void {
         $events = $tables->quoted('audit_events');
         $update = $tables->raw('audit_append_only_update');
         $delete = $tables->raw('audit_append_only_delete');
@@ -114,18 +168,34 @@ final class AuditAppendOnlyGuard
 
             return;
         }
-        if ($platform instanceof SQLitePlatform) {
-            foreach ([[$update, 'UPDATE'], [$delete, 'DELETE']] as [$name, $operation]) {
-                if (self::exists($database, $tables, $name)) {
-                    continue;
-                }
-                $database->executeStatement(self::sqliteTrigger($database, $tables, $name, $operation));
+        foreach ([[$update, 'UPDATE'], [$delete, 'DELETE']] as [$name, $operation]) {
+            if (self::exists($database, $tables, $name)) {
+                continue;
             }
-
-            return;
+            $database->executeStatement(self::sqliteTrigger($database, $tables, $name, $operation));
         }
+    }
 
-        throw new RuntimeException('The database platform cannot enforce an append-only audit trail.');
+    /**
+     * Observe from the server's own catalog whether append-only enforcement is in force right now.
+     *
+     * This is deliberately a question put to the database rather than a flag the migration wrote down.
+     * A stored claim would survive a dump and restore onto a server that never accepted the triggers,
+     * would go stale the moment a DBA granted the missing privilege, and would keep saying "enforced"
+     * after somebody dropped them. The catalog lookup is cheap and cannot be wrong.
+     *
+     * @param   Connection  $database  Connection the audit table lives on.
+     * @param   TableNames  $tables    Resolver for prefixed physical table and trigger names.
+     *
+     * @return  AuditEnforcementState  What this server is actually enforcing at the moment of the call.
+     *
+     * @since   2.0.0
+     */
+    public static function state(Connection $database, TableNames $tables): AuditEnforcementState
+    {
+        return self::installed($database, $tables)
+            ? AuditEnforcementState::Active
+            : AuditEnforcementState::NotInstalled;
     }
 
     /**
@@ -156,6 +226,11 @@ final class AuditAppendOnlyGuard
      * SQLite. Callers must already hold a transaction, so a failure discards both the deletions and, on
      * SQLite, the trigger removal.
      *
+     * When no delete guard is installed there is no window to open, and opening one anyway would be
+     * worse than pointless: the SQLite path closes by *creating* the trigger, so a server that never
+     * accepted enforcement would silently acquire half of it as a side effect of a retention pass. The
+     * guard is therefore looked up first and the operation simply runs when enforcement is absent.
+     *
      * @template T
      *
      * @param   Connection     $database   Connection the guarded delete runs on.
@@ -164,6 +239,7 @@ final class AuditAppendOnlyGuard
      *
      * @return  T  Whatever the operation returned.
      *
+     * @throws  RuntimeException  When the platform cannot open the audit retention window.
      * @throws  \Doctrine\DBAL\Exception  When the driver rejects opening or closing the window.
      *
      * @since   2.0.0
@@ -172,6 +248,16 @@ final class AuditAppendOnlyGuard
     {
         $platform = $database->getDatabasePlatform();
         $delete = $tables->raw('audit_append_only_delete');
+        if (
+            !$platform instanceof AbstractMySQLPlatform
+            && !$platform instanceof PostgreSQLPlatform
+            && !$platform instanceof SQLitePlatform
+        ) {
+            throw new RuntimeException('The database platform cannot open the audit retention window.');
+        }
+        if (!self::deleteGuarded($database, $tables)) {
+            return $operation();
+        }
         if ($platform instanceof AbstractMySQLPlatform) {
             $database->executeStatement(sprintf('SET @%s = 1', self::FLAG));
             try {
@@ -188,19 +274,38 @@ final class AuditAppendOnlyGuard
                 $database->executeStatement(sprintf("SET LOCAL %s.enabled = '0'", self::FLAG));
             }
         }
-        if ($platform instanceof SQLitePlatform) {
-            $database->executeStatement(sprintf(
-                'DROP TRIGGER IF EXISTS %s',
-                $database->quoteSingleIdentifier($delete),
-            ));
-            try {
-                return $operation();
-            } finally {
-                $database->executeStatement(self::sqliteTrigger($database, $tables, $delete, 'DELETE'));
-            }
+        $database->executeStatement(sprintf(
+            'DROP TRIGGER IF EXISTS %s',
+            $database->quoteSingleIdentifier($delete),
+        ));
+        try {
+            return $operation();
+        } finally {
+            $database->executeStatement(self::sqliteTrigger($database, $tables, $delete, 'DELETE'));
         }
+    }
 
-        throw new RuntimeException('The database platform cannot open the audit retention window.');
+    /**
+     * Report whether a guard is present that would refuse the deletion the retention window sanctions.
+     *
+     * PostgreSQL enforces both statement kinds through the one `BEFORE UPDATE OR DELETE` trigger, so
+     * the delete guard there is the same object the update guard is; MySQL and SQLite carry a separate
+     * trigger per statement kind.
+     *
+     * @param   Connection  $database  Connection the guarded delete runs on.
+     * @param   TableNames  $tables    Resolver for prefixed physical table and trigger names.
+     *
+     * @return  bool  True when a delete would currently be refused without an open window.
+     *
+     * @since   2.0.0
+     */
+    private static function deleteGuarded(Connection $database, TableNames $tables): bool
+    {
+        $name = $database->getDatabasePlatform() instanceof PostgreSQLPlatform
+            ? 'audit_append_only_update'
+            : 'audit_append_only_delete';
+
+        return self::exists($database, $tables, $tables->raw($name));
     }
 
     /**
