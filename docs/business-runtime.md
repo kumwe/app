@@ -77,6 +77,13 @@ Secret plaintext never enters audit metadata, query predicates, search indexes, 
 storage retains only the authenticated encrypted envelope and history presentation redacts secret and restricted
 fields.
 
+Every envelope records the identifier of the key that sealed it, and the runtime resolves that identifier against
+a key ring holding one active key plus the retired keys the deployment still needs, so a key can be rotated without
+making stored values unreadable. Re-sealing stored envelopes under a new active key is a separate bounded pass,
+`business-record-rekey`; it decrypts and re-encrypts under the same associated-data binding and does not touch
+revision snapshots, whose checksums are their integrity evidence. See
+[record encryption key lifecycle](business-security.md#record-encryption-key-lifecycle).
+
 ## Bounded querying
 
 Browse accepts only the typed `RecordQuerySpecification` AST: boolean/comparison/null/set/text filters, bounded

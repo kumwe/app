@@ -210,6 +210,30 @@ Exact decimals remain strings; internal keys, redaction markers, policy details,
 secret values, and protected file paths never appear. See
 [Generated business surfaces](architecture/generated-business-surfaces.md).
 
+### Re-keying stored secrets
+
+`business-record-rekey` moves stored `core.secret` envelopes onto the active record-encryption key after new key
+material has been configured. It requires `--site`, `--token-file`, and the `business.record.rekey` capability, and
+accepts `--batch-size` (1–1000, default 200).
+
+```bash
+until php bin/kumwe business-record-rekey \
+    --site=corporate \
+    --token-file=/run/secrets/kumwe-cli-token \
+    --batch-size=200; do
+    [ $? -eq 2 ] || exit 1
+done
+```
+
+One invocation re-seals at most `--batch-size` rows and then reports. Exit `0` means every stored secret on the
+site already carries the active key, `2` means the pass advanced and more remains, and `1` means it could not run.
+The pass is idempotent, safe to interrupt — progress lives in the stored key identifier, not in a cursor — and safe
+to run beside live traffic; a concurrent ordinary write wins and is counted as `rows_superseded`. Output is counts
+and key names only: no secret, ciphertext, key, or record identity is printed, and `skipped_installations` names
+any definition whose schema could not be fenced. The equivalent background job is
+`business.record.secret.rekey`. See
+[record encryption key lifecycle](business-security.md#record-encryption-key-lifecycle).
+
 ## Content
 
 The `content` command prints JSON and calls the same content service as the administrator, API, and MCP:

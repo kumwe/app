@@ -63,6 +63,43 @@ recovery code and session associated with the old credential. Rebuild membership
 typed administrator forms, then verify effective access with a limited account in every affected organization and
 workspace.
 
+### Record-encryption key compromise
+
+Business-record `core.secret` fields are sealed under their own key ring, separate from `APP_SECRET`. If that key
+material may have been exposed — a leaked secret file, a compromised orchestrator, a copied backup taken with its
+key — assume every stored envelope is readable by whoever holds it and rotate.
+
+1. **Treat the plaintext as disclosed.** The re-encryption below stops *future* reads under the old key; it does
+   not undo a copy already taken. Rotate the underlying credentials the secret fields hold — the third-party API
+   keys, integration passwords, and service credentials themselves — on their own systems. Re-keying the envelope
+   protects a credential nobody has yet extracted; it does nothing for one already extracted.
+2. **Issue new key material.** `openssl rand -base64 48` into a new `RECORD_ENCRYPTION_KEY_FILE`, with a new
+   `RECORD_ENCRYPTION_KEY_ID`. Move the compromised identifier and secret into `RECORD_ENCRYPTION_PREVIOUS_KEYS`;
+   it has to stay loaded until re-encryption finishes, because it is the only thing that can open what it sealed.
+   Restart. Every write from that moment carries the new identifier.
+3. **Re-seal what is stored**, per site, until the command reports complete:
+
+   ```bash
+   until bin/kumwe business-record-rekey --site=<site> --token-file=<file> --batch-size=200; do
+       [ $? -eq 2 ] || exit 1
+   done
+   ```
+
+   It is bounded, resumable, and safe beside live traffic; interrupting it loses nothing and repeating it is free.
+   Each pass is recorded as `business.record.secret.rekeyed` in the audit trail, so the incident record can show
+   when the rotation ran and how much it moved. Nothing it prints contains a secret.
+4. **Check what it could not reach.** `skipped_installations` names any definition whose schema was disabled,
+   preserved, or mid-change. Re-activate and rotate those before considering the campaign finished.
+5. **Retire the old key last.** Revision snapshots are deliberately not rewritten, so history written under the
+   compromised key still names it. Either wait until that history has passed out of retention, or, if the exposure
+   makes that unacceptable, purge the affected revision range through the retention path and record that decision.
+   Only then remove the entry from `RECORD_ENCRYPTION_PREVIOUS_KEYS` and restart.
+6. **If `APP_SECRET` is what leaked** and the installation never adopted dedicated record key material, the record
+   key derives from it. Set `RECORD_ENCRYPTION_LEGACY_SECRET` to the outgoing `APP_SECRET` before rotating
+   `APP_SECRET`, then adopt a dedicated `RECORD_ENCRYPTION_KEY` and run the re-encryption above; without that step
+   the rotation strands every stored envelope. See
+   [record encryption key lifecycle](../business-security.md#record-encryption-key-lifecycle).
+
 Document scope, root cause, dwell time, affected records, credential exposure,
 corrective actions and release evidence. Follow applicable notification and data
 protection requirements with qualified legal and security guidance.
