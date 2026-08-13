@@ -2431,6 +2431,91 @@
                     "custom_contract": {
                         "$ref": "#/components/schemas/GeneratedBusinessCustomContract"
                     },
+                    "document": {
+                        "additionalProperties": false,
+                        "properties": {
+                            "groups": {
+                                "items": {
+                                    "additionalProperties": false,
+                                    "properties": {
+                                        "fields": {
+                                            "items": {
+                                                "pattern": "^[a-z][a-z0-9_]{0,62}$",
+                                                "type": "string"
+                                            },
+                                            "maxItems": 64,
+                                            "type": "array",
+                                            "uniqueItems": true
+                                        },
+                                        "label": {
+                                            "maxLength": 120,
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "label",
+                                        "fields"
+                                    ],
+                                    "type": "object"
+                                },
+                                "maxItems": 16,
+                                "type": "array"
+                            },
+                            "identity": {
+                                "pattern": "^[a-z][a-z0-9_]{0,62}$",
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            },
+                            "lines": {
+                                "pattern": "^[a-z][a-z0-9_]{0,62}$",
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            },
+                            "parties": {
+                                "items": {
+                                    "additionalProperties": false,
+                                    "properties": {
+                                        "label": {
+                                            "maxLength": 120,
+                                            "type": "string"
+                                        },
+                                        "relationship": {
+                                            "pattern": "^[a-z][a-z0-9_]{0,62}$",
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "label",
+                                        "relationship"
+                                    ],
+                                    "type": "object"
+                                },
+                                "maxItems": 8,
+                                "type": "array"
+                            },
+                            "totals": {
+                                "items": {
+                                    "pattern": "^[a-z][a-z0-9_]{0,62}$",
+                                    "type": "string"
+                                },
+                                "maxItems": 16,
+                                "type": "array",
+                                "uniqueItems": true
+                            }
+                        },
+                        "required": [
+                            "identity",
+                            "groups",
+                            "parties",
+                            "lines",
+                            "totals"
+                        ],
+                        "type": "object"
+                    },
                     "fields": {
                         "items": {
                             "pattern": "^[a-z][a-z0-9_]{0,62}$",
@@ -2459,7 +2544,8 @@
                             "detail",
                             "form",
                             "history",
-                            "relation"
+                            "relation",
+                            "document"
                         ],
                         "type": "string"
                     },

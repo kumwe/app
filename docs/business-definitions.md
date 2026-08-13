@@ -25,6 +25,52 @@ Fields carry required/null/default rules, length or exact precision and scale, n
 
 Decimal, money, and quantity values are represented as canonical base-10 strings and require precision and scale. Definition parsing rejects PHP floats. Secret fields require secret sensitivity and cannot be searched, filtered, sorted, reported, or exported.
 
+## Document views
+
+A view of kind `document` renders a record as a business document — an invoice that looks like an
+invoice — on the generated administrator and portal record pages. It is declared inside the entity like
+every other view, travels in the canonical checksummed bytes, and carries an optional typed `document`
+block naming which declared parts play which documentary role:
+
+```json
+{
+  "handle": "invoice_document",
+  "label": "Invoice document",
+  "kind": "document",
+  "fields": ["invoice_number", "issued_on", "due_on", "subtotal", "tax", "total"],
+  "administrator": true,
+  "portal": true,
+  "public": false,
+  "document": {
+    "identity": "invoice_number",
+    "groups": [{"label": "Invoice dates", "fields": ["issued_on", "due_on"]}],
+    "parties": [{"label": "Billed to", "relationship": "client"}],
+    "lines": "lines",
+    "totals": ["subtotal", "tax", "total"]
+  }
+}
+```
+
+Every role is optional and validated against the entity: `identity`, group fields, and `totals` must
+name declared non-UUID fields inside the view's own `fields` projection; `lines` must name a declared
+`owned_line_collection` relationship; every party must name a declared `many_to_one` relationship. A
+document view cannot bind a custom handler — it always uses the generated rendering path — and the
+`document` block is omitted from canonical output when absent, so historical checksums stay stable.
+
+When a definition declares a generated document view for a surface, that surface's record detail page
+renders the document layout instead of the generic field list: a header with the definition label and
+the record's human identity (the `identity` field's value, falling back to the label plus the record
+date — never the UUID, which stays in the URL only), the party cards and meta groups, the owned lines
+as one table whose columns come from the line definition's first generated list view, and the totals
+block. The lines hydrate through the same bounded relationship read as the relationship route, all rows
+on one page, and the same record policy and disclosure filter every role — a withheld field or
+relationship is simply dropped. The relations, actions, and history workspaces keep their existing
+rendering, and browser print yields a clean paper document: screen chrome carries print-hidden styles
+in the shared generated-business stylesheet.
+
+The shipped VDM demonstration declares document views on its invoice and quotation definitions; see
+`resources/demo/business/vdm/definitions/invoice.json` for the reference declaration.
+
 ## Safe expressions
 
 Computed formulas and conditions are a typed AST. Supported nodes are literals, field references, comparisons, boolean logic, exact numeric arithmetic, concatenation, coalescing, conditional selection, null tests, membership, and containment. Parsing is deterministic and enforces maximum bytes, depth, operation count, arity, types, and field dependency cycles.

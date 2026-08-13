@@ -242,6 +242,88 @@
     .kis-business-order-form li > label { grid-template-columns: minmax(0, 1fr); }
   }
 
+  .kis-business-document { display: grid; min-width: 0; gap: var(--kis-space-6); padding: var(--kis-space-6); }
+  .kis-business-document-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--kis-space-4);
+    padding-block-end: var(--kis-space-4);
+    border-block-end: 2px solid var(--kumwe-border);
+  }
+  .kis-business-document-kind {
+    margin-bottom: 0;
+    color: var(--kumwe-text-muted);
+    font-size: .78rem;
+    font-weight: 680;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+  }
+  .kis-business-document-number { margin-bottom: 0; overflow-wrap: anywhere; font-size: 1.55rem; font-weight: 760; }
+  .kis-business-document-state {
+    margin-bottom: 0;
+    padding: .3rem .7rem;
+    border: 1px solid var(--kumwe-border);
+    border-radius: 999px;
+    color: var(--kumwe-text-muted);
+    font-size: .78rem;
+    font-weight: 680;
+    white-space: nowrap;
+  }
+  .kis-business-document-meta {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr));
+    gap: var(--kis-space-5);
+  }
+  .kis-business-document-party h2,
+  .kis-business-document-group h2 {
+    margin-bottom: var(--kis-space-2);
+    color: var(--kumwe-text-muted);
+    font-size: .78rem;
+    font-weight: 680;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+  }
+  .kis-business-document-party-lines { display: grid; margin: 0; padding: 0; gap: var(--kis-space-1); list-style: none; }
+  .kis-business-document-party-lines li { overflow-wrap: anywhere; }
+  .kis-business-document-party-lines li:first-child { font-weight: 700; }
+  .kis-business-document-empty { margin-bottom: 0; color: var(--kumwe-text-muted); }
+  .kis-business-document-group dl { display: grid; margin: 0; gap: var(--kis-space-1); }
+  .kis-business-document-group dl div { display: flex; justify-content: space-between; gap: var(--kis-space-3); }
+  .kis-business-document-group dt { color: var(--kumwe-text-muted); }
+  .kis-business-document-group dd { margin: 0; overflow-wrap: anywhere; text-align: end; }
+  .kis-business-document-lines { min-width: 0; max-width: 100%; overflow-x: auto; overscroll-behavior-inline: contain; }
+  .kis-business-document-table { width: 100%; min-width: 28rem; border-collapse: collapse; }
+  .kis-business-document-table th,
+  .kis-business-document-table td {
+    padding: var(--kis-space-2) var(--kis-space-3);
+    border-block-end: 1px solid var(--kumwe-border);
+    text-align: start;
+    vertical-align: top;
+    overflow-wrap: anywhere;
+  }
+  .kis-business-document-table thead th {
+    border-block-end: 2px solid var(--kumwe-border);
+    color: var(--kumwe-text-muted);
+    font-size: .78rem;
+    font-weight: 680;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+  }
+  .kis-business-document-line-number { width: 2.6rem; color: var(--kumwe-text-muted); }
+  .kis-business-document-totals { display: flex; justify-content: flex-end; }
+  .kis-business-document-totals dl { display: grid; min-width: min(100%, 20rem); margin: 0; gap: var(--kis-space-2); }
+  .kis-business-document-totals div { display: flex; justify-content: space-between; gap: var(--kis-space-4); }
+  .kis-business-document-totals dt { color: var(--kumwe-text-muted); }
+  .kis-business-document-totals dd { margin: 0; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
+  .kis-business-document-grand-total {
+    padding-block-start: var(--kis-space-2);
+    border-block-start: 2px solid var(--kumwe-border);
+    font-size: 1.08rem;
+    font-weight: 760;
+  }
+  .kis-business-document-grand-total dt { color: inherit; }
+
   @media (forced-colors: active) {
     .kis-business-view-nav [aria-current="page"],
     .kis-business-report-link[aria-current="true"] { outline: 2px solid CanvasText; outline-offset: -2px; }
@@ -253,9 +335,14 @@
     .kis-business-bulk-controls,
     .kis-business-pagination,
     .kis-business-record-sidebar .page-actions,
-    .kis-task-navigation { display: none !important; }
+    .kis-task-navigation,
+    .kis-business-document-chrome { display: none !important; }
     .kis-business-table-region { display: block; overflow: visible; }
     .kis-business-card-list { display: none; }
     .kis-business-table { min-width: 0; }
+    .kis-business-document { padding: 0; border: none; box-shadow: none; }
+    .kis-business-document-lines { overflow: visible; }
+    .kis-business-document-table { min-width: 0; }
+    .kis-business-document-table tr { break-inside: avoid; }
   }
 }

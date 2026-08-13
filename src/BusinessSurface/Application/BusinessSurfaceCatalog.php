@@ -10,6 +10,7 @@ use Kumwe\CMS\Application\Authorization\AuthorizationResource;
 use Kumwe\CMS\Application\Authorization\ExecutionContext;
 use Kumwe\CMS\BusinessDefinition\Application\FieldTypeDefinitionResolver;
 use Kumwe\CMS\BusinessDefinition\Domain\ActionDefinition;
+use Kumwe\CMS\BusinessDefinition\Domain\DocumentViewDefinition;
 use Kumwe\CMS\BusinessDefinition\Domain\EntityTypeDefinition;
 use Kumwe\CMS\BusinessDefinition\Domain\FieldDefinition;
 use Kumwe\CMS\BusinessDefinition\Domain\FieldTypeDefinition;
@@ -548,6 +549,32 @@ final readonly class BusinessSurfaceCatalog implements BusinessApprovalExposureC
                 $unconditionalQueryHandles[$field->handle] = true;
             }
         }
+        $relationships = [];
+        $allowedRelationships = [];
+        foreach ($definition->relationships() as $relationship) {
+            $related = $plan->related($relationship->handle);
+            if (
+                $related === null
+                || !$this->relatedAvailable(
+                    $relationship->target,
+                    $surface,
+                    $operation,
+                    $related,
+                    $targets,
+                )
+            ) {
+                continue;
+            }
+            $relationships[] = [
+                'handle' => $relationship->handle,
+                'label' => $relationship->label,
+                'kind' => $relationship->kind->value,
+                'target' => $relationship->target,
+                'required' => $relationship->required,
+                'ordered' => $relationship->ordered,
+            ];
+            $allowedRelationships[$relationship->handle] = true;
+        }
         $views = [];
         foreach ($definition->views() as $view) {
             if (!$this->viewExposed($view, $surface)) {
@@ -587,6 +614,9 @@ final readonly class BusinessSurfaceCatalog implements BusinessApprovalExposureC
             if ($customContract !== null) {
                 $item['custom_contract'] = $customContract;
             }
+            if ($view->document !== null) {
+                $item['document'] = $this->documentRoles($view->document, $allowedHandles, $allowedRelationships);
+            }
             $views[] = $item;
         }
         $actions = [];
@@ -610,30 +640,6 @@ final readonly class BusinessSurfaceCatalog implements BusinessApprovalExposureC
                 }
             }
             $actions[] = $item;
-        }
-        $relationships = [];
-        foreach ($definition->relationships() as $relationship) {
-            $related = $plan->related($relationship->handle);
-            if (
-                $related === null
-                || !$this->relatedAvailable(
-                    $relationship->target,
-                    $surface,
-                    $operation,
-                    $related,
-                    $targets,
-                )
-            ) {
-                continue;
-            }
-            $relationships[] = [
-                'handle' => $relationship->handle,
-                'label' => $relationship->label,
-                'kind' => $relationship->kind->value,
-                'target' => $relationship->target,
-                'required' => $relationship->required,
-                'ordered' => $relationship->ordered,
-            ];
         }
 
         return [
@@ -1108,5 +1114,55 @@ final readonly class BusinessSurfaceCatalog implements BusinessApprovalExposureC
             BusinessSurface::Administrator => $action->administrator,
             BusinessSurface::Api, BusinessSurface::Cli, BusinessSurface::Mcp => true,
         };
+    }
+
+    /**
+     * Intersect one declared document block with the fields and relationships this plan disclosed.
+     *
+     * Denied roles are dropped rather than annotated, exactly as fields and relationships are, so a caller
+     * cannot learn from the document metadata that a number field, a party, or a line collection exists
+     * behind a policy that hides it. A fully denied block still describes an empty document header.
+     *
+     * @param   DocumentViewDefinition  $document       Declared documentary roles.
+     * @param   array<string, mixed>    $fields         Disclosed field metadata keyed by handle.
+     * @param   array<string, true>     $relationships  Disclosed relationship handles.
+     *
+     * @return  array<string, mixed>  Policy-filtered identity, groups, parties, lines and totals roles.
+     *
+     * @since   2.0.0
+     */
+    private function documentRoles(
+        DocumentViewDefinition $document,
+        array $fields,
+        array $relationships,
+    ): array {
+        $groups = [];
+        foreach ($document->groups as $group) {
+            $disclosed = array_values(array_filter(
+                $group['fields'],
+                static fn (string $field): bool => isset($fields[$field]),
+            ));
+            if ($disclosed !== []) {
+                $groups[] = ['label' => $group['label'], 'fields' => $disclosed];
+            }
+        }
+
+        return [
+            'identity' => $document->identity !== null && isset($fields[$document->identity])
+                ? $document->identity
+                : null,
+            'groups' => $groups,
+            'parties' => array_values(array_filter(
+                $document->parties,
+                static fn (array $party): bool => isset($relationships[$party['relationship']]),
+            )),
+            'lines' => $document->lines !== null && isset($relationships[$document->lines])
+                ? $document->lines
+                : null,
+            'totals' => array_values(array_filter(
+                $document->totals,
+                static fn (string $field): bool => isset($fields[$field]),
+            )),
+        ];
     }
 }

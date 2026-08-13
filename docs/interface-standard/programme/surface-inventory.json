@@ -497,7 +497,7 @@
         {"name": "administrator.business.record.mutate", "methods": ["POST"], "path": "/administrator/business/{definition}/{record}", "source_anchor": "/administrator/business/{definition}/{record}"}
       ],
       "handler_sources": ["src/BusinessSurface/Delivery/Administrator/AdministratorBusinessSurfaceHandler.php", "src/BusinessSurface/Delivery/Browser/GeneratedBusinessBrowserController.php"],
-      "templates": ["templates/administrator/business-detail.twig", "templates/administrator/business-form.twig", "templates/administrator/business-history.twig", "templates/administrator/business-confirm.twig", "templates/administrator/_business-fields.twig", "templates/administrator/_business-schema-fields.twig", "templates/administrator/layout.twig"],
+      "templates": ["templates/administrator/business-detail.twig", "templates/administrator/business-document.twig", "templates/administrator/business-form.twig", "templates/administrator/business-history.twig", "templates/administrator/business-confirm.twig", "templates/administrator/_business-fields.twig", "templates/administrator/_business-schema-fields.twig", "templates/administrator/layout.twig"],
       "navigation_ids": ["core.business-records"],
       "capabilities": ["administrator.access", "business.record.read", "business.record.update", "business.record.action"],
       "kis_contract": {"standard":"kis-1.0","area":"administrator","actor":"administrator","intent":"detail","resource":"business-surface","purpose":"Inspect, edit, review history and perform authorized actions on one generated business record.","pattern":"tabs","capabilities":["administrator.access","business.record.read","business.record.update","business.record.action"],"states":["default","empty","error","permission-reduced","read-only"],"customization":[{"slot":"density","scope":"user"},{"slot":"layout","scope":"administrator"}],"responsive":[{"element":"record-identity","priority":"essential","may_collapse":false},{"element":"record-actions","priority":"primary","may_collapse":false},{"element":"technical-evidence","priority":"secondary","may_collapse":true}],"icon":"models"},
@@ -1029,7 +1029,7 @@
         {"name": "portal.business.record.mutate", "methods": ["POST"], "path": "/portal/business/{definition}/{record}", "source_anchor": "/portal/business/{definition}/{record}"}
       ],
       "handler_sources": ["src/BusinessSurface/Delivery/Portal/PortalBusinessSurfaceHandler.php", "src/BusinessSurface/Delivery/Browser/GeneratedBusinessBrowserController.php"],
-      "templates": ["templates/portal/business-detail.twig", "templates/portal/business-form.twig", "templates/portal/business-history.twig", "templates/portal/business-confirm.twig", "templates/portal/_business-fields.twig", "templates/portal/_business-schema-fields.twig", "templates/portal/layout.twig"],
+      "templates": ["templates/portal/business-detail.twig", "templates/portal/business-document.twig", "templates/portal/business-form.twig", "templates/portal/business-history.twig", "templates/portal/business-confirm.twig", "templates/portal/_business-fields.twig", "templates/portal/_business-schema-fields.twig", "templates/portal/layout.twig"],
       "navigation_ids": ["core.portal-business-records"],
       "capabilities": ["portal.access"],
       "kis_contract": {"standard":"kis-1.0","area":"portal","actor":"portal","intent":"detail","resource":"business-surface","purpose":"Inspect, edit, review history and perform explicitly portal-allowed actions on one record.","pattern":"tabs","capabilities":["portal.access"],"states":["default","empty","error","permission-reduced","read-only"],"customization":[{"slot":"density","scope":"user"},{"slot":"theme-mode","scope":"user"}],"responsive":[{"element":"record-identity","priority":"essential","may_collapse":false},{"element":"record-actions","priority":"primary","may_collapse":false},{"element":"technical-evidence","priority":"secondary","may_collapse":true}],"icon":"briefcase"},
@@ -1348,6 +1348,7 @@
     {"path": "templates/administrator/business-custom-view.twig", "kind": "surface", "surface_ids": ["core.administrator.generated-custom-view"]},
     {"path": "templates/administrator/business-definitions.twig", "kind": "surface", "surface_ids": ["core.administrator.business-definitions"]},
     {"path": "templates/administrator/business-detail.twig", "kind": "surface", "surface_ids": ["core.administrator.generated-record", "core.administrator.generated-relationship"]},
+    {"path": "templates/administrator/business-document.twig", "kind": "surface", "surface_ids": ["core.administrator.generated-record"]},
     {"path": "templates/administrator/business-form.twig", "kind": "surface-state", "surface_ids": ["core.administrator.generated-definition", "core.administrator.generated-record"]},
     {"path": "templates/administrator/business-history.twig", "kind": "surface-state", "surface_ids": ["core.administrator.generated-record"]},
     {"path": "templates/administrator/business-index.twig", "kind": "surface", "surface_ids": ["core.administrator.generated-catalog"]},
@@ -1389,6 +1390,7 @@
     {"path": "templates/portal/business-confirm.twig", "kind": "surface-state", "surface_ids": ["core.portal.generated-record"]},
     {"path": "templates/portal/business-custom-view.twig", "kind": "surface", "surface_ids": ["core.portal.generated-custom-view"]},
     {"path": "templates/portal/business-detail.twig", "kind": "surface", "surface_ids": ["core.portal.generated-record", "core.portal.generated-relationship"]},
+    {"path": "templates/portal/business-document.twig", "kind": "surface", "surface_ids": ["core.portal.generated-record"]},
     {"path": "templates/portal/business-form.twig", "kind": "surface-state", "surface_ids": ["core.portal.generated-definition", "core.portal.generated-record"]},
     {"path": "templates/portal/business-history.twig", "kind": "surface-state", "surface_ids": ["core.portal.generated-record"]},
     {"path": "templates/portal/business-index.twig", "kind": "surface", "surface_ids": ["core.portal.generated-catalog"]},

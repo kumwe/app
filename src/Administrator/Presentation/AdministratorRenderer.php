@@ -145,7 +145,7 @@ final readonly class AdministratorRenderer
             'content-models' => 'core.models',
             'business-definitions' => 'core.business-definitions',
             'business-schema-plans' => 'core.business-schema-plans',
-            'business-index', 'business-list', 'business-detail', 'business-form',
+            'business-index', 'business-list', 'business-detail', 'business-document', 'business-form',
             'business-history', 'business-confirm', 'business-bulk-confirm',
             'business-status' => 'core.business-records',
             'business-report' => 'core.business-reports',

@@ -49,24 +49,29 @@ final readonly class ViewDefinition
     /**
      * Declare a view, validating its identity, kind, surfaces, and field references.
      *
-     * @param   string        $handle         Lowercase snake-case name the view is addressed by.
-     * @param   string        $label          Operator-facing name shown wherever the view is offered.
-     * @param   string        $kind           Presentation shape: `list`, `detail`, `form`, `history`, or
-     *          `relation`.
-     * @param   list<string>  $fields         Field handles to project; at least one is required.
-     * @param   list<string>  $filters        Field handles offered as filters, each of which the entity must
-     *          declare filterable.
-     * @param   list<string>  $sorts          Field handles offered as sort keys, each of which the entity must
-     *          declare sortable.
-     * @param   bool          $administrator  Whether the administrator surface may render the view.
-     * @param   bool          $portal         Whether the portal surface may render the view.
-     * @param   bool          $public         Whether the view may be rendered anonymously.
-     * @param   ?string       $handler        Owner-scoped custom handler reference, or null for generated behavior.
-     * @param   ?string       $schema         Owner-scoped signed schema reference paired with `$handler`.
+     * @param   string                   $handle         Lowercase snake-case name the view is addressed by.
+     * @param   string                   $label          Operator-facing name shown wherever the view is offered.
+     * @param   string                   $kind           Presentation shape: `list`, `detail`, `form`, `history`,
+     *          `relation`, or `document`.
+     * @param   list<string>             $fields         Field handles to project; at least one is required.
+     * @param   list<string>             $filters        Field handles offered as filters, each of which the
+     *          entity must declare filterable.
+     * @param   list<string>             $sorts          Field handles offered as sort keys, each of which the
+     *          entity must declare sortable.
+     * @param   bool                     $administrator  Whether the administrator surface may render the view.
+     * @param   bool                     $portal         Whether the portal surface may render the view.
+     * @param   bool                     $public         Whether the view may be rendered anonymously.
+     * @param   ?string                  $handler        Owner-scoped custom handler reference, or null for
+     *          generated behavior.
+     * @param   ?string                  $schema         Owner-scoped signed schema reference paired with
+     *          `$handler`.
+     * @param   ?DocumentViewDefinition  $document       Documentary layout roles; only a `document` kind view
+     *          may carry them, and such a view keeps the generated rendering path.
      *
      * @throws  InvalidBusinessDefinition  When the handle or label is malformed, the kind is unsupported, no
      *          delivery surface is declared, the projection is empty, a list exceeds 128 entries or repeats a
-     *          handle, a handle is not a bounded lowercase identifier, or exactly one custom reference is set.
+     *          handle, a handle is not a bounded lowercase identifier, exactly one custom reference is set, a
+     *          document block accompanies a non-document kind, or a document view binds a custom handler.
      *
      * @since   2.0.0
      */
@@ -82,12 +87,19 @@ final readonly class ViewDefinition
         public bool $public = false,
         public ?string $handler = null,
         public ?string $schema = null,
+        public ?DocumentViewDefinition $document = null,
     ) {
         if (preg_match('/^[a-z][a-z0-9_]{0,62}$/D', $handle) !== 1 || $label === '' || strlen($label) > 120) {
             throw new InvalidBusinessDefinition('A business view identity is invalid.');
         }
-        if (!in_array($kind, ['list', 'detail', 'form', 'history', 'relation'], true)) {
+        if (!in_array($kind, ['list', 'detail', 'form', 'history', 'relation', 'document'], true)) {
             throw new InvalidBusinessDefinition('A business view kind is unsupported.');
+        }
+        if ($document !== null && $kind !== 'document') {
+            throw new InvalidBusinessDefinition('A document view block requires the document view kind.');
+        }
+        if ($kind === 'document' && ($handler !== null || $schema !== null)) {
+            throw new InvalidBusinessDefinition('A document view cannot bind a custom handler.');
         }
         if (!$administrator && !$portal && !$public) {
             throw new InvalidBusinessDefinition('A business view must declare at least one delivery surface.');
@@ -131,12 +143,20 @@ final readonly class ViewDefinition
         if (
             array_diff(array_keys($document), [
             'handle', 'label', 'kind', 'fields', 'filters', 'sorts', 'administrator', 'portal', 'public',
-            'handler', 'schema',
+            'handler', 'schema', 'document',
             ]) !== []
         ) {
             throw new InvalidBusinessDefinition('A business view contains an unknown property.');
         }
+        $documentBlock = $document['document'] ?? null;
+        if (
+            $documentBlock !== null
+            && (!is_array($documentBlock) || ($documentBlock !== [] && array_is_list($documentBlock)))
+        ) {
+            throw new InvalidBusinessDefinition('Business view property document must be null or an object.');
+        }
 
+        /** @var ?array<string, mixed> $documentBlock */
         return new self(
             self::string($document, 'handle'),
             self::string($document, 'label'),
@@ -149,6 +169,7 @@ final readonly class ViewDefinition
             self::boolean($document, 'public'),
             self::nullableString($document, 'handler'),
             self::nullableString($document, 'schema'),
+            $documentBlock === null ? null : DocumentViewDefinition::fromArray($documentBlock),
         );
     }
 
@@ -157,6 +178,8 @@ final readonly class ViewDefinition
      *
      * Every declared property is emitted, defaults included, so the document round-trips through
      * `fromArray()` unchanged. Key order carries no meaning: `CanonicalDefinitionJson` sorts before hashing.
+     * The custom references and the document block are written only when declared, so every previously
+     * published definition keeps its historical canonical bytes and checksum.
      *
      * @return  array<string, mixed>  Handle, label, kind, the three handle lists, and the three surface
      *          flags, under their canonical keys.
@@ -179,6 +202,9 @@ final readonly class ViewDefinition
         if ($this->handler !== null && $this->schema !== null) {
             $result['handler'] = $this->handler;
             $result['schema'] = $this->schema;
+        }
+        if ($this->document !== null) {
+            $result['document'] = $this->document->toArray();
         }
 
         return $result;

@@ -40,6 +40,7 @@ final readonly class GeneratedBusinessBrowserController
      * @param  BusinessFormInputMapper         $forms        Schema-authorized nested input mapper.
      * @param  BusinessOperationStatusService  $operations   Caller-bound operation-status lookup.
      * @param  BusinessCustomViewPresenter     $customViews  Safe generic custom-result projector.
+     * @param  BusinessDocumentPresenter       $documents    Document-view arrangement of safe read models.
      *
      * @since  2.0.0
      */
@@ -48,6 +49,7 @@ final readonly class GeneratedBusinessBrowserController
         private BusinessFormInputMapper $forms,
         private BusinessOperationStatusService $operations,
         private BusinessCustomViewPresenter $customViews,
+        private BusinessDocumentPresenter $documents,
     ) {
     }
 
@@ -662,14 +664,32 @@ final readonly class GeneratedBusinessBrowserController
             ]);
         }
 
-        $model = $this->business->read(
-            $context,
-            $surface,
-            $definition,
-            $record,
-            ($query['archived'] ?? null) === '1',
-            ($query['deleted'] ?? null) === '1',
-        );
+        if ($recordTask === 'summary') {
+            $model = $this->business->document(
+                $context,
+                $surface,
+                $definition,
+                $record,
+                ($query['archived'] ?? null) === '1',
+                ($query['deleted'] ?? null) === '1',
+            );
+            if (isset($model['document_view'])) {
+                return new BusinessBrowserResult('business-document', [
+                    ...$model,
+                    'record_task' => $recordTask,
+                    'document' => $this->documents->present($model),
+                ]);
+            }
+        } else {
+            $model = $this->business->read(
+                $context,
+                $surface,
+                $definition,
+                $record,
+                ($query['archived'] ?? null) === '1',
+                ($query['deleted'] ?? null) === '1',
+            );
+        }
         return new BusinessBrowserResult('business-detail', [
             ...$this->relationshipChoices(
                 $context,

@@ -11,6 +11,8 @@ const assetInspectionDefinition = 'kumwe.asset-inspection-example.inspection';
 const assetInspectionReport = 'kumwe.asset-inspection-example.inspection-summary';
 const windhoekOrderId = '019b40d9-8dd0-7ca2-a0db-9eae6a150511';
 const windhoekTargetId = '019b40d9-8dd0-7ca2-a0db-9eae6a150521';
+const browserInvoiceDefinition = 'site.default.browser_invoice';
+const browserInvoiceId = '019b40d9-8dd0-7ca2-a0db-9eae6a150611';
 
 async function expectAccessible(page: Page, include?: string): Promise<void> {
   const builder = new AxeBuilder({ page })
@@ -1192,6 +1194,34 @@ test.describe('authenticated administrator', () => {
     await expect(page).toHaveScreenshot('administrator-generated-business-confirmation.png', {
       fullPage: true,
     });
+  });
+
+  test('declared document views render records as documents inside the shell', async ({
+    page,
+  }, testInfo) => {
+    await page.goto(`/administrator/business/${browserInvoiceDefinition}/${browserInvoiceId}`);
+    await expect(page.getByRole('heading', { level: 1, name: 'Browser invoice INV-BROWSER-001' }))
+      .toBeVisible();
+    const article = page.locator('.kis-business-document');
+    await expect(article).toBeVisible();
+    await expect(article.getByText('INV-BROWSER-001', { exact: true })).toBeVisible();
+    expect(await article.innerText()).not.toMatch(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}/u);
+    const table = article.locator('.kis-business-document-table');
+    await expect(table.getByRole('columnheader', { name: 'Description' })).toBeVisible();
+    await expect(table.locator('tbody tr')).toHaveCount(3);
+    await expect(article.locator('.kis-business-document-totals')).toContainText('Total');
+    await expect(page.getByRole('link', { name: /Relations/ })).toBeVisible();
+    await expectStylesLoaded(page);
+    await expectAccessible(page);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBe(0);
+    await attachLiveInterfaceScreenshot(page, testInfo, 'administrator-business-document-live');
+    await expect(page).toHaveScreenshot('administrator-business-document.png', {
+      fullPage: true,
+    });
+    await page.emulateMedia({ media: 'print' });
+    await expect(page.locator('.kis-business-document-chrome').first()).toBeHidden();
+    await expect(article).toBeVisible();
+    await page.emulateMedia({ media: 'screen' });
   });
 
   test('generated relationship selectors and owned lines persist and reorder', async ({
