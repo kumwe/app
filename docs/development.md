@@ -42,8 +42,16 @@ composer analyse
 composer test:unit
 composer test:integration
 composer security:audit
+composer security:secrets
 npm run test:browser
 ```
+
+`composer security:secrets` is the same pinned gitleaks scan the security workflow runs, and it reads
+the branch's history rather than its working tree: a secret-shaped literal introduced by an earlier
+commit still fails after a later commit changes it, so fixing one means rewriting the commit that
+introduced it. It requires a Docker daemon and fails loudly without one, which is why it is not part of
+`composer qa` — that suite is documented above as running inside the application container, where no
+daemon is available.
 
 For a generated-business change, also run focused record/surface/OpenAPI/CLI/MCP tests, compile the golden contract,
 and execute the neutral cross-surface browser fixture with JavaScript enabled and disabled:
@@ -148,6 +156,10 @@ Backup/restore tooling must be exercised for every supported database engine. Si
 ## Before opening a pull request
 
 - Keep the worktree free of generated secrets, logs, database dumps, and built vendor files.
+- Run `composer security:secrets` for any change that adds a test fixture, an example, or configuration.
+  Derive fixture values from a readable stem or a fixed label rather than writing random-looking
+  literals; where a fixed vector is the point, allowlist that one fingerprint in `.gitleaksignore` with
+  the reason beside it, never a path or a rule.
 - Update OpenAPI and task documentation with behavior changes.
 - Update the [architecture guide](architecture/README.md) only when an invariant or stable interface changes; do not add temporary progress notes.
 - Run the narrowest test while developing, then the complete local quality suite and at least the default MariaDB deployment.

@@ -51,6 +51,8 @@ jobs:
           composer audit --locked --abandoned=fail
           composer architecture:policy
 
+      # tools/scan-secrets.sh runs this same scan locally as composer security:secrets, so a contributor
+      # can see this result before pushing. Change the pinned image or the arguments in both places.
       - name: Scan repository for secrets
         shell: bash
         run: |
