@@ -1682,6 +1682,9 @@ final class ContainerFactory
             ),
             $keyRing,
             new RuntimeArtifactDigester(),
+            3_600,
+            300,
+            self::service($container, LoggerInterface::class),
         ), true);
         $container->share(TrustRuntimeInvalidator::class, static fn (Container $container): TrustRuntimeInvalidator =>
             self::service($container, ExtensionRuntimeMapCompiler::class), true);

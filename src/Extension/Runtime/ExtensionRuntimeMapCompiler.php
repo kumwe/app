@@ -6,7 +6,6 @@ namespace Kumwe\CMS\Extension\Runtime;
 
 use DateInterval;
 use Doctrine\DBAL\Connection;
-use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use Doctrine\DBAL\Platforms\SQLitePlatform;
 use Doctrine\DBAL\Types\Types;
@@ -15,6 +14,7 @@ use Kumwe\CMS\Extension\Application\Trust\TrustRuntimeInvalidator;
 use Kumwe\CMS\Extension\Domain\ExtensionManifest;
 use Kumwe\CMS\Infrastructure\Persistence\TableNames;
 use Psr\Clock\ClockInterface;
+use Psr\Log\LoggerInterface;
 use Ramsey\Uuid\Uuid;
 use RuntimeException;
 
@@ -34,6 +34,14 @@ use RuntimeException;
  */
 final readonly class ExtensionRuntimeMapCompiler implements TrustRuntimeInvalidator
 {
+    /**
+     * Writer that claims and renews this replica's lease row without fighting its own peers.
+     *
+     * @var    RuntimeLeaseWriter
+     * @since  2.0.0
+     */
+    private RuntimeLeaseWriter $leases;
+
     /**
      * Wire the compiler to the registry, the local cache location and the signing key ring.
      *
@@ -55,6 +63,8 @@ final readonly class ExtensionRuntimeMapCompiler implements TrustRuntimeInvalida
      *          orphaned.
      * @param   int                        $replicaLeaseSeconds  How long a replica's claim on a generation stays
      *          valid without a heartbeat.
+     * @param   ?LoggerInterface           $logger               Log the lease writer reports absorbed peer
+     *          conflicts on; null leaves them unreported.
      *
      * @throws  InvalidArgumentException  When either the retention or the replica lease window is below one second.
      *
@@ -72,10 +82,12 @@ final readonly class ExtensionRuntimeMapCompiler implements TrustRuntimeInvalida
         private RuntimeArtifactDigester $artifacts,
         private int $retentionSeconds = 3_600,
         private int $replicaLeaseSeconds = 300,
+        private ?LoggerInterface $logger = null,
     ) {
         if (min($retentionSeconds, $replicaLeaseSeconds) < 1) {
             throw new InvalidArgumentException('Runtime publication trust and retention settings are invalid.');
         }
+        $this->leases = new RuntimeLeaseWriter($database, $tables, $logger);
     }
 
     /**
@@ -1305,10 +1317,12 @@ final readonly class ExtensionRuntimeMapCompiler implements TrustRuntimeInvalida
     /**
      * Claim or renew this replica's lease row for the generation it has just materialized.
      *
-     * The row is keyed by lease identity, so an update is attempted first and an insert only when no row
-     * was there; a concurrent process winning that insert is caught and turned back into an update. The
-     * lease written here is what pins a retired extension tree on disk while this replica may still be
-     * executing code from it.
+     * One upsert does the whole claim. The row is keyed by lease identity rather than by process, so the
+     * peers that share this identity — the other php-fpm children in this container, its health check and
+     * any operator command run inside it — write the same row; an update followed by an insert followed
+     * by an update handed each of them two windows to land between the statements. The lease written
+     * here is what pins a retired extension tree on disk while this replica may still be executing code
+     * from it, so `RuntimeLeaseWriter` gives up only to a peer that has just written the row itself.
      *
      * @param   RuntimeMaterializationState  $state  Generation this replica now holds, with the
      *          checksums it verified.
@@ -1320,57 +1334,15 @@ final readonly class ExtensionRuntimeMapCompiler implements TrustRuntimeInvalida
     private function acknowledge(RuntimeMaterializationState $state): void
     {
         $now = $this->clock->now();
-        $affected = $this->database->update($this->tables->raw('extension_runtime_materializations'), [
-            'deployment_id' => $this->identity->deploymentId,
-            'replica_name' => $this->identity->replicaId,
-            'process_id' => $this->identity->processId,
-            'generation' => $state->generation,
-            'publication_sha256' => $state->publicationChecksum,
-            'trust_hmac' => $state->trustHmac,
-            'materialized_at' => $now,
-            'last_seen_at' => $now,
-            'lease_until' => $now->add(new DateInterval('PT' . $this->replicaLeaseSeconds . 'S')),
-        ], ['replica_id' => $state->replicaId], [
-            'generation' => Types::BIGINT,
-            'materialized_at' => Types::DATETIME_IMMUTABLE,
-            'last_seen_at' => Types::DATETIME_IMMUTABLE,
-            'lease_until' => Types::DATETIME_IMMUTABLE,
-        ]);
-        if ($affected === 0) {
-            try {
-                $this->database->insert($this->tables->raw('extension_runtime_materializations'), [
-                    'replica_id' => $state->replicaId,
-                    'deployment_id' => $this->identity->deploymentId,
-                    'replica_name' => $this->identity->replicaId,
-                    'process_id' => $this->identity->processId,
-                    'generation' => $state->generation,
-                    'publication_sha256' => $state->publicationChecksum,
-                    'trust_hmac' => $state->trustHmac,
-                    'materialized_at' => $now,
-                    'last_seen_at' => $now,
-                    'lease_until' => $now->add(new DateInterval('PT' . $this->replicaLeaseSeconds . 'S')),
-                ], [
-                    'generation' => Types::BIGINT,
-                    'materialized_at' => Types::DATETIME_IMMUTABLE,
-                    'last_seen_at' => Types::DATETIME_IMMUTABLE,
-                    'lease_until' => Types::DATETIME_IMMUTABLE,
-                ]);
-            } catch (UniqueConstraintViolationException) {
-                $this->database->update($this->tables->raw('extension_runtime_materializations'), [
-                    'generation' => $state->generation,
-                    'publication_sha256' => $state->publicationChecksum,
-                    'trust_hmac' => $state->trustHmac,
-                    'materialized_at' => $now,
-                    'last_seen_at' => $now,
-                    'lease_until' => $now->add(new DateInterval('PT' . $this->replicaLeaseSeconds . 'S')),
-                ], ['replica_id' => $state->replicaId], [
-                    'generation' => Types::BIGINT,
-                    'materialized_at' => Types::DATETIME_IMMUTABLE,
-                    'last_seen_at' => Types::DATETIME_IMMUTABLE,
-                    'lease_until' => Types::DATETIME_IMMUTABLE,
-                ]);
-            }
-        }
+        $this->leases->renew(
+            $state->replicaId,
+            $this->identity,
+            $state->generation,
+            $state->publicationChecksum,
+            $state->trustHmac,
+            $now,
+            $now->add(new DateInterval('PT' . $this->replicaLeaseSeconds . 'S')),
+        );
     }
 
     /**
@@ -1380,6 +1352,15 @@ final readonly class ExtensionRuntimeMapCompiler implements TrustRuntimeInvalida
      * kept alive by a process serving something else. When nothing matched, `acknowledge()` rewrites the
      * row to what this process is actually holding.
      *
+     * A caller's open transaction suppresses the write entirely. Two things are wrong with renewing a
+     * lease inside one: the renewal would be rolled back with whatever the caller was doing, leaving a
+     * lease that reads as renewed to this process but was never committed; and the write would carry the
+     * caller's read view, which under MariaDB's snapshot isolation fails outright against a row a peer
+     * committed after that view opened, turning a peer's lease renewal into the caller's error. The
+     * verification the caller asked for still runs in full — only the bookkeeping write is left to the
+     * calls this same process makes outside a transaction, which every worker, dispatcher and probe does
+     * before it opens one.
+     *
      * @param   RuntimeMaterializationState  $state  Generation this process loaded and is still serving.
      *
      * @return  void
@@ -1388,6 +1369,9 @@ final readonly class ExtensionRuntimeMapCompiler implements TrustRuntimeInvalida
      */
     private function heartbeat(RuntimeMaterializationState $state): void
     {
+        if ($this->database->isTransactionActive()) {
+            return;
+        }
         $affected = $this->database->executeStatement(sprintf(
             'UPDATE %s SET last_seen_at = ?, lease_until = ? WHERE replica_id = ? AND generation = ? '
             . 'AND publication_sha256 = ? AND trust_hmac = ?',
