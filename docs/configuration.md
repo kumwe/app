@@ -50,6 +50,10 @@ Start from `.env.example` for development. Production Compose maps operator-faci
 | `EXTENSION_RUNTIME_SIGNING_KEY_ID` | Active versioned runtime-publication key ID | Stable lowercase identifier |
 | `EXTENSION_RUNTIME_SIGNING_KEY` | Dedicated runtime-publication signing secret | Independent 32+ byte secret file |
 | `EXTENSION_RUNTIME_PREVIOUS_KEYS` | JSON key-ID/secret overlap set | Retain only during controlled rotation |
+| `RECORD_ENCRYPTION_KEY` | Dedicated business-record secret-field key | Independent 32+ byte secret; unset keeps the `APP_SECRET`-derived key |
+| `RECORD_ENCRYPTION_KEY_ID` | Identifier new record envelopes carry | Stable versioned identifier; requires `RECORD_ENCRYPTION_KEY` |
+| `RECORD_ENCRYPTION_PREVIOUS_KEYS` | JSON key-ID/secret set for retired record keys | Retain until re-encryption and revision retention have passed |
+| `RECORD_ENCRYPTION_LEGACY_SECRET` | Previous `APP_SECRET`, so `application-secret-v1` survives its rotation | Set before rotating `APP_SECRET`; drop after re-encryption |
 | `KUMWE_RELEASE` | Running release identifier | Exact deployed version |
 | `KUMWE_DEPLOYMENT_ID` | Stable rollout identity | Explicit deployment identifier |
 | `KUMWE_REPLICA_ID` | Stable replica identity | Unique per concurrently running replica |
@@ -136,5 +140,7 @@ The supplied Compose deployment tracks the supported Redis 8 line for easy updat
 ## Secret files
 
 The production entrypoint recognizes `APP_SECRET_FILE`, `EXTENSION_RUNTIME_SIGNING_KEY_FILE`, `DB_PASSWORD_FILE`, and `REDIS_PASSWORD_FILE`. Each file must be readable only by the deployment service, contain exactly one non-empty secret, and remain outside the repository and release package. The entrypoint loads the value into the process and unsets the file-variable name before launching PHP.
+
+The application itself resolves `APP_SECRET_FILE`, `RECORD_ENCRYPTION_KEY_FILE`, `RECORD_ENCRYPTION_PREVIOUS_KEYS_FILE`, `RECORD_ENCRYPTION_LEGACY_SECRET_FILE`, and `EXTENSION_RUNTIME_PREVIOUS_KEYS_FILE`, so a bare-metal or systemd deployment gets the same mounted-secret discipline without an entrypoint of its own. Each path must be absolute, a readable regular file, and not a symbolic link. Supplying both a variable and its `_FILE` companion is refused at boot rather than resolved by precedence. Record-key provisioning and the rotation procedure are described in [business security](business-security.md#record-encryption-key-lifecycle).
 
 After changing process configuration, replace the affected web and worker containers. After changing administrator settings, no container restart is required.

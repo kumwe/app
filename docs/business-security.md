@@ -106,6 +106,129 @@ Secret fields remain encrypted envelopes and never enter predicates, full-text i
 exports, reports, or audit payloads. Application-internal withheld values may use a redaction marker, but generated
 HTML, REST, OpenAPI, CLI, and MCP projectors omit the denied handle entirely, including metadata and errors.
 
+## Record encryption key lifecycle
+
+A `core.secret` field is stored as an envelope — ciphertext, nonce, key identifier, algorithm — sealed with
+XChaCha20-Poly1305 and bound by associated data to its exact site, definition, record, and field. The envelope
+records the *name* of the key that sealed it, never the key, which is what makes rotation possible at all.
+
+### The key ring
+
+`SecretKeyRing` holds one active key plus every retired key the deployment still needs. New writes always use the
+active key; a read resolves whichever key the stored envelope names, by identifier and never by trial. A key the
+ring does not hold fails as `SecretKeyUnavailable` — a distinct condition from a failed authentication, so
+"restore the key" and "investigate tampering" are never confused. Removing a key from configuration is how a
+revocation is expressed; from the runtime's side, revoked and never-configured are the same fail-closed answer.
+
+Identifiers are versioned names matching `^[A-Za-z0-9][A-Za-z0-9._:-]{0,126}$`. An identifier is never reused for
+different key material: a new key is a new identifier, always.
+
+Two key purposes are kept apart. `SecretKeyPurpose::Record` covers durable record envelopes;
+`SecretKeyPurpose::MutationPlan` covers the five-minute opaque tokens `BusinessMutationPlanService` issues. They
+derive from different labels, carry different identifiers, and are injected as different types (`SecretCipher` and
+`MutationPlanCipher`), so a record-key rotation cannot invalidate a live plan token and a plan-key change cannot
+touch stored records.
+
+### Provisioning
+
+| Setting | Meaning |
+|---|---|
+| `RECORD_ENCRYPTION_KEY` | Dedicated record-encryption secret, at least 32 bytes, independent of `APP_SECRET`. |
+| `RECORD_ENCRYPTION_KEY_ID` | Identifier new envelopes carry; defaults to `record-encryption-v1`. Requires the key. |
+| `RECORD_ENCRYPTION_PREVIOUS_KEYS` | JSON object of retired identifier to retired secret. |
+| `RECORD_ENCRYPTION_LEGACY_SECRET` | The *previous* `APP_SECRET`, so `application-secret-v1` survives an application-secret rotation. |
+
+Every one of these, and `APP_SECRET` itself, has a `_FILE` companion (`RECORD_ENCRYPTION_KEY_FILE`,
+`APP_SECRET_FILE`, and so on) naming an absolute path to a readable regular file that is not a symbolic link.
+Supplying both spellings of one setting is refused at boot rather than resolved by precedence. File-based
+provisioning is resolved inside `ConfigurationFactory`, so a bare-metal, systemd, or Nomad deployment gets exactly
+what the container entrypoint provides, with no shell wrapper of its own.
+
+Secrets are stretched with HKDF-SHA256 under the purpose's frozen label rather than used as key bytes directly, so
+a long passphrase and a base64 blob both yield a uniform key. **The labels are frozen.** Changing one makes every
+envelope derived under it unreadable.
+
+### Backward compatibility
+
+Configuring none of these keeps the behaviour an existing installation already has: the key derived from
+`APP_SECRET` as `hash_hmac('sha256', 'kumwe:business-record:encryption:v1', APP_SECRET, true)` stays active under
+the identifier `application-secret-v1`, and nothing has to be re-encrypted to upgrade. Once
+`RECORD_ENCRYPTION_KEY` is configured that key becomes a *retired* key in the ring instead of the active one, so
+stored envelopes keep opening while `business-record-rekey` works through them. `application-secret-v1` is a
+reserved identifier and cannot be claimed by configuration.
+
+### Rotation procedure
+
+1. Generate new key material (`openssl rand -base64 48`) and place it in `RECORD_ENCRYPTION_KEY_FILE` with a new
+   `RECORD_ENCRYPTION_KEY_ID`. Move the identifier and secret it replaces, if any, into
+   `RECORD_ENCRYPTION_PREVIOUS_KEYS`.
+2. Restart the application. New writes immediately carry the new identifier; existing envelopes are untouched and
+   still readable.
+3. Re-seal stored envelopes, one bounded batch at a time, per site:
+
+   ```bash
+   until bin/kumwe business-record-rekey --site=<site> --token-file=<file> --batch-size=200; do
+       [ $? -eq 2 ] || exit 1
+   done
+   ```
+
+   Exit `0` means nothing is left, `2` means the pass advanced and more remains, `1` means it could not run. The
+   `business.record.secret.rekey` job does the same work under the worker; enqueue or schedule it for the duration
+   of the rotation and remove the schedule once a pass first reports `"complete": true`.
+4. The pass is safe to interrupt and safe to run beside live traffic. Progress lives in the data — a row carrying
+   the active identifier is a row that is done — so a killed pass leaves committed work committed and the next
+   pass reads exactly what is left. A concurrent ordinary write wins and is counted as `rows_superseded`.
+5. **Do not delete the retired key when the pass first reports complete.** Revision snapshots deliberately are not
+   re-sealed: a revision row is checksummed over its snapshot and every reader re-derives that checksum, so
+   rewriting one would be indistinguishable from tampering. Keep the retired key in
+   `RECORD_ENCRYPTION_PREVIOUS_KEYS` until revision history that names it has passed out of retention, then remove
+   it and restart. `skipped_installations` in the report names any installation the pass could not fence — a
+   disabled or preserved schema — which must be re-activated and rotated before the key is dropped.
+
+Rotating `APP_SECRET` is now independent: set `RECORD_ENCRYPTION_LEGACY_SECRET` to the outgoing value first, so
+envelopes still carrying `application-secret-v1` keep opening, and drop it once re-encryption has moved them.
+
+### KMS and HSM adapter contract
+
+Key acquisition is the port `Kumwe\CMS\BusinessRecord\Application\SecretKeyProvider`. The shipped
+`KeyRingSecretKeyProvider` is a production-capable default, not a placeholder; an external adapter replaces that
+one class and must guarantee:
+
+- **Identifier namespace.** `activeKeyId()` returns a stable versioned name in the alphabet above, never reused
+  for different material. It is the only thing the database records about the key.
+- **Stability within a process.** `activeKeyId()` and `activeKey()` agree and do not change during one request or
+  one job. A provider that rotates underneath a running batch stamps envelopes with an identifier whose bytes no
+  longer match.
+- **Fail closed.** `keyFor()` raises `SecretKeyUnavailable` for an identifier it cannot produce, including a
+  revoked one, and never substitutes another key.
+- **No disclosure.** Key material is never logged, printed, or attached to an exception, metric, or trace.
+  `SecretKeyMaterial` marks its constructor parameter sensitive and redacts itself from debug output; an adapter
+  must not undo that by logging the bytes before wrapping them.
+- **Caching and bounded latency.** Every record write and every re-encryption calls `activeKey()`. A remote
+  provider caches within the process and bounds its network wait, because a provider that blocks makes record
+  writes block. A cache entry is dropped on revocation.
+- **Enumeration.** `knownKeyIds()` returns names only. A provider that cannot enumerate returns just the active
+  identifier, which honestly says the active key is present rather than claiming no others exist.
+- **Audit.** Key use is not audited through this port: the record trail already records the mutation, and
+  `business.record.secret.rekeyed` records what a rotation re-sealed. An external provider keeps its own access
+  log, and that log is where "who asked for which key, when" is answered.
+
+### No reveal path, by design
+
+There is no authorized decrypt or disclose surface for a stored record secret, and adding one is not an oversight
+to be corrected. `core.secret` is a write-only property: values are set and replaced but never presented, queried,
+exported, reported, or audited. Nothing in the record runtime decrypts one — re-encryption is the sole decrypting
+caller, and it hands the plaintext to the cipher and nowhere else. Because no reveal exists, no compromise of a
+session, token, delegation, or field-visibility rule can produce one.
+
+If a future integration genuinely needs stored credentials back, the control that would have to come with it is:
+a dedicated non-delegable capability separate from every `business.record.*` action; fresh step-up proof bound to
+the exact record and field; an approval under separation of duties for anything beyond a single record; an audit
+entry naming actor, record, field, and purpose, written in the same transaction as the disclosure and failing the
+disclosure if it cannot be written; a rate limit and a disclosure budget per actor; and a stated retention and
+handling policy for the revealed value. Until such a use case exists with all of that, the write-only property is
+the stronger control and is what this platform claims.
+
 ## Organizations, workspaces, and memberships
 
 Site ownership and organizational authority are separate dimensions. An organization contains workspaces;
