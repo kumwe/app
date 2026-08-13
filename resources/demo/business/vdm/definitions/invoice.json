@@ -327,6 +327,50 @@
       "administrator": true,
       "portal": true,
       "public": false
+    },
+    {
+      "handle": "invoice_document",
+      "label": "Invoice document",
+      "kind": "document",
+      "fields": [
+        "invoice_number",
+        "issued_on",
+        "due_on",
+        "paid_on",
+        "subtotal",
+        "tax",
+        "total"
+      ],
+      "filters": [],
+      "sorts": [],
+      "administrator": true,
+      "portal": true,
+      "public": false,
+      "document": {
+        "identity": "invoice_number",
+        "groups": [
+          {
+            "label": "Invoice dates",
+            "fields": [
+              "issued_on",
+              "due_on",
+              "paid_on"
+            ]
+          }
+        ],
+        "parties": [
+          {
+            "label": "Billed to",
+            "relationship": "client"
+          }
+        ],
+        "lines": "lines",
+        "totals": [
+          "subtotal",
+          "tax",
+          "total"
+        ]
+      }
     }
   ],
   "actions": [

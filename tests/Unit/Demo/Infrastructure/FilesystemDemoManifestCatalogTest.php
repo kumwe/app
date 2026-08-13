@@ -235,7 +235,7 @@ final class FilesystemDemoManifestCatalogTest extends TestCase
 
         self::assertSame('kumwe.demo-business-profile/v1', $manifest['format'] ?? null);
         self::assertSame('vdm', $manifest['profile'] ?? null);
-        self::assertSame(4, $manifest['version'] ?? null);
+        self::assertSame(5, $manifest['version'] ?? null);
         self::assertMatchesRegularExpression('/^[a-f0-9]{64}$/D', $loaded['checksum']);
         self::assertCount(12, $order);
         self::assertSame(count($order), $expected['definition_count'] ?? null);
@@ -391,6 +391,41 @@ final class FilesystemDemoManifestCatalogTest extends TestCase
         self::assertNotEmpty($emailMatches[1]);
         foreach ($emailMatches[1] as $domain) {
             self::assertStringEndsWith('.example', $domain);
+        }
+    }
+
+    /**
+     * Proves the released invoice and quotation render as documents with human numbers, parties and lines.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testVdmInvoiceAndQuotationDeclareDocumentViews(): void
+    {
+        $manifest = $this->catalog()->vdmBusiness()['manifest'];
+        $documents = $this->map($manifest['definition_documents'] ?? null, 'definition documents');
+        foreach (
+            [
+                ['definition.invoice', 'invoice_document', 'invoice_number'],
+                ['definition.quotation', 'quotation_document', 'quote_number'],
+            ] as [$fixtureKey, $viewHandle, $identity]
+        ) {
+            $definition = $this->map($documents[$fixtureKey] ?? null, 'definition document');
+            $view = $this->memberByHandle(
+                $this->list($definition['views'] ?? null, 'definition views'),
+                $viewHandle,
+            );
+            self::assertSame('document', $view['kind'] ?? null);
+            self::assertTrue($view['administrator'] ?? null);
+            self::assertTrue($view['portal'] ?? null);
+            self::assertFalse($view['public'] ?? null);
+            $block = $this->map($view['document'] ?? null, 'document view block');
+            self::assertSame($identity, $block['identity'] ?? null);
+            self::assertSame('lines', $block['lines'] ?? null);
+            self::assertNotSame([], $this->list($block['groups'] ?? null, 'document groups'));
+            self::assertNotSame([], $this->list($block['parties'] ?? null, 'document parties'));
+            self::assertSame(['subtotal', 'tax', 'total'], $block['totals'] ?? null);
         }
     }
 
