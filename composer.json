@@ -83,6 +83,7 @@
   "scripts": {
     "analyse": "phpstan analyse --no-progress --memory-limit=1G",
     "security:audit": "composer audit --locked --abandoned=fail",
+    "security:secrets": "bash tools/scan-secrets.sh",
     "cs": "phpcs -q",
     "docs:api": "php tools/verify-docblocks.php src",
     "docs:format": "php tools/format-docblocks.php src",
