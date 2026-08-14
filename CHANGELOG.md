@@ -634,9 +634,10 @@ development programme, from the architecture decision that opened it to the curr
   `RECORD_ENCRYPTION_LEGACY_SECRET` pins the old derivation to the outgoing application secret so an
   installation can finish the move. A test asserts the derivation literally rather than through the class, so if
   it ever needs changing the failure says what it really means. (`a669846`, `8706736`)
-- **Backing up with per-entry ceiling reads and hand-maintained autoload lists.** Both patterns are retired in
-  favour of streamed, bounded reads and a registered loader mapping; an architecture assertion refuses a
-  hand-maintained list that grows back. (`cfaf840`, `26a7b39`)
+- **Per-entry ceiling reads of archive contents, and hand-maintained autoload lists in the drill entry
+  points.** Both patterns are retired in favour of streamed reads bounded against the bytes that actually
+  arrive, and a registered loader mapping; an architecture assertion refuses a hand-maintained list that grows
+  back. (`cfaf840`, `26a7b39`)
 
 ### Removed
 
