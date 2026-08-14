@@ -20,6 +20,7 @@ use Kumwe\CMS\BusinessIntegration\Domain\DomainListenerDefinition;
 use Kumwe\CMS\BusinessIntegration\Domain\EventConsumerDefinition;
 use Kumwe\CMS\BusinessIntegration\Domain\EventSchemaDefinition;
 use Kumwe\CMS\BusinessIntegration\Domain\WebhookContributionDefinition;
+use Kumwe\CMS\BusinessRecord\Application\MoneyRateProvider;
 use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessActionHandlerRegistry;
 use Kumwe\CMS\BusinessReporting\Application\ProjectionBuilder;
 use Kumwe\CMS\BusinessReporting\Domain\ProjectionDefinition;
@@ -268,6 +269,14 @@ final readonly class ExtensionContributionRegistrySet
     private OwnedRuntimeContributionRegistry $webhooks;
 
     /**
+     * Owner-bound runtime registry for money rate providers.
+     *
+     * @var    OwnedRuntimeContributionRegistry  Contributed sources of exchange rates.
+     * @since  2.0.0
+     */
+    private OwnedRuntimeContributionRegistry $moneyRateProviders;
+
+    /**
      * Every contribution kind, keyed by its dotted inventory path.
      *
      * Inventory and lifecycle removal both derive from this map, so a new kind becomes
@@ -351,6 +360,10 @@ final readonly class ExtensionContributionRegistrySet
         $this->projections = new OwnedRuntimeContributionRegistry('projection', ProjectionBuilder::class);
         $this->reports = new OwnedRuntimeContributionRegistry('report');
         $this->webhooks = new OwnedRuntimeContributionRegistry('webhook', IntegrationEventTransport::class);
+        $this->moneyRateProviders = new OwnedRuntimeContributionRegistry(
+            'money rate provider',
+            MoneyRateProvider::class,
+        );
         $this->surfaces = [
             'capabilities' => $this->capabilities,
             'resource_policies' => $this->resourcePolicies,
@@ -383,6 +396,7 @@ final readonly class ExtensionContributionRegistrySet
             'integration.projections' => $this->projections,
             'integration.reports' => $this->reports,
             'integration.webhooks' => $this->webhooks,
+            'integration.money_rate_providers' => $this->moneyRateProviders,
         ];
         if ($withCore) {
             $registrar = $this->registrar(
@@ -780,6 +794,21 @@ final readonly class ExtensionContributionRegistrySet
     public function webhooks(): OwnedRuntimeContributionRegistry
     {
         return $this->webhooks;
+    }
+
+    /**
+     * Return the money rate providers carried by this extension contribution registry set.
+     *
+     * Core contributes none, so this surface is empty until a package that owns rates is installed and
+     * trusted; the conversion pipeline reads it and refuses rather than inventing a rate.
+     *
+     * @return  OwnedRuntimeContributionRegistry  Active contributed sources of exchange rates.
+     *
+     * @since   2.0.0
+     */
+    public function moneyRateProviders(): OwnedRuntimeContributionRegistry
+    {
+        return $this->moneyRateProviders;
     }
 
     /**

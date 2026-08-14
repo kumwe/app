@@ -19,6 +19,8 @@ use Kumwe\CMS\BusinessIntegration\Domain\JobContributionDefinition;
 use Kumwe\CMS\BusinessIntegration\Domain\QueueContributionDefinition;
 use Kumwe\CMS\BusinessIntegration\Domain\ScheduleContributionDefinition;
 use Kumwe\CMS\BusinessIntegration\Domain\WebhookContributionDefinition;
+use Kumwe\CMS\BusinessRecord\Application\MoneyRateProvider;
+use Kumwe\CMS\BusinessRecord\Domain\MoneyRateProviderDefinition;
 use Kumwe\CMS\BusinessReporting\Domain\ReportDefinition;
 use Kumwe\CMS\BusinessReporting\Application\ProjectionBuilder;
 use Kumwe\CMS\BusinessReporting\Domain\ProjectionDefinition;
@@ -52,7 +54,10 @@ use Kumwe\CMS\Portal\Contribution\PortalWorkspaceDefinition;
  *
  * @since  2.0.0
  */
-final class OwnedExtensionContributionRegistrar implements ExtensionContributionRegistrar, InterfaceSurfaceRegistrar
+final class OwnedExtensionContributionRegistrar implements
+    ExtensionContributionRegistrar,
+    InterfaceSurfaceRegistrar,
+    MoneyRateProviderRegistrar
 {
     /**
      * Array exports of the manifest declarations, keyed by contribution kind and then by identifier.
@@ -132,6 +137,7 @@ final class OwnedExtensionContributionRegistrar implements ExtensionContribution
             'projection' => $this->index($declared->projections()),
             'report' => $this->index($declared->reports()),
             'webhook' => $this->index($declared->webhooks()),
+            'money_rate_provider' => $this->index($declared->moneyRateProviders()),
         ];
     }
 
@@ -635,6 +641,36 @@ final class OwnedExtensionContributionRegistrar implements ExtensionContribution
         }
         $this->accept('webhook', $definition->identifier(), $definition->toArray());
         $this->registries->webhooks()->register($this->owner, $definition, $transport);
+    }
+
+    /**
+     * Register a rate provider only when its identity matches the signed declaration.
+     *
+     * Attribution is the point of the check. Every rate this implementation later supplies names a
+     * provider, and a converted amount is only auditable if that name is the one the manifest published,
+     * so an implementation answering under another identity is refused here rather than discovered in an
+     * export months later.
+     *
+     * @param   MoneyRateProviderDefinition  $definition  Signed declaration naming the currencies it prices.
+     * @param   MoneyRateProvider            $provider    Runtime implementation bound to that declaration.
+     *
+     * @return  void
+     *
+     * @throws  InvalidArgumentException  When the implementation answers under another identity, or the
+     *          identifier is outside the owner's namespace, repeated, or undeclared or altered under strict mode.
+     * @throws  \LogicException  When the contribution phase has already been completed.
+     *
+     * @since   2.0.0
+     */
+    public function moneyRateProvider(
+        MoneyRateProviderDefinition $definition,
+        MoneyRateProvider $provider,
+    ): void {
+        if ($provider->identifier() !== $definition->identifier()) {
+            throw new InvalidArgumentException('A money rate provider implementation contradicts its declaration.');
+        }
+        $this->accept('money_rate_provider', $definition->identifier(), $definition->toArray());
+        $this->registries->moneyRateProviders()->register($this->owner, $definition, $provider);
     }
 
     /**

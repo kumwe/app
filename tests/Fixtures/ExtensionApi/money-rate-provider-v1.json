@@ -1,0 +1,23 @@
+{
+  "format": "kumwe-money-rate-provider-v1",
+  "interfaces": {
+    "Kumwe\\CMS\\BusinessRecord\\Application\\MoneyRateProvider": [
+      "identifier(): string",
+      "rateFor(Kumwe\\CMS\\BusinessRecord\\Domain\\MoneyConversionRequest $request): Kumwe\\CMS\\BusinessRecord\\Domain\\MoneyExchangeRate",
+      "supports(Kumwe\\CMS\\BusinessRecord\\Domain\\MoneyConversionRequest $request): bool"
+    ],
+    "Kumwe\\CMS\\Extension\\Contribution\\MoneyRateProviderRegistrar": [
+      "moneyRateProvider(Kumwe\\CMS\\BusinessRecord\\Domain\\MoneyRateProviderDefinition $definition, Kumwe\\CMS\\BusinessRecord\\Application\\MoneyRateProvider $provider): void"
+    ]
+  },
+  "enums": {
+    "Kumwe\\CMS\\BusinessRecord\\Domain\\MoneyRoundingMode": {
+      "Ceiling": "ceiling",
+      "Floor": "floor",
+      "HalfDown": "half_down",
+      "HalfEven": "half_even",
+      "HalfUp": "half_up",
+      "Truncate": "truncate"
+    }
+  }
+}

@@ -99,6 +99,64 @@ final class ExtensionPublicApiCompatibilityFixtureTest extends TestCase
     }
 
     /**
+     * Pin the additive money rate-provider contracts a rate package compiles against.
+     *
+     * Core owns the money conversion contract and ships no rate, so these three declarations are the
+     * whole of the surface a rate package touches: the registrar it contributes through, the port it
+     * implements, and the rounding vocabulary a conversion is declared in. They are pinned separately
+     * from the frozen SPI-two baseline for the same reason the KIS registrar is — an addition here must
+     * not rewrite bytes existing providers were admitted against.
+     *
+     * @return  void
+     *
+     * @since   2.0.0
+     */
+    public function testAdditiveMoneyRateProviderContractsRemainSourceCompatible(): void
+    {
+        $path = dirname(__DIR__, 4) . '/tests/Fixtures/ExtensionApi/money-rate-provider-v1.json';
+        $json = file_get_contents($path);
+        self::assertIsString($json);
+        self::assertSame(
+            '8fc35c4cf4596ad3c1efb786bb3794aac852a636e7a9d1edaac94edd30517900',
+            hash('sha256', $json),
+        );
+        $fixture = json_decode($json, true, 16, JSON_THROW_ON_ERROR);
+        self::assertIsArray($fixture);
+        self::assertSame('kumwe-money-rate-provider-v1', $fixture['format'] ?? null);
+        $interfaces = $fixture['interfaces'] ?? null;
+        self::assertIsArray($interfaces);
+        foreach ($interfaces as $interface => $expected) {
+            self::assertIsString($interface);
+            self::assertIsArray($expected);
+            self::assertTrue(interface_exists($interface), sprintf('Missing public interface %s.', $interface));
+            $actual = [];
+            foreach ((new ReflectionClass($interface))->getMethods(ReflectionMethod::IS_PUBLIC) as $method) {
+                if ($method->getDeclaringClass()->getName() === $interface) {
+                    $actual[] = $this->signature($method);
+                }
+            }
+            sort($actual, SORT_STRING);
+            sort($expected, SORT_STRING);
+            self::assertSame($expected, $actual, sprintf('Public interface %s changed.', $interface));
+        }
+        $enums = $fixture['enums'] ?? null;
+        self::assertIsArray($enums);
+        foreach ($enums as $enum => $expected) {
+            self::assertIsString($enum);
+            self::assertIsArray($expected);
+            self::assertTrue(enum_exists($enum), sprintf('Missing public enum %s.', $enum));
+            $actual = [];
+            foreach ((new ReflectionEnum($enum))->getCases() as $case) {
+                self::assertInstanceOf(ReflectionEnumBackedCase::class, $case);
+                $actual[$case->getName()] = $case->getBackingValue();
+            }
+            ksort($actual, SORT_STRING);
+            ksort($expected, SORT_STRING);
+            self::assertSame($expected, $actual, sprintf('Public enum %s changed.', $enum));
+        }
+    }
+
+    /**
      * Require stable enum names and backed values used in signed manifests and durable rows.
      *
      * @return  void

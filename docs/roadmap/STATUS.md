@@ -57,7 +57,7 @@ table when it completes, in the same change that writes it into the changelog.
 | 2 | `P2-A` … `P2-I` | `V2-ARC-001`, `V2-QA-001` – `V2-QA-005`, `V2-DB-001`, `V2-REL-001`, `GM-SUP-09` |
 | 3 | `P3-A` … `P3-F` | `V2-ARC-003`, `V2-GRP-001` – `V2-GRP-006` |
 | 4 | `P4-A` … `P4-D` | `V2-SCL-003`, `V2-ERP-001` |
-| E | `PE-A` … `PE-G` | `V2-ERP-002` – `V2-ERP-005`, `V2-CUR-001` – `V2-CUR-004`, `V2-POS-001`, `V2-POS-003`, `V2-POS-004` |
+| E | `PE-B` … `PE-G` (`PE-A` complete) | `V2-ERP-002` – `V2-ERP-005`, `V2-CUR-005`, `V2-POS-001`, `V2-POS-003`, `V2-POS-004` |
 | L | `PL-A` … `PL-G` | `V2-LNG-001` – `V2-LNG-010`, `V2-MLC-001` – `V2-MLC-004` |
 | 5 | `P5-A` … `P5-I` | `V2-SCL-001`, `V2-SCL-002`, `V2-SCL-004` – `V2-SCL-008` |
 | 6 | `P6-A` … `P6-D` | `V2-DR-001` – `V2-DR-004`, `V2-OPS-001`, `GM-BAK-04`, `GM-BAK-08` |
@@ -88,11 +88,11 @@ Fourteen, all recorded in [`README.md`](README.md) section 2. Four carry a full 
 
 ## Ledger snapshot
 
-**79 open findings** in [`findings.json`](findings.json). The ledger holds open work only.
+**76 open findings** in [`findings.json`](findings.json). The ledger holds open work only.
 
 | State | Count |
 |---|---|
-| `accepted_for_implementation` | 35 |
+| `accepted_for_implementation` | 32 |
 | `reproduced` | 17 |
 | `open` | 17 |
 | `conditional` | 7 |
@@ -109,7 +109,7 @@ Fourteen, all recorded in [`README.md`](README.md) section 2. Four carry a full 
 | 2 | 9 |
 | 3 | 7 |
 | 4 | 2 |
-| E | 11 |
+| E | 8 |
 | L | 14 |
 | 5 | 7 |
 | 6 | 7 |
@@ -119,12 +119,12 @@ Fourteen, all recorded in [`README.md`](README.md) section 2. Four carry a full 
 
 | Gate | Findings |
 |---|---|
-| A | 41 |
+| A | 38 |
 | B | 23 |
 | none | 15 |
 
-By severity: 2 critical, 42 high, 26 medium, 9 low.
-By origin: 25 from the independent review, 12 still-open entries from the executed gap matrix, 42 discovered
+By severity: 2 critical, 40 high, 25 medium, 9 low.
+By origin: 25 from the independent review, 12 still-open entries from the executed gap matrix, 39 discovered
 while verifying this roadmap, during the qualification programme, or from decisions D7 and D10 through D14.
 
 The 56 findings that were closed when this roadmap was consolidated have left the ledger. Their substance —
@@ -145,7 +145,7 @@ that closed it.
 | 6 | Aggregate seams are clean | No | `V2-ARC-003` |
 | 7 | Business-group ownership model in place | No | `V2-GRP-001` – `V2-GRP-006` |
 | 8 | Enterprise document primitives exist and are enforced | No | `V2-ERP-001` – `V2-ERP-005` |
-| 9 | Multi-currency contract holds, with conversion provenance everywhere | No | `V2-CUR-001` – `V2-CUR-004` |
+| 9 | Multi-currency contract holds, with conversion provenance everywhere | Partly — contract, port, pipeline, reports and exports delivered; rendering half open | `V2-CUR-005` |
 | 10 | Language contract and machinery in place, `en-GB` extracted | No | `V2-LNG-001` – `V2-LNG-009`, `V2-MLC-001` – `V2-MLC-004` |
 | 11 | Point of sale not foreclosed | No | `V2-POS-001`, `V2-POS-003`, `V2-POS-004`; `V2-POS-002` decided |
 | 12 | Nothing regressed on three engines | Not assessed | — |
@@ -160,14 +160,13 @@ Gate B's ten criteria are unchanged and are listed in [`README.md`](README.md) s
 
 ## Baseline health at this revision
 
-Green: `composer docs:api` (100% across 1,159 classes and 6,323 methods), `composer architecture:policy`,
-`composer interface:programme` (42 surfaces, 13 journeys, 60 work items), `composer roadmap:check` (79 open
+Green: `composer docs:api` (100% across 1,172 classes and 6,365 methods), `composer architecture:policy`,
+`composer interface:programme` (42 surfaces, 13 journeys, 60 work items), `composer roadmap:check` (76 open
 findings), `composer openapi:check`, `composer cs`, `composer analyse` (PHPStan level `max`, no errors),
-unit suite (1,538 tests, 22,191 assertions), architecture suite (112 tests, 6,958 assertions), functional
-suite (16 tests, 755 assertions) against a freshly migrated database.
+unit suite (1,555 tests, 22,316 assertions), architecture suite (114 tests, 9,386 assertions).
 
-Not executed here: the integration suite and the full browser suite, which need the whole live service
-matrix.
+Not executed here: the integration, functional and browser suites, which need the live database, cache and
+browser services.
 
 ---
 

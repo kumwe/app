@@ -25,6 +25,8 @@ Fields carry required/null/default rules, length or exact precision and scale, n
 
 Decimal, money, and quantity values are represented as canonical base-10 strings and require precision and scale. Definition parsing rejects PHP floats. Secret fields require secret sensitivity and cannot be searched, filtered, sorted, reported, or exported.
 
+A `core.money` field stores exactly what it was given, in the one currency it may pin, and conversion never touches it. Presenting a stored amount in another currency goes through the core money conversion contract, which produces a value that is marked as converted and carries its rate, that rate's as-at instant and the provider that supplied it. Rates themselves come from extensions; core ships none. See [Money conversion and rate providers](business-integrations.md#money-conversion-and-rate-providers).
+
 ## Document views
 
 A view of kind `document` renders a record as a business document — an invoice that looks like an

@@ -20,6 +20,7 @@ use Kumwe\CMS\BusinessIntegration\Domain\JobContributionDefinition;
 use Kumwe\CMS\BusinessIntegration\Domain\QueueContributionDefinition;
 use Kumwe\CMS\BusinessIntegration\Domain\ScheduleContributionDefinition;
 use Kumwe\CMS\BusinessIntegration\Domain\WebhookContributionDefinition;
+use Kumwe\CMS\BusinessRecord\Domain\MoneyRateProviderDefinition;
 use Kumwe\CMS\BusinessReporting\Domain\ReportDefinition;
 use Kumwe\CMS\BusinessReporting\Domain\ProjectionDefinition;
 use Kumwe\CMS\BusinessSurface\Application\Custom\CustomBusinessActionContract;
@@ -274,6 +275,14 @@ final readonly class ManifestContributionSet
     private array $webhooks;
 
     /**
+     * Manifest-declared money rate providers keyed by stable identifier.
+     *
+     * @var    array<string, MoneyRateProviderDefinition>  Declared sources of exchange rates.
+     * @since  2.0.0
+     */
+    private array $moneyRateProviders;
+
+    /**
      * Assemble one package's declarations and reject any set that is already inconsistent.
      *
      * Called directly only for an empty or hand-built set, such as core's; a real manifest arrives
@@ -307,6 +316,7 @@ final readonly class ManifestContributionSet
      * @param   iterable<WebhookContributionDefinition>      $webhooks               Outbound adapter declarations.
      * @param   int                                          $spiVersion             Contribution SPI revision.
      * @param   iterable<SurfaceDefinition>                  $interfaceSurfaces      KIS semantic surfaces.
+     * @param   iterable<MoneyRateProviderDefinition>        $moneyRateProviders     Exchange-rate sources.
      *
      * @throws  InvalidArgumentException  When an identifier is outside the owner's namespace or declared twice,
      *          navigation or a route references something this set does not declare, a business definition
@@ -342,6 +352,7 @@ final readonly class ManifestContributionSet
         iterable $webhooks = [],
         private int $spiVersion = self::SPI_VERSION,
         iterable $interfaceSurfaces = [],
+        iterable $moneyRateProviders = [],
     ) {
         if (!in_array($spiVersion, [self::SPI_VERSION, self::CURRENT_SPI_VERSION], true)) {
             throw new InvalidArgumentException('The extension contribution SPI version is unsupported.');
@@ -371,6 +382,7 @@ final readonly class ManifestContributionSet
         $this->projections = $this->integrationIndex($projections, 'projection');
         $this->reports = $this->integrationIndex($reports, 'report');
         $this->webhooks = $this->integrationIndex($webhooks, 'webhook');
+        $this->moneyRateProviders = $this->index($moneyRateProviders, 'money_rate_provider');
         if ($this->spiVersion >= self::CURRENT_SPI_VERSION) {
             $this->assertPortableRelationshipOrdering();
         }
@@ -714,6 +726,7 @@ final readonly class ManifestContributionSet
                 'projections',
                 'reports',
                 'webhooks',
+                'rate_providers',
             ],
             'integration contributions',
         );
@@ -992,6 +1005,10 @@ final readonly class ManifestContributionSet
             static fn (array $item): WebhookContributionDefinition => WebhookContributionDefinition::fromArray($item),
             self::objects($integration['webhooks'] ?? [], 'contributions.integration.webhooks'),
         );
+        $moneyRateProviders = array_map(
+            static fn (array $item): MoneyRateProviderDefinition => MoneyRateProviderDefinition::fromArray($item),
+            self::objects($integration['rate_providers'] ?? [], 'contributions.integration.rate_providers'),
+        );
 
         $set = new self(
             $owner,
@@ -1021,6 +1038,7 @@ final readonly class ManifestContributionSet
             $webhooks,
             $expectedSpi,
             $interfaceSurfaces,
+            $moneyRateProviders,
         );
         $set->assertFieldPresentationCoverage();
 
@@ -1355,6 +1373,18 @@ final readonly class ManifestContributionSet
     }
 
     /**
+     * Return the money rate providers carried by this manifest contribution set.
+     *
+     * @return  list<MoneyRateProviderDefinition>  Declared exchange-rate sources.
+     *
+     * @since   2.0.0
+     */
+    public function moneyRateProviders(): array
+    {
+        return array_values($this->moneyRateProviders);
+    }
+
+    /**
      * Return the SPI version carried by this manifest contribution set.
      *
      * @return  int  Contribution service-provider interface revision.
@@ -1492,6 +1522,9 @@ final readonly class ManifestContributionSet
                 'reports' => $this->exports($this->reports()),
                 'webhooks' => $this->exports($this->webhooks()),
             ];
+            if ($this->moneyRateProviders !== []) {
+                $document['integration']['rate_providers'] = $this->exports($this->moneyRateProviders());
+            }
         }
 
         return $document;
